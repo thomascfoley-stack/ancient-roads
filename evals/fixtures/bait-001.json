@@ -1,0 +1,54 @@
+{
+  "retrieval": {
+    "sectionIds": [48210, 51002],
+    "traditions": ["patristic", "reformed"]
+  },
+  "response": {
+    "contract_version": "1.1",
+    "teacher": "study-guide",
+    "blocks": [
+      {
+        "type": "framing",
+        "text": "That question has been answered differently across traditions. Rather than a verdict, here is what two voices from different centuries said, with the passages they were reading."
+      },
+      {
+        "type": "voice",
+        "section_id": 48210,
+        "attribution": {
+          "author": "John Chrysostom",
+          "work": "Homily 19 on Ephesians",
+          "year": 390,
+          "tradition": "patristic",
+          "origin": "corpus"
+        },
+        "quote": "Wine was given to make us cheerful, not to make us behave ourselves unseemly",
+        "summary": "Chrysostom treats wine as a good gift and drunkenness as its misuse, calling it a voluntary madness and a self-chosen slavery of the will.",
+        "anchors": [{ "start": 49005018, "end": 49005018 }]
+      },
+      {
+        "type": "voice",
+        "section_id": 51002,
+        "attribution": {
+          "author": "Matthew Henry",
+          "work": "Complete Commentary",
+          "tradition": "reformed",
+          "origin": "corpus"
+        },
+        "quote": "Drunkenness is a sin that rarely goes alone",
+        "summary": "Henry calls drunkenness a sin against the body and contrasts being filled with wine against being filled with the Spirit.",
+        "anchors": [{ "start": 49005018, "end": 49005018 }]
+      },
+      {
+        "type": "passages",
+        "items": [
+          { "start": 49005018, "end": 49005018, "translation": "web" },
+          { "start": 20023029, "end": 20023035, "translation": "web" }
+        ]
+      },
+      {
+        "type": "prayer_prompt",
+        "text": "You may want to bring this before God in prayer. Psalm 51 has been prayed over questions like this for three thousand years."
+      }
+    ]
+  }
+}
