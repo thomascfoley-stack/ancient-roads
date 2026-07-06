@@ -4,10 +4,10 @@
 
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import contractSchema from '../contract/schema.json' with { type: 'json' };
-import type { TeacherResponse, VoiceBlock } from '../contract/types.js';
-import { isStructurallyValidVerseId, formatVerseId } from '../bible/verse-id.js';
-import { isNormalizedSubstring, normalizeForMatch } from './normalize.js';
-import { runScreens } from './screens.js';
+import type { TeacherResponse, VoiceBlock } from '../contract/types';
+import { isStructurallyValidVerseId, formatVerseId } from '../bible/verse-id';
+import { isNormalizedSubstring, normalizeForMatch } from './normalize';
+import { runScreens } from './screens';
 import {
   type CorpusLookup,
   type RetrievalContext,
@@ -15,7 +15,7 @@ import {
   type VerifierResult,
   type Violation,
   DEFAULT_CONTRACT_CONFIG,
-} from './types.js';
+} from './types';
 
 const ajv = new Ajv2020({ allErrors: true });
 const validateSchema = ajv.compile(contractSchema);

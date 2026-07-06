@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { verifyV1 } from '../src/verifier/v1.js';
-import type { Violation } from '../src/verifier/types.js';
-import { corpus, retrieval, validResponse } from './fixtures.js';
+import { verifyV1 } from '../src/verifier/v1';
+import type { Violation } from '../src/verifier/types';
+import { corpus, retrieval, validResponse } from './fixtures';
 
 function violations(result: Awaited<ReturnType<typeof verifyV1>>): Violation[] {
   return result.ok ? [] : result.violations;

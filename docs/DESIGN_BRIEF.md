@@ -17,12 +17,14 @@ all-new personal infrastructure.
    constrained JSON output contract, and a verifier that rejects violations
    before render. The corpus lives in the database, not the weights.
 2. **Open weights, self-controlled.** No OpenAI/Anthropic in the product:
-   privacy ("your prayers never leave our infrastructure"), sovereignty (no
-   lab can move the product's behavior under us), and TOS (their outputs
-   can't train a competing model). Launch generation on Qwen3 32B or Llama
-   3.3 70B via Fireworks/Together with pinned weights; distill to Qwen3 8B
-   (Apache 2.0) after ~50k real transcripts. Embeddings: bge-m3. Synthetic
-   data only from permissively licensed models.
+   sovereignty (no lab can move the product's behavior under us), privacy
+   posture, and TOS (their outputs can't train a competing model). Launch
+   generation on Qwen3 32B via DeepInfra (primary, $0.08/$0.28 per Mtok,
+   version pinning) with Nebius Token Factory as failover (verified July
+   2026; Fireworks and Together no longer serve Qwen3 dense serverless).
+   Distill to a small model after ~50k real transcripts. Embeddings: bge-m3.
+   Synthetic data only from permissively licensed models. Provider-side
+   retention terms are a tiebreaker, not a gate (decided 2026-07-05).
 3. **Slack-shaped workspace: channels = studies, teachers = @mentions.** A
    channel is a persistent study topic ("#self-control"); teachers
    (@historian, @greek-tutor, @study-guide) are personas invoked in any
@@ -60,7 +62,7 @@ all-new personal infrastructure.
 | Web | Next.js on Vercel |
 | Mobile / iPad | Expo (React Native), offline reading required |
 | Database / auth / RLS | Supabase (Postgres 16, pgvector, storage) |
-| Model serving | Fireworks or Together, pinned open weights; self-host vLLM only when the bill justifies it |
+| Model serving | DeepInfra (primary) + Nebius (failover), pinned open weights; self-host vLLM only when the bill justifies it |
 | Retrieval | BM25 (tsvector) + pgvector HNSW + reranker; exact verse-reference parse bypasses search |
 | Payments | Stripe (web) + RevenueCat (App Store / Play) |
 | Upload parsing | Small dedicated worker (Fly.io or Modal) polling pgmq; Docling/marker for PDF, mammoth for DOCX |

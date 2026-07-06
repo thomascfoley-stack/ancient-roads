@@ -10,12 +10,12 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parse } from 'yaml';
-import { verifyV1 } from '../verifier/v1.js';
-import { createMemoryCorpus } from '../verifier/memory-corpus.js';
-import type { MemoryCorpusData } from '../verifier/memory-corpus.js';
-import type { TeacherResponse } from '../contract/types.js';
-import { runExpectation } from './checks.js';
-import type { CaseResult, EvalCase, TeacherAdapter } from './types.js';
+import { verifyV1 } from '../verifier/v1';
+import { createMemoryCorpus } from '../verifier/memory-corpus';
+import type { MemoryCorpusData } from '../verifier/memory-corpus';
+import type { TeacherResponse } from '../contract/types';
+import { runExpectation } from './checks';
+import type { CaseResult, EvalCase, TeacherAdapter } from './types';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const CASES_DIR = path.join(ROOT, 'evals/cases');

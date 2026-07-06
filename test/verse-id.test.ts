@@ -4,7 +4,7 @@ import {
   decodeVerseId,
   isStructurallyValidVerseId,
   formatVerseId,
-} from '../src/bible/verse-id.js';
+} from '../src/bible/verse-id';
 
 describe('canonical verse IDs', () => {
   it('Genesis 1:1 = 1001001', () => {

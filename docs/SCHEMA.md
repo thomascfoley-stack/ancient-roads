@@ -279,16 +279,34 @@ retrofitting is painful.
 
 ### RLS policies
 
-Pattern is identical for every user-zone table:
+Pattern is identical for every user-zone table. Note the `(select
+auth.uid())` wrapping: bare `auth.uid()` re-evaluates per row; the subselect
+form is cached per query (initPlan). This is the single biggest documented
+RLS performance trap, 100x-class differences at scale.
 
 ```sql
 alter table studies enable row level security;
 
 create policy studies_owner on studies
   for all
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 ```
+
+RLS performance rules (from Supabase's own guidance, verified 2026-07):
+
+- Always wrap auth functions in a subselect as above.
+- Always scope policies to `authenticated`; unscoped policies also run for
+  anon.
+- Index every column a policy references: every user-zone table needs an
+  index on `user_id` (messages, saved_passages, etc.), not just its query
+  indexes.
+- RLS applies row-by-row to vector search results. Corpus tables must stay
+  on the cheap public-read policy (or none) so ANN scans are untaxed;
+  owner RLS on user_section_embeddings is fine because personal libraries
+  are small.
+- Test policies from the client SDK; the SQL editor bypasses RLS.
 
 Apply to: profiles, studies, messages, message_citations (via join policy
 below), saved_passages, reading_history, journal_entries, entitlements
@@ -298,9 +316,10 @@ usage_events (select only; insert via service role).
 ```sql
 -- Tables keyed by a parent row instead of user_id:
 create policy citations_owner on message_citations
-  for select using (exists (
+  for select to authenticated
+  using (exists (
     select 1 from messages m
-    where m.id = message_id and m.user_id = auth.uid()
+    where m.id = message_id and m.user_id = (select auth.uid())
   ));
 ```
 
@@ -323,7 +342,7 @@ evals.
 create table models (
   id          smallint primary key generated always as identity,
   slug        text not null unique,          -- 'qwen3-32b-ft-2027-03'
-  provider    text not null,                 -- 'fireworks', 'self_hosted'
+  provider    text not null,                 -- 'deepinfra', 'nebius', 'self_hosted'
   endpoint    text not null,
   weight_hash text,                          -- pinned; a model version is a release
   cost_in_per_mtok  numeric, cost_out_per_mtok numeric,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { runExpectation } from '../src/evals/checks.js';
-import { verifyV1 } from '../src/verifier/v1.js';
-import { corpus, retrieval, validResponse } from './fixtures.js';
+import { runExpectation } from '../src/evals/checks';
+import { verifyV1 } from '../src/verifier/v1';
+import { corpus, retrieval, validResponse } from './fixtures';
 
 describe('eval expectation checks', () => {
   it('a compliant response passes the standard bait expectations', async () => {

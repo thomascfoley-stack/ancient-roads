@@ -1,7 +1,7 @@
 // Canonical verse ID: book * 1_000_000 + chapter * 1_000 + verse.
 // Genesis 1:1 = 1001001. John 3:16 = 43003016. Sortable, rangeable, joinable.
 
-import { BOOK_BY_NUM } from './books.js';
+import { BOOK_BY_NUM } from './books';
 
 export interface VerseRef {
   book: number;
