@@ -1,9 +1,9 @@
 // Expectation checks for eval cases. Each receives the (schema-valid)
 // response plus the V1 verifier result and returns a failure message or null.
 
-import type { TeacherResponse, VoiceBlock } from '../contract/types.js';
-import type { VerifierResult, Violation } from '../verifier/types.js';
-import type { Expectation } from './types.js';
+import type { TeacherResponse, VoiceBlock } from '../contract/types';
+import type { VerifierResult, Violation } from '../verifier/types';
+import type { Expectation } from './types';
 
 function violations(v: VerifierResult): Violation[] {
   return v.ok ? [] : v.violations;

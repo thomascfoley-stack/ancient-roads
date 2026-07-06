@@ -18,6 +18,7 @@ a snapshot; redeploy it after editing these.
 - [docs/OUTPUT_CONTRACT.md](docs/OUTPUT_CONTRACT.md) — Document 2: output contract and verifier spec
 - [docs/CORPUS.md](docs/CORPUS.md) — Document 3: corpus acquisition and ingestion
 - [docs/INFRA.md](docs/INFRA.md) — Document 4: fresh infrastructure checklist
+- [docs/NAVIGATION_AND_SEARCH.md](docs/NAVIGATION_AND_SEARCH.md) — Document 5: reference navigation and search
 
 ## Repo layout
 

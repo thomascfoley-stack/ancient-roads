@@ -1,5 +1,5 @@
-import type { TeacherResponse } from '../contract/types.js';
-import type { RetrievalContext, VerifierResult } from '../verifier/types.js';
+import type { TeacherResponse } from '../contract/types';
+import type { RetrievalContext, VerifierResult } from '../verifier/types';
 
 // A single eval case (OUTPUT_CONTRACT.md §4). YAML files in evals/cases/
 // each hold a list of these.

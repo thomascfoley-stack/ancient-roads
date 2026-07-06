@@ -1,6 +1,6 @@
-import type { TeacherResponse } from '../src/contract/types.js';
-import { createMemoryCorpus } from '../src/verifier/memory-corpus.js';
-import type { RetrievalContext } from '../src/verifier/types.js';
+import type { TeacherResponse } from '../src/contract/types';
+import { createMemoryCorpus } from '../src/verifier/memory-corpus';
+import type { RetrievalContext } from '../src/verifier/types';
 
 export const CHRYSOSTOM_BODY =
   'Hear this, ye that pass your time in revels and intemperance. Wine was given ' +

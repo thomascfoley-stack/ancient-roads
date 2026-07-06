@@ -260,7 +260,7 @@ create index usage_user_month_idx on usage_events (user_id, created_at);
 create table models (
   id                smallint primary key generated always as identity,
   slug              text not null unique,    -- 'qwen3-32b-ft-2027-03'
-  provider          text not null,           -- 'fireworks', 'self_hosted'
+  provider          text not null,           -- 'deepinfra', 'nebius', 'self_hosted'
   endpoint          text not null,
   weight_hash       text,                    -- pinned; a model version is a release
   cost_in_per_mtok  numeric,
@@ -355,7 +355,28 @@ create index use_hnsw_idx on user_section_embeddings
 
 -- ============================================================
 -- RLS
+-- Performance rules (from Supabase guidance, verified 2026-07):
+-- 1. Always wrap auth functions in a subselect: (select auth.uid())
+--    is cached per query (initPlan); bare auth.uid() re-evaluates per row.
+--    This is a 100x-class difference at scale.
+-- 2. Always scope policies to `authenticated`; unscoped policies also
+--    run for anon.
+-- 3. Index every column a policy references: user_id indexes below.
+-- 4. Corpus tables stay on cheap public-read so ANN scans are untaxed.
 -- ============================================================
+
+-- User-zone indexes (every column referenced by an RLS policy).
+-- PK-based (profiles, entitlements) already have an index.
+create index studies_user_id_idx        on studies (user_id);
+create index messages_user_id_idx       on messages (user_id);
+create index saved_passages_user_id_idx on saved_passages (user_id);
+create index reading_history_user_id_idx on reading_history (user_id);
+create index journal_entries_user_id_idx on journal_entries (user_id);
+create index usage_events_user_id_idx   on usage_events (user_id);
+create index user_documents_user_id_idx on user_documents (user_id);
+create index user_sections_user_id_idx  on user_sections (user_id);
+create index user_section_anchors_user_id_idx on user_section_anchors (user_id);
+create index user_section_embeddings_user_id_idx on user_section_embeddings (user_id);
 
 -- Corpus zone: public read, no client writes (writes via service role only).
 alter table books               enable row level security;
@@ -383,7 +404,7 @@ create policy lexicon_entries_read    on lexicon_entries    for select using (tr
 -- Topics: only published guides are client-visible.
 create policy topics_read on topics for select using (status = 'published');
 
--- User zone: owner-only.
+-- User zone: owner-only. Subselect pattern + to authenticated on every policy.
 alter table profiles         enable row level security;
 alter table studies          enable row level security;
 alter table messages         enable row level security;
@@ -395,30 +416,45 @@ alter table entitlements     enable row level security;
 alter table usage_events     enable row level security;
 
 create policy profiles_owner on profiles
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 create policy studies_owner on studies
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 create policy messages_owner on messages
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 create policy saved_passages_owner on saved_passages
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 create policy reading_history_owner on reading_history
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 create policy journal_entries_owner on journal_entries
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 -- Keyed by parent row instead of user_id:
 create policy citations_owner on message_citations
-  for select using (exists (
+  for select to authenticated
+  using (exists (
     select 1 from messages m
-    where m.id = message_id and m.user_id = auth.uid()
+    where m.id = message_id and m.user_id = (select auth.uid())
   ));
 
 -- Entitlements/usage: owner reads; writes via service role (webhooks/metering).
 create policy entitlements_owner_read on entitlements
-  for select using (auth.uid() = user_id);
+  for select to authenticated
+  using ((select auth.uid()) = user_id);
 create policy usage_events_owner_read on usage_events
-  for select using (auth.uid() = user_id);
+  for select to authenticated
+  using ((select auth.uid()) = user_id);
 
 -- User library: owner-only on all four tables.
 alter table user_documents          enable row level security;
@@ -427,13 +463,21 @@ alter table user_section_anchors    enable row level security;
 alter table user_section_embeddings enable row level security;
 
 create policy user_documents_owner on user_documents
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 create policy user_sections_owner on user_sections
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 create policy user_section_anchors_owner on user_section_anchors
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 create policy user_section_embeddings_owner on user_section_embeddings
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 -- Config zone: RLS enabled, zero policies. Service role only.
 alter table models          enable row level security;

@@ -1,4 +1,4 @@
-import type { Origin } from '../contract/types.js';
+import type { Origin } from '../contract/types';
 
 // What the verifier needs to know about a resolved section. In production
 // this comes from Postgres (sections join sources, or user_sections join

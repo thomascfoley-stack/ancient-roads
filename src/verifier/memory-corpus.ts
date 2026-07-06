@@ -1,8 +1,8 @@
 // In-memory CorpusLookup for tests and the offline eval harness. Production
 // swaps this for a Postgres-backed implementation with the same interface.
 
-import type { Origin } from '../contract/types.js';
-import type { CorpusLookup, ResolvedSection, ResolvedTranslation } from './types.js';
+import type { Origin } from '../contract/types';
+import type { CorpusLookup, ResolvedSection, ResolvedTranslation } from './types';
 
 export interface MemoryCorpusData {
   sections: ResolvedSection[];
