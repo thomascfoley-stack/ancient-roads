@@ -93,7 +93,13 @@ The retrieval spine was already built in a prior session:
 
 ## Task 5: Fix drifted web ref-parse.ts
 
-**Status:** Not started
+**Status:** Complete — files now byte-identical, audit green.
+
+### Changes
+
+- `web/src/bible/ref-parse.ts`: Removed unused `BOOK_BY_SLUG` import (the only difference from `src/bible/ref-parse.ts`)
+- Verified with `diff`: files are now byte-identical
+- Audit passes green (77 tests, 0 errors)
 
 ## Task 6: Note panel close on save
 
