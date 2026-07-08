@@ -103,7 +103,14 @@ The retrieval spine was already built in a prior session:
 
 ## Task 6: Note panel close on save
 
-**Status:** Not started
+**Status:** Complete — panel closes after save. Needs Thomas's visual confirmation.
+
+### Changes
+
+- `web/src/app/read/[book]/[chapter]/page.tsx:251`: `onSaveNote` callback now calls `setStudy(null)` after `saveVerseNote`, closing the study panel on successful (optimistic) save
+- Save is optimistic (local state updates immediately, fetch is fire-and-forget), so the panel closes instantly — no spinner needed
+- Commentary panel sidebar's AnnotationBar is left unchanged: it collapses the note editor but keeps the sidebar open, which is the correct UX for a persistent sidebar vs. a popup panel
+- Web typecheck passes
 
 ## Design proposals (no implementation)
 
