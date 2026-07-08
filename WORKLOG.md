@@ -44,7 +44,22 @@ Working through prioritized task list. Tree is clean on `main`.
 
 ## Task 2: V1 verifier reject-path tests
 
-**Status:** Not started
+**Status:** Complete — v1.ts at 100% statement coverage, ROADMAP row upgraded to Done.
+
+### Changes
+
+- `test/verifier.test.ts`: Added 8 new tests (20 → 28 total):
+  - `attribution_tradition`: wrong tradition in voice block
+  - `anchor_valid`: structurally invalid anchor verse IDs on voice block
+  - `anchor_order`: reversed anchor range on voice block
+  - `reading_resolves`: reading block with unresolvable source_id
+  - `reading_attribution`: reading block with mismatched author
+  - `passage_exists`: verse not found in translation
+  - I5 screen true-positive: doctrinal verdict in voice summary
+  - Valid reading block acceptance (green-path)
+- `test/fixtures.ts`: Added `missingVerses` to corpus fixture for `passage_exists` test
+- Coverage: `v1.ts` 77.6% → **100%** statements; `screens.ts`, `normalize.ts`, `memory-corpus.ts` all 100%
+- `/audit` passes green (28 verifier tests, 77 total, 0 errors)
 
 ## Task 3: Retrieval vertical slice (spine only)
 

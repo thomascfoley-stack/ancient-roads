@@ -30,7 +30,7 @@ that is **Partial** or **Missing**. Status values: Done / Partial / Missing / Bl
 | Area | Status | Evidence (files/routes/tests) | Definition-of-done | Gap remaining | Blockers/deps | Bucket · Priority |
 |---|---|---|---|---|---|---|
 | **Verse-reference parser + verse-id (core lib)** | **Done** | `src/bible/ref-parse.ts`, `verse-id.ts`; `test/ref-parse.test.ts` (33), `test/verse-id.test.ts` (5) — pass; in `/audit` scope | Parse/format refs + canonical IDs, unit-tested, in audit | — (web ships a *drifted copy*, tracked as its own row) | none | Intelligence·core · P1 |
-| **Output contract + V1 verifier** | Partial | `src/contract/{types.ts,schema.json}` (schema wired: `v1.ts:11,25,37`); `src/verifier/{v1,screens,normalize,memory-corpus}.ts`; `test/verifier.test.ts` (20) pass, in `/audit`. **But `v1.ts` = 77.6% stmt coverage** (downgraded on verification) | Schema + **every** deterministic reject path unit-tested + in audit | Untested reject paths: whole `reading` block (`reading_resolves`/`reading_attribution`, v1.ts:161-178), `attribution_tradition`, `anchor_valid`/`anchor_order`, `passage_exists`; screens cover I1/I2/I3/I5 only (I4/I6 = V2) and I5 true-positive unasserted | none (closable w/ reject-path tests) | Intelligence · P0 |
+| **Output contract + V1 verifier** | **Done** | `src/contract/{types.ts,schema.json}` (schema wired: `v1.ts:11,25,37`); `src/verifier/{v1,screens,normalize,memory-corpus}.ts`; `test/verifier.test.ts` (28) pass, in `/audit`. **`v1.ts` = 100% stmt coverage** — all reject paths exercised | Schema + **every** deterministic reject path unit-tested + in audit | — | none | Intelligence · P0 |
 | **Bible content plane (22 translations)** | Partial | `web/public/bible/` = 22 translations (244M); served via `web/src/lib/bible.ts` `fetch('/bible/{tr}/{slug}.json')`; ingest `src/ingest/ingest-*.ts` | 22 translations served + ingestion tested + in audit | Ingestion **0% coverage**; serving is `web/` → outside `/audit`; no tests | none | Content · P1 |
 | **Interlinear (Gk/Heb) + Strong's lexicon (data)** | Partial | `web/public/original/` (45M), `web/public/lexicon/` (3M); `web/src/lib/original.ts`; `src/ingest/ingest-{original,strongs}.ts` | Per-verse interlinear + lexicon served + tested + in audit | Ingest 0% coverage; not in audit; no tests | none | Content · P1 |
 | **Commentary corpus (401 sources / 371k)** | Partial | `web/public/commentaries/` (379M) + `_manifest.json`; `lib/bible.ts` `fetchCommentary*`; `src/ingest/{merge-commentaries,ingest-*commentary*}.ts` | Corpus served + manifest + ingestion tested + in audit | Ingest 0% coverage; not in audit; no tests | none | Content · P1 |
@@ -54,12 +54,13 @@ that is **Partial** or **Missing**. Status values: Done / Partial / Missing / Bl
 | **Highlighter "red is moving"** | Missing | Reported: red highlighter element visually "moves" — needs reproduction to identify the element and trigger (hover / select / scroll) | Reproduce → identify root cause → fix | Needs reproduction before any fix attempt | none | UX bug · P2 |
 | **Separate text color from highlight color** | Missing | `highlights` table has single `color` column; UI exposes one color axis | `highlights.color` → `highlight_color` + `text_color` (migration 003 + backfill); UI exposes two independent color pickers | Schema design + UI design (propose first, stop for approval), then migration + implementation | SEC-2 closed (RLS on the table being altered) | UX feature · P2 |
 
-## What is actually Done (1 row, after verification)
+## What is actually Done (2 rows, after verification)
 
-After fresh-eyes verification, **only the verse-reference parser clears the full bar.** The output
-contract + V1 verifier was downgraded to Partial (below). Everything user-facing is Partial (no web
-tests + outside `/audit`), Blocked (SEC-1 auth, SEC-2 data), or Missing (AI generation and everything
-gated on it). This matches the app's real phase: content plane shipped, intelligence plane not started.
+- **Verse-reference parser** — Done since initial audit.
+- **Output contract + V1 verifier** — Done after 2026-07-08 reject-path test expansion (see below).
+
+Everything user-facing is Partial (no web tests + outside `/audit`), Blocked (SEC-1 auth, SEC-2 data),
+or Missing (AI generation and everything gated on it). Content plane shipped, intelligence plane not started.
 
 ## Verification pass (independent fresh-eyes re-check of the Done rows)
 
@@ -68,10 +69,8 @@ gated on it). This matches the app's real phase: content plane shipped, intellig
   ranges, `ff`, comma-sequence context inheritance, and every "never guess" reject path; in `/audit`.
   The tested copy is `src/` (the drifted `web/` copy is its own Partial row). Cosmetic-only gap:
   `formatVerseId`'s unknown-book fallback branch is unexercised. Verdict unchanged.
-- **Output contract + V1 verifier — DOWNGRADED Done → Partial.** `test/verifier.test.ts` passes but
-  `v1.ts` is only **77.6% statement coverage**, and the uncovered lines are real rejection paths with
-  **no exercising test**: the entire `reading` block type (`reading_resolves`, `reading_attribution`),
-  `attribution_tradition`, `anchor_valid`/`anchor_order`, `passage_exists`. Screens implement I1/I2/I3/I5
-  only (I4/I6 are V2 by design); tests assert I1–I3 but not the I5 true-positive. Schema wiring,
-  `section_resolves`, `quote_verbatim`, `attribution_author`/`_work`, `translation_licensed`, and G1
-  diversity ARE genuinely tested. The original "20 tests → Done" overstated coverage; corrected.
+- **Output contract + V1 verifier — RESTORED to Done (2026-07-08).** Previously downgraded to Partial
+  at 77.6% stmt coverage with untested reject paths. Added 8 tests covering: `reading_resolves`,
+  `reading_attribution`, `attribution_tradition`, `anchor_valid`, `anchor_order`, `passage_exists`,
+  I5 true-positive screen, and valid reading block acceptance. `v1.ts` now at **100% statement coverage**.
+  All 28 tests pass, audit green. `memory-corpus.ts`, `normalize.ts`, `screens.ts` also 100%.

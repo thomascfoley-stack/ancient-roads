@@ -42,6 +42,7 @@ export const corpus = createMemoryCorpus({
     { slug: 'web', isActive: true, licensedForDisplay: true },
     { slug: 'esv', isActive: false, licensedForDisplay: false },
   ],
+  missingVerses: [{ translation: 'web', verseId: 19150007 }],
 });
 
 export const retrieval: RetrievalContext = {
