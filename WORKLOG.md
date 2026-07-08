@@ -114,9 +114,111 @@ The retrieval spine was already built in a prior session:
 
 ## Design proposals (no implementation)
 
-- Text/highlight color separation: Not started
-- Red highlighter investigation: Not started
+### Red highlighter "moving" — investigation
+
+**Status:** Analysis complete, awaiting Thomas's reproduction in browser.
+
+There is NO red color in `HIGHLIGHT_COLORS` — the palette is yellow, green, sky, pink, amber. "Red" likely means the **pink dot** (`bg-pink-400`, which renders as a saturated rose/coral).
+
+The "moving" behavior is almost certainly the **hover quick-menu** (`verse-display.tsx:87–140`):
+- It's `position: fixed` with coordinates from `el.getClientRects()[0]`
+- It follows the mouse across verses — each `onMouseEnter` repositions the menu to that verse's first line
+- For multi-line verses, the menu snaps to the first line even when the mouse entered from a lower line, which could look like the menu "jumps"
+- During scroll while the menu is visible, the menu stays viewport-fixed while text scrolls underneath (140ms dismiss timer may not fire fast enough)
+
+**Three likely causes** (Thomas should confirm which):
+1. **Normal hover-follow behavior** — the menu is designed to move verse-to-verse. If this feels wrong, the fix is debouncing or anchoring to click instead of hover.
+2. **Multi-line snap** — verse spans can wrap; `getClientRects()[0]` always returns the first line rect, so the menu appears above where the mouse is.
+3. **Scroll-during-hover** — `position: fixed` + stale coordinates = menu floats away from its verse during scroll.
+
+**Don't-guess-fix**: Thomas should reproduce and confirm which element is "red" (pink dot? pink highlight bg? something else?) and what "moving" means (hover-follow? scroll-float? something else?) before any code change.
+
+### Text/highlight color separation — schema + UX proposal
+
+**Status:** Proposal ready for Thomas's approval. DO NOT implement until approved.
+
+#### Current state
+- `highlights` table: `id, user_id, verse_id, verse_end, color, deleted_at, created_at, updated_at`
+- `color` stores a string key (`'yellow'`, `'green'`, `'sky'`, `'pink'`, `'amber'`) mapping to a Tailwind bg class
+- Text color is always the default (stone-800 / stone-200 in dark mode)
+- One color axis, one row of dots in the UI
+
+#### Proposed schema (migration 003)
+
+```sql
+-- 003_highlight_text_color.sql
+-- Add independent text_color axis. Rename color → highlight_color for clarity.
+
+ALTER TABLE highlights RENAME COLUMN color TO highlight_color;
+ALTER TABLE highlights ADD COLUMN text_color TEXT DEFAULT NULL;
+
+-- Backfill: nothing to do — NULL text_color means "use default text color"
+-- (backward compatible: all existing highlights keep their bg color, no text override)
+```
+
+TypeScript interface change:
+```typescript
+export interface Highlight {
+  id: string;
+  verse_id: number;
+  verse_end: number | null;
+  highlight_color: string;      // was: color
+  text_color: string | null;    // new — null means default
+}
+```
+
+#### Proposed text color palette
+
+```typescript
+export const TEXT_COLORS = [
+  { id: 'default', label: 'Default', class: null },          // stone-800 / stone-200
+  { id: 'red',     label: 'Red',     class: 'text-red-700 dark:text-red-400' },
+  { id: 'blue',    label: 'Blue',    class: 'text-blue-700 dark:text-blue-400' },
+  { id: 'green',   label: 'Green',   class: 'text-green-700 dark:text-green-400' },
+  { id: 'purple',  label: 'Purple',  class: 'text-purple-700 dark:text-purple-400' },
+] as const;
+```
+
+#### Proposed UX (3 surfaces to update)
+
+**1. Hover quick-menu** (`verse-display.tsx`):
+- Keep the existing row of bg-color dots (unchanged)
+- Add a second row below with smaller "A" letter swatches showing the text colors
+- Separator between the two rows
+- Compact: fits in the existing rounded-pill menu
+
+**2. Study panel HighlightRow** (`study-panel.tsx`):
+- Current: `Highlight [● ● ● ● ●] [clear]`
+- Proposed: Two labeled rows:
+  ```
+  Background  [● ● ● ● ●]  [clear]
+  Text color  [A  A  A  A  A]  [reset]
+  ```
+
+**3. Commentary panel AnnotationBar** (`commentary-panel.tsx`):
+- Same two-row layout as study panel
+
+**4. Verse rendering** (`verse-display.tsx`):
+- The `<span>` wrapping verse text gets an additional class from `TEXT_COLOR_CLASS[textColor]` when `text_color` is non-null
+- Falls through to the default `text-stone-800 dark:text-stone-200` when null
+
+#### Queries to update (6 total)
+- `getChapterAnnotations`: SELECT adds `text_color`
+- `setHighlight`: INSERT/UPDATE adds `text_color` param
+- `removeHighlight`: unchanged (soft-deletes whole row)
+- `listHighlights`: SELECT adds `text_color`
+- API route `POST /api/annotations` (highlight kind): accepts `textColor` field
+- API route `GET /api/annotations/all`: returns `text_color`
+
+#### Risks / open questions for Thomas
+1. **Rename `color` → `highlight_color`?** This touches every query and UI reference. Alternative: keep `color` as-is and just add `text_color`. Less churn, slightly less clear naming.
+2. **Palette size**: 5 text colors enough? Should it match the bg palette 1:1?
+3. **Combinatorics UX**: With 5 bg × 5 text colors = 25 combos, is a two-row layout intuitive enough or should we use a grid/matrix?
+4. **Default text color by bg**: Should certain bg colors auto-set a text color for readability (e.g., dark bg → light text)? Or always independent?
 
 ## Needs Thomas
 
-(Nothing yet)
+1. **Note panel close on save (Task 6)**: visually confirm the panel closes after saving a note in the reader
+2. **Red highlighter "moving" (Task 7)**: reproduce in browser and confirm: (a) which element is "red" — pink dot? pink bg? something else? (b) what "moving" means — hover-following? scroll-floating? multi-line snap?
+3. **Text/highlight color separation (Task 7)**: review the schema + UX proposal above and approve/redirect before implementation
+4. **SEC-2 closure (prod)**: re-apply APP_DATABASE_URL to prod, rotate neondb_owner password
