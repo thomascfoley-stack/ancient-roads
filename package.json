@@ -5,6 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
+    "audit": "bash scripts/audit.sh",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
@@ -13,17 +14,39 @@
     "ingest:api": "tsx src/ingest/ingest-api.ts",
     "ingest:commentaries": "tsx src/ingest/ingest-commentaries.ts",
     "ingest:commentary-api": "tsx src/ingest/ingest-commentary-api.ts",
-    "ingest:merge-commentaries": "tsx src/ingest/merge-commentaries.ts"
+    "ingest:merge-commentaries": "tsx src/ingest/merge-commentaries.ts",
+    "ingest:embeddings": "tsx src/ingest/ingest-embeddings.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "ajv": "^8.17.1",
-    "ajv-formats": "^3.0.1",
     "yaml": "^2.5.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/node": "^22.10.0",
+    "@vitest/coverage-v8": "^2.1.9",
+    "eslint": "^9.0.0",
+    "knip": "^6.25.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
+    "typescript-eslint": "^8.63.0",
     "vitest": "^2.1.0"
+  },
+  "pnpm": {
+    "auditConfig": {
+      "//": "Documented + justified in docs/SECURITY.md. All rooted in the pinned @neondatabase/auth@0.4.2-beta (better-auth@1.4.18); unfixable today (override breaks the build). GHSA-g38m is a real in-path account-takeover and is a tracked LAUNCH BLOCKER, not accepted.",
+      "ignoreGhsas": [
+        "GHSA-5xrq-8626-4rwp",
+        "GHSA-fx2h-pf6j-xcff",
+        "GHSA-pw9m-5jxm-xr6h",
+        "GHSA-7w99-5wm4-3g79",
+        "GHSA-fmh4-wcc4-5jm3",
+        "GHSA-g38m-r43w-p2q7",
+        "GHSA-86j7-9j95-vpqj",
+        "GHSA-9h47-pqcx-hjr4",
+        "GHSA-392p-2q2v-4372"
+      ]
+    }
   }
 }

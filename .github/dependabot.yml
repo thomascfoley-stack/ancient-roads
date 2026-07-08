@@ -1,0 +1,24 @@
+version: 2
+updates:
+  # Root package (audit tooling, ingestion, retrieval)
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      dev-dependencies:
+        dependency-type: development
+
+  # The Next.js web app
+  - package-ecosystem: npm
+    directory: "/web"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+
+  # Keep the GitHub Actions themselves patched
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
