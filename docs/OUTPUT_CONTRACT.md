@@ -1,7 +1,8 @@
 # Document 2: Output contract and verifier spec
 
 The product promise ("reports what others said, never interprets, cites
-everything") lives here, enforced in three layers:
+everything") is defined in the north-star spec [PRINCIPLES.md](PRINCIPLES.md); this
+document is the enforcement contract for it, in three layers:
 
 1. The contract: a JSON schema every teacher response must satisfy.
 2. The verifier: deterministic checks + a classifier pass that reject
@@ -93,6 +94,10 @@ When the corpus is thin on a topic, say so in framing ("fewer historical
 voices address this directly") rather than padding.
 
 ## 2. Operational definition of "interpretation" (the banned behavior)
+
+Canonical source: [PRINCIPLES.md](PRINCIPLES.md) — rules I1–I6 plus the structural floors
+C1 (corpus-only citation) and G1 (2–3 grounded-example floor). This section mirrors it; keep
+them in sync.
 
 A response interprets if it does any of:
 
