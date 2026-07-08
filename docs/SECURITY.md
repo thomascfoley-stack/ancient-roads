@@ -212,12 +212,16 @@ transaction — no read-then-branch). Then the **real repository layer** was dri
 RLS isolates user A from B, the upsert exercises both insert and conflict-update (one active row, same id),
 and the backstop denies queries with the session var unset. `next build` is green with the upsert change.
 
-### Rollout (HELD — awaiting user go for prod)
-- **Step A (reversible, no user-facing change):** create `app_runtime` on prod + apply migrations 001 & 002.
-  RLS stays inert while the app still connects as owner.
-- **Step B (the flip):** set `APP_DATABASE_URL` (app_runtime, pooled) in Vercel + `web/.env.local`, redeploy.
-  RLS goes live. Backward-compatible refactor + ~0 blast radius. **Rollback:** clear `APP_DATABASE_URL` in
-  Vercel → app falls back to owner; `DROP ROLE app_runtime` if needed.
+### Rollout — APPLIED to prod 2026-07-08 (pending signed-in smoke test)
+- **Step A — DONE:** `app_runtime` created on prod; migrations 001 & 002 applied. Prod notes had **0**
+  duplicate active `(user_id, verse_id)` groups, so the unique index built clean (`indisunique=true`).
+- **Step B — DONE:** `APP_DATABASE_URL` (app_runtime, pooled) set in Vercel production + `web/.env.local`;
+  redeployed. App now connects as `app_runtime` (RLS live). DB-layer proof passed via the real `runAsUser`
+  path (connects as app_runtime, RLS binds, backstop hides the unset-var query).
+- **PENDING:** signed-in browser smoke test — blocked from automation by Vercel Deployment Protection (SSO)
+  + OAuth; being run by the account owner. Runtime is not yet declared healthy until that passes.
+- **Rollback (one line):** `vercel env rm APP_DATABASE_URL production` → redeploy; app falls back to
+  `neondb_owner` (RLS inert, pre-flip known-good). `DROP ROLE app_runtime` only if fully reverting.
 - Throwaway branches to delete after: `sec2-verify`, `betterauth-spike`, `sec2-stage`.
 
 ## SEC-3 — hardcoded prod owner credential in `db/migrate.mjs`
