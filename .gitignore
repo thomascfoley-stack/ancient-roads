@@ -16,3 +16,13 @@ data/
 # Deploy with `npx vercel` from web/ which reads local files directly
 web/public/bible/
 web/public/commentaries/
+# Same pattern: generated interlinear + lexicon static data
+web/public/lexicon/
+web/public/original/
+
+# Generated coverage report + Neon CLI project artifact
+coverage/
+.neon
+
+# Throwaway SEC-2/auth spike workspace (own node_modules + local-only secrets)
+spike/
