@@ -75,6 +75,47 @@ describe('V1 verifier: citations', () => {
     const result = await verifyV1(r, corpus, retrieval);
     expect(violations(result).some((v) => v.check === 'section_resolves')).toBe(true);
   });
+
+  it('rejects a wrong tradition (the tradition-swap failure)', async () => {
+    const r = validResponse();
+    (r.blocks[1] as any).attribution.tradition = 'reformed';
+    const result = await verifyV1(r, corpus, retrieval);
+    expect(violations(result).some((v) => v.check === 'attribution_tradition')).toBe(true);
+  });
+});
+
+describe('V1 verifier: reading block', () => {
+  function responseWithReading(): ReturnType<typeof validResponse> {
+    const r = validResponse();
+    r.blocks.push({
+      type: 'reading',
+      items: [
+        { source_id: 7, title: 'Homilies on Ephesians', author: 'John Chrysostom' },
+      ],
+    } as any);
+    return r;
+  }
+
+  it('accepts a valid reading block', async () => {
+    const result = await verifyV1(responseWithReading(), corpus, retrieval);
+    expect(result.ok).toBe(true);
+  });
+
+  it('rejects a reading with unresolvable source_id', async () => {
+    const r = responseWithReading();
+    const reading = r.blocks[r.blocks.length - 1] as any;
+    reading.items[0].source_id = 99999;
+    const result = await verifyV1(r, corpus, retrieval);
+    expect(violations(result).some((v) => v.check === 'reading_resolves')).toBe(true);
+  });
+
+  it('rejects a reading with mismatched author', async () => {
+    const r = responseWithReading();
+    const reading = r.blocks[r.blocks.length - 1] as any;
+    reading.items[0].author = 'Augustine of Hippo';
+    const result = await verifyV1(r, corpus, retrieval);
+    expect(violations(result).some((v) => v.check === 'reading_attribution')).toBe(true);
+  });
 });
 
 describe('V1 verifier: passages and anchors', () => {
@@ -97,6 +138,27 @@ describe('V1 verifier: passages and anchors', () => {
     (r.blocks[3] as any).items[1] = { start: 20023035, end: 20023029, translation: 'web' };
     const result = await verifyV1(r, corpus, retrieval);
     expect(violations(result).some((v) => v.check === 'passage_order')).toBe(true);
+  });
+
+  it('rejects a verse that does not exist in the translation', async () => {
+    const r = validResponse();
+    (r.blocks[3] as any).items[0] = { start: 19150007, end: 19150007, translation: 'web' };
+    const result = await verifyV1(r, corpus, retrieval);
+    expect(violations(result).some((v) => v.check === 'passage_exists')).toBe(true);
+  });
+
+  it('rejects a structurally invalid anchor on a voice block', async () => {
+    const r = validResponse();
+    (r.blocks[1] as any).anchors = [{ start: 1099001, end: 1099001 }];
+    const result = await verifyV1(r, corpus, retrieval);
+    expect(violations(result).some((v) => v.check === 'anchor_valid')).toBe(true);
+  });
+
+  it('rejects a reversed anchor range on a voice block', async () => {
+    const r = validResponse();
+    (r.blocks[1] as any).anchors = [{ start: 49005020, end: 49005018 }];
+    const result = await verifyV1(r, corpus, retrieval);
+    expect(violations(result).some((v) => v.check === 'anchor_order')).toBe(true);
   });
 });
 
@@ -127,6 +189,13 @@ describe('V1 verifier: interpretation screens', () => {
     (r.blocks[4] as any).text = 'You must repent of this tonight in prayer.';
     const result = await verifyV1(r, corpus, retrieval);
     expect(violations(result).some((v) => v.check === 'screen:I3')).toBe(true);
+  });
+
+  it('rejects doctrinal verdict in voice summary (I5)', async () => {
+    const r = validResponse();
+    (r.blocks[1] as any).summary = 'Yes, it is a sin to drink in excess according to Chrysostom.';
+    const result = await verifyV1(r, corpus, retrieval);
+    expect(violations(result).some((v) => v.check === 'screen:I5')).toBe(true);
   });
 
   it('does not screen quoted source text: sources may say anything', async () => {
