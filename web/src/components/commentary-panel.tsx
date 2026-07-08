@@ -1,9 +1,21 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import type { CommentaryEntry } from '@/lib/bible';
+import { HIGHLIGHT_COLORS } from '@/lib/highlight-colors';
 
-function eraLabel(year: number | null): string {
+export interface AnnotationControls {
+  color: string | null;
+  note: string;
+  signedIn: boolean;
+  onSetHighlight: (color: string) => void;
+  onClearHighlight: () => void;
+  onSaveNote: (body: string) => void;
+  onDeleteNote: () => void;
+}
+
+export function eraLabel(year: number | null): string {
   if (!year) return '';
   if (year <= 500) return 'Early Church';
   if (year <= 1500) return 'Medieval';
@@ -16,7 +28,7 @@ function traditionKey(entry: CommentaryEntry): string {
   return eraLabel(entry.year) || 'Unknown';
 }
 
-function pickDiverse(entries: CommentaryEntry[], max: number): CommentaryEntry[] {
+export function pickDiverse(entries: CommentaryEntry[], max: number): CommentaryEntry[] {
   if (entries.length <= max) return entries;
 
   const byTradition = new Map<string, CommentaryEntry[]>();
@@ -47,15 +59,15 @@ function pickDiverse(entries: CommentaryEntry[], max: number): CommentaryEntry[]
   return picked.sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999));
 }
 
-function EntryCard({ entry }: { entry: CommentaryEntry }) {
+export function EntryCard({ entry }: { entry: CommentaryEntry }) {
   const [expanded, setExpanded] = useState(false);
   const isLong = entry.text.length > 600;
   const displayText = isLong && !expanded ? entry.text.slice(0, 600).replace(/\s+\S*$/, '') + '...' : entry.text;
 
   return (
-    <div className="rounded-xl bg-stone-50/80 px-4 py-3.5">
+    <div className="rounded-xl bg-stone-50/80 px-4 py-3.5 dark:bg-stone-800/50">
       <div className="flex items-baseline gap-2 mb-2 flex-wrap">
-        <span className="font-semibold text-stone-800 text-sm">
+        <span className="font-semibold text-stone-800 text-sm dark:text-stone-100">
           {entry.author}
         </span>
         {entry.year && (
@@ -69,7 +81,7 @@ function EntryCard({ entry }: { entry: CommentaryEntry }) {
           </span>
         )}
       </div>
-      <p className="font-scripture text-[15px] leading-relaxed text-stone-600">
+      <p className="font-scripture text-[15px] leading-relaxed text-stone-600 dark:text-stone-300">
         {displayText}
       </p>
       {isLong && (
@@ -105,11 +117,13 @@ export function CommentaryPanel({
   verseText,
   entries,
   onClose,
+  annotation,
 }: {
   verseNum: number;
   verseText: string;
   entries: CommentaryEntry[];
   onClose: () => void;
+  annotation?: AnnotationControls;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -138,11 +152,11 @@ export function CommentaryPanel({
     >
       <div
         ref={panelRef}
-        className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-t-2xl bg-white shadow-2xl animate-slide-up"
+        className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-t-2xl bg-white shadow-2xl animate-slide-up dark:bg-stone-900"
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-stone-100 bg-white/95 px-5 py-4 backdrop-blur-sm">
-          <h2 className="text-sm font-semibold text-stone-800">
-            What Others Have Said
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-stone-100 bg-white/95 px-5 py-4 backdrop-blur-sm dark:border-stone-800 dark:bg-stone-900/95">
+          <h2 className="text-sm font-semibold text-stone-800 dark:text-stone-100">
+            Ancient Roads
           </h2>
           <button
             onClick={onClose}
@@ -155,14 +169,16 @@ export function CommentaryPanel({
           </button>
         </div>
 
-        <div className="border-b border-stone-100 bg-stone-50/50 px-5 py-4">
+        <div className="border-b border-stone-100 bg-stone-50/50 px-5 py-4 dark:border-stone-800 dark:bg-stone-800/40">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 mb-1.5">
             Verse {verseNum}
           </p>
-          <p className="font-scripture text-base leading-relaxed text-stone-700 italic">
+          <p className="font-scripture text-base leading-relaxed text-stone-700 italic dark:text-stone-300">
             &ldquo;{verseText}&rdquo;
           </p>
         </div>
+
+        {annotation && <AnnotationBar key={verseNum} annotation={annotation} />}
 
         <div className="px-5 py-4 space-y-1">
           {diverse.length === 0 ? (
@@ -205,6 +221,100 @@ export function CommentaryPanel({
           </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
+  const [noteText, setNoteText] = useState(annotation.note);
+  const [editingNote, setEditingNote] = useState(false);
+
+  if (!annotation.signedIn) {
+    return (
+      <div className="border-b border-stone-100 bg-white px-5 py-3 dark:border-stone-800 dark:bg-stone-900">
+        <Link
+          href="/auth/sign-in"
+          className="text-xs font-medium text-amber-700 hover:text-amber-800"
+        >
+          Sign in to highlight this verse and save notes to your account →
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 border-b border-stone-100 bg-white px-5 py-3 dark:border-stone-800 dark:bg-stone-900">
+      {/* Highlight colors */}
+      <div className="flex items-center gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+          Highlight
+        </span>
+        <div className="flex items-center gap-1.5">
+          {HIGHLIGHT_COLORS.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => annotation.onSetHighlight(c.id)}
+              aria-label={`Highlight ${c.id}`}
+              className={`h-6 w-6 rounded-full ${c.dot} ring-2 transition-transform hover:scale-110 ${
+                annotation.color === c.id ? 'ring-stone-700' : 'ring-transparent'
+              }`}
+            />
+          ))}
+          {annotation.color && (
+            <button
+              onClick={annotation.onClearHighlight}
+              className="ml-1 text-xs text-stone-400 hover:text-stone-600"
+            >
+              clear
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Note */}
+      {editingNote || annotation.note ? (
+        <div>
+          <textarea
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            onFocus={() => setEditingNote(true)}
+            placeholder="Write a note on this verse…"
+            rows={3}
+            className="w-full resize-y rounded-lg border border-stone-200 bg-stone-50/50 px-3 py-2 text-sm text-stone-800 outline-none placeholder:text-stone-400 focus:border-stone-400"
+          />
+          <div className="mt-1.5 flex items-center gap-2">
+            <button
+              onClick={() => {
+                annotation.onSaveNote(noteText);
+                setEditingNote(false);
+              }}
+              disabled={!noteText.trim()}
+              className="rounded-md bg-stone-800 px-3 py-1 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-40"
+            >
+              Save note
+            </button>
+            {annotation.note && (
+              <button
+                onClick={() => {
+                  annotation.onDeleteNote();
+                  setNoteText('');
+                  setEditingNote(false);
+                }}
+                className="text-xs text-stone-400 hover:text-red-600"
+              >
+                Delete
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setEditingNote(true)}
+          className="text-xs font-medium text-amber-700 hover:text-amber-800"
+        >
+          + Add a note
+        </button>
+      )}
     </div>
   );
 }
