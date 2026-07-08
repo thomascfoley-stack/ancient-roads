@@ -12,9 +12,10 @@ that is **Partial** or **Missing**. Status values: Done / Partial / Missing / Bl
 
 ## Audit-wide caveats (they cap many rows at Partial)
 
-- **Git history is 2 commits.** `git log`: `76f21bb` (reader) + `c0b8b5a` (scaffold). 70 tracked
-  files, **81 uncommitted** working-tree entries — most recent work (SEC-2, PRINCIPLES, retrieval,
-  auth, evals, migrations) is **not committed**. Evidence below is the working tree + test/audit runs.
+- **Working tree committed to a clean baseline (2026-07-08).** `git log` is now 11 commits / 145
+  tracked files, clean tree — the prior 81 uncommitted entries landed as 9 small logical commits
+  (`e58c7e3` gitignore … `d8fac3c` web-reader). Generated data (`web/public/*`, `data/`), `coverage/`,
+  and the throwaway `spike/` workspace are gitignored. Evidence below is the tree + test/audit runs.
 - **`/audit` covers `src/` + `test/` only, not `web/`.** `tsconfig.json` include = `["src/**/*.ts","test/**/*.ts"]`;
   `scripts/audit.sh` runs `eslint src/ test/` and vitest over `test/`; `web/` has its own tsconfig and
   **no test script**. So **no `web/` feature can satisfy "passes /audit"** as things stand — the reader,
