@@ -9,7 +9,7 @@
 // typeahead; out-of-bounds chapters/verses and backwards ranges reject with
 // a reason the UI can show verbatim.
 
-import { BOOKS, BOOK_BY_SLUG, type Book } from './books';
+import { BOOKS, type Book } from './books';
 import { BOOK_ALIASES } from './aliases';
 import { encodeVerseId } from './verse-id';
 

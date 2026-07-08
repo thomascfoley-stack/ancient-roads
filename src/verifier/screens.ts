@@ -2,9 +2,10 @@
 // text, voice summaries, and prayer_prompt text — the fields written in the
 // assistant's own voice. Quotes are exempt: cited sources may say anything.
 //
-// Each screen maps to an interpretation rule ID (I1-I6). Regexes are
-// deliberately blunt; V2 (the classifier) catches what these miss. False
-// positives here cost a regeneration, not a user-facing failure.
+// Each screen maps to an interpretation rule ID (I1-I6), defined in the
+// north-star spec docs/PRINCIPLES.md (mirrored in OUTPUT_CONTRACT.md §2).
+// Regexes are deliberately blunt; V2 (the classifier) catches what these miss.
+// False positives here cost a regeneration, not a user-facing failure.
 
 export interface Screen {
   rule: string; // I1-I6

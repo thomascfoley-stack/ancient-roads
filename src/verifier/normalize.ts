@@ -3,7 +3,7 @@
 // and punctuation normalized (curly quotes, em dashes, ellipses, casing on
 // initial capitals must not fail an otherwise verbatim quote).
 
-const PUNCT = /[‘’“”'"“”‘’.,;:!?()\[\]{}–—…-]/g;
+const PUNCT = /[‘’“”'"“”‘’.,;:!?()[\]{}–—…-]/g;
 
 export function normalizeForMatch(text: string): string {
   return text
