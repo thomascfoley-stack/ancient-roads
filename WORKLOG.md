@@ -63,11 +63,33 @@ Working through prioritized task list. Tree is clean on `main`.
 
 ## Task 3: Retrieval vertical slice (spine only)
 
-**Status:** Not started
+**Status:** Already complete — all components exist and contract test passes (6/6).
+
+### Verification
+
+The retrieval spine was already built in a prior session:
+- `types.ts`: Full boundary vocabulary (CorpusDoc, Embedder, EmbeddingStore, RetrievalResult)
+- `embedder.ts`: `createDeepInfraEmbedder` (open-weight, no OpenAI/Anthropic)
+- `store.ts`: `createNeonStore` (pgvector-backed)
+- `retrieve.ts`: Public entrypoint, 100% coverage
+- `ingest.ts`: Batch ingestion pipeline, 100% coverage
+- `sources/commentary.ts`: Commentary corpus adapter
+- `test/retrieval.fakes.ts`: `fakeEmbedder` (bag-of-words hashing) + `inMemoryStore` (brute-force cosine)
+- `test/retrieval.contract.test.ts`: 6 tests pass (ranking, limit, hydration, idempotency, chunks, empty query)
+- Integration test exists but gated behind `RUN_INTEGRATION` (correct — no paid API calls)
 
 ## Task 4: Extend /audit to web/
 
-**Status:** Not started
+**Status:** Complete — web/ typecheck + lint added to audit, both pass green.
+
+### Changes
+
+- `scripts/audit.sh`: Added two new gates:
+  - `typecheck — web/ tsc --noEmit` (strict mode, all web/ TypeScript)
+  - `lint — web/ next lint --quiet` (Next.js ESLint integration)
+- Both pass cleanly — no type errors, no lint errors in web/
+- Note: `next lint` is deprecated in Next.js 16 (current is 15.5.20). When upgrading to
+  Next.js 16, migrate to eslint CLI (`npx @next/codemod@canary next-lint-to-eslint-cli .`)
 
 ## Task 5: Fix drifted web ref-parse.ts
 

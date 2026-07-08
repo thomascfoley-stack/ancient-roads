@@ -20,7 +20,9 @@ gate() {
 }
 
 gate "typecheck — tsc --noEmit (strict)"  $PNPM exec tsc --noEmit
+gate "typecheck — web/ tsc --noEmit"      bash -c "cd web && npx tsc --noEmit"
 gate "lint — eslint src/ test/"           $PNPM exec eslint src test
+gate "lint — web/ next lint"              bash -c "cd web && npx next lint --quiet"
 gate "unused — knip (files/exports/deps)" $PNPM exec knip
 gate "deps — pnpm audit (prod, high+ CVEs)" $PNPM audit --prod --audit-level=high
 gate "tests + coverage — vitest"          $PNPM exec vitest run --coverage
