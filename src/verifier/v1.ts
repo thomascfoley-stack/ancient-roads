@@ -1,6 +1,11 @@
 // Stage V1: deterministic verifier (OUTPUT_CONTRACT.md §3). No model calls.
 // Runs on every teacher response before it reaches the user. Collects ALL
 // violations (not fail-fast) so regeneration feedback is complete.
+//
+// Source of truth: docs/PRINCIPLES.md. This stage enforces the interpretation
+// rules I1-I6 (via screens + attribution/quote checks), C1 corpus-only citation
+// (section/quote/attribution/verse resolution), and G1 the grounded-example floor
+// (diversity). If PRINCIPLES.md changes, these checks change to match it.
 
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import contractSchema from '../contract/schema.json' with { type: 'json' };

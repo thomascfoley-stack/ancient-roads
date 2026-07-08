@@ -1,5 +1,10 @@
 // TypeScript mirror of src/contract/schema.json (contract v1.1).
 // The JSON schema is authoritative; keep these in sync.
+//
+// The contract exists to enforce the north-star spec docs/PRINCIPLES.md: the
+// response shape forces cited voices (never assistant-voice interpretation),
+// corpus-resolvable attribution (C1), and enough structure to meet the
+// grounded-example floor (G1).
 
 export type ContractVersion = '1.0' | '1.1';
 export type Origin = 'corpus' | 'user_library';
