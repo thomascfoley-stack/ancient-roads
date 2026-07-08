@@ -248,7 +248,7 @@ export default function ReaderPage() {
             signedIn,
             onSetHighlight: (color) => setVerseHighlight(study.verse, color),
             onClearHighlight: () => clearVerseHighlight(study.verse),
-            onSaveNote: (body) => saveVerseNote(study.verse, body),
+            onSaveNote: (body) => { saveVerseNote(study.verse, body); setStudy(null); },
             onDeleteNote: () => deleteVerseNote(study.verse),
           }}
           onTabChange={(t) => setStudy((s) => (s ? { ...s, tab: t, focusWordIdx: undefined } : s))}
