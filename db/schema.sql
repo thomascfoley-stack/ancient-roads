@@ -353,7 +353,7 @@ CREATE TABLE IF NOT EXISTS notes (
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   deleted_at    TIMESTAMPTZ
 );
-CREATE INDEX IF NOT EXISTS idx_notes_user_verse ON notes(user_id, verse_id) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_user_verse ON notes(user_id, verse_id) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_notes_user_updated ON notes(user_id, updated_at DESC) WHERE deleted_at IS NULL;
 
 ALTER TABLE highlights ENABLE ROW LEVEL SECURITY;

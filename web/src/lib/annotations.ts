@@ -62,28 +62,22 @@ export async function removeHighlight(userId: string, verseId: number): Promise<
   ]);
 }
 
-// One active note per verse: update if present, else insert.
+// One active note per verse, enforced by the unique partial index idx_notes_user_verse
+// (user_id, verse_id) WHERE deleted_at IS NULL. Single-statement atomic upsert — no
+// read-then-branch — so it fits one runAsUser transaction over the stateless HTTP driver.
+// See db/migrations/002_notes_unique_active.sql.
 export async function upsertNote(
   userId: string,
   verseId: number,
   body: string,
 ): Promise<Note> {
-  const [found] = await runAsUser(userId, (sql) => [
-    sql`SELECT id FROM notes WHERE user_id = ${userId} AND verse_id = ${verseId} AND deleted_at IS NULL LIMIT 1`,
-  ]);
-  const existing = (found as { id: string }[])[0];
-  if (existing) {
-    const [updated] = await runAsUser(userId, (sql) => [
-      sql`UPDATE notes SET body = ${body}, updated_at = now() WHERE id = ${existing.id} AND user_id = ${userId}
-          RETURNING id, verse_id, verse_end, body, updated_at`,
-    ]);
-    return (updated as Note[])[0]!;
-  }
-  const [inserted] = await runAsUser(userId, (sql) => [
+  const [rows] = await runAsUser(userId, (sql) => [
     sql`INSERT INTO notes (user_id, verse_id, body) VALUES (${userId}, ${verseId}, ${body})
+        ON CONFLICT (user_id, verse_id) WHERE deleted_at IS NULL
+        DO UPDATE SET body = EXCLUDED.body, updated_at = now()
         RETURNING id, verse_id, verse_end, body, updated_at`,
   ]);
-  return (inserted as Note[])[0]!;
+  return (rows as Note[])[0]!;
 }
 
 export async function removeNote(userId: string, verseId: number): Promise<void> {
