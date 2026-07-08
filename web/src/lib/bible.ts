@@ -22,6 +22,20 @@ export const TRANSLATIONS: Translation[] = [
   { id: 'darby', name: 'Darby Translation', abbr: 'DBY' },
   { id: 'bbe', name: 'Bible in Basic English', abbr: 'BBE' },
   { id: 'lsv', name: 'Literal Standard Version', abbr: 'LSV' },
+  { id: 'geneva', name: 'Geneva Bible (1599)', abbr: 'GNV' },
+  { id: 'tyndale', name: 'Tyndale Bible', abbr: 'TYN' },
+  { id: 'webster', name: "Webster's Bible Translation", abbr: 'WBT' },
+  { id: 'litv', name: 'Literal Translation', abbr: 'LITV' },
+  { id: 'nheb', name: 'New Heart English Bible', abbr: 'NHEB' },
+  { id: 'akjv', name: 'American King James Version', abbr: 'AKJV' },
+  { id: 'mkjv', name: 'Modern King James Version', abbr: 'MKJV' },
+  { id: 'rotherham', name: "Rotherham's Emphasized Bible", abbr: 'REB' },
+  { id: 'jubilee', name: 'Jubilee Bible 2000', abbr: 'JUB' },
+  { id: 'leb', name: 'Lexham English Bible', abbr: 'LEB' },
+  { id: 'rwebster', name: 'Revised Webster Version', abbr: 'RWB' },
+  { id: 'ukjv', name: 'Updated King James Version', abbr: 'UKJV' },
+  { id: 'noyes', name: 'Noyes Translation', abbr: 'NOY' },
+  { id: 'anderson', name: 'Anderson New Testament', abbr: 'ANT' },
 ];
 
 export const DEFAULT_TRANSLATION = 'web';
@@ -33,14 +47,33 @@ export interface ChapterData {
   verses: { verse: number; text: string }[];
 }
 
+interface BibleBookFile {
+  translation: string;
+  book: number;
+  slug: string;
+  chapters: Record<string, { verse: number; text: string }[]>;
+}
+
+// Per-book files are consolidated (see src/ingest/consolidate-bibles.ts). Cache
+// the fetched book so paging between chapters in the same book doesn't refetch.
+const bookCache = new Map<string, BibleBookFile>();
+
 export async function fetchChapter(
   bookSlug: string,
   chapter: number,
   translation: string = DEFAULT_TRANSLATION,
 ): Promise<ChapterData> {
-  const res = await fetch(`/bible/${translation}/${bookSlug}/${chapter}.json`);
-  if (!res.ok) throw new Error(`Failed to load ${bookSlug} ${chapter}`);
-  return res.json();
+  const key = `${translation}/${bookSlug}`;
+  let bookFile = bookCache.get(key);
+  if (!bookFile) {
+    const res = await fetch(`/bible/${translation}/${bookSlug}.json`);
+    if (!res.ok) throw new Error(`Failed to load ${bookSlug} (${translation})`);
+    bookFile = (await res.json()) as BibleBookFile;
+    bookCache.set(key, bookFile);
+  }
+  const verses = bookFile.chapters[String(chapter)];
+  if (!verses) throw new Error(`Failed to load ${bookSlug} ${chapter}`);
+  return { book: bookFile.book, chapter, translation, verses };
 }
 
 export interface CommentaryEntry {
@@ -66,6 +99,30 @@ export async function fetchCommentary(
 ): Promise<CommentaryData | null> {
   try {
     const res = await fetch(`/commentaries/${bookSlug}/${chapter}.json`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export interface CommentarySource {
+  author: string;
+  sourceTitle: string;
+  tradition: string | null;
+  year: number | null;
+  entries: number;
+  bookSlugs: string[];
+}
+
+export interface CommentaryManifest {
+  generatedAt: string;
+  sources: CommentarySource[];
+}
+
+export async function fetchCommentaryManifest(): Promise<CommentaryManifest | null> {
+  try {
+    const res = await fetch('/commentaries/_manifest.json');
     if (!res.ok) return null;
     return res.json();
   } catch {

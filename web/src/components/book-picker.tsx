@@ -33,7 +33,7 @@ export function BookPicker({
       (_, i) => i + 1,
     );
     return (
-      <div className="fixed inset-0 z-50 bg-stone-50/95 backdrop-blur-sm overflow-auto">
+      <div className="fixed inset-0 z-50 bg-stone-50/95 backdrop-blur-sm overflow-auto dark:bg-stone-950/95">
         <div className="mx-auto max-w-lg px-4 py-6">
           <div className="flex items-center justify-between mb-6">
             <button

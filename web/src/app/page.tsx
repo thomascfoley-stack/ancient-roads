@@ -13,13 +13,17 @@ export default function Home() {
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center px-6">
       <div className="text-center">
-        <h1 className="font-scripture text-5xl font-medium tracking-tight text-stone-800 sm:text-6xl">
-          What others<br />have said
+        <h1 className="font-scripture text-5xl font-medium tracking-tight text-stone-800 sm:text-6xl dark:text-stone-100">
+          Ancient<br />Roads
         </h1>
-        <p className="mx-auto mt-6 max-w-sm text-base leading-relaxed text-stone-500">
-          Read what theologians across 2,000 years have written about every
-          verse. Tap any verse to see the commentary. We never interpret
-          scripture — we show you what others have said, and you pray on it.
+        <p className="mx-auto mt-6 max-w-lg text-base leading-relaxed text-stone-500 dark:text-stone-400">
+          Learn the Word alongside theologians and church fathers who span the
+          past 2,000 years. This is a tool designed to lead you to the Holy
+          Spirit, not to be the Holy Spirit. We will never interpret the Holy
+          Scriptures. Instead, we point you to what others before you have said
+          about them. Journey down these ancient roads and labor as those who
+          came before you, unearthing the most precious treasures in God&rsquo;s
+          truth.
         </p>
       </div>
 
@@ -36,7 +40,7 @@ export default function Home() {
       </div>
 
       <p className="mt-16 font-scripture text-sm italic text-stone-400">
-        &ldquo;Study to shew thyself approved unto God&rdquo; — 2 Timothy 2:15
+        &ldquo;Study to shew thyself approved unto God.&rdquo; 2 Timothy 2:15
       </p>
     </main>
   );
