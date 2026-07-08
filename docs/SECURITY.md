@@ -203,14 +203,22 @@ The backstop is the **path that breaks if the session var isn't set**: a raw `ge
 - `highlights`/`notes` already have RLS + policy in prod (schema applied), but bypassed by the owner role.
 - `app_runtime` role does **not** exist on prod yet. Blast radius: 1 highlight, 0 notes (pre-launch).
 
-### Rollout (HELD — awaiting user go)
-- **Step A (reversible, no user-facing change):** create `app_runtime` on prod + apply migration 001 grants;
-  re-verify against the real prod schema (canonical `*_policy` names) via the pooled endpoint. RLS stays
-  inert while the app still connects as owner.
+### Staging (branch `sec2-stage`, DONE 2026-07-08)
+A fresh branch off `production` had `app_runtime` created and migrations **001 (grants + RLS) and 002
+(unique partial index on `notes`)** applied. `upsertNote` was converted to a single-statement, atomic
+`INSERT … ON CONFLICT (user_id, verse_id) WHERE deleted_at IS NULL DO UPDATE` (fits one `runAsUser`
+transaction — no read-then-branch). Then the **real repository layer** was driven against `app_runtime`
+(pooled, RLS on): **14/14 checks pass** — every annotations + chat function works with **no missing grant**,
+RLS isolates user A from B, the upsert exercises both insert and conflict-update (one active row, same id),
+and the backstop denies queries with the session var unset. `next build` is green with the upsert change.
+
+### Rollout (HELD — awaiting user go for prod)
+- **Step A (reversible, no user-facing change):** create `app_runtime` on prod + apply migrations 001 & 002.
+  RLS stays inert while the app still connects as owner.
 - **Step B (the flip):** set `APP_DATABASE_URL` (app_runtime, pooled) in Vercel + `web/.env.local`, redeploy.
   RLS goes live. Backward-compatible refactor + ~0 blast radius. **Rollback:** clear `APP_DATABASE_URL` in
   Vercel → app falls back to owner; `DROP ROLE app_runtime` if needed.
-- Throwaway branches to delete after: `sec2-verify`, `betterauth-spike`.
+- Throwaway branches to delete after: `sec2-verify`, `betterauth-spike`, `sec2-stage`.
 
 ## SEC-3 — hardcoded prod owner credential in `db/migrate.mjs`
 **Status: removed from working tree (2026-07-08); password rotation pending (owner action).**
