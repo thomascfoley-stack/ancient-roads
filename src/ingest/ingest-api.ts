@@ -8,8 +8,7 @@
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { BOOKS, type Book } from '../bible/books';
-import { encodeVerseId } from '../bible/verse-id';
+import { BOOKS } from '../bible/books';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..', '..');
