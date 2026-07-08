@@ -1,0 +1,19 @@
+# Vercel uses THIS file (not .gitignore) to decide what to upload. Because the
+# Bible/commentary JSON is gitignored (too large for git), we must list excludes
+# here explicitly — otherwise Vercel would fall back to .gitignore and drop all
+# of the corpus, shipping a data-less site.
+
+# Build & dev artifacts (Vercel rebuilds remotely)
+node_modules
+.next
+.vercel
+
+# Secrets — provided via Vercel project env, never uploaded
+.env
+.env.local
+.env*.local
+
+# Per-CHAPTER Bible JSON: superseded by per-book files at public/bible/<t>/<book>.json.
+# Excluded so the deploy stays under Vercel's 15,000-file CLI limit. The per-book
+# .json files (two levels deep) and all commentaries are still uploaded.
+public/bible/*/*/
