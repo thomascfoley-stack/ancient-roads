@@ -46,7 +46,7 @@ Verified current as of July 2026; re-check at build time — the field moves mon
 
 | Job | Model | License | Why |
 |---|---|---|---|
-| **Generation / extraction / composition** (the brain) | **Qwen3.6-35B-A3B-Instruct** | Apache 2.0 | MoE (~3B active) = cheap + fast, strong tool/JSON, long context. Primary. |
+| **Generation / extraction / composition** (the brain) | **Qwen3.5-35B-A3B-Instruct** | Apache 2.0 | MoE (~3B active) = cheap + fast, strong tool/JSON, long context. Primary. |
 | Composition upgrade (only if evals demand) | DeepSeek V4 / Qwen3.5-397B-A17B | MIT / Apache | bigger, pricier; rarely needed in a retrieval-grounded design |
 | **High-volume classifier tier** (stance, per-claim extraction) | **Granite 4.0 (3–8B)** or Qwen3.5-small | Apache | tuned for reliable structured JSON; cheap enough to call many times per sermon |
 | **Embeddings** | Qwen3-Embedding or BGE-M3 (or keep Jina v3) | open | 1024-dim; retrieval quality > model size |
@@ -56,7 +56,7 @@ Verified current as of July 2026; re-check at build time — the field moves mon
 ## Training: "train / untrain with weights"
 
 The mental model: **you never touch the base model's weights.** The base
-(Qwen3.6 / Granite) is frozen. You attach a small **LoRA adapter** — a few MB of
+(Qwen3.5 / Granite) is frozen. You attach a small **LoRA adapter** — a few MB of
 extra weights that ride on top.
 
 - **Phase 1 — no training at all.** Prompt + RAG + contract + verifier on the
@@ -82,12 +82,12 @@ extra weights that ride on top.
 
 ```
 sermon text
-  → extract claims/topics/refs        (Qwen3.6, JSON)
+  → extract claims/topics/refs        (Qwen3.5, JSON)
   → retrieve per claim                (pgvector + BM25 hybrid over the corpus)
   → rerank                            (BGE-reranker-v2-m3)
   → classify stance vs each source    (Granite 3–8B: aligns/differs/qualifies)
   → find similar sermons + passages   (vector NN over sermon corpus + TSK cross-refs)
-  → compose under the JSON contract   (Qwen3.6 emits blocks, never prose)
+  → compose under the JSON contract   (Qwen3.5 emits blocks, never prose)
   → verify                            (V1 deterministic + V2 classifier + stance grounding)
   → render                            (client renders blocks; model never free-writes)
 ```
@@ -98,7 +98,7 @@ user.
 
 ## Cost posture (beta)
 
-At beta volume this is pocket change: ~$0.0005 per composed response on Qwen3.6,
+At beta volume this is pocket change: ~$0.0005 per composed response on Qwen3.5,
 plus Neon/Vercel base tiers. The expensive line item is Neon Large compute
 (~$110/mo) when the full embedding index must live in RAM — defer until retrieval
 feels slow. See INFRA.md for the tier-by-tier table.
@@ -108,7 +108,7 @@ feels slow. See INFRA.md for the tier-by-tier table.
 1. **Retrieval** — embed the corpus into Neon pgvector, wire hybrid BM25+vector
    + reranker. (No new account needed to prototype with an open embedder.)
 2. **Contract + V1 verifier** — already scaffolded in `src/contract`, `src/verifier`.
-3. **First teacher prompt** → Qwen3.6 → contract JSON → verifier → render; iterate
+3. **First teacher prompt** → Qwen3.5 → contract JSON → verifier → render; iterate
    until the `interpretation_bait` eval suite passes.
 4. **Sermon companion** — ingest sermon corpus + TSK; add stance step + `stance`
    block + `stance_grounding` evals (SERMON_COMPANION.md).

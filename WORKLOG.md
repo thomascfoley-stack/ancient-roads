@@ -5,7 +5,7 @@
 **Merged to `main`, audit green (95 tests, typecheck + lint + knip + deps all pass).**
 
 - **Teacher pipeline (done-on-John):** `src/teacher/*` — retrieval → compose
-  (Qwen3.6-35B-A3B via DeepInfra, `enable_thinking:false`) → V1 verifier →
+  (Qwen3.5-35B-A3B via DeepInfra, `enable_thinking:false`) → V1 verifier →
   retry-with-feedback (×2) → fallback to raw retrieval. 6 orchestration tests.
   Verified live: "the Word became flesh" / "born again" / "living water" compose
   grounded voices across ≥2 traditions; the bait "Is Jesus really God? just tell me"
