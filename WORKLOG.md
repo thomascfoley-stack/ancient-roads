@@ -1,5 +1,46 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-09 — Teacher landed + wired to web (`feat/teacher-pipeline` → `main`)
+
+**Merged to `main`, audit green (95 tests, typecheck + lint + knip + deps all pass).**
+
+- **Teacher pipeline (done-on-John):** `src/teacher/*` — retrieval → compose
+  (Qwen3.6-35B-A3B via DeepInfra, `enable_thinking:false`) → V1 verifier →
+  retry-with-feedback (×2) → fallback to raw retrieval. 6 orchestration tests.
+  Verified live: "the Word became flesh" / "born again" / "living water" compose
+  grounded voices across ≥2 traditions; the bait "Is Jesus really God? just tell me"
+  holds shape (voices + passages, no verdict). A weaker model's fabricated Augustine
+  quote was caught by `quote_verbatim` and rejected — the verifier earns its keep.
+- **Extractive composer:** `voice.summary` made optional (contract widening, backward
+  compatible); prompt tells the model to quote generously and omit the gloss. Interim
+  drift mitigation until the V2 summary-faithfulness classifier exists.
+- **Vector retrieval live:** commentary embedded with BGE (`bge-large-en-v1.5`, 1024-dim)
+  into Neon pgvector; queried by `/ask` via app_runtime + RLS (`user_id IS NULL`).
+- **Web feature `/ask` ("Ask the voices"):** `web/src/lib/teacher/*` (native to web —
+  Next can't bundle root `src/`), authed-only `api/ask`, quote-forward UI, sidebar entry.
+  Contract + V1 verifier copied into `web/src` and locked byte-identical to `src/` via a
+  new sync-guard test (`test/web-core-sync.test.ts`), matching the bible-sync convention.
+- **Ingest resilience:** a batch that fails all retries is skipped (idempotent upserts
+  fill it on re-run) instead of crashing the multi-hour job; embedder now 5 retries / 60s.
+  (The first Gospels run had died on a DeepInfra timeout at 6,943 chunks.)
+- **/audit + /security before merge — clean.** Fixed dead code + the `verseExists` stub
+  (web path now checks real WEB versification, so `passage_exists` binds). Security review
+  of the teacher surface confirmed: DeepInfra key is header-only + `server-only` + never
+  logged; no path where unverified LLM text reaches the user (composed is V1-gated,
+  fallback renders corpus only, violations sent-but-not-rendered).
+- **Cost note:** full-corpus embedding ≈ **$0.6–1.0 one-time** (627k chunks); the real
+  recurring cost is **Neon Large ~$110/mo** to hold the index in RAM — so full-corpus +
+  HNSW + hybrid/rerank are parked until dogfooding justifies them.
+
+**Deferred cosmetic nits (non-blocking, from the merge /audit):**
+- `/ask` passage-range label (`ask-client.tsx`) is approximate for cross-chapter ranges
+  (shows only the trailing number of the end ref). Cosmetic; fix when labels matter.
+- Authed `/api/ask` has no per-user rate limit — a cost concern under abuse, not a
+  security hole for single-user dogfooding. Add a limiter before multi-user.
+- CLI-only `createPgStore` uses `ssl.rejectUnauthorized:false` (offline ingest only; the
+  web runtime uses the neon serverless driver over verified HTTPS). Tighten to
+  `sslmode=verify-full`/pinned CA when convenient.
+
 ## Status summary
 
 Working through prioritized task list. Tree is clean on `main`.
