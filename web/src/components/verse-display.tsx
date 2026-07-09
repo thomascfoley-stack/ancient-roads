@@ -57,7 +57,7 @@ export function VerseDisplay({
           const highlightColor = highlights?.get(v.verse);
           const hasNote = notedVerses?.has(v.verse);
           const bg = isSelected
-            ? 'bg-amber-100/80 dark:bg-amber-500/25'
+            ? 'bg-accent-100/80 dark:bg-accent-500/25'
             : highlightColor
               ? HIGHLIGHT_BG[highlightColor] ?? 'hover:bg-stone-100/70 dark:hover:bg-stone-800/60'
               : 'hover:bg-stone-100/70 dark:hover:bg-stone-800/60';
@@ -65,16 +65,22 @@ export function VerseDisplay({
             <span
               key={v.verse}
               className={`inline cursor-pointer rounded transition-colors ${bg}`}
-              onClick={() => onVerseClick(v.verse)}
+              onClick={() => {
+                // Don't hijack an in-progress text selection (long-press on
+                // touch, drag on desktop) — let the user copy scripture.
+                const sel = window.getSelection();
+                if (sel && !sel.isCollapsed) return;
+                onVerseClick(v.verse);
+              }}
               onMouseEnter={(e) => showFor(v.verse, e.currentTarget)}
               onMouseLeave={scheduleClear}
             >
-              <sup className="mr-0.5 font-sans text-[11px] font-semibold text-amber-600/70 select-none">
+              <sup className="mr-0.5 font-sans text-[11px] font-semibold text-accent-600/80 select-none dark:text-accent-300/80">
                 {v.verse}
               </sup>
               <span>{v.text} </span>
               {hasNote && (
-                <sup className="mr-0.5 select-none text-amber-600" title="You have a note here">
+                <sup className="mr-0.5 select-none text-accent-600 dark:text-accent-300" title="You have a note here">
                   ✎
                 </sup>
               )}
@@ -86,7 +92,7 @@ export function VerseDisplay({
       {/* Hover quick-menu (pointer devices only) */}
       {hover && onOpen && (
         <div
-          className="fixed z-40 hidden items-center gap-1 rounded-full border border-stone-200 bg-white px-1.5 py-1 shadow-lg [@media(hover:hover)]:flex dark:border-stone-700 dark:bg-stone-800"
+          className="fixed z-40 hidden items-center gap-1 rounded-full bg-paper px-1.5 py-1 shadow-float [@media(hover:hover)]:flex dark:border-stone-700 dark:bg-stone-800"
           style={{ left: hover.left, top: hover.top }}
           onMouseEnter={keepOpen}
           onMouseLeave={scheduleClear}
@@ -122,7 +128,7 @@ export function VerseDisplay({
               setHover(null);
             }}
             title="Word study"
-            className="rounded-full px-1.5 py-0.5 text-sm font-semibold text-stone-500 hover:text-amber-700 dark:text-stone-300"
+            className="rounded-full px-1.5 py-0.5 text-sm font-semibold text-stone-500 hover:text-accent-700 dark:text-stone-300"
           >
             אα
           </button>
@@ -132,7 +138,7 @@ export function VerseDisplay({
               setHover(null);
             }}
             title="Commentaries"
-            className="rounded-full px-1.5 py-0.5 text-stone-500 hover:text-amber-700 dark:text-stone-300"
+            className="rounded-full px-1.5 py-0.5 text-stone-500 hover:text-accent-700 dark:text-stone-300"
           >
             &#10077;
           </button>

@@ -52,7 +52,7 @@ export default function MyLibraryPage() {
           </p>
           <Link
             href="/auth/sign-in"
-            className="rounded-full bg-stone-800 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
+            className="inline-flex min-h-[44px] items-center rounded-full bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 dark:bg-accent-500 dark:hover:bg-accent-400"
           >
             Sign in
           </Link>
@@ -62,7 +62,7 @@ export default function MyLibraryPage() {
           <p className="text-sm text-stone-500 dark:text-stone-400">
             Nothing saved yet. Open a chapter, tap a verse, and highlight it or add a note.
           </p>
-          <Link href="/read/jhn/1" className="mt-4 inline-block text-sm font-medium text-amber-700 hover:text-amber-800">
+          <Link href="/read/jhn/1" className="mt-4 inline-flex min-h-[44px] items-center text-sm font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300">
             Start reading →
           </Link>
         </div>
@@ -79,9 +79,9 @@ export default function MyLibraryPage() {
                   return (
                     <div
                       key={n.id}
-                      className="rounded-xl border border-stone-200 bg-white/60 px-4 py-3 shadow-sm dark:border-stone-800 dark:bg-stone-800/40"
+                      className="rounded-xl bg-paper px-4 py-3 shadow-paper dark:bg-stone-800/60 dark:shadow-none"
                     >
-                      <Link href={ref.href} className="font-scripture text-sm font-medium text-amber-700 hover:text-amber-800">
+                      <Link href={ref.href} className="inline-flex min-h-[32px] items-center font-scripture text-sm font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300">
                         {ref.label}
                       </Link>
                       <p className="mt-1 whitespace-pre-line text-sm text-stone-700 dark:text-stone-300">{n.body}</p>
@@ -104,7 +104,7 @@ export default function MyLibraryPage() {
                     <Link
                       key={h.id}
                       href={ref.href}
-                      className="flex items-center gap-2 rounded-full border border-stone-200 bg-white/60 px-3 py-1.5 text-sm text-stone-700 shadow-sm hover:bg-stone-50 dark:border-stone-800 dark:bg-stone-800/40 dark:text-stone-300 dark:hover:bg-stone-800"
+                      className="flex min-h-[44px] items-center gap-2 rounded-full bg-paper px-4 text-sm text-stone-700 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800/60 dark:text-stone-300 dark:shadow-none dark:hover:bg-stone-800"
                     >
                       <span className={`h-3 w-3 rounded-full ${DOT[h.color] ?? 'bg-yellow-400'}`} />
                       {ref.label}

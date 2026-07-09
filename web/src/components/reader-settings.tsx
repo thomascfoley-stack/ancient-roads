@@ -47,7 +47,7 @@ export function ReaderSettings() {
       <button
         onClick={() => setOpen((v) => !v)}
         title="Reading settings"
-        className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-stone-500 shadow-sm transition-colors hover:bg-stone-100 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+        className="min-h-[44px] rounded-full bg-white px-3 text-xs font-semibold text-stone-500 shadow-sm transition-colors hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
       >
         Aa
       </button>
@@ -57,13 +57,13 @@ export function ReaderSettings() {
           <div className="mb-3 flex rounded-lg bg-stone-100 p-0.5 dark:bg-stone-700">
             <button
               onClick={() => applyDark(false)}
-              className={`flex-1 rounded-md py-1 text-sm font-medium transition-colors ${!dark ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-400'}`}
+              className={`min-h-[40px] flex-1 rounded-md py-1 text-sm font-medium transition-colors ${!dark ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-400'}`}
             >
               Light
             </button>
             <button
               onClick={() => applyDark(true)}
-              className={`flex-1 rounded-md py-1 text-sm font-medium transition-colors ${dark ? 'bg-stone-900 text-stone-100 shadow-sm' : 'text-stone-500 dark:text-stone-300'}`}
+              className={`min-h-[40px] flex-1 rounded-md py-1 text-sm font-medium transition-colors ${dark ? 'bg-stone-900 text-stone-100 shadow-sm' : 'text-stone-500 dark:text-stone-300'}`}
             >
               Dark
             </button>
@@ -73,7 +73,7 @@ export function ReaderSettings() {
             <button
               onClick={() => applySize(sizeIdx - 1)}
               disabled={sizeIdx === 0}
-              className="h-8 w-8 rounded-lg bg-stone-100 text-sm text-stone-600 hover:bg-stone-200 disabled:opacity-40 dark:bg-stone-700 dark:text-stone-300"
+              className="h-11 w-11 rounded-lg bg-stone-100 text-sm text-stone-600 hover:bg-stone-200 active:bg-stone-300 disabled:opacity-40 dark:bg-stone-700 dark:text-stone-300"
             >
               A−
             </button>
@@ -81,7 +81,7 @@ export function ReaderSettings() {
             <button
               onClick={() => applySize(sizeIdx + 1)}
               disabled={sizeIdx === SIZES.length - 1}
-              className="h-8 w-8 rounded-lg bg-stone-100 text-base text-stone-700 hover:bg-stone-200 disabled:opacity-40 dark:bg-stone-700 dark:text-stone-200"
+              className="h-11 w-11 rounded-lg bg-stone-100 text-base text-stone-700 hover:bg-stone-200 active:bg-stone-300 disabled:opacity-40 dark:bg-stone-700 dark:text-stone-200"
             >
               A+
             </button>
