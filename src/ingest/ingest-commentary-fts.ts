@@ -1,12 +1,9 @@
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
-import { createRequire } from 'module';
-
-const require = createRequire(import.meta.url);
-const { neon } = require('@neondatabase/serverless') as typeof import('@neondatabase/serverless');
+import pg from 'pg';
+import { from as copyFrom } from 'pg-copy-streams';
 
 const CORPUS_DIR = 'web/public/commentaries';
-const BATCH_SIZE = 200;
 
 interface RawEntry {
   verseStart: number;
@@ -25,24 +22,45 @@ interface ChapterFile {
   entries: RawEntry[];
 }
 
-interface Row {
-  book: number;
-  chapter: number;
-  verse_start: number;
-  verse_end: number;
-  author: string;
-  year: number | null;
-  tradition: string | null;
-  source_title: string;
-  source_url: string;
-  body: string;
+function escapeCopy(val: string | number | null): string {
+  if (val === null) return '\\N';
+  return String(val)
+    .replace(/\\/g, '\\\\')
+    .replace(/\t/g, '\\t')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r');
 }
 
-function* readAllEntries(): Generator<Row> {
+async function main() {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    console.error('DATABASE_URL must be set (owner role, direct/unpooled connection for COPY)');
+    process.exit(1);
+  }
+
+  const client = new pg.Client({ connectionString: url.replace(/^"|"$/g, ''), ssl: { rejectUnauthorized: false } });
+  await client.connect();
+  console.log('Connected.');
+
+  const beforeCount = await client.query('SELECT count(*)::int AS total FROM commentary_entries');
+  console.log(`Before: ${beforeCount.rows[0].total} rows`);
+
+  console.log('Truncating...');
+  await client.query('TRUNCATE commentary_entries RESTART IDENTITY');
+
+  console.log('Starting COPY...');
+  const stream = client.query(
+    copyFrom(
+      `COPY commentary_entries (book, chapter, verse_start, verse_end, author, year, tradition, source_title, source_url, body, entry_index) FROM STDIN`
+    )
+  );
+
   const bookDirs = readdirSync(CORPUS_DIR, { withFileTypes: true })
     .filter((d) => d.isDirectory())
     .map((d) => d.name)
     .sort();
+
+  let total = 0;
 
   for (const bookSlug of bookDirs) {
     const dir = join(CORPUS_DIR, bookSlug);
@@ -54,64 +72,52 @@ function* readAllEntries(): Generator<Row> {
       const data = JSON.parse(readFileSync(join(dir, file), 'utf-8')) as ChapterFile;
       if (!Array.isArray(data.entries)) continue;
 
+      let entryIndex = 0;
       for (const e of data.entries) {
         if (!e.text?.trim()) continue;
-        yield {
-          book: data.book,
-          chapter: data.chapter,
-          verse_start: e.verseStart,
-          verse_end: e.verseEnd,
-          author: e.author,
-          year: e.year ?? null,
-          tradition: e.tradition ?? null,
-          source_title: e.sourceTitle,
-          source_url: e.sourceUrl ?? '',
-          body: e.text,
-        };
+
+        const row = [
+          data.book,
+          data.chapter,
+          e.verseStart,
+          e.verseEnd,
+          escapeCopy(e.author),
+          e.year ?? null,
+          escapeCopy(e.tradition ?? null),
+          escapeCopy(e.sourceTitle),
+          escapeCopy(e.sourceUrl ?? ''),
+          escapeCopy(e.text),
+          entryIndex,
+        ]
+          .map((v) => (v === null ? '\\N' : String(v)))
+          .join('\t');
+
+        const canContinue = stream.write(row + '\n');
+        if (!canContinue) {
+          await new Promise<void>((resolve) => stream.once('drain', resolve));
+        }
+
+        total++;
+        entryIndex++;
+
+        if (total % 50000 === 0) {
+          process.stderr.write(`  ${total} rows...\n`);
+        }
       }
     }
   }
-}
 
-async function main() {
-  const url = process.env.DATABASE_URL;
-  if (!url) {
-    console.error('DATABASE_URL must be set (owner role for INSERT)');
-    process.exit(1);
-  }
-  const sql = neon(url.replace(/^"|"$/g, ''));
+  stream.end();
+  await new Promise<void>((resolve, reject) => {
+    stream.on('finish', resolve);
+    stream.on('error', reject);
+  });
 
-  let batch: Row[] = [];
-  let total = 0;
-  let batchCount = 0;
+  const afterCount = await client.query('SELECT count(*)::int AS total FROM commentary_entries');
+  console.log(`After: ${afterCount.rows[0].total} rows`);
 
-  async function flush() {
-    if (batch.length === 0) return;
-    await sql.transaction(
-      batch.map(
-        (r) =>
-          sql`INSERT INTO commentary_entries
-            (book, chapter, verse_start, verse_end, author, year, tradition, source_title, source_url, body)
-            VALUES (${r.book}, ${r.chapter}, ${r.verse_start}, ${r.verse_end},
-                    ${r.author}, ${r.year}, ${r.tradition}, ${r.source_title}, ${r.source_url}, ${r.body})
-            ON CONFLICT (book, chapter, verse_start, verse_end, author, source_title) DO NOTHING`,
-      ),
-    );
-    batchCount++;
-    batch = [];
-  }
-
-  for (const row of readAllEntries()) {
-    batch.push(row);
-    total++;
-    if (batch.length >= BATCH_SIZE) {
-      await flush();
-      process.stdout.write(`\r  ${total} entries processed (${batchCount} batches)...`);
-    }
-  }
-  await flush();
-
-  console.log(`\nDone. ${total} entries ingested in ${batchCount} batches (duplicates skipped via ON CONFLICT).`);
+  await client.end();
+  console.log('Done.');
 }
 
 main().catch((err) => {
