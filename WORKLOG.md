@@ -30,7 +30,8 @@
   fallback renders corpus only, violations sent-but-not-rendered).
 - **Cost note:** full-corpus embedding ≈ **$0.6–1.0 one-time** (627k chunks); the real
   recurring cost is **Neon Large ~$110/mo** to hold the index in RAM — so full-corpus +
-  HNSW + hybrid/rerank are parked until dogfooding justifies them.
+  HNSW tuning (the HNSW index already exists at default params) + hybrid/rerank are
+  parked until dogfooding justifies them.
 
 **Deferred cosmetic nits (non-blocking, from the merge /audit):**
 - `/ask` passage-range label (`ask-client.tsx`) is approximate for cross-chapter ranges

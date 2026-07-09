@@ -22,6 +22,13 @@ export function createDeepInfraEmbedder(opts: {
       if (texts.length === 0) return [];
 
       const MAX_RETRIES = 5;
+      // Backoff between attempts — but never after the last one (no point sleeping
+      // right before we give up and throw).
+      const backoff = (attempt: number): Promise<void> =>
+        attempt < MAX_RETRIES - 1
+          ? new Promise((r) => setTimeout(r, 2000 * (attempt + 1)))
+          : Promise.resolve();
+
       let lastErr: Error | undefined;
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
@@ -38,9 +45,10 @@ export function createDeepInfraEmbedder(opts: {
 
           if (!res.ok) {
             const body = await res.text();
+            // 5xx/429 are transient — retry; other 4xx are our bug — fail fast.
             if (res.status >= 500 || res.status === 429) {
               lastErr = new Error(`Embedding request failed: ${res.status} ${body}`);
-              await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+              await backoff(attempt);
               continue;
             }
             throw new Error(`Embedding request failed: ${res.status} ${body}`);
@@ -50,15 +58,11 @@ export function createDeepInfraEmbedder(opts: {
           return parseResponse(json, texts.length);
         } catch (e) {
           lastErr = e as Error;
-          if ((e as Error).name === 'TimeoutError' || (e as Error).name === 'AbortError') {
-            await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
-            continue;
-          }
-          if (attempt < MAX_RETRIES - 1 && (e as Error).message?.includes('fetch')) {
-            await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
-            continue;
-          }
-          throw e;
+          const name = (e as Error).name;
+          const transient =
+            name === 'TimeoutError' || name === 'AbortError' || e instanceof TypeError; // TypeError = fetch network failure
+          if (!transient) throw e;
+          await backoff(attempt);
         }
       }
       throw lastErr ?? new Error('Embedding failed after retries');
