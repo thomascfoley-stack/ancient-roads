@@ -15,7 +15,8 @@
     "ingest:commentaries": "tsx src/ingest/ingest-commentaries.ts",
     "ingest:commentary-api": "tsx src/ingest/ingest-commentary-api.ts",
     "ingest:merge-commentaries": "tsx src/ingest/merge-commentaries.ts",
-    "ingest:embeddings": "tsx src/ingest/ingest-embeddings.ts"
+    "ingest:embeddings": "tsx src/ingest/ingest-embeddings.ts",
+    "ingest:commentary-fts": "tsx src/ingest/ingest-commentary-fts.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
