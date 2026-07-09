@@ -2,38 +2,49 @@ import type { Metadata, Viewport } from 'next';
 import { NeonAuthUIProvider } from '@neondatabase/auth/react';
 import { authClient } from '@/lib/auth/client';
 import { Sidebar } from '@/components/sidebar';
+import { MobileNav } from '@/components/mobile-nav';
 import { Omnibox } from '@/components/omnibox';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Ancient Roads',
-    template: '%s · Ancient Roads',
+    default: 'Ancient Paths',
+    template: '%s · Ancient Paths',
   },
   description:
     'A Bible study tool that never interprets scripture. Read diverse commentaries from the early church through the Reformation and beyond, then pray on it.',
   openGraph: {
-    title: 'Ancient Roads',
+    title: 'Ancient Paths',
     description:
       'Learn the Word alongside theologians and church fathers who span the past 2,000 years. A tool designed to lead you to the Holy Spirit, not to be the Holy Spirit.',
-    siteName: 'Ancient Roads',
+    siteName: 'Ancient Paths',
     type: 'website',
   },
   twitter: {
     card: 'summary',
-    title: 'Ancient Roads',
+    title: 'Ancient Paths',
     description:
       'A Bible study tool that never interprets scripture.',
   },
   icons: {
     icon: '/favicon.svg',
+    apple: '/icons/apple-touch-icon.png',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Ancient Paths',
   },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#1c1917',
+  // Safe-area insets (notch / Dynamic Island / home indicator) and
+  // keyboard-aware layout on Android Chrome.
+  viewportFit: 'cover',
+  interactiveWidget: 'resizes-content',
+  themeColor: '#221d16',
 };
 
 export default function RootLayout({
@@ -51,7 +62,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Literata:ital,opsz,wght@0,7..72,400..700;1,7..72,400..700&family=Source+Sans+3:ital,wght@0,400..700;1,400..700&display=swap"
           rel="stylesheet"
         />
         <script
@@ -65,12 +76,13 @@ export default function RootLayout({
           authClient={authClient}
           social={{ providers: ['google', 'github'] }}
         >
-          <div className="flex h-screen overflow-hidden">
+          <div className="flex h-dvh overflow-hidden">
             <Sidebar />
-            <main className="flex-1 overflow-y-auto">
+            <main className="flex-1 overflow-y-auto pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0">
               {children}
             </main>
           </div>
+          <MobileNav />
           <Omnibox />
         </NeonAuthUIProvider>
       </body>
