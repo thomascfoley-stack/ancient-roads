@@ -252,4 +252,5 @@ export const TEXT_COLORS = [
 1. **Note panel close on save (Task 6)**: visually confirm the panel closes after saving a note in the reader
 2. **Red highlighter "moving" (Task 7)**: reproduce in browser and confirm: (a) which element is "red" — pink dot? pink bg? something else? (b) what "moving" means — hover-following? scroll-floating? multi-line snap?
 3. **Text/highlight color separation (Task 7)**: review the schema + UX proposal above and approve/redirect before implementation
-4. **SEC-2 closure (prod)**: re-apply APP_DATABASE_URL to prod, rotate neondb_owner password
+4. ~~**SEC-2 closure (prod)**: re-apply APP_DATABASE_URL to prod, rotate neondb_owner password~~ **DONE** — APP_DATABASE_URL re-applied, neondb_owner password rotated, Vercel DATABASE_URL + DATABASE_URL_UNPOOLED updated, .env.local updated, deployed. Old password is invalid.
+5. **Fix A visual confirmation**: visit `/account/settings` — if `<AccountView>` loads and sign-out button is visible, Fix A works
