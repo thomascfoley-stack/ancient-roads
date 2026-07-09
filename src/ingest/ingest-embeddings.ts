@@ -28,7 +28,8 @@ async function main(): Promise<void> {
 
   console.log(`Ingesting ${bookSlug} commentary with ${embedder.model}…`);
   const res = await ingestCorpus(readCommentaryDocs({ bookSlug }), { embedder, store }, { batchSize: 64 });
-  console.log(`Embedded ${res.embedded} chunks, upserted ${res.upserted} new rows.`);
+  const failed = res.failedBatches > 0 ? ` (${res.failedBatches} batch(es) skipped — re-run to fill)` : '';
+  console.log(`Embedded ${res.embedded} chunks, upserted ${res.upserted} new rows${failed}.`);
 
   await store.close();
 }

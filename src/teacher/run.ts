@@ -69,8 +69,8 @@ async function main(): Promise<void> {
             break;
           case 'voice':
             console.log(`[VOICE] ${block.attribution.author} — ${block.attribution.work} (${block.attribution.tradition})`);
-            console.log(`  Quote: "${block.quote.slice(0, 200)}${block.quote.length > 200 ? '…' : ''}"`);
-            console.log(`  Summary: ${block.summary}`);
+            console.log(`  Quote: "${block.quote.slice(0, 300)}${block.quote.length > 300 ? '…' : ''}"`);
+            if (block.summary) console.log(`  Summary: ${block.summary}`);
             console.log();
             break;
           case 'passages':
