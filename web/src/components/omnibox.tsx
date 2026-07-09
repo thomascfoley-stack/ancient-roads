@@ -6,6 +6,9 @@ import { typeahead, parseRef, type ParseOutcome } from '@bible/ref-parse';
 import { webVerseCounts } from '@bible/verse-counts';
 import { type Book, bookUrl } from '@/lib/bible';
 
+// Fired by the mobile Search tab (and anything else that wants the omnibox).
+export const OMNIBOX_OPEN_EVENT = 'ap:omnibox';
+
 export function Omnibox() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -20,8 +23,15 @@ export function Omnibox() {
       }
       if (e.key === 'Escape') setOpen(false);
     }
+    function onOpenEvent() {
+      setOpen(true);
+    }
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener(OMNIBOX_OPEN_EVENT, onOpenEvent);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener(OMNIBOX_OPEN_EVENT, onOpenEvent);
+    };
   }, []);
 
   useEffect(() => {
@@ -64,16 +74,16 @@ export function Omnibox() {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]">
+    <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[max(3rem,env(safe-area-inset-top))] sm:pt-[18vh]">
       <div
-        className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+        className="absolute inset-0 bg-stone-950/30"
         onClick={() => setOpen(false)}
       />
-      <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl ring-1 ring-stone-200">
+      <div className="relative w-full max-w-lg rounded-2xl bg-paper shadow-deep animate-fade-in dark:bg-stone-900">
         <form onSubmit={onSubmit}>
-          <div className="flex items-center border-b border-stone-100 px-4">
+          <div className="flex items-center border-b border-stone-200/70 px-4 dark:border-stone-800">
             <svg
-              className="h-4 w-4 text-stone-400"
+              className="h-4 w-4 shrink-0 text-stone-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -91,15 +101,25 @@ export function Omnibox() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Go to passage, e.g. John 3:16"
-              className="flex-1 bg-transparent px-3 py-4 text-sm text-stone-800 placeholder:text-stone-400 outline-none"
+              className="focus-quiet min-w-0 flex-1 bg-transparent px-3 py-4 text-base text-stone-800 outline-none placeholder:text-stone-400 sm:text-sm dark:text-stone-100 dark:placeholder:text-stone-500"
             />
-            <kbd className="hidden rounded border border-stone-200 px-1.5 py-0.5 text-[10px] text-stone-400 sm:inline-block">
+            <kbd className="hidden rounded border border-stone-200 px-1.5 py-0.5 text-[10px] text-stone-400 [@media(hover:hover)]:sm:inline-block dark:border-stone-700">
               esc
             </kbd>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Close search"
+              className="-mr-2 flex h-11 w-11 items-center justify-center rounded-full text-stone-400 hover:text-stone-600 active:bg-stone-200/60 [@media(hover:hover)]:hidden dark:active:bg-stone-800"
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
           </div>
         </form>
 
-        <div className="max-h-80 overflow-auto p-2">
+        <div className="max-h-[min(20rem,50dvh)] overflow-auto overscroll-contain p-2">
           {!result && (
             <p className="px-3 py-4 text-center text-sm text-stone-400">
               Type a book, chapter, or verse reference
@@ -112,9 +132,9 @@ export function Omnibox() {
                 <li key={b.slug}>
                   <button
                     onClick={() => navigate(b, 1)}
-                    className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm hover:bg-stone-50"
+                    className="flex min-h-[44px] w-full items-center rounded-lg px-3 py-2 text-left text-sm hover:bg-stone-100/70 active:bg-stone-200/60 dark:hover:bg-stone-800 dark:active:bg-stone-800"
                   >
-                    <span className="font-medium text-stone-800">
+                    <span className="font-medium text-stone-800 dark:text-stone-100">
                       {b.name}
                     </span>
                     <span className="ml-auto text-xs text-stone-400">
@@ -160,10 +180,10 @@ function RefResult({
     return (
       <button
         onClick={() => onNavigate(ref.book, chapter)}
-        className="flex w-full items-center rounded-lg px-3 py-3 text-left hover:bg-stone-50"
+        className="flex min-h-[44px] w-full items-center rounded-lg px-3 py-3 text-left hover:bg-stone-100/70 active:bg-stone-200/60 dark:hover:bg-stone-800 dark:active:bg-stone-800"
       >
         <div>
-          <p className="text-sm font-semibold text-stone-800">{ref.display}</p>
+          <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">{ref.display}</p>
           <p className="text-xs text-stone-400">{ref.book.testament} &middot; {ref.kind.replace('_', ' ')}</p>
         </div>
         <span className="ml-auto text-xs text-stone-400">Enter &rarr;</span>
@@ -181,9 +201,9 @@ function RefResult({
             <li key={b.slug}>
               <button
                 onClick={() => onNavigate(b, 1)}
-                className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm hover:bg-stone-50"
+                className="flex min-h-[44px] w-full items-center rounded-lg px-3 py-2 text-left text-sm hover:bg-stone-100/70 active:bg-stone-200/60 dark:hover:bg-stone-800 dark:active:bg-stone-800"
               >
-                <span className="font-medium text-stone-800">{b.name}</span>
+                <span className="font-medium text-stone-800 dark:text-stone-100">{b.name}</span>
               </button>
             </li>
           ))}
