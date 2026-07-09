@@ -5,6 +5,7 @@ import { verifyV1 } from '@/verifier/v1';
 import { embedQuery, compose } from './deepinfra';
 import { retrieveCommentary, type RetrievedChunk } from './retrieve';
 import { buildCorpusLookup } from './corpus';
+import { normalizeContract } from './normalize-contract';
 import { buildSystemPrompt, buildUserPrompt } from './prompt';
 
 export type TeacherResult =
@@ -34,7 +35,33 @@ export type TeacherEvent =
   | { stage: 'rejected'; attempt: number }
   | { stage: 'done'; result: TeacherResult };
 
-const MAX_RETRIES = 2;
+// One retry max. With the corrected fast model (~4–5s/compose) and the
+// normalize-before-verify step lifting the first-attempt pass rate, a second
+// retry mostly bought latency, not successes: a failed second attempt lands in
+// the same fallback a failed first retry would. Fewer attempts, same fail-closed
+// floor.
+const MAX_RETRIES = 1;
+
+// Retrieve a pool (for the source preview + diversity headroom) and compose over
+// the top few voices. Latency is output-bound (the model emits ~750 tokens
+// whether it's shown 3 sources or 6), so a smaller compose set does NOT buy
+// speed — it only trades away the model's room to skip an off-topic
+// high-ranked retrieval. 5 keeps the prompt lean while leaving that headroom.
+const RETRIEVE_K = 6;
+const COMPOSE_VOICES = 5;
+
+// Pick the top N voices by score, but guarantee ≥2 traditions are present when
+// the pool offers them, so the verifier's diversity floor stays satisfiable.
+function selectVoices(pool: RetrievedChunk[], n: number): RetrievedChunk[] {
+  if (pool.length <= n) return pool;
+  const top = pool.slice(0, n); // pool is score-ordered
+  const traditionsInTop = new Set(top.map((r) => r.metadata.tradition ?? 'unknown'));
+  if (traditionsInTop.size >= 2) return top;
+  const soleTradition = [...traditionsInTop][0];
+  const other = pool.find((r) => (r.metadata.tradition ?? 'unknown') !== soleTradition);
+  if (!other) return top; // pool is single-tradition; nothing to diversify with
+  return [...top.slice(0, n - 1), other];
+}
 
 // Full teacher pipeline: retrieve → compose → verify → retry-with-feedback →
 // fallback. The verifier gates every composed answer; a failed generation is
@@ -53,7 +80,7 @@ export async function teach(
 
   emit({ stage: 'retrieving' });
   const queryVec = await embedQuery(query);
-  const retrieval = await retrieveCommentary(queryVec, 6);
+  const retrieval = await retrieveCommentary(queryVec, RETRIEVE_K);
   if (retrieval.length === 0) {
     return finish({ kind: 'empty', reason: 'No relevant sources found for this question.' });
   }
@@ -72,12 +99,22 @@ export async function teach(
     })),
   });
 
+  // Compose over the top few voices; the verifier and prompt see exactly this set.
+  const voices = selectVoices(retrieval, COMPOSE_VOICES);
+  const voiceTraditions = new Set(voices.map((r) => r.metadata.tradition ?? 'unknown'));
   const systemPrompt = buildSystemPrompt();
-  const userPrompt = buildUserPrompt(query, retrieval);
-  const corpusLookup = buildCorpusLookup(retrieval);
+  const userPrompt = buildUserPrompt(query, voices);
+  const corpusLookup = buildCorpusLookup(voices);
+  // Authoritative attribution per cited section_id (1-based), used to backfill
+  // what the model typed so a correct citation can't be rejected over a mislabel.
+  const sectionAttributions = voices.map((r) => ({
+    author: r.metadata.author,
+    work: r.metadata.sourceTitle,
+    tradition: r.metadata.tradition ?? 'unknown',
+  }));
   const retrievalContext = {
-    sectionIds: retrieval.map((_, i) => i + 1),
-    traditions: [...traditions],
+    sectionIds: voices.map((_, i) => i + 1),
+    traditions: [...voiceTraditions],
   };
 
   let lastViolations: Violation[] = [];
@@ -103,7 +140,11 @@ export async function teach(
 
     let parsed: unknown;
     try {
-      parsed = JSON.parse(raw);
+      // Coerce quoted numeric IDs and backfill attribution from the cited
+      // section BEFORE verifying. This is lossless normalization, not a relaxed
+      // gate: the verifier below still enforces verbatim quotes, valid anchors/
+      // passages, screens, and diversity, and still fails closed.
+      parsed = normalizeContract(JSON.parse(raw), sectionAttributions);
     } catch {
       lastViolations = [{ check: 'json_parse', message: 'Response is not valid JSON' }];
       continue;
@@ -113,6 +154,8 @@ export async function teach(
     emit({ stage: 'verifying', attempt });
     const result = await verifyV1(parsed, corpusLookup, retrievalContext);
     if (result.ok) {
+      // Return the normalized object: its attribution is the authoritative
+      // source attribution the verifier just checked the quote against.
       return finish({ kind: 'composed', response: parsed as TeacherResponse, retrieval });
     }
     lastViolations = result.violations;

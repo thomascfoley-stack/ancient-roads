@@ -5,7 +5,11 @@
 import 'server-only';
 
 const EMBED_MODEL = 'BAAI/bge-large-en-v1.5';
-const COMPOSE_MODEL = 'Qwen/Qwen3.6-35B-A3B';
+// Qwen3.5-35B-A3B: 3B-active MoE, ~4–5s/compose on DeepInfra. The prior name
+// 'Qwen3.6-35B-A3B' does not exist on DeepInfra — it was silently auto-forwarded
+// to a slow fallback (~60s/compose; the INFRA.md model-drift hazard). Correcting
+// the name is the single biggest latency win in the teacher path.
+const COMPOSE_MODEL = 'Qwen/Qwen3.5-35B-A3B';
 const BASE_URL = 'https://api.deepinfra.com/v1/openai';
 const MAX_INPUT_CHARS = 1800; // BGE 512-token limit ≈ 1800 chars worst case
 
