@@ -3,6 +3,25 @@
 Audited from the actual repo on 2026-07-08 — code, tests, `/audit` output, `docs/`, and
 git history — not from memory or the earlier hit list.
 
+## Update 2026-07-09 — the teacher landed (done-on-John)
+
+Merged `feat/teacher-pipeline` to `main` (audit green, 95 tests). The intelligence
+plane is no longer empty:
+- **AI teacher — Partial (done-on-John).** Retrieval → compose (Qwen3.6-35B via
+  DeepInfra) → V1 verifier → retry-with-feedback → fallback. Wired to the web app as
+  **`/ask` ("Ask the voices")**, authed-only, verified end-to-end on John commentary.
+  Composer is **extractive** (`voice.summary` now optional — quotes over paraphrase)
+  to bound drift until V2. Not full **Done**: `interpretation_bait` ≥99% not yet run,
+  and only John (+ partial Gospels) is embedded.
+- **Tracked next (not started):** (1) **V2 summary-faithfulness classifier** — the gate
+  before anyone but the owner uses the teacher; (2) **full-corpus embedding** (~$0.6–1.0
+  one-time; the real cost is Neon Large ~$110/mo to hold the index) + **IVFFlat→HNSW**
+  retune + **hybrid/rerank**. Decide after real dogfooding.
+- **Deferred nits (from the merge /audit, non-blocking):** `/ask` passage-range label is
+  approximate for cross-chapter ranges; authed `/api/ask` has no per-user rate limit
+  (cost, not a security hole — single-user dogfooding); CLI-only `createPgStore` uses
+  `rejectUnauthorized:false` (offline ingest; web runtime uses verified HTTPS).
+
 ## The "Done" bar (strict)
 
 A row is **Done** only if it is: **built AND tested AND passes `/audit` AND** (for data paths)
@@ -22,8 +41,9 @@ that is **Partial** or **Missing**. Status values: Done / Partial / Missing / Bl
   annotations UI, and auth are all outside the gate. This alone drops every web surface to Partial.
 - **`/audit` is green only because 2 critical + 7 high CVEs are ignored** (SEC-1; `pnpm audit` line:
   "2 critical (2 ignored)"). Coverage is 30% statements.
-- **No teacher exists yet** → the `interpretation_bait` suite is 1 pass / 34 pending (only `bait-001`
-  has a fixture). No AI-generation feature can meet the evals clause.
+- **A teacher now exists (2026-07-09, done-on-John)** but the `interpretation_bait` suite still
+  runs against fixtures, not the live teacher (1 pass / 34 pending). Running the suite through the
+  real compose→verify loop at ≥99% is outstanding, so no AI-generation row is full **Done** yet.
 
 ## The table
 
@@ -41,9 +61,9 @@ that is **Partial** or **Missing**. Status values: Done / Partial / Missing / Bl
 | **Highlights + Notes (annotations)** | Partial | `web/src/lib/annotations.ts` (`runAsUser`, 8 fns; `upsertNote` now atomic `INSERT … ON CONFLICT` on the unique partial index, migration `002`), `api/annotations{,/all}/route.ts`, `app/library/notes/page.tsx`; all 8 fns pass staging on `app_runtime` (RLS on); **prod running on `app_runtime` with RLS enforced, DB-layer isolation 6/6** | Built + tested + **RLS enforced in prod** + in audit | No web tests; outside `/audit`; browser isolation check pending | **[SEC-2](docs/SECURITY.md)** (prod flip done, closing) | User data · P0 |
 | **SEC-2 — least-priv role + RLS enforcement** | **Done** | `web/src/lib/db.ts` `runAsUser`; migrations `001` (role+grants+RLS) + `002` (unique note index); staging 14/14; **prod live**: `app_runtime` + `APP_DATABASE_URL` + RLS enforced, DB-layer isolation 6/6, persistence confirmed, **neondb_owner password rotated** (old password invalid) | `app_runtime` + RLS live in prod, browser isolation verified, owner rotated | — | none | Security · P0 |
 | **Auth (login / account)** | Partial | `app/auth/[path]/page.tsx`, `account/[path]/page.tsx` (`@neondatabase/auth/react`); `lib/auth/{client,server}.ts`, `lib/session.ts`, `middleware.ts` (matcher empty), `api/auth/[...path]/route.ts`. **Standalone logout wired:** `api/auth/sign-out/route.ts` clears all `__Secure-neon-auth.*` cookies directly (no `<AccountView>` dependency). Sidebar shows "Sign out" when session active, "Sign in" when not. **Account management UI (teams/api-keys/orgs/security) is broken-until-Fix-C (SEC-1).** | Login + logout + account + no critical/high CVEs + JWT→RLS wired | `@neondatabase/auth` pins better-auth 1.4.18 → 2 critical + 7 high CVEs; account management UI broken (beta library); standalone logout bypasses it | **[SEC-1](docs/SECURITY.md)**; move to Better Auth-direct ([AUTH_MIGRATION_SPIKE.md](docs/AUTH_MIGRATION_SPIKE.md)) | Auth·Security · P0 |
-| **Retrieval (hybrid BM25 + vector)** | Partial | `src/retrieval/{retrieve,ingest,store,embedder,types}.ts`, `sources/commentary.ts`; `test/retrieval.contract.test.ts` (6) pass; `test/retrieval.integration.test.ts` **skipped** (gated `RUN_INTEGRATION`); in `/audit` | Corpus embedded + hybrid search wired to a surface + integration test passing | Integration **unproven** (skipped); corpus not embedded in prod; not wired to any route | DeepInfra/embeddings key; Neon pgvector index | Intelligence · P0 |
-| **AI generation / "the teacher"** | Missing | No generation code (grep: none in `web/` or `src/`); ARCHITECTURE.md §"Intelligence plane" = "to build (current phase)"; `evals` 34 pending "until the first teacher exists" | Prompt → Qwen3.6 → contract JSON → verifier → render, `interpretation_bait` ≥99% | Entire feature | Retrieval + contract (present); DeepInfra key | Intelligence · P0 |
-| **V2 classifier verifier** | Missing | No `src/verifier/v2*.ts`; OUTPUT_CONTRACT.md §3 "Stage V2 … fine-tuned later, prompted at first" | Classifier pass (I1/I2 unattributed, I4/I6 fidelity, I3/I5 prescription) built + evaluated | Entire stage | AI-generation stack; logged data for later fine-tune | Intelligence · P1 |
+| **Retrieval (hybrid BM25 + vector)** | Partial | `src/retrieval/{retrieve,ingest,store,embedder,types}.ts`, `sources/commentary.ts`; `test/retrieval.contract.test.ts` (6) pass; `test/retrieval.integration.test.ts` **skipped**; in `/audit`. **Vector retrieval now LIVE**: BGE (`bge-large-en-v1.5`/DeepInfra) 1024-dim embeddings in Neon pgvector, queried by `/ask` (`web/src/lib/teacher/retrieve.ts`, app_runtime + RLS, `user_id IS NULL`). John embedded + Gospels ingesting; ingest resilient (skip-and-continue) | Corpus embedded + **hybrid** search wired + integration test passing | **Vector-only** (no BM25/rerank hybrid yet); integration test still skipped; only Gospels-scale embedded; IVFFlat not HNSW | DeepInfra key (set); Neon pgvector index | Intelligence · P0 |
+| **AI generation / "the teacher"** | Partial (done-on-John) | `src/teacher/{teacher,prompt,llm,run,types}.ts` (CLI) + `web/src/lib/teacher/*` + `web/src/app/api/ask` + `/ask` UI; `test/teacher.test.ts` (6: composed/retry/fallback/non-JSON/empty/extractive) pass, in `/audit`. Compose (Qwen3.6-35B/DeepInfra) → V1 → retry → fallback; verified live on John + partial Gospels; composer extractive (`voice.summary` optional) | Prompt → Qwen3.6 → contract JSON → verifier → render, `interpretation_bait` ≥99% | `interpretation_bait` not yet executed ≥99%; only John(+partial Gospels) embedded; V2 fidelity gate pending; web path outside `/audit` | Retrieval + contract (present); DeepInfra key (set) | Intelligence · P0 |
+| **V2 classifier verifier** | Missing — **tracked next (gate before multi-user)** | No `src/verifier/v2*.ts`; OUTPUT_CONTRACT.md §3 "Stage V2 … fine-tuned later, prompted at first". Now the explicit gate before anyone but the owner uses the teacher; extractive composer is the interim drift mitigation | Classifier pass (I1/I2 unattributed, **I4/I6 summary-faithfulness**, I3/I5 prescription) built + evaluated | Entire stage — summary-faithfulness is the priority sub-piece | AI-generation stack (present); logged data for later fine-tune | Intelligence · **P0 (was P1)** |
 | **Eval harness + interpretation-bait suite** | Partial | `src/evals/{run,checks,types}.ts`; `test/evals.test.ts` (5) pass; `evals/cases/{interpretation_bait(35),format,diversity,refusal_shape}.yaml`; only `fixtures/bait-001.json` | Harness (Done-level) **and** suites executed vs a teacher, bait ≥99% | Suites **unexecuted** (1 pass / 34 pending — no fixtures/teacher) | AI generation (Missing) | Intelligence · P0 |
 | **Chat / Channels / Study-partner** | Missing | Backend scaffold exists (`lib/chat.ts` RLS-refactored; `api/{channels,chats,messages}`), but `app/chat/[id]` + `channel/[id]` are `ComingSoon` stubs "arrive with the trained model" | Full feature: UI + AI teacher + RLS + bait evals | No UI, no AI, no tests | AI generation; SEC-2 (RLS) | Intelligence·User · P2 |
 | **Uploads / My books (files, favorites)** | Missing | `app/library/{uploads,books}/page.tsx` = `ComingSoon` stubs; `user_library` designed in USER_DATA.md; Vercel Blob not wired | Upload → Blob + `user_library` row + RLS + UI | Entire feature | Vercel Blob; SEC-2 | User data · P2 |
