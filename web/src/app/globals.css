@@ -5,12 +5,127 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-serif: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  /* Type system — EB Garamond for display/headings (inscriptional old-style),
+     Literata for long-form reading (scripture, commentary, answers),
+     Source Sans 3 for UI chrome. */
+  --font-sans: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Literata', Georgia, 'Times New Roman', serif;
+  --font-display: 'EB Garamond', Georgia, 'Times New Roman', serif;
+
+  /* Warm remap of the stone scale — bone/parchment lights, ink/charcoal darks.
+     Each step keeps Tailwind's original lightness, so every existing
+     stone-on-stone contrast pairing in the app still meets the same WCAG ratio;
+     only the temperature changes. */
+  --color-stone-50: oklch(97.8% 0.008 88);
+  --color-stone-100: oklch(95.5% 0.013 86);
+  --color-stone-200: oklch(91.8% 0.016 84);
+  --color-stone-300: oklch(86.4% 0.018 80);
+  --color-stone-400: oklch(70.5% 0.02 74);
+  --color-stone-500: oklch(54.8% 0.022 68);
+  --color-stone-600: oklch(44.2% 0.022 62);
+  --color-stone-700: oklch(37.2% 0.02 58);
+  --color-stone-800: oklch(26.6% 0.015 52);
+  --color-stone-900: oklch(21.4% 0.012 48);
+  --color-stone-950: oklch(14.8% 0.008 46);
+
+  /* Raised paper surface — warm near-white, never pure white. */
+  --color-paper: oklch(98.8% 0.006 92);
+
+  /* The one classical accent: muted oxblood / terracotta. */
+  --color-accent-50: oklch(96.5% 0.012 35);
+  --color-accent-100: oklch(93% 0.024 33);
+  --color-accent-200: oklch(87% 0.042 32);
+  --color-accent-300: oklch(78% 0.062 31);
+  --color-accent-400: oklch(66% 0.085 30);
+  --color-accent-500: oklch(55% 0.1 29);
+  --color-accent-600: oklch(48% 0.105 28);
+  --color-accent-700: oklch(42% 0.1 27);
+  --color-accent-800: oklch(35% 0.085 26);
+  --color-accent-900: oklch(30% 0.07 25);
+  --color-accent-950: oklch(22% 0.05 25);
+
+  /* Soft, diffuse elevation — layered paper instead of hairline borders. */
+  --shadow-paper:
+    0 1px 2px oklch(20% 0.015 50 / 0.05), 0 4px 16px -4px oklch(20% 0.015 50 / 0.08);
+  --shadow-float:
+    0 2px 4px oklch(20% 0.015 50 / 0.06), 0 12px 32px -8px oklch(20% 0.015 50 / 0.16);
+  --shadow-deep:
+    0 4px 8px oklch(14% 0.012 50 / 0.1), 0 24px 64px -16px oklch(14% 0.012 50 / 0.35);
+
+  /* Gentle, decelerating motion. */
+  --ease-gentle: cubic-bezier(0.32, 0, 0.24, 1);
 }
 
 html { color-scheme: light; }
 html.dark { color-scheme: dark; }
+
+/* Mobile fundamentals: no gray tap flash (we style active: states instead),
+   and no horizontal scroll leaks from full-bleed surfaces. */
+html {
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: clip;
+}
+
+/* Theme the Neon Auth UI (sign-in / account cards) through its shadcn-style
+   variable fallbacks. Unlayered, so it wins over @layer neon-auth defaults. */
+:root {
+  --background: var(--color-stone-50);
+  --foreground: var(--color-stone-800);
+  --card: var(--color-paper);
+  --card-foreground: var(--color-stone-800);
+  --popover: var(--color-paper);
+  --popover-foreground: var(--color-stone-800);
+  --primary: var(--color-accent-700);
+  --primary-foreground: var(--color-stone-50);
+  --secondary: var(--color-stone-100);
+  --secondary-foreground: var(--color-stone-700);
+  --muted: var(--color-stone-100);
+  --muted-foreground: var(--color-stone-500);
+  --accent: var(--color-stone-100);
+  --accent-foreground: var(--color-stone-800);
+  --border: var(--color-stone-200);
+  --input: var(--color-stone-300);
+  --ring: var(--color-accent-500);
+  --neon-radius: 1rem;
+}
+
+.dark {
+  --background: var(--color-stone-950);
+  --foreground: var(--color-stone-200);
+  --card: var(--color-stone-900);
+  --card-foreground: var(--color-stone-200);
+  --popover: var(--color-stone-900);
+  --popover-foreground: var(--color-stone-200);
+  --primary: var(--color-accent-400);
+  --primary-foreground: var(--color-stone-950);
+  --secondary: var(--color-stone-800);
+  --secondary-foreground: var(--color-stone-300);
+  --muted: var(--color-stone-800);
+  --muted-foreground: var(--color-stone-400);
+  --accent: var(--color-stone-800);
+  --accent-foreground: var(--color-stone-200);
+  --border: var(--color-stone-800);
+  --input: var(--color-stone-700);
+  --ring: var(--color-accent-400);
+}
+
+/* Keyboard focus is always visible, in the accent. Elements inside a
+   container that shows its own focus-within treatment can opt out with
+   .focus-quiet. */
+:focus-visible {
+  outline: 2px solid var(--color-accent-600);
+  outline-offset: 2px;
+}
+.dark :focus-visible {
+  outline-color: var(--color-accent-400);
+}
+.focus-quiet:focus-visible {
+  outline: none;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-accent-300) 45%, transparent);
+}
 
 /* Reader font-size control (set --reading-size on the reading container) */
 .reading-scale { font-size: var(--reading-size, 1.125rem); }
@@ -26,11 +141,11 @@ html.dark { color-scheme: dark; }
 }
 
 .animate-slide-up {
-  animation: slide-up 0.3s ease-out;
+  animation: slide-up 0.3s var(--ease-gentle);
 }
 
 .animate-fade-in {
-  animation: fade-in 0.2s ease-out;
+  animation: fade-in 0.25s var(--ease-gentle);
 }
 
 .font-scripture {
