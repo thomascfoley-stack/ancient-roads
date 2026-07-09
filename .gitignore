@@ -26,3 +26,4 @@ coverage/
 
 # Throwaway SEC-2/auth spike workspace (own node_modules + local-only secrets)
 spike/
+.vercel
