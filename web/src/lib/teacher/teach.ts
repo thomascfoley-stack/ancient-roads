@@ -12,29 +12,80 @@ export type TeacherResult =
   | { kind: 'fallback'; retrieval: RetrievedChunk[]; violations: Violation[] }
   | { kind: 'empty'; reason: string };
 
+// A safe-to-stream preview of a retrieved source. This is CORPUS text (never
+// model output), so it can be shown to the user before/while composing.
+export interface SourcePreview {
+  sourceId: string;
+  author: string;
+  sourceTitle: string;
+  tradition: string | null;
+  content: string;
+  score: number;
+}
+
+// Progress events emitted as the pipeline runs. The ONLY payloads that carry
+// text to the client are `retrieved` (corpus) and the final `done` result
+// (verifier-passed for `composed`). Raw model output is never emitted.
+export type TeacherEvent =
+  | { stage: 'retrieving' }
+  | { stage: 'retrieved'; sources: SourcePreview[]; traditions: number }
+  | { stage: 'composing'; attempt: number }
+  | { stage: 'verifying'; attempt: number }
+  | { stage: 'rejected'; attempt: number }
+  | { stage: 'done'; result: TeacherResult };
+
 const MAX_RETRIES = 2;
 
 // Full teacher pipeline: retrieve → compose → verify → retry-with-feedback →
 // fallback. The verifier gates every composed answer; a failed generation is
-// never returned as `composed`. Callers render `fallback` as raw retrieval.
-export async function teach(query: string): Promise<TeacherResult> {
+// never returned (or emitted) as `composed`. `onEvent` streams pipeline STAGES
+// (not tokens): callers render progress + the safe retrieved sources during the
+// wait, then the verified result on `done`.
+export async function teach(
+  query: string,
+  opts: { onEvent?: (e: TeacherEvent) => void } = {},
+): Promise<TeacherResult> {
+  const emit = opts.onEvent ?? (() => {});
+  const finish = (result: TeacherResult): TeacherResult => {
+    emit({ stage: 'done', result });
+    return result;
+  };
+
+  emit({ stage: 'retrieving' });
   const queryVec = await embedQuery(query);
   const retrieval = await retrieveCommentary(queryVec, 6);
   if (retrieval.length === 0) {
-    return { kind: 'empty', reason: 'No relevant sources found for this question.' };
+    return finish({ kind: 'empty', reason: 'No relevant sources found for this question.' });
   }
+
+  const traditions = new Set(retrieval.map((r) => r.metadata.tradition ?? 'unknown'));
+  emit({
+    stage: 'retrieved',
+    traditions: traditions.size,
+    sources: retrieval.map((r) => ({
+      sourceId: r.sourceId,
+      author: r.metadata.author,
+      sourceTitle: r.metadata.sourceTitle,
+      tradition: r.metadata.tradition,
+      content: r.content,
+      score: r.score,
+    })),
+  });
 
   const systemPrompt = buildSystemPrompt();
   const userPrompt = buildUserPrompt(query, retrieval);
   const corpusLookup = buildCorpusLookup(retrieval);
   const retrievalContext = {
     sectionIds: retrieval.map((_, i) => i + 1),
-    traditions: [...new Set(retrieval.map((r) => r.metadata.tradition ?? 'unknown'))],
+    traditions: [...traditions],
   };
 
   let lastViolations: Violation[] = [];
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (attempt > 0) emit({ stage: 'rejected', attempt: attempt - 1 });
+    emit({ stage: 'composing', attempt });
+
     const prompt =
       attempt === 0
         ? userPrompt
@@ -58,12 +109,14 @@ export async function teach(query: string): Promise<TeacherResult> {
       continue;
     }
 
+    // The verifier runs server-side here, BEFORE any `done` event is emitted.
+    emit({ stage: 'verifying', attempt });
     const result = await verifyV1(parsed, corpusLookup, retrievalContext);
     if (result.ok) {
-      return { kind: 'composed', response: parsed as TeacherResponse, retrieval };
+      return finish({ kind: 'composed', response: parsed as TeacherResponse, retrieval });
     }
     lastViolations = result.violations;
   }
 
-  return { kind: 'fallback', retrieval, violations: lastViolations };
+  return finish({ kind: 'fallback', retrieval, violations: lastViolations });
 }
