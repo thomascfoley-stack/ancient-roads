@@ -80,7 +80,7 @@ export async function teach(
 
   emit({ stage: 'retrieving' });
   const queryVec = await embedQuery(query);
-  const retrieval = await retrieveCommentary(queryVec, RETRIEVE_K);
+  const retrieval = await retrieveCommentary(queryVec, RETRIEVE_K, { query });
   if (retrieval.length === 0) {
     return finish({ kind: 'empty', reason: 'No relevant sources found for this question.' });
   }
