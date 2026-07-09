@@ -43,9 +43,14 @@ export async function ingestCorpus(
     batch = [];
   };
 
+  let batchNum = 0;
   for await (const doc of docs) {
     batch.push(doc);
-    if (batch.length >= opts.batchSize) await flush();
+    if (batch.length >= opts.batchSize) {
+      await flush();
+      batchNum++;
+      if (batchNum % 10 === 0) process.stdout.write(`  batch ${batchNum}: ${embedded} embedded, ${upserted} upserted\n`);
+    }
   }
   await flush();
 

@@ -5,7 +5,7 @@ import { encodeVerseId } from '../../bible/verse-id';
 import type { CorpusDoc } from '../types';
 
 const CORPUS_DIR = 'web/public/commentaries';
-const MAX_CHARS = 1200; // ~300 tokens: keeps each embedded vector topically tight
+const MAX_CHARS = 800; // BGE context is 512 tokens; Greek/Hebrew text tokenizes at ~3 chars/token
 
 interface RawEntry {
   verseStart: number;
