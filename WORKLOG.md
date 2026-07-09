@@ -48,9 +48,76 @@
 **Deferred cosmetic nit:** `/ask` passage-range label (`ask-client.tsx`) is approximate for
 cross-chapter ranges (repeats the chapter on the end ref). Fix when labels matter.
 
+## 2026-07-09 — Retrieval accuracy sprint (in progress)
+
+**Goal:** Take true success rate from 4/10 → 10/10 via three stacked fixes.
+
+### Diagnosis (complete)
+
+Ran 10-query diagnostic through the full pipeline. Findings:
+- **Compose rate** 7/10 was misleading — 3 of 7 used wrong sources (e.g. Luke 2 nativity
+  shepherds for "good shepherd" → John 10). **True success rate: 4/10.**
+- **Root cause #1 — corpus gap:** embeddings table had only 4 Gospel books (13,631 chunks)
+  while `commentary_entries` has 371,406 entries across 66 books. Every OT/Epistle query fails.
+- **Root cause #2 — BM25 dead:** `websearch_to_tsquery` AND semantics returned 0 results for
+  59/60 test sources against short embedding chunks (chunks rarely contain ALL query terms).
+- **Root cause #3 — no reranker:** vector cosine alone can't distinguish "good shepherd" (John 10)
+  from "shepherds" (Luke 2) — semantically similar, topically wrong.
+
+### Step 1: Embed full corpus (IN PROGRESS)
+
+`src/ingest/embed-full-corpus.ts` — batch-embedding all 342k commentary_entries (body >= 100 chars)
+via BGE-large-en-v1.5 on DeepInfra. Pre-skips existing source_ids (avoids re-embedding the 5,351
+Gospel entries). ON CONFLICT DO NOTHING for idempotency.
+
+- MAX_EMBED_CHARS reduced from 1800 → 1500 → 1200 → **1000** to eliminate BGE 512-token-limit
+  batch failures (1000 chars ≈ 285 tokens worst case). Running at 0 errors.
+- Progress: ~3% of 341,912, ~2.5 hours remaining. 0 embed errors.
+
+### Step 2: Fix hybrid search (APPLIED)
+
+Migration `db/migrations/004_hybrid_search_v2.sql` applied to prod DB:
+- `websearch_to_tsquery` → `plainto_tsquery` (OR semantics — any keyword matches)
+- Added `source_type = 'commentary'` filter
+- Widened BM25 pool to `match_count * 5`
+
+### Step 3: Add reranker (CODE READY)
+
+`web/src/lib/teacher/rerank.ts` — BGE-reranker-v2-m3 cross-encoder via DeepInfra.
+`web/src/lib/teacher/retrieve.ts` — rewritten: hybrid_search(20 candidates) → rerank(top 6).
+`web/src/lib/teacher/teach.ts` — passes raw query text through for BM25.
+
+### Diagnostic harness
+
+`web/src/scripts/diagnose-pipeline.mts` — 10 queries, `MODE=vector|hybrid|full`, tracks
+compose rate AND true success rate (source quality heuristics). Dry-run verified working.
+
+### Commits (8, on `main`)
+
+All work committed in logical groups. Push to `ancient-roads` remote pending (needs manual
+`git push origin main` — no HTTPS creds or SSH configured from this environment).
+
+### Neon capacity
+
+Current DB ~1GB, estimated full corpus ~5.3GB. `max_connections=901` confirms Large compute.
+Fits within Neon Launch (10GB) or Scale (50GB) plan limits.
+
+### Next steps (after embedding completes)
+
+1. Verify embedding count reaches ~355k
+2. Re-run diagnostic `MODE=vector` — measure full-corpus vector-only improvement
+3. Re-run diagnostic `MODE=hybrid` — measure BM25+vector fusion improvement
+4. Re-run diagnostic `MODE=full` — measure hybrid+reranker improvement
+5. Record all three numbers here. Target: 10/10.
+6. Groq/Together speed benchmark (user will add keys)
+
+---
+
 ## Status summary
 
-Working through prioritized task list. Tree is clean on `main`.
+Retrieval accuracy sprint in progress. Embedding job running (~2.5h). Code for all three
+fixes is written and ready; migration 004 applied. Diagnostic harness ready to measure
+the improvement at each step.
 
 ## Task 1: Diagnose logout/account-page bug (staging only)
 
