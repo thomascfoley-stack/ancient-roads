@@ -13,16 +13,22 @@ plane is no longer empty:
   Composer is **extractive** (`voice.summary` now optional — quotes over paraphrase)
   to bound drift until V2. Not full **Done**: `interpretation_bait` ≥99% not yet run,
   and only John (+ partial Gospels) is embedded.
-- **Tracked next (not started):** (1) **V2 summary-faithfulness classifier** — the gate
-  before anyone but the owner uses the teacher; (2) **full-corpus embedding** (~$0.6–1.0
-  one-time; the real cost is Neon Large ~$110/mo to hold the index) + **HNSW tuning**
-  (the `idx_embeddings_vector` HNSW index already exists at default params — raise
-  `ef_construction`/`ef_search` and move to Neon Large at full-corpus scale) +
-  **hybrid/rerank**. Decide after real dogfooding.
-- **Deferred nits (from the merge /audit, non-blocking):** `/ask` passage-range label is
-  approximate for cross-chapter ranges; authed `/api/ask` has no per-user rate limit
-  (cost, not a security hole — single-user dogfooding); CLI-only `createPgStore` uses
-  `rejectUnauthorized:false` (offline ingest; web runtime uses verified HTTPS).
+- **Pre-signup gate — must clear before anyone but the owner signs up:**
+  1. **V2 summary-faithfulness classifier** — the fidelity check the extractive composer
+     only *mitigates*; the real gate against summary drift (I4/I6).
+  2. **Rate-limit `/api/ask`** — authed but unthrottled today; a signed-up user could run
+     up embedding + LLM spend (wallet-DoS). Add a per-user limiter before opening signups.
+  3. **`createPgStore`'s `rejectUnauthorized:false` must never reach a runtime path** —
+     it is offline-ingest-only today (the web runtime uses the verified neon serverless
+     driver, not `pg`). Before multi-user, guarantee it can't be imported into a request
+     path (e.g. `server-only`/lint guard) and tighten the CLI to `sslmode=verify-full`.
+- **Tracked next (post-dogfood, not gated on signup):** **full-corpus embedding**
+  (~$0.6–1.0 one-time; the real cost is Neon Large ~$110/mo to hold the index) +
+  **HNSW tuning** (the `idx_embeddings_vector` HNSW index already exists at default
+  params — raise `ef_construction`/`ef_search`, move to Neon Large) + **hybrid/rerank**.
+  Decide after real dogfooding.
+- **Deferred cosmetic nit:** `/ask` passage-range label is approximate for cross-chapter
+  ranges.
 
 ## The "Done" bar (strict)
 
