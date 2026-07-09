@@ -13,5 +13,5 @@ export default function middleware(req: NextRequest) {
 // infinite redirect-to-login. The server component uses the local JWT cache
 // (same path as annotations), which works reliably.
 export const config = {
-  matcher: [] as string[],
+  matcher: [],
 };
