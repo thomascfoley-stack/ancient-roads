@@ -177,7 +177,7 @@ The "moving" behavior is almost certainly the **hover quick-menu** (`verse-displ
 #### Proposed schema (migration 003)
 
 ```sql
--- 003_highlight_text_color.sql
+-- 004_highlight_text_color.sql
 -- Add independent text_color axis. Rename color → highlight_color for clarity.
 
 ALTER TABLE highlights RENAME COLUMN color TO highlight_color;
@@ -247,10 +247,220 @@ export const TEXT_COLORS = [
 3. **Combinatorics UX**: With 5 bg × 5 text colors = 25 combos, is a two-row layout intuitive enough or should we use a grid/matrix?
 4. **Default text color by bg**: Should certain bg colors auto-set a text color for readability (e.g., dark bg → light text)? Or always independent?
 
+## Standalone logout (replaces Fix A)
+
+**Status:** Complete — needs Thomas's visual confirmation after deploy.
+
+Fix A (server-component `requireUser()` guard on account page) failed through three iterations —
+the `@neondatabase/auth` beta library's session handling is too unreliable in the Edge/serverless
+environment. Thomas directed: stop patching account page, wire standalone logout, mark account UI
+broken-until-Fix-C.
+
+### Changes
+
+- `web/src/app/api/auth/sign-out/route.ts`: POST handler that clears all `__Secure-neon-auth.*`
+  cookies (session token, JWT cache, challenge) by setting `maxAge: 0`. Returns JSON `{ ok: true }`.
+  Takes precedence over the catch-all `[...path]` route. No dependency on `<AccountView>` or the
+  Neon Auth library.
+- `web/src/components/sidebar.tsx`: Uses `authClient.useSession()` to detect auth state.
+  Shows "Sign out" button (with log-out icon) when session is active, "Sign in" link when not.
+  Sign-out POSTs to `/api/auth/sign-out` then hard-navigates to `/`.
+- Account management UI (teams/api-keys/orgs/security) is marked broken-until-Fix-C (SEC-1 Better
+  Auth migration). No further fixes will be deployed for `<AccountView>`.
+- `web/src/middleware.ts`: matcher stays empty (unchanged from prior commit).
+
+### What to verify after deploy
+
+1. Sign in works (via sidebar "Sign in" → `/auth/sign-in`)
+2. After sign-in, sidebar shows "Sign out" button instead of "Sign in"
+3. Clicking "Sign out" clears session and returns to home
+4. Reader + annotations still work while signed in
+
+## Full-text commentary search
+
+**Status:** Implemented — code complete, audit green. Needs migration + ingestion run against Neon.
+
+**Thomas's decisions (approved):**
+- Q1 (cost): Proceed. May bump Neon to Launch plan (~$0.16/mo storage).
+- Q2 (tsvector scope): Body text only. Author/tradition stay as WHERE filter columns, not in tsvector.
+- Q3 (panel search): Deferred.
+- Q4 (snippet): 50-word snippets, fine.
+- Pagination: capped at max 100 results per request, default 20.
+- Idempotency: UNIQUE constraint on natural key `(book, chapter, verse_start, verse_end, author, source_title)`, ingestion uses `ON CONFLICT DO NOTHING`.
+- Migration numbering: commentary FTS = 003, text/highlight color separation = 004.
+
+### Problem
+
+371k commentary entries from 401 sources exist as static JSON on the CDN. Users can browse by
+book+chapter+author but cannot search the text. "What did Chrysostom say about baptism?" requires
+manually opening every chapter of every book and scrolling. The omnibox only resolves verse
+references — no free-text search exists anywhere in the product.
+
+### Why not use the existing `embeddings` table?
+
+The `embeddings` table has tsvector/GIN and `hybrid_search()` already, but it's wrong for this:
+
+1. **RLS blocks it.** `embeddings` has RLS enabled with `user_id = current_setting(...)`. Commentary
+   rows have `user_id IS NULL` — invisible to `app_runtime`. Fixing this requires either a policy
+   change, SECURITY DEFINER, or a separate read path. All are worse than a clean table.
+2. **Data is chunked, not structured.** The embedding pipeline splits entries at 1200 chars for
+   vector quality. Search results would be fragments, not complete commentary entries with metadata.
+3. **Not all commentary is embedded.** Embedding requires DeepInfra API calls per book. The ingestion
+   status is unknown and completing it has a cost.
+4. **Vector search is unnecessary.** Keyword search ("chrysostom baptism") is BM25's strength.
+   Semantic search adds latency and cost (query embedding API call) with no benefit for structured
+   text lookup.
+
+### Approach: new `commentary_entries` table with tsvector/GIN
+
+Same pattern as `embeddings.tsv` + `idx_embeddings_fts`. Public data, no RLS, no vector column.
+Ingested from the same static JSON files the CDN serves.
+
+### Schema (migration 003)
+
+See `db/migrations/003_commentary_fts.sql`. Key points:
+- tsvector on `body` only (author/tradition are WHERE filters, not in the tsvector)
+- GIN index for `@@` queries
+- B-tree index on `(book, chapter, verse_start)` for passage browsing
+- UNIQUE index on `(book, chapter, verse_start, verse_end, author, source_title)` for idempotent ingestion
+
+### Ingestion script
+
+`src/ingest/ingest-commentary-fts.ts` — reads all 1,212 chapter JSON files from
+`web/public/commentaries/`, batch-inserts into `commentary_entries`.
+
+```
+DATABASE_URL=<owner-url> pnpm ingest:commentary-fts
+```
+
+- Reads the same JSON files the CDN serves — single source of truth
+- Batch INSERT (200 rows per transaction) via neon tagged template literals
+- Idempotent: `ON CONFLICT (natural key) DO NOTHING` — safe to re-run
+- Expected: ~371k rows, ~300 MB text + ~150 MB indexes ≈ 450 MB in Postgres
+
+### Search query function
+
+`web/src/lib/commentary-search.ts` — no `runAsUser` needed (public data, no RLS):
+
+```typescript
+export interface CommentarySearchResult {
+  id: number;
+  book: number;
+  chapter: number;
+  verse_start: number;
+  verse_end: number;
+  author: string;
+  year: number | null;
+  tradition: string | null;
+  source_title: string;
+  snippet: string;          // ts_headline highlighted excerpt
+  rank: number;
+}
+
+export async function searchCommentaries(opts: {
+  query: string;
+  book?: number;
+  tradition?: string;
+  author?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ results: CommentarySearchResult[]; total: number }>
+```
+
+SQL core (using `ts_rank_cd` + `websearch_to_tsquery`, same as `hybrid_search()`):
+
+```sql
+SELECT
+  id, book, chapter, verse_start, verse_end,
+  author, year, tradition, source_title,
+  ts_headline('english', body, query,
+    'MaxWords=50, MinWords=20, StartSel=<mark>, StopSel=</mark>') AS snippet,
+  ts_rank_cd(tsv, query) AS rank
+FROM commentary_entries, websearch_to_tsquery('english', $1) AS query
+WHERE tsv @@ query
+  AND ($2::smallint IS NULL OR book = $2)
+  AND ($3::text IS NULL OR tradition = $3)
+  AND ($4::text IS NULL OR author = $4)
+ORDER BY rank DESC
+LIMIT $5 OFFSET $6
+```
+
+`websearch_to_tsquery` handles natural language well: `chrysostom baptism` → AND semantics,
+`"iron sharpens"` → phrase match, `baptism OR immersion` → OR. No query sanitization needed.
+
+### API route
+
+`GET /api/search/commentaries?q=<query>&book=<num>&tradition=<str>&author=<str>&limit=<n>&offset=<n>`
+
+- Returns `{ results: CommentarySearchResult[], total: number }`
+- No auth required (public data)
+- Rate-limited by Vercel's edge (no custom rate limit needed at this scale)
+- `q` is required, all other params are optional filters
+- Default limit: 20, max: 100
+
+### UI: commentary library page
+
+Add a search input to the existing `library/commentaries/page.tsx`. Two modes:
+
+**Browse mode** (current behavior, default): book/chapter/author dropdowns, passage-by-passage view.
+
+**Search mode** (activated when user types in the search input): replaces the passage view with
+ranked search results. Each result shows:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  John Chrysostom · 407 · Patristic                         │
+│  Homilies on Matthew                                       │
+│  John 3:5                                                  │
+│                                                            │
+│  "...the water of <mark>baptism</mark> is the entrance     │
+│  to the kingdom, for unless one is born of water..."       │
+│                                                            │
+│  Open in reader →                                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+- Clicking "Open in reader" navigates to `/read/{bookSlug}/{chapter}` with the verse in view
+- Tradition/era badges use the same styling as the existing commentary panel
+- Facet chips above results: All / Patristic / Reformed / Methodist / Presbyterian / etc.
+  (derived from the result set's tradition values, not hardcoded)
+- Pagination at bottom (20 results per page)
+- Debounced search input (300ms) to avoid hammering the API on every keystroke
+
+### Files to create/modify
+
+| File | Action | What |
+|---|---|---|
+| `db/migrations/003_commentary_fts.sql` | Create | Table + indexes |
+| `src/ingest/ingest-commentary-fts.ts` | Create | JSON → Postgres batch insert |
+| `web/src/lib/commentary-search.ts` | Create | Search query function |
+| `web/src/app/api/search/commentaries/route.ts` | Create | GET endpoint |
+| `web/src/app/library/commentaries/page.tsx` | Modify | Add search input + results view |
+| `package.json` | Modify | Add `ingest:commentary-fts` script |
+
+### What this does NOT include (deferred)
+
+- **Omnibox integration** — NAVIGATION_AND_SEARCH.md §5 designs corpus search as the third omnibox
+  intent (after reference and topic). That wiring is a separate task. This proposal only adds the
+  search function and the library page surface.
+- **Verse text search** — searching Bible text across translations is a different feature (needs
+  `verses` table from SCHEMA.md, not built yet).
+- **Semantic/vector search** — BM25 keyword search first. If users need "passages about suffering"
+  (no keyword match), that's the hybrid search path via `embeddings` + DeepInfra — a later layer.
+- **User library search** — searching user's own notes/highlights. Different table, needs RLS.
+
+### To go live
+
+1. Run migration 003 against Neon as `neondb_owner`
+2. Run ingestion: `DATABASE_URL=<owner-url> pnpm ingest:commentary-fts`
+3. Deploy web/ to Vercel
+4. Verify search from `/library/commentaries`
+
 ## Needs Thomas
 
 1. **Note panel close on save (Task 6)**: visually confirm the panel closes after saving a note in the reader
 2. **Red highlighter "moving" (Task 7)**: reproduce in browser and confirm: (a) which element is "red" — pink dot? pink bg? something else? (b) what "moving" means — hover-following? scroll-floating? multi-line snap?
 3. **Text/highlight color separation (Task 7)**: review the schema + UX proposal above and approve/redirect before implementation
 4. ~~**SEC-2 closure (prod)**: re-apply APP_DATABASE_URL to prod, rotate neondb_owner password~~ **DONE** — APP_DATABASE_URL re-applied, neondb_owner password rotated, Vercel DATABASE_URL + DATABASE_URL_UNPOOLED updated, .env.local updated, deployed. Old password is invalid.
-5. **Fix A visual confirmation**: visit `/account/settings` — if `<AccountView>` loads and sign-out button is visible, Fix A works
+5. ~~**Fix A visual confirmation**~~ **Replaced by standalone logout** — verify sign-in/sign-out cycle works from the sidebar after deploy
+6. ~~**Full-text commentary search**~~ **Approved + implemented** — code complete, needs migration + ingestion run against Neon (see "To go live" above)
