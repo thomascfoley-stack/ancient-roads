@@ -3,6 +3,7 @@ import { AccountView } from '@neondatabase/auth/react';
 import { accountViewPaths } from '@neondatabase/auth/react/ui/server';
 import { requireUser } from '@/lib/session';
 
+export const dynamic = 'force-dynamic';
 export const dynamicParams = false;
 
 export function generateStaticParams() {
