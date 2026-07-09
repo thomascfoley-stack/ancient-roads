@@ -57,12 +57,100 @@ function EntryText({ text }: { text: string }) {
       {isLong && (
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="ml-1 text-xs font-medium text-amber-700 hover:text-amber-800"
+          className="ml-1 text-xs font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300"
         >
           {expanded ? 'less' : 'more'}
         </button>
       )}
     </>
+  );
+}
+
+function SearchResultCard({
+  result: r,
+  loadFullText,
+}: {
+  result: SearchResult;
+  loadFullText: (r: SearchResult) => Promise<string | null>;
+}) {
+  const [full, setFull] = useState<string | null>(null);
+  const [view, setView] = useState<'snippet' | 'loading' | 'full' | 'unavailable'>('snippet');
+
+  const b = BOOK_BY_NUM.get(r.book);
+  const passageLabel = b
+    ? `${b.name} ${r.chapter}:${verseLabel(r.verse_start, r.verse_end)}`
+    : `${r.book}:${r.chapter}:${r.verse_start}`;
+  const readerUrl = b ? `/read/${b.slug}/${r.chapter}` : '#';
+
+  async function expand() {
+    if (full) {
+      setView('full');
+      return;
+    }
+    setView('loading');
+    const text = await loadFullText(r);
+    if (text) {
+      setFull(text);
+      setView('full');
+    } else {
+      setView('unavailable');
+    }
+  }
+
+  return (
+    <article className="rounded-2xl bg-paper p-4 shadow-paper dark:bg-stone-800/60 dark:shadow-none">
+      <div className="mb-1 flex flex-wrap items-baseline gap-2">
+        <span className="text-sm font-medium text-stone-800 dark:text-stone-100">{r.author}</span>
+        {r.year != null && <span className="text-xs text-stone-400">{yearLabel(r.year)}</span>}
+        {r.tradition && (
+          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-stone-500 dark:bg-stone-700 dark:text-stone-400">
+            {r.tradition}
+          </span>
+        )}
+      </div>
+      <p className="mb-2 text-xs text-stone-400 dark:text-stone-500">
+        {passageLabel} · {r.source_title}
+      </p>
+      {view === 'full' && full ? (
+        <p className="whitespace-pre-line font-scripture text-[15px] leading-relaxed text-stone-700 dark:text-stone-300">
+          {full}
+        </p>
+      ) : (
+        <p
+          className="font-scripture text-sm leading-relaxed text-stone-600 dark:text-stone-300 [&_mark]:rounded-sm [&_mark]:bg-accent-100 [&_mark]:px-0.5 [&_mark]:text-accent-900 dark:[&_mark]:bg-accent-900/50 dark:[&_mark]:text-accent-200"
+          dangerouslySetInnerHTML={{ __html: r.snippet }}
+        />
+      )}
+      {view === 'unavailable' && (
+        <p className="mt-1 text-xs text-stone-400">
+          Full text isn&rsquo;t available here — open it in the reader.
+        </p>
+      )}
+      <div className="mt-1 flex flex-wrap items-center gap-x-5">
+        {view === 'full' ? (
+          <button
+            onClick={() => setView('snippet')}
+            className="inline-flex min-h-[44px] items-center text-xs font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300 dark:hover:text-accent-200"
+          >
+            Show less
+          </button>
+        ) : view !== 'unavailable' ? (
+          <button
+            onClick={expand}
+            disabled={view === 'loading'}
+            className="inline-flex min-h-[44px] items-center text-xs font-medium text-accent-700 hover:text-accent-800 disabled:opacity-50 dark:text-accent-300 dark:hover:text-accent-200"
+          >
+            {view === 'loading' ? 'Loading full text…' : 'Read full text'}
+          </button>
+        ) : null}
+        <Link
+          href={readerUrl}
+          className="inline-flex min-h-[44px] items-center text-xs font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300 dark:hover:text-accent-200"
+        >
+          Open in reader &rarr;
+        </Link>
+      </div>
+    </article>
   );
 }
 
@@ -132,8 +220,12 @@ export default function CommentariesPage() {
         return r.json();
       })
       .then((data: { results: SearchResult[]; total: number }) => {
-        setSearchResults(data.results);
         setSearchTotal(data.total);
+        setSearchResults((prev) => {
+          if (searchPage === 0) return data.results;
+          const seen = new Set(prev.map((r) => r.id));
+          return [...prev, ...data.results.filter((r) => !seen.has(r.id))];
+        });
       })
       .catch((err) => {
         setSearchError(err instanceof Error ? err.message : 'Search failed');
@@ -142,6 +234,29 @@ export default function CommentariesPage() {
       })
       .finally(() => setSearchLoading(false));
   }, [debouncedQuery, searchPage, traditionFilter]);
+
+  // Resolve a search hit to its full entry text from the static corpus files
+  // (same content the reader uses); cached per chapter.
+  const chapterCacheRef = useRef(new Map<string, CommentaryEntry[]>());
+  const loadFullText = useCallback(async (r: SearchResult): Promise<string | null> => {
+    const b = BOOK_BY_NUM.get(r.book);
+    if (!b) return null;
+    const key = `${b.slug}:${r.chapter}`;
+    let chapterEntries = chapterCacheRef.current.get(key);
+    if (!chapterEntries) {
+      const d = await fetchCommentary(b.slug, r.chapter);
+      chapterEntries = d?.entries ?? [];
+      chapterCacheRef.current.set(key, chapterEntries);
+    }
+    const hit =
+      chapterEntries.find(
+        (e) => e.author === r.author && e.verseStart === r.verse_start && e.verseEnd === r.verse_end,
+      ) ??
+      chapterEntries.find(
+        (e) => e.author === r.author && e.verseStart <= r.verse_start && r.verse_end <= e.verseEnd,
+      );
+    return hit?.text ?? null;
+  }, []);
 
   const traditions = useMemo(() => {
     const set = new Set<string>();
@@ -171,7 +286,6 @@ export default function CommentariesPage() {
   }, [entries]);
 
   const visible = authorFilter === 'all' ? grouped : grouped.filter((g) => g.author === authorFilter);
-  const totalPages = Math.ceil(searchTotal / PAGE_SIZE);
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6">
@@ -195,12 +309,12 @@ export default function CommentariesPage() {
           value={searchQuery}
           onChange={(e) => handleSearchInput(e.target.value)}
           placeholder="Search commentaries…"
-          className="w-full rounded-lg border border-stone-300 bg-white py-2.5 pl-10 pr-4 text-sm text-stone-800 shadow-sm outline-none placeholder:text-stone-400 focus:border-stone-500 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus:border-stone-400"
+          className="w-full rounded-xl bg-paper py-3 pl-10 pr-12 text-base text-stone-800 shadow-paper outline-none transition-shadow duration-200 ease-gentle placeholder:text-stone-400 focus:shadow-float sm:py-2.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
         />
         {searchQuery && (
           <button
             onClick={() => handleSearchInput('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-0.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+            className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-stone-400 hover:text-stone-600 active:bg-stone-200/60 dark:hover:text-stone-300 dark:active:bg-stone-700/60"
             aria-label="Clear search"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -218,10 +332,10 @@ export default function CommentariesPage() {
             <div className="mb-4 flex flex-wrap gap-1.5">
               <button
                 onClick={() => { setTraditionFilter(null); setSearchPage(0); }}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                className={`min-h-[44px] rounded-full px-4 text-[13px] font-medium transition-colors sm:min-h-0 sm:px-3 sm:py-1 sm:text-xs ${
                   !traditionFilter
-                    ? 'bg-stone-800 text-white dark:bg-stone-200 dark:text-stone-900'
-                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'
+                    ? 'bg-accent-700 text-stone-50 dark:bg-accent-400 dark:text-stone-950'
+                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'
                 }`}
               >
                 All
@@ -230,10 +344,10 @@ export default function CommentariesPage() {
                 <button
                   key={t}
                   onClick={() => { setTraditionFilter(traditionFilter === t ? null : t); setSearchPage(0); }}
-                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  className={`min-h-[44px] rounded-full px-4 text-[13px] font-medium transition-colors sm:min-h-0 sm:px-3 sm:py-1 sm:text-xs ${
                     traditionFilter === t
-                      ? 'bg-stone-800 text-white dark:bg-stone-200 dark:text-stone-900'
-                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'
+                      ? 'bg-accent-700 text-stone-50 dark:bg-accent-400 dark:text-stone-950'
+                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'
                   }`}
                 >
                   {t}
@@ -242,10 +356,10 @@ export default function CommentariesPage() {
             </div>
           )}
 
-          {searchLoading ? (
+          {searchLoading && searchResults.length === 0 ? (
             <p className="py-16 text-center text-sm text-stone-400">Searching…</p>
           ) : searchError ? (
-            <p className="py-16 text-center text-sm text-red-500">{searchError}</p>
+            <p className="py-16 text-center text-sm text-accent-700 dark:text-accent-300">{searchError}</p>
           ) : searchResults.length === 0 ? (
             <p className="py-16 text-center text-sm text-stone-400">
               No results for &ldquo;{debouncedQuery}&rdquo;
@@ -258,61 +372,20 @@ export default function CommentariesPage() {
               </p>
 
               <div className="space-y-3">
-                {searchResults.map((r) => {
-                  const b = BOOK_BY_NUM.get(r.book);
-                  const passageLabel = b
-                    ? `${b.name} ${r.chapter}:${verseLabel(r.verse_start, r.verse_end)}`
-                    : `${r.book}:${r.chapter}:${r.verse_start}`;
-                  const readerUrl = b ? `/read/${b.slug}/${r.chapter}` : '#';
-
-                  return (
-                    <article key={r.id} className="rounded-xl border border-stone-200 bg-white/60 p-4 shadow-sm dark:border-stone-700 dark:bg-stone-800/50">
-                      <div className="mb-1 flex flex-wrap items-baseline gap-2">
-                        <span className="text-sm font-medium text-stone-800 dark:text-stone-100">{r.author}</span>
-                        {r.year != null && <span className="text-xs text-stone-400">{yearLabel(r.year)}</span>}
-                        {r.tradition && (
-                          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-stone-500 dark:bg-stone-700 dark:text-stone-400">
-                            {r.tradition}
-                          </span>
-                        )}
-                      </div>
-                      <p className="mb-2 text-xs text-stone-400 dark:text-stone-500">
-                        {passageLabel} · {r.source_title}
-                      </p>
-                      <p
-                        className="font-scripture text-sm leading-relaxed text-stone-600 dark:text-stone-300 [&_mark]:rounded-sm [&_mark]:bg-amber-200/70 [&_mark]:px-0.5 [&_mark]:text-amber-900 dark:[&_mark]:bg-amber-700/40 dark:[&_mark]:text-amber-200"
-                        dangerouslySetInnerHTML={{ __html: r.snippet }}
-                      />
-                      <Link
-                        href={readerUrl}
-                        className="mt-2 inline-block text-xs font-medium text-amber-700 hover:text-amber-800 dark:text-amber-500 dark:hover:text-amber-400"
-                      >
-                        Open in reader &rarr;
-                      </Link>
-                    </article>
-                  );
-                })}
+                {searchResults.map((r) => (
+                  <SearchResultCard key={r.id} result={r} loadFullText={loadFullText} />
+                ))}
               </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="mt-6 flex items-center justify-center gap-2">
+              {/* Load more (append) */}
+              {searchResults.length < searchTotal && (
+                <div className="mt-6 flex justify-center">
                   <button
-                    onClick={() => setSearchPage((p) => Math.max(0, p - 1))}
-                    disabled={searchPage === 0}
-                    className="rounded-md border border-stone-300 px-3 py-1.5 text-xs text-stone-600 hover:bg-stone-100 disabled:opacity-40 dark:border-stone-600 dark:text-stone-400 dark:hover:bg-stone-800"
+                    onClick={() => setSearchPage((p) => p + 1)}
+                    disabled={searchLoading}
+                    className="min-h-[44px] rounded-full bg-paper px-6 text-sm font-medium text-stone-600 shadow-paper transition-all duration-200 ease-gentle hover:text-accent-800 hover:shadow-float active:bg-stone-100 disabled:opacity-40 dark:bg-stone-800 dark:text-stone-300 dark:shadow-none"
                   >
-                    Previous
-                  </button>
-                  <span className="text-xs text-stone-500 dark:text-stone-400">
-                    {searchPage + 1} of {totalPages}
-                  </span>
-                  <button
-                    onClick={() => setSearchPage((p) => Math.min(totalPages - 1, p + 1))}
-                    disabled={searchPage >= totalPages - 1}
-                    className="rounded-md border border-stone-300 px-3 py-1.5 text-xs text-stone-600 hover:bg-stone-100 disabled:opacity-40 dark:border-stone-600 dark:text-stone-400 dark:hover:bg-stone-800"
-                  >
-                    Next
+                    {searchLoading ? 'Loading…' : `Load more (${searchResults.length} of ${searchTotal})`}
                   </button>
                 </div>
               )}
@@ -330,7 +403,7 @@ export default function CommentariesPage() {
                 setBookSlug(e.target.value);
                 setChapter(1);
               }}
-              className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm text-stone-800 shadow-sm outline-none focus:border-stone-500 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100"
+              className="min-h-[44px] max-w-full rounded-xl bg-paper px-3 text-base text-stone-800 shadow-paper outline-none sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:shadow-none"
             >
               <optgroup label="Old Testament">
                 {BOOKS.filter((b) => b.testament === 'OT').map((b) => (
@@ -347,7 +420,7 @@ export default function CommentariesPage() {
             <select
               value={chapter}
               onChange={(e) => setChapter(Number(e.target.value))}
-              className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm text-stone-800 shadow-sm outline-none focus:border-stone-500 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100"
+              className="min-h-[44px] max-w-full rounded-xl bg-paper px-3 text-base text-stone-800 shadow-paper outline-none sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:shadow-none"
             >
               {Array.from({ length: book.chapterCount }, (_, i) => i + 1).map((c) => (
                 <option key={c} value={c}>
@@ -360,7 +433,7 @@ export default function CommentariesPage() {
               <select
                 value={authorFilter}
                 onChange={(e) => setAuthorFilter(e.target.value)}
-                className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm text-stone-800 shadow-sm outline-none focus:border-stone-500 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100"
+                className="min-h-[44px] max-w-full rounded-xl bg-paper px-3 text-base text-stone-800 shadow-paper outline-none sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:shadow-none"
               >
                 <option value="all">All sources ({grouped.length})</option>
                 {grouped.map((g) => (
@@ -371,7 +444,7 @@ export default function CommentariesPage() {
 
             <Link
               href={`/read/${bookSlug}/${chapter}`}
-              className="ml-auto rounded-full bg-white px-3 py-1.5 text-xs font-medium text-stone-600 shadow-sm hover:bg-stone-100 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+              className="ml-auto inline-flex min-h-[44px] items-center rounded-full bg-paper px-4 text-xs font-medium text-stone-600 shadow-paper hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700 dark:shadow-none"
             >
               Open in reader &rarr;
             </Link>
@@ -386,8 +459,8 @@ export default function CommentariesPage() {
           ) : (
             <div className="space-y-8">
               {visible.map((g) => (
-                <article key={g.author} className="rounded-2xl border border-stone-200 bg-white/60 p-5 shadow-sm dark:border-stone-700 dark:bg-stone-800/50">
-                  <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b border-stone-100 pb-3 dark:border-stone-700">
+                <article key={g.author} className="rounded-2xl bg-paper p-5 shadow-paper dark:bg-stone-800/60 dark:shadow-none">
+                  <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b border-stone-200/60 pb-3 dark:border-stone-700/60">
                     <h2 className="font-scripture text-xl font-medium text-stone-800 dark:text-stone-100">{g.author}</h2>
                     {g.year != null && <span className="text-xs text-stone-400">{yearLabel(g.year)}</span>}
                     <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-stone-500 dark:bg-stone-700 dark:text-stone-400">
@@ -398,7 +471,7 @@ export default function CommentariesPage() {
                   <div className="space-y-3">
                     {g.notes.map((n, i) => (
                       <p key={i} className="font-scripture text-[15px] leading-relaxed text-stone-700 dark:text-stone-300">
-                        <span className="mr-2 select-none font-sans text-xs font-semibold text-amber-600/80">
+                        <span className="mr-2 select-none font-sans text-xs font-semibold text-accent-600/80 dark:text-accent-300/80">
                           {n.verseStart === n.verseEnd ? `v${n.verseStart}` : `v${n.verseStart}–${n.verseEnd}`}
                         </span>
                         <EntryText text={n.text} />
@@ -412,7 +485,7 @@ export default function CommentariesPage() {
         </>
       )}
 
-      <p className="mt-12 border-t border-stone-100 pt-6 text-center font-scripture text-sm italic text-stone-400 dark:border-stone-800">
+      <p className="mt-12 border-t border-stone-200/60 pt-6 text-center font-scripture text-sm italic text-stone-400 dark:border-stone-800">
         These are the words of men. Open your Bible and pray on it.
       </p>
     </div>
