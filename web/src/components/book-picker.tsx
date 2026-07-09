@@ -33,21 +33,21 @@ export function BookPicker({
       (_, i) => i + 1,
     );
     return (
-      <div className="fixed inset-0 z-50 bg-stone-50/95 backdrop-blur-sm overflow-auto dark:bg-stone-950/95">
+      <div className="fixed inset-0 z-50 overflow-auto overscroll-contain bg-stone-50/97 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] backdrop-blur-sm dark:bg-stone-950/97">
         <div className="mx-auto max-w-lg px-4 py-6">
           <div className="flex items-center justify-between mb-6">
             <button
               onClick={() => setStage('book')}
-              className="text-sm text-stone-500 hover:text-stone-800"
+              className="inline-flex min-h-[44px] items-center rounded-lg px-2 text-sm text-stone-500 hover:text-stone-800 active:bg-stone-200/60 dark:hover:text-stone-200"
             >
               &larr; Books
             </button>
-            <h2 className="text-lg font-semibold text-stone-800">
+            <h2 className="font-display text-lg font-semibold text-stone-800 dark:text-stone-100">
               {selectedBook.name}
             </h2>
             <button
               onClick={onClose}
-              className="text-sm text-stone-500 hover:text-stone-800"
+              className="inline-flex min-h-[44px] items-center rounded-lg px-2 text-sm text-stone-500 hover:text-stone-800 active:bg-stone-200/60 dark:hover:text-stone-200"
             >
               Close
             </button>
@@ -58,10 +58,10 @@ export function BookPicker({
                 key={c}
                 href={bookUrl(selectedBook, c)}
                 onClick={onClose}
-                className={`flex h-11 items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+                className={`flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-colors ${
                   selectedBook.slug === currentBook.slug && c === currentChapter
-                    ? 'bg-stone-800 text-white'
-                    : 'bg-white text-stone-700 hover:bg-stone-100 shadow-sm'
+                    ? 'bg-accent-700 text-stone-50 dark:bg-accent-500'
+                    : 'bg-paper text-stone-700 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:shadow-none'
                 }`}
               >
                 {c}
@@ -74,19 +74,19 @@ export function BookPicker({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-stone-50/95 backdrop-blur-sm overflow-auto">
+    <div className="fixed inset-0 z-50 overflow-auto overscroll-contain bg-stone-50/97 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] backdrop-blur-sm dark:bg-stone-950/97">
       <div className="mx-auto max-w-lg px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => setSort(sort === 'canonical' ? 'alpha' : 'canonical')}
-            className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-stone-600 shadow-sm hover:bg-stone-100"
+            className="inline-flex min-h-[44px] items-center rounded-full bg-paper px-4 text-xs font-medium text-stone-600 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:shadow-none"
           >
             {sort === 'canonical' ? 'A–Z' : '1–66'}
           </button>
-          <h2 className="text-lg font-semibold text-stone-800">Books</h2>
+          <h2 className="font-display text-lg font-semibold text-stone-800 dark:text-stone-100">Books</h2>
           <button
             onClick={onClose}
-            className="text-sm text-stone-500 hover:text-stone-800"
+            className="inline-flex min-h-[44px] items-center rounded-lg px-2 text-sm text-stone-500 hover:text-stone-800 active:bg-stone-200/60 dark:hover:text-stone-200"
           >
             Close
           </button>
@@ -143,10 +143,10 @@ function BookSection({
               <Link
                 key={b.slug}
                 href={bookUrl(b, 1)}
-                className={`rounded-lg px-2 py-2 text-center text-sm transition-colors ${
+                className={`flex min-h-[48px] items-center justify-center rounded-xl px-2 py-2 text-center text-sm transition-colors ${
                   b.slug === currentSlug
-                    ? 'bg-stone-800 text-white'
-                    : 'bg-white text-stone-700 hover:bg-stone-100 shadow-sm'
+                    ? 'bg-accent-700 text-stone-50 dark:bg-accent-500'
+                    : 'bg-paper text-stone-700 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:shadow-none'
                 }`}
               >
                 {b.name}
@@ -157,10 +157,10 @@ function BookSection({
             <button
               key={b.slug}
               onClick={() => onSelect(b)}
-              className={`rounded-lg px-2 py-2 text-center text-sm transition-colors ${
+              className={`flex min-h-[48px] items-center justify-center rounded-xl px-2 py-2 text-center text-sm transition-colors ${
                 b.slug === currentSlug
-                  ? 'bg-stone-800 text-white'
-                  : 'bg-white text-stone-700 hover:bg-stone-100 shadow-sm'
+                  ? 'bg-accent-700 text-stone-50 dark:bg-accent-500'
+                  : 'bg-paper text-stone-700 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:shadow-none'
               }`}
             >
               {b.name}

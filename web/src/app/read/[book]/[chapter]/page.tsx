@@ -182,7 +182,7 @@ export default function ReaderPage() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-dvh items-center justify-center">
         <p className="text-lg text-stone-500 dark:text-stone-400">{error}</p>
       </div>
     );

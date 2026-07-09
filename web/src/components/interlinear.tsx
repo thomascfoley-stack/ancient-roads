@@ -30,7 +30,7 @@ export function Interlinear({
       <div className="space-y-5">
         {verseNums.map((v) => (
           <div key={v} className="flex gap-2">
-            <span className="mt-1.5 shrink-0 select-none font-sans text-[11px] font-semibold text-amber-600/70">
+            <span className="mt-1.5 shrink-0 select-none font-sans text-[11px] font-semibold text-accent-600/80 dark:text-accent-300/80">
               {v}
             </span>
             <div
@@ -41,10 +41,10 @@ export function Interlinear({
                 <button
                   key={i}
                   onClick={() => onWordClick(word, v, i)}
-                  className="group flex flex-col items-center rounded-md px-1.5 py-1 text-center transition-colors hover:bg-amber-50 dark:hover:bg-amber-500/10"
+                  className="group flex min-h-[44px] flex-col items-center justify-center rounded-md px-1.5 py-1 text-center transition-colors hover:bg-accent-50/70 active:bg-accent-50 dark:hover:bg-accent-950/30"
                   title={word.s}
                 >
-                  <span className="font-scripture text-xl leading-tight text-stone-900 group-hover:text-amber-900 dark:text-stone-100 dark:group-hover:text-amber-300">
+                  <span className="font-scripture text-xl leading-tight text-stone-900 group-hover:text-accent-800 dark:text-stone-100 dark:group-hover:text-accent-300">
                     {word.w}
                   </span>
                   <span className="mt-0.5 text-[10px] leading-tight text-stone-400 dark:text-stone-500" dir="ltr">

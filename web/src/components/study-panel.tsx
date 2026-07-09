@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { CommentaryEntry } from '@/lib/bible';
 import { HIGHLIGHT_COLORS } from '@/lib/highlight-colors';
 import { fetchLexEntry, decodeMorph, type OWord, type LexEntry } from '@/lib/original';
+import { useDragDismiss } from '@/lib/use-drag-dismiss';
 import {
   eraLabel,
   pickDiverse,
@@ -47,6 +48,7 @@ export function StudyPanel({
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<StudyTab>(defaultTab);
+  const drag = useDragDismiss(onClose);
 
   useEffect(() => setTab(defaultTab), [defaultTab, verseNum]);
 
@@ -77,9 +79,16 @@ export function StudyPanel({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="flex max-h-[88vh] w-full max-w-2xl flex-col rounded-t-2xl bg-white shadow-2xl animate-slide-up dark:bg-stone-900">
+      <div
+        className="flex max-h-[88dvh] w-full max-w-2xl flex-col rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] shadow-deep animate-slide-up dark:bg-stone-900"
+        style={drag.style}
+      >
+        {/* Grab handle (drag down to dismiss) */}
+        <div aria-hidden className="flex justify-center pt-2.5" {...drag.handleProps}>
+          <span className="h-1.5 w-10 rounded-full bg-stone-300/80 dark:bg-stone-700" />
+        </div>
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-stone-100 px-5 py-3.5 dark:border-stone-800">
+        <div className="flex items-center justify-between border-b border-stone-200/60 px-5 py-3 dark:border-stone-800" {...drag.handleProps}>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">{reference}</p>
             <p className="mt-0.5 line-clamp-2 max-w-md font-scripture text-sm italic leading-snug text-stone-600 dark:text-stone-400">
@@ -88,7 +97,7 @@ export function StudyPanel({
           </div>
           <button
             onClick={onClose}
-            className="rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600 active:bg-stone-100 dark:hover:bg-stone-800"
             aria-label="Close"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -101,14 +110,14 @@ export function StudyPanel({
         <HighlightRow annotation={annotation} />
 
         {/* Tabs */}
-        <div className="flex gap-1 border-b border-stone-100 px-4 dark:border-stone-800">
+        <div className="flex gap-1 border-b border-stone-200/60 px-4 dark:border-stone-800">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => selectTab(t.id)}
-              className={`relative px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={`relative min-h-[44px] px-3.5 py-2.5 text-sm font-medium transition-colors ${
                 tab === t.id
-                  ? 'text-amber-700 dark:text-amber-500'
+                  ? 'text-accent-700 dark:text-accent-300'
                   : 'text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200'
               }`}
             >
@@ -117,7 +126,7 @@ export function StudyPanel({
                 <span className="ml-1 text-[10px] text-stone-400">{entries.length}</span>
               )}
               {tab === t.id && (
-                <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-amber-600" />
+                <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-accent-600 dark:bg-accent-400" />
               )}
             </button>
           ))}
@@ -130,7 +139,7 @@ export function StudyPanel({
           {tab === 'notes' && <NotesTab annotation={annotation} />}
         </div>
 
-        <div className="border-t border-stone-100 px-5 py-3 text-center dark:border-stone-800">
+        <div className="border-t border-stone-200/60 px-5 py-3 text-center dark:border-stone-800">
           <p className="font-scripture text-xs italic text-stone-400">
             These are the words of men. Open your Bible and pray on it.
           </p>
@@ -144,30 +153,34 @@ function HighlightRow({ annotation }: { annotation: AnnotationControls }) {
   if (!annotation.signedIn) {
     return (
       <div className="border-b border-stone-100 px-5 py-2.5 dark:border-stone-800">
-        <Link href="/auth/sign-in" className="text-xs font-medium text-amber-700 hover:text-amber-800">
+        <Link href="/auth/sign-in" className="inline-flex min-h-[44px] items-center text-xs font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300">
           Sign in to highlight and save notes to your account →
         </Link>
       </div>
     );
   }
   return (
-    <div className="flex items-center gap-2 border-b border-stone-100 px-5 py-2.5 dark:border-stone-800">
+    <div className="flex items-center gap-2 border-b border-stone-200/60 px-5 py-1 dark:border-stone-800">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">Highlight</span>
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-0.5">
         {HIGHLIGHT_COLORS.map((c) => (
           <button
             key={c.id}
             onClick={() => annotation.onSetHighlight(c.id)}
             aria-label={`Highlight ${c.id}`}
-            className={`h-6 w-6 rounded-full ${c.dot} ring-2 transition-transform hover:scale-110 ${
-              annotation.color === c.id ? 'ring-stone-700 dark:ring-stone-200' : 'ring-transparent'
-            }`}
-          />
+            className="flex h-11 w-11 items-center justify-center rounded-full active:bg-stone-100 dark:active:bg-stone-800"
+          >
+            <span
+              className={`h-7 w-7 rounded-full ${c.dot} ring-2 transition-transform hover:scale-110 ${
+                annotation.color === c.id ? 'ring-stone-700 dark:ring-stone-200' : 'ring-transparent'
+              }`}
+            />
+          </button>
         ))}
         {annotation.color && (
           <button
             onClick={annotation.onClearHighlight}
-            className="ml-1 text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+            className="ml-1 min-h-[44px] px-2 text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
           >
             clear
           </button>
@@ -257,10 +270,10 @@ function WordRow({ word, lang, defaultOpen = false }: { word: OWord; lang: 'hebr
   const morph = decodeMorph(word.m, lang);
 
   return (
-    <div className="border-b border-stone-100 last:border-0 dark:border-stone-800/70">
+    <div className="border-b border-stone-200/50 last:border-0 dark:border-stone-800/70">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-3 px-2 py-2.5 text-left transition-colors hover:bg-amber-50/60 dark:hover:bg-amber-500/10"
+        className="flex min-h-[48px] w-full items-center gap-3 px-2 py-2.5 text-left transition-colors hover:bg-accent-50/60 active:bg-accent-50/80 dark:hover:bg-accent-950/30"
       >
         <span dir={rtl ? 'rtl' : 'ltr'} className="font-scripture text-xl text-stone-900 dark:text-stone-100">
           {word.w}
@@ -309,7 +322,7 @@ function NotesTab({ annotation }: { annotation: AnnotationControls }) {
         <p className="mb-3 text-sm text-stone-500 dark:text-stone-400">Save notes to your account.</p>
         <Link
           href="/auth/sign-in"
-          className="rounded-full bg-stone-800 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
+          className="inline-flex min-h-[44px] items-center rounded-full bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 dark:bg-accent-500 dark:hover:bg-accent-400"
         >
           Sign in
         </Link>
@@ -324,13 +337,13 @@ function NotesTab({ annotation }: { annotation: AnnotationControls }) {
         onChange={(e) => setText(e.target.value)}
         placeholder="Write a note on this verse…"
         rows={6}
-        className="w-full resize-y rounded-lg border border-stone-200 bg-stone-50/50 px-3 py-2 text-sm text-stone-800 outline-none placeholder:text-stone-400 focus:border-stone-400 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
+        className="w-full resize-y rounded-xl bg-stone-100/80 px-3 py-2.5 text-base text-stone-800 outline-none placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
       />
       <div className="mt-2 flex items-center gap-2">
         <button
           onClick={() => annotation.onSaveNote(text)}
           disabled={!text.trim()}
-          className="rounded-md bg-stone-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-40"
+          className="min-h-[44px] rounded-full bg-accent-700 px-4 text-xs font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 disabled:opacity-40 dark:bg-accent-500 dark:hover:bg-accent-400"
         >
           Save note
         </button>
@@ -340,7 +353,7 @@ function NotesTab({ annotation }: { annotation: AnnotationControls }) {
               annotation.onDeleteNote();
               setText('');
             }}
-            className="text-xs text-stone-400 hover:text-red-600"
+            className="min-h-[44px] px-2 text-xs text-stone-400 hover:text-accent-700 dark:hover:text-accent-300"
           >
             Delete
           </button>

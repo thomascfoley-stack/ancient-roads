@@ -65,7 +65,7 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
   const displayText = isLong && !expanded ? entry.text.slice(0, 600).replace(/\s+\S*$/, '') + '...' : entry.text;
 
   return (
-    <div className="rounded-xl bg-stone-50/80 px-4 py-3.5 dark:bg-stone-800/50">
+    <div className="rounded-xl bg-stone-100/80 px-4 py-3.5 dark:bg-stone-800/50">
       <div className="flex items-baseline gap-2 mb-2 flex-wrap">
         <span className="font-semibold text-stone-800 text-sm dark:text-stone-100">
           {entry.author}
@@ -87,7 +87,7 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
       {isLong && (
         <button
           onClick={() => setExpanded(!expanded)}
-          className="mt-2 text-xs font-medium text-amber-700 hover:text-amber-800"
+          className="mt-2 inline-flex min-h-[36px] items-center text-xs font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300"
         >
           {expanded ? 'Show less' : 'Read more'}
         </button>
@@ -152,15 +152,15 @@ export function CommentaryPanel({
     >
       <div
         ref={panelRef}
-        className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-t-2xl bg-white shadow-2xl animate-slide-up dark:bg-stone-900"
+        className="w-full max-w-2xl max-h-[85dvh] overflow-y-auto overscroll-contain rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] shadow-deep animate-slide-up dark:bg-stone-900"
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-stone-100 bg-white/95 px-5 py-4 backdrop-blur-sm dark:border-stone-800 dark:bg-stone-900/95">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-stone-200/60 bg-paper/95 px-5 py-4 backdrop-blur-sm dark:border-stone-800 dark:bg-stone-900/95">
           <h2 className="text-sm font-semibold text-stone-800 dark:text-stone-100">
-            Ancient Roads
+            Ancient Paths
           </h2>
           <button
             onClick={onClose}
-            className="rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600 active:bg-stone-100 transition-colors"
             aria-label="Close"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -234,7 +234,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
       <div className="border-b border-stone-100 bg-white px-5 py-3 dark:border-stone-800 dark:bg-stone-900">
         <Link
           href="/auth/sign-in"
-          className="text-xs font-medium text-amber-700 hover:text-amber-800"
+          className="inline-flex min-h-[44px] items-center text-xs font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300"
         >
           Sign in to highlight this verse and save notes to your account →
         </Link>
@@ -280,7 +280,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
             onFocus={() => setEditingNote(true)}
             placeholder="Write a note on this verse…"
             rows={3}
-            className="w-full resize-y rounded-lg border border-stone-200 bg-stone-50/50 px-3 py-2 text-sm text-stone-800 outline-none placeholder:text-stone-400 focus:border-stone-400"
+            className="w-full resize-y rounded-xl bg-stone-100/80 px-3 py-2.5 text-base text-stone-800 outline-none placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
           />
           <div className="mt-1.5 flex items-center gap-2">
             <button
@@ -289,7 +289,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
                 setEditingNote(false);
               }}
               disabled={!noteText.trim()}
-              className="rounded-md bg-stone-800 px-3 py-1 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-40"
+              className="min-h-[44px] rounded-full bg-accent-700 px-4 text-xs font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 disabled:opacity-40 dark:bg-accent-500 dark:hover:bg-accent-400"
             >
               Save note
             </button>
@@ -300,7 +300,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
                   setNoteText('');
                   setEditingNote(false);
                 }}
-                className="text-xs text-stone-400 hover:text-red-600"
+                className="min-h-[44px] px-2 text-xs text-stone-400 hover:text-accent-700 dark:hover:text-accent-300"
               >
                 Delete
               </button>
@@ -310,7 +310,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
       ) : (
         <button
           onClick={() => setEditingNote(true)}
-          className="text-xs font-medium text-amber-700 hover:text-amber-800"
+          className="inline-flex min-h-[44px] items-center text-xs font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300"
         >
           + Add a note
         </button>
