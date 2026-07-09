@@ -181,7 +181,7 @@ describe('V1 verifier: interpretation screens', () => {
     const r = validResponse();
     (r.blocks[0] as any).text = 'The Bible clearly teaches that drunkenness is forbidden.';
     const result = await verifyV1(r, corpus, retrieval);
-    expect(violations(result).some((v) => v.check.startsWith('screen:'))).toBe(true);
+    expect(violations(result).some((v) => v.check === 'screen:I1')).toBe(true);
   });
 
   it('rejects directive prayer prompts (I3)', async () => {

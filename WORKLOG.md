@@ -10,37 +10,54 @@ Working through prioritized task list. Tree is clean on `main`.
 
 ### Diagnosis: PRE-EXISTING (not caused by SEC-2 flip)
 
-**Evidence chain:**
+**Evidence that SEC-2 is not involved:**
 
-1. **Auth is 100% HTTP-based, zero database involvement.** The middleware (`web/src/middleware.ts`)
-   calls `getAuth().middleware()` which validates sessions by HTTP `fetch` to `NEON_AUTH_BASE_URL`
-   (Neon's hosted auth service). It checks for `__Secure-neon-auth.session_token` cookie → fetches
-   `/get-session` from the auth service → allows or redirects. Neither `DATABASE_URL` nor
-   `APP_DATABASE_URL` is used anywhere in this flow.
+1. Auth is 100% HTTP-based, zero database involvement. Neither `DATABASE_URL` nor `APP_DATABASE_URL`
+   participates in session validation.
+2. `app_runtime` has full DML on ALL tables — no grant could be missing.
 
-2. **`app_runtime` has full DML on ALL tables** (`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES
-   IN SCHEMA public`). Even if auth somehow queried the app database (it doesn't), no table would
-   be denied.
+**Root cause — middleware vs. API route session validation divergence:**
 
-3. **Zero `signOut`/`logout` code in the app.** `grep -rn 'signOut\|logout' web/src/` returns
-   nothing. The `SignOut` component exists in `@neondatabase/auth/react` but is only rendered inside
-   `<AccountView>` — so if the account page itself can't load (middleware redirect), there's no way
-   to sign out.
+The `@neondatabase/auth` library validates sessions via two different code paths that behave differently:
 
-4. **The account page renders `<AccountView>` from `@neondatabase/auth/react` (beta).** The
-   redirect-to-login means the middleware's session validation is failing, likely because:
-   - Session cookie domain/path mismatch (Vercel Deployment Protection may interfere)
-   - `NEON_AUTH_BASE_URL` returning errors on `get-session`
-   - `@neondatabase/auth` beta bugs (this library pins better-auth 1.4.18 with 2 critical + 7 high CVEs — SEC-1)
+- **API routes** (`requireUser()` → `getAuth().getSession()`, `server/index.mjs:892`): Reads
+  cookies via Next.js `cookies()` API. Checks the local `session_data` JWT cookie first (signed,
+  validated locally with `cookieSecret` — zero HTTP calls). If valid AND `session_token` cookie
+  exists → returns cached session immediately. **This is why annotations work.**
 
-5. **Cannot reproduce on staging via CLI.** This is a browser cookie/session issue — requires a real
-   browser behind the SSO wall. The code analysis is conclusive: no database path is involved.
+- **Middleware** (`getAuth().middleware()`, `server/index.mjs:1500`): Reads cookies from
+  `request.headers.get("cookie")` in Edge Runtime. Also tries the JWT cache via `trySessionCache`,
+  but if the `session_data` cookie is expired (5-minute TTL default) or absent, it falls back to
+  `fetchSessionWithCookie(sessionTokenCookie, baseUrl)` — an HTTP call from Edge Runtime to
+  `NEON_AUTH_BASE_URL`. If this HTTP call fails (network, timeout, auth service error), `sessionData`
+  stays `{ session: null, user: null }` → `checkSessionRequired` returns `allowed: false` →
+  redirect to `/auth/sign-in`.
 
-### Action taken
+The symptom — annotations work but `/account` redirects — is explained by the JWT cache being warm
+for API routes (5-minute TTL, frequently refreshed by annotation calls) but cold or failing for the
+middleware's HTTP fallback. Vercel Deployment Protection adds another layer that can interfere with
+Edge→auth-service networking.
 
-- Logged in ROADMAP.md under "Auth (login / account)" as a pre-existing issue tied to SEC-1/auth-completion
-- No migration or grant fix needed — this is a Neon Auth configuration or beta-library issue
-- Will be resolved when SEC-1 auth migration to Better Auth-direct happens
+**Logout is unreachable as a consequence:** `SignOut` only renders inside `<AccountView>` (from
+`@neondatabase/auth/react`). The account page can't load → no signout button → no logout path.
+The `NeonAuthUIProvider` wrapper IS already in `layout.tsx` — that's not the fix.
+
+### Proposed fixes (ranked)
+
+**Fix A — Short-term (unblocks logout now):** Move `/account` out of middleware protection. Remove
+`/account/:path*` from the middleware matcher. Add `requireUser()` guard in the account page's
+server component (same path that works for annotations). The account page loads, `<AccountView>`
+renders, logout becomes reachable.
+
+**Fix B — Medium-term (debug the middleware):** Add structured logging to the middleware to capture:
+does the session cookie arrive? Does `trySessionCache` find the JWT? Does the HTTP call to the auth
+service succeed? This identifies the exact failure point but doesn't fix logout.
+
+**Fix C — Long-term (SEC-1):** Migrate to Better Auth direct, removing the `@neondatabase/auth`
+beta library entirely. This eliminates the middleware/API divergence, the CVEs, and the dependency
+on the Neon Auth HTTP service.
+
+**Recommendation:** Fix A first (10-minute change, unblocks logout), then Fix C on the SEC-1 timeline.
 
 ## Task 2: V1 verifier reject-path tests
 
