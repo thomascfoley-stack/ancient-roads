@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { authClient } from '@/lib/auth/client';
 
 interface Channel {
   id: string;
@@ -28,6 +29,7 @@ const PERSONA_LABELS: Record<string, string> = {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = authClient.useSession();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [chats, setChats] = useState<Chat[]>([]);
   const [collapsed, setCollapsed] = useState(false);
@@ -123,12 +125,23 @@ export function Sidebar() {
             label="Reader"
             active={pathname.startsWith('/read')}
           />
-          <SidebarLink
-            href="/auth/sign-in"
-            icon={<UserIcon />}
-            label="Account"
-            active={pathname.startsWith('/auth') || pathname.startsWith('/account')}
-          />
+          {session?.user ? (
+            <SidebarButton
+              icon={<LogOutIcon />}
+              label="Sign out"
+              onClick={async () => {
+                await fetch('/api/auth/sign-out', { method: 'POST' });
+                window.location.href = '/';
+              }}
+            />
+          ) : (
+            <SidebarLink
+              href="/auth/sign-in"
+              icon={<UserIcon />}
+              label="Sign in"
+              active={pathname.startsWith('/auth')}
+            />
+          )}
         </div>
 
         {/* Channels */}
@@ -348,6 +361,34 @@ function UploadIcon() {
   return (
     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+    </svg>
+  );
+}
+
+function SidebarButton({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-800 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200"
+    >
+      <span className="flex w-4 items-center justify-center text-sm">{icon}</span>
+      <span className="flex-1 truncate text-left">{label}</span>
+    </button>
+  );
+}
+
+function LogOutIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
     </svg>
   );
 }
