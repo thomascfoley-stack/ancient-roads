@@ -1,7 +1,24 @@
-import type { RetrievedChunk } from './retrieve';
+// The composer's behavioural spec (PRINCIPLES I1-I6/C1/G1 + the extractive rules).
+// This file is kept BYTE-IDENTICAL between the CLI (src/teacher/prompt.ts) and the
+// web app (web/src/lib/teacher/prompt.ts) by test/web-core-sync.test.ts — prompt
+// drift means proving one thing and shipping another. It deliberately imports no
+// package-specific type: `PromptSource` is a local structural shape that both
+// RankedRow (CLI) and RetrievedChunk (web) satisfy, which is what lets the two
+// copies stay identical. Change one, copy to the other, or the guard fails.
 
-// The composer's spec-encoding prompt. Kept in lockstep with the CLI reference
-// (src/teacher/prompt.ts) — behaviour must not drift between the two entrypoints.
+// Minimal shape buildUserPrompt reads; RankedRow and RetrievedChunk both satisfy it.
+interface PromptSource {
+  score: number;
+  content: string;
+  metadata: {
+    author: string;
+    sourceTitle: string;
+    tradition: string | null;
+    verseId: number;
+    verseEnd: number;
+  };
+}
+
 export function buildSystemPrompt(): string {
   return `/no_think
 You are a theology study assistant. You report what others have said. You NEVER interpret scripture, and you cite everything.
@@ -53,7 +70,7 @@ Each retrieved source has a section_id provided in the context. Use that exact I
 Order voice blocks to present different perspectives, not to argue toward a conclusion.`;
 }
 
-export function buildUserPrompt(query: string, results: RetrievedChunk[]): string {
+export function buildUserPrompt(query: string, results: PromptSource[]): string {
   const sources = results.map((r, i) => {
     const sectionId = i + 1;
     return `--- SOURCE ${sectionId} ---

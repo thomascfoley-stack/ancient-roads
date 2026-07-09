@@ -33,14 +33,20 @@
   HNSW tuning (the HNSW index already exists at default params) + hybrid/rerank are
   parked until dogfooding justifies them.
 
-**Deferred cosmetic nits (non-blocking, from the merge /audit):**
-- `/ask` passage-range label (`ask-client.tsx`) is approximate for cross-chapter ranges
-  (shows only the trailing number of the end ref). Cosmetic; fix when labels matter.
-- Authed `/api/ask` has no per-user rate limit — a cost concern under abuse, not a
-  security hole for single-user dogfooding. Add a limiter before multi-user.
-- CLI-only `createPgStore` uses `ssl.rejectUnauthorized:false` (offline ingest only; the
-  web runtime uses the neon serverless driver over verified HTTPS). Tighten to
-  `sslmode=verify-full`/pinned CA when convenient.
+**Audit follow-ups (post-merge):**
+- Fixed embedder retry (no backoff after the final attempt; `e instanceof TypeError`
+  for network errors) + corrected the HNSW docs.
+- **Prompt is now sync-guarded.** `src/teacher/prompt.ts` ↔ `web/src/lib/teacher/prompt.ts`
+  are byte-identical and enforced by `test/web-core-sync.test.ts` (prompt.ts refactored to
+  a local structural `PromptSource` type so neither copy imports a package-specific one —
+  that's what lets them stay identical). The composer's behavioural spec can no longer drift
+  between CLI and web.
+- **Two items promoted to the pre-signup gate** (see ROADMAP "Pre-signup gate"), alongside
+  V2 summary-faithfulness: (1) rate-limit `/api/ask`; (2) guarantee `createPgStore`'s
+  `rejectUnauthorized:false` never reaches a runtime path.
+
+**Deferred cosmetic nit:** `/ask` passage-range label (`ask-client.tsx`) is approximate for
+cross-chapter ranges (repeats the chapter on the end ref). Fix when labels matter.
 
 ## Status summary
 
