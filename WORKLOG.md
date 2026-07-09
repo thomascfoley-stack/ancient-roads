@@ -59,6 +59,20 @@ on the Neon Auth HTTP service.
 
 **Recommendation:** Fix A first (10-minute change, unblocks logout), then Fix C on the SEC-1 timeline.
 
+### Fix A applied
+
+- `web/src/middleware.ts`: matcher changed from `['/account/:path*']` to `[]` (middleware no longer
+  runs for any route; kept for future use)
+- `web/src/app/account/[path]/page.tsx`: added `requireUser()` + `redirect('/auth/sign-in')` guard
+  before rendering `<AccountView>`. Uses the same JWT-cache path as annotations.
+- **Check 1 (logged-out redirect):** `requireUser()` throws → catch calls `redirect('/auth/sign-in')`.
+  Same destination as the old middleware, enforced server-side.
+- **Check 2 (subtree coverage):** The entire `/account` subtree is one dynamic `[path]/page.tsx` with
+  `dynamicParams = false`. No other files under `/account/`. All 5 paths (settings, security, teams,
+  api-keys, organizations) pass through the single `requireUser()` guard.
+- **Logout needs Thomas's visual confirmation after deploy:** if `<AccountView>` now loads, the
+  `<SignOut>` button rendered by the Neon Auth UI should be reachable.
+
 ## Task 2: V1 verifier reject-path tests
 
 **Status:** Complete — v1.ts at 100% statement coverage, ROADMAP row upgraded to Done.
