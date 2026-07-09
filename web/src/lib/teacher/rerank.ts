@@ -1,7 +1,7 @@
 import 'server-only';
 
-const RERANK_MODEL = 'BAAI/bge-reranker-v2-m3';
-const BASE_URL = 'https://api.deepinfra.com/v1/rerank';
+const RERANK_MODEL = 'Qwen/Qwen3-Reranker-0.6B';
+const BASE_URL = `https://api.deepinfra.com/v1/inference/${RERANK_MODEL}`;
 
 function apiKey(): string {
   const k = process.env.DEEPINFRA_API_KEY;
@@ -14,8 +14,6 @@ export interface RerankResult {
   relevance_score: number;
 }
 
-// Rerank candidate documents against a query using a cross-encoder.
-// Returns indices sorted by relevance_score descending, capped at topN.
 export async function rerank(
   query: string,
   documents: string[],
@@ -30,10 +28,8 @@ export async function rerank(
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey()}` },
     body: JSON.stringify({
-      model: RERANK_MODEL,
-      query,
+      queries: [query],
       documents,
-      top_n: topN,
     }),
     signal: AbortSignal.timeout(30_000),
   });
@@ -42,6 +38,8 @@ export async function rerank(
     throw new Error(`Rerank failed: ${res.status} ${await res.text()}`);
   }
 
-  const json = (await res.json()) as { results: RerankResult[] };
-  return json.results.sort((a, b) => b.relevance_score - a.relevance_score);
+  const json = (await res.json()) as { scores: number[] };
+  const scored = json.scores.map((score, index) => ({ index, relevance_score: score }));
+  scored.sort((a, b) => b.relevance_score - a.relevance_score);
+  return scored.slice(0, topN);
 }

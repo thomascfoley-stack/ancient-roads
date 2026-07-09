@@ -73,16 +73,18 @@ async function retrieveHybrid(queryText: string, vec: number[], limit: number): 
 async function rerankCandidates(query: string, candidates: RetrievedChunk[], topN: number): Promise<RetrievedChunk[]> {
   if (candidates.length <= topN) return candidates;
   const docs = candidates.map((c) => c.content.slice(0, 1200));
-  const res = await fetch('https://api.deepinfra.com/v1/rerank', {
+  const res = await fetch('https://api.deepinfra.com/v1/inference/Qwen/Qwen3-Reranker-0.6B', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: 'BAAI/bge-reranker-v2-m3', query, documents: docs, top_n: topN }),
+    body: JSON.stringify({ queries: [query], documents: docs }),
     signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error(`Rerank failed: ${res.status}`);
-  const json = (await res.json()) as { results: { index: number; relevance_score: number }[] };
-  const ranked = json.results.sort((a, b) => b.relevance_score - a.relevance_score);
-  return ranked.map((r) => ({ ...candidates[r.index]!, score: r.relevance_score }));
+  const json = (await res.json()) as { scores: number[] };
+  const scored = json.scores.map((score, index) => ({ index, relevance_score: score }));
+  scored.sort((a, b) => b.relevance_score - a.relevance_score);
+  const top = scored.slice(0, topN);
+  return top.map((r) => ({ ...candidates[r.index]!, score: r.relevance_score }));
 }
 
 async function retrieve(query: string, vec: number[]): Promise<RetrievedChunk[]> {
