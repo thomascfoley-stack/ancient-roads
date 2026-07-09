@@ -5,7 +5,7 @@ export interface LLMConfig {
 }
 
 export function createLLM(config: LLMConfig) {
-  const model = config.model ?? 'Qwen/Qwen3.6-35B-A3B';
+  const model = config.model ?? 'Qwen/Qwen3.5-35B-A3B';
   const baseUrl = config.baseUrl ?? 'https://api.deepinfra.com/v1/openai';
 
   return {
