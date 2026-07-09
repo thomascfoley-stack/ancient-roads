@@ -1,16 +1,10 @@
 // Batch-embed the full commentary_entries corpus (371k rows, 66 books) into the
-// embeddings table for the teacher pipeline. Reads from commentary_entries (which
-// already has FTS), embeds via BGE-large-en-v1.5 on DeepInfra, and upserts with
-// ON CONFLICT so existing Gospel embeddings are kept and new books fill the gaps.
+// embeddings table for the teacher pipeline.
 //
-//   cd web && npx tsx --env-file=.env.local ../src/ingest/embed-full-corpus.ts
+//   npx tsx src/ingest/embed-full-corpus.ts
 //
-// Filters: body >= 100 chars (skips ~29k stub entries). Source IDs match the
-// existing format: commentary:{book_slug}:{chapter}:{verse_start}-{verse_end}:{author}
-// so Gospel entries that already have embeddings are deduplicated automatically.
-//
-// Progress is printed every batch. Safe to interrupt and re-run — ON CONFLICT
-// DO NOTHING means already-embedded rows are skipped for free.
+// Safe to interrupt and re-run — skips already-embedded source_ids before calling
+// the API, and ON CONFLICT DO NOTHING handles any remaining races.
 
 import pg from 'pg';
 import { createDeepInfraEmbedder } from '../retrieval/embedder.js';
@@ -31,10 +25,13 @@ const BOOK_SLUGS: Record<number, string> = {
 const MIN_BODY_LENGTH = 100;
 const EMBED_BATCH = 64;
 const DB_BATCH = 500;
-// BGE-large-en-v1.5 has a 512-token context. 1800 chars is the theoretical max
-// but dense theological text (long proper nouns, Latin) can exceed 512 tokens at
-// ~1600 chars. Pre-truncate before handing to the embedder.
-const MAX_CHARS = 1500;
+// BGE-large-en-v1.5: 512-token context. Conservative 1200 chars (~340 tokens
+// worst case for dense Latin/Greek theological text) virtually eliminates batch
+// failures from the token limit.
+// 1000 chars ≈ 285 tokens at 3.5 chars/tok — guaranteed under BGE's 512-token
+// limit even for dense Latin/Greek. The first 1000 chars of a commentary entry
+// capture the substantive content; the tail is typically elaboration.
+const MAX_EMBED_CHARS = 1000;
 
 function localEnv(name: string): string | undefined {
   if (process.env[name]) return process.env[name];
@@ -59,26 +56,29 @@ async function main() {
   });
   await client.connect();
 
+  // Load existing source_ids into a Set for fast lookup (avoids wasting API calls)
+  console.log('Loading existing source_ids...');
+  const { rows: existingRows } = await client.query(
+    `SELECT source_id FROM embeddings WHERE user_id IS NULL AND source_type = 'commentary'`,
+  );
+  const existing = new Set(existingRows.map((r: { source_id: string }) => r.source_id));
+  console.log(`Existing commentary embeddings: ${existing.size}`);
+
   // Count total
   const { rows: [{ total }] } = await client.query(
     `SELECT count(*)::int AS total FROM commentary_entries WHERE length(body) >= $1`,
     [MIN_BODY_LENGTH],
   );
-  console.log(`Total entries to embed: ${total} (of 371k, filtering body >= ${MIN_BODY_LENGTH} chars)`);
-
-  // Check how many already exist
-  const { rows: [{ existing }] } = await client.query(
-    `SELECT count(*)::int AS existing FROM embeddings WHERE user_id IS NULL AND source_type = 'commentary'`,
-  );
-  console.log(`Existing commentary embeddings: ${existing}`);
+  console.log(`Total entries to process: ${total} (filtering body >= ${MIN_BODY_LENGTH} chars)`);
 
   let offset = 0;
   let embedded = 0;
-  let skipped = 0;
+  let preSkipped = 0;
+  let dbSkipped = 0;
+  let embedErrors = 0;
   const t0 = performance.now();
 
   while (offset < total) {
-    // Fetch a batch of commentary_entries
     const { rows } = await client.query(
       `SELECT id, book, chapter, verse_start, verse_end, author, year, tradition,
               source_title, source_url, body
@@ -91,18 +91,20 @@ async function main() {
 
     if (rows.length === 0) break;
 
-    // Build EmbeddingRows (without vectors yet)
-    const pending: { row: Omit<EmbeddingRow, 'embedding'>; text: string }[] = [];
+    // Build pending list, skipping already-embedded entries
+    const pending: { text: string; row: Omit<EmbeddingRow, 'embedding'> }[] = [];
     for (const r of rows) {
       const slug = BOOK_SLUGS[r.book];
-      if (!slug) { skipped++; continue; }
+      if (!slug) continue;
 
       const sourceId = `commentary:${slug}:${r.chapter}:${r.verse_start}-${r.verse_end}:${r.author}`;
+      if (existing.has(sourceId)) { preSkipped++; continue; }
+
       const verseId = r.book * 1_000_000 + r.chapter * 1_000 + r.verse_start;
       const verseEnd = r.book * 1_000_000 + r.chapter * 1_000 + r.verse_end;
 
       pending.push({
-        text: r.body.slice(0, MAX_CHARS),
+        text: r.body.slice(0, MAX_EMBED_CHARS),
         row: {
           sourceType: 'commentary',
           sourceId,
@@ -122,7 +124,7 @@ async function main() {
       });
     }
 
-    // Embed in sub-batches
+    // Embed new entries in sub-batches
     for (let i = 0; i < pending.length; i += EMBED_BATCH) {
       const chunk = pending.slice(i, i + EMBED_BATCH);
       const texts = chunk.map((p) => p.text);
@@ -131,18 +133,19 @@ async function main() {
       try {
         vectors = await embedder.embed(texts);
       } catch (e) {
-        console.error(`  Embed error at offset ${offset + i}, skipping batch: ${(e as Error).message}`);
-        skipped += chunk.length;
+        // Rare at 1200 chars. Log and skip the batch.
+        console.error(`  Embed batch error at offset ${offset + i}: ${(e as Error).message.slice(0, 120)}`);
+        embedErrors += chunk.length;
         continue;
       }
 
-      // Build full rows with vectors
+      // Build rows with vectors
       const embeddingRows: EmbeddingRow[] = chunk.map((p, j) => ({
         ...p.row,
         embedding: vectors[j]!,
       }));
 
-      // Upsert
+      // Upsert (handles any races from concurrent runs)
       const COLS = 6;
       const params: unknown[] = [];
       const tuples = embeddingRows.map((r, idx) => {
@@ -163,20 +166,31 @@ async function main() {
 
       const inserted = res.rowCount ?? 0;
       embedded += inserted;
-      skipped += embeddingRows.length - inserted;
+      dbSkipped += embeddingRows.length - inserted;
+      // Track in the in-memory set so later batches with the same source_id are skipped
+      for (const r of embeddingRows) existing.add(r.sourceId);
     }
 
     offset += rows.length;
-    const elapsed = ((performance.now() - t0) / 1000).toFixed(0);
-    const rate = (offset / Number(elapsed)).toFixed(0);
-    const eta = (((total - offset) / Number(rate)) / 60).toFixed(1);
-    console.log(`  ${offset}/${total} (${((offset / total) * 100).toFixed(1)}%) — ${embedded} new, ${skipped} skipped — ${elapsed}s elapsed, ~${eta} min remaining`);
+    const elapsed = (performance.now() - t0) / 1000;
+    const processed = offset - preSkipped;
+    const rate = processed > 0 ? elapsed / processed : 1;
+    const remaining = total - offset;
+    const eta = (remaining * (elapsed / offset)) / 60;
+    console.log(
+      `  ${offset}/${total} (${((offset / total) * 100).toFixed(1)}%) — ` +
+      `${embedded} embedded, ${preSkipped} pre-skipped, ${embedErrors} errors — ` +
+      `${elapsed.toFixed(0)}s elapsed, ~${eta.toFixed(1)} min remaining`,
+    );
   }
 
   const totalTime = ((performance.now() - t0) / 1000 / 60).toFixed(1);
-  console.log(`\nDone in ${totalTime} min. Embedded: ${embedded}, Skipped: ${skipped}`);
+  console.log(`\nDone in ${totalTime} min.`);
+  console.log(`  Embedded: ${embedded}`);
+  console.log(`  Pre-skipped (already existed): ${preSkipped}`);
+  console.log(`  DB-skipped (ON CONFLICT): ${dbSkipped}`);
+  console.log(`  Embed errors: ${embedErrors}`);
 
-  // Verify final count
   const { rows: [{ final }] } = await client.query(
     `SELECT count(*)::int AS final FROM embeddings WHERE user_id IS NULL AND source_type = 'commentary'`,
   );
