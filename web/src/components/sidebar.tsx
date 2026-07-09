@@ -1,83 +1,244 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { authClient } from '@/lib/auth/client';
 
-interface Channel {
+// --- user-defined study sections (parent/child). Stored locally per user
+// while the real feature (saved work, conversation) is still coming soon;
+// child pages render a ComingSoon notice. ---
+interface StudyItem {
   id: string;
   name: string;
-  description: string | null;
-  icon: string | null;
 }
 
-interface Chat {
+interface StudySection {
   id: string;
-  title: string;
-  persona: string;
-  icon_color: string;
+  kind: 'channels' | 'group';
+  name: string;
+  items: StudyItem[];
 }
 
-const PERSONA_LABELS: Record<string, string> = {
-  general: 'General study',
-  reformer: 'Reformer guide',
-  puritan: 'Puritan tutor',
-  patristic: 'Early church',
-  evangelical: 'Evangelical',
-};
+const SEED_SECTIONS: StudySection[] = [
+  { id: 'channels', kind: 'channels', name: 'Channels', items: [] },
+  { id: 'partners', kind: 'group', name: 'Study Partners', items: [] },
+];
+
+const DOT_COLORS = ['#8a4436', '#5c6b46', '#8a6a33', '#4e5d6b', '#7d5a4f'];
+
+function dotColor(id: string): string {
+  let h = 0;
+  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return DOT_COLORS[h % DOT_COLORS.length];
+}
+
+function newId(): string {
+  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2);
+}
+
+function storageKey(userId: string | undefined): string {
+  return `study-sections:v1:${userId ?? 'guest'}`;
+}
+
+// Shared nav content, rendered inside the desktop rail and the mobile menu
+// sheet. `touch` widens rows to comfortable tap-target sizes; `onNavigate`
+// lets the mobile sheet close itself after a link is chosen.
+export function SidebarNavContent({
+  touch = false,
+  onNavigate,
+}: {
+  touch?: boolean;
+  onNavigate?: () => void;
+}) {
+  const pathname = usePathname();
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id;
+  const [sections, setSections] = useState<StudySection[] | null>(null);
+  const [addingSection, setAddingSection] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey(userId));
+      setSections(raw ? (JSON.parse(raw) as StudySection[]) : SEED_SECTIONS);
+    } catch {
+      setSections(SEED_SECTIONS);
+    }
+  }, [userId]);
+
+  const save = useCallback(
+    (next: StudySection[]) => {
+      setSections(next);
+      try {
+        localStorage.setItem(storageKey(userId), JSON.stringify(next));
+      } catch {
+        // storage unavailable (private mode); keep in-memory state
+      }
+    },
+    [userId],
+  );
+
+  const row = touch ? 'min-h-[44px] py-2.5' : 'py-1.5';
+
+  return (
+    <>
+      <nav className="flex-1 overflow-y-auto px-2 py-3">
+        {/* Quick links */}
+        <div className="mb-1 px-2">
+          <SidebarLink
+            href="/"
+            icon={<HomeIcon />}
+            label="Home"
+            active={pathname === '/'}
+            row={row}
+            onNavigate={onNavigate}
+          />
+          <SidebarLink
+            href="/read/jhn/1"
+            icon={<BookIcon />}
+            label="Reader"
+            active={pathname.startsWith('/read')}
+            row={row}
+            onNavigate={onNavigate}
+          />
+          <SidebarLink
+            href="/ask"
+            icon={<AskIcon />}
+            label="Explore the paths"
+            active={pathname.startsWith('/ask')}
+            row={row}
+            onNavigate={onNavigate}
+          />
+          {session?.user ? (
+            <SidebarButton
+              icon={<LogOutIcon />}
+              label="Sign out"
+              row={row}
+              onClick={async () => {
+                await fetch('/api/auth/sign-out', { method: 'POST' });
+                window.location.href = '/';
+              }}
+            />
+          ) : (
+            <SidebarLink
+              href="/auth/sign-in"
+              icon={<UserIcon />}
+              label="Sign in"
+              active={pathname.startsWith('/auth')}
+              row={row}
+              onNavigate={onNavigate}
+            />
+          )}
+        </div>
+
+        {/* Study sections (user-defined parent/child) */}
+        {sections?.map((section) => (
+          <StudySectionView
+            key={section.id}
+            section={section}
+            pathname={pathname}
+            row={row}
+            onNavigate={onNavigate}
+            onRename={(name) =>
+              save(sections.map((s) => (s.id === section.id ? { ...s, name } : s)))
+            }
+            onAddItem={(name) =>
+              save(
+                sections.map((s) =>
+                  s.id === section.id
+                    ? { ...s, items: [...s.items, { id: newId(), name }] }
+                    : s,
+                ),
+              )
+            }
+          />
+        ))}
+
+        {/* New section */}
+        {sections && (
+          <div className="mt-3 px-2">
+            {addingSection ? (
+              <InlineNameForm
+                placeholder="section name"
+                onSubmit={(name) => {
+                  save([...sections, { id: newId(), kind: 'group', name, items: [] }]);
+                  setAddingSection(false);
+                }}
+                onCancel={() => setAddingSection(false)}
+              />
+            ) : (
+              <button
+                onClick={() => setAddingSection(true)}
+                className={`flex w-full items-center gap-2.5 rounded-md px-2 text-sm text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 active:bg-stone-200/70 dark:hover:bg-stone-800 dark:hover:text-stone-300 ${row}`}
+              >
+                <span className="flex w-4 items-center justify-center"><PlusIcon /></span>
+                <span className="flex-1 truncate text-left">New section</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Library */}
+        <div className="mt-4">
+          <div className="mb-1 px-4">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+              Library
+            </span>
+          </div>
+          <SidebarLink
+            href="/library/notes"
+            icon={<BookStackIcon />}
+            label="My library"
+            active={pathname.startsWith('/library/notes')}
+            row={row}
+            onNavigate={onNavigate}
+          />
+          <SidebarLink
+            href="/library/commentaries"
+            icon={<QuoteIcon />}
+            label="Commentaries"
+            active={pathname.startsWith('/library/commentaries')}
+            row={row}
+            onNavigate={onNavigate}
+          />
+          <SidebarLink
+            href="/library/word-study"
+            icon={<span className="text-stone-400">אα</span>}
+            label="Word study"
+            active={pathname.startsWith('/library/word-study')}
+            row={row}
+            onNavigate={onNavigate}
+          />
+        </div>
+      </nav>
+
+      {/* Bottom: settings */}
+      <div className="border-t border-stone-200 px-2 py-2 dark:border-stone-800">
+        <SidebarLink
+          href="/settings"
+          icon={<SettingsIcon />}
+          label="Settings"
+          active={pathname === '/settings'}
+          row={row}
+          onNavigate={onNavigate}
+        />
+      </div>
+    </>
+  );
+}
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { data: session } = authClient.useSession();
-  const [channels, setChannels] = useState<Channel[]>([]);
-  const [chats, setChats] = useState<Chat[]>([]);
   const [collapsed, setCollapsed] = useState(false);
-  const [newChannelName, setNewChannelName] = useState('');
-  const [showNewChannel, setShowNewChannel] = useState(false);
-  const [newChatTitle, setNewChatTitle] = useState('');
-  const [showNewChat, setShowNewChat] = useState(false);
 
-  useEffect(() => {
-    fetch('/api/channels').then(r => r.ok ? r.json() : []).then(setChannels).catch(() => {});
-    fetch('/api/chats').then(r => r.ok ? r.json() : []).then(setChats).catch(() => {});
-  }, []);
-
-  const handleCreateChannel = useCallback(async () => {
-    const name = newChannelName.trim();
-    if (!name) return;
-    const res = await fetch('/api/channels', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
-    });
-    if (res.ok) {
-      const channel = await res.json();
-      setChannels(prev => [...prev, channel]);
-      setNewChannelName('');
-      setShowNewChannel(false);
-    }
-  }, [newChannelName]);
-
-  const handleCreateChat = useCallback(async () => {
-    const title = newChatTitle.trim();
-    if (!title) return;
-    const res = await fetch('/api/chats', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title }),
-    });
-    if (res.ok) {
-      const chat = await res.json();
-      setChats(prev => [...prev, chat]);
-      setNewChatTitle('');
-      setShowNewChat(false);
-    }
-  }, [newChatTitle]);
+  // The pre-launch password gate stands alone — no app chrome around it.
+  if (pathname === '/gate') return null;
 
   if (collapsed) {
     return (
-      <aside className="flex w-12 flex-col items-center border-r border-stone-200 bg-stone-100 py-3">
+      <aside className="hidden w-12 flex-col items-center border-r border-stone-200 bg-stone-100 py-3 md:flex">
         <button
           onClick={() => setCollapsed(false)}
           className="rounded p-1 text-stone-500 hover:bg-stone-200 hover:text-stone-700"
@@ -92,11 +253,11 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex w-64 flex-col border-r border-stone-200 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
+    <aside className="hidden w-64 flex-col border-r border-stone-200 bg-stone-50 md:flex dark:border-stone-800 dark:bg-stone-900">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3 dark:border-stone-800">
         <Link href="/" className="font-scripture text-base font-medium text-stone-800 dark:text-stone-100">
-          Ancient Roads
+          Ancient Paths
         </Link>
         <button
           onClick={() => setCollapsed(true)}
@@ -108,187 +269,147 @@ export function Sidebar() {
           </svg>
         </button>
       </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-2 py-3">
-        {/* Quick links */}
-        <div className="mb-1 px-2">
-          <SidebarLink
-            href="/"
-            icon={<HomeIcon />}
-            label="Home"
-            active={pathname === '/'}
-          />
-          <SidebarLink
-            href="/read/jhn/1"
-            icon={<BookIcon />}
-            label="Reader"
-            active={pathname.startsWith('/read')}
-          />
-          <SidebarLink
-            href="/ask"
-            icon={<AskIcon />}
-            label="Ask the voices"
-            active={pathname.startsWith('/ask')}
-          />
-          {session?.user ? (
-            <SidebarButton
-              icon={<LogOutIcon />}
-              label="Sign out"
-              onClick={async () => {
-                await fetch('/api/auth/sign-out', { method: 'POST' });
-                window.location.href = '/';
-              }}
-            />
-          ) : (
-            <SidebarLink
-              href="/auth/sign-in"
-              icon={<UserIcon />}
-              label="Sign in"
-              active={pathname.startsWith('/auth')}
-            />
-          )}
-        </div>
-
-        {/* Channels */}
-        <div className="mt-4">
-          <SectionHeader
-            label="Channels"
-            onAdd={() => setShowNewChannel(true)}
-          />
-          {showNewChannel && (
-            <form
-              onSubmit={(e) => { e.preventDefault(); handleCreateChannel(); }}
-              className="mx-2 mb-1"
-            >
-              <input
-                type="text"
-                value={newChannelName}
-                onChange={(e) => setNewChannelName(e.target.value)}
-                placeholder="channel name"
-                className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-sm text-stone-800 placeholder:text-stone-400 outline-none focus:border-stone-500"
-                autoFocus
-                onBlur={() => { if (!newChannelName.trim()) setShowNewChannel(false); }}
-              />
-            </form>
-          )}
-          {channels.length === 0 && !showNewChannel && (
-            <p className="px-4 py-2 text-xs text-stone-400">No channels yet</p>
-          )}
-          {channels.map((ch) => (
-            <SidebarLink
-              key={ch.id}
-              href={`/channel/${ch.id}`}
-              icon={<span className="text-stone-400">#</span>}
-              label={ch.name}
-              active={pathname === `/channel/${ch.id}`}
-            />
-          ))}
-        </div>
-
-        {/* Study partners (DM chats) */}
-        <div className="mt-4">
-          <SectionHeader
-            label="Study partners"
-            onAdd={() => setShowNewChat(true)}
-          />
-          {showNewChat && (
-            <form
-              onSubmit={(e) => { e.preventDefault(); handleCreateChat(); }}
-              className="mx-2 mb-1"
-            >
-              <input
-                type="text"
-                value={newChatTitle}
-                onChange={(e) => setNewChatTitle(e.target.value)}
-                placeholder="chat name"
-                className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-sm text-stone-800 placeholder:text-stone-400 outline-none focus:border-stone-500"
-                autoFocus
-                onBlur={() => { if (!newChatTitle.trim()) setShowNewChat(false); }}
-              />
-            </form>
-          )}
-          {chats.length === 0 && !showNewChat && (
-            <p className="px-4 py-2 text-xs text-stone-400">No chats yet</p>
-          )}
-          {chats.map((chat) => (
-            <SidebarLink
-              key={chat.id}
-              href={`/chat/${chat.id}`}
-              icon={
-                <span
-                  className="inline-block h-2 w-2 rounded-full"
-                  style={{ backgroundColor: chat.icon_color }}
-                />
-              }
-              label={chat.title}
-              sublabel={PERSONA_LABELS[chat.persona] ?? chat.persona}
-              active={pathname === `/chat/${chat.id}`}
-            />
-          ))}
-        </div>
-
-        {/* Library */}
-        <div className="mt-4">
-          <SectionHeader label="Library" />
-          <SidebarLink
-            href="/library/notes"
-            icon={<BookStackIcon />}
-            label="My library"
-            active={pathname.startsWith('/library/notes')}
-          />
-          <SidebarLink
-            href="/library/commentaries"
-            icon={<QuoteIcon />}
-            label="Commentaries"
-            active={pathname.startsWith('/library/commentaries')}
-          />
-          <SidebarLink
-            href="/library/word-study"
-            icon={<span className="text-stone-400">אα</span>}
-            label="Word study"
-            active={pathname.startsWith('/library/word-study')}
-          />
-          <SidebarLink
-            href="/library/uploads"
-            icon={<UploadIcon />}
-            label="Uploaded files"
-            active={pathname.startsWith('/library/uploads')}
-          />
-        </div>
-      </nav>
-
-      {/* Bottom: settings */}
-      <div className="border-t border-stone-200 px-2 py-2">
-        <SidebarLink
-          href="/settings"
-          icon={<SettingsIcon />}
-          label="Settings"
-          active={pathname === '/settings'}
-        />
-      </div>
+      <SidebarNavContent />
     </aside>
   );
 }
 
-function SectionHeader({ label, onAdd }: { label: string; onAdd?: () => void }) {
+function StudySectionView({
+  section,
+  pathname,
+  row,
+  onNavigate,
+  onRename,
+  onAddItem,
+}: {
+  section: StudySection;
+  pathname: string;
+  row: string;
+  onNavigate?: () => void;
+  onRename: (name: string) => void;
+  onAddItem: (name: string) => void;
+}) {
+  const [renaming, setRenaming] = useState(false);
+  const [addingItem, setAddingItem] = useState(false);
+
   return (
-    <div className="mb-1 flex items-center justify-between px-4">
-      <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
-        {label}
-      </span>
-      {onAdd && (
-        <button
-          onClick={onAdd}
-          className="rounded p-0.5 text-stone-400 hover:bg-stone-200 hover:text-stone-600"
-          aria-label={`Add ${label.toLowerCase()}`}
-        >
-          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-        </button>
+    <div className="group mt-4">
+      <div className="mb-1 flex items-center justify-between px-4">
+        {renaming ? (
+          <InlineNameForm
+            initial={section.name}
+            placeholder="section name"
+            onSubmit={(name) => {
+              onRename(name);
+              setRenaming(false);
+            }}
+            onCancel={() => setRenaming(false)}
+          />
+        ) : (
+          <>
+            <span className="truncate text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+              {section.name}
+            </span>
+            <span className="flex items-center gap-0.5 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100">
+              <button
+                onClick={() => setRenaming(true)}
+                className="rounded p-1.5 text-stone-400 hover:bg-stone-200 hover:text-stone-600 active:bg-stone-200 dark:hover:bg-stone-800"
+                aria-label={`Rename ${section.name}`}
+              >
+                <PencilIcon />
+              </button>
+              <button
+                onClick={() => setAddingItem(true)}
+                className="rounded p-1.5 text-stone-400 hover:bg-stone-200 hover:text-stone-600 active:bg-stone-200 dark:hover:bg-stone-800"
+                aria-label={`Add to ${section.name}`}
+              >
+                <PlusIcon />
+              </button>
+            </span>
+          </>
+        )}
+      </div>
+      {addingItem && (
+        <div className="mx-2 mb-1">
+          <InlineNameForm
+            placeholder="name"
+            onSubmit={(name) => {
+              onAddItem(name);
+              setAddingItem(false);
+            }}
+            onCancel={() => setAddingItem(false)}
+          />
+        </div>
       )}
+      {section.items.length === 0 && !addingItem && (
+        <p className="px-4 py-2 text-xs text-stone-400">Nothing here yet</p>
+      )}
+      {section.items.map((item) => {
+        const href =
+          section.kind === 'channels' ? `/channel/${item.id}` : `/study/${item.id}`;
+        return (
+          <SidebarLink
+            key={item.id}
+            href={href}
+            icon={
+              section.kind === 'channels' ? (
+                <span className="text-stone-400">#</span>
+              ) : (
+                <span
+                  className="inline-block h-2 w-2 rounded-full"
+                  style={{ backgroundColor: dotColor(item.id) }}
+                />
+              )
+            }
+            label={item.name}
+            active={pathname === href}
+            row={row}
+            onNavigate={onNavigate}
+          />
+        );
+      })}
     </div>
+  );
+}
+
+function InlineNameForm({
+  initial = '',
+  placeholder,
+  onSubmit,
+  onCancel,
+}: {
+  initial?: string;
+  placeholder: string;
+  onSubmit: (name: string) => void;
+  onCancel: () => void;
+}) {
+  const [value, setValue] = useState(initial);
+  const commit = () => {
+    const name = value.trim();
+    if (name) onSubmit(name);
+    else onCancel();
+  };
+  return (
+    <form
+      className="w-full"
+      onSubmit={(e) => {
+        e.preventDefault();
+        commit();
+      }}
+    >
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') onCancel();
+        }}
+        placeholder={placeholder}
+        className="w-full rounded border border-stone-300 bg-white px-2 py-1.5 text-base text-stone-800 placeholder:text-stone-400 outline-none focus:border-stone-500 sm:py-1 sm:text-sm dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100"
+        autoFocus
+      />
+    </form>
   );
 }
 
@@ -296,30 +417,68 @@ function SidebarLink({
   href,
   icon,
   label,
-  sublabel,
   active,
+  row = 'py-1.5',
+  onNavigate,
 }: {
   href: string;
   icon: React.ReactNode;
   label: string;
-  sublabel?: string;
   active: boolean;
+  row?: string;
+  onNavigate?: () => void;
 }) {
   return (
     <Link
       href={href}
-      className={`flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors ${
+      onClick={onNavigate}
+      className={`flex items-center gap-2.5 rounded-md px-2 text-sm transition-colors ${row} ${
         active
           ? 'bg-stone-200/80 font-medium text-stone-900 dark:bg-stone-700/70 dark:text-stone-100'
-          : 'text-stone-600 hover:bg-stone-100 hover:text-stone-800 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200'
+          : 'text-stone-600 hover:bg-stone-100 hover:text-stone-800 active:bg-stone-200/70 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200'
       }`}
     >
       <span className="flex w-4 items-center justify-center text-sm">{icon}</span>
       <span className="flex-1 truncate">{label}</span>
-      {sublabel && (
-        <span className="truncate text-[10px] text-stone-400">{sublabel}</span>
-      )}
     </Link>
+  );
+}
+
+function SidebarButton({
+  icon,
+  label,
+  row = 'py-1.5',
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  row?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center gap-2.5 rounded-md px-2 text-sm text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-800 active:bg-stone-200/70 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200 ${row}`}
+    >
+      <span className="flex w-4 items-center justify-center text-sm">{icon}</span>
+      <span className="flex-1 truncate text-left">{label}</span>
+    </button>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+    </svg>
+  );
+}
+
+function PencilIcon() {
+  return (
+    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+    </svg>
   );
 }
 
@@ -368,34 +527,6 @@ function QuoteIcon() {
     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
     </svg>
-  );
-}
-
-function UploadIcon() {
-  return (
-    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-    </svg>
-  );
-}
-
-function SidebarButton({
-  icon,
-  label,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-800 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200"
-    >
-      <span className="flex w-4 items-center justify-center text-sm">{icon}</span>
-      <span className="flex-1 truncate text-left">{label}</span>
-    </button>
   );
 }
 
