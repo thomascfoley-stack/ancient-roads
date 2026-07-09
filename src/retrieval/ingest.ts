@@ -10,11 +10,16 @@ export async function ingestCorpus(
   docs: AsyncIterable<CorpusDoc>,
   deps: { embedder: Embedder; store: EmbeddingStore },
   opts: { batchSize: number },
-): Promise<{ embedded: number; upserted: number }> {
+): Promise<{ embedded: number; upserted: number; failedBatches: number }> {
   let embedded = 0;
   let upserted = 0;
+  let failedBatches = 0;
   let batch: CorpusDoc[] = [];
 
+  // Embed + upsert one batch. A single batch that keeps failing (e.g. a provider
+  // timeout that outlasts the embedder's own retries) must not kill a multi-hour
+  // run: the caller catches, counts it, and continues. Upserts are idempotent
+  // (ON CONFLICT DO NOTHING), so re-running the ingest fills any skipped batches.
   const flush = async (): Promise<void> => {
     if (batch.length === 0) return;
     const vectors = await deps.embedder.embed(batch.map((d) => d.text));
@@ -43,16 +48,27 @@ export async function ingestCorpus(
     batch = [];
   };
 
+  // Flush the current batch; on failure, drop it and keep going.
+  const flushSafely = async (): Promise<void> => {
+    try {
+      await flush();
+    } catch (e) {
+      failedBatches++;
+      batch = []; // discard the failed batch so ingestion advances
+      process.stdout.write(`  ⚠ batch failed (${failedBatches} total), skipping: ${(e as Error).message}\n`);
+    }
+  };
+
   let batchNum = 0;
   for await (const doc of docs) {
     batch.push(doc);
     if (batch.length >= opts.batchSize) {
-      await flush();
+      await flushSafely();
       batchNum++;
       if (batchNum % 10 === 0) process.stdout.write(`  batch ${batchNum}: ${embedded} embedded, ${upserted} upserted\n`);
     }
   }
-  await flush();
+  await flushSafely();
 
-  return { embedded, upserted };
+  return { embedded, upserted, failedBatches };
 }

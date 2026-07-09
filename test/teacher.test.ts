@@ -150,6 +150,22 @@ describe('teacher orchestration', () => {
     }
   });
 
+  it('accepts extractive voices with no summary (quotes over paraphrase)', async () => {
+    const extractive = JSON.parse(validJson());
+    // Strip summaries — the composer is extractive; summary is optional.
+    for (const b of extractive.blocks) if (b.type === 'voice') delete b.summary;
+    const result = await teach('the Word became flesh', {
+      retrieve: async () => retrieved(),
+      generate: async () => JSON.stringify(extractive),
+      corpusLookup: undefined as never,
+    });
+    expect(result.kind).toBe('composed');
+    if (result.kind === 'composed') {
+      const voices = result.response.blocks.filter((b) => b.type === 'voice');
+      expect(voices.every((v) => v.type === 'voice' && v.summary === undefined)).toBe(true);
+    }
+  });
+
   it('returns empty when retrieval finds nothing', async () => {
     const result = await teach('unrelated query', {
       retrieve: async () => [],

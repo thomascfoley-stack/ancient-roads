@@ -14,9 +14,11 @@ function voices(r: TeacherResponse): VoiceBlock[] {
 }
 
 function assistantVoiceTexts(r: TeacherResponse): string[] {
-  return r.blocks.flatMap((b) =>
-    b.type === 'framing' || b.type === 'prayer_prompt' ? [b.text] : b.type === 'voice' ? [b.summary] : [],
-  );
+  return r.blocks.flatMap((b) => {
+    if (b.type === 'framing' || b.type === 'prayer_prompt') return [b.text];
+    if (b.type === 'voice' && b.summary) return [b.summary]; // summary optional (extractive)
+    return [];
+  });
 }
 
 type CheckFn = (r: TeacherResponse, v: VerifierResult, param?: number) => string | null;

@@ -21,7 +21,7 @@ export function createDeepInfraEmbedder(opts: {
     async embed(texts: string[]): Promise<number[][]> {
       if (texts.length === 0) return [];
 
-      const MAX_RETRIES = 3;
+      const MAX_RETRIES = 5;
       let lastErr: Error | undefined;
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
@@ -32,7 +32,8 @@ export function createDeepInfraEmbedder(opts: {
               Authorization: `Bearer ${opts.apiKey}`,
             },
             body: JSON.stringify({ model, input: texts.map(t => t.slice(0, MAX_INPUT_CHARS)), encoding_format: 'float' }),
-            signal: AbortSignal.timeout(30_000),
+            // Batch embeds (64 texts) can be slow under provider load; be patient.
+            signal: AbortSignal.timeout(60_000),
           });
 
           if (!res.ok) {
