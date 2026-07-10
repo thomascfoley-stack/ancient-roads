@@ -4,6 +4,14 @@
 
 **This session owns the `sources`/`sections` ingestion migration (NEXT_PHASE §3 / ADR-010) as of 2026-07-09.** Other sessions must NOT write the migration schema or scripts — that would re-create the exact cross-session divergence the ownership gate exists to prevent (two parallel `sources`/`sections` designs + a diverged `source_id` scheme). Per the design-before-code rail, the only deliverable right now is one approval-ready design doc (`docs/MIGRATION_DESIGN.md`); **no schema/migration code until Thomas approves it.**
 
+**APPROVED 2026-07-10** — Path A (re-point in place, preserve all 173,806 vectors, $0, coverage stays 0); Barnes' Notes first slice; fold schema corrections into SCHEMA.md; one `ingest/sources.config.json`. Building migration `006` + the Barnes slice only, then stop for review.
+
+### KNOWN LIMITATION (tracked — do NOT let this drop off): the source_id collapse caps vector recall
+
+The legacy `source_id` (`commentary:{slug}:{ch}:{vs}:{author}`, no `entry_index`) collapses **341,912 eligible `commentary_entries` → 168,233 keys**; only the first entry per key was ever embedded, so **~173,679 entries' distinct text is NOT in the vector index** (still keyword-searchable via FTS). Path A preserves the current corpus exactly and **carries this limitation forward unchanged** — it does not fix it, by design (fixing = new embeddings = cost + a reopened coverage gap). **This is a deferred corpus-EXPANSION decision, explicitly tied to eval-set growth:** we cannot yet tell whether the collapse actually caps accuracy, because the current 30-query eval is Gospel/reformed-heavy. **Revisit expansion once the larger, broader eval (NEXT_PHASE §4) can show whether the collapse limits true-success — decide with data, not speculation.** The section identity is surrogate + append-only (`MIGRATION_DESIGN.md` §4.1), so expansion later is a pure `INSERT` of new rows, never a re-migration.
+
+**Compliance flag surfaced during the slice:** the existing corpus's `sourceUrl` is **biblehub.com** (an aggregator ADR-008 forbids scraping). The text is public domain so the license is valid and the migration is unaffected, but **re-sourcing from CrossWire/PD (INGESTION_TASK Phase 2) is required before wide/beta rollout.** Tracked in `MIGRATION_DESIGN.md` §8.6.
+
 ## 2026-07-09 (next phase) — Step 1 backup + Step 2 gates (coverage + license)
 
 Executing `docs/NEXT_PHASE.md` Steps 1–2. Stopping at the Step 3 boundary (the

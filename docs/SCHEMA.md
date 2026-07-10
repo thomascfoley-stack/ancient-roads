@@ -114,14 +114,16 @@ create table sources (
   author_died smallint,                      -- public domain math
   year_written smallint,
   source_type text not null check (source_type in
-    ('commentary','sermon','theology','father','confession','lexicon')),
+    ('commentary','sermon','historian','theology','father','confession','lexicon')),
   tradition   text not null,                 -- 'reformed','catholic','orthodox',
                                              -- 'wesleyan','baptist','patristic','lutheran'
   era         text not null,                 -- 'patristic','medieval','reformation',
                                              -- 'puritan','modern'
   language    text not null default 'en',
-  license     text not null,
-  provenance  jsonb                          -- where ingested from, when, checksum
+  license     text not null,                 -- Gate B: NOT NULL, from ingest/sources.config.json
+  provenance  jsonb not null,                -- {url, edition/translator, year, retrieved_at, checksum}
+  status      text not null default 'staged' -- staged→published QA gate; Gate B keys on status='published'
+              check (status in ('staged','published','quarantined'))
 );
 
 create table sections (
@@ -147,7 +149,7 @@ create index anchors_range_idx on section_anchors (verse_id_start, verse_id_end)
 -- Embeddings live apart from content: re-embedding is a rebuild, not a migration
 create table section_embeddings (
   section_id  bigint not null references sections,
-  model_slug  text not null,                 -- 'bge-m3-v1'
+  model_slug  text not null,                 -- 'bge-large-en-v1.5' (ADR-005, pinned) — was 'bge-m3', stale
   embedding   vector(1024) not null,
   primary key (section_id, model_slug)
 );

@@ -93,7 +93,11 @@ create index se_hnsw_idx on section_embeddings using hnsw (embedding vector_cosi
 
 ## 4. `source_id` stays computed in exactly one place
 
-The new model keys on **`sections.id` (bigint identity)** — no new string-`source_id` scheme is invented (inventing one is exactly the cross-session divergence risk NEXT_PHASE §3 warns about). The legacy `commentary:{…}` key is used **only as the migration bridge** to join `commentary_entries` ↔ `embeddings` ↔ new `sections`, and it is computed **only** by `synthesizeSourceId` in [`source-id.ts`](../src/ingest/source-id.ts) — the backfill imports it, never re-implements it. After cutover (§6) and once the legacy tables are dropped, `source-id.ts` is retired with them. Net: the format still lives in one file; the migration adds zero new definitions of it.
+The new model keys on **`sections.id` (bigint identity)** — no new string-`source_id` scheme is invented (inventing one is exactly the cross-session divergence risk NEXT_PHASE §3 warns about). The legacy `commentary:{…}` key is used **only as the migration bridge** to join `commentary_entries` ↔ `embeddings` ↔ new `sections`, and it is computed **only** by `synthesizeSourceId` in [`source-id.ts`](../src/ingest/source-id.ts) — the backfill imports it, never re-implements it. (In practice the backfill reads structured fields — `verseId`, `verseEnd`, `author` — directly from `embeddings.metadata`, so it doesn't even parse the key string.) After cutover (§6) and once the legacy tables are dropped, `source-id.ts` is retired with them. Net: the format still lives in one file; the migration adds zero new definitions of it.
+
+### 4.1 Deferred expansion is APPEND-ONLY — deferring must never mean re-migrating (confirmed)
+
+`sections.id` is a **surrogate `bigint generated always as identity`** — it carries no content and is independent of verse/author/order. So the ~173,679 currently-collapsed entries (§1) can be added **later** as brand-new `sections` rows: each gets a fresh `id`, an `ordinal` **after the source's current `max(ordinal)`** (append, don't re-interleave), a new `section_anchor`, and a **new** embedding for its own text. **No existing `sections` row is re-keyed, re-ordinaled, its anchors touched, or its vector regenerated.** Expansion is a pure `INSERT` of new rows; it is not a re-run of this migration. (The only thing later expansion changes for existing rows is nothing.) True reading-order interleaving, if ever wanted, belongs to the separate full-works re-chunk rebuild (§7), which is already a re-embed and can assign ordinals freely. **This is the guarantee that makes deferral safe.**
 
 ---
 
@@ -110,6 +114,10 @@ The new model keys on **`sections.id` (bigint identity)** — no new string-`sou
 
 For the first slice this is a handful of `INSERT … SELECT` statements scoped to one `author`; scaling to all 401 is the same statements without the filter (optionally `COPY` for speed).
 
+### 5.1 Chunked embeddings map 1:1 to sections (confirmed — no PK conflict)
+
+3,872 `source_id`s are chunked (`chunk_index` 0…up to 11) → 173,806 embedding rows over 168,392 keys. The mapping is deliberately **one `embeddings` row → one `section` → one `section_embeddings` row (1:1:1)**, *not* "N vectors per section." A `source_id` with 11 chunks becomes **11 sections**, each a distinct retrieval unit with `body :=` that chunk's `content` and exactly one vector. This is the only mapping that fits `section_embeddings`' primary key `(section_id, model_slug)` — you cannot store N vectors for one section under one model without changing that PK, and there's no reason to: the chunk *is* the retrieval unit. So the whole commentary slice is a clean **173,806 embeddings → 173,806 sections → 173,806 section_embeddings**; `sections` count == `section_embeddings` count by construction, so Gate A is 0 with no orphaned or dropped chunk. (Chunks of one original entry stay adjacent via consecutive `ordinal`; concatenating them for a future "read the whole entry" view is a later full-works concern, §7.)
+
 ---
 
 ## 6. How the two gates integrate (both must pass before `published`)
@@ -119,13 +127,15 @@ For the first slice this is a handful of `INSERT … SELECT` statements scoped t
 **Gate A — coverage (fail LOUD), one small addition:** today `check-corpus-coverage.ts` anti-joins `commentary_entries` vs `embeddings`. Post-migration it must also anti-join **eligible `sections` minus `section_embeddings` (with `model_slug='bge-large-en-v1.5'`), per source** — exactly what NEXT_PHASE §Gate-A specifies. Add a `--target=sections` mode (the anti-join query below); run **both** during dual-read, drop the legacy one at cutover.
 
 ```sql
--- Gate A (sections): missing = published sources' sections with no matching-model embedding
-select s.source_id, count(*) as missing
+-- Gate A (sections): missing = non-quarantined sources' sections with no matching-model
+-- embedding. Uses status <> 'quarantined' (not '= published') so it also gates a source
+-- while it is still 'staged' — completeness must be proven BEFORE flipping to 'published'.
+select src.slug, count(*) as missing
 from sections s
-join sources src on src.id = s.source_id and src.status = 'published'
+join sources src on src.id = s.source_id and src.status <> 'quarantined'
 left join section_embeddings e on e.section_id = s.id and e.model_slug = 'bge-large-en-v1.5'
 where e.section_id is null
-group by s.source_id;   -- any row => exit 1
+group by src.slug;   -- any row => exit 1
 ```
 
 **Retrieval bridge (dual-read → parity → cutover):** add a section-based retrieval path (`section_anchors` + `section_embeddings` + `sections.tsv` + reranker) alongside the current `hybrid_search_v2`/`embeddings`. **Prove the true-success diagnostic on the new path is ≥ the current number** (re-run the 10-query + 30-query evals per CLAUDE.md; record in WORKLOG). Only then cut retrieval over. **Do not drop `commentary_entries`/`embeddings` until parity is proven.**
@@ -148,6 +158,11 @@ group by s.source_id;   -- any row => exit 1
 3. **First-slice source:** Barnes' Notes — OK, or prefer another?
 4. **Schema corrections in §3** (add `status`, fix `model_slug`, `+historian`, `provenance NOT NULL`) — approve folding these into `SCHEMA.md` so the docs and DB agree.
 5. **`ingest/sources.config.json` shape:** extend the Gate-B manifest entry with `source_type/tradition/era/author_died` (one config, two consumers) vs a second file. Recommend **one file**.
+6. **Provenance sourcing (surfaced during the Barnes slice):** the existing corpus's `sourceUrl` points to **biblehub.com** — an aggregator ADR-008 says never to scrape. The *text* is public domain (Barnes d. 1870), so the **license is valid** and this does not block the model migration. But the acquisition provenance is a real compliance item: **re-source the corpus text from CrossWire/PD (INGESTION_TASK Phase 2) before wide/beta rollout.** Provenance records the biblehub origin honestly (per ADR-013, retained in the record, never rendered as an outbound link). Tracked, not fixed here.
+
+---
+
+## APPROVED (2026-07-10): Path A; defer expansion (tracked, tied to eval-set growth); Barnes first slice; fold §3 into SCHEMA.md; one config file. Building migration 006 + the Barnes slice only, proven green on both gates, before the other ~400 sources.
 
 ---
 *No code will be written against this until it is approved. On approval, first deliverable is migration `006` + the Barnes first-slice backfill + the Gate A `sections` mode, proven green, before touching the other 400 sources.*
