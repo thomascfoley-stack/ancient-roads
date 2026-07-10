@@ -3,6 +3,7 @@ import {
   normalizeContract,
   type SectionAttribution,
 } from '../web/src/lib/teacher/normalize-contract';
+import { isNormalizedSubstring } from '../src/verifier/normalize';
 
 // The teacher normalizes the model's parsed JSON before the verifier sees it:
 // it coerces quoted numeric IDs and backfills attribution from the cited
@@ -96,5 +97,60 @@ describe('normalizeContract', () => {
   it('is a no-op on malformed roots (no blocks array)', () => {
     expect(normalizeContract(null)).toBeNull();
     expect(normalizeContract({ blocks: 'nope' })).toEqual({ blocks: 'nope' });
+  });
+});
+
+describe('normalizeContract: snap-to-source quote repair', () => {
+  const MACLAREN =
+    'The king who had been the shepherd-boy, and had been taken from the quiet ' +
+    'sheep-cotes to rule over Israel, sings this little psalm of Him who is the ' +
+    'true Shepherd and King of men. We do not know at what period of David’s life ' +
+    'it was written, but it sounds as if it were the work of his later years.';
+  const withBody = (quote: string): SectionAttribution[] => [
+    { author: 'Alexander MacLaren', work: 'Expositions', tradition: 'Baptist', body: MACLAREN },
+  ];
+  const voice = (quote: string) => ({
+    contract_version: '1.1', teacher: 'qwen',
+    blocks: [{ type: 'voice', section_id: 1, attribution: {}, quote }],
+  });
+  const quoteOf = (out: unknown) => (out as { blocks: Array<{ quote: string }> }).blocks[0]!.quote;
+
+  it('trims a drifted quote back to its verbatim prefix', () => {
+    // Verbatim opening, then the model stitches on a non-adjacent sentence.
+    const drifted =
+      'sings this little psalm of Him who is the true Shepherd and King of men. ' +
+      'There is a fulness of experience about it, and a tone of quiet confidence.';
+    const out = normalizeContract(voice(drifted), withBody(drifted));
+    const q = quoteOf(out);
+    expect(q).toBe('sings this little psalm of Him who is the true Shepherd and King of men.');
+    // and the repaired quote IS a verbatim substring of the source
+    expect(isNormalizedSubstring(q, MACLAREN)).toBe(true);
+  });
+
+  it('leaves an already-verbatim quote unchanged', () => {
+    const exact = 'the true Shepherd and King of men';
+    expect(quoteOf(normalizeContract(voice(exact), withBody(exact)))).toBe(exact);
+  });
+
+  it('does NOT repair a mostly-fabricated quote (fail-closed, verifier rejects)', () => {
+    // Only a short fragment matches; the rest is invented → below SNAP_MIN_RATIO.
+    const fabricated =
+      'true Shepherd. This psalm proves the doctrine of eternal security beyond all doubt and forever.';
+    const q = quoteOf(normalizeContract(voice(fabricated), withBody(fabricated)));
+    expect(q).toBe(fabricated); // untouched
+    expect(isNormalizedSubstring(q, MACLAREN)).toBe(false); // so the verifier still fails it
+  });
+
+  it('never lengthens or invents — repaired quote is a prefix of the model quote', () => {
+    const drifted = 'sings this little psalm of Him who is the true Shepherd and King of men. INVENTED TAIL.';
+    const q = quoteOf(normalizeContract(voice(drifted), withBody(drifted)));
+    expect(drifted.startsWith(q)).toBe(true);
+    expect(q.length).toBeLessThan(drifted.length);
+  });
+
+  it('does not touch quotes when the section body is absent (attribution-only mode)', () => {
+    const noBody: SectionAttribution[] = [{ author: 'A', work: 'W', tradition: 'T' }];
+    const drifted = 'anything at all that will not match';
+    expect(quoteOf(normalizeContract(voice(drifted), noBody))).toBe(drifted);
   });
 });

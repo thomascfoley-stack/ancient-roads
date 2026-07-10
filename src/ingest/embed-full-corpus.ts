@@ -9,6 +9,7 @@
 import pg from 'pg';
 import { createDeepInfraEmbedder } from '../retrieval/embedder.js';
 import type { EmbeddingRow } from '../retrieval/types.js';
+import { sanitizeForIngest } from './content-sanity.js';
 import { readFileSync, existsSync } from 'fs';
 
 const BOOK_SLUGS: Record<number, string> = {
@@ -175,13 +176,19 @@ async function main() {
       const verseId = r.book * 1_000_000 + r.chapter * 1_000 + r.verse_start;
       const verseEnd = r.book * 1_000_000 + r.chapter * 1_000 + r.verse_end;
 
+      // Decode HTML entities before storing/embedding so the reader shows real
+      // characters (Greek/Hebrew, curly quotes) and the vector is computed over
+      // real text — not &#x3b1; noise. The verifier decodes at match time too,
+      // so stored and matched forms agree.
+      const cleanBody = sanitizeForIngest(r.body);
+
       pending.push({
-        text: r.body.slice(0, MAX_EMBED_CHARS),
+        text: cleanBody.slice(0, MAX_EMBED_CHARS),
         row: {
           sourceType: 'commentary',
           sourceId,
           chunkIndex: 0,
-          content: r.body,
+          content: cleanBody,
           metadata: {
             author: r.author,
             year: r.year,

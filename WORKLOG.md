@@ -137,6 +137,53 @@ Fix levers toward reliable end-to-end 10/10 (all faithfulness-axis, verifier sta
   before verifying. Robust against drift; must stay fail-closed (only snap true near-matches).
 - **Prompt:** instruct shorter quotes (short exact spans drift less than long ones).
 
+## 2026-07-09 — Compose/verify hardening: entity decode + retry + snap-to-source
+
+Implemented the fix set (owner-directed ordering). Verifier semantics NOT loosened.
+
+**Root-cause split (measured, not assumed):**
+- Diffed the real failing MacLaren quote through the REAL `normalizeForMatch`: verbatim for
+  177 chars, then the model stitches a NON-ADJACENT sentence → **Case B, genuine drift**, not
+  an entity/whitespace bug. `normalizeForMatch` already folds whitespace/punct/case/NFKD.
+- BUT entities DO break matching corpus-wide (independently verified): a source `&#8217;`
+  normalized to the digits `8217` and never matched the model's real `’`. Prevalence
+  measured (`measure-embedding-gap`-style scan): **595 quote-breaking entries / 0.34% / 8
+  works** (mostly Greek/Hebrew as numeric hex entities in Pulpit Commentary, Barnes'). NOT
+  "~all the gap" — the diagnostic's failures are drift, not entities.
+
+**Implemented:**
+1. **Entity decode in `normalizeForMatch`** (both sync-guarded copies, byte-identical, guard
+   green). Numeric + a pragmatic named map; unknown names fall through unchanged (can only
+   fix a match, never invent one). `test/normalize.test.ts` (12) incl. "still rejects genuine
+   drift." Exact decoding (`&#8217;` IS `’`), not fuzzy — `normalizeForMatch` NOT loosened.
+2. **Ingest decode** (`src/ingest/content-sanity.ts`, reuses the ONE decoder) wired into
+   `embed-full-corpus` so future content stores clean. No large backfill (595 rows; verifier
+   already fixed at match time — backfill would be display/embedding polish only).
+3. **Integrity-gate detector** `hasQuoteBreakingEntities` + `test/content-sanity.test.ts` (7)
+   in `npm run audit`.
+4. **`MAX_RETRIES` 1→2** (web teach + diagnostic).
+5. **Snap-to-source** in `normalize-contract.ts` (web-only, not synced): trims a drifted
+   quote to its longest verbatim PREFIX (of the model's OWN text — never invents/lengthens),
+   fires only at ≥0.4 ratio AND ≥40 chars, and the verifier RE-CHECKS after — so it can only
+   shorten to real source text, never manufacture a pass. `test/normalize-contract.test.ts`
+   +5 snap tests incl. "does NOT repair a mostly-fabricated quote." 64 tests total pass;
+   web+src typecheck + knip clean.
+
+**Measured before/after (honest — did NOT claim it closed the gap):**
+- Retrieval: **10/10 every run** (0 wrong-source flags) — unchanged, already solved.
+- End-to-end full-mode, full fix set, 5 runs: **9, 10, 8, 9, 10 → avg ~9.2, range 8–10.**
+- Entity fix moved this set by **0** (as predicted — its failures are drift, not entities);
+  it's a corpus-wide robustness fix for the 595 entity entries, not a fix for these 10.
+- Retry+snap made **10/10 achievable** (hit 2/5 runs) but NOT guaranteed. Residual is
+  stochastic quote-drift on long-prose sources; the verifier correctly fail-closes to the
+  safe fallback (retrieved sources shown, no unverified narrative) — not a wrong answer.
+
+**Remaining levers if a *reliable* 10/10 is required (not just achievable):** upgrade snap
+from longest-prefix to longest-substring (catch drift at the start/middle, not only the tail);
+prompt for shorter quotes; or accept ~9/10 with safe fallbacks as beta-acceptable (fallbacks
+degrade gracefully, never mislead). Decision deferred to owner — diminishing returns vs. the
+retrieval gate, which is met. Bigger eval set needed for statistical power on the compose axis.
+
 ## 2026-07-09 — Teacher landed + wired to web (`feat/teacher-pipeline` → `main`)
 
 **Merged to `main`, audit green (95 tests, typecheck + lint + knip + deps all pass).**

@@ -35,12 +35,15 @@ export type TeacherEvent =
   | { stage: 'rejected'; attempt: number }
   | { stage: 'done'; result: TeacherResult };
 
-// One retry max. With the corrected fast model (~4–5s/compose) and the
-// normalize-before-verify step lifting the first-attempt pass rate, a second
-// retry mostly bought latency, not successes: a failed second attempt lands in
-// the same fallback a failed first retry would. Fewer attempts, same fail-closed
-// floor.
-const MAX_RETRIES = 1;
+// Two retries. Diagnostics traced the residual fallbacks to verbatim-quote
+// drift on long flowing-prose sources (the model quotes an opening sentence,
+// then stitches on a non-adjacent one). The retry carries the specific
+// violations back to the model, so a second retry meaningfully lifts recovery
+// on exactly that class; combined with the snap-to-source repair in
+// normalize-contract, most drift is caught before the last attempt. Compose is
+// ~4–5s, so a worst-case 3 attempts (~15s) is an acceptable tail for the
+// accuracy gate. Still fail-closed: a failed final attempt lands in fallback.
+const MAX_RETRIES = 2;
 
 // Retrieve a pool (for the source preview + diversity headroom) and compose over
 // the top few voices. Latency is output-bound (the model emits ~750 tokens
@@ -111,6 +114,7 @@ export async function teach(
     author: r.metadata.author,
     work: r.metadata.sourceTitle,
     tradition: r.metadata.tradition ?? 'unknown',
+    body: r.content, // enables snap-to-source quote repair in normalizeContract
   }));
   const retrievalContext = {
     sectionIds: voices.map((_, i) => i + 1),

@@ -15,6 +15,7 @@ import { buildSystemPrompt, buildUserPrompt } from '../lib/teacher/prompt.ts';
 import { buildCorpusLookup } from '../lib/teacher/corpus.ts';
 import { normalizeContract } from '../lib/teacher/normalize-contract.ts';
 import { verifyV1 } from '../verifier/v1.ts';
+import { normalizeForMatch, isNormalizedSubstring } from '../verifier/normalize.ts';
 import type { RetrievedChunk } from '../lib/teacher/retrieve.ts';
 import type { TeacherResponse } from '../contract/types.ts';
 
@@ -22,7 +23,7 @@ const MODEL = 'Qwen/Qwen3.5-35B-A3B';
 const RETRIEVE_K = 6;
 const CANDIDATE_POOL = 20;
 const COMPOSE_VOICES = 5;
-const MAX_RETRIES = 1;
+const MAX_RETRIES = 2; // mirror teach.ts (bumped 1→2 for verbatim-drift recovery)
 const MODE = (process.env.MODE ?? 'full') as 'vector' | 'hybrid' | 'full';
 const apiKey = process.env.DEEPINFRA_API_KEY!;
 const sql = neon((process.env.APP_DATABASE_URL ?? process.env.DATABASE_URL ?? '').replace(/^"|"$/g, ''));
@@ -182,19 +183,23 @@ async function main() {
     const system = buildSystemPrompt();
     const user = buildUserPrompt(q, voices);
     const lookup = buildCorpusLookup(voices);
-    const sections = voices.map((r) => ({ author: r.metadata.author, work: r.metadata.sourceTitle, tradition: r.metadata.tradition ?? 'unknown' }));
+    const sections = voices.map((r) => ({ author: r.metadata.author, work: r.metadata.sourceTitle, tradition: r.metadata.tradition ?? 'unknown', body: r.content }));
     const ctx = { sectionIds: voices.map((_, i) => i + 1), traditions: [...new Set(voices.map((r) => r.metadata.tradition ?? 'unknown'))] };
 
     let final: TeacherResponse | null = null;
     let totalMs = 0;
+    let lastViolations: Array<{ check: string; message: string; blockIndex?: number }> = [];
+    let lastParsed: unknown = null;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       let raw: string, ms: number;
-      try { ({ text: raw, ms } = await composeOnce(system, attempt === 0 ? user : `${user}\n\n--- retry: fix violations ---`)); } catch { continue; }
+      try { ({ text: raw, ms } = await composeOnce(system, attempt === 0 ? user : `${user}\n\n--- retry: fix violations ---`)); } catch { lastViolations = [{ check: 'compose_error', message: 'compose threw' }]; continue; }
       totalMs += ms;
       let parsed: unknown;
-      try { parsed = normalizeContract(JSON.parse(raw), sections); } catch { continue; }
+      try { parsed = normalizeContract(JSON.parse(raw), sections); } catch { lastViolations = [{ check: 'json_parse', message: 'not valid JSON' }]; continue; }
+      lastParsed = parsed;
       const vr = await verifyV1(parsed, lookup, ctx);
       if (vr.ok) { final = parsed as TeacherResponse; break; }
+      lastViolations = vr.violations;
     }
 
     if (final) {
@@ -207,7 +212,28 @@ async function main() {
       if (framing) console.log(`  framing: "${(framing as { text: string }).text.slice(0, 100)}…"`);
     } else {
       fallback++;
-      console.log(`  outcome: FALLBACK (${(totalMs / 1000).toFixed(1)}s)`);
+      console.log(`  outcome: FALLBACK (${(totalMs / 1000).toFixed(1)}s) — last-attempt violations:`);
+      for (const v of lastViolations) {
+        console.log(`      [${v.check}] ${v.message}`);
+        // For quote_verbatim, show WHY snap couldn't repair: prefix vs any-position ratio.
+        if (v.check === 'quote_verbatim' && lastParsed && typeof v.blockIndex === 'number') {
+          const blk = (lastParsed as { blocks: Array<{ section_id?: number; quote?: string }> }).blocks[v.blockIndex];
+          const body = blk?.section_id ? voices[blk.section_id - 1]?.content : undefined;
+          if (blk?.quote && body) {
+            const full = normalizeForMatch(blk.quote).length || 1;
+            // longest verbatim prefix
+            let lo = 1, hi = blk.quote.length, pfx = 0;
+            while (lo <= hi) { const m = (lo + hi) >> 1; if (isNormalizedSubstring(blk.quote.slice(0, m), body)) { pfx = m; lo = m + 1; } else hi = m - 1; }
+            // longest verbatim substring (any start)
+            let bestSub = 0;
+            for (let i = 0; i < blk.quote.length; i++) { let l2 = 1, h2 = blk.quote.length - i, b = 0; while (l2 <= h2) { const m = (l2 + h2) >> 1; if (isNormalizedSubstring(blk.quote.slice(i, i + m), body)) { b = m; l2 = m + 1; } else h2 = m - 1; } if (b > bestSub) bestSub = b; }
+            const pfxRatio = normalizeForMatch(blk.quote.slice(0, pfx)).length / full;
+            const subRatio = bestSub / blk.quote.length;
+            console.log(`        quote(${blk.quote.length} ch): "${blk.quote.slice(0, 90).replace(/\s+/g, ' ')}…"`);
+            console.log(`        longest verbatim PREFIX ratio: ${pfxRatio.toFixed(2)} | longest SUBSTRING(any-pos) raw chars: ${bestSub} (${subRatio.toFixed(2)})`);
+          }
+        }
+      }
     }
     console.log();
   }
