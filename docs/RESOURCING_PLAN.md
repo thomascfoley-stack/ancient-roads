@@ -245,3 +245,29 @@ Measured retrieval accuracy on the **publishable set = verified-repairable only*
 - **Catena Aurea (Newman 1841, confirmed PD, Gospels)** → directly covers the **Sermon on the Mount** (Matthew) diversity gap; the highest-value diversity voice for Gospel passages.
 - **CrossWire-5 (Barnes/Calvin/Wesley/Scofield/Darby — whole-Bible PD)** → covers **Isaiah 53** + the epistle passages (1 Cor 13, propitiation in Romans/Hebrews).
 - Together they target all 4 lost queries. **The legal-corpus-only is 93%/87% — near the bar but not at it; the gap is small, concentrated, and recoverable by two confirmed-PD sources** rather than the 70% patristic long tail. So: wire Catena + CrossWire-5, re-measure; don't chase the tail.
+
+## 14. Failure-code eval — the gap is RANKING, not content; CrossWire-5 has zero ROI (2026-07-10)
+
+Before wiring anything, expanded to an **88-query** eval with a per-query failure-code breakdown on the legal corpus (`web/src/scripts/eval-failure-codes.mts`, read-only) + a top-6 diagnosis of the 2 genuine misses (`diagnose-legal-misses.mts`).
+
+**Diagnosis of the 2 HIT=1 misses — NOT a clean content gap:** for "1 Corinthians 13… love", the legal set has 400+ commentaries on 1 Cor but the reranker returns **John 15 "greater love"** — a *ranking* drift, not missing content. For "propitiation", the baseline hit came from **excluded patristic voices**; the helloao coverage exists but doesn't surface. Neither is an anchoring issue.
+
+**88-query result:** true-success HIT=1 **64%** (56/88); ≥2-voices HIT=2 **84%** (74/88). Failure codes:
+
+| Code | Count | % | Intervention it justifies |
+|---|---:|---:|---|
+| pass | 74 | 84% | — |
+| **<2-voices** (right passage, only 1 voice) | 9 | 10% | any added voice (Catena) |
+| **wrong-passage** (content exists, wrong one ranks top) | 5 | 6% | **verse-ref intent routing (ranking)** |
+| **no-content** (set lacks the passage) | **0** | **0%** | CrossWire-5/content — **nothing to fix** |
+
+**Decisive: `no-content = 0%`.** The verified-repairable corpus is never missing the passage — so **standing up libsword for CrossWire-5 has ZERO measured ROI.** All 14 failures are the reranker/vector drifting to semantically-similar passages instead of concentrating in-range voices, and they cluster in **verse-ref** queries (the query names the reference — "Isaiah 53", "1 Corinthians 13", "Sermon on the Mount" — and retrieval drifts). **Ranking drift is systemic, not rare.**
+
+**Why the full-corpus baseline hit 100%:** sheer voice volume (patristic + biblehub-14 + helloao) meant ≥2 in-range results survived the drift into the top-6. A smaller *legal* corpus exposes the underlying ranking weakness that volume was masking.
+
+**ROI-ranked interventions (measured, cheapest-first):**
+1. **verse-ref intent routing — HIGHEST leverage, no corpus, no install.** When a query names a specific reference, route to that passage (reference-parse) instead of pure semantic drift. Directly fixes the 6% wrong-passage + most of the 10% <2-voices (they're verse-ref queries). This is the real bottleneck.
+2. **Catena Aurea (Newman PD, Gutenberg — no install):** adds Gospel voices → helps the Gospel <2-voices (Sermon on Mount, Lord's Prayer). Moderate, worth it.
+3. **CrossWire-5 / libsword — DO NOT BUILD.** `no-content = 0%` — zero ROI; it fixes a gap that doesn't exist.
+
+**Nothing wired. Recommend: build verse-ref intent routing, re-measure; add Catena if the Gospel <2-voices persist; drop the libsword/CrossWire-5 plan.**
