@@ -33,7 +33,7 @@ Ancient Paths is a **concordance, not a commentator.** It reports what others ha
 - **Errors:** no empty `catch`, no silent failures. Fail fast in dev; typed/safe at API boundaries. **The verifier fails closed** — on any verifier error, fall back to raw retrieval; never emit unverified model text.
 - **Data:** every filtered/joined query path has its index; **never return unbounded result sets** (paginate/`LIMIT`); no N+1; keep embeddings/LLM calls **off the request path**.
 - **Secrets:** server-only; never logged; **never printed in output**; never placed in prompts.
-- **Sync guards:** code duplicated across `src/` ↔ `web/` (verifier, contract, prompt, `ref-parse`) must be **byte-identical**, enforced by `test/web-core-sync.test.ts`. If you change one copy, copy it to the other or the guard test goes red — that's intended.
+- **Sync guards:** code duplicated across `src/` ↔ `web/` must be **byte-identical**, enforced two ways — `test/web-core-sync.test.ts` (the integrity core: verifier, contract, teacher prompt) and `test/bible-sync.test.ts` (all of `src/bible/` ↔ `web/src/bible/`: `ref-parse`, `pericopes`, `verse-id`, aliases — same file set AND byte-identical). If you change one copy, copy it to the other or the guard test goes red — that's intended.
 
 ## Security
 

@@ -410,3 +410,31 @@ export function typeahead(input: string, opts: ParseOptions = {}): TypeaheadResu
   }
   return { kind: 'ref', outcome: parseRef(input, opts) };
 }
+
+// ---------------------------------------------------------------------------
+// Free-text reference scan (retrieval intent routing).
+
+// Candidate "<book> <chapter>[:verse][-range]" spans: optional ordinal, one book
+// word, then numbers. Deliberately conservative — each candidate is validated by
+// parseRef, so a non-book word ("chapter 3", "top 6") yields nothing.
+const SCAN_RE =
+  /\b((?:[1-3]|i{1,3}|first|second|third)\s+)?([a-z]{2,})\s+(\d{1,3}(?::\d{1,3})?(?:\s*[-–]\s*\d{1,3}(?::\d{1,3})?)?)\b/gi;
+
+// Find scripture references embedded in prose — "1 Corinthians 13 the greatest
+// of these…", "Isaiah 53", "John 3:16" — and return the resolved refs. Unlike
+// parseRef (whole-string typeahead), this scans candidate spans anywhere in the
+// text and keeps only those that parse to a valid reference (high precision).
+// Used to route a query to the passage it names; never guesses.
+export function scanReferences(text: string, opts: ParseOptions = {}): ResolvedRef[] {
+  const out: ResolvedRef[] = [];
+  const seen = new Set<string>();
+  for (const m of text.matchAll(SCAN_RE)) {
+    const span = `${m[1] ?? ''}${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim();
+    const outcome = parseRef(span, opts);
+    if (outcome.ok && !seen.has(outcome.ref.display)) {
+      seen.add(outcome.ref.display);
+      out.push(outcome.ref);
+    }
+  }
+  return out;
+}

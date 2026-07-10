@@ -1,0 +1,42 @@
+// Reference/pericope intent routing (retrieval): scanReferences finds numeric
+// refs in prose, matchPericopes/resolveIntent map named passages — high precision
+// (topical queries route to nothing). Ranges are canonical verse IDs.
+
+import { describe, expect, it } from 'vitest';
+import { scanReferences } from '../src/bible/ref-parse';
+import { resolveIntent, matchPericopes } from '../src/bible/pericopes';
+
+const vid = (book: number, ch: number, v = 1) => book * 1_000_000 + ch * 1_000 + v;
+const hasStart = (ranges: { start: number }[], start: number) => ranges.some((r) => r.start === start);
+
+describe('scanReferences (numeric refs in prose)', () => {
+  it('finds a reference embedded in a natural-language query', () => {
+    const refs = scanReferences('1 Corinthians 13 the greatest of these is love');
+    expect(refs.flatMap((r) => r.ranges).some((r) => r.start === vid(46, 13))).toBe(true);
+  });
+  it('handles ordinal books, chapter:verse, and multiple refs', () => {
+    expect(scanReferences('Isaiah 53 the suffering servant').some((r) => r.ranges[0]!.start === vid(23, 53))).toBe(true);
+    expect(scanReferences('John 3:16 for God so loved the world').some((r) => r.ranges[0]!.start === vid(43, 3, 16))).toBe(true);
+  });
+  it('is high-precision — non-book words and topical queries yield nothing', () => {
+    expect(scanReferences('the good shepherd lays down his life')).toEqual([]);
+    expect(scanReferences('propitiation for our sins')).toEqual([]);
+    expect(scanReferences('top 6 results in chapter form')).toEqual([]);
+  });
+});
+
+describe('matchPericopes + resolveIntent (named passages)', () => {
+  it('resolves named pericopes to their ranges', () => {
+    expect(hasStart(matchPericopes('the beatitudes in the Sermon on the Mount'), vid(40, 5))).toBe(true);
+    expect(hasStart(matchPericopes('the whole armor of God'), vid(49, 6, 10))).toBe(true);
+    expect(hasStart(matchPericopes('Daniel in the lions den'), vid(27, 6))).toBe(true);
+  });
+  it('resolveIntent unions numeric refs + pericopes, dedupes', () => {
+    expect(hasStart(resolveIntent('Romans 8 nothing can separate us'), vid(45, 8))).toBe(true);
+    expect(hasStart(resolveIntent('the good shepherd lays down his life for the sheep'), vid(43, 10))).toBe(true);
+  });
+  it('leaves genuinely topical queries unrouted (empty)', () => {
+    expect(resolveIntent('propitiation for our sins')).toEqual([]);
+    expect(resolveIntent('justification by faith apart from works')).toEqual([]);
+  });
+});
