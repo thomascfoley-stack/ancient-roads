@@ -132,3 +132,14 @@ Ran the probe on **Adam Clarke** vs `helloao/adam-clarke` (10-chapter sample acr
 **Every sampled Adam Clarke verse is the same PD text as helloao** — the initial 34% "differ" was entirely *truncation* (our stored text is a cut-short copy of the identical work), which containment caught and which is still a $0 repair. **Implication: the whole 62,708-entry no-provenance-commentary bucket (Gill, JFB, Clarke, Matthew Henry) is expected to re-source at $0** — keep all vectors, just record helloao's PD provenance. Re-embed is likely reserved for the biblehub-14 (Wikisource/archive sources) and the patristic Schaff work, if at all.
 
 **Next unit:** the provenance-repair pipeline — full per-work match verification (all books, not a sample) → write config entries with helloao PD provenance for the 4 works → they're clean + ready for the scale-up migration. Still no publish until the full cleanup (incl. biblehub-14 + patristic) clears.
+
+### 8.2 helloao repair DONE + patristic probe (2026-07-10)
+
+**helloao commentaries — DONE, $0.** Full per-work verification (`resource-repair-helloao.ts`): Gill 28,279 / JFB 15,267 / Clarke 12,571 / Matthew Henry 4,124 = **~60,241 verses, ~99.99% $0 provenance-repair, 3 genuine-differ total.** Config entries written with helloao PD provenance + a forward-compatible `rebuild` recipe (per-verse endpoint) per work. Truncation logged as a tracked quality-limitation (Matthew Henry 88% truncated — same PD text, full text recoverable via the recipe; **no rebuild now — eval-gated**).
+
+**Patristic strategy REVISED — not blanket Schaff-canonical.** The probe (anchor points + author/edition classification) shows the ~384-work patristic bucket is **mixed**:
+- **PD-repairable:** ANF/NPNF core (Chrysostom — *verified* verbatim vs NPNF; Augustine, Tertullian, Origen, Cyril, Clement, Cyprian, Irenaeus) + *Catena Aurea* (Newman 1841 PD, the "as quoted by Aquinas" entries). ≈ half.
+- **DROP (modern copyrighted translations only):** **Theophylact (6,470), Bonaventure (4,185), Oecumenius (1,753), Jerome's prophet commentaries** (verified: no PD translation). ≈ 20–30%.
+- **Per-work edition check:** Aquinas's own lectures, Bede, Gregory the Great, Ambrose.
+
+So the patristic re-source is **edition-classify → repair-to-Schaff-if-PD → DROP-if-modern-only**, not a blanket Schaff fetch. Expect to drop ~12–18k entries. This is the next build after biblehub-14; a precise repair/drop rate needs the per-work edition classification.

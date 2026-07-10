@@ -17,6 +17,160 @@
       "retrieved_via": "biblehub aggregator — text is public domain (Barnes d. 1870); re-source from CrossWire/PD per ADR-008 before wide rollout"
     },
     "quarantine": "biblehub provenance (ADR-008 forbidden aggregator) — held until re-sourced from a permitted PD source per docs/RESOURCING_PLAN.md; text is PD so re-sourcing should be a $0 provenance-repair (existing vectors kept if the permitted text matches)",
-    "backfill": { "match_author": "Barnes' Notes" }
+    "backfill": {
+      "match_author": "Barnes' Notes"
+    }
+  },
+  {
+    "id": "john-gill",
+    "slug": "john-gill",
+    "title": "John Gill's Exposition of the Bible",
+    "author": "John Gill",
+    "year_written": 1763,
+    "source_type": "commentary",
+    "tradition": "reformed",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://bible.helloao.org/api/c/john-gill",
+      "edition": "John Gill's Exposition of the Bible (helloao john-gill, CC Public Domain Mark 1.0)",
+      "year": 1763,
+      "license_ref": "CC Public Domain Mark 1.0",
+      "rebuild": {
+        "source": "helloao",
+        "commentary_id": "john-gill",
+        "api": "https://bible.helloao.org/api",
+        "books_endpoint": "https://bible.helloao.org/api/c/john-gill/books.json",
+        "verse_endpoint": "https://bible.helloao.org/api/c/john-gill/{helloao_book_id}/{chapter}.json  (verse = content item where type='verse', item.number)",
+        "book_id_map": "src/ingest/helloao-source.ts#HELLOAO_BOOK_MAP",
+        "note": "stored section body is the vector-backing text (some verses truncated); a full-text rebuild re-fetches untruncated text via this recipe"
+      },
+      "text_match": {
+        "verses_compared": 28279,
+        "repair": 28279,
+        "repair_pct": 100,
+        "match": 15792,
+        "truncated": 12487,
+        "genuine_differ": 0,
+        "note": "truncated = same PD text, our stored copy cut short (vector kept as-is; full text via rebuild recipe)"
+      }
+    },
+    "backfill": {
+      "match_author": "John Gill"
+    }
+  },
+  {
+    "id": "jfb",
+    "slug": "jfb",
+    "title": "Jamieson-Fausset-Brown Bible Commentary",
+    "author": "Jamieson, Fausset & Brown",
+    "year_written": 1871,
+    "source_type": "commentary",
+    "tradition": "presbyterian",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://bible.helloao.org/api/c/jamieson-fausset-brown",
+      "edition": "Jamieson-Fausset-Brown Bible Commentary (helloao jamieson-fausset-brown, CC Public Domain Mark 1.0)",
+      "year": 1871,
+      "license_ref": "CC Public Domain Mark 1.0",
+      "rebuild": {
+        "source": "helloao",
+        "commentary_id": "jamieson-fausset-brown",
+        "api": "https://bible.helloao.org/api",
+        "books_endpoint": "https://bible.helloao.org/api/c/jamieson-fausset-brown/books.json",
+        "verse_endpoint": "https://bible.helloao.org/api/c/jamieson-fausset-brown/{helloao_book_id}/{chapter}.json  (verse = content item where type='verse', item.number)",
+        "book_id_map": "src/ingest/helloao-source.ts#HELLOAO_BOOK_MAP",
+        "note": "stored section body is the vector-backing text (some verses truncated); a full-text rebuild re-fetches untruncated text via this recipe"
+      },
+      "text_match": {
+        "verses_compared": 15267,
+        "repair": 15267,
+        "repair_pct": 100,
+        "match": 14093,
+        "truncated": 1174,
+        "genuine_differ": 0,
+        "note": "truncated = same PD text, our stored copy cut short (vector kept as-is; full text via rebuild recipe)"
+      }
+    },
+    "backfill": {
+      "match_author": "Jamieson, Fausset & Brown"
+    }
+  },
+  {
+    "id": "adam-clarke",
+    "slug": "adam-clarke",
+    "title": "Adam Clarke's Commentary on the Bible",
+    "author": "Adam Clarke",
+    "year_written": 1832,
+    "source_type": "commentary",
+    "tradition": "methodist",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://bible.helloao.org/api/c/adam-clarke",
+      "edition": "Adam Clarke's Commentary on the Bible (helloao adam-clarke, CC Public Domain Mark 1.0)",
+      "year": 1832,
+      "license_ref": "CC Public Domain Mark 1.0",
+      "rebuild": {
+        "source": "helloao",
+        "commentary_id": "adam-clarke",
+        "api": "https://bible.helloao.org/api",
+        "books_endpoint": "https://bible.helloao.org/api/c/adam-clarke/books.json",
+        "verse_endpoint": "https://bible.helloao.org/api/c/adam-clarke/{helloao_book_id}/{chapter}.json  (verse = content item where type='verse', item.number)",
+        "book_id_map": "src/ingest/helloao-source.ts#HELLOAO_BOOK_MAP",
+        "note": "stored section body is the vector-backing text (some verses truncated); a full-text rebuild re-fetches untruncated text via this recipe"
+      },
+      "text_match": {
+        "verses_compared": 12571,
+        "repair": 12570,
+        "repair_pct": 99.99,
+        "match": 10296,
+        "truncated": 2274,
+        "genuine_differ": 1,
+        "note": "truncated = same PD text, our stored copy cut short (vector kept as-is; full text via rebuild recipe)"
+      }
+    },
+    "backfill": {
+      "match_author": "Adam Clarke"
+    }
+  },
+  {
+    "id": "matthew-henry",
+    "slug": "matthew-henry",
+    "title": "Matthew Henry's Complete Commentary",
+    "author": "Matthew Henry",
+    "year_written": 1710,
+    "source_type": "commentary",
+    "tradition": "nonconformist",
+    "era": "puritan",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://bible.helloao.org/api/c/matthew-henry",
+      "edition": "Matthew Henry's Complete Commentary (helloao matthew-henry, CC Public Domain Mark 1.0)",
+      "year": 1710,
+      "license_ref": "CC Public Domain Mark 1.0",
+      "rebuild": {
+        "source": "helloao",
+        "commentary_id": "matthew-henry",
+        "api": "https://bible.helloao.org/api",
+        "books_endpoint": "https://bible.helloao.org/api/c/matthew-henry/books.json",
+        "verse_endpoint": "https://bible.helloao.org/api/c/matthew-henry/{helloao_book_id}/{chapter}.json  (verse = content item where type='verse', item.number)",
+        "book_id_map": "src/ingest/helloao-source.ts#HELLOAO_BOOK_MAP",
+        "note": "stored section body is the vector-backing text (some verses truncated); a full-text rebuild re-fetches untruncated text via this recipe"
+      },
+      "text_match": {
+        "verses_compared": 4124,
+        "repair": 4122,
+        "repair_pct": 99.95,
+        "match": 498,
+        "truncated": 3624,
+        "genuine_differ": 2,
+        "note": "truncated = same PD text, our stored copy cut short (vector kept as-is; full text via rebuild recipe)"
+      }
+    },
+    "backfill": {
+      "match_author": "Matthew Henry"
+    }
   }
 ]

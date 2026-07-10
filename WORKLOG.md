@@ -65,6 +65,27 @@ Owner: **HTTP-first** tooling; **forbid historicalchristian.faith** (added to `F
 
 **Next unit:** the provenance-repair pipeline — per-work full match verification → write config entries with helloao PD provenance for the 4 works (clean, ready for scale-up). No publish until the full cleanup (biblehub-14 + patristic Schaff) clears.
 
+### Unit 1 DONE — helloao commentaries provenance-repaired ($0), + patristic probe
+
+**helloao repair (`resource-repair-helloao.ts` + shared `helloao-source.ts`) — FULL per-work verification (all books):**
+
+| Work | verses | $0 repair | genuine-differ | truncated |
+|---|---:|---|---:|---:|
+| John Gill | 28,279 | 100% | 0 | 12,487 |
+| JFB | 15,267 | 100% | 0 | 1,174 |
+| Adam Clarke | 12,571 | 99.99% | 1 | 2,274 |
+| Matthew Henry | 4,124 | 99.95% | 2 | 3,624 |
+
+**~60,241 verses, ~99.99% $0 provenance-repair, 3 genuine-differ total.** The entire 62,708-entry no-provenance-commentary bucket is confirmed the same PD text as helloao. Wrote 4 clean config entries (`ingest/sources.config.json`, now 5 with Barnes) with helloao PD provenance + a **forward-compatible `rebuild` recipe** per work (commentary_id + verse-endpoint pattern + `book_id_map` ref) so a future full-text rebuild is a clean re-fetch. **Gate B green (5 sources), `npm run audit` green.** Kept existing (truncated) text + vectors — **$0, no re-embed/rebuild** (that's the eval-gated later phase). Not migrated/published (waits for scale-up after full cleanup).
+
+**TRACKED QUALITY-LIMITATION (2) — truncation** (alongside the source_id-collapse, [[known-limitation]]): our stored section body is truncated for long comments (Matthew Henry 88% truncated, Gill 44%), clustered in the long/high-value expositions. Vectors are over the truncated text (kept as-is for the $0 compliance clear). A future full-text rebuild — **gated on the eval, not now** — re-fetches untruncated text via each source's `provenance.rebuild` recipe. Revisit with the collapse when the broader eval can measure whether truncation caps answer quality.
+
+**Patristic probe (the biggest unknown) — result: MIXED, a real drop bucket exists.** No structured Schaff API to align ~62k verse-keyed father snippets, so verified by anchor points + author/edition classification (`historicalchristian.faith` = the 149 patristic works):
+- **PD-repairable (ANF/NPNF/Catena-Newman):** Chrysostom (verified: his Galatians homily is verbatim the NPNF text on New Advent), Augustine, Tertullian, Origen, Cyril, Clement, Cyprian, Irenaeus + the heavy "*as quoted by Aquinas*" entries = *Catena Aurea* (Newman 1841 PD). ≈ roughly half the volume.
+- **DROP-risk (modern copyrighted translations only):** **Theophylact of Ohrid (6,470)**, **Bonaventure (4,185)**, **Oecumenius (1,753)**, Jerome's prophet commentaries (verified: no PD translation exists — only modern). ≈ 20–30% by volume.
+- **Needs per-work edition check:** Aquinas's own commentaries (7,274 — Catena PD vs his modern-translated lectures), Bede, Gregory the Great, Ambrose.
+- **Verdict:** the patristic bucket is NOT blanket-repairable to Schaff (a meaningful slice is modern-only → **drop**) and NOT all-drop (the ANF/NPNF core + Catena is PD). A precise repair/drop rate needs per-work edition classification (the fetcher build). **Recommend: build the patristic re-source as edition-classify → repair-to-Schaff-if-PD → drop-if-modern-only, and expect to DROP Theophylact/Oecumenius/Bonaventure/Jerome-prophets (~12–18k entries).**
+
 ## 2026-07-09 (next phase) — Step 1 backup + Step 2 gates (coverage + license)
 
 Executing `docs/NEXT_PHASE.md` Steps 1–2. Stopping at the Step 3 boundary (the
