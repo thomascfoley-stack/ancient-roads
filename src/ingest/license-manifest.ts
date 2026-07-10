@@ -16,11 +16,17 @@ export function isAllowedLicense(license: unknown): license is AllowedLicense {
   return typeof license === 'string' && (ALLOWED_LICENSES as readonly string[]).includes(license);
 }
 
-// ToS-protected aggregators we must never scrape/host (ADR-008, CLAUDE.md). The
+// Aggregators we must never depend on for provenance (ADR-008, CLAUDE.md). The
 // TEXT may be public domain, but reusing THEIR compilation is a breach-of-contract
-// exposure (the hiQ pattern). A source whose provenance points here fails closed:
-// it must be re-sourced from a permitted PD source, or explicitly quarantined.
-export const FORBIDDEN_PROVENANCE_DOMAINS = ['biblehub.com', 'studylight.org'] as const;
+// exposure (the hiQ pattern), and an unlabeled aggregator edition can't clear the
+// edition trap. A source whose provenance points here fails closed: it must be
+// re-sourced from a permitted PD edition, or explicitly quarantined.
+//   - biblehub.com, studylight.org: ADR-008 (ToS-protected).
+//   - historicalchristian.faith: added 2026-07-10 after vetting (RESOURCING_PLAN
+//     §7) — "open source, crowd-sourced" with NO license grant, no edition
+//     attribution, and it lists non-PD authors (e.g. C.S. Lewis); its father
+//     translations can't be assumed PD. Re-source the fathers from Schaff.
+export const FORBIDDEN_PROVENANCE_DOMAINS = ['biblehub.com', 'studylight.org', 'historicalchristian.faith'] as const;
 
 function provenanceHost(url: string): string | null {
   try {

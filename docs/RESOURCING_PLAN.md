@@ -94,3 +94,25 @@ Owner approved **full provenance cleanup before any publish**; parity taken **by
 4. **First unit = the match/repair engine on Barnes?** or a different starting work?
 
 *No fetchers/parsers/matchers written until the tooling approach (decision 1) is chosen — SWORD being unavailable changes the design.*
+
+## 8. Decisions taken + clean source found (2026-07-10)
+
+**Decisions:** (1) tooling = **HTTP-first**; (2) **forbid `historicalchristian.faith`** (now in `FORBIDDEN_PROVENANCE_DOMAINS`) + **Schaff ANF/NPNF as the canonical PD father source**.
+
+**Major de-risk — `bible.helloao.org` ("Free Use Bible API") cleanly carries 4 of the no-provenance mega-commentaries, all Public Domain (CC PD Mark 1.0), structured per-chapter, with an explicit license field:**
+
+| helloao id | Work | Our entries | License |
+|---|---|---:|---|
+| `adam-clarke` | Adam Clarke | 13,318 | Public Domain |
+| `jamieson-fausset-brown` | JFB | 16,966 | Public Domain |
+| `john-gill` | John Gill | 28,300 | Public Domain |
+| `matthew-henry` | Matthew Henry | 4,124 | Public Domain |
+
+That's **62,708 entries (the entire no-provenance-commentary bucket) from one clean, permitted, structured API** — and the repo already has `ingest-helloao-commentaries.ts` for its shape. helloao also has `keil-delitzsch` (PD) and `tyndale` (CC BY-SA). It does **not** carry the biblehub 14 (Barnes/Calvin/Wesley/…) — those still need Wikisource/archive.org.
+
+**Revised sourcing map:**
+- **helloao (PD, structured):** Gill, JFB, Clarke, Matthew Henry, Keil-Delitzsch → text-match → provenance-repair (helloao url + PD).
+- **Wikisource/archive.org:** the biblehub 14 PD commentaries.
+- **Schaff (archive.org):** the ~384 patristic works (historicalchristian.faith + no-provenance patristic).
+
+**First slice (building now):** the **text-match engine**, proven on real helloao data — fetch a helloao PD commentary, align per-verse to our stored `embeddings.content`, report normalized-match rate = the split between $0 provenance-repair and re-embed. Then repair one work's provenance (config entry) end-to-end. No publish until the whole cleanup clears (owner's "full cleanup first").

@@ -122,8 +122,11 @@ describe('forbiddenProvenanceDomain', () => {
     expect(forbiddenProvenanceDomain(undefined)).toBeNull();
     expect(forbiddenProvenanceDomain(42)).toBeNull();
   });
-  it('exports exactly the two forbidden domains', () => {
-    expect([...FORBIDDEN_PROVENANCE_DOMAINS]).toEqual(['biblehub.com', 'studylight.org']);
+  it('flags historicalchristian.faith (added after 2026-07-10 vetting)', () => {
+    expect(forbiddenProvenanceDomain('https://historicalchristian.faith/commentary/rom/8')).toBe('historicalchristian.faith');
+  });
+  it('exports exactly the forbidden domains', () => {
+    expect([...FORBIDDEN_PROVENANCE_DOMAINS]).toEqual(['biblehub.com', 'studylight.org', 'historicalchristian.faith']);
   });
 });
 
