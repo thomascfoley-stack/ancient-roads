@@ -45,6 +45,30 @@ export function shingleSet(s: string, n = 4): Set<string> {
   return out;
 }
 
+// 32-bit FNV-1a. For a corpus-scale shingle index, store hashes (numbers) not
+// strings — a whole-corpus Set<string> of n-grams is memory-prohibitive.
+function fnv1a(s: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+export function shingleHashSet(s: string, n = 4): Set<number> {
+  const t = tokenList(s);
+  const out = new Set<number>();
+  for (let i = 0; i + n <= t.length; i++) out.add(fnv1a(t.slice(i, i + n).join(' ')));
+  return out;
+}
+
+// Add a text's shingle-hashes into a growing corpus set (for building the corpus).
+export function addShingleHashes(corpus: Set<number>, s: string, n = 4): void {
+  const t = tokenList(s);
+  for (let i = 0; i + n <= t.length; i++) corpus.add(fnv1a(t.slice(i, i + n).join(' ')));
+}
+
 export type MatchClass = 'match' | 'truncated' | 'differ';
 
 // match  = same text (Jaccard ≥ t).
@@ -76,8 +100,9 @@ export function tallyMatch(stored: Map<number, Set<string>>, source: VerseText[]
 export const repairOf = (s: MatchStats): number => s.match + s.truncated;
 export const repairPct = (s: MatchStats): number => (s.compared ? (100 * repairOf(s)) / s.compared : 0);
 
-// Fraction of `part`'s tokens present in `whole`.
-export function containment(part: Set<string>, whole: Set<string>): number {
+// Fraction of `part`'s members present in `whole` (works on token-sets, shingle
+// strings, or shingle-hash sets).
+export function containment<T>(part: Set<T>, whole: Set<T>): number {
   if (part.size === 0) return 0;
   let inter = 0;
   for (const x of part) if (whole.has(x)) inter++;

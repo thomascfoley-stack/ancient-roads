@@ -103,7 +103,13 @@ Owner: **HTTP-first** tooling; **forbid historicalchristian.faith** (added to `F
 - **Augustine, Homilies on 1 John (NPNF1-07): 88.5% $0-repair** ✅ (10 per-snippet drops)
 - **Origen, Commentary on John (ANF9): 1.6% → DROP** ❌ — our catena "Origen on John" is a **different/modern translation**, NOT the ANF text (only 2/128 match), despite Origen having a PD ANF edition.
 
-**Key finding (validates the required rigor): per-work text-match is essential; author-name is NOT enough.** Origen-by-name looked repairable (ANF exists) but the text-match proves our text isn't it → DROP. $0-repair holds where the text IS the PD edition (Chrysostom, Augustine), not otherwise. Drops → `status=quarantined`, held/reversible, never published. +2 unit tests for the shingle matcher (7 total in `resource-textmatch`). **Next: scale the classify to all ~384 patristic works.**
+**Key finding (validates the required rigor): per-work text-match is essential; author-name is NOT enough.** Origen-by-name looked repairable (ANF exists) but the text-match proves our text isn't it → DROP. $0-repair holds where the text IS the PD edition (Chrysostom, Augustine), not otherwise. Drops → `status=quarantined`, held/reversible, never published. +2 unit tests for the shingle matcher (7 total in `resource-textmatch`).
+
+### Patristic classify RUN — whole-corpus crawl CONTAMINATED, did NOT report a false number (2026-07-10)
+
+Scaled the classify as a read-only pass with the three conditions: (1) **provenance fixed** to cite the PD ANF/NPNF edition, not newadvent.org (New Advent = `verify_via` only); (2) verification source = New Advent (**robots.txt permits `/fathers/`**), rate-limited + page-cached + resumable (`newadvent-crawl.ts`) so we don't become an aggregator; (3) classify across all works, write nothing. Added corpus-scale shingle-HASH matching (`shingleHashSet`/`addShingleHashes`, FNV-1a) for memory.
+
+**Raw output was 12.6% repairable / 82.1% quarantine (1,387 works, 62,444 entries) — but it is CONTAMINATED and I did not report it as true.** Proof: Chrysostom-on-Acts classified at 1% while Chrysostom-on-Galatians was verified at 99% — the crawl (BFS from `/fathers/`) reached only 2,004 of ~5,000 pages, unevenly (Augustine 139 content pages, Tertullian 18, **Chrysostom 0** — only index pages), and New Advent doesn't host the Catena Aurea (Aquinas ~15k). So the quarantine bucket is full of **false quarantines** (PD text that wasn't crawled). **12.6% is a floor; 82% is inflated.** Reliable signal: the crawled ANF/NPNF core (Augustine 85–94%, Tertullian 77–95%, Clement, Cyprian) genuinely repairs. **Next: a complete multi-source PD corpus (full New Advent + Catena-Newman + Gutenberg/archive) or per-work targeting, then re-run.** Detail in `RESOURCING_PLAN` §11.
 
 ## 2026-07-09 (next phase) — Step 1 backup + Step 2 gates (coverage + license)
 
