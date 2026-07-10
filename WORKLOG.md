@@ -1,5 +1,79 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-09 (later) — Full-corpus embedding: throughput + resilience hardening
+
+Getting the full-corpus embed to run fast AND survive to completion took several
+iterations. Captured here so the next batch job (and the planned `batch-runner.ts`
+extraction) starts from the lessons, not a blank page.
+
+**Bug 1 — reranker 404.** BGE-reranker-v2-m3 isn't on DeepInfra. Switched to
+`Qwen/Qwen3-Reranker-0.6B` (`/v1/inference` endpoint, `queries`/`documents` → `scores`).
+Verified precision: "good shepherd" scores John-10 at 0.995 vs Luke-2 nativity 0.071.
+
+**Bug 2 — sequential embed calls.** Original job embedded one 64-text batch at a time.
+Added a bounded worker pool (`EMBED_CONCURRENCY`). Isolated test confirmed DeepInfra
+serves 7 concurrent embed calls in ~the time of one — the API was never the bottleneck.
+
+**Bug 3 — single shared `pg.Client` serialized all "concurrent" writes.** The workers
+overlapped their API calls but queued every INSERT on one TCP connection ("client already
+executing a query" warning). Switched to a `pg.Pool`.
+
+**Bug 4 — 183 direct connections drowned Neon's auth handshake.** Bumping concurrency to
+180 with `max: 183` on the *direct* (unpooled) endpoint produced "Authentication timed
+out" / "socket disconnected" storms. Per Neon's guidance: **decouple API concurrency from
+DB connections** — use the **`-pooler` (PgBouncer) endpoint** + `connect_timeout=15` with
+a **small** pool (`max: 20`) that PgBouncer multiplexes. 180-way embed concurrency now
+rides over 20 real connections. Connection errors → 0.
+
+**Bug 5 — job died on total network/DNS outage.** Twice the machine briefly lost
+connectivity (`fetch failed` + `getaddrinfo ENOTFOUND`); the outer page-fetch query
+exhausted its ~30s retry budget and threw, killing the run. Hardened `dbQuery` to retry
+ANY error for ~10 min (30 attempts, backoff capped at 30s) and wrapped the worker INSERT
+so an exhausted write skips-and-continues (next run's pre-skip fills it) instead of
+crashing. The job is now idempotent AND outage-resilient.
+
+**Note on counts:** `commentary_entries` has 371k rows but this script's `source_id`
+(`commentary:{slug}:{ch}:{vs}-{ve}:{author}`, no `entry_index`) collapses multi-paragraph
+entries — so ~half pre-skip as same-source_id dupes. True unique-embedding target ≈ 170k,
+not 342k. Fine for retrieval (one vector per verse+author is what we want).
+
+Restart is always safe: pre-skip + `ON CONFLICT DO NOTHING` resume from wherever the last
+run stopped. Extraction of this proven pattern into `src/ingest/batch-runner.ts` logged in
+ROADMAP (do it AFTER the 10/10 accuracy gate, from working code).
+
+**Bug 6 — coverage loss from wholesale batch-poisoning (the big one).** Diagnosed with a
+new read-only harness `src/ingest/measure-embedding-gap.ts` (anti-join vs the REAL schema:
+`commentary_entries` → synthesized `source_id` → `embeddings`; note the true target is
+**168,233 unique source_ids**, not 371k, because the `source_id` omits `entry_index` and
+collapses multi-paragraph entries). Found a **47,139-row gap (28%)**. Root cause confirmed
+by code AND a real-BGE-tokenizer probe (embed each missing text as a singleton via the API):
+- Uniform sample: **0/400 oversized** → the gap is almost entirely COLLATERAL.
+- Densest-tail (Greek/Hebrew/HTML-entity) sample: **12/500 (2.4%) oversized** → genuine
+  culprits exist but number only in the **low hundreds**, all dense-script.
+Mechanism: BGE's batch API fails WHOLESALE when any one text >512 tokens (it counts
+`[CLS]`+`[SEP]`, so ~511 content tokens = the "513 input tokens" error), dropping ~63
+innocent batchmates. Re-runs regrouped and recovered some (why the count crept 83k→121k
+across restarts) but the dense culprits kept re-poisoning their new batches → never closed.
+
+**Fix (owner chose adaptive truncation over chunking).** Chunking was the wrong tool here:
+retrieval indexes chunks positionally and does NOT dedup by `source_id`, so multi-chunk
+rows would surface the same author+verse as duplicate "voices" and skew the ≥2-tradition
+gate — a real retrieval change for a ~few-hundred-row problem, when we already head-truncate
+all 168k entries. Instead: **de-poison** (batch fail → re-embed each text individually) +
+**adaptive truncation** (a text that still 400s is shortened 1000→600→400→250 chars until
+it embeds — never dropped). One vector per source_id, zero retrieval changes.
+
+**Result — full coverage, verified.** Backfill (only the missing ids; `ON CONFLICT DO
+NOTHING` never overwrites) ran clean in **13.2 min: 47,139 embedded, 0 errors, 0 dropped**
+(adaptive truncation recovered even the dense culprits). Re-ran the gap harness:
+**MISSING = 0.** 168,392 distinct commentary source_ids now embedded (173,806 total rows).
+
+**Pushed back on the task spec where it didn't fit our stack:** (1) embedding is a LOCAL
+batch job, not a Vercel function — no serverless logs to cross-check; (2) no `source_texts`
+table — it's `commentary_entries` + synthesized `source_id`, and I query Neon directly
+(ground truth), no dashboard/OAuth needed; (3) truncation was already ON (1000 chars) — the
+bug was char-truncation ≠ token-limit, not "truncation disabled."
+
 ## 2026-07-09 — Teacher landed + wired to web (`feat/teacher-pipeline` → `main`)
 
 **Merged to `main`, audit green (95 tests, typecheck + lint + knip + deps all pass).**

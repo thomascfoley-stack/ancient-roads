@@ -24,7 +24,12 @@ const BOOK_SLUGS: Record<number, string> = {
 
 const MIN_BODY_LENGTH = 100;
 const EMBED_BATCH = 64;
-const DB_BATCH = 500;
+// DeepInfra allows 200 concurrent requests/model; stay at 90% of that so a
+// burst doesn't get 429'd right at the ceiling.
+const EMBED_CONCURRENCY = 180;
+// Must be large relative to EMBED_CONCURRENCY * EMBED_BATCH (180*64=11,520) or
+// most workers sit idle waiting for the next DB page instead of embedding.
+const DB_BATCH = 50_000;
 // BGE-large-en-v1.5: 512-token context. Conservative 1200 chars (~340 tokens
 // worst case for dense Latin/Greek theological text) virtually eliminates batch
 // failures from the token limit.
@@ -45,27 +50,41 @@ function localEnv(name: string): string | undefined {
 
 async function main() {
   const apiKey = localEnv('DEEPINFRA_API_KEY');
-  const dbUrl = localEnv('DATABASE_URL_UNPOOLED') ?? localEnv('DATABASE_URL');
+  // Prefer the POOLED (PgBouncer) endpoint, not the direct one — embed
+  // concurrency (180) and DB connection count are decoupled on purpose:
+  // PgBouncer transaction-pools many workers' short queries over far fewer
+  // real Postgres connections, instead of each worker opening its own
+  // connection and hammering Neon's auth handshake with a herd of ~180 at once.
+  const dbUrl = localEnv('DATABASE_URL') ?? localEnv('DATABASE_URL_UNPOOLED');
   if (!apiKey) throw new Error('DEEPINFRA_API_KEY is required');
-  if (!dbUrl) throw new Error('DATABASE_URL_UNPOOLED is required');
+  if (!dbUrl) throw new Error('DATABASE_URL is required');
 
   const embedder = createDeepInfraEmbedder({ apiKey });
-  const client = new pg.Client({
-    connectionString: dbUrl.replace(/^"|"$/g, ''),
+  const cleanUrl = dbUrl.replace(/^"|"$/g, '') +
+    (dbUrl.includes('?') ? '&' : '?') + 'connect_timeout=15';
+
+  // Small pool relative to EMBED_CONCURRENCY — PgBouncer multiplexes the 180
+  // embed workers' brief INSERT/SELECT calls over this many real connections.
+  const pool = new pg.Pool({
+    connectionString: cleanUrl,
     ssl: { rejectUnauthorized: false },
+    max: 20,
+    connectionTimeoutMillis: 15_000,
   });
-  await client.connect();
+  pool.on('error', (err: Error) => {
+    console.error(`  Pool connection error: ${err.message}`);
+  });
 
   // Load existing source_ids into a Set for fast lookup (avoids wasting API calls)
   console.log('Loading existing source_ids...');
-  const { rows: existingRows } = await client.query(
+  const { rows: existingRows } = await pool.query(
     `SELECT source_id FROM embeddings WHERE user_id IS NULL AND source_type = 'commentary'`,
   );
   const existing = new Set(existingRows.map((r: { source_id: string }) => r.source_id));
   console.log(`Existing commentary embeddings: ${existing.size}`);
 
   // Count total
-  const { rows: [{ total }] } = await client.query(
+  const { rows: [{ total }] } = await pool.query(
     `SELECT count(*)::int AS total FROM commentary_entries WHERE length(body) >= $1`,
     [MIN_BODY_LENGTH],
   );
@@ -78,8 +97,61 @@ async function main() {
   let embedErrors = 0;
   const t0 = performance.now();
 
+  // Retry on ANY error, not just specific known transient-error strings — at
+  // 180-way concurrency Neon surfaces auth-handshake timeouts, pool exhaustion,
+  // etc. under many different messages. Backoff is capped at 30s and runs for
+  // MAX_ATTEMPTS tries (~10 min total) so a full network/DNS outage — the whole
+  // machine losing connectivity for a minute or two, which we've now seen twice
+  // — is ridden out rather than killing a multi-hundred-thousand-row job.
+  async function dbQuery(sql: string, params: unknown[]): Promise<pg.QueryResult> {
+    const MAX_ATTEMPTS = 30;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      try {
+        return await pool.query(sql, params);
+      } catch (e) {
+        const msg = (e as Error).message;
+        if (attempt === MAX_ATTEMPTS - 1) throw e;
+        console.error(`  DB error (attempt ${attempt + 1}/${MAX_ATTEMPTS}): ${msg.slice(0, 100)} — retrying...`);
+        await new Promise((r) => setTimeout(r, Math.min(3000 * (attempt + 1), 30_000)));
+      }
+    }
+    throw new Error('unreachable');
+  }
+
+  // Embed a sub-batch, tolerating BGE's wholesale 512-token batch failure.
+  // Fast path: one call for the whole batch. On failure (a poisoned text), fall
+  // back to per-text embedding so the innocents still get vectors. Returns one
+  // slot per input text (null = truly unembeddable, ~never in practice).
+  async function embedResilient(texts: string[], offsetHint: number): Promise<(number[] | null)[]> {
+    try {
+      return await embedder.embed(texts);
+    } catch {
+      console.error(`  Batch @${offsetHint} failed — re-embedding ${texts.length} texts individually`);
+      const out: (number[] | null)[] = [];
+      for (const t of texts) out.push(await embedOneAdaptive(t));
+      return out;
+    }
+  }
+
+  // Embed a single text, adaptively shortening it until it fits BGE's 512-token
+  // limit. `texts` are already sliced to MAX_EMBED_CHARS upstream, so the first
+  // attempt matches the batch attempt; only a genuinely oversized (dense) text
+  // shrinks further. Consistent with the head-truncation applied corpus-wide.
+  const ADAPTIVE_CHARS = [MAX_EMBED_CHARS, 600, 400, 250];
+  async function embedOneAdaptive(text: string): Promise<number[] | null> {
+    for (const chars of ADAPTIVE_CHARS) {
+      try {
+        const [v] = await embedder.embed([text.slice(0, chars)]);
+        if (v) return v;
+      } catch {
+        // token-limit or transient — shrink and retry the next size down
+      }
+    }
+    return null;
+  }
+
   while (offset < total) {
-    const { rows } = await client.query(
+    const { rows } = await dbQuery(
       `SELECT id, book, chapter, verse_start, verse_end, author, year, tradition,
               source_title, source_url, body
        FROM commentary_entries
@@ -124,52 +196,74 @@ async function main() {
       });
     }
 
-    // Embed new entries in sub-batches
+    // Embed sub-batches with EMBED_CONCURRENCY requests in flight at once.
+    // DB writes still happen one batch at a time (dbQuery/client are not
+    // concurrency-safe), but the embedding API calls — the actual bottleneck,
+    // one network round-trip per 64 texts — overlap.
+    const subBatches: { text: string; row: Omit<EmbeddingRow, 'embedding'> }[][] = [];
     for (let i = 0; i < pending.length; i += EMBED_BATCH) {
-      const chunk = pending.slice(i, i + EMBED_BATCH);
-      const texts = chunk.map((p) => p.text);
-
-      let vectors: number[][];
-      try {
-        vectors = await embedder.embed(texts);
-      } catch (e) {
-        // Rare at 1200 chars. Log and skip the batch.
-        console.error(`  Embed batch error at offset ${offset + i}: ${(e as Error).message.slice(0, 120)}`);
-        embedErrors += chunk.length;
-        continue;
-      }
-
-      // Build rows with vectors
-      const embeddingRows: EmbeddingRow[] = chunk.map((p, j) => ({
-        ...p.row,
-        embedding: vectors[j]!,
-      }));
-
-      // Upsert (handles any races from concurrent runs)
-      const COLS = 6;
-      const params: unknown[] = [];
-      const tuples = embeddingRows.map((r, idx) => {
-        const b = idx * COLS;
-        params.push(
-          r.sourceType, r.sourceId, r.chunkIndex, r.content,
-          JSON.stringify(r.embedding), JSON.stringify(r.metadata),
-        );
-        return `(NULL, $${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}, $${b + 5}::vector, $${b + 6}::jsonb)`;
-      });
-
-      const res = await client.query(
-        `INSERT INTO embeddings (user_id, source_type, source_id, chunk_index, content, embedding, metadata)
-         VALUES ${tuples.join(', ')}
-         ON CONFLICT (source_type, source_id, chunk_index) DO NOTHING RETURNING id`,
-        params,
-      );
-
-      const inserted = res.rowCount ?? 0;
-      embedded += inserted;
-      dbSkipped += embeddingRows.length - inserted;
-      // Track in the in-memory set so later batches with the same source_id are skipped
-      for (const r of embeddingRows) existing.add(r.sourceId);
+      subBatches.push(pending.slice(i, i + EMBED_BATCH));
     }
+
+    let nextIdx = 0;
+    async function worker(): Promise<void> {
+      while (nextIdx < subBatches.length) {
+        const idx = nextIdx++;
+        const chunk = subBatches[idx]!;
+        const texts = chunk.map((p) => p.text);
+
+        // De-poisoned embed: the batch API fails WHOLESALE if any single text
+        // exceeds BGE's 512-token limit, so one dense (Greek/Hebrew/entity)
+        // text would otherwise drop its ~63 innocent batchmates. On batch
+        // failure we re-embed each text on its own; a text that STILL exceeds
+        // the limit is adaptively shortened until it fits. Every text gets a
+        // real vector — nothing is dropped.
+        const vectors = await embedResilient(texts, offset + idx * EMBED_BATCH);
+
+        const embeddingRows: EmbeddingRow[] = [];
+        for (let j = 0; j < chunk.length; j++) {
+          const v = vectors[j];
+          if (v) embeddingRows.push({ ...chunk[j]!.row, embedding: v });
+          else embedErrors++; // truly unembeddable — ~never in practice
+        }
+        if (embeddingRows.length === 0) continue;
+
+        const COLS = 6;
+        const params: unknown[] = [];
+        const tuples = embeddingRows.map((r, idx2) => {
+          const b = idx2 * COLS;
+          params.push(
+            r.sourceType, r.sourceId, r.chunkIndex, r.content,
+            JSON.stringify(r.embedding), JSON.stringify(r.metadata),
+          );
+          return `(NULL, $${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}, $${b + 5}::vector, $${b + 6}::jsonb)`;
+        });
+
+        let res: pg.QueryResult;
+        try {
+          res = await dbQuery(
+            `INSERT INTO embeddings (user_id, source_type, source_id, chunk_index, content, embedding, metadata)
+             VALUES ${tuples.join(', ')}
+             ON CONFLICT (source_type, source_id, chunk_index) DO NOTHING RETURNING id`,
+            params,
+          );
+        } catch (e) {
+          // Exhausted retries — leave these unembedded rather than crash the
+          // whole job; the next run's pre-skip naturally picks up whatever
+          // didn't make it in (they won't be in `existing`).
+          console.error(`  DB insert failed at offset ${offset + idx * EMBED_BATCH}: ${(e as Error).message.slice(0, 120)}`);
+          embedErrors += embeddingRows.length;
+          continue;
+        }
+
+        const inserted = res.rowCount ?? 0;
+        embedded += inserted;
+        dbSkipped += embeddingRows.length - inserted;
+        for (const r of embeddingRows) existing.add(r.sourceId);
+      }
+    }
+
+    await Promise.all(Array.from({ length: EMBED_CONCURRENCY }, () => worker()));
 
     offset += rows.length;
     const elapsed = (performance.now() - t0) / 1000;
@@ -191,12 +285,13 @@ async function main() {
   console.log(`  DB-skipped (ON CONFLICT): ${dbSkipped}`);
   console.log(`  Embed errors: ${embedErrors}`);
 
-  const { rows: [{ final }] } = await client.query(
+  const finalRes = await dbQuery(
     `SELECT count(*)::int AS final FROM embeddings WHERE user_id IS NULL AND source_type = 'commentary'`,
+    [],
   );
-  console.log(`Total commentary embeddings now: ${final}`);
+  console.log(`Total commentary embeddings now: ${finalRes.rows[0].final}`);
 
-  await client.end();
+  await pool.end();
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

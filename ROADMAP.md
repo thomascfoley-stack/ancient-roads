@@ -30,6 +30,7 @@ Scaffolding status (this pass):
 - [ ] `docs/RELEASE.md` — release checklist + rollback runbook. *Medium.*
 - [ ] **Observability** (error tracking / query-logging / alerting) — **DEFERRED per owner: infra foundation first, analytics later.** Required before real traffic. *Do before public.*
 - [ ] SEC-1 auth migration — gates public launch.
+- [ ] **Extract `src/ingest/batch-runner.ts`** — a reusable high-throughput batch primitive, lifted from the proven `embed-full-corpus.ts` after the accuracy gate closes. Pattern: bounded worker-pool (N concurrent API calls) **decoupled from** a small PgBouncer-pooled DB writer (pooler endpoint + `connect_timeout`), retry-on-any-transient-error w/ backoff, idempotent upsert + pre-skip for crash-safe resume, progress/ETA + completion signal. Callers: `ingest-original.ts`, `ingest-strongs.ts`, bible-translation ingests, and any future re-embed (model swap / corpus additions). Debugged the hard way 2026-07-09: coupling API concurrency to raw Postgres connections (183 direct conns) drowned Neon's auth handshake; the fix is 180-way API concurrency over a 20-conn pooler. *Medium — do after 10/10, extract from working code (not speculative).*
 
 ## Update 2026-07-09 — the teacher landed (done-on-John)
 
