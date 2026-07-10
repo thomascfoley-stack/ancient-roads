@@ -12,6 +12,19 @@ The legacy `source_id` (`commentary:{slug}:{ch}:{vs}:{author}`, no `entry_index`
 
 **Compliance flag surfaced during the slice:** the existing corpus's `sourceUrl` is **biblehub.com** (an aggregator ADR-008 forbids scraping). The text is public domain so the license is valid and the migration is unaffected, but **re-sourcing from CrossWire/PD (INGESTION_TASK Phase 2) is required before wide/beta rollout.** Tracked in `MIGRATION_DESIGN.md` §8.6.
 
+### Barnes first slice — BUILT + PROVEN GREEN (stopped before the other ~400)
+
+Migration `006` (`sources`/`sections`/`section_anchors`/`section_embeddings`, additive, no RLS, `GRANT SELECT` to `app_runtime`) applied to Neon. Backfilled **Barnes' Notes** by re-pointing its existing vectors (Path A) — `db/apply-migration.mjs`, `ingest/sources.config.json` (Barnes: Public Domain + provenance), `src/ingest/migrate-sections-slice.ts` (SQL-only re-point; vectors never leave the DB), Gate A `--target=sections` mode added to `check-corpus-coverage.ts`.
+
+Proven (verify, don't assume — ran it):
+- **Re-point 1:1:1:** 1,300 Barnes embeddings → **1,300 sections = 1,300 section_anchors = 1,300 section_embeddings** (reused, `model_slug=bge-large-en-v1.5`). **$0 embedding cost.**
+- **Gate A (sections) = 0 missing** (`pnpm check:coverage:sections`): 1 non-quarantined source, 1,300 sections, 1,300 embeddings, gap 0.
+- **Gate B PASSED** (`pnpm check:licenses`): manifest valid (Barnes PD + provenance) AND the DB defence-in-depth check verified the now-**published** Barnes source (0 violations).
+- **`npm run audit` green.**
+- One bug found + fixed during the run: the backfill first put two SQL statements in one parameterized query (`CREATE TEMP … AS SELECT …; SELECT count…`) → pg "cannot insert multiple commands into a prepared statement"; split into two queries.
+
+Legacy retrieval untouched (dual-read — the app still reads `embeddings`/`hybrid_search_v2`; nothing reads `sources`/`sections` yet). **STOPPED here per "prove deep before wide" — the retrieval bridge + the other ~400 sources are the next unit, on approval.** Next: build the section-based retrieval path, prove the true-success diagnostic ≥ current on it (dual-read), then scale the backfill to all 401 works (each needs its reviewed license-map entry in `ingest/sources.config.json` first — the compliance pause).
+
 ## 2026-07-09 (next phase) — Step 1 backup + Step 2 gates (coverage + license)
 
 Executing `docs/NEXT_PHASE.md` Steps 1–2. Stopping at the Step 3 boundary (the

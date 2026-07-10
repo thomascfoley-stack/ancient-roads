@@ -19,8 +19,10 @@
     "ingest:commentary-fts": "tsx src/ingest/ingest-commentary-fts.ts",
     "teacher": "tsx src/teacher/run.ts",
     "check:coverage": "tsx src/ingest/check-corpus-coverage.ts",
+    "check:coverage:sections": "tsx src/ingest/check-corpus-coverage.ts --target=sections",
     "check:licenses": "tsx src/ingest/check-licenses.ts",
-    "check:data": "pnpm check:licenses && pnpm check:coverage"
+    "check:data": "pnpm check:licenses && pnpm check:coverage",
+    "migrate:sections-slice": "tsx src/ingest/migrate-sections-slice.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

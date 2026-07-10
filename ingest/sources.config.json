@@ -1,0 +1,21 @@
+[
+  {
+    "id": "barnes-notes",
+    "slug": "barnes-notes",
+    "title": "Barnes' Notes on the Bible",
+    "author": "Albert Barnes",
+    "author_died": 1870,
+    "year_written": 1834,
+    "source_type": "commentary",
+    "tradition": "reformed",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://biblehub.com/commentaries/barnes/",
+      "edition": "Barnes' Notes on the Bible (Albert Barnes)",
+      "year": 1834,
+      "retrieved_via": "biblehub aggregator — text is public domain (Barnes d. 1870); re-source from CrossWire/PD per ADR-008 before wide rollout"
+    },
+    "backfill": { "match_author": "Barnes' Notes" }
+  }
+]
