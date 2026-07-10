@@ -1,5 +1,9 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-09 (Step 3 ownership) — sources/sections migration owner assigned
+
+**This session owns the `sources`/`sections` ingestion migration (NEXT_PHASE §3 / ADR-010) as of 2026-07-09.** Other sessions must NOT write the migration schema or scripts — that would re-create the exact cross-session divergence the ownership gate exists to prevent (two parallel `sources`/`sections` designs + a diverged `source_id` scheme). Per the design-before-code rail, the only deliverable right now is one approval-ready design doc (`docs/MIGRATION_DESIGN.md`); **no schema/migration code until Thomas approves it.**
+
 ## 2026-07-09 (next phase) — Step 1 backup + Step 2 gates (coverage + license)
 
 Executing `docs/NEXT_PHASE.md` Steps 1–2. Stopping at the Step 3 boundary (the
