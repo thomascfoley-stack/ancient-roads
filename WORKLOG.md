@@ -24,6 +24,14 @@ site never runs ahead of backed-up history — and I can't push. So I committed
 everything (tree is clean, nothing at risk), and the push + deploy are flagged
 as owner actions below.
 
+**ADR-014 — reranker is core, recorded.** The reranker-is-core finding (full
+pipeline 100% vs vector/hybrid 97%) is now an ADR. Checked the current highest
+number first (ADR-013, from the parallel session's 010–013) to avoid a
+collision — so this is **ADR-014**. It formalizes what ADR-007 only suspected,
+now backed by the 30-query eval, and carries the honesty caveat that "100%" is
+scoped to the Gospel/reformed-heavy eval and must be re-earned as the corpus
+grows.
+
 Getting the full-corpus embed to run fast AND survive to completion took several
 iterations. Captured here so the next batch job (and the planned `batch-runner.ts`
 extraction) starts from the lessons, not a blank page.
