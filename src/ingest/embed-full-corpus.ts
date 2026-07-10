@@ -11,19 +11,12 @@ import { createDeepInfraEmbedder } from '../retrieval/embedder.js';
 import type { EmbeddingRow } from '../retrieval/types.js';
 import { sanitizeForIngest } from './content-sanity.js';
 import { readFileSync, existsSync } from 'fs';
+// Canonical source_id synthesis + eligibility floor, shared with the coverage
+// gate (check-corpus-coverage.ts / measure-embedding-gap.ts) so the embed job
+// and the gate can never disagree on which rows are eligible or what key they
+// carry. If they diverged, the gate would report phantom gaps. See source-id.ts.
+import { MIN_BODY_LENGTH, synthesizeSourceId } from './source-id.js';
 
-const BOOK_SLUGS: Record<number, string> = {
-  1:'gen',2:'exo',3:'lev',4:'num',5:'deu',6:'jos',7:'jdg',8:'rut',9:'1sa',10:'2sa',
-  11:'1ki',12:'2ki',13:'1ch',14:'2ch',15:'ezr',16:'neh',17:'est',18:'job',19:'psa',
-  20:'pro',21:'ecc',22:'sng',23:'isa',24:'jer',25:'lam',26:'ezk',27:'dan',28:'hos',
-  29:'jol',30:'amo',31:'oba',32:'jon',33:'mic',34:'nam',35:'hab',36:'zep',37:'hag',
-  38:'zec',39:'mal',40:'mat',41:'mrk',42:'luk',43:'jhn',44:'act',45:'rom',46:'1co',
-  47:'2co',48:'gal',49:'eph',50:'php',51:'col',52:'1th',53:'2th',54:'1ti',55:'2ti',
-  56:'tit',57:'phm',58:'heb',59:'jas',60:'1pe',61:'2pe',62:'1jn',63:'2jn',64:'3jn',
-  65:'jud',66:'rev',
-};
-
-const MIN_BODY_LENGTH = 100;
 const EMBED_BATCH = 64;
 // DeepInfra allows 200 concurrent requests/model; stay at 90% of that so a
 // burst doesn't get 429'd right at the ceiling.
@@ -167,10 +160,8 @@ async function main() {
     // Build pending list, skipping already-embedded entries
     const pending: { text: string; row: Omit<EmbeddingRow, 'embedding'> }[] = [];
     for (const r of rows) {
-      const slug = BOOK_SLUGS[r.book];
-      if (!slug) continue;
-
-      const sourceId = `commentary:${slug}:${r.chapter}:${r.verse_start}-${r.verse_end}:${r.author}`;
+      const sourceId = synthesizeSourceId(r);
+      if (sourceId === null) continue;
       if (existing.has(sourceId)) { preSkipped++; continue; }
 
       const verseId = r.book * 1_000_000 + r.chapter * 1_000 + r.verse_start;

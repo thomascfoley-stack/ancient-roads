@@ -17,7 +17,8 @@
     "ingest:merge-commentaries": "tsx src/ingest/merge-commentaries.ts",
     "ingest:embeddings": "tsx src/ingest/ingest-embeddings.ts",
     "ingest:commentary-fts": "tsx src/ingest/ingest-commentary-fts.ts",
-    "teacher": "tsx src/teacher/run.ts"
+    "teacher": "tsx src/teacher/run.ts",
+    "check:coverage": "tsx src/ingest/check-corpus-coverage.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

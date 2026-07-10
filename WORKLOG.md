@@ -32,6 +32,22 @@ now backed by the 30-query eval, and carries the honesty caveat that "100%" is
 scoped to the Gospel/reformed-heavy eval and must be re-earned as the corpus
 grows.
 
+**Gate A — coverage (completeness, fail LOUD).** Anti-join of eligible
+`commentary_entries` (body ≥ 100) against embedded commentary `source_id`s;
+`missing > 0` prints per-author counts and exits 1. `pnpm check:coverage`.
+Closed the integrity hole in the prior session's version: `source-id.ts` is
+*named* the single source of truth for the key format, but the embed job
+(`embed-full-corpus.ts`) still carried its own inline `BOOK_SLUGS` +
+`MIN_BODY_LENGTH` + key string — byte-identical by luck, free to drift. If they
+drifted, the gate would compare against keys the embed job never wrote and
+report phantom gaps (or hide real ones). Refactored the embed job to import
+`synthesizeSourceId` + `MIN_BODY_LENGTH` from `source-id.ts`, so the writer and
+the checker now compute keys in one place. **Ran it against Neon: gap = 0**
+(168,233 eligible source_ids, all embedded — confirms the 10/10 corpus claim is
+backed by a completeness check, not just asserted). Left `check:coverage` out of
+the always-run `audit` because it hard-requires `DATABASE_URL`; it belongs to
+the ingest/publish path (`check:data`), run where the DB is present.
+
 Getting the full-corpus embed to run fast AND survive to completion took several
 iterations. Captured here so the next batch job (and the planned `batch-runner.ts`
 extraction) starts from the lessons, not a blank page.
