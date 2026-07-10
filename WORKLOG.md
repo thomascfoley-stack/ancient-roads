@@ -37,6 +37,16 @@ Extended Gate B (ADR-008 / CLAUDE.md aggregator rail): `license-manifest.ts` gai
 
 Sized the footprint from Neon. **biblehub = 14 works but they are the mega-commentaries** (Barnes, Calvin, Wesley, Darby, Bengel, Poole, Pulpit, Cambridge, Geneva, Scofield, MacLaren, Lange, Benson, B.W. Johnson) — 176,553 eligible entries (~52% by raw entries) that **collapse to only 16,072 embeddings (~9%)**, so the re-embed *worst case* is ~$0.07. The footprint also surfaced provenance problems the forbidden-domain gate does NOT cover: **242 works with no recorded provenance** (78,716 entries), **CCEL** (17 works, ADR-008 restricted), and **historicalchristian.faith** (149 works, unvetted — the single biggest bucket). Plan defines the permitted source per work-type + the **text-match test**: normalized match → provenance-repair (keep vector, $0); differ → re-embed that section; no permitted source → quarantine. No code until approved.
 
+### Track 2 — Parity (section model == legacy, proven)
+
+**Baseline (current model, `embeddings`), re-run 2026-07-10:** vector **29/30 (97%)**, hybrid **29/30 (97%)**, full/reranked **30/30 (100%)** — matches the handoff (the one vector/hybrid miss is "the Word became flesh" → John 1, which only the reranker fixes; see ADR-014).
+
+**Section model parity — PROVEN byte-faithful.** `src/ingest/parity-probe-sections.ts`: for 6 probe queries, rank Barnes' vectors two ways — legacy (`embeddings`, author-scoped) and new (`section_embeddings`, source-scoped) — with **exact NN (HNSW disabled)**. All 6: **identical ordered verse ids.** The re-point preserved the vectors and anchors exactly. (Had to disable HNSW: an author-filtered query over the full HNSW index returns empty because HNSW pre-filters before the predicate — an artifact of scoping, not the data.)
+
+**Why this settles parity without a corpus-wide re-run:** the true-success diagnostic scores only on the retrieved passages' `verseId`, which is a pure function of the vectors + anchors. The migration re-points *identical* vectors and *identical* anchors (`section.body := embeddings.content`, so `sections.tsv` == the BM25 text and the reranker input is identical too). So the section-model 30-query number **equals** the legacy number **by construction** (97/97/100) — it is `≥ current`, in fact equal. **The literal corpus-wide 30-query number on the section model requires all 173,806 vectors re-pointed** = the gated scale-up (needs the reviewed license map per work). It is NOT run here — that would be "scaling to the other sources," which is held pending approval + Track-1 provenance clearance.
+
+**STOP — showing all three (extended Gate B w/ Barnes flagged, re-sourcing plan, parity). No cutover, no scaling.** Next on approval: `hybrid_search_sections` (the dual-read retrieval fn) + the corpus-wide diagnostic, run as part of the (Track-1-cleared) scale-up.
+
 ## 2026-07-09 (next phase) — Step 1 backup + Step 2 gates (coverage + license)
 
 Executing `docs/NEXT_PHASE.md` Steps 1–2. Stopping at the Step 3 boundary (the
