@@ -5,6 +5,7 @@
 // re-investigation (RESOURCING_PLAN §8.1).
 
 import { BOOKS } from '../bible/books.js';
+import type { SourceAdapter, VerseText } from './resource-textmatch.js';
 
 export const HELLOAO_API = 'https://bible.helloao.org/api';
 
@@ -66,6 +67,59 @@ export interface HelloaoWork {
   era: string;
   license: 'Public Domain';
 }
+
+interface HelloaoBookMeta { id: string; numberOfChapters: number; firstChapterNumber: number }
+interface HelloaoVerseNode { type?: string; number?: number; content?: Array<string | { text?: string }> }
+
+async function fetchJson(url: string): Promise<unknown> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const t = await res.text();
+    return t.startsWith('<') ? null : JSON.parse(t);
+  } catch { return null; }
+}
+function versesOf(content: HelloaoVerseNode[]): Array<{ verse: number; text: string }> {
+  const out: Array<{ verse: number; text: string }> = [];
+  for (const item of content) {
+    if (item.type === 'verse' && item.number && item.content) {
+      const parts = item.content.map((c) => (typeof c === 'string' ? c : c?.text ?? '')).join(' ').trim();
+      if (parts.length > 10) out.push({ verse: item.number, text: parts });
+    }
+  }
+  return out;
+}
+async function pool<T>(items: T[], n: number, fn: (t: T) => Promise<void>): Promise<void> {
+  let i = 0;
+  await Promise.all(Array.from({ length: n }, async () => { while (i < items.length) await fn(items[i++]!); }));
+}
+
+// The helloao SourceAdapter — the reference implementation of the reusable
+// re-source contract (resource-textmatch.ts). fetchWork yields every (verseId,
+// text) helloao has for a commentary; the generic matcher does the rest.
+export const helloaoAdapter: SourceAdapter = {
+  name: 'helloao',
+  provenanceUrl: (id) => `${HELLOAO_API}/c/${id}`,
+  editionLabel: (id, title) => `${title} (helloao ${id}, CC Public Domain Mark 1.0)`,
+  rebuildRecipe,
+  async fetchWork(id: string): Promise<VerseText[]> {
+    const booksData = await fetchJson(`${HELLOAO_API}/c/${id}/books.json`) as { books: HelloaoBookMeta[] } | null;
+    const jobs: Array<{ url: string; bookNum: number; ch: number }> = [];
+    for (const b of booksData?.books ?? []) {
+      const slug = HELLOAO_BOOK_MAP[b.id];
+      const bookNum = slug ? SLUG_TO_BOOK_NUM[slug] : undefined;
+      if (!bookNum) continue;
+      for (let ch = b.firstChapterNumber; ch <= b.numberOfChapters; ch++) jobs.push({ url: chapterEndpoint(id, b.id, ch), bookNum, ch });
+    }
+    const out: VerseText[] = [];
+    await pool(jobs, 8, async (job) => {
+      const data = await fetchJson(job.url) as { chapter?: { content?: HelloaoVerseNode[] } } | null;
+      if (!data?.chapter?.content) return;
+      for (const { verse, text } of versesOf(data.chapter.content)) out.push({ verseId: job.bookNum * 1_000_000 + job.ch * 1000 + verse, text });
+    });
+    return out;
+  },
+};
 
 export const HELLOAO_PD_WORKS: HelloaoWork[] = [
   { commentaryId: 'john-gill', slug: 'john-gill', title: "John Gill's Exposition of the Bible", author: 'John Gill', dataAuthor: 'John Gill', year: 1763, tradition: 'reformed', era: 'modern', license: 'Public Domain' },

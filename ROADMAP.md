@@ -21,7 +21,9 @@ Executing `docs/NEXT_PHASE.md`. Steps 1 and 2 done; **stopped at the Step 3 boun
 > **Full cleanup APPROVED + underway (2026-07-10):** tooling HTTP-first; historicalchristian.faith forbidden; Schaff canonical for fathers.
 > - **Unit 1 DONE — helloao PD commentaries provenance-repaired ($0):** Gill/JFB/Clarke/Matthew Henry fully verified vs bible.helloao.org — **~60,241 verses, ~99.99% $0 repair, 3 genuine-differ**. Clean config entries written with helloao PD provenance + forward-compatible rebuild recipes. Gate B green (5 sources). The 62,708-entry no-provenance bucket is cleared.
 > - **Patristic probe (biggest unknown) — MIXED:** ANF/NPNF core + Catena-Newman ≈ half is PD-repairable; **Theophylact/Oecumenius/Bonaventure/Jerome-prophets (~12–18k entries) are modern-only → DROP.** Needs per-work edition classification (not blanket Schaff-repair).
-> - **Still to clear before publish:** biblehub-14 (Wikisource/archive) + the patristic edition-classify/repair/drop build.
+> - **Reusable re-source module DONE** (`resource-textmatch.ts` matcher + `SourceAdapter` contract, unit-tested; helloao refactored onto it, byte-identical result). Drives the patristic phase via a new adapter.
+> - **biblehub-14 BLOCKED on a clean HTTP source:** none on helloao/Wikisource; archive.org is OCR-only; **CrossWire SWORD has ~5 (Barnes/Calvin/Wesley/Scofield/Darby) but needs `libsword`** (HTTP-first deferred it); ~9 have no clean source. All PD. **Held/quarantined interim** (not published — reversible); decision on tooling (libsword) vs OCR vs hold pending. Hold list in `RESOURCING_PLAN` §9.
+> - **Still to clear before publish:** the biblehub-14 sourcing decision + the patristic edition-classify/repair/drop build (repairable proven per-work vs actual Schaff/NPNF; drops → quarantined).
 
 - **KNOWN LIMITATIONS (tracked — tied to eval-set growth, revisit with data, both gated on the eval not now):**
   1. **source_id collapse:** no `entry_index` → **341,912 eligible entries collapse to 168,233 keys**; only the first per key is embedded (~173,679 entries FTS-only, not in the vector index). Fixing = re-embed = cost + reopened gap.

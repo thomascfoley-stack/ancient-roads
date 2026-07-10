@@ -143,3 +143,26 @@ Ran the probe on **Adam Clarke** vs `helloao/adam-clarke` (10-chapter sample acr
 - **Per-work edition check:** Aquinas's own lectures, Bede, Gregory the Great, Ambrose.
 
 So the patristic re-source is **edition-classify → repair-to-Schaff-if-PD → DROP-if-modern-only**, not a blanket Schaff fetch. Expect to drop ~12–18k entries. This is the next build after biblehub-14; a precise repair/drop rate needs the per-work edition classification.
+
+## 9. Reusable module built; biblehub-14 blocked on a clean HTTP source (2026-07-10)
+
+**Reusable re-source module — BUILT + proven.** `resource-textmatch.ts` is the source-agnostic core (the match/truncated/differ matcher + `tallyMatch` + the `SourceAdapter` contract), unit-tested (`test/resource-textmatch.test.ts`, 5 cases). `helloao-source.ts#helloaoAdapter` is the reference adapter; the helloao repair now runs **through the generic matcher** (same ~99.99% result). **The same core will drive the patristic phase** — only a new adapter (NewAdvent/Schaff/CCEL-text) is needed, not a new matcher.
+
+**biblehub-14 have NO clean HTTP per-verse source (unlike helloao):**
+- helloao / other JSON APIs: **none** of the 14 (helloao carries only the 6 already used).
+- Wikisource: **no** structured Barnes/etc. (verified).
+- archive.org: **OCR scans only** — continuous text, no per-verse structure; brittle/lossy to align.
+- **CrossWire SWORD: cleanly has Barnes, Calvin, Wesley, Scofield, Darby** (explicit per-module licenses) — but needs `libsword`/`diatheke`, which decision-1 deferred ("HTTP-first"). Not on CrossWire: Poole, Bengel, Pulpit, Cambridge, Geneva, MacLaren, Lange, Benson, B.W. Johnson.
+
+**So the 14 split:** ~5 CrossWire-available (need libsword) · ~9 with no clean structured source (archive-OCR/manual) · all are **PD text** (the only issue is biblehub ToS/provenance, mitigated by not publishing them).
+
+**Decision needed (reopens tooling for THIS bucket, since the 14 lack HTTP sources):**
+- (a) **Install `libsword`** → re-source the ~5 CrossWire works cleanly (through the same matcher); archive-OCR or hold the other ~9.
+- (b) **archive.org OCR parsers** per work — high effort, brittle, uncertain quality.
+- (c) **Hold the biblehub-14 quarantined** (PD text, not published/served — biblehub-ToS risk mitigated, reversible) until clean sources exist; helloao ✓ and patristic proceed. *Recommended interim* — the 14 are already excluded from publish (only Barnes is in the config, quarantined; the other 13 aren't migrated, and Gate B fails-closed on biblehub provenance).
+
+**Hold list (biblehub-14, quarantined / excluded from publish pending clean sourcing):**
+- *CrossWire-available (need libsword):* Barnes' Notes, John Calvin, John Wesley, C.I. Scofield, J.N. Darby.
+- *No clean source (archive-OCR/manual):* Matthew Poole, Johann Bengel, Pulpit Commentary, Cambridge Bible, Geneva Study Bible, Alexander MacLaren, J.P. Lange, Joseph Benson, B.W. Johnson.
+
+**Recommend (c) now + (a) with the patristic phase:** hold the 14; when building the patristic NewAdvent adapter, also add a CrossWire adapter (install libsword) for the ~5 — same matcher, one more adapter.
