@@ -166,3 +166,18 @@ So the patristic re-source is **edition-classify → repair-to-Schaff-if-PD → 
 - *No clean source (archive-OCR/manual):* Matthew Poole, Johann Bengel, Pulpit Commentary, Cambridge Bible, Geneva Study Bible, Alexander MacLaren, J.P. Lange, Joseph Benson, B.W. Johnson.
 
 **Recommend (c) now + (a) with the patristic phase:** hold the 14; when building the patristic NewAdvent adapter, also add a CrossWire adapter (install libsword) for the ~5 — same matcher, one more adapter.
+
+## 10. Decisions taken + patristic sample proven (2026-07-10)
+
+**biblehub-14 → HOLD (c), decided.** All 14 held quarantined — PD text, unpublished, reversible, zero compliance risk (none publish; Gate B fails-closed on biblehub). **Not OCR (b)** — lossy, breaks verbatim matching. **Follow-up (a):** libsword adapter to recover the CrossWire-5 (Barnes/Calvin/Wesley/Scofield/Darby) during/after the patristic build. The other 9 (Poole, Bengel, Pulpit, Cambridge, Geneva, MacLaren, Lange, Benson, B.W. Johnson): **low-priority backlog** — revisit case-by-case if a PD source surfaces (Gutenberg/CCEL-text); do not OCR, do not block.
+
+**Patristic re-source — NewAdvent/Schaff adapter built + sample proven per-work.** `newadvent-source.ts` (fetch + PD sample + provenance recipe) on the reusable matcher. **Word-set containment failed** (control: 75/123 false-positive — patristic English shares too much vocabulary), so added **shingle (4-gram) containment** to the core: the same translation shares long exact phrases, a different translation shares only vocabulary. Control then dropped to **0/123** — the matcher discriminates.
+
+| Work (edition) | pages | our snippets | REPAIR | verdict |
+|---|---|---:|---:|---|
+| Chrysostom, Homilies on Galatians (NPNF1-13) | 6/6 | 123 | **99.2%** | ✅ $0-repair |
+| Augustine, Homilies on 1 John (NPNF1-07) | 10/10 | 87 | **88.5%** | ✅ $0-repair (10 per-snippet drops) |
+| Origen, Commentary on John (ANF9) | 11/11 | 128 | **1.6%** | ❌ **DROP** — our text is NOT the ANF translation |
+| *control:* Chrysostom vs Augustine text | — | 123 | 0% | discriminates ✓ |
+
+**Key finding — per-work text-match is essential; author-name is not.** Origen has an ANF PD edition, yet our catena "Origen on John" is a **different (modern) translation** — only 2/128 snippets match the ANF text → **DROP**, not repair. This is exactly the rigor required: prove repairable per-work vs the actual PD text, never assume from the author. **$0-repair holds where the text IS the PD edition (Chrysostom, Augustine); it does NOT for Origen-John.** Drops → `status=quarantined`, held/reversible. **Next: scale this classify to all ~384 patristic works** (per-work New Advent/CCEL/archive fetch → shingle-containment → repair-or-quarantine).

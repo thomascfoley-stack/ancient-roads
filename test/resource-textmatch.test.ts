@@ -3,7 +3,7 @@
 // from re-embed/drop.
 
 import { describe, expect, it } from 'vitest';
-import { tokens, classify, tallyMatch, repairOf, repairPct } from '../src/ingest/resource-textmatch';
+import { tokens, classify, tallyMatch, repairOf, repairPct, shingleSet, containment, tallyContainment } from '../src/ingest/resource-textmatch';
 
 describe('tokens', () => {
   it('lowercases, folds punctuation, strips entities/tags', () => {
@@ -46,5 +46,25 @@ describe('tallyMatch', () => {
     expect(s).toEqual({ compared: 3, match: 1, truncated: 1, differ: 1, sourceOnly: 1 });
     expect(repairOf(s)).toBe(2);
     expect(repairPct(s)).toBeCloseTo(66.67, 1);
+  });
+});
+
+describe('shingle containment (patristic translation discrimination)', () => {
+  const srcText = 'in the beginning was the word and the word was with god and the word was god the same was in the beginning with god';
+  const src = shingleSet(srcText);
+
+  it('same translation (even truncated) → high containment; different wording → near zero', () => {
+    const same = shingleSet('in the beginning was the word and the word was with god and the word'); // a prefix
+    const diff = shingleSet('at the outset there existed the divine reason which coexisted eternally alongside the deity himself before all');
+    expect(containment(same, src)).toBeGreaterThan(0.8);
+    expect(containment(diff, src)).toBeLessThan(0.2);
+  });
+
+  it('tallyContainment splits repair (same translation) vs drop (different)', () => {
+    const same = shingleSet('the word was with god and the word was god the same was in the beginning');
+    const diff = shingleSet('the logos abided with the almighty and the logos shared the very essence of divinity from eternity past');
+    const s = tallyContainment([same, diff], src, 0.5);
+    expect(s.repair).toBe(1);
+    expect(s.drop).toBe(1);
   });
 });

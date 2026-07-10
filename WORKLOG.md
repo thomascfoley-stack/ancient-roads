@@ -94,6 +94,17 @@ Owner: **HTTP-first** tooling; **forbid historicalchristian.faith** (added to `F
 
 **Decision needed (reopens tooling for this bucket):** (a) install `libsword` → clean-source the ~5 CrossWire works via the same matcher; (b) archive-OCR parsers (brittle); (c) **hold the 14 quarantined** (PD, not served, reversible) — *recommended interim* (they're already excluded: only Barnes is in the config/quarantined, the other 13 aren't migrated, Gate B fails-closed on biblehub). **Recommend (c) now + (a) alongside the patristic NewAdvent build.** Hold list in `RESOURCING_PLAN` §9.
 
+### biblehub-14 → HOLD (decided); patristic NewAdvent adapter built + sample proven (2026-07-10)
+
+**biblehub-14 → HOLD all 14 quarantined** (owner picked c): PD text, unpublished, reversible, zero compliance risk. NOT OCR. Follow-up: libsword adapter for the CrossWire-5 during/after patristic; the other 9 are low-priority backlog (revisit if a PD source surfaces; no OCR, no blocking).
+
+**Patristic phase — NewAdvent/Schaff adapter (`newadvent-source.ts`) built on the reusable matcher; per-work text-match proven vs REAL NPNF/ANF text.** First attempt with word-set containment gave 100% everywhere but the **control caught it** (75/123 Chrysostom snippets falsely "repaired" against Augustine's text — patristic English shares too much vocabulary). Fixed by adding **shingle (4-gram) containment** to `resource-textmatch.ts` (same translation shares long exact phrases; different translation shares only words) → control dropped to **0/123**. Results (New Advent, real Schaff/ANF):
+- **Chrysostom, Homilies on Galatians (NPNF1-13): 99.2% $0-repair** ✅
+- **Augustine, Homilies on 1 John (NPNF1-07): 88.5% $0-repair** ✅ (10 per-snippet drops)
+- **Origen, Commentary on John (ANF9): 1.6% → DROP** ❌ — our catena "Origen on John" is a **different/modern translation**, NOT the ANF text (only 2/128 match), despite Origen having a PD ANF edition.
+
+**Key finding (validates the required rigor): per-work text-match is essential; author-name is NOT enough.** Origen-by-name looked repairable (ANF exists) but the text-match proves our text isn't it → DROP. $0-repair holds where the text IS the PD edition (Chrysostom, Augustine), not otherwise. Drops → `status=quarantined`, held/reversible, never published. +2 unit tests for the shingle matcher (7 total in `resource-textmatch`). **Next: scale the classify to all ~384 patristic works.**
+
 ## 2026-07-09 (next phase) — Step 1 backup + Step 2 gates (coverage + license)
 
 Executing `docs/NEXT_PHASE.md` Steps 1–2. Stopping at the Step 3 boundary (the
