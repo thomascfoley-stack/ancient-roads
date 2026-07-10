@@ -65,23 +65,25 @@ interface Range2 { start: number; end: number }
 
 async function retrieve(q: string, vec: string, legal: boolean, route: boolean): Promise<number[]> {
   let rows = await basePool(q, vec, legal);
-  let ranges: Range2[] = [];
+  let floorRanges: Range2[] = [];
   if (route) {
-    ranges = resolveIntent(q) as Range2[];
-    if (ranges.length) {
-      const inj = await injectRange(vec, ranges, legal);
+    const intent = resolveIntent(q);
+    if (intent.inject.length) {
+      const inj = await injectRange(vec, intent.inject, legal);
       const seen = new Set<string>(); const merged: Row[] = [];
       for (const r of [...inj, ...rows]) if (!seen.has(r.source_id)) { seen.add(r.source_id); merged.push(r); }
       rows = merged;
     }
+    floorRanges = intent.floor;
   }
   const ranked = await rerankAll(q, rows);
-  return ranges.length ? applyFloor(ranked, ranges) : ranked.slice(0, K).map((r) => vid(r.metadata));
+  return floorRanges.length ? applyFloor(ranked, floorRanges) : ranked.slice(0, K).map((r) => vid(r.metadata));
 }
 
 const CONFIGS: Array<{ name: string; legal: boolean; route: boolean }> = [
   { name: 'legal / no route', legal: true, route: false },
   { name: 'legal / ROUTED', legal: true, route: true },
+  { name: 'full / no route', legal: false, route: false },
   { name: 'full / ROUTED', legal: false, route: true },
 ];
 

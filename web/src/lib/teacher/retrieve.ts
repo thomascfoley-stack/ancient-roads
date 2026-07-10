@@ -121,13 +121,14 @@ export async function retrieveCommentary(
     }));
   }
 
-  // Reference/pericope routing (soft-boost). If the query names a passage, inject
-  // that passage's top voices into the candidate pool. Retrieval-only — the JSON
-  // contract + verifier are untouched, so the concordance guarantee holds. Topical
-  // queries resolve to no ranges and take the path unchanged.
-  const ranges = queryText ? resolveIntent(queryText) : [];
-  if (ranges.length > 0) {
-    const injected = await fetchOnRange(sql, vecStr, ranges);
+  // Reference/pericope routing. `intent.inject` = every named range (soft-boost
+  // the pool, false-positive-safe); `intent.floor` = the high-confidence subset
+  // (numeric refs + corroborated pericopes) that earns the reserved top slots.
+  // Retrieval-only — the JSON contract + verifier are untouched, so the
+  // concordance guarantee holds. Topical queries yield empty on both.
+  const intent = queryText ? resolveIntent(queryText) : { inject: [], floor: [] };
+  if (intent.inject.length > 0) {
+    const injected = await fetchOnRange(sql, vecStr, intent.inject);
     const seen = new Set<string>();
     const merged: RetrievedChunk[] = [];
     for (const c of [...injected, ...candidates]) {
@@ -136,15 +137,15 @@ export async function retrieveCommentary(
     candidates = merged;
   }
 
-  if (candidates.length <= limit && ranges.length === 0) return candidates;
+  if (candidates.length <= limit && intent.floor.length === 0) return candidates;
 
-  // Rerank the full pool, then (for referenced queries) floor the top on-passage
-  // voices into the lead slots before taking `limit`.
+  // Rerank the full pool, then floor the top on-passage voices into the lead slots
+  // (only for the high-confidence `floor` ranges) before taking `limit`.
   try {
     const docs = candidates.map((c) => c.content.slice(0, 1200));
     const ranked = await rerank(queryText || 'commentary', docs);
     let ordered = ranked.map((r) => ({ ...candidates[r.index]!, score: r.relevance_score }));
-    if (ranges.length > 0) ordered = floorOnRange(ordered, ranges);
+    if (intent.floor.length > 0) ordered = floorOnRange(ordered, intent.floor);
     return ordered.slice(0, limit);
   } catch {
     // Reranker failure: fall back to the hybrid/vector ordering

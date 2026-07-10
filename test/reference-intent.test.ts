@@ -31,12 +31,22 @@ describe('matchPericopes + resolveIntent (named passages)', () => {
     expect(hasStart(matchPericopes('the whole armor of God'), vid(49, 6, 10))).toBe(true);
     expect(hasStart(matchPericopes('Daniel in the lions den'), vid(27, 6))).toBe(true);
   });
-  it('resolveIntent unions numeric refs + pericopes, dedupes', () => {
-    expect(hasStart(resolveIntent('Romans 8 nothing can separate us'), vid(45, 8))).toBe(true);
-    expect(hasStart(resolveIntent('the good shepherd lays down his life for the sheep'), vid(43, 10))).toBe(true);
+  it('resolveIntent unions numeric refs + pericopes into inject, dedupes', () => {
+    expect(hasStart(resolveIntent('Romans 8 nothing can separate us').inject, vid(45, 8))).toBe(true);
+    expect(hasStart(resolveIntent('the good shepherd lays down his life for the sheep').inject, vid(43, 10))).toBe(true);
+  });
+  it('floors numeric references unconditionally (a chapter number is explicit intent)', () => {
+    expect(hasStart(resolveIntent('Romans 8 nothing can separate us').floor, vid(45, 8))).toBe(true);
+  });
+  it('floors a pericope only with corroboration; idiomatic use injects but never floors', () => {
+    const genuine = resolveIntent('the ten commandments given to Moses'); // "Moses" corroborates
+    expect(hasStart(genuine.floor, vid(2, 20))).toBe(true);
+    const idiom = resolveIntent('the good shepherd insurance company reviews'); // no biblical context
+    expect(hasStart(idiom.inject, vid(43, 10))).toBe(true); // soft-boost still fires (harmless)
+    expect(idiom.floor).toEqual([]); // but the floor cannot hijack a topical query
   });
   it('leaves genuinely topical queries unrouted (empty)', () => {
-    expect(resolveIntent('propitiation for our sins')).toEqual([]);
-    expect(resolveIntent('justification by faith apart from works')).toEqual([]);
+    expect(resolveIntent('propitiation for our sins')).toEqual({ inject: [], floor: [] });
+    expect(resolveIntent('justification by faith apart from works')).toEqual({ inject: [], floor: [] });
   });
 });

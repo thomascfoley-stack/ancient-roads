@@ -6,8 +6,26 @@
 // strings and resolved through parseRef, so we never hand-encode verse IDs and
 // the ranges stay canonical. Grows reactively as measured misses reveal gaps —
 // a data change, not a code change.
+//
+// resolveIntent returns TWO tiers (measured precision, not assumed — see the
+// false-positive probe, `probe-reference-routing.mts`):
+//   - inject: every range the query plausibly names. Soft-boost only — adding
+//     these to the reranker pool is false-positive-safe (the reranker still
+//     decides), so an idiomatic "bread of life bakery" costs nothing.
+//   - floor: the HIGH-CONFIDENCE subset that earns the reserved top slots. A
+//     numeric reference ("1 Corinthians 13") is unambiguous intent and always
+//     floors. A pericope NAME is idiom-prone ("good shepherd insurance"), so it
+//     floors only with biblical corroboration — a second named passage, or a
+//     scriptural token OUTSIDE the matched phrase. Un-corroborated pericopes
+//     inject but never seize the top, so a mis-detection can't hijack a topical
+//     query.
 
 import { parseRef, scanReferences, type VerseRange } from './ref-parse';
+
+export interface Intent {
+  inject: VerseRange[]; // all named ranges — soft-boost the reranker pool
+  floor: VerseRange[]; // high-confidence subset — reserve the top slots for these
+}
 
 interface Pericope { aliases: string[]; refs: string[] }
 
@@ -48,6 +66,42 @@ const PERICOPES: Pericope[] = [
   { aliases: ['the empty tomb', 'resurrection of jesus'], refs: ['Matthew 28', 'John 20'] },
 ];
 
+// General biblical vocabulary — the domain's lexicon, NOT tuned to any query set.
+// A pericope match earns the floor only when a token from HERE survives after the
+// matched pericope phrase is stripped out (i.e. the query carries scriptural
+// context beyond the idiom itself). Book names, core theology, and major figures.
+const BIBLICAL_LEXICON: ReadonlySet<string> = new Set(
+  (
+    // books
+    'genesis exodus leviticus numbers deuteronomy joshua judges ruth samuel kings ' +
+    'chronicles ezra nehemiah esther job psalm psalms proverbs ecclesiastes song ' +
+    'isaiah jeremiah lamentations ezekiel daniel hosea joel amos obadiah jonah micah ' +
+    'nahum habakkuk zephaniah haggai zechariah malachi matthew mark luke acts romans ' +
+    'corinthians galatians ephesians philippians colossians thessalonians timothy ' +
+    'titus philemon hebrews james jude revelation gospel gospels epistle epistles ' +
+    // theology / worship
+    'god lord jesus christ messiah savior saviour holy spirit scripture scriptures ' +
+    'bible biblical verse verses passage chapter testament parable parables disciple ' +
+    'disciples apostle apostles prophet prophets prophecy covenant righteousness ' +
+    'salvation sin sins sinner repentance grace faith faithful believe belief holiness ' +
+    'heaven heavenly hell kingdom resurrection risen raised raising rose crucified ' +
+    'crucifixion cross atonement redemption redeemer sabbath temple synagogue priest ' +
+    'pharisee pharisees gentile gentiles israel israelite israelites tongues angel ' +
+    'angels miracle miracles blessed glory worship preach sermon creation flood ark ' +
+    'passover manna tabernacle sacrifice prayer baptism baptized communion trinity ' +
+    'incarnation exile babylon egypt jerusalem zion bethlehem nazareth galilee calvary ' +
+    // major figures
+    'moses aaron joshua samuel abraham sarah isaac jacob esau joseph noah adam eve ' +
+    'cain abel david solomon saul elijah elisha isaiah jeremiah ezekiel daniel jonah ' +
+    'job esther nehemiah ezra shadrach meshach abednego nebuchadnezzar pharaoh herod ' +
+    'pilate paul peter andrew philip bartholomew thomas matthew mary martha lazarus ' +
+    'judas stephen barnabas timothy titus cornelius goliath samson gideon deborah ' +
+    'boaz naaman zacchaeus nicodemus caiaphas'
+  ).split(' '),
+);
+
+const normalize = (text: string) => ` ${text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim()} `;
+
 // Resolve reference strings ("Matthew 5-7") to canonical ranges via parseRef.
 function resolveRefStrings(refs: string[]): VerseRange[] {
   const out: VerseRange[] = [];
@@ -55,23 +109,62 @@ function resolveRefStrings(refs: string[]): VerseRange[] {
   return out;
 }
 
-// Named pericopes present in the text (whole-phrase match, punctuation-folded).
-export function matchPericopes(text: string): VerseRange[] {
-  const t = ` ${text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim()} `;
-  const out: VerseRange[] = [];
+// Named pericopes present in the text, each with the specific alias that matched
+// (needed to strip it before the corroboration check).
+function findPericopes(norm: string): Array<{ alias: string; ranges: VerseRange[] }> {
+  const out: Array<{ alias: string; ranges: VerseRange[] }> = [];
   for (const p of PERICOPES) {
-    if (p.aliases.some((a) => t.includes(` ${a} `))) out.push(...resolveRefStrings(p.refs));
+    // Record the SHORTEST matching alias (the proper-noun core). Corroboration
+    // strips it, so a longer alias must not swallow a descriptive context word
+    // ("raising of lazarus" would eat "raising"; stripping "lazarus" keeps it).
+    const matches = p.aliases.filter((a) => norm.includes(` ${a} `));
+    if (matches.length) {
+      const alias = matches.reduce((s, a) => (a.length < s.length ? a : s));
+      out.push({ alias, ranges: resolveRefStrings(p.refs) });
+    }
   }
   return out;
 }
 
-// The retrieval intent: every passage this query names, as canonical verse-ID
-// ranges (numeric refs + named pericopes), de-duplicated. Empty ⇒ topical ⇒
-// current semantic retrieval unchanged.
-export function resolveIntent(query: string): VerseRange[] {
-  const ranges: VerseRange[] = [];
-  for (const r of scanReferences(query)) ranges.push(...r.ranges);
-  ranges.push(...matchPericopes(query));
+// All named-pericope ranges present in the text (inject-level; no corroboration).
+export function matchPericopes(text: string): VerseRange[] {
+  return findPericopes(normalize(text)).flatMap((p) => p.ranges);
+}
+
+// Does the query carry biblical context BEYOND the matched pericope phrases? Two
+// or more named passages already corroborate each other; otherwise a lexicon
+// token must survive after the matched aliases are removed.
+function pericopesCorroborated(norm: string, matched: Array<{ alias: string }>): boolean {
+  if (matched.length >= 2) return true;
+  let stripped = norm;
+  for (const m of matched) stripped = stripped.split(` ${m.alias} `).join(' ');
+  return stripped.trim().split(/\s+/).some((tok) => BIBLICAL_LEXICON.has(tok));
+}
+
+const dedup = (ranges: VerseRange[]): VerseRange[] => {
   const seen = new Set<string>();
   return ranges.filter((r) => { const k = `${r.start}-${r.end}`; if (seen.has(k)) return false; seen.add(k); return true; });
+};
+
+// The retrieval intent, split by confidence. `inject` = every range the query
+// names (soft-boost the pool). `floor` = the subset trusted to seize the top
+// slots: numeric references (always) + corroborated pericopes. Topical queries
+// yield empty on both ⇒ semantic retrieval unchanged.
+export function resolveIntent(query: string): Intent {
+  const inject: VerseRange[] = [];
+  const floor: VerseRange[] = [];
+
+  // Numeric references — high precision (a chapter/verse number is explicit intent).
+  for (const r of scanReferences(query)) { inject.push(...r.ranges); floor.push(...r.ranges); }
+
+  // Named pericopes — always inject; floor only when biblically corroborated.
+  const norm = normalize(query);
+  const pericopes = findPericopes(norm);
+  const floorPericopes = pericopesCorroborated(norm, pericopes);
+  for (const p of pericopes) {
+    inject.push(...p.ranges);
+    if (floorPericopes) floor.push(...p.ranges);
+  }
+
+  return { inject: dedup(inject), floor: dedup(floor) };
 }
