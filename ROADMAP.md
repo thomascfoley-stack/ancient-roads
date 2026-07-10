@@ -18,7 +18,9 @@ Post-`4403795`, a large body of work is DONE but was **uncommitted and undocumen
 
 ## Engineering-excellence backlog (2026-07-09) — see `docs/ENGINEERING.md` §15
 
-**TOP PRIORITY — retrieval accuracy to 10/10.** The teacher's true-success diagnostic is **~4/10**: it composes with the *wrong* passage's commentary (Gospels-only embedding + dead BM25). This is THE blocker before beta — a pastor getting Luke-2 commentary for a "good shepherd" question is a credibility-killer. Fix sequence (in progress): embed the full commentary corpus → fix hybrid (`plainto_tsquery` OR-semantics, tuned) → reranker top-20→6 → **re-run the 10-query diagnostic after each step and record the number here.** Target: **10/10**. Caching/topical-curation is built only *after* this (caching a wrong pipeline serves wrong answers instantly).
+**RETRIEVAL ACCURACY — DONE (10/10), 2026-07-09.** Was ~4/10 (Gospels-only embedding + dead BM25). Fixed: embedded the **full commentary corpus** (168,233 unique sources / 66 books; a hardened de-poisoned batch pipeline recovered a 47k coverage gap to MISSING=0), migration 004 hybrid (`plainto_tsquery`), Qwen3-Reranker-0.6B top-20→6. The 10-query true-success diagnostic now reports **retrieval 10/10 every run (0 wrong-source flags)** across vector/hybrid/full. A larger 30-query labeled eval (`web/src/scripts/eval-retrieval.mts`) settles vector-vs-hybrid-vs-full on data (see WORKLOG).
+
+**Residual limiter = COMPOSE/VERIFY reliability (~9/10), a faithfulness-axis issue, NOT retrieval.** Fallbacks are the V1 verifier correctly refusing non-verbatim quotes on long-prose sources → safe fallback (retrieved sources shown, no unverified narrative). Owner accepted ~9/10 with safe fallbacks as beta-acceptable; fixes landed (entity-decode in `normalizeForMatch`, `MAX_RETRIES` 1→2, snap-to-source) make 10/10 achievable, not guaranteed. Caching/topical-curation still only *after* the pipeline is at bar (never cache a sub-bar answer).
 
 Scaffolding status (this pass):
 - [x] `CLAUDE.md` — created; enforced standards, auto-loaded by Claude Code every session.

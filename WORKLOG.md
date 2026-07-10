@@ -184,6 +184,31 @@ prompt for shorter quotes; or accept ~9/10 with safe fallbacks as beta-acceptabl
 degrade gracefully, never mislead). Decision deferred to owner — diminishing returns vs. the
 retrieval gate, which is met. Bigger eval set needed for statistical power on the compose axis.
 
+## 2026-07-09 — Expanded retrieval eval settles vector-vs-hybrid-vs-full
+
+Owner accepted ~9/10 compose (safe fallbacks) as beta-acceptable and chose to expand the eval
+set. Built `web/src/scripts/eval-retrieval.mts`: **30 LABELED queries** across the categories
+the topical-10 set couldn't exercise — verse-ref, proper-noun, exact-term, rare-topic (+
+topical) — each declaring its expected passage(s). Scoring is objective: a retrieved source
+is a HIT if its `verseId` decodes to an expected (book, chapter); "correct" = ≥2 of K=6 in
+range. Retrieval-only (compose is ~9/10 and mode-independent).
+
+**Result — the reranker earns its keep (owner's "core, not polish" call, now on data):**
+- vector: **29/30 (97%)** · hybrid: **29/30 (97%)** · **full (hybrid+reranker): 30/30 (100%)**
+- The reranker fixed the ONE query vector+hybrid both missed: "the Word became flesh in the
+  Gospel of John" — vector pulled only 1/6 John-1 sources (incarnation commentary scatters to
+  Heb/Col); the reranker's query-awareness prioritized John 1. Textbook topical-precision win.
+- **Retires the earlier "hybrid hurts" confusion:** on pure retrieval (no compose) hybrid =
+  vector = 97%; the earlier topical-set 7/10 was compose variance (0 wrong-source flags). BM25
+  fusion is neutral here; the RERANKER is the lift.
+
+**Decision: keep the full pipeline (hybrid candidate pool → Qwen3 reranker → top 6).** It is
+the only config at 100% on the hard set. Optional future simplification to test: vector-pool →
+reranker (drop BM25) — if also 100%, BM25 is droppable for latency/simplicity. Not urgent;
+current full pipeline is validated. Per-category: proper-noun/exact-term/rare-topic/topical all
+100% in every mode — the corpus + embeddings are strong; the reranker only needed to break a
+verse-ref tie.
+
 ## 2026-07-09 — Teacher landed + wired to web (`feat/teacher-pipeline` → `main`)
 
 **Merged to `main`, audit green (95 tests, typecheck + lint + knip + deps all pass).**

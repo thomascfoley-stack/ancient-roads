@@ -9,7 +9,7 @@ Ancient Paths is a **concordance, not a commentator.** It reports what others ha
 ## The two quality axes — both are gates, measure both
 
 1. **Faithfulness** — never interpret/fabricate, always attribute, ≥2–3 grounded voices. Proven by the `interpretation_bait` suite through the **live** compose→verify loop at **≥99%**.
-2. **Accuracy** — the retrieved sources are the *right* ones ("good shepherd" → John 10, not Luke 2). Proven by the **10-query true-success-rate diagnostic. Target = 10/10.** It is currently ~4/10 and is the top blocker before beta.
+2. **Accuracy** — the retrieved sources are the *right* ones ("good shepherd" → John 10, not Luke 2). Proven by the true-success-rate diagnostic. **Retrieval accuracy is now 10/10** (full corpus embedded 2026-07-09 — 168k sources / 66 books; the old ~4/10 was Gospels-only coverage). The remaining limiter is **compose/verify reliability** (~9/10, verifier fail-closes non-verbatim quotes to a safe fallback — a faithfulness-axis issue, not retrieval). Re-run the eval on every retrieval change and record the number in `WORKLOG.md`.
 
 **Never ship, cache, or curate answers from a pipeline below the accuracy bar** — caching a wrong answer serves it instantly to everyone. Re-run the accuracy diagnostic on every retrieval change (corpus / hybrid / reranker) and record the number in `WORKLOG.md`.
 
