@@ -117,6 +117,12 @@ Per owner: dropped the whole-corpus crawl; scaled the **targeted per-work fetch*
 
 **ENTRY-WEIGHTED DISTRIBUTION (62,444 patristic entries):** repairable **8.4%** (5,219 — Chrysostom Acts/John/Matt 98–99%, Augustine Ps/John 78–90%); drop (modern-only) **16.1%** (10,054); needs-review (PD exists, source not wired: Catena-Newman, Gregory-Oxford, Cyril-Pusey) **6.1%** (3,786); **quarantine-by-default (unmeasured tail, ~1,367 tiny works) 69.5%** (43,385). **The true repair rate is far below the ~50% author estimate, as predicted** — verified 8.4%, ~15% even counting likely needs-review. Tail = later expansion phase (owner). Corpus-shape tally in `RESOURCING_PLAN` §12.
 
+### Legal-corpus ACCURACY measured (read-only) — decides launch + wiring (2026-07-10)
+
+Per owner: stopped patristic recovery; measured what the legal (verified-repairable) corpus delivers. Publishable = helloao 4 + patristic-repairable 5 = **66,801 embeddings (38.4%)**; filtered retrieval to those source_ids, ran the 30-query eval baseline-vs-legal (`eval-legal-corpus.mts`, read-only). **Baseline reproduced exactly (full 100%, vector 97%)** → harness valid.
+
+**Legal corpus: true-success (HIT=1) 93% (28/30); ≥2-voices (HIT=2) 87% (26/30); vs 100% baseline.** The loss is NOT in diversity/patristic queries (topical + rare-topic + proper-noun all held 100%) — it's in **verse-ref** (8/8→5/8) + one exact-term. HIT=1 vs HIT=2 splits the 4 losses: **2 genuine misses** (1 Cor 13, propitiation) + **2 diversity gaps** (Isaiah 53, Sermon on the Mount — right passage retrieved, <2 voices). **Decision: wiring Catena Aurea (Newman PD, Gospels → Sermon on Mount) + CrossWire-5 (Barnes/Calvin whole-Bible → Isaiah 53, epistles) targets all 4 losses — worth it; the gap is small + recoverable, not the 70% tail.** Detail in `RESOURCING_PLAN` §13.
+
 ## 2026-07-09 (next phase) — Step 1 backup + Step 2 gates (coverage + license)
 
 Executing `docs/NEXT_PHASE.md` Steps 1–2. Stopping at the Step 3 boundary (the

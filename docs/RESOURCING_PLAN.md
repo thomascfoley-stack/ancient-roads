@@ -224,3 +224,24 @@ Replaced the whole-corpus crawl with the reliable primitive (`resource-classify-
 - **Bibles + already-clean commentary corpus:** unaffected (the 168k-embedding retrieval corpus stands).
 
 Final published-vs-quarantined-vs-dropped tally comes once the needs-review sources are wired and the tail expansion is scoped — **before any publish**.
+
+## 13. Legal-corpus ACCURACY — what the verified-repairable set delivers (2026-07-10, read-only)
+
+Measured retrieval accuracy on the **publishable set = verified-repairable only** (helloao Gill/JFB/Clarke/Matthew-Henry + patristic-repairable Chrysostom Acts/John/Matthew + Augustine Psalms/John = **66,801 embeddings, 38.4%** of 173,806). Filtered retrieval to those source_ids; ran the labeled 30-query eval baseline-vs-legal (`web/src/scripts/eval-legal-corpus.mts`). Read-only — no migration/publish.
+
+| Metric | Baseline (full corpus) | **Legal (publishable 38%)** |
+|---|---|---|
+| Full-pipeline, true-success (HIT=1, right passage) | 30/30 (100%) | **28/30 (93%)** |
+| Full-pipeline, ≥2 voices in-range (HIT=2, the product guarantee) | 30/30 (100%) | **26/30 (87%)** |
+| Vector-only (HIT=2) | 29/30 (97%) | 26/30 (87%) |
+
+**The loss is NOT in diversity/patristic queries — the opposite of the hypothesis.** By category (base→legal, full pipeline, HIT=2): topical 4/4→4/4, rare-topic 6/6→6/6, proper-noun 7/7→7/7 all held; **verse-ref 8/8→5/8** and exact-term 5/5→4/5 took the hit — famous specific passages.
+
+**HIT=1 vs HIT=2 splits the 4 losses into two kinds:**
+- **Genuine misses (2, fail even at HIT=1):** "1 Corinthians 13… love" and "propitiation for our sins" — the legal set doesn't surface the right passage on top.
+- **Diversity gaps (2, right passage retrieved but < 2 voices):** "Isaiah 53 suffering servant" and "the Sermon on the Mount" — recoverable by adding voices.
+
+**Decision — wiring the high-value PD voices IS worth it, and it's targeted:**
+- **Catena Aurea (Newman 1841, confirmed PD, Gospels)** → directly covers the **Sermon on the Mount** (Matthew) diversity gap; the highest-value diversity voice for Gospel passages.
+- **CrossWire-5 (Barnes/Calvin/Wesley/Scofield/Darby — whole-Bible PD)** → covers **Isaiah 53** + the epistle passages (1 Cor 13, propitiation in Romans/Hebrews).
+- Together they target all 4 lost queries. **The legal-corpus-only is 93%/87% — near the bar but not at it; the gap is small, concentrated, and recoverable by two confirmed-PD sources** rather than the 70% patristic long tail. So: wire Catena + CrossWire-5, re-measure; don't chase the tail.
