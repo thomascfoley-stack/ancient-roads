@@ -33,6 +33,10 @@ Extended Gate B (ADR-008 / CLAUDE.md aggregator rail): `license-manifest.ts` gai
 
 *Note on state:* DB status is `staged` (per instruction = "unpublish"); the config `quarantine` marker is what holds it at the registry level. For the wide rollout I'd recommend the backfill set forbidden-provenance sources to DB `status='quarantined'` for strict consistency — flagging for decision, not doing it unasked.
 
+### Track 1b — re-sourcing plan (`docs/RESOURCING_PLAN.md`, approval-only)
+
+Sized the footprint from Neon. **biblehub = 14 works but they are the mega-commentaries** (Barnes, Calvin, Wesley, Darby, Bengel, Poole, Pulpit, Cambridge, Geneva, Scofield, MacLaren, Lange, Benson, B.W. Johnson) — 176,553 eligible entries (~52% by raw entries) that **collapse to only 16,072 embeddings (~9%)**, so the re-embed *worst case* is ~$0.07. The footprint also surfaced provenance problems the forbidden-domain gate does NOT cover: **242 works with no recorded provenance** (78,716 entries), **CCEL** (17 works, ADR-008 restricted), and **historicalchristian.faith** (149 works, unvetted — the single biggest bucket). Plan defines the permitted source per work-type + the **text-match test**: normalized match → provenance-repair (keep vector, $0); differ → re-embed that section; no permitted source → quarantine. No code until approved.
+
 ## 2026-07-09 (next phase) — Step 1 backup + Step 2 gates (coverage + license)
 
 Executing `docs/NEXT_PHASE.md` Steps 1–2. Stopping at the Step 3 boundary (the
