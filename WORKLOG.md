@@ -74,6 +74,69 @@ table — it's `commentary_entries` + synthesized `source_id`, and I query Neon 
 (ground truth), no dashboard/OAuth needed; (3) truncation was already ON (1000 chars) — the
 bug was char-truncation ≠ token-limit, not "truncation disabled."
 
+## 2026-07-09 — ACCURACY DIAGNOSTIC: 4/10 → 9/10 (full corpus + hybrid + reranker)
+
+With the full corpus embedded (173,806 rows / 168k unique source_ids), re-ran the 10-query
+true-success diagnostic (`web/src/scripts/diagnose-pipeline.mts`, `MODE=full` = hybrid_search
++ Qwen3-Reranker-0.6B).
+
+**Result — mode=full: 9 composed / 1 fallback; true success 9/10** (baseline was 4/10).
+
+- **Retrieval accuracy is effectively 10/10:** every query — including the previously
+  ZERO-coverage OT/topical ones (Psalm 23, Genesis 1, Paul's thorn, Sermon on the Mount,
+  predestination, eucharist) — now retrieves genuinely on-topic sources across multiple
+  traditions. The old "good shepherd → Luke 2 nativity" class of bug is gone; reranker
+  scores the right sources 0.97–0.99.
+- **The lone miss (Psalm 23) is a COMPOSE/VERIFY failure, not retrieval.** Its 6 sources are
+  all correct Psalm 23 commentary (Darby, Tyndale, Matthew Poole, MacLaren, Augustine), 5
+  traditions — but the composed answer was rejected by the V1 verifier on both attempts and
+  fell closed to fallback (11.2s). That's the faithfulness gate doing its job, a different
+  axis from retrieval accuracy. Worth a separate look (transient temp-0.3 variance vs. a
+  systematic verbatim-quote issue with the Psalm 23 source formatting).
+
+Verifier gate intact throughout — no unverified text emitted.
+
+**Lever-by-lever + a CORRECTION.** Ran vector-only / hybrid / full on the same full corpus:
+vector 9/10, hybrid 7/10, full 9/10. My first read — "hybrid actively hurts retrieval via
+OR-flooding" — was WRONG, and checking the flags proved it: **0 wrong-source flags in any
+mode.** Every query in every mode retrieves topically-correct sources. The fallback is a
+DIFFERENT query each run (John 1 in vector; vine/Genesis/John 1 in hybrid; Psalm 23 in full),
+and isolating Psalm 23 verifies it 3/3. So the 9/7/9 spread is **compose/verify VARIANCE, not
+retrieval** — temp-0.3 compose + strict V1 verifier + only 1 retry means ~10–30% of composes
+fail the gate and occasionally both attempts miss → fallback.
+
+**Accurate conclusions:**
+- **Retrieval accuracy = 10/10 in all three modes.** The corpus fix solved retrieval outright.
+- **The 10-query set can't discriminate vector vs hybrid vs full** (all 10/10 on sources) —
+  confirms the owner's "expand the eval set before deciding hybrid's fate" call.
+- **New limiting factor for END-TO-END 10/10 is compose/verify reliability**, a faithfulness-
+  axis issue (temp / retry budget / prompt / normalize), NOT retrieval. `MAX_RETRIES` was cut
+  2→1 for latency; the reliability/latency trade may be worth revisiting for the gate.
+
+Next: (1) expand the eval query set (harder: exact-term, proper-noun, verse-ref, rare-topic)
+to decide hybrid/reranker on data; (2) instrument which V1 checks fail most across many
+composes to fix the compose/verify miss rate toward a reliable 10/10.
+
+**Psalm 23 root cause (investigated) — verbatim-quote drift on long-prose sources.** The
+lone consistent full-mode fallback traces to ONE check: `quote_verbatim` on section 5
+(Alexander MacLaren). Confirmed by isolating it: the model's MacLaren quote matches verbatim
+for ~123 chars then drifts into paraphrase ("…sings this little" ✓ → then a smoothed
+continuation ✗). MacLaren is 5000 chars of flowing prose; the model copies the opening
+faithfully then rewrites the tail. **The verifier is correctly failing closed — not a bug,
+not retrieval, not whitespace.** `normalize.ts` already handles whitespace/punct/case/NFKD.
+Vector mode passes Psalm 23 only because it surfaces *structured* sources (Tyndale/Darby)
+that are trivial to quote exactly; the reranker surfaces MacLaren (more topical, but prose)
+→ the model quotes it less cleanly. So **better retrieval can surface harder-to-quote
+sources** — the fix is compose-side, NOT avoiding good sources or weakening the verifier.
+
+Fix levers toward reliable end-to-end 10/10 (all faithfulness-axis, verifier stays intact):
+- **Quick:** `MAX_RETRIES` 1→2 (retry carries violation feedback; a 2nd pass often repairs
+  verbatim drift). Was cut 2→1 for latency; compose is ~5s so 3-attempt worst case ~15s.
+- **Durable (aligns with "select, don't regenerate"):** extractive quote-repair in
+  normalize — snap a near-verbatim quote to the longest exact span in the cited section
+  before verifying. Robust against drift; must stay fail-closed (only snap true near-matches).
+- **Prompt:** instruct shorter quotes (short exact spans drift less than long ones).
+
 ## 2026-07-09 — Teacher landed + wired to web (`feat/teacher-pipeline` → `main`)
 
 **Merged to `main`, audit green (95 tests, typecheck + lint + knip + deps all pass).**
