@@ -2,6 +2,7 @@ import { getDb } from '../db';
 import { rerank } from './rerank';
 import { resolveIntent } from '../../bible/pericopes';
 import type { VerseRange } from '../../bible/ref-parse';
+import { CANDIDATE_POOL, RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange } from './routing';
 
 // A retrieved commentary chunk, fully hydrated (attribution + content on the row).
 export interface RetrievedChunk {
@@ -29,50 +30,25 @@ export interface RetrievedChunk {
 //
 // The reranker is the direct fix for the "semantically similar but topically
 // wrong" precision bug: it understands that "good shepherd" means John 10, not
-// any mention of shepherds.
-const CANDIDATE_POOL = 20;
-// Cap on injected on-passage candidates, so a false-positive reference detection
-// can't flood the reranker pool (docs/REFERENCE_ROUTING_DESIGN.md §2).
-const INJECT_CAP = 8;
+// any mention of shepherds. The routing orchestration (inject cap, injection SQL,
+// pool merge, on-passage floor) lives in ./routing — the SINGLE source shared with
+// the accuracy eval so the measured number can't drift from this shipped path.
 
-// The top INJECT_CAP vector matches WITHIN the named passage's verse range(s).
-// MATERIALIZED CTE range-scan (not an HNSW post-filter, which returns empty on a
-// selective filter) — served by the 007 partial expression index on verseId.
+// The top on-range vector matches, hydrated to RetrievedChunk (SQL from ./routing).
 async function fetchOnRange(
   sql: ReturnType<typeof getDb>,
   vecStr: string,
   ranges: readonly VerseRange[],
 ): Promise<RetrievedChunk[]> {
-  const conds = ranges
-    .map((r) => `(metadata->>'verseId')::int BETWEEN ${r.start} AND ${r.end}`)
-    .join(' OR ');
-  const rows = (await sql.query(
-    `WITH inrange AS MATERIALIZED (
-       SELECT source_id, content, metadata, embedding FROM embeddings
-       WHERE user_id IS NULL AND source_type = 'commentary' AND (${conds})
-     )
-     SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
-     FROM inrange ORDER BY embedding <=> $1::vector LIMIT ${INJECT_CAP}`,
-    [vecStr],
-  )) as Array<{ source_id: string; score: number; content: string; metadata: unknown }>;
+  const rows = (await sql.query(injectionSql(ranges), [vecStr])) as Array<{
+    source_id: string; score: number; content: string; metadata: unknown;
+  }>;
   return rows.map((r) => ({
     sourceId: r.source_id,
     score: Number(r.score),
     content: r.content,
     metadata: (typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata) as RetrievedChunk['metadata'],
   }));
-}
-
-// FLOOR: reserve the top 2 slots for the best-reranked on-passage voices. The
-// reranker alone drifts to semantically-near but off-reference passages (e.g.
-// "1 Corinthians 13" → John 15 "greater love"); the floor pins the named passage
-// to the lead (measured: verse-ref HIT=1 46%→96%, no full-corpus regression).
-function floorOnRange(ordered: RetrievedChunk[], ranges: readonly VerseRange[]): RetrievedChunk[] {
-  const onRange = (c: RetrievedChunk) =>
-    ranges.some((r) => c.metadata.verseId >= r.start && c.metadata.verseId <= r.end);
-  const promote = ordered.filter(onRange).slice(0, 2);
-  const rest = ordered.filter((c) => !promote.includes(c));
-  return [...promote, ...rest];
 }
 
 export async function retrieveCommentary(
@@ -129,12 +105,7 @@ export async function retrieveCommentary(
   const intent = queryText ? resolveIntent(queryText) : { inject: [], floor: [] };
   if (intent.inject.length > 0) {
     const injected = await fetchOnRange(sql, vecStr, intent.inject);
-    const seen = new Set<string>();
-    const merged: RetrievedChunk[] = [];
-    for (const c of [...injected, ...candidates]) {
-      if (!seen.has(c.sourceId)) { seen.add(c.sourceId); merged.push(c); }
-    }
-    candidates = merged;
+    candidates = mergeById(injected, candidates, (c) => c.sourceId);
   }
 
   if (candidates.length <= limit && intent.floor.length === 0) return candidates;
@@ -142,10 +113,10 @@ export async function retrieveCommentary(
   // Rerank the full pool, then floor the top on-passage voices into the lead slots
   // (only for the high-confidence `floor` ranges) before taking `limit`.
   try {
-    const docs = candidates.map((c) => c.content.slice(0, 1200));
+    const docs = candidates.map((c) => c.content.slice(0, RERANK_DOC_CHARS));
     const ranked = await rerank(queryText || 'commentary', docs);
     let ordered = ranked.map((r) => ({ ...candidates[r.index]!, score: r.relevance_score }));
-    if (intent.floor.length > 0) ordered = floorOnRange(ordered, intent.floor);
+    if (intent.floor.length > 0) ordered = floorOnRange(ordered, intent.floor, (c) => c.metadata.verseId);
     return ordered.slice(0, limit);
   } catch {
     // Reranker failure: fall back to the hybrid/vector ordering

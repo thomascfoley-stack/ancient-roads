@@ -1,6 +1,6 @@
 import 'server-only';
+import { RERANK_MODEL } from './routing';
 
-const RERANK_MODEL = 'Qwen/Qwen3-Reranker-0.6B';
 const BASE_URL = `https://api.deepinfra.com/v1/inference/${RERANK_MODEL}`;
 
 function apiKey(): string {

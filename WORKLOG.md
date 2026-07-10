@@ -1,5 +1,15 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-10 (PARITY FIX) — eval now exercises the shipped retrieval path, not a look-alike
+
+Thomas flagged the real code risk: `eval-routing.mts` hand-duplicated `basePool`/`injectRange`/`rerankAll`/`applyFloor`/the inject cap, separate from production `retrieve.ts` — so the 96% was measured on a parallel copy. A one-line drift (inject cap, rerank model, floor logic) and the eval passes while prod differs. (Root cause confirmed: the eval **can't** import `retrieveCommentary` — `rerank.ts` pulls in `server-only`, which throws under tsx.)
+
+**Fix — single source of truth, `web/src/lib/teacher/routing.ts` (no `server-only`):** the drift-prone orchestration now lives in one module both callers import — `injectionSql` (the MATERIALIZED-CTE range query + the cap), `mergeById` (pool merge), `floorOnRange` (the on-passage floor, generic over the row shape), and the `CANDIDATE_POOL`/`RERANK_MODEL`/`RERANK_DOC_CHARS` constants. Production `retrieveCommentary` and the eval both call these exact functions; the only per-caller pieces left are the base-pool query (the legal `PUBLISHABLE` filter is a genuine measurement-only variant until we publish the legal corpus) and the rerank fetch (production's is server-only). `rerank.ts` now sources its model id from `routing.ts` too. `test/routing-orchestration.test.ts` (5) pins the floor/merge behavior.
+
+**Proof it's behavior-preserving:** re-ran the frozen 88 through the refactored shared path — **identical routed numbers** (legal/ROUTED HIT=1 77%, ≥2-voices 91%, **verse-ref HIT=1 96%**; full/ROUTED 72/97/85; full/no-route baseline verse-ref 54%). The ±1 wobble is confined to the no-route configs (reranker nondeterminism). Audit green; 20/20 unit tests.
+
+**Open — the actual launch gate (not closed here):** 96% is still largely **in-sample** — the gazetteer and floor were tuned against these 88, and the held-out check is only n=5 per bucket (reassuring but thin). The larger held-out eval is the real accuracy gate for the legal corpus; **96% does not stand in for it.** Tracked as the next retrieval milestone.
+
 ## 2026-07-10 (VALIDATED + HARDENED) — routing precision: two-tier floor; gated dogfood deployed
 
 Deployed the routing slice behind the `SITE_PASSWORD` gate (gated dogfood, not beta-open) — GET `/` → 307 `/gate`, `POST /api/ask` → 401, verified live. Then ran the two pre-real-users validations Thomas asked for; the first found a real precision hole and I fixed it in-slice.
