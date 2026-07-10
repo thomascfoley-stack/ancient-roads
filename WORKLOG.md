@@ -1,5 +1,10 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-10 (design) — reference/pericope intent routing (awaiting approval)
+
+Per the failure-code finding (gap is ranking on verse-ref queries, no-content=0%): wrote **docs/REFERENCE_ROUTING_DESIGN.md** — a general reference/pericope intent-routing mechanism (SOFT-BOOST candidate injection, not hard-filter, to preserve topical breadth). Covers intent detection (numeric ref-scan extending ref-parse + a named-pericope gazetteer), the soft-boost-vs-hard-filter choice + why, concordance-guarantee preservation (retrieval-only, verifier unchanged, no interpretation), and how ref-parse stays byte-identical (bible-sync guard — noting CLAUDE.md misnames it web-core-sync). Re-measure plan: frozen 88 on legal+full, report verse-ref HIT=1. **Design-only, no code until approved.**
+
+
 ## 2026-07-09 (Step 3 ownership) — sources/sections migration owner assigned
 
 **This session owns the `sources`/`sections` ingestion migration (NEXT_PHASE §3 / ADR-010) as of 2026-07-09.** Other sessions must NOT write the migration schema or scripts — that would re-create the exact cross-session divergence the ownership gate exists to prevent (two parallel `sources`/`sections` designs + a diverged `source_id` scheme). Per the design-before-code rail, the only deliverable right now is one approval-ready design doc (`docs/MIGRATION_DESIGN.md`); **no schema/migration code until Thomas approves it.**
