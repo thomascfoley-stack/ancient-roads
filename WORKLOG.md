@@ -1,5 +1,18 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-10 (PILOT GREEN + SET FROZEN) — held-out launch-gate eval, awaiting the go for the full run
+
+Built the held-out accuracy eval (`docs/HELDOUT_EVAL_DESIGN.md`, methodology approved). Two artifacts: `web/src/scripts/eval-heldout.mts` (harness) + `web/src/scripts/heldout-queries.mts` (PILOT 20 + FROZEN 120). Harness runs through the **shared shipped `routing.ts` path** on the **legal corpus**, reporting per-category HIT@1 / HIT@2 (≥2 **distinct-author** voices) + failure codes vs pre-registered bars.
+
+**Plumbing pilot (20 queries, all 6 categories) — GREEN.** End-to-end validation only (not accuracy): all labels parsed, all four failure codes computed (pass / <2-voices / wrong-passage, with `hasContent` splitting wrong-passage from no-content), HIT@1/HIT@2-by-distinct-author tallied per category, shared routing path ran, **controls 0 hijacks**. Pilot accuracy levels were NOT acted on (plumbing discipline).
+
+**FROZEN set — authored, validated, hashed, locked.** 120 queries, composition exactly as approved (verse-ref 40 · pericope 15 · epistle 25 · topical 20 · proper-noun 10 · control 10), **representative, not epistle-reweighted**. Labels: verse-ref/pericope/proper-noun = objective verseId ranges via the tested `parseRef`; **topical/epistle = Westminster Shorter + Heidelberg catechism proof-texts** (both PD, license confirmed — centuries pre-1929). Disjoint from the tuned 88; stratified across the canon (Torah→Revelation). Label QA: **0 parse failures, 0 duplicate ids.**
+- **Freeze hash:** `sha256(heldout-queries.mts) = 49685727f716ed1603907bad048ca18b90727f10ce4242b480b9e0cd7ee5ab8e`. The full 120 is frozen+hashed **before any accuracy number is seen**; committing it locks the git blob too.
+
+**Pre-registered bars (gate = open beta *behind the security gate*):** topical/epistle HIT@2 ≥85% (the guarantee, primary) · verse-ref HIT@1 ≥85% · held-out pericope HIT@1 ≥70% · proper-noun HIT@1 ≥70% · no-content ≤8% · controls 0 hijacks/fabrications · faithfulness ≥99% (separate axis). No 100% targets (n≈10–40/cat has wide CIs).
+
+**STOP — awaiting Thomas.** Per protocol, showing the pilot + the frozen set before the full accuracy run. On the go: `eval-heldout.mts --frozen` read-only → per-category number vs the bars. **No gazetteer/floor edits in response to held-out failures — those are a separate later slice** (editing in response re-tunes it back to in-sample).
+
 ## 2026-07-10 (PARITY FIX) — eval now exercises the shipped retrieval path, not a look-alike
 
 Thomas flagged the real code risk: `eval-routing.mts` hand-duplicated `basePool`/`injectRange`/`rerankAll`/`applyFloor`/the inject cap, separate from production `retrieve.ts` — so the 96% was measured on a parallel copy. A one-line drift (inject cap, rerank model, floor logic) and the eval passes while prod differs. (Root cause confirmed: the eval **can't** import `retrieveCommentary` — `rerank.ts` pulls in `server-only`, which throws under tsx.)

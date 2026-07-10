@@ -1,0 +1,102 @@
+# Held-out launch-gate eval — design
+
+**Status:** methodology APPROVED 2026-07-10. Pilot GREEN (plumbing validated); FROZEN 120
+authored + validated (0 parse failures / 0 dup ids) + hashed
+(`sha256 49685727…5ab8e`). **The full accuracy run waits for Thomas to see the pilot + frozen set.**
+Harness: `web/src/scripts/eval-heldout.mts`; set: `web/src/scripts/heldout-queries.mts`.
+**Purpose:** the real accuracy gate for publishing the legal corpus. The tuned 88 is
+in-sample (gazetteer + floor were fit to it); this is the frozen, out-of-sample number
+that decides ship / no-ship. It must answer three questions at once:
+
+1. **Generalization** — does routing + the gazetteer hold on passages/pericopes it was
+   NOT tuned on?
+2. **Corpus sufficiency** — is the legal (verified-repairable) corpus good enough to ship
+   across the whole canon, not just the Gospel/reformed-heavy strengths?
+3. **Epistle-breadth (the deferred CrossWire question)** — do we get ≥2 grounded voices on
+   *epistle-concentrated* topics, or is that gap systemic?
+
+## The discipline (this is what makes it a gate, not another 88)
+
+The number is only worth something if the set is genuinely held-out. Commitments:
+
+- **Disjoint from the tuned 88.** No query reuses a passage, pericope, or phrasing from
+  the routing eval's query set.
+- **Frozen + hashed before ANY accuracy number is seen.** The full 120-query+label file is
+  authored, content-hashed (hash recorded in `WORKLOG.md`), and locked *before* the accuracy
+  run. The set is not authored or adjusted in response to any result. One shot.
+- **The pilot is plumbing-only.** A ~20-query harness pilot runs *first* to validate that
+  labeling parses, the four failure codes compute per-category, and the shared routing path
+  runs end-to-end — NOT to read the accuracy level. Its queries are separate from the frozen
+  120; nothing about the 120 is authored or changed from pilot results.
+- **No tuning against it.** Held-out failures do **not** trigger gazetteer edits, floor
+  changes, or lexicon additions in this slice. The frozen number stands as reported; any fix
+  is a *separate*, later slice with its own re-measure. (Editing the gazetteer in response to
+  a held-out miss silently converts it back to in-sample — the exact trap we're avoiding.)
+- **Pre-registered thresholds** (below) — decided now, before the number exists, so it
+  isn't graded on a curve after the fact.
+- **Measured through the shipped path.** Runs the shared `lib/teacher/routing.ts`
+  orchestration (injection/merge/floor/rerank) the production `retrieveCommentary` uses —
+  reusing the parity work just landed. Legal corpus only (the `PUBLISHABLE` filter), K=6.
+
+## Provenance / composition — BLEND (approved)
+
+Target **~120 queries**, frozen, each `{ id, category, query, expected, source, notes }`.
+Author bias is removed two ways: the coverage block's passages are **stratified-sampled across
+the canon** (chosen by sampling, not by me), and the topical/epistle **labels are seeded from
+public-domain catechism proof-texts** — so "the right passages" is a centuries-old published
+authority's call, not mine. Composition stays **representative — NOT epistle-reweighted**
+(reweighting skews the launch gate toward a secondary question; if the epistle verdict is
+ambiguous at n=120, run a separate targeted epistle probe later).
+
+**Label source (license confirmed PD):** Westminster Shorter Catechism (proof-texts 1649) +
+Heidelberg Catechism (1563) — both public domain (centuries pre-1929), both scripture-proofed,
+both on Wikisource/CCEL. A topical query's "acceptable passages" = that doctrine's catechism
+proof-texts. Verse-ref / pericope / proper-noun labels are objective verseId ranges from Scripture.
+
+| block | n | what it tests | labeling |
+|---|---|---|---|
+| **Canon-coverage verse-ref** | ~40 | corpus coverage + numeric-routing generalization, **stratified across all 66 books** (weighted to OT history/wisdom/major+minor prophets, not just Gospels) | objective — expected verseId range |
+| **Held-out pericopes** | ~15 | gazetteer generalization: in-gazetteer (freshly phrased) + NOT-in-gazetteer (woman at the well, Jonah, Babel, Nicodemus…) | objective — range; flag gazetteer coverage |
+| **Epistle-topic** | ~25 | the CrossWire question: ≥2 voices on epistle-concentrated abstractions (justification, propitiation, sanctification, adoption, imputation, reconciliation…) | catechism proof-texts |
+| **General topical** | ~20 | cross-canon themes (providence, prayer, covenant, the moral law, resurrection hope…) | catechism proof-texts |
+| **Proper-noun / rare-topic** | ~10 | minor figures + rare terms (Melchizedek, Onesimus, Nephilim, propitiation…) | objective range where applicable |
+| **Negative controls** | ~10 | idiomatic (no hijack) + genuinely out-of-corpus (graceful no-content) | expected = ∅; PASS = no false floor / honest empty |
+
+## Metrics + pre-registered per-category bars (approved)
+
+Failure-code taxonomy as the 88 (**pass / <2-voices / wrong-passage / no-content**) + **HIT@1**
+(top result on-target) and **HIT@2** (≥2 on-target voices from **≥2 distinct authors** — the
+concordance guarantee). Reported **per category**, not one aggregate. n≈10–40 per category has
+wide CIs, so **no 100% targets**; a single-category near-miss is "investigate via failure codes,"
+not auto-no-ship. **The bar gates moving to open beta *behind the security gate*** — not public
+launch (SEC-1 still gates that).
+
+| category | primary metric | pre-registered bar |
+|---|---|---|
+| **Topical + epistle** | **HIT@2 (≥2 distinct-author voices)** — *the guarantee, primary* | **≥ 85%** |
+| Canon-coverage verse-ref | HIT@1 | ≥ 85% |
+| Held-out pericopes | HIT@1 | ≥ 70% (some are inject-only, not floored) |
+| Proper-noun / rare | HIT@1 | ≥ 70% |
+| Corpus sufficiency (all blocks) | no-content where content should exist | ≤ 8% |
+| **Negative controls** | hijacks + fabrications | **0 (any is a bug, not a miss)** |
+| Faithfulness (separate live axis) | interpretation_bait pass | ≥ 99% |
+
+**Verdict logic:** meet all bars → clear to open **beta behind the security gate**. Misses that
+localize to one block the failure codes explain (e.g. epistle <2-voices high → the CrossWire /
+Barnes-Calvin trigger) → conditional, fix-then-remeasure. no-content > 10% or a control hijack →
+no-ship until fixed.
+
+## Protocol (order of operations)
+1. Build the harness + author the ~20 **plumbing pilot** (separate from the 120).
+2. Run the pilot → confirm labels parse, failure codes compute per-category, the shared routing
+   path runs end-to-end. Plumbing only — accuracy level is not acted on.
+3. Author the full **120**, freeze + **content-hash** it (hash → `WORKLOG.md`). Not derived from
+   pilot accuracy.
+4. **Show Thomas the pilot + the frozen set.** Stop.
+5. On approval: run the frozen 120 **read-only** on the legal corpus through the shipped path →
+   report per-category + failure codes vs the bars above.
+
+## Out of scope
+- Faithfulness axis (interpretation_bait / compose-verify) — separate gate, unchanged here.
+- Fixing anything this eval surfaces — findings only; fixes are later slices.
+- Full-corpus measurement — this gate is about the *legal* (publishable) corpus.
