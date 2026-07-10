@@ -1,5 +1,26 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-10 (VALIDATED + HARDENED) — routing precision: two-tier floor; gated dogfood deployed
+
+Deployed the routing slice behind the `SITE_PASSWORD` gate (gated dogfood, not beta-open) — GET `/` → 307 `/gate`, `POST /api/ask` → 401, verified live. Then ran the two pre-real-users validations Thomas asked for; the first found a real precision hole and I fixed it in-slice.
+
+**Validation 1 — false-positive probe (`probe-reference-routing.mts`).** The floor forces on-reference voices to the top, so a mis-detection hijacks topical queries — and the original gazetteer matched pericope names in idiom: **8/12** idiomatic queries fired ("good shepherd insurance company" → John 10, "bread of life bakery" → John 6, "ten commandments of leadership" → Exodus 20). The floor would have surfaced the wrong passage. **Fix — a two-tier `resolveIntent` (`{ inject, floor }`):** the numeric scan is already high-precision (needs a chapter number — "reading Romans", "prodigal spending" stay clean), so numeric refs floor unconditionally; a **pericope** only earns the floor with **biblical corroboration** (a second named passage, or a general-lexicon token surviving after the matched phrase is stripped). Un-corroborated pericopes still *inject* (soft-boost is false-positive-safe) but never seize the top. Result: **precision 12/12** (no hijack), **recall 8/8** (genuine "about the passage" queries still floor — one edge, "raising of Lazarus", fixed by stripping the shortest matching alias so context words survive).
+
+**Validation 2 — held-out generalization.** Held-out NUMERIC refs not in the eval (Habakkuk 3, 2 Kings 5, Philippians 2, Nehemiah 8, Amos 5) → **5/5 route + floor** (the numeric mechanism generalizes with zero tuning). Held-out PERICOPE names not in the gazetteer (woman at the well, doubting Thomas, Jonah, Babel, Cana) → **5/5 no-route** (honest coverage — grows reactively, never silently wrong).
+
+**4-way re-measure (frozen 88, K=6, cap 8) — settles "no full regression" against the true baseline:**
+
+| config | HIT=1 | HIT=2 | verse-ref HIT=1 |
+|---|---|---|---|
+| legal / no route | 63% | 84% | 46% (12/26) |
+| **legal / ROUTED** | **77%** | **90%** | **96% (25/26)** |
+| full / no route | 59% | 95% | 54% (14/26) |
+| **full / ROUTED** | **70%** | **97%** | **85% (22/26)** |
+
+**No regression — routing lifts the FULL corpus too** (verse-ref 54%→85%, HIT=2 95%→97%, HIT=1 59%→70%). Tightening held legal verse-ref at **96%**; the full-corpus verse-ref 2-query give-back vs the pre-tightening 92% is the precision/recall trade (idiomatic pericopes no longer floor), still +31pts over no-route. Sole residual: "beatitudes in the Sermon on the Mount" → Luke 6 (also beatitudes) — a label overlap. `test/reference-intent.test.ts` now asserts the two-tier contract (numeric floors; idiomatic injects-but-never-floors); audit green.
+
+**Note for the record (Thomas's correction):** CrossWire-5 is **not** 0-ROI for `<2-voices` — Barnes/Calvin cover the epistles, and the residual topical misses ("propitiation", "justification by faith") are epistle-topics. The measured 0-ROI was **no-content-specific**. Catena is Gospels-only so it adds nothing there — **not wired** (accepted as beta breadth). libsword/CrossWire-5 **deferred**, not killed: revisit once the bigger held-out eval shows whether epistle breadth is systemic.
+
 ## 2026-07-10 (BUILT + PROVEN) — reference/pericope routing: soft-boost + on-passage floor
 
 Built the §8 slice + §9 re-measure from the approved `REFERENCE_ROUTING_DESIGN.md` (ADR-015). **Retrieval-only** — the output contract, the fail-closed verifier, and "never interpret" are untouched (concordance guarantee holds).
