@@ -3,6 +3,16 @@
 Audited from the actual repo on 2026-07-08 — code, tests, `/audit` output, `docs/`, and
 git history — not from memory or the earlier hit list.
 
+## Update 2026-07-09 (next phase — Steps 1–2: backup + the two upfront gates)
+
+Executing `docs/NEXT_PHASE.md`. Steps 1 and 2 done; **stopped at the Step 3 boundary** (the `sources`/`sections` ingestion migration — unresolved cross-session owner, needs an approved design doc first, per the design-before-code rail).
+
+- **Backup done — the "no GitHub remote / backup" risk (below) is closed.** `origin` = `github.com/thomascfoley-stack/ancient-roads`; `main` pushed to `48b3bb9`. Working tree clean, nothing unpushed. **Deploy still owner-side** (`deploy.sh` → `npx vercel --prod`, no Vercel auth in the agent env; pre-signup gate / SSO wall stays ON).
+- **Found HEAD was lint-red, not deploy-ready.** `cbe9ea7` (the "ready to deploy" handoff commit) failed `eslint src test` on two committed files (dead `rate`/`processed` in `embed-full-corpus.ts`, unused `quote` param in `normalize-contract.test.ts`). Fixed (`3c530fb`); `npm run audit` now green.
+- **Gate A — coverage (completeness, fail LOUD): built + green.** `pnpm check:coverage` anti-joins eligible `commentary_entries` against embedded `source_id`s; ran it against Neon → **gap = 0** (168,233 sources). `source-id.ts` is now the single key-format source of truth shared by the embed job *and* the checker (they were duplicated before — free to drift). In `pnpm check:data` (not `audit` — hard-requires DB).
+- **Gate B — license (legal, fail CLOSED): built + green + in `npm run audit`.** `license-manifest.ts` validator (Public Domain | CC BY | CC BY-SA + provenance url/edition/year, the edition-trap guard) + `check-licenses.ts` runnable gate + defence-in-depth DB check (inert until `sources` exists) + 13 unit tests. `pnpm check:licenses`. CI-safe, so wired into `audit` — license is legally irreversible and must never be skippable.
+- **ADR-014** records reranker-is-core (full pipeline 100% vs vector/hybrid 97%); numbered past the parallel session's 010–013.
+
 ## Update 2026-07-09 (later — reconciled from the repo working tree, not memory)
 
 Post-`4403795`, a large body of work is DONE but was **uncommitted and undocumented**. Reconciled by reading the actual tree + git:
