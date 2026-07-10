@@ -1,5 +1,25 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-10 (AUTHOR-DIVERSITY INGEST) — Barnes/Wesley/Calvin added; on-target lift + a pool-dilution regression (judgment call)
+
+Stood up SWORD/CrossWire ingestion (no libsword available: no brew, and pysword can't read `zcom`, so I wrote the zVerse compressed-commentary reader directly — `scratchpad/sword/`). Modules: **Barnes' NT Notes, Wesley's Notes, Calvin's Commentaries** — all `DistributionLicense=Public Domain` (verified in each `.conf`). Alignment: Barnes via embedded `Verse N.` labels (bulletproof); Wesley/Calvin via the verse-index walk on **pysword's KJV canon** (the repo's WEB counts drift vs the modules' KJV v11n). Extracted **17,192 NT entries**, embedded (BAAI/bge-large, 512-token-safe), ingested to the publishable corpus via `src/ingest/ingest-sword-commentaries.mts` (owner conn = `web/.env.local` `DATABASE_URL`; root `.env.local` is **stale post-rotation** — flag). Provenance clean; the pre-existing **biblehub** Barnes/Calvin/Wesley (forbidden aggregator, ~3.8k rows, quarantined) are superseded — colliding source_ids repaired to CrossWire, residual biblehub excluded by a `sourceUrl ILIKE '%crosswire%'` gate in PUBLISHABLE. CrossWire counts verified exact: Barnes 6850 / Calvin 5088 / Wesley 5254.
+
+**Re-run WHOLE frozen v2 (hash `56c00104…` intact — no query/label edits; corpus + publishable-author filter only):**
+
+| category | metric | bar | v2 pre-ingest | POST-INGEST | Δ |
+|---|---|---|---|---|---|
+| verse-ref | HIT@1 (HIT@2) | ≥85% | 100% (85%) | **100% (90%)** | HIT@2 +5 ✅ |
+| held-out pericope | HIT@1 | ≥70% | 80% | **73%** | −7 (HIT@2 held) |
+| epistle | HIT@2 | ≥85% | 68% | **72%** | +4 |
+| topical | HIT@2 | ≥85% | 70% | **60%** | **−10** |
+| proper-noun | HIT@1 | ≥70% | 80% | **80%** | = |
+| controls | hijacks | 0 | 0 | **0** | = |
+| all | no-content | ≤8% | 0% | **0%** | = |
+
+**Diagnosis — author-diversity works on-target, but naive corpus expansion dilutes the fixed pool.** The added voices lifted many passages (f-ep-14 high-priest 1→2 voices → PASS; +1/+2 voices across ~20 epistle/pericope passages; verse-ref HIT@2 +5). But on **diffuse topical** queries the new authors' near-but-off-target entries entered the top-20 candidate pool and **displaced** on-target voices out of top-6 (f-tp-03 repentance 2→1, f-tp-05 forgiveness 2→1, f-tp-08 faithfulness 1→0, f-tp-11 pride 1→0, f-tp-17 angels 1→0). Net: epistle +4 (still short of 85%), topical −10, pericope HIT@1 −7 (HIT@2 unaffected; the guarantee held for pericope). So the lever is **not more corpus alone** — it's pool/reranking capacity for the richer corpus (larger `CANDIDATE_POOL` or diversity-aware selection), a retrieval-param slice with its own measurement — NOT gazetteer/floor/labels.
+
+**Judgment call (per Thomas's "surface with the number, don't pre-commit"):** epistle is **72%, not ~80%**, and the ingest net-regressed topical, so this is NOT ship-ready — and the clear next step is the pool-dilution fix, which should recover topical while keeping the epistle/verse-ref gains. Options: (a) keep the ingested corpus + do the pool-sizing slice next; (b) hold the PUBLISHABLE expansion until the pool fix lands. **Owner-only dogfood continues; no beta.** libsword/CrossWire-5 is now stood up and reusable regardless. No gazetteer/floor/label edits were made.
+
 ## 2026-07-10 (CORRECTED RE-RUN) — labels re-derived from authority; topical/epistle residual is author-diversity, not coverage
 
 Re-labeled ALL topical/epistle expected sets from **authoritative WSC/HC proof-texts** (fetched from PD sources: thewestminsterstandard.org WSC, ccel.org Heidelberg) — uniformly, from the authority, before the re-run (not expand-until-pass). Fixed the Gen 1 label error (WSC Q10 cites Gen 1:26-28). Kept strict where the authority is strict — e.g. high-priest = WSC Q25's Heb 2/7/9 only (so the Heb 5/8/10 the system returned still don't count, and f-ep-14 stays a fail: proof I didn't expand to pass). **Re-freeze hash v2:** `sha256 = 56c001049d5bb74c4b5127d6a030b03a3f0e44c239ec934e66f4db90fa1dc98c` (0 parse failures, 0 dup ids). No gazetteer/floor edits.
