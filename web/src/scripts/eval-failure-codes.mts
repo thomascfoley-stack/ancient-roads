@@ -20,12 +20,12 @@ const PUBLISHABLE = `(
   OR (metadata->>'author'='Augustine of Hippo' AND (metadata->>'verseId')::int/1000000 IN (19,43))
 )`;
 
-const B = { gen:1,exo:2,lev:3,num:4,deu:5,jos:6,jdg:7,rut:8,sa1:9,sa2:10,ki1:11,ki2:12,job:18,psa:19,pro:20,ecc:21,isa:23,jer:24,ezk:26,dan:27,hos:28,jol:29,amo:30,oba:31,jon:32,mic:33,mat:40,mrk:41,luk:42,jhn:43,act:44,rom:45,co1:46,co2:47,gal:48,eph:49,php:50,col:51,th1:52,ti1:54,tit:56,heb:58,jas:59,pe1:60,jn1:62,jn4:62,rev:66 } as const;
-type Range = { book: number; ch: [number, number] };
-interface Q { q: string; cat: string; expect: Range[] }
+export const B = { gen:1,exo:2,lev:3,num:4,deu:5,jos:6,jdg:7,rut:8,sa1:9,sa2:10,ki1:11,ki2:12,job:18,psa:19,pro:20,ecc:21,isa:23,jer:24,ezk:26,dan:27,hos:28,jol:29,amo:30,oba:31,jon:32,mic:33,mat:40,mrk:41,luk:42,jhn:43,act:44,rom:45,co1:46,co2:47,gal:48,eph:49,php:50,col:51,th1:52,ti1:54,tit:56,heb:58,jas:59,pe1:60,jn1:62,jn4:62,rev:66 } as const;
+export type Range = { book: number; ch: [number, number] };
+export interface Q { q: string; cat: string; expect: Range[] }
 const R = (book: number, a: number, b = a): Range => ({ book, ch: [a, b] });
 
-const QUERIES: Q[] = [
+export const QUERIES: Q[] = [
   // verse-ref
   { q: 'the Word became flesh in the Gospel of John', cat: 'verse-ref', expect: [R(B.jhn,1)] },
   { q: 'Genesis 1 creation, in the beginning God created', cat: 'verse-ref', expect: [R(B.gen,1,2)] },
@@ -176,4 +176,5 @@ async function main() {
   console.log('\nby category (HIT=2 pass / n):');
   for (const [c, v] of Object.entries(byCat)) console.log(`  ${c.padEnd(12)} ${v.pass2}/${v.n}`);
 }
-main().catch((e) => { console.error(e); process.exit(1); });
+import { fileURLToPath } from 'node:url';
+if (process.argv[1] === fileURLToPath(import.meta.url)) main().catch((e) => { console.error(e); process.exit(1); });
