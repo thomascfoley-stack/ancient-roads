@@ -1,9 +1,11 @@
 # Held-out launch-gate eval — design
 
-**Status:** methodology APPROVED 2026-07-10. Pilot GREEN (plumbing validated); FROZEN 120
-authored + validated (0 parse failures / 0 dup ids) + hashed
-(`sha256 49685727…5ab8e`). **The full accuracy run waits for Thomas to see the pilot + frozen set.**
-Harness: `web/src/scripts/eval-heldout.mts`; set: `web/src/scripts/heldout-queries.mts`.
+**Status:** RUN COMPLETE. v1 (`sha256 49685727…5ab8e`) → v2 re-freeze with authoritative
+WSC/HC labels (`sha256 56c00104…c98c`). Result (v2): verse-ref HIT@1 100%, pericope 80%,
+proper-noun 80%, controls 0 hijacks, no-content 0% → PASS; epistle HIT@2 68%, topical 70%
+→ below the 85% bar, residual = author-diversity thinness (not coverage) + reranker drift on
+abstract terms. Disposition: owner-only dogfood held; topical-doctrine breadth fix scoped
+before beta. See `WORKLOG.md` 2026-07-10. Harness `eval-heldout.mts`; set `heldout-queries.mts`.
 **Purpose:** the real accuracy gate for publishing the legal corpus. The tuned 88 is
 in-sample (gazetteer + floor were fit to it); this is the frozen, out-of-sample number
 that decides ship / no-ship. It must answer three questions at once:

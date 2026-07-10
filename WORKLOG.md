@@ -1,5 +1,29 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-10 (CORRECTED RE-RUN) — labels re-derived from authority; topical/epistle residual is author-diversity, not coverage
+
+Re-labeled ALL topical/epistle expected sets from **authoritative WSC/HC proof-texts** (fetched from PD sources: thewestminsterstandard.org WSC, ccel.org Heidelberg) — uniformly, from the authority, before the re-run (not expand-until-pass). Fixed the Gen 1 label error (WSC Q10 cites Gen 1:26-28). Kept strict where the authority is strict — e.g. high-priest = WSC Q25's Heb 2/7/9 only (so the Heb 5/8/10 the system returned still don't count, and f-ep-14 stays a fail: proof I didn't expand to pass). **Re-freeze hash v2:** `sha256 = 56c001049d5bb74c4b5127d6a030b03a3f0e44c239ec934e66f4db90fa1dc98c` (0 parse failures, 0 dup ids). No gazetteer/floor edits.
+
+**Corrected number beside the raw (don't bury it):**
+
+| category | metric | bar | RAW v1 | CORRECTED v2 | |
+|---|---|---|---|---|---|
+| verse-ref | HIT@1 | ≥85% | 100% | **100%** | ✅ |
+| held-out pericope | HIT@1 | ≥70% | 80% | **80%** | ✅ |
+| proper-noun | HIT@1 | ≥70% | 80% | **80%** | ✅ |
+| epistle | HIT@2 | ≥85% | 64% | **68%** (17/25) | ❌ |
+| topical | HIT@2 | ≥85% | 40% | **70%** (14/20) | ❌ |
+| controls | hijacks | 0 | 0 | **0** | ✅ |
+| all | no-content | ≤8% | 0% | **0%** | ✅ |
+
+Label correction moved **topical 40→70%** (it was heavily deflated) but **epistle only 64→68%** (it was mostly genuine). Both still short of the 85% ≥2-voices bar. **Residual isolated (14 fails), and it is NOT wrong-passage-drift or coverage:**
+- **Author-diversity thinness — the modal failure (9/14: all 6 topical + 3 epistle are `<2-voices`).** The system surfaces the *correct* on-doctrine passage but the legal corpus's 6 authors yield only **one** substantive voice on it — e.g. union → Rom 6 + 1 Cor 6 *both John Gill*; pride → Prov 16/18/13 *all Matthew Henry*. Right passage, one author.
+- **Reranker semantic drift (5/14, epistle `wrong-passage`):** abstract NT-soteriology terms drift — effectual calling, perseverance (John 10:28 not surfaced), resurrection-of-the-body (→ Christ's own resurrection), put-off/put-on, glorification (Rom 8:29 not surfaced).
+
+**What this means for the deferred CrossWire question — now answered with data:** the ≥2-voices miss on abstract doctrine is **author count per passage**, and adding PD commentators (Barnes/Calvin/Poole) is exactly the lever — the "0-ROI" earlier was *no-content*-specific; for the ≥2-voices *guarantee* on epistle/topical doctrine, more authors per passage has direct ROI. Corpus coverage is fine (no-content=0%); breadth of *voices* is the gap. The ~5 reranker-drift cases are separate (query-understanding on abstract terms) — and any fix there must use an *independent* doctrine→passage source, NOT these catechism labels (circular).
+
+**Disposition (pre-registered conditional):** core (verse-ref/pericope/proper-noun/controls/no-content) **passes** and generalizes. topical/epistle ≥2-voices miss even corrected — so per Thomas's call: **do NOT open beta as-is** (topical-doctrine is the modal query, too visible); keep owner-only dogfood; scope the topical-doctrine breadth fix (author-diversity via PD commentators + the abstract-term reranker drift), re-measure that block, then beta. **No lowering the bar.**
+
 ## 2026-07-10 (HELD-OUT NUMBER) — launch-gate result: verse-ref/pericope/controls pass; topical/epistle deflated by label gaps
 
 Ran the frozen 120 (`eval-heldout.mts --frozen`) read-only on the legal corpus through the shared shipped path. Integrity: frozen hash matched before the run (set unchanged). **No gazetteer/floor edits were made in response — the number stands.**
