@@ -1,5 +1,31 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-10 (BUILT + PROVEN) — reference/pericope routing: soft-boost + on-passage floor
+
+Built the §8 slice + §9 re-measure from the approved `REFERENCE_ROUTING_DESIGN.md` (ADR-015). **Retrieval-only** — the output contract, the fail-closed verifier, and "never interpret" are untouched (concordance guarantee holds).
+
+**What shipped (all byte-synced `src/` ↔ `web/`, audit green):**
+- `bible/ref-parse.ts` — `scanReferences(text)`: finds every numeric reference in prose (high-precision; topical text → `[]`).
+- `bible/pericopes.ts` — references-only named-pericope gazetteer (34 entries) + `resolveIntent(query)` → canonical verse-ID ranges (numeric refs + pericopes, de-duped). Grows reactively; this pass added Pentecost, raising of Lazarus, Mount Carmel, walking on water, feeding the 5,000, Jacob wrestling, crucifixion, empty tomb as the eval surfaced them.
+- `db/migrations/007_verseid_index.sql` — **applied.** Partial expression index on `(metadata->>'verseId')::int` (commentary rows) so the on-range injection is a selective MATERIALIZED-CTE scan, not an HNSW post-filter (which returns empty on selective filters).
+- `web/src/lib/teacher/retrieve.ts` — production `retrieveCommentary` now: `resolveIntent` → inject top ≤8 on-range vector matches into the pool → rerank the full pool → **floor** the top-2 on-passage voices into the lead slots → take `limit`. Topical queries (no ranges) take the unchanged path.
+- `web/src/lib/teacher/rerank.ts` — `topN` now defaults to "all" so the floor can see the full reranked order (only the 0/1-doc trivial case skips the API).
+- Tests: `test/reference-intent.test.ts` (6) + `test/bible-sync.test.ts` (7) green; full `npm run audit` green.
+
+**Re-measure (frozen 88, K=6, inject cap 8) — the gate:**
+
+| config | HIT=1 | HIT=2 | **verse-ref HIT=1** |
+|---|---|---|---|
+| legal / no route | 63% | 85% | 46% (12/26) |
+| **legal / ROUTED** | **78%** | **91%** | **96% (25/26)** |
+| full / ROUTED | 76% | 98% | 92% (24/26) |
+
+**The floor was necessary and is the lever.** Soft-boost injection *alone* barely moved verse-ref HIT=1 (46%→50%): the on-passage voices were in the pool but the reranker still led with the drifted passage — exactly the "reranker owns final order" risk flagged at approval. Adding the on-passage floor cleared it: **legal verse-ref HIT=1 46%→96%**, legal ≥2-voices 85%→91%, and **no full-corpus regression** (full ≥2-voices 85%→98%, verse-ref 92%). `no-content` stayed 0. One residual verse-ref "miss" — "the beatitudes in the Sermon on the Mount" surfaces Luke 6 (also a beatitudes passage) over Matt 5 — is a label-overlap, not a retrieval failure.
+
+**Residual (legal/ROUTED failure codes): <2-voices 5, wrong-passage 3, no-content 0.** These are *topical* queries with no resolvable reference (e.g. "propitiation", "justification by faith") where breadth, not ranking, is the limiter — the Catena-Aurea-for-Gospel-diversity candidate. Routing does not touch them (by design).
+
+**Recommend next (for Thomas):** (1) the re-measure meets the gate — greenlight the deploy of this slice (nothing else changed). (2) Decide whether the residual topical <2-voices (5/88) warrants wiring Catena Aurea (Gospels, no install) or is acceptable breadth for beta. libsword/CrossWire-5 remain dropped (no-content=0).
+
 ## 2026-07-10 (design) — reference/pericope intent routing (awaiting approval)
 
 Per the failure-code finding (gap is ranking on verse-ref queries, no-content=0%): wrote **docs/REFERENCE_ROUTING_DESIGN.md** — a general reference/pericope intent-routing mechanism (SOFT-BOOST candidate injection, not hard-filter, to preserve topical breadth). Covers intent detection (numeric ref-scan extending ref-parse + a named-pericope gazetteer), the soft-boost-vs-hard-filter choice + why, concordance-guarantee preservation (retrieval-only, verifier unchanged, no interpretation), and how ref-parse stays byte-identical (bible-sync guard — noting CLAUDE.md misnames it web-core-sync). Re-measure plan: frozen 88 on legal+full, report verse-ref HIT=1. **Design-only, no code until approved.**
