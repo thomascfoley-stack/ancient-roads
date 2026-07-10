@@ -26,6 +26,7 @@ gate "lint — web/ next lint"              bash -c "cd web && npx next lint --q
 gate "unused — knip (files/exports/deps)" $PNPM exec knip
 gate "deps — pnpm audit (prod, high+ CVEs)" $PNPM audit --prod --audit-level=high
 gate "tests + coverage — vitest"          $PNPM exec vitest run --coverage
+gate "data — Gate B license (fail-closed)" $PNPM exec tsx src/ingest/check-licenses.ts
 
 # Informational: source files the test suite never touches.
 printf '\n\033[1m▶ coverage gaps (informational)\033[0m\n'

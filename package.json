@@ -18,7 +18,9 @@
     "ingest:embeddings": "tsx src/ingest/ingest-embeddings.ts",
     "ingest:commentary-fts": "tsx src/ingest/ingest-commentary-fts.ts",
     "teacher": "tsx src/teacher/run.ts",
-    "check:coverage": "tsx src/ingest/check-corpus-coverage.ts"
+    "check:coverage": "tsx src/ingest/check-corpus-coverage.ts",
+    "check:licenses": "tsx src/ingest/check-licenses.ts",
+    "check:data": "pnpm check:licenses && pnpm check:coverage"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

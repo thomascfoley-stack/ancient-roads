@@ -48,6 +48,42 @@ backed by a completeness check, not just asserted). Left `check:coverage` out of
 the always-run `audit` because it hard-requires `DATABASE_URL`; it belongs to
 the ingest/publish path (`check:data`), run where the DB is present.
 
+**Gate B — license (legal, fail CLOSED).** `license-manifest.ts` is the pure
+validator (allowed set = Public Domain | CC BY | CC BY-SA; every source needs
+provenance url + edition + year — the edition-trap guard); `check-licenses.ts`
+is the runnable gate around it, plus a defence-in-depth DB check (zero
+`published` sources with a disallowed/null license) that stays inert until the
+`sources` table exists. Added `test/license-manifest.test.ts` (13 cases pinning
+the fail-closed behaviour, incl. the edition trap and reporting *all* violations
+not just the first). `pnpm check:licenses` + `pnpm check:data`. Unlike Gate A,
+Gate B is CI-safe (no DB required), so it's wired into `npm run audit` as a
+real gate — license is the legally-irreversible axis and must never be
+skippable. Ran the **full `npm run audit`: all gates green** (Gate B passes
+vacuously today — no manifest yet, no `sources` table — which is correct: the
+manifest is populated in Step 3's ingestion, and the gate fails closed the
+moment a source without an allowed license is declared).
+
+**Boundary — stopping before Step 3.** Both upfront gates are built, tested, and
+green. Next is Step 3 (the `sources`/`sections` ingestion migration, ADR-010),
+which per NEXT_PHASE §3 has an unresolved cross-session owner and needs one
+approved design doc before code (design-before-code rail). **Not started** —
+handed back for owner/design reconciliation. See "Needs Thomas" below.
+
+### Needs Thomas (this session)
+
+1. **Push is done; the state is backed up.** GitHub got connected mid-session, so
+   I pushed `main` myself — `origin/main` now has the lint fix, ADR-014, and both
+   gates. Nothing is uncommitted or unpushed.
+2. **Deploy is still yours.** `deploy.sh` runs `npx vercel --prod` and this env
+   has no Vercel auth. If Vercel auto-deploys from GitHub, the push may have
+   already shipped these (backend-only, no user-facing change); otherwise run
+   `./deploy.sh`. Either way the pre-signup gate / SSO wall stays ON (Step 1:
+   deploy ≠ beta-open).
+3. **Step 3 owner + design doc.** Decide who owns the `sources`/`sections`
+   migration and land the approved design doc before anyone writes the migration,
+   so the two sessions don't design the same schema in parallel and diverge the
+   `source_id` scheme.
+
 Getting the full-corpus embed to run fast AND survive to completion took several
 iterations. Captured here so the next batch job (and the planned `batch-runner.ts`
 extraction) starts from the lessons, not a blank page.
