@@ -16,6 +16,32 @@ export function isAllowedLicense(license: unknown): license is AllowedLicense {
   return typeof license === 'string' && (ALLOWED_LICENSES as readonly string[]).includes(license);
 }
 
+// ToS-protected aggregators we must never scrape/host (ADR-008, CLAUDE.md). The
+// TEXT may be public domain, but reusing THEIR compilation is a breach-of-contract
+// exposure (the hiQ pattern). A source whose provenance points here fails closed:
+// it must be re-sourced from a permitted PD source, or explicitly quarantined.
+export const FORBIDDEN_PROVENANCE_DOMAINS = ['biblehub.com', 'studylight.org'] as const;
+
+function provenanceHost(url: string): string | null {
+  try {
+    return new URL(url.includes('://') ? url : `https://${url}`).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+// Returns the forbidden aggregator domain a provenance URL belongs to, else null.
+// Matches the domain and any subdomain (www.biblehub.com), not naive substrings.
+export function forbiddenProvenanceDomain(url: unknown): string | null {
+  if (typeof url !== 'string' || url.trim() === '') return null;
+  const host = provenanceHost(url.trim());
+  if (host === null) return null;
+  for (const d of FORBIDDEN_PROVENANCE_DOMAINS) {
+    if (host === d || host.endsWith(`.${d}`)) return d;
+  }
+  return null;
+}
+
 // Provenance is the attribution + license basis for a work. `year` and
 // `edition` guard the "edition trap": a public-domain author with a post-1929
 // *translation* is NOT public domain, so the specific edition + year must be
@@ -32,6 +58,10 @@ export interface SourceManifestEntry {
   author: string;
   license: string;
   provenance: SourceProvenance;
+  // Set to a non-empty reason to knowingly HOLD a source out of publish (e.g. it
+  // is sourced from a forbidden aggregator and awaits re-sourcing). A quarantined
+  // entry is declared/registered but must never be published or retrieved.
+  quarantine?: string;
 }
 
 export interface LicenseViolation {
@@ -92,6 +122,17 @@ export function validateManifest(manifest: unknown): LicenseViolation[] {
     }
 
     out.push(...validateProvenance(id, e.provenance));
+
+    // Fail closed on forbidden-aggregator provenance (ADR-008). A source sourced
+    // from biblehub/studylight may not be published — unless it is explicitly
+    // quarantined (declared + held for re-sourcing, never published).
+    const provUrl = (typeof e.provenance === 'object' && e.provenance !== null)
+      ? (e.provenance as Record<string, unknown>).url
+      : undefined;
+    const forbidden = forbiddenProvenanceDomain(provUrl);
+    if (forbidden !== null && !isNonEmptyString(e.quarantine)) {
+      out.push({ id, reason: `provenance host is a forbidden aggregator (${forbidden}) — ADR-008; re-source from a permitted PD source (SWORD/Wikisource/archive.org/STEP), or set "quarantine" to hold it (never published)` });
+    }
   });
 
   return out;

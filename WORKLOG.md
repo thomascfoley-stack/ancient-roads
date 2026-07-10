@@ -25,6 +25,14 @@ Proven (verify, don't assume — ran it):
 
 Legacy retrieval untouched (dual-read — the app still reads `embeddings`/`hybrid_search_v2`; nothing reads `sources`/`sections` yet). **STOPPED here per "prove deep before wide" — the retrieval bridge + the other ~400 sources are the next unit, on approval.** Next: build the section-based retrieval path, prove the true-success diagnostic ≥ current on it (dual-read), then scale the backfill to all 401 works (each needs its reviewed license-map entry in `ingest/sources.config.json` first — the compliance pause).
 
+### Track 1a — Gate B now fails closed on forbidden-aggregator provenance (biblehub/studylight)
+
+Extended Gate B (ADR-008 / CLAUDE.md aggregator rail): `license-manifest.ts` gains `FORBIDDEN_PROVENANCE_DOMAINS` + `forbiddenProvenanceDomain(url)` (host-parsed, matches domain + subdomains, not naive substrings), and `validateManifest` fails closed on a forbidden-domain provenance **unless** the entry sets a `quarantine` reason (declared + held, never published). `check-licenses.ts` DB check also flags any **published** source with forbidden provenance (defence in depth). +6 tests (19 total).
+
+**The gate caught Barnes, as expected — that's it working.** First run flagged Barnes two ways: manifest (biblehub, not quarantined) AND the published DB row (`id=2`, biblehub). Remediated per instruction: **unpublished Barnes (DB `published → staged`)** and added a `quarantine` marker to its config entry (the manifest-level "held, re-source first"). Re-run → Gate B PASSES; Gate A (sections) still 0 (Barnes staged, still complete); `npm run audit` green (144 tests).
+
+*Note on state:* DB status is `staged` (per instruction = "unpublish"); the config `quarantine` marker is what holds it at the registry level. For the wide rollout I'd recommend the backfill set forbidden-provenance sources to DB `status='quarantined'` for strict consistency — flagging for decision, not doing it unasked.
+
 ## 2026-07-09 (next phase) — Step 1 backup + Step 2 gates (coverage + license)
 
 Executing `docs/NEXT_PHASE.md` Steps 1–2. Stopping at the Step 3 boundary (the

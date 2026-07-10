@@ -9,6 +9,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   isAllowedLicense,
+  forbiddenProvenanceDomain,
+  FORBIDDEN_PROVENANCE_DOMAINS,
   validateManifest,
   type SourceManifestEntry,
 } from '../src/ingest/license-manifest';
@@ -101,5 +103,51 @@ describe('validateManifest', () => {
     const bad = { id: 'bad', title: '', author: '', license: 'CC BY-NC', provenance: null };
     const v = validateManifest([bad]);
     expect(v.length).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe('forbiddenProvenanceDomain', () => {
+  it('flags the forbidden aggregators (ADR-008), incl. subdomains and no-scheme', () => {
+    expect(forbiddenProvenanceDomain('https://biblehub.com/commentaries/barnes/')).toBe('biblehub.com');
+    expect(forbiddenProvenanceDomain('http://www.biblehub.com/x')).toBe('biblehub.com');
+    expect(forbiddenProvenanceDomain('https://studylight.org/commentaries/eng/x.html')).toBe('studylight.org');
+    expect(forbiddenProvenanceDomain('biblehub.com/commentaries')).toBe('biblehub.com'); // no scheme
+  });
+  it('allows permitted PD sources and rejects non-strings/garbage', () => {
+    expect(forbiddenProvenanceDomain('https://ccel.org/ccel/barnes')).toBeNull();
+    expect(forbiddenProvenanceDomain('https://archive.org/details/x')).toBeNull();
+    expect(forbiddenProvenanceDomain('https://en.wikisource.org/wiki/x')).toBeNull();
+    expect(forbiddenProvenanceDomain('notbiblehub.com.evil.example/x')).toBeNull(); // not a real subdomain
+    expect(forbiddenProvenanceDomain('')).toBeNull();
+    expect(forbiddenProvenanceDomain(undefined)).toBeNull();
+    expect(forbiddenProvenanceDomain(42)).toBeNull();
+  });
+  it('exports exactly the two forbidden domains', () => {
+    expect([...FORBIDDEN_PROVENANCE_DOMAINS]).toEqual(['biblehub.com', 'studylight.org']);
+  });
+});
+
+describe('validateManifest: forbidden-aggregator provenance (fail closed)', () => {
+  const biblehubEntry: SourceManifestEntry = {
+    id: 'barnes-notes',
+    title: "Barnes' Notes on the Bible",
+    author: 'Albert Barnes',
+    license: 'Public Domain',
+    provenance: { url: 'https://biblehub.com/commentaries/barnes/', edition: "Barnes' Notes", year: 1834 },
+  };
+
+  it('flags a biblehub-sourced work that is not quarantined', () => {
+    const v = validateManifest([biblehubEntry]);
+    expect(v.some((x) => x.id === 'barnes-notes' && /forbidden aggregator \(biblehub\.com\)/.test(x.reason))).toBe(true);
+  });
+
+  it('allows the same work once it is explicitly quarantined (held, not published)', () => {
+    const held = { ...biblehubEntry, quarantine: 'biblehub — re-source per RESOURCING_PLAN before publish' };
+    expect(validateManifest([held])).toEqual([]);
+  });
+
+  it('does not flag a permitted-source work', () => {
+    const ok = { ...biblehubEntry, provenance: { ...biblehubEntry.provenance, url: 'https://ccel.org/ccel/barnes' } };
+    expect(validateManifest([ok])).toEqual([]);
   });
 });

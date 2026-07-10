@@ -16,6 +16,7 @@
       "year": 1834,
       "retrieved_via": "biblehub aggregator — text is public domain (Barnes d. 1870); re-source from CrossWire/PD per ADR-008 before wide rollout"
     },
+    "quarantine": "biblehub provenance (ADR-008 forbidden aggregator) — held until re-sourced from a permitted PD source per docs/RESOURCING_PLAN.md; text is PD so re-sourcing should be a $0 provenance-repair (existing vectors kept if the permitted text matches)",
     "backfill": { "match_author": "Barnes' Notes" }
   }
 ]

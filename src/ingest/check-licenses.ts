@@ -12,7 +12,7 @@
 // manifest exists yet, nothing has been published, so it passes vacuously.
 
 import { readFileSync, existsSync } from 'fs';
-import { ALLOWED_LICENSES, validateManifest, type LicenseViolation } from './license-manifest.js';
+import { ALLOWED_LICENSES, forbiddenProvenanceDomain, validateManifest, type LicenseViolation } from './license-manifest.js';
 
 const MANIFEST_PATH = 'ingest/sources.config.json';
 
@@ -37,8 +37,8 @@ async function checkPublishedSources(dbUrl: string): Promise<LicenseViolation[]>
     if (!exists[0]?.ok) return [];
 
     const allowed = ALLOWED_LICENSES as readonly string[];
-    const { rows } = await client.query<{ id: string; license: string | null }>(
-      `SELECT id::text AS id, license FROM sources WHERE status = 'published'`,
+    const { rows } = await client.query<{ id: string; license: string | null; url: string | null }>(
+      `SELECT id::text AS id, license, provenance->>'url' AS url FROM sources WHERE status = 'published'`,
     );
     const out: LicenseViolation[] = [];
     for (const r of rows) {
@@ -46,6 +46,10 @@ async function checkPublishedSources(dbUrl: string): Promise<LicenseViolation[]>
         out.push({ id: r.id, reason: 'published source has null/empty license' });
       } else if (!allowed.includes(r.license)) {
         out.push({ id: r.id, reason: `published source license "${r.license}" not in allowed set` });
+      }
+      const forbidden = forbiddenProvenanceDomain(r.url);
+      if (forbidden !== null) {
+        out.push({ id: r.id, reason: `published source has forbidden aggregator provenance (${forbidden}) — ADR-008; must be re-sourced or unpublished` });
       }
     }
     return out;
