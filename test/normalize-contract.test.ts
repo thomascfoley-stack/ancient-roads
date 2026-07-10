@@ -106,7 +106,7 @@ describe('normalizeContract: snap-to-source quote repair', () => {
     'sheep-cotes to rule over Israel, sings this little psalm of Him who is the ' +
     'true Shepherd and King of men. We do not know at what period of David’s life ' +
     'it was written, but it sounds as if it were the work of his later years.';
-  const withBody = (quote: string): SectionAttribution[] => [
+  const withBody = (_quote: string): SectionAttribution[] => [
     { author: 'Alexander MacLaren', work: 'Expositions', tradition: 'Baptist', body: MACLAREN },
   ];
   const voice = (quote: string) => ({

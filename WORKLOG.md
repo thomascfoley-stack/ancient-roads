@@ -1,6 +1,28 @@
 # WORKLOG — Autonomous session 2026-07-08
 
-## 2026-07-09 (later) — Full-corpus embedding: throughput + resilience hardening
+## 2026-07-09 (next phase) — Step 1 backup + Step 2 gates (coverage + license)
+
+Executing `docs/NEXT_PHASE.md` Steps 1–2. Stopping at the Step 3 boundary (the
+`sources`/`sections` ingestion migration) per the design-before-code rail — it
+has an unresolved cross-session owner and needs one approved design doc first.
+
+**Finding — HEAD was lint-red, not deploy-ready.** The handoff said `cbe9ea7`
+was ready to push + deploy, but `eslint src test` failed with 2 errors on
+committed, unmodified files: an unused `rate`/`processed` pair in
+`embed-full-corpus.ts` (dead ETA calc — the log uses `elapsed/offset` instead)
+and an unused `quote` param in `normalize-contract.test.ts`. `npm run audit`
+would have failed. Removed the dead lines; renamed the param to `_quote` (the
+config allows `^_`-prefixed unused args). eslint + tsc now clean. This is why
+the rail is "verify, don't assume — a green check is not proof": the gate has to
+be *run*, not trusted.
+
+**Step 1 (deploy + back up) — the push and the deploy are yours.** This agent
+environment has no git credentials (`git ls-remote` → "could not read Username
+for https://github.com") and no Vercel auth, and `deploy.sh` runs
+`npx vercel --prod`. Per the rail the push must precede the deploy so the live
+site never runs ahead of backed-up history — and I can't push. So I committed
+everything (tree is clean, nothing at risk), and the push + deploy are flagged
+as owner actions below.
 
 Getting the full-corpus embed to run fast AND survive to completion took several
 iterations. Captured here so the next batch job (and the planned `batch-runner.ts`

@@ -274,8 +274,6 @@ async function main() {
 
     offset += rows.length;
     const elapsed = (performance.now() - t0) / 1000;
-    const processed = offset - preSkipped;
-    const rate = processed > 0 ? elapsed / processed : 1;
     const remaining = total - offset;
     const eta = (remaining * (elapsed / offset)) / 60;
     console.log(
