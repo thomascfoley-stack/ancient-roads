@@ -38,6 +38,14 @@ const PERICOPES: Pericope[] = [
   { aliases: ['writing on the wall', 'mene mene tekel'], refs: ['Daniel 5'] },
   { aliases: ['four horsemen'], refs: ['Revelation 6'] },
   { aliases: ['new heaven and a new earth', 'new heaven and new earth'], refs: ['Revelation 21'] },
+  { aliases: ['pentecost', 'tongues of fire'], refs: ['Acts 2'] },
+  { aliases: ['raising of lazarus', 'lazarus'], refs: ['John 11'] },
+  { aliases: ['prophets of baal', 'mount carmel'], refs: ['1 Kings 18'] },
+  { aliases: ['walking on water', 'walking on the water'], refs: ['Matthew 14:22-33', 'John 6:16-21'] },
+  { aliases: ['feeding of the five thousand', 'feeding the five thousand'], refs: ['Matthew 14:13-21', 'John 6:1-14'] },
+  { aliases: ['jacob wrestling', 'wrestling with god'], refs: ['Genesis 32'] },
+  { aliases: ['the crucifixion', 'crucifixion of jesus'], refs: ['Matthew 27', 'John 19'] },
+  { aliases: ['the empty tomb', 'resurrection of jesus'], refs: ['Matthew 28', 'John 20'] },
 ];
 
 // Resolve reference strings ("Matthew 5-7") to canonical ranges via parseRef.

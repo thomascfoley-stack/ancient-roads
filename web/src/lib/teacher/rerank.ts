@@ -14,13 +14,15 @@ export interface RerankResult {
   relevance_score: number;
 }
 
+// topN defaults to "all" so callers can get the full reranked order (needed by
+// reference-routing's on-passage floor). Only the trivial 0/1-doc case skips the
+// API; anything larger is actually reranked, then sliced to topN.
 export async function rerank(
   query: string,
   documents: string[],
-  topN: number,
+  topN: number = documents.length,
 ): Promise<RerankResult[]> {
-  if (documents.length === 0) return [];
-  if (documents.length <= topN) {
+  if (documents.length <= 1) {
     return documents.map((_, i) => ({ index: i, relevance_score: 1 }));
   }
 
