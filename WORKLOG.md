@@ -1,5 +1,27 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-10 (HELD-OUT NUMBER) — launch-gate result: verse-ref/pericope/controls pass; topical/epistle deflated by label gaps
+
+Ran the frozen 120 (`eval-heldout.mts --frozen`) read-only on the legal corpus through the shared shipped path. Integrity: frozen hash matched before the run (set unchanged). **No gazetteer/floor edits were made in response — the number stands.**
+
+| category | metric | bar | RESULT | verdict |
+|---|---|---|---|---|
+| verse-ref | HIT@1 | ≥85% | **100%** (40/40) | ✅ PASS |
+| held-out pericope | HIT@1 | ≥70% | **80%** (12/15) | ✅ PASS |
+| proper-noun / rare | HIT@1 | ≥70% | **80%** (8/10) | ✅ PASS |
+| epistle | HIT@2 | ≥85% | **64%** (16/25) | ❌ below |
+| topical | HIT@2 | ≥85% | **40%** (8/20) | ❌ below |
+| controls | hijacks | 0 | **0/10** | ✅ PASS |
+| all blocks | no-content | ≤8% | **0%** | ✅ PASS |
+
+**Generalization CONFIRMED:** held-out verse-ref HIT@1 100% and pericope 80% (incl. not-in-gazetteer: Nicodemus, woman-at-well, Jonah, Balaam's donkey) — routing + the gazetteer hold out-of-sample. Controls 0 hijacks in the wild. **no-content 0% everywhere** — the legal corpus has NO coverage holes; every failure is ranking/diversity, not missing content.
+
+**Diagnosis of the topical/epistle miss (`--diagnose`, per the label-incompleteness-vs-genuine protocol):** roughly HALF the 21 failures are **label-incompleteness** — the system returned a valid, catechism-justifiable on-doctrine passage that my *central-chapter* labels omitted. Clear cases: image-of-God → **Gen 1** ×3 distinct authors (my label wrongly excluded Gen 1 to dodge 88-overlap — a label error); patience-of-Job → **Jas 5:11** ×3 (the definitional NT text, omitted); idolatry → Rom 1 / 2 Kgs 23 / 1 Cor 8; sovereignty → Rom 9 / Isa 45 / Acts 17; kingdom-at-hand → Matt 4:17 / Rom 14:17; union-with-Christ → 1 Cor 6:17 / John 17; high-priest → Heb 5 / Heb 8; marriage → 1 Cor 7; last-judgment → 1 Pet 4 / Mal 3. Passes spot-checked: NOT inflated (on-target marks land on the right passages). **Genuine residual (~5–7):** abstract NT-soteriology semantic drift (perseverance → John 10:28 not surfaced; resurrection-of-the-body → drifts to Christ's resurrection; glorification → Rom 8:29 not surfaced) + author-diversity thinness on wisdom topics (pride → mostly Matthew Henry). Corrected estimate ≈ topical ~80–85%, epistle ~72–76% — improved but epistle likely still short, with a real residual.
+
+**This residual is NOT the CrossWire/epistle-content question** — the epistle content is present (no-content=0%); the gap is reranking on abstract topical queries + author diversity, which corpus expansion (Barnes/Calvin) would only partly help. CrossWire-5 stays deferred.
+
+**Recommend (systematic label gap → re-freeze + re-run, per protocol; NOT per-query fudging):** re-label topical/epistle from the *authoritative* WSC/HC proof-text lists (pull from a PD edition — reverses the earlier "central-only" call, now justified by the data) + fix the Gen 1 label error; re-freeze + re-hash + re-run; report the corrected number beside this raw one. Then assess the true genuine-miss residual against the 85% bar. **Awaiting Thomas's go on the re-freeze** (the gap is systematic, not the "rare" correction we expected — his call, since it reverses "don't pull exhaustive"). verse-ref/pericope/proper-noun/controls/no-content are trustworthy as-is.
+
 ## 2026-07-10 (PILOT GREEN + SET FROZEN) — held-out launch-gate eval, awaiting the go for the full run
 
 Built the held-out accuracy eval (`docs/HELDOUT_EVAL_DESIGN.md`, methodology approved). Two artifacts: `web/src/scripts/eval-heldout.mts` (harness) + `web/src/scripts/heldout-queries.mts` (PILOT 20 + FROZEN 120). Harness runs through the **shared shipped `routing.ts` path** on the **legal corpus**, reporting per-category HIT@1 / HIT@2 (≥2 **distinct-author** voices) + failure codes vs pre-registered bars.

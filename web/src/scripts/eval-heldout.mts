@@ -81,6 +81,11 @@ async function hasContent(rs: ExpRange[]): Promise<boolean> {
   return res[0]!.n > 0;
 }
 
+// Book abbreviations (1-indexed by canonical book number) for readable diagnosis.
+const BOOKS = ['Gen', 'Exod', 'Lev', 'Num', 'Deut', 'Josh', 'Judg', 'Ruth', '1Sam', '2Sam', '1Kgs', '2Kgs', '1Chr', '2Chr', 'Ezra', 'Neh', 'Esth', 'Job', 'Ps', 'Prov', 'Eccl', 'Song', 'Isa', 'Jer', 'Lam', 'Ezek', 'Dan', 'Hos', 'Joel', 'Amos', 'Obad', 'Jonah', 'Mic', 'Nah', 'Hab', 'Zeph', 'Hag', 'Zech', 'Mal', 'Matt', 'Mark', 'Luke', 'John', 'Acts', 'Rom', '1Cor', '2Cor', 'Gal', 'Eph', 'Phil', 'Col', '1Thess', '2Thess', '1Tim', '2Tim', 'Titus', 'Phlm', 'Heb', 'Jas', '1Pet', '2Pet', '1John', '2John', '3John', 'Jude', 'Rev'];
+const loc = (v: number) => `${BOOKS[Math.floor(v / 1e6) - 1]}${Math.floor((v % 1e6) / 1000)}`;
+const shortAuthor = (a: string) => ({ 'John Gill': 'Gill', 'Jamieson, Fausset & Brown': 'JFB', 'Adam Clarke': 'Clarke', 'Matthew Henry': 'Henry', 'John Chrysostom': 'Chrys', 'Augustine of Hippo': 'Aug' })[a] ?? a.slice(0, 6);
+
 type Code = 'pass' | '<2-voices' | 'wrong-passage' | 'no-content';
 interface Tally { n: number; hit1: number; hit2: number; codes: Record<Code, number> }
 const blank = (): Tally => ({ n: 0, hit1: 0, hit2: 0, codes: { pass: 0, '<2-voices': 0, 'wrong-passage': 0, 'no-content': 0 } });
@@ -101,6 +106,22 @@ function validate() {
   console.log(`FROZEN ${FROZEN.length} · PILOT ${PILOT.length}`);
   console.log('FROZEN by category:', JSON.stringify(byCat));
   console.log(`parse failures: ${bad} · duplicate ids: ${dup}`);
+}
+
+// READ-ONLY diagnosis: for epistle+topical, dump top-6 returned passages+authors so
+// each failure can be judged label-incompleteness (returned a valid on-doctrine passage
+// not in the acceptable set) vs genuine miss. `*` marks an on-target (in-label) result.
+async function diagnose() {
+  for (const q of FROZEN.filter((x) => x.cat === 'epistle' || x.cat === 'topical')) {
+    const exp = toRanges(q.expected);
+    const results = await retrieveLegal(q.query, await embed(q.query));
+    const onT = results.filter((r) => onTarget(r.verseId, exp));
+    const authors = new Set(onT.map((r) => r.author));
+    const code: Code = authors.size >= 2 ? 'pass' : onT.length >= 1 ? '<2-voices' : (await hasContent(exp)) ? 'wrong-passage' : 'no-content';
+    const expStr = exp.map((r) => `${BOOKS[r.book - 1]}${r.chLo === r.chHi ? r.chLo : `${r.chLo}-${r.chHi}`}`).join(',');
+    const top = results.map((r) => `${loc(r.verseId)}(${shortAuthor(r.author)})${onTarget(r.verseId, exp) ? '*' : ''}`).join('  ');
+    console.log(`${code === 'pass' ? '✓' : '·'} ${q.id} [${code}]  label:{${expStr}}\n    Q: ${q.query}\n    →: ${top}`);
+  }
 }
 
 async function main() {
@@ -146,5 +167,6 @@ async function main() {
 import { fileURLToPath } from 'node:url';
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (process.argv.includes('--validate')) validate();
+  else if (process.argv.includes('--diagnose')) diagnose().catch((e) => { console.error(e); process.exit(1); });
   else main().catch((e) => { console.error(e); process.exit(1); });
 }
