@@ -111,6 +111,12 @@ Scaled the classify as a read-only pass with the three conditions: (1) **provena
 
 **Raw output was 12.6% repairable / 82.1% quarantine (1,387 works, 62,444 entries) — but it is CONTAMINATED and I did not report it as true.** Proof: Chrysostom-on-Acts classified at 1% while Chrysostom-on-Galatians was verified at 99% — the crawl (BFS from `/fathers/`) reached only 2,004 of ~5,000 pages, unevenly (Augustine 139 content pages, Tertullian 18, **Chrysostom 0** — only index pages), and New Advent doesn't host the Catena Aurea (Aquinas ~15k). So the quarantine bucket is full of **false quarantines** (PD text that wasn't crawled). **12.6% is a floor; 82% is inflated.** Reliable signal: the crawled ANF/NPNF core (Augustine 85–94%, Tertullian 77–95%, Clement, Cyprian) genuinely repairs. **Next: a complete multi-source PD corpus (full New Advent + Catena-Newman + Gutenberg/archive) or per-work targeting, then re-run.** Detail in `RESOURCING_PLAN` §11.
 
+### Patristic TOP-N TARGETED classify — the reliable entry-weighted number (2026-07-10)
+
+Per owner: dropped the whole-corpus crawl; scaled the **targeted per-work fetch** (`resource-classify-topn.ts`) — each work fetched from its OWN New Advent index → content links → shingle-match (rate-limited, cached, **read-only, wrote nothing**). Bug found + fixed: content-page ids vary in length (Chrysostom 5–6 digit, Augustine **7-digit** `1701001`) — widened the regex; Augustine then verified 78–90% (was falsely 0). **Corpus is a long tail — top 20 works = only 30.5% of 62,444 entries** (not the ~85% assumed).
+
+**ENTRY-WEIGHTED DISTRIBUTION (62,444 patristic entries):** repairable **8.4%** (5,219 — Chrysostom Acts/John/Matt 98–99%, Augustine Ps/John 78–90%); drop (modern-only) **16.1%** (10,054); needs-review (PD exists, source not wired: Catena-Newman, Gregory-Oxford, Cyril-Pusey) **6.1%** (3,786); **quarantine-by-default (unmeasured tail, ~1,367 tiny works) 69.5%** (43,385). **The true repair rate is far below the ~50% author estimate, as predicted** — verified 8.4%, ~15% even counting likely needs-review. Tail = later expansion phase (owner). Corpus-shape tally in `RESOURCING_PLAN` §12.
+
 ## 2026-07-09 (next phase) — Step 1 backup + Step 2 gates (coverage + license)
 
 Executing `docs/NEXT_PHASE.md` Steps 1–2. Stopping at the Step 3 boundary (the

@@ -115,7 +115,7 @@ export interface ContainStats { total: number; repair: number; drop: number }
 // question per stored snippet is: is its text present in the PD work's full text?
 // contained ⇒ same PD translation (repair); not ⇒ a different/modern translation
 // (drop). Trivially short snippets are skipped.
-export function tallyContainment(snippets: Set<string>[], sourceText: Set<string>, t = 0.8): ContainStats {
+export function tallyContainment<T>(snippets: Set<T>[], sourceText: Set<T>, t = 0.8): ContainStats {
   const s: ContainStats = { total: 0, repair: 0, drop: 0 };
   for (const snip of snippets) {
     if (snip.size < 8) continue;

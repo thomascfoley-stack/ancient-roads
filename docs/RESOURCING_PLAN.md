@@ -196,3 +196,31 @@ Built the read-only classify: crawl New Advent `/fathers/` (robots.txt permits i
 **So 12.6% is a FLOOR** (reliably-repairable, pages crawled: Augustine 85–94%, Tertullian 77–95%, Clement, Cyprian) **and 82% is an inflated CEILING.** The true repairable is substantially higher.
 
 **The whole-corpus single-crawl shortcut fails.** The true distribution needs a **complete PD corpus**: (a) comprehensive New Advent ANF/NPNF (fix the crawl — seed from a full work-index, not BFS-from-home), PLUS (b) the Catena Aurea (Newman, via Gutenberg/archive) + other PD translations New Advent lacks. Reliable per-work rates come from **targeted fetch** (the §8.1 method: fetch the specific work's pages), not a partial whole-corpus crawl. **Next: assemble the complete multi-source PD corpus (or per-work targeting), then re-run — I did not report a false number.**
+
+## 12. Patristic TOP-N TARGETED classify — the reliable entry-weighted number (2026-07-10)
+
+Replaced the whole-corpus crawl with the reliable primitive (`resource-classify-topn.ts`): **each high-volume work fetched from its OWN New Advent index page → its content links → shingle-match** (rate-limited, cached, read-only). The corpus is a **long tail** — the top 20 works cover only **30.5%** of the 62,444 entries (top work = 2%), so most is quarantine-by-default (fail-closed).
+
+**Top-20 per-work (all verified by targeted fetch):**
+- **REPAIRABLE:** Chrysostom on Acts **99%**, on John **99%**, on Matthew **98%**; Augustine on John **90%**, on Psalms **78%**. (These are genuinely the PD NPNF text.)
+- **DROP (modern-only translations, no PD edition):** Aquinas on Isaiah/Job/Psalms, Bonaventure (Luke/John), Bede (Luke/bk20), Jerome (Isaiah/Matthew), Theophylact (John/Matthew).
+- **NEEDS-REVIEW (a PD edition exists but its source wasn't wired this pass):** Catena Aurea Matthew + John (Newman 1841), Gregory *Morals on Job* (Oxford 1844), Cyril on John (Pusey 1874).
+
+**ENTRY-WEIGHTED DISTRIBUTION (of all 62,444 patristic entries):**
+
+| Bucket | Entries | % |
+|---|---:|---:|
+| **repairable** (verified PD text) | 5,219 | **8.4%** |
+| **drop** (modern-only / not the PD text) | 10,054 | **16.1%** |
+| **needs-review** (PD source exists, not yet wired) | 3,786 | **6.1%** |
+| **quarantine-by-default** (unmeasured long tail, ~1,367 tiny works) | 43,385 | **69.5%** |
+
+**The true repair rate is far below the ~50% author estimate — as predicted (Origen-John precedent).** Verified-repairable is **8.4%**; even adding the likely-repairable needs-review (Catena/Gregory/Cyril, +6.1%) tops out near ~15% for the measured head. The long tail (69.5%) is unmeasured and fail-closed to quarantine — a **later expansion phase** (per owner), and it contains both more ANF/NPNF-repairable books and more modern drops. **Nothing was written (read-only); no quarantine/repair/publish.**
+
+### Corpus-shape tally so far (entries)
+- **Commentaries (helloao) — repairable ($0), provenance verified:** 62,708 (Gill/JFB/Clarke/Matthew Henry).
+- **biblehub-14 — HELD/quarantined** (PD, unpublished, reversible): the mega-commentaries (Barnes/Calvin/Wesley/… — 176,553 entries by raw count / 16,072 embeddings).
+- **Patristic (62,444):** repairable 8.4% · drop 16.1% · needs-review 6.1% · quarantine-tail 69.5%.
+- **Bibles + already-clean commentary corpus:** unaffected (the 168k-embedding retrieval corpus stands).
+
+Final published-vs-quarantined-vs-dropped tally comes once the needs-review sources are wired and the tail expansion is scoped — **before any publish**.
