@@ -67,4 +67,30 @@ For each section of a to-be-re-sourced work, per verse anchor:
 5. **Scope of "re-sourcing" now:** just biblehub (the coded gate), or the full provenance cleanup (biblehub + CCEL + no-URL + historicalchristian.faith) before *any* scale-up? Recommend the full cleanup — a scale-up that publishes 242 no-provenance + 149 unvetted works is the same class of risk as biblehub.
 
 ---
-*No fetchers, parsers, or matchers will be written until this is approved. First code on approval = the Barnes CrossWire re-source (one work, match-test proven) before the other 13.*
+
+## 7. Findings from vetting (2026-07-10) — scope APPROVED (full cleanup), approach revised
+
+Owner approved **full provenance cleanup before any publish**; parity taken **by construction** (no harness). Vetting the unknowns first (§5.1) materially reshaped the plan:
+
+**Tooling reality — SWORD/CrossWire is NOT available** (`diatheke`/`installmgr`/`pysword` absent). The "CrossWire primary" is not usable as-is. **Revised: re-source over HTTP from confirmed-PD editions** — archive.org, Wikisource, Schaff ANF/NPNF (fathers) — one parser per format; install `libsword` only if a work exists *only* as a SWORD module. → open decision.
+
+**The 242 "no-provenance" works are two different buckets:**
+- **4 major PD commentaries with lost provenance — Gill (28,300), JFB (16,966), Clarke (13,318), Matthew Henry (4,124) = 62,708 entries.** Unambiguously PD (pre-1900); just need a confirmed-PD source URL recorded + a text-match (mostly $0 repair).
+- **235 patristic works (~19k entries)** — fathers, PD *by age* but the **translation edition is unconfirmed (edition trap)**.
+
+**historicalchristian.faith (149 patristic works) — UNVETTED; treat as an aggregator, not a permitted source.** Its about page states only "open source, crowd-sourced," **no license grant**, no edition attribution, and lists **non-PD authors (C.S. Lewis, d. 1963)** — so its specific father *translations* cannot be assumed PD. Same risk class as biblehub. **Recommend: re-source the fathers from confirmed-PD translations (Schaff) and add `historicalchristian.faith` to `FORBIDDEN_PROVENANCE_DOMAINS`.**
+
+**True shape of the cleanup (by difficulty, not the biblehub headline):**
+1. **PD commentaries → provenance-backfill (easy):** the 14 biblehub + 4 no-provenance mega-commentaries are all clearly PD; work = record a confirmed-PD source + text-match (mostly $0 repair).
+2. **Patristic → edition-verification (hard, the real bulk):** ~384 works (149 historicalchristian.faith + 235 no-provenance) where PD hinges on the *translation* year. Re-source from Schaff ANF/NPNF (PD, pre-1900) or verify per-work.
+3. CCEL (17) + misc — small.
+
+**First buildable unit (proposed):** the **text-match + provenance-repair engine**, proven on ONE PD commentary end-to-end — re-source Barnes from a confirmed-PD HTTP source, normalized match → repair-in-place (keep vectors) or re-embed diffs → Gate A/B green + parity unchanged. Then the other PD commentaries; then the patristic edition-verification.
+
+**Open decisions (checkpoint before building):**
+1. **Tooling:** HTTP re-source from archive.org/Wikisource/Schaff (no install, one parser per format), or install `libsword`? *Recommend HTTP-first.*
+2. **historicalchristian.faith:** add to forbidden-domains + re-source the 149 fathers from Schaff? *Recommend yes.*
+3. **Patristic edition trap:** accept Schaff ANF/NPNF (PD) as the canonical father source for all ~384 patristic works, or verify per-work?
+4. **First unit = the match/repair engine on Barnes?** or a different starting work?
+
+*No fetchers/parsers/matchers written until the tooling approach (decision 1) is chosen — SWORD being unavailable changes the design.*

@@ -47,6 +47,16 @@ Sized the footprint from Neon. **biblehub = 14 works but they are the mega-comme
 
 **STOP — showing all three (extended Gate B w/ Barnes flagged, re-sourcing plan, parity). No cutover, no scaling.** Next on approval: `hybrid_search_sections` (the dual-read retrieval fn) + the corpus-wide diagnostic, run as part of the (Track-1-cleared) scale-up.
 
+### Approved 2026-07-10: full cleanup + by-construction parity; vetting reshaped the plan
+
+Owner approved **full provenance cleanup before any publish** (not biblehub-only) and **by-construction parity** (no harness). Vetted the unknowns first (`RESOURCING_PLAN.md` §7):
+- **SWORD/CrossWire tooling is NOT installed** (`diatheke`/`installmgr`/`pysword` absent) → re-sourcing pivots to **HTTP from archive.org/Wikisource/Schaff**, not CrossWire modules. Design decision — surfaced before building.
+- **The 242 no-provenance works = 4 huge PD commentaries** (Gill 28k, JFB 17k, Clarke 13k, Matthew Henry 4k = 62,708 entries) **+ 235 patristic** works. The commentaries are clearly PD (provenance-backfill); the patristic ones have an unconfirmed *translation* edition (edition trap).
+- **historicalchristian.faith (149 works) is unvetted** — "open source, crowd-sourced," no license grant, no edition attribution, lists non-PD authors (C.S. Lewis) → treat as an aggregator; recommend forbidding it + re-sourcing the fathers from Schaff.
+- **Real shape:** PD-commentary provenance-backfill is easy (~18 works, mostly $0 text-match repair); the **patristic edition-verification (~384 works) is the hard bulk.**
+
+**Checkpoint before building** (design-before-code, since SWORD-unavailable changed the approach): open decisions in `RESOURCING_PLAN.md` §7 — tooling (HTTP vs libsword), forbid historicalchristian.faith?, Schaff-as-canonical-father-source?, first unit = match/repair engine on Barnes?
+
 ## 2026-07-09 (next phase) — Step 1 backup + Step 2 gates (coverage + license)
 
 Executing `docs/NEXT_PHASE.md` Steps 1–2. Stopping at the Step 3 boundary (the
