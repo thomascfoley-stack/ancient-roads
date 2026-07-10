@@ -57,6 +57,14 @@ Owner approved **full provenance cleanup before any publish** (not biblehub-only
 
 **Checkpoint before building** (design-before-code, since SWORD-unavailable changed the approach): open decisions in `RESOURCING_PLAN.md` §7 — tooling (HTTP vs libsword), forbid historicalchristian.faith?, Schaff-as-canonical-father-source?, first unit = match/repair engine on Barnes?
 
+### Decisions + text-match engine proven (2026-07-10)
+
+Owner: **HTTP-first** tooling; **forbid historicalchristian.faith** (added to `FORBIDDEN_PROVENANCE_DOMAINS`, +test) + **Schaff canonical** for fathers. Then found the clean source and proved the match engine:
+- **`bible.helloao.org` cleanly carries Gill/JFB/Clarke/Matthew Henry** (the 62,708-entry no-provenance bucket), all Public Domain (CC PD Mark 1.0), structured per-chapter, explicit license. Not the biblehub-14.
+- **Text-match probe (`resource-match-probe.ts`) on Adam Clarke vs helloao, 227-verse sample:** **100% $0 provenance-repair** (150 exact-match + 77 truncation-only, caught by a containment metric), **0% genuine re-embed**, 0 unaligned. The initial 34% "differ" was purely our copy being truncated — same PD text. **So the whole 62,708-entry commentary bucket should re-source at $0.**
+
+**Next unit:** the provenance-repair pipeline — per-work full match verification → write config entries with helloao PD provenance for the 4 works (clean, ready for scale-up). No publish until the full cleanup (biblehub-14 + patristic Schaff) clears.
+
 ## 2026-07-09 (next phase) — Step 1 backup + Step 2 gates (coverage + license)
 
 Executing `docs/NEXT_PHASE.md` Steps 1–2. Stopping at the Step 3 boundary (the

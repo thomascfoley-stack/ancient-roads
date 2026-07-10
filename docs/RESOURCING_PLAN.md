@@ -116,3 +116,19 @@ That's **62,708 entries (the entire no-provenance-commentary bucket) from one cl
 - **Schaff (archive.org):** the ~384 patristic works (historicalchristian.faith + no-provenance patristic).
 
 **First slice (building now):** the **text-match engine**, proven on real helloao data — fetch a helloao PD commentary, align per-verse to our stored `embeddings.content`, report normalized-match rate = the split between $0 provenance-repair and re-embed. Then repair one work's provenance (config entry) end-to-end. No publish until the whole cleanup clears (owner's "full cleanup first").
+
+### 8.1 Text-match probe result (`resource-match-probe.ts`, 2026-07-10)
+
+Ran the probe on **Adam Clarke** vs `helloao/adam-clarke` (10-chapter sample across OT/NT, 227 verses present in both):
+
+| Bucket | Verses | |
+|---|---:|---|
+| MATCH (Jaccard ≥ 0.9) | 150 | same text |
+| TRUNCATED (Jaccard < 0.9 but containment ≥ 0.9) | 77 | **same text, our copy just cut short** |
+| **→ $0 provenance-repair (match + truncated)** | **227 (100%)** | keep every vector |
+| DIFFER (genuine edition difference → re-embed) | **0 (0%)** | — |
+| helloao verses with no stored counterpart | 0 | clean alignment |
+
+**Every sampled Adam Clarke verse is the same PD text as helloao** — the initial 34% "differ" was entirely *truncation* (our stored text is a cut-short copy of the identical work), which containment caught and which is still a $0 repair. **Implication: the whole 62,708-entry no-provenance-commentary bucket (Gill, JFB, Clarke, Matthew Henry) is expected to re-source at $0** — keep all vectors, just record helloao's PD provenance. Re-embed is likely reserved for the biblehub-14 (Wikisource/archive sources) and the patristic Schaff work, if at all.
+
+**Next unit:** the provenance-repair pipeline — full per-work match verification (all books, not a sample) → write config entries with helloao PD provenance for the 4 works → they're clean + ready for the scale-up migration. Still no publish until the full cleanup (incl. biblehub-14 + patristic) clears.
