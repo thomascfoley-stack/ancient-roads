@@ -1,5 +1,18 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-10 (DILUTION MEASURED) — variance ~0; pool-size is not the lever; diversity-aware selection is
+
+Measured before building (read-only, harness knobs `--corpus pre|post --pool N --cats`, frozen hash intact). Ran the 3 moved categories pre×3 / post×3 + a pool sweep. **Variance = 0** across repeats — the pipeline is deterministic (bge + Qwen reranker + SQL), so the deltas are real, not n=20 noise. (The earlier "topical −10" conflated an HNSW index-state change from the +17k rows; measured on the *same* index it is −5.)
+
+| config (same index) | topical HIT@2 | pericope HIT@1 | epistle HIT@2 |
+|---|---|---|---|
+| pre (6 authors), pool 20 | 65 | 80 | 60 |
+| post (9 authors), pool 20 | 60 | 73 | **72** |
+| post, pool 30 | 60 | 73 | 72 |
+| post, pool 40 | 60 | 73 | 72 |
+
+**Two hard results:** (1) epistle is a real **+12** (60→72) from the added voices; the cost is topical **−5** and pericope-HIT@1 **−7** (its HIT@2 held). (2) **CANDIDATE_POOL 20→30→40 recovers nothing** — every metric is identical across pool sizes. The on-target voices aren't missing from the pool; the reranker fills the top-6 with multiple *same-author, near-passage* entries that outrank the 2nd on-target author. So brute-force size (which would ~2× rerank latency) is measured useless; the lever is **diversity-aware final selection** (guarantee multi-author representation in the top-6). Design doc: `docs/DIVERSITY_SELECTION_DESIGN.md`. No label/gazetteer/floor edits; owner-only dogfood continues; no beta.
+
 ## 2026-07-10 (AUTHOR-DIVERSITY INGEST) — Barnes/Wesley/Calvin added; on-target lift + a pool-dilution regression (judgment call)
 
 Stood up SWORD/CrossWire ingestion (no libsword available: no brew, and pysword can't read `zcom`, so I wrote the zVerse compressed-commentary reader directly — `scratchpad/sword/`). Modules: **Barnes' NT Notes, Wesley's Notes, Calvin's Commentaries** — all `DistributionLicense=Public Domain` (verified in each `.conf`). Alignment: Barnes via embedded `Verse N.` labels (bulletproof); Wesley/Calvin via the verse-index walk on **pysword's KJV canon** (the repo's WEB counts drift vs the modules' KJV v11n). Extracted **17,192 NT entries**, embedded (BAAI/bge-large, 512-token-safe), ingested to the publishable corpus via `src/ingest/ingest-sword-commentaries.mts` (owner conn = `web/.env.local` `DATABASE_URL`; root `.env.local` is **stale post-rotation** — flag). Provenance clean; the pre-existing **biblehub** Barnes/Calvin/Wesley (forbidden aggregator, ~3.8k rows, quarantined) are superseded — colliding source_ids repaired to CrossWire, residual biblehub excluded by a `sourceUrl ILIKE '%crosswire%'` gate in PUBLISHABLE. CrossWire counts verified exact: Barnes 6850 / Calvin 5088 / Wesley 5254.

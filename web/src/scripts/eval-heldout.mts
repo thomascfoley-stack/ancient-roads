@@ -14,12 +14,18 @@ import { PILOT, FROZEN, type Q, type Cat } from './heldout-queries.mjs';
 const apiKey = process.env.DEEPINFRA_API_KEY!;
 const sql = neon((process.env.APP_DATABASE_URL ?? process.env.DATABASE_URL ?? '').replace(/^"|"$/g, ''));
 const K = 6; // = production retrieveCommentary default `limit`
-const PUBLISHABLE = `(
-  metadata->>'author' IN ('John Gill','Jamieson, Fausset & Brown','Adam Clarke','Matthew Henry')
+const argVal = (flag: string) => { const i = process.argv.indexOf(flag); return i >= 0 ? process.argv[i + 1] : undefined; };
+// Measurement knobs (read-only; do NOT ship). --pool N overrides CANDIDATE_POOL;
+// --corpus pre drops the CrossWire authors (= pre-ingest legal corpus, for the
+// variance/A-B band); --cats a,b filters categories to speed variance runs.
+const POOL = Number(argVal('--pool') ?? CANDIDATE_POOL);
+const CORPUS = argVal('--corpus') ?? 'post';
+const CAT_FILTER = argVal('--cats')?.split(',');
+const PUB_BASE = `metadata->>'author' IN ('John Gill','Jamieson, Fausset & Brown','Adam Clarke','Matthew Henry')
   OR (metadata->>'author'='John Chrysostom'   AND (metadata->>'verseId')::int/1000000 IN (40,43,44))
-  OR (metadata->>'author'='Augustine of Hippo' AND (metadata->>'verseId')::int/1000000 IN (19,43))
-  OR (metadata->>'author' IN ('Albert Barnes','John Wesley','John Calvin') AND metadata->>'sourceUrl' ILIKE '%crosswire%')
-)`;
+  OR (metadata->>'author'='Augustine of Hippo' AND (metadata->>'verseId')::int/1000000 IN (19,43))`;
+const PUB_NEW = `OR (metadata->>'author' IN ('Albert Barnes','John Wesley','John Calvin') AND metadata->>'sourceUrl' ILIKE '%crosswire%')`;
+const PUBLISHABLE = `(${PUB_BASE} ${CORPUS === 'pre' ? '' : PUB_NEW})`;
 
 type Row = { source_id: string; content: string; metadata: unknown };
 const meta = (m: unknown) => (typeof m === 'string' ? JSON.parse(m) : m) as { verseId: number; author: string };
@@ -62,7 +68,7 @@ async function rerankAll(q: string, rows: Row[]): Promise<Row[]> {
 // rerank → floor), returning the top-K voices' verseId + author.
 async function retrieveLegal(query: string, vec: string): Promise<Array<{ verseId: number; author: string }>> {
   let rows = (await sql.query(
-    `SELECT source_id, content, metadata FROM embeddings WHERE user_id IS NULL AND source_type='commentary' AND ${PUBLISHABLE} ORDER BY embedding <=> $1::vector LIMIT ${CANDIDATE_POOL}`, [vec],
+    `SELECT source_id, content, metadata FROM embeddings WHERE user_id IS NULL AND source_type='commentary' AND ${PUBLISHABLE} ORDER BY embedding <=> $1::vector LIMIT ${POOL}`, [vec],
   )) as Row[];
   const intent = resolveIntent(query);
   if (intent.inject.length) {
@@ -126,12 +132,13 @@ async function diagnose() {
 }
 
 async function main() {
-  const set: Q[] = process.argv.includes('--frozen') ? FROZEN : PILOT;
+  let set: Q[] = process.argv.includes('--frozen') ? FROZEN : PILOT;
+  if (CAT_FILTER) set = set.filter((q) => CAT_FILTER.includes(q.cat));
   const cats: Cat[] = ['verse-ref', 'pericope', 'epistle', 'topical', 'proper-noun', 'control'];
   const tally: Record<string, Tally> = Object.fromEntries(cats.map((c) => [c, blank()]));
   let hijacks = 0;
 
-  console.log(`Held-out eval — set=${set === PILOT ? 'PILOT (plumbing)' : 'FROZEN'} · ${set.length} queries · K=${K} · legal corpus · shared routing.ts\n`);
+  console.log(`Held-out eval — ${process.argv.includes('--frozen') ? 'FROZEN' : 'PILOT'} · ${set.length} q · K=${K} · corpus=${CORPUS} · pool=${POOL}${CAT_FILTER ? ` · cats=${CAT_FILTER.join(',')}` : ''}\n`);
   for (const q of set) {
     const t = tally[q.cat]!; t.n++;
     if (q.cat === 'control') {
@@ -162,7 +169,8 @@ async function main() {
     const k = t.codes;
     console.log(`  ${c.padEnd(13)} ${String(t.n).padStart(2)}   ${pct(t.hit1, t.n)}  ${pct(t.hit2, t.n)}    ${k.pass} / ${k['<2-voices']} / ${k['wrong-passage']} / ${k['no-content']}`);
   }
-  console.log(`\n(plumbing check: labels parsed, 4 codes computed per category, shared routing path ran end-to-end)`);
+  const g = (c: Cat, m: 'hit1' | 'hit2') => { const t = tally[c]!; return t.n ? Math.round((100 * t[m]) / t.n) : 0; };
+  console.log(`TAG corpus=${CORPUS} pool=${POOL} :: topicalH2=${g('topical', 'hit2')} pericopeH1=${g('pericope', 'hit1')} epistleH2=${g('epistle', 'hit2')} verserefH1=${g('verse-ref', 'hit1')}`);
 }
 
 import { fileURLToPath } from 'node:url';
