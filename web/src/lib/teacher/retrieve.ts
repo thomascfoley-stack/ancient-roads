@@ -2,7 +2,7 @@ import { getDb } from '../db';
 import { rerank } from './rerank';
 import { resolveIntent } from '../../bible/pericopes';
 import type { VerseRange } from '../../bible/ref-parse';
-import { RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse, legalBasePoolSql, LEGAL_CORPUS_FILTER } from './routing';
+import { RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse, legalBasePoolSql, LEGAL_CORPUS_FILTER, chapterKeysOf, diversityBackfillSql, insertBackfill, BACKFILL_TOP_CHAPTERS } from './routing';
 
 // A retrieved commentary chunk, fully hydrated (attribution + content on the row).
 export interface RetrievedChunk {
@@ -89,10 +89,24 @@ export async function retrieveCommentary(
     const ranked = await rerank(queryText || 'commentary', docs);
     let ordered = ranked.map((r) => ({ ...candidates[r.index]!, score: r.relevance_score }));
     if (intent.floor.length > 0) ordered = floorOnRange(ordered, intent.floor, (c) => c.metadata.verseId);
-    // Diversity-aware top-K: force a 2nd distinct author onto diffuse queries; on-
-    // reference (floored) voices are exempt so routing/HIT@1 is preserved.
+    // On-passage backfill (Phase A item 2): fetch the 2nd+ distinct voices on the
+    // chapters retrieval already surfaced, so selectDiverse has a 2nd voice to keep.
+    const chapterKey = (c: RetrievedChunk) => Math.floor(c.metadata.verseId / 1000);
+    const chapters = chapterKeysOf(ordered.slice(0, BACKFILL_TOP_CHAPTERS), chapterKey);
+    if (chapters.length > 0) {
+      const bf = (await sql.query(diversityBackfillSql(chapters, LEGAL_CORPUS_FILTER), [vecStr])) as Array<{
+        source_id: string; score: number; content: string; metadata: unknown;
+      }>;
+      const fetched: RetrievedChunk[] = bf.map((r) => ({
+        sourceId: r.source_id, score: Number(r.score), content: r.content,
+        metadata: (typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata) as RetrievedChunk['metadata'],
+      }));
+      ordered = insertBackfill(ordered, fetched, (c) => c.sourceId, chapterKey, (c) => c.metadata.author);
+    }
+    // Diversity-aware top-K: per-PASSAGE cap keeps ≥2 voices on a passage without
+    // collapsing coverage; on-reference (floored) voices are exempt (HIT@1 preserved).
     const onRef = (c: RetrievedChunk) => intent.floor.some((r) => c.metadata.verseId >= r.start && c.metadata.verseId <= r.end);
-    return selectDiverse(ordered, limit, (c) => c.metadata.author, onRef);
+    return selectDiverse(ordered, limit, chapterKey, onRef);
   } catch {
     // Reranker failure: fall back to the legal-corpus vector ordering
     return candidates.slice(0, limit);

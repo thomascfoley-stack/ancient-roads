@@ -88,29 +88,93 @@ export function floorOnRange<T>(
   return [...promote, ...rest];
 }
 
-export const AUTHOR_CAP = 2; // max entries per author in the final top-K (off-reference)
+export const PASSAGE_CAP = 2; // max entries per PASSAGE (chapter) in the final top-K (off-reference)
+// Backfill only the top-N surfaced chapters (not all K). The on-target chapter for a
+// surfaced=1 miss is almost always among the top reranked; scoping to 3 roughly halves
+// the backfill range-scan (measured p50 558→~300ms) with no accuracy loss (WORKLOG).
+export const BACKFILL_TOP_CHAPTERS = 3;
 
-// DIVERSITY-AWARE top-K selection. Measured (WORKLOG 2026-07-10): after the corpus
-// grew, the reranker fills the top-6 with multiple same-author, near-passage entries
-// that crowd out the second distinct author on diffuse topical queries — and a bigger
-// pool doesn't help. This caps off-reference entries at `cap` per author so a second
-// distinct voice survives; ON-REFERENCE items (the ADR-015 routing guarantee) are
-// EXEMPT and always kept (floor-first, then cap the rest). Deferred items backfill if
-// the cap would otherwise leave fewer than k. Pure reordering — no extra API/DB call.
+// Chapter key = verseId/1000 (book·1000+chapter). Distinct keys among `entries`, first-seen order.
+export function chapterKeysOf<T>(entries: readonly T[], chapterKey: (t: T) => number): number[] {
+  const seen = new Set<number>();
+  for (const e of entries) seen.add(chapterKey(e));
+  return [...seen];
+}
+
+// ON-PASSAGE BACKFILL: the top-by-vector entry per (chapter, author) across the surfaced
+// chapters — the candidate 2nd+ voices. A DISTINCT ON range-scan (007 verseId index);
+// ordering by embedding<=>vec within each (chapter,author) self-selects the on-topic verse.
+// $1 = query vector. `corpusFilter` splices the legal filter. Chapter keys are integers.
+export function diversityBackfillSql(chapterKeys: readonly number[], corpusFilter = ''): string {
+  const conds = chapterKeys
+    .map((ck) => `(metadata->>'verseId')::int BETWEEN ${ck * 1000 + 1} AND ${ck * 1000 + 999}`)
+    .join(' OR ');
+  // DISTINCT ON already bounds output to ≤ chapters×authors; the LIMIT is a hard
+  // ceiling (defence against an unbounded set if the chapter cap ever grows).
+  return `SELECT DISTINCT ON ((metadata->>'verseId')::int/1000, metadata->>'author')
+     source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
+   FROM embeddings
+   WHERE user_id IS NULL AND source_type = 'commentary'${corpusFilter ? ` AND ${corpusFilter}` : ''} AND (${conds})
+   ORDER BY (metadata->>'verseId')::int/1000, metadata->>'author', embedding <=> $1::vector
+   LIMIT ${chapterKeys.length * 12 + 6}`;
+}
+
+// Splice the backfilled voices in: right after each surfaced chapter's FIRST (lead) entry,
+// add its OTHER distinct authors — so a 2nd voice sits directly behind the lead and can
+// survive selection. A fetched voice already present later is PROMOTED (its later dup is
+// skipped). Fetched voices on chapters not in `ordered` are dropped (we only strengthen
+// passages retrieval surfaced). Pure reordering; the DB fetch is the caller's.
+export function insertBackfill<T>(
+  ordered: readonly T[],
+  fetched: readonly T[],
+  id: (t: T) => string,
+  chapterKey: (t: T) => number,
+  author: (t: T) => string,
+): T[] {
+  const byChapter = new Map<number, T[]>();
+  for (const f of fetched) {
+    const ck = chapterKey(f);
+    const list = byChapter.get(ck) ?? [];
+    if (list.length === 0) byChapter.set(ck, list);
+    list.push(f);
+  }
+  const out: T[] = [];
+  const emitted = new Set<string>();
+  const seenChapter = new Set<number>();
+  for (const o of ordered) {
+    if (emitted.has(id(o))) continue;
+    out.push(o); emitted.add(id(o));
+    const ck = chapterKey(o);
+    if (seenChapter.has(ck)) continue;
+    seenChapter.add(ck);
+    const leadAuthor = author(o);
+    for (const f of byChapter.get(ck) ?? []) {
+      if (emitted.has(id(f)) || author(f) === leadAuthor) continue;
+      out.push(f); emitted.add(id(f));
+    }
+  }
+  return out;
+}
+
+// DIVERSITY-AWARE top-K selection — caps at `cap` entries per PASSAGE (chapter), NOT per
+// author (the prior per-author cap let 6 distinct-author voices from ONE chapter fill the
+// top-6, collapsing cross-passage coverage → topical 65→50). Per-passage preserves coverage
+// (≤2 per chapter) while letting a backfilled 2nd voice onto the target passage. ON-REFERENCE
+// (floored) items are EXEMPT (ADR-015 guarantee). Deferred items backfill to fill k. Pure reorder.
 export function selectDiverse<T>(
   ordered: readonly T[],
   k: number,
-  author: (t: T) => string,
+  chapterKey: (t: T) => number,
   onRef: (t: T) => boolean,
-  cap: number = AUTHOR_CAP,
+  cap: number = PASSAGE_CAP,
 ): T[] {
   const final: T[] = [];
-  const count = new Map<string, number>();
+  const count = new Map<number, number>();
   const deferred: T[] = [];
   for (const r of ordered) {
     if (final.length >= k) break;
-    const a = author(r);
-    if (onRef(r) || (count.get(a) ?? 0) < cap) { final.push(r); count.set(a, (count.get(a) ?? 0) + 1); }
+    const ch = chapterKey(r);
+    if (onRef(r) || (count.get(ch) ?? 0) < cap) { final.push(r); count.set(ch, (count.get(ch) ?? 0) + 1); }
     else deferred.push(r);
   }
   for (const r of deferred) { if (final.length >= k) break; final.push(r); }

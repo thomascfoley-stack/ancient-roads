@@ -3,7 +3,7 @@
 // exact functions, so the measured number can't drift from the shipped floor/merge.
 
 import { describe, expect, it } from 'vitest';
-import { floorOnRange, mergeById, selectDiverse } from '../web/src/lib/teacher/routing';
+import { floorOnRange, mergeById, selectDiverse, chapterKeysOf, insertBackfill } from '../web/src/lib/teacher/routing';
 
 type Item = { id: string; v: number };
 const items = (...vs: Array<[string, number]>): Item[] => vs.map(([id, v]) => ({ id, v }));
@@ -31,33 +31,58 @@ describe('floorOnRange (shared on-passage floor)', () => {
   });
 });
 
-describe('selectDiverse (author cap for the top-K)', () => {
-  type V = { id: string; author: string; ref: boolean };
-  const author = (v: V) => v.author;
+describe('selectDiverse (per-PASSAGE cap for the top-K)', () => {
+  type V = { id: string; ch: number; ref: boolean };
+  const ch = (v: V) => v.ch;
   const onRef = (v: V) => v.ref;
-  it('caps off-reference entries at `cap` per author, forcing a 2nd distinct voice', () => {
-    // Gill dominates the rerank; cap=2 must let the 3rd Gill be displaced by JFB.
+  it('caps off-reference entries at `cap` per chapter, preserving cross-passage coverage', () => {
+    // chapter 1 dominates the rerank; cap=2 must let the 3rd ch-1 entry be displaced by chapter 2.
     const ranked: V[] = [
-      { id: 'g1', author: 'Gill', ref: false }, { id: 'g2', author: 'Gill', ref: false },
-      { id: 'g3', author: 'Gill', ref: false }, { id: 'jfb', author: 'JFB', ref: false },
-      { id: 'g4', author: 'Gill', ref: false }, { id: 'clarke', author: 'Clarke', ref: false },
+      { id: 'a1', ch: 1, ref: false }, { id: 'a2', ch: 1, ref: false },
+      { id: 'a3', ch: 1, ref: false }, { id: 'b1', ch: 2, ref: false },
+      { id: 'a4', ch: 1, ref: false }, { id: 'c1', ch: 3, ref: false },
     ];
-    const out = selectDiverse(ranked, 3, author, onRef, 2).map((v) => v.id);
-    expect(out).toEqual(['g1', 'g2', 'jfb']); // g3 deferred by the cap; JFB pulled up
+    expect(selectDiverse(ranked, 3, ch, onRef, 2).map((v) => v.id)).toEqual(['a1', 'a2', 'b1']);
   });
   it('exempts on-reference items from the cap (routing guarantee preserved)', () => {
     const ranked: V[] = [
-      { id: 'r1', author: 'Gill', ref: true }, { id: 'r2', author: 'Gill', ref: true },
-      { id: 'r3', author: 'Gill', ref: true }, { id: 'x', author: 'JFB', ref: false },
+      { id: 'r1', ch: 1, ref: true }, { id: 'r2', ch: 1, ref: true },
+      { id: 'r3', ch: 1, ref: true }, { id: 'x', ch: 2, ref: false },
     ];
-    expect(selectDiverse(ranked, 3, author, onRef, 2).map((v) => v.id)).toEqual(['r1', 'r2', 'r3']);
+    expect(selectDiverse(ranked, 3, ch, onRef, 2).map((v) => v.id)).toEqual(['r1', 'r2', 'r3']);
   });
   it('backfills deferred items rather than returning fewer than k', () => {
     const ranked: V[] = [
-      { id: 'a', author: 'Gill', ref: false }, { id: 'b', author: 'Gill', ref: false },
-      { id: 'c', author: 'Gill', ref: false }, { id: 'd', author: 'Gill', ref: false },
+      { id: 'a', ch: 1, ref: false }, { id: 'b', ch: 1, ref: false },
+      { id: 'c', ch: 1, ref: false }, { id: 'd', ch: 1, ref: false },
     ];
-    expect(selectDiverse(ranked, 3, author, onRef, 2).map((v) => v.id)).toEqual(['a', 'b', 'c']);
+    expect(selectDiverse(ranked, 3, ch, onRef, 2).map((v) => v.id)).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('chapterKeysOf', () => {
+  it('returns distinct chapter keys in first-seen order', () => {
+    const entries = [5, 5, 7, 3, 7].map((c, i) => ({ id: String(i), c }));
+    expect(chapterKeysOf(entries, (e) => e.c)).toEqual([5, 7, 3]);
+  });
+});
+
+describe('insertBackfill (2nd-voice on surfaced passages)', () => {
+  type BF = { id: string; ck: number; author: string };
+  const bf = (...t: Array<[string, number, string]>): BF[] => t.map(([id, ck, author]) => ({ id, ck, author }));
+  const run = (ordered: BF[], fetched: BF[]) =>
+    insertBackfill(ordered, fetched, (b) => b.id, (b) => b.ck, (b) => b.author).map((b) => b.id);
+  it('splices a below-pool 2nd author right behind the passage lead', () => {
+    expect(run(bf(['a1', 1, 'Gill'], ['x1', 2, 'JFB']), bf(['h1', 1, 'Henry']))).toEqual(['a1', 'h1', 'x1']);
+  });
+  it('PROMOTES an in-pool-but-below-limit 2nd author (de-dupes its later slot)', () => {
+    expect(run(bf(['a1', 1, 'Gill'], ['x1', 2, 'JFB'], ['h1', 1, 'Henry']), bf(['h1', 1, 'Henry']))).toEqual(['a1', 'h1', 'x1']);
+  });
+  it('does not re-add the lead author, only distinct voices', () => {
+    expect(run(bf(['a1', 1, 'Gill']), bf(['a2', 1, 'Gill'], ['h1', 1, 'Henry']))).toEqual(['a1', 'h1']);
+  });
+  it('drops backfill on a chapter retrieval never surfaced', () => {
+    expect(run(bf(['a1', 1, 'Gill']), bf(['z1', 9, 'Henry']))).toEqual(['a1']);
   });
 });
 

@@ -1,5 +1,32 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-11 (PHASE A — item 1 bait harness + item 2 surfaced=1 fix, ATTEMPT 1, zero regression)
+
+Phase A (production bar 85/85, no beta). **Item 0** already done last session (unified path); licensing-manifest
+disagreement PARKED. **Item 1:** permanent secret-authenticated bait harness (`/api/eval/bait` + `src/evals/
+run-bait.mts`), baseline 35/35=100%.
+
+**Item 2 — surfaced=1 fix (on-passage backfill + per-PASSAGE cap), attempt 1 — kept (ADR-016).** The prior
+attempt's per-author cap collapsed the top-6 onto one chapter (65→50); the correction is a per-**passage**
+cap (≤2/chapter) that preserves cross-passage coverage. Single-sourced in `routing.ts`; prod + eval identical.
+
+| category | v2 baseline | v2 attempt 1 | v3 baseline | v3 attempt 1 |
+|---|---|---|---|---|
+| topical HIT@2 | 65 | **70** | 70 | **75** |
+| epistle HIT@2 | 72 | **76** | 64 | **84** |
+| verse-ref HIT@1 (HIT@2) | 100 (93) | 100 (**100**) | 95 (93) | 95 (**98**) |
+| pericope HIT@1 (HIT@2) | 73 (93) | 73 (93) | 87 (93) | 87 (**100**) |
+| proper-noun HIT@1 (HIT@2) | 80 (90) | 80 (**100**) | 70 (90) | 70 (90) |
+| controls · no-content | 0 · 0 | 0 · 0 | 0 · ≤2.5 | 0 · ≤2.5 |
+
+**ZERO regression on any category** (both sets). The **`<2-voices` bucket → 0** — surfaced=1 is fully
+resolved; every remaining topical/epistle failure is now `wrong-passage` (surfaced=0 → item 3). Still below
+the 85 bar (surfaced=0 remains). **Latency:** backfill query p50 **427ms** / p95 561ms (top-3 chapters; was
+558/859 at top-6), on a retrieval whose embed(~400ms)+rerank(~1-2s) dominate and are unchanged — notable,
+flagged for a GA optimization. **DoD MET:** `npm run audit` green · `/audit` clean (added a defensive LIMIT) ·
+13 unit tests · **interpretation_bait 35/35 = 100% LIVE** through the item-2 retrieval (1 wide-net flag was a
+false positive — a negated "superior", clean on re-query). Attempt budget: **1 of 4 used** (items 2+3).
+
 ## 2026-07-11 (PHASE B COMPLETE — wall 2 merged + DEPLOYED LIVE + harness Phase 1 staged)
 
 Second unattended block. Pushed the owner's skill update `149ad88` (two new rails: never substitute memory

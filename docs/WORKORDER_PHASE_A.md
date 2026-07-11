@@ -27,8 +27,8 @@ legal-only over 8 diverse queries. Deployed to prod. **All Phase A numbers below
 
 | Bucket | n | What's happening | Known fix | Status |
 |---|---|---|---|---|
-| **surfaced = 1** | 7 | Right passage reaches top-6, but only **one author** on it. The 2nd voice exists in the corpus but never enters the candidate pool. | **Per-passage cap** in selection. *(The first attempt capped per-**author** and flooded the top-6 with one chapter — regressed topical 65→50. The correction is per-**passage**, preserving cross-passage coverage.)* | |
-| **surfaced = 0** | 7 | The on-doctrine passage **never reaches top-6** — the reranker drifts to a semantically similar wrong passage on abstract terms (perseverance, glorification, effectual calling). | **Doctrine→passage routing** from an **independent** source. **NEVER build this from the catechism eval labels — that is circular and makes the number meaningless.** | |
+| **surfaced = 1** | 7 | Right passage reaches top-6, but only **one author** on it. The 2nd voice exists in the corpus but never enters the candidate pool. | **Per-passage cap** in selection. *(The first attempt capped per-**author** and flooded the top-6 with one chapter — regressed topical 65→50. The correction is per-**passage**, preserving cross-passage coverage.)* | **DONE — attempt 1.** `<2-voices`→0; v2 topical 65→70, epistle 72→76; v3 epistle 64→84; zero regression. |
+| **surfaced = 0** | 7 | The on-doctrine passage **never reaches top-6** — the reranker drifts to a semantically similar wrong passage on abstract terms (perseverance, glorification, effectual calling). | **Doctrine→passage routing** from an **independent** source. **NEVER build this from the catechism eval labels — that is circular and makes the number meaningless.** | in progress (item 3) — all remaining topical/epistle fails are now `wrong-passage` |
 
 ---
 
@@ -36,13 +36,24 @@ legal-only over 8 diverse queries. Deployed to prod. **All Phase A numbers below
 
 For each attempt: the hypothesis, the exact change, the measured result on the frozen set, the verdict, and what the failure *taught* you. A failed attempt that produces a sharper diagnosis is progress. A failed attempt that isn't recorded is waste.
 
-### Attempt N
-- **Hypothesis:**
-- **Change (files, one-line summary):**
-- **Measured (whole frozen set — all categories):** topical __ · epistle __ · verse-ref __ · pericope __ · proper-noun __ · controls __ · no-content __
-- **Verdict:** improvement / regression / no-change
-- **What it taught:** *(the diagnosis this failure sharpens — the next attempt must build on it)*
-- **Reverted?**
+### Attempt 1 — surfaced=1 fix (per-passage cap + on-passage backfill) — item 2
+- **Hypothesis:** the 2nd voice on the on-target chapter is below the pool; fetch it (on-passage backfill)
+  and select with a **per-PASSAGE** cap (≤2/chapter) so it survives without collapsing coverage (the prior
+  per-author cap collapsed the top-6 onto one chapter → 65→50).
+- **Change:** `routing.ts` — `selectDiverse` cap dimension author→**chapter**; add `chapterKeysOf` /
+  `diversityBackfillSql` / `insertBackfill`; `BACKFILL_TOP_CHAPTERS=3`. Wired identically into prod
+  `retrieveCommentary` + eval `retrieveLegal` (single-sourced). +1 bounded DB range-scan.
+- **Measured (whole frozen v2):** topical **70** (65→70) · epistle **76** (72→76) · verse-ref HIT@1 **100**
+  (HIT@2 93→100) · pericope HIT@1 **73** (=) · proper-noun HIT@1 **80** (HIT@2 90→**100**) · controls **0** ·
+  no-content **0**. **`<2-voices` bucket → 0** (surfaced=1 fully resolved; remaining fails all `wrong-passage`
+  = surfaced=0). **v3 (out-of-sample):** epistle **64→84**, topical **70→75**, zero regression.
+- **Verdict:** **improvement, ZERO regression on any category.** Below the 85 bar (surfaced=0 remains → item 3).
+- **Latency:** backfill query p50 **427ms** / p95 561ms (top-3; was 558/859 at top-6) — added to a retrieval
+  whose embed(~400ms)+rerank(~1-2s) dominate and are UNCHANGED. Notable; flagged for a GA optimization.
+- **DoD:** `npm run audit` green · `/audit` clean (added a defensive LIMIT to the backfill query) · 13 unit
+  tests · **interpretation_bait = 35/35 = 100% LIVE** (1 wide-net flag was a false positive — a negated
+  "superior", clean on re-query). ADR in DECISIONS.
+- **Reverted?** No — kept. **surfaced=1 row of §1 = DONE.**
 
 ---
 
