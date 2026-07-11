@@ -8,7 +8,7 @@
 import { neon } from '@neondatabase/serverless';
 import { parseRef } from '../bible/ref-parse';
 import { resolveIntent } from '../bible/pericopes';
-import { CANDIDATE_POOL, RERANK_MODEL, RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange } from '../lib/teacher/routing';
+import { CANDIDATE_POOL, RERANK_MODEL, RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse, AUTHOR_CAP } from '../lib/teacher/routing';
 import { PILOT, FROZEN, type Q, type Cat } from './heldout-queries.mjs';
 
 const apiKey = process.env.DEEPINFRA_API_KEY!;
@@ -21,6 +21,7 @@ const argVal = (flag: string) => { const i = process.argv.indexOf(flag); return 
 const POOL = Number(argVal('--pool') ?? CANDIDATE_POOL);
 const CORPUS = argVal('--corpus') ?? 'post';
 const CAT_FILTER = argVal('--cats')?.split(',');
+const CAP = Number(argVal('--cap') ?? AUTHOR_CAP); // per-author cap sweep knob
 const PUB_BASE = `metadata->>'author' IN ('John Gill','Jamieson, Fausset & Brown','Adam Clarke','Matthew Henry')
   OR (metadata->>'author'='John Chrysostom'   AND (metadata->>'verseId')::int/1000000 IN (40,43,44))
   OR (metadata->>'author'='Augustine of Hippo' AND (metadata->>'verseId')::int/1000000 IN (19,43))`;
@@ -76,8 +77,9 @@ async function retrieveLegal(query: string, vec: string): Promise<Array<{ verseI
     rows = mergeById(inj, rows, (r) => r.source_id);
   }
   const ranked = await rerankAll(query, rows);
-  return floorOnRange(ranked, intent.floor, (r) => meta(r.metadata).verseId)
-    .slice(0, K)
+  const floored = floorOnRange(ranked, intent.floor, (r) => meta(r.metadata).verseId);
+  const onRef = (r: Row) => { const v = meta(r.metadata).verseId; return intent.floor.some((rg) => v >= rg.start && v <= rg.end); };
+  return selectDiverse(floored, K, (r) => meta(r.metadata).author, onRef, CAP)
     .map((r) => { const m = meta(r.metadata); return { verseId: m.verseId, author: m.author }; });
 }
 // Does the legal corpus hold ANY voice in the expected passages? (wrong-passage vs no-content)
@@ -170,7 +172,7 @@ async function main() {
     console.log(`  ${c.padEnd(13)} ${String(t.n).padStart(2)}   ${pct(t.hit1, t.n)}  ${pct(t.hit2, t.n)}    ${k.pass} / ${k['<2-voices']} / ${k['wrong-passage']} / ${k['no-content']}`);
   }
   const g = (c: Cat, m: 'hit1' | 'hit2') => { const t = tally[c]!; return t.n ? Math.round((100 * t[m]) / t.n) : 0; };
-  console.log(`TAG corpus=${CORPUS} pool=${POOL} :: topicalH2=${g('topical', 'hit2')} pericopeH1=${g('pericope', 'hit1')} epistleH2=${g('epistle', 'hit2')} verserefH1=${g('verse-ref', 'hit1')}`);
+  console.log(`TAG corpus=${CORPUS} pool=${POOL} cap=${CAP} :: topicalH2=${g('topical', 'hit2')} pericopeH1=${g('pericope', 'hit1')} epistleH2=${g('epistle', 'hit2')} verserefH1=${g('verse-ref', 'hit1')}`);
 }
 
 import { fileURLToPath } from 'node:url';

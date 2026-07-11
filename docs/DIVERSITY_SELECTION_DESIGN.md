@@ -1,7 +1,9 @@
 # Diversity-aware final selection — design (for approval)
 
-**Status:** proposed; no code until approved (design-before-code rail — this touches the
-shared retrieval path). Grounded in the 2026-07-10 measurement (WORKLOG), not written blind.
+**Status:** APPROVED + BUILT 2026-07-10 (per-author cap, AUTHOR_CAP=2, floor-first-then-cap).
+`selectDiverse` in shared `routing.ts`; wired to production + eval; tests 8/8. Result: topical
+HIT@2 60→65 (dilution undone), epistle 72 held (+12), verse-ref HIT@2 →93; pericope HIT@1 73
+(ingest side-effect, unchanged by cap). See WORKLOG 2026-07-10. Next gate = fresh v3 held-out.
 
 ## Problem (measured, deterministic — variance ~0)
 Adding Barnes/Wesley/Calvin (author-diversity ingest) gave a real **epistle HIT@2 +12**

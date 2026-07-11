@@ -61,3 +61,32 @@ export function floorOnRange<T>(
   const rest = ordered.filter((t) => !promote.includes(t));
   return [...promote, ...rest];
 }
+
+export const AUTHOR_CAP = 2; // max entries per author in the final top-K (off-reference)
+
+// DIVERSITY-AWARE top-K selection. Measured (WORKLOG 2026-07-10): after the corpus
+// grew, the reranker fills the top-6 with multiple same-author, near-passage entries
+// that crowd out the second distinct author on diffuse topical queries — and a bigger
+// pool doesn't help. This caps off-reference entries at `cap` per author so a second
+// distinct voice survives; ON-REFERENCE items (the ADR-015 routing guarantee) are
+// EXEMPT and always kept (floor-first, then cap the rest). Deferred items backfill if
+// the cap would otherwise leave fewer than k. Pure reordering — no extra API/DB call.
+export function selectDiverse<T>(
+  ordered: readonly T[],
+  k: number,
+  author: (t: T) => string,
+  onRef: (t: T) => boolean,
+  cap: number = AUTHOR_CAP,
+): T[] {
+  const final: T[] = [];
+  const count = new Map<string, number>();
+  const deferred: T[] = [];
+  for (const r of ordered) {
+    if (final.length >= k) break;
+    const a = author(r);
+    if (onRef(r) || (count.get(a) ?? 0) < cap) { final.push(r); count.set(a, (count.get(a) ?? 0) + 1); }
+    else deferred.push(r);
+  }
+  for (const r of deferred) { if (final.length >= k) break; final.push(r); }
+  return final;
+}

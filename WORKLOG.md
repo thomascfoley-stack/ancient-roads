@@ -1,5 +1,15 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-10 (DIVERSITY CAP BUILT) — per-author cap recovers topical, preserves epistle +12
+
+Built the diversity-aware selector (`selectDiverse` in the shared `routing.ts`; `DIVERSITY_SELECTION_DESIGN.md` approved): a per-author cap on the final top-K, on-reference (floored) voices exempt (floor-first-then-cap), pure post-rerank reordering (~0 request-path cost). Wired into production `retrieveCommentary` + the eval (parity); `test/routing-orchestration.test.ts` pins it (8/8).
+
+**Cap sweep (post corpus, deterministic ⇒ exact):** cap=1 and cap=2 both take topical HIT@2 60→**65** (dilution fully undone) while epistle holds **72**; cap=3 doesn't recover (60). cap=1≡cap=2 here (no material gain) ⇒ ship **AUTHOR_CAP=2** (the guarantee default; keeps a strong author's best two notes).
+
+**Full frozen v2 + cap=2 (all categories):** verse-ref HIT@1 100% (HIT@2 **93**, up from 85) · epistle HIT@2 **72** (+12 vs same-index 6-author 60) · topical HIT@2 **65** (dilution undone) · pericope HIT@1 **73** · proper-noun 80% · controls 0 hijacks · no-content 0%. **Net of the whole author-diversity slice: epistle +12, verse-ref HIT@2 +8, topical neutral, pericope HIT@1 −7** (an *ingest* top-1 side-effect the cap doesn't target; ≥70 bar; not chased — that's tuning the dev set). Epistle still **< 85%** — remaining residual = reranker semantic-drift (separate slice, independent source) + passages with <2 total authors even after the ingest.
+
+**Ship status:** the cap is a clean win over no-cap (topical +5, ~0 cost) — committed to the pipeline. But **frozen v2 is now a DEV set** (measured across the pool + cap fixes), so its 72% is NOT the launch number. Per Thomas: before beta, build a fresh **v3** held-out (same methodology, new frozen queries) and run it ONCE as the real ship gate. Owner-only dogfood continues; no beta.
+
 ## 2026-07-10 (DILUTION MEASURED) — variance ~0; pool-size is not the lever; diversity-aware selection is
 
 Measured before building (read-only, harness knobs `--corpus pre|post --pool N --cats`, frozen hash intact). Ran the 3 moved categories pre×3 / post×3 + a pool sweep. **Variance = 0** across repeats — the pipeline is deterministic (bge + Qwen reranker + SQL), so the deltas are real, not n=20 noise. (The earlier "topical −10" conflated an HNSW index-state change from the +17k rows; measured on the *same* index it is −5.)

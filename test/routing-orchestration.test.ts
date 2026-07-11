@@ -3,7 +3,7 @@
 // exact functions, so the measured number can't drift from the shipped floor/merge.
 
 import { describe, expect, it } from 'vitest';
-import { floorOnRange, mergeById } from '../web/src/lib/teacher/routing';
+import { floorOnRange, mergeById, selectDiverse } from '../web/src/lib/teacher/routing';
 
 type Item = { id: string; v: number };
 const items = (...vs: Array<[string, number]>): Item[] => vs.map(([id, v]) => ({ id, v }));
@@ -28,6 +28,36 @@ describe('floorOnRange (shared on-passage floor)', () => {
   it('promotes the single on-range item when only one exists', () => {
     const ordered = items(['a', 45_001_001], ['b', 40_006_001], ['c', 45_002_001]);
     expect(floorOnRange(ordered, MATT_5_7, (i) => i.v).map((i) => i.id)).toEqual(['b', 'a', 'c']);
+  });
+});
+
+describe('selectDiverse (author cap for the top-K)', () => {
+  type V = { id: string; author: string; ref: boolean };
+  const author = (v: V) => v.author;
+  const onRef = (v: V) => v.ref;
+  it('caps off-reference entries at `cap` per author, forcing a 2nd distinct voice', () => {
+    // Gill dominates the rerank; cap=2 must let the 3rd Gill be displaced by JFB.
+    const ranked: V[] = [
+      { id: 'g1', author: 'Gill', ref: false }, { id: 'g2', author: 'Gill', ref: false },
+      { id: 'g3', author: 'Gill', ref: false }, { id: 'jfb', author: 'JFB', ref: false },
+      { id: 'g4', author: 'Gill', ref: false }, { id: 'clarke', author: 'Clarke', ref: false },
+    ];
+    const out = selectDiverse(ranked, 3, author, onRef, 2).map((v) => v.id);
+    expect(out).toEqual(['g1', 'g2', 'jfb']); // g3 deferred by the cap; JFB pulled up
+  });
+  it('exempts on-reference items from the cap (routing guarantee preserved)', () => {
+    const ranked: V[] = [
+      { id: 'r1', author: 'Gill', ref: true }, { id: 'r2', author: 'Gill', ref: true },
+      { id: 'r3', author: 'Gill', ref: true }, { id: 'x', author: 'JFB', ref: false },
+    ];
+    expect(selectDiverse(ranked, 3, author, onRef, 2).map((v) => v.id)).toEqual(['r1', 'r2', 'r3']);
+  });
+  it('backfills deferred items rather than returning fewer than k', () => {
+    const ranked: V[] = [
+      { id: 'a', author: 'Gill', ref: false }, { id: 'b', author: 'Gill', ref: false },
+      { id: 'c', author: 'Gill', ref: false }, { id: 'd', author: 'Gill', ref: false },
+    ];
+    expect(selectDiverse(ranked, 3, author, onRef, 2).map((v) => v.id)).toEqual(['a', 'b', 'c']);
   });
 });
 

@@ -2,7 +2,7 @@ import { getDb } from '../db';
 import { rerank } from './rerank';
 import { resolveIntent } from '../../bible/pericopes';
 import type { VerseRange } from '../../bible/ref-parse';
-import { CANDIDATE_POOL, RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange } from './routing';
+import { CANDIDATE_POOL, RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse } from './routing';
 
 // A retrieved commentary chunk, fully hydrated (attribution + content on the row).
 export interface RetrievedChunk {
@@ -117,7 +117,10 @@ export async function retrieveCommentary(
     const ranked = await rerank(queryText || 'commentary', docs);
     let ordered = ranked.map((r) => ({ ...candidates[r.index]!, score: r.relevance_score }));
     if (intent.floor.length > 0) ordered = floorOnRange(ordered, intent.floor, (c) => c.metadata.verseId);
-    return ordered.slice(0, limit);
+    // Diversity-aware top-K: force a 2nd distinct author onto diffuse queries; on-
+    // reference (floored) voices are exempt so routing/HIT@1 is preserved.
+    const onRef = (c: RetrievedChunk) => intent.floor.some((r) => c.metadata.verseId >= r.start && c.metadata.verseId <= r.end);
+    return selectDiverse(ordered, limit, (c) => c.metadata.author, onRef);
   } catch {
     // Reranker failure: fall back to the hybrid/vector ordering
     return candidates.slice(0, limit);
