@@ -1,6 +1,11 @@
 # Author backfill on surfaced passages — design (for approval)
 
-**Status:** DRAFT — awaiting owner approval before code (design-before-code rail).
+**Status:** MEASURED-REGRESSED 2026-07-10 — built as approved (Option C), re-measured on the whole frozen
+v2, and it **regressed** topical 65→50 / epistle 72→56 (see WORKLOG). Root cause: `selectDiverse` caps per
+*author* not per *passage*, so backfill collapses the top-K onto the single #1-reranked chapter (off-target
+on diffuse queries). Slice stashed (`git stash@{0}`); production stays at the pre-backfill 65/72. The right
+correction is a **per-passage cap in selection** — a new design, deferred (post-beta GA per strategy).
+~~DRAFT — awaiting owner approval before code (design-before-code rail).~~
 **Slice:** the ACTIVE-JOB step-1 retrieval fix — the `surfaced=1` half of the frozen-v2 gap.
 **Scope:** `web/src/lib/teacher/routing.ts` (shared) + its two callers. Retrieval-only; the
 JSON contract + fail-closed verifier are **untouched** (concordance guarantee holds).

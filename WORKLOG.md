@@ -1,5 +1,52 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-10 (AUTHOR-BACKFILL SLICE — BUILT, MEASURED, REGRESSED, STASHED) — a clean negative result
+
+Built the approved surfaced=1 fix (`DIVERSITY_BACKFILL_DESIGN.md`, Option C): after rerank/floor, for
+the distinct chapters in the reranked top-K, fetch the top-by-vector entry per (chapter, author) on those
+surfaced passages and splice each missing author in behind its chapter's lead, then `selectDiverse(cap=2)`.
+Shared `routing.ts` helpers (`chapterKeysOf`, `diversityBackfillSql`, `insertBackfill`), wired into BOTH
+production `retrieveCommentary` and the eval `retrieveLegal` (parity); 15/15 orchestration tests + web
+typecheck green. Re-ran the WHOLE frozen v2 (hash `56c00104…` intact, read-only).
+
+**IT REGRESSED — do not ship.** Full frozen v2, backfill ON vs the pre-backfill baseline:
+
+| category | metric | baseline (cap=2) | BACKFILL ON | Δ |
+|---|---|---|---|---|
+| verse-ref | HIT@1 (HIT@2) | 100% (93) | 100% (**100**) | HIT@2 +7 |
+| pericope | HIT@1 (HIT@2) | 73% (—) | 73% (80) | = |
+| epistle | HIT@2 | 72% | **56%** | **−16** ❌ |
+| topical | HIT@2 | 65% | **50%** | **−15** ❌ |
+| proper-noun | HIT@1 (HIT@2) | 80% | 80% (90) | = |
+| controls | hijacks | 0 | **0** | = |
+| all | no-content | 0% | 0% | = |
+
+And the failure codes flipped from `<2-voices` to **`wrong-passage`** (epistle 11, topical 10) — the
+on-target passage is now dropped from the top-K entirely.
+
+**Root cause (confirmed visually via `--diagnose`) — a design flaw, not a code bug.** `selectDiverse` caps
+per **author**, not per **passage**. Backfill floods each surfaced chapter with all its distinct-author
+voices; since they are all *different* authors, none hits the per-author cap, so selection fills the entire
+top-6 from the single **#1-reranked chapter**. When that chapter is off-target (common on diffuse
+topical/epistle), the result is 0 on-target voices. Examples — every regressed query collapsed to one
+off-target chapter: union→`Eph2×6`, imputation→`Ps37×4 1John2×2`, sovereignty→`Rev2×6`, marriage→`Heb13×6`.
+The backfill traded away the **cross-passage coverage** that was carrying HIT@2 (a query could pass via 2
+*different* on-target chapters each with 1 voice; backfill collapses that to one chapter).
+
+**Correct diagnosis for the record:** the surfaced=1 lever is real but needs a **per-PASSAGE cap in
+selection**, not just per-author — cap voices/chapter in the top-K (preserve coverage) AND allow the 2nd
+voice. That is a *new* selection-semantics design (changes `selectDiverse`), so it needs approval and its
+own measurement; NOT a silent iteration against the frozen dev set (overfit trap).
+
+**Action:** stashed the whole slice (`git stash@{0}`, recoverable — the fetch helpers would be reused by a
+per-passage-cap variant); production is back at the safe pre-backfill **65/72**. `DIVERSITY_BACKFILL_DESIGN.md`
+marked MEASURED-REGRESSED. **STOP — reporting per the plan.**
+
+**Recommendation (matches the strategy "one slice, then stop grinding; de-risk faithfulness early"):** do
+NOT chase a per-passage-cap variant pre-beta. Keep 65/72 as the documented beta limitation and PIVOT to
+step 2 (prove the faithfulness gate — the highest-value unknown). The per-passage-cap correction is the
+right retrieval fix but belongs in the post-beta GA push. Owner's call.
+
 ## 2026-07-10 (≥2-AVAILABLE SPLIT — READ-ONLY DIAGNOSIS) — the gap is 100% retrieval, 0% content
 
 Ran the pre-registered "≥2-available denominator" diagnostic Thomas asked for before any Phase-A fix
