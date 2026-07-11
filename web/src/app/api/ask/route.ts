@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/session';
+import { checkAskRateLimit } from '@/lib/rate-limit';
+import { apiError } from '@/lib/api-error';
 import { teach } from '@/lib/teacher/teach';
 
 export const runtime = 'nodejs';
@@ -7,26 +9,36 @@ export const maxDuration = 300; // composition + retries can take a while
 
 // POST /api/ask { question } → the teacher pipeline (retrieve → compose → verify).
 // Authed-only: the endpoint spends on embeddings + LLM, so it is not public.
+// Errors use the stable envelope (docs/API_ERRORS.md) — a code, a safe message,
+// never a leaked internal.
 export async function POST(req: NextRequest) {
+  let user: { id: string; email: string };
   try {
-    await requireUser();
+    user = await requireUser();
   } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return apiError('UNAUTHENTICATED');
+  }
+
+  // Per-user rate limit BEFORE any spend (wallet-DoS guard). Fails open on its
+  // own DB error (see rate-limit.ts) so a limiter outage can't down the product.
+  const rl = await checkAskRateLimit(user.id);
+  if (!rl.ok) {
+    return apiError(rl.limited === 'day' ? 'RATE_LIMIT_DAY' : 'RATE_LIMIT_MINUTE', { retryAfterSec: rl.retryAfterSec });
   }
 
   let body: { question?: unknown };
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    return apiError('INVALID_REQUEST');
   }
 
   const question = typeof body.question === 'string' ? body.question.trim() : '';
   if (!question) {
-    return NextResponse.json({ error: 'question is required' }, { status: 400 });
+    return apiError('INVALID_REQUEST', { message: 'A question is required.' });
   }
   if (question.length > 500) {
-    return NextResponse.json({ error: 'question is too long (max 500 chars)' }, { status: 400 });
+    return apiError('INVALID_REQUEST', { message: 'That question is too long (max 500 characters).' });
   }
 
   try {
@@ -34,6 +46,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result);
   } catch (e) {
     console.error('teacher pipeline error:', (e as Error).message);
-    return NextResponse.json({ error: 'The teacher failed to answer. Please try again.' }, { status: 500 });
+    return apiError('INTERNAL');
   }
 }
