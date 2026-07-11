@@ -13,6 +13,8 @@ Ancient Paths is a **concordance, not a commentator.** It reports what others ha
 
 **Never ship, cache, or curate answers from a pipeline below the accuracy bar** — caching a wrong answer serves it instantly to everyone. Re-run the accuracy diagnostic on every retrieval change (corpus / hybrid / reranker) and record the number in `WORKLOG.md`.
 
+**For ANY retrieval-quality, eval, corpus, or ingestion slice, follow the `quality-slice` skill** ([`.claude/skills/quality-slice/SKILL.md`](.claude/skills/quality-slice/SKILL.md)) — the standing methodology: diagnose-before-fix, measure-before-build, failure-code the misses, held-out discipline (never tune to the test; ship on a fresh vN), pre-registered bars, no-overfit/circularity, verify-the-label-not-just-the-system, test-the-real-code-path. Ingestion automation follows [`docs/INGESTION_HARNESS_DESIGN.md`](docs/INGESTION_HARNESS_DESIGN.md) (per-work digest, auto-decide/escalate, publish = hard human gate). These are enforced, not optional.
+
 ## Working protocol (how you and the PM stay in sync)
 
 - **The repo is the shared channel. Do not leave status or recommendations only in chat.** After any unit of work, write what you did, what you found, and what you recommend next into `WORKLOG.md`; update `ROADMAP.md` status; log irreversible/architectural calls in `docs/DECISIONS.md`.
