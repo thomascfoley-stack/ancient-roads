@@ -10,6 +10,7 @@ import { parseRef } from '../bible/ref-parse';
 import { resolveIntent } from '../bible/pericopes';
 import { CANDIDATE_POOL, RERANK_MODEL, RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse, AUTHOR_CAP } from '../lib/teacher/routing';
 import { PILOT, FROZEN, type Q, type Cat } from './heldout-queries.mjs';
+import { FROZEN_V3 } from './heldout-v3-queries.mjs';
 
 const apiKey = process.env.DEEPINFRA_API_KEY!;
 const sql = neon((process.env.APP_DATABASE_URL ?? process.env.DATABASE_URL ?? '').replace(/^"|"$/g, ''));
@@ -208,13 +209,14 @@ async function availability() {
 }
 
 async function main() {
-  let set: Q[] = process.argv.includes('--frozen') ? FROZEN : PILOT;
+  const setName = process.argv.includes('--v3') ? 'FROZEN_V3' : process.argv.includes('--frozen') ? 'FROZEN' : 'PILOT';
+  let set: Q[] = setName === 'FROZEN_V3' ? FROZEN_V3 : setName === 'FROZEN' ? FROZEN : PILOT;
   if (CAT_FILTER) set = set.filter((q) => CAT_FILTER.includes(q.cat));
   const cats: Cat[] = ['verse-ref', 'pericope', 'epistle', 'topical', 'proper-noun', 'control'];
   const tally: Record<string, Tally> = Object.fromEntries(cats.map((c) => [c, blank()]));
   let hijacks = 0;
 
-  console.log(`Held-out eval — ${process.argv.includes('--frozen') ? 'FROZEN' : 'PILOT'} · ${set.length} q · K=${K} · corpus=${CORPUS} · pool=${POOL}${CAT_FILTER ? ` · cats=${CAT_FILTER.join(',')}` : ''}\n`);
+  console.log(`Held-out eval — ${setName} · ${set.length} q · K=${K} · corpus=${CORPUS} · pool=${POOL}${CAT_FILTER ? ` · cats=${CAT_FILTER.join(',')}` : ''}\n`);
   for (const q of set) {
     const t = tally[q.cat]!; t.n++;
     if (q.cat === 'control') {
