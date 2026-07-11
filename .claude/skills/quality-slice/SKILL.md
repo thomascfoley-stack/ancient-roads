@@ -71,6 +71,9 @@ check. Follow the loop; do not skip steps to save time — skipping is how the w
 
 ## Non-negotiables (Ancient Paths)
 
+- **Never substitute your own knowledge for a required authoritative source.** If a task needs authority-grounded input (proof-texts, licenses, editions, specs, prices) and the source is unreachable, **try alternate URLs/mirrors first — then PARK the task**, record the blocker, and move on. Do NOT proceed from memory and disclose it afterward. An unauthoritative input silently corrupts every number built on top of it, and "I flagged it" does not undo a frozen eval or a shipped decision. Momentum is never a reason to downgrade a load-bearing input.
+- **Committed ≠ live.** A fix is not real until it is deployed to the target environment *and verified there*. Never report a security fix, gate, or limit as "done" on the strength of a passing test — say explicitly whether it is deployed, and verify the behaviour in the environment it protects.
+
 - **Licensing is existential and fails closed.** Verify each work by **per-work text-match to a PD reference**
   (shingle containment), not by author name — an author with a PD edition can still have a *copyrighted*
   translation in your copy. Forbidden aggregators live **in the gate**, not in memory. **Quarantine, never
