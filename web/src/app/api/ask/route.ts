@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/session';
 import { checkAskRateLimit } from '@/lib/rate-limit';
 import { apiError } from '@/lib/api-error';
+import { logEvent } from '@/lib/observability';
 import { teach } from '@/lib/teacher/teach';
 
 export const runtime = 'nodejs';
@@ -41,11 +42,15 @@ export async function POST(req: NextRequest) {
     return apiError('INVALID_REQUEST', { message: 'That question is too long (max 500 characters).' });
   }
 
+  const startedAt = Date.now();
   try {
     const result = await teach(question);
+    // Surfaces the production fallback rate (composed vs fallback vs empty).
+    logEvent('ask_outcome', { kind: result.kind, ms: Date.now() - startedAt });
     return NextResponse.json(result);
   } catch (e) {
     console.error('teacher pipeline error:', (e as Error).message);
+    logEvent('error', { where: 'api/ask', message: (e as Error).message });
     return apiError('INTERNAL');
   }
 }

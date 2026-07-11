@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/session';
 import { checkAskRateLimit } from '@/lib/rate-limit';
 import { apiError } from '@/lib/api-error';
+import { logEvent } from '@/lib/observability';
 import { teach, type TeacherEvent } from '@/lib/teacher/teach';
 
 export const runtime = 'nodejs';
@@ -42,10 +43,14 @@ export async function POST(req: NextRequest) {
       const write = (e: TeacherEvent | { stage: 'error'; message: string }) => {
         controller.enqueue(encoder.encode(JSON.stringify(e) + '\n'));
       };
+      const startedAt = Date.now();
       try {
-        await teach(question, { onEvent: write });
+        const result = await teach(question, { onEvent: write });
+        // Surfaces the production fallback rate (composed vs fallback vs empty).
+        logEvent('ask_outcome', { kind: result.kind, ms: Date.now() - startedAt });
       } catch (e) {
         console.error('teacher stream error:', (e as Error).message);
+        logEvent('error', { where: 'api/ask/stream', message: (e as Error).message });
         write({ stage: 'error', message: 'The teacher failed to answer. Please try again.' });
       } finally {
         controller.close();

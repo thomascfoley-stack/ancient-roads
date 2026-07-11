@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { GATE_COOKIE, gateToken, gateDecision } from '@/lib/gate';
+import { logEvent } from '@/lib/observability';
 
 // Site-wide password gate for the pre-launch deployment (SEC-1 in
 // docs/SECURITY.md is open, so the public URL must not accept anonymous
@@ -33,6 +34,7 @@ export default async function middleware(req: NextRequest) {
       // deploy without SITE_PASSWORD is a misconfiguration that must scream at us
       // and reveal nothing to a visitor. Fail closed.
       console.error('[gate] SITE_PASSWORD is not set in production — failing CLOSED (503). Set SITE_PASSWORD to unlock the site.');
+      logEvent('gate_locked', { path: req.nextUrl.pathname, method: req.method });
       return new NextResponse('This site is temporarily unavailable.', { status: 503 });
     case 'redirect': {
       const { pathname, search } = req.nextUrl;

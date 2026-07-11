@@ -1,4 +1,5 @@
 import { getDb } from './db';
+import { logEvent } from './observability';
 
 // Per-user fixed-window rate limit for the paid teacher endpoints (wallet-DoS
 // guard). One atomic upsert per bucket against api_rate_limit (migration 008).
@@ -48,16 +49,17 @@ export async function checkAskRateLimit(userId: string, sql: Sql = getDb()): Pro
     ]);
 
     if (minCount > LIMIT_PER_MIN) {
-      console.warn(`[ratelimit] user=${userId} HIT per-min cap (${minCount}/${LIMIT_PER_MIN}) → 429`);
+      logEvent('rate_limit_hit', { userId, cap: 'min', count: minCount, limit: LIMIT_PER_MIN });
       return { ok: false, limited: 'min', retryAfterSec: 60 };
     }
     if (dayCount > LIMIT_PER_DAY) {
-      console.warn(`[ratelimit] user=${userId} HIT per-day cap (${dayCount}/${LIMIT_PER_DAY}) → 429`);
+      logEvent('rate_limit_hit', { userId, cap: 'day', count: dayCount, limit: LIMIT_PER_DAY });
       return { ok: false, limited: 'day', retryAfterSec: 3600 };
     }
     return { ok: true };
   } catch (e) {
-    console.error(`[ratelimit] FAIL-OPEN — limiter DB error, allowing request for user=${userId}: ${(e as Error).message}`);
+    // FAIL OPEN (allow) but log loudly — a limiter outage must not down the product.
+    logEvent('rate_limit_fail_open', { userId, error: (e as Error).message });
     return { ok: true };
   }
 }
