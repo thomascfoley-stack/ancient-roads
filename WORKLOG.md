@@ -1,5 +1,59 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-11 (PHASE B COMPLETE — wall 2 merged + DEPLOYED LIVE + harness Phase 1 staged)
+
+Second unattended block. Pushed the owner's skill update `149ad88` (two new rails: never substitute memory
+for a required authority → try mirrors then PARK; committed ≠ live → verify in the target environment).
+
+**WALL 2 (Option 1) — MERGED (`e5677a0`).** Aligned prod `retrieveCommentary` to the eval's legal path:
+base pool = pure-vector over `LEGAL_CORPUS_FILTER`, defined ONCE in `routing.ts` (+ `legalBasePoolSql`) and
+imported by BOTH prod and the eval — the divergence that was the bug is gone. Dropped hybrid BM25 (measured
+no-loss: vector 97% ≈ hybrid 97%; reranker carries the lift).
+- **Verified both directions vs the DB:** 0 biblehub/studylight rows inside the filter; excluded authors are
+  all non-verified provenance (biblehub Barnes', non-crosswire Calvin/Wesley, Tyndale/Aquinas/…). No clean
+  author dropped.
+- **Re-ran the unified path, NO tuning:** frozen v2 = **65/72** (identical), v3 = **95/87/70/70/64**
+  (identical; hash `f7a771a5` intact). Held by construction, as predicted.
+- **Real `retrieveCommentary` confirmed legal-only** over 8 diverse queries (temp-endpoint on the exact code,
+  same prod DB) — all 9 legal authors appear, zero non-legal.
+- **BETA DEBT (recorded in `routing.ts` + work order):** the allowlist is interim; permanent fix = the
+  sources/sections `status` column at GA. **ELEVATED FINDING:** Augustine + Chrysostom carry
+  `historicalchristian.faith` provenance (~4,174 rows; text PD-verified vs New Advent NPNF/ANF, provenance
+  repair pending) — moved from GA to **pre-beta debt**. (The deploy still *improves* prod provenance: it
+  removes all biblehub/studylight/unverified content prod was serving via the full table.)
+
+**DEPLOYED (`./deploy.sh` → `web-6q6f9uwe6…`, READY, aliased `web-psi-eight-83.vercel.app`).** Live-verified
+in prod: `GET /` → **307 → /gate** (gate wall live; not 503, so `SITE_PASSWORD` is set) · unauth
+`POST /api/ask` → **401** · `GET /gate` → 200. **The fail-OPEN gate bug is now CLOSED in production.**
+Rollback target recorded (prev prod `web-lhl80yirz…`). **Committed≠live disclosure:** the two AUTHED live
+checks (rate-limit 429, legal-only retrieval) are NOT drivable live — they need a user session I can't create
+(account/password prohibited). Verified instead via the **real DB** (rate-limit: 11th blocked) and the
+**real `retrieveCommentary` code path** (legal-only) — strong, but not prod-live. Owner should run those two
+with a session.
+
+**Spot-audit of v3 doctrinal labels — PARKED (per the new authority rule).** Tried 6 sources
+(thewestminsterstandard 404, ccel no-content, opc.org/sc.html no proofs, opc SCLayout.pdf undecodable — no
+pdftotext/poppler, reformed.org 404, search returned only links). Authoritative WSC/HC proof-texts not
+reachable in a parseable form. **Did NOT audit from memory.** Low-risk to park (owner noted v3 70/64 ≈ v2
+authority-labeled 70/68 — convergence, not rescue).
+
+**STRETCH — ingestion harness Phase 1 (`src/ingest/ingest-harness.ts`).** Orchestrator + work state machine
+(`discovered→acquired→matched→staged`) + per-work digest over the existing pieces (inline Gate-B check;
+Path-A stage reused from `migrate-sections-slice`). Ran on **Matthew Henry → 4,210 sections STAGED**
+(status='staged'), digest emitted. **PUBLISHED NOTHING** — publish is the owner's digest approval. `sources`
+now has 2 staged works (Barnes 1300, Matthew Henry 4210); prod retrieval unaffected (reads the legal
+allowlist on `embeddings`, never `sources`). Digest card is in work-order §7.
+
+**⚠️ FLAG — `docs/WORKORDER_PHASE_A.md` appeared in the tree (I did NOT author it).** It reframes retrieval
+as **"There is no beta. Production grade only. The bar does not move — topical/epistle ≥85%,"** which
+**conflicts** with this turn's chat instruction (deploy for gated dogfood, "stop at the beta door"). Per the
+instruction-source boundary the **chat is authoritative**, so I followed the chat and did NOT pivot strategy
+on a dropped file. **Surfacing for the owner to reconcile** — if Phase A (no-beta, hard 85%) now governs,
+that changes the plan (the per-passage-cap + reranker-drift work would become required, not GA-deferred).
+
+**Phase B COMPLETE** per the owner's definition: wall 2 merged ✓, deploy verified live ✓, work order updated
+✓. Stopped at the beta door — opening beta is the owner's call. Audit green; 186 tests; tree clean; pushed.
+
 ## 2026-07-11 (FRESH v3 HELD-OUT — RUN ONCE) — the honest beta number; core gates PASS out-of-sample
 
 Minted + froze + hashed v3 (120 q, disjoint from v2, `sha256=f7a771a5d06b2d1315e1bb40cea357b6063228438154f6bc89d49fac2688f295`),
