@@ -1,5 +1,55 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-11 (BETA WALL 2 — PARKED, genuine fork) — prod/eval retrieval already diverge; switch needs owner's mechanism call
+
+Investigated Wall 2 (migrate + publish legal corpus; switch prod retrieval to published-only). **Parking it
+per the "don't guess a genuine fork / don't leave prod broken" rail** — with the finding + recommendation
+below so the owner can unblock in one decision.
+
+**DB state (read-only, 2026-07-11):** `sources` = **1 row (Barnes, `status='staged'`)** — the legal set was
+never migrated; `sections`/`section_embeddings` = 1,300 (Barnes only). Legacy `embeddings` (commentary) =
+**190,635 rows** (grew +17k from the CrossWire ingest). **Production `retrieveCommentary` reads the whole
+`embeddings` table with NO legal filter** → it serves quarantined content today, as flagged.
+
+**The blocking finding — eval and prod retrieval ALREADY diverge, so "verify no regression vs 65/72" is not
+a clean pre-existing baseline:**
+- **Eval** (`retrieveLegal`, the 65/72 number): base pool = **pure-vector** `ORDER BY embedding<=>q` over the
+  `PUBLISHABLE` legal filter (9 authors), then shared rerank/inject/floor/selectDiverse.
+- **Prod** (`retrieveCommentary`): base pool = **`hybrid_search`** (BM25+vector fusion) over the **full**
+  corpus, no filter, then the same shared rerank/inject/floor/selectDiverse.
+- So 65/72 is the **pure-vector-legal** number; prod's hybrid-full number on the legal set is **unmeasured.**
+  "Switch prod + verify no regression vs 65/72" therefore implies *changing prod's base-pool method*, not
+  just adding a filter — a real retrieval-behavior change.
+
+**THE FORK — three mechanisms, materially different risk/quality (owner picks):**
+1. **Align prod base-pool to the eval (pure-vector-legal), single-sourced in `routing.ts`.** Prod == the
+   measured pipeline ⇒ 65/72 by construction; serves only legal; reversible. **Cost:** drops `hybrid_search`
+   (BM25) from prod — hybrid's real-user value is unmeasured, so this is "ship what we actually measured."
+   **My recommendation for beta** (lowest-risk way to get "legal-only + verified 65/72").
+2. **Author-allowlist post-filter on the existing hybrid path** (~2 lines, reversible). Guarantees prod never
+   returns non-legal content (correctness met) but yields an **unmeasured** number (hybrid-full→legal-filter
+   ≠ 65/72) and can shrink recall. Correctness-safe, but can't cleanly claim the 65/72 bar.
+3. **Full sources/sections retrieval cutover** (the `MIGRATION_DESIGN.md` end-state): re-point the legal set
+   into sections (Path A, additive/$0), mark published, and **rewrite the whole retrieval stack**
+   (`retrieveCommentary` + `routing.ts` hybrid/inject/floor/selectDiverse) onto `section_embeddings`/
+   `sections`/`section_anchors`, prove parity, cut over. **Biggest + riskiest**; the design itself gates it
+   behind "prove parity before cutover, don't drop legacy." Not safe to one-shot unattended.
+
+**Why parked, not guessed:** all three change production retrieval behavior; the eval/prod divergence means
+none is a drop-in "verify vs 65/72"; and a wrong cutover risks leaving prod broken — which the owner
+explicitly forbade. The `sources/sections` data migration is *coupled* to which mechanism wins (needed for
+#3, irrelevant to #1/#2 for beta), so migrating 83,993 rows now could be wasted or misleading (marking
+sources `published` while prod doesn't read them).
+
+**Recommendation:** pick **#1** for beta — I'll single-source `PUBLISHABLE` into `routing.ts`, switch
+prod's base pool to the shared pure-vector-legal path, verify frozen v2 = 65/72 through the shipped path,
+AND exercise the real `retrieveCommentary` (temp-endpoint, as in the faithfulness measurement) to confirm it
+returns only legal authors. Keep #3 (sections model) as the GA architecture. **Need:** owner's ✅ on #1 (or
+a different pick). ~1–2 hrs once chosen; fully reversible.
+
+**Interim exposure note:** prod is **gated** (SITE_PASSWORD, now fail-closed) so only invited testers can
+reach it; the quarantined content is not public. This fork blocks *opening beta*, not current owner dogfood.
+
 ## 2026-07-11 (BETA WALL 1 — SHIPPED + VERIFIED) — fail-closed gate + per-user rate-limit + API error contract
 
 Built per the approved `SITE_GATE_RATELIMIT_DESIGN.md` (all 5 confirmed conditions) + the `API_ERRORS.md`
