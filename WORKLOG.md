@@ -1,5 +1,41 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-11 (BETA WALL 1 — SHIPPED + VERIFIED) — fail-closed gate + per-user rate-limit + API error contract
+
+Built per the approved `SITE_GATE_RATELIMIT_DESIGN.md` (all 5 confirmed conditions) + the `API_ERRORS.md`
+contract. Commit `cbd09b1`. `/security` on the diff: **no HIGH/MEDIUM findings** (net security improvement).
+`npm run audit` green. 15 new unit tests.
+
+**Note — two files appeared in the tree that I did NOT author:** `docs/API_ERRORS.md` (approved error-contract
+spec, scoped to wall 1) and `docs/WORKORDER_PHASE_B.md` (the review-artifact template). Content is fully
+consistent with the owner's plan (references 65/72, ~14% fallback, n=35 bait, the 7 tasks). Treated as owner
+artifacts: implemented the error contract; will fill the workorder as the return briefing. **Flagging for
+owner confirmation.**
+
+**What shipped:**
+- **Fail-closed gate** (`middleware.ts` + pure `gateDecision` in `gate.ts`): prod + unset `SITE_PASSWORD` ⇒
+  **503** (vague to client "This site is temporarily unavailable", loud server log); dev unaffected; password
+  set ⇒ unchanged (cookie ✓ → allow, else redirect/401). `NODE_ENV==='production'` is the prod signal.
+- **Per-user rate limit** (`rate-limit.ts`, migration `008` `api_rate_limit`): Postgres fixed-window,
+  `ASK_LIMIT_PER_MIN=10` + `ASK_LIMIT_PER_DAY=100` (env-tunable), atomic upsert per bucket, on both `/api/ask`
+  and `/api/ask/stream`, after `requireUser()` before `teach()`. Logs every limit hit. **Fails OPEN + logs
+  loudly** on its own DB error (limiter outage must not down the product).
+- **API error contract** (`api-error.ts`): typed codes → status + `Retry-After` + safe message, never leaks
+  internals. Wired into both routes; gate 503 = `GATE_LOCKED`.
+
+**Verification — seeded the bad config (not just green checks):**
+- **Prod build (`next build` + `next start`) + `SITE_PASSWORD` unset ⇒ `GET /` = HTTP 503, `POST /api/ask`
+  = HTTP 503**, body "This site is temporarily unavailable", loud log fired. ✓
+- Dev + unset ⇒ serves normally (observed during the bait run + `gateDecision` unit test). ✓
+- **Rate limit against the REAL DB** (app_runtime path): calls 1–10 ok, **11th blocked (429, cap 10)**, a
+  **2nd user unaffected**, app_runtime grant confirmed, test rows cleaned up. ✓
+- **Limiter fail-open**: throwing `sql` ⇒ request allowed (unit test). ✓
+- `gateDecision` (5 branches), `checkAskRateLimit` (4), `apiError` (6) unit tests all green; migration `008`
+  applied to the DB.
+
+**Reversible:** gate is one middleware branch; rate-limit is `DROP TABLE api_rate_limit` + revert the route
+wiring. No verifier/compose path touched.
+
 ## 2026-07-10 (FAITHFULNESS GATE — MEASURED LIVE) — interpretation_bait 35/35 = 100%, gate CLEARS
 
 Ran the full `interpretation_bait` suite (35 cases: I1×6 I2×6 I3×6 I4×3 I5×6 I6×3 C1×3 G1×2) end-to-end
