@@ -3,6 +3,40 @@
 Audited from the actual repo on 2026-07-08 — code, tests, `/audit` output, `docs/`, and
 git history — not from memory or the earlier hit list.
 
+## Update 2026-07-11 (BETA PLAN — decisions locked; building the walls in order)
+
+**Where we are:** the faithfulness gate CLEARS (interpretation_bait 35/35 = 100% live through the real
+`teach()`; WORKLOG 2026-07-10). Retrieval is at the accepted beta limitation 65/72. Original "Phase A"
+(topical/epistle ≥85%) is **retired as a beta blocker → GA target.** Now building the three beta walls in
+sequence (design-doc → approval → build → report, each its own slice):
+1. **Fail-closed site gate + rate-limit `/api/ask`** — smallest, highest-safety; `middleware.ts:16` fails
+   **OPEN** today. ← NEXT.
+2. **Migrate + publish the legal corpus** (`docs/MIGRATION_DESIGN.md`) — hard correctness gate; prod serves
+   quarantined content today (legal filter is eval-only). Biggest slice.
+3. **Observability** — error tracking / query logging / alerting, landing right before we open.
+
+Then mint a **fresh v3** held-out, run it ONCE, report the honest topical/epistle number, and open a gated
+beta to invited testers.
+
+### Documented BETA LIMITATIONS (accepted by owner 2026-07-11 — conscious beta/GA split, not passed bars)
+1. **Retrieval topical/epistle HIT@2 = 65% / 72%** (verse-ref 100%, pericope/proper-noun/controls/no-content
+   all pass). 85% is a **GA target**; the per-passage-cap correction is stashed for post-beta GA (WORKLOG
+   2026-07-10 backfill entry).
+2. **Fallback rate ~14%** (≈1 in 7 queries shows retrieved sources, not a composed answer). Stochastic
+   (compose temp 0.3); fail-closed-safe. A compose-**reliability** cost, not a faithfulness gap. GA: reduce
+   the dominant `schema` (invalid-block) failure mode to lift the composed rate.
+3. **Faithfulness proven on n=35 seed bait** — a strong **de-risk, NOT a statistical guarantee** on arbitrary
+   traffic, and **bound to the extractive composer** (one neutral framing line is the whole app-voice
+   surface). GA: grow the bait suite from real queries + every verifier rejection, and add **production
+   faithfulness monitoring**.
+
+### V2 classifier verifier — HARD RE-GATE TRIGGER (owner-locked 2026-07-11)
+V2 is post-beta defense-in-depth **only while the composer stays extractive.** V2 **returns as a REQUIRED
+pre-ship gate** the moment the app-voice generative surface expands — specifically: re-enabling
+`voice.summary`, richer/longer summaries, or the **debate-topics / attributed-stance** feature. Today's 100%
+is bound to the extractive composer and **does not transfer** to a product with more app-voice prose; any
+such change must re-run interpretation_bait AND stand up V2 before shipping.
+
 ## Update 2026-07-09 (next phase — Steps 1–2: backup + the two upfront gates)
 
 Executing `docs/NEXT_PHASE.md`. Steps 1 and 2 done; **stopped at the Step 3 boundary** (the `sources`/`sections` ingestion migration — unresolved cross-session owner, needs an approved design doc first, per the design-before-code rail).
@@ -145,7 +179,7 @@ that is **Partial** or **Missing**. Status values: Done / Partial / Missing / Bl
 | **Auth (login / account)** | Partial | `app/auth/[path]/page.tsx`, `account/[path]/page.tsx` (`@neondatabase/auth/react`); `lib/auth/{client,server}.ts`, `lib/session.ts`, `middleware.ts` (matcher empty), `api/auth/[...path]/route.ts`. **Standalone logout wired:** `api/auth/sign-out/route.ts` clears all `__Secure-neon-auth.*` cookies directly (no `<AccountView>` dependency). Sidebar shows "Sign out" when session active, "Sign in" when not. **Account management UI (teams/api-keys/orgs/security) is broken-until-Fix-C (SEC-1).** | Login + logout + account + no critical/high CVEs + JWT→RLS wired | `@neondatabase/auth` pins better-auth 1.4.18 → 2 critical + 7 high CVEs; account management UI broken (beta library); standalone logout bypasses it | **[SEC-1](docs/SECURITY.md)**; move to Better Auth-direct ([AUTH_MIGRATION_SPIKE.md](docs/AUTH_MIGRATION_SPIKE.md)) | Auth·Security · P0 |
 | **Retrieval (hybrid BM25 + vector + reranker)** | Partial (in progress) | `src/retrieval/*`; `web/src/lib/teacher/{retrieve,rerank}.ts` (hybrid+rerank pipeline); `db/migrations/004_hybrid_search_v2.sql` (plainto_tsquery, applied); `src/ingest/embed-full-corpus.ts`. **Full-corpus embedding running** (~342k entries, 0 errors at 1000-char truncation). Hybrid search + BGE-reranker-v2-m3 code ready. Diagnostic harness: `web/src/scripts/diagnose-pipeline.mts` | Full corpus embedded + hybrid+reranker wired + **10/10 true success rate** + integration test passing | Embedding job ~3% complete (~2.5h remaining); diagnostic re-runs pending after each step; integration test still skipped; HNSW untuned | DeepInfra key (set); Neon pgvector index (HNSW) | Intelligence · **P0 (TOP PRIORITY)** |
 | **AI generation / "the teacher"** | Partial (done-on-John) | `src/teacher/{teacher,prompt,llm,run,types}.ts` (CLI) + `web/src/lib/teacher/*` + `web/src/app/api/ask` + `/ask` UI; `test/teacher.test.ts` (6: composed/retry/fallback/non-JSON/empty/extractive) pass, in `/audit`. Compose (Qwen3.5-35B/DeepInfra) → V1 → retry → fallback; verified live on John + partial Gospels; composer extractive (`voice.summary` optional) | Prompt → Qwen3.5 → contract JSON → verifier → render, `interpretation_bait` ≥99% | `interpretation_bait` not yet executed ≥99%; only John(+partial Gospels) embedded; V2 fidelity gate pending; web path outside `/audit` | Retrieval + contract (present); DeepInfra key (set) | Intelligence · P0 |
-| **V2 classifier verifier** | Missing — **reclassify → post-beta hardening (pending owner)** | No `src/verifier/v2*.ts`; OUTPUT_CONTRACT.md §3 "Stage V2 … fine-tuned later, prompted at first". **2026-07-10: V1 screens + extractive composer HELD on interpretation_bait (35/35, 0 leaks), so V2 moves from hard gate → defense-in-depth** (re-gate if `voice.summary` is ever re-enabled — that reopens the interpretation surface) | Classifier pass (I1/I2 unattributed, **I4/I6 summary-faithfulness**, I3/I5 prescription) built + evaluated | Entire stage — summary-faithfulness is the priority sub-piece | AI-generation stack (present); logged data for later fine-tune | Intelligence · **P0 (was P1)** |
+| **V2 classifier verifier** | Missing — **post-beta defense-in-depth (owner-locked 2026-07-11); HARD RE-GATE on app-voice expansion** | No `src/verifier/v2*.ts`; OUTPUT_CONTRACT.md §3 "Stage V2 … fine-tuned later, prompted at first". **2026-07-10: V1 screens + extractive composer HELD on interpretation_bait (35/35, 0 leaks) → V2 = defense-in-depth for beta.** REQUIRED again the moment the app-voice surface grows — re-enabling `voice.summary`, richer summaries, or debate-topics/attributed-stance (see top-of-file trigger) | Classifier pass (I1/I2 unattributed, **I4/I6 summary-faithfulness**, I3/I5 prescription) built + evaluated | Entire stage — summary-faithfulness is the priority sub-piece | AI-generation stack (present); logged data for later fine-tune | Intelligence · **P0 (was P1)** |
 | **Eval harness + interpretation-bait suite** | Partial | `src/evals/{run,checks,types}.ts`; `test/evals.test.ts` (5) pass; `evals/cases/{interpretation_bait(35),format,diversity,refusal_shape}.yaml`. **interpretation_bait EXECUTED live through the real `teach()` 2026-07-10 → 35/35 = 100%, 0 breaches reached the user** (WORKLOG; the fail-closed verifier was observed catching prescription + fabrication wobbles) | Harness (Done-level) **and** suites executed vs a teacher, bait ≥99% | ✅ bait ≥99% MET on the seed set (n=35, one run + spot re-runs). Remaining: CI-wire it via a permanent **authed** harness (the 2026-07-10 run used a throwaway local endpoint) + grow the set from real queries | AI generation (present) | Intelligence · P0 |
 | **Chat / Channels / Study-partner** | Missing | Backend scaffold exists (`lib/chat.ts` RLS-refactored; `api/{channels,chats,messages}`), but `app/chat/[id]` + `channel/[id]` are `ComingSoon` stubs "arrive with the trained model" | Full feature: UI + AI teacher + RLS + bait evals | No UI, no AI, no tests | AI generation; SEC-2 (RLS) | Intelligence·User · P2 |
 | **Uploads / My books (files, favorites)** | Missing | `app/library/{uploads,books}/page.tsx` = `ComingSoon` stubs; `user_library` designed in USER_DATA.md; Vercel Blob not wired | Upload → Blob + `user_library` row + RLS + UI | Entire feature | Vercel Blob; SEC-2 | User data · P2 |
