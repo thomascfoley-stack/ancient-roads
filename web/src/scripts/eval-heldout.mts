@@ -8,7 +8,7 @@
 import { neon } from '@neondatabase/serverless';
 import { parseRef } from '../bible/ref-parse';
 import { resolveIntent } from '../bible/pericopes';
-import { CANDIDATE_POOL, RERANK_MODEL, RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse, AUTHOR_CAP } from '../lib/teacher/routing';
+import { CANDIDATE_POOL, RERANK_MODEL, RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse, AUTHOR_CAP, legalBasePoolSql, LEGAL_CORPUS_FILTER } from '../lib/teacher/routing';
 import { PILOT, FROZEN, type Q, type Cat } from './heldout-queries.mjs';
 import { FROZEN_V3 } from './heldout-v3-queries.mjs';
 
@@ -17,17 +17,13 @@ const sql = neon((process.env.APP_DATABASE_URL ?? process.env.DATABASE_URL ?? ''
 const K = 6; // = production retrieveCommentary default `limit`
 const argVal = (flag: string) => { const i = process.argv.indexOf(flag); return i >= 0 ? process.argv[i + 1] : undefined; };
 // Measurement knobs (read-only; do NOT ship). --pool N overrides CANDIDATE_POOL;
-// --corpus pre drops the CrossWire authors (= pre-ingest legal corpus, for the
-// variance/A-B band); --cats a,b filters categories to speed variance runs.
+// --cats a,b filters categories to speed variance runs.
 const POOL = Number(argVal('--pool') ?? CANDIDATE_POOL);
-const CORPUS = argVal('--corpus') ?? 'post';
 const CAT_FILTER = argVal('--cats')?.split(',');
 const CAP = Number(argVal('--cap') ?? AUTHOR_CAP); // per-author cap sweep knob
-const PUB_BASE = `metadata->>'author' IN ('John Gill','Jamieson, Fausset & Brown','Adam Clarke','Matthew Henry')
-  OR (metadata->>'author'='John Chrysostom'   AND (metadata->>'verseId')::int/1000000 IN (40,43,44))
-  OR (metadata->>'author'='Augustine of Hippo' AND (metadata->>'verseId')::int/1000000 IN (19,43))`;
-const PUB_NEW = `OR (metadata->>'author' IN ('Albert Barnes','John Wesley','John Calvin') AND metadata->>'sourceUrl' ILIKE '%crosswire%')`;
-const PUBLISHABLE = `(${PUB_BASE} ${CORPUS === 'pre' ? '' : PUB_NEW})`;
+// The legal corpus filter is SINGLE-SOURCED from routing.ts (beta wall 2) so this eval
+// and production retrieveCommentary can never diverge on what "the legal corpus" is.
+const PUBLISHABLE = LEGAL_CORPUS_FILTER;
 
 type Row = { source_id: string; content: string; metadata: unknown };
 const meta = (m: unknown) => (typeof m === 'string' ? JSON.parse(m) : m) as { verseId: number; author: string };
@@ -69,9 +65,8 @@ async function rerankAll(q: string, rows: Row[]): Promise<Row[]> {
 // Legal-corpus retrieval through the SHARED shipped orchestration (inject → merge →
 // rerank → floor), returning the top-K voices' verseId + author.
 async function retrieveLegal(query: string, vec: string): Promise<Array<{ verseId: number; author: string }>> {
-  let rows = (await sql.query(
-    `SELECT source_id, content, metadata FROM embeddings WHERE user_id IS NULL AND source_type='commentary' AND ${PUBLISHABLE} ORDER BY embedding <=> $1::vector LIMIT ${POOL}`, [vec],
-  )) as Row[];
+  // Base pool via the SHARED builder — byte-identical to production retrieveCommentary.
+  let rows = (await sql.query(legalBasePoolSql(POOL), [vec])) as Row[];
   const intent = resolveIntent(query);
   if (intent.inject.length) {
     const inj = (await sql.query(injectionSql(intent.inject, PUBLISHABLE), [vec])) as Row[];
@@ -216,7 +211,7 @@ async function main() {
   const tally: Record<string, Tally> = Object.fromEntries(cats.map((c) => [c, blank()]));
   let hijacks = 0;
 
-  console.log(`Held-out eval — ${setName} · ${set.length} q · K=${K} · corpus=${CORPUS} · pool=${POOL}${CAT_FILTER ? ` · cats=${CAT_FILTER.join(',')}` : ''}\n`);
+  console.log(`Held-out eval — ${setName} · ${set.length} q · K=${K} · corpus=legal(shared) · pool=${POOL}${CAT_FILTER ? ` · cats=${CAT_FILTER.join(',')}` : ''}\n`);
   for (const q of set) {
     const t = tally[q.cat]!; t.n++;
     if (q.cat === 'control') {
@@ -248,7 +243,7 @@ async function main() {
     console.log(`  ${c.padEnd(13)} ${String(t.n).padStart(2)}   ${pct(t.hit1, t.n)}  ${pct(t.hit2, t.n)}    ${k.pass} / ${k['<2-voices']} / ${k['wrong-passage']} / ${k['no-content']}`);
   }
   const g = (c: Cat, m: 'hit1' | 'hit2') => { const t = tally[c]!; return t.n ? Math.round((100 * t[m]) / t.n) : 0; };
-  console.log(`TAG corpus=${CORPUS} pool=${POOL} cap=${CAP} :: topicalH2=${g('topical', 'hit2')} pericopeH1=${g('pericope', 'hit1')} epistleH2=${g('epistle', 'hit2')} verserefH1=${g('verse-ref', 'hit1')}`);
+  console.log(`TAG corpus=legal(shared) pool=${POOL} cap=${CAP} :: topicalH2=${g('topical', 'hit2')} pericopeH1=${g('pericope', 'hit1')} epistleH2=${g('epistle', 'hit2')} verserefH1=${g('verse-ref', 'hit1')}`);
 }
 
 import { fileURLToPath } from 'node:url';

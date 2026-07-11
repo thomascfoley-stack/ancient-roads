@@ -17,6 +17,32 @@ const INJECT_CAP = 8; // max on-range candidates injected into the pool (baked i
 export const RERANK_MODEL = 'Qwen/Qwen3-Reranker-0.6B';
 export const RERANK_DOC_CHARS = 1200; // per-doc truncation fed to the reranker
 
+// ⚠️ BETA DEBT (beta wall 2, 2026-07-11) — the license-verified corpus as a HARD-CODED
+// author allowlist, the SINGLE source shared by production retrieveCommentary AND the
+// held-out eval so the two can never diverge again (that divergence was the bug: the
+// eval measured pure-vector-on-this-filter = 65/72, while prod ran hybrid over the WHOLE
+// table incl. quarantined content). The permanent fix is the sources/sections `status`
+// column at GA (docs/MIGRATION_DESIGN.md); until then this constant IS "published".
+// Verified against the DB 2026-07-11: 0 biblehub/studylight rows inside it; excluded
+// authors are all non-verified provenance. KNOWN residual: Augustine + Chrysostom rows
+// carry historicalchristian.faith provenance (text PD-verified vs New Advent NPNF/ANF,
+// provenance repair to New Advent pending) — flagged as pre-beta debt in the work order.
+export const LEGAL_CORPUS_FILTER = `(metadata->>'author' IN ('John Gill','Jamieson, Fausset & Brown','Adam Clarke','Matthew Henry')
+   OR (metadata->>'author'='John Chrysostom'    AND (metadata->>'verseId')::int/1000000 IN (40,43,44))
+   OR (metadata->>'author'='Augustine of Hippo' AND (metadata->>'verseId')::int/1000000 IN (19,43))
+   OR (metadata->>'author' IN ('Albert Barnes','John Wesley','John Calvin') AND metadata->>'sourceUrl' ILIKE '%crosswire%'))`;
+
+// The base candidate pool: top-`pool` PURE-VECTOR matches over the legal corpus. BM25/
+// hybrid is dropped deliberately — measured no-loss (vector 97% ≈ hybrid 97%; the
+// reranker carries the lift to 100%). $1 = query vector. Shared by prod + eval so the
+// measured number is exactly what production serves.
+export function legalBasePoolSql(pool: number = CANDIDATE_POOL): string {
+  return `SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
+     FROM embeddings
+     WHERE user_id IS NULL AND source_type = 'commentary' AND ${LEGAL_CORPUS_FILTER}
+     ORDER BY embedding <=> $1::vector LIMIT ${pool}`;
+}
+
 // On-range injection: the top INJECT_CAP vector matches WITHIN the named passage's
 // verse range(s). A MATERIALIZED CTE range-scan (served by the 007 partial verseId
 // index) — NOT an HNSW post-filter, which returns empty on a selective filter.

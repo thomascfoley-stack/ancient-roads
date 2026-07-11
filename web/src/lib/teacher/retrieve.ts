@@ -2,7 +2,7 @@ import { getDb } from '../db';
 import { rerank } from './rerank';
 import { resolveIntent } from '../../bible/pericopes';
 import type { VerseRange } from '../../bible/ref-parse';
-import { CANDIDATE_POOL, RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse } from './routing';
+import { RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse, legalBasePoolSql, LEGAL_CORPUS_FILTER } from './routing';
 
 // A retrieved commentary chunk, fully hydrated (attribution + content on the row).
 export interface RetrievedChunk {
@@ -21,26 +21,24 @@ export interface RetrievedChunk {
   };
 }
 
-// Hybrid BM25+vector retrieval with cross-encoder reranking.
+// Legal-corpus vector retrieval with cross-encoder reranking.
 //
-// 1. hybrid_search (DB function) fuses BM25 keyword matches with vector cosine
-//    similarity over a wide candidate pool (CANDIDATE_POOL results).
-// 2. BGE-reranker-v2-m3 cross-encoder rescores the candidates against the raw
-//    query, picking the topically best `limit` results.
-//
-// The reranker is the direct fix for the "semantically similar but topically
-// wrong" precision bug: it understands that "good shepherd" means John 10, not
-// any mention of shepherds. The routing orchestration (inject cap, injection SQL,
-// pool merge, on-passage floor) lives in ./routing — the SINGLE source shared with
-// the accuracy eval so the measured number can't drift from this shipped path.
+// 1. legalBasePoolSql (./routing) = the top-CANDIDATE_POOL pure-vector matches over
+//    the LEGAL_CORPUS_FILTER (the license-verified author allowlist). BM25/hybrid was
+//    dropped deliberately — measured no-loss (vector 97% ≈ hybrid 97%); the reranker
+//    carries the lift. The filter is what makes prod serve ONLY license-verified
+//    content (beta wall 2); it is the SINGLE source shared with the eval so the
+//    measured number is exactly what production serves — they can never diverge again.
+// 2. BGE-reranker cross-encoder rescores the candidates, picking the topically best
+//    `limit`. The routing orchestration (inject, floor, diversity) lives in ./routing.
 
-// The top on-range vector matches, hydrated to RetrievedChunk (SQL from ./routing).
+// The top on-range vector matches WITHIN the legal corpus, hydrated (SQL from ./routing).
 async function fetchOnRange(
   sql: ReturnType<typeof getDb>,
   vecStr: string,
   ranges: readonly VerseRange[],
 ): Promise<RetrievedChunk[]> {
-  const rows = (await sql.query(injectionSql(ranges), [vecStr])) as Array<{
+  const rows = (await sql.query(injectionSql(ranges, LEGAL_CORPUS_FILTER), [vecStr])) as Array<{
     source_id: string; score: number; content: string; metadata: unknown;
   }>;
   return rows.map((r) => ({
@@ -60,42 +58,16 @@ export async function retrieveCommentary(
   const vecStr = `[${queryVec.join(',')}]`;
   const queryText = opts?.query ?? '';
 
-  let candidates: RetrievedChunk[];
-
-  if (queryText) {
-    // Hybrid: BM25 (plainto_tsquery OR semantics) + vector cosine fusion
-    const rows = (await sql.query(
-      `SELECT * FROM hybrid_search($1, $2::vector, $3, 0.4, 0.6, NULL)`,
-      [queryText, vecStr, CANDIDATE_POOL],
-    )) as Array<{
-      source_id: string; content: string; metadata: unknown;
-      bm25_score: number; vector_score: number; combined_score: number;
-    }>;
-
-    candidates = rows.map((r) => ({
-      sourceId: r.source_id,
-      score: Number(r.combined_score),
-      content: r.content,
-      metadata: (typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata) as RetrievedChunk['metadata'],
-    }));
-  } else {
-    // Fallback: pure vector (no query text available)
-    const rows = (await sql.query(
-      `SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
-       FROM embeddings
-       WHERE user_id IS NULL AND source_type = 'commentary'
-       ORDER BY embedding <=> $1::vector
-       LIMIT $2`,
-      [vecStr, CANDIDATE_POOL],
-    )) as Array<{ source_id: string; score: number; content: string; metadata: RetrievedChunk['metadata'] }>;
-
-    candidates = rows.map((r) => ({
-      sourceId: r.source_id,
-      score: Number(r.score),
-      content: r.content,
-      metadata: typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata,
-    }));
-  }
+  // Base pool: pure-vector over the legal corpus (shared with the eval — routing.ts).
+  const rows = (await sql.query(legalBasePoolSql(), [vecStr])) as Array<{
+    source_id: string; score: number; content: string; metadata: unknown;
+  }>;
+  let candidates: RetrievedChunk[] = rows.map((r) => ({
+    sourceId: r.source_id,
+    score: Number(r.score),
+    content: r.content,
+    metadata: (typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata) as RetrievedChunk['metadata'],
+  }));
 
   // Reference/pericope routing. `intent.inject` = every named range (soft-boost
   // the pool, false-positive-safe); `intent.floor` = the high-confidence subset
@@ -122,7 +94,7 @@ export async function retrieveCommentary(
     const onRef = (c: RetrievedChunk) => intent.floor.some((r) => c.metadata.verseId >= r.start && c.metadata.verseId <= r.end);
     return selectDiverse(ordered, limit, (c) => c.metadata.author, onRef);
   } catch {
-    // Reranker failure: fall back to the hybrid/vector ordering
+    // Reranker failure: fall back to the legal-corpus vector ordering
     return candidates.slice(0, limit);
   }
 }
