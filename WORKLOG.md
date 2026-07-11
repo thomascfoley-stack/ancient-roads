@@ -1,5 +1,55 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-10 (≥2-AVAILABLE SPLIT — READ-ONLY DIAGNOSIS) — the gap is 100% retrieval, 0% content
+
+Ran the pre-registered "≥2-available denominator" diagnostic Thomas asked for before any Phase-A fix
+(`eval-heldout.mts --frozen --availability`, new read-only mode; frozen hash `56c00104…` intact — no
+query/label/routing edits). It reuses the SHARED shipped `retrieveLegal` path + the exact `PUBLISHABLE`
+filter, so the pass/fail can't drift from production. For every epistle+topical label it counts the
+**distinct PD authors that actually exist in the legal corpus on that label** and splits the misses.
+
+**Reproduced the known frozen-v2 numbers exactly** (topical 13/20 = 65%, epistle 18/25 = 72%) — the run
+cross-validates the harness.
+
+**THE RESULT KILLS THE PREMISE: there is no content limit.** Every one of the 45 labels has ≥2 authors
+available — in fact **min union availability = 4, min single-passage max = 3** (many labels carry all 7–9
+authors on a single chapter). So the ≥2-available denominator **equals** the raw denominator, and the
+adjusted HIT@2 is **identical** to the raw: topical 65%, epistle 72%. All 14 misses are RETRIEVAL-LIMITED.
+
+| bucket | topical | epistle | both |
+|---|---|---|---|
+| passes | 13 | 18 | 31 |
+| **retrieval-limited** (≥2 avail, surfaced <2 — FIXABLE by retrieval) | 7 | 7 | **14** |
+| content-limited (1 author) | **0** | **0** | **0** |
+| no-content (0 authors) | **0** | **0** | **0** |
+| HIT@2 raw denom | 65% | 72% | 69% |
+| **HIT@2 ≥2-available denom** | **65%** | **72%** | **69%** |
+
+**This reverses the pre-ingest diagnosis in the record.** The 2026-07-10 CORRECTED RE-RUN called the modal
+failure "author-diversity thinness … right passage, one author" (union → Rom 6 + 1 Cor 6 *both Gill*; pride
+→ *all Matthew Henry*). That was true **before** the Barnes/Wesley/Calvin ingest — the ingest fixed content
+availability. Post-ingest those exact labels now carry 7–9 authors (pride f-tp-11 = 7 avail; union f-ep-03 =
+9 avail). The voices exist; the reranker/selector isn't surfacing them. **Ingesting more commentators has
+zero ROI for this gap, and refining the metric for content-scarcity is unwarranted** — both forks the split
+was meant to rule in/out are ruled OUT by data. The lever is retrieval.
+
+**Actionable sub-split of the 14 retrieval-limited misses (by # on-target voices surfaced into top-6):**
+- **surfaced=0 — reranker semantic-drift (7): the on-doctrine passage never reaches top-6.** f-tp-04 pray,
+  f-tp-08 faithfulness, f-tp-11 pride, f-ep-01 effectual-calling, f-ep-08 perseverance, f-ep-22 put-off/put-on,
+  f-ep-25 glorification. Abstract doctrine terms drift to semantically-near but off-label passages. → the
+  pending **reranker-drift slice** (independent doctrine→passage source, NEVER the catechism labels — circular).
+- **surfaced=1 — 2nd voice crowded out (7): right passage IS in top-6 but only 1 author on it.** f-tp-01
+  sovereignty, f-tp-03 repentance, f-tp-05 forgiveness, f-tp-17 angels, f-ep-03 union, f-ep-17 resurrection-of-
+  body, f-ep-19 indwelling-Spirit. The 2nd distinct author exists in the corpus but isn't in top-6 — the
+  AUTHOR_CAP=2 selector can only promote what's in the reranked pool, so the 2nd voice is being dropped
+  *before* selection (likely below the CANDIDATE_POOL=20 vector cutoff on diffuse queries). → a
+  diversity/pool-composition question, distinct from the drift cases.
+
+**STOP — awaiting Thomas's fork call.** Per the ACTIVE JOB this split decides the path. My read: skip ingest
++ skip metric-refinement; the whole residual is retrieval, cleanly halved into (a) reranker drift and (b)
+2nd-voice-not-in-pool. Both are retrieval slices with independent, non-circular fixes. No fix or bar change
+made. New `--availability` mode is read-only tooling; frozen set + routing untouched.
+
 ## 2026-07-10 (DIVERSITY CAP BUILT) — per-author cap recovers topical, preserves epistle +12
 
 Built the diversity-aware selector (`selectDiverse` in the shared `routing.ts`; `DIVERSITY_SELECTION_DESIGN.md` approved): a per-author cap on the final top-K, on-reference (floored) voices exempt (floor-first-then-cap), pure post-rerank reordering (~0 request-path cost). Wired into production `retrieveCommentary` + the eval (parity); `test/routing-orchestration.test.ts` pins it (8/8).

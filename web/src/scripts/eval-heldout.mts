@@ -133,6 +133,80 @@ async function diagnose() {
   }
 }
 
+// ≥2-AVAILABLE DENOMINATOR (READ-ONLY). The HIT@2 guarantee is "≥2 distinct voices",
+// but a passage can only yield that if the LEGAL corpus actually holds ≥2 distinct PD
+// authors on it — you cannot retrieve a 2nd voice that does not exist. This splits the
+// epistle+topical failures into (a) RETRIEVAL-LIMITED — ≥2 authors are available on the
+// label but the pipeline surfaced <2 (a real retrieval bug, fixable) vs (b) CONTENT-
+// LIMITED — the label has <2 distinct PD authors at all (an ingest/metric limit, not a
+// retrieval miss). Reports HIT@2 recomputed over the ≥2-available denominator.
+//   cd web && npx tsx --env-file=.env.local src/scripts/eval-heldout.mts --frozen --availability
+async function availByAuthor(rs: ExpRange[]): Promise<Array<{ author: string; n: number }>> {
+  if (!rs.length) return [];
+  const conds = rs.map((r) => `((metadata->>'verseId')::int BETWEEN ${r.book * 1e6 + r.chLo * 1000 + 1} AND ${r.book * 1e6 + r.chHi * 1000 + 999})`).join(' OR ');
+  return (await sql.query(`SELECT metadata->>'author' AS author, COUNT(*)::int AS n FROM embeddings
+     WHERE user_id IS NULL AND source_type='commentary' AND ${PUBLISHABLE} AND (${conds}) GROUP BY 1 ORDER BY 2 DESC`)) as Array<{ author: string; n: number }>;
+}
+// Max distinct authors on ANY SINGLE labeled passage (secondary lens: union ≥2 can be two
+// authors on two different passages; per-passage tells whether one passage alone is thin).
+async function maxAuthorsOnOnePassage(rs: ExpRange[]): Promise<number> {
+  let mx = 0;
+  for (const r of rs) {
+    const cond = `((metadata->>'verseId')::int BETWEEN ${r.book * 1e6 + r.chLo * 1000 + 1} AND ${r.book * 1e6 + r.chHi * 1000 + 999})`;
+    const res = (await sql.query(`SELECT COUNT(DISTINCT metadata->>'author')::int AS n FROM embeddings
+       WHERE user_id IS NULL AND source_type='commentary' AND ${PUBLISHABLE} AND ${cond}`)) as Array<{ n: number }>;
+    mx = Math.max(mx, res[0]!.n);
+  }
+  return mx;
+}
+async function availability() {
+  type Klass = 'pass' | 'retrieval-limited' | 'content-1author' | 'content-0author';
+  interface Rec { id: string; cat: Cat; query: string; expStr: string; availN: number; perPassageMax: number; surfaced: number; hit2: boolean; klass: Klass; authors: string[] }
+  const recs: Rec[] = [];
+  for (const q of FROZEN.filter((x) => x.cat === 'epistle' || x.cat === 'topical')) {
+    const exp = toRanges(q.expected);
+    const results = await retrieveLegal(q.query, await embed(q.query));
+    const onT = results.filter((r) => onTarget(r.verseId, exp));
+    const surfaced = new Set(onT.map((r) => r.author)).size;
+    const hit2 = surfaced >= 2;
+    const avail = await availByAuthor(exp);
+    const availN = avail.length;
+    const perPassageMax = await maxAuthorsOnOnePassage(exp);
+    const achievable = availN >= 2;
+    const klass: Klass = hit2 ? 'pass' : achievable ? 'retrieval-limited' : availN === 1 ? 'content-1author' : 'content-0author';
+    const expStr = exp.map((r) => `${BOOKS[r.book - 1]}${r.chLo === r.chHi ? r.chLo : `${r.chLo}-${r.chHi}`}`).join(',');
+    recs.push({ id: q.id, cat: q.cat, query: q.query, expStr, availN, perPassageMax, surfaced, hit2, klass, authors: avail.map((a) => `${shortAuthor(a.author)}:${a.n}`) });
+  }
+
+  const mark = { pass: '✓', 'retrieval-limited': '✗R', 'content-1author': '·C1', 'content-0author': '·C0' } as const;
+  for (const cat of ['topical', 'epistle'] as const) {
+    console.log(`\n=== ${cat.toUpperCase()} — per-query (availN = distinct PD authors on the label in the legal corpus) ===`);
+    console.log(`  id        avail(union/1-pass)  surfaced  HIT@2  class   label / available-authors`);
+    for (const r of recs.filter((x) => x.cat === cat)) {
+      console.log(`  ${r.id.padEnd(8)} ${String(r.availN).padStart(2)}/${r.perPassageMax}                ${r.surfaced}       ${r.hit2 ? 'Y' : 'n'}     ${mark[r.klass].padEnd(4)} {${r.expStr}}  [${r.authors.join(' ')}]`);
+    }
+  }
+
+  console.log(`\n=== SPLIT (topical + epistle combined, n=${recs.length}) ===`);
+  for (const cat of ['topical', 'epistle', 'both'] as const) {
+    const rs = cat === 'both' ? recs : recs.filter((x) => x.cat === cat);
+    const pass = rs.filter((r) => r.klass === 'pass').length;
+    const retr = rs.filter((r) => r.klass === 'retrieval-limited').length;
+    const c1 = rs.filter((r) => r.klass === 'content-1author').length;
+    const c0 = rs.filter((r) => r.klass === 'content-0author').length;
+    const achievable = rs.filter((r) => r.availN >= 2).length;
+    const rawH2 = Math.round((100 * pass) / rs.length);
+    const adjH2 = achievable ? Math.round((100 * pass) / achievable) : 0;
+    console.log(`\n  ${cat.toUpperCase()} (n=${rs.length})`);
+    console.log(`    passes:                 ${pass}`);
+    console.log(`    retrieval-limited miss: ${retr}   (≥2 authors available on label, pipeline surfaced <2 — FIXABLE by retrieval)`);
+    console.log(`    content-limited (1 au): ${c1}   (label has exactly 1 PD author — HIT@2 impossible without ingest)`);
+    console.log(`    content-limited (0 au): ${c0}   (label has 0 PD authors = no-content)`);
+    console.log(`    ── HIT@2 raw denom (all ${rs.length}):          ${pass}/${rs.length} = ${rawH2}%`);
+    console.log(`    ── HIT@2 ≥2-available denom (${achievable}):       ${pass}/${achievable} = ${adjH2}%`);
+  }
+}
+
 async function main() {
   let set: Q[] = process.argv.includes('--frozen') ? FROZEN : PILOT;
   if (CAT_FILTER) set = set.filter((q) => CAT_FILTER.includes(q.cat));
@@ -179,5 +253,6 @@ import { fileURLToPath } from 'node:url';
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (process.argv.includes('--validate')) validate();
   else if (process.argv.includes('--diagnose')) diagnose().catch((e) => { console.error(e); process.exit(1); });
+  else if (process.argv.includes('--availability')) availability().catch((e) => { console.error(e); process.exit(1); });
   else main().catch((e) => { console.error(e); process.exit(1); });
 }
