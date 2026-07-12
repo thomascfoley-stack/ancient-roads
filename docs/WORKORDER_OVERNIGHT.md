@@ -39,11 +39,21 @@ Committed as one logical change (all 6 safe bugs). `npm run audit` green. Live b
 H1/H2/H4 deferred to the deploy step (needs a session); the logic is unit-tested/typechecked.
 
 ## 4. Accuracy — before / after (frozen v3 through shipped path)
-**No corpus change occurred** (ingest parked), so retrieval is byte-identical — the safe bugs touch chat,
-rate-limiting, error copy, and the eval endpoint, none of which are on the retrieval path. Last measured v3
-(post item-2) stands unchanged: verse-ref 95 · pericope 87 · proper-noun 70 · **topical 75 · epistle 84**.
-Re-running would only re-spend a dev set to confirm the identical number, so it was skipped (honest, not a
-regression). The "more voices should raise topical/epistle" test is pending the ingest (parked, §7).
+**No corpus/retrieval change occurred this session** (ingest parked; §4/§5/§6 touch tests, docs, skills, and
+the pre-commit hook — nothing on the embed→inject→rerank→selectDiverse path; diff-verified). §2 **re-measured
+frozen v3 through the shipped shared routing anyway** as a regression guard (`--v3`, retrieval-only):
+
+| Category | last recorded | **re-measured 07-12** |
+|---|---|---|
+| verse-ref (HIT@1) | 95 | **95** |
+| pericope (HIT@1) | 87 | **87** |
+| proper-noun (HIT@1) | 70 | **70** |
+| epistle (HIT@2) | 84 | **84** |
+| topical (HIT@2) | 75 | **75** |
+| control | clean | **10/10, hijacks=0** |
+
+**Zero drift — byte-identical.** Confirms the night's work did not perturb retrieval and there is no
+regression. The "more voices should raise topical/epistle" lift is still pending the (parked) content ingest.
 
 ## 5. Deploy + live verification
 Deployed via `./deploy.sh` (kept `SITE_PASSWORD`). **Live prod HEALTHY:** `GET /` → 307 → /gate (gate wall

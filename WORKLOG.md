@@ -1573,3 +1573,56 @@ ranked search results. Each result shows:
 4. ~~**SEC-2 closure (prod)**: re-apply APP_DATABASE_URL to prod, rotate neondb_owner password~~ **DONE** — APP_DATABASE_URL re-applied, neondb_owner password rotated, Vercel DATABASE_URL + DATABASE_URL_UNPOOLED updated, .env.local updated, deployed. Old password is invalid.
 5. ~~**Fix A visual confirmation**~~ **Replaced by standalone logout** — verify sign-in/sign-out cycle works from the sidebar after deploy
 6. ~~**Full-text commentary search**~~ **Approved + implemented** — code complete, needs migration + ingestion run against Neon (see "To go live" above)
+
+---
+
+## QUEUE #2 (overnight 2026-07-12) — content parked, test-integrity + tooling + DoD
+
+**Shift summary.** Content ingest stayed blocked on OCR (below); the night went to hardening the *gate*
+itself — the tests, the DoD, and a pre-commit tripwire — plus running the real app end-to-end. No
+retrieval/compose/verifier code changed; corpus unchanged. Full status in `docs/WORKORDER_OVERNIGHT.md`.
+
+**§1 Content — PARKED (honest, load-bearing).** Ryle proof-of-pipeline: two independent OCR scans of
+Ryle-on-John (Princeton 1857 archive.org vs Oxford 1859 Google) scored **9.3%** 3-gram shingle containment
+against a **pre-registered 55%** bar — barely above the different-work floor. Confirmed same work; the failure
+is OCR noise + layout artifacts (line-break hyphenation, page headers) fragmenting 3-grams. The matcher was
+validated on *clean* text (helloao 100%) and does not tolerate OCR. **Did NOT loosen the threshold.** All
+archive.org anchors are OCR → same blocker; the fix is OCR-normalization (own slice) or the CCEL clean-text
+terms-fork. Owner decisions in WORKORDER §7.
+
+**§4 False-confidence test audit — skill + 3 fixes, each seed-the-bug proven.** New skill
+`.claude/skills/false-confidence-audit/` (7 fake-test smells + the "watch it fail before you trust it"
+discipline); ran across all 26 test files (`docs/FALSE_CONFIDENCE_AUDIT.md`). The owner's named offender
+(`licensing.test.ts` baseline-against-itself) was already fixed by the QA-harness session. Fixed + proven:
+- **H1 regression** asserted only `sql.toMatch(/user_id/)` (passes on decoy `WHERE user_id IS NOT NULL`) →
+  now binds the caller id to the `user_id = $N` predicate via captured param values. Seeded decoy → red.
+- **wallet invariant** used `includes('requireUser')` (matched the *import*) → now asserts the CALL exists and
+  precedes `teach(` (comment-stripped). Seeded call-removal → red; old check still saw the import.
+- **evals** `toBeTruthy()` on a failure string → `toContain('<check>')`.
+- **HIGH, PARKED:** the two behavioral existential invariants (licensing "Tyndale never served" + tenancy
+  two-account) are `describe.skipIf(!dbUrl)`; CI has no DB, so they skip and the gate is green having run zero
+  of their assertions. Recommend a Neon test branch + `APP_DATABASE_URL` secret in `audit.yml`. WORKORDER §7.
+
+**§5 Ran the app (390px + desktop, real query).** Booted the dev server; `/ask`, `/read/jhn/10`,
+`/library/commentaries` all clean at 390px and desktop (no overflow, no console errors). Drove a **real query
+end-to-end** ("good shepherd in John 10?") through the bait harness (the UI ask path correctly 401s without a
+login, which I must not perform): retrieval **correct (John 10:11)**, 3 voices / 3 traditions
+(Barnes/Clarke/Calvin), verbatim + attributed, framing descriptive not interpretive, no forbidden author.
+Added a "load it at 390px + desktop and look" clause to the **DoD (CLAUDE.md)** and **quality-slice** skill.
+*Finding (parked, UI-only, NOT a leak):* the library source dropdown lists forbidden authors (Tyndale) from
+the static `_manifest.json`; the live search API correctly returns 0 for them. Task chip spawned.
+
+**§6 Pre-commit hook.** `.githooks/pre-commit` (wired dependency-free via a `prepare` script; no husky):
+eslint `--fix` on staged TS → sync guards when a shared `src/`↔`web/src/` file is staged → forbidden-provenance
+ratchet when the static corpus is present. **~5s, no LLM.** First version used bash-4 `mapfile` and fake-passed
+on macOS's bash 3.2; rewrote portable and **proved** it: `prefer-const` auto-fixes, a `no-unused-vars` error
+blocks the commit (HEAD unchanged), licensing ratchet runs. Bypass with `--no-verify`.
+
+**§2 Re-measure v3.** Session diff touches only tests/docs/skills/hook/package.json — **nothing** on the
+retrieval/compose/verify path, corpus unchanged. Re-ran the frozen v3 held-out through the shipped shared
+routing anyway (regression guard): **zero drift** — verse-ref H1 95 · pericope H1 87 · proper-noun H1 70 ·
+epistle H2 84 · topical H2 75 · control 10/10 clean (hijacks=0). Byte-identical to the last recorded v3;
+confirms no accidental perturbation and no regression.
+
+**Prod:** healthy (existing deployment; no product change this session) — `/`→200 via gate, `/gate`→200,
+unauth `/api/ask`→401.
