@@ -82,6 +82,15 @@ check. Follow the loop; do not skip steps to save time — skipping is how the w
   back to raw retrieval on any error. Never emit unverified model text. A missing config denies, not exposes.
 - **A green check is not proof.** Run the query, read the diff, seed a bad row and confirm the gate rejects
   it. "I built the gate" ≠ "the gate fails closed."
+- **LOOK AT THE DATA BEFORE YOU PARK. A number is not evidence until you have seen the input that produced
+  it.** Before you park a P0, reject a source, or conclude "the data won't work," **print the raw input and
+  read it with your own eyes** — the first 800 chars, the title page, the actual tokens being compared. Two
+  nights of content were lost because an agent verified "is this scan Ryle-on-John?" by *grepping for a
+  string* (false positive) and parked the P0 on a 9.3% score that was actually **Ryle-on-John vs
+  Ryle-on-Luke — two different Gospels, each title page saying so in the first 800 characters**. Grep finds a
+  substring; it does not tell you what the document *is*. A low number has two explanations — the method is
+  weak, or the inputs are wrong — and you cannot tell which without reading the inputs. Never let a measured
+  number stand in for having looked.
 - **Load the page and look — at 390px AND desktop.** Any slice that changes something a user sees or a route
   serves is not done until you have actually opened it in a browser at **390px mobile and desktop width**,
   looked (no horizontal overflow, no overlap, no unreadable text, no console errors), and exercised one real
