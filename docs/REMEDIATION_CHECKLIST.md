@@ -39,13 +39,13 @@ Owner call: the genuinely-copyrighted content (Tyndale Study Notes, modern patri
 
 ## HIGH — Security / authorization
 
-- [ ] **H1 — `getMessages` relies solely on RLS, no explicit `user_id` filter.** `web/src/lib/chat.ts:89-108` filters only by `channel_id`/`chat_id`. Every other user-scoped query carries an explicit `user_id` belt; `db.ts` promises the explicit filter isolates "even when RLS is inert" (the `DATABASE_URL` owner fallback) — false for messages. On that fallback, a guessed channel/chat id returns another user's messages. Add `AND user_id = ...`.
+- [x] **H1 — `getMessages` relies solely on RLS, no explicit `user_id` filter.** `web/src/lib/chat.ts:89-108` filters only by `channel_id`/`chat_id`. Every other user-scoped query carries an explicit `user_id` belt; `db.ts` promises the explicit filter isolates "even when RLS is inert" (the `DATABASE_URL` owner fallback) — false for messages. On that fallback, a guessed channel/chat id returns another user's messages. Add `AND user_id = ...`.
 
-- [ ] **H2 — `addMessage` IDOR write.** `web/src/lib/chat.ts:112-126` does not verify the target `channelId`/`chatId` belongs to the caller before insert. RLS-on-read hides it today; combined with H1's inert-RLS fallback it's a cross-tenant write. Validate ownership before insert.
+- [x] **H2 — `addMessage` IDOR write.** `web/src/lib/chat.ts:112-126` does not verify the target `channelId`/`chatId` belongs to the caller before insert. RLS-on-read hides it today; combined with H1's inert-RLS fallback it's a cross-tenant write. Validate ownership before insert.
 
 - [ ] **H3 — `app_runtime` has INSERT/UPDATE/DELETE on the corpus + license tables.** `db/migrations/001…:49-54` `ALTER DEFAULT PRIVILEGES … GRANT SELECT,INSERT,UPDATE,DELETE` covers all future tables; later SELECT-only grants (003, 006) don't revoke it (Postgres grants are additive). The runtime role can mutate the licensed corpus and the `sources` license registry. Not least-privilege. Verify with `\dp` on prod and REVOKE.
 
-- [ ] **H4 — Rate limiter charges the daily quota for requests it refuses.** `web/src/lib/rate-limit.ts:44-58` bumps BOTH `ask:min` and `ask:day` before checking either. A per-minute-limited burst (double-click, retry loop) still consumes daily slots → a user can be locked out for 24h by traffic that was never served. Check the minute bucket first; only bump the day bucket for requests you'll serve.
+- [x] **H4 — Rate limiter charges the daily quota for requests it refuses.** `web/src/lib/rate-limit.ts:44-58` bumps BOTH `ask:min` and `ask:day` before checking either. A per-minute-limited burst (double-click, retry loop) still consumes daily slots → a user can be locked out for 24h by traffic that was never served. Check the minute bucket first; only bump the day bucket for requests you'll serve.
 
 - [ ] **H5 — The eval that produces the accuracy numbers measures a different corpus AND pipeline than production.** `web/src/scripts/eval-routing.mts:22-26` and `eval-failure-codes.mts:17-21` hardcode their own `PUBLISHABLE` constant that **omits the crosswire (Barnes/Wesley/Calvin) clause** of the real `LEGAL_CORPUS_FILTER`, and skip the production diversity/backfill/`selectDiverse` stages — while `eval-routing.mts:3-5` claims to be "the SHARED production path." (Note: `eval-heldout.mts` DOES import the real filter — so the v3 held-out gate is sound; these two diagnostic evals are not.) Any number cited from these two is not the shipped pipeline.
 
@@ -66,11 +66,11 @@ Owner call: the genuinely-copyrighted content (Tyndale Study Notes, modern patri
 - [ ] **M1 — Stored-XSS sink.** `web/src/app/library/commentaries/page.tsx:121` renders `ts_headline` output via `dangerouslySetInnerHTML`; the surrounding scraped body text is not HTML-escaped. A `<script>`/`<img onerror>` in a scraped body executes. Escape/sanitize before render.
 - [ ] **M2 — Frozen held-out sets are not hash-verified at runtime.** v2/v3 hashes live in WORKLOG prose; no script/test computes+asserts the hash before a run. A silent mutation would run and report a number with no tripwire. Add a fail-closed pre-run hash assert.
 - [ ] **M3 — The legal filter and the two new routes have ZERO automated test coverage; `web/` has no test runner in CI at all.** `test/routing-orchestration.test.ts` tests only pure helpers; nothing tests `LEGAL_CORPUS_FILTER`, the SQL builders, or `/api/eval/bait`. A one-char edit to the licensing filter passes `npm run audit`. Add web tests + a "non-legal author is excluded" regression test; wire `web/` into CI.
-- [ ] **M4 — `/api/eval/bait` has no rate limit and no length cap, and calls the paid `teach()`.** `web/src/app/api/eval/bait/route.ts`. Secret-gated + middleware-gated today, but the middleware comment says the gate comes off at launch → a public LLM endpoint behind one static bearer token. Add `requireUser`/rate-limit, or hard `NODE_ENV !== 'production'` guard.
+- [x] **M4 — `/api/eval/bait` has no rate limit and no length cap, and calls the paid `teach()`.** `web/src/app/api/eval/bait/route.ts`. Secret-gated + middleware-gated today, but the middleware comment says the gate comes off at launch → a public LLM endpoint behind one static bearer token. Add `requireUser`/rate-limit, or hard `NODE_ENV !== 'production'` guard.
 - [ ] **M5 — `rejectUnauthorized: false` on every DB connection (13+ sites).** `src/retrieval/store.ts:45,74`, `db/apply-migration.mjs:23`, ingest scripts. TLS certs never verified. CLAUDE.md's pre-signup gate explicitly lists this as a blocker.
 - [ ] **M6 — Raw upstream error text goes into logs.** `api/ask` + `ask/stream` do `logEvent('error',{message:(e as Error).message})`; deepinfra/embeddings throw with `res.text()` appended. Client envelope is clean; logs are not — against "secrets never logged."
 - [ ] **M7 — `verifyV1` is not wrapped in try/catch in `teach.ts:159`.** A verifier throw becomes a 500 instead of the specified "fall back to raw retrieval." Still fail-closed for faithfulness (no unverified text), but not the graceful degradation CLAUDE.md specifies.
-- [ ] **M8 — `api_rate_limit` has no sweep job.** Migration 008 promises a periodic delete of expired windows; no code implements it → unbounded table growth. Add the sweep.
+- [x] **M8 — `api_rate_limit` has no sweep job.** Migration 008 promises a periodic delete of expired windows; no code implements it → unbounded table growth. Add the sweep.
 - [ ] **M9 — No migration ledger; migrations not transaction-wrapped.** `db/apply-migration.mjs:26` runs the whole file in one `query()` with no BEGIN/COMMIT and no `schema_migrations` table. No programmatic way to verify prod == repo. Idempotent `IF NOT EXISTS` mitigates re-apply only.
 
 ---
@@ -82,7 +82,7 @@ Owner call: the genuinely-copyrighted content (Tyndale Study Notes, modern patri
 - [ ] **D3 — MIGRATION_DESIGN.md header "DESIGN ONLY — no code until approved"** but it shipped (006 applied, harness staging Barnes + Matthew Henry). Reconcile.
 - [ ] **D4 — ROADMAP top block stale** ("gate fails OPEN ← NEXT", "legal filter is eval-only") — both fixed post-write; ROADMAP is the designated status source of truth.
 - [ ] **D5 — SEC-2 marked "Done"** in ROADMAP but SECURITY.md says the two-account in-browser isolation check is still pending. Run it or downgrade the status.
-- [ ] **D6 — Pre-signup gate list stale** (rate-limit + bait now done); design-doc schema mismatch (`(user_id, window_start)` vs as-built `(user_id, bucket, window_start)`); shipped copy references a "beta" you say doesn't exist (`api-error.ts` RATE_LIMIT_DAY message).
+- [x] **D6 — Pre-signup gate list stale** (rate-limit + bait now done); design-doc schema mismatch (`(user_id, window_start)` vs as-built `(user_id, bucket, window_start)`); shipped copy references a "beta" you say doesn't exist (`api-error.ts` RATE_LIMIT_DAY message).
 
 ---
 

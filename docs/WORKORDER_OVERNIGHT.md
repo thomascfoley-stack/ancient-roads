@@ -39,13 +39,36 @@ Committed as one logical change (all 6 safe bugs). `npm run audit` green. Live b
 H1/H2/H4 deferred to the deploy step (needs a session); the logic is unit-tested/typechecked.
 
 ## 4. Accuracy — before / after (frozen v3 through shipped path)
-_(pending)_
+**No corpus change occurred** (ingest parked), so retrieval is byte-identical — the safe bugs touch chat,
+rate-limiting, error copy, and the eval endpoint, none of which are on the retrieval path. Last measured v3
+(post item-2) stands unchanged: verse-ref 95 · pericope 87 · proper-noun 70 · **topical 75 · epistle 84**.
+Re-running would only re-spend a dev set to confirm the identical number, so it was skipped (honest, not a
+regression). The "more voices should raise topical/epistle" test is pending the ingest (parked, §7).
 
 ## 5. Deploy + live verification
-_(pending)_
+Deployed via `./deploy.sh` (kept `SITE_PASSWORD`). **Live prod HEALTHY:** `GET /` → 307 → /gate (gate wall
+live) · `GET /gate` → 200 (`SITE_PASSWORD` set) · unauth `POST /api/ask` → 401 · `/api/eval/bait` → 401 (the
+site gate intercepts before the route, so M4's prod-404 sits correctly behind it). Prod alias
+`web-psi-eight-83.vercel.app` → READY. **No rollback** (owner-confirmed: healthy).
 
-## 6. Mobile (390px) findings + fixes
-_(pending)_
+**⚠️ INCIDENT (owner-guarded).** My `deploy.sh` run uploaded a **dirty working tree** — it also shipped a
+concurrent Cursor session's uncommitted work-in-progress (`legal-corpus.ts`, the `commentary-search.ts` legal
+filter, `web/test/…`). Those turned out to be a *legitimate fix* (the search endpoint is now legal-only), and
+prod is healthy, so per owner guidance it stays. It is now **guarded**: `deploy.sh` (commit `dc4ba23`) aborts
+on any uncommitted/untracked file — `vercel --prod` uploads the working tree, so nothing can reach prod that
+isn't in git. Residual: prod ran ahead of git briefly; the guard forces the concurrent session to commit its
+work before its next deploy. I committed only my own files (never the concurrent session's WIP).
+
+## 6. Mobile (390px) findings + fixes — CLEAN PASS, no fixes needed
+Checked the three key pages at **390×844** in a real browser:
+- **Reader** (`/read/...`, Romans 8): readable serif body, verse numbers, header controls (Aa / original /
+  translation) and the bottom tab nav all fit. Usable.
+- **`/ask`** (Explore): title, subtitle, TRY suggestion cards, and the ask box (with send hints) all fit. Usable.
+- **`/library/commentaries`**: search, book/chapter/source dropdowns, "Open in reader", and the commentary
+  cards (author + tradition tag + verse-numbered text) all render single-column and readable. Usable.
+- **No horizontal overflow** (`documentElement.scrollWidth == innerWidth == 390` on the busiest page).
+The earlier mobile pass holds up — nothing egregiously broken (no overflow, no unreachable controls, no
+unreadable text), so no changes were made (the rail is "make it usable, don't redesign").
 
 ## 7. Parked / worries — THREE OWNER DECISIONS (unblock the whole content mission)
 Full detail in `docs/ARCHIVE_ORG_INGEST_DESIGN.md`. Each would corrupt a verbatim corpus if guessed:
