@@ -28,6 +28,12 @@ function traditionKey(entry: CommentaryEntry): string {
   return eraLabel(entry.year) || 'Unknown';
 }
 
+// Primacy = the foundational voice in each tradition first. The round-robin below picks
+// the round-th entry from each tradition, so ORDER WITHIN A TRADITION decides who survives
+// the cut. The old code left each bucket in raw insertion (file) order, so at John 1:1 the
+// top slot went to whoever the ingest happened to write first ("Alcuin of York, as quoted
+// by Aquinas") while Chrysostom, Augustine, Calvin and Henry were dropped. Rank each bucket
+// by year ascending (earliest = most primary) so the round-robin surfaces the primary voice.
 export function pickDiverse(entries: CommentaryEntry[], max: number): CommentaryEntry[] {
   if (entries.length <= max) return entries;
 
@@ -37,6 +43,9 @@ export function pickDiverse(entries: CommentaryEntry[], max: number): Commentary
     const arr = byTradition.get(key);
     if (arr) arr.push(e);
     else byTradition.set(key, [e]);
+  }
+  for (const arr of byTradition.values()) {
+    arr.sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999));
   }
 
   const picked: CommentaryEntry[] = [];

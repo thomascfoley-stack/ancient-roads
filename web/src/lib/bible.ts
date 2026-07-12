@@ -1,6 +1,7 @@
 // Client-side Bible data access. Fetches verse JSON from /bible/{translation}/{slug}/{chapter}.json.
 
 import { BOOKS, BOOK_BY_SLUG, type Book } from '@bible/books';
+import { isPublishedCommentaryEntry, isPublishedAuthor } from '@/lib/legal-corpus';
 
 export type { Book };
 export { BOOKS, BOOK_BY_SLUG };
@@ -100,7 +101,16 @@ export async function fetchCommentary(
   try {
     const res = await fetch(`/commentaries/${bookSlug}/${chapter}.json`);
     if (!res.ok) return null;
-    return res.json();
+    const data = (await res.json()) as CommentaryData;
+    // INTEGRITY (§1a): the static files hold the whole ingested corpus, including
+    // unverified/heretical authors (Pelagius, Valentinus, …). The reader must serve only
+    // published authors — the same boundary the DB paths enforce — NOT the raw file.
+    return {
+      ...data,
+      entries: data.entries.filter((e) =>
+        isPublishedCommentaryEntry({ author: e.author, sourceUrl: e.sourceUrl, book: data.book }),
+      ),
+    };
   } catch {
     return null;
   }
@@ -124,7 +134,10 @@ export async function fetchCommentaryManifest(): Promise<CommentaryManifest | nu
   try {
     const res = await fetch('/commentaries/_manifest.json');
     if (!res.ok) return null;
-    return res.json();
+    const m = (await res.json()) as CommentaryManifest;
+    // §1a: the library facet must list only published authors (was leaking Tyndale,
+    // Pelagius, et al. into the source dropdown).
+    return { ...m, sources: m.sources.filter((s) => isPublishedAuthor(s.author)) };
   } catch {
     return null;
   }
