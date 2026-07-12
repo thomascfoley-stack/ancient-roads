@@ -78,7 +78,10 @@ npx next build
 # Deploy
 echo ""
 echo "Deploying to Vercel..."
-npx vercel --prod
+# --archive=tgz: the static data dirs (concordance = 13,480 files, original,
+# commentaries, lexicon) exceed Vercel's 15,000-file upload limit; archiving
+# bundles them into one tarball. Added 2026-07-12 when the concordance shipped.
+npx vercel --prod --archive=tgz
 
 echo ""
 echo "Done!"
