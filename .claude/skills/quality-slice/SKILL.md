@@ -82,6 +82,11 @@ check. Follow the loop; do not skip steps to save time — skipping is how the w
   back to raw retrieval on any error. Never emit unverified model text. A missing config denies, not exposes.
 - **A green check is not proof.** Run the query, read the diff, seed a bad row and confirm the gate rejects
   it. "I built the gate" ≠ "the gate fails closed."
+- **Load the page and look — at 390px AND desktop.** Any slice that changes something a user sees or a route
+  serves is not done until you have actually opened it in a browser at **390px mobile and desktop width**,
+  looked (no horizontal overflow, no overlap, no unreadable text, no console errors), and exercised one real
+  interaction end-to-end. Boot the dev server (`preview_start`), screenshot both widths, run a real query.
+  "It typechecks / the API returns 200" is not "it renders and works." A screenshot is the proof.
 - **Never cache/curate/ship an answer from a pipeline below the bar.** Caching a wrong answer serves it to
   everyone.
 - **Record the number.** Every retrieval/corpus change → the accuracy number and its failure-code breakdown

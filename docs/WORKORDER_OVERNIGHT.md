@@ -125,6 +125,31 @@ session (now an honest skip). Findings:
 - **F4 (evals) FIXED** — `toBeTruthy()` on a failure-reason string → `toContain('<check>')`.
 - **F1 (HIGH) PARKED — owner infra decision (below).**
 
+## §5 — RAN THE APP (booted dev server, looked at 390px + desktop, real query end-to-end)
+Booted `theology-dev` (Next 15.5 turbopack, ready ~1.3s, local gate open). Added the mobile+desktop "load it
+and look" clause to **CLAUDE.md DoD** and the **quality-slice** skill.
+- **/ask** — clean at 390px (parchment/ink/oxblood tokens, serif, no overflow) and at desktop 1280 (sidebar +
+  main two-pane). No console errors. *Minor:* at an extreme ~301px-wide × short viewport the fixed composer
+  overlaps the 3rd suggestion card; at the 390px target and desktop it does not. Low priority.
+- **/read/jhn/10** — clean: verse-numbered WEB text, Aa/original(Greek)/translation controls, readable serif.
+- **/library/commentaries** — renders (401 sources, book/chapter/source facets). **FINDING (below).**
+- **Real query end-to-end** — "good shepherd in John 10?" via the bait harness (UI `/api/ask/stream` correctly
+  411→401 without login; I must not authenticate, so I drove the REAL `teach()` through the
+  EVAL_HARNESS_SECRET-gated harness). Result: **retrieval CORRECT (John 10:11)**, 3 voices / 3 traditions
+  (Barnes-Presbyterian, Clarke-Methodist, Calvin-Reformed), all verbatim + attributed, framing descriptive
+  not interpretive ("The following excerpts present…"), **no forbidden author**. Pipeline healthy.
+
+### FINDING (§5) — library source dropdown lists FORBIDDEN authors (UI only, NOT a content leak)
+`/library/commentaries` builds its "sources" facet from the static `web/public/commentaries/_manifest.json`,
+which still lists `Tyndale Study Notes` and `Tyndale Open Study Notes` (both `MUST_NOT_SERVE`). So the UI
+offers them as filter options and discloses the names. **Verified behaviorally that NO content leaks:** the
+live search API returns `{"results":[],"total":0}` for `?author=Tyndale Study Notes`, and 0 Tyndale hits in an
+unfiltered `q=faith&limit=100`. Root cause: the manifest facet source isn't run through the legal filter that
+results are. **Fix (parked — data-path/module-boundary):** either (a) regenerate `_manifest.json` at ingest
+excluding non-published authors (cleanest), or (b) filter the facet list at read — but `isMustNotServeAuthor`
+lives in `legal-corpus.ts`, which re-exports server-only `teacher/routing`, so a client fix needs a
+client-safe forbidden list or the manifest-gen fix. Not a rush; existential rail intact.
+
 ## 7. Parked / worries
 ### OWNER DECISION — CI does not run the two existential behavioral invariants (§4 F1)
 `web/test/invariants/licensing.test.ts` (Tyndale never served) and `tenancy.test.ts` (two-account isolation)

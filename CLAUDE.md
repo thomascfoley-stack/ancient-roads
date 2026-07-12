@@ -53,7 +53,7 @@ Ingest **only** public-domain or commercially-permissive (CC BY / CC BY-SA) cont
 
 Before a PR: `npm run audit` (typecheck strict · lint · knip · `pnpm audit` high/critical · tests+coverage · web typecheck+lint). On demand: `/audit` (adversarial slop review), `/security` (authz/RLS/secrets). CI enforces the gate on every PR/push.
 
-**Definition of Done (strict):** built AND tested AND passes `/audit` AND (data paths) RLS-enforced in prod AND (AI features) passes `interpretation_bait` ≥99% AND (retrieval changes) accuracy diagnostic recorded. Anything short is Partial/Missing.
+**Definition of Done (strict):** built AND tested AND passes `/audit` AND (data paths) RLS-enforced in prod AND (AI features) passes `interpretation_bait` ≥99% AND (retrieval changes) accuracy diagnostic recorded AND (any UI/client change) **actually loaded in a browser at 390px AND desktop width — looked at, no horizontal overflow/overlap, no console errors, a real interaction exercised** (a screenshot is not optional; "typechecks" is not "runs"). Anything short is Partial/Missing.
 
 ## Never
 
