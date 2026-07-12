@@ -18,6 +18,7 @@ import { VerseDisplay } from '@/components/verse-display';
 import { ChapterNav } from '@/components/chapter-nav';
 import { Interlinear } from '@/components/interlinear';
 import { StudyPanel, type StudyTab } from '@/components/study-panel';
+import { WordPanel } from '@/components/word-panel';
 import { fetchOriginal, loadFullLexicon, type OriginalData, type OWord } from '@/lib/original';
 import { encodeVerseId } from '@bible/verse-id';
 
@@ -47,7 +48,9 @@ export default function ReaderPage() {
   const [notes, setNotes] = useState<Map<number, string>>(new Map());
   const [signedIn, setSignedIn] = useState(false);
   // The unified study panel: which verse, which tab, optional focused word.
-  const [study, setStudy] = useState<{ verse: number; tab: StudyTab; focusWordIdx?: number } | null>(null);
+  // focusWord carries the actual tapped OWord so a single-word tap can render the
+  // focused WordPanel (not the whole-verse word list).
+  const [study, setStudy] = useState<{ verse: number; tab: StudyTab; focusWordIdx?: number; focusWord?: OWord } | null>(null);
 
   const handleTranslationChange = useCallback((t: Translation) => {
     setTranslation(t);
@@ -159,13 +162,16 @@ export default function ReaderPage() {
     }).catch(() => {});
   }, [verseId]);
 
-  const openStudy = useCallback((verse: number, tab: StudyTab, focusWordIdx?: number) => {
-    setStudy({ verse, tab, focusWordIdx });
-  }, []);
+  const openStudy = useCallback(
+    (verse: number, tab: StudyTab, focusWordIdx?: number, focusWord?: OWord) => {
+      setStudy({ verse, tab, focusWordIdx, focusWord });
+    },
+    [],
+  );
 
   const handleVerseClick = useCallback((verse: number) => openStudy(verse, 'commentaries'), [openStudy]);
   const handleWordClick = useCallback(
-    (_word: OWord, verse: number, idx: number) => openStudy(verse, 'word', idx),
+    (word: OWord, verse: number, idx: number) => openStudy(verse, 'word', idx, word),
     [openStudy],
   );
 
@@ -232,7 +238,17 @@ export default function ReaderPage() {
           <p className="text-sm text-stone-400">Loading…</p>
         </div>
       )}
-      {study && (
+      {study && study.focusWord && original ? (
+        <WordPanel
+          word={study.focusWord}
+          lang={original.lang}
+          reference={`${book.name} ${chapterNum}:${study.verse}`}
+          onShowCommentary={() =>
+            setStudy((s) => (s ? { ...s, tab: 'commentaries', focusWordIdx: undefined, focusWord: undefined } : s))
+          }
+          onClose={() => setStudy(null)}
+        />
+      ) : study ? (
         <StudyPanel
           reference={`${book.name} ${chapterNum}:${study.verse}`}
           verseNum={study.verse}
@@ -254,7 +270,7 @@ export default function ReaderPage() {
           onTabChange={(t) => setStudy((s) => (s ? { ...s, tab: t, focusWordIdx: undefined } : s))}
           onClose={() => setStudy(null)}
         />
-      )}
+      ) : null}
     </div>
   );
 }
