@@ -1676,7 +1676,7 @@ window at zero drift; prod DB search index live. 8 commits this queue.
 
 ---
 
-## QUEUE #4 (overnight 2026-07-12) — live integrity defects fixed; Phase A diagnosed as a RERANKER problem
+## QUEUE #4 (overnight 2026-07-12) — live integrity defects fixed; Phase A measured to completion (recall + feature, not shippable tonight)
 
 Theme: three live defects each defeating a guarantee, and a "diagnose-before-you-spend" §2 that **saved a
 $4 re-embed** by looking at the data. All committed, audit green, deployed.
@@ -1703,18 +1703,24 @@ The behavioral invariant then caught a real regression (both Barnes name-aliases
 served set is currently sound, but proposed a curated tradition enum + author map + a data-quality gate before
 promoting more (in AUTHOR_TRIAGE.md). Not re-labelled — owner's call.
 
-**§2 (Phase A) — DIAGNOSED, and the brief was wrong.** Looking at the live DB: the vector index is already
-**HNSW** (schema.sql stale → ivfflat rebuild moot); `RERANK_DOC_CHARS` already 1200; live embed cap ~4000 not
-1000. **Pool sweep 20/50/100 IDENTICAL, 200 worse.** The killer: for the failing topical labels, the label
-passages are **present in the vectors and rank #1–#32 by similarity** yet return voices=0 — so it is a
-**reranker/selection** problem, not content. Confirmed with a `--no-rerank` run: removing the reranker lifts
-**topical HIT@1 35→50 and proper-noun 70→90** (it demotes the vector-#1 on-label passage) but drops topical
-HIT@2 75→60 (it earns its place finding the 2nd voice). **Decision: SKIP the chunking+re-embed** — disproven,
-$4 + a prod-index rewrite avoided. Deleted the dead `embeddings.ts` footgun. Real fix (parked): a
-query-type-aware rerank blend. Full writeup: `docs/PHASE_A_DIAGNOSIS.md`.
+**§2 (Phase A) — MEASURED TO COMPLETION, and the brief was wrong.** Live DB: index already **HNSW**
+(schema.sql stale → ivfflat rebuild moot); `RERANK_DOC_CHARS` already 1200; embed cap ~4000 not 1000; NOT
+content (every failing label has ≥3 legal authors vectored). Using the owner's exact-rank window query, the
+failing labels' voices sit at exact vector rank **#22–#140**, and the default HNSW `ef_search=40` under the
+selective legal filter DROPS them from the pool (why the pool sweep 20/50/100 was flat). Two distinct
+problems: **(a) EPISTLE→85 is a RECALL fix** — `iterative_scan` + `ef=200` lifts epistle 84→92, but `/ask`
+latency goes 5s→12–14s (2.5×), so it needs a partial legal HNSW index (fast high-`ef`), not a knob — the
+naive form was **REVERTED**, not shipped. **(b) TOPICAL→85 is at the retrieval CEILING** — no config (pool
+20–200, iterative_scan, ef 40–400, vector/rerank blend α 0.4–0.8) surfaces 2 on-label voices into the top-6;
+it needs a *feature* (query-expansion / attributed topical index / thematic re-embed). **Correctly SKIPPED**
+the chunking+re-embed ($4, zero gain — vectors already exist). Deleted the dead `embeddings.ts` footgun; fixed
+a pre-existing flaky licensing test (nondeterministic sample vector). Full matrix: `docs/PHASE_A_DIAGNOSIS.md`.
+_(An earlier note in this entry said "reranker problem / rank #1" — that first pass was wrong; corrected here
+and in the diagnosis doc.)_
 
 **§3** — recorded **ADR-017**: do NOT build the Torrey doctrine router (circular — 92% WSC containment;
 bypasses the passage cap; interpretive). Confirms queue #3 §6.
 
-**Not done:** the reranker-blend fix (§2, parked as a designed+measured experiment — a retrieval change
-needing design-before-code + a fresh vN, not a 4am ship). v3 stands at topical H2 75 / epistle 84.
+**Not done (measured, parked, NOT shipped):** the Phase A retrieval fix. Epistle→85 = a partial legal HNSW
+index (fast high-`ef` recall, measured on a fresh v4); topical→85 = a feature, not a knob. Retrieval code was
+reverted to the fast baseline — prod unchanged; v3 stands at topical H2 75 / epistle 84.

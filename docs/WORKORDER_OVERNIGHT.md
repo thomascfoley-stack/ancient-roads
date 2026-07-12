@@ -15,8 +15,9 @@ translator/editor + edition year ≤1929) · shingle text-match proof · coverag
 
 ## ★ END-OF-SHIFT VALIDATION (QUEUE #4 · 2026-07-12) — ALL GREEN
 
-**Theme: three live integrity defects fixed, and Phase A diagnosed as a reranker problem — which SAVED a $4
-re-embed by looking at the data.**
+**Theme: three live integrity defects fixed, and Phase A measured to completion — the topical/epistle bar is
+NOT reachable tonight (epistle needs a latency-optimized recall index; topical is at the retrieval ceiling and
+needs a feature), and the $4 re-embed was correctly disproven. `docs/PHASE_A_DIAGNOSIS.md` has the full matrix.**
 
 | § | What | Status |
 |---|---|---|
@@ -24,7 +25,7 @@ re-embed by looking at the data.**
 | §1a | **Reader served the raw corpus** (Origen, Tyndale, "CS Lewis via Screwtape a devil") — now filtered to published authors; pickDiverse ranks by primacy | ✅ **live-defect fixed**, verified 390px |
 | §1b | Search predicate served **6 of 9** (Barnes/Wesley/Calvin = 0 rows on a name/URL mismatch) — now 9; PRESENCE tests added | ✅ fixed, seed-the-bug proven |
 | §1c | 378/401 authors are "Patristic" — reported; tradition schema proposed | ✅ in AUTHOR_TRIAGE.md |
-| §2 | **Phase A is a RERANKER problem, NOT a re-embed problem** — re-embed SKIPPED (saved $4 + prod-index risk) | ✅ diagnosed; fix parked |
+| §2 | **Phase A measured to completion** — NOT content/re-embed. Epistle→85 is a RECALL fix (iterative_scan → 92) but costs 2.5× latency (reverted); topical is at the retrieval CEILING (needs a feature). | ✅ diagnosed; fix designed+parked |
 | §3 | Do NOT build the Torrey router | ✅ ADR-017 |
 
 - **`npm run audit`:** ✅ all gates green (incl. the new presence tests; the behavioral licensing invariant
@@ -41,8 +42,9 @@ re-embed by looking at the data.**
 1. **AUTHOR_TRIAGE.md** — rule on the 315 pre-1929 PD candidates (Poole 31k, Geneva 31k, Cambridge, Pulpit,
    Benson, Bengel, K&D…) to un-sparse the reader; verify the Barnes/Wesley/Calvin biblehub editions; decide
    the Catena-Aurea derivatives; approve the tradition enum.
-2. **Phase A reranker fix** — the parked query-type-aware rerank blend (design-before-code + fresh vN);
-   `docs/PHASE_A_DIAGNOSIS.md` has the measured experiment plan. NOT a re-embed.
+2. **Phase A** — two designed slices in `docs/PHASE_A_DIAGNOSIS.md`: (a) epistle→85 = a partial legal HNSW
+   index (fast, high-`ef` recall) via `legalBasePool`, measured on a fresh v4; (b) topical→85 = a *feature*
+   (query-expansion / attributed topical index / thematic re-embed), not a knob. NOT a re-embed, NOT a router.
 3. **§3 content ingest** (from queue #3) — verse-aligned staged ingest of Ryle-on-John; match gate PASSES.
 
 ---

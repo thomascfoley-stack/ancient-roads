@@ -53,12 +53,15 @@ describe.skipIf(!dbUrl)('Layer 1 — licensing invariant (behavioral)', () => {
     tyndaleInCorpus = (probe as { n: number }[])[0]?.n ?? 0;
     expect(tyndaleInCorpus, 'sanity: Tyndale must exist in corpus to prove the filter works').toBeGreaterThan(0);
 
-    const row = (await sql`
-      SELECT embedding::text AS vec
-      FROM embeddings
-      WHERE user_id IS NULL AND source_type = 'commentary'
-      LIMIT 1
-    `) as { vec: string }[];
+    // DETERMINISTIC + LEGAL sample vector. The old `LIMIT 1` (no ORDER BY) picked an
+    // arbitrary vector; if it was a non-legal author's, its HNSW neighbours could ALL be
+    // non-legal and legalBasePoolSql(50) returned 0 rows (flaky). Anchoring on a legal
+    // vector (ordered) guarantees its own legal passage is among the nearest.
+    const row = (await sql.query(
+      `SELECT embedding::text AS vec FROM embeddings
+       WHERE user_id IS NULL AND source_type = 'commentary' AND ${LEGAL_CORPUS_FILTER}
+       ORDER BY source_id LIMIT 1`,
+    )) as { vec: string }[];
     const parsed = JSON.parse(row[0]!.vec) as number[];
     sampleVec = parsed;
   }, 30_000);

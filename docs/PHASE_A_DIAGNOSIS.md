@@ -1,10 +1,29 @@
-# Phase A diagnosis (queue #4 §2) — it is NOT a re-embed problem
+# Phase A diagnosis (queue #4 §2) — measured to completion
 
-**Bottom line: the topical/epistle gap is a POST-RETRIEVAL RANKING problem, not a data/coverage
-problem. The chunking + re-embed the brief prescribed would spend ~$4 and prod-index risk to add
-vectors for passages that are already ranked #1 by vector similarity. It is not warranted. Do not run it.**
+## FINAL VERDICT (2026-07-12, after exhausting the retrieval-tuning space)
 
-This is what §2.1 (free, read-only) found by looking at the live DB instead of the brief's assumptions.
+The topical/epistle gap is **NOT content and NOT a re-embed problem** — every failing label has ≥3 distinct
+legal authors already vectored. It splits cleanly into two different problems, and **neither is cleanly
+shippable tonight**:
+
+- **Epistle → SOLVABLE by recall, but at a latency cost.** The on-label voices sit at exact vector rank
+  #22–#95, which the default HNSW `ef_search=40` under the selective legal filter drops from the pool.
+  `iterative_scan` + `ef_search=200` lifts **epistle H2 84→92** — but `/ask` latency goes **~5s → 12–14s**
+  (2.5×), which is not shippable. Making it fast needs a latency-optimized index (a partial legal HNSW index
+  co-designed with `ef`/pool), a real slice — not a knob. A fast partial index at `ef=40` alone gives only
+  epistle 84 (the win specifically needs the deep search).
+- **Topical → at the RETRIEVAL CEILING (~70–75), not fixable by tuning.** The failing abstract-thematic
+  queries' 2nd on-label voice is at exact rank #32–#140; **no** config (pool 20/50/100/200, iterative_scan,
+  `ef` 40–400, or a vector/rerank blend α 0.4–0.8) surfaces **two** distinct on-label voices into the top-6.
+  It needs a **feature** — query-expansion or an *attributed* topical index (ADR-017 permits the latter only
+  as a visible voice, never a hidden router) — or a stronger embedding for thematic queries.
+
+**What was NOT done, deliberately:** no re-embed (the vectors exist; $4 + prod-index risk for zero gain), no
+router (ADR-017), and the recall change was **reverted** rather than ship a 12–14s `/ask` or a topical
+regression. v3 stands at topical H2 75 / epistle 84. Any real fix ships on a freshly-minted, authority-
+grounded v4 — NOT from memory.
+
+This is what looking at the live DB (instead of the brief's assumptions) found:
 
 ## What the brief assumed vs what the data shows
 
@@ -27,24 +46,10 @@ This is what §2.1 (free, read-only) found by looking at the live DB instead of 
 Raising the pool 20→100 changes **nothing**; 200 makes topical/pericope **worse** (more distractors for the
 reranker). The pool is not the limiter.
 
-## The killer measurement — are the failing labels even missing?
-
-For the failing topical queries, I embedded the query and found the vector rank of the label passages in the
-legal corpus (`_rankprobe.mts`, since deleted):
-
-| failing query | legal label vectors | best label vector rank | so… |
-|---|---|---|---|
-| "praise and thanksgiving to God" (Ps 100/150, Col 3, 1 Th 5) | 313 | **#1** | present + top |
-| "truthfulness and bearing false witness" (Ex 20, Prov 12, Eph 4) | 317 | **#1** | present + top |
-| "justice and care for the poor" (Isa 58, Deut 15, Prov 14, Jas 1) | 316 | **#32** | present + in pool |
-
-**The label passages are present in the vectors and rank #1–#32 by similarity — and the queries still return
-voices=0 in the top-6.** The base pool contains the on-label passage at #1; the pipeline then drops it. That
-is a **reranker / selection** failure on abstract thematic queries, not a retrieval-recall failure. Chunking
-would create more vectors for content whose vector is *already #1* — zero expected benefit.
-
-This also explains the sweep shape: the label is in the pool at every size (so pool is flat), and pool=200
-feeds the reranker more off-label distractors (so topical drops to 65).
+*(An earlier first-pass measurement here reported the "best single label vector" at rank #1 and concluded
+"reranker demotes vector-#1." That was wrong on both counts — corrected by the DEFINITIVE per-label test
+below, which measures ≥2-distinct-author availability and exact ranks: the failing labels' voices are at
+exact #22–#140, and the retrieval, not the reranker, drops them. See that section.)*
 
 ## §2.2 decision
 
@@ -117,32 +122,24 @@ still has `ef_search=40`, so recall depth is capped ~40 and topical's #48–#95 
 unreached. **Reverted** (`DROP INDEX`) — I will not leave an unmeasured, target-regressing retrieval change
 live on prod, and shipping one needs a fresh vN + a no-regression proof.
 
-## The REAL fix (parked — §7) — a designed recall slice, measured on a fresh vN
+## The two designed slices (parked — §7), with the tradeoffs MEASURED
 
-Not a re-embed, not a router. A co-designed change, each step measured, verse-ref/pericope guarded:
-1. **Partial legal HNSW index** (recovers proper-noun/pericope recall) **+ raised `ef_search`** (≥100–200, so
-   the pool reaches exact rank #90 — proven: `ef_search=400` recovers tp-08/tp-15 on-label to match exact) **+
-   a larger `CANDIDATE_POOL`** (the 2nd voice sits below #20). These three are interdependent — none alone
-   moves topical; measured together they should clear 85 for the 6 recall-class labels.
-2. Watch the reranker/`selectDiverse` interaction — topical is sensitive to which distractors enter the pool
-   (it moved ±1 query on every change). The `--no-rerank` data (topical H1 35→50) says the reranker also
-   demotes the on-label 1st voice for abstract queries; a query-type-aware blend may be needed on top.
-3. The ep-09-class semantic residual (2nd voice at exact #140) will not yield to recall — accept ~1 miss, or
-   add hybrid/query-expansion, to close the last gap toward 100.
+**EPISTLE (→85): a latency-optimized recall index.** The win is real (iterative_scan + ef=200 → epistle 92)
+but the naive form costs 2.5× latency. Ship path: a **partial legal HNSW index** (`hnsw(embedding) WHERE
+<legal predicate>` — searches only the ~84k legal vectors, so a high `ef` is cheap) built as a migration,
+wired via `legalBasePool()` (SET LOCAL the GUCs in the same neon transaction — proven to work), then measure
+latency AND the number together. Guard: it perturbs the pool, which flips ±1 topical/pericope query, so it
+must be measured on a fresh v4 with a no-regression check before shipping.
 
-## The REAL fix (superseded note) — the earlier reranker-only framing below is incomplete; see the section above
+**TOPICAL (→85): a feature, not a knob.** Measured dead-ends (all leave topical H2 ≤75): pool 20/50/100/200,
+iterative_scan, ef 40–400, vector/rerank blend α 0.4–0.8. The failing abstract queries' 2nd on-label voice is
+at exact rank #22–#140 by vector; the embedding simply doesn't rank two on-topic passages high enough, and no
+re-ranking of a pool that lacks them can help. The real levers: **query-expansion** (expand "justice and care
+for the poor" into its scriptural vocabulary before embedding), an **attributed topical index** (ADR-017
+permits it ONLY as a visible, cited voice — never a hidden router), or a **stronger/thematic embedding**
+(a real re-embed with a better model — different from the rejected chunking re-embed). ep-09-class (#140) is
+the hardest; ~1 residual miss likely persists.
 
-The topical/epistle limiter is that **`Qwen3-Reranker-0.6B` + `selectDiverse` demote the vector-#1 on-label
-passage for abstract thematic queries** (queries that name a theme, not a passage — the opposite of the
-verse-ref/pericope queries the reranker *excels* at, ADR-014/015). Proposed experiments, cheapest first, each
-measured on v3 as a dev-set, none shipped without a fresh vN and a no-regression check on verse-ref/pericope:
-1. **Free:** re-run v3 topical/epistle with the reranker BYPASSED (pure vector/hybrid order) to confirm the
-   reranker is the culprit and estimate the ceiling. If vector-order tops the label, the reranker is proven.
-2. If confirmed: a **query-type-aware blend** — for abstract topical queries (no resolved reference, no
-   proper noun), weight the vector/hybrid score higher vs the cross-encoder, OR widen `selectDiverse` so a
-   vector-top on-label passage cannot be capped out. Must NOT touch the verse-ref/pericope path (the reranker
-   is load-bearing there — ADR-014).
-3. Do NOT build the Torrey router (ADR-017) — it is circular and does not address this ranking defect.
-
+Do NOT build the Torrey router (ADR-017 — circular, and it doesn't address this ranking defect anyway).
 **The concordance guarantee is untouched by any of this** — reordering which grounded voices surface is not
-interpretation; the JSON contract + fail-closed verifier stay in force.
+interpretation; the JSON output contract + fail-closed verifier stay in force.
