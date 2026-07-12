@@ -32,3 +32,6 @@ spike/
 # transient re-source verification cache
 .newadvent-cache/
 web/public/concordance/
+
+# stray local DB-inspection scratch (not authored by the overnight agent; preserved, not tracked)
+.audit-q.mjs
