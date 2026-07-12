@@ -29,6 +29,19 @@ fi
 echo "Content: $BIBLE_COUNT Bible chapters, $COMMENTARY_COUNT commentary chapters"
 echo ""
 
+# ---------------------------------------------------------------------------
+# PRE-DEPLOY GATE — the licensing ratchet.
+#
+# web/public/commentaries/ is gitignored and has no build step; `vercel --prod`
+# uploads the local directory, so this content reaches production WITHOUT ever
+# passing through git or CI. CI cannot see it. This is the only point in the
+# pipeline where the artifact being shipped is visible — so the gate lives here.
+#
+# Hard-fails (set -e) if the corpus is missing or if forbidden-provenance
+# content has INCREASED. The number may only go down.
+# ---------------------------------------------------------------------------
+npx tsx scripts/predeploy-gate.ts
+
 # Build
 echo "Building..."
 cd web
