@@ -106,3 +106,47 @@ Anything short → `staged` or `quarantined`. **Quarantine, never delete.**
 Options: (a) leave author-based, ingest broadly and let breadth do the work; (b) add a **tradition-aware diversity cap** to selection (≤N per tradition in the top-K), mirroring the per-passage cap; (c) report tradition-span as a *reported* metric without gating on it.
 
 **Do not implement without an explicit decision.** It changes what "a good answer" means.
+
+---
+
+## §3 UNBLOCK (2026-07-12, QUEUE #3) — the P0 was never actually blocked
+
+**The 9.3% that parked this for two nights was a MEASUREMENT ERROR, not a matcher limit.**
+It compared `expositorythough05ryle` (Ryle on **St. JOHN**, Vol I) against
+`expositorythoug05rylegoog` (Ryle on **St. LUKE**, Vol II) — *two different Gospels*. Both title
+pages say which Gospel in the first ~200 characters; nobody printed them. The prior agent verified
+"is this Ryle-on-John?" by grepping for a string ("John V. 1—10") and hit a cross-reference to John
+**the Baptist** inside the Luke volume. Rail added to `quality-slice`: **LOOK AT THE DATA BEFORE YOU PARK.**
+
+**Corrected measurement (looked at the data):** the TRUE John Vol I twin —
+`expositorythough05ryle` (archive.org OCR) vs `expositorythoug02rylegoog` (Google OCR), both
+confirmed "ST. JOHN. VOL. I." with the identical preface — scores:
+
+| pair | min 3-gram containment |
+|---|---|
+| **John I twin (same work)** | **43.5%** |
+| John vs Luke (last night's pairing) | 9.3% |
+| John vs Matthew | 8.9% |
+
+A clean ~5× separation. **The matcher was never broken.**
+
+**Tooling shipped (commit d3bd062):**
+- `tokenListOcr` / `shingleHashSetOcr` — strip line-break hyphenation, all-caps running headers, digit
+  tokens (layout artifacts that differ between scans) WITHOUT touching OCR character errors (real signal).
+- `extractGospelVolume` / `titleGuardAgrees` — **title-page guard**: assert two scans are the same
+  Gospel + volume before matching. `johnA vs lukeG → ok=FALSE`. This is the one-second check that would
+  have prevented the whole two-night detour. Tolerates real OCR mangling (JOHlSr, VOXi, "VOL. Ill").
+- `test/resource-textmatch-calibration.test.ts` — derives the bar from four control bands
+  (identity 100 / layout-only ≥95 / synthetic double-OCR ~42 / different-work <15). **DERIVED BAR = 21%**
+  (pre-registered, control-grounded — the old 55% was simply unachievable for double-OCR). John twin
+  clears it by 23 points.
+
+**NEXT SLICE — verse-aligned staged ingest (scoped, NOT rushed).** The match proof PASSES, so the John
+Vol I twin is a validated ingest candidate. Remaining work is the OCR→(verseId,text) alignment, which is
+the one operation the product must never get wrong (misattribution). Structure found in the scan:
+running headers `JOHN, CHAP. I. <page>`; verse markers `N.—` (noisy, interleaved with scripture-ref
+em-dashes like `9—11`); bracketed lemmas `[The Word was God.]`. Plan: parse to **passage-range** entries
+(verse_start–verse_end, matching the `commentary_entries` schema) rather than single verses (lower
+misattribution risk); validate with the N=20 spot-check (headers parse · monotonic within chapter ·
+sample aligned against the scan); **ship STAGED, never auto-published**. Deliberately not rushed overnight
+to avoid the exact misattribution the rails forbid.
