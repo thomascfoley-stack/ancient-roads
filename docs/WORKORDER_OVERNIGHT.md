@@ -14,12 +14,16 @@ translator/editor + edition year ≤1929) · shingle text-match proof · coverag
 ---
 
 ## 1. Content published (morning review)
-| Work | Tradition | Edition (translator, year) | Source | Match score | Entries | Status |
-|---|---|---|---|---|---|---|
-| _(none yet)_ | | | | | | |
+**None.** The new-tradition mission requires archive.org **fresh** ingest, which hit **three genuine forks I
+would not guess** (`docs/ARCHIVE_ORG_INGEST_DESIGN.md`). Publishing noisy-OCR, possibly-misaligned text into a
+verbatim/attributed corpus on a guessed match-proof would violate *verbatim only / never guess / quality over
+count / gate discipline*. I confirmed the data is reachable (correct PD editions: a Lapide Mossman 1908, Ryle
+1857, Menno Funk 1871), designed the adapter, and proved with a POC that naive OCR containment does NOT
+discriminate (same-edition 5% < different-work 9.5%) — so the OCR matcher is real engineering, not a
+formality. **Three owner decisions unblock a clean build (see §7).**
 
 ## 2. Quarantined (reversible) + why
-_(none yet)_
+_(none — nothing ingested)_
 
 ## 3. Safe bugs fixed (none touch content/verifier)
 | Item | What | Verified |
@@ -43,5 +47,20 @@ _(pending)_
 ## 6. Mobile (390px) findings + fixes
 _(pending)_
 
-## 7. Parked / worries
-_(none yet)_
+## 7. Parked / worries — THREE OWNER DECISIONS (unblock the whole content mission)
+Full detail in `docs/ARCHIVE_ORG_INGEST_DESIGN.md`. Each would corrupt a verbatim corpus if guessed:
+- **FORK A — "shingle text-match proof" is undefined for a FRESH work** (nothing stored to match against).
+  Recommend **cross-copy containment** (two independent PD scans of the same edition) — but the POC shows it
+  needs section-alignment + threshold calibration, not naive containment. Confirm this satisfies the gate.
+- **FORK B — OCR→verse-alignment is unreliable and this corpus is VERBATIM.** A wrong boundary = words
+  attributed to the wrong verse (the one thing the product must never do). Recommend fresh archive.org works
+  ship **staged** (NOT auto-published) until a validation pass — i.e. fresh ingests are outside the
+  auto-publish pre-authorization; only provenance-*repairs* (no re-parse) are covered.
+- **FORK C — non-verse `theology` works (Menno, mystics) have NO retrieval path.** Retrieval is entirely
+  `verseId`-keyed. Ingesting them today = stored-but-never-retrieved. Needs the topical/`theology` retrieval
+  design first. Menno Simons is blocked on this independent of A/B.
+
+**Worry:** the content mission cannot advance to *new traditions* without these three decisions — they are
+inherent to fresh-ingest, not avoidable. Provenance-repair of the existing (Reformed/patristic) tail is
+fork-free but adds no new tradition. **Recommended first slice once A+B land:** J.C. Ryle on one Gospel
+(single clean Anglican volume), shipped staged with an alignment validation pass.
