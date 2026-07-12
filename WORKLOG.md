@@ -1673,3 +1673,48 @@ builds; documented as the next slices in WORKORDER §7. §6 depends on §5's dat
 
 **Verification:** `npm run audit` GREEN (incl. new calibration tests); v3 held-out re-confirmed earlier this
 window at zero drift; prod DB search index live. 8 commits this queue.
+
+---
+
+## QUEUE #4 (overnight 2026-07-12) — live integrity defects fixed; Phase A diagnosed as a RERANKER problem
+
+Theme: three live defects each defeating a guarantee, and a "diagnose-before-you-spend" §2 that **saved a
+$4 re-embed** by looking at the data. All committed, audit green, deployed.
+
+**§0** — deleted the stray `.audit-q.mjs`; **resharded the concordance 13,480 → 296 files** (2-digit prefix
+buckets + outlier shards for function words), so it no longer strains Vercel's 15k-file limit. Verified both
+fetch paths in-browser.
+
+**§1a (CRITICAL, live integrity)** — the reader served `/commentaries/{ch}.json` **raw**: John 1:1 was 557
+entries / ~57 authors including Origen, Theophylact, Bonaventure, Tyndale, Alcuin, **"CS Lewis via Screwtape a
+devil"**. `isPublishedCommentaryEntry` was called only from a test. Wired the reader + library manifest
+through the published-author filter; fixed `pickDiverse` to rank by primacy (year), not file insertion order.
+Verified at 390px: John 1:1 → "10 of 125", zero heretics, Chrysostom (407) on top. Wrote **AUTHOR_TRIAGE.md**
+(all authors, entry counts, 315 PD promotion candidates, provenance flags) for the owner to rule on — corpus
+membership stays his call.
+
+**§1b** — the commentary predicate served **6 of 9** authors: `'Albert Barnes'`+crosswire (the embeddings
+naming) matched zero rows in commentary_entries, where Barnes is `"Barnes' Notes"`+biblehub — dropping Barnes/
+Wesley/Calvin (45,390 entries). Fixed; verified all 9 served. Added **presence tests** (the class the owner
+named: every licensing test asserted forbidden ABSENT, none asserted allowed PRESENT), seed-the-bug proven.
+The behavioral invariant then caught a real regression (both Barnes name-aliases must be recognized) — fixed.
+
+**§1c** — confirmed **378/401 authors are "Patristic"** (incl. CS Lewis 1963, Tolkien, Wilson 2020). The
+served set is currently sound, but proposed a curated tradition enum + author map + a data-quality gate before
+promoting more (in AUTHOR_TRIAGE.md). Not re-labelled — owner's call.
+
+**§2 (Phase A) — DIAGNOSED, and the brief was wrong.** Looking at the live DB: the vector index is already
+**HNSW** (schema.sql stale → ivfflat rebuild moot); `RERANK_DOC_CHARS` already 1200; live embed cap ~4000 not
+1000. **Pool sweep 20/50/100 IDENTICAL, 200 worse.** The killer: for the failing topical labels, the label
+passages are **present in the vectors and rank #1–#32 by similarity** yet return voices=0 — so it is a
+**reranker/selection** problem, not content. Confirmed with a `--no-rerank` run: removing the reranker lifts
+**topical HIT@1 35→50 and proper-noun 70→90** (it demotes the vector-#1 on-label passage) but drops topical
+HIT@2 75→60 (it earns its place finding the 2nd voice). **Decision: SKIP the chunking+re-embed** — disproven,
+$4 + a prod-index rewrite avoided. Deleted the dead `embeddings.ts` footgun. Real fix (parked): a
+query-type-aware rerank blend. Full writeup: `docs/PHASE_A_DIAGNOSIS.md`.
+
+**§3** — recorded **ADR-017**: do NOT build the Torrey doctrine router (circular — 92% WSC containment;
+bypasses the passage cap; interpretive). Confirms queue #3 §6.
+
+**Not done:** the reranker-blend fix (§2, parked as a designed+measured experiment — a retrieval change
+needing design-before-code + a fresh vN, not a 4am ship). v3 stands at topical H2 75 / epistle 84.

@@ -13,6 +13,40 @@ translator/editor + edition year ≤1929) · shingle text-match proof · coverag
 
 ---
 
+## ★ END-OF-SHIFT VALIDATION (QUEUE #4 · 2026-07-12) — ALL GREEN
+
+**Theme: three live integrity defects fixed, and Phase A diagnosed as a reranker problem — which SAVED a $4
+re-embed by looking at the data.**
+
+| § | What | Status |
+|---|---|---|
+| §0 | Concordance resharded 13,480 → **296 files**; stray scratch file removed | ✅ shipped, verified |
+| §1a | **Reader served the raw corpus** (Origen, Tyndale, "CS Lewis via Screwtape a devil") — now filtered to published authors; pickDiverse ranks by primacy | ✅ **live-defect fixed**, verified 390px |
+| §1b | Search predicate served **6 of 9** (Barnes/Wesley/Calvin = 0 rows on a name/URL mismatch) — now 9; PRESENCE tests added | ✅ fixed, seed-the-bug proven |
+| §1c | 378/401 authors are "Patristic" — reported; tradition schema proposed | ✅ in AUTHOR_TRIAGE.md |
+| §2 | **Phase A is a RERANKER problem, NOT a re-embed problem** — re-embed SKIPPED (saved $4 + prod-index risk) | ✅ diagnosed; fix parked |
+| §3 | Do NOT build the Torrey router | ✅ ADR-017 |
+
+- **`npm run audit`:** ✅ all gates green (incl. the new presence tests; the behavioral licensing invariant
+  caught + I fixed a Barnes-alias regression).
+- **§2 diagnosis (the headline):** the index is already HNSW (not ivfflat — schema.sql stale); pool sweep
+  20/50/100 flat, 200 worse; the failing topical labels are **present in the vectors and rank #1–#32** yet
+  return voices=0 → reranker/selection demotes them. Confirmed: `--no-rerank` lifts topical H1 35→50,
+  proper-noun 70→90. **Re-embed disproven.** Full writeup `docs/PHASE_A_DIAGNOSIS.md`.
+- **Deploy:** the §1 live-integrity fixes deployed at end of shift (see the QUEUE #3 stamp's deploy notes for
+  the `--archive` mechanism; the reshard makes it non-load-bearing). Reader now shows only the 9 published
+  authors per verse — **safe but sparse; expand via AUTHOR_TRIAGE.md promotions (owner's call).**
+
+**OWNER DECISIONS QUEUED (§7):**
+1. **AUTHOR_TRIAGE.md** — rule on the 315 pre-1929 PD candidates (Poole 31k, Geneva 31k, Cambridge, Pulpit,
+   Benson, Bengel, K&D…) to un-sparse the reader; verify the Barnes/Wesley/Calvin biblehub editions; decide
+   the Catena-Aurea derivatives; approve the tradition enum.
+2. **Phase A reranker fix** — the parked query-type-aware rerank blend (design-before-code + fresh vN);
+   `docs/PHASE_A_DIAGNOSIS.md` has the measured experiment plan. NOT a re-embed.
+3. **§3 content ingest** (from queue #3) — verse-aligned staged ingest of Ryle-on-John; match gate PASSES.
+
+---
+
 ## ★ END-OF-SHIFT VALIDATION (QUEUE #3 · 2026-07-12) — 7 of 9 sections, ALL GREEN
 
 **THE CONTENT P0 WAS NEVER BLOCKED.** Last night's 9.3% compared Ryle-on-**JOHN** vs Ryle-on-**LUKE** (two
