@@ -13,6 +13,38 @@ translator/editor + edition year ≤1929) · shingle text-match proof · coverag
 
 ---
 
+## ★ END-OF-SHIFT VALIDATION (QUEUE #3 · 2026-07-12) — 7 of 9 sections, ALL GREEN
+
+**THE CONTENT P0 WAS NEVER BLOCKED.** Last night's 9.3% compared Ryle-on-**JOHN** vs Ryle-on-**LUKE** (two
+Gospels). Printed the title pages this time. True John Vol I twin = **43.5%** vs ~9% different-work. New rail:
+*LOOK AT THE DATA BEFORE YOU PARK.*
+
+| § | What | Status |
+|---|---|---|
+| §1 | Word-click bug → single-word `WordPanel` | ✅ shipped, verified 390px+desktop |
+| §2 | Commentary search: partial legal index (10×, **live on prod DB**) + capped count | ✅ shipped, verified |
+| §3 | Content unblock: `tokenListOcr` + title guard + calibrated bar (21%) | ✅ tooling shipped; **verse-aligned staged ingest = next slice** |
+| §4 | Concordance index (13,480 files) + "appears in N verses" in WordPanel | ✅ shipped, verified 390px |
+| §7 | Licensing: false "public-domain" attribution → accurate CC BY/BY-SA credits | ✅ shipped, verified |
+| §8 | CLAUDE.md "retrieval 10/10" lie fixed · ROADMAP reconciled · 3 docs stamped SUPERSEDED | ✅ shipped |
+| §5 | Topics via CrossWire Torrey (`/topics`) | ⏸ NOT STARTED — next slice (multi-hour build) |
+| §6 | Circularity number: overlap(Torrey refs, WSC proof texts) | ⏸ NOT STARTED — depends on §5 data |
+
+- **`npm run audit`:** ✅ all gates green (typecheck root+web · lint · knip · pnpm audit · full vitest+coverage
+  incl. new calibration tests · qa invariants · Gate B license).
+- **Prod DB:** partial legal FTS index (migration 009) is **live** — commentary search is already 10× faster.
+- **Deploy:** app code (word-panel, concordance, count-cap, attribution) committed; deployed at end of shift (see below).
+
+**NEXT SLICES (owner or next session):**
+1. **§3 verse-aligned staged ingest** of Ryle-on-John — passage-range entries, N=20 spot-check, staged NOT
+   published (structure documented in `CONTENT_RECOVERY_PIPELINE.md` §3-unblock). The match gate now PASSES.
+2. **§5 Torrey topics** — parse Torrey New Topical Textbook (CrossWire PD) → static TS mirroring
+   `pericopes.ts`; `/topics` + `/topics/[slug]` → legal-filtered voices. Zero retrieval code. Needs CrossWire
+   fetch/parse tooling (check `diatheke`/`libsword` availability first).
+3. **§6** — once §5 lands, compute set-overlap(Torrey refs, WSC proof texts) per doctrine; record the number.
+
+---
+
 ## ★ END-OF-SHIFT VALIDATION (QUEUE #2 · 2026-07-12) — ALL GREEN
 - **Full suite + `npm run audit`:** ✅ AUDIT PASSED — all gates green (root 192 · web qa 18 · rate-limit 5 ·
   typecheck strict root+web · lint · knip · pnpm audit · licensing fail-closed).

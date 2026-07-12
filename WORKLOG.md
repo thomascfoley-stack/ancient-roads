@@ -1626,3 +1626,50 @@ confirms no accidental perturbation and no regression.
 
 **Prod:** healthy (existing deployment; no product change this session) — `/`→200 via gate, `/gate`→200,
 unauth `/api/ask`→401.
+
+---
+
+## QUEUE #3 (overnight 2026-07-12) — content UNBLOCKED, word-study shipped, live defects fixed
+
+**The headline: the content P0 was never actually blocked.** Last night's 9.3% that parked it for two nights
+was a Ryle-on-**John** vs Ryle-on-**Luke** comparison — two different Gospels, each title page saying so in
+the first ~200 chars. This time I printed the data. New rail in `quality-slice`: **LOOK AT THE DATA BEFORE
+YOU PARK — a number is not evidence until you've seen the input that produced it.**
+
+**§1 Word-click bug — FIXED + verified.** `read/[book]/[chapter]/page.tsx` discarded the tapped OWord and
+mapped the whole verse's word list. Threaded `study.focusWord` through; the previously-dead `WordPanel`
+single-word sheet now renders on a word tap (lemma/definition/morphology/KJV), with a "Read commentaries"
+CTA that switches to the StudyPanel. Verified at 390px + desktop (Ἐν, ὁ, καὶ).
+
+**§2 Commentary search — populated in prod, and 10× faster.** `commentary_entries` = 371,406 rows (69,444
+legal). EXPLAIN showed a common word ("God") matched 143,575 rows then read all of them to rank + apply the
+legal filter (incl. unindexable `source_url ILIKE '%crosswire%'`) — 1.2–1.7s. Migration 009 adds a **partial
+gin(tsv) index on legal rows** (predicate = LEGAL_COMMENTARY_ENTRIES_PREDICATE), built CONCURRENTLY, **live on
+prod DB now**: love 1235→93ms, God 1710→163ms (10–13×). Also capped the unbounded `count(*)` at 1000 → UI
+shows "1000+". Verified in-browser.
+
+**§3 Content P0 — UNBLOCKED.** True John Vol I twin (archive.org vs Google OCR, both "ST. JOHN. VOL. I.")
+scores **43.5%** min containment vs ~9% different-work — clean ~5× separation. Shipped `tokenListOcr` (strip
+hyphenation/headers/digits, not char errors), `titleGuardAgrees` (johnA vs lukeG → FALSE — the one-second
+check that would have saved two nights), and a **calibration test** deriving the bar from four control bands
+(**DERIVED BAR = 21%**; old 55% was unachievable). Next slice: verse-aligned staged ingest (scoped, N=20
+spot-check, staged not published — not rushed to avoid misattribution).
+
+**§4 Concordance — shipped.** `build-concordance.ts` (pnpm ingest:concordance) → 13,480 static files / 3.6MB
+keyed by verseId. WordPanel now shows "Also appears in N verses" as paginated verse-link chips. Verified at
+390px (καὶ → 5112 verses, paging works). Extends §1.
+
+**§7 Licensing — live violation FIXED.** interlinear.tsx claimed morphology is "public-domain" — false;
+SBLGNT (CC BY 4.0), MorphGNT (CC BY-SA 3.0), OSHB (CC BY 4.0) require attribution. Added an accurate
+language-aware credits block + DATA_SOURCES.md entries. Verified rendered on the John interlinear.
+
+**§8 Honesty fixes.** CLAUDE.md §Accuracy said "retrieval 10/10" (auto-loaded into every session, false —
+topical/epistle HIT@2 75/84 below the 85 bar); corrected to real per-category numbers. Reconciled the 2-day
+stale ROADMAP (walls 1–3 shipped; content P0 added). Stamped MIGRATION_DESIGN / REFERENCE_ROUTING_DESIGN /
+INGESTION_HARNESS_DESIGN as SUPERSEDED (they said "no code until approved" while their code is in prod).
+
+**§5 (CrossWire Torrey topics) + §6 (Torrey∩WSC overlap number) — NOT STARTED.** Substantial multi-hour
+builds; documented as the next slices in WORKORDER §7. §6 depends on §5's data.
+
+**Verification:** `npm run audit` GREEN (incl. new calibration tests); v3 held-out re-confirmed earlier this
+window at zero drift; prod DB search index live. 8 commits this queue.
