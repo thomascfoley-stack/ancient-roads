@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchLexEntry, decodeMorph, type OWord, type LexEntry } from '@/lib/original';
+import { fetchLexEntry, fetchConcordance, decodeMorph, type OWord, type LexEntry, type Concordance } from '@/lib/original';
+import { decodeVerseId, formatVerseId } from '@bible/verse-id';
+import { BOOK_BY_NUM } from '@bible/books';
+
+const CONCORDANCE_PAGE = 12;
 
 export function WordPanel({
   word,
@@ -18,14 +22,19 @@ export function WordPanel({
 }) {
   const [entry, setEntry] = useState<LexEntry | null>(null);
   const [loading, setLoading] = useState(true);
+  const [concordance, setConcordance] = useState<Concordance | null>(null);
+  const [ccPage, setCcPage] = useState(0);
 
   useEffect(() => {
     setLoading(true);
     setEntry(null);
+    setConcordance(null);
+    setCcPage(0);
     fetchLexEntry(word.s).then((e) => {
       setEntry(e);
       setLoading(false);
     });
+    if (word.s) fetchConcordance(word.s).then(setConcordance);
   }, [word.s]);
 
   useEffect(() => {
@@ -111,6 +120,53 @@ export function WordPanel({
             </p>
           )}
         </div>
+
+        {concordance && concordance.count > 1 && (
+          <div className="border-t border-stone-100 px-5 py-4 dark:border-stone-800">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+              Also appears in {concordance.count} verse{concordance.count === 1 ? '' : 's'}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {concordance.verseIds
+                .slice(ccPage * CONCORDANCE_PAGE, ccPage * CONCORDANCE_PAGE + CONCORDANCE_PAGE)
+                .map((vid) => {
+                  const { book, chapter } = decodeVerseId(vid);
+                  const slug = BOOK_BY_NUM.get(book)?.slug;
+                  return (
+                    <a
+                      key={vid}
+                      href={slug ? `/read/${slug}/${chapter}` : undefined}
+                      className="rounded-full bg-stone-100 px-2.5 py-1 text-xs text-stone-600 transition-colors hover:bg-amber-100 hover:text-amber-800 dark:bg-stone-800 dark:text-stone-300"
+                    >
+                      {formatVerseId(vid)}
+                    </a>
+                  );
+                })}
+            </div>
+            {concordance.count > CONCORDANCE_PAGE && (
+              <div className="mt-3 flex items-center justify-between text-xs text-stone-400">
+                <button
+                  onClick={() => setCcPage((p) => Math.max(0, p - 1))}
+                  disabled={ccPage === 0}
+                  className="rounded px-2 py-1 hover:text-stone-600 disabled:opacity-40"
+                >
+                  ← prev
+                </button>
+                <span>
+                  {ccPage * CONCORDANCE_PAGE + 1}–{Math.min((ccPage + 1) * CONCORDANCE_PAGE, concordance.count)} of{' '}
+                  {concordance.count}
+                </span>
+                <button
+                  onClick={() => setCcPage((p) => p + 1)}
+                  disabled={(ccPage + 1) * CONCORDANCE_PAGE >= concordance.count}
+                  className="rounded px-2 py-1 hover:text-stone-600 disabled:opacity-40"
+                >
+                  next →
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="border-t border-stone-100 px-5 py-4">
           <button

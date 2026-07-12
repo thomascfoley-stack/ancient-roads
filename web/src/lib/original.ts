@@ -69,6 +69,24 @@ export async function loadFullLexicon(lang: 'greek' | 'hebrew') {
   return loadLexicon(lang);
 }
 
+// Concordance: every verseId where this Strong's number occurs (built by
+// src/ingest/build-concordance.ts). verseIds are sorted canonical ids.
+export interface Concordance { strong: string; count: number; verseIds: number[] }
+const concordanceCache = new Map<string, Concordance | null>();
+export async function fetchConcordance(strong: string): Promise<Concordance | null> {
+  if (!strong) return null;
+  if (concordanceCache.has(strong)) return concordanceCache.get(strong)!;
+  let result: Concordance | null = null;
+  try {
+    const res = await fetch(`/concordance/${strong}.json`);
+    if (res.ok) result = (await res.json()) as Concordance;
+  } catch {
+    result = null;
+  }
+  concordanceCache.set(strong, result);
+  return result;
+}
+
 // ---- Morphology decoding ---------------------------------------------------
 
 const GK = {

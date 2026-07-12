@@ -31,3 +31,4 @@ spike/
 
 # transient re-source verification cache
 .newadvent-cache/
+web/public/concordance/
