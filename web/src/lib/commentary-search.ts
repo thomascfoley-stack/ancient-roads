@@ -17,6 +17,10 @@ export interface CommentarySearchResult {
 
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 20;
+/** Upper bound on the reported match count. A common word matches tens of thousands of
+ *  legal rows; nobody pages past this, and counting further is wasted work. When the cap
+ *  is hit the UI shows "N+". */
+const COUNT_CAP = 1000;
 
 export async function searchCommentaries(opts: {
   query: string;
@@ -25,9 +29,9 @@ export async function searchCommentaries(opts: {
   author?: string;
   limit?: number;
   offset?: number;
-}): Promise<{ results: CommentarySearchResult[]; total: number }> {
+}): Promise<{ results: CommentarySearchResult[]; total: number; totalCapped: boolean }> {
   const q = opts.query.trim();
-  if (!q) return { results: [], total: 0 };
+  if (!q) return { results: [], total: 0, totalCapped: false };
 
   const limit = Math.min(Math.max(1, opts.limit ?? DEFAULT_LIMIT), MAX_LIMIT);
   const offset = Math.max(0, opts.offset ?? 0);
@@ -56,20 +60,30 @@ export async function searchCommentaries(opts: {
       OFFSET $6`,
       [q, book, tradition, author, limit, offset],
     ),
+    // Count is CAPPED at COUNT_CAP (never an unbounded aggregate scan — CLAUDE.md
+    // "never return unbounded result sets"). A common word ("God") matches ~28k legal
+    // rows; the UI only needs "how many, roughly" for a "Load more (X of Y)" label, so
+    // we stop counting at the cap and render "N+" when it's hit. The inner LIMIT lets
+    // Postgres stop scanning the partial index early.
     sql.query(
-      `SELECT count(*)::int AS total
-      FROM commentary_entries
-      WHERE tsv @@ websearch_to_tsquery('english', $1)
-        AND (${LEGAL_COMMENTARY_ENTRIES_PREDICATE})
-        AND ($2::smallint IS NULL OR book = $2)
-        AND ($3::text IS NULL OR tradition = $3)
-        AND ($4::text IS NULL OR author = $4)`,
+      `SELECT count(*)::int AS total FROM (
+        SELECT 1
+        FROM commentary_entries
+        WHERE tsv @@ websearch_to_tsquery('english', $1)
+          AND (${LEGAL_COMMENTARY_ENTRIES_PREDICATE})
+          AND ($2::smallint IS NULL OR book = $2)
+          AND ($3::text IS NULL OR tradition = $3)
+          AND ($4::text IS NULL OR author = $4)
+        LIMIT ${COUNT_CAP}
+      ) capped`,
       [q, book, tradition, author],
     ),
   ]);
 
+  const total = (countRows as unknown as { total: number }[])[0]?.total ?? 0;
   return {
     results: results as unknown as CommentarySearchResult[],
-    total: (countRows as unknown as { total: number }[])[0]?.total ?? 0,
+    total,
+    totalCapped: total >= COUNT_CAP,
   };
 }

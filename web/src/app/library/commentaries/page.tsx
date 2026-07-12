@@ -159,6 +159,7 @@ export default function CommentariesPage() {
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchTotal, setSearchTotal] = useState(0);
+  const [searchTotalCapped, setSearchTotalCapped] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchPage, setSearchPage] = useState(0);
   const [traditionFilter, setTraditionFilter] = useState<string | null>(null);
@@ -194,6 +195,7 @@ export default function CommentariesPage() {
       setDebouncedQuery('');
       setSearchResults([]);
       setSearchTotal(0);
+      setSearchTotalCapped(false);
       setSearchPage(0);
       setTraditionFilter(null);
       setSearchError(null);
@@ -219,8 +221,9 @@ export default function CommentariesPage() {
         if (!r.ok) throw new Error(`Search failed (${r.status})`);
         return r.json();
       })
-      .then((data: { results: SearchResult[]; total: number }) => {
+      .then((data: { results: SearchResult[]; total: number; totalCapped?: boolean }) => {
         setSearchTotal(data.total);
+        setSearchTotalCapped(Boolean(data.totalCapped));
         setSearchResults((prev) => {
           if (searchPage === 0) return data.results;
           const seen = new Set(prev.map((r) => r.id));
@@ -231,6 +234,7 @@ export default function CommentariesPage() {
         setSearchError(err instanceof Error ? err.message : 'Search failed');
         setSearchResults([]);
         setSearchTotal(0);
+        setSearchTotalCapped(false);
       })
       .finally(() => setSearchLoading(false));
   }, [debouncedQuery, searchPage, traditionFilter]);
@@ -367,7 +371,7 @@ export default function CommentariesPage() {
           ) : (
             <>
               <p className="mb-3 text-xs text-stone-400 dark:text-stone-500">
-                {searchTotal} result{searchTotal !== 1 ? 's' : ''}
+                {searchTotal}{searchTotalCapped ? '+' : ''} result{searchTotal !== 1 ? 's' : ''}
                 {traditionFilter ? ` in ${traditionFilter}` : ''}
               </p>
 
@@ -385,7 +389,7 @@ export default function CommentariesPage() {
                     disabled={searchLoading}
                     className="min-h-[44px] rounded-full bg-paper px-6 text-sm font-medium text-stone-600 shadow-paper transition-all duration-200 ease-gentle hover:text-accent-800 hover:shadow-float active:bg-stone-100 disabled:opacity-40 dark:bg-stone-800 dark:text-stone-300 dark:shadow-none"
                   >
-                    {searchLoading ? 'Loading…' : `Load more (${searchResults.length} of ${searchTotal})`}
+                    {searchLoading ? 'Loading…' : `Load more (${searchResults.length} of ${searchTotal}${searchTotalCapped ? '+' : ''})`}
                   </button>
                 </div>
               )}
