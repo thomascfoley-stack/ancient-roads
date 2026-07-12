@@ -111,7 +111,31 @@ matcher was built + validated on **clean** text (helloao → 100% repair); it do
   the tail absorbs the night." **Owner decisions needed (§7):** build the OCR normalizer (own slice) and/or
   resolve the CCEL terms-fork so clean transcriptions unblock the whole tier.
 
-## 7. Parked / worries — THREE OWNER DECISIONS (unblock the whole content mission)
+## §4 — FALSE-CONFIDENCE TEST AUDIT — DONE (skill + run + fixes)
+Wrote `.claude/skills/false-confidence-audit/` (taxonomy of 7 fake-test smells + the seed-the-bug proof
+discipline) and ran it across all 26 test files. Full report: `docs/FALSE_CONFIDENCE_AUDIT.md`. The owner's
+named offender (`licensing.test.ts` `expect(baseline).toBe(263496)`) was **already fixed** by the QA-harness
+session (now an honest skip). Findings:
+- **F2 (H1) FIXED + proven** — `get-messages-filters-by-user-id` asserted only `sql.toMatch(/user_id/)`
+  (passes on the decoy `WHERE user_id IS NOT NULL`). Now captures bound param VALUES and asserts the caller's
+  id is bound to `user_id = $N`. Seeded the decoy → red; reverted → green; `chat.ts` diff clean.
+- **F3 (wallet) FIXED + proven** — `includes('requireUser')` matched the IMPORT, so a deleted/after-teach()
+  call passed. Now asserts the CALL exists and precedes `teach(` (comment-stripped). Seeded call-removal →
+  red (old check still saw the import); reverted → green; `ask/route.ts` diff clean.
+- **F4 (evals) FIXED** — `toBeTruthy()` on a failure-reason string → `toContain('<check>')`.
+- **F1 (HIGH) PARKED — owner infra decision (below).**
+
+## 7. Parked / worries
+### OWNER DECISION — CI does not run the two existential behavioral invariants (§4 F1)
+`web/test/invariants/licensing.test.ts` (Tyndale never served) and `tenancy.test.ts` (two-account isolation)
+are `describe.skipIf(!dbUrl)`; **CI runs `pnpm run audit` with no DB, so both skip and the gate is green
+having run zero of their assertions.** `predeploy-gate.ts` enforces only the STATIC ratchet, not these — so
+the licensing + tenancy guarantees run **nowhere automatically**. Not a broken test; a missing environment.
+I did NOT turn CI red overnight or fake a pass. **Recommend (A)** wire a Neon test branch + `APP_DATABASE_URL`
+secret into `audit.yml` so they run in CI; **(B)** defense-in-depth: extend `predeploy-gate.ts` with a
+DB-backed legal-pool assertion (design-before-code — warn-not-block if DB down). Detail: `docs/FALSE_CONFIDENCE_AUDIT.md` §F1.
+
+### THREE OWNER DECISIONS (unblock the whole content mission)
 Full detail in `docs/ARCHIVE_ORG_INGEST_DESIGN.md`. Each would corrupt a verbatim corpus if guessed:
 - **FORK A — "shingle text-match proof" is undefined for a FRESH work** (nothing stored to match against).
   Recommend **cross-copy containment** (two independent PD scans of the same edition) — but the POC shows it

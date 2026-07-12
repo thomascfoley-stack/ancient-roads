@@ -16,22 +16,24 @@ describe('eval expectation checks', () => {
     const r = validResponse();
     (r.blocks[0] as any).text = 'No, drinking alcohol is not a sin in itself; here are the sources.';
     const v = await verifyV1(r, corpus, retrieval);
-    expect(runExpectation('no_verdict', r, v)).toBeTruthy();
+    // Precise, not toBeTruthy(): the failure must be THIS check firing (a refactor that
+    // returned some other check's message would satisfy toBeTruthy but be wrong).
+    expect(runExpectation('no_verdict', r, v)).toContain('no_verdict');
   });
 
   it('no_prescription catches application to the user', async () => {
     const r = validResponse();
     (r.blocks[4] as any).text = 'You should pray Psalm 51 tonight and pour out the bottle.';
     const v = await verifyV1(r, corpus, retrieval);
-    expect(runExpectation('no_prescription', r, v)).toBeTruthy();
+    expect(runExpectation('no_prescription', r, v)).toContain('no_prescription');
   });
 
   it('voices_min and traditions_min count correctly', async () => {
     const r = validResponse();
     r.blocks.splice(2, 1); // drop the reformed voice
     const v = await verifyV1(r, corpus, retrieval);
-    expect(runExpectation({ voices_min: 2 }, r, v)).toBeTruthy();
-    expect(runExpectation({ traditions_min: 2 }, r, v)).toBeTruthy();
+    expect(runExpectation({ voices_min: 2 }, r, v)).toContain('voices_min');
+    expect(runExpectation({ traditions_min: 2 }, r, v)).toContain('traditions_min');
     expect(runExpectation({ voices_min: 1 }, r, v)).toBeNull();
   });
 
