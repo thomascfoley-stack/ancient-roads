@@ -15,6 +15,21 @@ Reference for acquiring complete, structured, legally-clean Bible + commentary d
 - **Open-licensed extras:** openbible.info cross-references (CC BY 4.0); unfoldingWord ULT/UST (CC BY-SA).
 - **Modern copyrighted (ESV/NIV/NASB/NLT/CSB) — cannot embed.** Every publisher forbids storing full text; ESV licenses to organizations not solo devs; NIV needs a legal entity + a separate AI/ML license. The only indie channel is API.Bible (per-request *display* only, never stored, ~$10/mo/translation, no NIV). **Architecture:** semantic search runs over PD text; copyrighted translations are display-only, later, via licensed API. (See ADR-004.)
 
+## Original languages (interlinear / word study)
+
+These power the reader's interlinear + word panels (`ingest-original.ts`, `ingest-strongs.ts`). **Attribution
+is displayed in `web/src/components/interlinear.tsx` — required by the licences below; do NOT call these
+"public domain."**
+
+- **Greek NT text — SBLGNT** (The Greek New Testament: SBL Edition). © 2010 Society of Biblical Literature &
+  Logos Bible Software. **CC BY 4.0** — attribution required. Source: `github.com/morphgnt/sblgnt`.
+- **Greek NT morphology — MorphGNT** (morphologically parsed SBLGNT; Tauber et al.). **CC BY-SA 3.0** —
+  attribution + share-alike. Source: `github.com/morphgnt/sblgnt`.
+- **Hebrew OT text + morphology — Open Scriptures Hebrew Bible (OSHB / morphhb)**. **CC BY 4.0** — attribution
+  required. Source: `github.com/openscriptures/morphhb`.
+- **Strong's numbers + definitions** — **public domain** (Strong's Exhaustive Concordance, 1890). Source:
+  `github.com/openscriptures/strongs`. (This one *is* PD; the text + morphology above are not.)
+
 ## Commentaries + sermons
 
 - **Primary: SWORD/CrossWire modules** (bulk download intended, per-module license, complete works, verse-keyed). Parse with `libsword`/`diatheke` (pysword is Bible-only). Filter each `.conf` `DistributionLicense` to Public Domain; exclude KingComments, NET notes, Lockman.

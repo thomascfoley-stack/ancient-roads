@@ -62,10 +62,19 @@ export function Interlinear({
         ))}
       </div>
 
-      <p className="mt-10 border-t border-stone-100 pt-6 text-center text-xs text-stone-400">
-        Tap any word for its {rtl ? 'Hebrew' : 'Greek'} definition, morphology, and commentaries.
-        Strong&rsquo;s numbers and morphology from public-domain sources.
-      </p>
+      <div className="mt-10 border-t border-stone-100 pt-6 text-center text-xs text-stone-400">
+        <p>Tap any word for its {rtl ? 'Hebrew' : 'Greek'} definition, morphology, and commentaries.</p>
+        {/* Attribution required by the licences of the source data (§7 licensing fix). Full
+            per-work records in DATA_SOURCES.md. Strong's is PD; the text + morphology are not. */}
+        <p className="mt-1 leading-relaxed">
+          {rtl ? (
+            <>Hebrew text &amp; morphology: Open Scriptures Hebrew Bible (CC&nbsp;BY&nbsp;4.0).</>
+          ) : (
+            <>Greek text: SBLGNT © 2010 SBL &amp; Logos (CC&nbsp;BY&nbsp;4.0). Greek morphology: MorphGNT (CC&nbsp;BY-SA&nbsp;3.0).</>
+          )}{' '}
+          Strong&rsquo;s numbers &amp; definitions: public domain (Strong&rsquo;s, 1890).
+        </p>
+      </div>
     </div>
   );
 }
