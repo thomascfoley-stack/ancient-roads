@@ -13,6 +13,28 @@ translator/editor + edition year ≤1929) · shingle text-match proof · coverag
 
 ---
 
+## ★ END-OF-SHIFT VALIDATION (QUEUE #2 · 2026-07-12) — ALL GREEN
+- **Full suite + `npm run audit`:** ✅ AUDIT PASSED — all gates green (root 192 · web qa 18 · rate-limit 5 ·
+  typecheck strict root+web · lint · knip · pnpm audit · licensing fail-closed).
+- **v3 re-measure (§2):** ✅ zero drift — verse-ref 95 / pericope 87 / proper-noun 70 / epistle H2 84 /
+  topical H2 75 / control 10-10. Byte-identical; no retrieval change this session (diff-verified).
+- **Live prod smoke:** ✅ `/`→200 via gate · `/gate`→200 · unauth `/api/ask`→401 (existing deployment; no
+  product change shipped tonight, so no new deploy).
+- **Real app run (§5):** ✅ booted dev, `/ask` `/read` `/library` clean at 390px + desktop; real query
+  "good shepherd in John 10?" → John 10:11, 3 voices/3 traditions, verbatim+attributed, no forbidden author.
+- **Tree clean + pushed:** ✅ 6 commits pushed to origin/main (`574b55b..dfa43dd`), working tree clean.
+- **Pre-commit hook (§6):** ✅ installed + proven (blocks lint errors under macOS bash 3.2).
+
+**What needs YOU (owner decisions, in priority order):**
+1. **Content is blocked on OCR** (§1/§7) — build the OCR-normalizer slice, or resolve the CCEL clean-text
+   terms-fork. All archive.org anchors fail the pre-registered cross-copy bar until then. Nothing was loosened.
+2. **CI runs zero of the two existential behavioral invariants** (§4 F1) — wire a Neon test branch +
+   `APP_DATABASE_URL` secret into `audit.yml` so licensing + tenancy actually execute in the gate.
+3. **Three fresh-ingest forks** (§7 A/B/C) still gate the new-tradition mission.
+4. **Library dropdown lists forbidden authors** (§5, UI-only, not a leak) — task chip spawned.
+
+---
+
 ## 1. Content published (morning review)
 **None.** The new-tradition mission requires archive.org **fresh** ingest, which hit **three genuine forks I
 would not guess** (`docs/ARCHIVE_ORG_INGEST_DESIGN.md`). Publishing noisy-OCR, possibly-misaligned text into a
