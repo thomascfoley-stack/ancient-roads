@@ -4,6 +4,34 @@ set -e
 echo "=== What Others Have Said — Deploy ==="
 echo ""
 
+# ---------------------------------------------------------------------------
+# CLEAN-TREE GATE — you cannot deploy code that isn't committed.
+#
+# `vercel --prod` uploads the WORKING TREE, not a commit. With more than one
+# agent/session editing this directory, whoever runs deploy.sh ships whatever
+# happens to be sitting there — including another session's half-finished work.
+# That happened on 2026-07-12: a session deployed a concurrent session's
+# un-reviewed, in-flight changes to production without either of them intending it.
+#
+# Nothing reaches production that isn't in git. If you want it live, commit it.
+# ---------------------------------------------------------------------------
+DIRTY=$(git status --porcelain 2>/dev/null)
+if [ -n "$DIRTY" ]; then
+  echo "✗ DEPLOY BLOCKED — the working tree is dirty."
+  echo ""
+  echo "$DIRTY"
+  echo ""
+  echo "vercel --prod uploads the WORKING TREE, so these uncommitted/untracked files"
+  echo "would ship to production un-reviewed — possibly another session's work-in-progress."
+  echo ""
+  echo "Commit (or stash) everything you intend to ship, then re-run. What's in prod"
+  echo "must be reproducible from git."
+  exit 1
+fi
+
+echo "✓ Working tree clean — deploying commit $(git rev-parse --short HEAD)"
+echo ""
+
 # Check prerequisites
 if ! command -v npx &> /dev/null; then
   echo "Error: npx not found. Install Node.js first."

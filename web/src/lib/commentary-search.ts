@@ -1,4 +1,5 @@
 import { getDb } from './db';
+import { LEGAL_COMMENTARY_ENTRIES_PREDICATE } from './legal-corpus';
 
 export interface CommentarySearchResult {
   id: number;
@@ -32,31 +33,39 @@ export async function searchCommentaries(opts: {
   const offset = Math.max(0, opts.offset ?? 0);
   const sql = getDb();
 
+  const book = opts.book ?? null;
+  const tradition = opts.tradition ?? null;
+  const author = opts.author ?? null;
+
   const [results, countRows] = await Promise.all([
-    sql`
-      SELECT
+    sql.query(
+      `SELECT
         id, book, chapter, verse_start, verse_end,
         author, year, tradition, source_title,
-        ts_headline('english', body, websearch_to_tsquery('english', ${q}),
+        ts_headline('english', body, websearch_to_tsquery('english', $1),
           'MaxWords=50, MinWords=20, StartSel=<mark>, StopSel=</mark>') AS snippet,
-        ts_rank_cd(tsv, websearch_to_tsquery('english', ${q})) AS rank
+        ts_rank_cd(tsv, websearch_to_tsquery('english', $1)) AS rank
       FROM commentary_entries
-      WHERE tsv @@ websearch_to_tsquery('english', ${q})
-        AND (${opts.book ?? null}::smallint IS NULL OR book = ${opts.book ?? null})
-        AND (${opts.tradition ?? null}::text IS NULL OR tradition = ${opts.tradition ?? null})
-        AND (${opts.author ?? null}::text IS NULL OR author = ${opts.author ?? null})
+      WHERE tsv @@ websearch_to_tsquery('english', $1)
+        AND (${LEGAL_COMMENTARY_ENTRIES_PREDICATE})
+        AND ($2::smallint IS NULL OR book = $2)
+        AND ($3::text IS NULL OR tradition = $3)
+        AND ($4::text IS NULL OR author = $4)
       ORDER BY rank DESC
-      LIMIT ${limit}
-      OFFSET ${offset}
-    `,
-    sql`
-      SELECT count(*)::int AS total
+      LIMIT $5
+      OFFSET $6`,
+      [q, book, tradition, author, limit, offset],
+    ),
+    sql.query(
+      `SELECT count(*)::int AS total
       FROM commentary_entries
-      WHERE tsv @@ websearch_to_tsquery('english', ${q})
-        AND (${opts.book ?? null}::smallint IS NULL OR book = ${opts.book ?? null})
-        AND (${opts.tradition ?? null}::text IS NULL OR tradition = ${opts.tradition ?? null})
-        AND (${opts.author ?? null}::text IS NULL OR author = ${opts.author ?? null})
-    `,
+      WHERE tsv @@ websearch_to_tsquery('english', $1)
+        AND (${LEGAL_COMMENTARY_ENTRIES_PREDICATE})
+        AND ($2::smallint IS NULL OR book = $2)
+        AND ($3::text IS NULL OR tradition = $3)
+        AND ($4::text IS NULL OR author = $4)`,
+      [q, book, tradition, author],
+    ),
   ]);
 
   return {
