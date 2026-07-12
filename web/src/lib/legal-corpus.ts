@@ -31,6 +31,7 @@ export const PUBLISHED_WHOLE_BIBLE_AUTHORS = [
   'Adam Clarke',
   'Matthew Henry',
   "Barnes' Notes",
+  'Albert Barnes', // SAME author as "Barnes' Notes" — the embeddings table names him this way; both are published (matches 0 rows in commentary_entries, which is harmless)
   'John Wesley',
   'John Calvin',
 ] as const;

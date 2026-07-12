@@ -20,6 +20,7 @@ const WHOLE_BIBLE = [
   'Adam Clarke',
   'Matthew Henry',
   "Barnes' Notes",
+  'Albert Barnes', // embeddings-table alias for the same published author
   'John Wesley',
   'John Calvin',
 ] as const;
@@ -50,11 +51,14 @@ describe('Layer 1 — published-author PRESENCE', () => {
     }
   });
 
-  it('the embeddings-table naming ("Albert Barnes") is NOT the commentary naming', () => {
-    // Guards the exact bug: the commentary paths use "Barnes' Notes"; if someone copies the
-    // embeddings 'Albert Barnes' back in, Barnes silently disappears from search + reader.
+  it('BOTH Barnes names are published aliases — the commentary one ("Barnes\' Notes") must not be dropped', () => {
+    // Barnes appears as "Barnes' Notes" in commentary_entries + the static reader, and as
+    // 'Albert Barnes' in the embeddings table. Both are the same published PD author; the
+    // check must accept both. The §1b bug was that the commentary PREDICATE used only the
+    // embeddings name, so search/reader Barnes ("Barnes' Notes") matched zero rows — this
+    // asserts that name is present, so reverting to embeddings-only naming turns it red.
     expect(isPublishedAuthor("Barnes' Notes")).toBe(true);
-    expect(isPublishedAuthor('Albert Barnes')).toBe(false);
+    expect(isPublishedAuthor('Albert Barnes')).toBe(true);
   });
 
   it('forbidden / non-corpus authors are NOT published', () => {
