@@ -1,6 +1,9 @@
 # Design — Reference/Pericope Intent Routing for Retrieval
 
-**Status: DESIGN ONLY — awaiting owner approval. No code until approved** (design-before-code rail; this touches retrieval + sync-guarded `ref-parse`).
+**Status: SUPERSEDED — IMPLEMENTED and IN PROD (as of 2026-07-12).** Reference routing (ADR-015) shipped:
+`injectionSql` / `floorOnRange` / intent resolution in `web/src/lib/teacher/routing.ts` + `src/bible/pericopes.ts`,
+exercised by the v3 held-out eval and deployed live. Retained as design rationale, **not a pending proposal.**
+_(Original status: DESIGN ONLY — awaiting owner approval.)_
 
 ## 1. Context — what we're fixing (measured, §14)
 

@@ -1,6 +1,9 @@
 # Ingestion Harness — Design
 
-**Status:** Operational settings locked (see below); awaiting owner go-ahead for Phase 1. Per the design-before-code rail: no harness code until approved. Owner: Thomas. Author: PM.
+**Status: SUPERSEDED — Phase 1 BUILT (as of 2026-07-12).** The harness shipped: `src/ingest/ingest-harness.ts`
+(per-work digest, auto-decide/escalate; publish remains a hard human gate). Retained as design rationale,
+**not a pending proposal.** Owner: Thomas. Author: PM.
+_(Original status: awaiting owner go-ahead for Phase 1; no harness code until approved.)_
 
 ## Purpose
 

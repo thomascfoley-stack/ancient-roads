@@ -1,6 +1,10 @@
 # Migration Design — `commentary_entries`/`embeddings` → `sources`/`sections`
 
-**Status: DESIGN ONLY — awaiting owner (Thomas) approval. No schema code, no migration scripts until approved.**
+**Status: SUPERSEDED — IMPLEMENTED and IN PROD (as of 2026-07-12).** The legal-corpus migration/publish
+shipped: `db/migrations/*.sql` (incl. the `status` staged→published column), `legalBasePoolSql` /
+`LEGAL_CORPUS_FILTER` in `web/src/lib/teacher/routing.ts`, deployed and verified live. This doc is retained as
+design rationale, **not a pending proposal** — do not read "awaiting approval" as "unbuilt."
+_(Original status: DESIGN ONLY — awaiting owner approval.)_
 Owner: this session (recorded in `WORKLOG.md`/`ROADMAP.md` 2026-07-10). Executes ADR-010. Consolidates `docs/INGESTION_TASK.md` (Appendix A) + `docs/SCHEMA.md` §4 + the running system — it does not restate them, it reconciles them to what is actually in Neon today.
 
 ---

@@ -3,7 +3,31 @@
 Audited from the actual repo on 2026-07-08 — code, tests, `/audit` output, `docs/`, and
 git history — not from memory or the earlier hit list.
 
-## Update 2026-07-11 (BETA PLAN — decisions locked; building the walls in order)
+## Update 2026-07-12 (reconciled to the actual tree — supersedes the 07-11 plan below)
+
+The three beta walls are **DONE and DEPLOYED**, not "NEXT":
+1. **Fail-closed site gate + rate-limit `/api/ask`** — shipped (`middleware.ts` + `gate.ts` fail closed;
+   per-user Postgres rate limit, migration 008). Live: unauth `/api/ask` → 401.
+2. **Migrate + publish the legal corpus** — shipped (`legalBasePoolSql` / `LEGAL_CORPUS_FILTER` single-sourced;
+   `MIGRATION_DESIGN.md` now stamped SUPERSEDED). Prod serves legal-only.
+3. **Observability** — shipped (`observability.ts` `logEvent`).
+
+**Held-out v3 (re-measured 2026-07-12, zero drift):** verse-ref 95/98 · pericope 87/100 · proper-noun 70/90 ·
+epistle 60/**84** · topical 35/**75** · control clean. **Topical/epistle still below the 85 HIT@2 bar** — a
+retrieval+content limit, NOT "retrieval solved" (CLAUDE.md §Accuracy corrected accordingly).
+
+**THE ACTIVE P0 IS CONTENT** (`docs/CONTENT_RECOVERY_PIPELINE.md`), which the 07-11 plan omitted entirely.
+Status 2026-07-12: the cross-copy match proof is **UNBLOCKED** — the "9.3% failure" that parked it for two
+nights was a Ryle-on-John vs Ryle-on-Luke mis-pairing; the true John Vol I twin scores 43.5% vs a
+control-derived 21% bar. Title guard + `tokenListOcr` + calibration test shipped. **Next slice:** verse-aligned
+staged ingest of Ryle-on-John (passage-range, N=20 spot-check, staged not published).
+
+**Also shipped this window (QUEUE #3):** reader single-word `WordPanel` (§1); commentary FTS 10× faster via a
+partial legal GIN index + capped count (§2, live on prod DB).
+
+---
+
+## Update 2026-07-11 (BETA PLAN — decisions locked; building the walls in order) — SUPERSEDED by 07-12 above
 
 **Where we are:** the faithfulness gate CLEARS (interpretation_bait 35/35 = 100% live through the real
 `teach()`; WORKLOG 2026-07-10). Retrieval is at the accepted beta limitation 65/72. Original "Phase A"
