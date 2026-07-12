@@ -21,6 +21,7 @@ const argVal = (flag: string) => { const i = process.argv.indexOf(flag); return 
 const POOL = Number(argVal('--pool') ?? CANDIDATE_POOL);
 const CAT_FILTER = argVal('--cats')?.split(',');
 const CAP = Number(argVal('--cap') ?? PASSAGE_CAP); // per-passage cap sweep knob
+const NO_RERANK = process.argv.includes('--no-rerank'); // §2 diagnosis: keep pure vector order
 // The legal corpus filter is SINGLE-SOURCED from routing.ts (beta wall 2) so this eval
 // and production retrieveCommentary can never diverge on what "the legal corpus" is.
 const PUBLISHABLE = LEGAL_CORPUS_FILTER;
@@ -72,7 +73,7 @@ async function retrieveLegal(query: string, vec: string): Promise<Array<{ verseI
     const inj = (await sql.query(injectionSql(intent.inject, PUBLISHABLE), [vec])) as Row[];
     rows = mergeById(inj, rows, (r) => r.source_id);
   }
-  const ranked = await rerankAll(query, rows);
+  const ranked = NO_RERANK ? rows : await rerankAll(query, rows);
   let floored = floorOnRange(ranked, intent.floor, (r) => meta(r.metadata).verseId);
   // On-passage backfill (item 2) — shared with production retrieveCommentary.
   const chapterKey = (r: Row) => Math.floor(meta(r.metadata).verseId / 1000);
