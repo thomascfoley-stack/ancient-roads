@@ -70,6 +70,47 @@ Checked the three key pages at **390×844** in a real browser:
 The earlier mobile pass holds up — nothing egregiously broken (no overflow, no unreachable controls, no
 unreadable text), so no changes were made (the rail is "make it usable, don't redesign").
 
+## QUEUE #2 (2026-07-12)
+**§3 git==prod + deploy — DONE.** Committed the concurrent session's live legal-only search fix
+(`commentary-search.ts` → `LEGAL_COMMENTARY_ENTRIES_PREDICATE`, `legal-corpus.ts`) + its QA harness so git
+matches prod. **Found + fixed 3 silent breakages in that harness** (it was committed red): (1)
+`web/vitest.config.ts` used `__dirname` (undefined under ESM) → `@` alias 404'd; (2) root `vitest.config.ts`
+had no `include` → its default glob swept `web/test/**` without the alias; (3) `web/tsconfig.json` typechecked
+`web/test/**` in `next build`, and `corpus-scan.ts` imports root `src/ingest` which doesn't exist in Vercel's
+web-only build — **this failed the first deploy** (local `next build` passed, remote errored). All fixed;
+audit GREEN (root 192 · web QA 18 · rate-limit 5); deploy `574b55b` READY + aliased; live healthy (307/gate ·
+/gate 200 · unauth /api/ask 401). "New authors appear in answers" is N/A tonight — no content published, and
+fresh works ship staged/unserved.
+
+## §1 CONTENT — Ryle (proof-of-pipeline)
+**Fork-A cross-copy proof — PRE-REGISTERED THRESHOLD (before measuring, no tuning):** two *independent*
+full-text scans of the same edition must have **3-gram shingle-hash containment ≥ 0.55** (mutual: the smaller
+set contained in the larger). Rationale: independent OCR scans of the *same* text share the vast majority of
+3-grams (identical wording; only OCR noise + pagination differ), while a paraphrase / different translation /
+OCR garbage shares far fewer; 3-grams are OCR-robust (one bad char breaks fewer shingles). Sanity floor: a
+different work must be < 0.20. Independence verified: `expositorythough05ryle` (1857, Princeton, archive.org
+OCR) vs `expositorythoug05rylegoog` (1859, Oxford, Google OCR) — different institution + OCR engine.
+
+**RESULT — FAILED the bar, PARKED (did not loosen the threshold).** Measured cross-copy containment = **9.3%**
+(bar 55%) — barely above the different-work floor (~7–9%). Confirmed both scans ARE the same work (both Ryle
+on John; the Google scan shows "John V. 1—10" headers), so 9.3% is a genuine **OCR-match failure**, not a
+wrong pairing. **Root cause (the real finding):** two independent OCR engines produce different character
+errors AND different layout artifacts — line-break hyphenation (`under- taken` → `under taken` vs
+`undertaken`), page numbers, running headers — so few exact 3-grams survive across both scans. The shingle
+matcher was built + validated on **clean** text (helloao → 100% repair); it does **NOT** tolerate OCR as-is.
+
+**Implication — CONTENT IS BLOCKED tonight, and it is a real slice, not a rush:**
+- All archive.org anchors (Ryle, a Lapide, Haydock, Lightfoot, Westcott, Poole) are OCR → same failure. Moving
+  to the next OCR work does not help; the blocker is the matcher, not the work.
+- The fix is **OCR normalization before shingling** — de-hyphenate line breaks, strip page numbers / running
+  headers / short lines, collapse common OCR substitutions — then re-pre-register a threshold and re-measure.
+  This is genuine engineering (own slice), not a night's rush, and I will not fake a pass by loosening the bar.
+- The clean-transcription path (owner's fork-A condition 2) — Ryle/Spurgeon/Poole on **CCEL** as hand-typed
+  HTML — would match cleanly, but CCEL is the P0.1 terms-fork (do not build until its terms are verified).
+- **No content was ingested, staged, or published.** Moving to the tail tasks (§4–6) per "content can die,
+  the tail absorbs the night." **Owner decisions needed (§7):** build the OCR normalizer (own slice) and/or
+  resolve the CCEL terms-fork so clean transcriptions unblock the whole tier.
+
 ## 7. Parked / worries — THREE OWNER DECISIONS (unblock the whole content mission)
 Full detail in `docs/ARCHIVE_ORG_INGEST_DESIGN.md`. Each would corrupt a verbatim corpus if guessed:
 - **FORK A — "shingle text-match proof" is undefined for a FRESH work** (nothing stored to match against).
