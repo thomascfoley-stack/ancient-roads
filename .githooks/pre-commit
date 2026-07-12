@@ -4,26 +4,29 @@
 # in CI / scripts/audit.sh). It catches the cheap-to-detect, expensive-to-miss
 # breakages: lint slop, src/ <-> web/ byte-drift, and forbidden-provenance creep.
 #
-# Bypass in a genuine emergency with:  git commit --no-verify
-set -uo pipefail
-cd "$(git rev-parse --show-toplevel)"
+# Portable to macOS's stock bash 3.2 (no mapfile/readarray; no `set -u` empty-array
+# landmine). Bypass in a genuine emergency with:  git commit --no-verify
+set -o pipefail
+cd "$(git rev-parse --show-toplevel)" || exit 1
 
 FAIL=0
 step() { printf '\n\033[1m▶ %s\033[0m\n' "$1"; }
 ok()   { printf '\033[32m  ✓ %s\033[0m\n' "$1"; }
 bad()  { printf '\033[31m  ✗ %s\033[0m\n' "$1"; FAIL=1; }
 
-# Staged files (Added/Copied/Modified/Renamed), NUL-safe.
-mapfile -t STAGED < <(git diff --cached --name-only --diff-filter=ACMR)
-[ ${#STAGED[@]} -eq 0 ] && exit 0
+# Staged files (Added/Copied/Modified/Renamed). newline-delimited strings, grep-filtered.
+STAGED="$(git diff --cached --name-only --diff-filter=ACMR)"
+[ -z "$STAGED" ] && exit 0
 
 # --- 1. eslint --fix on staged TS (the only --fix step) -----------------------
-mapfile -t TS < <(printf '%s\n' "${STAGED[@]}" | grep -E '^(src|test|web)/.*\.(ts|tsx)$' || true)
-if [ ${#TS[@]} -gt 0 ]; then
-  step "eslint --fix (${#TS[@]} staged TS file(s))"
-  if npx eslint --fix "${TS[@]}"; then
+TS="$(printf '%s\n' "$STAGED" | grep -E '^(src|test|web)/.*\.(ts|tsx)$')"
+if [ -n "$TS" ]; then
+  N="$(printf '%s\n' "$TS" | wc -l | tr -d ' ')"
+  step "eslint --fix ($N staged TS file(s))"
+  # shellcheck disable=SC2086
+  if printf '%s\n' "$TS" | xargs npx eslint --fix; then
     # Re-stage anything --fix rewrote so the fix is part of THIS commit.
-    git add -- "${TS[@]}"
+    printf '%s\n' "$TS" | xargs git add --
     ok "lint clean"
   else
     bad "eslint reported errors — fix them or re-run (warnings do not block)"
@@ -31,7 +34,7 @@ if [ ${#TS[@]} -gt 0 ]; then
 fi
 
 # --- 2. src/ <-> web/ byte-identical sync guards (rail) ------------------------
-if printf '%s\n' "${STAGED[@]}" | grep -qE '^(src|web/src)/'; then
+if printf '%s\n' "$STAGED" | grep -qE '^(src|web/src)/'; then
   step "sync guards (src/ <-> web/ byte-identical: verifier, contract, bible/*)"
   if npx vitest run test/web-core-sync.test.ts test/bible-sync.test.ts >/tmp/precommit-sync.log 2>&1; then
     ok "core + bible copies in sync"
