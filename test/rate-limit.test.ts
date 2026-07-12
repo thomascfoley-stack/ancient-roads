@@ -35,4 +35,17 @@ describe('checkAskRateLimit', () => {
     const throwing = { query: async () => { throw new Error('db down'); } } as unknown as SqlArg;
     expect(await checkAskRateLimit('u1', throwing)).toEqual({ ok: true });
   });
+  it('H4: a minute-refused request does NOT touch the day bucket', async () => {
+    const buckets: string[] = [];
+    const spy = {
+      query: async (_t: string, params: unknown[]) => {
+        const bucket = params[1] as string;
+        buckets.push(bucket);
+        return [{ count: bucket === 'ask:min' ? 11 : 1 }]; // minute over cap
+      },
+    } as unknown as SqlArg;
+    const r = await checkAskRateLimit('u1', spy);
+    expect(r.limited).toBe('min');
+    expect(buckets).toEqual(['ask:min']); // day bucket never bumped
+  });
 });

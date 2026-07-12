@@ -22,7 +22,7 @@ interface Spec {
 
 const SPECS: Record<ApiErrorCode, Spec> = {
   RATE_LIMIT_MINUTE: { status: 429, message: 'You’ve reached the per-minute question limit. Please wait a moment and try again.' },
-  RATE_LIMIT_DAY: { status: 429, message: 'You’ve reached today’s question limit (it resets at midnight UTC). If you need more during the beta, let us know.' },
+  RATE_LIMIT_DAY: { status: 429, message: 'You’ve reached today’s question limit. It resets at midnight UTC.' },
   UNAUTHENTICATED: { status: 401, message: 'Please sign in to continue.' },
   GATE_LOCKED: { status: 503, message: 'This site is temporarily unavailable.' },
   UPSTREAM_UNAVAILABLE: { status: 503, message: 'We couldn’t reach the study service just now. Please try again in a moment.', retryAfterSec: 30 },

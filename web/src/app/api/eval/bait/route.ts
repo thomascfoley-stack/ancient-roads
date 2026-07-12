@@ -20,13 +20,18 @@ function tokenOk(header: string | null, secret: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
+  // M4: this is a LOCAL measurement tool that calls the paid teach(); it must never be
+  // reachable in production, secret or not. Disabled outside dev/test, plus a length cap.
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'not found' }, { status: 404 });
+  }
   const secret = process.env.EVAL_HARNESS_SECRET;
   if (!secret) return NextResponse.json({ error: 'harness not configured' }, { status: 503 });
   if (!tokenOk(req.headers.get('authorization'), secret)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
   const body = (await req.json()) as { question?: unknown };
-  const question = typeof body.question === 'string' ? body.question : '';
+  const question = typeof body.question === 'string' ? body.question.slice(0, 500) : '';
   if (!question) return NextResponse.json({ error: 'question required' }, { status: 400 });
   const result = await teach(question);
   return NextResponse.json(result);

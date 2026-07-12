@@ -34,6 +34,17 @@ async function bump(sql: Sql, userId: string, bucket: string, windowStart: strin
   return rows[0]!.count;
 }
 
+// M8: the sweep migration 008 promised. No cron infra, so run it opportunistically on
+// ~1% of checks (served by the api_rate_limit_window_idx index) — bounds table growth
+// without new infrastructure. Its own try swallows errors: a sweep must never affect a
+// request. Windows older than 2 days can never be current (day window is 1 day).
+async function maybeSweep(sql: Sql): Promise<void> {
+  if (Math.random() >= 0.01) return;
+  try {
+    await sql.query(`DELETE FROM api_rate_limit WHERE window_start < now() - interval '2 days'`);
+  } catch { /* sweep failure is irrelevant to the caller */ }
+}
+
 // `sql` is injectable so the helper can be exercised against the real DB in tests
 // and driven with a throwing handle to prove the fail-open path.
 export async function checkAskRateLimit(userId: string, sql: Sql = getDb()): Promise<RateLimitResult> {
@@ -43,19 +54,20 @@ export async function checkAskRateLimit(userId: string, sql: Sql = getDb()): Pro
     const d = new Date(now);
     const dayStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toISOString();
 
-    const [minCount, dayCount] = await Promise.all([
-      bump(sql, userId, 'ask:min', minStart),
-      bump(sql, userId, 'ask:day', dayStart),
-    ]);
-
+    // H4: check the minute bucket FIRST and bail before touching the day bucket, so a
+    // per-minute-limited burst (double-click / retry loop) cannot burn the daily quota.
+    // Only requests that clear the minute cap consume a daily slot.
+    const minCount = await bump(sql, userId, 'ask:min', minStart);
     if (minCount > LIMIT_PER_MIN) {
       logEvent('rate_limit_hit', { userId, cap: 'min', count: minCount, limit: LIMIT_PER_MIN });
       return { ok: false, limited: 'min', retryAfterSec: 60 };
     }
+    const dayCount = await bump(sql, userId, 'ask:day', dayStart);
     if (dayCount > LIMIT_PER_DAY) {
       logEvent('rate_limit_hit', { userId, cap: 'day', count: dayCount, limit: LIMIT_PER_DAY });
       return { ok: false, limited: 'day', retryAfterSec: 3600 };
     }
+    await maybeSweep(sql);
     return { ok: true };
   } catch (e) {
     // FAIL OPEN (allow) but log loudly — a limiter outage must not down the product.
