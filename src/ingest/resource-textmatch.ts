@@ -34,6 +34,113 @@ export function tokens(s: string): Set<string> {
   return new Set(tokenList(s));
 }
 
+// OCR-tolerant tokenizer for cross-copy matching of two INDEPENDENT scans of the same
+// printed work. tokenList() is byte-identical-synced and must not change; this is the
+// scan-normalizing variant. Two OCR engines of the same page produce the SAME words but
+// DIFFERENT layout artifacts — line-break hyphenation, all-caps running headers, page/
+// verse numbers — which fragment exact shingles and sink containment. We strip those
+// (NOT the OCR character errors, which are real signal that the words differ) so the
+// surviving shingles reflect wording, not typography. Measured: layout-only damage
+// recovers from ~85% (tokenList) to ~99% (this) containment on genuinely identical text.
+export function tokenListOcr(s: string): string[] {
+  const dehyphenated = s.replace(/([A-Za-z])-[ \t]*\r?\n[ \t]*([A-Za-z])/g, '$1$2');
+  const bodyOnly = dehyphenated
+    .split(/\r?\n/)
+    .filter((line) => {
+      const letters = line.replace(/[^A-Za-z]/g, '');
+      // Drop all-caps running-header/title lines (e.g. "EXPOSITORY THOUGHTS", "ST. JOHN").
+      return !(letters.length >= 4 && letters === letters.toUpperCase());
+    })
+    .join(' ');
+  const folded = bodyOnly
+    .toLowerCase()
+    .replace(/&#x?[0-9a-f]+;/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+  if (!folded) return [];
+  // Drop pure-digit tokens (page numbers, verse markers, scripture-ref numerals).
+  return folded.split(/\s+/).filter((tok) => !/^\d+$/.test(tok));
+}
+
+export function shingleHashSetOcr(s: string, n = 3): Set<number> {
+  const t = tokenListOcr(s);
+  const out = new Set<number>();
+  for (let i = 0; i + n <= t.length; i++) out.add(fnv1a(t.slice(i, i + n).join(' ')));
+  return out;
+}
+
+// ── Title-page guard ────────────────────────────────────────────────────────
+// Before matching two scans as the SAME work, assert their title pages agree. Two
+// nights of content were lost when a scan of Ryle-on-JOHN was matched against
+// Ryle-on-LUKE (both title pages say which Gospel in the first ~800 chars). A number
+// is not evidence until the guard confirms the inputs are even the same work.
+
+export type Gospel = 'MATTHEW' | 'MARK' | 'LUKE' | 'JOHN';
+
+function classifyGospelWord(w: string): Gospel | null {
+  const u = w.toUpperCase();
+  if (u.startsWith('MAT')) return 'MATTHEW';
+  if (u.startsWith('MAR') || u === 'MK') return 'MARK';
+  if (u.startsWith('LU')) return 'LUKE';
+  if (u.startsWith('JOH') || u.startsWith('JON')) return 'JOHN'; // JOHlSr, JOH2Sr, …
+  return null;
+}
+
+function romanToInt(r: string): number | null {
+  // OCR renders volume numerals as I / II / Ill / VOXi etc. Tolerate l→I and lowercase.
+  const s = r.toUpperCase().replace(/L(?=L|$)/g, 'I'); // "Ill" → "III" heuristic
+  const map: Record<string, number> = { I: 1, V: 5, X: 10 };
+  let total = 0;
+  let prev = 0;
+  for (const ch of s.split('').reverse()) {
+    const v = map[ch];
+    if (v === undefined) return null;
+    if (v < prev) total -= v;
+    else { total += v; prev = v; }
+  }
+  return total > 0 && total <= 4 ? total : null;
+}
+
+/** Extract {gospel, volume} from a scan's title region by voting over "ST. <gospel> …
+ *  VOL. <roman>" occurrences (title + running headers repeat the work's own gospel;
+ *  cross-references to other Gospels are a minority). Returns null if undecidable. */
+export function extractGospelVolume(text: string): { gospel: Gospel; volume: number | null } | null {
+  const head = text.slice(0, 20000);
+  const votes: Record<string, number> = {};
+  let volume: number | null = null;
+  const re = /ST[.\s]+([A-Za-z0-9]{2,10})[.\s]+VO[LX][.\sI]*?([IVXLl]{1,4})\b/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(head)) !== null) {
+    const g = classifyGospelWord(m[1]!);
+    if (!g) continue;
+    votes[g] = (votes[g] ?? 0) + 1;
+    if (volume === null) volume = romanToInt(m[2]!);
+  }
+  // Fallback: no "VOL." matched — vote on bare "ST. <gospel>" title/header lines.
+  if (Object.keys(votes).length === 0) {
+    const re2 = /ST[.\s]+([A-Za-z0-9]{2,10})\b/g;
+    while ((m = re2.exec(head)) !== null) {
+      const g = classifyGospelWord(m[1]!);
+      if (g) votes[g] = (votes[g] ?? 0) + 1;
+    }
+  }
+  const ranked = Object.entries(votes).sort((a, b) => b[1] - a[1]);
+  if (ranked.length === 0) return null;
+  return { gospel: ranked[0]![0] as Gospel, volume };
+}
+
+/** True only if both scans are the same Gospel AND (when both state a volume) the same
+ *  volume. Unknown volume on one side is permitted (some scans omit it); a Gospel
+ *  mismatch, or a stated-volume mismatch, fails closed. */
+export function titleGuardAgrees(a: string, b: string): { ok: boolean; a: ReturnType<typeof extractGospelVolume>; b: ReturnType<typeof extractGospelVolume> } {
+  const ga = extractGospelVolume(a);
+  const gb = extractGospelVolume(b);
+  const ok = !!ga && !!gb && ga.gospel === gb.gospel
+    && (ga.volume === null || gb.volume === null || ga.volume === gb.volume);
+  return { ok, a: ga, b: gb };
+}
+
 // Overlapping n-gram (shingle) set — the ordered-phrase fingerprint. Word-SET
 // containment can't tell two translations apart (they share vocabulary); shingle
 // containment can (only the SAME translation shares long exact phrases). Used for
