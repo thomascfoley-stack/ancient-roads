@@ -33,7 +33,12 @@ Gospels). Printed the title pages this time. True John Vol I twin = **43.5%** vs
 - **`npm run audit`:** ✅ all gates green (typecheck root+web · lint · knip · pnpm audit · full vitest+coverage
   incl. new calibration tests · qa invariants · Gate B license).
 - **Prod DB:** partial legal FTS index (migration 009) is **live** — commentary search is already 10× faster.
-- **Deploy:** app code (word-panel, concordance, count-cap, attribution) committed; deployed at end of shift (see below).
+- **Deploy:** ✅ DEPLOYED (`web-psi-eight-83.vercel.app`, READY). The concordance's 13,480 files pushed the
+  upload past Vercel's 15,000-file limit (18,910 total) — fixed `deploy.sh` with `--archive=tgz`. Live smoke:
+  `/`→200 via gate · `/gate`→200 · unauth `/api/ask`→401 · new routes (`/api/search`, `/concordance/*`) sit
+  correctly behind the site gate (307). Every feature was verified locally at 390px+desktop before deploy.
+- **Stray file surfaced:** `.audit-q.mjs` (untracked ad-hoc DB-query scratch, not authored by me) was blocking
+  the deploy clean-tree guard — gitignored (preserved on disk, not deleted). Remove it if it's not yours.
 
 **NEXT SLICES (owner or next session):**
 1. **§3 verse-aligned staged ingest** of Ryle-on-John — passage-range entries, N=20 spot-check, staged NOT
