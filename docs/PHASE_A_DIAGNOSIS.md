@@ -55,6 +55,25 @@ feeds the reranker more off-label distractors (so topical drops to 65).
 - **§2.3.4 (delete dead `embeddings.ts`): DONE** (commit this queue).
 - No retrieval change is shipped, so **§2.4 re-measure is a no-op** — v3 stands at topical H2 75 / epistle 84.
 
+## Confirmation — v3 with the reranker BYPASSED (pure vector/hybrid order)
+
+Ran v3 with a measurement-only `--no-rerank` knob (kept the vector-ordered pool, skipped the cross-encoder):
+
+| category (H1 / H2) | WITH reranker (prod) | NO reranker (vector order) |
+|---|---|---|
+| topical | 35 / 75 | **50** / 60 |
+| proper-noun | 70 / 90 | **90** / 90 |
+| verse-ref | 95 / 98 | 98 / 98 |
+| pericope | 87 / 100 | 80 / 100 |
+| epistle | 60 / 84 | 60 / 80 |
+
+**Proof:** removing the reranker lifts **topical HIT@1 35→50** and **proper-noun HIT@1 70→90** — because the
+vector-#1 on-label passage (which the reranker was demoting) now leads. It is confirmed: the reranker demotes
+vector-top on-label passages for abstract/proper-noun queries. **But** it also *earns its place* — it lifts
+topical **HIT@2** (75 vs 60) and pericope (87 vs 80) by finding the 2nd distinct voice / handling
+multi-passage. So the answer is a **query-type-aware blend**, never a blanket removal (ADR-014 stands for the
+categories where it helps).
+
 ## The REAL fix (parked — §7) — a reranker/selection investigation, not a data migration
 
 The topical/epistle limiter is that **`Qwen3-Reranker-0.6B` + `selectDiverse` demote the vector-#1 on-label
