@@ -27,6 +27,19 @@ flagged for a GA optimization. **DoD MET:** `npm run audit` green · `/audit` cl
 13 unit tests · **interpretation_bait 35/35 = 100% LIVE** through the item-2 retrieval (1 wide-net flag was a
 false positive — a negated "superior", clean on re-query). Attempt budget: **1 of 4 used** (items 2+3).
 
+**Item 3 — surfaced=0 doctrine routing — PARKED as a scoped build (NOT unreachable).** Confirmed Torrey's is
+reachable + clean via CCEL (fetched "Sanctification" → 44 refs). But a non-circular router must be **general**
+(route any doctrine via an independent index, not a lookup of the eval's 12 failing doctrines — that
+test-awareness is exactly what the work order forbids). A general router = bulk topic index (~25–30 fetches) +
+matcher + inject/floor + re-measure + DoD — a substantial, careful slice. Per the anti-thrashing + production-
+quality rails, parked with the design ready (WORKORDER_PHASE_A §6) rather than rushed. **v4 DEFERRED** (held-out
+economics: spent once, after item 3). Remaining topical/epistle failures are ALL `wrong-passage` = item 3's target.
+
+**Item 6 — Phase B audited vs a production bar (`docs/PRODUCTION_AUDIT.md`, report-only).** Not production-ready:
+4 CRITICAL/HIGH blockers — SEC-1 auth CVEs, the hardcoded allowlist + manifest/provenance licensing gap,
+retrieval below 85/85, and no alerting — plus V2 faithfulness + n=35 suite as scale blockers. Only the ~14%
+fallback is acceptable-with-monitoring. Ordered by leverage in the doc.
+
 ## 2026-07-11 (PHASE B COMPLETE — wall 2 merged + DEPLOYED LIVE + harness Phase 1 staged)
 
 Second unattended block. Pushed the owner's skill update `149ad88` (two new rails: never substitute memory

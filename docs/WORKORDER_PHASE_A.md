@@ -90,6 +90,29 @@ Mint a **fresh v4 held-out**: same methodology, stratified sampling, **authority
 
 ## 6. Forks parked
 
+**ITEM 3 — surfaced=0 doctrine→passage routing (PARKED as a scoped build; NOT unreachable).**
+- **Source CONFIRMED reachable + clean:** fetched Torrey's New Topical Textbook via CCEL
+  (`ccel.org/ccel/torrey/ttt.html?term=<topic>`) — returns a complete, parseable verse list per topic (tested
+  on "Sanctification" → 44 refs). Nave's + Torrey's are PD and independent of the WSC/HC eval labels, so
+  routing from them is **not circular**. This is NOT a "park because unreachable" — it is reachable.
+- **Why parked (honest — scope/budget, not a blocker):** a router that is **not circular must be GENERAL** —
+  it must route *any* doctrine query via an independent topic index, not a lookup table of the eval's 12
+  failing doctrines (selecting topics by the eval failures is the exact test-awareness the work order forbids,
+  and v4 would expose it). A general router needs the **bulk** topic→verse index (~25–30+ independent
+  systematic-theology topics, fetched one CCEL page each) + a general query→topic matcher + inject/floor
+  (reuse ADR-015) + a whole-frozen-set re-measure + full DoD. That is a substantial, careful slice; rushing it
+  at the tail of a very long session risks the low-quality/circular outcome the rails explicitly forbid.
+- **Design (ready to build):** (1) fetch a general set of Torrey's doctrinal topics (chosen by systematic
+  loci — God/Christ's offices/atonement/calling/regeneration/justification/sanctification/perseverance/
+  glorification/prayer/etc. — NOT the eval queries); (2) build a doctrine gazetteer (topic → verse ranges via
+  the tested `parseRef`); (3) extend `resolveIntent` with a **doctrine tier** that keyword-matches a query to a
+  topic and injects+floors its ranges (same machinery as the reference/pericope tier, ADR-015); (4) measure
+  the whole frozen set, zero regression, DoD (bait live). Circularity guard: topics chosen by doctrine, verses
+  from Torrey's, matcher is general vocabulary — v4 (disjoint) is the honest test.
+- **Recommendation:** build it as its own focused slice (est. ~half a day). Highest-leverage remaining lever:
+  after item 2, **all** remaining topical/epistle failures are `wrong-passage` (surfaced=0) — exactly item 3's
+  target. **v4 is deferred until this lands** (held-out economics: v4 is spent once, after all retrieval work).
+
 **LICENSING-MANIFEST DISAGREEMENT (parked — do not guess a licensing boundary).**
 - **The disagreement:** `ingest/sources.config.json` (the Gate-B licensing authority) records **5 works** —
   Gill / JFB / Clarke / Matthew Henry (helloao PD) + Barnes (biblehub provenance). But the operative legal
