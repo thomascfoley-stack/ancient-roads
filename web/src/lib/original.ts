@@ -70,21 +70,45 @@ export async function loadFullLexicon(lang: 'greek' | 'hebrew') {
 }
 
 // Concordance: every verseId where this Strong's number occurs (built by
-// src/ingest/build-concordance.ts). verseIds are sorted canonical ids.
+// src/ingest/build-concordance.ts). Sharded by 2-digit prefix bucket (G3588 -> "G35");
+// outlier function words have their own shard, flagged in the bucket. MUST stay in sync
+// with concordanceBucket() in build-concordance.ts.
 export interface Concordance { strong: string; count: number; verseIds: number[] }
-const concordanceCache = new Map<string, Concordance | null>();
-export async function fetchConcordance(strong: string): Promise<Concordance | null> {
-  if (!strong) return null;
-  if (concordanceCache.has(strong)) return concordanceCache.get(strong)!;
-  let result: Concordance | null = null;
+type BucketEntry = { count: number; verseIds: number[] } | { count: number; shard: true };
+
+/** Bucket file for a Strong's number: language letter + floor(number/100). */
+function bucketOf(strong: string): string {
+  return `${strong[0]}${Math.floor(parseInt(strong.slice(1), 10) / 100)}`;
+}
+
+const bucketCache = new Map<string, Record<string, BucketEntry> | null>();
+const shardCache = new Map<string, Concordance | null>();
+
+async function fetchJson<T>(url: string): Promise<T | null> {
   try {
-    const res = await fetch(`/concordance/${strong}.json`);
-    if (res.ok) result = (await res.json()) as Concordance;
+    const res = await fetch(url);
+    return res.ok ? ((await res.json()) as T) : null;
   } catch {
-    result = null;
+    return null;
   }
-  concordanceCache.set(strong, result);
-  return result;
+}
+
+export async function fetchConcordance(strong: string): Promise<Concordance | null> {
+  if (!strong || !/^[GH]\d+$/.test(strong)) return null;
+  const bucketKey = bucketOf(strong);
+  if (!bucketCache.has(bucketKey)) {
+    bucketCache.set(bucketKey, await fetchJson<Record<string, BucketEntry>>(`/concordance/${bucketKey}.json`));
+  }
+  const entry = bucketCache.get(bucketKey)?.[strong];
+  if (!entry) return null;
+  if ('shard' in entry) {
+    // Outlier: verseIds live in a dedicated shard file.
+    if (!shardCache.has(strong)) {
+      shardCache.set(strong, await fetchJson<Concordance>(`/concordance/${strong}.json`));
+    }
+    return shardCache.get(strong) ?? null;
+  }
+  return { strong, count: entry.count, verseIds: entry.verseIds };
 }
 
 // ---- Morphology decoding ---------------------------------------------------
