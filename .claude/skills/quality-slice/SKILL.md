@@ -19,6 +19,16 @@ check. Follow the loop; do not skip steps to save time — skipping is how the w
 
 ## The loop (in order)
 
+0. **NAME THE ARTIFACT before you accept any measurement.** State *what column / file / variable you actually
+   measured*, and *why that artifact is the thing the mechanism depends on*. If you cannot, you have not
+   measured it — you have measured a proxy, and the conclusion will be drawn wider than the evidence. Four
+   retrieval diagnoses in a row were wrong this exact way: "corpus too small" (measured entry COUNT, not
+   embedded coverage); "reranker demotes the passage" (measured HIT@1, but the gated HIT@2 moved the opposite
+   way); "HNSW drops the vectors" (true for epistle, but topical never moved); "truncation eats the argument"
+   (measured `embeddings.content`, the STORED column — but the embedder reads a *different variable*, so the
+   stored text is not what was embedded). Before every number: which artifact, and is it the one the code
+   path actually reads? (See also step 11 "test the real code path" and the "green check is not proof" rail.)
+
 1. **Diagnose before fixing.** Never assume the cause. Look at what the system *actually returned* — the
    top-k passages/authors, the failure code — before deciding on a fix. A low number is a symptom, not a
    diagnosis. (This caught: an 82% "drop" that was a crawl artifact; "1 Cor 13" being a *ranking* miss not
