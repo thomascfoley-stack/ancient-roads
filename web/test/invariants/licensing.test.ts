@@ -16,7 +16,7 @@ import {
   LEGAL_CORPUS_FILTER,
   MUST_NOT_SERVE_AUTHORS,
 } from '@/lib/legal-corpus';
-import { legalBasePoolSql, LEGAL_CORPUS_FILTER } from '@/lib/teacher/routing';
+import { legalBasePoolSql } from '@/lib/teacher/routing';
 import { searchCommentaries } from '@/lib/commentary-search';
 import { retrieveCommentary } from '@/lib/teacher/retrieve';
 import { requireDbInCi } from '../helpers/env';

@@ -21,6 +21,7 @@ gate() {
 
 gate "typecheck — tsc --noEmit (strict)"  $PNPM exec tsc --noEmit
 gate "typecheck — web/ tsc --noEmit"      bash -c "cd web && npx tsc --noEmit"
+gate "typecheck — web/test tsc --noEmit"  bash -c "cd web && npx tsc --noEmit -p tsconfig.test.json"
 gate "lint — eslint src/ test/"           $PNPM exec eslint src test
 gate "lint — web/ next lint"              bash -c "cd web && npx next lint --quiet"
 gate "unused — knip (files/exports/deps)" $PNPM exec knip

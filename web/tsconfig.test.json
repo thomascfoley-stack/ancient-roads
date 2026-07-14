@@ -1,0 +1,6 @@
+{
+  "//": "Typecheck gate for web/test/** (the app tsconfig excludes 'test' so Next never builds tests). Wired into scripts/audit.sh so type errors in tests — e.g. a duplicate-binding TS2300 — actually fail CI instead of only surfacing at runtime via vitest's type-stripping esbuild.",
+  "extends": "./tsconfig.json",
+  "include": ["next-env.d.ts", "test/**/*.ts", "test/**/*.tsx"],
+  "exclude": ["node_modules"]
+}
