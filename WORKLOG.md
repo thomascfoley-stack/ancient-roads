@@ -1,5 +1,51 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-13 (THE CORRECTED BUILD — §0 safety SHIPPED · §1b label audit MEASURED) — "topical 35" was mostly a measurement artifact; the real sub-bar signal is EPISTLE (genuine semantic misses)
+
+**§0 SAFETY — shipped (commit aa66896).** (a) Boot-time role assert (`assertAppRuntimeRole` in `db.ts` +
+`instrumentation.ts`): prod now FAILS HARD if the runtime DB role has BYPASSRLS — closes the silent `db.ts`
+fallback to the owner URL that made RLS inert. (b) Migration **010 applied to prod**: REVOKE
+INSERT/UPDATE/DELETE on `commentary_entries`/`sources`/`sections` from `app_runtime` (it could delete the
+licensed corpus; `embeddings` was already RLS-protected) — verified app_runtime now SELECT-only on the three.
+(c) CI `requireDbInCi()` THROWS (not skips) when `APP_DATABASE_URL` is unset — a green gate that ran zero
+licensing/tenancy assertions is worse than a red one. **PARKED (owner console):** create the Neon test branch
++ set `APP_DATABASE_URL_TEST` GH secret — CI is RED until then, by design.
+
+**§1b — LABEL AUDIT vs the local KJV (`web/public/bible/kjv`) as authority.** v3 doctrinal labels are
+model-authored; a correct retrieval scored against an incomplete label is a false miss. Re-scored v3 with
+KJV-grounded corrections applied at SCORING time (frozen v3 file untouched; `eval-heldout --relabeled`; each
+addition is a verbatim query-phrase chapter or a direct synoptic parallel, derived from the query's scripture
+NOT from retrieval output — no circularity):
+
+| category | frozen v3 | + KJV relabel | what moved |
+|---|---|---|---|
+| topical HIT@1 | 35 | **40** | tp-05: retrieval's #1 was Deut 5 (Sabbath command), excluded by the label |
+| topical HIT@2 | 75 | **80** | tp-12: retrieval returned the Hallel (Ps 113/117/146–149); label had only Ps 100/150 |
+| epistle HIT@1 | 60 | 60 | — |
+| epistle HIT@2 | 84 | 84 | **zero** label bugs |
+
+Under the strict non-circular rule, **labels = +5 topical HIT@2 (one query) and 0 epistle** — the gap is NOT
+mostly labels. **But the two failure modes differ (looked at the top-6, per the rail):**
+- **TOPICAL misses are dominated by label under-specification** — confirmed by the KJV concordance (NOT
+  retrieval): tp-09 "false witness" is verbatim in Prov 6/12/14/19/21/25 (label had only Prov 12); tp-08 "poor
+  and needy" in Ps 82 + Prov 31 (both omitted). Retrieval returns verbatim-on-topic chapters the label
+  excludes — topical's TRUE retrieval quality is BETTER than 80; the metric is label-limited. Clean
+  quantification needs an INDEPENDENT topical authority (Torrey, task #35), not my grep (= circularity). Two
+  misses (tp-15 wisdom, tp-17 creation-stewardship) have no distinctive phrase and returned off-topic — genuine.
+- **EPISTLE misses are genuine SEMANTIC/recall failures** — wrong SENSE returned: ep-09 "saving faith" → the
+  healing-faith narratives (Matt 8/Mark 10 "thy faith hath made thee whole"); ep-11 "priesthood of all
+  believers" → the Levitical temple priesthood (Ezek 44/46); ep-16 "fear of the Lord AND the judgment seat" →
+  2 Sam 6 (Uzzah), missing 2 Cor 5. Not fixable by relabeling — needs recall (§4) or content.
+
+**★ §1 DECISION GATE — NOT MET, but the honest read is narrower than "topical 35."** Corrected topical 80 /
+epistle 84, both < 85. The "topical 35" alarm was mostly a MEASUREMENT artifact (HIT@1 is not the bar; +
+under-specified labels). The trustworthy sub-bar signal is **EPISTLE (84, genuine semantic misses)**, not
+topical. Do NOT re-embed (Phase A falsified it). Next: finish the free experiments (§1a bge query prefix,
+§1c pool sweep), then MINT v4 with topical labels built from Torrey (task #35) so the topical number is
+trustworthy; the genuine structural work is epistle recall (§4) + more distinct PD voices. Tooling:
+`eval-heldout.mts` gains `--relabeled` (KJV RELABEL map, off by default, frozen set untouched); `--diagnose`
+now honours `--v3`.
+
 ## 2026-07-11 (PHASE A — item 1 bait harness + item 2 surfaced=1 fix, ATTEMPT 1, zero regression)
 
 Phase A (production bar 85/85, no beta). **Item 0** already done last session (unified path); licensing-manifest

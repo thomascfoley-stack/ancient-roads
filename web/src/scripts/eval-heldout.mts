@@ -22,6 +22,30 @@ const POOL = Number(argVal('--pool') ?? CANDIDATE_POOL);
 const CAT_FILTER = argVal('--cats')?.split(',');
 const CAP = Number(argVal('--cap') ?? PASSAGE_CAP); // per-passage cap sweep knob
 const NO_RERANK = process.argv.includes('--no-rerank'); // §2 diagnosis: keep pure vector order
+// §1b LABEL AUDIT: the v3 doctrinal labels are model-authored and DEMONSTRABLY incomplete —
+// a correct retrieval is scored a miss. Each addition below is grounded in the KJV TEXT
+// (verbatim phrase in the query, or a direct synoptic parallel of a labelled chapter),
+// derived from the query's scripture, NOT from what retrieval returned (so this measures a
+// label bug, not over-fit). --relabeled merges these at SCORING time; the frozen v3 file is
+// untouched. Verified against web/public/bible/kjv: e.g. John 15:12 "love one another, as I
+// have loved you" (tp-19), Lev 11:44 "be ye holy; for I am holy" (tp-01), Luke 12 = Matt 6
+// synoptic (tp-18), Matt 18:15 "brother shall trespass" (tp-16), the Hallel (tp-12).
+const RELABEL: Record<string, string[]> = {
+  'v3-tp-01': ['Leviticus 11'],
+  'v3-tp-05': ['Deuteronomy 5'],
+  'v3-tp-06': ['Deuteronomy 5'],
+  'v3-tp-09': ['Deuteronomy 5'],
+  'v3-tp-11': ['John 15'],
+  'v3-tp-12': ['Psalm 113', 'Psalm 117', 'Psalm 146', 'Psalm 147', 'Psalm 148', 'Psalm 149'],
+  'v3-tp-16': ['Matthew 18'],
+  'v3-tp-18': ['Luke 12'],
+  'v3-tp-19': ['John 15'],
+  'v3-tp-20': ['Luke 24', 'John 20'],
+  'v3-ep-13': ['Mark 14'],
+  'v3-ep-25': ['Matthew 22'],
+};
+const RELABELED = process.argv.includes('--relabeled');
+const expectedFor = (q: Q): string[] => (RELABELED && RELABEL[q.id] ? [...q.expected, ...RELABEL[q.id]!] : q.expected);
 // The legal corpus filter is SINGLE-SOURCED from routing.ts (beta wall 2) so this eval
 // and production retrieveCommentary can never diverge on what "the legal corpus" is.
 const PUBLISHABLE = LEGAL_CORPUS_FILTER;
@@ -125,8 +149,9 @@ function validate() {
 // each failure can be judged label-incompleteness (returned a valid on-doctrine passage
 // not in the acceptable set) vs genuine miss. `*` marks an on-target (in-label) result.
 async function diagnose() {
-  for (const q of FROZEN.filter((x) => x.cat === 'epistle' || x.cat === 'topical')) {
-    const exp = toRanges(q.expected);
+  const diagSet: Q[] = process.argv.includes('--v3') ? FROZEN_V3 : FROZEN;
+  for (const q of diagSet.filter((x) => x.cat === 'epistle' || x.cat === 'topical')) {
+    const exp = toRanges(expectedFor(q));
     const results = await retrieveLegal(q.query, await embed(q.query));
     const onT = results.filter((r) => onTarget(r.verseId, exp));
     const authors = new Set(onT.map((r) => r.author));
@@ -168,7 +193,7 @@ async function availability() {
   interface Rec { id: string; cat: Cat; query: string; expStr: string; availN: number; perPassageMax: number; surfaced: number; hit2: boolean; klass: Klass; authors: string[] }
   const recs: Rec[] = [];
   for (const q of FROZEN.filter((x) => x.cat === 'epistle' || x.cat === 'topical')) {
-    const exp = toRanges(q.expected);
+    const exp = toRanges(expectedFor(q));
     const results = await retrieveLegal(q.query, await embed(q.query));
     const onT = results.filter((r) => onTarget(r.verseId, exp));
     const surfaced = new Set(onT.map((r) => r.author)).size;
@@ -228,7 +253,7 @@ async function main() {
       else { t.hit1++; console.log(`  ✓ [control] ${q.id}  clean (no floor) — ${q.query}`); }
       continue;
     }
-    const exp = toRanges(q.expected);
+    const exp = toRanges(expectedFor(q));
     const results = await retrieveLegal(q.query, await embed(q.query));
     const onT = results.filter((r) => onTarget(r.verseId, exp));
     const hit1 = results.length > 0 && onTarget(results[0]!.verseId, exp);
