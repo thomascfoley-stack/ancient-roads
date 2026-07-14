@@ -14,6 +14,16 @@ export interface Translation {
   abbr: string;
 }
 
+// Translation IDs the corpus policy forbids serving — copyrighted or commercially
+// capped, per docs/ACQUISITION_MANIFEST.md:28 ("EXCLUDE (copyrighted, commonly mislabeled
+// free): LEB (Lexham), LITV / MKJV (Green's), LSV (CC BY-SA but commercial-capped), NASB/
+// NIV/ESV/NLT/CSB"). These must never appear in TRANSLATIONS (the served reader picker).
+// Guarded by web/test/invariants/translation-licensing.test.ts. The static files under
+// web/public/bible/{leb,litv,mkjv,lsv}/ still need purging + a redeploy — owner action
+// (docs/LONG_NIGHT.md § NEEDS YOUR HAND, finding C1). Removing them here stops the reader
+// offering them; it does NOT remove the already-deployed files.
+export const FORBIDDEN_TRANSLATION_IDS = ['leb', 'litv', 'mkjv', 'lsv', 'nasb', 'niv', 'esv', 'nlt', 'csb'] as const;
+
 export const TRANSLATIONS: Translation[] = [
   { id: 'web', name: 'World English Bible', abbr: 'WEB' },
   { id: 'bsb', name: 'Berean Standard Bible', abbr: 'BSB' },
@@ -22,17 +32,13 @@ export const TRANSLATIONS: Translation[] = [
   { id: 'ylt', name: "Young's Literal Translation", abbr: 'YLT' },
   { id: 'darby', name: 'Darby Translation', abbr: 'DBY' },
   { id: 'bbe', name: 'Bible in Basic English', abbr: 'BBE' },
-  { id: 'lsv', name: 'Literal Standard Version', abbr: 'LSV' },
   { id: 'geneva', name: 'Geneva Bible (1599)', abbr: 'GNV' },
   { id: 'tyndale', name: 'Tyndale Bible', abbr: 'TYN' },
   { id: 'webster', name: "Webster's Bible Translation", abbr: 'WBT' },
-  { id: 'litv', name: 'Literal Translation', abbr: 'LITV' },
   { id: 'nheb', name: 'New Heart English Bible', abbr: 'NHEB' },
   { id: 'akjv', name: 'American King James Version', abbr: 'AKJV' },
-  { id: 'mkjv', name: 'Modern King James Version', abbr: 'MKJV' },
   { id: 'rotherham', name: "Rotherham's Emphasized Bible", abbr: 'REB' },
   { id: 'jubilee', name: 'Jubilee Bible 2000', abbr: 'JUB' },
-  { id: 'leb', name: 'Lexham English Bible', abbr: 'LEB' },
   { id: 'rwebster', name: 'Revised Webster Version', abbr: 'RWB' },
   { id: 'ukjv', name: 'Updated King James Version', abbr: 'UKJV' },
   { id: 'noyes', name: 'Noyes Translation', abbr: 'NOY' },

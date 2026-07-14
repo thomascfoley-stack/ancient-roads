@@ -68,7 +68,7 @@ echo ""
 # Hard-fails (set -e) if the corpus is missing or if forbidden-provenance
 # content has INCREASED. The number may only go down.
 # ---------------------------------------------------------------------------
-npx tsx scripts/predeploy-gate.ts
+DEPLOYING=1 npx tsx scripts/predeploy-gate.ts  # DEPLOYING=1 -> bible-translation licensing HARD-fails here (not on pre-commit)
 
 # Build
 echo "Building..."

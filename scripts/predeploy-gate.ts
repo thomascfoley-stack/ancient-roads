@@ -25,6 +25,7 @@ import {
   COMMENTARIES_DIR,
   countStaticForbiddenProvenanceEntries,
   loadForbiddenProvenanceBaseline,
+  findForbiddenBibleTranslations,
 } from '../web/test/helpers/corpus-scan';
 import { existsSync } from 'node:fs';
 
@@ -81,3 +82,27 @@ console.log(
     `  This is DEBT, not approval. It is visible, it is capped, and it may only shrink.\n` +
     `  Reduce it via docs/CONTENT_RECOVERY_PIPELINE.md.\n`,
 );
+
+// Bible-translation licensing (LONG_NIGHT C1/H5): the reader ships raw Scripture from
+// public/bible/<id>/. Copyrighted translations (LEB/LITV/MKJV/LSV, …) were stored full-text
+// AND deployed because this gate only ever scanned commentaries/. Refuse to ship any
+// translation dir the manifest forbids — the file-side twin of the picker guard.
+console.log('\n=== Pre-deploy gate: Bible-translation licensing ===');
+const forbiddenTranslations = findForbiddenBibleTranslations();
+if (forbiddenTranslations.length > 0) {
+  const msg =
+    `Copyrighted Bible translations present in public/bible/:\n` +
+    `  ${forbiddenTranslations.join(', ')}\n\n` +
+    `docs/ACQUISITION_MANIFEST.md:28 lists these as EXCLUDE (copyrighted). "Never store the\n` +
+    `full text of copyrighted translations" (CLAUDE.md). Delete web/public/bible/{${forbiddenTranslations.join(',')}}/\n` +
+    `then re-run. (They are already removed from the reader picker in web/src/lib/bible.ts.)`;
+  // FAIL only when actually deploying (deploy.sh sets DEPLOYING=1) — this same gate runs on
+  // every pre-commit, and we must not block all commits while the owner-owned file purge is
+  // pending (LONG_NIGHT C1). At commit time: loud WARNING. At deploy time: hard stop.
+  if (process.env.DEPLOYING === '1') {
+    FAIL(msg);
+  }
+  console.warn(`\n\x1b[33m⚠  ${msg}\n   (WARNING only — will HARD-FAIL the actual deploy. Purge before shipping.)\x1b[0m`);
+} else {
+  console.log(`  ✓ No forbidden translation directories present in public/bible/.`);
+}

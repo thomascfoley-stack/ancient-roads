@@ -12,6 +12,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.join(webRoot, 'src'),
+      // mirror tsconfig paths — some app modules (e.g. lib/bible.ts) import via @bible;
+      // without this a web test that pulls one in fails to resolve @bible/* (LONG_NIGHT).
+      '@bible': path.join(webRoot, 'src', 'bible'),
     },
   },
   test: {

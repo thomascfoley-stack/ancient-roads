@@ -1,6 +1,15 @@
 # WORKLOG — Autonomous session 2026-07-08
 
-## 2026-07-14 (THE POOL FIX — the retriever finally sees 50 docs, not 5) — SHIPPED
+## 2026-07-14 (THE POOL FIX — the legal base pool fills reliably again) — SHIPPED
+
+> **CORRECTION (LONG_NIGHT claim-audit, 2026-07-14):** an earlier title here said "the retriever finally sees
+> 50 docs, not 5." That overstates it. Production `CANDIDATE_POOL = 20` and is **unchanged** by this fix;
+> `retrieve.ts` calls `legalBasePool` with the default **20**, not 50. The "5" and "50" are both **diagnostic/
+> test probe sizes** (the recall probe asks for 50 as a harder-than-prod guard). What changed: the pool now
+> *fills* reliably (the `ef_search` GUC is owned in a transaction) instead of being starved to ~5 by the
+> default-ef post-filter. The accuracy table below was run at the real pool=20, so those numbers stand — but
+> the "5 → 50" framing described the probe, not the shipped pool. Also: "ADR-022" cited below is **not recorded
+> in main's `docs/DECISIONS.md`** (it tops out at ADR-020; ADR-021/022 live only on the unmerged `sec-1` branch).
 
 The base-pool starvation, fixed and measured. Diagnostic (2026-07-14): `legalBasePoolSql(50)` returned **5** —
 the full-table HNSW walked 190k rows at `ef_search=40`, then the 44%-selective legal filter gutted the 40

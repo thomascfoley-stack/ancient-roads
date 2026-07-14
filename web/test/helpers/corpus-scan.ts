@@ -4,6 +4,21 @@ import { forbiddenProvenanceDomain } from '../../../src/ingest/license-manifest'
 
 const WEB_ROOT = path.join(__dirname, '../..');
 export const COMMENTARIES_DIR = path.join(WEB_ROOT, 'public/commentaries');
+export const BIBLE_DIR = path.join(WEB_ROOT, 'public/bible');
+
+// Translation directory ids that must NEVER ship — copyrighted/commercial-capped per
+// docs/ACQUISITION_MANIFEST.md:28. MUST match FORBIDDEN_TRANSLATION_IDS in web/src/lib/bible.ts
+// (the picker guard); this is the file-side twin, enforced at deploy by predeploy-gate.ts.
+// The picker guard (translation-licensing.test.ts) can't see a copyrighted dir that ships
+// without being in the picker — this can. (LONG_NIGHT finding C1/H5, 2026-07-14.)
+export const FORBIDDEN_TRANSLATION_DIRS = ['leb', 'litv', 'mkjv', 'lsv', 'nasb', 'niv', 'esv', 'nlt', 'csb'];
+
+/** Forbidden Bible-translation directories present under `dir` (default public/bible/, about to ship). */
+export function findForbiddenBibleTranslations(dir: string = BIBLE_DIR): string[] {
+  if (!existsSync(dir)) return [];
+  const present = new Set(readdirSync(dir).filter((n) => statSync(path.join(dir, n)).isDirectory()));
+  return FORBIDDEN_TRANSLATION_DIRS.filter((id) => present.has(id));
+}
 const BASELINE_PATH = path.join(__dirname, '../baselines/static-forbidden-provenance.json');
 
 export interface ForbiddenProvenanceBaseline {
