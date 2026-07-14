@@ -5,6 +5,7 @@ import { verifyV1 } from '@/verifier/v1';
 import { embedQuery, compose } from './deepinfra';
 import { retrieveCommentary, type RetrievedChunk } from './retrieve';
 import { buildCorpusLookup } from './corpus';
+import { resolveIntent } from '../../bible/pericopes';
 import { normalizeContract } from './normalize-contract';
 import { buildSystemPrompt, buildUserPrompt } from './prompt';
 
@@ -119,6 +120,9 @@ export async function teach(
   const retrievalContext = {
     sectionIds: voices.map((_, i) => i + 1),
     traditions: [...voiceTraditions],
+    // Verse ranges the query itself named — the passages_grounded screen treats these
+    // (plus any voice-block anchor) as the only legitimate grounds for a passage.
+    queryRanges: resolveIntent(query).inject,
   };
 
   let lastViolations: Violation[] = [];

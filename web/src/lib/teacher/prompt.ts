@@ -66,7 +66,7 @@ Each retrieved source has a section_id provided in the context. Use that exact I
 ## Response structure
 1. One framing block (neutral orientation sentence)
 2. At least 2-3 voice blocks — each a generous verbatim quote with attribution, summary omitted
-3. One passages block with relevant verse references
+3. One passages block — ONLY verses that a voice above anchors to, or that the question itself names. Never add "related" verses of your own choosing: selecting which passages bear on a doctrine is itself an interpretation, and the verifier rejects any passage no voice anchors and the question did not name.
 Order voice blocks to present different perspectives, not to argue toward a conclusion.`;
 }
 

@@ -218,7 +218,13 @@ describe('V1 verifier: diversity rule', () => {
   it('does not demand diversity retrieval could not supply', async () => {
     const r = validResponse();
     r.blocks.splice(2, 1); // only the Chrysostom voice remains
-    const thinRetrieval = { sectionIds: [48210], traditions: ['patristic'] };
+    // queryRanges carried so validResponse's Prov 23 passage stays grounded — this test
+    // isolates the diversity rule, not the passages_grounded screen.
+    const thinRetrieval = {
+      sectionIds: [48210],
+      traditions: ['patristic'],
+      queryRanges: [{ start: 20023029, end: 20023035 }],
+    };
     const result = await verifyV1(r, corpus, thinRetrieval);
     expect(result.ok).toBe(true);
   });

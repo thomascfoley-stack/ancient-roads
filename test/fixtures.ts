@@ -48,6 +48,10 @@ export const corpus = createMemoryCorpus({
 export const retrieval: RetrievalContext = {
   sectionIds: [48210, 51002],
   traditions: ['patristic', 'reformed'],
+  // The query resolved to Prov 23:29-35 (the "who hath woe" drunkenness pericope), so
+  // validResponse's second passage is grounded by the query path; its first passage
+  // (Eph 5:18) is grounded by the two voices' anchors. See the passages_grounded screen.
+  queryRanges: [{ start: 20023029, end: 20023035 }],
 };
 
 // A fully valid response against the fixture corpus.

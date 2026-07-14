@@ -9,7 +9,7 @@
 
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import contractSchema from '../contract/schema.json' with { type: 'json' };
-import type { TeacherResponse, VoiceBlock } from '../contract/types';
+import type { TeacherResponse, VerseRange, VoiceBlock } from '../contract/types';
 import { isStructurallyValidVerseId, formatVerseId } from '../bible/verse-id';
 import { isNormalizedSubstring, normalizeForMatch } from './normalize';
 import { runScreens } from './screens';
@@ -46,6 +46,9 @@ export async function verifyV1(
   const r = response as unknown as TeacherResponse;
 
   const voiceBlocks: Array<{ block: VoiceBlock; index: number }> = [];
+  // Passage items collected for the post-loop grounding screen. Filled only with
+  // structurally-valid ranges (invalid ones already raised their own violation).
+  const passageChecks: Array<{ item: VerseRange; index: number }> = [];
 
   for (const [index, block] of r.blocks.entries()) {
     switch (block.type) {
@@ -132,6 +135,8 @@ export async function verifyV1(
               blockIndex: index,
               message: `passage start ${formatVerseId(item.start)} is after end ${formatVerseId(item.end)}`,
             });
+          } else {
+            passageChecks.push({ item, index }); // well-ordered ⇒ eligible for the grounding screen
           }
           const translation = await lookup.getTranslation(item.translation);
           if (!translation || !translation.isActive || !translation.licensedForDisplay) {
@@ -198,6 +203,27 @@ export async function verifyV1(
           span: hit.span,
         });
       }
+    }
+  }
+
+  // Grounding rule (G1, interpretation-by-selection): `passages` is a generated CHOICE,
+  // not generated prose — the screens defend words, this defends the selection. A passage
+  // may be shown ONLY if it intersects a voice-block anchor in THIS response (a source is
+  // actually speaking on it) or a range the query itself named (resolveIntent → queryRanges).
+  // Otherwise it is the model's own uncited verse-picking — a doctrinal verdict expressed as
+  // a list — and we fail closed. Judged after the loop so anchors from any voice count.
+  const rangesOverlap = (a: VerseRange, b: VerseRange): boolean => a.start <= b.end && b.start <= a.end;
+  const groundingRanges: VerseRange[] = [
+    ...voiceBlocks.flatMap(({ block }) => block.anchors ?? []),
+    ...(retrieval.queryRanges ?? []),
+  ];
+  for (const { item, index } of passageChecks) {
+    if (!groundingRanges.some((g) => rangesOverlap(item, g))) {
+      violations.push({
+        check: 'passages_grounded',
+        blockIndex: index,
+        message: `passage ${formatVerseId(item.start)}-${formatVerseId(item.end)} is ungrounded: it intersects no voice-block anchor and no query-resolved range (interpretation-by-selection)`,
+      });
     }
   }
 

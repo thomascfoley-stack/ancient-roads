@@ -66,6 +66,7 @@ function validJson(): string {
         },
         quote: 'the Word became man, not by a change of nature, but by assuming our flesh',
         summary: 'Cyril states the Word became man by assuming flesh, not by a change of nature.',
+        anchors: [{ start: 43001014, end: 43001014 }], // Cyril is commenting on John 1:14
       },
       {
         type: 'voice',
@@ -78,6 +79,7 @@ function validJson(): string {
         },
         quote: 'BECAME MAN, in man\'s present frail, mortal condition',
         summary: 'JFB gloss "made flesh" as becoming man in a frail, mortal condition.',
+        anchors: [{ start: 43001014, end: 43001014 }], // JFB is commenting on John 1:14
       },
       { type: 'passages', items: [{ start: 43001014, end: 43001014, translation: 'web' }] },
     ],

@@ -1,4 +1,4 @@
-import type { Origin } from '../contract/types';
+import type { Origin, VerseRange } from '../contract/types';
 
 // What the verifier needs to know about a resolved section. In production
 // this comes from Postgres (sections join sources, or user_sections join
@@ -34,6 +34,12 @@ export interface CorpusLookup {
 export interface RetrievalContext {
   sectionIds: number[];
   traditions: string[]; // distinct traditions present in the retrieval set
+  // Verse ranges the QUERY itself named — resolveIntent(query).inject. A passages
+  // block item is "grounded" iff it intersects one of these OR a voice-block anchor;
+  // otherwise it is the model's own uncited selection and the verifier fails closed
+  // (the passages_grounded screen). Optional/defaults to [] so callers that predate
+  // the screen (and topical queries, which resolve to nothing) still typecheck.
+  queryRanges?: VerseRange[];
 }
 
 export interface TeacherContractConfig {
