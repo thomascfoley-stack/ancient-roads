@@ -11,6 +11,7 @@
 // plain tsx script can load it. Keep it pure orchestration + constants.
 
 import type { VerseRange } from '../../bible/ref-parse';
+import type { NeonQueryFunction } from '@neondatabase/serverless';
 
 export const CANDIDATE_POOL = 20; // base hybrid/vector pool size fed to the reranker
 const INJECT_CAP = 8; // max on-range candidates injected into the pool (baked into injectionSql)
@@ -32,15 +33,43 @@ export const LEGAL_CORPUS_FILTER = `(metadata->>'author' IN ('John Gill','Jamies
    OR (metadata->>'author'='Augustine of Hippo' AND (metadata->>'verseId')::int/1000000 IN (19,43))
    OR (metadata->>'author' IN ('Albert Barnes','John Wesley','John Calvin') AND metadata->>'sourceUrl' ILIKE '%crosswire%'))`;
 
-// The base candidate pool: top-`pool` PURE-VECTOR matches over the legal corpus. BM25/
-// hybrid is dropped deliberately — measured no-loss (vector 97% ≈ hybrid 97%; the
-// reranker carries the lift to 100%). $1 = query vector. Shared by prod + eval so the
-// measured number is exactly what production serves.
-export function legalBasePoolSql(pool: number = CANDIDATE_POOL): string {
+// hnsw.ef_search for the base-pool KNN walk. With the partial legal HNSW index (migration
+// 012) every neighbour is already legal, so a modest ef fills the pool — no iterative_scan,
+// no full-graph re-walk (which is where Phase A's 12–14s came from). The shipped default;
+// re-tune via the eval's --ef sweep and update here. See WORKLOG 2026-07-14.
+export const HNSW_EF_SEARCH = 128;
+
+// The base candidate pool SQL. PRIVATE on purpose — the ONLY public entry is
+// legalBasePool(), which wraps this in a transaction that sets hnsw.ef_search. Exporting
+// the raw string is exactly how a 4th call site silently ships at the default ef_search=40
+// and starves (asking for 50 legal rows returned 5, diagnostic 2026-07-14). One way in.
+function legalBasePoolSql(pool: number): string {
   return `SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
      FROM embeddings
      WHERE user_id IS NULL AND source_type = 'commentary' AND ${LEGAL_CORPUS_FILTER}
      ORDER BY embedding <=> $1::vector LIMIT ${pool}`;
+}
+
+export interface BasePoolRow { source_id: string; score: number; content: string; metadata: unknown }
+
+// THE base candidate pool: top-`pool` PURE-VECTOR matches over the legal corpus, via the
+// partial legal HNSW index (012). Owns the GUC: `set_config('hnsw.ef_search', …, true)` is
+// transaction-local, and a bare SET LOCAL on stateless HTTP is a no-op — so it MUST run in
+// the same sql.transaction() as the SELECT (the runAsUser pattern, proven through the
+// pooler). This is what makes CANDIDATE_POOL real: `pool` in, `pool` out, not ~5. Shared by
+// prod (retrieve.ts) and the eval so the measured number is exactly what production serves.
+// `vec` is the '[…]' vector literal; `ef` defaults to the shipped HNSW_EF_SEARCH.
+export async function legalBasePool(
+  sql: NeonQueryFunction<false, false>,
+  vec: string,
+  pool: number = CANDIDATE_POOL,
+  ef: number = HNSW_EF_SEARCH,
+): Promise<BasePoolRow[]> {
+  const results = await sql.transaction([
+    sql`SELECT set_config('hnsw.ef_search', ${String(ef)}, true)`,
+    sql.query(legalBasePoolSql(pool), [vec]),
+  ]);
+  return results[1] as BasePoolRow[];
 }
 
 // On-range injection: the top INJECT_CAP vector matches WITHIN the named passage's

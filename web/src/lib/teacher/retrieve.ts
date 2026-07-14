@@ -2,7 +2,7 @@ import { getDb } from '../db';
 import { rerank } from './rerank';
 import { resolveIntent } from '../../bible/pericopes';
 import type { VerseRange } from '../../bible/ref-parse';
-import { RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse, legalBasePoolSql, LEGAL_CORPUS_FILTER, chapterKeysOf, diversityBackfillSql, insertBackfill, BACKFILL_TOP_CHAPTERS } from './routing';
+import { RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse, legalBasePool, LEGAL_CORPUS_FILTER, chapterKeysOf, diversityBackfillSql, insertBackfill, BACKFILL_TOP_CHAPTERS } from './routing';
 
 // A retrieved commentary chunk, fully hydrated (attribution + content on the row).
 export interface RetrievedChunk {
@@ -58,10 +58,9 @@ export async function retrieveCommentary(
   const vecStr = `[${queryVec.join(',')}]`;
   const queryText = opts?.query ?? '';
 
-  // Base pool: pure-vector over the legal corpus (shared with the eval — routing.ts).
-  const rows = (await sql.query(legalBasePoolSql(), [vecStr])) as Array<{
-    source_id: string; score: number; content: string; metadata: unknown;
-  }>;
+  // Base pool: pure-vector over the legal corpus, via the partial legal HNSW index with
+  // hnsw.ef_search owned inside legalBasePool (shared with the eval — routing.ts).
+  const rows = await legalBasePool(sql, vecStr);
   let candidates: RetrievedChunk[] = rows.map((r) => ({
     sourceId: r.source_id,
     score: Number(r.score),

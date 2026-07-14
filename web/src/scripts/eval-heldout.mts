@@ -8,7 +8,7 @@
 import { neon } from '@neondatabase/serverless';
 import { parseRef } from '../bible/ref-parse';
 import { resolveIntent } from '../bible/pericopes';
-import { CANDIDATE_POOL, RERANK_MODEL, RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse, PASSAGE_CAP, legalBasePoolSql, LEGAL_CORPUS_FILTER, chapterKeysOf, diversityBackfillSql, insertBackfill, BACKFILL_TOP_CHAPTERS } from '../lib/teacher/routing';
+import { CANDIDATE_POOL, RERANK_MODEL, RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse, PASSAGE_CAP, legalBasePool, HNSW_EF_SEARCH, LEGAL_CORPUS_FILTER, chapterKeysOf, diversityBackfillSql, insertBackfill, BACKFILL_TOP_CHAPTERS } from '../lib/teacher/routing';
 import { PILOT, FROZEN, type Q, type Cat } from './heldout-queries.mjs';
 import { FROZEN_V3 } from './heldout-v3-queries.mjs';
 
@@ -30,6 +30,7 @@ const argVal = (flag: string) => { const i = process.argv.indexOf(flag); return 
 // Measurement knobs (read-only; do NOT ship). --pool N overrides CANDIDATE_POOL;
 // --cats a,b filters categories to speed variance runs.
 const POOL = Number(argVal('--pool') ?? CANDIDATE_POOL);
+const EF = Number(argVal('--ef') ?? HNSW_EF_SEARCH); // hnsw.ef_search sweep knob (§4 2026-07-14)
 const CAT_FILTER = argVal('--cats')?.split(',');
 const CAP = Number(argVal('--cap') ?? PASSAGE_CAP); // per-passage cap sweep knob
 const NO_RERANK = process.argv.includes('--no-rerank'); // §2 diagnosis: keep pure vector order
@@ -109,7 +110,7 @@ async function rerankAll(q: string, rows: Row[]): Promise<Row[]> {
 // rerank → floor), returning the top-K voices' verseId + author.
 async function retrieveLegal(query: string, vec: string): Promise<Array<{ verseId: number; author: string }>> {
   // Base pool via the SHARED builder — byte-identical to production retrieveCommentary.
-  let rows = (await sql.query(legalBasePoolSql(POOL), [vec])) as Row[];
+  let rows = (await legalBasePool(sql, vec, POOL, EF)) as Row[];
   const intent = resolveIntent(query);
   if (intent.inject.length) {
     const inj = (await sql.query(injectionSql(intent.inject, PUBLISHABLE), [vec])) as Row[];
@@ -261,7 +262,7 @@ async function main() {
   const tally: Record<string, Tally> = Object.fromEntries(cats.map((c) => [c, blank()]));
   let hijacks = 0;
 
-  console.log(`Held-out eval — ${setName} · ${set.length} q · K=${K} · corpus=legal(shared) · pool=${POOL}${CAT_FILTER ? ` · cats=${CAT_FILTER.join(',')}` : ''}\n`);
+  console.log(`Held-out eval — ${setName} · ${set.length} q · K=${K} · corpus=legal(shared) · pool=${POOL} · ef=${EF}${CAT_FILTER ? ` · cats=${CAT_FILTER.join(',')}` : ''}\n`);
   for (const q of set) {
     const t = tally[q.cat]!; t.n++;
     if (q.cat === 'control') {
@@ -293,7 +294,7 @@ async function main() {
     console.log(`  ${c.padEnd(13)} ${String(t.n).padStart(2)}   ${pct(t.hit1, t.n)}  ${pct(t.hit2, t.n)}    ${k.pass} / ${k['<2-voices']} / ${k['wrong-passage']} / ${k['no-content']}`);
   }
   const g = (c: Cat, m: 'hit1' | 'hit2') => { const t = tally[c]!; return t.n ? Math.round((100 * t[m]) / t.n) : 0; };
-  console.log(`TAG corpus=legal(shared) pool=${POOL} cap=${CAP} :: topicalH2=${g('topical', 'hit2')} pericopeH1=${g('pericope', 'hit1')} epistleH2=${g('epistle', 'hit2')} verserefH1=${g('verse-ref', 'hit1')}`);
+  console.log(`TAG corpus=legal(shared) pool=${POOL} ef=${EF} cap=${CAP} :: topicalH2=${g('topical', 'hit2')} pericopeH1=${g('pericope', 'hit1')} epistleH2=${g('epistle', 'hit2')} verserefH1=${g('verse-ref', 'hit1')}`);
 }
 
 import { fileURLToPath } from 'node:url';

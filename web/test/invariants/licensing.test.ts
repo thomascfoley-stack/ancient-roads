@@ -16,7 +16,7 @@ import {
   LEGAL_CORPUS_FILTER,
   MUST_NOT_SERVE_AUTHORS,
 } from '@/lib/legal-corpus';
-import { legalBasePoolSql } from '@/lib/teacher/routing';
+import { legalBasePool } from '@/lib/teacher/routing';
 import { searchCommentaries } from '@/lib/commentary-search';
 import { retrieveCommentary } from '@/lib/teacher/retrieve';
 import { requireDbInCi } from '../helpers/env';
@@ -86,7 +86,7 @@ describe.skipIf(!dbUrl)('Layer 1 — licensing invariant (behavioral)', () => {
   it('teacher legal SQL pool: no quarantined author in top candidates', async () => {
     const sql = getDb();
     const vecStr = `[${sampleVec.join(',')}]`;
-    const rows = (await sql.query(legalBasePoolSql(50), [vecStr])) as Array<{ metadata: unknown }>;
+    const rows = (await legalBasePool(sql, vecStr, 50)) as Array<{ metadata: unknown }>;
     expect(rows.length).toBeGreaterThan(0);
     const authors = rows.map((r) => {
       const meta = typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata;
