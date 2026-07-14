@@ -12,6 +12,17 @@ import { CANDIDATE_POOL, RERANK_MODEL, RERANK_DOC_CHARS, injectionSql, mergeById
 import { PILOT, FROZEN, type Q, type Cat } from './heldout-queries.mjs';
 import { FROZEN_V3 } from './heldout-v3-queries.mjs';
 
+// The ONE resolver for which query set every entry point runs on. Previously main(),
+// validate(), diagnose() and availability() each re-derived this and three of them
+// hardcoded FROZEN — so `--v3 --availability` (etc.) silently reported on v2. A diagnostic
+// that reports on the wrong set is worse than none. All four now call this.
+//   --v3 → FROZEN_V3 · --frozen → FROZEN · (default) → PILOT
+function activeSet(): { name: string; set: Q[] } {
+  if (process.argv.includes('--v3')) return { name: 'FROZEN_V3', set: FROZEN_V3 };
+  if (process.argv.includes('--frozen')) return { name: 'FROZEN', set: FROZEN };
+  return { name: 'PILOT', set: PILOT };
+}
+
 const apiKey = process.env.DEEPINFRA_API_KEY!;
 const sql = neon((process.env.APP_DATABASE_URL ?? process.env.DATABASE_URL ?? '').replace(/^"|"$/g, ''));
 const K = 6; // = production retrieveCommentary default `limit`
@@ -137,7 +148,7 @@ const blank = (): Tally => ({ n: 0, hit1: 0, hit2: 0, codes: { pass: 0, '<2-voic
 // Label QA only (no retrieval, no accuracy): every expected ref parses, category
 // counts, no duplicate ids. Safe to run before the frozen accuracy measurement.
 function validate() {
-  const all = [...PILOT, ...FROZEN];
+  const { name, set: all } = activeSet();
   const ids = new Set<string>();
   let dup = 0, bad = 0;
   for (const q of all) {
@@ -146,9 +157,9 @@ function validate() {
     try { toRanges(q.expected); } catch (e) { bad++; console.log(`  ✗ ${q.id}: ${(e as Error).message}`); }
   }
   const byCat: Record<string, number> = {};
-  for (const q of FROZEN) byCat[q.cat] = (byCat[q.cat] ?? 0) + 1;
-  console.log(`FROZEN ${FROZEN.length} · PILOT ${PILOT.length}`);
-  console.log('FROZEN by category:', JSON.stringify(byCat));
+  for (const q of all) byCat[q.cat] = (byCat[q.cat] ?? 0) + 1;
+  console.log(`${name} ${all.length}`);
+  console.log(`${name} by category:`, JSON.stringify(byCat));
   console.log(`parse failures: ${bad} · duplicate ids: ${dup}`);
 }
 
@@ -156,8 +167,7 @@ function validate() {
 // each failure can be judged label-incompleteness (returned a valid on-doctrine passage
 // not in the acceptable set) vs genuine miss. `*` marks an on-target (in-label) result.
 async function diagnose() {
-  const diagSet: Q[] = process.argv.includes('--v3') ? FROZEN_V3 : FROZEN;
-  for (const q of diagSet.filter((x) => x.cat === 'epistle' || x.cat === 'topical')) {
+  for (const q of activeSet().set.filter((x) => x.cat === 'epistle' || x.cat === 'topical')) {
     const exp = toRanges(expectedFor(q));
     const results = await retrieveLegal(q.query, await embed(q.query));
     const onT = results.filter((r) => onTarget(r.verseId, exp));
@@ -199,7 +209,7 @@ async function availability() {
   type Klass = 'pass' | 'retrieval-limited' | 'content-1author' | 'content-0author';
   interface Rec { id: string; cat: Cat; query: string; expStr: string; availN: number; perPassageMax: number; surfaced: number; hit2: boolean; klass: Klass; authors: string[] }
   const recs: Rec[] = [];
-  for (const q of FROZEN.filter((x) => x.cat === 'epistle' || x.cat === 'topical')) {
+  for (const q of activeSet().set.filter((x) => x.cat === 'epistle' || x.cat === 'topical')) {
     const exp = toRanges(expectedFor(q));
     const results = await retrieveLegal(q.query, await embed(q.query));
     const onT = results.filter((r) => onTarget(r.verseId, exp));
@@ -244,8 +254,8 @@ async function availability() {
 }
 
 async function main() {
-  const setName = process.argv.includes('--v3') ? 'FROZEN_V3' : process.argv.includes('--frozen') ? 'FROZEN' : 'PILOT';
-  let set: Q[] = setName === 'FROZEN_V3' ? FROZEN_V3 : setName === 'FROZEN' ? FROZEN : PILOT;
+  const { name: setName, set: fullSet } = activeSet();
+  let set: Q[] = fullSet;
   if (CAT_FILTER) set = set.filter((q) => CAT_FILTER.includes(q.cat));
   const cats: Cat[] = ['verse-ref', 'pericope', 'epistle', 'topical', 'proper-noun', 'control'];
   const tally: Record<string, Tally> = Object.fromEntries(cats.map((c) => [c, blank()]));
