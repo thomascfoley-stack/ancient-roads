@@ -12,9 +12,12 @@ The three beta walls are **DONE and DEPLOYED**, not "NEXT":
    `MIGRATION_DESIGN.md` now stamped SUPERSEDED). Prod serves legal-only.
 3. **Observability** — shipped (`observability.ts` `logEvent`).
 
-**Held-out v3 (re-measured 2026-07-12, zero drift):** verse-ref 95/98 · pericope 87/100 · proper-noun 70/90 ·
-epistle 60/**84** · topical 35/**75** · control clean. **Topical/epistle still below the 85 HIT@2 bar** — a
-retrieval+content limit, NOT "retrieval solved" (CLAUDE.md §Accuracy corrected accordingly).
+**Held-out v3 (2026-07-13):** verse-ref 95/98 · pericope 87/100 · proper-noun 70/90 · epistle HIT@2 **84**
+(n=25) · topical HIT@2 **75 frozen → 80 relabeled** (n=20; §1b — the frozen topical labels are
+under-specified) · control clean. **Neither category is statistically below 85 at these n:** topical's 95% CI
+is [53, 89] and epistle's is [65, 94], both containing 85. So the 85/85 gate is **unmeasurable, not failed** —
+the honest next step is a larger v4 (n≈100/stratum) or a label-free gate (≥2 distinct grounded voices per
+answer). See WORKLOG §7 for the owner decision. Do NOT re-embed (ADR-019).
 
 **THE ACTIVE P0 IS CONTENT** (`docs/CONTENT_RECOVERY_PIPELINE.md`), which the 07-11 plan omitted entirely.
 Status 2026-07-12: the cross-copy match proof is **UNBLOCKED** — the "9.3% failure" that parked it for two
@@ -186,6 +189,13 @@ that is **Partial** or **Missing**. Status values: Done / Partial / Missing / Bl
   real compose→verify loop at ≥99% is outstanding, so no AI-generation row is full **Done** yet.
 
 ## The table
+
+> ⚠️ **STALE (2026-07-08 snapshot) — SUPERSEDED by the dated "Update" sections at the top of this file.**
+> This table describes the repo as of 2026-07-08 and much of it no longer holds — e.g. "embedding job ~3%
+> complete", "interpretation_bait not yet executed", and "V2 classifier missing" are all long resolved; the
+> three beta walls shipped; the corpus verse-key defect (`docs/CORPUS_VERSE_KEY_REPAIR.md`) is not reflected
+> here. Kept for history. For current status read the **2026-07-12/13 updates above** and `WORKLOG.md`; do not
+> treat any row below as live. _(Flagged 2026-07-13, §4.)_
 
 | Area | Status | Evidence (files/routes/tests) | Definition-of-done | Gap remaining | Blockers/deps | Bucket · Priority |
 |---|---|---|---|---|---|---|
