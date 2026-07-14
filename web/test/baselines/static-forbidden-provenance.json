@@ -1,5 +1,5 @@
 {
-  "count": 263496,
-  "recordedAt": "2026-07-12",
-  "description": "Forbidden-provenance rows in web/public/commentaries/*.json (biblehub/studylight/historicalchristian.faith). Ratchet: pnpm qa fails if this count goes UP. When content fixes lower it, commit the new count here. At 0, CI hard-fails on any violation."
+  "count": 278693,
+  "recordedAt": "2026-07-14",
+  "description": "MUST-NOT-SHIP rows in web/public/commentaries/*.json = forbidden provenance (biblehub/studylight/historicalchristian.faith) OR quarantined author (MUST_NOT_SERVE, incl. copyrighted Tyndale on bible.helloao.org). Ratchet: pnpm qa / predeploy-gate fails if this count goes UP. 2026-07-14: re-baselined from 263,496 (domain-only) to 278,693 (author-aware) — the +15,197 jump is Tyndale et al. that the domain-only gate never counted, not a regression. NOTE: naming drift (Theophylact of Ohrid vs Theophylact, Origen of Alexandria vs Origen) means ~7,920 more are still uncounted until MUST_NOT_SERVE_AUTHORS is reconciled to corpus naming. At 0, the gate hard-fails on any violation."
 }

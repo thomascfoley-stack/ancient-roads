@@ -23,8 +23,8 @@
  */
 import {
   COMMENTARIES_DIR,
-  countStaticForbiddenProvenanceEntries,
   loadForbiddenProvenanceBaseline,
+  scanMustNotShip,
 } from '../web/test/helpers/corpus-scan';
 import { existsSync } from 'node:fs';
 
@@ -45,10 +45,21 @@ if (!existsSync(COMMENTARIES_DIR)) {
 }
 
 const baseline = loadForbiddenProvenanceBaseline();
-const current = countStaticForbiddenProvenanceEntries();
+const b = scanMustNotShip();
+const current = b.mustNotShip; // union: forbidden domain OR quarantined author
 
-console.log(`  forbidden-provenance entries : ${current.toLocaleString()}`);
+console.log(`  MUST-NOT-SHIP entries        : ${current.toLocaleString()}  (of ${b.total.toLocaleString()})`);
+console.log(`    ├─ forbidden provenance    : ${b.domainForbidden.toLocaleString()}`);
+console.log(`    ├─ quarantined author      : ${b.authorQuarantined.toLocaleString()}  (incl. copyrighted Tyndale — was invisible to the domain-only gate)`);
+console.log(`    └─ both                    : ${b.both.toLocaleString()}`);
 console.log(`  committed baseline           : ${baseline.count.toLocaleString()}`);
+const drift = Object.entries(b.driftSuspects).sort((x, y) => y[1] - x[1]);
+if (drift.length) {
+  console.warn(`\n\x1b[33m⚠ MATCHER DRIFT — these authors look quarantined but isMustNotServeAuthor misses them (naming\x1b[0m`);
+  console.warn(`\x1b[33m  drift, e.g. "Theophylact of Ohrid" vs "Theophylact"); the gate CANNOT count them until the\x1b[0m`);
+  console.warn(`\x1b[33m  owner reconciles MUST_NOT_SERVE_AUTHORS to the corpus naming (docs/AUTHOR_TRIAGE.md):\x1b[0m`);
+  for (const [a, n] of drift.slice(0, 8)) console.warn(`\x1b[33m    ${a}: ${n.toLocaleString()}\x1b[0m`);
+}
 
 if (baseline.count === 0 && current > 0) {
   FAIL(

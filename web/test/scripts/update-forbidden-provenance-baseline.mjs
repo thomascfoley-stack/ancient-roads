@@ -12,6 +12,13 @@ const BASELINE_PATH = path.join(__dirname, '../baselines/static-forbidden-proven
 
 const FORBIDDEN = ['biblehub.com', 'studylight.org', 'historicalchristian.faith'];
 
+// MUST stay in sync with web/src/lib/legal-corpus.ts MUST_NOT_SERVE_AUTHORS + isMustNotServeAuthor.
+// (This .mjs runs under plain node and cannot import the .ts; the gate + invariant test use the
+// canonical corpus-scan.ts. Baseline written here MUST be the same UNION the gate ratchets, or a
+// stale domain-only recount would silently lower the baseline and re-hide Tyndale.)
+const MUST_NOT_SERVE = ['Tyndale Study Notes','Tyndale Open Study Notes','Theophylact','Bonaventure','Oecumenius','Origen','Aquinas-Larcher'];
+const isMustNotServe = (a) => (a && (MUST_NOT_SERVE.includes(a) || a.startsWith("Jerome's")));
+
 function forbiddenDomain(url) {
   if (!url || typeof url !== 'string') return null;
   try {
@@ -38,7 +45,7 @@ function countEntries() {
       if (!name.endsWith('.json')) continue;
       const data = JSON.parse(readFileSync(full, 'utf-8'));
       for (const entry of data.entries ?? []) {
-        if (forbiddenDomain(entry.sourceUrl ?? '')) count += 1;
+        if (forbiddenDomain(entry.sourceUrl ?? '') || isMustNotServe(entry.author ?? '')) count += 1;
       }
     }
   };
