@@ -1,5 +1,65 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-13 (THE INTEGRITY BUILD — §1–§7) — the verifier now defends selection, not just words
+
+Read-only on prod all shift (no CREATE INDEX, no ingest, no embed). Seven commits, audit green, pushed.
+
+- **§1 CI** — removed a duplicate `LEGAL_CORPUS_FILTER` import in `licensing.test.ts` (TS2300). Root cause it
+  slipped: **no tsc gate covered `web/test/`** (root config = src+root-test; web config excludes `test`; vitest
+  strips types). Added `web/tsconfig.test.json` + an audit gate that typechecks `web/test` (0 errors now).
+  Note: this dup was NOT what kept CI red — CI's red is the §0 `requireDbInCi` throw until the owner sets
+  `APP_DATABASE_URL_TEST`.
+- **★ §2 passages_grounded (the mission)** — every prior screen defended generated WORDS; `passages` is a
+  generated CHOICE, and a doctrinal verdict delivered purely through *which verses the model picks* (clean
+  prose, valid voices) passed every screen green. Added `passages_grounded` to `verifyV1`: a passage may appear
+  iff it intersects a voice-block anchor in the same response OR a range the query itself named
+  (`resolveIntent(query).inject` → `RetrievalContext.queryRanges`); else fail closed. Integrity core edited in
+  `src/`, copied byte-identical to `web/` (sync guard green); `prompt.ts:69` tightened; both callers wired.
+  **Proof:** a bait the old suite could not express goes RED before / GREEN after (`test/passages-grounding`);
+  **live interpretation_bait (real teach(), n=35): 32 composed / 3 safe fallback / 0 breaches, faithfulness
+  35/35 — histogram `{schema:102, quote_verbatim:1, diversity_traditions:1}`, `passages_grounded` fired ZERO
+  times, so the rule did not raise the fallback rate;** end-to-end "good shepherd" composes a passages block
+  [John 10:11] grounded by all four voice anchors.
+- **§3 verse-keys distributional guard** — `verse_start=verse_end=chapter` is a PLAUSIBLE value; only a
+  distribution catches it. `web/test/invariants/verse-keys.test.ts`: per author ≥200 entries, collapsed
+  fraction < 0.20 (clean authors 0.9–6.9%, biblehub authors 99.9–100% — measured, not guessed) + no served
+  entry may carry a biblehub/studylight `sourceUrl`. Committed **RED** (proven un-skipped: 14 collapse authors
+  + 200,385 forbidden-provenance entries) as `describe.skip` + dated TODO so the audit stays green until the
+  repair; threshold NOT weakened. **ADR-020**: for a derived key, assert the distribution, never the row.
+- **§4 stat honesty** — CLAUDE.md "faithfulness ≥99%" is unsupported (35/35 ⇒ 95% lower bound ≈92%, not ≥99%);
+  "topical 35/75 below 85" is stale AND unmeasurable (topical 95% CI [53,89], epistle [65,94] — 85 inside
+  both). Both corrected; ROADMAP numbers fixed + its stale 2026-07-08 table banner-stamped SUPERSEDED.
+- **§5 broken instrument** — `eval-heldout.mts` `availability()`/`validate()`/`diagnose()` each hardcoded
+  FROZEN, so `--v3 --availability` silently reported v2. Collapsed all four entry points to one `activeSet()`.
+- **§6 PARKED (design only, `docs/PARKED_RETRIEVAL_LEVERS.md`)** — (A) Calvin's OT is likely already inside the
+  downloaded CrossWire module; the NT-only shape is our extraction filter (verify the `.conf` first, then
+  re-extract → staged → distribution-check → additive embed). (B) the HNSW config nobody has run: a **partial
+  legal HNSW index** + `ef_search=128` + `iterative_scan=OFF`. The smoking gun, finally named:
+  `licensing.test.ts:56-59` — `legalBasePoolSql(50)` returned **0 rows** (post-filter starvation: full-graph
+  `ef_search=40` then the selective legal filter). A partial legal index removes the reason `iterative_scan`
+  (and Phase A's 12–14s latency) exists. Both need a dev branch.
+
+### ★ §7 — OWNER DECISION: the 85/85 gate cannot be measured at n=20/25. Pick one.
+The frozen v3 doctrinal strata are n=20 (topical) / n=25 (epistle). At that size the 95% CI spans ~35 points, so
+"85" is statistically indistinguishable from anything in [53–94]. The gate as written is **unmeasurable, not
+failed.** Two ways out — **your call, I did not decide:**
+- **(a) Mint a fresh v4 at n≈100 per doctrinal stratum** (~285 queries). One ~25-min eval run gives a topical/
+  epistle number with a ±~10 CI — tight enough to actually pass or fail 85. Cost: building 285 authority-graded
+  labels (Torrey/WSC, task #35) — and §1b already showed hand/model labels are the weak point. Keeps the
+  current accuracy definition.
+- **(b) Replace the label-gate with "≥2 distinct grounded voices per answer."** This needs **no label at all**,
+  is the actual product promise (a concordance shows ≥2 attributed voices), is measurable on ANY query set at
+  ANY n, and is exactly what the verifier's `diversity_voices` + new `passages_grounded` screens already enforce
+  per-response. It drops the "is John 10 the *right* chapter" question — which (a) keeps.
+My read: (b) is the honester gate (measures the guarantee, not a proxy) and is nearly free; (a) is worth doing
+once as a one-time calibration but is expensive to maintain. But this is a product-definition call — yours.
+
+### Owner-console blockers (the whole content + retrieval track waits on these)
+1. Neon **dev** branch + split `.env.local` off PROD (tonight I could only read prod; every §6 lever + the §2/§3
+   repair needs a writable non-prod DB). 2. Neon **test** branch + `APP_DATABASE_URL_TEST` GH secret (CI is red
+   until then, by design — §0). 3. A **DeepInfra spend cap** before the next live bait/eval run (tonight's bait
+   was 35 uncapped compose calls). 4. Approve the §2 corpus re-source (`docs/CORPUS_VERSE_KEY_REPAIR.md`).
+
 ## ★ RETURN BRIEFING — 2026-07-13 (THE CORRECTED BUILD — one overnight shift)
 
 **Shipped LIVE to prod (verified):**
