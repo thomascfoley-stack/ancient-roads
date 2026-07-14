@@ -248,21 +248,65 @@ horizontal overflow at 375px** on the reader (`scrollWidth == clientWidth == 375
 
 ---
 
-## PHASE 5 — SELF-HEAL · _in progress_
-## PHASE 6 — SUMMARY, NUMBERS, NEEDS-YOUR-HAND · _pending_
+## PHASE 5 — SELF-HEAL (mechanical fixes only, each with a seeded-bug proof)
+
+I fixed the two CRITICALs' mechanical parts and left every judgment call / content decision / DB write parked.
+Per the rule, a **different agent independently verified** these (verdict folded into Phase 6).
+
+| Fix | What | Seeded-bug proof |
+|---|---|---|
+| **C2** | Regenerated `pnpm-lock.yaml` to match `web/package.json` (adds the `vitest` importer entry, 3 lines, no version churn). | Before: `pnpm install --frozen-lockfile` → `ERR_PNPM_OUTDATED_LOCKFILE` (RED). After: green. **This unbreaks the whole CI gate.** |
+| **C1a** | Removed LEB/LITV/MKJV/LSV from `TRANSLATIONS` (`bible.ts`) + added `FORBIDDEN_TRANSLATION_IDS`. Verified in-browser: the reader picker no longer offers them. | New `translation-licensing.test.ts`: RED when `leb` is re-added, GREEN without. Also fixed `web/vitest.config.ts` (missing `@bible` alias blocked testing app modules). |
+| **C1b** | `predeploy-gate.ts` now refuses to ship any forbidden translation dir under `public/bible/` (`findForbiddenBibleTranslations`). HARD-fails at deploy (`DEPLOYING=1`, set by `deploy.sh`); WARNS on pre-commit so it doesn't block commits while the file purge is owner-pending. | New `bible-translation-gate.test.ts` (detector). Ran the gate: exit 0 + warning at commit-time, exit 1 + FAIL at deploy-time on `leb,litv,mkjv,lsv`. **The gate that would have caught C1 now does.** |
+| doc | Corrected my own claim-audit-flagged over-claims in `WORKLOG.md` (the "5→50 docs" caption; the ADR-022 citation). | n/a (doc) |
+
+**Explicitly PARKED (not mine to do):**
+- **Deleting the 44MB static files** `web/public/bible/{leb,litv,mkjv,lsv}/` + **redeploying** to purge them from prod
+  — that's a content decision + a deploy, both owner-owned. The deploy gate now blocks shipping them regardless.
+- **Every verifier bypass (H2/H3/H4), the `/api/gate` brute-force (H1), the REVOKEs (M1/M2)** — design/security changes
+  that need the owner, not a mechanical patch.
+- **Did NOT deploy.** The C1 fix removes the picker entries but the copyrighted files are still live on prod until a
+  purge+redeploy; shipping a half-fix would imply the licensing risk is closed when it isn't.
+
+## PHASE 6 — SUMMARY
+
+**What this night was: 9 things believed true that are false** (see § SCOREBOARD) — the requested measure of success.
+The headline: the app **stores and serves 4 copyrighted Bible translations** its own manifest forbids (C1), and its
+**CI gate hasn't actually run in days** (C2). Both are now fixed in code / blocked at the gate; the C1 file-purge is the
+one thing that needs your hand tonight.
+
+**Numbers nobody had, now measured:** `/api/ask` p50 **24s** / p95 **44s** (dev, compose-bound — over the 14s bar);
+fallback **16.7%**; `/read` default view ships **2.08 MB**. Test suite: **8/8 critical guards catch their own bug**
+(Phase 2) — no theater in the spine; the theater the project remembers is already remediated.
+
+**Anti-goal honored:** the two tests I added (`translation-licensing`, `bible-translation-gate`) each exist because of a
+specific proven defect (C1), and each was shown to go RED on that defect. No coverage-filler.
 
 ---
 
-## § NEEDS YOUR HAND (running — ~10 min each)
+## § NEEDS YOUR HAND (ranked — the top one is tonight)
 
-- **P2-A — the verse-key invariant is unguarded in CI** (`verse-keys.test.ts` is `describe.skip`). Not urgent,
-  but decide: either finish the biblehub verse-key repair and un-skip it, or accept that verse-key regressions
-  won't turn CI red until then. (No action from me — it's parked-by-design and touches corpus data.)
-- **P1-A — REVOKE writes on `embeddings` (least-privilege gap).** The app role can delete the corpus. One-liner,
-  but confirm no code path inserts user embeddings into this table first (I found zero user rows, didn't audit
-  every writer). Proposed `db/migrations/013_revoke_embeddings_writes.sql`:
-  `REVOKE INSERT, UPDATE, DELETE ON embeddings FROM app_runtime;` — run against prod after you confirm. I did
-  **not** apply it (permission write, outside the additive-only rail).
+1. **★ C1 — purge the copyrighted translations + redeploy (legal exposure, live now).** The picker fix is committed
+   and the deploy gate now blocks you, so:
+   `rm -rf web/public/bible/{leb,litv,mkjv,lsv}` then `cd ~/theology-study-app && ./deploy.sh`. ~5 min. Until you do,
+   LEB/LITV/MKJV/LSV remain served on prod. (Consider double-checking BSB/NHEB/AKJV licenses too — I only removed the
+   4 the manifest explicitly names.)
+2. **C2 — confirm CI is actually green now.** The lockfile fix is pushed; watch the next `audit.yml` run install and
+   run the gates it's been skipping since `0897373`. ~2 min.
+3. **H6 — confirm Vercel Git-integration is OFF for Production** (else a git push deploys a content-empty app that skips
+   `predeploy-gate.ts`). Dashboard check. ~2 min.
+4. **H1 — rate-limit + constant-time `/api/gate`.** The shared pre-launch password is brute-forceable today. (Dev task.)
+5. **M1/M2 — REVOKE corpus writes** you thought migration 010 already did: `section_anchors`/`section_embeddings`
+   (full DML, **no RLS at all**) and `embeddings` (`REVOKE UPDATE, DELETE` — RLS blocks them today, this is the belt).
+   Confirm no writer first. ~5 min SQL each.
+5. **H2/H3/H4 — verifier hardening (design):** validate `passages` anchors against the cited section (not just verse-id
+   shape); stop using `resolveIntent().inject` as a grounding authority; add real I6 patterns or the missing V2 classifier.
+6. **M3 — reader/search serve ToS-scraped Barnes/Wesley/Calvin** the teacher path excludes — your `AUTHOR_TRIAGE` call.
+7. **Doc reconciliation (docs lens):** `SCHEMA.md` still targets Supabase with ~80% fictional tables; `OUTPUT_CONTRACT.md`
+   says interpretation_bait is ~300 (it's 35) and lists 2 eval suites that don't exist; `ENGINEERING.md:18/122` stale;
+   ADR-021/022 aren't on `main`; `/ask` says "answering from the Gospels" (corpus is 65 books). None block launch.
+8. **P2-A — `verse-keys.test.ts` is `describe.skip`** so the verse-key-collapse invariant is unguarded in CI. Finish the
+   biblehub repair and un-skip, or accept the hole knowingly.
 
 ## § SCOREBOARD — believed true, actually false (the night's real measure)
 1. **"We never store copyrighted translations."** — **false: LEB/LITV/MKJV/LSV are stored full-text AND served live**, against the project's own EXCLUDE list (C1). *The biggest one.*
