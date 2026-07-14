@@ -78,6 +78,45 @@ for the semantic-depth misses (ep-09/ep-11). Do NOT re-embed (Phase A + §1b bot
 Tooling: `eval-heldout.mts` gains `--relabeled` (KJV RELABEL map) and `--bge-prefix`, both off by default and
 leaving the frozen v3 file untouched; `--diagnose` now honours `--v3`.
 
+## 2026-07-13 (§2 — TRUE vector coverage: the verse-key bug — 3 of 9 legal voices ~90% MISSING from retrieval) — the biggest fish
+
+**★ THE HEADLINE FINDING.** `synthesizeSourceId` omits `entry_index`, but the deeper cause (found by looking
+at the rows, per the rail) is a **data bug**: **Barnes' Notes, John Wesley, and John Calvin were ingested with
+`verse_start = verse_end = the CHAPTER number`** on every entry. So all ~17 distinct verse-by-verse paragraphs
+in a chapter collapse to ONE verse-key → ONE source_id → the embed job vectors only the first and skips the
+rest as "already embedded," and mis-attributes the one it keeps to `verse = chapter`.
+
+Measured (prod, read-only; artifact = `commentary_entries` verse_start vs distinct `md5(body)` vs
+`embeddings.source_id`):
+
+| author | entries | `verse_start = chapter` | distinct text **absent from vectors** |
+|---|---|---|---|
+| **Barnes' Notes** | 19,848 | **19,848 / 19,848** | **~94%** (→ 1 vector/chapter) |
+| **John Wesley** | 14,849 | 14,846 | **~91%** |
+| **John Calvin** | 6,166 | 6,159 | **~81%** |
+| John Gill / Adam Clarke / Matthew Henry | — | ~0 | **0% ✅ clean** |
+
+Scope is broader than the 3 served: the coverage gate now lists **~14 BibleHub-sourced commentaries** all
+keyed `verse_start=chapter` (Pulpit 25,328 · Cambridge 24,928 · Geneva 24,875 · Poole 23,153 · Barnes · Benson
+· Wesley · Bengel · Calvin · Darby · Scofield · MacLaren · Lange). Barnes/Wesley/Calvin are the 3 currently
+served; the rest are AUTHOR_TRIAGE promotion candidates that **cannot be promoted until this is fixed**.
+
+Corpus-wide: **341,912** eligible entries → **340,808** distinct texts (only ~1,100 exact dupes) but only
+**~168k** reachable source_ids → **true vector coverage ≈ 49%**, not the ~100% the collapsed detector reported.
+**173,679 distinct commentary paragraphs are in the corpus (visible in FTS/reader) yet never embedded.** Three
+consumers are hit: teacher retrieval (voice-starvation — this likely swamps the §4 HNSW-recall effect), the
+attribution guarantee (a Barnes comment on Rom 8:1 is tagged **Rom 8:8**), and the verse-keyed reader.
+
+**Deliverables:** full diagnosis + fix design in `docs/CORPUS_VERSE_KEY_REPAIR.md`; `measure-embedding-gap.ts`
+now reports TRUE distinct-text coverage + flags every `verse_start=chapter` author (the gate no longer hides
+the ~49% behind the collapse). **NOT fixed tonight, by design:** the fix is SEQUENCED — (1) repair `verse_start`
+by re-sourcing Barnes/Wesley/Calvin from a **permitted PD origin (CCEL/Wikisource — NOT BibleHub/StudyLight,
+which are ToS-forbidden and are where these were scraped from — a provenance flag too)**; (2) THEN add
+`entry_index` to `source_id` + both checkers in lockstep; (3) THEN incremental re-embed (~174k additive
+vectors, not the model-swap one-way door). Adding `entry_index`/re-embedding BEFORE step 1 would bake 342k
+**mis-attributed** vectors — worse than 168k. **Needs owner approval** (source choice + one-time re-embed $).
+This is the #1 retrieval lever found — bigger than §4; it plausibly explains most of the topical/epistle gap.
+
 ## 2026-07-11 (PHASE A — item 1 bait harness + item 2 surfaced=1 fix, ATTEMPT 1, zero regression)
 
 Phase A (production bar 85/85, no beta). **Item 0** already done last session (unified path); licensing-manifest

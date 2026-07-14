@@ -78,6 +78,54 @@ async function main() {
   console.log('almost certainly COLLATERAL (killed by a poisoned batch, not oversized).');
   console.log('Longer ones are candidate CULPRITS — the singleton probe confirms.');
 
+  // ── TRUE coverage (§2, 2026-07-13) ────────────────────────────────────────
+  // The source_id omits entry_index, so N distinct paragraphs sharing a
+  // (book,chapter,verse_start,verse_end,author) key collapse to ONE source_id and
+  // only one is embedded. The "Unique target source_ids" line above therefore
+  // UNDER-counts the real work: it treats a collapsed group as a single unit.
+  // Report the distinct-text truth so coverage can't hide behind the collapse.
+  // See docs/CORPUS_VERSE_KEY_REPAIR.md — Barnes/Wesley/Calvin were ingested with
+  // verse_start = chapter, which is what drives most of this collapse.
+  const { rows: truth } = await client.query(
+    `WITH grp AS (
+       SELECT count(*) AS n, count(DISTINCT md5(body)) AS d
+       FROM commentary_entries
+       WHERE length(body) >= $1 AND book BETWEEN 1 AND 66
+       GROUP BY book, chapter, verse_start, verse_end, author
+     )
+     SELECT coalesce(sum(d),0)::int AS distinct_texts,
+            coalesce(sum(n),0)::int AS entries,
+            count(*)::int           AS source_ids
+     FROM grp`,
+    [MIN_BODY_LENGTH],
+  );
+  const t = truth[0] as { distinct_texts: number; entries: number; source_ids: number };
+  console.log('');
+  console.log('─ TRUE coverage (distinct text, not collapsed source_ids) ─────────────');
+  console.log(`Distinct texts (md5 within key):                 ${t.distinct_texts}`);
+  console.log(`Reachable via source_id (1 per collapse group):  ${t.source_ids}`);
+  console.log(`TRUE vector coverage:                            ${((100 * embedded.size) / t.distinct_texts).toFixed(1)}%  (embedded ${embedded.size} / ${t.distinct_texts} distinct)`);
+
+  const { rows: patho } = await client.query(
+    `SELECT author,
+            count(*)::int AS entries,
+            sum(CASE WHEN verse_start = chapter THEN 1 ELSE 0 END)::int AS vs_eq_chapter
+     FROM commentary_entries
+     WHERE length(body) >= $1 AND book BETWEEN 1 AND 66
+     GROUP BY author
+     HAVING sum(CASE WHEN verse_start = chapter THEN 1 ELSE 0 END) > count(*) / 2
+     ORDER BY entries DESC`,
+    [MIN_BODY_LENGTH],
+  );
+  if (patho.length) {
+    console.log('');
+    console.log('⚠️  verse_start = chapter (verse-key DATA BUG — text un-vectored + mis-attributed):');
+    for (const p of patho as { author: string; entries: number; vs_eq_chapter: number }[]) {
+      console.log(`     ${p.author.padEnd(24)} ${p.vs_eq_chapter}/${p.entries} entries keyed to verse=chapter`);
+    }
+    console.log('     → fix per docs/CORPUS_VERSE_KEY_REPAIR.md BEFORE any entry_index re-embed.');
+  }
+
   await client.end();
 }
 
