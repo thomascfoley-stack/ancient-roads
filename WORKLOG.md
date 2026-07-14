@@ -1,5 +1,43 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-14 (THE POOL FIX — the retriever finally sees 50 docs, not 5) — SHIPPED
+
+The base-pool starvation, fixed and measured. Diagnostic (2026-07-14): `legalBasePoolSql(50)` returned **5** —
+the full-table HNSW walked 190k rows at `ef_search=40`, then the 44%-selective legal filter gutted the 40
+neighbours to ~5. `CANDIDATE_POOL=20` was a fiction; the teacher chose from ~5 passages. Every retrieval number
+for a week was taken off that broken machine.
+
+- **§1 migration 012 — partial legal HNSW index, APPLIED LIVE** (CREATE INDEX CONCURRENTLY, additive,
+  non-locking, no rows touched; built 208s, `indisvalid=true`). Predicate byte-identical to LEGAL_CORPUS_FILTER.
+  Rollback = `DROP INDEX CONCURRENTLY idx_embeddings_vector_legal`.
+- **§2 own the GUC in routing.ts** — `legalBasePool(sql, vec, pool, ef)` runs `set_config('hnsw.ef_search', ef,
+  true)` + the SELECT in one `sql.transaction()` (the runAsUser pattern; bare SET LOCAL on stateless HTTP is a
+  no-op). Un-exported the raw string builder so no call site can silently ship at ef=40. `HNSW_EF_SEARCH=64`.
+- **§3 PROVEN before measuring** (app_runtime+RLS path): ask for 50 → ef=40→**40**, ef=64/128/200→**50**;
+  `EXPLAIN` = `Index Scan using idx_embeddings_vector_legal`. Was 5.
+- **§4 measured — first honest number on an un-broken machine.** ef∈{64,128,200} give **identical** accuracy
+  (once the pool fills, walk depth doesn't change the reranked top-6), so ship the smallest: **ef=64** (fills
+  50/50 across sampled vectors, base pool ~270ms; `iterative_scan` OFF → none of Phase A's 12–14s).
+
+  | category | before (broken, 5 docs) | after (fixed, 50 docs) | ADR-022 |
+  |---|---|---|---|
+  | verse-ref | 95 / 98 | 95 / 98 | GATE — held ✓ |
+  | pericope | 87 / 100 | 87 / 100 | GATE — held ✓ |
+  | proper-noun | 70 / 90 | **80** / 90 | GATE — +10 H1 ✓ |
+  | epistle | 60 / 84 | **72 / 88** | diagnostic — +12 H1 / +4 H2 |
+  | topical | 35 / 75 | 35 / **70** | diagnostic — −5 H2 |
+
+- **§5 honest verdict.** Hard gates (verse-ref/pericope/proper-noun) held or improved — **no regression**.
+  Diagnostics: epistle up, topical −5. At n=20/25 the 95% CIs are wide (topical ~[50,86], epistle ~[70,96]) so
+  I **cannot distinguish** 70 from 75 or 88 from 84 — and topical 70 is **stable across all three ef** (not
+  inter-run noise), which means it is the honest number on 50 real docs; the old 75 was the 5-doc artifact (the
+  reranker had almost no choice). Whether the topical dip is a true effect or a label artifact (§1b: the topical
+  labels are under-specified) is not resolvable without an objective topical set (v4/Torrey).
+- **§6 not worse → ship, not revert.** By ADR-022 the gates are the bar and they held/improved; the machine is
+  un-broken. **§7 guards:** predicate-drift test (LEGAL_CORPUS_FILTER vs the index migration) + a recall probe
+  (`legalBasePool(50)` must return 50) — both green, so a filter drift or a dropped GUC turns CI red instead of
+  silently reverting the retrieval number.
+
 ## 2026-07-13 (THE INTEGRITY BUILD — §1–§7) — the verifier now defends selection, not just words
 
 Read-only on prod all shift (no CREATE INDEX, no ingest, no embed). Seven commits, audit green, pushed.

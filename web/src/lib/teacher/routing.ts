@@ -35,9 +35,11 @@ export const LEGAL_CORPUS_FILTER = `(metadata->>'author' IN ('John Gill','Jamies
 
 // hnsw.ef_search for the base-pool KNN walk. With the partial legal HNSW index (migration
 // 012) every neighbour is already legal, so a modest ef fills the pool — no iterative_scan,
-// no full-graph re-walk (which is where Phase A's 12–14s came from). The shipped default;
-// re-tune via the eval's --ef sweep and update here. See WORKLOG 2026-07-14.
-export const HNSW_EF_SEARCH = 128;
+// no full-graph re-walk (which is where Phase A's 12–14s came from). Swept ef∈{64,128,200}
+// on v3 2026-07-14: accuracy is IDENTICAL across all three (once ef fills the pool, walk
+// depth doesn't change the reranked top-6), so we ship the SMALLEST that reliably fills —
+// ef=64 returns 50/50 across sampled vectors, at ~270ms. Re-tune via the eval's --ef sweep.
+export const HNSW_EF_SEARCH = 64;
 
 // The base candidate pool SQL. PRIVATE on purpose — the ONLY public entry is
 // legalBasePool(), which wraps this in a transaction that sets hnsw.ef_search. Exporting
