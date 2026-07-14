@@ -72,7 +72,54 @@ then name the artifact" is the rail: the instrument was broken, not the system.
 
 ---
 
-## PHASE 2 — BREAK EVERY TEST · _in progress_
+## PHASE 2 — BREAK EVERY TEST (mutation testing)
+
+**Verdict: no theater found in the security / integrity / guarantee / sync spine.** I seeded the real bug each
+guard claims to catch, ran it, and proved it goes RED — then reverted via `git checkout` (tree verified clean
+after each). **8 mutations, 8 caught.**
+
+| # | Seeded defect | Guard test | Result |
+|---|---|---|---|
+| MUT-1 | gate fails **open** in prod (`gate.ts` `deny503`→`allow`) | `gate-decision.test.ts` | RED ✓ |
+| MUT-2 | drop `Matthew Henry` from `PUBLISHED_WHOLE_BIBLE_AUTHORS` | `published-authors.test.ts` | RED ✓ (2 tests) |
+| MUT-3 | `LEGAL_CORPUS_FILTER` drift (`John Gill`→`John Gil`) | `legal-hnsw-index-sync.test.ts` | RED ✓ |
+| MUT-3b | predicate drift (stray author in the FTS predicate) | `fts-legal-index-sync.test.ts` | RED ✓ |
+| MUT-4 | verifier neutered (force `ok:true`) | `verifier.test.ts` | RED ✓ (23/28) |
+| MUT-5 | licensing filter admits `Tyndale Study Notes` | `licensing.test.ts` (DB, behavioral) | RED ✓ |
+| MUT-6 | byte-drift a covered integrity-core file | `web-core-sync.test.ts` | RED ✓ |
+| MUT-7 | raise the rate-limit cap so it never trips | `rate-limit.test.ts` | RED ✓ (2 tests) |
+
+**Verified behavioral by inspection (not mutated):** `get-messages`/`add-message` regressions capture *bound
+parameter values* and assert the caller id is bound to the `user_id` predicate — they explicitly defeat the
+`WHERE user_id IS NOT NULL` decoy that the owner remembers as theater (the comment documents that exact fix).
+`bible-sync.test.ts` compares whole directories via `readdirSync` (can't silently miss a duplicated file, and
+the completeness check confirmed every `src/`↔`web/src/` duplicate is guarded by core-sync or bible-sync).
+`tenancy.test.ts` is a real two-account RLS test (creates as A, asserts B is blocked, cleans up) — I did **not**
+run it because it writes user rows to prod (write-safety; it needs the test branch that's already a pending
+owner action).
+
+### The important non-finding
+**The theater the owner remembers is already gone.** The licensing test no longer asserts a constant against
+itself — it runs the real `legalBasePool`/`retrieveCommentary` and MUT-5 proves a forbidden author leaks it red.
+The allowlist is no longer absence-only — `published-authors.test.ts` (MUT-2) fails when an *allowed* author is
+dropped. Mutation testing confirms the remediation is real, not just re-worded.
+
+### Finding P2-A (coverage gap, not theater) — one invariant guards nothing today
+`verse-keys.test.ts` is `describe.**skip**` — an **honest** RED baseline (its header says so), parked until the
+biblehub corpus verse-keys are repaired. But the consequence is that the **verse-key distributional-collapse
+invariant is unenforced in CI right now**: the corpus could regress on verse-key quality and no test would go
+red. Same shape (documented, not hidden) as the forbidden-provenance static ratchet, which `ctx.skip()`s in CI
+when the gitignored corpus is absent (enforced instead at deploy time by `predeploy-gate.ts` — see
+`FALSE_CONFIDENCE_AUDIT.md`). Neither is a lie; both are holes to be aware of.
+
+### Coverage honesty
+I mutation-tested **8 of 32** files — deliberately the security, integrity, product-guarantee, sync, and
+rate-limit spine, where theater would be most costly. The remaining ~24 (contract/normalize/ref-parse/verse-id/
+api-error/routing-orchestration/resource-textmatch/…) got **static review only**: each imports real production
+code (not a mock of itself), carries a healthy assertion count, and shows none of the tautology / self-referential
+/ over-mock patterns. That is weaker evidence than a mutation, and I'm naming it as such rather than claiming the
+whole suite is proven.
+
 ## PHASE 3 — PARALLEL ADVERSARIAL AUDIT · _pending_
 ## PHASE 4 — RUN THE APP · _pending_
 ## PHASE 5 — SELF-HEAL · _pending_
@@ -82,6 +129,9 @@ then name the artifact" is the rail: the instrument was broken, not the system.
 
 ## § NEEDS YOUR HAND (running — ~10 min each)
 
+- **P2-A — the verse-key invariant is unguarded in CI** (`verse-keys.test.ts` is `describe.skip`). Not urgent,
+  but decide: either finish the biblehub verse-key repair and un-skip it, or accept that verse-key regressions
+  won't turn CI red until then. (No action from me — it's parked-by-design and touches corpus data.)
 - **P1-A — REVOKE writes on `embeddings` (least-privilege gap).** The app role can delete the corpus. One-liner,
   but confirm no code path inserts user embeddings into this table first (I found zero user rows, didn't audit
   every writer). Proposed `db/migrations/013_revoke_embeddings_writes.sql`:
