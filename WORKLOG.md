@@ -1,5 +1,41 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## ★ RETURN BRIEFING — 2026-07-13 (THE CORRECTED BUILD — one overnight shift)
+
+**Shipped LIVE to prod (verified):**
+- **§0 safety** — boot role-assert (prod fails hard if the runtime DB role has BYPASSRLS); **migration 010**
+  REVOKEs corpus writes from `app_runtime` (was able to DELETE the licensed corpus); CI throws-not-skips when
+  no DB (a green gate that ran zero licensing/tenancy assertions is worse than red).
+- **§6** — **migration 011** rebuilt the DEAD partial FTS index (009's predicate drifted at §1b; `EXPLAIN`
+  confirms the planner uses it again — common-word search is fast again).
+
+**Diagnosed honestly — NO fix shipped (needs your call):**
+- **§1 CLOSED, gate NOT met, nothing shippable at $0.** Corrected labels topical **80** / epistle **84** (both
+  <85). The bge query-prefix is a measured trade-off (epistle +8 / topical −20) — **rejected**. Topical is
+  largely *label*-limited (a metric artifact); **epistle 84 is the genuine sub-bar signal** (semantic/recall
+  misses — ep-09 saving-faith, ep-11 priesthood — need recall/content, not labels).
+- **§2 verse-key bug — CORRECTED mid-investigation (I first overstated it; the rail caught it).** It is a
+  **SEARCH/reader citation bug** (biblehub `commentary_entries` carry `verse_start=chapter`, so Barnes on
+  Rom 8:1 is cited Rom 8:8), **NOT** a teacher-coverage bug — the teacher's vectors are a *separate,
+  correctly-keyed* crosswire ingest (NT-only for Barnes/Wesley/Calvin). **Teacher serves all 9 voices**
+  (verified + locked with a behavioral PRESENCE test).
+- **Doc rot fixed:** `schema.sql` (ivfflat→HNSW), `DECISIONS.md` (ADR dup + added ADR-018/019),
+  `MIGRATION_DESIGN.md` (false "IMPLEMENTED IN PROD" stamp — the migration is a 5,510-row pilot; retrieval still
+  runs on the flat `embeddings`).
+
+**★ DECISIONS I NEED FROM YOU (owner console / approval):**
+1. **CI is RED by design** until you create a Neon **test** branch + set the `APP_DATABASE_URL_TEST` GH secret
+   (§0). Also create the Neon **dev** branch + split `.env.local` (it still points at PROD).
+2. **§2 fix** — approve re-sourcing the biblehub commentaries from **CCEL/Wikisource** (NOT BibleHub/StudyLight —
+   ToS) with a per-verse parser → fixes search citations + unblocks promoting ~11 more commentaries. See
+   `docs/CORPUS_VERSE_KEY_REPAIR.md`.
+3. **§3 v4** needs **authority-built topical labels (Torrey, task #35)** before it's a trustworthy gate — §1b
+   proved the model-authored topical labels are under-specified.
+
+**Retrieval track is blocked on you:** §3 (v4 + Torrey labels) → §4 (the partial legal HNSW index, the clean
+epistle 84→92 without the latency) are the next levers but depend on the above. **Do NOT re-embed** (ADR-019).
+Full detail in the dated entries below.
+
 ## 2026-07-13 (THE CORRECTED BUILD — §0 safety SHIPPED · §1b label audit MEASURED) — "topical 35" was mostly a measurement artifact; the real sub-bar signal is EPISTLE (genuine semantic misses)
 
 **§0 SAFETY — shipped (commit aa66896).** (a) Boot-time role assert (`assertAppRuntimeRole` in `db.ts` +
