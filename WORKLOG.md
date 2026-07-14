@@ -78,44 +78,40 @@ for the semantic-depth misses (ep-09/ep-11). Do NOT re-embed (Phase A + §1b bot
 Tooling: `eval-heldout.mts` gains `--relabeled` (KJV RELABEL map) and `--bge-prefix`, both off by default and
 leaving the frozen v3 file untouched; `--diagnose` now honours `--v3`.
 
-## 2026-07-13 (§2 — TRUE vector coverage: the verse-key bug — 3 of 9 legal voices ~90% MISSING from retrieval) — the biggest fish
+## 2026-07-13 (§2 — verse-key bug: a SEARCH/reader citation bug, NOT a teacher-coverage bug — corrected mid-investigation)
 
-**★ THE HEADLINE FINDING.** `synthesizeSourceId` omits `entry_index`, but the deeper cause (found by looking
-at the rows, per the rail) is a **data bug**: **Barnes' Notes, John Wesley, and John Calvin were ingested with
-`verse_start = verse_end = the CHAPTER number`** on every entry. So all ~17 distinct verse-by-verse paragraphs
-in a chapter collapse to ONE verse-key → ONE source_id → the embed job vectors only the first and skips the
-rest as "already embedded," and mis-attributes the one it keeps to `verse = chapter`.
+**The rail caught my own proxy error.** First pass (commit `16c27b1`) claimed "3 of 9 legal voices ~90%
+missing from RETRIEVAL / true coverage ≈ 49% / #1 lever." **That was wrong** — corrected here and in the code
+(commit follows). I measured the biblehub `commentary_entries` (reader corpus) as a proxy for the teacher's
+vector coverage; they are **two disjoint ingests**, so the "gap" was a join artifact.
 
-Measured (prod, read-only; artifact = `commentary_entries` verse_start vs distinct `md5(body)` vs
-`embeddings.source_id`):
+**The two-corpus truth (measured, prod, read-only):**
+- **Teacher / vectors** (`embeddings`): Barnes/Wesley/Calvin come from a **crosswire (SWORD)** ingest, named
+  `Albert Barnes` etc., **correctly per-verse keyed** (Barnes Romans 8 → verses 2–39; ~26/20/21 distinct
+  verses per chapter; ~0 collapsed) — but **NT-only** (books 40–66). The teacher is **not** verse-key-broken.
+  It serves **9 distinct authors** (verified: Gill, JFB, Clarke, Barnes, Wesley, Calvin, Henry, Augustine,
+  Chrysostom) — the "serves 6 of 9" fear is FALSE.
+- **Search / reader** (`commentary_entries`): a **disjoint biblehub** ingest, named `Barnes' Notes` etc.,
+  whole-Bible but **`verse_start = verse_end = chapter`** on every row (Barnes 19,848/19,848; Wesley 14,846;
+  Calvin 6,159 — and ~11 more biblehub commentaries: Pulpit 25,328, Cambridge 24,928, Geneva 24,875, Poole
+  23,153, Benson, Bengel, B.W. Johnson, Darby, Scofield, MacLaren, Lange). Gill/Clarke/Henry clean.
 
-| author | entries | `verse_start = chapter` | distinct text **absent from vectors** |
-|---|---|---|---|
-| **Barnes' Notes** | 19,848 | **19,848 / 19,848** | **~94%** (→ 1 vector/chapter) |
-| **John Wesley** | 14,849 | 14,846 | **~91%** |
-| **John Calvin** | 6,166 | 6,159 | **~81%** |
-| John Gill / Adam Clarke / Matthew Henry | — | ~0 | **0% ✅ clean** |
+**The two REAL defects (re-scoped):**
+1. **Search citation bug (user-visible).** `searchCommentaries` serves those biblehub rows via
+   `LEGAL_COMMENTARY_ENTRIES_PREDICATE`; with `verse_start=chapter`, a Barnes comment on **Rom 8:1** is cited
+   **Rom 8:8** — right text/author/chapter, WRONG verse. Also blocks promoting the ~11 other biblehub works.
+2. **Teacher OT gap (modest).** Crosswire B/W/C modules are NT-only → those 3 voices are absent on OT passages
+   (OT served by Gill/JFB/Clarke/Henry + partial Augustine/Chrysostom). Note: v3 **epistles are NT**, so B/W/C
+   ARE available there — this does **NOT** explain the epistle misses (those stay the §1a/§1b genuine-recall
+   story). It would help OT topical breadth.
 
-Scope is broader than the 3 served: the coverage gate now lists **~14 BibleHub-sourced commentaries** all
-keyed `verse_start=chapter` (Pulpit 25,328 · Cambridge 24,928 · Geneva 24,875 · Poole 23,153 · Barnes · Benson
-· Wesley · Bengel · Calvin · Darby · Scofield · MacLaren · Lange). Barnes/Wesley/Calvin are the 3 currently
-served; the rest are AUTHOR_TRIAGE promotion candidates that **cannot be promoted until this is fixed**.
-
-Corpus-wide: **341,912** eligible entries → **340,808** distinct texts (only ~1,100 exact dupes) but only
-**~168k** reachable source_ids → **true vector coverage ≈ 49%**, not the ~100% the collapsed detector reported.
-**173,679 distinct commentary paragraphs are in the corpus (visible in FTS/reader) yet never embedded.** Three
-consumers are hit: teacher retrieval (voice-starvation — this likely swamps the §4 HNSW-recall effect), the
-attribution guarantee (a Barnes comment on Rom 8:1 is tagged **Rom 8:8**), and the verse-keyed reader.
-
-**Deliverables:** full diagnosis + fix design in `docs/CORPUS_VERSE_KEY_REPAIR.md`; `measure-embedding-gap.ts`
-now reports TRUE distinct-text coverage + flags every `verse_start=chapter` author (the gate no longer hides
-the ~49% behind the collapse). **NOT fixed tonight, by design:** the fix is SEQUENCED — (1) repair `verse_start`
-by re-sourcing Barnes/Wesley/Calvin from a **permitted PD origin (CCEL/Wikisource — NOT BibleHub/StudyLight,
-which are ToS-forbidden and are where these were scraped from — a provenance flag too)**; (2) THEN add
-`entry_index` to `source_id` + both checkers in lockstep; (3) THEN incremental re-embed (~174k additive
-vectors, not the model-swap one-way door). Adding `entry_index`/re-embedding BEFORE step 1 would bake 342k
-**mis-attributed** vectors — worse than 168k. **Needs owner approval** (source choice + one-time re-embed $).
-This is the #1 retrieval lever found — bigger than §4; it plausibly explains most of the topical/epistle gap.
+**NOT the #1 retrieval lever** (my error) — the teacher is correctly keyed; this does not explain the
+topical/epistle HIT@2 gap. **Deliverables:** corrected diagnosis + sequenced fix in
+`docs/CORPUS_VERSE_KEY_REPAIR.md`; `measure-embedding-gap.ts` now prints a CAUTION that its "missing" count
+compares two disjoint ingests (not a retrieval gap) and only flags the real `verse_start=chapter` pathology.
+**Fix (needs owner approval):** re-source the biblehub commentaries from a permitted PD origin (CCEL/Wikisource
+— NOT BibleHub/StudyLight, ToS-forbidden and the scrape origin) with a per-verse parser → fixes citations +
+unblocks promotion; optionally then extend B/W/C to the OT in the teacher.
 
 ## 2026-07-11 (PHASE A — item 1 bait harness + item 2 surfaced=1 fix, ATTEMPT 1, zero regression)
 

@@ -78,34 +78,16 @@ async function main() {
   console.log('almost certainly COLLATERAL (killed by a poisoned batch, not oversized).');
   console.log('Longer ones are candidate CULPRITS — the singleton probe confirms.');
 
-  // ── TRUE coverage (§2, 2026-07-13) ────────────────────────────────────────
-  // The source_id omits entry_index, so N distinct paragraphs sharing a
-  // (book,chapter,verse_start,verse_end,author) key collapse to ONE source_id and
-  // only one is embedded. The "Unique target source_ids" line above therefore
-  // UNDER-counts the real work: it treats a collapsed group as a single unit.
-  // Report the distinct-text truth so coverage can't hide behind the collapse.
-  // See docs/CORPUS_VERSE_KEY_REPAIR.md — Barnes/Wesley/Calvin were ingested with
-  // verse_start = chapter, which is what drives most of this collapse.
-  const { rows: truth } = await client.query(
-    `WITH grp AS (
-       SELECT count(*) AS n, count(DISTINCT md5(body)) AS d
-       FROM commentary_entries
-       WHERE length(body) >= $1 AND book BETWEEN 1 AND 66
-       GROUP BY book, chapter, verse_start, verse_end, author
-     )
-     SELECT coalesce(sum(d),0)::int AS distinct_texts,
-            coalesce(sum(n),0)::int AS entries,
-            count(*)::int           AS source_ids
-     FROM grp`,
-    [MIN_BODY_LENGTH],
-  );
-  const t = truth[0] as { distinct_texts: number; entries: number; source_ids: number };
-  console.log('');
-  console.log('─ TRUE coverage (distinct text, not collapsed source_ids) ─────────────');
-  console.log(`Distinct texts (md5 within key):                 ${t.distinct_texts}`);
-  console.log(`Reachable via source_id (1 per collapse group):  ${t.source_ids}`);
-  console.log(`TRUE vector coverage:                            ${((100 * embedded.size) / t.distinct_texts).toFixed(1)}%  (embedded ${embedded.size} / ${t.distinct_texts} distinct)`);
-
+  // ── verse-key pathology (§2, 2026-07-13) ──────────────────────────────────
+  // CAUTION: the "MISSING source_ids" number above is NOT a teacher-coverage gap.
+  // The embeddings for Barnes/Wesley/Calvin come from a SEPARATE crosswire (SWORD)
+  // ingest ("Albert Barnes", per-verse keyed, NT-only), while commentary_entries
+  // holds a DISJOINT biblehub ingest ("Barnes' Notes", whole-Bible, verse_start=
+  // chapter). Different author strings + different keys ⇒ they never join, so this
+  // tool reports the biblehub rows as "missing" even though the teacher is served
+  // by the crosswire vectors. Do NOT read the gap as "N% of retrieval is missing".
+  // The real defect the flag below surfaces is a SEARCH/READER citation bug (the
+  // biblehub rows carry verse_start=chapter). See docs/CORPUS_VERSE_KEY_REPAIR.md.
   const { rows: patho } = await client.query(
     `SELECT author,
             count(*)::int AS entries,
@@ -119,11 +101,11 @@ async function main() {
   );
   if (patho.length) {
     console.log('');
-    console.log('⚠️  verse_start = chapter (verse-key DATA BUG — text un-vectored + mis-attributed):');
+    console.log('⚠️  verse_start = chapter (biblehub verse-key DATA BUG — SEARCH/reader mis-cites the verse):');
     for (const p of patho as { author: string; entries: number; vs_eq_chapter: number }[]) {
       console.log(`     ${p.author.padEnd(24)} ${p.vs_eq_chapter}/${p.entries} entries keyed to verse=chapter`);
     }
-    console.log('     → fix per docs/CORPUS_VERSE_KEY_REPAIR.md BEFORE any entry_index re-embed.');
+    console.log('     → fix per docs/CORPUS_VERSE_KEY_REPAIR.md (repair verse_start; teacher vectors are a separate, correctly-keyed crosswire ingest).');
   }
 
   await client.end();
