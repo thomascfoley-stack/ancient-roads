@@ -87,7 +87,12 @@ describe.skipIf(!dbUrl)('Layer 1 — licensing invariant (behavioral)', () => {
     const sql = getDb();
     const vecStr = `[${sampleVec.join(',')}]`;
     const rows = (await legalBasePool(sql, vecStr, 50)) as Array<{ metadata: unknown }>;
-    expect(rows.length).toBeGreaterThan(0);
+    // §7 RECALL PROBE (2026-07-14): asking for 50 legal rows must return 50. Before migration
+    // 012 this returned 5 (HNSW post-filter starvation). If it drops below 50 again, the
+    // partial legal index regressed OR the hnsw.ef_search GUC isn't landing (a pooler change
+    // dropped the transaction-local SET) — this goes red instead of the retrieval number
+    // silently reverting.
+    expect(rows.length, 'recall probe: legalBasePool(50) must return 50 (starvation fixed)').toBe(50);
     const authors = rows.map((r) => {
       const meta = typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata;
       return (meta as { author: string }).author;
