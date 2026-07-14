@@ -7,6 +7,16 @@ was investigated and is **not possible** on this beta SDK (see "App-level mitiga
 Moving off `@neondatabase/auth` is therefore an **urgent** blocker, not a later cleanup.
 **Owner decision required: whether to ship auth with SEC-1 open is the founder's call, not the audit script's.**
 
+**RE-CHECKED 2026-07-14 (sec-1 worktree) — situation UNCHANGED, and the implementation is blocked on owner-console prerequisites:**
+- Registry re-check: `@neondatabase/auth` latest is still **`0.4.2-beta`** (never updated) and still hard-pins `better-auth@1.4.18`; `better-auth` patched line is **≥1.6.11** (latest 1.6.23). The 2026-07-08 override test (breaks the build; `@better-auth/passkey`/Neon UI expect `@better-auth/core@1.4.18`) still holds — nothing to re-test. **No version-bump path exists.** The fix is still **Better Auth direct**.
+- **The vuln runs on Neon's hosted server, not here** (managed-service architecture, confirmed: `NEON_AUTH_BASE_URL` + `NEON_AUTH_JWKS_URL`, OAuth providers configured on Neon's side). So the fastest INTERIM close is still prong 1 below — **get Neon to confirm in writing their hosted Auth server is patched (≥1.6.11)**; that is an owner action and it is still `pending`.
+- **The site-password gate currently mitigates the active risk** (a stranger cannot reach `/sign-up/email` or the OAuth callback while gated — verified 2026-07-14, unauth `GET /` → 307 /gate). So SEC-1 is a hard **launch** blocker, not an active exploit today. **But do not remove the gate on SEC-1 alone — see ADR-021** (the gate also hides the raw copyrighted corpus).
+- **Why the Better-Auth-direct implementation was NOT done this shift (blocked, not skipped):**
+  1. **OAuth client secrets** (Google + GitHub) live in **Neon's** hosted config, not in this app's env (`.env.local` has only `NEON_AUTH_BASE_URL/COOKIE_SECRET/JWKS_URL`). Self-hosting better-auth requires those client IDs/secrets in this app + the callback URLs registered in the Google/GitHub consoles — **owner console**.
+  2. **The two-account RLS verification the work order mandates is a DB WRITE** (create users/sessions/channels/messages). `.env.local` points at PROD and this shift is read-only; there is **no dev branch** yet. Verification needs a **writable Neon dev branch** — owner console. Shipping unverified auth ("a green test that would pass on broken code is worse than no test") is refused.
+  3. **UI rebuild:** login/account are `@neondatabase/auth-ui` React components (`NeonAuthUIProvider`, `AuthView`, `AccountView`, the `@neondatabase/auth/ui/tailwind` import). Better Auth ships no drop-in equivalent — the swap includes custom sign-in/sign-up/account forms.
+  Prereqs to unblock, in order: (a) Neon's written patched-server answer (may close the interim risk immediately); (b) Google/GitHub OAuth secrets into this app + consoles; (c) a writable Neon dev branch; then execute the migration below + the two-account verification.
+
 ### What
 `pnpm audit` surfaced **15 advisories, all rooted in one pinned dependency**:
 `web > @neondatabase/auth@0.4.2-beta > better-auth@1.4.18` (+ its `@better-auth/*`,

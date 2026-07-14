@@ -7,7 +7,14 @@ import { logEvent } from '@/lib/observability';
 // visitors). FAILS CLOSED: in production an unset/empty SITE_PASSWORD denies
 // (503), it does NOT expose the app — one missing env var must never drop the
 // whole wall (the 2026-07-09 public-prod incident). Local dev (NODE_ENV!=
-// 'production') keeps running gate-free. Remove the gate when SEC-1 closes.
+// 'production') keeps running gate-free.
+//
+// ⚠️ DO NOT remove this gate on "SEC-1 closed" ALONE. It hides TWO exposures, not one
+// (ADR-021): (1) SEC-1 (the auth CVE) AND (2) the raw web/public/commentaries/** corpus,
+// which ships copyrighted Tyndale + quarantined authors verbatim to the CDN — the runtime
+// author filter does nothing to the files (verified: unauth GET /commentaries/rom/8.json
+// → 307 /gate; the matcher covers public/). The site opens only when SEC-1 is closed AND
+// the reader assets are regenerated clean (predeploy forbidden count = 0). Two conditions.
 //
 // The Neon auth middleware stays out of here: /account auth is enforced by
 // requireUser() in the page server component (Fix A — see WORKLOG.md). The
