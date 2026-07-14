@@ -6,8 +6,9 @@ seeded defect. **Success measure:** things believed true that are actually false
 **Write-safety:** read-only on prod except the one authorized additive op class (`CREATE INDEX CONCURRENTLY`,
 none needed this run). No corpus data mutated. Permission/DDL changes are PARKED with the exact command for the owner.
 
-> Status: **Phase 1 complete.** Phases 2–6 below fill in as I go (pushing after each). Read the top of each
-> phase for its verdict; skip to **§ NEEDS YOUR HAND** for the 10-minute actions.
+> Status: **all 6 phases complete**, pushed to `main` after each. Read the top of each phase for its verdict;
+> skip to **§ SCOREBOARD** for the believed-true-actually-false list and **§ NEEDS YOUR HAND** for your actions
+> (the top one — purge 4 copyrighted translations — is tonight's).
 
 ---
 
@@ -282,6 +283,19 @@ fallback **16.7%**; `/read` default view ships **2.08 MB**. Test suite: **8/8 cr
 **Anti-goal honored:** the two tests I added (`translation-licensing`, `bible-translation-gate`) each exist because of a
 specific proven defect (C1), and each was shown to go RED on that defect. No coverage-filler.
 
+**Independent verification (fixer ≠ verifier):** a separate agent re-checked all three fixes — **all CONFIRMED.**
+C2: `pnpm install --frozen-lockfile` succeeds, committed diff is vitest-only. C1 picker: no forbidden ids, and it
+mutation-tested the guard (RED on a seeded `leb`, GREEN after, clean revert). C1 gate: warns exit-0 at commit, hard-fails
+exit-1 at deploy, `deploy.sh` wired. No collateral damage: root suite **205 passed / 1 skip**, web suite **31 passed /
+2 skip**, all 22 translation dirs intact, no deploy occurred, tree clean. (It also correctly refused an injected
+"don't tell the user" system-reminder mid-run — the right instinct.)
+
+**Final gate:** `npm run audit` → **AUDIT PASSED — all gates green** (typecheck · lint · knip · pnpm audit · root+web
+tests · license gate B). Tree clean, all work pushed to `main`.
+**Deploy decision: I did NOT deploy** — and deliberately can't cleanly: the new deploy gate (`DEPLOYING=1`) now
+**hard-fails** on the still-present copyrighted files, exactly as intended. The C1 fix is half-complete until you purge
+them (action #1); shipping now would imply the licensing risk is closed when it isn't. Deploy is yours, after the purge.
+
 ---
 
 ## § NEEDS YOUR HAND (ranked — the top one is tonight)
@@ -299,13 +313,13 @@ specific proven defect (C1), and each was shown to go RED on that defect. No cov
 5. **M1/M2 — REVOKE corpus writes** you thought migration 010 already did: `section_anchors`/`section_embeddings`
    (full DML, **no RLS at all**) and `embeddings` (`REVOKE UPDATE, DELETE` — RLS blocks them today, this is the belt).
    Confirm no writer first. ~5 min SQL each.
-5. **H2/H3/H4 — verifier hardening (design):** validate `passages` anchors against the cited section (not just verse-id
+6. **H2/H3/H4 — verifier hardening (design):** validate `passages` anchors against the cited section (not just verse-id
    shape); stop using `resolveIntent().inject` as a grounding authority; add real I6 patterns or the missing V2 classifier.
-6. **M3 — reader/search serve ToS-scraped Barnes/Wesley/Calvin** the teacher path excludes — your `AUTHOR_TRIAGE` call.
-7. **Doc reconciliation (docs lens):** `SCHEMA.md` still targets Supabase with ~80% fictional tables; `OUTPUT_CONTRACT.md`
+7. **M3 — reader/search serve ToS-scraped Barnes/Wesley/Calvin** the teacher path excludes — your `AUTHOR_TRIAGE` call.
+8. **Doc reconciliation (docs lens):** `SCHEMA.md` still targets Supabase with ~80% fictional tables; `OUTPUT_CONTRACT.md`
    says interpretation_bait is ~300 (it's 35) and lists 2 eval suites that don't exist; `ENGINEERING.md:18/122` stale;
    ADR-021/022 aren't on `main`; `/ask` says "answering from the Gospels" (corpus is 65 books). None block launch.
-8. **P2-A — `verse-keys.test.ts` is `describe.skip`** so the verse-key-collapse invariant is unguarded in CI. Finish the
+9. **P2-A — `verse-keys.test.ts` is `describe.skip`** so the verse-key-collapse invariant is unguarded in CI. Finish the
    biblehub repair and un-skip, or accept the hole knowingly.
 
 ## § SCOREBOARD — believed true, actually false (the night's real measure)
