@@ -1,10 +1,14 @@
 # Migration Design — `commentary_entries`/`embeddings` → `sources`/`sections`
 
-**Status: SUPERSEDED — IMPLEMENTED and IN PROD (as of 2026-07-12).** The legal-corpus migration/publish
-shipped: `db/migrations/*.sql` (incl. the `status` staged→published column), `legalBasePoolSql` /
-`LEGAL_CORPUS_FILTER` in `web/src/lib/teacher/routing.ts`, deployed and verified live. This doc is retained as
-design rationale, **not a pending proposal** — do not read "awaiting approval" as "unbuilt."
-_(Original status: DESIGN ONLY — awaiting owner approval.)_
+**Status: DESIGN + PARTIAL PILOT — NOT the operative retrieval path (corrected 2026-07-13).** What shipped is
+the *stopgap*, not this migration: the hard-coded `LEGAL_CORPUS_FILTER` / `legalBasePoolSql` allowlist in
+`web/src/lib/teacher/routing.ts` is what enforces "published," and **the teacher + eval still query the flat
+`embeddings` table (190,635 commentary rows)**. Verified in prod (pg 2026-07-13): `sources` (2 rows, HAS a
+`status` column), `sections` (5,510 rows, NO status column), `section_embeddings` (5,510 rows, NO status
+column) all **exist** but hold a ~5,510-row **pilot**, not the 190k corpus — retrieval does not read them. So
+the "status staged→published column" publish mechanism this doc designs is **not operative**; the allowlist is.
+_(A prior stamp here claimed "IMPLEMENTED and IN PROD incl. the status column" — that was FALSE; corrected.)_
+This doc remains the design for the eventual cut-over. _(Original status: DESIGN ONLY — awaiting owner approval.)_
 Owner: this session (recorded in `WORKLOG.md`/`ROADMAP.md` 2026-07-10). Executes ADR-010. Consolidates `docs/INGESTION_TASK.md` (Appendix A) + `docs/SCHEMA.md` §4 + the running system — it does not restate them, it reconciles them to what is actually in Neon today.
 
 ---
