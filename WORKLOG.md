@@ -1,5 +1,37 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-14 (SEC-1 shift — worktree `../ancient-paths-sec`, branch `sec-1`) — DO NOT MERGE, DO NOT DEPLOY
+
+Read-only on prod the whole shift; integrity core untouched. This branch owns ONLY the SEC-1 column
+(auth · middleware.ts · observability.ts · page.tsx · DECISIONS.md · SECURITY.md). The reader-column work I
+did this shift (author-aware predeploy gate; pickDiverse lock-test) was **moved to branch `reader-regen`**
+(worktree `../ancient-paths-reader`) per the owner's file-ownership split, so the two sessions don't collide in
+`predeploy-gate.ts`/`corpus-scan.ts`. **DECISIONS.md has ONE owner (this SEC-1 branch)** — ADR-021 lives here.
+
+**★ §0 EXPOSURE VERDICT — the copyrighted corpus is GATED, not public.** Unauth vs the live beta
+`web-psi-eight-83.vercel.app`: `/` → 307 /gate; **`/commentaries/rom/8.json` → 307 /gate**;
+`/commentaries/_manifest.json` → 307 /gate. The middleware matcher covers `public/`. Contained **today — by the
+site-password gate, and only the gate.** Not a stop-everything; see ADR-021.
+
+**§1 SEC-1 — RE-CONFIRMED unchanged; coupling ADR written; implementation BLOCKED, not skipped.** Checked,
+didn't assume: `@neondatabase/auth` still `0.4.2-beta` (latest, abandoned), still hard-pins `better-auth@1.4.18`;
+patch is **≥1.6.11** (latest 1.6.23); override tested-broken; the vuln runs on **Neon's HOSTED auth server**
+(managed service — `NEON_AUTH_BASE_URL`/JWKS, OAuth on Neon's side), so no client bump fixes it. Fix stays
+**Better-Auth-direct**, blocked on prerequisites unreachable read-only: (1) OAuth client secrets live on Neon's
+side, not this app's env; (2) the mandatory two-account RLS verification is a DB WRITE and there is no writable
+dev branch; (3) login/account UI is `@neondatabase/auth-ui`, no drop-in swap. Refused to ship unverified auth.
+Prereqs + plan in `docs/SECURITY.md`.
+
+**ADR-021 + corrected `middleware.ts` comment:** the site-password gate hides TWO holes — SEC-1 AND the raw
+`web/public/commentaries/**` corpus. "Remove the gate when SEC-1 closes" is a footgun; the site opens only when
+SEC-1 is closed AND the reader assets are regenerated clean. Two conditions, one gate.
+
+**Parked for the owner (console/decisions):** SEC-1 impl (OAuth secrets into this app + a writable Neon dev
+branch, then Better-Auth-direct + two-account verify; fastest interim close = Neon's written "hosted server
+≥1.6.11" answer). Observability/Sentry + landing-page email capture are SEC-1-column but each needs an env/table
+you must provision (SENTRY_DSN; a `waitlist` table = migration) — not started this shift. **`.env.local` still
+points at PROD — split it.** **CI red** until `APP_DATABASE_URL_TEST` is set (prior shift, by design).
+
 ## 2026-07-13 (THE INTEGRITY BUILD — §1–§7) — the verifier now defends selection, not just words
 
 Read-only on prod all shift (no CREATE INDEX, no ingest, no embed). Seven commits, audit green, pushed.
