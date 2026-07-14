@@ -16,7 +16,7 @@ import {
   LEGAL_CORPUS_FILTER,
   MUST_NOT_SERVE_AUTHORS,
 } from '@/lib/legal-corpus';
-import { legalBasePoolSql } from '@/lib/teacher/routing';
+import { legalBasePoolSql, LEGAL_CORPUS_FILTER } from '@/lib/teacher/routing';
 import { searchCommentaries } from '@/lib/commentary-search';
 import { retrieveCommentary } from '@/lib/teacher/retrieve';
 import { requireDbInCi } from '../helpers/env';
@@ -103,6 +103,27 @@ describe.skipIf(!dbUrl)('Layer 1 — licensing invariant (behavioral)', () => {
       )) as { n: number }[];
       expect(leaked[0]?.n ?? 0, `${forbidden} must not appear inside LEGAL_CORPUS_FILTER`).toBe(0);
     }
+  }, 30_000);
+
+  // PRESENCE (§6, 2026-07-13). Behavioral twin of published-authors.test.ts (which is
+  // static): every OTHER behavioral test here asserts a forbidden author is ABSENT — none
+  // asserted that the teacher's vector pool actually CONTAINS the voices it's supposed to
+  // serve. The teacher's B/W/C come from a crosswire ingest ('Albert Barnes') gated by
+  // `source_url ILIKE '%crosswire%'`; if that ingest or filter regressed, the teacher would
+  // silently serve 6 of 9 and no absence test would notice. This turns that red.
+  it('teacher LEGAL_CORPUS_FILTER admits ALL 9 served voices (presence)', async () => {
+    const sql = getDb();
+    const rows = (await sql.query(
+      `SELECT DISTINCT metadata->>'author' AS author FROM embeddings
+       WHERE user_id IS NULL AND source_type = 'commentary' AND ${LEGAL_CORPUS_FILTER}`,
+    )) as { author: string }[];
+    const present = new Set(rows.map((r) => r.author));
+    const expected = [
+      'John Gill', 'Jamieson, Fausset & Brown', 'Adam Clarke', 'Matthew Henry',
+      'Albert Barnes', 'John Wesley', 'John Calvin', 'Augustine of Hippo', 'John Chrysostom',
+    ];
+    const missing = expected.filter((a) => !present.has(a));
+    expect(missing, `teacher must serve all 9 voices; MISSING: ${missing.join(', ')}`).toEqual([]);
   }, 30_000);
 
   it('teacher retrieveCommentary: no quarantined author in returned chunks', async () => {

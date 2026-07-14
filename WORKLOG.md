@@ -78,6 +78,27 @@ for the semantic-depth misses (ep-09/ep-11). Do NOT re-embed (Phase A + §1b bot
 Tooling: `eval-heldout.mts` gains `--relabeled` (KJV RELABEL map) and `--bge-prefix`, both off by default and
 leaving the frozen v3 file untouched; `--diagnose` now honours `--v3`.
 
+## 2026-07-13 (§6 THE ROT — schema/doc lies fixed, dead index rebuilt LIVE, teacher-serves-9 locked in)
+
+Anti-false-confidence pass; every claim verified against prod (pg_indexes / EXPLAIN / row counts).
+- **schema.sql** said `idx_embeddings_vector USING ivfflat(lists=100)`; prod is **HNSW**. Corrected.
+- **★ teacher serves 9, not 6** — VERIFIED. `LEGAL_CORPUS_FILTER` over `embeddings` returns all 9 distinct
+  voices (Gill, JFB, Clarke, Barnes, Wesley, Calvin, Henry, Augustine, Chrysostom). The B/W/C are crosswire
+  (`Albert Barnes` + `source_url ILIKE '%crosswire%'`), correctly per-verse keyed (see §2). The "serves 6 of 9"
+  fear is FALSE. Locked in with a **behavioral PRESENCE test** (`licensing.test.ts`) — the first teacher-path
+  test that asserts a voice is PRESENT, not just that forbidden ones are absent.
+- **Migration 009 partial FTS index was DEAD** — its predicate still had the pre-§1b crosswire condition, but
+  the query predicate (`LEGAL_COMMENTARY_ENTRIES_PREDICATE`) broadened to serve `Barnes' Notes` (biblehub), so
+  the planner silently stopped using it and the 1.2–1.7s common-word scan came back. **Migration 011 rebuilt it
+  to match, APPLIED LIVE** (CREATE new CONCURRENTLY → DROP old → RENAME); `EXPLAIN` now shows `Bitmap Index Scan
+  on idx_commentary_fts_legal`. Added a static **drift-guard test** (`fts-legal-index-sync.test.ts`) so a future
+  constant change without a rebuild migration turns red.
+- **DECISIONS.md**: ADR-016's body was orphaned under a duplicated ADR-017 heading — removed the dup; added the
+  missing **ADR-018** (Phase A measured + reverted) and **ADR-019** (do NOT re-embed).
+- **MIGRATION_DESIGN.md**: falsely stamped "IMPLEMENTED and IN PROD incl. the status column." Verified false —
+  `sources`/`sections`/`section_embeddings` exist but hold a ~5,510-row pilot; teacher+eval query the flat
+  `embeddings` (190,635 rows); `status` exists only on `sources`. "Published" = the hard-coded allowlist. Fixed.
+
 ## 2026-07-13 (§2 — verse-key bug: a SEARCH/reader citation bug, NOT a teacher-coverage bug — corrected mid-investigation)
 
 **The rail caught my own proxy error.** First pass (commit `16c27b1`) claimed "3 of 9 legal voices ~90%
