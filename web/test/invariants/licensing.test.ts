@@ -19,10 +19,10 @@ import {
 import { legalBasePoolSql } from '@/lib/teacher/routing';
 import { searchCommentaries } from '@/lib/commentary-search';
 import { retrieveCommentary } from '@/lib/teacher/retrieve';
-import { ensureDbEnv } from '../helpers/env';
+import { requireDbInCi } from '../helpers/env';
 import { evaluateForbiddenProvenanceRatchet } from '../helpers/corpus-scan';
 
-const dbUrl = ensureDbEnv();
+const dbUrl = requireDbInCi();
 
 function assertNoForbiddenAuthors(authors: string[], pathLabel: string): void {
   const hits = authors.filter((a) => isMustNotServeAuthor(a));

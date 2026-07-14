@@ -7,14 +7,50 @@ type Sql = NeonQueryFunction<false, false>;
 // migrations/DDL, never at runtime. Falls back to DATABASE_URL if APP_DATABASE_URL
 // is unset (e.g., a dev box before the SEC-2 migration) — RLS is inert there, but the
 // explicit WHERE user_id filters still isolate.
+function isProd(): boolean {
+  return process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
+}
+
 function runtimeUrl(): string {
-  const url = process.env.APP_DATABASE_URL ?? process.env.DATABASE_URL;
+  const app = process.env.APP_DATABASE_URL;
+  // SECURITY (§0): in production the runtime MUST use the least-privilege app_runtime role
+  // (APP_DATABASE_URL). Silently falling back to the BYPASSRLS owner (DATABASE_URL) makes
+  // RLS inert for every private row — one missing Vercel env var = total isolation loss.
+  // Fail hard rather than serve unprotected.
+  if (isProd() && !app) {
+    throw new Error(
+      'SECURITY: APP_DATABASE_URL (least-privilege app_runtime) is required in production; ' +
+        'refusing to fall back to the BYPASSRLS owner role (RLS would be inert).',
+    );
+  }
+  const url = app ?? process.env.DATABASE_URL;
   if (!url) throw new Error('APP_DATABASE_URL or DATABASE_URL must be set');
   return url.replace(/^"|"$/g, '');
 }
 
 export function getDb(): Sql {
   return neon(runtimeUrl());
+}
+
+// Boot-time assertion (call from instrumentation.ts). Catches the case the sync config
+// guard cannot: APP_DATABASE_URL is set but still points at a BYPASSRLS role. Verifies the
+// runtime role has NO BYPASSRLS in production; throws to fail the server start. Runs once
+// at startup, never per request.
+export async function assertAppRuntimeRole(): Promise<void> {
+  if (!isProd()) return;
+  const sql = getDb();
+  const rows = (await sql`SELECT rolname, rolbypassrls FROM pg_roles WHERE rolname = current_user`) as {
+    rolname: string;
+    rolbypassrls: boolean;
+  }[];
+  const role = rows[0];
+  if (!role) throw new Error('SECURITY: could not verify the runtime DB role (pg_roles empty for current_user).');
+  if (role.rolbypassrls) {
+    throw new Error(
+      `SECURITY: runtime DB role '${role.rolname}' has BYPASSRLS in production — RLS is inert. ` +
+        'Point APP_DATABASE_URL at the app_runtime role.',
+    );
+  }
 }
 
 // Run user-scoped queries in ONE transaction with `app.current_user_id` set, so RLS

@@ -4,9 +4,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createChannel, addMessage, getMessages } from '@/lib/chat';
 import { getDb, runAsUser } from '@/lib/db';
-import { runtimeDbUrl, ensureDbEnv } from '../helpers/env';
+import { runtimeDbUrl, requireDbInCi } from '../helpers/env';
 
-const dbUrl = ensureDbEnv();
+const dbUrl = requireDbInCi();
 const userA = `qa-tenancy-a-${Date.now()}`;
 const userB = `qa-tenancy-b-${Date.now()}`;
 let channelId = '';
