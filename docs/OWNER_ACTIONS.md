@@ -115,3 +115,26 @@ table assigns each its **most binding** constraint. (a) and (b) are not really "
 provenance are hard requirements); (c)/(d)/(e) are yours. The reader's runtime filter already hides everything
 not explicitly published, so nothing here is *served* today — this is about what the regenerated corpus should
 *contain*.
+
+---
+
+## §4 — /api/ask is COMPOSE-bound (~16s, up to 36s) — the real latency wall (your call: touches compose/faithfulness)
+
+The pool fix is **live** and adds no latency (retrieval ~0.27s; the old 12–14s `iterative_scan` blowup is gone).
+But I measured end-to-end per your "a correct answer at 14s is a broken product" bar and the wall is the **compose
+LLM**, not retrieval (evidence: `WORKLOG.md` §4, `scratchpad/latency-decomp.txt`):
+
+- Raw compose (Qwen3.5-35B-A3B, `max_tokens=6000`, temp 0.3) = **16.5s** for a 3330-token answer, **36.3s** at the
+  6000-token cap — generation-bound (~5ms/token), so **prod is the same floor** (it's DeepInfra's compute, not our build).
+- `teach()` re-composes on verifier rejection (`MAX_RETRIES=2` → up to **3** attempts) → a contested answer is
+  2–3× compose (~32–108s) before fallback.
+- Mitigant already shipped: retrieved sources render at ~1s, so the screen isn't blank — but the **answer** is over bar.
+
+**This is NOT the pool fix's doing** (pre-existing) and I did **not** change it — compose is integrity-adjacent
+(faithfulness). Levers, each needing a bait + accuracy re-run before shipping — **which do you want?**
+| lever | effect | cost/risk |
+|---|---|---|
+| **token streaming** (emit tokens, not just STAGES) | perceived latency drops to first-token (~2–3s); wall-clock unchanged | no model change; UI + a streaming verify story (can't verify mid-stream — verify still gates the final) |
+| **tighter `max_tokens` / length-capped contract** | caps the 36s tail; may truncate long multi-voice answers | re-run bait — truncation must not drop attribution/quotes |
+| **faster compose model** | lower floor across the board | re-run bait **and** accuracy — a weaker model may interpret or mis-quote |
+| accept it | — | product feels slow; "14s = broken" stands |

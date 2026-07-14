@@ -37,6 +37,28 @@ for a week was taken off that broken machine.
   un-broken. **§7 guards:** predicate-drift test (LEGAL_CORPUS_FILTER vs the index migration) + a recall probe
   (`legalBasePool(50)` must return 50) — both green, so a filter drift or a dropped GUC turns CI red instead of
   silently reverting the retrieval number.
+- **§4 (latency) — DEPLOYED & VERIFIED LIVE, and I measured the wrong thing was ever the worry.** HEAD `ef0fe36`
+  is live (`readyState:READY`, site still 307→/gate to anon, deployed commit contains the fix). Then I measured
+  end-to-end per the work order — and the honest number **inverts my own earlier assumption** that prod would be
+  ~6–7s:
+
+  | phase | measured | notes |
+  |---|---|---|
+  | retrieval (base pool, ef=64) | **~0.27s** | my fix's whole surface; `iterative_scan` OFF → Phase A's 12–14s gone |
+  | full `teach()` end-to-end (3 real Q, dev) | 15.0 / 16.7 / 18.9s | |
+  | **raw compose (LLM) alone** — Qwen3.5-35B-A3B, max_tokens=6000 | **16.5s @3330 tok · 36.3s @6000 tok** | ~5ms/token, **generation-bound** |
+
+  **The wall is the compose LLM, not retrieval.** A normal answer is ~16s of pure generation; a verbose one that
+  hits the token cap is 36s. This is **not** dev overhead — the generation time is on DeepInfra's servers, so prod
+  is the same floor (network shaves <1s). Worse: `teach()` re-composes on verifier rejection (`MAX_RETRIES=2` → up
+  to **3** attempts before fallback), so a contested answer is 2–3× compose (~32–108s). **This blows the "a correct
+  answer at 14s is a broken product" bar** — and it is a **separate, pre-existing bottleneck** (compose model +
+  `max_tokens=6000` + `onEvent` streams STAGES not tokens, so the user watches a spinner, not text). The pool fix
+  neither caused nor was scoped to fix it. Mitigant already in place: sources render at ~1s (`retrieved` stage),
+  so time-to-first-content ≠ time-to-answer. **Owner call — NOT mine to make (touches compose/faithfulness):**
+  token streaming (perceived latency, no model change), a tighter `max_tokens` / length-capped contract, or a
+  faster compose model — each needs a bait + accuracy re-run before it ships. Raw evidence:
+  `scratchpad/latency-decomp.txt`.
 
 ## 2026-07-13 (THE INTEGRITY BUILD — §1–§7) — the verifier now defends selection, not just words
 
