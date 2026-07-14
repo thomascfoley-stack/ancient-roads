@@ -31,9 +31,12 @@ needs a feature), and the $4 re-embed was correctly disproven. `docs/PHASE_A_DIA
 - **`npm run audit`:** ✅ all gates green (incl. the new presence tests; the behavioral licensing invariant
   caught + I fixed a Barnes-alias regression).
 - **§2 diagnosis (the headline):** the index is already HNSW (not ivfflat — schema.sql stale); pool sweep
-  20/50/100 flat, 200 worse; the failing topical labels are **present in the vectors and rank #1–#32** yet
-  return voices=0 → reranker/selection demotes them. Confirmed: `--no-rerank` lifts topical H1 35→50,
-  proper-noun 70→90. **Re-embed disproven.** Full writeup `docs/PHASE_A_DIAGNOSIS.md`.
+  20/50/100 flat, 200 worse; **Re-embed disproven.** Full writeup `docs/PHASE_A_DIAGNOSIS.md`.
+  _(SUPERSEDED — the original wording here blamed "reranker/selection demotes them"; that was WRONG. Phase A's
+  ≥2-author availability probe found the real cause: the failing labels' 2nd voice sits at exact vector rank
+  #22–#140, and HNSW `ef_search=40` under the selective legal filter drops it BEFORE the reranker ever sees it.
+  `--no-rerank` lifting topical H1 35→50 is a small-pool reshuffle, not evidence the reranker was the culprit.
+  And per §1b [2026-07-13], most topical "misses" are label under-specification, not retrieval at all.)_
 - **Deploy:** the §1 live-integrity fixes deployed at end of shift (see the QUEUE #3 stamp's deploy notes for
   the `--archive` mechanism; the reshard makes it non-load-bearing). Reader now shows only the 9 published
   authors per verse — **safe but sparse; expand via AUTHOR_TRIAGE.md promotions (owner's call).**

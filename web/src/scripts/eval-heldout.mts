@@ -71,10 +71,17 @@ const onTarget = (v: number, rs: ExpRange[]) => {
   return rs.some((r) => b === r.book && c >= r.chLo && c <= r.chHi);
 };
 
+// §1a A/B: bge-large-en-v1.5 is an asymmetric retriever — its model card says to prefix
+// the QUERY (not the passages) with this instruction for short-query→long-passage search.
+// The corpus was embedded with NO prefix, so this only shifts the query vector. --bge-prefix
+// turns it on so we can measure the delta on v3 before touching the prod embedQuery path.
+const BGE_QUERY_PREFIX = 'Represent this sentence for searching relevant passages: ';
+const BGE_PREFIX = process.argv.includes('--bge-prefix');
 async function embed(text: string): Promise<string> {
+  const input = BGE_PREFIX ? BGE_QUERY_PREFIX + text : text;
   const res = await fetch('https://api.deepinfra.com/v1/openai/embeddings', {
     method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: 'BAAI/bge-large-en-v1.5', input: [text.slice(0, 1800)], encoding_format: 'float' }),
+    body: JSON.stringify({ model: 'BAAI/bge-large-en-v1.5', input: [input.slice(0, 1800)], encoding_format: 'float' }),
   });
   return `[${((await res.json()) as { data: { embedding: number[] }[] }).data[0]!.embedding.join(',')}]`;
 }

@@ -42,9 +42,41 @@ epistle 84, both < 85. The "topical 35" alarm was mostly a MEASUREMENT artifact 
 under-specified labels). The trustworthy sub-bar signal is **EPISTLE (84, genuine semantic misses)**, not
 topical. Do NOT re-embed (Phase A falsified it). Next: finish the free experiments (§1a bge query prefix,
 §1c pool sweep), then MINT v4 with topical labels built from Torrey (task #35) so the topical number is
-trustworthy; the genuine structural work is epistle recall (§4) + more distinct PD voices. Tooling:
-`eval-heldout.mts` gains `--relabeled` (KJV RELABEL map, off by default, frozen set untouched); `--diagnose`
-now honours `--v3`.
+trustworthy; the genuine structural work is epistle recall (§4) + more distinct PD voices.
+
+**§1a — bge query-instruction prefix: MEASURED, it's a TRADE-OFF, NOT shipped.** bge-large-en-v1.5 is an
+asymmetric retriever; its card says to prefix the QUERY (not passages) with `"Represent this sentence for
+searching relevant passages: "`. A/B on v3 (`eval-heldout --bge-prefix`, prod `embedQuery` untouched):
+
+| category H2 | baseline (frozen / relabel) | + bge-prefix (frozen / relabel) |
+|---|---|---|
+| **epistle** | 84 / 84 | **92 / 92** (+8) |
+| **topical** | 75 / 80 | **60 / 60** (−15 to −20) |
+
+The topical drop is REAL, not a label artifact — it's 60 under BOTH label sets. So the prefix robs topical to
+pay epistle (short thematic queries distort under the sentence-instruction; full doctrinal sentences align).
+**Do NOT ship globally.** Its value is diagnostic: the +8 comes from flipping exactly ep-04 ("humiliation…
+death on a cross") and ep-16 ("fear of the Lord + judgment seat") from `voices=0` → pass — the same genuine
+recall misses §1b found. So epistle's gap is RECALL-recoverable, and the clean lever is the **§4 partial legal
+HNSW index** (fast high-`ef`), which Phase A showed lifts epistle 84→92 *without* the topical cost or the
+latency. (ep-09 saving-faith / ep-11 priesthood stay missed under every knob — those need content.)
+
+**§1c — CANDIDATE_POOL sweep: already answered in Phase A, not re-run.** pool 20→100 flat, 200 worse; HNSW
+`ef_search=40` caps the candidate set before the pool matters (`docs/PHASE_A_DIAGNOSIS.md` §"The pool sweep").
+Pool is not the lever.
+
+**§1d — HIT@1-vs-HIT@2 metric in docs: verified, mostly already correct.** CLAUDE.md §Accuracy and ROADMAP.md
+already label 75/84 as HIT@2 and name the 85 bar; no live doc treats "topical 35" (HIT@1) as the gate. Fixed
+the one stale spot: `WORKORDER_OVERNIGHT.md` still carried the falsified "reranker/selection demotes them"
+diagnosis — superseded-note added pointing to the real cause (HNSW `ef_search=40` recall) and to §1b.
+
+**★ §1 CLOSED — DECISION GATE NOT MET, nothing shippable at $0.** Corrected labels: topical 80 / epistle 84.
+bge-prefix: a rejected trade-off. So do NOT stop at §1. Proceed to the structural work: §4 partial HNSW index
+(epistle recall, the clean 84→92), §3 v4 with Torrey-built topical labels (so topical is trustworthy), content
+for the semantic-depth misses (ep-09/ep-11). Do NOT re-embed (Phase A + §1b both falsify it).
+
+Tooling: `eval-heldout.mts` gains `--relabeled` (KJV RELABEL map) and `--bge-prefix`, both off by default and
+leaving the frozen v3 file untouched; `--diagnose` now honours `--v3`.
 
 ## 2026-07-11 (PHASE A — item 1 bait harness + item 2 surfaced=1 fix, ATTEMPT 1, zero regression)
 
