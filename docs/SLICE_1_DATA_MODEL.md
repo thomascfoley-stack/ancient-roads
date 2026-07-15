@@ -87,6 +87,21 @@ function traditionGap(userId: string, documentId: string): Promise<CorpusVoice[]
    throws), never returns a spurious "voice you didn't cite." Seed-bug proof: remove the parity guard →
    the mismatched row joins → RED.
 
+## Ships-with — lock the shared corpus `embeddings` to SELECT-only (do NOT skip)
+
+**This rides WITH Slice 1, it does not wait for it.** Today `app_runtime` still holds
+`INSERT/UPDATE/DELETE` on the shared corpus `embeddings` table (`STATE_OF_TRUTH.md` §7.1, a LONG-NIGHT
+finding). It's tolerable *now* because the runtime only ever serves corpus rows. **The moment Slice 1 ships,
+user content and corpus content coexist behind the same `app_runtime` connection** — a runtime role that can
+write the corpus table is a materially bigger deal then than it is today (a compromised request path, or a
+tenancy bug, could reach corpus integrity, not just one user's rows). So the `REVOKE INSERT, UPDATE, DELETE ON
+embeddings FROM app_runtime` belongs in the same change set as this migration — not a follow-up that gets lost.
+
+Caveat that makes it non-trivial (why it wasn't auto-applied): **first confirm the ingestion path does not
+connect as `app_runtime`.** Ingestion runs as `neondb_owner` by design, but verify before revoking, or ingestion
+breaks. Draft it as `db/migrations/0NN_revoke_embeddings_writes.sql.draft` alongside 013 and apply both on the
+dev branch together; it's a prod write, so it stays a draft until the branch exists (OWNER_ACTIONS §1).
+
 ## Out of scope for Slice 1 (named, not forgotten)
 
 - The **per-user HNSW partition** + the tripwire job (§5) — a separate migration, fired above ~20–30k chunks/user.
