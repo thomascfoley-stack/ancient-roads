@@ -223,7 +223,22 @@ recall ≥70%, precision ≥95%, recall weighted higher.
   precision vs the ≥95% bar needs per-match labelling I did not do. **Before Slice 1: a real precision eval + a
   tighter run rule** (longer min-run, or require ≥2 distinct runs per verse, or down-weight common clauses).
 
-**Net go/no-go:** recall clears the bar on a clean instrument → the ambition is real and Slice 1 is justified —
-**conditioned on** (a) indexing the user's translation(s), (b) the semantic channel covering the paraphrase
-residual, and (c) a precision pass before ship. Not a rounded-up yes: the recall leg is genuinely cleared; the
-precision leg is explicitly open.
+**Net go/no-go (first pass):** recall clears the bar on a clean instrument → conditioned on translation indexing,
+the semantic channel, and a precision pass. The recall leg is cleared; the precision leg is explicitly open.
+
+### CONFIRMATION RUN (2026-07-14) — held-out n=30, FROZEN harness
+The n=17 above tuned the harness (shingle length, window, KJV). So it was re-run on a **held-out** set the harness
+never saw — **30 CCEL Spurgeon sermons from Volumes 10 + 13** (New Park Street / MTP, PD, ≠ *Talks to Farmers*) —
+with the harness **frozen** (no parameter change after seeing the data; git-verified unchanged since the Part 3 commit).
+
+- **★ RECALL CONFIRMED — uncited-quote channel: 90% chapter-level (27/30), 95% CI ≈ [74, 96].** The CI lower bound
+  (74%) is **above the pre-registered 70% bar** — so recall is confirmed, not "probably clears." Exact-verse 70%
+  (21/30). Explicit channel 0% again (header-only citation, structural). Misses (3): Exodus 33, Matthew 15, Job 17
+  — paraphrase/orthography, the semantic channel's territory.
+- **⚠ PRECISION — the proxy got WORSE, not better: 66.5 verses returned per sermon** (was 36.5 at n=17). This is
+  the owner's precision worry made concrete: at ~66 returns for a sermon that genuinely engages perhaps 10–20
+  passages, "have I written on Romans 8?" would bury Romans 8 in a wall of incidental hits. **Recall is cleared;
+  precision is now the leg that decides the feature — quantified in the PRECISION RUN below.**
+
+### PRECISION RUN (2026-07-14) — the eval that never ran
+_<measured in Part 2, appended below>_
