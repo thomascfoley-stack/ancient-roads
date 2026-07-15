@@ -99,4 +99,12 @@ probe** (`legalBasePool(50)`=50) confirmed in the §9 audit.
 - `npm run audit` → **AUDIT PASSED — all gates green** (typecheck ×3, lint ×2, knip, deps [infra-tolerant C3],
   205 tests incl. the DB recall probe + licensing invariants, Gate B license fail-closed).
 - **Drift test** `legal-hnsw-index-sync` green · **recall probe** `legalBasePool(50)=50` green (in the audit).
-- Deploy: _<filled after deploy>_ · Live check: _<307→/gate + LSV attribution>_
+- **Deploy: LIVE** (commit `8279b29`, `readyState: READY`). The first attempt's `next build` failed on a
+  `/account/[path]` prerender ("Cannot find module") — a `.next` collision because a dev server was running during
+  the build; a clean rebuild (dev server stopped, `.next` cleared) succeeded. Not a code defect.
+- **Live checks:** site still gated (`GET / → 307 /gate`); upload dropped to **161 MB** (−47 MB = the 4 removed
+  translations, so the copyrighted files are absent from the deployed bundle — a direct prod HTTP check can't
+  distinguish present/absent because the middleware gates all `/bible/*` for anon). On a fresh local dev server:
+  the picker offers **LSV** and NOT jubilee/mkjv/leb/litv, and LSV renders its **CC BY-SA attribution** footer;
+  no console errors.
+- **Gate at deploy:** `✓ Every translation dir present has a shipping license record` (DEPLOYING=1 hard-gate passed).
