@@ -76,6 +76,11 @@ re-ingest (`ingest-scrollmapper-bibles.ts`), not git.**
   **[48, 86]**. Both intervals span 85, so neither is measurably at/below the old 85 target — **unmeasurable at
   these n**, not failed. The honest next step for these two is a larger v4 (n≈100/stratum) or a label-free gate
   (≥2 distinct grounded voices), not a verdict off n=20.
+- **★ Do NOT read topical as "improved."** It wasn't. **70 is the true number**; the 75 we carried was the
+  5-doc artifact (the reranker had almost no pool to choose from). Filling the pool to 20 dropped the honest read
+  to 70. The pool fix **helped epistle (84→88)** and **slightly lowered the honest topical read (75→70)** — that's
+  what the fix surfaced, not a gain. The headline is that we now know what topical actually is, and that the
+  **hard gates held on real numbers** — which is the close.
 
 ### §7 The verifier hole is closed (byte-synced src↔web; proof)
 `passages_grounded` grounded a passage on (voice anchors) **OR** `resolveIntent(query).inject`. The inject range
