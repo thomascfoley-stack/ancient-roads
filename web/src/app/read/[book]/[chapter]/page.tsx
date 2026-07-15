@@ -7,6 +7,7 @@ import {
   fetchChapter,
   fetchCommentary,
   TRANSLATIONS,
+  translationAttribution,
   DEFAULT_TRANSLATION,
   type Book,
   type ChapterData,
@@ -238,6 +239,11 @@ export default function ReaderPage() {
           <p className="text-sm text-stone-400">Loading…</p>
         </div>
       )}
+      {translationAttribution(translation.id) ? (
+        <p className="mx-auto max-w-2xl px-6 pb-8 text-center text-xs text-stone-400">
+          {translationAttribution(translation.id)}
+        </p>
+      ) : null}
       {study && study.focusWord && original ? (
         <WordPanel
           word={study.focusWord}

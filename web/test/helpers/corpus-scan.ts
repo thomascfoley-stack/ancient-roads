@@ -1,23 +1,28 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { forbiddenProvenanceDomain } from '../../../src/ingest/license-manifest';
+import { translationShipDecision } from '../../src/lib/licensing';
 
 const WEB_ROOT = path.join(__dirname, '../..');
 export const COMMENTARIES_DIR = path.join(WEB_ROOT, 'public/commentaries');
 export const BIBLE_DIR = path.join(WEB_ROOT, 'public/bible');
 
-// Translation directory ids that must NEVER ship — copyrighted/commercial-capped per
-// docs/ACQUISITION_MANIFEST.md:28. MUST match FORBIDDEN_TRANSLATION_IDS in web/src/lib/bible.ts
-// (the picker guard); this is the file-side twin, enforced at deploy by predeploy-gate.ts.
-// The picker guard (translation-licensing.test.ts) can't see a copyrighted dir that ships
-// without being in the picker — this can. (LONG_NIGHT finding C1/H5, 2026-07-14.)
-export const FORBIDDEN_TRANSLATION_DIRS = ['leb', 'litv', 'mkjv', 'lsv', 'nasb', 'niv', 'esv', 'nlt', 'csb'];
-
-/** Forbidden Bible-translation directories present under `dir` (default public/bible/, about to ship). */
-export function findForbiddenBibleTranslations(dir: string = BIBLE_DIR): string[] {
+/** All Bible-translation directory ids present under `dir` (each is a corpus work about to ship). */
+export function presentBibleTranslations(dir: string = BIBLE_DIR): string[] {
   if (!existsSync(dir)) return [];
-  const present = new Set(readdirSync(dir).filter((n) => statSync(path.join(dir, n)).isDirectory()));
-  return FORBIDDEN_TRANSLATION_DIRS.filter((id) => present.has(id));
+  return readdirSync(dir).filter((n) => statSync(path.join(dir, n)).isDirectory());
+}
+
+// Translation dirs present that the LICENSE RECORD does not permit to ship — the file-side
+// twin of the picker guard, enforced at deploy by predeploy-gate.ts. Reads
+// web/src/lib/licensing.ts (block-by-default): allow ships, conditional ships only if
+// acknowledged, deny/unknown/no-record block. This replaced the old hardcoded denylist so the
+// gate decides on a per-work license, not a blocklist (T1§3, 2026-07-14).
+export function blockedBibleTranslations(dir: string = BIBLE_DIR): Array<{ id: string; reason: string }> {
+  return presentBibleTranslations(dir)
+    .map((id) => ({ id, decision: translationShipDecision(id) }))
+    .filter((x) => !x.decision.ship)
+    .map((x) => ({ id: x.id, reason: x.decision.reason }));
 }
 const BASELINE_PATH = path.join(__dirname, '../baselines/static-forbidden-provenance.json');
 

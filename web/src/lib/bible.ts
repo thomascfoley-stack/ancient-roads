@@ -2,6 +2,7 @@
 
 import { BOOKS, BOOK_BY_SLUG, type Book } from '@bible/books';
 import { isPublishedCommentaryEntry, isPublishedAuthor } from '@/lib/legal-corpus';
+import { TRANSLATION_LICENSES } from '@/lib/licensing';
 
 export type { Book };
 export { BOOKS, BOOK_BY_SLUG };
@@ -14,16 +15,12 @@ export interface Translation {
   abbr: string;
 }
 
-// Translation IDs the corpus policy forbids serving — copyrighted or commercially
-// capped, per docs/ACQUISITION_MANIFEST.md:28 ("EXCLUDE (copyrighted, commonly mislabeled
-// free): LEB (Lexham), LITV / MKJV (Green's), LSV (CC BY-SA but commercial-capped), NASB/
-// NIV/ESV/NLT/CSB"). These must never appear in TRANSLATIONS (the served reader picker).
-// Guarded by web/test/invariants/translation-licensing.test.ts. The static files under
-// web/public/bible/{leb,litv,mkjv,lsv}/ still need purging + a redeploy — owner action
-// (docs/LONG_NIGHT.md § NEEDS YOUR HAND, finding C1). Removing them here stops the reader
-// offering them; it does NOT remove the already-deployed files.
-export const FORBIDDEN_TRANSLATION_IDS = ['leb', 'litv', 'mkjv', 'lsv', 'nasb', 'niv', 'esv', 'nlt', 'csb'] as const;
-
+// The served reader picker. Every id here MUST have a shipping license record in
+// web/src/lib/licensing.ts (commercial_use=allow, or conditional+ack) — enforced by
+// web/test/invariants/translation-licensing.test.ts, which is the picker-side twin of the
+// deploy gate. Excluded because their record blocks: litv/mkjv (deny), leb (conditional,
+// no ack), jubilee (unknown — Jubilee Bible 2000 appears copyrighted). LSV ships WITH
+// attribution (see translationAttribution).
 export const TRANSLATIONS: Translation[] = [
   { id: 'web', name: 'World English Bible', abbr: 'WEB' },
   { id: 'bsb', name: 'Berean Standard Bible', abbr: 'BSB' },
@@ -32,18 +29,24 @@ export const TRANSLATIONS: Translation[] = [
   { id: 'ylt', name: "Young's Literal Translation", abbr: 'YLT' },
   { id: 'darby', name: 'Darby Translation', abbr: 'DBY' },
   { id: 'bbe', name: 'Bible in Basic English', abbr: 'BBE' },
+  { id: 'lsv', name: 'Literal Standard Version', abbr: 'LSV' },
   { id: 'geneva', name: 'Geneva Bible (1599)', abbr: 'GNV' },
   { id: 'tyndale', name: 'Tyndale Bible', abbr: 'TYN' },
   { id: 'webster', name: "Webster's Bible Translation", abbr: 'WBT' },
   { id: 'nheb', name: 'New Heart English Bible', abbr: 'NHEB' },
   { id: 'akjv', name: 'American King James Version', abbr: 'AKJV' },
   { id: 'rotherham', name: "Rotherham's Emphasized Bible", abbr: 'REB' },
-  { id: 'jubilee', name: 'Jubilee Bible 2000', abbr: 'JUB' },
   { id: 'rwebster', name: 'Revised Webster Version', abbr: 'RWB' },
   { id: 'ukjv', name: 'Updated King James Version', abbr: 'UKJV' },
   { id: 'noyes', name: 'Noyes Translation', abbr: 'NOY' },
   { id: 'anderson', name: 'Anderson New Testament', abbr: 'ANT' },
 ];
+
+// Required display credit for a translation (CC BY / CC BY-SA / conditional), or undefined
+// for public-domain works. The reader shows this when the translation is selected.
+export function translationAttribution(id: string): string | undefined {
+  return TRANSLATION_LICENSES[id]?.attribution;
+}
 
 export const DEFAULT_TRANSLATION = 'web';
 

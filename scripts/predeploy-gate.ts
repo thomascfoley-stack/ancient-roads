@@ -25,7 +25,7 @@ import {
   COMMENTARIES_DIR,
   countStaticForbiddenProvenanceEntries,
   loadForbiddenProvenanceBaseline,
-  findForbiddenBibleTranslations,
+  blockedBibleTranslations,
 } from '../web/test/helpers/corpus-scan';
 import { existsSync } from 'node:fs';
 
@@ -87,22 +87,25 @@ console.log(
 // public/bible/<id>/. Copyrighted translations (LEB/LITV/MKJV/LSV, …) were stored full-text
 // AND deployed because this gate only ever scanned commentaries/. Refuse to ship any
 // translation dir the manifest forbids — the file-side twin of the picker guard.
-console.log('\n=== Pre-deploy gate: Bible-translation licensing ===');
-const forbiddenTranslations = findForbiddenBibleTranslations();
-if (forbiddenTranslations.length > 0) {
+// Bible-translation licensing (T1§3). The gate reads the per-work LICENSE RECORD
+// (web/src/lib/licensing.ts), block-by-default: a translation dir ships only if its record
+// says commercial_use=allow, or conditional AND acknowledged (LICENSE_ACK). deny / unknown /
+// no-record all block. This replaced the old hardcoded denylist so the decision rests on a
+// license, not a blocklist — and a translation with NO record blocks instead of slipping.
+console.log('\n=== Pre-deploy gate: Bible-translation licensing (per-work record) ===');
+const blockedTranslations = blockedBibleTranslations();
+if (blockedTranslations.length > 0) {
+  const lines = blockedTranslations.map((b) => `  ${b.id} — ${b.reason}`).join('\n');
   const msg =
-    `Copyrighted Bible translations present in public/bible/:\n` +
-    `  ${forbiddenTranslations.join(', ')}\n\n` +
-    `docs/ACQUISITION_MANIFEST.md:28 lists these as EXCLUDE (copyrighted). "Never store the\n` +
-    `full text of copyrighted translations" (CLAUDE.md). Delete web/public/bible/{${forbiddenTranslations.join(',')}}/\n` +
-    `then re-run. (They are already removed from the reader picker in web/src/lib/bible.ts.)`;
-  // FAIL only when actually deploying (deploy.sh sets DEPLOYING=1) — this same gate runs on
-  // every pre-commit, and we must not block all commits while the owner-owned file purge is
-  // pending (LONG_NIGHT C1). At commit time: loud WARNING. At deploy time: hard stop.
-  if (process.env.DEPLOYING === '1') {
-    FAIL(msg);
-  }
-  console.warn(`\n\x1b[33m⚠  ${msg}\n   (WARNING only — will HARD-FAIL the actual deploy. Purge before shipping.)\x1b[0m`);
+    `Bible translations present in public/bible/ that the license record does not permit:\n` +
+    `${lines}\n\n` +
+    `Each must ship only on a license record (web/src/lib/licensing.ts) with commercial_use=allow,\n` +
+    `or conditional + its id in LICENSE_ACK. Remove web/public/bible/<id>/ for the ones you can't\n` +
+    `license, set LICENSE_ACK for conditional ones, or add a verified allow record — then re-run.`;
+  // FAIL only when actually deploying (deploy.sh sets DEPLOYING=1); this same gate runs on every
+  // pre-commit, and must not block all commits while a file purge is pending. Commit: WARNING.
+  if (process.env.DEPLOYING === '1') FAIL(msg);
+  console.warn(`\n\x1b[33m⚠  ${msg}\n   (WARNING only — will HARD-FAIL the actual deploy.)\x1b[0m`);
 } else {
-  console.log(`  ✓ No forbidden translation directories present in public/bible/.`);
+  console.log(`  ✓ Every translation dir present has a shipping license record (allow, or conditional+ack).`);
 }
