@@ -38,6 +38,24 @@ describe('Layer 1 — translation license record', () => {
     expect(acknowledgedWorkIds(undefined)).toEqual(new Set());
   });
 
+  // HARDENING (Track 2): acknowledgment is a bypass for `conditional` ONLY. A denied or
+  // unknown work must NEVER ship just because its id is in LICENSE_ACK — otherwise adding a
+  // work to the ack list would silently ship copyrighted content. If shipDecision is ever
+  // refactored to consult `ack` before switching on commercial_use, this goes RED.
+  it('acknowledgment can NEVER unblock a deny / unknown / malformed work', () => {
+    const rec = (commercial_use: LicenseRecord['commercial_use']): LicenseRecord =>
+      ({ license: 'x', commercial_use, source: 't', verified_on: 't' });
+    const ackTheWork = new Set(['w']); // the work id IS acknowledged — must not matter for deny
+    expect(shipDecision('w', rec('deny'), ackTheWork).ship, 'deny + ack still blocks').toBe(false);
+    // a malformed record (commercial_use outside the union — e.g. bad data from a future source)
+    // must fail closed even when acknowledged.
+    const malformed = { license: 'x', commercial_use: 'permit', source: 't', verified_on: 't' } as unknown as LicenseRecord;
+    expect(shipDecision('w', malformed, ackTheWork).ship, 'unknown commercial_use fails closed').toBe(false);
+    // and at the real translation layer: acking a DENIED translation id cannot ship it.
+    expect(translationShipDecision('litv', ackTheWork).ship, 'acking a denied translation cannot ship it').toBe(false);
+    expect(translationShipDecision('jubilee', new Set(['jubilee'])).ship, 'acking an unknown→deny translation cannot ship it').toBe(false);
+  });
+
   it("records the owner's translation rulings", () => {
     expect(TRANSLATION_LICENSES.litv.commercial_use).toBe('deny');
     expect(TRANSLATION_LICENSES.mkjv.commercial_use).toBe('deny');

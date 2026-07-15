@@ -13,9 +13,9 @@
  */
 import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
+import { selectFindings } from './deps-audit-core.mjs';
 
 const BULK = 'https://registry.npmjs.org/-/npm/v1/security/advisories/bulk';
-const LEVELS = new Set(['high', 'critical']);
 
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const IGNORE = new Set(pkg.pnpm?.auditConfig?.ignoreGhsas ?? []);
@@ -60,14 +60,7 @@ for (let i = 0; i < entries.length; i += BATCH) {
     process.exit(2); // an unreachable advisory DB is a hard error here (the whole point is a real gate)
   }
   const data = await res.json();
-  for (const [name, advisories] of Object.entries(data)) {
-    for (const a of advisories) {
-      if (!LEVELS.has(a.severity)) continue;
-      const ghsa = (a.url ?? '').split('/advisories/')[1] ?? String(a.id);
-      if (IGNORE.has(ghsa)) continue;
-      findings.push({ name, severity: a.severity, ghsa, title: a.title, range: a.vulnerable_versions });
-    }
-  }
+  findings.push(...selectFindings(data, IGNORE)); // pure decision — unit-tested in deps-audit-core.test.ts
 }
 
 const counts = { total: pkgs.size, ignored: IGNORE.size };

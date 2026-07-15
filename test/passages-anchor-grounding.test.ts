@@ -54,3 +54,45 @@ describe('owner #4 — anchors must match the cited section, not the model claim
     expect(await verifyV1(validResponse(), corpus, retrieval)).toEqual({ ok: true });
   });
 });
+
+// HARDENING (Track 2) — lock the OFF-BY-ONE boundary of anchor_offbase's overlap operator.
+// The Chrysostom section (block[1], id 48210) is indexed to a single verse, Eph 5:18 (49005018).
+// The overlap test is `anchor.start <= section.end && section.start <= anchor.end` — the `<=`
+// endpoints are where a refactor (e.g. `<=`→`<`) would silently re-open the H2 hole for a
+// near-miss anchor. These cases pin both `<=` edges: an anchor touching the section at exactly
+// one verse must GROUND; an anchor one verse short must be OFFBASE. block[2] (Henry) keeps its
+// valid Eph 5:18 anchor so the passages block stays grounded and block[1]'s anchor is the only
+// thing under test.
+describe('anchor_offbase — off-by-one boundary of the overlap operator', () => {
+  const EPH_5_18 = 49005018;
+  function withChrysostomAnchor(start: number, end: number): TeacherResponse {
+    const r = validResponse();
+    (r.blocks[1] as { anchors: Array<{ start: number; end: number }> }).anchors = [{ start, end }];
+    return r;
+  }
+
+  it('ACCEPTS an anchor touching the section verse from below (Eph 5:10–5:18)', async () => {
+    // ends exactly AT the section verse — overlaps only at the boundary → must ground (locks `section.start <= anchor.end`)
+    expect(await verifyV1(withChrysostomAnchor(EPH_5_18 - 8, EPH_5_18), corpus, retrieval)).toEqual({ ok: true });
+  });
+
+  it('ACCEPTS an anchor touching the section verse from above (Eph 5:18–5:25)', async () => {
+    // starts exactly AT the section verse → must ground (locks `anchor.start <= section.end`)
+    expect(await verifyV1(withChrysostomAnchor(EPH_5_18, EPH_5_18 + 7), corpus, retrieval)).toEqual({ ok: true });
+  });
+
+  it('REJECTS an anchor ending one verse short (Eph 5:10–5:17) as anchor_offbase', async () => {
+    const v = violations(await verifyV1(withChrysostomAnchor(EPH_5_18 - 8, EPH_5_18 - 1), corpus, retrieval));
+    expect(v.some((x) => x.check === 'anchor_offbase'), 'a one-verse miss must be caught').toBe(true);
+  });
+
+  it('REJECTS an anchor starting one verse past (Eph 5:19–5:25) as anchor_offbase', async () => {
+    const v = violations(await verifyV1(withChrysostomAnchor(EPH_5_18 + 1, EPH_5_18 + 7), corpus, retrieval));
+    expect(v.some((x) => x.check === 'anchor_offbase'), 'a one-verse miss must be caught').toBe(true);
+  });
+
+  it('REJECTS a reversed anchor (start > end) as anchor_order, before offbase', async () => {
+    const v = violations(await verifyV1(withChrysostomAnchor(EPH_5_18 + 7, EPH_5_18), corpus, retrieval));
+    expect(v.some((x) => x.check === 'anchor_order'), 'start>end must be caught by anchor_order').toBe(true);
+  });
+});
