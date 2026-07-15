@@ -10,6 +10,7 @@
 export type ObsEvent =
   | 'rate_limit_hit'
   | 'rate_limit_fail_open'
+  | 'gate_rate_limit_hit'
   | 'gate_locked'
   | 'ask_outcome'
   | 'error';
