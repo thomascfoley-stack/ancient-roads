@@ -14,6 +14,12 @@ export interface ResolvedSection {
     tradition: string;
   };
   heading?: string;
+  // The canonical verse range this section is actually indexed to (what the source
+  // is commenting ON). The verifier requires a voice block's anchors to intersect this,
+  // so a model can't quote a real Genesis section and anchor it to Revelation to sneak an
+  // unrelated passage past passages_grounded (LONG_NIGHT H2). Optional: legacy/CLI lookups
+  // that don't supply it fall back to structural-only anchor validation.
+  verses?: VerseRange;
 }
 
 export interface ResolvedTranslation {

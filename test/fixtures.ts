@@ -23,6 +23,7 @@ export const corpus = createMemoryCorpus({
       origin: 'corpus',
       heading: 'Homily 19 on Ephesians',
       source: { id: 7, author: 'John Chrysostom', title: 'Homilies on Ephesians', tradition: 'patristic' },
+      verses: { start: 49005018, end: 49005018 }, // this section is indexed to Eph 5:18
     },
     {
       id: 51002,
@@ -30,6 +31,7 @@ export const corpus = createMemoryCorpus({
       origin: 'corpus',
       heading: 'Ephesians 5',
       source: { id: 12, author: 'Matthew Henry', title: 'Complete Commentary', tradition: 'reformed' },
+      verses: { start: 49005018, end: 49005018 }, // Eph 5:18
     },
     {
       id: 3,

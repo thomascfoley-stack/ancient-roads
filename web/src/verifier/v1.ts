@@ -100,7 +100,13 @@ export async function verifyV1(
             message: `attribution.tradition "${a.tradition}" does not match source tradition "${section.source.tradition}"`,
           });
         }
-        // Anchors: structurally valid canonical verse IDs, start <= end.
+        // Anchors: structurally valid canonical verse IDs, start <= end, AND actually within
+        // the verse range this section is indexed to. The last check is the load-bearing one
+        // (LONG_NIGHT H2): anchors are model-self-reported, so without it a model can quote a
+        // real Genesis section, tag it with a Revelation anchor, and that anchor then grounds an
+        // unrelated Revelation passage in passages_grounded below. An anchor must point at what
+        // the cited source is actually speaking on — its own verse range — not wherever the model
+        // says. Skipped only when the lookup didn't supply a range (legacy/CLI fixtures).
         for (const anchor of block.anchors ?? []) {
           if (!isStructurallyValidVerseId(anchor.start) || !isStructurallyValidVerseId(anchor.end)) {
             violations.push({
@@ -113,6 +119,15 @@ export async function verifyV1(
               check: 'anchor_order',
               blockIndex: index,
               message: `anchor start ${formatVerseId(anchor.start)} is after end ${formatVerseId(anchor.end)}`,
+            });
+          } else if (
+            section.verses &&
+            !(anchor.start <= section.verses.end && section.verses.start <= anchor.end)
+          ) {
+            violations.push({
+              check: 'anchor_offbase',
+              blockIndex: index,
+              message: `anchor ${formatVerseId(anchor.start)}-${formatVerseId(anchor.end)} is outside section ${section.id}'s own range ${formatVerseId(section.verses.start)}-${formatVerseId(section.verses.end)} (${section.source.author}) — an anchor must point at what the cited source discusses`,
             });
           }
         }

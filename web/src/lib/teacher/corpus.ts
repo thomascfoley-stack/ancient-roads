@@ -27,6 +27,9 @@ export function buildCorpusLookup(retrieval: RetrievedChunk[]): CorpusLookup {
             title: r.metadata.sourceTitle,
             tradition: r.metadata.tradition ?? 'unknown',
           },
+          // The verse range this chunk is indexed to — the verifier grounds voice-block
+          // anchors against it (LONG_NIGHT H2), so a fabricated cross-book anchor is rejected.
+          verses: { start: r.metadata.verseId, end: r.metadata.verseEnd },
         },
       ];
     }),
