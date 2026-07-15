@@ -1,5 +1,44 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-15 (CI SPLIT + RECONCILE / HARDEN DELTA / DRAFT SLICE 1) — three read-safe tracks, all pushed
+
+**CI split (earlier, `3ac0d9f`).** The `audit` workflow red-failed every push because the licensing/tenancy
+invariants throw `requireDbInCi()` while the Neon test-branch secret is pending. Split into `audit` (non-DB
+gates, green every push — `requireDbInCi` now throws only under `REQUIRE_DB=1`) + `db-invariants` (runs the DB
+invariants only when `APP_DATABASE_URL_TEST` exists, else a visible green-with-`::warning::` placeholder).
+Verified locally under CI conditions; **the actual GitHub run was NOT observed from here** (`gh` not installed,
+private repo) — honest caveat, not a claim of CI-green.
+
+**TRACK 1 — `docs/STATE_OF_TRUTH.md` (`14b2606`).** Re-checked every system claim against prod (read-only
+`scripts/ground-truth.mjs`), code, git. New one-page cold read. Corrections, each with proof:
+- CLAUDE.md:12 + ROADMAP carried the 2026-07-13 pre-pool-fix numbers (topical 75→80, epistle 84, proper-noun H1
+  70). PHASE_A_CLOSE §5 (2026-07-14) superseded them: **topical 70** (NOT an improvement — the 75 was a 5-doc-pool
+  artifact), **epistle 88**, **proper-noun H1 80**. `git log 38c7a85..HEAD -- web/src/lib web/src/verifier` is
+  empty → frozen-v3 numbers still current, reconcile-to-recorded (no re-run needed/spent).
+- ROADMAP "22 translations" → **18** (license gate removed jubilee/leb/litv/mkjv; verified gone).
+- Recorded the two LONG-NIGHT findings still OPEN (never fixed): `app_runtime` still holds write grants on the
+  shared `embeddings` table (least-privilege gap; fix = a prod REVOKE, deferred), and Bible has no prod DB schema.
+
+**TRACK 2 — fence the delta (`3e1b409`).** Adversarially probed the genuinely-new code; fenced 3 real gaps, each
+seeded RED → reverted → green:
+- licensing.ts: **ack can never override deny/unknown** (old tests missed it) — seeded shipDecision to check ack
+  first → deny+ack shipped → RED.
+- deps-audit: extracted the decision to a pure `selectFindings` (`deps-audit-core.mjs`) + fenced teeth/ignore/
+  severity/GHSA-fallback — the gate had no permanent test before (network I/O at import). Real gate re-ran clean.
+- verifier `anchor_offbase`: **off-by-one boundary** of the overlap `<=` — touching-at-one-verse grounds,
+  one-verse-miss is offbase; seeded `<=`→`<` → RED. src↔web v1.ts stays byte-identical.
+- Harness (slice0-*.mts): read it — a frozen MEASUREMENT script, not a shipped gate; its collision risk (~0.007%)
+  is already bounded by the precision run. Nothing to fence. (Said so, didn't manufacture a test.)
+
+**TRACK 3 — draft Slice 1 data model (`907bd70`), drafted NOT applied.** `db/migrations/013_user_corpus.sql.draft`
+(four user tables, Neon dialect, RLS on each, full delete cascade, no-HNSW brute-force per §5, model_slug parity)
++ `docs/SLICE_1_DATA_MODEL.md` (module interface signatures + the 3-invariant test plan: tenancy, no-HNSW recall,
+model parity). Stays `.sql.draft` — targets a Neon dev branch that doesn't exist yet (OWNER_ACTIONS §1);
+`apply-migration.mjs` takes an explicit path so it's inert.
+
+**STOP conditions met:** full `npm run audit` green (read-safe: `.env.local` aside so tenancy invariants skip, not
+hit prod), tree clean, all pushed. No fourth track.
+
 ## 2026-07-14 (THE POOL FIX — the legal base pool fills reliably again) — SHIPPED
 
 > **CORRECTION (LONG_NIGHT claim-audit, 2026-07-14):** an earlier title here said "the retriever finally sees
