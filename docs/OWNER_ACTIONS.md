@@ -62,11 +62,22 @@ typed opt-in (~17 scripts hand-roll a reader of `web/.env.local` — that one fi
 change; the agent left it for after the branch exists so the repoint has a real target — flag it to whichever
 session owns the env/scripts and it's a single focused change.*
 
-**Prove CI runs the invariants:** after the secret is set, push any commit. The audit's `requireDbInCi()` will
-find `APP_DATABASE_URL_TEST` and the DB tests go from **skipped → `tenancy 3 passed` / `licensing 5 passed`**.
-If either still says *skipped*, the URL never reached the process. Then seed a bug (strip the ownership
-predicate from `getMessages`), push, watch CI go **red**, revert. A green test that passes on broken code is
-worse than no test.
+**CI no longer red-spams you while this is pending (2026-07-15, owner-approved).** `.github/workflows/audit.yml`
+is split into two jobs so the endless "all jobs have failed" emails stop without going dishonestly silent-green:
+- **`audit`** — every non-DB gate (typecheck ×3, lint ×2, knip, deps-audit, tests+coverage, Gate B). The
+  licensing + tenancy suites **skip** here (`requireDbInCi()` only throws under `REQUIRE_DB=1`, which this job
+  does not set). Verified green under CI conditions with no DB. **Goes green on every push.**
+- **`db-invariants`** — runs `licensing.test.ts` + `tenancy.test.ts` against the real TEST branch, `REQUIRE_DB=1`.
+  Until `APP_DATABASE_URL_TEST` is set, a guard step short-circuits: the job is **green but every real step is
+  skipped**, and a loud **`::warning:: DB invariants NOT RUN`** annotation records the gap. This is the honest,
+  *visible* placeholder — a pending job with a warning, not an ignored perpetual failure. If the secret is set
+  but empty/wrong, `REQUIRE_DB=1` makes the job go **red** (verified: the command exits 1 with the misconfig error).
+
+**Prove CI runs the invariants:** after the secret is set, push any commit. The **`db-invariants`** job stops
+short-circuiting and runs them for real — the warning disappears and you see **`tenancy 3 passed` / `licensing
+5 passed`**. If it still shows the warning, the secret never reached the job. Then seed a bug (strip the ownership
+predicate from `getMessages`), push, watch **`db-invariants`** go **red**, revert. A green test that passes on
+broken code is worse than no test.
 
 ---
 

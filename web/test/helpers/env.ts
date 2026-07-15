@@ -27,19 +27,24 @@ export function runtimeDbUrl(): string | undefined {
 }
 
 /**
- * DB URL for the behavioral invariants (licensing, tenancy). Locally, returns undefined
- * when no DB is configured so the suite can `describe.skipIf` (dev convenience). IN CI it
- * THROWS instead of skipping — a green gate that executed ZERO of the licensing/tenancy
- * assertions is worse than a red one. To make CI green: create a Neon test branch and set
- * the APP_DATABASE_URL secret (wired in .github/workflows/audit.yml).
+ * DB URL for the behavioral invariants (licensing, tenancy). Returns undefined when no DB is
+ * configured so the suite can `describe.skipIf`.
+ *
+ * THROWS only in the dedicated `db-invariants` CI job, which sets REQUIRE_DB=1 and runs ONLY
+ * when the Neon test-branch secret is present (.github/workflows/audit.yml). There, a missing
+ * URL is a misconfiguration and must fail loudly. The main `audit` job runs WITHOUT REQUIRE_DB,
+ * so these suites skip there (they still get a real run in the separate db-invariants job, and
+ * locally where .env.local supplies a DB). This split (owner-approved 2026-07-15) replaced the
+ * always-throw-in-CI that red-failed every push while the test branch was pending — perpetual
+ * red is an ignored signal, not a live one. The honesty is preserved by the SEPARATE job, which
+ * is visibly skipped (with a warning annotation) until the secret exists, not a silent in-suite skip.
  */
 export function requireDbInCi(): string | undefined {
   const url = ensureDbEnv();
-  if (!url && process.env.CI) {
+  if (!url && process.env.REQUIRE_DB === '1') {
     throw new Error(
-      'CI has no APP_DATABASE_URL/DATABASE_URL — the licensing + tenancy invariants would SKIP and the ' +
-        'gate would report green having run zero assertions. Wire a Neon test-branch secret into ' +
-        'audit.yml (see docs/SECURITY.md). A red gate beats a green one that ran nothing.',
+      'db-invariants job has no APP_DATABASE_URL — the APP_DATABASE_URL_TEST secret (Neon test branch) is ' +
+        'missing/empty. This job must run against a real test DB. See docs/SECURITY.md / OWNER_ACTIONS §1.',
     );
   }
   return url;
