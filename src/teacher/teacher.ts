@@ -2,7 +2,6 @@ import type { TeacherResponse } from '../contract/types';
 import type { RankedRow } from '../retrieval/types';
 import type { CorpusLookup, RetrievalContext, Violation } from '../verifier/types';
 import { verifyV1 } from '../verifier/v1';
-import { resolveIntent } from '../bible/pericopes';
 import { buildSystemPrompt, buildUserPrompt } from './prompt';
 import type { TeacherResult } from './types';
 
@@ -27,9 +26,6 @@ export async function teach(query: string, config: TeacherConfig): Promise<Teach
   const retrievalContext: RetrievalContext = {
     sectionIds: retrieval.map((_, i) => i + 1),
     traditions: [...new Set(retrieval.map((r) => r.metadata.tradition ?? 'unknown'))],
-    // Verse ranges the query itself named — the passages_grounded screen treats these
-    // (plus any voice-block anchor) as the only legitimate grounds for a passage.
-    queryRanges: resolveIntent(query).inject,
   };
 
   const corpusLookup = buildRetrievalCorpusLookup(retrieval);

@@ -50,10 +50,9 @@ export const corpus = createMemoryCorpus({
 export const retrieval: RetrievalContext = {
   sectionIds: [48210, 51002],
   traditions: ['patristic', 'reformed'],
-  // The query resolved to Prov 23:29-35 (the "who hath woe" drunkenness pericope), so
-  // validResponse's second passage is grounded by the query path; its first passage
-  // (Eph 5:18) is grounded by the two voices' anchors. See the passages_grounded screen.
-  queryRanges: [{ start: 20023029, end: 20023035 }],
+  // NOTE: no queryRanges — removed as a grounding authority (T2§7). Passages are grounded
+  // only by source-grounded voice anchors now. validResponse's Eph 5:18 passage is grounded
+  // by both voices' anchors; a Prov 23 passage with no voice anchor is now (correctly) ungrounded.
 };
 
 // A fully valid response against the fixture corpus.
@@ -96,8 +95,7 @@ export function validResponse(): TeacherResponse {
       {
         type: 'passages',
         items: [
-          { start: 49005018, end: 49005018, translation: 'web' },
-          { start: 20023029, end: 20023035, translation: 'web' },
+          { start: 49005018, end: 49005018, translation: 'web' }, // Eph 5:18 — grounded by both voices' anchors
         ],
       },
       {

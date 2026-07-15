@@ -222,22 +222,22 @@ export async function verifyV1(
   }
 
   // Grounding rule (G1, interpretation-by-selection): `passages` is a generated CHOICE,
-  // not generated prose — the screens defend words, this defends the selection. A passage
-  // may be shown ONLY if it intersects a voice-block anchor in THIS response (a source is
-  // actually speaking on it) or a range the query itself named (resolveIntent → queryRanges).
-  // Otherwise it is the model's own uncited verse-picking — a doctrinal verdict expressed as
-  // a list — and we fail closed. Judged after the loop so anchors from any voice count.
+  // not generated prose — the screens defend words, this defends the selection. A passage may
+  // be shown ONLY if it intersects a voice-block anchor grounded in the CITED SOURCE SECTION:
+  // the anchors above already had to intersect their own section (anchor_offbase), so a
+  // surviving anchor means a retrieved source is actually speaking on that passage. The query's
+  // own resolveIntent().inject range is a soft-boost retrieval heuristic (false-positive-safe,
+  // whole-chapter, "good shepherd insurance") and is NOT an authorization boundary — removed as
+  // a grounding source (was: `...retrieval.queryRanges`). Otherwise it is the model's own uncited
+  // verse-picking — a doctrinal verdict expressed as a list — and we fail closed.
   const rangesOverlap = (a: VerseRange, b: VerseRange): boolean => a.start <= b.end && b.start <= a.end;
-  const groundingRanges: VerseRange[] = [
-    ...voiceBlocks.flatMap(({ block }) => block.anchors ?? []),
-    ...(retrieval.queryRanges ?? []),
-  ];
+  const groundingRanges: VerseRange[] = voiceBlocks.flatMap(({ block }) => block.anchors ?? []);
   for (const { item, index } of passageChecks) {
     if (!groundingRanges.some((g) => rangesOverlap(item, g))) {
       violations.push({
         check: 'passages_grounded',
         blockIndex: index,
-        message: `passage ${formatVerseId(item.start)}-${formatVerseId(item.end)} is ungrounded: it intersects no voice-block anchor and no query-resolved range (interpretation-by-selection)`,
+        message: `passage ${formatVerseId(item.start)}-${formatVerseId(item.end)} is ungrounded: it intersects no source-grounded voice-block anchor (interpretation-by-selection)`,
       });
     }
   }

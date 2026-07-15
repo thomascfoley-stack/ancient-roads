@@ -40,12 +40,10 @@ export interface CorpusLookup {
 export interface RetrievalContext {
   sectionIds: number[];
   traditions: string[]; // distinct traditions present in the retrieval set
-  // Verse ranges the QUERY itself named — resolveIntent(query).inject. A passages
-  // block item is "grounded" iff it intersects one of these OR a voice-block anchor;
-  // otherwise it is the model's own uncited selection and the verifier fails closed
-  // (the passages_grounded screen). Optional/defaults to [] so callers that predate
-  // the screen (and topical queries, which resolve to nothing) still typecheck.
-  queryRanges?: VerseRange[];
+  // NOTE: a `queryRanges` field (resolveIntent(query).inject) was removed 2026-07-14 (T2§7).
+  // It fed the passages_grounded screen as a grounding authority, but inject is a soft-boost
+  // retrieval heuristic (false-positive-safe, whole-chapter) — not proof any source speaks on
+  // the passage. Grounding is now ONLY source-grounded voice anchors; do not re-add it.
 }
 
 export interface TeacherContractConfig {

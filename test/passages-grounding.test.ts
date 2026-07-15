@@ -62,14 +62,17 @@ describe('§2 passages must be grounded (fail closed on interpretation-by-select
     expect(result).toEqual({ ok: true });
   });
 
-  it('ACCEPTS a passage grounded by a query-resolved range', async () => {
-    // The fixture retrieval carries queryRanges = Prov 23:29-35; a passage there is grounded
-    // even though no voice anchors it.
+  it('REJECTS a passage the QUERY named but no source anchors (T2§7 — soft-boost is not grounding)', async () => {
+    // Prov 23:29-35 is the "who hath woe" drunkenness pericope — resolveIntent(query).inject
+    // WOULD have soft-matched it, and the old rule grounded a passage there with no voice
+    // anchoring it. That is exactly the hole: a soft-boost retrieval heuristic used as an
+    // authorization boundary. Now grounding is ONLY source-grounded anchors, so this fails closed.
     const r = validResponse();
     (r.blocks[3] as { items: Array<{ start: number; end: number; translation: string }> }).items = [
-      { start: 20023029, end: 20023035, translation: 'web' }, // Prov 23:29-35, from queryRanges
+      { start: 20023029, end: 20023035, translation: 'web' }, // Prov 23:29-35 — no voice anchors it
     ];
     const result = await verifyV1(r, corpus, retrieval);
-    expect(result).toEqual({ ok: true });
+    expect(result.ok, 'a query-only-grounded passage must fail closed now').toBe(false);
+    expect(violations(result).some((v) => v.check === 'passages_grounded')).toBe(true);
   });
 });
