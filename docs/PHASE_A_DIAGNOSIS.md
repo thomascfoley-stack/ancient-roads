@@ -1,6 +1,16 @@
 # Phase A diagnosis (queue #4 §2) — measured to completion
 
-## FINAL VERDICT (2026-07-12, after exhausting the retrieval-tuning space)
+> **⛔ SUPERSEDED (2026-07-14, docs/PHASE_A_CLOSE.md).** Every number in this doc was measured on the
+> pool-STARVED instrument — `legalBasePool` ran at the default `ef_search=40` and the ~44%-selective legal filter
+> starved the delivered pool to ≤5 candidates regardless of requested size, so "the sweep is flat / topical is at
+> the ceiling" is indistinguishable from a broken instrument. The pool fix shipped (partial legal HNSW index +
+> owned `ef` GUC, migration 012). **Operative numbers are now the re-measurement on the shipped path**
+> (`pool=20, ef=64`, frozen v3, read-only, 2026-07-14): **verse-ref 95/98 · pericope 87/100 · epistle 72/88 ·
+> topical 35/70 · proper-noun 80/90 · control clean.** The diagnosis below is kept for history; do not quote its
+> numbers as current. Its one vindicated call — "epistle needs a latency-optimized partial legal HNSW index" —
+> shipped and stands.
+
+## FINAL VERDICT (2026-07-12, after exhausting the retrieval-tuning space) — see SUPERSEDED banner above
 
 The topical/epistle gap is **NOT content and NOT a re-embed problem** — every failing label has ≥3 distinct
 legal authors already vectored. It splits cleanly into two different problems, and **neither is cleanly
