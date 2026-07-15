@@ -138,3 +138,27 @@ LLM**, not retrieval (evidence: `WORKLOG.md` §4, `scratchpad/latency-decomp.txt
 | **tighter `max_tokens` / length-capped contract** | caps the 36s tail; may truncate long multi-voice answers | re-run bait — truncation must not drop attribution/quotes |
 | **faster compose model** | lower floor across the board | re-run bait **and** accuracy — a weaker model may interpret or mis-quote |
 | accept it | — | product feels slow; "14s = broken" stands |
+
+---
+
+## §5 — PHASE A CLOSE / license gate (2026-07-14) — facts + your calls
+
+**Done tonight (no action needed):** license-record gate shipped (`web/src/lib/licensing.ts`); LITV/MKJV/LEB/
+jubilee files removed (gate now permits the deploy); LSV kept with attribution; verifier soft-boost hole closed;
+Phase A closed on the hard gates. See `docs/PHASE_A_CLOSE.md`.
+
+**Your calls / facts:**
+- **LEB (conditional).** To serve the Lexham English Bible: re-ingest it (`ingest-scrollmapper-bibles.ts`) and set
+  `LICENSE_ACK=leb` in the Vercel env. The reader already shows its required Logos attribution automatically. Left
+  blocked by default tonight — not a Phase A blocker.
+- **UNKNOWN list (verify or leave removed):** **jubilee (Jubilee Bible 2000)** — I could not verify a PD/permissive
+  license; it appears © Life Sentence Publishing, so it's recorded `unknown` → blocked → removed. If you have a
+  license basis, add an `allow` record + re-ingest; otherwise it stays out. (No other served work is unknown.)
+- **Removed translation files are gitignored** → reversible via **re-ingest**, not `git checkout` (they were never
+  in git). LITV/MKJV are copyright — do not restore.
+- **C3 — the deps CVE gate is degraded.** `pnpm audit` 410s (npm retired the legacy endpoint); the audit now warns
+  instead of failing (`scripts/pnpm-audit-gate.sh`). To restore real CVE gating, bump `packageManager` to a pnpm
+  version that uses npm's bulk advisory endpoint, then delete the wrapper. (GHSA-g38m is separately tracked.)
+- **Still open from prior nights:** SEC-1 (GHSA-g38m migration), the M1/M2 REVOKEs (`section_anchors`/
+  `section_embeddings` have no RLS; `embeddings` write grant), H4 (the "V2 classifier" the docs reference doesn't
+  exist), and doc reconciliation (SCHEMA.md Supabase, OUTPUT_CONTRACT eval counts). See `docs/LONG_NIGHT.md`.
