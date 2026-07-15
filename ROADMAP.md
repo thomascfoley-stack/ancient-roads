@@ -3,6 +3,11 @@
 Audited from the actual repo on 2026-07-08 — code, tests, `/audit` output, `docs/`, and
 git history — not from memory or the earlier hit list.
 
+> **For the current VERIFIED system state (numbers, corpus, gates, open gaps) read
+> [`docs/STATE_OF_TRUTH.md`](docs/STATE_OF_TRUTH.md)** — reconciled to prod 2026-07-15. This ROADMAP's
+> priority narrative below predates the 2026-07-14 Phase A close + license gate + Slice 0; trust
+> STATE_OF_TRUTH for facts, and treat the section priorities here as owner-set direction, not current status.
+
 ## Update 2026-07-12 (reconciled to the actual tree — supersedes the 07-11 plan below)
 
 The three beta walls are **DONE and DEPLOYED**, not "NEXT":
@@ -12,10 +17,11 @@ The three beta walls are **DONE and DEPLOYED**, not "NEXT":
    `MIGRATION_DESIGN.md` now stamped SUPERSEDED). Prod serves legal-only.
 3. **Observability** — shipped (`observability.ts` `logEvent`).
 
-**Held-out v3 (2026-07-13):** verse-ref 95/98 · pericope 87/100 · proper-noun 70/90 · epistle HIT@2 **84**
-(n=25) · topical HIT@2 **75 frozen → 80 relabeled** (n=20; §1b — the frozen topical labels are
-under-specified) · control clean. **Neither category is statistically below 85 at these n:** topical's 95% CI
-is [53, 89] and epistle's is [65, 94], both containing 85. So the 85/85 gate is **unmeasurable, not failed** —
+**Held-out v3 (2026-07-14, re-measured on the un-starved pool — `docs/PHASE_A_CLOSE.md` §5, supersedes ADR-018):**
+verse-ref 95/98 · pericope 87/100 · proper-noun 80/90 · epistle HIT@2 **88**
+(n=25) · topical HIT@2 **70** (n=20; **70 is the true number, NOT an improvement — the earlier 75 was a
+5-doc-pool artifact**) · control clean. **Neither category is statistically below 85 at these n:** topical's 95% CI
+is [48, 86] and epistle's is [70, 96], both containing 85. So the 85/85 gate is **unmeasurable, not failed** —
 the honest next step is a larger v4 (n≈100/stratum) or a label-free gate (≥2 distinct grounded voices per
 answer). See WORKLOG §7 for the owner decision. Do NOT re-embed (ADR-019).
 
@@ -201,7 +207,7 @@ that is **Partial** or **Missing**. Status values: Done / Partial / Missing / Bl
 |---|---|---|---|---|---|---|
 | **Verse-reference parser + verse-id (core lib)** | **Done** | `src/bible/ref-parse.ts`, `verse-id.ts`; `test/ref-parse.test.ts` (33), `test/verse-id.test.ts` (5) — pass; in `/audit` scope | Parse/format refs + canonical IDs, unit-tested, in audit | — (web ships a *drifted copy*, tracked as its own row) | none | Intelligence·core · P1 |
 | **Output contract + V1 verifier** | **Done** | `src/contract/{types.ts,schema.json}` (schema wired: `v1.ts:11,25,37`); `src/verifier/{v1,screens,normalize,memory-corpus}.ts`; `test/verifier.test.ts` (28) pass, in `/audit`. **`v1.ts` = 100% stmt coverage** — all reject paths exercised | Schema + **every** deterministic reject path unit-tested + in audit | — | none | Intelligence · P0 |
-| **Bible content plane (22 translations)** | Partial | `web/public/bible/` = 22 translations (244M); served via `web/src/lib/bible.ts` `fetch('/bible/{tr}/{slug}.json')`; ingest `src/ingest/ingest-*.ts` | 22 translations served + ingestion tested + in audit | Ingestion **0% coverage**; serving is `web/` → outside `/audit`; no tests | none | Content · P1 |
+| **Bible content plane (18 translations)** | Partial | `web/public/bible/` = **18** translations (~197M); served via `web/src/lib/bible.ts` `fetch('/bible/{tr}/{slug}.json')`; ingest `src/ingest/ingest-*.ts`. **4 removed by the license gate** (jubilee/leb/litv/mkjv; reversible via re-ingest, not git) | 18 translations served + ingestion tested + in audit | Ingestion **0% coverage**; serving is `web/` → outside `/audit`; no tests; NO prod DB schema (static JSON, see `STATE_OF_TRUTH.md` §3) | none | Content · P1 |
 | **Interlinear (Gk/Heb) + Strong's lexicon (data)** | Partial | `web/public/original/` (45M), `web/public/lexicon/` (3M); `web/src/lib/original.ts`; `src/ingest/ingest-{original,strongs}.ts` | Per-verse interlinear + lexicon served + tested + in audit | Ingest 0% coverage; not in audit; no tests | none | Content · P1 |
 | **Commentary corpus (401 sources / 371k)** | Partial | `web/public/commentaries/` (379M) + `_manifest.json`; `lib/bible.ts` `fetchCommentary*`; `src/ingest/{merge-commentaries,ingest-*commentary*}.ts` | Corpus served + manifest + ingestion tested + in audit | Ingest 0% coverage; not in audit; no tests | none | Content · P1 |
 | **Bible reader UI** | Partial | `web/src/app/read/[book]/[chapter]/page.tsx` (260 lines) + `components/{verse-display,reader-header,chapter-nav,reader-settings,book-picker,study-panel,interlinear}.tsx` | Reader works + tested + in audit | **Zero automated tests**; outside `/audit`; not RLS-relevant | none | Content·Reader · P1 |
