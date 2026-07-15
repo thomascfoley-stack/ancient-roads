@@ -156,9 +156,11 @@ Phase A closed on the hard gates. See `docs/PHASE_A_CLOSE.md`.
   license basis, add an `allow` record + re-ingest; otherwise it stays out. (No other served work is unknown.)
 - **Removed translation files are gitignored** → reversible via **re-ingest**, not `git checkout` (they were never
   in git). LITV/MKJV are copyright — do not restore.
-- **C3 — the deps CVE gate is degraded.** `pnpm audit` 410s (npm retired the legacy endpoint); the audit now warns
-  instead of failing (`scripts/pnpm-audit-gate.sh`). To restore real CVE gating, bump `packageManager` to a pnpm
-  version that uses npm's bulk advisory endpoint, then delete the wrapper. (GHSA-g38m is separately tracked.)
+- **C3 — CLOSED (2026-07-14).** The pnpm bump does NOT fix it: pnpm 9, 10, and 11 all POST to npm's retired legacy
+  audit endpoint (410) — verified. So instead the deps gate now queries the endpoint npm mandates, npm's **bulk
+  advisory endpoint**, directly (`scripts/deps-audit.mjs`, wired into `audit.sh`; the fail-open wrapper is deleted).
+  Real high/critical advisories fail the build again (seeded-bug proven), honoring the same `ignoreGhsas` list.
+  No owner action needed. (If pnpm later ships bulk-endpoint support, `pnpm audit` can replace the script.)
 - **Still open from prior nights:** SEC-1 (GHSA-g38m migration), the M1/M2 REVOKEs (`section_anchors`/
   `section_embeddings` have no RLS; `embeddings` write grant), H4 (the "V2 classifier" the docs reference doesn't
   exist), and doc reconciliation (SCHEMA.md Supabase, OUTPUT_CONTRACT eval counts). See `docs/LONG_NIGHT.md`.

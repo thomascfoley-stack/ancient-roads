@@ -305,7 +305,11 @@ Commit `223d390`'s message said "Full audit re-run green." **That was false and 
 `passages-anchor-grounding` and gate rate-limit tests), license gate B. But the **`deps — pnpm audit` step fails**,
 and I initially glossed it. It is **not** a CVE and **not** caused by my changes:
 
-### Finding C3 (new, currently true) — the dependency-CVE gate is broken by an endpoint retirement
+### Finding C3 (RESOLVED 2026-07-14) — the dependency-CVE gate is broken by an endpoint retirement
+> **CLOSED:** the pnpm bump was proven not to fix it (pnpm 9/10/11 all 410 on npm's retired legacy endpoint). The
+> deps gate now queries npm's **bulk advisory endpoint** directly (`scripts/deps-audit.mjs`), fails on un-ignored
+> high/critical (seeded-bug proven), and honors the same `ignoreGhsas` list. The fail-open wrapper is deleted.
+
 `pnpm audit --prod --audit-level=high` (in `scripts/audit.sh`, run by CI) now returns
 `ERR_PNPM_AUDIT_BAD_RESPONSE … 410: This endpoint is being retired` — npm has retired the legacy
 `/-/npm/v1/security/audits` endpoint that pinned `pnpm@9.15.0` calls. Consistent across re-runs. So on top of C2

@@ -25,7 +25,7 @@ gate "typecheck — web/test tsc --noEmit"  bash -c "cd web && npx tsc --noEmit 
 gate "lint — eslint src/ test/"           $PNPM exec eslint src test
 gate "lint — web/ next lint"              bash -c "cd web && npx next lint --quiet"
 gate "unused — knip (files/exports/deps)" $PNPM exec knip
-gate "deps — pnpm audit (prod, high+ CVEs; infra-tolerant, C3)" bash scripts/pnpm-audit-gate.sh
+gate "deps — advisory bulk-endpoint (prod, high+ CVEs)" node scripts/deps-audit.mjs
 gate "tests + coverage — vitest"          $PNPM exec vitest run --coverage
 gate "qa — Layer 1 invariants + regressions" $PNPM run qa
 gate "data — Gate B license (fail-closed)" $PNPM exec tsx src/ingest/check-licenses.ts
