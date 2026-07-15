@@ -298,6 +298,26 @@ them (action #1); shipping now would imply the licensing risk is closed when it 
 
 ---
 
+## CORRECTION — "audit green" after the follow-up was wrong (I caught it on re-run)
+
+Commit `223d390`'s message said "Full audit re-run green." **That was false and I'm correcting it.** The re-run's
+**code gates all pass** — typecheck (src / web / web-test), lint (src / web), knip, **205 tests** (incl. the new
+`passages-anchor-grounding` and gate rate-limit tests), license gate B. But the **`deps — pnpm audit` step fails**,
+and I initially glossed it. It is **not** a CVE and **not** caused by my changes:
+
+### Finding C3 (new, currently true) — the dependency-CVE gate is broken by an endpoint retirement
+`pnpm audit --prod --audit-level=high` (in `scripts/audit.sh`, run by CI) now returns
+`ERR_PNPM_AUDIT_BAD_RESPONSE … 410: This endpoint is being retired` — npm has retired the legacy
+`/-/npm/v1/security/audits` endpoint that pinned `pnpm@9.15.0` calls. Consistent across re-runs. So on top of C2
+(the lockfile drift), the **deps gate can't run at all right now** — locally or in CI — until pnpm is upgraded to a
+version that uses npm's bulk advisory endpoint (or the gate is repointed). **Parked for the owner** (it's a pinned
+`packageManager` bump with CI implications — a judgment call, not a mechanical patch). The real dependency risk
+(GHSA-g38m) is separately tracked and suppressed via `ignoreGhsas`, so this is a gate-plumbing outage, not a newly
+exposed vulnerability. This is exactly the "believed true (audit green), actually false" pattern — this time in my own
+words from an hour ago.
+
+---
+
 ## FOLLOW-UP — the owner's 4-item list (2026-07-14, after the report)
 
 The PM read the report and named four next steps, in order. Three were mine; #1 is his.
@@ -318,8 +338,10 @@ The PM read the report and named four next steps, in order. Three were mine; #1 
    `rm -rf web/public/bible/{leb,litv,mkjv,lsv}` then `cd ~/theology-study-app && ./deploy.sh`. ~5 min. Until you do,
    LEB/LITV/MKJV/LSV remain served on prod. (Consider double-checking BSB/NHEB/AKJV licenses too — I only removed the
    4 the manifest explicitly names.)
-2. **C2 — confirm CI is actually green now.** The lockfile fix is pushed; watch the next `audit.yml` run install and
-   run the gates it's been skipping since `0897373`. ~2 min.
+2. **C2 + C3 — CI's gate.** The lockfile fix (C2) is pushed so `install` succeeds again; but the **`pnpm audit` step
+   now 410s** (C3, npm retired the legacy endpoint), so the deps gate will fail in CI until `pnpm` is upgraded to a
+   version using the bulk advisory endpoint (or that step is repointed). All *other* gates pass. ~10 min (a pinned
+   `packageManager` bump — test it before trusting).
 3. **H6 — confirm Vercel Git-integration is OFF for Production** (else a git push deploys a content-empty app that skips
    `predeploy-gate.ts`). Dashboard check. ~2 min.
 4. **H1 — rate-limit + constant-time `/api/gate`. ✅ DONE (commit `05c9400`).** Per-IP throttle (10/min + 60/hour,
