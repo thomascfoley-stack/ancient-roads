@@ -194,5 +194,36 @@ fail loud now, OCR later).
 
 ---
 
-## SLICE 0 RESULT
-_<measured in Part 3, appended below>_
+## SLICE 0 RESULT (measured 2026-07-14 — `scripts/slice0-anchor-recall.mts`)
+
+**Artifact:** C. H. Spurgeon, *Talks to Farmers* (Project Gutenberg #42518, clean text, PD). n=17 addresses whose
+header states the text (`"…"--PROVERBS 24:30-32.`) — clean ground truth. Anchoring run over each **de-headered
+body** (the stated text stripped, so the channel must recover it from the prose). Bar pre-registered above:
+recall ≥70%, precision ≥95%, recall weighted higher.
+
+| channel | stated-text recall (chapter) | exact-verse | note |
+|---|---|---|---|
+| explicit references | **0%** | 0% | legitimately — the only explicit citations in the whole book are the 17 header lines; the bodies never re-cite, so once the header is stripped there is nothing to find. **This is the finding, not a bug** (verified: scanReferences finds exactly 19 refs book-wide, all headers). It is *why* the uncited + semantic channels are load-bearing. |
+| **★ uncited-quote (shingle vs KJV)** | **82% (14/17)** | 71% (12/17) | the make-or-break lever — recovers the passage the document is about, from prose alone, with no citation. |
+
+- **VERDICT — the recall leg CLEARS the bar: 82% ≥ 70%** (95% CI ≈ [59, 94] at n=17 — point estimate clears,
+  interval is wide; the design's Slice 0 should reconfirm at n≥25 before Slice 1 ships). The mechanism is real:
+  the feature is not a filing cabinet.
+- **★ The decisive confound (and the sharpest design finding): translation-matching.** Against the **WEB** index
+  the same run scored **65%**; against **KJV** (what Spurgeon actually quotes) it scored **82%**. A verbatim
+  6-word run doesn't survive a translation swap ("Doth the plowman plow" vs "Does he who plows"). **The uncited
+  channel must shingle against the translation the user quotes — or all translations.** This is a first-class
+  design requirement, not a detail; it moved the headline number 17 points.
+- **Failure-coded misses (3/17), all Isaiah:** `Isaiah 28` (×2, the "ploughman" addresses) and `Isaiah 9`. Cause
+  = **orthography + paraphrase**: KJV "plowman" vs the text's "ploughman" breaks the run by one word, and Spurgeon
+  expounds the *image* without a full verbatim clause. These are exactly what **spine 2 (semantic vector)** exists
+  to catch — the anchor channel alone shouldn't be expected to get them.
+- **Precision leg — NOT cleared, and honestly not cleanly measured.** The proxy (avg **36.5** verses matched per
+  sermon) shows the channel **over-returns** on scripture-saturated prose (short/common KJV clauses collide). True
+  precision vs the ≥95% bar needs per-match labelling I did not do. **Before Slice 1: a real precision eval + a
+  tighter run rule** (longer min-run, or require ≥2 distinct runs per verse, or down-weight common clauses).
+
+**Net go/no-go:** recall clears the bar on a clean instrument → the ambition is real and Slice 1 is justified —
+**conditioned on** (a) indexing the user's translation(s), (b) the semantic channel covering the paraphrase
+residual, and (c) a precision pass before ship. Not a rounded-up yes: the recall leg is genuinely cleared; the
+precision leg is explicitly open.
