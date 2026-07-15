@@ -164,3 +164,32 @@ Phase A closed on the hard gates. See `docs/PHASE_A_CLOSE.md`.
 - **Still open from prior nights:** SEC-1 (GHSA-g38m migration), the M1/M2 REVOKEs (`section_anchors`/
   `section_embeddings` have no RLS; `embeddings` write grant), H4 (the "V2 classifier" the docs reference doesn't
   exist), and doc reconciliation (SCHEMA.md Supabase, OUTPUT_CONTRACT eval counts). See `docs/LONG_NIGHT.md`.
+
+---
+
+## §6 — SERMON SEARCH: the translation-indexing decision (your call — facts only)
+
+Slice 0's uncited-quote channel finds a passage by matching a 6-word verbatim run of the user's prose against a
+Bible index. A verbatim run does not survive a translation swap, so **which translation(s) you index determines
+who the feature works for.** Measured on held-out Spurgeon (`docs/SERMON_SEARCH_DESIGN.md`):
+
+- **The spread is the single biggest lever.** Same sermons: **WEB index → 65%** recall · **KJV index → 90–93%**.
+  25+ points, purely from matching the translation the author quotes.
+- **Multi-index barely helps *on this set*** (KJV+WEB+ASV+BBE+YLT → 95%, +1 sermon) — because Spurgeon quotes KJV,
+  so adding others only catches edge cases. **The multi-translation *benefit is for users who quote a different
+  translation* and cannot be shown on a mono-translation (KJV) source** — it needs a real multi-translation test set.
+- **Cost of indexing more translations:** more verbatim collisions → precision pressure → the K threshold has to
+  rise to hold precision (Slice 0 already needs K≥2–3).
+
+**The fork (yours):**
+1. **Index all PD translations we hold** (KJV, WEB, ASV, YLT, Darby, Geneva, …) and match against the union.
+   Covers anyone quoting a public-domain translation. Costs index size + precision pressure.
+2. **Accept the channel degrades** for users who quote a translation we don't hold.
+
+**The hard limit that makes this a who-are-we-building-for decision, not a config choice:** M.Div students and
+contemporary pastors overwhelmingly quote **ESV / NIV / NASB / CSB / NLT** — which are copyrighted and **cannot be
+stored** (the whole Track 1 licensing gate). So "index all PD translations" **structurally cannot cover
+modern-translation preachers.** For them the uncited-quote channel drops toward zero and they depend entirely on
+the **semantic channel** (spine 2), whose recall for that population is unmeasured. Net: this feature is strongest
+for KJV/PD-quoting (Reformed, traditional) users and weakest for modern-translation users. Which audience the
+product serves is above the agent's call — it's yours.

@@ -240,5 +240,37 @@ with the harness **frozen** (no parameter change after seeing the data; git-veri
   passages, "have I written on Romans 8?" would bury Romans 8 in a wall of incidental hits. **Recall is cleared;
   precision is now the leg that decides the feature — quantified in the PRECISION RUN below.**
 
-### PRECISION RUN (2026-07-14) — the eval that never ran
-_<measured in Part 2, appended below>_
+### PRECISION RUN (2026-07-14) — the eval that never ran (`scripts/slice0-precision.mts`)
+**Pre-registered** (before measuring): return rule knob **K** = a verse is returned iff ≥K of its 6-word shingles
+appear in the body (K=1 is the frozen recall harness). **Gold/truth** (independent of K, so not circular) = the
+body contains an **≥8-word verbatim run** of the verse — a conservative "real quote" signal, so precision is a
+**lower bound**. Precision (sermon-level) = |returns ∩ gold| / |returns|, **bar ≥60%**; recall bar ≥70%. Held-out
+set (CCEL vols 10+13, n=44). **The trade curve, not a point:**
+
+| K | returns/sermon | precision (sermon-avg) | recall (chapter) |
+|---|---|---|---|
+| **1** (frozen recall harness) | 67.5 | **33%** | 93% |
+| **2** | 25.7 | **68%** ✓ | **82%** ✓ |
+| **3** | 17.9 | **96%** ✓ | **75%** ✓ |
+| 4 | 13.1 | 98% | 66% |
+| 5 | 10.4 | 100% | 59% |
+
+- **Both bars clear simultaneously at K=2 (82% / 68%) and, with room, at K=3 (75% / 96%).** The recall harness
+  ran at K=1 — high recall, **33% precision** (the wall: 67 returns, mostly noise). Requiring one more verbatim
+  clause (K≥2) fixes it.
+- **Failure code:** at K=1, **83% of the false positives are single-6-gram incidental collisions** (a lone common
+  clause matching one verse) — exactly the "scripture-dense prose" flaw, and it's killed by K≥2. Not a matcher bug.
+- **Gold proxy validated by inspection:** the K=3 returns for the 2 Peter 1 sermon are all genuine quotes — 1 John
+  3:2 ("sons of God"), 1 Cor 15:52 ("twinkling of an eye"), Mal 3:6 ("I change not"), Rev 14:13, plus the text's
+  own 2 Peter 1:1–4. ~18 real quotes/sermon at K=3 is a usable "passages engaged" list, not a wall.
+- **Caveats, not rounded away:** (1) K was read off *this* held-out set — the K choice itself should be validated
+  on a further held-out set before it ships (recommend K=3). (2) gold = ≥8-word run undercounts short/paraphrased
+  quotes, so precision is a floor. (3) recall at the precision-viable K=3 is 75% — clears 70 but with less margin
+  than K=1's 90%; the paraphrase residual is still the semantic channel's job.
+
+### VERDICT — is Slice 1 justified? **YES.**
+Recall is confirmed on held-out data (CI lower bound above 70), and — the open leg — **precision now clears its bar
+at the same threshold that keeps recall above its bar** (K=2: 82/68; K=3: 75/96, precision inspection-validated).
+The mechanism both finds the passage *and* can be made precise; the false positives were a diagnosed, fixable
+threshold artifact, not a dead end. Conditioned still on: the translation decision (§ below), the semantic channel
+for the paraphrase residual, and re-validating K on one more held-out set before ship.
