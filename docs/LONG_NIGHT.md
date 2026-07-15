@@ -298,6 +298,19 @@ them (action #1); shipping now would imply the licensing risk is closed when it 
 
 ---
 
+## FOLLOW-UP — the owner's 4-item list (2026-07-14, after the report)
+
+The PM read the report and named four next steps, in order. Three were mine; #1 is his.
+1. **Rule on the four translations, then purge.** — HELD for the owner (his content ruling; the deploy gate blocks shipping them until then).
+2. **Rate-limit `/api/gate`.** — ✅ `05c9400`: per-IP 10/min + 60/hour + `timingSafeEqual`, mutation-proven.
+3. **Re-run the retrieval eval on the un-starved pool; mark ADR-018/019 provisional.** — ✅ `443d6a4`: re-ran v3 at the
+   real pool=20/ef=64 → verse-ref 95/98 · pericope 87/100 · epistle 72/88 · topical 35/70 · proper-noun 80/90 · control
+   clean (epistle 84→88 up; topical 75→70, the old 75 was the 5-doc artifact). ADR-018/019 stamped provisional.
+4. **Fix the `passages_grounded` anchor check.** — ✅ `fa9f36a`: anchors must intersect the cited section's own verse
+   range (`anchor_offbase`); the Genesis-quote-anchored-to-Revelation bypass now fails closed, seeded-bug-proven.
+
+---
+
 ## § NEEDS YOUR HAND (ranked — the top one is tonight)
 
 1. **★ C1 — purge the copyrighted translations + redeploy (legal exposure, live now).** The picker fix is committed
@@ -309,12 +322,15 @@ them (action #1); shipping now would imply the licensing risk is closed when it 
    run the gates it's been skipping since `0897373`. ~2 min.
 3. **H6 — confirm Vercel Git-integration is OFF for Production** (else a git push deploys a content-empty app that skips
    `predeploy-gate.ts`). Dashboard check. ~2 min.
-4. **H1 — rate-limit + constant-time `/api/gate`.** The shared pre-launch password is brute-forceable today. (Dev task.)
+4. **H1 — rate-limit + constant-time `/api/gate`. ✅ DONE (commit `05c9400`).** Per-IP throttle (10/min + 60/hour,
+   fail-open) + `timingSafeEqual`, hermetically tested + mutation-proven. Tune `GATE_LIMIT_PER_MIN/HOUR` via env if desired.
 5. **M1/M2 — REVOKE corpus writes** you thought migration 010 already did: `section_anchors`/`section_embeddings`
    (full DML, **no RLS at all**) and `embeddings` (`REVOKE UPDATE, DELETE` — RLS blocks them today, this is the belt).
    Confirm no writer first. ~5 min SQL each.
-6. **H2/H3/H4 — verifier hardening (design):** validate `passages` anchors against the cited section (not just verse-id
-   shape); stop using `resolveIntent().inject` as a grounding authority; add real I6 patterns or the missing V2 classifier.
+6. **H2/H3/H4 — verifier hardening.** **H2 ✅ DONE (commit `fa9f36a`):** anchors must now intersect the cited
+   section's own verse range (`anchor_offbase`), so a fabricated cross-book anchor can't ground an unrelated passage —
+   seeded-bug-proven. **Still design work:** H3 (stop using `resolveIntent().inject` as a grounding authority) and H4
+   (real I6 patterns / the missing V2 classifier).
 7. **M3 — reader/search serve ToS-scraped Barnes/Wesley/Calvin** the teacher path excludes — your `AUTHOR_TRIAGE` call.
 8. **Doc reconciliation (docs lens):** `SCHEMA.md` still targets Supabase with ~80% fictional tables; `OUTPUT_CONTRACT.md`
    says interpretation_bait is ~300 (it's 35) and lists 2 eval suites that don't exist; `ENGINEERING.md:18/122` stale;
