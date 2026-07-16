@@ -3,8 +3,8 @@ import { getDb } from '@/lib/db';
 import { checkGateRateLimit } from '@/lib/rate-limit';
 import { logEvent } from '@/lib/observability';
 
-// node runtime: the neon DB insert. This route is PUBLIC (gate.ts isPublicPath) — it must
-// validate + rate-limit its own input, because nothing upstream gates it.
+// node runtime: the neon DB insert. This route is PUBLIC (gate.ts isPublicPath), so it must
+// validate and rate-limit its own input, because nothing upstream gates it.
 export const runtime = 'nodejs';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -17,7 +17,7 @@ function clientIp(req: NextRequest): string {
 }
 
 export async function POST(req: NextRequest) {
-  // Per-IP throttle before any work — a public write endpoint with no gate in front.
+  // Per-IP throttle before any work. A public write endpoint with no gate in front.
   const limit = await checkGateRateLimit(clientIp(req));
   if (!limit.ok) {
     return NextResponse.json(
@@ -44,9 +44,9 @@ export async function POST(req: NextRequest) {
       INSERT INTO waitlist (email, source) VALUES (${email}, 'landing')
       ON CONFLICT (email) DO NOTHING
     `;
-    // Observability only — deliberately NO email in the log (PII stays out of logs).
+    // Observability only. Deliberately NO email in the log (PII stays out of logs).
     logEvent('waitlist_signup', { domain: email.split('@')[1] ?? 'unknown' });
-    return NextResponse.json({ message: "You're on the list — we'll be in touch." });
+    return NextResponse.json({ message: "You're on the list. We'll be in touch." });
   } catch (e) {
     // Fail-soft: never leak DB internals to a visitor; keep the message friendly.
     console.error('[waitlist] insert failed:', (e as Error).message);

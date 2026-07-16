@@ -23,7 +23,7 @@ export function WaitlistForm() {
       const data = (await res.json().catch(() => ({}))) as { message?: string };
       if (res.ok) {
         setState('done');
-        setMessage(data.message ?? "You're on the list — we'll be in touch.");
+        setMessage(data.message ?? "You're on the list. We'll be in touch.");
       } else {
         setState('error');
         setMessage(data.message ?? 'Something went wrong. Please try again.');

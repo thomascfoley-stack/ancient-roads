@@ -1,25 +1,21 @@
 import Link from 'next/link';
 
-// PUBLIC about page — served OUTSIDE the SITE_PASSWORD wall (gate.ts isPublicPath,
-// app-shell.tsx CHROME_FREE). Kept minimal; the marketing landing is `/`.
+// PUBLIC about page, outside the SITE_PASSWORD wall (gate.ts isPublicPath,
+// app-shell.tsx CHROME_FREE). Kept short; the marketing landing is `/`.
 export const metadata = {
   title: 'About',
   description:
-    'Ancient Paths is a concordance, not a commentator — it reports what the faithful of the past two thousand years have said of Scripture, quoted and attributed, and never interprets in its own voice.',
+    'Ancient Paths helps you search the Scriptures and learn with the fathers of the faith. It does not interpret for you. It shows you how the church has read the passage for two thousand years.',
 };
 
 const PRINCIPLES = [
   {
-    h: 'A concordance, not a commentator',
-    p: 'The guarantee is architectural, not a promise. Retrieval over a licensed corpus feeds a strict output contract, and a verifier rejects any answer that interprets, fabricates, or fails to attribute — before it is ever shown to you.',
+    h: 'Learn with those who came before',
+    p: 'The men who laid the foundations of the faith gave their lives to these Scriptures. Read Augustine, Chrysostom, Calvin, Wesley, Matthew Henry and others on the passage in front of you, and weigh them together.',
   },
   {
-    h: 'Two thousand years of voices',
-    p: 'From the early fathers through the Reformers — Chrysostom, Augustine, Calvin, Matthew Henry and more — each grounded in the passage in front of you, so you weigh them together, not one editor’s verdict.',
-  },
-  {
-    h: 'Sourced and licensed',
-    p: 'Only public-domain and permissively licensed works, each carrying its provenance and license. What you read is what they wrote — verified before it reaches you, never scraped, never fabricated.',
+    h: 'It will not tell you what to think',
+    p: 'Ancient Paths does not interpret Scripture for you. It points you to those who wrestled the same words before you, and to prayer. The Holy Spirit is our helper, not an algorithm.',
   },
 ];
 
@@ -27,16 +23,16 @@ export default function About() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-2xl flex-col px-5 py-14 sm:px-8 sm:py-20">
       <p className="font-display text-lg italic leading-relaxed text-stone-600 dark:text-stone-400">
-        &ldquo;Ask for the ancient paths, where the good way is; and walk in it.&rdquo;
+        &ldquo;Ask for the ancient paths, where the good way is, and walk in it.&rdquo;
         <span className="ml-2 text-sm not-italic uppercase tracking-[0.2em] text-stone-500">Jeremiah 6:16</span>
       </p>
       <h1 className="mt-8 font-display text-4xl font-medium tracking-tight text-stone-900 sm:text-5xl dark:text-stone-100">
         About Ancient Paths
       </h1>
       <p className="mt-6 font-serif text-[17px] leading-relaxed text-stone-700 dark:text-stone-300">
-        Ancient Paths is built to lead you to the Holy Spirit, not to be the Holy Spirit. It will never
-        interpret Scripture; it points you to what the faithful before you have said of it — quoted, attributed,
-        and verified.
+        Ancient Paths helps you search the Scriptures and learn with the fathers of the faith. When you are
+        wrestling with a verse, it does not hand you an answer. It shows you how the church has read that
+        passage for two thousand years, so you can wrestle and pray it through yourself.
       </p>
 
       <div className="mt-12 grid gap-6">
