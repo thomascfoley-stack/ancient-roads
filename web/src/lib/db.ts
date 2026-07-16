@@ -33,19 +33,54 @@ export function getDb(): Sql {
 }
 
 // Boot-time assertion (call from instrumentation.ts). Catches the case the sync config
-// guard cannot: APP_DATABASE_URL is set but still points at a BYPASSRLS role. Verifies the
-// runtime role has NO BYPASSRLS in production; throws to fail the server start. Runs once
-// at startup, never per request.
-export async function assertAppRuntimeRole(): Promise<void> {
+// guard cannot: APP_DATABASE_URL is set but still points at a BYPASSRLS role. Runs once at
+// startup, never per request.
+//
+// It is a CANARY, not the enforcement (that is per-request RLS in runAsUser). So it must not
+// be a single point of total failure: a boot check that throws on a transient Neon hiccup
+// ("other side closed" at serverless cold-start) takes the WHOLE app down with a 500 on every
+// function. Therefore:
+//   - retry across transient connection failures (survive cold-start),
+//   - HARD-FAIL only on the real security condition: it connected and the role has BYPASSRLS,
+//   - if it simply cannot reach the DB after retries, log loudly and SERVE anyway (per-request
+//     RLS still binds; an unreachable DB fails per-request on its own, it does not leak).
+const BOOT_ATTEMPTS = 4;
+const BOOT_BACKOFF_MS = [200, 500, 1000];
+
+export async function assertAppRuntimeRole(sql: Sql = getDb()): Promise<void> {
   if (!isProd()) return;
-  const sql = getDb();
-  const rows = (await sql`SELECT rolname, rolbypassrls FROM pg_roles WHERE rolname = current_user`) as {
-    rolname: string;
-    rolbypassrls: boolean;
-  }[];
+  let rows: { rolname: string; rolbypassrls: boolean }[] | undefined;
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < BOOT_ATTEMPTS; attempt++) {
+    try {
+      rows = (await sql`SELECT rolname, rolbypassrls FROM pg_roles WHERE rolname = current_user`) as {
+        rolname: string;
+        rolbypassrls: boolean;
+      }[];
+      break;
+    } catch (e) {
+      lastErr = e;
+      if (attempt < BOOT_ATTEMPTS - 1) {
+        await new Promise((r) => setTimeout(r, BOOT_BACKOFF_MS[attempt] ?? 1000));
+      }
+    }
+  }
+  if (!rows) {
+    // Could not reach the DB after retries. Do NOT brick the server.
+    console.error(
+      '[boot] assertAppRuntimeRole: could not reach the DB to verify the runtime role after ' +
+        `${BOOT_ATTEMPTS} attempts; serving anyway (per-request RLS still binds). Last error: ` +
+        String((lastErr as Error)?.message ?? lastErr),
+    );
+    return;
+  }
   const role = rows[0];
-  if (!role) throw new Error('SECURITY: could not verify the runtime DB role (pg_roles empty for current_user).');
+  if (!role) {
+    console.error('[boot] assertAppRuntimeRole: pg_roles empty for current_user; cannot verify. Serving anyway.');
+    return;
+  }
   if (role.rolbypassrls) {
+    // THE security condition: connected fine, but the role can bypass RLS. Fail hard.
     throw new Error(
       `SECURITY: runtime DB role '${role.rolname}' has BYPASSRLS in production — RLS is inert. ` +
         'Point APP_DATABASE_URL at the app_runtime role.',
