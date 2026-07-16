@@ -10,7 +10,15 @@ export const GATE_COOKIE = 'site_gate';
 // `/api/waitlist` is the public waitlist capture. Exact match only — '/' never matches
 // '/read', and no entry may be a prefix of a corpus/app route. Guarded by
 // test/middleware-gate.test.ts (corpus stays gated) — DO NOT widen without that staying green.
-const PUBLIC_PATHS = new Set(['/', '/about', '/api/waitlist']);
+const PUBLIC_PATHS = new Set([
+  '/',
+  '/about',
+  '/api/waitlist',
+  // The marketing hero image. Static assets the PUBLIC pages render must be listed here
+  // too: dev runs gate-free so a missing entry only breaks in production (the photo 307'd
+  // to /gate on the live site, 2026-07-16). Corpus data (/bible, /commentaries) stays gated.
+  '/hero-road.jpg',
+]);
 
 export function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.has(pathname);

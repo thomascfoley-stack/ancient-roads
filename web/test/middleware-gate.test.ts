@@ -32,7 +32,9 @@ async function gateOutcome(path: string, method = 'GET'): Promise<string | null>
 
 describe('middleware allowlist — the marketing flip gate', () => {
   it('SERVES the public marketing tier unauthenticated (no redirect)', async () => {
-    for (const p of ['/', '/about', '/api/waitlist']) {
+    // hero-road.jpg is the marketing hero image: dev runs gate-free, so an asset missing
+    // from the allowlist only breaks in PROD (it 307'd to /gate on the live site, 2026-07-16).
+    for (const p of ['/', '/about', '/api/waitlist', '/hero-road.jpg']) {
       expect(await gateOutcome(p), `${p} must be public`).toBeNull();
     }
   });
