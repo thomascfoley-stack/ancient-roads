@@ -14,6 +14,11 @@ description: >
 
 # False-Confidence Audit — tests that buy unearned green
 
+> **The principle is in [`docs/THE_LOOP.md`](../../../docs/THE_LOOP.md): the verifier is the bottleneck; no
+> work is "done" without a check that could have failed.** That page is the index; this skill is the deep
+> procedure for rule 4 (seeded-bug proof) — how to tell a real check from theatre, and the seed→red→revert→green
+> loop that proves one.
+
 **The failure this exists to prevent:** a suite that reports green while the thing it claims to guarantee is
 broken. A wrong test is worse than no test — no test is an honest gap; a wrong test is a gap with a light on
 top of it saying "covered." On this repo the existential guarantees (never interpret Scripture, never serve a

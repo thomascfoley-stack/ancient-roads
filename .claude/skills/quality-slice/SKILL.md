@@ -12,6 +12,11 @@ description: >
 
 # Quality Slice — the discipline
 
+> **The principle is in [`docs/THE_LOOP.md`](../../../docs/THE_LOOP.md): the verifier is the bottleneck; no
+> work is "done" without a check that could have failed.** That page is the index; this skill is the deep
+> procedure for retrieval/eval/corpus work. Rules 1 (name the artifact), 2 (look at the data), 3 (kill the
+> broken instrument), 5 (held-out freeze) live here in full.
+
 You are working on Ancient Paths (concordance, not commentator). This skill is the standing methodology
 for any slice that touches retrieval quality, the corpus, ingestion, or the eval. It exists because the
 same mistakes recur: fixing the wrong thing, building off noise, tuning to the test, trusting a green

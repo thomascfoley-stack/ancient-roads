@@ -25,7 +25,7 @@ Ancient Paths is a **concordance, not a commentator.** It reports what others ha
 
 ## Engineering values
 
-1. **Verify, don't assume.** Check the number, read the diff, run the query. A green check is not proof.
+1. **Verify, don't assume.** Check the number, read the diff, run the query. A green check is not proof. **This is the whole practice — [`docs/THE_LOOP.md`](docs/THE_LOOP.md) is the standing definition: the verifier is the bottleneck; no unit of work is "done" without a check that could have failed. Read it; the `quality-slice` / `false-confidence-audit` / `deep-audit` / `overnight-run` skills are its deep procedures.**
 2. **Design before code.** For anything touching data model, auth, retrieval, or the contract: write a short design doc (smallest slice, interfaces, scaling risks named, out-of-scope) and get approval before implementing.
 3. **Prove deep before wide.** One correct vertical slice over five half-features. Every mode is the same engine in a new UX.
 4. **Boring, obvious code.** No premature abstraction (inline until the 3rd real call site); no speculative generality.

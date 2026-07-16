@@ -10,6 +10,10 @@ description: >
 
 # Deep Audit — parallel, exhaustive, non-overlapping
 
+> **The principle is in [`docs/THE_LOOP.md`](../../../docs/THE_LOOP.md): the verifier is the bottleneck; no
+> work is "done" without a check that could have failed.** That page is the index; this skill is the deep
+> procedure for rule 6 (fixer ≠ verifier) — a fresh, parallel sweep that an author may not run on its own output.
+
 **The failure this exists to prevent:** reading one file per question, drip-feeding findings across many turns, and giving the owner false confidence. A properly designed parallel sweep finds more in one pass than a dozen serial checks. **Never answer "is this safe / find the bugs" by reading a couple of files.**
 
 ## When to fan out

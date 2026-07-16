@@ -11,6 +11,10 @@ description: >
 
 # Overnight Run — lock the decision, then let it run, then audit it cold
 
+> **The principle is in [`docs/THE_LOOP.md`](../../../docs/THE_LOOP.md): the verifier is the bottleneck; no
+> work is "done" without a check that could have failed.** That page is the index; this skill is the deep
+> procedure for rule 8 (a STOP rule on every open loop) and rule 6 (a cold audit by fresh agents).
+
 **The two failures this exists to prevent:**
 1. **The ping-pong loop** — a job starts from an *opinion*, the owner challenges it, the agent flips its
    hypothesis, and this repeats 8 times because nothing was ever committed to. Cured by a **decision-lock**
