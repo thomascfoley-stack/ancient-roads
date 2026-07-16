@@ -5,10 +5,10 @@ import { AppShell } from '@/components/app-shell';
 import './globals.css';
 
 export const metadata: Metadata = {
-  // The site's canonical origin — used to resolve OG/Twitter/canonical URLs to absolute.
-  // Overridable in Vercel via NEXT_PUBLIC_SITE_URL (set it if the public domain ever differs
-  // from the default below, e.g. Vercel appended a suffix or a custom domain is added later).
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ancient-paths.vercel.app'),
+  // The site's canonical origin, used to resolve OG/Twitter/canonical URLs to absolute.
+  // ancientpaths.app is the purchased production domain (2026-07-16). Overridable in
+  // Vercel via NEXT_PUBLIC_SITE_URL if the public domain ever changes.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ancientpaths.app'),
   title: {
     default: 'Ancient Paths',
     template: '%s · Ancient Paths',
