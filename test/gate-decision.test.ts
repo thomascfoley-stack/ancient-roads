@@ -32,8 +32,9 @@ describe('gateDecision (fail-closed site gate)', () => {
 // carve-out to EXACTLY the marketing root + the waitlist endpoint — every app route stays
 // gated. Seed a bug (return true broadly, or add a prefix match) and the app-route cases go RED.
 describe('isPublicPath (the marketing carve-out — must stay tiny + exact)', () => {
-  it('serves the marketing root and the waitlist endpoint publicly', () => {
+  it('serves the marketing root, /about, and the waitlist endpoint publicly', () => {
     expect(isPublicPath('/')).toBe(true);
+    expect(isPublicPath('/about')).toBe(true);
     expect(isPublicPath('/api/waitlist')).toBe(true);
   });
   it('keeps EVERY app route gated (no prefix leak)', () => {

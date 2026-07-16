@@ -6,9 +6,11 @@ export const GATE_COOKIE = 'site_gate';
 // The PUBLIC tier — paths served OUTSIDE the SITE_PASSWORD wall (the front-facing
 // marketing site). Everything else (the reader, /ask, library, settings) stays gated.
 // ★ Keep this set TINY and EXACT-MATCH: every entry is a hole in the wall, and a broad
-// prefix could accidentally expose the app. `/` is the marketing landing; `/api/waitlist`
-// is the public waitlist capture. Exact match only — '/' never matches '/read'.
-const PUBLIC_PATHS = new Set(['/', '/api/waitlist']);
+// prefix could accidentally expose the app. `/` + `/about` are the marketing pages;
+// `/api/waitlist` is the public waitlist capture. Exact match only — '/' never matches
+// '/read', and no entry may be a prefix of a corpus/app route. Guarded by
+// test/middleware-gate.test.ts (corpus stays gated) — DO NOT widen without that staying green.
+const PUBLIC_PATHS = new Set(['/', '/about', '/api/waitlist']);
 
 export function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.has(pathname);

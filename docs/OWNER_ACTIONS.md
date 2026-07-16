@@ -6,6 +6,43 @@ agent; §3 is your ruling, not an agent's.
 
 ---
 
+## §0 — ★ BEFORE you turn Vercel Deployment Protection OFF — the corpus-exposure check
+
+Turning off Deployment Protection removes the SSO layer, leaving the `SITE_PASSWORD` middleware as the
+**only** lock on the copyrighted corpus (`public/bible`, `public/commentaries`). The allowlist logic is proven
+locally (`web/test/middleware-gate.test.ts`, red-first) — but **middleware can behave differently deployed**, so
+confirm it on the real deployment. **If any GATED path below returns `200`, the corpus is public — STOP.**
+
+The corpus must never be publicly reachable *during* the check. Two safe ways:
+
+- **Preferred — bypass token (corpus stays protected while you test):** Vercel → Settings → Deployment
+  Protection → *Protection Bypass for Automation* → generate a secret, then send it as a header so your curl
+  passes the SSO layer and hits the app middleware, while the public still can't:
+  ```bash
+  BASE=https://ancient-paths.vercel.app        # your prod URL
+  BYPASS=<paste the automation-bypass secret>
+  H=(-H "x-vercel-protection-bypass: $BYPASS" -H "x-vercel-set-bypass-cookie: false")
+  ```
+- **Fallback — flip → verify → re-enable if bad:** turn protection off, run the checks IMMEDIATELY, and if any
+  gated path is `200`, turn protection **back on at once**. (Omit the `H=(...)` header below.)
+
+```bash
+echo "PUBLIC — expect 200:"
+for p in / /about ; do printf "%s  %s\n" "$(curl -s "${H[@]}" -o /dev/null -w '%{http_code}' "$BASE$p")" "$p"; done
+
+echo "GATED — expect 307 → /gate (a 200 here = CORPUS EXPOSED, do not flip):"
+for p in /commentaries/ /bible/kjv/jhn.json /read/jhn/1 /library/notes /home /settings /ask /api/ask ; do
+  code=$(curl -s "${H[@]}" -o /dev/null -w '%{http_code}' "$BASE$p")
+  loc=$(curl -s "${H[@]}" -o /dev/null -D - "$BASE$p" | tr -d '\r' | awk 'tolower($1)=="location:"{print $2}')
+  printf "%s  %-28s  %s\n" "$code" "${loc:-<no-redirect>}" "$p"
+done
+```
+
+Green = every PUBLIC row `200` and every GATED row `307` with a `/gate` Location. Only then flip protection off
+for real. (This whole gate exists because a wrong allowlist + this one config click = public copyright exposure.)
+
+---
+
 ## §1 — NEON BRANCHES (the bottleneck) — HANDED BACK: `neonctl` and `gh` are not installed on this machine
 
 The agent checked `neonctl --version` and `gh auth status`: **both "command not found"**, and there is **no
@@ -84,6 +121,10 @@ broken code is worse than no test.
 ## §2 — TWO EMAILS (drafts — DO NOT let an agent send these)
 
 ### (a) To Neon support — the SEC-1 interim-close question
+**★ Send this FIRST.** It is the cheapest move on the whole board: a written "yes, we run ≥ 1.6.11 and verify
+before linking" collapses SEC-1 from a *migration* into a *non-event*, and unblocks real-user launch without
+touching code. Ask before you plan the migration.
+
 > Subject: Neon Auth — what better-auth version does the hosted auth server run?
 >
 > Hi — we use Neon Auth (`@neondatabase/auth`) in production. The bundled SDK pins `better-auth@1.4.18`, which
