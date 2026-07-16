@@ -88,7 +88,7 @@ export function SidebarNavContent({
         {/* Quick links */}
         <div className="mb-1 px-2">
           <SidebarLink
-            href="/"
+            href="/home"
             icon={<HomeIcon />}
             label="Home"
             active={pathname === '/'}
@@ -256,7 +256,7 @@ export function Sidebar() {
     <aside className="hidden w-64 flex-col border-r border-stone-200 bg-stone-50 md:flex dark:border-stone-800 dark:bg-stone-900">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3 dark:border-stone-800">
-        <Link href="/" className="font-scripture text-base font-medium text-stone-800 dark:text-stone-100">
+        <Link href="/home" className="font-scripture text-base font-medium text-stone-800 dark:text-stone-100">
           Ancient Paths
         </Link>
         <button

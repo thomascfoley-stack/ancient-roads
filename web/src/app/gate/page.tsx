@@ -8,7 +8,7 @@ export default async function GatePage({
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
   const { next, error } = await searchParams;
-  const dest = next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
+  const dest = next && next.startsWith('/') && !next.startsWith('//') ? next : '/home';
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center px-6">
       <div className="w-full max-w-xs rounded-2xl bg-paper px-6 py-8 text-center shadow-deep dark:bg-stone-900">

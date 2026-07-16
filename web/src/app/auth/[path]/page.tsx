@@ -28,7 +28,7 @@ export default async function AuthPage({
       <div className="relative z-10 w-full max-w-sm overflow-hidden rounded-2xl shadow-deep">
         <div className="bg-paper px-6 pb-2 pt-8 text-center dark:bg-stone-900">
           <Link
-            href="/"
+            href="/home"
             className="font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100"
           >
             Ancient Paths

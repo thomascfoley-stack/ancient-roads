@@ -13,6 +13,7 @@ export type ObsEvent =
   | 'gate_rate_limit_hit'
   | 'gate_locked'
   | 'ask_outcome'
+  | 'waitlist_signup'
   | 'error';
 
 export type ObsFields = Record<string, string | number | boolean>;

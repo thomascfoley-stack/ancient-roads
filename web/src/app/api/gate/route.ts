@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   const next =
     typeof rawNext === 'string' && rawNext.startsWith('/') && !rawNext.startsWith('//')
       ? rawNext
-      : '/';
+      : '/home';
 
   if (typeof attempt !== 'string' || !passwordMatches(attempt, password)) {
     const url = new URL('/gate', req.url);

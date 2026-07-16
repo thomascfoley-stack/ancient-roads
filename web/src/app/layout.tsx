@@ -1,9 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { NeonAuthUIProvider } from '@neondatabase/auth/react';
 import { authClient } from '@/lib/auth/client';
-import { Sidebar } from '@/components/sidebar';
-import { MobileNav } from '@/components/mobile-nav';
-import { Omnibox } from '@/components/omnibox';
+import { AppShell } from '@/components/app-shell';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -80,14 +78,7 @@ export default function RootLayout({
           authClient={authClient}
           social={{ providers: ['google', 'github'] }}
         >
-          <div className="flex h-dvh overflow-hidden">
-            <Sidebar />
-            <main className="flex-1 overflow-y-auto pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0">
-              {children}
-            </main>
-          </div>
-          <MobileNav />
-          <Omnibox />
+          <AppShell>{children}</AppShell>
         </NeonAuthUIProvider>
       </body>
     </html>

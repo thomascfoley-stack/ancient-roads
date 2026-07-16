@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { GATE_COOKIE, gateToken, gateDecision } from '@/lib/gate';
+import { GATE_COOKIE, gateToken, gateDecision, isPublicPath } from '@/lib/gate';
 import { logEvent } from '@/lib/observability';
 
 // Site-wide password gate for the pre-launch deployment (SEC-1 in
@@ -15,6 +15,10 @@ import { logEvent } from '@/lib/observability';
 // failed, causing infinite redirect-to-login.
 
 export default async function middleware(req: NextRequest) {
+  // Public tier (marketing landing + waitlist) bypasses the password wall entirely.
+  // Exact-match allowlist in gate.ts — the app routes below stay gated.
+  if (isPublicPath(req.nextUrl.pathname)) return NextResponse.next();
+
   const password = process.env.SITE_PASSWORD;
   const cookie = req.cookies.get(GATE_COOKIE)?.value;
   const cookieValid = !!password && !!cookie && cookie === (await gateToken(password));

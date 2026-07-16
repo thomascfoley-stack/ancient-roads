@@ -3,6 +3,17 @@
 
 export const GATE_COOKIE = 'site_gate';
 
+// The PUBLIC tier — paths served OUTSIDE the SITE_PASSWORD wall (the front-facing
+// marketing site). Everything else (the reader, /ask, library, settings) stays gated.
+// ★ Keep this set TINY and EXACT-MATCH: every entry is a hole in the wall, and a broad
+// prefix could accidentally expose the app. `/` is the marketing landing; `/api/waitlist`
+// is the public waitlist capture. Exact match only — '/' never matches '/read'.
+const PUBLIC_PATHS = new Set(['/', '/api/waitlist']);
+
+export function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATHS.has(pathname);
+}
+
 export async function gateToken(password: string): Promise<string> {
   const bytes = new TextEncoder().encode(`ancient-paths-gate:${password}`);
   const digest = await crypto.subtle.digest('SHA-256', bytes);

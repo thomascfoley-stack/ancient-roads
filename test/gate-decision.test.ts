@@ -3,7 +3,7 @@
 // production, never expose — while local dev keeps running gate-free.
 
 import { describe, expect, it } from 'vitest';
-import { gateDecision } from '../web/src/lib/gate';
+import { gateDecision, isPublicPath } from '../web/src/lib/gate';
 
 describe('gateDecision (fail-closed site gate)', () => {
   it('FAILS CLOSED in production when the password is unset/empty', () => {
@@ -24,5 +24,21 @@ describe('gateDecision (fail-closed site gate)', () => {
   });
   it('401s a non-GET without a valid cookie (e.g. POST /api/ask through the wall)', () => {
     expect(gateDecision({ password: 'p', isProd: true, method: 'POST', cookieValid: false })).toBe('locked401');
+  });
+});
+
+// The public tier (marketing landing + waitlist) sits OUTSIDE the SITE_PASSWORD wall. The
+// hazard is over-exposure: a too-broad allowlist would leak the gated app. These pin the
+// carve-out to EXACTLY the marketing root + the waitlist endpoint — every app route stays
+// gated. Seed a bug (return true broadly, or add a prefix match) and the app-route cases go RED.
+describe('isPublicPath (the marketing carve-out — must stay tiny + exact)', () => {
+  it('serves the marketing root and the waitlist endpoint publicly', () => {
+    expect(isPublicPath('/')).toBe(true);
+    expect(isPublicPath('/api/waitlist')).toBe(true);
+  });
+  it('keeps EVERY app route gated (no prefix leak)', () => {
+    for (const p of ['/home', '/read/jhn/1', '/ask', '/settings', '/api/ask', '/api/gate', '/read', '/homepage']) {
+      expect(isPublicPath(p), `${p} must stay behind the wall`).toBe(false);
+    }
   });
 });
