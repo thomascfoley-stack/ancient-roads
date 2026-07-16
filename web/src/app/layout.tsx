@@ -7,6 +7,10 @@ import { Omnibox } from '@/components/omnibox';
 import './globals.css';
 
 export const metadata: Metadata = {
+  // The site's canonical origin — used to resolve OG/Twitter/canonical URLs to absolute.
+  // Overridable in Vercel via NEXT_PUBLIC_SITE_URL (set it if the public domain ever differs
+  // from the default below, e.g. Vercel appended a suffix or a custom domain is added later).
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ancient-paths.vercel.app'),
   title: {
     default: 'Ancient Paths',
     template: '%s · Ancient Paths',
