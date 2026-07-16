@@ -18,15 +18,15 @@ export const metadata = {
 const BEATS = [
   {
     title: 'Walk the same paths',
-    body: 'Sit with the verse in front of you and see how the church read it. On "In the beginning was the Word," hear Augustine, Chrysostom, and Calvin before you settle what it means.',
+    body: 'Sit with the verse in front of you and see how the church read it. On "In the beginning was the Word," hear what Augustine, Chrysostom, and Calvin have to say about it.',
   },
   {
     title: 'Learn with those who came before',
     body: "Calvin, Wesley, Matthew Henry, the early fathers, each speaking to the passage you're in. Not one voice handed to you. Many, to weigh and pray over.",
   },
   {
-    title: 'It will not tell you what to think',
-    body: "Ancient Paths never says what a verse means. It leads you to those who wrestled it before you and laid the paths we walk, so your theology is your own, and it's solid.",
+    title: 'Built to never interpret Scripture',
+    body: "Ancient Paths is designed to never tell you what a verse means. It leads you to those who wrestled these words before you and laid the paths we walk, so your theology is your own, and it's solid.",
   },
 ];
 
@@ -95,7 +95,8 @@ export default function MarketingHome() {
           <p className="text-center font-serif text-[17px] leading-relaxed text-stone-700 dark:text-stone-300">
             When a verse is hard, you don&rsquo;t have to ask a chatbot what it means. Read how the men
             who gave their lives to Scripture wrestled with the same words. Then wrestle and pray over
-            it yourself. The Holy Spirit is our helper.
+            it yourself. The Holy Spirit is our helper, and He will teach you all things.{' '}
+            <span className="whitespace-nowrap text-[15px] text-stone-500 dark:text-stone-400">John 14:26</span>
           </p>
 
           <div aria-hidden className="mx-auto mt-12 h-px w-16 bg-stone-400/60" />

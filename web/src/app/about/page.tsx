@@ -14,8 +14,8 @@ const PRINCIPLES = [
     p: 'The men who laid the foundations of the faith gave their lives to these Scriptures. Read Augustine, Chrysostom, Calvin, Wesley, Matthew Henry and others on the passage in front of you, and weigh them together.',
   },
   {
-    h: 'It will not tell you what to think',
-    p: 'Ancient Paths does not interpret Scripture for you. It points you to those who wrestled the same words before you, and to prayer. The Holy Spirit is our helper, not an algorithm.',
+    h: 'Built to never interpret Scripture',
+    p: 'Ancient Paths is designed to never tell you what a verse means. It points you to those who wrestled the same words before you, and to prayer. The Holy Spirit is our helper, and He will teach you all things (John 14:26).',
   },
 ];
 
