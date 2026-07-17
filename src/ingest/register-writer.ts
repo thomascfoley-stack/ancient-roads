@@ -45,6 +45,17 @@ function localEnv(name: string): string | undefined {
   return readFileSync(p, 'utf-8').match(new RegExp(`^${name}=(.*)`, 'm'))?.[1]?.trim().replace(/^"|"$/g, '');
 }
 
+// Shared env/branch guard for the loop + direct callers. Fails closed unless
+// NEON_BRANCH (from the same source as DATABASE_URL) is dev/test.
+export function assertDevBranch(): { dbUrl: string; key: string } {
+  const dbUrl = (localEnv('DATABASE_URL') ?? '').replace(/^"|"$/g, '');
+  const key = localEnv('DEEPINFRA_API_KEY');
+  if (!dbUrl || !key) throw new Error('DATABASE_URL and DEEPINFRA_API_KEY required');
+  const branch = process.env.DATABASE_URL ? process.env.NEON_BRANCH : localEnv('NEON_BRANCH');
+  if (branch !== 'dev' && branch !== 'test') throw new Error(`STOP: NEON_BRANCH="${branch ?? '(unset)'}" from the same source as DATABASE_URL must be dev|test`);
+  return { dbUrl, key };
+}
+
 async function embedWhole(texts: string[], key: string): Promise<number[][]> {
   for (const t of texts) if (t.length > REGISTER_EMBED_MAX) throw new Error(`chunk ${t.length} > ${REGISTER_EMBED_MAX} — contract breach`);
   const res = await fetch('https://api.deepinfra.com/v1/openai/embeddings', {
