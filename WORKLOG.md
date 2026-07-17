@@ -1,5 +1,24 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-16 (DEPLOY — landing copy + Today home screen) — live on ancientpaths.app at 654f028
+
+Owner said ship. Deployed **654f028** (not HEAD) from an isolated git worktree because the
+annotation session had a dirty tree in the main checkout at the time — the clean-tree gate would
+have blocked, and deploying HEAD would have shipped in-flight work (the 2026-07-12 failure mode).
+Gitignored artifacts (corpus dirs, node_modules, .env.local, .vercel link) were APFS-cloned into
+the worktree; content counts verified (22,590 bible / 1,213 commentary JSONs); predeploy licensing
+gate + build + `vercel --prod --archive=tgz` all green. Worktree removed after.
+
+- **Now live:** header tagline (owner's wording), Today home screen (Spurgeon daily, was teed up
+  for owner deploy), the two "AI is not the Holy Spirit" beats-copy commits.
+- **NOT in this deploy:** the sub-verse highlight slice (8463dc6, 9b38772, f42ca49) — landed after
+  the cut. Migration 015 is already applied to prod and is additive/nullable, so prod code at
+  654f028 ignores the new columns safely. Next deploy picks the slice up.
+- **Deployment:** `dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr` READY → aliased ancientpaths.app.
+  Live-verified: landing at desktop width, tagline top-left under the wordmark, hero photo renders,
+  no console errors. Owner opted to ship without a pre-deploy deep-audit (copy + already-verified
+  slices).
+
 ## 2026-07-16 (READER ANNOTATION TOOLBELT — thinnest slice) — sub-verse highlighting, selection-first; migration live on prod
 
 **The regression, confirmed in a browser before rebuilding (as instructed).** The "disappeared
