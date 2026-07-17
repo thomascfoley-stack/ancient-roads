@@ -56,9 +56,14 @@ export default function MarketingHome() {
 
         {/* Top bar */}
         <header className="relative z-10 flex w-full items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
-          <span className="font-scripture text-base font-medium tracking-wide text-stone-50/95">
-            Ancient Paths
-          </span>
+          <div className="flex max-w-[240px] flex-col sm:max-w-none">
+            <span className="font-scripture text-base font-medium tracking-wide text-stone-50/95">
+              Ancient Paths
+            </span>
+            <span className="mt-0.5 font-serif text-[11px] leading-snug text-stone-200/85 [text-shadow:0_1px_8px_rgba(0,0,0,0.7)]">
+              AI Designed To Lead You To The Holy Spirit, Not Be The Holy Spirit
+            </span>
+          </div>
           <Link
             href="/home"
             className="inline-flex min-h-[40px] items-center rounded-full border border-stone-50/30 px-4 text-sm font-semibold text-stone-50/95 backdrop-blur-sm transition-colors hover:border-stone-50/60 hover:text-white"

@@ -1,5 +1,13 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-16 (LANDING COPY — header tagline) — owner's wording, verified both widths
+
+Added the owner's tagline under the "Ancient Paths" wordmark in the landing header
+(`web/src/app/page.tsx`): "AI Designed To Lead You To The Holy Spirit, Not Be The Holy Spirit."
+Owner placed it in the top-left (explicitly not the hero). 11px serif, text-shadow over the photo,
+`max-w-[240px]` on mobile so it wraps to two lines clear of the Log in button. Verified live at
+1280px (one line) and 390px (two lines, no overlap, no console errors).
+
 ## 2026-07-16 (TODAY HOME SCREEN — Tier 3 Spurgeon daily) — /home is now a daily devotional; pushed, not yet deployed
 
 **Built the "Today" home screen (Tier 3 only, no framework sprawl).** /home now serves Spurgeon's
