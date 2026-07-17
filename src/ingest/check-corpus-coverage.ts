@@ -37,8 +37,14 @@ interface EntryRow {
   author: string;
 }
 
+export interface CoverageResult {
+  target: 'commentary' | 'sections';
+  missing: number;
+  perSource: Array<{ source: string; missing: number }>;
+}
+
 // Legacy target: commentary_entries vs embeddings (the current live retrieval corpus).
-async function checkCommentary(client: pg.Client) {
+export async function checkCommentary(client: pg.Client): Promise<CoverageResult> {
   // Covered set: every commentary source_id that has an embedding.
   const { rows: emb } = await client.query<{ source_id: string }>(
     `SELECT source_id FROM embeddings WHERE user_id IS NULL AND source_type = 'commentary'`,
@@ -81,28 +87,27 @@ async function checkCommentary(client: pg.Client) {
   console.log(`Embedded commentary source_ids (in DB):           ${embedded.size}`);
   console.log(`MISSING source_ids:                               ${missing}`);
 
+  const ranked = [...missingByAuthor.entries()].sort((a, b) => b[1] - a[1]);
   if (missing > 0) {
     console.log('');
     console.log('Per-source (author) missing counts:');
-    const ranked = [...missingByAuthor.entries()].sort((a, b) => b[1] - a[1]);
     for (const [author, n] of ranked) {
       console.log(`  ${String(n).padStart(7)}  ${author}`);
     }
     console.log('');
     console.error(`✗ GATE A FAILED: ${missing} eligible source_ids are not embedded.`);
     console.error('  Do NOT publish / mark this corpus complete. Re-run the embed job to fill the gap.');
-    process.exitCode = 1;
-    return;
+  } else {
+    console.log('');
+    console.log('✓ GATE A PASSED: every eligible source_id is embedded (gap = 0).');
   }
-
-  console.log('');
-  console.log('✓ GATE A PASSED: every eligible source_id is embedded (gap = 0).');
+  return { target: 'commentary', missing, perSource: ranked.map(([source, n]) => ({ source, missing: n })) };
 }
 
 // New target (--target=sections): sections vs section_embeddings, per source.
 // A section of a non-quarantined source with no matching-model embedding is a gap
 // (checked while 'staged' too, so completeness is proven BEFORE publish).
-async function checkSections(client: pg.Client) {
+export async function checkSections(client: pg.Client): Promise<CoverageResult> {
   const { rows: missing } = await client.query<{ slug: string; missing: number }>(
     `SELECT src.slug, count(*)::int AS missing
        FROM sections s
@@ -136,12 +141,11 @@ async function checkSections(client: pg.Client) {
     console.log('');
     console.error(`✗ GATE A (sections) FAILED: ${totalMissing} sections have no ${SECTIONS_MODEL_SLUG} embedding.`);
     console.error('  Do NOT publish these sources. Re-point/re-embed to fill the gap.');
-    process.exitCode = 1;
-    return;
+  } else {
+    console.log('');
+    console.log('✓ GATE A (sections) PASSED: every non-quarantined section is embedded (gap = 0).');
   }
-
-  console.log('');
-  console.log('✓ GATE A (sections) PASSED: every non-quarantined section is embedded (gap = 0).');
+  return { target: 'sections', missing: totalMissing, perSource: missing.map((m) => ({ source: m.slug, missing: m.missing })) };
 }
 
 async function main() {
@@ -152,11 +156,14 @@ async function main() {
   await client.connect();
 
   try {
-    if (target === 'sections') await checkSections(client);
-    else await checkCommentary(client);
+    const result = target === 'sections' ? await checkSections(client) : await checkCommentary(client);
+    if (result.missing > 0) process.exitCode = 1;
   } finally {
     await client.end();
   }
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+// Runnable gate when invoked directly; importable (checkCommentary/checkSections) from gate-ingest.
+if (process.argv[1] && /check-corpus-coverage/.test(process.argv[1])) {
+  main().catch((e) => { console.error(e); process.exit(1); });
+}
