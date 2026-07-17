@@ -16,9 +16,40 @@
 // work-slug clause (chrysostom-homilies / augustine-homilies) already in the filter.
 
 import pg from 'pg';
-import { readFileSync, appendFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, appendFileSync, mkdirSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
 
 const FORBIDDEN = '%historicalchristian.faith%';
+const FORBIDDEN_RE = /historicalchristian\.faith/i;
+const STATIC_DIR = 'web/public/commentaries';
+
+// The forbidden provenance lives in the STATIC reader corpus too (e.g. Mat 5:
+// 433 of 981 entries), and the FTS table is COPYed FROM these files — so the
+// static sweep must run before the FTS regen. Same discipline: back up every
+// removed entry, then rewrite the file shape-preservingly.
+function sweepStatic(apply: boolean, backup: string): { files: number; removed: number } {
+  let files = 0, removed = 0;
+  if (!existsSync(STATIC_DIR)) return { files, removed };
+  for (const book of readdirSync(STATIC_DIR)) {
+    const dir = `${STATIC_DIR}/${book}`;
+    let chapters: string[];
+    try { chapters = readdirSync(dir).filter((f) => f.endsWith('.json')); } catch { continue; }
+    for (const ch of chapters) {
+      const path = `${dir}/${ch}`;
+      const raw = JSON.parse(readFileSync(path, 'utf8')) as unknown;
+      const entries = (Array.isArray(raw) ? raw : (raw as { entries?: unknown[] }).entries) as Array<Record<string, unknown>> | undefined;
+      if (!entries) continue;
+      const bad = entries.filter((e) => FORBIDDEN_RE.test(String(e.sourceUrl ?? '')));
+      if (bad.length === 0) continue;
+      files++; removed += bad.length;
+      if (apply) {
+        for (const e of bad) appendFileSync(backup, JSON.stringify({ static: path, entry: e }) + '\n');
+        const kept = entries.filter((e) => !FORBIDDEN_RE.test(String(e.sourceUrl ?? '')));
+        writeFileSync(path, JSON.stringify(Array.isArray(raw) ? kept : { ...(raw as object), entries: kept }));
+      }
+    }
+  }
+  return { files, removed };
+}
 const arg = (f: string) => process.argv.find((a) => a.startsWith(`${f}=`))?.slice(f.length + 1);
 
 function localEnv(name: string): string | undefined {
@@ -64,6 +95,9 @@ async function main() {
       process.exit(1);
     }
 
+    const staticDry = sweepStatic(false, '');
+    console.log(`static corpus: ${staticDry.removed} forbidden entries across ${staticDry.files} chapter files`);
+
     if (!apply) { console.log('\n(dry run — pass --apply to back up + delete)'); return; }
 
     // (2) back up, then (3) delete
@@ -75,11 +109,18 @@ async function main() {
     const del = await db.query(`DELETE FROM embeddings WHERE user_id IS NULL AND metadata->>'sourceUrl' ILIKE $1`, [FORBIDDEN]);
     console.log(`deleted ${del.rowCount} forbidden-provenance rows`);
 
-    // (4) verify the ratchet
+    // (3b) the static reader corpus (FTS regen must run after this)
+    const swept = sweepStatic(true, backup);
+    console.log(`static corpus: removed ${swept.removed} entries from ${swept.files} files (backed up)`);
+
+    // (4) verify the ratchet — DB and static both
     const after = await db.query<{ n: number }>(`SELECT count(*)::int n FROM embeddings WHERE user_id IS NULL AND metadata->>'sourceUrl' ILIKE $1`, [FORBIDDEN]);
     const remaining = after.rows[0]!.n;
-    console.log(remaining === 0 ? '✓ RATCHET GREEN: 0 served rows with historicalchristian.faith provenance' : `✗ ${remaining} still remain`);
-    if (remaining !== 0) process.exit(1);
+    const staticAfter = sweepStatic(false, '');
+    console.log(remaining === 0 && staticAfter.removed === 0
+      ? '✓ RATCHET GREEN: 0 forbidden-provenance rows in served embeddings AND static corpus'
+      : `✗ remaining: db=${remaining} static=${staticAfter.removed}`);
+    if (remaining !== 0 || staticAfter.removed !== 0) process.exit(1);
   } finally {
     await db.end();
   }
