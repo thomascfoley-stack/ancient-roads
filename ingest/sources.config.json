@@ -957,7 +957,9 @@
         ],
         "strip_markup": true
       }
-    }
+    },
+    "serve": false,
+    "quarantine": "A6 run 2026-07-17: no clean-text source — CCEL serves HTML landing (no ThML); all 5 archive.org copies are engraved-music editions, 27-31% OCR-garbage lines (>5% guardrail), engraved titles unrecoverable"
   },
   {
     "id": "herbert-temple",
@@ -974,17 +976,15 @@
     "text_only": true,
     "note": "requires additive migration adding 'poetry' to source_type CHECK; ~167 poems; shaped poems need layout-aware ingest",
     "provenance": {
-      "url": "https://www.ccel.org/h/herbert/temple/",
-      "edition": "Herbert, The Temple 1633 (CCEL / Wikisource)",
+      "url": "https://archive.org/details/temple00herb_0",
+      "edition": "Herbert, The Temple (1633) — Cassell's National Library ed., London/New York: Cassell, 1887 (archive.org temple00herb_0; PG has no edition)",
       "year": 1633,
       "acquire": {
-        "adapter": "ccel",
-        "ccel_ids": [
-          "h/herbert/temple"
-        ],
-        "strip_markup": true
+        "adapter": "gutenberg",
+        "archive_id": "temple00herb_0"
       }
-    }
+    },
+    "serve": true
   },
   {
     "id": "montgomery-sacred-poems",
@@ -1008,9 +1008,11 @@
         "ccel_ids": [
           "montgomery/sacredpoems"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "heading_filter": "^Hymn \\d+:"
       }
-    }
+    },
+    "serve": true
   },
   {
     "id": "watts-hymns",
@@ -1198,13 +1200,14 @@
     "text_only": true,
     "provenance": {
       "url": "https://www.gutenberg.org/ebooks/77809",
-      "edition": "Rossetti, Verses 1893 (Gutenberg #77809)",
+      "edition": "Rossetti, Verses — New York: E. & J. B. Young & Co., 1894 (Gutenberg #77809)",
       "year": 1893,
       "acquire": {
         "adapter": "gutenberg",
         "ebook_id": 77809
       }
-    }
+    },
+    "serve": true
   },
   {
     "id": "hopkins-poems",

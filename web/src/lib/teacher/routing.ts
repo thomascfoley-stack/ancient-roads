@@ -61,13 +61,16 @@ export const SERVED_PROSE_WORKS = [
   'hodge-systematic', 'calvin-institutes', 'schaff-creeds',
   'whitefield-works',
 ] as const;
-// Removed as quarantined: bramley-carols/herbert-temple/montgomery-sacred-poems/
-// rossetti-verses (no clean source edition), donne-divine-poems/herrick-noble-
-// numbers (A6: whole secular volumes served under sacred titles).
+// herbert-temple/montgomery-sacred-poems/rossetti-verses RECOVERED 2026-07-17
+// (archive.org Cassell 1887 / CCEL title-div fallback / PG title-line splitter).
+// Still quarantined: bramley-carols (all sources are engraved-music editions,
+// 27-31% OCR garbage), donne-divine-poems/herrick-noble-numbers (A6: whole
+// secular volumes under sacred titles — need section-scoped profiles).
 export const SERVED_SONG_VERSE_WORKS = [
   'olney-hymns', 'scottish-psalter-1650', 'neale-eastern-hymns',
   'watts-hymns', 'watts-psalms',
-  'keble-christian-year',
+  'keble-christian-year', 'herbert-temple', 'montgomery-sacred-poems',
+  'rossetti-verses',
   'traherne-poems', 'milton-poetical-works', 'hopkins-poems',
   'tennyson-in-memoriam', 'dante-divine-comedy', 'wheatley-poems',
 ] as const;

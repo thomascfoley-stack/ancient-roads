@@ -5,7 +5,7 @@
 -- SONG_VERSE_CORPUS_FILTER in routing.ts (test/invariants/legal-hnsw-index-sync).
 -- The served lists were pruned to ingested+clean works only (quarantined and
 -- never-ingested slugs removed); the indexes rebuild here to match.
--- CONCURRENTLY: run via db/apply-migration-concurrent.mjs (statement-split file).
+-- CONCURRENTLY: run via db/apply-migration-concurrent.mjs (splits on --SPLIT--).
 -- Rollback: DROP INDEX CONCURRENTLY IF EXISTS <name>;   Run as neondb_owner.
 -- ============================================================
 
@@ -26,7 +26,7 @@ DROP INDEX CONCURRENTLY IF EXISTS idx_embeddings_vector_song_verse;
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_embeddings_vector_song_verse
   ON embeddings USING hnsw (embedding vector_cosine_ops)
   WHERE (user_id IS NULL AND source_type IN ('hymn','poetry') AND (
-    metadata->>'work' IN ('olney-hymns','scottish-psalter-1650','neale-eastern-hymns','watts-hymns','watts-psalms','keble-christian-year','traherne-poems','milton-poetical-works','hopkins-poems','tennyson-in-memoriam','dante-divine-comedy','wheatley-poems')
+    metadata->>'work' IN ('olney-hymns','scottish-psalter-1650','neale-eastern-hymns','watts-hymns','watts-psalms','keble-christian-year','herbert-temple','montgomery-sacred-poems','rossetti-verses','traherne-poems','milton-poetical-works','hopkins-poems','tennyson-in-memoriam','dante-divine-comedy','wheatley-poems')
   ));
 --SPLIT--
 DROP INDEX CONCURRENTLY IF EXISTS idx_embeddings_verseid_registers;
