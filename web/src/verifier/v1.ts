@@ -200,6 +200,22 @@ export async function verifyV1(
       case 'framing':
       case 'prayer_prompt':
         break; // screened below
+
+      default: {
+        // FAIL CLOSED on contract drift (CONTENT_GO_LIVE.md decision 6). A block
+        // type added to the schema/union without a verifier case must never pass
+        // unverified: the `never` binding makes tsc reject the drift at compile
+        // time, and if a value still arrives at runtime (schema and types out of
+        // step), it is a violation, not a pass. Proven red-first with a seeded
+        // block type that returned {ok:true} before this default existed.
+        const drifted: never = block;
+        violations.push({
+          check: 'unknown_block_type',
+          blockIndex: index,
+          message: `unknown block type "${String((drifted as { type?: unknown }).type)}" — verifier has no rule for it; fail closed`,
+        });
+        break;
+      }
     }
 
     // Regex screens on assistant-voice text (framing, summaries, prayer_prompt).
