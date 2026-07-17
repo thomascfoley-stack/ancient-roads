@@ -27,6 +27,47 @@ dev; the byte-lockstep tests (legal-hnsw-index-sync, fts-legal-index-sync, licen
 filter change did not regress commentary. (This measures the plumbing change; the corpus-competition
 re-test is A5, after the 46-work ingest lands.)
 
+**A2 — adapters built + proven deep on seed-validated works.** `adapter-gutenberg.ts` (fetch by ebook_id,
+strip PG boilerplate, per-slug sacred-section isolation, romanised-epigraph verse anchor) — Keble
+"Morning" → Lam 3:22, matches the seed. `adapter-ccel.ts` (fetch the ThML XML for its machine-readable
+`<scripRef osisRef>`, strip markup, chunk on the work's own div units, recognize both `type=` and
+`class=` divs, Psalm-title anchoring for metrical psalters) — Olney "Amazing Grace" → 1Chr 17:16, matches
+the seed. `adapter-loop.ts` — ranked queue (hymn/poetry first, historians last), integrity-aware resume,
+publish iff in the served allowlists, quarantine-rate>30% breaker, run-log. The breaker earned its keep:
+it caught the 1800-char embed budget overflowing bge-large's 512-TOKEN ceiling on dense hymn text, an
+empty-vector bug in the transient-error path, and non-ThML CCEL landing pages — all fixed (embed
+1800→1200 chars still whole; error-typed embed that shrinks only on a token-length 400 and backs off on
+transient; class-div + title-anchor support).
+
+**A3 — hymn/poetry tier ingested (14 published, 4 quarantined).** Published (served): olney-hymns (432),
+keble-christian-year (111), neale-eastern-hymns, scottish-psalter-1650 (paraphrase), watts-hymns,
+watts-psalms (paraphrase), herrick, donne, traherne, milton, hopkins, tennyson, dante, wheatley —
+**5,561 served register rows** across hymn+poetry, all embedded whole, verse-anchored where the source
+carries an anchor (osisRef / epigraph / Psalm-title), metrical psalters PARAPHRASE-tagged. Quarantined
+(source problems, escalated for repoint): bramley-carols + herbert-temple (no CCEL ThML edition — HTML
+landing page), montgomery + rossetti (unrecognized Gutenberg/CCEL structure). Prose tier (Spurgeon,
+Maclaren, the NPNF Chrysostom/Augustine re-source, Owen/Hodge/Calvin/Schaff-Creeds/etc.) is a
+long-running background ingest, in flight.
+
+**A5 (partial) — both surfaces CONFIRMED on real register data.** Reader (static JSON): Psalm 23 shows the
+Scottish Psalter ("The Lord's my shepherd, I'll not want…") attributed to "Church of Scotland (based on
+Francis Rous), 1650", `paraphrase:true`, rendered at 390px AND desktop, console clean, panel interaction
+exercised. Teacher (`retrieveSongVerse` + `legalBasePool` on dev): "the Lord is my shepherd" returns the
+Scottish Psalter + Olney hymns in the DISTINCT `song_verse` pool; the exegetical base pool (20 rows) has
+**0 song/verse leaked** — the "distinct register, never blended into the exegetical ≥2-voices floor"
+guarantee holds. (Prose-work confirm + the corpus-competition eval re-run follow the prose ingest.)
+
+**Part B (prepped on dev).** 021_revoke_app_runtime_anchor_writes.sql applied on dev — section_anchors /
+section_embeddings / section_history_anchors are SELECT-only for app_runtime (the standalone record Part
+C applies to prod). b2-remove-forbidden-provenance.ts written + typechecked: coverage-guarded, backs up
+to a recoverable JSONL, removes the historicalchristian.faith Chrysostom/Augustine rows once the NPNF
+re-source lands, verifies the ratchet → 0. Runs after chrysostom/augustine ingest.
+
+**Still to do in Part A (after the prose ingest finishes):** run B2 removal + verify the ratchet;
+re-run the frozen eval on the full corpus (A5, commentary must not regress); regenerate any remaining
+static reader JSON; fresh-agent deep-audit (A6). **Then STOP for the owner's go-ahead before Part C** —
+no prod, no deploy, per the run's charter.
+
 
 ## 2026-07-16 (CONTENT GO-LIVE — in flight) — branch `golive` (main + merged `ingest`), worktree ~/ap-golive, DEV only
 
