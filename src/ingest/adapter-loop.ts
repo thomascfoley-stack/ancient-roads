@@ -31,13 +31,21 @@ const arg = (f: string) => process.argv.find((a) => a.startsWith(`${f}=`))?.slic
 
 interface LogRow { at: string; slug: string; adapter: string; result: 'published' | 'staged' | 'skipped' | 'quarantined' | 'escalated'; units?: number; anchored?: number; embedded?: number; reason?: string }
 
-async function alreadyIngested(db: pg.Client, slug: string): Promise<boolean> {
+// Resume-skip is INTEGRITY-aware: a work counts as ingested only if its served
+// embeddings count matches its 006 section count (a crashed/partial run leaves
+// fewer embeddings than sections — those re-complete via ON CONFLICT rather than
+// being silently skipped as "done", the watts-hymns partial-ingest bug).
+async function ingestState(db: pg.Client, slug: string): Promise<'done' | 'partial' | 'absent'> {
   const r = await db.query(
     `SELECT (SELECT count(*) FROM embeddings WHERE metadata->>'work'=$1)::int e,
             (SELECT count(*) FROM sections s JOIN sources src ON src.id=s.source_id WHERE src.slug=$1)::int s`,
     [slug],
   );
-  return (r.rows[0].e as number) > 0 || (r.rows[0].s as number) > 0;
+  const e = r.rows[0].e as number, s = r.rows[0].s as number;
+  if (e === 0 && s === 0) return 'absent';
+  // served works: embeddings ≥ sections (chunking can add rows). staged (serve:false): sections only.
+  if (s > 0 && e > 0 && e < s) return 'partial';
+  return 'done';
 }
 
 async function main() {
@@ -68,7 +76,9 @@ async function main() {
     for (const entry of queue) {
       const slug = entry.slug as string;
       const acq = (entry.provenance as Record<string, unknown>)['acquire'] as { adapter: string };
-      if (await alreadyIngested(db, slug)) { log({ at: new Date().toISOString(), slug, adapter: acq.adapter, result: 'skipped', reason: 'already ingested' }); continue; }
+      const state = await ingestState(db, slug);
+      if (state === 'done') { log({ at: new Date().toISOString(), slug, adapter: acq.adapter, result: 'skipped', reason: 'already ingested' }); continue; }
+      if (state === 'partial') console.log(`  ↻ ${slug} partially ingested — re-running to complete (ON CONFLICT fills gaps)`);
       if (dry) { console.log(`  would run ${acq.adapter}: ${slug} (${entry.source_type})`); continue; }
 
       attempted++;

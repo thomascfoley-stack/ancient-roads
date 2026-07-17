@@ -34,8 +34,10 @@ export async function fetchCcelXml(ccelId: string): Promise<string | null> {
   const res = await fetch(url, { signal: AbortSignal.timeout(90_000) });
   if (!res.ok) return null;
   const xml = await res.text();
-  // guard: a landing/error page is HTML, not ThML — reject
-  if (!/<ThML|<div[0-9]?\b|scripRef|<hymn|<verse/i.test(xml)) return null;
+  // Guard: reject the HTML reader/landing page (bramley/carols served one). ThML
+  // is identified by NUMBERED divs (div1/2/3) or ThML-specific tags — NOT a bare
+  // <div>, which every HTML page has.
+  if (!/<ThML\b|<div[1-4]\b|<scripRef\b|<hymn\b|<verse\b/i.test(xml)) return null;
   void author;
   writeFileSync(cached, xml);
   return xml;
@@ -68,29 +70,42 @@ function unitAnchor(unitXml: string): { verseIdStart: number; verseIdEnd: number
   return r ? { verseIdStart: r.start, verseIdEnd: r.end } : null;
 }
 
-// Pick the div type that gives the most units (finest real structure).
-function chooseUnitType(xml: string): string | null {
-  let best: string | null = null, bestN = 0;
-  for (const t of UNIT_TYPE_ORDER) {
-    const n = (xml.match(new RegExp(`<div[0-9]?\\s[^>]*type="${t}"`, 'gi')) ?? []).length;
-    if (n > bestN) { best = t; bestN = n; }
+// A "Psalm 23: The Lord's my shepherd" style title (metrical psalters) → an
+// anchor to that psalm, when the unit carries no scripRef. Book 19 (Psalms).
+function titleAnchor(heading?: string): { verseIdStart: number; verseIdEnd: number } | null {
+  const m = heading?.match(/\bPsalm\s+(\d{1,3})\b/i);
+  if (!m) return null;
+  const ps = Number(m[1]);
+  if (ps < 1 || ps > 150) return null;
+  return { verseIdStart: 19_000_000 + ps * 1000 + 1, verseIdEnd: 19_000_000 + ps * 1000 + 999 };
+}
+
+// Pick the div selector (type= OR class=) that yields the most units — CCEL works
+// vary: Olney uses type="Hymn", the Scottish Psalter uses class="hymn".
+function chooseUnitSelector(xml: string): { attr: 'type' | 'class'; value: string } | null {
+  let best: { attr: 'type' | 'class'; value: string } | null = null, bestN = MIN_UNITS - 1;
+  for (const attr of ['type', 'class'] as const) {
+    for (const t of UNIT_TYPE_ORDER) {
+      const n = (xml.match(new RegExp(`<div[1-4]\\s[^>]*${attr}="${t}"`, 'gi')) ?? []).length;
+      if (n > bestN) { best = { attr, value: t }; bestN = n; }
+    }
   }
-  return bestN >= MIN_UNITS ? best : null;
+  return best;
 }
 
 export function buildCcelSections(xml: string): RegisterSection[] {
-  const unitType = chooseUnitType(xml);
-  if (!unitType) return [];
+  const sel = chooseUnitSelector(xml);
+  if (!sel) return [];
   const out: RegisterSection[] = [];
   let m: RegExpExecArray | null;
-  const full = new RegExp(`(<div[0-9]?\\s[^>]*type="${unitType}"[^>]*>)([\\s\\S]*?)</div[0-9]?>`, 'gi');
+  const full = new RegExp(`(<div[1-4]\\s[^>]*${sel.attr}="${sel.value}"[^>]*>)([\\s\\S]*?)</div[1-4]>`, 'gi');
   while ((m = full.exec(xml))) {
     const openTag = m[1]!;
     const inner = m[2]!;
     const titleAttr = openTag.match(/\btitle="([^"]*)"/i)?.[1];
     const headTag = inner.match(/<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/i)?.[1];
     const heading = (titleAttr || (headTag ? thmlText(headTag) : undefined) || '').replace(/\s+/g, ' ').trim() || undefined;
-    const anchor = unitAnchor(inner);
+    const anchor = unitAnchor(inner) ?? titleAnchor(heading);
     const body = thmlText(inner);
     if (body.length < 40) continue; // skip empty/structural shells
     out.push({ heading, body, anchors: anchor ? [anchor] : undefined });
@@ -138,6 +153,8 @@ export async function acquireCcel(entry: Record<string, unknown>, opts: { write:
     authorDied: entry.author_died as number | undefined, year: (entry.year_written as number) ?? (prov.year as number),
     sourceType: st, register: registerMap[st] ?? 'prose', tradition: entry.tradition as string, era: entry.era as string,
     license: entry.license as string, url: prov.url as string, edition: (prov.edition as string) ?? '', publish: opts.publish ?? (entry.serve !== false),
+    // metrical psalters are PARAPHRASE-voice (never rendered as Scripture)
+    paraphrase: (entry.paraphrase as boolean | undefined) ?? /psalter|metrical.*psalm/i.test(entry.slug as string),
     sections,
   };
   const res = await writeRegisterWork(work);

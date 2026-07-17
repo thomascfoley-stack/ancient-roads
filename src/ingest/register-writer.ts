@@ -11,7 +11,12 @@ import path from 'node:path';
 import { BOOK_SLUGS } from './source-id.js';
 import { isAllowedLicense } from './license-manifest.js';
 
-export const REGISTER_EMBED_MAX = 1800; // whole-chunk budget; MAX_EMBED_CHARS(1000) never fires here
+// Whole-chunk budget. 1200 chars keeps even token-DENSE text (hymns, Greek/
+// Hebrew) under bge-large's 512-token ceiling — 1800 overflowed on Watts
+// ("513 input tokens"). Sections split at this bound are still WHOLE (no head
+// truncation — MAX_EMBED_CHARS never fires); we just make more, smaller chunks,
+// which is exactly "chunk under the embed budget" (INGESTION_ADAPTERS.md).
+export const REGISTER_EMBED_MAX = 1200;
 const MODEL = 'BAAI/bge-large-en-v1.5';
 
 export interface RegisterSection {
@@ -56,15 +61,48 @@ export function assertDevBranch(): { dbUrl: string; key: string } {
   return { dbUrl, key };
 }
 
-async function embedWhole(texts: string[], key: string): Promise<number[][]> {
-  for (const t of texts) if (t.length > REGISTER_EMBED_MAX) throw new Error(`chunk ${t.length} > ${REGISTER_EMBED_MAX} — contract breach`);
+class EmbedError extends Error { constructor(msg: string, readonly status: number, readonly tokenLimit: boolean) { super(msg); } }
+async function embedRaw(texts: string[], key: string): Promise<number[][]> {
   const res = await fetch('https://api.deepinfra.com/v1/openai/embeddings', {
     method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
     body: JSON.stringify({ model: MODEL, input: texts, encoding_format: 'float' }),
     signal: AbortSignal.timeout(90_000),
   });
-  if (!res.ok) throw new Error(`embed ${res.status}: ${await res.text()}`);
+  if (!res.ok) {
+    const bodyText = await res.text();
+    throw new EmbedError(`embed ${res.status}: ${bodyText}`, res.status, /context length|maximum input length|input tokens/i.test(bodyText));
+  }
   return ((await res.json()) as { data: { embedding: number[] }[] }).data.map((d) => d.embedding);
+}
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// Embed one text with correct error handling: a token-length 400 → adaptively
+// shorten THIS text (never a corpus-wide truncation); a transient error (429/5xx/
+// timeout) → back off and RETRY the same text (do NOT shrink — that was the bug
+// that produced empty vectors). If a real vector still can't be obtained, THROW
+// (the work quarantines with a clear reason) — never insert a zero-dimension vector.
+async function embedOne(text: string, key: string): Promise<number[]> {
+  let len = text.length;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    try {
+      const v = (await embedRaw([text.slice(0, len)], key))[0];
+      if (v && v.length > 0) return v;
+      throw new Error('empty embedding returned');
+    } catch (e) {
+      if (e instanceof EmbedError && e.tokenLimit) { len = Math.floor(len * 0.8); if (len < 100) break; }
+      else await sleep(500 * (attempt + 1)); // transient — back off, same length
+    }
+  }
+  throw new Error(`could not embed a ${text.length}-char section after retries`);
+}
+// Batch fast-path; on WHOLESALE batch failure, fall back to per-text embedOne.
+async function embedWhole(texts: string[], key: string): Promise<number[][]> {
+  try {
+    const v = await embedRaw(texts, key);
+    if (v.length === texts.length && v.every((x) => x.length > 0)) return v;
+  } catch { /* fall through to per-text */ }
+  const out: number[][] = [];
+  for (const t of texts) out.push(await embedOne(t, key));
+  return out;
 }
 
 // Chunk a section body at sentence bounds under the budget (hard split fallback).
