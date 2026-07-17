@@ -22,12 +22,28 @@ session picks up HERE):
   ruling conflicts with the go-live queue — owner reconciles), thayers-lexicon (OCR tier -> staged),
   historians x3 (no read path), josephus-works (duplicate of the already-staged josephus-whiston),
   poole-tcp/scofield/pnt (the parked filter-collision call from v2).
-- **NEXT:** Phase 2 seed-confirm (K&D Gen 1:1 via helloao + an Olney hymn + a Herbert poem through
-  register-writer -> FTS re-ingest -> /api/ask + reader browser-verify 390px/desktop + eval re-run —
-  the GATE for bulk). Then Phase 3 adapters (helloao/ccel/gutenberg/sword per INGESTION_ADAPTERS.md),
-  Phase 4 the 46-work queue (auto-publish authorized for the verified-PD tier; stop rules armed),
-  Phase 5 static regen + both-surfaces confirm + accuracy diagnostic + fresh-agent deep-audit.
-  Commentary eval MUST not regress (record numbers here). NO deploy, NO prod.
+- **DONE Phase 2 SEED-CONFIRM (2026-07-16):** three real items seeded through register-writer —
+  K&D Gen 1:1 (helloao API, 3 whole chunks), Olney "Amazing Grace" (ccel 1779 text, anchored
+  1 Chr 17:16-17), Keble "Morning" (Gutenberg #4272, anchored by its printed Lam 3:22-23 epigraph).
+  Migration 020 added en route (embeddings.source_type CHECK — the flat table had its own, found
+  red-first when the hymn insert tripped it). RETRIEVAL PROVEN through the shipped SQL: K&D 3 rows in
+  legalBasePool(20); Amazing Grace via songVerseOnRangeSql(1Ch17:16); Keble via songVersePoolSql.
+  READER PROVEN in the browser (worktree-pinned dev server, port 3012): verse-16 tap -> panel shows
+  "Commentaries 5" with the hymn attributed (Newton & Cowper · 1779 · Anglican-Evangelical), 390px +
+  desktop, no overflow, console clean. Fix found by the seed: fetchCommentary dropped the `work` field
+  before the publish check (bible.ts:120) — entries type + callsite extended.
+  ⚠ Gate finding: herbert-temple's ccel_ids in the manifest 404 (HTML error page at every cache/txt
+  pattern) — Phase 4 must fail->quarantine it; seed swapped to Keble.
+- **NEXT (continuation picks up here):** (1) re-run the held-out commentary eval (scripts/eval-routing
+  or pnpm eval; MUST not regress; record per-category numbers HERE). (2) Phase 3 adapters per
+  INGESTION_ADAPTERS.md — helloao exists (src/ingest/helloao-source.ts), ccel/gutenberg new, sword
+  extend; all write through src/ingest/register-writer.ts (the one writer; whole-chunk; publish flag
+  = the served lists). (3) Phase 4: the 46-work queue via the loop (INGESTION_LOOP.md breakers; skip
+  josephus-works as dupe; quarantine herbert-temple pending correct ccel id; origen/thayers staged
+  only). (4) Phase 5: FTS re-ingest (work/register columns are in the COPY already), static regen,
+  both-surfaces confirm on real bulk data, accuracy diagnostic recorded, fresh-agent deep-audit,
+  STATE_OF_TRUTH/ROADMAP reconcile. NO deploy, NO prod. Dev server config: ~/.claude/launch.json
+  "golive-dev" (port 3012, cwd ~/ap-golive/web).
 
 ## 2026-07-16 (DEPLOY — landing copy + Today home screen) — live on ancientpaths.app at 654f028
 

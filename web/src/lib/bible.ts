@@ -95,6 +95,11 @@ export interface CommentaryEntry {
   sourceTitle: string;
   sourceUrl: string;
   text: string;
+  // Register go-live (CONTENT_GO_LIVE decision 2/3): published-work slug +
+  // register label; paraphrase marks metrical psalters (never Scripture).
+  work?: string;
+  register?: string;
+  paraphrase?: boolean;
 }
 
 export interface CommentaryData {
@@ -117,7 +122,7 @@ export async function fetchCommentary(
     return {
       ...data,
       entries: data.entries.filter((e) =>
-        isPublishedCommentaryEntry({ author: e.author, sourceUrl: e.sourceUrl, book: data.book }),
+        isPublishedCommentaryEntry({ author: e.author, sourceUrl: e.sourceUrl, book: data.book, work: e.work }),
       ),
     };
   } catch {
