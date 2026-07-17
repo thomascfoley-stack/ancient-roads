@@ -5,7 +5,7 @@
 -- SONG_VERSE_CORPUS_FILTER in routing.ts (test/invariants/legal-hnsw-index-sync).
 -- The served lists were pruned to ingested+clean works only (quarantined and
 -- never-ingested slugs removed); the indexes rebuild here to match.
--- CONCURRENTLY: run via db/apply-migration-concurrent.mjs (splits on --SPLIT--).
+-- CONCURRENTLY: run via db/apply-migration-concurrent.mjs (statement-split file).
 -- Rollback: DROP INDEX CONCURRENTLY IF EXISTS <name>;   Run as neondb_owner.
 -- ============================================================
 

@@ -24,7 +24,7 @@ async function main() {
       await db.query(`DROP INDEX CONCURRENTLY IF EXISTS ${r.relname}`);
     }
     for (const file of ['db/migrations/018_register_partial_indexes.sql', 'db/migrations/019_register_columns_fts.sql']) {
-      const stmts = readFileSync(file, 'utf8').split('--SPLIT--').map((s) => s.trim()).filter((s) => s && !/^--[^\n]*$/.test(s));
+      const stmts = readFileSync(file, 'utf8').split(/^--SPLIT--$/m).map((s) => s.trim()).filter((s) => s && !/^--[^\n]*$/.test(s));
       for (const stmt of stmts) {
         const label = stmt.replace(/--[^\n]*\n/g, '').slice(0, 70).replace(/\s+/g, ' ');
         const t0 = Date.now();
