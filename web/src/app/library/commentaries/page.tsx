@@ -16,6 +16,16 @@ const BOOK_BY_NUM = new Map(BOOKS.map((b) => [b.bookNum, b]));
 const DEBOUNCE_MS = 300;
 const PAGE_SIZE = 20;
 
+// The ts_headline snippet is rendered as HTML so <mark> highlights work — but
+// ts_headline does NOT escape the surrounding body text, so any tag-shaped text
+// that survives ingest would render live. Escape everything, then restore ONLY
+// the <mark> pairs ts_headline itself inserted (security hardening 2026-07-17).
+function sanitizeSnippet(snippet: string): string {
+  return snippet
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/&lt;mark&gt;/g, '<mark>').replace(/&lt;\/mark&gt;/g, '</mark>');
+}
+
 interface SearchResult {
   id: number;
   book: number;
@@ -118,7 +128,7 @@ function SearchResultCard({
       ) : (
         <p
           className="font-scripture text-sm leading-relaxed text-stone-600 dark:text-stone-300 [&_mark]:rounded-sm [&_mark]:bg-accent-100 [&_mark]:px-0.5 [&_mark]:text-accent-900 dark:[&_mark]:bg-accent-900/50 dark:[&_mark]:text-accent-200"
-          dangerouslySetInnerHTML={{ __html: r.snippet }}
+          dangerouslySetInnerHTML={{ __html: sanitizeSnippet(r.snippet) }}
         />
       )}
       {view === 'unavailable' && (
