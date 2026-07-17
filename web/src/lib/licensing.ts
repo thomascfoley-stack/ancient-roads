@@ -88,6 +88,28 @@ export const COMMENTARY_LICENSES: Record<string, LicenseRecord> = {
   'John Chrysostom': { license: 'Public Domain', commercial_use: 'allow', source: 'NPNF (Schaff) — PD; provenance repair to New Advent pending', verified_on: '2026-07-14' },
 };
 
+// Devotional works served on the daily "Today" home screen (web/public/devotional/*).
+// Not a Bible translation and not a served commentary author — its own provenance record so
+// every shipped work has one (T1§2). Spurgeon's text + the KJV it quotes are both public domain.
+export interface DevotionalLicenseRecord extends LicenseRecord {
+  work: string;
+  author: string;
+  pd_basis: string;
+  verse_translation: string;
+}
+export const DEVOTIONAL_LICENSES: Record<string, DevotionalLicenseRecord> = {
+  'morning-evening': {
+    work: 'Morning and Evening',
+    author: 'C. H. Spurgeon (d.1892)',
+    license: 'Public Domain',
+    commercial_use: 'allow',
+    pd_basis: 'pre-1929 (author died 1892)',
+    source: 'archive.spurgeon.org/morn_eve — re-provenanced from the Spurgeon Center PD archive, NOT CCEL markup',
+    verse_translation: 'KJV (Public Domain)',
+    verified_on: '2026-07-16',
+  },
+};
+
 const NO_RECORD: LicenseRecord = { license: 'unknown', commercial_use: 'deny', source: 'no license record', verified_on: '—' };
 
 /** Work ids the owner has acknowledged for conditional shipping (LICENSE_ACK=leb,...). */
