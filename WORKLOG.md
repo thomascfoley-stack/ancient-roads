@@ -1,5 +1,33 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-16 (GO-LIVE Part A — dev, branch `golive`) — register read path + eval gate
+
+**Phase 0 (verifier fail-open closed).** The verifier block `switch` had no `default` — a drifted
+block type passed unverified ({ok:true}, proven red-first with a seeded schema block type). Added a
+`never`-exhaustiveness `default` → compile-time drift rejection + runtime `unknown_block_type` violation,
+byte-synced to both trees (web-core-sync green). 35 verifier+sync tests pass.
+
+**Phase 1 (schema, dev).** Migration 017: hymn/poetry/art added to the `sources.source_type` CHECK
+(art for the parked pipeline; ingesting art stays out of scope). Idempotent (applied twice clean). 016
+(historian write-contract) already on dev from the v2 merge.
+
+**Phase 2 (register-aware served read path).** `routing.ts`: `LEGAL_CORPUS_FILTER` widened from the
+9-author allowlist to also admit 23 verified-PD prose work-slugs; a DISTINCT `SONG_VERSE_CORPUS_FILTER`
++ `retrieveSongVerse()` pool for hymns/poetry — surfaced as a SEPARATE labeled `song_verse` payload in
+`teach()`, never composed over, never counted toward the exegetical ≥2-voices floor (CONTENT_GO_LIVE
+decision 2). Migrations 018 (rebuild legal HNSW + song/verse twin + register verseId index, all
+CONCURRENTLY) and 019 (commentary_entries work/register columns + FTS legal partial rebuild) applied on
+dev; the byte-lockstep tests (legal-hnsw-index-sync, fts-legal-index-sync, licensing recall probe
+50/50) are green. Reader allowlist (`legal-corpus.ts` PUBLISHED_WORKS) already extended via the merge.
+3 register seeds (Olney "Amazing Grace", 2× Keble) confirmed present + published in dev.
+
+**A1 — eval-regression gate (BLOCKS the ingest): PASS.** Frozen v3 held-out (n=120) through the live
+`routing.ts` on dev: **verse-ref 95/98 · pericope 87/100 · epistle H2 88 · topical H2 70 · proper-noun
+80/90 · control clean 10/10, 0 hijacks** — identical to the CLAUDE.md baseline to the digit. The Phase 2
+filter change did not regress commentary. (This measures the plumbing change; the corpus-competition
+re-test is A5, after the 46-work ingest lands.)
+
+
 ## 2026-07-16 (CONTENT GO-LIVE — in flight) — branch `golive` (main + merged `ingest`), worktree ~/ap-golive, DEV only
 
 Executing docs/CONTENT_GO_LIVE.md. State as of this entry (the repo is the channel — a continuation
