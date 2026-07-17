@@ -349,5 +349,51 @@
     "backfill": {
       "match_author": "Matthew Poole"
     }
+  },
+  {
+    "id": "josephus-whiston",
+    "slug": "josephus-whiston",
+    "title": "Josephus: The Complete Works (Whiston)",
+    "author": "Flavius Josephus",
+    "author_died": 100,
+    "year_written": 94,
+    "source_type": "historian",
+    "tradition": "jewish",
+    "era": "second-temple",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=Josephus",
+      "edition": "The Complete Works of Josephus, tr. William Whiston 1737 (CrossWire SWORD module Josephus, RawGenBook/ThML)",
+      "year": 1737,
+      "license_ref": "module .conf DistributionLicense=Public Domain, verified 2026-07-16",
+      "rebuild": {
+        "source": "crosswire-sword",
+        "module": "Josephus",
+        "decoder": "src/ingest/sword-genbook.ts"
+      }
+    }
+  },
+  {
+    "id": "spurgeon-talks-to-farmers",
+    "slug": "spurgeon-talks-to-farmers",
+    "title": "Talks to Farmers",
+    "author": "C. H. Spurgeon",
+    "author_died": 1892,
+    "year_written": 1882,
+    "source_type": "sermon",
+    "tradition": "baptist",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/42518",
+      "edition": "Talks to Farmers (Farm Sermons), C. H. Spurgeon — Project Gutenberg #42518 plain text",
+      "year": 1882,
+      "license_ref": "Project Gutenberg — US public domain (author d. 1892, pre-1929 work), verified 2026-07-16",
+      "rebuild": {
+        "source": "gutenberg",
+        "id": 42518,
+        "decoder": "src/ingest/ingest-sermon.ts"
+      }
+    }
   }
 ]

@@ -1,5 +1,56 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-16 (CORPUS INGESTION v2 — all four types through the machine, DEV only) — branch `ingest`, continues the v1 entry below
+
+**Every content type now has a gated ingest path on dev: commentary (Tier 1), bible (Tier 2), sermon
+(Tier 3), historian (Tier 4).** Everything staged, nothing published, nothing deployed, no prod write.
+Stop rules honored: staged backlog = 4 source-works (≪30); worst quarantine-class rate 0.24% (≪30%).
+
+- **Tier 1 — CC0 Poole ingested.** Found the real "CC0 Poole": the EEBO-TCP keyboarded transcriptions
+  A55363/A55368 (github.com/textcreationpartnership), CC0 grant verbatim in each TEI header.
+  `poole-tcp.ts` parses per-verse (each verse is `<p n=…>`, annotations are bottom-notes), survives the
+  damaged print (normalized head matching, implicit chapter-1, verse-reset inference), and CANON-VALIDATES:
+  ≤0.24% miskeyed entries dropped, fail-closed above 1%. **24,104 entries, all 66 books** → static corpus +
+  FTS re-ingest (dev `commentary_entries` 215,489 → 239,593); verse-keys gate 2.9% collapse; suite still
+  green. Lacunae preserved honestly as ⟨…⟩ (Vol II 33% of entries carry one — staged quality). Edition
+  cross-check vs quarantined biblehub Poole: 0.3% chapter match = different edition family (TCP = 1685
+  original), consistent with the Calvin finding. Lev 11 lost to a damaged head (recorded, never misattributed).
+- **Tier 2 — versification gate (`versification-gate.ts`, wired as L2b).** All 18 hosted translations
+  structurally canonical vs KJV v11n; edition variants are NAMED, not tolerated blindly (critical-text
+  Mark 9:44,46; WEB Romans doxology at 14:24–26). Real finding: **tyndale/anderson/noyes ship untranslated
+  books as empty-text skeletons** (56/39/17 books) — reader-UX call for the owner. Gap-fill: none needed;
+  LEB correctly absent pending LICENSE_ACK; LITV/MKJV/jubilee correctly absent (denied).
+- **Tier 3 — sermons behind the frozen Slice-0 bar.** `ingest-sermon.ts` parses Gutenberg Spurgeon
+  (*Talks to Farmers*, PG 42518), measures stated-text anchor recall through the slice0 channel (explicit
+  refs + uncited 6-gram-vs-KJV, min-3-shingle verses, chapter grain) and FAILS CLOSED under 70%. First
+  build mis-read "K=3" as top-3 and measured 37.5% — corrected to the frozen method: **81.3% (13/16), bar
+  cleared** (matches slice0's 82% on MTP). 300 sections staged in 006, embedded whole; recall number
+  recorded in the source's provenance. Uncited matches are used for MEASUREMENT only — never written as
+  anchors (an anchor row is a fact; a shingle hit is a probability).
+- **Tier 4 — the historian write-contract, landed and proven.** Migration **016** applied to DEV only:
+  section `period_start/end_year` + index, `section_history_anchors` (person/place/event/institution),
+  and the `tsv` fix (was body-only — headings were unsearchable). **Pilot substitution, escalated:** the
+  workorder's one-SCHAFF pilot is blocked by its own source rule — "CCEL text only via CrossWire/SWORD"
+  and Schaff's HCC is on neither Gutenberg nor Wikisource nor CrossWire; only CCEL/OCR carry it. So the
+  pilot ran on **Josephus (CrossWire module, Whiston 1737, .conf PD)** — same dated heading-structured
+  prose, zero source ambiguity. `sword-genbook.ts` (RawGenBook/TreeKeyIdx decoder, format proven by
+  offset arithmetic) + `ingest-historian.ts`. **Pilot (120 nodes): all 8 contract items verified by
+  query** — born in 006 as `source_type='historian'`; chunked on the module's own tree headings; heading
+  populated 181/181; period only from verbatim dates; embedded WHOLE (truncation asserted impossible);
+  entity anchors from the hand-seeded gazetteer (`history-gazetteer.ts`, open question (b) resolved
+  conservatively) 8/8 sampled verbatim-present; **verse anchors audited span-by-span: all 19 are genuine
+  Whiston-apparatus citations ("See Ezra 2:36-39…", "Acts 27:38…") — zero fabricated.** Bulk: **4,124
+  sections, 4,845 entity anchors, 440 explicit verse anchors, 15 period-tagged, 4,124/4,124 embedded
+  whole.** Status='staged' — historians are NEVER served (no read path; §6/§8 deferred by design).
+- **Final dev state (006):** barnes-notes 1,300 quarantined · matthew-henry 4,210 staged · josephus-whiston
+  4,124 staged · spurgeon-talks-to-farmers 300 staged; every section embedded 1:1.
+- **Escalations for the owner (decide, I did not):** (1) Schaff/Eusebius/Edersheim clean-source ruling —
+  permit CCEL-text extraction with re-provenance (the ACQUISITION_MANIFEST's own §rule) or accept OCR-tier;
+  Wikisource NPNF is a candidate for Eusebius. (2) Geneva notes module still license-less (fail-closed
+  quarantine stands). (3) Publish decisions: Poole/Scofield/PNT/Spurgeon/Josephus are staged and
+  gate-clean but ONLY you publish. (4) tyndale/noyes/anderson skeleton books in the reader. (5) LEB ack.
+  (6) The v1 parked reds stand (father provenance · owner-gated teacher embed · matthew-henry chunk-dup).
+
 ## 2026-07-16 (CORPUS INGESTION — gate:ingest wired + verse-key repair on DEV) — branch `ingest`, worktree ~/ap-ingest, nothing promoted to prod
 
 **The verifier is wired, the clean tranche is in — all against the Neon DEV branch (`ep-tiny-hat`,

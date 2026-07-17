@@ -88,3 +88,20 @@ One short entry per irreversible or architectural decision: **context → decisi
 
 ## ADR-020 — For a DERIVED key, assert the distribution, never the row
 **Context:** `commentary_entries.verse_start` was set to the CHAPTER number for ~14 biblehub-sourced authors (§2 / `docs/CORPUS_VERSE_KEY_REPAIR.md`). Every per-row guard we had passed it: the value is an integer, in range, `verse_start ≤ verse_end`, and it renders fine — so a Barnes comment on Rom 8:1 is cited "Rom 8:8" and nothing flags it. It stayed invisible for months. **Decision:** when a column is a DERIVED key (parsed, computed, or mapped from a source — verse numbers, source_ids, slugs, embeddings keys), the invariant test asserts the **distribution across rows**, not the shape of any single row. Here: for every author with ≥200 entries, the fraction with `verse_start = verse_end = chapter` must be < 0.20 — a threshold measured from the data (clean authors 0.9–6.9%, broken authors 99.9–100%; the two populations are an order of magnitude apart), never guessed. `web/test/invariants/verse-keys.test.ts` encodes it. **Why:** a plausible-but-wrong value is exactly the failure a row-level constraint cannot see; only the shape of the whole column reveals it. **Rejected:** per-row range/format checks (they all passed); trusting the ingest (the adapter was the bug); raising the threshold to make the current corpus pass (that deletes the signal — the test is committed RED/`.skip` as an honest baseline until the repair).
+
+## ADR-021 — Historians are born in the 006 model; the write-contract gates bulk ingest (2026-07-16)
+**Context:** bulk ingestion v2 needed a home for `source_type='historian'` (Josephus first; Schaff/Eusebius/
+Edersheim pending a clean-source ruling). Forcing history into the verse-keyed `embeddings` table means
+fabricating a `verseId` for prose about events — the corruption the verse-key repair exists to kill.
+**Decision:** historians (and new sermons) are ingested ONLY into `sources`/`sections` (006), per
+`docs/HISTORY_RETRIEVAL_DESIGN.md` §9: migration `016_history_sections.sql` (section-level `period_*`,
+`section_history_anchors`, tsv over heading+body) applied to the DEV branch only; chunk on the source's own
+headings; embed every chunk whole (truncation asserted impossible, not merely avoided); entity anchors come
+from a hand-seeded gazetteer and are written only when the label is verbatim in the section (kind = curated
+human fact, never model inference); scripture anchors only where the text explicitly cites (span-audited);
+`status='staged'`, never served until a history read path exists and the owner publishes. **Also decided:**
+the pilot ran on Josephus (CrossWire, license in `.conf`) instead of Schaff because the run's source rule —
+CCEL text only via CrossWire/SWORD — is unsatisfiable for Schaff; substituting the pilot work is an
+execution call, but *sourcing Schaff at all* is the owner's (escalated, not guessed). **Rejected:** blind
+token-window chunking; bootstrapped entity tagging without human curation; treating archive.org OCR
+historians as clean tier; applying 016 to prod this cycle.
