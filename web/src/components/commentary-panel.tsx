@@ -102,20 +102,12 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
         </button>
       )}
       {entry.sourceTitle && (
-        <p className="mt-2 text-[11px] text-stone-400">
-          {entry.sourceUrl ? (
-            <a
-              href={entry.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-stone-600 underline decoration-stone-300"
-            >
-              {entry.sourceTitle}
-            </a>
-          ) : (
-            entry.sourceTitle
-          )}
-        </p>
+        // Attribution is the author + WORK TITLE only — never a host link.
+        // Content is ingested and self-hosted (ADR-013); a hyperlink to
+        // ccel.org/gutenberg/crosswire surfaces a host as if it were the source
+        // (GO_LIVE A5: "attribute to the author, never a host"). provenance
+        // keeps the URL for the record; the UI shows the work title, plain.
+        <p className="mt-2 text-[11px] text-stone-400">{entry.sourceTitle}</p>
       )}
     </div>
   );
