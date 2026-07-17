@@ -1,5 +1,34 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-16 (CONTENT GO-LIVE — in flight) — branch `golive` (main + merged `ingest`), worktree ~/ap-golive, DEV only
+
+Executing docs/CONTENT_GO_LIVE.md. State as of this entry (the repo is the channel — a continuation
+session picks up HERE):
+
+- **DONE Phase 0:** verifier block switch fail-closed `default` (both trees, byte-synced, red-first:
+  a seeded drift block returned {ok:true} before, `unknown_block_type` violation after; 35 tests green).
+- **DONE Phase 1:** migration 017 (source_type CHECK + hymn/poetry/art) applied dev, idempotent-proven.
+  (Historian write-contract = 016, already live from the v2 run.)
+- **DONE Phase 2 infra:** routing.ts register-aware — SERVED_PROSE_WORKS (23 slugs) extends
+  LEGAL_CORPUS_FILTER; SONG_VERSE_CORPUS_FILTER + its own pool builders + retrieveSongVerse();
+  teach() attaches `song_verse` as a SEPARATE labeled payload (never composed over, never counted
+  toward >=2-voices). Migrations 018 (HNSW legal rebuild + song/verse twin + register verseId btree)
+  and 019 (commentary_entries work/register columns + FTS legal partial v3) applied on dev;
+  legal-hnsw-index-sync + fts-legal-index-sync lockstep tests green. legal-corpus.ts: PUBLISHED_WORKS
+  (41 slugs) + register-aware isPublishedCommentaryEntry + extended LEGAL_COMMENTARY_ENTRIES_PREDICATE.
+  register-writer.ts = the ONE writer (flat embeddings whole-chunk + sources registry + static corpus
+  for anchored entries). ingest-commentary-fts carries work/register columns.
+- **HELD OUT of the served lists (escalations):** origen-commentary (standing MUST_NOT_SERVE 'Origen'
+  ruling conflicts with the go-live queue — owner reconciles), thayers-lexicon (OCR tier -> staged),
+  historians x3 (no read path), josephus-works (duplicate of the already-staged josephus-whiston),
+  poole-tcp/scofield/pnt (the parked filter-collision call from v2).
+- **NEXT:** Phase 2 seed-confirm (K&D Gen 1:1 via helloao + an Olney hymn + a Herbert poem through
+  register-writer -> FTS re-ingest -> /api/ask + reader browser-verify 390px/desktop + eval re-run —
+  the GATE for bulk). Then Phase 3 adapters (helloao/ccel/gutenberg/sword per INGESTION_ADAPTERS.md),
+  Phase 4 the 46-work queue (auto-publish authorized for the verified-PD tier; stop rules armed),
+  Phase 5 static regen + both-surfaces confirm + accuracy diagnostic + fresh-agent deep-audit.
+  Commentary eval MUST not regress (record numbers here). NO deploy, NO prod.
+
 ## 2026-07-16 (DEPLOY — landing copy + Today home screen) — live on ancientpaths.app at 654f028
 
 Owner said ship. Deployed **654f028** (not HEAD) from an isolated git worktree because the
