@@ -1,5 +1,52 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-16 (TODAY HOME SCREEN — Tier 3 Spurgeon daily) — /home is now a daily devotional; pushed, not yet deployed
+
+**Built the "Today" home screen (Tier 3 only, no framework sprawl).** /home now serves Spurgeon's
+*Morning and Evening* for the user's LOCAL date, with the corpus commentary voices on the devotional's
+verse attached beneath it. One data file, one resolver, one page edit, reusing the reader's own
+fetchCommentary / EntryCard / pickDiverse. Did NOT build a source registry, tier selector, preference
+column, settings toggle, notifications, streaks, /api/today, or Tier 1/2 resolvers (§0).
+
+- **Content (§1):** `scripts/ingest-morning-evening.mts` → `web/public/devotional/morning-evening.json`
+  (366 days, both AM+PM, 0 anchor-parse failures). Source is the Spurgeon Center PD archive
+  (archive.spurgeon.org), re-provenanced, NOT CCEL markup. Every day's reference is validated through
+  the repo's `parseRef` at ingest — a day whose anchor does not resolve FAILS the ingest. Provenance
+  record added to `licensing.ts` (`DEVOTIONAL_LICENSES`).
+- **Seam (§2):** `web/src/lib/today.ts` — `TodayCard`/`DailySource` types, `spurgeonSource`,
+  `voicesForPassage`, `resolveToday`. A source picks the passage; voice-attachment is a separate,
+  invariant step (grounded + license-filtered + degrade ladder). Tier 1/2 later = another `DailySource`
+  emitting the same shape; it inherits everything.
+- **Date (§3):** keyed by LOCAL `MM-DD`, never an ordinal day-of-year; 02-29 kept. Client-side so the
+  day + AM/PM read the user's clock, not server UTC. Red-first tests: leap vs common year resolve the
+  same day; a UTC instant that is next-day in UTC still resolves the local day/half.
+- **Grounding (§4):** voices are corpus `CommentaryEntry` pointers whose verse-range intersects the
+  passage; degrade ladder verse → chapter → Spurgeon-alone (never blank). Defense-in-depth license
+  filter re-applied at attach time. Red-first tests: off-passage voice dropped; MUST_NOT_SERVE author
+  never renders. Every guard proven RED by seeding the bug, then reverted.
+- **★ Tyndale flag — ANSWERED, no hole:** the raw corpus DOES contain "Tyndale Study Notes" on the
+  relevant chapters (10 in Exodus 16, 12 in Joshua 5, 9 in Genesis 5), but the reader path filters on a
+  POSITIVE allowlist (`isPublishedCommentaryEntry`: 8 whole-Bible + 2 book-scoped authors), which is
+  strictly stronger than the MUST_NOT_SERVE denylist — Tyndale is not on the allowlist, so it can never
+  render. Verified through the real code path over today's + Jan 1's anchors: Tyndale dropped every
+  time. The denylist is redundant belt over the allowlist gate. (Same allowlist also excludes several
+  PD authors — Geneva, Poole, Pulpit, Cambridge, Benson, Keil & Delitzsch — flagged in AUTHOR_TRIAGE.md;
+  safe-but-narrow, an owner call, not this slice.)
+- **Verified live (§7):** loaded /home at 390px + 1280px on the real date/data. Today (07-16 PM,
+  Evening) renders Psalms 102:13,14 + Spurgeon's devotional + two grounded voices (Augustine on Psalms,
+  Matthew Henry) — no Tyndale, no console errors, no horizontal overflow, CTA clears the bottom nav.
+  Fixed one latent bug along the way: the view rendered a nested `<main>` inside the app-shell's `<main>`
+  (invalid landmark) — now a plain container.
+
+**Known limitation to report:** the archive source has occasional transcription typos, kept verbatim
+for source fidelity (e.g., 07-16 PM verse reads "servants rake pleasure" where the KJV is "take"). The
+structural fix, if we want guaranteed-clean verses, is to render the anchor verse from our own licensed
+KJV corpus (`/bible/kjv/...`) instead of Spurgeon's transcribed quote — a follow-up, not hand-patching
+single verses (that is exactly the per-passage curation the guarantee avoids).
+
+**State:** `npm run audit` green, tree clean, pushed to main (`8c34f6c`). NOT deployed — the STOP
+condition was pushed, and deploy is outward-facing; teed up for the owner or a follow-up.
+
 ## 2026-07-16 (LIVE ON ancientpaths.app) — public landing on the purchased domain; app + corpus stay gated
 
 **Shipped to production (6 deploys, all verified live):** the marketing landing redesigned around the
