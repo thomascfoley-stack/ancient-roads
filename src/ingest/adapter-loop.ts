@@ -55,9 +55,15 @@ async function main() {
   const adaptersFilter = arg('--adapters')?.split(',');
   const dry = process.argv.includes('--dry');
 
+  // --skip: KNOWN quarantines (source problems already triaged + logged). They
+  // are excluded from the queue so they don't re-trip the systematic-failure
+  // breaker on every resume pass — the breaker is for UNKNOWN failure, not for
+  // works a human has already dispositioned.
+  const skip = new Set(arg('--skip')?.split(',') ?? []);
   let queue = manifest.filter((e) => {
     const acq = (e.provenance as Record<string, unknown> | undefined)?.['acquire'] as { adapter?: string } | undefined;
     if (!acq?.adapter) return false;
+    if (skip.has(e.slug as string)) return false;
     if (only && !only.includes(e.slug as string)) return false;
     if (adaptersFilter && !adaptersFilter.includes(acq.adapter)) return false;
     return true;

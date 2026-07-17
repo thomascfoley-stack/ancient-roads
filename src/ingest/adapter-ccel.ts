@@ -70,19 +70,28 @@ function unitAnchor(unitXml: string): { verseIdStart: number; verseIdEnd: number
   return r ? { verseIdStart: r.start, verseIdEnd: r.end } : null;
 }
 
-// A "Psalm 23: The Lord's my shepherd" style title (metrical psalters) → an
-// anchor to that psalm, when the unit carries no scripRef. Book 19 (Psalms).
+// A "Psalm 23: …" or "Psalm XXIII" style title (metrical psalters, the Treasury
+// of David) → an anchor to that psalm, when the unit carries no scripRef.
+const ROMAN_MAP: Record<string, number> = { i: 1, v: 5, x: 10, l: 50, c: 100 };
+function romanVal(s: string): number | null {
+  let n = 0; const t = s.toLowerCase();
+  for (let i = 0; i < t.length; i++) { const c = ROMAN_MAP[t[i]!]; if (!c) return null; const nx = ROMAN_MAP[t[i + 1]!] ?? 0; n += c < nx ? -c : c; }
+  return n || null;
+}
 function titleAnchor(heading?: string): { verseIdStart: number; verseIdEnd: number } | null {
-  const m = heading?.match(/\bPsalm\s+(\d{1,3})\b/i);
+  const m = heading?.match(/\bPsalms?\s+(\d{1,3}|[IVXLCivxlc]{1,8})\b/);
   if (!m) return null;
-  const ps = Number(m[1]);
-  if (ps < 1 || ps > 150) return null;
+  const raw = m[1]!;
+  const ps = /^\d+$/.test(raw) ? Number(raw) : romanVal(raw);
+  if (!ps || ps < 1 || ps > 150) return null;
   return { verseIdStart: 19_000_000 + ps * 1000 + 1, verseIdEnd: 19_000_000 + ps * 1000 + 999 };
 }
 
 // Pick the div selector (type= OR class=) that yields the most units — CCEL works
-// vary: Olney uses type="Hymn", the Scottish Psalter uses class="hymn".
-function chooseUnitSelector(xml: string): { attr: 'type' | 'class'; value: string } | null {
+// vary: Olney uses type="Hymn", the Scottish Psalter uses class="hymn". Works with
+// NO typed/classed divs (Treasury of David: bare <div2 title="Psalm I">) fall back
+// to the div LEVEL with the most title-bearing divs.
+function chooseUnitSelector(xml: string): { attr: 'type' | 'class'; value: string } | { level: string } | null {
   let best: { attr: 'type' | 'class'; value: string } | null = null, bestN = MIN_UNITS - 1;
   for (const attr of ['type', 'class'] as const) {
     for (const t of UNIT_TYPE_ORDER) {
@@ -90,15 +99,27 @@ function chooseUnitSelector(xml: string): { attr: 'type' | 'class'; value: strin
       if (n > bestN) { best = { attr, value: t }; bestN = n; }
     }
   }
-  return best;
+  if (best) return best;
+  let bestLevel: string | null = null; let bestLevelN = MIN_UNITS - 1;
+  for (const lvl of ['div2', 'div3', 'div1']) {
+    const n = (xml.match(new RegExp(`<${lvl}\\s[^>]*title="[^"]`, 'gi')) ?? []).length;
+    if (n > bestLevelN) { bestLevel = lvl; bestLevelN = n; }
+  }
+  return bestLevel ? { level: bestLevel } : null;
 }
+
+// Front/back-matter titles that are never content units (the Treasury fallback
+// would otherwise ingest prefaces and indexes as "sections").
+const MATTER_RE = /^(title pages?|preface|introduction|index|contents|table of|dedication|advertisement|to the reader|appendix|copyright)/i;
 
 export function buildCcelSections(xml: string): RegisterSection[] {
   const sel = chooseUnitSelector(xml);
   if (!sel) return [];
   const out: RegisterSection[] = [];
   let m: RegExpExecArray | null;
-  const full = new RegExp(`(<div[1-4]\\s[^>]*${sel.attr}="${sel.value}"[^>]*>)([\\s\\S]*?)</div[1-4]>`, 'gi');
+  const full = 'level' in sel
+    ? new RegExp(`(<${sel.level}\\s[^>]*title="[^"]+"[^>]*>)([\\s\\S]*?)(?=<${sel.level}[\\s>]|</${sel.level}>\\s*$)`, 'gi')
+    : new RegExp(`(<div[1-4]\\s[^>]*${sel.attr}="${sel.value}"[^>]*>)([\\s\\S]*?)</div[1-4]>`, 'gi');
   while ((m = full.exec(xml))) {
     const openTag = m[1]!;
     const inner = m[2]!;
@@ -108,9 +129,27 @@ export function buildCcelSections(xml: string): RegisterSection[] {
     const anchor = unitAnchor(inner) ?? titleAnchor(heading);
     const body = thmlText(inner);
     if (body.length < 40) continue; // skip empty/structural shells
+    if ('level' in sel && heading && MATTER_RE.test(heading)) continue; // front/back matter
     out.push({ heading, body, anchors: anchor ? [anchor] : undefined });
   }
   return out;
+}
+
+// ccel_author enumeration: the author page lists work hrefs /ccel/{author}/{id}.
+// Enumerate candidate ids, dedupe, cap; each id is then fetched as ThML (the
+// non-ThML guard quarantines anything that isn't a real book file).
+export async function enumerateCcelAuthor(author: string, cap = 40): Promise<string[]> {
+  const res = await fetch(`https://www.ccel.org/ccel/${author}`, { signal: AbortSignal.timeout(60_000) });
+  if (!res.ok) return [];
+  const html = await res.text();
+  const ids = new Set<string>();
+  for (const m of html.matchAll(new RegExp(`/ccel/${author}/([a-z0-9_]+)(?:\\.|/|")`, 'gi'))) {
+    const id = m[1]!.toLowerCase();
+    if (['index', 'about', 'author'].includes(id)) continue;
+    ids.add(`${author}/${id}`);
+    if (ids.size >= cap) break;
+  }
+  return [...ids];
 }
 
 export async function acquireCcel(entry: Record<string, unknown>, opts: { write: boolean; publish?: boolean } = { write: true }): Promise<CcelWorkResult> {
@@ -124,8 +163,8 @@ export async function acquireCcel(entry: Record<string, unknown>, opts: { write:
     if (m) { const [, pre, a, b, post] = m; const pad = a!.length; for (let i = Number(a); i <= Number(b); i++) ids.push(`${pre}${String(i).padStart(pad, '0')}${post}`); }
     else ids = [acq.ccel_id_pattern];
   } else if (acq.ccel_author) {
-    // author-page enumeration is a separate network step; not attempted in this pass — escalate
-    return { slug: entry.slug as string, units: 0, anchored: 0, embedded: 0, skipped: true, reason: `ccel_author enumeration not implemented (${acq.ccel_author})` };
+    ids = await enumerateCcelAuthor(acq.ccel_author);
+    if (ids.length === 0) return { slug: entry.slug as string, units: 0, anchored: 0, embedded: 0, skipped: true, reason: `author page enumeration empty (${acq.ccel_author})` };
   }
 
   const allSections: RegisterSection[] = [];
