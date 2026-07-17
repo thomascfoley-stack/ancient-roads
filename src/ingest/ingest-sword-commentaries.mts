@@ -23,7 +23,7 @@ const META: Record<string, { year: number; tradition: string; sourceTitle: strin
   'John Calvin': { year: 1555, tradition: 'Reformed', sourceTitle: "Calvin's Commentaries", sourceUrl: 'https://crosswire.org/sword/modules/ModInfo.jsp?modName=CalvinCommentaries' },
 };
 
-interface Entry { author: string; verseId: number; content: string }
+interface Entry { author: string; verseId: number; verseEnd?: number; content: string }
 const decode = (v: number) => ({ book: Math.floor(v / 1e6), ch: Math.floor((v % 1e6) / 1000), vs: v % 1000 });
 
 async function embedRaw(texts: string[]): Promise<number[][]> {
@@ -76,7 +76,7 @@ async function main() {
     const m = META[e.author]!;
     return [{
       sourceId, content: e.content,
-      metadata: { author: e.author, year: m.year, tradition: m.tradition, sourceTitle: m.sourceTitle, sourceUrl: m.sourceUrl, verseId: e.verseId, verseEnd: e.verseId, model: MODEL },
+      metadata: { author: e.author, year: m.year, tradition: m.tradition, sourceTitle: m.sourceTitle, sourceUrl: m.sourceUrl, verseId: e.verseId, verseEnd: e.verseEnd ?? e.verseId, model: MODEL },
     }];
   });
   console.log(`${entries.length} extracted · ${rows.length} new to ingest · ${entries.length - rows.length} already present`);

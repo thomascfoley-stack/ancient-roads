@@ -70,6 +70,20 @@ pre-ship gate** the moment the app-voice generative surface expands — specific
 is bound to the extractive composer and **does not transfer** to a product with more app-voice prose; any
 such change must re-run interpretation_bait AND stand up V2 before shipping.
 
+## Update 2026-07-16 (corpus ingestion v1+v2 — branch `ingest`, DEV only, staged)
+
+`pnpm gate:ingest` wired over the existing gate modules (license/provenance/must-not-serve irreversible-first;
+verse-keys, count-parity, content-sanity, text-match, versification, coverage). Verse-key collapse REPAIRED on
+dev for Barnes/Wesley/Calvin/Scofield/B.W. Johnson (CrossWire per-verse; 100% → 3.0–3.8%; `verse-keys.test.ts`
+un-skipped GREEN); 9 unfixable authors quarantined out; CC0 Poole (EEBO-TCP) parsed per-verse and staged
+(24,104 entries); Calvin OT in the teacher (6,204, slice-complete). Migration **016** (dev): historian
+write-contract landed; **Josephus** staged in 006 (4,124 sections; the pilot's 19 verse anchors were
+span-audited clean; the deep-audit then found 3 fabricated anchors + 1 wrong-era period tag in the BULK —
+fixed same night: word-boundary gazetteer, book-name citation filter, heading-only periods, re-ingested);
+**Spurgeon Talks to Farmers** staged behind the frozen Slice-0 recall bar (81.3% ≥ 70%); versification gate
+green over all 18 hosted translations. Nothing published, nothing deployed, no prod write. Full numbers +
+owner escalations: WORKLOG 2026-07-16 (v1 + v2 entries); ADR-021.
+
 ## Update 2026-07-09 (next phase — Steps 1–2: backup + the two upfront gates)
 
 Executing `docs/NEXT_PHASE.md`. Steps 1 and 2 done; **stopped at the Step 3 boundary** (the `sources`/`sections` ingestion migration — unresolved cross-session owner, needs an approved design doc first, per the design-before-code rail).

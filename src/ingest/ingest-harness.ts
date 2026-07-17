@@ -15,9 +15,10 @@
 import pg from 'pg';
 import { execFileSync } from 'node:child_process';
 import { readFileSync, existsSync } from 'fs';
-
-const FORBIDDEN = ['biblehub', 'studylight', 'historicalchristian']; // aggregators flagged in ROADMAP/ADR-008
-const LICENSES = ['Public Domain', 'CC BY', 'CC BY-SA'];
+// The license/provenance RULES live in license-manifest.ts (Gate B core) — the
+// harness CALLS them; it no longer re-inlines its own copy (byte-drift risk: the
+// inline copy substring-matched hosts and silently disagreed with the gate).
+import { isAllowedLicense, forbiddenProvenanceDomain } from './license-manifest.js';
 
 type State = 'discovered' | 'acquired' | 'matched' | 'staged' | 'quarantined';
 interface Step { to: State; ok: boolean; detail: string }
@@ -58,10 +59,10 @@ async function main() {
     record('acquired', acquired, `${acq} embeddings for author "${matchAuthor}" (adapter output already in DB)`);
     if (!acquired) throw new Error('no acquired content');
 
-    // matched: license/provenance gate (Gate B rules, inline). Fail ⇒ quarantine.
+    // matched: license/provenance gate (Gate B rules, CALLED from license-manifest). Fail ⇒ quarantine.
     const provUrl = e.provenance?.url ?? '';
-    provOk = !!provUrl && !FORBIDDEN.some((d) => provUrl.includes(d));
-    licOk = LICENSES.includes(e.license);
+    provOk = !!provUrl && forbiddenProvenanceDomain(provUrl) === null;
+    licOk = isAllowedLicense(e.license);
     const matched = provOk && licOk;
     record(matched ? 'matched' : 'quarantined', matched,
       `license="${e.license}" (${licOk ? 'ok' : 'DISALLOWED'}) · provenance=${provUrl || '(none)'} (${provOk ? 'clean' : 'forbidden/none'})`);

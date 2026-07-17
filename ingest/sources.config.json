@@ -172,5 +172,228 @@
     "backfill": {
       "match_author": "Matthew Henry"
     }
+  },
+  {
+    "id": "barnes-crosswire-nt",
+    "slug": "barnes-crosswire-nt",
+    "title": "Barnes' New Testament Notes",
+    "author": "Albert Barnes",
+    "author_died": 1870,
+    "year_written": 1834,
+    "source_type": "commentary",
+    "tradition": "presbyterian",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=Barnes",
+      "edition": "Barnes' New Testament Notes (CrossWire SWORD module Barnes, ThML)",
+      "year": 1834,
+      "license_ref": "module .conf DistributionLicense=Public Domain, verified 2026-07-16",
+      "rebuild": {
+        "source": "crosswire-sword",
+        "module": "Barnes",
+        "decoder": "src/ingest/sword-zverse.ts"
+      }
+    },
+    "backfill": {
+      "match_author": "Barnes' Notes"
+    }
+  },
+  {
+    "id": "wesley-crosswire",
+    "slug": "wesley-crosswire",
+    "title": "Wesley's Explanatory Notes",
+    "author": "John Wesley",
+    "author_died": 1791,
+    "year_written": 1765,
+    "source_type": "commentary",
+    "tradition": "methodist",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=Wesley",
+      "edition": "John Wesley's Notes on the Bible (CrossWire SWORD module Wesley, ThML)",
+      "year": 1765,
+      "license_ref": "module .conf DistributionLicense=Public Domain, verified 2026-07-16",
+      "rebuild": {
+        "source": "crosswire-sword",
+        "module": "Wesley",
+        "decoder": "src/ingest/sword-zverse.ts"
+      }
+    },
+    "backfill": {
+      "match_author": "John Wesley"
+    }
+  },
+  {
+    "id": "calvin-crosswire",
+    "slug": "calvin-crosswire",
+    "title": "Calvin's Commentaries",
+    "author": "John Calvin",
+    "author_died": 1564,
+    "year_written": 1555,
+    "source_type": "commentary",
+    "tradition": "reformed",
+    "era": "reformation",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=CalvinCommentaries",
+      "edition": "Calvin's Collected Commentaries (CrossWire SWORD module CalvinCommentaries, OSIS, KJV v11n)",
+      "year": 1555,
+      "license_ref": "module .conf DistributionLicense=Public Domain, verified 2026-07-16",
+      "rebuild": {
+        "source": "crosswire-sword",
+        "module": "CalvinCommentaries",
+        "decoder": "src/ingest/sword-zverse.ts"
+      }
+    },
+    "backfill": {
+      "match_author": "John Calvin"
+    }
+  },
+  {
+    "id": "scofield-crosswire",
+    "slug": "scofield-crosswire",
+    "title": "Scofield Reference Notes (1917)",
+    "author": "C.I. Scofield",
+    "author_died": 1921,
+    "year_written": 1917,
+    "source_type": "commentary",
+    "tradition": "dispensationalist",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=Scofield",
+      "edition": "Scofield Reference Notes 1917 Edition (CrossWire SWORD module Scofield, OSIS, KJV v11n) — pre-1929 US PD",
+      "year": 1917,
+      "license_ref": "module .conf DistributionLicense=Public Domain, verified 2026-07-16",
+      "rebuild": {
+        "source": "crosswire-sword",
+        "module": "Scofield",
+        "decoder": "src/ingest/sword-zverse.ts"
+      }
+    },
+    "backfill": {
+      "match_author": "C.I. Scofield"
+    }
+  },
+  {
+    "id": "pnt-crosswire",
+    "slug": "pnt-crosswire",
+    "title": "The People's New Testament",
+    "author": "B.W. Johnson",
+    "author_died": 1894,
+    "year_written": 1891,
+    "source_type": "commentary",
+    "tradition": "restoration",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=PNT",
+      "edition": "The People's New Testament (CrossWire SWORD module PNT, ThML)",
+      "year": 1891,
+      "license_ref": "module .conf DistributionLicense=Public Domain, verified 2026-07-16",
+      "rebuild": {
+        "source": "crosswire-sword",
+        "module": "PNT",
+        "decoder": "src/ingest/sword-zverse.ts"
+      }
+    },
+    "backfill": {
+      "match_author": "B.W. Johnson"
+    }
+  },
+  {
+    "id": "geneva-notes-crosswire",
+    "slug": "geneva-notes-crosswire",
+    "title": "Geneva Bible Translation Notes",
+    "author": "Geneva Study Bible",
+    "year_written": 1599,
+    "source_type": "commentary",
+    "tradition": "reformed",
+    "era": "reformation",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=Geneva",
+      "edition": "Geneva Bible Translation Notes (CrossWire SWORD module Geneva)",
+      "year": 1599
+    },
+    "quarantine": "CrossWire module .conf has NO DistributionLicense and the module page lists it as null — no license grant to rely on (fail closed 2026-07-16). Text is 1599 (PD-in-fact); held until the owner rules or a licensed PD edition is found. Old biblehub-collapsed rows quarantined to data/quarantine/, never served."
+  },
+  {
+    "id": "poole-tcp",
+    "slug": "poole-tcp",
+    "title": "Annotations upon the Holy Bible",
+    "author": "Matthew Poole",
+    "author_died": 1679,
+    "year_written": 1685,
+    "source_type": "commentary",
+    "tradition": "puritan",
+    "era": "puritan",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://github.com/textcreationpartnership/A55363",
+      "edition": "Annotations upon the Holy Bible, London 1685 (Vol I, A55363, Gen–Isa) + 1685–96 continuation (Vol II, A55368, Jer–Rev, completed posthumously by other divines) — EEBO-TCP Phase I keyboarded transcription",
+      "year": 1685,
+      "license_ref": "CC0 1.0 Universal — grant verbatim in each TEI header (creativecommons.org/publicdomain/zero/1.0), verified 2026-07-16",
+      "rebuild": {
+        "source": "eebo-tcp",
+        "ids": [
+          "A55363",
+          "A55368"
+        ],
+        "decoder": "src/ingest/poole-tcp.ts"
+      },
+      "quality_note": "TCP Phase I vs damaged microfilm: ~7 illegibility gaps/1000 words preserved as ⟨…⟩ lacunae (16% of Vol I entries, 33% of Vol II entries carry at least one); Lev 11 annotations lost to a damaged chapter head; canon validation drops <0.25% miskeyed entries"
+    },
+    "backfill": {
+      "match_author": "Matthew Poole"
+    }
+  },
+  {
+    "id": "josephus-whiston",
+    "slug": "josephus-whiston",
+    "title": "Josephus: The Complete Works (Whiston)",
+    "author": "Flavius Josephus",
+    "author_died": 100,
+    "year_written": 94,
+    "source_type": "historian",
+    "tradition": "jewish",
+    "era": "second-temple",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=Josephus",
+      "edition": "The Complete Works of Josephus, tr. William Whiston 1737 (CrossWire SWORD module Josephus, RawGenBook/ThML)",
+      "year": 1737,
+      "license_ref": "module .conf DistributionLicense=Public Domain, verified 2026-07-16",
+      "rebuild": {
+        "source": "crosswire-sword",
+        "module": "Josephus",
+        "decoder": "src/ingest/sword-genbook.ts"
+      }
+    }
+  },
+  {
+    "id": "spurgeon-talks-to-farmers",
+    "slug": "spurgeon-talks-to-farmers",
+    "title": "Talks to Farmers",
+    "author": "C. H. Spurgeon",
+    "author_died": 1892,
+    "year_written": 1882,
+    "source_type": "sermon",
+    "tradition": "baptist",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/42518",
+      "edition": "Talks to Farmers (Farm Sermons), C. H. Spurgeon — Project Gutenberg #42518 plain text",
+      "year": 1882,
+      "license_ref": "Project Gutenberg — US public domain (author d. 1892, pre-1929 work), verified 2026-07-16",
+      "rebuild": {
+        "source": "gutenberg",
+        "id": 42518,
+        "decoder": "src/ingest/ingest-sermon.ts"
+      }
+    }
   }
 ]

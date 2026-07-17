@@ -23,6 +23,7 @@
     "ingest:commentary-fts": "tsx src/ingest/ingest-commentary-fts.ts",
     "ingest:concordance": "tsx src/ingest/build-concordance.ts",
     "teacher": "tsx src/teacher/run.ts",
+    "gate:ingest": "tsx src/ingest/gate-ingest.ts",
     "check:coverage": "tsx src/ingest/check-corpus-coverage.ts",
     "check:coverage:sections": "tsx src/ingest/check-corpus-coverage.ts --target=sections",
     "check:licenses": "tsx src/ingest/check-licenses.ts",
