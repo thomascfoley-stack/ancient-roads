@@ -17,6 +17,10 @@ const PRINCIPLES = [
     h: 'Built to never interpret Scripture',
     p: 'Ancient Paths is designed to never tell you what a verse means. It points you to those who wrestled the same words before you, and to prayer. The Holy Spirit is our helper, and He will teach you all things (John 14:26).',
   },
+  {
+    h: 'AI is not the Holy Spirit',
+    p: 'Interpretation is not a search result. The Holy Spirit speaks it to our hearts as we labor over the Word and wrestle our lives and wills into submission to it. Ancient Paths hands you the best of this technology safely, so AI serves the labor and never replaces the Helper.',
+  },
 ];
 
 export default function About() {

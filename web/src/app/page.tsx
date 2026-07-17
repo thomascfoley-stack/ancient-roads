@@ -28,6 +28,10 @@ const BEATS = [
     title: 'Built to never interpret Scripture',
     body: "Ancient Paths is designed to never tell you what a verse means. It leads you to those who wrestled these words before you and laid the paths we walk, so your theology is your own, and it's solid.",
   },
+  {
+    title: 'AI is not the Holy Spirit',
+    body: 'Christians are beginning to ask AI what Scripture means. We believe this is wrong. Interpretation is not a search result. The Holy Spirit speaks it to our hearts as we labor over the Word and wrestle our lives and wills into submission to it. That wrestling is the walk, and no tool should take it from you. Ancient Paths is our attempt to hand Christians the best of this technology safely, so AI serves the labor and never replaces the Helper.',
+  },
 ];
 
 export default function MarketingHome() {
