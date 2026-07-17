@@ -1,5 +1,52 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-16 (READER ANNOTATION TOOLBELT — thinnest slice) — sub-verse highlighting, selection-first; migration live on prod
+
+**The regression, confirmed in a browser before rebuilding (as instructed).** The "disappeared
+highlighter" is a visibility regression, not a deletion: the only lightweight highlight affordance
+was the hover quick-menu in verse-display.tsx, gated `hidden [@media(hover:hover)]:flex` and
+triggered only by mouse `mouseenter` — so on a touch device it is permanently `display:none` and
+there is no trigger; the only mobile path left was the full-screen study sheet. The "moving" bug:
+that menu was `position:fixed`, re-anchored on every `mouseenter` to `getClientRects()[0]` (first
+line only), so it hopped verse-to-verse and snapped above a wrapped verse. (The Browser pane can't
+emulate touch — it reports `hover:hover=true / pointer:coarse=false` — which itself confirms the
+gate is live; the defect is CSS-structural + confirmed by reading the source.)
+
+**Shipped (pushed to main; three logical commits):**
+- **Anchoring library** (`lib/highlight-range.ts`) — pure + unit-tested so the two silent-break
+  bugs can't return. `offsetInVerse`/`rangeToOffsets`: anchor from v.text by summing preceding
+  text-node lengths (a DOM-relative selection offset drifts once highlight spans split the verse).
+  `flattenToSegments`: render by flattening immutable ranges into one non-overlapping tiling — never
+  string-splicing — so overlaps can't corrupt the text. `snapToWords`: word-boundary snap.
+  `rangeToVerseOffsets`: the thin browser adapter. **Red-first:** both silent-break guards proven
+  RED by seeding the bug (raw DOM offset; one-segment-per-range → duplicated overlap text), then
+  reverted. 11 tests green.
+- **Persistence** (`migration 015` — APPLIED to prod; `annotations.ts`; API) — additive ALTER adds
+  span_start/span_end (offsets into v.text; NULL = legacy whole verse), translation (offsets are
+  translation-pinned), background_color + text_color. Multi-span per verse needed no constraint
+  drop (idx_highlights_user_verse is a plain index). createHighlight inserts a span;
+  removeHighlightById deletes one; listNotes/listHighlights are now keyset-paginated with a bounded
+  LIMIT (fixes the unbounded-query CLAUDE.md violation). **§7 tenancy:** executed two-account test
+  against the real DB round-trips a span (offsets/color/translation intact) and proves user B can
+  neither read nor delete user A's span (RLS + belt). 3 green.
+- **UI** (`verse-display.tsx`, reader page) — verses render as flattened segments (exact sub-verse
+  paint). Selection-first: ride selectionchange (touch AND mouse; native copy preserved), snap to
+  words, show a compact bar DOCKED LOW above the nav (never floats over the OS callout → also kills
+  the moving bug). Translation-pinned spans degrade to a verse-level dot elsewhere.
+
+**Verified in a browser at 390px AND 1280px:** selecting text docks the bar; a swatch paints the
+exact span green; the full verse text stays intact; sidebar chrome + no horizontal overflow on
+desktop. (The authed save round-trip isn't browser-verifiable locally — no local auth — so it is
+proven at the DB layer by the executed tenancy test instead.)
+
+**Deferred to the next layers (as the work order sequenced):** the text-color tool, note-on-
+selection, "commentaries about this verse" inline (§5), "open in reader" deep-link + flash (§6),
+the full gesture grammar (tap-word vs long-press vs tap-number vs tap-existing-highlight),
+per-span recolor/delete, and cross-translation re-anchoring. Migration is live on prod; the new UI
+is pushed but NOT yet deployed to Vercel (owner's call).
+
+
+
 ## 2026-07-16 (LANDING COPY — header tagline) — owner's wording, verified both widths
 
 Added the owner's tagline under the "Ancient Paths" wordmark in the landing header
