@@ -1,5 +1,87 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-17 (GO-LIVE overnight→morning, branch `golive`) — bulk ingest + A6 deep-audit remediation
+
+**What ran overnight:** the 46-work queue through the gated loop on dev. Landed clean:
+14 hymn/poetry works + Schaff Creeds (first batch), then Chrysostom 9,441 units /
+Augustine 3,738 / Origen 1,227 (staged) / Owen 20,259 / Hodge 5,146 / Calvin
+Institutes 3,466 / Maclaren 17,475 / Watson 3,198 / Flavel 3,527. Quarantined with
+reasons: spurgeon-treasury (CCEL is page scans, no text), vincent (author page
+enumerates empty), ryle (CCEL author page mixes works; blind enumeration would
+mislabel), bramley/herbert/montgomery/rossetti (no clean source edition). Deferred:
+isbe/eastons/smiths/naves (zLD/RawLD decoders not built), bdb (structured-data
+pipeline), thayers (OCR tier). josephus dupe skipped per pre-auth.
+
+**A6 deep-audit (64 agents, adversarially verified): 58 raw → 55 confirmed
+(4 critical, 28 major, 23 minor).** The big ones, all fixed this morning:
+
+1. **Corpus text corruption (critical):** `thmlText`'s per-line trim used `\s+$`
+   under /m — multiline `$` let it swallow whole `\n\n` runs, FUSING words across
+   line breaks ("his bloodFar better things"). Hit 75–92% of CCEL hymn rows, up to
+   9.4% of prose rows. Also: scripRef display text ("Heb 12:24") embedded as body
+   debris, numeric entities destroyed, NPNF back-matter ("Greek Words and Phrases",
+   212 chunks in Chrysostom) served as content, gutenberg first-line duplication +
+   poem-structure flattening, chunker hard-slicing mid-word. ALL fixed; full corpus
+   force re-ingest running (deleteWork-then-write replacement).
+2. **Wrong content under sacred titles (critical):** herrick-noble-numbers and
+   donne-divine-poems served whole secular volumes (Hesperides, Grierson vol I —
+   The Flea, the Elegies) under sacred-work titles. Quarantined + unpublished.
+   (Their embeddings turned out to be already empty from the truncation purge —
+   status='published' with 0 rows, which is its own lesson, see 4.)
+3. **Register wall gaps (critical/major):** the FTS commentary search admitted
+   hymn/poetry via the legal predicate with no register column or label; the reader
+   panel blended hymns into commentary voices unlabeled. Fixed: FTS queries exclude
+   hymn/poetry registers; the reader panel splits them into a labeled "Hymns &
+   sacred poetry" section (register chip + paraphrase note) that never displaces
+   exegetical voices; scottish-psalter scoped by heading_filter so the 1781
+   Translations & Paraphrases no longer rides under 1650 attribution.
+4. **Published-shell hazard (major):** sources.status was stamped 'published'
+   BEFORE content was written (K&D sat as a published 3-row shell from a silent
+   helloao fetch failure). Now: status='ingesting' until success (migration 020
+   adds the CHECK value); helloao fails closed at >2% chapter-fetch failures;
+   deleteWork gives true replacement idempotency (ON CONFLICT DO NOTHING was
+   keeping stale rows on re-ingest).
+5. **Gate blindness (major):** MUST_NOT_SERVE said 'Origen' but the register rows
+   say 'Origen of Alexandria' — every named gate missed it (added + normalized
+   matching + invariant leak query unscoped from source_type='commentary');
+   gate-ingest L3/L5, the licensing invariant, and today.ts all dropped the work
+   slug when checking publishability (register works publish BY SLUG — all fixed).
+6. **Landmine 2 is bigger than the DB (major):** historicalchristian.faith
+   provenance lives in the STATIC reader corpus too (433/981 entries on Mat 5).
+   B2 now sweeps DB + static (backup-before-delete both), ratchet checks both;
+   FTS regen ordered after B2 so it inherits the cleanup. Also: B2 would have
+   gutted Augustine-on-Psalms (clean set was NPNF 1-06/07 = Matthew/John only) —
+   NPNF 1-08 (Expositions on the Psalms) added to the manifest first.
+7. **Index defects (major):** 019's FTS index keyed to_tsvector('english', body)
+   while every query matches the STORED tsv column — planner could never use it
+   (rewritten, v4 on tsv); 018/019 predicates carried the full 46-slug list —
+   pruned to ingested+clean works, and PUBLISHED_WORKS + the FTS predicate are now
+   DERIVED from the routing constants (drift class killed); served lists pruned
+   the same way.
+8. **Instrument fixes:** eval v3-tp-12 relabel removed (derived from retrieval
+   output — circular); verifier fail-closed dispatch default now has a committed
+   regression test; register-wall-check extended to FTS + reader surfaces;
+   licensing test rows now carry the work slug; dev endpoint asserts added to
+   register-writer and B2 (label alone is self-attested; Part C uses
+   B2_ALLOW_PROD=1 deliberately). Migration 015 applied to dev (highlights
+   schema drift found by the suite).
+
+**Parked (logged, non-blocking for dev-green):** eval failure-coding still
+scoped to source_type='commentary' (diagnostic only — HIT@k unaffected);
+reading-block title/note screening; 018 drop-then-rebuild window on prod (Part C
+note: build v2 names first instead if zero-downtime matters); B2 backup not
+transactional with its delete (backup writes BEFORE delete; crash between =
+backup exists, delete pending — acceptable); static JSON writes non-atomic
+(serial driver is the mitigation); Catena serves Origen EXCERPTS while the
+Origen voice is staged (owner's editorial call, flagged); library UI shows
+v1-999 ranges for psalter whole-psalm anchors (cosmetic).
+
+**Corpus repair driver (running):** index rebuild → quarantine unpublish →
+force re-ingest of ALL ccel/gutenberg works with the fixed parser → K&D →
+Catena → historian backfill → B2 (db+static) → FTS regen → fused-words probe.
+Then: eval --v3 on the full corpus, register-wall re-check, browser verify,
+final numbers into GO_LIVE_STATUS.md.
+
 ## 2026-07-16 (GO-LIVE Part A — dev, branch `golive`) — register read path + eval gate
 
 **Phase 0 (verifier fail-open closed).** The verifier block `switch` had no `default` — a drifted
