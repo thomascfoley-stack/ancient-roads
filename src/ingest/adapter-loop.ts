@@ -76,8 +76,20 @@ async function main() {
   queue = queue.filter((e) => e.slug !== 'josephus-works');
   queue.sort((a, b) => RANK.indexOf(a.source_type as string) - RANK.indexOf(b.source_type as string));
 
-  const db = new pg.Client({ connectionString: (assertDevBranch().dbUrl), ssl: { rejectUnauthorized: false } });
+  // The shared client lives for HOURS across a bulk sweep — a Neon compute
+  // restart kills it ("Connection terminated unexpectedly", 2026-07-17, which
+  // orphaned the prose tier mid-sweep and briefly left the endpoint read-only).
+  // reconnect() + one retry per work makes the sweep survive restarts; the
+  // work that died mid-write is safe to retry (deleteWork-then-write).
+  let db = new pg.Client({ connectionString: (assertDevBranch().dbUrl), ssl: { rejectUnauthorized: false } });
   await db.connect();
+  const reconnect = async () => {
+    try { await db.end(); } catch { /* already dead */ }
+    db = new pg.Client({ connectionString: (assertDevBranch().dbUrl), ssl: { rejectUnauthorized: false } });
+    await db.connect();
+  };
+  const isTransient = (e: unknown) =>
+    /terminated|ECONNRESET|ETIMEDOUT|read-only|Connection ended|server closed/i.test(e instanceof Error ? e.message : String(e));
   mkdirSync('data', { recursive: true });
   const log = (row: LogRow) => { appendFileSync(RUN_LOG, JSON.stringify(row) + '\n'); console.log(`  [${row.result}] ${row.slug} ${row.units ?? ''}${row.embedded ? `/${row.embedded}emb` : ''} ${row.reason ?? ''}`); };
 
@@ -86,7 +98,14 @@ async function main() {
     for (const entry of queue) {
       const slug = entry.slug as string;
       const acq = (entry.provenance as Record<string, unknown>)['acquire'] as { adapter: string };
-      const state = await ingestState(db, slug);
+      let state: Awaited<ReturnType<typeof ingestState>>;
+      try { state = await ingestState(db, slug); }
+      catch (e) {
+        if (!isTransient(e)) throw e;
+        console.log('  ⟳ transient connection error on state check — reconnecting');
+        await reconnect();
+        state = await ingestState(db, slug);
+      }
       // --force (with --only) re-ingests named done works; --force-all re-ingests
       // EVERY queued work — the corpus-repair mode after a parser fix (A6
       // 2026-07-17: the newline-fusion re-ingest). Safe either way:
@@ -98,7 +117,7 @@ async function main() {
 
       attempted++;
       const publish = SERVED.has(slug);
-      try {
+      const runWork = async (): Promise<void> => {
         if (acq.adapter === 'gutenberg') {
           const r = await acquireGutenberg(entry, { write: true, publish });
           log({ at: new Date().toISOString(), slug, adapter: 'gutenberg', result: publish ? 'published' : 'staged', units: r.sections, anchored: r.anchored, embedded: r.embedded });
@@ -109,9 +128,19 @@ async function main() {
         } else {
           log({ at: new Date().toISOString(), slug, adapter: acq.adapter, result: 'escalated', reason: `adapter "${acq.adapter}" not run by this loop (sword/helloao/archive/github have separate paths)` });
         }
+      };
+      try {
+        await runWork();
       } catch (e) {
-        quarantined++;
-        log({ at: new Date().toISOString(), slug, adapter: acq.adapter, result: 'quarantined', reason: (e as Error).message.slice(0, 200) });
+        if (isTransient(e)) {
+          console.log(`  ⟳ transient connection error on ${slug} — reconnecting + retrying once`);
+          await reconnect();
+          try { await runWork(); }
+          catch (e2) { quarantined++; log({ at: new Date().toISOString(), slug, adapter: acq.adapter, result: 'quarantined', reason: `retry failed: ${(e2 as Error).message.slice(0, 180)}` }); }
+        } else {
+          quarantined++;
+          log({ at: new Date().toISOString(), slug, adapter: acq.adapter, result: 'quarantined', reason: (e as Error).message.slice(0, 200) });
+        }
       }
 
       // breaker: quarantine-rate > 30% of attempted (min 4 attempts)
