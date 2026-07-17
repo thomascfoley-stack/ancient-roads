@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/session';
 import {
   getChapterAnnotations,
-  setHighlight,
+  createHighlight,
   removeHighlight,
+  removeHighlightById,
   upsertNote,
   removeNote,
 } from '@/lib/annotations';
@@ -31,7 +32,16 @@ export async function POST(req: NextRequest) {
     if (!verseId) return NextResponse.json({ error: 'verseId required' }, { status: 400 });
 
     if (body.kind === 'highlight') {
-      const h = await setHighlight(user.id, verseId, String(body.color ?? 'yellow'));
+      // Sub-verse span when spanStart/spanEnd are present; whole verse otherwise (null/null).
+      const hasSpan = Number.isInteger(body.spanStart) && Number.isInteger(body.spanEnd) && body.spanEnd > body.spanStart;
+      const h = await createHighlight(user.id, {
+        verseId,
+        color: String(body.color ?? 'yellow'),
+        textColor: body.textColor != null ? String(body.textColor) : null,
+        spanStart: hasSpan ? Number(body.spanStart) : null,
+        spanEnd: hasSpan ? Number(body.spanEnd) : null,
+        translation: body.translation != null ? String(body.translation) : null,
+      });
       return NextResponse.json(h, { status: 201 });
     }
     if (body.kind === 'note') {
@@ -50,6 +60,11 @@ export async function DELETE(req: NextRequest) {
   try {
     const user = await requireUser();
     const body = await req.json();
+    // Highlight delete: by span id (one span) if given, else clear the whole verse.
+    if (body.kind === 'highlight' && typeof body.id === 'string' && body.id) {
+      await removeHighlightById(user.id, body.id);
+      return NextResponse.json({ ok: true });
+    }
     const verseId = Number(body.verseId);
     if (!verseId) return NextResponse.json({ error: 'verseId required' }, { status: 400 });
     if (body.kind === 'highlight') await removeHighlight(user.id, verseId);
