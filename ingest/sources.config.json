@@ -319,5 +319,35 @@
       "year": 1599
     },
     "quarantine": "CrossWire module .conf has NO DistributionLicense and the module page lists it as null — no license grant to rely on (fail closed 2026-07-16). Text is 1599 (PD-in-fact); held until the owner rules or a licensed PD edition is found. Old biblehub-collapsed rows quarantined to data/quarantine/, never served."
+  },
+  {
+    "id": "poole-tcp",
+    "slug": "poole-tcp",
+    "title": "Annotations upon the Holy Bible",
+    "author": "Matthew Poole",
+    "author_died": 1679,
+    "year_written": 1685,
+    "source_type": "commentary",
+    "tradition": "puritan",
+    "era": "puritan",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://github.com/textcreationpartnership/A55363",
+      "edition": "Annotations upon the Holy Bible, London 1685 (Vol I, A55363, Gen–Isa) + 1685–96 continuation (Vol II, A55368, Jer–Rev, completed posthumously by other divines) — EEBO-TCP Phase I keyboarded transcription",
+      "year": 1685,
+      "license_ref": "CC0 1.0 Universal — grant verbatim in each TEI header (creativecommons.org/publicdomain/zero/1.0), verified 2026-07-16",
+      "rebuild": {
+        "source": "eebo-tcp",
+        "ids": [
+          "A55363",
+          "A55368"
+        ],
+        "decoder": "src/ingest/poole-tcp.ts"
+      },
+      "quality_note": "TCP Phase I vs damaged microfilm: ~7 illegibility gaps/1000 words preserved as ⟨…⟩ lacunae (16% of Vol I entries, 33% of Vol II entries carry at least one); Lev 11 annotations lost to a damaged chapter head; canon validation drops <0.25% miskeyed entries"
+    },
+    "backfill": {
+      "match_author": "Matthew Poole"
+    }
   }
 ]
