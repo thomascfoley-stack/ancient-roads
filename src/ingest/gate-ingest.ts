@@ -24,6 +24,7 @@ import { collapseByAuthor, collapseOffenders, COLLAPSE_MAX, MIN_ENTRIES, type Ke
 import { hasQuoteBreakingEntities } from './content-sanity.js';
 import { shingleSet, classify, type MatchClass } from './resource-textmatch.js';
 import { checkCommentary, checkSections } from './check-corpus-coverage.js';
+import { checkAllTranslations } from './versification-gate.js';
 import {
   MUST_NOT_SERVE_AUTHORS,
   isMustNotServeAuthor,
@@ -146,6 +147,16 @@ async function main() {
     } else {
       record('L2 translation-license', 'irreversible', true, 'no web/public/bible dir in this tree', 'no-dir');
     }
+
+    // [L2b] Versification — the Bible fork of the per-type gate: every hosted
+    // translation structurally canonical (versification-gate module).
+    const vers = checkAllTranslations();
+    const versBad = vers.filter((v) => v.errors.length > 0);
+    const emptyNote = vers.filter((v) => v.emptyBooks.length > 0).map((v) => `${v.id}:${v.emptyBooks.length} skeleton books`);
+    record('L2b versification', 'reversible', versBad.length === 0,
+      versBad.length === 0
+        ? `${vers.length} translations canonical${emptyNote.length ? ` (partials: ${emptyNote.join(', ')})` : ''}`
+        : versBad.map((v) => `${v.id}: ${v.errors.slice(0, 2).join('; ')}`).join(' · '));
 
     // Walk the static corpus once; feed L3/L5/R2/R3/R4.
     const authorCounts = new Map<string, number>();       // non-empty text (FTS-eligible), per author
