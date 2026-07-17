@@ -63,6 +63,10 @@ async function main() {
   let queue = manifest.filter((e) => {
     const acq = (e.provenance as Record<string, unknown> | undefined)?.['acquire'] as { adapter?: string } | undefined;
     if (!acq?.adapter) return false;
+    // Historians ride the sections write-contract (ingest-historian: period/
+    // gazetteer/verbatim rules), NOT the register embeddings store — the
+    // embeddings source_type CHECK rejects them by design.
+    if ((e.source_type as string) === 'historian') return false;
     if (skip.has(e.slug as string)) return false;
     if (only && !only.includes(e.slug as string)) return false;
     if (adaptersFilter && !adaptersFilter.includes(acq.adapter)) return false;
