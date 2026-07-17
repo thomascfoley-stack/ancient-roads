@@ -333,7 +333,9 @@
         "identifier": "greekenglishlexi00grimuoft",
         "note": "TEI-XML edition preferred if available; else OCR"
       }
-    }
+    },
+    "serve": false,
+    "quarantine": "A6 run 2026-07-17: archive.org OCR headword recognizability 50.2% fuzzy / 6.2% strict, 0% Greek script (Latin-script OCR) — systemic across 3 scans, keys unrecoverable. Path forward: TEI-XML/structured Thayer keyed by Strong's, or Greek re-OCR. NOT a parser problem."
   },
   {
     "id": "bdb-lexicon",
