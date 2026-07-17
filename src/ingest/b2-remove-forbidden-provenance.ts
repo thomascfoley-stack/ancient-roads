@@ -1,0 +1,88 @@
+// Part B2 (GO_LIVE_EXECUTION): remove the historicalchristian.faith-provenance
+// Chrysostom/Augustine rows from the SERVED embeddings corpus, now that the clean
+// NPNF/CCEL re-source (chrysostom-homilies / augustine-homilies) provides the
+// replacement coverage. Fail-safe:
+//   1. REFUSE unless the clean replacements are actually ingested (coverage guard).
+//   2. BACK UP every removed row to a timestamped JSONL (recoverable — no hard
+//      delete without a backup; the rows are also re-ingestable from CCEL).
+//   3. DELETE the forbidden rows.
+//   4. Verify the ratchet: 0 served rows with historicalchristian.faith provenance.
+//
+//   DATABASE_URL=<dev owner> NEON_BRANCH=dev npx tsx src/ingest/b2-remove-forbidden-provenance.ts [--apply]
+//
+// Default is a DRY RUN (counts + coverage, no delete). --apply performs the backup
+// + delete. The LEGAL_CORPUS_FILTER need not change: the old author+verseId clauses
+// simply match zero rows afterward, and the new coverage is served by the
+// work-slug clause (chrysostom-homilies / augustine-homilies) already in the filter.
+
+import pg from 'pg';
+import { readFileSync, appendFileSync, mkdirSync } from 'node:fs';
+
+const FORBIDDEN = '%historicalchristian.faith%';
+const arg = (f: string) => process.argv.find((a) => a.startsWith(`${f}=`))?.slice(f.length + 1);
+
+function localEnv(name: string): string | undefined {
+  if (process.env[name]) return process.env[name];
+  const p = 'web/.env.local';
+  return readFileSync(p, 'utf-8').match(new RegExp(`^${name}=(.*)`, 'm'))?.[1]?.trim().replace(/^"|"$/g, '');
+}
+
+async function main() {
+  const apply = process.argv.includes('--apply');
+  const dbUrl = (localEnv('DATABASE_URL') ?? '').replace(/^"|"$/g, '');
+  const branch = process.env.DATABASE_URL ? process.env.NEON_BRANCH : localEnv('NEON_BRANCH');
+  if (branch !== 'dev' && branch !== 'test') throw new Error(`STOP: NEON_BRANCH="${branch ?? '(unset)'}" must be dev|test`);
+  void arg;
+
+  const db = new pg.Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
+  await db.connect();
+  try {
+    // (1) coverage guard — the clean replacements must exist first
+    const repl = await db.query<{ w: string; n: number }>(
+      `SELECT metadata->>'work' w, count(*)::int n FROM embeddings
+       WHERE metadata->>'work' IN ('chrysostom-homilies','augustine-homilies') GROUP BY 1`,
+    );
+    const replMap = new Map(repl.rows.map((r) => [r.w, r.n]));
+    const cN = replMap.get('chrysostom-homilies') ?? 0, aN = replMap.get('augustine-homilies') ?? 0;
+    console.log(`clean replacements: chrysostom-homilies=${cN}, augustine-homilies=${aN}`);
+
+    // the forbidden rows to remove
+    const forb = await db.query<{ author: string; n: number; books: string }>(
+      `SELECT metadata->>'author' author, count(*)::int n,
+              string_agg(DISTINCT ((metadata->>'verseId')::int/1000000)::text, ',') books
+       FROM embeddings WHERE user_id IS NULL AND metadata->>'sourceUrl' ILIKE $1 GROUP BY 1`,
+      [FORBIDDEN],
+    );
+    const totalForbidden = forb.rows.reduce((s, r) => s + r.n, 0);
+    console.log('forbidden-provenance rows (served):');
+    for (const r of forb.rows) console.log(`  ${r.author}: ${r.n} rows, books {${r.books}}`);
+    console.log(`total: ${totalForbidden}`);
+
+    if (totalForbidden === 0) { console.log('✓ already clean — ratchet is 0'); return; }
+    if (cN === 0 || aN === 0) {
+      console.error('✗ REFUSE: a clean replacement is missing (chrysostom-homilies or augustine-homilies not ingested) — coverage would shrink. Ingest them first.');
+      process.exit(1);
+    }
+
+    if (!apply) { console.log('\n(dry run — pass --apply to back up + delete)'); return; }
+
+    // (2) back up, then (3) delete
+    mkdirSync('data/quarantine', { recursive: true });
+    const backup = `data/quarantine/historicalchristian-faith-removed-${new Date().toISOString().replace(/[:.]/g, '-')}.jsonl`;
+    const rows = await db.query(`SELECT source_type, source_id, content, metadata FROM embeddings WHERE user_id IS NULL AND metadata->>'sourceUrl' ILIKE $1`, [FORBIDDEN]);
+    for (const r of rows.rows) appendFileSync(backup, JSON.stringify(r) + '\n');
+    console.log(`backed up ${rows.rows.length} rows → ${backup}`);
+    const del = await db.query(`DELETE FROM embeddings WHERE user_id IS NULL AND metadata->>'sourceUrl' ILIKE $1`, [FORBIDDEN]);
+    console.log(`deleted ${del.rowCount} forbidden-provenance rows`);
+
+    // (4) verify the ratchet
+    const after = await db.query<{ n: number }>(`SELECT count(*)::int n FROM embeddings WHERE user_id IS NULL AND metadata->>'sourceUrl' ILIKE $1`, [FORBIDDEN]);
+    const remaining = after.rows[0]!.n;
+    console.log(remaining === 0 ? '✓ RATCHET GREEN: 0 served rows with historicalchristian.faith provenance' : `✗ ${remaining} still remain`);
+    if (remaining !== 0) process.exit(1);
+  } finally {
+    await db.end();
+  }
+}
+
+main().catch((e) => { console.error(e); process.exit(1); });
