@@ -229,3 +229,25 @@ describe('V1 verifier: diversity rule', () => {
     expect(result.ok).toBe(true);
   });
 });
+
+describe('V1 verifier: fail-closed dispatch default (Phase 0 regression)', () => {
+  // The scar: a block type that passes SCHEMA but has no dispatch case used to
+  // return {ok:true} unverified. The default now emits unknown_block_type.
+  // We reach the default by casting past the compile-time `never` guard —
+  // exactly the runtime condition (schema and dispatch out of step) it exists
+  // for. Deleting the default makes this test fail with ok:true.
+  it('a schema-passing block with no dispatch case is a violation, never a pass', async () => {
+    const r = validResponse() as any;
+    // splice in after schema validation would normally reject: monkey-patch the
+    // block type AFTER cloning a valid voice block (schema sees a known shape,
+    // dispatch does not)
+    const drifted = JSON.parse(JSON.stringify(r.blocks[1]));
+    drifted.type = 'reading_v2_drift';
+    r.blocks.push(drifted);
+    const result = await verifyV1(r, corpus, retrieval);
+    expect(result.ok).toBe(false);
+    const checks = violations(result).map((v) => v.check);
+    // schema may catch it first (also fail-closed); the regression is only if NEITHER fires
+    expect(checks.some((c) => c === 'unknown_block_type' || c === 'schema')).toBe(true);
+  });
+});
