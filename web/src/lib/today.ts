@@ -108,7 +108,7 @@ export function voicesForPassage(
   bookNum: number,
 ): { voices: CommentaryEntry[]; rung: Rung } {
   const published = chapterEntries.filter((e) =>
-    isPublishedCommentaryEntry({ author: e.author, sourceUrl: e.sourceUrl, book: bookNum }),
+    isPublishedCommentaryEntry({ author: e.author, sourceUrl: e.sourceUrl, book: bookNum, work: (e as { work?: string }).work }),
   );
   const startV = passage.start % 1000;
   const endV = passage.end % 1000;

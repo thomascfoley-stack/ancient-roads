@@ -116,10 +116,13 @@ export function buildSections(body: string, profile: Profile): RegisterSection[]
     const anchor = epigraphAnchor(unit);
     return {
       heading,
-      body: unit.replace(/\s+/g, ' ').trim(),
+      // body EXCLUDES the heading line (register-writer composes heading\nbody —
+      // including it duplicated every unit's first line, A6 audit) and KEEPS
+      // line breaks: collapsing \s+ to spaces flattened poem structure.
+      body: lines.slice(1).join('\n').trim() || lines.join('\n').trim(),
       anchors: anchor ? [anchor] : undefined,
     } satisfies RegisterSection;
-  });
+  }).filter((s) => s.body.length >= 40);
 }
 
 export async function acquireGutenberg(entry: Record<string, unknown>, opts: { write: boolean; publish?: boolean } = { write: true }): Promise<{ sections: number; anchored: number; embedded: number }> {

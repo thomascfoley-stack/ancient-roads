@@ -59,6 +59,7 @@ function mulberry32(seed: number) {
 
 interface StaticEntry {
   author: string;
+  work?: string; // register works publish BY SLUG — L3/L5 are blind without it (A6 2026-07-17)
   sourceUrl: string;
   verseStart: number;
   verseEnd: number;
@@ -86,6 +87,7 @@ function* walkStaticEntries(): Generator<StaticEntry> {
       for (const e of j.entries) {
         yield {
           author: e.author ?? '',
+          work: (e as { work?: string }).work,
           sourceUrl: e.sourceUrl ?? '',
           verseStart: e.verseStart ?? 0,
           verseEnd: e.verseEnd ?? 0,
@@ -171,7 +173,7 @@ async function main() {
       staticTotal++;
       if (e.text.trim()) authorCounts.set(e.author, (authorCounts.get(e.author) ?? 0) + 1);
       keyed.push({ author: e.author, verseStart: e.verseStart, verseEnd: e.verseEnd, chapter: e.chapter });
-      const served = isPublishedCommentaryEntry({ author: e.author, book: e.book });
+      const served = isPublishedCommentaryEntry({ author: e.author, book: e.book, work: e.work });
       if (served && forbiddenProvenanceDomain(e.sourceUrl)) {
         servedForbidden.set(e.author, (servedForbidden.get(e.author) ?? 0) + 1);
       }

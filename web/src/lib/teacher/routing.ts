@@ -47,19 +47,28 @@ export const SERVED_SONG_VERSE_TYPES = ['hymn', 'poetry'] as const;
 // 'Origen' ruling — escalated, owner reconciles), thayers-lexicon (OCR tier),
 // the three historians (no read path), and the v2 staged commentaries
 // (poole-tcp/scofield/pnt — the parked LEGAL_CORPUS_FILTER collision call).
+// ONLY works that are ingested (or in tonight's gated queue) AND clean. A slug
+// here is the publish switch — a work that was never ingested, or is
+// quarantined, must NOT be pre-authorized (A6 2026-07-17: the full 46-work list
+// made one-line publishes of quarantined/never-verified works invisible).
+// Removed pending follow-ups: spurgeon-treasury (CCEL = page scans), ryle/
+// vincent (author-page mislabeling), isbe/eastons/smiths/naves/bdb/thayers
+// (zLD/RawLD + structured-data decoders not built).
 export const SERVED_PROSE_WORKS = [
-  'keil-delitzsch', 'catena-aurea', 'isbe', 'eastons-dictionary', 'smiths-dictionary',
-  'naves-topical', 'bdb-lexicon', 'spurgeon-sermons', 'spurgeon-treasury',
+  'keil-delitzsch', 'catena-aurea', 'spurgeon-sermons',
   'maclaren-expositions', 'chrysostom-homilies', 'augustine-homilies', 'owen-works',
-  'watson-works', 'flavel-works', 'edwards-works', 'wesley-sermons', 'ryle-expository',
-  'vincent-word-studies', 'hodge-systematic', 'calvin-institutes', 'schaff-creeds',
+  'watson-works', 'flavel-works', 'edwards-works', 'wesley-sermons',
+  'hodge-systematic', 'calvin-institutes', 'schaff-creeds',
   'whitefield-works',
 ] as const;
+// Removed as quarantined: bramley-carols/herbert-temple/montgomery-sacred-poems/
+// rossetti-verses (no clean source edition), donne-divine-poems/herrick-noble-
+// numbers (A6: whole secular volumes served under sacred titles).
 export const SERVED_SONG_VERSE_WORKS = [
-  'olney-hymns', 'scottish-psalter-1650', 'neale-eastern-hymns', 'bramley-carols',
-  'watts-hymns', 'watts-psalms', 'herbert-temple', 'montgomery-sacred-poems',
-  'keble-christian-year', 'donne-divine-poems', 'herrick-noble-numbers',
-  'traherne-poems', 'milton-poetical-works', 'rossetti-verses', 'hopkins-poems',
+  'olney-hymns', 'scottish-psalter-1650', 'neale-eastern-hymns',
+  'watts-hymns', 'watts-psalms',
+  'keble-christian-year',
+  'traherne-poems', 'milton-poetical-works', 'hopkins-poems',
   'tennyson-in-memoriam', 'dante-divine-comedy', 'wheatley-poems',
 ] as const;
 

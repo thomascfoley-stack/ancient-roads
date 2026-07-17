@@ -52,6 +52,7 @@ export async function searchCommentaries(opts: {
       FROM commentary_entries
       WHERE tsv @@ websearch_to_tsquery('english', $1)
         AND (${LEGAL_COMMENTARY_ENTRIES_PREDICATE})
+        AND (register IS NULL OR register NOT IN ('hymn','poetry'))
         AND ($2::smallint IS NULL OR book = $2)
         AND ($3::text IS NULL OR tradition = $3)
         AND ($4::text IS NULL OR author = $4)
@@ -71,6 +72,7 @@ export async function searchCommentaries(opts: {
         FROM commentary_entries
         WHERE tsv @@ websearch_to_tsquery('english', $1)
           AND (${LEGAL_COMMENTARY_ENTRIES_PREDICATE})
+          AND (register IS NULL OR register NOT IN ('hymn','poetry'))
           AND ($2::smallint IS NULL OR book = $2)
           AND ($3::text IS NULL OR tradition = $3)
           AND ($4::text IS NULL OR author = $4)

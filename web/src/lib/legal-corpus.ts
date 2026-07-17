@@ -2,6 +2,8 @@
 // Mirrors LEGAL_CORPUS_FILTER in teacher/routing.ts (embeddings metadata JSON).
 // Permanent fix at GA: sources.status='published' column (docs/MIGRATION_DESIGN.md).
 
+import { SERVED_PROSE_WORKS, SERVED_SONG_VERSE_WORKS } from './teacher/routing';
+
 export { LEGAL_CORPUS_FILTER } from './teacher/routing';
 
 /** Authors that must never be returned from any served read path (quarantined / copyrighted). */
@@ -12,14 +14,20 @@ export const MUST_NOT_SERVE_AUTHORS = [
   'Bonaventure',
   'Oecumenius',
   'Origen',
+  'Origen of Alexandria', // the register ingest's author string — same ruling (A6 2026-07-17)
   'Aquinas-Larcher',
 ] as const;
 
 export type MustNotServeAuthor = (typeof MUST_NOT_SERVE_AUTHORS)[number];
 
 export function isMustNotServeAuthor(author: string): boolean {
-  return (MUST_NOT_SERVE_AUTHORS as readonly string[]).includes(author)
-    || author.startsWith("Jerome's"); // Jeremiah/Lamentations modern translation bucket
+  // exact list hit, a normalized first-token hit ("Origen of Alexandria" ~ 'Origen'),
+  // or the Jerome's-translation bucket. Normalization guards against the next
+  // author-string spelling variant silently bypassing an editorial ruling.
+  if ((MUST_NOT_SERVE_AUTHORS as readonly string[]).includes(author)) return true;
+  const first = author.split(/\s+(of|the)\s+/i)[0]!.trim();
+  if (first !== author && (MUST_NOT_SERVE_AUTHORS as readonly string[]).includes(first)) return true;
+  return author.startsWith("Jerome's"); // Jeremiah/Lamentations modern translation bucket
 }
 
 // The published (PD, servable) commentators, in the naming used by commentary_entries
@@ -49,32 +57,21 @@ const PUBLISHED_BOOK_SCOPED: Record<string, number[]> = {
 // URL condition. (Provenance of the biblehub/blogspot sources is flagged for owner
 // review in docs/AUTHOR_TRIAGE.md; these authors are all pre-1929 PD.)
 const sqlList = (xs: readonly string[]) => xs.map((a) => `'${a.replace(/'/g, "''")}'`).join(',');
+const REGISTER_SERVED_SLUGS: readonly string[] = [...SERVED_PROSE_WORKS, ...SERVED_SONG_VERSE_WORKS];
 // The register go-live adds `work IN (published slugs)` — migration 019 adds the
 // column + rebuilds idx_commentary_fts_legal in lockstep (fts-legal-index-sync).
 export const LEGAL_COMMENTARY_ENTRIES_PREDICATE = `(author IN (${sqlList(PUBLISHED_WHOLE_BIBLE_AUTHORS)})
    OR (author = 'John Chrysostom' AND book IN (40, 43, 44))
    OR (author = 'Augustine of Hippo' AND book IN (19, 43))
-   OR work IN ('keil-delitzsch','catena-aurea','isbe','eastons-dictionary','smiths-dictionary','naves-topical','bdb-lexicon','spurgeon-sermons','spurgeon-treasury','maclaren-expositions','chrysostom-homilies','augustine-homilies','owen-works','watson-works','flavel-works','edwards-works','wesley-sermons','ryle-expository','vincent-word-studies','hodge-systematic','calvin-institutes','schaff-creeds','whitefield-works','olney-hymns','scottish-psalter-1650','neale-eastern-hymns','bramley-carols','watts-hymns','watts-psalms','herbert-temple','montgomery-sacred-poems','keble-christian-year','donne-divine-poems','herrick-noble-numbers','traherne-poems','milton-poetical-works','rossetti-verses','hopkins-poems','tennyson-in-memoriam','dante-divine-comedy','wheatley-poems'))`;
+   OR work IN (${sqlList(REGISTER_SERVED_SLUGS)}))`;
 
 // Register go-live (CONTENT_GO_LIVE.md decisions 2/3, 2026-07-16): static-corpus
 // entries from the auto-published clean tier carry a `work` slug; membership here
 // is the reader-side publish switch (mirrors SERVED_*_WORKS in teacher/routing.ts
-// — update BOTH or the surfaces diverge). Deliberately absent: origen-commentary
+// — now DERIVED from those constants; one edit updates every surface). Deliberately absent: origen-commentary
 // (MUST_NOT_SERVE conflict, escalated), thayers-lexicon (OCR tier), historians
 // (no read path), poole-tcp/scofield/pnt (the parked owner call).
-export const PUBLISHED_WORKS = new Set<string>([
-  'keil-delitzsch', 'catena-aurea', 'isbe', 'eastons-dictionary', 'smiths-dictionary',
-  'naves-topical', 'bdb-lexicon', 'spurgeon-sermons', 'spurgeon-treasury',
-  'maclaren-expositions', 'chrysostom-homilies', 'augustine-homilies', 'owen-works',
-  'watson-works', 'flavel-works', 'edwards-works', 'wesley-sermons', 'ryle-expository',
-  'vincent-word-studies', 'hodge-systematic', 'calvin-institutes', 'schaff-creeds',
-  'whitefield-works',
-  'olney-hymns', 'scottish-psalter-1650', 'neale-eastern-hymns', 'bramley-carols',
-  'watts-hymns', 'watts-psalms', 'herbert-temple', 'montgomery-sacred-poems',
-  'keble-christian-year', 'donne-divine-poems', 'herrick-noble-numbers',
-  'traherne-poems', 'milton-poetical-works', 'rossetti-verses', 'hopkins-poems',
-  'tennyson-in-memoriam', 'dante-divine-comedy', 'wheatley-poems',
-]);
+export const PUBLISHED_WORKS = new Set<string>(REGISTER_SERVED_SLUGS);
 
 /** In-memory per-entry check for static JSON entries (reader). Book-aware;
  *  register-aware via the entry's `work` slug. */

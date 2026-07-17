@@ -6,7 +6,7 @@
 // writer marks sources.status per the manifest serve flag + the authorized tier.
 
 import pg from 'pg';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { BOOK_SLUGS } from './source-id.js';
 import { isAllowedLicense } from './license-manifest.js';
@@ -113,10 +113,43 @@ export function chunkWhole(body: string, max = REGISTER_EMBED_MAX): string[] {
   for (const sent of body.split(/(?<=[.!?])\s+|\n\n+/)) {
     if (buf && buf.length + sent.length + 1 > max) { out.push(buf); buf = sent; }
     else buf = buf ? `${buf} ${sent}` : sent;
-    while (buf.length > max) { out.push(buf.slice(0, max)); buf = buf.slice(max); }
+    // over-budget single block: split at the LAST whitespace before max, never
+    // mid-word (hymn stanzas have no sentence punctuation and used to hard-slice)
+    while (buf.length > max) {
+      const cut = buf.lastIndexOf(' ', max) > max * 0.5 ? buf.lastIndexOf(' ', max)
+        : buf.lastIndexOf('\n', max) > max * 0.5 ? buf.lastIndexOf('\n', max) : max;
+      out.push(buf.slice(0, cut).trimEnd());
+      buf = buf.slice(cut).trimStart();
+    }
   }
   if (buf) out.push(buf);
   return out;
+}
+
+// Remove every trace of a work from the served embeddings AND the static reader
+// corpus. Makes re-ingest replacement-idempotent (ON CONFLICT DO NOTHING alone
+// keeps stale rows when a work's parse changes — A6 audit) and is the unserve
+// path for quarantined works. DB rows are recoverable by re-running the adapter.
+export async function deleteWork(db: pg.Client, slug: string): Promise<{ dbRows: number; staticRemoved: number }> {
+  const del = await db.query(`DELETE FROM embeddings WHERE user_id IS NULL AND metadata->>'work' = $1`, [slug]);
+  let staticRemoved = 0;
+  const root = 'web/public/commentaries';
+  if (existsSync(root)) {
+    for (const book of readdirSync(root)) {
+      const dir = path.join(root, book);
+      let files: string[] = [];
+      try { files = readdirSync(dir).filter((f) => f.endsWith('.json')); } catch { continue; }
+      for (const f of files) {
+        const p = path.join(dir, f);
+        const j = JSON.parse(readFileSync(p, 'utf8')) as { book: number; chapter: number; entries: Array<Record<string, unknown>> };
+        if (!j.entries?.some((e) => e.work === slug)) continue;
+        const kept = j.entries.filter((e) => e.work !== slug);
+        staticRemoved += j.entries.length - kept.length;
+        writeFileSync(p, JSON.stringify({ ...j, entries: kept }));
+      }
+    }
+  }
+  return { dbRows: del.rowCount ?? 0, staticRemoved };
 }
 
 export async function writeRegisterWork(work: RegisterWork): Promise<{ embedded: number; staticEntries: number }> {
@@ -126,6 +159,10 @@ export async function writeRegisterWork(work: RegisterWork): Promise<{ embedded:
   if (!dbUrl || !key) throw new Error('DATABASE_URL and DEEPINFRA_API_KEY required');
   const branch = process.env.DATABASE_URL ? process.env.NEON_BRANCH : localEnv('NEON_BRANCH');
   if (branch !== 'dev' && branch !== 'test') throw new Error(`STOP: NEON_BRANCH="${branch ?? '(unset)'}" must be dev|test`);
+  // The label alone is self-attested — also require the URL to point at a
+  // known non-prod endpoint (dev=ep-tiny-hat / test), so a prod DATABASE_URL
+  // with a stale NEON_BRANCH=dev cannot pass (A6 audit).
+  if (!/ep-tiny-hat|localhost|127\.0\.0\.1/.test(dbUrl)) throw new Error(`STOP: DATABASE_URL endpoint is not the dev branch (expected ep-tiny-hat)`);
 
   const db = new pg.Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
   await db.connect();
@@ -134,7 +171,13 @@ export async function writeRegisterWork(work: RegisterWork): Promise<{ embedded:
     if (prior.rows[0]?.status === 'published' && !work.publish) {
       throw new Error(`STOP: ${work.slug} already published; refusing staged re-ingest`);
     }
-    // (2) provenance/staging registry
+    // (0) replacement-idempotency: remove the work's previous rows/entries so a
+    // changed parse fully replaces (never interleaves with) the old ingest
+    const wiped = await deleteWork(db, work.slug);
+    if (wiped.dbRows || wiped.staticRemoved) console.log(`  ↻ ${work.slug}: replaced prior ingest (${wiped.dbRows} rows, ${wiped.staticRemoved} static entries)`);
+    // (2) provenance/staging registry — status='ingesting' until the write
+    // SUCCEEDS; publish/staged is stamped at the end (a crash mid-write must
+    // never leave a published shell — the K&D 3-row lesson, A6 audit)
     await db.query(
       `INSERT INTO sources (slug, title, author, author_died, year_written, source_type, tradition, era, license, provenance, status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
@@ -142,7 +185,7 @@ export async function writeRegisterWork(work: RegisterWork): Promise<{ embedded:
       [work.slug, work.title, work.author, work.authorDied ?? null, work.year, work.sourceType,
         work.tradition, work.era, work.license,
         JSON.stringify({ url: work.url, edition: work.edition, year: work.year, retrieved_at: new Date().toISOString().slice(0, 10), attribution: work.attribution, register: work.register }),
-        work.publish ? 'published' : 'staged'],
+        'ingesting'],
     );
 
     // (1) served flat store — whole-chunk vectors, idempotent by source_id
@@ -151,6 +194,7 @@ export async function writeRegisterWork(work: RegisterWork): Promise<{ embedded:
     work.sections.forEach((s, si) => {
       const chunks = chunkWhole(s.heading ? `${s.heading}\n${s.body}` : s.body);
       chunks.forEach((content, ci) => {
+        if (content.trim().length < 20) return; // junk-fragment floor (A6: ~1,300 sub-20-char rows)
         const a = s.anchors?.[0];
         rows.push({
           sourceId: `${work.sourceType}:${work.slug}:${si + 1}${chunks.length > 1 ? `.${ci + 1}` : ''}`,
@@ -161,6 +205,7 @@ export async function writeRegisterWork(work: RegisterWork): Promise<{ embedded:
             register: work.sourceType === 'hymn' ? 'hymn' : work.sourceType === 'poetry' ? 'poetry' : 'prose',
             heading: s.heading, verseId: a?.verseIdStart ?? 0, verseEnd: a?.verseIdEnd ?? 0,
             paraphrase: work.paraphrase || undefined, attribution: work.attribution, model: MODEL,
+            license: work.license,
           },
         });
       });
@@ -197,18 +242,25 @@ export async function writeRegisterWork(work: RegisterWork): Promise<{ embedded:
         author: work.author, year: work.year, tradition: work.tradition,
         sourceTitle: work.title, sourceUrl: work.url, text: s.heading ? `${s.heading}\n\n${s.body}` : s.body,
         work: work.slug, register: work.sourceType, paraphrase: work.paraphrase || undefined,
+        license: work.license, // CC BY(-SA) works must carry attribution to the UI
       });
       byChapter.set(k, list);
     }
     for (const [k, entries] of byChapter) {
       const p = path.join('web/public/commentaries', `${k}.json`);
-      if (!existsSync(p)) continue;
-      const j = JSON.parse(readFileSync(p, 'utf8')) as { book: number; chapter: number; entries: Array<Record<string, unknown>> };
+      const [bookSlug, chStr] = k.split('/');
+      // create missing chapter files instead of silently dropping the entries
+      const j = existsSync(p)
+        ? (JSON.parse(readFileSync(p, 'utf8')) as { book: number; chapter: number; entries: Array<Record<string, unknown>> })
+        : { book: Object.entries(BOOK_SLUGS).find(([, s]) => s === bookSlug) ? Number(Object.entries(BOOK_SLUGS).find(([, s]) => s === bookSlug)![0]) : 0, chapter: Number(chStr), entries: [] as Array<Record<string, unknown>> };
+      mkdirSync(path.dirname(p), { recursive: true });
       const kept = j.entries.filter((e) => e.work !== work.slug);
       kept.push(...entries);
       writeFileSync(p, JSON.stringify({ book: j.book, chapter: j.chapter, entries: kept }));
       staticEntries += entries.length;
     }
+    // (4) success — NOW stamp the real status (crash above leaves 'ingesting')
+    await db.query(`UPDATE sources SET status=$2 WHERE slug=$1`, [work.slug, work.publish ? 'published' : 'staged']);
     return { embedded, staticEntries };
   } finally {
     await db.end();

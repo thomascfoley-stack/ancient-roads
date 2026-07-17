@@ -899,7 +899,8 @@
         "ccel_ids": [
           "anonymous/scotpsalter"
         ],
-        "strip_markup": true
+        "strip_markup": true,
+        "heading_filter": "^psalm "
       }
     }
   },
@@ -1103,7 +1104,9 @@
         "adapter": "gutenberg",
         "ebook_id": 48688
       }
-    }
+    },
+    "serve": false,
+    "quarantine": "A6 2026-07-17: gutenberg profile served the WHOLE secular volume (Hesperides / Grierson vol I) under the sacred title; needs a section-scoped profile before re-serve"
   },
   {
     "id": "herrick-noble-numbers",
@@ -1127,7 +1130,9 @@
         "adapter": "gutenberg",
         "ebook_id": 22421
       }
-    }
+    },
+    "serve": false,
+    "quarantine": "A6 2026-07-17: gutenberg profile served the WHOLE secular volume (Hesperides / Grierson vol I) under the sacred title; needs a section-scoped profile before re-serve"
   },
   {
     "id": "traherne-poems",

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import type { CommentaryEntry } from '@/lib/bible';
+import { isSongVerse, type CommentaryEntry } from '@/lib/bible';
 import { HIGHLIGHT_COLORS } from '@/lib/highlight-colors';
 
 export interface AnnotationControls {
@@ -89,6 +89,12 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
             {entry.tradition}
           </span>
         )}
+        {(entry.register === 'hymn' || entry.register === 'poetry') && (
+          <span className="rounded-full bg-accent-700/10 px-2 py-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300">
+            {entry.register === 'hymn' ? 'Hymn' : 'Poetry'}
+            {entry.paraphrase ? ' · paraphrase' : ''}
+          </span>
+        )}
       </div>
       <p className="font-scripture text-[15px] leading-relaxed text-stone-600 dark:text-stone-300">
         {displayText}
@@ -107,7 +113,11 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
         // ccel.org/gutenberg/crosswire surfaces a host as if it were the source
         // (GO_LIVE A5: "attribute to the author, never a host"). provenance
         // keeps the URL for the record; the UI shows the work title, plain.
-        <p className="mt-2 text-[11px] text-stone-400">{entry.sourceTitle}</p>
+        <p className="mt-2 text-[11px] text-stone-400">
+          {entry.sourceTitle}
+          {/* CC BY / CC BY-SA require attribution notice; PD needs none */}
+          {entry.license && /^cc/i.test(entry.license) ? ` · ${entry.license}` : ''}
+        </p>
       )}
     </div>
   );
@@ -141,7 +151,11 @@ export function CommentaryPanel({
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  const diverse = pickDiverse(entries, 10);
+  // Register wall (reader side): hymns/poems NEVER mix with or displace
+  // exegetical voices — they render in their own labeled section below.
+  const exegetical = entries.filter((e) => !isSongVerse(e));
+  const songVerse = entries.filter(isSongVerse);
+  const diverse = pickDiverse(exegetical, 10);
   let lastEra = '';
 
   return (
@@ -208,10 +222,27 @@ export function CommentaryPanel({
           )}
         </div>
 
-        {diverse.length < entries.length && (
+        {songVerse.length > 0 && (
+          <div className="px-5 pb-4">
+            <p className="pt-2 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300">
+              Hymns &amp; sacred poetry
+            </p>
+            <p className="mb-2 text-[11px] text-stone-400 italic">
+              Sung and poetic responses to this passage — not commentary, and (where
+              marked) a metrical paraphrase, not the Scripture text itself.
+            </p>
+            <div className="space-y-2">
+              {songVerse.slice(0, 4).map((entry, i) => (
+                <EntryCard key={`sv-${i}`} entry={entry} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {diverse.length < exegetical.length && (
           <div className="px-5 pb-3">
             <p className="text-xs text-stone-400 text-center">
-              Showing {diverse.length} of {entries.length} commentaries
+              Showing {diverse.length} of {exegetical.length} commentaries
             </p>
           </div>
         )}

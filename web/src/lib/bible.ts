@@ -100,6 +100,13 @@ export interface CommentaryEntry {
   work?: string;
   register?: string;
   paraphrase?: boolean;
+  license?: string; // shown when attribution-required (CC BY / CC BY-SA)
+}
+
+// The register wall, reader side: hymn/poetry entries render in their own
+// LABELED section and never mix with (or displace) exegetical voices.
+export function isSongVerse(e: CommentaryEntry): boolean {
+  return e.register === 'hymn' || e.register === 'poetry';
 }
 
 export interface CommentaryData {

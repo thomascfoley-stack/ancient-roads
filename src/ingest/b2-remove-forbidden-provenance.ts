@@ -63,6 +63,12 @@ async function main() {
   const dbUrl = (localEnv('DATABASE_URL') ?? '').replace(/^"|"$/g, '');
   const branch = process.env.DATABASE_URL ? process.env.NEON_BRANCH : localEnv('NEON_BRANCH');
   if (branch !== 'dev' && branch !== 'test') throw new Error(`STOP: NEON_BRANCH="${branch ?? '(unset)'}" must be dev|test`);
+  // The branch label is self-attested — also require a known non-prod endpoint.
+  // Part C runs this against prod DELIBERATELY: that run must set B2_ALLOW_PROD=1
+  // (the conscious-override friction is the design).
+  if (!/ep-tiny-hat|localhost|127\.0\.0\.1/.test(dbUrl) && process.env.B2_ALLOW_PROD !== '1') {
+    throw new Error('STOP: DATABASE_URL is not the dev endpoint (ep-tiny-hat). For the deliberate Part C prod run, set B2_ALLOW_PROD=1.');
+  }
   void arg;
 
   const db = new pg.Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });

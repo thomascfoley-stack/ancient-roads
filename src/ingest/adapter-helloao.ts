@@ -69,15 +69,17 @@ async function main() {
   const books = ((await booksRes.json()) as { books: Array<{ id: string; numberOfChapters: number; firstChapterNumber: number }> }).books;
 
   const sections: RegisterSection[] = [];
+  let chaptersTried = 0, chaptersFailed = 0;
   for (const book of books) {
     const bslug = HELLOAO_BOOK_MAP[book.id];
     const bookNum = bslug ? SLUG_TO_BOOK_NUM[bslug] : undefined;
     if (!bookNum) { console.log(`  skip unknown book id ${book.id}`); continue; }
     const bookName = BOOKS[bookNum - 1]!.name;
     for (let ch = book.firstChapterNumber; ch <= book.numberOfChapters; ch++) {
+      chaptersTried++;
       const data = await fetchChapter(acq.api, acq.commentary_id, book.id, ch);
       const content = data?.chapter?.content;
-      if (!content) continue;
+      if (!content) { chaptersFailed++; continue; }
       for (const v of verseEntries(content)) {
         const verseId = bookNum * 1_000_000 + ch * 1000 + v.verse;
         sections.push({
@@ -90,6 +92,11 @@ async function main() {
     console.log(`  ${bookName}: cumulative ${sections.length} verse entries`);
   }
   if (sections.length < 100) throw new Error(`FAIL CLOSED: only ${sections.length} entries — fetch incomplete`);
+  // fail CLOSED on fetch errors, not just low totals: a timeout/404/HTML page
+  // must never silently thin the corpus (the K&D 3-row shell, A6 audit)
+  if (chaptersFailed > Math.max(5, chaptersTried * 0.02)) {
+    throw new Error(`FAIL CLOSED: ${chaptersFailed}/${chaptersTried} chapter fetches failed — retry when the source is healthy`);
+  }
 
   const work: RegisterWork = {
     slug, title: entry.title as string, author: entry.author as string,

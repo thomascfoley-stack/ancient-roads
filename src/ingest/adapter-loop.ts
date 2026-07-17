@@ -83,10 +83,11 @@ async function main() {
       const slug = entry.slug as string;
       const acq = (entry.provenance as Record<string, unknown>)['acquire'] as { adapter: string };
       const state = await ingestState(db, slug);
-      // --force (with --only): re-ingest even if done — register-writer's
-      // deleteWork-then-write makes this safe; used when a work's source set
-      // grows (e.g. augustine-homilies gaining NPNF 1-08 Psalms expositions).
-      const force = process.argv.includes('--force') && only?.includes(slug);
+      // --force (with --only) re-ingests named done works; --force-all re-ingests
+      // EVERY queued work — the corpus-repair mode after a parser fix (A6
+      // 2026-07-17: the newline-fusion re-ingest). Safe either way:
+      // register-writer deleteWork-then-write fully replaces prior rows.
+      const force = process.argv.includes('--force-all') || (process.argv.includes('--force') && only?.includes(slug));
       if (state === 'done' && !force) { log({ at: new Date().toISOString(), slug, adapter: acq.adapter, result: 'skipped', reason: 'already ingested' }); continue; }
       if (state === 'partial') console.log(`  ↻ ${slug} partially ingested — re-running to complete (ON CONFLICT fills gaps)`);
       if (dry) { console.log(`  would run ${acq.adapter}: ${slug} (${entry.source_type})`); continue; }

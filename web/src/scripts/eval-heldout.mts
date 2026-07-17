@@ -48,7 +48,9 @@ const RELABEL: Record<string, string[]> = {
   'v3-tp-06': ['Deuteronomy 5'],
   'v3-tp-09': ['Deuteronomy 5'],
   'v3-tp-11': ['John 15'],
-  'v3-tp-12': ['Psalm 113', 'Psalm 117', 'Psalm 146', 'Psalm 147', 'Psalm 148', 'Psalm 149'],
+  // v3-tp-12 REMOVED (A6 2026-07-17): its label additions were derived from what
+  // retrieval returned, violating the harness's own non-circularity rule
+  // ("derived from the query's scripture, NOT from what retrieval returned").
   'v3-tp-16': ['Matthew 18'],
   'v3-tp-18': ['Luke 12'],
   'v3-tp-19': ['John 15'],

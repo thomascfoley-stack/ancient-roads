@@ -15,7 +15,7 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { parseRef } from '../bible/ref-parse.js';
-import { writeRegisterWork, chunkWhole, type RegisterWork, type RegisterSection } from './register-writer.js';
+import { writeRegisterWork, type RegisterWork, type RegisterSection } from './register-writer.js';
 
 const CACHE = 'data/raw/ccel';
 const MIN_UNITS = 3;
@@ -49,9 +49,21 @@ function thmlText(frag: string): string {
     .replace(/<l\b[^>]*>/gi, '').replace(/<\/l>/gi, '\n')
     .replace(/<verse\b[^>]*>/gi, '').replace(/<\/verse>/gi, '\n')
     .replace(/<note\b[\s\S]*?<\/note>/gi, ' ')
+    // scripRefs are marginal cross-reference ANNOTATIONS (already consumed by
+    // unitAnchor) — their display text ("Heb 12:24") is debris inside body text.
+    .replace(/<scripRef\b[^>]*>[\s\S]*?<\/scripRef>/gi, ' ')
     .replace(/<[^>]+>/g, ' ')
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&apos;/g, "'").replace(/&quot;/g, '"').replace(/&#\d+;/g, ' ')
-    .replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').replace(/^\s+|\s+$/gm, '')
+    .replace(/&#x([0-9a-f]+);/gi, (_, h: string) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d: string) => String.fromCodePoint(Number(d)))
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&apos;/g, "'")
+    .replace(/&quot;/g, '"').replace(/&nbsp;/g, ' ').replace(/&mdash;/g, '—').replace(/&ndash;/g, '–')
+    .replace(/&rsquo;/g, '’').replace(/&lsquo;/g, '‘').replace(/&rdquo;/g, '”').replace(/&ldquo;/g, '“')
+    // Trim SPACES/TABS at line edges only — NEVER \s, whose multiline $ match
+    // swallows whole \n\n runs and fuses words across line breaks (the corpus
+    // scar of 2026-07-17: "his bloodFar better things").
+    .replace(/[ \t]+/g, ' ')
+    .replace(/^[ \t]+|[ \t]+$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
@@ -108,17 +120,28 @@ function chooseUnitSelector(xml: string): { attr: 'type' | 'class'; value: strin
   return bestLevel ? { level: bestLevel } : null;
 }
 
-// Front/back-matter titles that are never content units (the Treasury fallback
-// would otherwise ingest prefaces and indexes as "sections").
-const MATTER_RE = /^(title pages?|preface|introduction|index|contents|table of|dedication|advertisement|to the reader|appendix|copyright)/i;
+// Front/back-matter titles that are never content units — applied on EVERY
+// selector path (NPNF volumes carry "Index of Subjects" / "Greek Words and
+// Phrases" back-matter as typed divs too, and 212 such chunks reached the
+// served pool in Chrysostom alone before this filter was universal).
+const MATTER_RE = /^(title pages?|preface|introduction|index(es)? (of|to)|indexes$|index$|contents|table of|dedication|advertisement|to the reader|appendix|copyright|greek words|hebrew words|bibliograph)/i;
 
-export function buildCcelSections(xml: string): RegisterSection[] {
+// Optional per-work unit filter from the manifest (acquire.heading_filter, a
+// regex source): only units whose heading matches are kept. Used to scope a
+// work to the section the manifest actually claims (e.g. scottish-psalter-1650
+// → ^Psalm — the CCEL file appends the 1781 Translations & Paraphrases, which
+// must not ride under the 1650 Psalter's attribution).
+export function buildCcelSections(xml: string, headingFilter?: string): RegisterSection[] {
   const sel = chooseUnitSelector(xml);
   if (!sel) return [];
   const out: RegisterSection[] = [];
   let m: RegExpExecArray | null;
+  // Fallback mode: capture from each title-bearing div to the NEXT title-bearing
+  // div at ANY level (not just the same level) — stopping only at the same level
+  // drops every deeper/shallower sibling's span in mixed-level works and bleeds
+  // text under the wrong heading (A6 audit, 2026-07-17).
   const full = 'level' in sel
-    ? new RegExp(`(<${sel.level}\\s[^>]*title="[^"]+"[^>]*>)([\\s\\S]*?)(?=<${sel.level}[\\s>]|</${sel.level}>\\s*$)`, 'gi')
+    ? /(<div[1-4]\s[^>]*title="[^"]+"[^>]*>)([\s\S]*?)(?=<div[1-4]\s[^>]*title="|$)/gi
     : new RegExp(`(<div[1-4]\\s[^>]*${sel.attr}="${sel.value}"[^>]*>)([\\s\\S]*?)</div[1-4]>`, 'gi');
   while ((m = full.exec(xml))) {
     const openTag = m[1]!;
@@ -129,7 +152,8 @@ export function buildCcelSections(xml: string): RegisterSection[] {
     const anchor = unitAnchor(inner) ?? titleAnchor(heading);
     const body = thmlText(inner);
     if (body.length < 40) continue; // skip empty/structural shells
-    if ('level' in sel && heading && MATTER_RE.test(heading)) continue; // front/back matter
+    if (heading && MATTER_RE.test(heading)) continue; // front/back matter, any path
+    if (headingFilter && !(heading && new RegExp(headingFilter, 'i').test(heading))) continue;
     out.push({ heading, body, anchors: anchor ? [anchor] : undefined });
   }
   return out;
@@ -168,18 +192,19 @@ export async function acquireCcel(entry: Record<string, unknown>, opts: { write:
   }
 
   const allSections: RegisterSection[] = [];
+  let emptyVolumes = 0;
   for (const id of ids) {
     const xml = await fetchCcelXml(id);
     if (!xml) return { slug: entry.slug as string, units: 0, anchored: 0, embedded: 0, skipped: true, reason: `fetch failed / not ThML: ${id}` };
-    allSections.push(...buildCcelSections(xml));
+    const secs = buildCcelSections(xml, (acq as { heading_filter?: string }).heading_filter);
+    if (secs.length === 0) emptyVolumes++; // a silent 0-section volume must fail the WORK, not vanish
+    allSections.push(...secs);
   }
-  // chunk any over-budget section whole (register-writer also chunks; keep sections cohesive)
-  const sections: RegisterSection[] = [];
-  for (const s of allSections) {
-    const chunks = chunkWhole(s.heading ? `${s.heading}\n${s.body}` : s.body);
-    if (chunks.length === 1) sections.push(s);
-    else chunks.forEach((c, i) => sections.push({ heading: s.heading ? `${s.heading} (${i + 1}/${chunks.length})` : undefined, body: c, anchors: i === 0 ? s.anchors : undefined }));
-  }
+  if (emptyVolumes > 0) return { slug: entry.slug as string, units: allSections.length, anchored: 0, embedded: 0, skipped: true, reason: `${emptyVolumes}/${ids.length} volumes parsed to 0 sections — structure not recognized` };
+  // NO pre-chunking here: register-writer chunks heading+body once, at word
+  // boundaries. The old pre-chunk pass re-prefixed headings ("(2/2)") and made
+  // register-writer chunk the already-chunked text a second time (A6 audit).
+  const sections = allSections;
   if (sections.length < MIN_UNITS) return { slug: entry.slug as string, units: sections.length, anchored: 0, embedded: 0, skipped: true, reason: `only ${sections.length} units — structure not recognized` };
 
   const anchored = sections.filter((s) => s.anchors).length;

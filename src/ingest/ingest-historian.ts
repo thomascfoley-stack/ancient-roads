@@ -246,4 +246,8 @@ async function main() {
   }
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+// CLI-only: importing this module for verbatimPeriod must not run the ingest
+// (historian-contract-backfill imports it — A6 2026-07-17)
+if (process.argv[1] && /ingest-historian/.test(process.argv[1])) {
+  main().catch((e) => { console.error(e); process.exit(1); });
+}
