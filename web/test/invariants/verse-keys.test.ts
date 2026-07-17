@@ -11,9 +11,11 @@
 //   - Barnes/Wesley/Calvin/Scofield/B.W. Johnson re-sourced per-verse from CrossWire
 //     SWORD modules (src/ingest/sword-zverse.ts; DistributionLicense=Public Domain
 //     verified per .conf) — collapse now in the clean 0.9–6.9% band.
-//   - Cambridge/Poole/Pulpit/Benson/Bengel/MacLaren/Darby/Lange/Geneva have no clean
-//     per-verse source yet (Geneva's module carries NO license grant — fail closed) and
-//     are QUARANTINED out of the static corpus (data/quarantine/, reversible hold).
+//   - Poole re-sourced per-verse the same night from the EEBO-TCP CC0 transcription
+//     (src/ingest/poole-tcp.ts). Cambridge/Pulpit/Benson/Bengel/MacLaren/Darby/Lange/
+//     Geneva have no clean per-verse source yet (Geneva's module carries NO license
+//     grant — fail closed) and are QUARANTINED out of the static corpus
+//     (data/quarantine/, reversible hold).
 // The 0.20 threshold is unchanged — it is the point.
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';

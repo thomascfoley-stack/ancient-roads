@@ -30,8 +30,16 @@ CREATE TABLE IF NOT EXISTS section_history_anchors (
 CREATE INDEX IF NOT EXISTS history_anchors_entity_idx
   ON section_history_anchors (kind, entity_slug);
 
--- least-privilege read for the app role (ADR-009 pattern, mirrors 006/010)
+-- least-privilege read for the app role. GRANT SELECT alone is a NO-OP here:
+-- migration 001's ALTER DEFAULT PRIVILEGES makes every owner-created table born
+-- with full DML for app_runtime, so the REVOKE below is the real gate (the 010
+-- pattern). 010 revoked commentary_entries/sources/sections but missed the two
+-- 006 satellite tables — repaired here alongside the new table (deep-audit
+-- 2026-07-16, data-layer H1).
 GRANT SELECT ON section_history_anchors TO app_runtime;
+REVOKE INSERT, UPDATE, DELETE ON section_history_anchors FROM app_runtime;
+REVOKE INSERT, UPDATE, DELETE ON section_anchors        FROM app_runtime;
+REVOKE INSERT, UPDATE, DELETE ON section_embeddings     FROM app_runtime;
 
 -- tsv heading fix — swap the generated column only when it is still body-only.
 DO $$

@@ -1,5 +1,46 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-16 (DEEP-AUDIT of the ingestion run + same-night hardening) — 3 fresh agents, non-overlapping lenses
+
+Per the overnight protocol, three fresh agents audited commits f4e277a..965403c (licensing invariants ·
+data layer · docs-vs-reality). The bookkeeping held to the digit (every recomputable number matched,
+including the self-incriminating parked reds). What they caught, and what was fixed the same night:
+
+**Caught and FIXED (commit after this entry):**
+- **Fabricated anchors in the Josephus BULK** (docs lens, HIGH): the pilot's 19 verse anchors were clean,
+  but the generalization to the bulk was false confidence — "which is 3,000,000" parsed as Isaiah 3 (the
+  `is` alias over free prose), and the Nicaea alias "Nice" substring-matched "Nicelens"/"Nicephorus"
+  (2 entity anchors). A Whiston footnote's "fire of London, A.D. 1666" period-tagged a Herod-era section.
+  Fixes: word-boundary gazetteer matching; a book-name-adjacent-to-digit filter on scanned citations
+  (`isExplicitCitation`); period extraction restricted to the HEADING only (§9 item 5 as written).
+  Josephus + Spurgeon re-ingested with the fixed logic.
+- **`app_runtime` had full DML on `section_history_anchors` AND the 006 satellites `section_anchors`/
+  `section_embeddings`** (data lens, HIGH): migration 001's default privileges make owner-created tables
+  born writable; 010's REVOKE missed the satellites and 016's GRANT SELECT was a no-op. 016 now REVOKEs
+  all three; re-applied to dev; verified SELECT-only. **Prod likely has the same leak on the two 006
+  satellites — owner must apply the REVOKE at the prod 016 application.**
+- **FTS re-ingest hardened** (data lens): TRUNCATE+COPY now one transaction; NEON_BRANCH allow-list guard.
+- **Quarantine hold-file safety** (data lens): append-before-mutate, collision-proof timestamped name,
+  refuse-if-exists, multi-book rerun probe.
+- **License validity + manifest-quarantine + published-status guards at the historian/sermon mouths**
+  (licensing lens H3/H4): `isAllowedLicense` enforced; quarantined manifest entries refuse to ingest;
+  re-ingest of a published slug refuses.
+- **Sermon chunker hard cap** (data lens M2), **silent-drop reporting** in insert-static-author (M6),
+  **ordinal-mapped RETURNING** (L1), stale doc headers (Poole status in CORPUS_VERSE_KEY_REPAIR +
+  verse-keys.test.ts; ROADMAP's over-broad "zero fabricated"; harness doc "2-work pilot" → 4 works).
+
+**Caught and ESCALATED (owner decisions, not fixed):**
+- The served Chrysostom/Augustine historicalchristian.faith debt is the standing CRITICAL — the gate
+  detects it; nothing enforces gate-green before deploy (licensing lens C1). Wire `gate:ingest` into the
+  predeploy path?
+- `ingest-sword-commentaries.mts` writes straight into the served teacher pool (author+crosswire-URL
+  matches `LEGAL_CORPUS_FILTER`) with no license check at its mouth — publish-by-embedding bypass
+  (licensing lens H1). Also `ingest-biblehub.ts` still exists armed (M2) — delete or guard it?
+- "Staged" static-corpus content is publicly fetchable JSON on any deploy (the allowlist is a UI filter,
+  not a serving boundary) — M3; fine while everything staged is PD-in-fact, but it's a mechanism gap.
+- The manifest `quarantine` field is advisory outside the new mouths (H2) — the harness digest would
+  still call a quarantined-but-PD-licensed work publish-eligible.
+
 ## 2026-07-16 (CORPUS INGESTION v2 — all four types through the machine, DEV only) — branch `ingest`, continues the v1 entry below
 
 **Every content type now has a gated ingest path on dev: commentary (Tier 1), bible (Tier 2), sermon
@@ -77,8 +118,10 @@ session; touched none of its files.
   (clean band); static 371,406 → 215,489 entries; static↔db parity exact. **`verse-keys.test.ts`
   UN-SKIPPED and green** (threshold untouched). Ratchet baseline 263,496 → **63,111** (the remaining
   historicalchristian.faith patristic debt).
-- **Quarantined, reversible:** Cambridge/Poole/Pulpit/Benson/Bengel/MacLaren/Darby/Lange/Geneva (200,395
-  old rows → `data/quarantine/biblehub-collapsed-2026-07-17.jsonl`). **Geneva fail-closed:** CrossWire's
+- **Quarantined, reversible:** the hold file `data/quarantine/biblehub-collapsed-2026-07-17.jsonl`
+  (200,395 rows) carries ALL 14 biblehub authors: the 9 unfixable (Cambridge/Poole/Pulpit/Benson/Bengel/
+  MacLaren/Darby/Lange/Geneva, 143,658 rows) AND the old biblehub rows of the 5 re-sourced authors
+  (56,737 rows). **Geneva fail-closed:** CrossWire's
   module has NO DistributionLicense and its module page lists null — recorded as a quarantined manifest
   entry, needs an owner ruling. barnes-notes `sources` row staged→quarantined on dev (mirrors the
   manifest's standing ruling; L4 green).

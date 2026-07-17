@@ -13,7 +13,7 @@
 //   fail closed).
 // Every other author's entries pass through byte-identical.
 
-import { readFileSync, readdirSync, writeFileSync, mkdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync, appendFileSync, mkdirSync, statSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { BOOK_SLUGS } from './source-id.js';
 
@@ -55,12 +55,15 @@ function main() {
   // Rerun guard: once regenerated, the replaced authors carry crosswire provenance.
   // Running again would quarantine the CLEAN entries and clobber the quarantine
   // file with them (this happened once, 2026-07-17 — the file had to be rebuilt
-  // from the pre-regen corpus). Refuse instead.
-  const probe = path.join(CORPUS_DIR, 'jhn/3.json');
-  const probeJson = JSON.parse(readFileSync(probe, 'utf8')) as ChapterFile;
-  if (probeJson.entries.some((e) => removeSet.has(e.author) && /crosswire\.org/.test(e.sourceUrl))) {
-    console.error('ABORT: corpus already regenerated (crosswire provenance present on a replaced author).');
-    process.exit(1);
+  // from the pre-regen corpus). Probe MULTIPLE books across the alphabet: a crashed
+  // first run rewrites early dirs while a single late-alphabet probe still looks
+  // pre-regen (deep-audit 2026-07-16, H2).
+  for (const probeRel of ['gen/1.json', 'psa/23.json', 'jhn/3.json']) {
+    const probeJson = JSON.parse(readFileSync(path.join(CORPUS_DIR, probeRel), 'utf8')) as ChapterFile;
+    if (probeJson.entries.some((e) => removeSet.has(e.author) && /crosswire\.org/.test(e.sourceUrl))) {
+      console.error(`ABORT: corpus already (partially) regenerated — crosswire provenance on a replaced author in ${probeRel}.`);
+      process.exit(1);
+    }
   }
 
   // Load replacement entries, grouped per (book, chapter).
@@ -92,11 +95,17 @@ function main() {
   }
 
   mkdirSync(QUARANTINE_DIR, { recursive: true });
-  const stamp = new Date().toISOString().slice(0, 10);
+  // Collision-proof hold file, appended BEFORE each chapter file is mutated — a
+  // mid-run crash must never lose removed entries, and a rerun must never clobber
+  // an existing hold (deep-audit 2026-07-16, H2; the 2026-07-17 incident).
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const quarantinePath = path.join(QUARANTINE_DIR, `biblehub-collapsed-${stamp}.jsonl`);
-  const quarantined: string[] = [];
+  if (existsSync(quarantinePath)) {
+    console.error(`ABORT: ${quarantinePath} already exists — refusing to overwrite a hold file.`);
+    process.exit(1);
+  }
   const removedCounts = new Map<string, number>();
-  let filesTouched = 0, added = 0;
+  let filesTouched = 0, added = 0, removedTotal = 0;
 
   for (const bookSlug of readdirSync(CORPUS_DIR).sort()) {
     const dir = path.join(CORPUS_DIR, bookSlug);
@@ -107,16 +116,16 @@ function main() {
       const j = JSON.parse(readFileSync(p, 'utf8')) as ChapterFile;
       if (!Array.isArray(j.entries)) continue;
       const kept: StaticEntry[] = [];
-      let changed = false;
+      const removedHere: string[] = [];
       for (const e of j.entries) {
         if (removeSet.has(e.author)) {
-          quarantined.push(JSON.stringify({ book: j.book, chapter: j.chapter, ...e }));
+          removedHere.push(JSON.stringify({ book: j.book, chapter: j.chapter, ...e }));
           removedCounts.set(e.author, (removedCounts.get(e.author) ?? 0) + 1);
-          changed = true;
         } else {
           kept.push(e);
         }
       }
+      let changed = removedHere.length > 0;
       const fresh = incoming.get(`${j.book}:${j.chapter}`);
       if (fresh) {
         kept.push(...fresh.sort((a, b) => a.verseStart - b.verseStart));
@@ -124,14 +133,16 @@ function main() {
         changed = true;
       }
       if (changed) {
+        if (removedHere.length > 0) {
+          appendFileSync(quarantinePath, removedHere.join('\n') + '\n'); // persist FIRST
+          removedTotal += removedHere.length;
+        }
         writeFileSync(p, JSON.stringify({ book: j.book, chapter: j.chapter, entries: kept }));
         filesTouched++;
       }
     }
   }
-
-  writeFileSync(quarantinePath, quarantined.join('\n') + '\n');
-  console.log(`files rewritten: ${filesTouched} · entries added: ${added} · removed→quarantine: ${quarantined.length}`);
+  console.log(`files rewritten: ${filesTouched} · entries added: ${added} · removed→quarantine: ${removedTotal}`);
   console.log(`quarantine file: ${quarantinePath}`);
   console.log('replaced (new counts):', Object.fromEntries(incomingCounts));
   console.log('removed (old counts):', Object.fromEntries(removedCounts));

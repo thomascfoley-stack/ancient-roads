@@ -20,6 +20,8 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { parseRef, scanReferences } from '../bible/ref-parse.js';
 import { shingleHashSetOcr } from './resource-textmatch.js';
+import { isExplicitCitation } from './ingest-historian.js';
+import { isAllowedLicense } from './license-manifest.js';
 
 const EMBED_MAX = 1800;
 const MODEL_SLUG = 'bge-large-en-v1.5';
@@ -179,15 +181,24 @@ async function main() {
   const entry = manifest.find((e) => e.slug === slug);
   if (!entry) throw new Error(`FAIL CLOSED: slug "${slug}" has no manifest entry`);
   if (entry.source_type !== 'sermon') throw new Error(`manifest entry ${slug} is not source_type=sermon`);
+  if (!isAllowedLicense(entry.license)) throw new Error(`FAIL CLOSED: ${slug} license "${String(entry.license)}" not in the allowed set`);
+  if (typeof entry.quarantine === 'string' && entry.quarantine.trim()) throw new Error(`FAIL CLOSED: ${slug} is quarantined in the manifest: ${entry.quarantine}`);
 
   const dbUrl = (localEnv('DATABASE_URL') ?? '').replace(/^"|"$/g, '');
   const key = localEnv('DEEPINFRA_API_KEY');
   if (!dbUrl || !key) throw new Error('DATABASE_URL and DEEPINFRA_API_KEY required');
-  if (localEnv('NEON_BRANCH') === 'production') throw new Error('STOP: env points at production');
+  const branch = process.env.DATABASE_URL ? process.env.NEON_BRANCH : localEnv('NEON_BRANCH');
+  if (branch !== 'dev' && branch !== 'test') {
+    throw new Error(`STOP: NEON_BRANCH="${branch ?? '(unset)'}" from the same env source as DATABASE_URL must be dev or test`);
+  }
 
   const db = new pg.Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
   await db.connect();
   try {
+    const prior = await db.query<{ status: string }>(`SELECT status FROM sources WHERE slug=$1`, [slug]);
+    if (prior.rows[0]?.status === 'published') {
+      throw new Error(`STOP: ${slug} is PUBLISHED — re-ingest would replace owner-approved content; unpublish first`);
+    }
     await db.query('BEGIN');
     const src = await db.query<{ id: string }>(
       `INSERT INTO sources (slug, title, author, author_died, year_written, source_type, tradition, era, license, provenance, status)
@@ -199,20 +210,29 @@ async function main() {
     );
     const sourceId = src.rows[0]!.id;
     await db.query(`DELETE FROM section_embeddings WHERE section_id IN (SELECT id FROM sections WHERE source_id=$1)`, [sourceId]);
+    await db.query(`DELETE FROM section_history_anchors WHERE section_id IN (SELECT id FROM sections WHERE source_id=$1)`, [sourceId]);
     await db.query(`DELETE FROM section_anchors WHERE section_id IN (SELECT id FROM sections WHERE source_id=$1)`, [sourceId]);
     await db.query(`DELETE FROM sections WHERE source_id=$1`, [sourceId]);
 
     const chunkRows: Array<{ id?: string; heading: string; body: string; anchors: Array<{ start: number; end: number }> }> = [];
     for (const s of sermons) {
-      const explicit = scanReferences(romaniseRefs(s.body)).flatMap((r) => r.ranges);
-      // chunk ≤ EMBED_MAX at sentence boundaries; stated + explicit anchors ride on chunk 1
+      // explicit body citations only, book-name-filtered like the historian path
+      const explicit = scanReferences(romaniseRefs(s.body))
+        .filter((ref) => isExplicitCitation(ref.display, romaniseRefs(s.body)))
+        .flatMap((r) => r.ranges);
+      // chunk ≤ EMBED_MAX at sentence boundaries, with a hard split for
+      // pathological unbroken runs (deep-audit M2 — no silent oversize chunks)
       const chunks: string[] = [];
       let buf = '';
       for (const sent of s.body.split(/(?<=[.!?])\s+/)) {
         if (buf && buf.length + sent.length + 1 > EMBED_MAX) { chunks.push(buf); buf = sent; }
         else buf = buf ? `${buf} ${sent}` : sent;
+        while (buf.length > EMBED_MAX) { chunks.push(buf.slice(0, EMBED_MAX)); buf = buf.slice(EMBED_MAX); }
       }
       if (buf) chunks.push(buf);
+      for (const c of chunks) {
+        if (c.length > EMBED_MAX) throw new Error(`contract breach: sermon chunk ${c.length} > ${EMBED_MAX}`);
+      }
       chunks.forEach((body, ci) => {
         chunkRows.push({
           heading: `${s.title} — ${s.statedRef}${chunks.length > 1 ? ` (${ci + 1}/${chunks.length})` : ''}`,

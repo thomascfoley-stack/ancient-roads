@@ -21,6 +21,7 @@ import pg from 'pg';
 import { readFileSync, existsSync } from 'node:fs';
 import { scanReferences } from '../bible/ref-parse.js';
 import { verbatimAnchors } from './history-gazetteer.js';
+import { isAllowedLicense } from './license-manifest.js';
 
 const EMBED_MAX = 1800; // chars; ~450 tokens — bge-large's 512-token budget never truncates
 const MODEL_SLUG = 'bge-large-en-v1.5';
@@ -33,6 +34,20 @@ function localEnv(name: string): string | undefined {
   return readFileSync(p, 'utf-8').match(new RegExp(`^${name}=(.*)`, 'm'))?.[1]?.trim().replace(/^"|"$/g, '');
 }
 const arg = (flag: string) => process.argv.find((a) => a.startsWith(`${flag}=`))?.slice(flag.length + 1);
+
+// A scanned reference counts as an EXPLICIT citation only if the book is named
+// in the text next to a digit ("Isa. 53:7", "1 Samuel 12"). scanReferences over
+// free prose false-positives on bare aliases — the deep-audit found "which is
+// 3,000,000" parsed as Isaiah 3 via the `is` alias. Conservative: a genuine
+// citation always names its book; anything else is dropped, never anchored.
+export function isExplicitCitation(display: string, body: string): boolean {
+  const bookPart = display.replace(/[\s ]+[0-9].*$/, ''); // "1 Samuel 12:1–5" → "1 Samuel"
+  const lastWord = bookPart.split(/\s+/).pop() ?? bookPart;
+  const stem = lastWord.slice(0, Math.min(3, lastWord.length));
+  if (!stem) return false;
+  const re = new RegExp(`\\b${stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[a-z]*\\.?\\s+[0-9ivxlc]`, 'i');
+  return re.test(body);
+}
 
 // period_* from VERBATIM date expressions only (§5 of the contract).
 export function verbatimPeriod(text: string): { start: number; end: number } | null {
@@ -84,13 +99,21 @@ async function main() {
   const entry = manifest.find((e) => e.slug === slug);
   if (!entry) throw new Error(`FAIL CLOSED: slug "${slug}" has no manifest entry (license record required before ingest)`);
   if (entry.source_type !== 'historian') throw new Error(`manifest entry ${slug} is not source_type=historian`);
+  // Existence is not validity (deep-audit H3): the license must be in the allowed
+  // set, and a quarantined manifest entry never ingests, whatever its license says.
+  if (!isAllowedLicense(entry.license)) throw new Error(`FAIL CLOSED: ${slug} license "${String(entry.license)}" not in the allowed set`);
+  if (typeof entry.quarantine === 'string' && entry.quarantine.trim()) throw new Error(`FAIL CLOSED: ${slug} is quarantined in the manifest: ${entry.quarantine}`);
 
   const dbUrl = (localEnv('DATABASE_URL') ?? '').replace(/^"|"$/g, '');
   if (!dbUrl) throw new Error('DATABASE_URL required');
   const key = localEnv('DEEPINFRA_API_KEY');
   if (!key) throw new Error('DEEPINFRA_API_KEY required');
-  const branch = localEnv('NEON_BRANCH');
-  if (branch === 'production') throw new Error('STOP: env points at production — historians land on dev only');
+  // Branch guard, allow-list + paired-source (deep-audit M1): NEON_BRANCH must
+  // come from the SAME source as DATABASE_URL, and must be dev/test explicitly.
+  const branch = process.env.DATABASE_URL ? process.env.NEON_BRANCH : localEnv('NEON_BRANCH');
+  if (branch !== 'dev' && branch !== 'test') {
+    throw new Error(`STOP: NEON_BRANCH="${branch ?? '(unset)'}" from the same env source as DATABASE_URL must be dev or test — historians land on dev only`);
+  }
 
   let nodes: Node[] = readFileSync(jsonlPath, 'utf8').trim().split('\n').map((l) => JSON.parse(l) as Node)
     .filter((n) => n.content.length > 0);
@@ -104,13 +127,22 @@ async function main() {
     const chunks = chunkBody(n.content);
     chunks.forEach((body, i) => {
       const h = chunks.length > 1 ? `${heading} (${i + 1}/${chunks.length})` : heading;
-      rows.push({ ordinal: rows.length + 1, heading: h, body, period: verbatimPeriod(`${heading} ${body}`) });
+      // period from the HEADING ONLY (§9 item 5). Scanning the body too tagged a
+      // Herod-era section 1666 off a footnote's "fire of London, A.D. 1666"
+      // (deep-audit 2026-07-16) — mechanically verbatim, semantically wrong.
+      rows.push({ ordinal: rows.length + 1, heading: h, body, period: verbatimPeriod(heading) });
     });
   }
 
   const db = new pg.Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
   await db.connect();
   try {
+    // A published work's content is owner-approved; re-ingesting under the flag
+    // would swap it silently (deep-audit M4). Refuse.
+    const prior = await db.query<{ status: string }>(`SELECT status FROM sources WHERE slug=$1`, [slug]);
+    if (prior.rows[0]?.status === 'published') {
+      throw new Error(`STOP: ${slug} is PUBLISHED — re-ingest would replace owner-approved content; unpublish first`);
+    }
     await db.query('BEGIN');
     const src = await db.query<{ id: string }>(
       `INSERT INTO sources (slug, title, author, author_died, year_written, source_type, tradition, era, license, provenance, status)
@@ -127,8 +159,8 @@ async function main() {
     await db.query(`DELETE FROM section_anchors WHERE section_id IN (SELECT id FROM sections WHERE source_id=$1)`, [sourceId]);
     await db.query(`DELETE FROM sections WHERE source_id=$1`, [sourceId]);
 
-    // insert sections, collect ids in ordinal order
-    const ids: string[] = [];
+    // insert sections; map ids BY ORDINAL, never by RETURNING row order (deep-audit L1)
+    const idByOrdinal = new Map<number, string>();
     for (let i = 0; i < rows.length; i += 200) {
       const batch = rows.slice(i, i + 200);
       const params: unknown[] = [];
@@ -138,12 +170,17 @@ async function main() {
         return `($${p + 1},$${p + 2},$${p + 3},$${p + 4},$${p + 5},${r.period ? `$${p + 5}::smallint` : 'NULL'})`;
       });
       // period_end uses same param when a single year; ranges recomputed below
-      const res = await db.query<{ id: string }>(
+      const res = await db.query<{ id: string; ordinal: number }>(
         `INSERT INTO sections (source_id, ordinal, heading, body, period_start_year, period_end_year)
-         VALUES ${tuples.join(',')} RETURNING id`, params,
+         VALUES ${tuples.join(',')} RETURNING id, ordinal`, params,
       );
-      ids.push(...res.rows.map((r) => r.id));
+      for (const r of res.rows) idByOrdinal.set(r.ordinal, r.id);
     }
+    const ids: string[] = rows.map((r) => {
+      const id = idByOrdinal.get(r.ordinal);
+      if (!id) throw new Error(`insert lost ordinal ${r.ordinal}`);
+      return id;
+    });
     // fix period_end for real ranges
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i]!;
@@ -164,6 +201,7 @@ async function main() {
         entityAnchors++;
       }
       for (const ref of scanReferences(r.body)) {
+        if (!isExplicitCitation(ref.display, r.body)) continue;
         for (const range of ref.ranges) {
           await db.query(
             `INSERT INTO section_anchors (section_id, verse_id_start, verse_id_end)

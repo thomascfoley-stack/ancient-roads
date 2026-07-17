@@ -3,7 +3,8 @@
 **Status (honest, 2026-07-16): GATES IMPLEMENTED ON THE LEGACY PATH; the full status-gated harness lands
 with migration 006.** The earlier "Phase 1 BUILT" stamp overstated it — `src/ingest/ingest-harness.ts` is a
 thin per-work digest over existing adapters, and this doc's full `staged → published` status machine is
-coupled to the 006 `sources.status` column, which has only a 2-work pilot. What IS live:
+coupled to the 006 `sources.status` column, which now holds 4 works (the 2-work commentary pilot plus the
+v2 josephus-whiston historian and spurgeon-talks-to-farmers sermon, both staged). What IS live:
 
 - **`pnpm gate:ingest`** (`src/ingest/gate-ingest.ts`) — the gates wired as one entrypoint that CALLS the
   existing modules (license-manifest, licensing, legal-corpus, check-corpus-coverage, content-sanity,

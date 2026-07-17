@@ -58,10 +58,21 @@ export const HISTORY_GAZETTEER: GazetteerEntry[] = [
 ];
 
 /** Anchors for one section: gazetteer entries whose label (or alias) appears
- *  VERBATIM (case-sensitive for capitalized forms) in heading or body. */
+ *  VERBATIM AS A WORD in heading or body. Word boundaries are load-bearing:
+ *  plain substring matching anchored "Caesar" to every "Caesarea" and Nicaea's
+ *  "Nice" alias to "Nicelens"/"Nicephorus" (deep-audit 2026-07-16, M3). */
+const wordRe = new Map<string, RegExp>();
+function hasWord(hay: string, s: string): boolean {
+  let re = wordRe.get(s);
+  if (!re) {
+    re = new RegExp(`\\b${s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+    wordRe.set(s, re);
+  }
+  return re.test(hay);
+}
 export function verbatimAnchors(heading: string, body: string): GazetteerEntry[] {
   const hay = `${heading}\n${body}`;
   return HISTORY_GAZETTEER.filter((g) =>
-    [g.label, ...(g.aliases ?? [])].some((s) => hay.includes(s)),
+    [g.label, ...(g.aliases ?? [])].some((s) => hasWord(hay, s)),
   );
 }
