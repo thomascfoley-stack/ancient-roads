@@ -49,17 +49,43 @@ const PUBLISHED_BOOK_SCOPED: Record<string, number[]> = {
 // URL condition. (Provenance of the biblehub/blogspot sources is flagged for owner
 // review in docs/AUTHOR_TRIAGE.md; these authors are all pre-1929 PD.)
 const sqlList = (xs: readonly string[]) => xs.map((a) => `'${a.replace(/'/g, "''")}'`).join(',');
+// The register go-live adds `work IN (published slugs)` — migration 019 adds the
+// column + rebuilds idx_commentary_fts_legal in lockstep (fts-legal-index-sync).
 export const LEGAL_COMMENTARY_ENTRIES_PREDICATE = `(author IN (${sqlList(PUBLISHED_WHOLE_BIBLE_AUTHORS)})
    OR (author = 'John Chrysostom' AND book IN (40, 43, 44))
-   OR (author = 'Augustine of Hippo' AND book IN (19, 43)))`;
+   OR (author = 'Augustine of Hippo' AND book IN (19, 43))
+   OR work IN ('keil-delitzsch','catena-aurea','isbe','eastons-dictionary','smiths-dictionary','naves-topical','bdb-lexicon','spurgeon-sermons','spurgeon-treasury','maclaren-expositions','chrysostom-homilies','augustine-homilies','owen-works','watson-works','flavel-works','edwards-works','wesley-sermons','ryle-expository','vincent-word-studies','hodge-systematic','calvin-institutes','schaff-creeds','whitefield-works','olney-hymns','scottish-psalter-1650','neale-eastern-hymns','bramley-carols','watts-hymns','watts-psalms','herbert-temple','montgomery-sacred-poems','keble-christian-year','donne-divine-poems','herrick-noble-numbers','traherne-poems','milton-poetical-works','rossetti-verses','hopkins-poems','tennyson-in-memoriam','dante-divine-comedy','wheatley-poems'))`;
 
-/** In-memory per-entry check for static JSON entries (reader). Book-aware. */
+// Register go-live (CONTENT_GO_LIVE.md decisions 2/3, 2026-07-16): static-corpus
+// entries from the auto-published clean tier carry a `work` slug; membership here
+// is the reader-side publish switch (mirrors SERVED_*_WORKS in teacher/routing.ts
+// — update BOTH or the surfaces diverge). Deliberately absent: origen-commentary
+// (MUST_NOT_SERVE conflict, escalated), thayers-lexicon (OCR tier), historians
+// (no read path), poole-tcp/scofield/pnt (the parked owner call).
+export const PUBLISHED_WORKS = new Set<string>([
+  'keil-delitzsch', 'catena-aurea', 'isbe', 'eastons-dictionary', 'smiths-dictionary',
+  'naves-topical', 'bdb-lexicon', 'spurgeon-sermons', 'spurgeon-treasury',
+  'maclaren-expositions', 'chrysostom-homilies', 'augustine-homilies', 'owen-works',
+  'watson-works', 'flavel-works', 'edwards-works', 'wesley-sermons', 'ryle-expository',
+  'vincent-word-studies', 'hodge-systematic', 'calvin-institutes', 'schaff-creeds',
+  'whitefield-works',
+  'olney-hymns', 'scottish-psalter-1650', 'neale-eastern-hymns', 'bramley-carols',
+  'watts-hymns', 'watts-psalms', 'herbert-temple', 'montgomery-sacred-poems',
+  'keble-christian-year', 'donne-divine-poems', 'herrick-noble-numbers',
+  'traherne-poems', 'milton-poetical-works', 'rossetti-verses', 'hopkins-poems',
+  'tennyson-in-memoriam', 'dante-divine-comedy', 'wheatley-poems',
+]);
+
+/** In-memory per-entry check for static JSON entries (reader). Book-aware;
+ *  register-aware via the entry's `work` slug. */
 export function isPublishedCommentaryEntry(entry: {
   author: string;
   sourceUrl?: string | null;
   book?: number;
+  work?: string | null;
 }): boolean {
   const { author } = entry;
+  if (entry.work && PUBLISHED_WORKS.has(entry.work)) return true;
   if ((PUBLISHED_WHOLE_BIBLE_AUTHORS as readonly string[]).includes(author)) return true;
   const books = PUBLISHED_BOOK_SCOPED[author];
   return books ? books.includes(entry.book ?? 0) : false;

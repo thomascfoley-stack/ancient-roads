@@ -3,14 +3,15 @@ import type { TeacherResponse } from '@/contract/types';
 import type { Violation } from '@/verifier/types';
 import { verifyV1 } from '@/verifier/v1';
 import { embedQuery, compose } from './deepinfra';
-import { retrieveCommentary, type RetrievedChunk } from './retrieve';
+import { retrieveCommentary, retrieveSongVerse, type RetrievedChunk, type SongVerseChunk } from './retrieve';
+import { resolveIntent } from '../../bible/pericopes';
 import { buildCorpusLookup } from './corpus';
 import { normalizeContract } from './normalize-contract';
 import { buildSystemPrompt, buildUserPrompt } from './prompt';
 
 export type TeacherResult =
-  | { kind: 'composed'; response: TeacherResponse; retrieval: RetrievedChunk[] }
-  | { kind: 'fallback'; retrieval: RetrievedChunk[]; violations: Violation[] }
+  | { kind: 'composed'; response: TeacherResponse; retrieval: RetrievedChunk[]; song_verse?: SongVerseChunk[] }
+  | { kind: 'fallback'; retrieval: RetrievedChunk[]; violations: Violation[]; song_verse?: SongVerseChunk[] }
   | { kind: 'empty'; reason: string };
 
 // A safe-to-stream preview of a retrieved source. This is CORPUS text (never
@@ -83,7 +84,15 @@ export async function teach(
 
   emit({ stage: 'retrieving' });
   const queryVec = await embedQuery(query);
+  // The song/verse register rides ALONGSIDE the exegetical pipeline: verbatim
+  // corpus text, its own pool, surfaced as a separate labeled payload — never
+  // composed over, never counted toward the ≥2-voices floor (CONTENT_GO_LIVE
+  // decision 2). Its failure returns [] and must never break the answer.
+  const songVersePromise = retrieveSongVerse(queryVec, resolveIntent(query).inject);
   const retrieval = await retrieveCommentary(queryVec, RETRIEVE_K, { query });
+  const songVerse = await songVersePromise;
+  const withRegister = <T extends TeacherResult>(r: T): T =>
+    (r.kind !== 'empty' && songVerse.length > 0 ? { ...r, song_verse: songVerse } : r);
   if (retrieval.length === 0) {
     return finish({ kind: 'empty', reason: 'No relevant sources found for this question.' });
   }
@@ -160,10 +169,10 @@ export async function teach(
     if (result.ok) {
       // Return the normalized object: its attribution is the authoritative
       // source attribution the verifier just checked the quote against.
-      return finish({ kind: 'composed', response: parsed as TeacherResponse, retrieval });
+      return finish(withRegister({ kind: 'composed', response: parsed as TeacherResponse, retrieval }));
     }
     lastViolations = result.violations;
   }
 
-  return finish({ kind: 'fallback', retrieval, violations: lastViolations });
+  return finish(withRegister({ kind: 'fallback', retrieval, violations: lastViolations }));
 }

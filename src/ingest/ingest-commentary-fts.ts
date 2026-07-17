@@ -9,6 +9,8 @@ interface RawEntry {
   verseStart: number;
   verseEnd: number;
   author: string;
+  work?: string;
+  register?: string;
   year: number | null;
   tradition?: string;
   sourceTitle: string;
@@ -61,7 +63,7 @@ async function main() {
   console.log('Starting COPY...');
   const stream = client.query(
     copyFrom(
-      `COPY commentary_entries (book, chapter, verse_start, verse_end, author, year, tradition, source_title, source_url, body, entry_index) FROM STDIN`
+      `COPY commentary_entries (book, chapter, verse_start, verse_end, author, year, tradition, source_title, source_url, body, entry_index, work, register) FROM STDIN`
     )
   );
 
@@ -98,6 +100,8 @@ async function main() {
           escapeCopy(e.sourceUrl ?? ''),
           escapeCopy(e.text),
           entryIndex,
+          e.work ? escapeCopy(e.work) : null,
+          e.register ? escapeCopy(e.register) : null,
         ]
           .map((v) => (v === null ? '\\N' : String(v)))
           .join('\t');
