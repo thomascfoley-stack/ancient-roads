@@ -1,5 +1,32 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-16 (LIVE ON ancientpaths.app) — public landing on the purchased domain; app + corpus stay gated
+
+**Shipped to production (6 deploys, all verified live):** the marketing landing redesigned around the
+hero photograph (full-viewport image, chapel and vanishing point clear, verse/title/waitlist set on the
+stones over a gradient scrim; secondary content below the fold on parchment); owner copy notes (John
+14:26 on the helper line, "hear what Augustine, Chrysostom, and Calvin have to say about it," beat
+retitled "Built to never interpret Scripture"); /about to match.
+
+**Domain:** owner purchased ancientpaths.app (a typo purchase, acientpaths.app, was caught by
+inspection before wiring and removed). Attached apex + www to the project; metadataBase now defaults to
+https://ancientpaths.app. Verified live: / , /about, /hero-road.jpg all 200; /bible, /commentaries,
+/read, /home, /ask, /api/ask all 307 to /gate; waitlist 200 end to end (test rows cleaned).
+
+**Two production incidents found by LOOKING at the live site, both fixed with tests:**
+1. The boot role-assert (instrumentation.ts) threw on a transient Neon cold-start connection and 500'd
+   EVERY server function. Made it retry and serve-on-unreachable while still hard-failing on BYPASSRLS
+   (web/test/db-boot-assert.test.ts, red-first).
+2. The SITE_PASSWORD gate was blocking the public page's own hero image (dev runs gate-free, so it only
+   broke in prod). /hero-road.jpg added to the exact-match allowlist; middleware test pins it.
+
+**Facts for the next agent:** Vercel Deployment Protection was never on the prod alias; the wall is the
+SITE_PASSWORD middleware, and the marketing tier is now deliberately public through it. Tailwind v4
+gradients are bg-linear-to-*, not bg-gradient-to-* (the old names compile to nothing, silently). The
+Browser-pane preview at CUSTOM window sizes shows a scaled-box compositor glitch; measure the DOM or use
+the presets. Canonical og:url/canonical tags are not emitted (never declared); metadataBase is in place
+if we add them. Real-user login still gated on SEC-1 (Neon email drafted, OWNER_ACTIONS §2a).
+
 ## 2026-07-15 (CI SPLIT + RECONCILE / HARDEN DELTA / DRAFT SLICE 1) — three read-safe tracks, all pushed
 
 **CI split (earlier, `3ac0d9f`).** The `audit` workflow red-failed every push because the licensing/tenancy
