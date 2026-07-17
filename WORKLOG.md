@@ -1,6 +1,50 @@
 # WORKLOG — Autonomous session 2026-07-08
 
-## 2026-07-16 (LANDING COPY — header tagline) — owner's wording, verified both widths
+## 2026-07-16 (CORPUS INGESTION — gate:ingest wired + verse-key repair on DEV) — branch `ingest`, worktree ~/ap-ingest, nothing promoted to prod
+
+**The verifier is wired, the clean tranche is in — all against the Neon DEV branch (`ep-tiny-hat`,
+NEON_BRANCH=dev), no migration, no deploy, no prod write.** Ran parallel to the annotation-toolbelt
+session; touched none of its files.
+
+- **`pnpm gate:ingest`** (`src/ingest/gate-ingest.ts`): one entrypoint CALLING the existing gate modules
+  (license-manifest, licensing.translationShipDecision, legal-corpus MUST_NOT_SERVE,
+  check-corpus-coverage, content-sanity, resource-textmatch, new `verse-key-gate.ts`), irreversible
+  license/provenance gates first. `ingest-harness.ts` now imports Gate B rules (its inline copy
+  substring-matched hosts — the byte-drift the workorder flagged). 3 new gates, each proven RED on real
+  defects first (no synthetic fixtures): **count-parity** (caught barnes pilot 1,300 staged vs 21,036
+  static AND matthew-henry 4,210 vs 4,124 — the latter diagnosed as 86 multi-chunk source_ids duplicated
+  by the 006 re-point migrator, a real pilot defect, PARKED), **sampled content-sanity** (caught real
+  entities in biblehub rows), **chapter-grain text-match** (caught that stored biblehub Calvin is a
+  DIFFERENT EDITION — Latin-interleaved, abridged; 36.1% repair → wrong-edition alarm → re-source, never
+  flag-flip; post-repair 801/801 chapters match, 100%).
+- **Verse-key repair (docs/CORPUS_VERSE_KEY_REPAIR.md §4) EXECUTED on dev:** re-stood the zVerse decoder
+  as committed code (`src/ingest/sword-zverse.ts`; slot layout proven by file-size arithmetic, KJV v11n
+  canon from the repo's own KJV JSON, Barnes "Verse N." label check 99.91% — the 6 mismatches are the
+  module's own range-labels/misplaced links). Re-sourced **Barnes/Wesley/Calvin/Scofield/B.W. Johnson**
+  per-verse from CrossWire (licenses verified per `.conf`), regenerated the static corpus
+  (`regen-crosswire-static.ts`), re-ran `ingest-commentary-fts` → dev. **Collapse 100% → 3.0–3.8%**
+  (clean band); static 371,406 → 215,489 entries; static↔db parity exact. **`verse-keys.test.ts`
+  UN-SKIPPED and green** (threshold untouched). Ratchet baseline 263,496 → **63,111** (the remaining
+  historicalchristian.faith patristic debt).
+- **Quarantined, reversible:** Cambridge/Poole/Pulpit/Benson/Bengel/MacLaren/Darby/Lange/Geneva (200,395
+  old rows → `data/quarantine/biblehub-collapsed-2026-07-17.jsonl`). **Geneva fail-closed:** CrossWire's
+  module has NO DistributionLicense and its module page lists null — recorded as a quarantined manifest
+  entry, needs an owner ruling. barnes-notes `sources` row staged→quarantined on dev (mirrors the
+  manifest's standing ruling; L4 green).
+- **Calvin OT ingested to the teacher (the §3 tranche):** 6,204 entries (books 1–6, 19, 23–39), embedded
+  bge-large via the proven ingest-sword path, **slice coverage 6,204/6,204**, spot-checks verified (Ps
+  23:1, Hos 6:6 land on the genuine comments). Calvin crosswire vectors now 11,292 across 48 books.
+- **Final gate state (dev):** 8/11 green. The 3 reds are named, real, parked items: (1) L3
+  served-provenance — Chrysostom 2,947 + Augustine 2,291 entries still cite historicalchristian.faith
+  (pre-existing owner-tracked debt, "repair to New Advent pending"; mechanical re-pointing without the
+  original match records would fabricate provenance); (2) R1 coverage-commentary — 21,350 un-embedded
+  source_ids = the staged Wesley-OT/Scofield/PNT content + keying deltas; embedding them would enter
+  `LEGAL_CORPUS_FILTER` (author + crosswire URL match ⇒ double-voicing/pool change) — **needs the eval +
+  owner call, do not embed casually**; (3) R3 matthew-henry chunk-duplication (006 pilot defect above).
+- **Not done / explicitly deferred:** historians, OCR works, 006 cutover, Poole fresh parse, Wesley-OT+
+  Scofield+PNT teacher embedding, any deploy or prod promotion. The v3 accuracy eval was NOT re-run:
+  the only served-retrieval change is additive Calvin OT (owner-cleared as no-predicate-change); flagged
+  for the next measurement pass.
 
 Added the owner's tagline under the "Ancient Paths" wordmark in the landing header
 (`web/src/app/page.tsx`): "AI Designed To Lead You To The Holy Spirit, Not Be The Holy Spirit."

@@ -172,7 +172,9 @@ async function main() {
       else { const i = Math.floor(rng() * staticTotal); if (i < SANITY_SAMPLE) sample[i] = e; }
       if (perWork && e.author === matchAuthor && e.text.trim()) {
         const k = `${e.book}:${e.chapter}`;
-        (storedChapters.get(k) ?? storedChapters.set(k, []).get(k)!).push(e.text);
+        const list = storedChapters.get(k) ?? [];
+        list.push(e.text);
+        storedChapters.set(k, list);
       }
     }
 
@@ -299,7 +301,9 @@ async function main() {
         for (const w of work) {
           const d = decodeVerseId(w.verseId);
           const k = `${d.book}:${d.chapter}`;
-          (srcChapters.get(k) ?? srcChapters.set(k, []).get(k)!).push(w.content);
+          const list = srcChapters.get(k) ?? [];
+          list.push(w.content);
+          srcChapters.set(k, list);
         }
         const tally: Record<MatchClass, number> = { match: 0, truncated: 0, differ: 0 };
         let compared = 0;
@@ -325,7 +329,10 @@ async function main() {
   for (const r of results) {
     const mark = r.ok ? (r.skipped ? '○' : '✓') : '✗';
     console.log(`  ${mark} [${r.tier === 'irreversible' ? 'IRREV' : 'rev  '}] ${r.gate.padEnd(28)} ${r.detail}`);
-    if (!r.ok) (r.tier === 'irreversible' ? redIrreversible++ : redReversible++);
+    if (!r.ok) {
+      if (r.tier === 'irreversible') redIrreversible++;
+      else redReversible++;
+    }
   }
   console.log('─'.repeat(72));
   const red = redIrreversible + redReversible;

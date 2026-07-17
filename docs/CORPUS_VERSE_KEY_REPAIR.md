@@ -1,7 +1,16 @@
 # Corpus verse-key repair — biblehub `commentary_entries` (§2)
 
-**Status: DIAGNOSED (2026-07-13), fix NOT started — needs owner approval (source + cost).**
-Measured read-only against prod.
+**Status: REPAIRED ON THE DEV BRANCH (2026-07-16) for 5 of 14 authors; 9 quarantined; NOT promoted to
+prod.** Barnes/Wesley/Calvin/Scofield/B.W. Johnson re-sourced per-verse from CrossWire SWORD modules
+(`src/ingest/sword-zverse.ts`, DistributionLicense verified per `.conf`); static corpus regenerated
+(`src/ingest/regen-crosswire-static.ts`); `ingest-commentary-fts` re-run against dev — collapse 100% →
+3.0–3.8%, forbidden provenance on these authors → 0; `verse-keys.test.ts` un-skipped and green. The 9
+authors with no clean per-verse source (Cambridge/Poole/Pulpit/Benson/Bengel/MacLaren/Darby/Lange/Geneva
+— Geneva's CrossWire module carries NO license grant, fail closed) are quarantined out of the static
+corpus to `data/quarantine/` (reversible). Teacher OT: Calvin OT ingested (6,204 entries, the cleared
+tranche); Wesley-OT/Scofield/PNT teacher-embedding is PARKED — their author strings + crosswire
+source_url would enter `LEGAL_CORPUS_FILTER` (double-voicing/pool change), so it needs the eval + an
+owner call. Original diagnosis (2026-07-13, measured read-only against prod) below.
 
 > **Correction (same day):** my first pass called this "3 of 9 legal voices ~90% missing from *retrieval*" and
 > "true vector coverage ≈ 49%". **That was wrong** — it measured the biblehub reader corpus as a proxy for the
