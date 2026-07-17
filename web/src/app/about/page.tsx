@@ -19,7 +19,7 @@ const PRINCIPLES = [
   },
   {
     h: 'AI is not the Holy Spirit',
-    p: 'Interpretation is not a search result. The Holy Spirit speaks it to our hearts as we labor over the Word and wrestle our lives and wills into submission to it. Ancient Paths hands you the best of this technology safely, so AI serves the labor and never replaces the Helper.',
+    p: "People are starting to ask AI about the Bible, its meaning and how to apply it to their lives. We won't answer those questions on purpose. The Holy Spirit speaks to our hearts as we labor over the Word and wrestle our lives and wills into submission to it. Ancient Paths is designed to give you the best of today's technology to assist you as you labor and never replace the Helper. The teaching belongs to Him, as does the glory.",
   },
 ];
 

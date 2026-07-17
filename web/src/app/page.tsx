@@ -30,7 +30,7 @@ const BEATS = [
   },
   {
     title: 'AI is not the Holy Spirit',
-    body: 'Christians are beginning to ask AI what Scripture means. We believe this is wrong. Interpretation is not a search result. The Holy Spirit speaks it to our hearts as we labor over the Word and wrestle our lives and wills into submission to it. That wrestling is the walk, and no tool should take it from you. Ancient Paths is our attempt to hand Christians the best of this technology safely, so AI serves the labor and never replaces the Helper.',
+    body: "People are starting to ask AI about the Bible, its meaning and how to apply it to their lives. We won't answer those questions on purpose. The Holy Spirit speaks to our hearts as we labor over the Word and wrestle our lives and wills into submission to it. Ancient Paths is designed to give you the best of today's technology to assist you as you labor and never replace the Helper. The teaching belongs to Him, as does the glory.",
   },
 ];
 
