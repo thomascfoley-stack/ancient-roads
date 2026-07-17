@@ -25,6 +25,22 @@ export function offsetInVerse(pieceLengths: number[], pieceIndex: number, offset
 
 const clamp = (n: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, n));
 
+/** Expand a [start, end) range to whole-word boundaries (§3: snap selection to words), then trim
+ *  any whitespace the expansion pulled in at the edges. Returns null if nothing is left. */
+export function snapToWords(text: string, start: number, end: number): { start: number; end: number } | null {
+  let s = clamp(Math.min(start, end), 0, text.length);
+  let e = clamp(Math.max(start, end), 0, text.length);
+  // Trim to the actually-selected non-whitespace content first, so a selection that starts on a
+  // boundary space doesn't reach back into the previous word.
+  while (s < e && /\s/.test(text[s]!)) s++;
+  while (e > s && /\s/.test(text[e - 1]!)) e--;
+  if (s >= e) return null; // empty or all-whitespace selection
+  // Then expand outward to whole-word boundaries.
+  while (s > 0 && /\S/.test(text[s - 1]!)) s--;
+  while (e < text.length && /\S/.test(text[e]!)) e++;
+  return { start: s, end: e };
+}
+
 /** Map a selection (as text-piece indices/offsets) to a { start, end } range within v.text.
  *  Returns null for a collapsed/empty/out-of-range selection. */
 export function rangeToOffsets(

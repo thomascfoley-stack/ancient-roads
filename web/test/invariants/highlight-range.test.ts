@@ -6,7 +6,23 @@
 //         segment per raw range (no tiling) and the reconstruction of two overlapping highlights
 //         no longer equals the verse text.
 import { describe, expect, it } from 'vitest';
-import { offsetInVerse, rangeToOffsets, flattenToSegments } from '@/lib/highlight-range';
+import { offsetInVerse, rangeToOffsets, flattenToSegments, snapToWords } from '@/lib/highlight-range';
+
+describe('§3 snap selection to word boundaries', () => {
+  const text = 'For God so loved the world';
+  it('expands a mid-word selection to the whole word', () => {
+    expect(snapToWords(text, 5, 6)).toEqual({ start: 4, end: 7 }); // "o" in "God" → "God"
+  });
+  it('expands a partial multi-word selection to whole words', () => {
+    expect(snapToWords(text, 5, 13)).toEqual({ start: 4, end: 16 }); // "od so lo" → "God so loved"
+  });
+  it('a selection starting on a boundary space does not reach into the previous word', () => {
+    expect(snapToWords(text, 7, 10)).toEqual({ start: 8, end: 10 }); // space+"so" → "so", not "God so"
+  });
+  it('returns null for an all-whitespace/empty range', () => {
+    expect(snapToWords(text, 3, 3)).toBeNull();
+  });
+});
 
 describe('§1.1 anchor is an offset into v.text, never a DOM-relative offset', () => {
   // A highlighted verse renders as several text nodes: e.g. "For God " | "so loved" | " the world".

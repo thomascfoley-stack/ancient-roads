@@ -15,13 +15,24 @@ import {
   type Translation,
 } from '@/lib/bible';
 import { ReaderHeader } from '@/components/reader-header';
-import { VerseDisplay } from '@/components/verse-display';
+import { VerseDisplay, type StoredSpan } from '@/components/verse-display';
 import { ChapterNav } from '@/components/chapter-nav';
 import { Interlinear } from '@/components/interlinear';
 import { StudyPanel, type StudyTab } from '@/components/study-panel';
 import { WordPanel } from '@/components/word-panel';
 import { fetchOriginal, loadFullLexicon, type OriginalData, type OWord } from '@/lib/original';
 import { encodeVerseId } from '@bible/verse-id';
+
+// The highlight shape returned by GET /api/annotations (sub-verse columns from migration 015).
+interface ApiHighlight {
+  id: string;
+  verse_id: number;
+  span_start: number | null;
+  span_end: number | null;
+  color: string;
+  text_color: string | null;
+  translation: string | null;
+}
 
 function getStoredTranslation(): Translation {
   if (typeof window === 'undefined') return TRANSLATIONS[0]!;
@@ -45,7 +56,8 @@ export default function ReaderPage() {
   const [commentaryCache, setCommentaryCache] = useState<Map<string, CommentaryEntry[]>>(new Map());
   const [interlinear, setInterlinear] = useState(false);
   const [original, setOriginal] = useState<OriginalData | null>(null);
-  const [highlights, setHighlights] = useState<Map<number, string>>(new Map());
+  // verse (1-based within chapter) → its highlight spans (multiple allowed).
+  const [highlights, setHighlights] = useState<Map<number, StoredSpan[]>>(new Map());
   const [notes, setNotes] = useState<Map<number, string>>(new Map());
   const [signedIn, setSignedIn] = useState(false);
   // The unified study panel: which verse, which tab, optional focused word.
@@ -106,9 +118,16 @@ export default function ReaderPage() {
     setNotes(new Map());
     fetch(`/api/annotations?book=${book.bookNum}&chapter=${chapterNum}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((d: { highlights: { verse_id: number; color: string }[]; notes: { verse_id: number; body: string }[] }) => {
+      .then((d: { highlights: ApiHighlight[]; notes: { verse_id: number; body: string }[] }) => {
         setSignedIn(true);
-        setHighlights(new Map(d.highlights.map((h) => [h.verse_id % 1000, h.color])));
+        const byVerse = new Map<number, StoredSpan[]>();
+        for (const h of d.highlights) {
+          const v = h.verse_id % 1000;
+          const arr = byVerse.get(v) ?? [];
+          arr.push({ id: h.id, start: h.span_start, end: h.span_end, color: h.color, textColor: h.text_color, translation: h.translation });
+          byVerse.set(v, arr);
+        }
+        setHighlights(byVerse);
         setNotes(new Map(d.notes.map((n) => [n.verse_id % 1000, n.body])));
       })
       .catch(() => setSignedIn(false));
@@ -119,16 +138,39 @@ export default function ReaderPage() {
     [book, chapterNum],
   );
 
-  const setVerseHighlight = useCallback((verse: number, color: string) => {
-    setHighlights((prev) => new Map(prev).set(verse, color));
-    fetch('/api/annotations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kind: 'highlight', verseId: verseId(verse), color }),
-    }).catch(() => {});
-  }, [verseId]);
+  // Add a highlight span. range === null → whole verse (the tap-a-verse path). Optimistic:
+  // paint locally first, then persist (the save carries the pinned translation).
+  const addHighlight = useCallback(
+    (verse: number, range: { start: number; end: number } | null, color: string) => {
+      const optimistic: StoredSpan = {
+        start: range?.start ?? null,
+        end: range?.end ?? null,
+        color,
+        translation: translation.id,
+      };
+      setHighlights((prev) => {
+        const next = new Map(prev);
+        next.set(verse, [...(next.get(verse) ?? []), optimistic]);
+        return next;
+      });
+      fetch('/api/annotations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind: 'highlight',
+          verseId: verseId(verse),
+          color,
+          spanStart: range?.start ?? null,
+          spanEnd: range?.end ?? null,
+          translation: translation.id,
+        }),
+      }).catch(() => {});
+    },
+    [verseId, translation],
+  );
 
-  const clearVerseHighlight = useCallback((verse: number) => {
+  // Clear every span on a verse (the whole-verse "clear" affordance in the study panel).
+  const clearVerse = useCallback((verse: number) => {
     setHighlights((prev) => {
       const next = new Map(prev);
       next.delete(verse);
@@ -223,13 +265,13 @@ export default function ReaderPage() {
           <VerseDisplay
             data={data}
             bookName={book.name}
+            translation={translation.id}
             selectedVerse={study?.verse ?? null}
             onVerseClick={handleVerseClick}
             highlights={highlights}
             notedVerses={new Set(notes.keys())}
             signedIn={signedIn}
-            onSetHighlight={setVerseHighlight}
-            onClearHighlight={clearVerseHighlight}
+            onAddHighlight={addHighlight}
             onOpen={(verse, tab) => openStudy(verse, tab)}
           />
           <ChapterNav book={book} chapter={chapterNum} />
@@ -265,11 +307,11 @@ export default function ReaderPage() {
           defaultTab={study.tab}
           focusWordIdx={study.focusWordIdx}
           annotation={{
-            color: highlights.get(study.verse) ?? null,
+            color: highlights.get(study.verse)?.at(-1)?.color ?? null,
             note: notes.get(study.verse) ?? '',
             signedIn,
-            onSetHighlight: (color) => setVerseHighlight(study.verse, color),
-            onClearHighlight: () => clearVerseHighlight(study.verse),
+            onSetHighlight: (color) => addHighlight(study.verse, null, color),
+            onClearHighlight: () => clearVerse(study.verse),
             onSaveNote: (body) => { saveVerseNote(study.verse, body); setStudy(null); },
             onDeleteNote: () => deleteVerseNote(study.verse),
           }}
