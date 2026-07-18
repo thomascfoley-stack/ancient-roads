@@ -106,10 +106,14 @@ export const HNSW_EF_SEARCH = 64;
 // legalBasePool(), which wraps this in a transaction that sets hnsw.ef_search. Exporting
 // the raw string is exactly how a 4th call site silently ships at the default ef_search=40
 // and starves (asking for 50 legal rows returned 5, diagnostic 2026-07-14). One way in.
-function legalBasePoolSql(pool: number): string {
+function legalBasePoolSql(pool: number, extraFilter = ''): string {
+  // extraFilter: a read-only DIAGNOSTIC knob (default '' → identical production
+  // SQL). The sermon-lane slice (2026-07-18) uses it to measure the pool with
+  // certain source_types/works excluded, through THIS shipped path — never a
+  // lookalike. Production callers never pass it.
   return `SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
      FROM embeddings
-     WHERE user_id IS NULL AND ${PROSE_TYPE_SQL} AND ${LEGAL_CORPUS_FILTER}
+     WHERE user_id IS NULL AND ${PROSE_TYPE_SQL} AND ${LEGAL_CORPUS_FILTER}${extraFilter ? ` AND ${extraFilter}` : ''}
      ORDER BY embedding <=> $1::vector LIMIT ${pool}`;
 }
 
@@ -127,10 +131,11 @@ export async function legalBasePool(
   vec: string,
   pool: number = CANDIDATE_POOL,
   ef: number = HNSW_EF_SEARCH,
+  extraFilter = '', // read-only diagnostic knob; default '' = production SQL
 ): Promise<BasePoolRow[]> {
   const results = await sql.transaction([
     sql`SELECT set_config('hnsw.ef_search', ${String(ef)}, true)`,
-    sql.query(legalBasePoolSql(pool), [vec]),
+    sql.query(legalBasePoolSql(pool, extraFilter), [vec]),
   ]);
   return results[1] as BasePoolRow[];
 }
