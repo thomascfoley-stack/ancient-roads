@@ -31,6 +31,7 @@ import {
   isPublishedCommentaryEntry,
   LEGAL_COMMENTARY_ENTRIES_PREDICATE,
 } from '../../web/src/lib/legal-corpus';
+import { LEGAL_CORPUS_FILTER } from '../../web/src/lib/teacher/routing';
 import { translationShipDecision } from '../../web/src/lib/licensing';
 
 const CORPUS_DIR = 'web/public/commentaries';
@@ -208,16 +209,23 @@ async function main() {
         ? `${srcRows.length} non-quarantined sources, provenance clean`
         : dirtySources.map((r) => `${r.slug} [${r.status}] → ${r.url}`).join(' · '));
 
-    // [L5] MUST_NOT_SERVE — static (book-aware serve check) + DB legal predicate.
-    const { rows: mnsDb } = await db.query<{ author: string; n: string }>(
-      `SELECT author, count(*) n FROM commentary_entries
-        WHERE ${LEGAL_COMMENTARY_ENTRIES_PREDICATE} AND author = ANY($1)
-        GROUP BY author`,
-      [[...MUST_NOT_SERVE_AUTHORS]],
-    );
+    // [L5] MUST_NOT_SERVE — static (book-aware serve check) + BOTH served DB
+    // stores. The DB side now fetches distinct served authors and applies
+    // isMustNotServeAuthor in JS (the SAME normalized matching the static side
+    // uses), instead of an exact `= ANY(list)` that missed spelling variants; and
+    // it sweeps the embeddings teacher pool too, not just commentary_entries
+    // (A6 line-by-line 2026-07-17: Origen's 'father' rows live in embeddings).
+    const ceAuthors = await db.query<{ author: string }>(
+      `SELECT DISTINCT author FROM commentary_entries WHERE ${LEGAL_COMMENTARY_ENTRIES_PREDICATE}`);
+    const embAuthors = await db.query<{ author: string }>(
+      `SELECT DISTINCT metadata->>'author' author FROM embeddings WHERE user_id IS NULL AND ${LEGAL_CORPUS_FILTER}`);
+    const dbBanned = [
+      ...ceAuthors.rows.map((r) => ({ store: 'commentary_entries', author: r.author })),
+      ...embAuthors.rows.map((r) => ({ store: 'embeddings', author: r.author })),
+    ].filter((r) => r.author && isMustNotServeAuthor(r.author));
     const mnsBad = [
       ...[...mustNotServeHits.entries()].map(([a, n]) => `static: ${a} (${n})`),
-      ...mnsDb.map((r) => `db: ${r.author} (${r.n})`),
+      ...dbBanned.map((r) => `${r.store}: ${r.author}`),
     ];
     record('L5 must-not-serve', 'irreversible', mnsBad.length === 0,
       mnsBad.length === 0 ? `none of ${MUST_NOT_SERVE_AUTHORS.length} banned authors reachable from a served path` : mnsBad.join(' · '));
