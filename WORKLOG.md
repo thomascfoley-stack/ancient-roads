@@ -1,5 +1,26 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-18 (HERO IMAGE swap) — committed to main (af34b7f), NOT yet on live prod
+
+Owner supplied a refined hero photo (olive-path chapel). Swapped `web/public/hero-road.jpg`
+in place (filename kept, so the landing hero, the auth background, and the `/hero-road.jpg`
+gate allowlist all pick it up with zero code change). Render verified in a browser at desktop
+(1280) and mobile (~327px) widths off `theology-prod-dev` on :3013: photo fills the viewport,
+`object-[62%_30%]` keeps the chapel + path framed, scrim keeps the type legible, no horizontal
+overflow, no console errors. Committed from an isolated worktree at origin/main (dirty main tree,
+same discipline as the 654f028 deploy).
+
+- **Not a resolution upgrade:** new file is the SAME 1376x768 as the placeholder it replaced
+  (~1.03 MB vs ~1.02 MB). It is a better *composition*, not higher def. A genuinely crisper hero
+  on large/retina screens needs a ~2048-2560px-wide source.
+- **No OG/social image still:** `layout.tsx` sets no `openGraph.images` and twitter card is
+  `summary` (no photo on shared links). Candidate follow-up: add the hero as the OG image +
+  `summary_large_image`. Not done (out of scope, changes every shared-link preview).
+- **Deploy status:** on main at af34b7f, alongside the nav-label commits (8237f49, a974085).
+  Real prod (ancientpaths.app, the git-DISCONNECTED `web` Vercel project) is still on 654f028
+  and updates only via `vercel --prod` from an isolated worktree. None of these three commits
+  are live for users until that deploy runs.
+
 ## 2026-07-16 (DEPLOY — landing copy + Today home screen) — live on ancientpaths.app at 654f028
 
 Owner said ship. Deployed **654f028** (not HEAD) from an isolated git worktree because the
