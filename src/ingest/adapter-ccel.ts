@@ -200,16 +200,30 @@ export async function acquireCcel(entry: Record<string, unknown>, opts: { write:
     if (ids.length === 0) return { slug: entry.slug as string, units: 0, anchored: 0, embedded: 0, skipped: true, reason: `author page enumeration empty (${acq.ccel_author})` };
   }
 
+  // Author enumeration OVER-collects (indexes, bios, "works" landing pages) that
+  // legitimately parse to 0 sections — those are noise to skip, not a fail. A
+  // named/explicit volume yielding 0 IS a real structure problem → fail closed
+  // (A6 line-by-line 2026-07-17 tightened empty-volume handling; the resume then
+  // quarantined flavel/edwards on enumeration noise — this restores the
+  // distinction). Guard: if >50% of enumerated volumes are empty, the parser
+  // itself is suspect → fail.
+  const enumerated = !acq.ccel_ids && !acq.ccel_id_pattern && !!acq.ccel_author;
   const allSections: RegisterSection[] = [];
-  let emptyVolumes = 0;
+  const emptyIds: string[] = [];
   for (const id of ids) {
     const xml = await fetchCcelXml(id);
-    if (!xml) return { slug: entry.slug as string, units: 0, anchored: 0, embedded: 0, skipped: true, reason: `fetch failed / not ThML: ${id}` };
+    if (!xml) { if (enumerated) { emptyIds.push(`${id}(no-thml)`); continue; } return { slug: entry.slug as string, units: 0, anchored: 0, embedded: 0, skipped: true, reason: `fetch failed / not ThML: ${id}` }; }
     const secs = buildCcelSections(xml, (acq as { heading_filter?: string }).heading_filter);
-    if (secs.length === 0) emptyVolumes++; // a silent 0-section volume must fail the WORK, not vanish
+    if (secs.length === 0) emptyIds.push(id);
     allSections.push(...secs);
   }
-  if (emptyVolumes > 0) return { slug: entry.slug as string, units: allSections.length, anchored: 0, embedded: 0, skipped: true, reason: `${emptyVolumes}/${ids.length} volumes parsed to 0 sections — structure not recognized` };
+  if (emptyIds.length > 0 && !enumerated) {
+    return { slug: entry.slug as string, units: allSections.length, anchored: 0, embedded: 0, skipped: true, reason: `${emptyIds.length}/${ids.length} named volumes parsed to 0 sections — structure not recognized: ${emptyIds.join(',')}` };
+  }
+  if (enumerated) {
+    if (emptyIds.length > ids.length * 0.5) return { slug: entry.slug as string, units: allSections.length, anchored: 0, embedded: 0, skipped: true, reason: `${emptyIds.length}/${ids.length} enumerated volumes empty (>50%) — parser suspect` };
+    if (emptyIds.length > 0) console.log(`  ${entry.slug as string}: skipped ${emptyIds.length} non-content enumerated page(s): ${emptyIds.slice(0, 6).join(', ')}`);
+  }
   // NO pre-chunking here: register-writer chunks heading+body once, at word
   // boundaries. The old pre-chunk pass re-prefixed headings ("(2/2)") and made
   // register-writer chunk the already-chunked text a second time (A6 audit).
