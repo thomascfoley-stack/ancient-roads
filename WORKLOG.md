@@ -1,5 +1,65 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-18 (DEPLOY) — 24677ba LIVE on ancientpaths.app (hero swap + nav labels)
+
+Owner said ship. Ran `./deploy.sh` from an isolated worktree at origin/main (the main
+checkout was dirty; corpus/node_modules/.env.local/.vercel cloned/symlinked in, clean-tree
+gate passed on 24677ba). Predeploy ratchet green (forbidden-provenance 263,496 = baseline;
+all Bible-translation dirs licensed). `next build` clean (32/32 pages). `vercel --prod
+--archive=tgz` to the `web` project, 153 MB uploaded, cloud build 49s.
+
+- **Now live:** the nav labels (Reader→Bible, "Explore the paths"→"Ancient Paths",
+  mobile Explore→AP) and the olive-path chapel hero (af34b7f). Supersedes the 2026-07-16
+  deploy (654f028).
+- **Deployment:** `dpl_FYQxxZ1rLN1wd4UeMwShhX12G5BM` READY → aliased ancientpaths.app +
+  www. Live-verified by fetch: `/hero-road.jpg` = 1,031,066 bytes (the new file, was
+  1,022,441) and the site's assets now report `dpl_FYQxxZ1…` (was `dpl_EjzknRQEp`). Raw hero
+  renders at 1376×768.
+- **NOT changed:** no prod DB change, no go-live cutover. The misspelled-stray cleanup
+  (git disconnect) from earlier today stands.
+- Hero image decision: kept the 1376×768 image over the wider 2:56PM 1600×672 variant — same
+  ~1 MP, and the taller image is sharper for a full-viewport (min-h-dvh) hero. See below.
+
+## 2026-07-18 (INFRA source-of-truth) — verified two Vercel projects; disconnected the stray; wrote docs/DEPLOYMENT.md
+
+Read-only verification against the live Vercel dashboard, then one reversible cleanup. New
+`docs/DEPLOYMENT.md` is now the durable source of truth. Findings:
+
+- **Real prod = `web`** (`prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR`, team `home-network-hardening`) →
+  ancientpaths.app + www + web-psi-eight-83.vercel.app. Git-connect confirmed **OFF**. Serves
+  ancientpaths.app via CLI deploy `dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr` = **654f028, 2026-07-16**.
+  Matches `web/.vercel/project.json` and `deploy.sh`. Made ZERO changes to this project.
+- **Stray = `theology-study-app`** (`prj_a3OXQsM5RSvstgfL0VuF7FAU6nX5`) → acientpaths.app
+  (misspelled) + theology-study-app.vercel.app. Was git-auto-deploying `main` (corpus-less).
+  **DISCONNECTED its git repo** (Settings → Git → Disconnect; "settings and configuration
+  preserved"; reversible). Verified: it now reports "not connected to a Git repository."
+- **acientpaths.app is DEAD:** no A/CNAME, `Invalid Configuration`, HTTPS returns nothing.
+  Redirect to ancientpaths.app not cleanly possible (no DNS points at Vercel), so LEFT + flagged.
+  Did NOT delete the project or the domain (irreversible → owner decides).
+- **Correction to "everything is live":** it is NOT. Real prod (ancientpaths.app) is still on
+  654f028 (2026-07-16). The nav labels + hero (`8237f49`, `a974085`, `af34b7f`) are on `main`
+  but NOT deployed. A `./deploy.sh` run is still required to ship them.
+
+## 2026-07-18 (HERO IMAGE swap) — committed to main (af34b7f), NOT yet on live prod
+
+Owner supplied a refined hero photo (olive-path chapel). Swapped `web/public/hero-road.jpg`
+in place (filename kept, so the landing hero, the auth background, and the `/hero-road.jpg`
+gate allowlist all pick it up with zero code change). Render verified in a browser at desktop
+(1280) and mobile (~327px) widths off `theology-prod-dev` on :3013: photo fills the viewport,
+`object-[62%_30%]` keeps the chapel + path framed, scrim keeps the type legible, no horizontal
+overflow, no console errors. Committed from an isolated worktree at origin/main (dirty main tree,
+same discipline as the 654f028 deploy).
+
+- **Not a resolution upgrade:** new file is the SAME 1376x768 as the placeholder it replaced
+  (~1.03 MB vs ~1.02 MB). It is a better *composition*, not higher def. A genuinely crisper hero
+  on large/retina screens needs a ~2048-2560px-wide source.
+- **No OG/social image still:** `layout.tsx` sets no `openGraph.images` and twitter card is
+  `summary` (no photo on shared links). Candidate follow-up: add the hero as the OG image +
+  `summary_large_image`. Not done (out of scope, changes every shared-link preview).
+- **Deploy status:** on main at af34b7f, alongside the nav-label commits (8237f49, a974085).
+  Real prod (ancientpaths.app, the git-DISCONNECTED `web` Vercel project) is still on 654f028
+  and updates only via `vercel --prod` from an isolated worktree. None of these three commits
+  are live for users until that deploy runs.
 ## 2026-07-18 — full re-ingest + final verification (A4/A5/A6 close)
 
 Whole corpus re-ingested through the fixed adapters (survived an accidental

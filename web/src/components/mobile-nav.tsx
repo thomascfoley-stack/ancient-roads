@@ -42,8 +42,8 @@ export function MobileNav() {
 
   const tabs = [
     { href: '/', label: 'Home', active: pathname === '/', icon: <HomeIcon /> },
-    { href: '/read/jhn/1', label: 'Reader', active: pathname.startsWith('/read'), icon: <BookIcon /> },
-    { href: '/ask', label: 'Explore', active: pathname.startsWith('/ask'), icon: <AskIcon /> },
+    { href: '/read/jhn/1', label: 'Bible', active: pathname.startsWith('/read'), icon: <BookIcon /> },
+    { href: '/ask', label: 'AP', active: pathname.startsWith('/ask'), icon: <AskIcon /> },
     { href: '/library/commentaries', label: 'Library', active: pathname.startsWith('/library'), icon: <LibraryIcon /> },
   ];
   const tabClass = (active: boolean) =>
