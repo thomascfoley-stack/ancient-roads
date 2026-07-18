@@ -1,5 +1,43 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-18 — full re-ingest + final verification (A4/A5/A6 close)
+
+Whole corpus re-ingested through the fixed adapters (survived an accidental
+session-close mid-run + a double-loop race from an orphaned detached process;
+recovered idempotently by killing all writers and running a single clean resume). Final DEV state: **34 works served** (all via fixed adapters) +
+5 reference works staged + origen staged; **297,059 register rows**; fusion 0,
+sub-20-char junk 0, forbidden-provenance 0 (DB + static), 0 stuck; all 6 indexes
+valid; FTS 191,749 rows. Text-integrity fixes verified live: Trent canons
+restored to schaff-creeds (205 chunks, was ~0), K&D Ps 147-150 restored (28
+rows, was 0).
+
+**Final verification:**
+- `npm run audit`: PASSED (typecheck ×3, lint, knip, deps, tests + coverage).
+- Invariants (live DB): 57/57 — licensing (Tyndale absent, no quarantined author,
+  9 voices present, forbidden ratchet), verse-keys, hnsw + FTS lockstep.
+- **interpretation_bait (live compose→verify): 35/35 = 0 breaches reaching the
+  user** (27 composed, 8 safe-fallback incl. 1 passages_grounded + 1
+  diversity_traditions — the A6 containment/diversity fixes firing correctly).
+  Per CLAUDE.md this is a **~92% lower bound** (rule of three on n=35), NOT ≥99%.
+- Register wall (A5.2): **0 breaches** on the full corpus — vector pools, FTS
+  (955 hymn rows, 0 leak), reader (21 labeled, 0 unlabeled).
+- Reader (A5.3, browser @375px): labeled hymn section, register chips, 0 host
+  links, clean full commentary, console clean.
+
+**⚠ A5.1 — commentary accuracy REGRESSED on broad queries** (frozen v3, full
+corpus): verse-ref 95/95 · pericope 93/100 (both held) but epistle HIT@2 88→72,
+topical 70→45, proper-noun 90→80. Diagnosed (not guessed): the exegetical pool is
+now ~40% Spurgeon sermon chunks + Maclaren/Owen/fathers; broad queries surface
+thematically-relevant sermons anchored to related-but-different passages, crowding
+out the labeled passage. Content is clean (no bad anchors/dupes — verified by pool
+inspection). A corpus-balance TRADEOFF, not a defect. **Only affects /ask** (ranked
+retrieval); the reader (per-verse, no ranking) is richer, not worse. Flagged as the
+headline owner decision in GO_LIVE_STATUS.md with 3 options (ship as-is / reader-
+all-but-ask-baseline / rebalance+v4). Recommendation: (b) then (c). NOT decided —
+never tune to the test, never ship below the bar without owner sign-off.
+
+
+
 ## 2026-07-17 (GO-LIVE, cont.) — finish-everything ingest + line-by-line review
 
 **Ingest completed the queue.** Reference tier decoded + STAGED (never served,

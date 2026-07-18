@@ -1,46 +1,88 @@
-# GO-LIVE STATUS — morning readout (overnight run of 2026-07-16 → 17)
+# GO-LIVE STATUS — morning readout (runs of 2026-07-16 → 18)
 
 **Branch `golive`, everything DEV-only. Part C NOT executed (hard stop honored).**
-This doc is the wake-up readout + the exact Part C sequence. Numbers marked ⏳ are
-filled by the overnight finisher; if any is still ⏳ when you read this, the run
-died mid-flight — resume `data/overnight-driver.sh`, don't restart.
+The whole corpus was re-ingested through the fixed adapters after the A6 line-by-
+line audit. **One BLOCKER for the owner: the full-corpus /ask retrieval accuracy
+regressed on broad queries (A5 check 1 below) — a corpus-balance decision, not a
+bug.** Everything else is green.
+
+## ⚠ HEADLINE DECISION — the /ask exegetical pool regressed (read first)
+
+The frozen v3 eval on the FULL re-ingested corpus:
+
+| category | HIT@1 | HIT@2 | vs baseline HIT@2 |
+|---|---|---|---|
+| verse-ref (n=40) | 95 | 95 | 98 → **95** (held) |
+| pericope (n=15) | 93 | 100 | 100 → **100** (held) |
+| epistle (n=25) | 40 | 72 | 88 → **72** ↓ |
+| topical (n=20) | 10 | 45 | 70 → **45** ↓↓ |
+| proper-noun (n=10) | 70 | 80 | 90 → **80** ↓ |
+| control (n=10) | clean 10/10, 0 hijacks | | ✓ |
+
+**Precise queries held; broad/thematic queries regressed.** Root cause (diagnosed,
+not guessed): the exegetical pool went from ~commentary-only to **297,059 rows,
+~40% of them Spurgeon's 118k sermon chunks**, plus Maclaren/Owen/Edwards/fathers.
+For a broad query ("loving one another") the pool fills with genuine, correctly-
+anchored **sermons ON the theme** that anchor to *related-but-different* passages,
+crowding out the single labeled passage. The content is clean — no bad anchors, no
+duplicates, no pollution (verified by direct pool inspection). It is a **corpus-
+balance tradeoff**, and per the standing rule ("never ship a pipeline below the
+accuracy bar; any regression the tree can't self-fix → LOG for the owner") it is
+**yours to decide.**
+
+**Critical scoping — this only affects /ask, NOT the reader.** The eval measures the
+teacher's ranked retrieval (`legalBasePool`→rerank). The **reader** (per-verse
+commentary panel, static JSON) shows ALL published voices for a verse with no
+ranking competition — it is *richer*, not worse, with the new works, and is
+verified clean (below). So the reader can ship; the /ask pool is the open question.
+
+Options (all reversible; none applied — your call):
+- **(a) Ship the expanded pool as-is.** Broader voices; lower passage-precision on
+  broad queries. Users get thematically-relevant Spurgeon/Maclaren instead of the
+  one "textbook" passage.
+- **(b) Reader = all works; /ask pool = commentary-only baseline.** Preserves the
+  95/98·87/100·88·70·80/90 accuracy. Mechanically: keep the new work slugs in the
+  reader allowlist (`PUBLISHED_WORKS`) but drop them from `LEGAL_CORPUS_FILTER` /
+  `SERVED_PROSE_WORKS` (the /ask pool). One-constant change, fully reversible.
+- **(c) Rebalance ranking** (per-work pool cap so Spurgeon can't dominate, or a
+  sermon down-weight) and re-measure on a fresh held-out v4 — NOT tuned to this
+  eval (held-out discipline). The real fix if you want both breadth AND precision.
+
+My recommendation: **(b) for the immediate go-live** (ship the reader's richer
+corpus + keep /ask accuracy), then **(c)** as the follow-up to earn the sermons
+into /ask. But this is explicitly flagged for you, not decided.
 
 ## Green / red per phase
 
 | Phase | State | Evidence |
 |---|---|---|
-| 0 — verifier fail-open | ✅ GREEN | seeded drift block returned `{ok:true}` before, `unknown_block_type` violation after; byte-synced; 35 tests |
-| 1 — schema (017) | ✅ GREEN | hymn/poetry/art in the CHECK; applied twice (idempotent) on dev |
-| 2 — register read path | ✅ GREEN | 018/019 applied; lockstep tests green; licensing recall probe 50/50 |
-| A1 — eval gate (pre-ingest) | ✅ GREEN | frozen v3 n=120: verse-ref 95/98 · pericope 87/100 · epistle 88 · topical 70 · proper-noun 80/90 · control clean — identical to baseline |
-| A2 — adapters | ✅ GREEN | ccel + gutenberg + helloao + sword-bridge; each proven against a seed-validated anchor (Olney→1Chr 17:16, Keble→Lam 3:22) |
-| A3 — 46-work queue | 🟡 see table | hymn/poetry tier: 14 published (5,561 served rows); prose tier ⏳ (in flight overnight) |
-| A4 — static JSON + FTS | ⏳ | FTS regen is the driver's last step (work/register columns ride the COPY) |
-| A5 — both-surface confirm | 🟡→⏳ | register-wall: **0 breaches** on 5 queries incl. "amazing grace" (hardest case); reader shows Scottish Psalter on Ps 23 attributed, `paraphrase`, 390px+desktop, console clean; EntryCard **0 external host links** (link removed — commit 86ef7f6). ⏳ full-corpus eval re-run after prose lands |
-| A6 — deep-audit | ⏳ | fresh agents after the driver completes |
-| B1 — 021 REVOKE | ✅ GREEN (dev) | section_anchors/section_embeddings/section_history_anchors → SELECT-only for app_runtime, verified by role_table_grants |
-| B2 — forbidden-provenance removal | ⏳ | script proven (coverage-guarded, backup-before-delete); applies automatically once chrysostom/augustine NPNF re-source lands |
+| 0 — verifier fail-open | ✅ GREEN | dispatch default fails closed; 41 verifier + grounding tests green; both src/ & web/ copies byte-identical |
+| 1 — schema (017/020/022) | ✅ GREEN | hymn/poetry/art + 'ingesting' in the CHECKs; embeddings write-policy user-scoped (022) — all applied idempotently on dev |
+| 2 — register read path | ✅ GREEN | 018/019 applied; song/verse + FTS lockstep tests green; licensing recall 50/50 |
+| A2 — adapters | ✅ GREEN | ccel/gutenberg/helloao/sword-bridge/sword-ld/bdb/archive; text-integrity fixes verified (Trent canons restored, K&D Ps147-150 restored, 0 fused rows) |
+| A3 — ingest | ✅ GREEN | 34 works served (all re-ingested via fixed adapters), 5 reference works staged, origen staged; 297,059 register rows; fusion 0 · junk 0 · forbidden 0 · 0 stuck |
+| A4 — static JSON + FTS | ✅ GREEN | FTS 191,749 rows (work/register columns); all 6 indexes valid |
+| A5.1 — commentary accuracy | 🔴 **REGRESSED** | see the HEADLINE DECISION above — broad-query HIT@2 down; owner call |
+| A5.2 — register wall | ✅ GREEN | **0 breaches** on the full corpus: vector pools (incl. "amazing grace"), FTS (955 hymn rows, 0 leak), reader (21 labeled, 0 unlabeled); song_verse non-empty 5/5 |
+| A5.3 — reader surface | ✅ GREEN | Ps 23 @375px: "Hymns & sacred poetry" labeled section, Hymn/paraphrase/Poetry chips, **0 external host links**, Calvin/Augustine render full+clean, "words of men" line, console clean |
+| A6 — deep-audit + line-by-line | ✅ DONE | 83 confirmed findings; 3 criticals + all serving-correctness majors fixed; escalations logged. `docs/GO_LIVE_A6_FINDINGS.md` |
+| Sec — security review | ✅ GREEN | 0 high-confidence vulns; snippet sink + Function() eval hardened |
+| B1 — 021 REVOKE | ✅ GREEN (dev) | anchor/embedding satellite tables SELECT-only for app_runtime |
+| B2 — forbidden-provenance | ✅ GREEN (dev) | ratchet 0 in DB AND static corpus; backup-before-delete proven |
 
-## A5 — the two "no regression" checks
-
-1. **Commentary held**: frozen v3 re-run on the FULL corpus → ⏳ (fill: per-category vs baseline 95/98 · 87/100 · 88 · 70 · 80/90)
-2. **Register wall held**: hymns/poems in ANY exegetical pool (base/injection/backfill) across 5 probe queries = **0 breaches**; song_verse pool non-empty 5/5; prose never in song_verse. (`web/src/scripts/register-wall-check.mts` — re-run anytime.)
-
-## Quarantine / escalation list (owner decisions or follow-ups)
+## Quarantine / deferred / owner-decision list
 
 | Work | State | Why / next step |
 |---|---|---|
-| origen-commentary | staged, NOT served | standing MUST_NOT_SERVE 'Origen' ruling vs the go-live queue — your editorial call |
-| herbert-temple | quarantined | no CCEL ThML (HTML landing page); refetch from Wikisource later — attribute to author, never a host |
-| bramley-carols | quarantined | same — no CCEL ThML edition |
-| montgomery-sacred-poems | quarantined | CCEL structure unrecognized (no typed/classed divs) |
-| rossetti-verses | quarantined | Gutenberg structure unrecognized (1 unit) |
-| isbe · eastons · smiths · naves | deferred | zLD/RawLD dictionary decoder not built this run (Catena zCom WAS ingested); follow-up decoder |
-| bdb-lexicon | deferred | github structured-data pipeline (not verse-voice prose) — separate follow-up |
-| thayers-lexicon | deferred (staged intent) | archive.org OCR tier; archive adapter not built this run |
-| josephus-works | skipped | duplicate of the already-staged josephus-whiston (CrossWire) |
-| historians (schaff-history, edersheim) | staged, never served | write-contract path; no read path exists (by design) |
-| ⏳ any overnight auto-quarantines | see `data/ingest-run-log.jsonl` | pre-authorized: quarantine + log + continue |
+| origen-commentary | staged, NOT served | standing MUST_NOT_SERVE 'Origen'. NOTE: Catena Aurea (served) carries Origen EXCERPTS attributed "as quoted by Aquinas" — your editorial call whether that's acceptable |
+| whitefield-works | quarantined | PG 68976 is only vol 1/6 and mixes letters/sermons/tracts with no clean boundaries — needs a multi-volume segmentation profile |
+| bramley-carols | quarantined | all 5 archive.org copies are engraved-music editions (27-31% OCR garbage), titles unrecoverable |
+| donne-divine-poems, herrick-noble-numbers | quarantined | whole secular volumes (Grierson, Hesperides) under sacred titles — need section-scoped profiles |
+| thayers-lexicon | quarantined | archive.org OCR: 0% Greek-script headwords, 6.2% strict-match — needs a structured TEI/Strong's source, not a better parser |
+| isbe · easton · nave · smith · bdb | STAGED (never served) | decoded + ingested as reference. **Serving UX is your design call** — a reference pane vs blending into /ask (do NOT blend into the exegetical pool without deciding) |
+| historians (schaff-history, edersheim, josephus-whiston) | staged, never served | write-contract path; no read path (by design) |
+| herbert-temple / montgomery / rossetti | ✅ RECOVERED + served | archive.org Cassell 1887 / CCEL title-div fallback / PG title-line splitter |
+| Herbert OCR warts | note | 1887 Cassell has scattered OCR errors in headings (NATUKE., COLOSSIANS hi. 3.) — accept or re-source |
 
 ## PART C — the deliberate prod cutover (YOUR eyes-open step; needs prod creds)
 
