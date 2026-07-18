@@ -1,5 +1,6 @@
 import { getDb } from './db';
 import { LEGAL_COMMENTARY_ENTRIES_PREDICATE } from './legal-corpus';
+import { EXEGETICAL_FTS_EXCLUSION } from './teacher/routing';
 
 export interface CommentarySearchResult {
   id: number;
@@ -52,7 +53,7 @@ export async function searchCommentaries(opts: {
       FROM commentary_entries
       WHERE tsv @@ websearch_to_tsquery('english', $1)
         AND (${LEGAL_COMMENTARY_ENTRIES_PREDICATE})
-        AND (register IS NULL OR register NOT IN ('hymn','poetry'))
+        AND (${EXEGETICAL_FTS_EXCLUSION})
         AND ($2::smallint IS NULL OR book = $2)
         AND ($3::text IS NULL OR tradition = $3)
         AND ($4::text IS NULL OR author = $4)
@@ -72,7 +73,7 @@ export async function searchCommentaries(opts: {
         FROM commentary_entries
         WHERE tsv @@ websearch_to_tsquery('english', $1)
           AND (${LEGAL_COMMENTARY_ENTRIES_PREDICATE})
-          AND (register IS NULL OR register NOT IN ('hymn','poetry'))
+          AND (${EXEGETICAL_FTS_EXCLUSION})
           AND ($2::smallint IS NULL OR book = $2)
           AND ($3::text IS NULL OR tradition = $3)
           AND ($4::text IS NULL OR author = $4)

@@ -79,6 +79,12 @@ const sqlStrList = (xs: readonly string[]) => xs.map((s) => `'${s.replace(/'/g, 
 export const PROSE_TYPE_SQL = `source_type IN (${sqlStrList(SERVED_PROSE_TYPES)})`;
 export const SONG_VERSE_TYPE_SQL = `source_type IN (${sqlStrList(SERVED_SONG_VERSE_TYPES)})`;
 
+// Exegetical-surface exclusion for commentary_entries (the FTS search). Excludes
+// song/verse rows TWO ways so a NULL/missing register column can't fail the wall
+// open (A6 line-by-line 2026-07-17): by register AND by the known song/verse work
+// slugs. Legacy commentary rows (register NULL, work NULL) still pass.
+export const EXEGETICAL_FTS_EXCLUSION = `(register IS NULL OR register NOT IN ('hymn','poetry')) AND (work IS NULL OR work NOT IN (${sqlStrList(SERVED_SONG_VERSE_WORKS)}))`;
+
 export const LEGAL_CORPUS_FILTER = `(metadata->>'author' IN ('John Gill','Jamieson, Fausset & Brown','Adam Clarke','Matthew Henry')
    OR (metadata->>'author'='John Chrysostom'    AND (metadata->>'verseId')::int/1000000 IN (40,43,44))
    OR (metadata->>'author'='Augustine of Hippo' AND (metadata->>'verseId')::int/1000000 IN (19,43))
