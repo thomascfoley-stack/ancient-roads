@@ -22,7 +22,11 @@ function localEnv(name: string): string | undefined {
 async function main() {
   const branch = process.env.DATABASE_URL ? process.env.NEON_BRANCH : localEnv('NEON_BRANCH');
   if (branch !== 'dev' && branch !== 'test') throw new Error(`STOP: NEON_BRANCH="${branch ?? '(unset)'}" must be dev|test`);
-  const db = new pg.Client({ connectionString: (localEnv('DATABASE_URL') ?? '').replace(/^"|"$/g, ''), ssl: { rejectUnauthorized: false } });
+  const dbUrl = (localEnv('DATABASE_URL') ?? '').replace(/^"|"$/g, '');
+  // The branch label is self-attested — also require a non-prod endpoint, the
+  // same guard writeRegisterWork/b2 use (A6 line-by-line 2026-07-17).
+  if (!/ep-tiny-hat|localhost|127\.0\.0\.1/.test(dbUrl)) throw new Error('STOP: DATABASE_URL is not the dev endpoint (ep-tiny-hat)');
+  const db = new pg.Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
   await db.connect();
   try {
     const rows = await db.query<{ id: string; heading: string | null; body: string; slug: string }>(

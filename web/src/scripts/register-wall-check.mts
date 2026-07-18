@@ -7,9 +7,13 @@
 //
 //   cd web && npx tsx --env-file=.env.local src/scripts/register-wall-check.mts
 
+import { readFileSync, existsSync } from 'node:fs';
 import { neon } from '@neondatabase/serverless';
-import { legalBasePool, injectionSql, diversityBackfillSql, songVersePoolSql, songVerseOnRangeSql, LEGAL_CORPUS_FILTER, SERVED_SONG_VERSE_WORKS } from '../lib/teacher/routing.js';
+import { legalBasePool, injectionSql, diversityBackfillSql, songVersePoolSql, songVerseOnRangeSql, LEGAL_CORPUS_FILTER, EXEGETICAL_FTS_EXCLUSION, SERVED_SONG_VERSE_WORKS } from '../lib/teacher/routing.js';
+import { LEGAL_COMMENTARY_ENTRIES_PREDICATE } from '../lib/legal-corpus.js';
 import { resolveIntent } from '../bible/pericopes.js';
+
+const SONG_VERSE_SLUGS = new Set<string>(SERVED_SONG_VERSE_WORKS);
 
 const sql = neon((process.env.APP_DATABASE_URL ?? process.env.DATABASE_URL ?? '').replace(/^"|"$/g, ''));
 async function embed(q: string): Promise<string> {
@@ -55,34 +59,45 @@ for (const q of QUERIES) {
   console.log(`  "${q.slice(0, 44)}" → base ${base.length} (leaked ${leaked.length}) · song_verse ${sv.length} (${bad.length} non-register)`);
   wallBreaches += bad.length;
 }
-// ── surface 2: the FTS commentary search (A6: was blind here) ──
-const fts = (await sql.query(
+// ── surface 2: the FTS commentary search — REAL breach detector (A6 line-by-
+// line 2026-07-17: the old probe was `register IN (hymn,poetry) AND register NOT
+// IN (hymn,poetry)` = 0 by construction, a tautology). Apply the EXACT serving
+// predicates (legal + exegetical exclusion) and count any song/verse row that
+// slips through. If the exclusion has a hole, n > 0 → breach.
+const ftsLeak = (await sql.query(
   `SELECT count(*)::int n FROM commentary_entries
-   WHERE tsv @@ websearch_to_tsquery('english', 'shepherd')
-     AND register IN ('hymn','poetry')
-     AND (register IS NULL OR register NOT IN ('hymn','poetry'))`,
+   WHERE tsv @@ websearch_to_tsquery('english', 'shepherd God grace faith love mercy')
+     AND (${LEGAL_COMMENTARY_ENTRIES_PREDICATE})
+     AND (${EXEGETICAL_FTS_EXCLUSION})
+     AND (register IN ('hymn','poetry') OR work IN (${SERVED_SONG_VERSE_WORKS.map((w) => `'${w}'`).join(',')}))`,
 )) as Array<{ n: number }>;
 const ftsAll = (await sql.query(
   `SELECT count(*)::int n FROM commentary_entries WHERE register IN ('hymn','poetry')`,
 )) as Array<{ n: number }>;
-console.log(`\nFTS surface: ${ftsAll[0]!.n} hymn/poetry rows in the table; the search predicate excludes them (self-check: ${fts[0]!.n} = 0 by construction)`);
+console.log(`\nFTS surface: ${ftsAll[0]!.n} hymn/poetry rows exist; ${ftsLeak[0]!.n} leak past the live search predicate (must be 0)`);
+wallBreaches += ftsLeak[0]!.n;
 
-// ── surface 3: the reader static corpus (labels, not exclusion — hymns live
-// there BY DESIGN but must carry register so the panel can segregate them) ──
-import { readFileSync, existsSync } from 'node:fs';
-let unlabeled = 0, labeled = 0;
-for (const probe of ['psa/23', 'jhn/3', 'mat/5']) {
-  const p = `public/commentaries/${probe}.json`;
-  if (!existsSync(p)) continue;
+// ── surface 3: the reader static corpus — every register-work entry MUST carry
+// its register so the panel can segregate it. Path is resolved against BOTH web-
+// cwd and repo-root cwd (the old cwd-relative path silently skipped, A6). An
+// unlabeled register-work entry is a real breach (it would render as commentary).
+let unlabeled = 0, labeled = 0, chaptersProbed = 0;
+for (const probe of ['psa/23', 'jhn/3', 'mat/5', 'gen/3', 'luk/2']) {
+  const p = [`public/commentaries/${probe}.json`, `web/public/commentaries/${probe}.json`].find((x) => existsSync(x));
+  if (!p) continue;
+  chaptersProbed++;
   const j = JSON.parse(readFileSync(p, 'utf8')) as { entries: Array<{ register?: string; work?: string }> };
   for (const e of j.entries) {
     if (!e.work) continue; // legacy commentary rows have no register — fine
-    if (e.register === 'hymn' || e.register === 'poetry') labeled++;
-    else if (!e.register) unlabeled++;
+    if (SONG_VERSE_SLUGS.has(e.work)) {
+      if (e.register === 'hymn' || e.register === 'poetry') labeled++;
+      else unlabeled++; // a song/verse work entry with no/other register — breach
+    }
   }
 }
-console.log(`reader surface: ${labeled} hymn/poetry entries labeled with register across 3 probe chapters; ${unlabeled} register-work entries UNLABELED`);
-wallBreaches += unlabeled > 0 ? 0 : 0; // unlabeled register-work rows are a data bug, reported not fatal
+console.log(`reader surface: ${chaptersProbed}/5 probe chapters found; ${labeled} song/verse entries labeled, ${unlabeled} UNLABELED`);
+if (chaptersProbed === 0) { console.error('✗ reader probe found NO chapter files — check cwd'); process.exit(1); }
+wallBreaches += unlabeled;
 
 console.log(`\nregister-wall breaches (hymn/poetry inside ANY exegetical pool, or prose inside song_verse): ${wallBreaches}`);
 console.log(`song_verse pools empty: ${svEmpty}/${QUERIES.length} (should be 0 — ${SERVED_SONG_VERSE_WORKS.length} works served)`);

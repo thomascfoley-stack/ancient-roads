@@ -122,16 +122,23 @@ export async function verifyV1(
             });
           } else if (
             section.verses &&
-            !(section.verses.start <= anchor.start && anchor.end <= section.verses.end)
+            !(
+              // (a) overlaps the section's own range (voice speaks on it), AND
+              anchor.start <= section.verses.end && section.verses.start <= anchor.end &&
+              // (b) stays within the section's chapter span — a section indexed
+              // narrowly (often one verse) is legitimately commented across its
+              // pericope, so full containment is too strict; but an anchor may NOT
+              // sprawl beyond the section's chapters. This is what kills the
+              // canon-spanning anchor (Gen 1:1–Rev 22:21) that overlap alone let
+              // through to ground ANY passage below (A6 line-by-line 2026-07-17).
+              Math.floor(anchor.start / 1000) >= Math.floor(section.verses.start / 1000) &&
+              Math.floor(anchor.end / 1000) <= Math.floor(section.verses.end / 1000)
+            )
           ) {
-            // CONTAINMENT, not overlap (A6 line-by-line 2026-07-17): an overlap
-            // test let a canon-spanning anchor (Gen 1:1–Rev 22:21) touch its own
-            // section and then ground ANY passage below. The anchor must lie
-            // WITHIN the section's indexed range — the voice speaks only there.
             violations.push({
               check: 'anchor_offbase',
               blockIndex: index,
-              message: `anchor ${formatVerseId(anchor.start)}-${formatVerseId(anchor.end)} is not contained within section ${section.id}'s own range ${formatVerseId(section.verses.start)}-${formatVerseId(section.verses.end)} (${section.source.author}) — an anchor must point at what the cited source discusses`,
+              message: `anchor ${formatVerseId(anchor.start)}-${formatVerseId(anchor.end)} is outside section ${section.id}'s own range/chapters ${formatVerseId(section.verses.start)}-${formatVerseId(section.verses.end)} (${section.source.author}) — an anchor must point at what the cited source discusses, within its chapters`,
             });
           }
         }

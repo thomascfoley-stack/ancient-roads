@@ -82,6 +82,10 @@ export function isPublishedCommentaryEntry(entry: {
   work?: string | null;
 }): boolean {
   const { author } = entry;
+  // MUST_NOT_SERVE is an absolute veto — the work-slug branch was author-blind,
+  // so a banned author (e.g. an Origen excerpt) inside an otherwise-published
+  // work slug would serve (A6 line-by-line 2026-07-17). Check the ruling first.
+  if (isMustNotServeAuthor(author)) return false;
   if (entry.work && PUBLISHED_WORKS.has(entry.work)) return true;
   if ((PUBLISHED_WHOLE_BIBLE_AUTHORS as readonly string[]).includes(author)) return true;
   const books = PUBLISHED_BOOK_SCOPED[author];
@@ -91,6 +95,7 @@ export function isPublishedCommentaryEntry(entry: {
 /** Author-level check for the library facet / manifest: is this author published in
  *  ANY book? (The per-book restriction is enforced at entry level by the reader.) */
 export function isPublishedAuthor(author: string): boolean {
+  if (isMustNotServeAuthor(author)) return false;
   return (PUBLISHED_WHOLE_BIBLE_AUTHORS as readonly string[]).includes(author)
-    || author in PUBLISHED_BOOK_SCOPED;
+    || Object.prototype.hasOwnProperty.call(PUBLISHED_BOOK_SCOPED, author);
 }

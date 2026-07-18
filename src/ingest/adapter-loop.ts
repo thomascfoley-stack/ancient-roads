@@ -31,20 +31,25 @@ const arg = (f: string) => process.argv.find((a) => a.startsWith(`${f}=`))?.slic
 
 interface LogRow { at: string; slug: string; adapter: string; result: 'published' | 'staged' | 'skipped' | 'quarantined' | 'escalated'; units?: number; anchored?: number; embedded?: number; reason?: string }
 
-// Resume-skip is INTEGRITY-aware: a work counts as ingested only if its served
-// embeddings count matches its 006 section count (a crashed/partial run leaves
-// fewer embeddings than sections — those re-complete via ON CONFLICT rather than
-// being silently skipped as "done", the watts-hymns partial-ingest bug).
+// Resume-skip is INTEGRITY-aware. Register works write to `embeddings` + a
+// sources row, NOT the 006 `sections` table — so the old sections-count integrity
+// check could never fire for them (s=0 → always 'done'), classifying a crashed
+// partial as complete (A6 line-by-line 2026-07-17). The load-bearing signal is
+// sources.status: register-writer stamps 'ingesting' at the start and 'published'/
+// 'staged' only AFTER the write succeeds — so status still 'ingesting' means a
+// crashed mid-write, i.e. partial. The sections-count check still catches the
+// 006 write-contract (historian) partials.
 async function ingestState(db: pg.Client, slug: string): Promise<'done' | 'partial' | 'absent'> {
   const r = await db.query(
     `SELECT (SELECT count(*) FROM embeddings WHERE metadata->>'work'=$1)::int e,
-            (SELECT count(*) FROM sections s JOIN sources src ON src.id=s.source_id WHERE src.slug=$1)::int s`,
+            (SELECT count(*) FROM sections s JOIN sources src ON src.id=s.source_id WHERE src.slug=$1)::int s,
+            (SELECT status FROM sources WHERE slug=$1) status`,
     [slug],
   );
-  const e = r.rows[0].e as number, s = r.rows[0].s as number;
+  const e = r.rows[0].e as number, s = r.rows[0].s as number, status = r.rows[0].status as string | null;
   if (e === 0 && s === 0) return 'absent';
-  // served works: embeddings ≥ sections (chunking can add rows). staged (serve:false): sections only.
-  if (s > 0 && e > 0 && e < s) return 'partial';
+  if (status === 'ingesting') return 'partial'; // crashed mid-write (register path)
+  if (s > 0 && e > 0 && e < s) return 'partial'; // 006 write-contract partial (historian path)
   return 'done';
 }
 

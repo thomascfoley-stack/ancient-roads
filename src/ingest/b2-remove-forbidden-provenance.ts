@@ -95,14 +95,18 @@ async function main() {
     for (const r of forb.rows) console.log(`  ${r.author}: ${r.n} rows, books {${r.books}}`);
     console.log(`total: ${totalForbidden}`);
 
-    if (totalForbidden === 0) { console.log('✓ already clean — ratchet is 0'); return; }
-    if (cN === 0 || aN === 0) {
+    // The DB and the STATIC reader corpus are independent stores — a clean DB
+    // does NOT mean the static corpus is clean (A6 line-by-line 2026-07-17: the
+    // early return on DB-clean skipped the static sweep entirely). Check static
+    // ALWAYS, and only declare victory when BOTH are 0.
+    const staticDry = sweepStatic(false, '');
+    console.log(`static corpus: ${staticDry.removed} forbidden entries across ${staticDry.files} chapter files`);
+
+    if (totalForbidden === 0 && staticDry.removed === 0) { console.log('✓ already clean — DB and static ratchet both 0'); return; }
+    if ((totalForbidden > 0 || staticDry.removed > 0) && (cN === 0 || aN === 0)) {
       console.error('✗ REFUSE: a clean replacement is missing (chrysostom-homilies or augustine-homilies not ingested) — coverage would shrink. Ingest them first.');
       process.exit(1);
     }
-
-    const staticDry = sweepStatic(false, '');
-    console.log(`static corpus: ${staticDry.removed} forbidden entries across ${staticDry.files} chapter files`);
 
     if (!apply) { console.log('\n(dry run — pass --apply to back up + delete)'); return; }
 

@@ -326,10 +326,17 @@ async function main() {
           compared++;
           tally[classify(shingleSet(stored.join(' ')), shingleSet(texts.join(' ')))]++;
         }
-        const repairPctV = compared ? (100 * (tally.match + tally.truncated)) / compared : 0;
-        const ok = compared === 0 || repairPctV >= TEXT_MATCH_MIN_REPAIR_PCT;
-        record('R5 text-match(work)', 'reversible', ok,
-          `${compared} chapters compared: ${tally.match} match / ${tally.truncated} truncated / ${tally.differ} differ → repair ${repairPctV.toFixed(1)}% (floor ${TEXT_MATCH_MIN_REPAIR_PCT}%)${tally.differ > compared * 0.3 ? ' — >30% differ: WRONG-EDITION ALARM, escalate' : ''}`);
+        // Zero overlapping chapters means the gate verified NOTHING — it is a
+        // SKIP, not a pass (A6 line-by-line 2026-07-17: `compared === 0 || …`
+        // reported green when there was no evidence at all).
+        if (compared === 0) {
+          record('R5 text-match(work)', 'reversible', true,
+            '0 chapters overlapped the stored corpus — nothing to compare; text-match could not run', 'no-overlap');
+        } else {
+          const repairPctV = (100 * (tally.match + tally.truncated)) / compared;
+          record('R5 text-match(work)', 'reversible', repairPctV >= TEXT_MATCH_MIN_REPAIR_PCT,
+            `${compared} chapters compared: ${tally.match} match / ${tally.truncated} truncated / ${tally.differ} differ → repair ${repairPctV.toFixed(1)}% (floor ${TEXT_MATCH_MIN_REPAIR_PCT}%)${tally.differ > compared * 0.3 ? ' — >30% differ: WRONG-EDITION ALARM, escalate' : ''}`);
+        }
       }
     }
   } finally {

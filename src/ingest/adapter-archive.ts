@@ -32,7 +32,11 @@ import { sanitizeForIngest } from './content-sanity.js';
 const arg = (flag: string) => process.argv.find((a) => a.startsWith(`${flag}=`))?.slice(flag.length + 1);
 
 const CACHE_ROOT = 'data/raw/archive';
-const STRONGS_GREEK_URL = 'https://raw.githubusercontent.com/openscriptures/strongs/master/greek/strongs-greek-dictionary.js';
+// PINNED to a commit SHA, not `master` (A6 line-by-line 2026-07-17): this file's
+// contents are executed via Function() below, so a mutable ref is a supply-chain
+// hole — a hijacked master could ship arbitrary code into the ingest process.
+const STRONGS_GREEK_COMMIT = 'f4f1881c1a7423926a1378b08355864d90a23a96';
+const STRONGS_GREEK_URL = `https://raw.githubusercontent.com/openscriptures/strongs/${STRONGS_GREEK_COMMIT}/greek/strongs-greek-dictionary.js`;
 
 // ── fetch + cache ──
 async function fetchCached(url: string, cachePath: string): Promise<string> {
