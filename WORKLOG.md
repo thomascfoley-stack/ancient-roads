@@ -1,5 +1,25 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-18 (INFRA source-of-truth) — verified two Vercel projects; disconnected the stray; wrote docs/DEPLOYMENT.md
+
+Read-only verification against the live Vercel dashboard, then one reversible cleanup. New
+`docs/DEPLOYMENT.md` is now the durable source of truth. Findings:
+
+- **Real prod = `web`** (`prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR`, team `home-network-hardening`) →
+  ancientpaths.app + www + web-psi-eight-83.vercel.app. Git-connect confirmed **OFF**. Serves
+  ancientpaths.app via CLI deploy `dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr` = **654f028, 2026-07-16**.
+  Matches `web/.vercel/project.json` and `deploy.sh`. Made ZERO changes to this project.
+- **Stray = `theology-study-app`** (`prj_a3OXQsM5RSvstgfL0VuF7FAU6nX5`) → acientpaths.app
+  (misspelled) + theology-study-app.vercel.app. Was git-auto-deploying `main` (corpus-less).
+  **DISCONNECTED its git repo** (Settings → Git → Disconnect; "settings and configuration
+  preserved"; reversible). Verified: it now reports "not connected to a Git repository."
+- **acientpaths.app is DEAD:** no A/CNAME, `Invalid Configuration`, HTTPS returns nothing.
+  Redirect to ancientpaths.app not cleanly possible (no DNS points at Vercel), so LEFT + flagged.
+  Did NOT delete the project or the domain (irreversible → owner decides).
+- **Correction to "everything is live":** it is NOT. Real prod (ancientpaths.app) is still on
+  654f028 (2026-07-16). The nav labels + hero (`8237f49`, `a974085`, `af34b7f`) are on `main`
+  but NOT deployed. A `./deploy.sh` run is still required to ship them.
+
 ## 2026-07-18 (HERO IMAGE swap) — committed to main (af34b7f), NOT yet on live prod
 
 Owner supplied a refined hero photo (olive-path chapel). Swapped `web/public/hero-road.jpg`
