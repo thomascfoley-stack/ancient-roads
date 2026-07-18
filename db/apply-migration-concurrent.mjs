@@ -18,6 +18,11 @@ const file = process.argv[2];
 if (!file) { console.error('usage: node db/apply-migration-concurrent.mjs <path-to-.sql>'); process.exit(1); }
 const url = localEnv('DATABASE_URL') ?? localEnv('DATABASE_URL_UNPOOLED');
 if (!url) { console.error('owner DATABASE_URL is required'); process.exit(1); }
+// Dev-only by default; Part C prod run sets MIGRATE_ALLOW_PROD=1 (A6 2026-07-17).
+if (!/ep-tiny-hat|localhost|127\.0\.0\.1/.test(url) && process.env.MIGRATE_ALLOW_PROD !== '1') {
+  console.error('✗ REFUSE: DATABASE_URL is not the dev endpoint (ep-tiny-hat). For the deliberate Part C prod run, set MIGRATE_ALLOW_PROD=1.');
+  process.exit(1);
+}
 
 const parts = readFileSync(file, 'utf-8').split(/^--SPLIT--$/m).map((s) => s.trim()).filter(Boolean);
 const client = new pg.Client({ connectionString: url.replace(/^"|"$/g, ''), ssl: { rejectUnauthorized: false } });

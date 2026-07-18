@@ -18,6 +18,13 @@ const file = process.argv[2];
 if (!file) { console.error('usage: node db/apply-migration.mjs <path-to-.sql>'); process.exit(1); }
 const url = localEnv('DATABASE_URL') ?? localEnv('DATABASE_URL_UNPOOLED');
 if (!url) { console.error('owner DATABASE_URL is required'); process.exit(1); }
+// Default to a dev-only endpoint guard (A6 line-by-line 2026-07-17: the runner
+// silently applied to whatever DATABASE_URL resolved to, incl. a prod fallback in
+// web/.env.local). Part C applies to prod DELIBERATELY: set MIGRATE_ALLOW_PROD=1.
+if (!/ep-tiny-hat|localhost|127\.0\.0\.1/.test(url) && process.env.MIGRATE_ALLOW_PROD !== '1') {
+  console.error('✗ REFUSE: DATABASE_URL is not the dev endpoint (ep-tiny-hat). For the deliberate Part C prod run, set MIGRATE_ALLOW_PROD=1.');
+  process.exit(1);
+}
 
 const sql = readFileSync(file, 'utf-8');
 const client = new pg.Client({ connectionString: url.replace(/^"|"$/g, ''), ssl: { rejectUnauthorized: false } });
