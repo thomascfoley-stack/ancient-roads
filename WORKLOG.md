@@ -1,5 +1,25 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-18 (DEPLOY) — 24677ba LIVE on ancientpaths.app (hero swap + nav labels)
+
+Owner said ship. Ran `./deploy.sh` from an isolated worktree at origin/main (the main
+checkout was dirty; corpus/node_modules/.env.local/.vercel cloned/symlinked in, clean-tree
+gate passed on 24677ba). Predeploy ratchet green (forbidden-provenance 263,496 = baseline;
+all Bible-translation dirs licensed). `next build` clean (32/32 pages). `vercel --prod
+--archive=tgz` to the `web` project, 153 MB uploaded, cloud build 49s.
+
+- **Now live:** the nav labels (Reader→Bible, "Explore the paths"→"Ancient Paths",
+  mobile Explore→AP) and the olive-path chapel hero (af34b7f). Supersedes the 2026-07-16
+  deploy (654f028).
+- **Deployment:** `dpl_FYQxxZ1rLN1wd4UeMwShhX12G5BM` READY → aliased ancientpaths.app +
+  www. Live-verified by fetch: `/hero-road.jpg` = 1,031,066 bytes (the new file, was
+  1,022,441) and the site's assets now report `dpl_FYQxxZ1…` (was `dpl_EjzknRQEp`). Raw hero
+  renders at 1376×768.
+- **NOT changed:** no prod DB change, no go-live cutover. The misspelled-stray cleanup
+  (git disconnect) from earlier today stands.
+- Hero image decision: kept the 1376×768 image over the wider 2:56PM 1600×672 variant — same
+  ~1 MP, and the taller image is sharper for a full-viewport (min-h-dvh) hero. See below.
+
 ## 2026-07-18 (INFRA source-of-truth) — verified two Vercel projects; disconnected the stray; wrote docs/DEPLOYMENT.md
 
 Read-only verification against the live Vercel dashboard, then one reversible cleanup. New
