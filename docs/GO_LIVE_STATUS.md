@@ -122,11 +122,17 @@ node db/apply-migration.mjs           db/migrations/023_sources_status_ingesting
 #    THE irreversible outward step. Rollback = redeploy previous build.
 
 # 3. Idempotent ingest against prod (fills registers + the clean Chrysostom/Augustine):
-NEON_BRANCH=... # prod is BLOCKED by the guards — run the ingest with the owner
-                # consciously exporting the prod URL AND editing the guard, or
-                # (recommended) promote the DEV branch data via Neon instead.
-#    Recommended path: Neon branch-promote/copy of the dev data (no re-embed spend).
-#    Alternative: re-run data/overnight-driver.sh steps against prod (same gates).
+#    THE ONLY corpus-to-DB path: re-run the ingest against PROD Neon — idempotent,
+#    ON CONFLICT DO NOTHING, touches NO existing rows, so live highlights/notes/
+#    waitlist survive. Owner consciously exports the prod DATABASE_URL + NEON_BRANCH
+#    and sets the deliberate guard override (MIGRATE_ALLOW_PROD=1).
+NEON_BRANCH=...  # prod; guards require the conscious override above
+#    ⛔ DO NOT branch-promote / copy the dev Neon branch onto prod. A branch promote
+#    REPLACES the prod database wholesale and WIPES live user data (highlights, notes,
+#    waitlist) — that data exists only on prod, never on the dev branch. The re-embed
+#    cost of a fresh ingest is the price of not destroying user data. Non-negotiable.
+#    (Static reader corpus is a separate path: regenerate clean locally, ship via
+#    deploy.sh — see docs/DEPLOYMENT.md. Never via Neon.)
 
 # 4. Landmine 2 on prod (after step 3 provides replacement coverage):
 npx tsx src/ingest/b2-remove-forbidden-provenance.ts          # dry run first
@@ -152,5 +158,6 @@ from CCEL. Nothing in Part C hard-deletes prod data.
 
 The guards intentionally block prod: every ingest/migration entry point requires
 `NEON_BRANCH ∈ {dev,test}` from the same env source as `DATABASE_URL`. Part C therefore
-requires a conscious owner action (the Neon promote, or a deliberate guard override in
-the session you run with prod creds) — that friction is the design, not an oversight.
+requires a conscious owner action (a deliberate guard override in the session you run
+with prod creds — NOT a Neon branch-promote, which would wipe live user data) — that
+friction is the design, not an oversight.

@@ -49,7 +49,7 @@ Continuation of the go-live run (branch `golive`, Phases 0–2 done: verifier ho
 
 **C2. Deploy code to prod** (Vercel) — the verifier fix, `routing.ts` register path, reader changes. This is the irreversible outward step; owner runs it or explicitly authorizes it in-session.
 
-**C3. Run the ingest against prod** (idempotent, `ON CONFLICT DO NOTHING`) — fills the register content and writes the clean Chrysostom/Augustine. Same license gate, same breakers. Does not touch existing commentary. *(Alternative to double-embedding: promote the dev-branch data via Neon rather than re-embed — decide at execution; re-run is simpler and safe.)*
+**C3. Run the ingest against prod** (idempotent, `ON CONFLICT DO NOTHING`) — fills the register content and writes the clean Chrysostom/Augustine. Same license gate, same breakers. Does not touch existing commentary. ⛔ **Never branch-promote the dev Neon branch onto prod** — that replaces the prod DB wholesale and wipes live user data (highlights/notes/waitlist), which lives only on prod. A fresh re-ingest (paying the re-embed cost) is the only safe path.
 
 **C4. Apply the landmines to prod:** the `021` REVOKE (C1 covers it) and the B2 removal of the forbidden-provenance rows.
 
