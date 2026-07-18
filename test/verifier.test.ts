@@ -228,6 +228,34 @@ describe('V1 verifier: diversity rule', () => {
     const result = await verifyV1(r, corpus, thinRetrieval);
     expect(result.ok).toBe(true);
   });
+
+  it('counts DISTINCT sections for the >=2-voices floor: two voices from ONE section fail (A6)', async () => {
+    // A6 line-by-line 2026-07-17: the >=2-voices floor must count DISTINCT
+    // section_ids, not raw voice blocks. Here TWO otherwise-valid voice blocks
+    // both quote section 48210 (a second, distinct verbatim substring of the same
+    // Chrysostom homily), replacing the Matthew Henry (section 51002) voice. Two
+    // blocks, ONE source section. The pre-A6 raw-block count (voiceBlocks.length
+    // === 2 >= 2) would have PASSED this; counting distinct sections (size 1 < 2)
+    // rejects it. Retrieval is unchanged (2 sections), so requiredVoices = 2.
+    const r = validResponse() as any;
+    r.blocks[2] = {
+      type: 'voice',
+      section_id: 48210, // SAME section as blocks[1]
+      attribution: {
+        author: 'John Chrysostom',
+        work: 'Homily 19 on Ephesians',
+        year: 390,
+        tradition: 'patristic',
+        origin: 'corpus',
+      },
+      quote: 'Drunkenness is a voluntary madness, a self-chosen slavery of the will',
+      summary: 'Chrysostom also names drunkenness a voluntary madness and a self-chosen slavery of the will.',
+      anchors: [{ start: 49005018, end: 49005018 }],
+    };
+    const result = await verifyV1(r, corpus, retrieval);
+    expect(result.ok).toBe(false);
+    expect(violations(result).some((v) => v.check === 'diversity_voices')).toBe(true);
+  });
 });
 
 describe('V1 verifier: fail-closed dispatch default (Phase 0 regression)', () => {
