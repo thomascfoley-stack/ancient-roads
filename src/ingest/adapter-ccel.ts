@@ -140,12 +140,21 @@ export function buildCcelSections(xml: string, headingFilter?: string): Register
   // div at ANY level (not just the same level) — stopping only at the same level
   // drops every deeper/shallower sibling's span in mixed-level works and bleeds
   // text under the wrong heading (A6 audit, 2026-07-17).
-  const full = 'level' in sel
+  // Typed path: close on the SAME div level via a backreference (\2 = the
+  // matched "divN"), NOT the first </div[1-4]> of any level. The old any-level
+  // close truncated every unit that contains a nested child div at the child's
+  // close, silently dropping ~2.7M chars from served works (Owen digressions,
+  // the entire Trent canons + Longer Catechism in schaff-creeds) — A6 line-by-
+  // line audit, 2026-07-17. Same-typed units never nest, so lazy-to-same-close
+  // is exact. Fallback (title) path keeps its lookahead-to-next-title (the
+  // earlier A6 mixed-level fix).
+  const isFallback = 'level' in sel;
+  const full = isFallback
     ? /(<div[1-4]\s[^>]*title="[^"]+"[^>]*>)([\s\S]*?)(?=<div[1-4]\s[^>]*title="|$)/gi
-    : new RegExp(`(<div[1-4]\\s[^>]*${sel.attr}="${sel.value}"[^>]*>)([\\s\\S]*?)</div[1-4]>`, 'gi');
+    : new RegExp(`(<(div[1-4])\\s[^>]*${sel.attr}="${sel.value}"[^>]*>)([\\s\\S]*?)</\\2>`, 'gi');
   while ((m = full.exec(xml))) {
     const openTag = m[1]!;
-    const inner = m[2]!;
+    const inner = (isFallback ? m[2] : m[3])!;
     const titleAttr = openTag.match(/\btitle="([^"]*)"/i)?.[1];
     const headTag = inner.match(/<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/i)?.[1];
     const heading = (titleAttr || (headTag ? thmlText(headTag) : undefined) || '').replace(/\s+/g, ' ').trim() || undefined;

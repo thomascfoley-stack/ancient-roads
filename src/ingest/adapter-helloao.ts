@@ -24,19 +24,26 @@ for (const [i, b] of BOOKS.entries()) SLUG_TO_BOOK_NUM[b.slug] = i + 1;
 
 interface ChapterJson { chapter?: { content?: Array<{ type?: string; number?: number; content?: unknown[] }> } }
 
-async function fetchChapter(api: string, id: string, helloaoBook: string, ch: number): Promise<ChapterJson | null> {
+// Discriminated result so the loop can iterate the full first..last chapter span
+// (commentaries skip chapters, so numberOfChapters < lastChapterNumber) and tell
+// a legitimately-absent chapter (404, skip silently) from a real fetch error
+// (network/timeout/HTML — fail closed). A6 line-by-line 2026-07-17.
+type ChapterResult = { status: 'ok'; data: ChapterJson } | { status: 'absent' } | { status: 'error' };
+async function fetchChapter(api: string, id: string, helloaoBook: string, ch: number): Promise<ChapterResult> {
   mkdirSync(`${CACHE}/${id}`, { recursive: true });
   const cached = `${CACHE}/${id}/${helloaoBook}-${ch}.json`;
-  if (existsSync(cached)) return JSON.parse(readFileSync(cached, 'utf8')) as ChapterJson;
+  if (existsSync(cached)) return { status: 'ok', data: JSON.parse(readFileSync(cached, 'utf8')) as ChapterJson };
   await sleep(50);
   try {
     const res = await fetch(`${api}/c/${id}/${helloaoBook}/${ch}.json`, { signal: AbortSignal.timeout(60_000) });
-    if (!res.ok) return null;
+    if (res.status === 404) return { status: 'absent' }; // this commentary simply doesn't cover this chapter
+    if (!res.ok) return { status: 'error' };
     const text = await res.text();
-    if (text.startsWith('<')) return null;
+    if (text.startsWith('<')) return { status: 'error' }; // an HTML error page, not JSON — do NOT cache
+    JSON.parse(text); // validate BEFORE caching so a bad body never poisons the cache
     writeFileSync(cached, text);
-    return JSON.parse(text) as ChapterJson;
-  } catch { return null; }
+    return { status: 'ok', data: JSON.parse(text) as ChapterJson };
+  } catch { return { status: 'error' }; }
 }
 
 function verseEntries(content: Array<{ type?: string; number?: number; content?: unknown[] }>): Array<{ verse: number; text: string }> {
@@ -66,19 +73,27 @@ async function main() {
 
   const booksRes = await fetch(`${acq.api}/c/${acq.commentary_id}/books.json`, { signal: AbortSignal.timeout(60_000) });
   if (!booksRes.ok) throw new Error(`books.json ${booksRes.status}`);
-  const books = ((await booksRes.json()) as { books: Array<{ id: string; numberOfChapters: number; firstChapterNumber: number }> }).books;
+  const books = ((await booksRes.json()) as { books: Array<{ id: string; numberOfChapters: number; firstChapterNumber: number; lastChapterNumber?: number }> }).books;
 
   const sections: RegisterSection[] = [];
-  let chaptersTried = 0, chaptersFailed = 0;
+  let chaptersTried = 0, chaptersFailed = 0, booksUnmapped = 0;
   for (const book of books) {
+    if ((book.numberOfChapters ?? 0) === 0) continue; // commentary doesn't cover this book (e.g. K&D has no Song of Songs)
     const bslug = HELLOAO_BOOK_MAP[book.id];
     const bookNum = bslug ? SLUG_TO_BOOK_NUM[bslug] : undefined;
-    if (!bookNum) { console.log(`  skip unknown book id ${book.id}`); continue; }
+    // An unknown book id is NOT a silent skip — it drops a whole book of
+    // commentary. Count it so the fail-closed gate below can catch a bad map.
+    if (!bookNum) { console.log(`  ⚠ unknown book id ${book.id} (${book.numberOfChapters} chapters dropped)`); booksUnmapped++; continue; }
     const bookName = BOOKS[bookNum - 1]!.name;
-    for (let ch = book.firstChapterNumber; ch <= book.numberOfChapters; ch++) {
+    // Iterate the full first..LAST chapter span — numberOfChapters is a COUNT, and
+    // commentaries skip chapters, so it is < lastChapterNumber (K&D: Ps 147-150,
+    // Ezk 46-48, Exo 39-40 were dropped when the bound was the count). A6 2026-07-17.
+    const lastCh = book.lastChapterNumber ?? (book.firstChapterNumber + book.numberOfChapters - 1);
+    for (let ch = book.firstChapterNumber; ch <= lastCh; ch++) {
+      const r = await fetchChapter(acq.api, acq.commentary_id, book.id, ch);
+      if (r.status === 'absent') continue; // commentary skips this chapter — legitimate, not a failure
       chaptersTried++;
-      const data = await fetchChapter(acq.api, acq.commentary_id, book.id, ch);
-      const content = data?.chapter?.content;
+      const content = r.status === 'ok' ? r.data?.chapter?.content : undefined;
       if (!content) { chaptersFailed++; continue; }
       for (const v of verseEntries(content)) {
         const verseId = bookNum * 1_000_000 + ch * 1000 + v.verse;
@@ -97,6 +112,7 @@ async function main() {
   if (chaptersFailed > Math.max(5, chaptersTried * 0.02)) {
     throw new Error(`FAIL CLOSED: ${chaptersFailed}/${chaptersTried} chapter fetches failed — retry when the source is healthy`);
   }
+  if (booksUnmapped > 0) throw new Error(`FAIL CLOSED: ${booksUnmapped} book id(s) not in HELLOAO_BOOK_MAP — whole books would be dropped; fix the map`);
 
   const work: RegisterWork = {
     slug, title: entry.title as string, author: entry.author as string,

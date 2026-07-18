@@ -237,8 +237,13 @@ export async function writeRegisterWork(work: RegisterWork): Promise<{ embedded:
       if (!BOOK_SLUGS[book]) continue;
       const k = `${BOOK_SLUGS[book]}/${chapter}`;
       const list = byChapter.get(k) ?? [];
+      // The reader entry is filed under the START chapter. `verseEnd % 1000` on a
+      // cross-chapter anchor (start Gen 3:20, end Gen 4:2) yielded verseEnd=2 < 20
+      // — a broken range in the wrong chapter (A6 line-by-line 2026-07-17). Cap a
+      // cross-chapter/-book range at the rest of the start chapter (999).
+      const sameChapter = Math.floor(a.verseIdStart / 1000) === Math.floor(a.verseIdEnd / 1000);
       list.push({
-        verseStart: a.verseIdStart % 1000, verseEnd: a.verseIdEnd % 1000,
+        verseStart: a.verseIdStart % 1000, verseEnd: sameChapter ? a.verseIdEnd % 1000 : 999,
         author: work.author, year: work.year, tradition: work.tradition,
         sourceTitle: work.title, sourceUrl: work.url, text: s.heading ? `${s.heading}\n\n${s.body}` : s.body,
         work: work.slug, register: work.sourceType, paraphrase: work.paraphrase || undefined,

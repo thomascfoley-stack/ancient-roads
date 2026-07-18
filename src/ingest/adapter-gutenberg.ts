@@ -111,7 +111,11 @@ export const PROFILES: Record<string, Profile> = {
     sacred: { start: /NOBLE NUMBERS|HIS NOBLE NUMBERS/, end: /\*\*\* END OF/ },
     register: 'poetry',
   },
-  'traherne-poems': { register: 'poetry' },
+  // Dobell's 1903 ed. appends "THE POEMS OF WILLIAM STRODE" (a DIFFERENT poet)
+  // as an appendix — end before it so Strode's verse never serves under Traherne
+  // (A6 line-by-line 2026-07-17). The memoir/title-page front matter is caught
+  // by GUT_MATTER.
+  'traherne-poems': { sacred: { end: /\n\s*THE POEMS OF WILLIAM STRODE/ }, register: 'poetry' },
   'milton-poetical-works': { register: 'poetry' },
   'rossetti-verses': {
     // PG #77809 (1894 ed.) uses single blank lines everywhere → defaultSplit
@@ -180,6 +184,22 @@ export async function fetchGutenberg(ebookId: number): Promise<string> {
   throw new Error(`gutenberg ${ebookId}: no plain-text file found`);
 }
 
+// Front/back matter a PG ebook carries around the actual work — served under the
+// author's name if not filtered (A6 line-by-line audit 2026-07-17: Moxon's
+// bookseller catalog under Tennyson, modern Transcriber's Notes under Watts/
+// Milton, Dobell's memoir + William Strode's poem under Traherne, Bridges'
+// apparatus under Hopkins, and worst — watts-hymns' back-matter "A TABLE of the
+// Scriptures that are Turned into Verse." carried a Scripture epigraph, so it
+// verse-ANCHORED into the reader at Genesis 3 / Luke 2 as an Isaac Watts entry).
+// CCEL grew MATTER_RE for exactly this class; gutenberg never had the equivalent.
+const GUT_MATTER_HEADING = /^(transcriber|contents|table of|a table|list of books|index|preface|dedication|to the reader|footnotes?|notes\b|errata|colophon|appendix|glossary|memoir|introduction|editor|advertisement|title page|by the same|works by|also by|published by|price\b)/i;
+// Content markers of a publisher catalog / transcriber apparatus (matches even
+// when the first line is an innocuous title).
+const GUT_MATTER_BODY = /(published by|price\s+\d|\bcloth\b.{0,12}(morocco|bound|gilt)|this project gutenberg|project gutenberg|transcriber'?s? note|in the (first|second|third|fourth) book\.)/i;
+function isGutMatter(heading: string | undefined, body: string): boolean {
+  return (!!heading && GUT_MATTER_HEADING.test(heading)) || GUT_MATTER_BODY.test(`${heading ?? ''}\n${body}`.slice(0, 400));
+}
+
 export function buildSections(body: string, profile: Profile): RegisterSection[] {
   let region = body;
   if (profile.sacred?.start) {
@@ -191,19 +211,20 @@ export function buildSections(body: string, profile: Profile): RegisterSection[]
     if (m) region = region.slice(0, m.index!);
   }
   const units = (profile.splitUnits ?? defaultSplit)(region);
-  return units.map((unit) => {
+  const out: RegisterSection[] = [];
+  for (const unit of units) {
     const lines = unit.split('\n').map((l) => l.trim()).filter(Boolean);
     const heading = lines[0]?.slice(0, 120);
+    // body EXCLUDES the heading line (register-writer composes heading\nbody —
+    // including it duplicated every unit's first line, A6 audit) and KEEPS line
+    // breaks: collapsing \s+ to spaces flattened poem structure.
+    const bodyText = lines.slice(1).join('\n').trim() || lines.join('\n').trim();
+    if (isGutMatter(heading, bodyText)) continue; // never serve front/back matter
+    if (bodyText.length < 40) continue;
     const anchor = epigraphAnchor(unit);
-    return {
-      heading,
-      // body EXCLUDES the heading line (register-writer composes heading\nbody —
-      // including it duplicated every unit's first line, A6 audit) and KEEPS
-      // line breaks: collapsing \s+ to spaces flattened poem structure.
-      body: lines.slice(1).join('\n').trim() || lines.join('\n').trim(),
-      anchors: anchor ? [anchor] : undefined,
-    } satisfies RegisterSection;
-  }).filter((s) => s.body.length >= 40);
+    out.push({ heading, body: bodyText, anchors: anchor ? [anchor] : undefined });
+  }
+  return out;
 }
 
 export async function acquireGutenberg(entry: Record<string, unknown>, opts: { write: boolean; publish?: boolean } = { write: true }): Promise<{ sections: number; anchored: number; embedded: number }> {
@@ -224,7 +245,11 @@ export async function acquireGutenberg(entry: Record<string, unknown>, opts: { w
     authorDied: entry.author_died as number | undefined, year: (entry.year_written as number) ?? (prov.year as number),
     sourceType: entry.source_type as string, register: profile.register, tradition: entry.tradition as string,
     era: entry.era as string, license: entry.license as string, paraphrase: profile.paraphrase,
-    url: prov.url as string, edition: (prov.edition as string) ?? '', publish: opts.publish ?? true,
+    // publish default RESPECTS the manifest serve flag (a direct CLI run of a
+    // serve:false / quarantined work must NOT publish — A6 line-by-line
+    // 2026-07-17; was `?? true`, which published quarantined works). The loop
+    // always passes opts.publish explicitly from the SERVED allowlist.
+    url: prov.url as string, edition: (prov.edition as string) ?? '', publish: opts.publish ?? (entry.serve !== false),
     sections,
   };
   const res = await writeRegisterWork(work);
