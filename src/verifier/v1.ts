@@ -122,12 +122,16 @@ export async function verifyV1(
             });
           } else if (
             section.verses &&
-            !(anchor.start <= section.verses.end && section.verses.start <= anchor.end)
+            !(section.verses.start <= anchor.start && anchor.end <= section.verses.end)
           ) {
+            // CONTAINMENT, not overlap (A6 line-by-line 2026-07-17): an overlap
+            // test let a canon-spanning anchor (Gen 1:1–Rev 22:21) touch its own
+            // section and then ground ANY passage below. The anchor must lie
+            // WITHIN the section's indexed range — the voice speaks only there.
             violations.push({
               check: 'anchor_offbase',
               blockIndex: index,
-              message: `anchor ${formatVerseId(anchor.start)}-${formatVerseId(anchor.end)} is outside section ${section.id}'s own range ${formatVerseId(section.verses.start)}-${formatVerseId(section.verses.end)} (${section.source.author}) — an anchor must point at what the cited source discusses`,
+              message: `anchor ${formatVerseId(anchor.start)}-${formatVerseId(anchor.end)} is not contained within section ${section.id}'s own range ${formatVerseId(section.verses.start)}-${formatVerseId(section.verses.end)} (${section.source.author}) — an anchor must point at what the cited source discusses`,
             });
           }
         }
@@ -218,15 +222,23 @@ export async function verifyV1(
       }
     }
 
-    // Regex screens on assistant-voice text (framing, summaries, prayer_prompt).
-    const screenable =
-      block.type === 'framing' || block.type === 'prayer_prompt'
-        ? block.text
-        : block.type === 'voice'
-          ? block.summary
-          : null;
-    if (screenable) {
-      for (const hit of runScreens(screenable)) {
+    // Regex screens on ALL assistant-voice text. reading.items[].title and .note
+    // are model-authored free text (title is NOT the source title — it is not
+    // checked against the resolved source) and were previously unscreened, so an
+    // interpretive verdict in a reading note bypassed every screen (A6 line-by-
+    // line 2026-07-17). Screen framing/prayer text, voice summaries, AND every
+    // reading item's title + note.
+    const screenTexts: string[] = [];
+    if (block.type === 'framing' || block.type === 'prayer_prompt') screenTexts.push(block.text);
+    else if (block.type === 'voice' && block.summary) screenTexts.push(block.summary);
+    else if (block.type === 'reading') {
+      for (const it of block.items) {
+        if (it.title) screenTexts.push(it.title);
+        if (it.note) screenTexts.push(it.note);
+      }
+    }
+    for (const text of screenTexts) {
+      for (const hit of runScreens(text)) {
         violations.push({
           check: `screen:${hit.rule}`,
           blockIndex: index,
@@ -246,27 +258,37 @@ export async function verifyV1(
   // whole-chapter, "good shepherd insurance") and is NOT an authorization boundary — removed as
   // a grounding source (was: `...retrieval.queryRanges`). Otherwise it is the model's own uncited
   // verse-picking — a doctrinal verdict expressed as a list — and we fail closed.
-  const rangesOverlap = (a: VerseRange, b: VerseRange): boolean => a.start <= b.end && b.start <= a.end;
+  // CONTAINMENT, not overlap (A6 line-by-line 2026-07-17): an overlap test let a
+  // passage extend far beyond its grounding anchor (anchor Gen 3:1-3 → shown
+  // passage Gen 3:1-Rev 22:21 claims the whole canon on a sliver of overlap —
+  // interpretation-by-selection). A shown passage must sit WITHIN a single
+  // source-grounded anchor; a passage spanning two grounded spans must be two items.
+  const rangeContains = (outer: VerseRange, inner: VerseRange): boolean => outer.start <= inner.start && inner.end <= outer.end;
   const groundingRanges: VerseRange[] = voiceBlocks.flatMap(({ block }) => block.anchors ?? []);
   for (const { item, index } of passageChecks) {
-    if (!groundingRanges.some((g) => rangesOverlap(item, g))) {
+    if (!groundingRanges.some((g) => rangeContains(g, item))) {
       violations.push({
         check: 'passages_grounded',
         blockIndex: index,
-        message: `passage ${formatVerseId(item.start)}-${formatVerseId(item.end)} is ungrounded: it intersects no source-grounded voice-block anchor (interpretation-by-selection)`,
+        message: `passage ${formatVerseId(item.start)}-${formatVerseId(item.end)} is ungrounded: it is not contained within any source-grounded voice-block anchor (interpretation-by-selection)`,
       });
     }
   }
 
   // Diversity rule: judged against what retrieval returned, not the corpus.
-  const availableTraditions = new Set(retrieval.traditions);
-  const usedTraditions = new Set(voiceBlocks.map(({ block }) => block.attribution.tradition));
+  // Count DISTINCT source SECTIONS, not raw voice blocks (A6 line-by-line
+  // 2026-07-17): two voice blocks quoting the same section are one source, and
+  // must not satisfy the >=2-voices floor. Traditions are normalized so raw-string
+  // casing/spacing variants of one tradition don't inflate the count.
+  const availableTraditions = new Set(retrieval.traditions.map(normalizeForMatch));
+  const usedTraditions = new Set(voiceBlocks.map(({ block }) => normalizeForMatch(block.attribution.tradition)));
+  const distinctVoiceSections = new Set(voiceBlocks.map(({ block }) => block.section_id));
   const requiredVoices = Math.min(config.minVoices, retrieval.sectionIds.length);
   const requiredTraditions = Math.min(config.minTraditions, availableTraditions.size);
-  if (voiceBlocks.length < requiredVoices) {
+  if (distinctVoiceSections.size < requiredVoices) {
     violations.push({
       check: 'diversity_voices',
-      message: `${voiceBlocks.length} voice block(s); ${requiredVoices} required given retrieval returned ${retrieval.sectionIds.length} section(s)`,
+      message: `${distinctVoiceSections.size} distinct source section(s) across ${voiceBlocks.length} voice block(s); ${requiredVoices} required given retrieval returned ${retrieval.sectionIds.length} section(s)`,
     });
   }
   if (availableTraditions.size >= 2 && usedTraditions.size < requiredTraditions) {
