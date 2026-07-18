@@ -1,5 +1,42 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-17 (GO-LIVE, cont.) — finish-everything ingest + line-by-line review
+
+**Ingest completed the queue.** Reference tier decoded + STAGED (never served,
+serving UX is an owner call): the SWORD zLD/RawLD dictionary decoder (ISBE 8,928 /
+Easton 3,933 / Nave 4,870 / Smith 4,362, byte-verified formats + cp1252), the
+openscriptures BDB pipeline (11,845 entries, CC-BY-4.0 markup verified verbatim +
+PD text, Strong's joined). Quarantined poetry recovered 3/4: montgomery
+(title-div fallback, 360u), rossetti (PG single-blank-line splitter, 181u),
+herbert (archive.org Cassell 1887 — PG has NO edition; Grosart is a long-s
+facsimile). Re-quarantined with measured reasons: bramley (all 5 archive copies
+are engraved-music, 27-31% OCR garbage), thayers (Greek headword OCR 0% Greek
+script, 6.2% strict — a lexicon's keys are the one thing this OCR destroys).
+
+**Fresh-agent line-by-line review (10 file-groups + 8 lenses, adversarially
+verified): 142 raw → 83 confirmed.** Full disposition in
+[docs/GO_LIVE_A6_FINDINGS.md](docs/GO_LIVE_A6_FINDINGS.md). Three criticals the
+earlier passes missed, all fixed + verified: (1) the register wall was DEAD CODE
+on the live reader (StudyPanel, not the CommentaryPanel the fix went into) — hymns
+mixed into exegetical voices on 38k verses; (2) gutenberg served front/back matter
+under authors' names, incl. a Scripture-index table that verse-anchored into the
+reader at Genesis 3 as Isaac Watts; (3) the verifier grounded on overlap not
+containment — a canon-spanning anchor could ground any passage. Plus ~20 majors
+(CCEL truncation dropped 2.7M chars incl. the entire Trent canons — verified fixed,
+205 Trent chunks now live; K&D missing chapters; today/FTS register-wall holes;
+author-blind publish veto; b2 static-sweep skip; three tautological legs in the
+wall-check itself; migration 022 closing an app_runtime write hole; migration-
+runner prod guards). Security review: 0 high-confidence vulns; snippet sink +
+Function() eval both hardened. Escalations (Part C index window, GA status-column,
+lexicon serving UX, Origen-via-Catena, Herbert OCR) logged, not silently dropped.
+
+**Running:** final clean re-ingest of the whole corpus through the fixed adapters,
+then the certifying gates (A5 eval both checks, register-wall 0 breaches, browser
+matrix, npm run audit + invariants + interpretation_bait live loop). Final numbers
+land in GO_LIVE_STATUS.md when it completes. No prod, no deploy, no Part C.
+
+
+
 ## 2026-07-17 (GO-LIVE overnight→morning, branch `golive`) — bulk ingest + A6 deep-audit remediation
 
 **What ran overnight:** the 46-work queue through the gated loop on dev. Landed clean:
