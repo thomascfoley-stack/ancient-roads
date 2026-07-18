@@ -67,8 +67,11 @@ into /ask. But this is explicitly flagged for you, not decided.
 | A5.3 — reader surface | ✅ GREEN | Ps 23 @375px: "Hymns & sacred poetry" labeled section, Hymn/paraphrase/Poetry chips, **0 external host links**, Calvin/Augustine render full+clean, "words of men" line, console clean |
 | A6 — deep-audit + line-by-line | ✅ DONE | 83 confirmed findings; 3 criticals + all serving-correctness majors fixed; escalations logged. `docs/GO_LIVE_A6_FINDINGS.md` |
 | Sec — security review | ✅ GREEN | 0 high-confidence vulns; snippet sink + Function() eval hardened |
-| B1 — 021 REVOKE | ✅ GREEN (dev) | anchor/embedding satellite tables SELECT-only for app_runtime |
+| B1 — 021 REVOKE | ✅ GREEN (dev) | section_anchors/section_embeddings/section_history_anchors SELECT-only for app_runtime (verified role_table_grants) |
 | B2 — forbidden-provenance | ✅ GREEN (dev) | ratchet 0 in DB AND static corpus; backup-before-delete proven |
+| 022 — embeddings write scope | ✅ GREEN (dev) | app_runtime keeps its embeddings grant for USER content, but RLS is ENFORCED (rls enabled, app_runtime bypassrls=false) and the write policy is `user_id = current_user` — so it CANNOT write platform (user_id IS NULL) rows. Owner ingest bypasses RLS. Verified at enforcement level, not just grants. |
+| Idempotency | ✅ GREEN | re-ingest neale-eastern-hymns: 86 rows → 86 rows (deleteWork+rewrite, 0 dupes) |
+| Attribution | ✅ GREEN | 10 works across registers: author (+ translator) only, 0 host in author; register/paraphrase labels correct |
 
 ## Quarantine / deferred / owner-decision list
 
