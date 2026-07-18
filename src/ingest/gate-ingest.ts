@@ -74,6 +74,11 @@ const results: GateResult[] = [];
 const record = (gate: string, tier: GateResult['tier'], ok: boolean, detail: string, skipped?: string) =>
   results.push({ gate, tier, ok, detail, ...(skipped ? { skipped } : {}) });
 
+// Chapter files the walk could not parse/shape-check — an UNSCANNED served file
+// bypasses the irreversible L3 (provenance) / L5 (must-not-serve) gates, so the
+// gate must SEE these, not silently skip them (A6 line-by-line 2026-07-17).
+const unparseableChapterFiles: string[] = [];
+
 // ── static corpus walk (one pass feeds provenance, must-not-serve, verse-key, parity, sanity) ──
 function* walkStaticEntries(): Generator<StaticEntry> {
   if (!existsSync(CORPUS_DIR)) return;
@@ -83,8 +88,8 @@ function* walkStaticEntries(): Generator<StaticEntry> {
     for (const f of readdirSync(dir).sort()) {
       if (!f.endsWith('.json') || f === '_manifest.json') continue;
       let j: { book?: number; chapter?: number; entries?: Array<Partial<StaticEntry> & { text?: string }> };
-      try { j = JSON.parse(readFileSync(path.join(dir, f), 'utf8')); } catch { continue; }
-      if (!j || !Array.isArray(j.entries) || typeof j.chapter !== 'number' || typeof j.book !== 'number') continue;
+      try { j = JSON.parse(readFileSync(path.join(dir, f), 'utf8')); } catch { unparseableChapterFiles.push(`${bookSlug}/${f} (bad JSON)`); continue; }
+      if (!j || !Array.isArray(j.entries) || typeof j.chapter !== 'number' || typeof j.book !== 'number') { unparseableChapterFiles.push(`${bookSlug}/${f} (bad shape)`); continue; }
       for (const e of j.entries) {
         yield {
           author: e.author ?? '',
@@ -191,6 +196,13 @@ async function main() {
         storedChapters.set(k, list);
       }
     }
+
+    // [L2b] Corpus readability — an unparseable served chapter file is never
+    // scanned by L3/L5, so a gate that skips it silently would pass corrupt or
+    // forbidden content unseen. Fail closed on ANY unparseable file.
+    record('L2b corpus-readable', 'irreversible', unparseableChapterFiles.length === 0,
+      unparseableChapterFiles.length === 0 ? 'all static chapter files parsed + shape-valid'
+        : `${unparseableChapterFiles.length} unparseable: ${unparseableChapterFiles.slice(0, 8).join(' · ')}`);
 
     // [L3] Served provenance — no SERVED entry from a forbidden aggregator
     // (legal-corpus.isPublishedCommentaryEntry × license-manifest.forbiddenProvenanceDomain).
