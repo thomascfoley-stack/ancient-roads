@@ -98,7 +98,7 @@ export function SidebarNavContent({
           <SidebarLink
             href="/read/jhn/1"
             icon={<BookIcon />}
-            label="Reader"
+            label="Bible"
             active={pathname.startsWith('/read')}
             row={row}
             onNavigate={onNavigate}
@@ -106,7 +106,7 @@ export function SidebarNavContent({
           <SidebarLink
             href="/ask"
             icon={<AskIcon />}
-            label="Explore the paths"
+            label="Ancient Paths"
             active={pathname.startsWith('/ask')}
             row={row}
             onNavigate={onNavigate}
