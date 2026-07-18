@@ -49,17 +49,29 @@ died mid-flight — resume `data/overnight-driver.sh`, don't restart.
 ```bash
 # 0. From a session WITH prod credentials (this one has none by design):
 #    export DATABASE_URL=<prod owner unpooled>   # never committed, never echoed
+#    export MIGRATE_ALLOW_PROD=1   # migration runners now dev-guard by default (A6);
+#                                  # this flag is the deliberate prod override.
 cd <repo>
 
-# 1. Migrations 016→021 in order (all additive; 018/019 use the concurrent runner):
+# 1. Migrations in dependency order (all additive). NOTE the two 020s (duplicate
+#    number — both idempotent; apply BOTH, order below):
 node db/apply-migration.mjs           db/migrations/016_history_sections.sql
 node db/apply-migration.mjs           db/migrations/017_source_type_registers.sql
-node db/apply-migration-concurrent.mjs db/migrations/018_register_partial_indexes.sql
-node db/apply-migration-concurrent.mjs db/migrations/019_register_columns_fts.sql
-# (020 exists only if numbered in this branch — apply in numeric order, skip gaps)
+node db/apply-migration.mjs           db/migrations/020_embeddings_source_type_registers.sql
+node db/apply-migration.mjs           db/migrations/020_sources_status_ingesting.sql
 node db/apply-migration.mjs           db/migrations/021_revoke_app_runtime_anchor_writes.sql
-# verify: role_table_grants → SELECT-only on the three anchor/embedding tables;
-#         sources CHECK includes hymn/poetry/art; tsv expr includes heading.
+node db/apply-migration.mjs           db/migrations/022_embeddings_write_policy_user_scope.sql
+# 018/019 build partial indexes. ⚠ On prod DO NOT use the dev drop-then-create
+# (rebuild-register-indexes.ts / the committed 018/019) — that DROPs the live
+# serving index first and opens the ef=40 starvation window (how migration 009
+# died). Instead build the replacement under a NEW name FIRST, then drop the old:
+#   CREATE INDEX CONCURRENTLY idx_embeddings_vector_legal_v2 ON … WHERE <predicate>;
+#   DROP INDEX CONCURRENTLY idx_embeddings_vector_legal;   -- only after v2 is VALID
+#   ALTER INDEX idx_embeddings_vector_legal_v2 RENAME TO idx_embeddings_vector_legal;
+# (repeat for the song_verse HNSW twin + the FTS legal index). Zero-window.
+# verify: role_table_grants → SELECT-only on the 3 anchor/embedding tables AND
+#         embeddings write-policy WITH CHECK is user-scoped (no user_id IS NULL);
+#         sources CHECK includes hymn/poetry/art + 'ingesting'; tsv expr includes heading.
 
 # 2. Deploy code (Vercel) — verifier fix + routing register path + reader changes.
 #    THE irreversible outward step. Rollback = redeploy previous build.
@@ -80,6 +92,10 @@ npx tsx src/ingest/b2-remove-forbidden-provenance.ts --apply  # backup → delet
 #    register-wall-check (0 breaches); role_table_grants (SELECT-only);
 #    seeded bad block → verifier fails closed. Record all numbers in WORKLOG.
 ```
+
+**Read `docs/GO_LIVE_A6_FINDINGS.md` before Part C** — the full line-by-line audit
+disposition (3 criticals + majors fixed, escalations logged, owner design calls
+flagged: lexicon serving UX, Origen-via-Catena, Herbert OCR).
 
 **Rollback paths:** code → redeploy prior Vercel build. Content → the register rows are
 additive; reverting the `routing.ts` served-list constants unserves them instantly
