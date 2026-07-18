@@ -18,7 +18,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_embeddings_vector_legal
     OR (metadata->>'author'='John Chrysostom'    AND (metadata->>'verseId')::int/1000000 IN (40,43,44))
     OR (metadata->>'author'='Augustine of Hippo' AND (metadata->>'verseId')::int/1000000 IN (19,43))
     OR (metadata->>'author' IN ('Albert Barnes','John Wesley','John Calvin') AND metadata->>'sourceUrl' ILIKE '%crosswire%')
-    OR metadata->>'work' IN ('keil-delitzsch','catena-aurea','spurgeon-sermons','maclaren-expositions','chrysostom-homilies','augustine-homilies','owen-works','watson-works','flavel-works','edwards-works','wesley-sermons','hodge-systematic','calvin-institutes','schaff-creeds')
+    OR metadata->>'work' IN ('keil-delitzsch','catena-aurea','chrysostom-homilies','augustine-homilies')
   ));
 --SPLIT--
 DROP INDEX CONCURRENTLY IF EXISTS idx_embeddings_vector_song_verse;
@@ -28,6 +28,18 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_embeddings_vector_song_verse
   WHERE (user_id IS NULL AND source_type IN ('hymn','poetry') AND (
     metadata->>'work' IN ('olney-hymns','scottish-psalter-1650','neale-eastern-hymns','watts-hymns','watts-psalms','keble-christian-year','herbert-temple','montgomery-sacred-poems','rossetti-verses','traherne-poems','milton-poetical-works','hopkins-poems','tennyson-in-memoriam','dante-divine-comedy','wheatley-poems')
   ));
+--SPLIT--
+DROP INDEX CONCURRENTLY IF EXISTS idx_embeddings_vector_sermon;
+--SPLIT--
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_embeddings_vector_sermon
+  ON embeddings USING hnsw (embedding vector_cosine_ops)
+  WHERE (user_id IS NULL AND metadata->>'work' IN ('spurgeon-sermons','maclaren-expositions','watson-works','flavel-works','edwards-works','wesley-sermons'));
+--SPLIT--
+DROP INDEX CONCURRENTLY IF EXISTS idx_embeddings_vector_theology;
+--SPLIT--
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_embeddings_vector_theology
+  ON embeddings USING hnsw (embedding vector_cosine_ops)
+  WHERE (user_id IS NULL AND metadata->>'work' IN ('owen-works','hodge-systematic','calvin-institutes','schaff-creeds'));
 --SPLIT--
 DROP INDEX CONCURRENTLY IF EXISTS idx_embeddings_verseid_registers;
 --SPLIT--

@@ -3,15 +3,18 @@ import type { TeacherResponse } from '@/contract/types';
 import type { Violation } from '@/verifier/types';
 import { verifyV1 } from '@/verifier/v1';
 import { embedQuery, compose } from './deepinfra';
-import { retrieveCommentary, retrieveSongVerse, type RetrievedChunk, type SongVerseChunk } from './retrieve';
+import { retrieveCommentary, retrieveSongVerse, retrieveSermonLane, retrieveTheologyLane, type RetrievedChunk, type SongVerseChunk, type RegisterLaneChunk } from './retrieve';
 import { resolveIntent } from '../../bible/pericopes';
 import { buildCorpusLookup } from './corpus';
 import { normalizeContract } from './normalize-contract';
 import { buildSystemPrompt, buildUserPrompt } from './prompt';
 
+// Register-lane payloads (song_verse, sermons, theology) ride alongside the
+// exegetical answer — labeled, retrieve-and-quote, never composed/floored.
+type LanePayloads = { song_verse?: SongVerseChunk[]; sermons?: RegisterLaneChunk[]; theology?: RegisterLaneChunk[] };
 export type TeacherResult =
-  | { kind: 'composed'; response: TeacherResponse; retrieval: RetrievedChunk[]; song_verse?: SongVerseChunk[] }
-  | { kind: 'fallback'; retrieval: RetrievedChunk[]; violations: Violation[]; song_verse?: SongVerseChunk[] }
+  | ({ kind: 'composed'; response: TeacherResponse; retrieval: RetrievedChunk[] } & LanePayloads)
+  | ({ kind: 'fallback'; retrieval: RetrievedChunk[]; violations: Violation[] } & LanePayloads)
   | { kind: 'empty'; reason: string };
 
 // A safe-to-stream preview of a retrieved source. This is CORPUS text (never
@@ -88,11 +91,23 @@ export async function teach(
   // corpus text, its own pool, surfaced as a separate labeled payload — never
   // composed over, never counted toward the ≥2-voices floor (CONTENT_GO_LIVE
   // decision 2). Its failure returns [] and must never break the answer.
-  const songVersePromise = retrieveSongVerse(queryVec, resolveIntent(query).inject);
+  // Sermon + theology ride the SAME alongside pattern as song/verse — their own
+  // pools, labeled payloads, never composed over, never in the ≥2-voices floor
+  // (sermon-lane slice 2026-07-18). All three lanes fail-soft to [].
+  const ranges = resolveIntent(query).inject;
+  const songVersePromise = retrieveSongVerse(queryVec, ranges);
+  const sermonPromise = retrieveSermonLane(queryVec, ranges);
+  const theologyPromise = retrieveTheologyLane(queryVec, ranges);
   const retrieval = await retrieveCommentary(queryVec, RETRIEVE_K, { query });
-  const songVerse = await songVersePromise;
-  const withRegister = <T extends TeacherResult>(r: T): T =>
-    (r.kind !== 'empty' && songVerse.length > 0 ? { ...r, song_verse: songVerse } : r);
+  const [songVerse, sermons, theology] = await Promise.all([songVersePromise, sermonPromise, theologyPromise]);
+  const withRegister = <T extends TeacherResult>(r: T): T => {
+    if (r.kind === 'empty') return r;
+    let out = r;
+    if (songVerse.length > 0) out = { ...out, song_verse: songVerse };
+    if (sermons.length > 0) out = { ...out, sermons };
+    if (theology.length > 0) out = { ...out, theology };
+    return out;
+  };
   if (retrieval.length === 0) {
     return finish({ kind: 'empty', reason: 'No relevant sources found for this question.' });
   }

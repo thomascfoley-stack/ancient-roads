@@ -54,12 +54,28 @@ export const SERVED_SONG_VERSE_TYPES = ['hymn', 'poetry'] as const;
 // Removed pending follow-ups: spurgeon-treasury (CCEL = page scans), ryle/
 // vincent (author-page mislabeling), isbe/eastons/smiths/naves/bdb/thayers
 // (zLD/RawLD + structured-data decoders not built).
+// EXEGETICAL pool (the /ask ≥2-voices commentary pool) = verse-anchored
+// commentary + fathers ONLY. Sermons and systematic-theology are DISTINCT
+// registers with their own lanes below — they are not exegetical verse-commentary
+// and (measured, docs/SERMON_LANE_DIAGNOSIS.md 2026-07-18) diluted broad-query
+// retrieval when pooled together. Owner decision (c): keep verse-commentary +
+// fathers exegetical; route sermons + theology to labeled lanes.
 export const SERVED_PROSE_WORKS = [
-  'keil-delitzsch', 'catena-aurea', 'spurgeon-sermons',
-  'maclaren-expositions', 'chrysostom-homilies', 'augustine-homilies', 'owen-works',
-  'watson-works', 'flavel-works', 'edwards-works', 'wesley-sermons',
-  'hodge-systematic', 'calvin-institutes', 'schaff-creeds',
-] as const; // whitefield-works quarantined 2026-07-18 (PG vol 1/6, no clean sermon boundaries)
+  'keil-delitzsch', 'catena-aurea', 'chrysostom-homilies', 'augustine-homilies',
+] as const;
+// The SERMON register lane (homiletical exposition — Spurgeon, Maclaren, the
+// Puritans). Retrieve-and-quote in its own pool + labeled payload; the reusable
+// sermon-search retrieval core. NEVER in the exegetical pool or its voice floor.
+export const SERVED_SERMON_WORKS = [
+  'spurgeon-sermons', 'maclaren-expositions', 'watson-works', 'flavel-works',
+  'edwards-works', 'wesley-sermons',
+] as const;
+// The THEOLOGY/CONFESSION register lane (systematic + confessional — topical
+// treatises, not verse-commentary). Same lane machinery, its own labeled payload.
+export const SERVED_THEOLOGY_WORKS = [
+  'owen-works', 'hodge-systematic', 'calvin-institutes', 'schaff-creeds',
+] as const;
+// whitefield-works quarantined 2026-07-18 (PG vol 1/6, no clean sermon boundaries)
 // herbert-temple/montgomery-sacred-poems/rossetti-verses RECOVERED 2026-07-17
 // (archive.org Cassell 1887 / CCEL title-div fallback / PG title-line splitter).
 // Still quarantined: bramley-carols (all sources are engraved-music editions,
@@ -78,11 +94,20 @@ const sqlStrList = (xs: readonly string[]) => xs.map((s) => `'${s.replace(/'/g, 
 export const PROSE_TYPE_SQL = `source_type IN (${sqlStrList(SERVED_PROSE_TYPES)})`;
 export const SONG_VERSE_TYPE_SQL = `source_type IN (${sqlStrList(SERVED_SONG_VERSE_TYPES)})`;
 
+// The two prose LANES (sermon, theology) — distinct registers, their own pools.
+// SERVED_LANE_WORKS = every work routed to a lane (never exegetical). Used by the
+// register wall + FTS exclusion so a lane work can never re-enter the /ask
+// exegetical pool or the FTS commentary search.
+export const SERVED_LANE_WORKS = [...SERVED_SERMON_WORKS, ...SERVED_THEOLOGY_WORKS] as const;
+export const SERMON_CORPUS_FILTER = `(metadata->>'work' IN (${sqlStrList(SERVED_SERMON_WORKS)}))`;
+export const THEOLOGY_CORPUS_FILTER = `(metadata->>'work' IN (${sqlStrList(SERVED_THEOLOGY_WORKS)}))`;
+
 // Exegetical-surface exclusion for commentary_entries (the FTS search). Excludes
-// song/verse rows TWO ways so a NULL/missing register column can't fail the wall
-// open (A6 line-by-line 2026-07-17): by register AND by the known song/verse work
-// slugs. Legacy commentary rows (register NULL, work NULL) still pass.
-export const EXEGETICAL_FTS_EXCLUSION = `(register IS NULL OR register NOT IN ('hymn','poetry')) AND (work IS NULL OR work NOT IN (${sqlStrList(SERVED_SONG_VERSE_WORKS)}))`;
+// song/verse AND lane (sermon/theology) rows TWO ways so a NULL/missing register
+// column can't fail the wall open (A6 line-by-line 2026-07-17; sermon lane
+// 2026-07-18): by register AND by the known lane work slugs. Legacy commentary
+// rows (register NULL, work NULL) still pass.
+export const EXEGETICAL_FTS_EXCLUSION = `(register IS NULL OR register NOT IN ('hymn','poetry')) AND (work IS NULL OR work NOT IN (${sqlStrList([...SERVED_SONG_VERSE_WORKS, ...SERVED_LANE_WORKS])}))`;
 
 export const LEGAL_CORPUS_FILTER = `(metadata->>'author' IN ('John Gill','Jamieson, Fausset & Brown','Adam Clarke','Matthew Henry')
    OR (metadata->>'author'='John Chrysostom'    AND (metadata->>'verseId')::int/1000000 IN (40,43,44))
@@ -181,6 +206,33 @@ export function songVersePoolSql(pool: number = SONG_VERSE_LIMIT): string {
   return `SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
      FROM embeddings
      WHERE user_id IS NULL AND ${SONG_VERSE_TYPE_SQL} AND ${SONG_VERSE_CORPUS_FILTER}
+     ORDER BY embedding <=> $1::vector LIMIT ${pool}`;
+}
+
+// ── the REUSABLE prose-register LANE primitive (sermon-lane slice 2026-07-18) ──
+// A register lane is retrieve-and-quote over ONE work list, in its own pool,
+// surfaced as a labeled payload — never composed over, never in the exegetical
+// ≥2-voices floor. Same shape as the song/verse lane (kept separate so the proven
+// hymn wall is untouched), but parameterized by corpusFilter so sermon, theology,
+// and any future prose register share ONE machinery. This is the sermon-search
+// retrieval core. `corpusFilter` MUST be a routing constant (SERMON_CORPUS_FILTER
+// / THEOLOGY_CORPUS_FILTER), never user input — it interpolates work slugs only.
+export const LANE_LIMIT = 3;
+
+export function laneOnRangeSql(corpusFilter: string, ranges: readonly VerseRange[], limit = LANE_LIMIT): string {
+  const conds = ranges.map((r) => `(metadata->>'verseId')::int BETWEEN ${r.start} AND ${r.end}`).join(' OR ');
+  return `WITH inrange AS MATERIALIZED (
+     SELECT source_id, content, metadata, embedding FROM embeddings
+     WHERE user_id IS NULL AND ${corpusFilter} AND (${conds})
+   )
+   SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
+   FROM inrange ORDER BY embedding <=> $1::vector LIMIT ${limit}`;
+}
+
+export function lanePoolSql(corpusFilter: string, pool = LANE_LIMIT): string {
+  return `SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
+     FROM embeddings
+     WHERE user_id IS NULL AND ${corpusFilter}
      ORDER BY embedding <=> $1::vector LIMIT ${pool}`;
 }
 

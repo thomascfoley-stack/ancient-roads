@@ -8,7 +8,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { LEGAL_CORPUS_FILTER, SERVED_SONG_VERSE_WORKS, SERVED_PROSE_WORKS } from '@/lib/teacher/routing';
+import { LEGAL_CORPUS_FILTER, SERVED_SONG_VERSE_WORKS, SERVED_PROSE_WORKS, SERVED_SERMON_WORKS, SERVED_THEOLOGY_WORKS } from '@/lib/teacher/routing';
 
 const MIGRATIONS_DIR = fileURLToPath(new URL('../../../db/migrations', import.meta.url));
 const strip = (s: string) => s.replace(/\s+/g, '');
@@ -55,6 +55,21 @@ describe('§7 — partial legal HNSW index predicate stays in sync with LEGAL_CO
     const idx = newestContaining('idx_commentary_fts_legal');
     for (const slug of [...SERVED_PROSE_WORKS, ...SERVED_SONG_VERSE_WORKS]) {
       expect(idx.includes(`'${slug}'`), `FTS legal index missing served slug ${slug} — regenerate migration 019`).toBe(true);
+    }
+  });
+
+  // sermon-lane slice 2026-07-18: the two prose lanes have their own partial HNSW
+  // indexes; their predicates must carry every lane slug or lane retrieval starves.
+  it('the newest sermon lane index carries every SERVED_SERMON_WORKS slug', () => {
+    const idx = newestContaining('idx_embeddings_vector_sermon');
+    for (const slug of SERVED_SERMON_WORKS) {
+      expect(idx.includes(`'${slug}'`), `sermon lane index missing ${slug} — rebuild migration 018`).toBe(true);
+    }
+  });
+  it('the newest theology lane index carries every SERVED_THEOLOGY_WORKS slug', () => {
+    const idx = newestContaining('idx_embeddings_vector_theology');
+    for (const slug of SERVED_THEOLOGY_WORKS) {
+      expect(idx.includes(`'${slug}'`), `theology lane index missing ${slug} — rebuild migration 018`).toBe(true);
     }
   });
 });

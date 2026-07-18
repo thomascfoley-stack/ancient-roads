@@ -15,9 +15,13 @@ type Block =
 
 interface SourcePreview { sourceId: string; author: string; sourceTitle: string; tradition: string | null; content: string; score: number }
 interface Retrieved { sourceId: string; score: number; content: string; metadata: { author: string; sourceTitle: string; tradition: string | null } }
+// Register-lane chunk (song/verse, sermon, theology) — verbatim corpus text
+// surfaced in its OWN labeled section, never blended into the exegetical voices.
+interface LaneChunk { sourceId: string; content: string; metadata: { author: string; sourceTitle: string; work?: string; register?: string; paraphrase?: boolean } }
+interface Lanes { song_verse?: LaneChunk[]; sermons?: LaneChunk[]; theology?: LaneChunk[] }
 type TeacherResult =
-  | { kind: 'composed'; response: { blocks: Block[] }; retrieval: Retrieved[] }
-  | { kind: 'fallback'; retrieval: Retrieved[]; violations: { check: string; message: string }[] }
+  | ({ kind: 'composed'; response: { blocks: Block[] }; retrieval: Retrieved[] } & Lanes)
+  | ({ kind: 'fallback'; retrieval: Retrieved[]; violations: { check: string; message: string }[] } & Lanes)
   | { kind: 'empty'; reason: string };
 
 type Stage = 'retrieving' | 'retrieved' | 'composing' | 'verifying' | 'rejected' | 'done' | 'error';
@@ -250,7 +254,7 @@ function Answer({ result }: { result: TeacherResult }) {
       </p>
     );
   }
-  if (result.kind === 'fallback') return <Fallback retrieval={result.retrieval} />;
+  if (result.kind === 'fallback') return <><Fallback retrieval={result.retrieval} /><Lanes result={result} /></>;
 
   const blocks = result.response.blocks;
   const framing = blocks.find((b) => b.type === 'framing') as Extract<Block, { type: 'framing' }> | undefined;
@@ -272,6 +276,7 @@ function Answer({ result }: { result: TeacherResult }) {
           </figure>
         ))}
       </div>
+      <Lanes result={result} />
       {passages && passages.items.length > 0 && (
         <div className="pt-1">
           <p className="mb-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">Passages</p>
@@ -286,6 +291,45 @@ function Answer({ result }: { result: TeacherResult }) {
         </div>
       )}
     </div>
+  );
+}
+
+// The register LANES (song/verse, sermon, theology) — each a DISTINCT labeled
+// section of verbatim corpus text, never blended into the exegetical voices and
+// never part of the composed answer (sermon-lane slice 2026-07-18). Attribution
+// is author + work only — never a host URL. A paraphrase-tagged item (metrical
+// psalter) is marked as such, never presented as Scripture.
+function LaneSection({ title, note, chunks }: { title: string; note: string; chunks?: LaneChunk[] }) {
+  if (!chunks || chunks.length === 0) return null;
+  return (
+    <div className="pt-2">
+      <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">{title}</p>
+      <p className="mb-3 text-[13px] italic text-stone-400 dark:text-stone-500">{note}</p>
+      <div className="space-y-4">
+        {chunks.map((c) => (
+          <figure key={c.sourceId} className="border-l-[3px] border-stone-300/70 pl-5 dark:border-stone-700">
+            <blockquote className="whitespace-pre-line break-words font-serif text-[15px] leading-relaxed text-stone-700 dark:text-stone-300">
+              {c.content.length > 400 ? `${c.content.slice(0, 400)}…` : c.content}
+            </blockquote>
+            <figcaption className="mt-2 text-sm text-stone-500 dark:text-stone-400">
+              <span className="font-semibold text-stone-800 dark:text-stone-300">{c.metadata.author}</span>
+              {c.metadata.sourceTitle ? `, ${c.metadata.sourceTitle}` : ''}
+              {c.metadata.paraphrase ? <span className="ml-2 rounded-full bg-accent-700/10 px-2 py-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300">paraphrase</span> : null}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Lanes({ result }: { result: Extract<TeacherResult, { kind: 'composed' | 'fallback' }> }) {
+  return (
+    <>
+      <LaneSection title="Sermons on this theme" note="Preached expositions — not commentary; read them in full for the argument." chunks={result.sermons} />
+      <LaneSection title="Theology & confessions" note="Systematic and confessional reflections on this theme." chunks={result.theology} />
+      <LaneSection title="Hymns & sacred poetry" note="Sung and poetic responses — and (where marked) a metrical paraphrase, not the Scripture text itself." chunks={result.song_verse} />
+    </>
   );
 }
 

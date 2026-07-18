@@ -9,11 +9,12 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { neon } from '@neondatabase/serverless';
-import { legalBasePool, injectionSql, diversityBackfillSql, songVersePoolSql, songVerseOnRangeSql, LEGAL_CORPUS_FILTER, EXEGETICAL_FTS_EXCLUSION, SERVED_SONG_VERSE_WORKS } from '../lib/teacher/routing.js';
+import { legalBasePool, injectionSql, diversityBackfillSql, songVersePoolSql, songVerseOnRangeSql, LEGAL_CORPUS_FILTER, EXEGETICAL_FTS_EXCLUSION, SERVED_SONG_VERSE_WORKS, SERVED_LANE_WORKS } from '../lib/teacher/routing.js';
 import { LEGAL_COMMENTARY_ENTRIES_PREDICATE } from '../lib/legal-corpus.js';
 import { resolveIntent } from '../bible/pericopes.js';
 
 const SONG_VERSE_SLUGS = new Set<string>(SERVED_SONG_VERSE_WORKS);
+const LANE_SLUGS = new Set<string>(SERVED_LANE_WORKS); // sermon + theology — must NEVER be in the exegetical pool
 
 const sql = neon((process.env.APP_DATABASE_URL ?? process.env.DATABASE_URL ?? '').replace(/^"|"$/g, ''));
 async function embed(q: string): Promise<string> {
@@ -25,6 +26,9 @@ async function embed(q: string): Promise<string> {
 }
 const meta = (r: { metadata: unknown }) => (typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata) as Record<string, unknown>;
 const isSongVerse = (r: { metadata: unknown }) => ['hymn', 'poetry'].includes(String(meta(r).register));
+// A lane row (sermon/theology) in the exegetical pool is a register-wall breach —
+// those registers have their own pools and must never enter the ≥2-voices floor.
+const isLane = (r: { metadata: unknown }) => LANE_SLUGS.has(String(meta(r).work));
 
 const QUERIES = [
   'the Lord is my shepherd I shall not want',
@@ -39,15 +43,15 @@ const newProseAuthors = new Set<string>();
 for (const q of QUERIES) {
   const vec = await embed(q);
   const base = await legalBasePool(sql, vec, 20);
-  const leaked = base.filter(isSongVerse);
+  const leaked = base.filter((r) => isSongVerse(r) || isLane(r)); // hymn/poetry OR sermon/theology in the exegetical pool = breach
   wallBreaches += leaked.length;
   for (const r of base) { const m = meta(r); if (m.work) newProseAuthors.add(String(m.author)); }
   const inj = resolveIntent(q).inject;
   if (inj.length > 0) {
     const injected = (await sql.query(injectionSql(inj, LEGAL_CORPUS_FILTER), [vec])) as Array<{ metadata: unknown }>;
-    wallBreaches += injected.filter(isSongVerse).length;
+    wallBreaches += injected.filter((r) => isSongVerse(r) || isLane(r)).length;
     const bf = (await sql.query(diversityBackfillSql([Math.floor(inj[0]!.start / 1000)], LEGAL_CORPUS_FILTER), [vec])) as Array<{ metadata: unknown }>;
-    wallBreaches += bf.filter(isSongVerse).length;
+    wallBreaches += bf.filter((r) => isSongVerse(r) || isLane(r)).length;
   }
   const svRows = (inj.length > 0
     ? ((await sql.query(songVerseOnRangeSql(inj), [vec])) as Array<{ metadata: unknown }>)

@@ -2,7 +2,7 @@ import { getDb } from '../db';
 import { rerank } from './rerank';
 import { resolveIntent } from '../../bible/pericopes';
 import type { VerseRange } from '../../bible/ref-parse';
-import { RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse, legalBasePool, LEGAL_CORPUS_FILTER, chapterKeysOf, diversityBackfillSql, insertBackfill, BACKFILL_TOP_CHAPTERS, songVerseOnRangeSql, songVersePoolSql, SONG_VERSE_LIMIT } from './routing';
+import { RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse, legalBasePool, LEGAL_CORPUS_FILTER, chapterKeysOf, diversityBackfillSql, insertBackfill, BACKFILL_TOP_CHAPTERS, songVerseOnRangeSql, songVersePoolSql, SONG_VERSE_LIMIT, laneOnRangeSql, lanePoolSql, LANE_LIMIT, SERMON_CORPUS_FILTER, THEOLOGY_CORPUS_FILTER } from './routing';
 
 // A retrieved commentary chunk, fully hydrated (attribution + content on the row).
 export interface RetrievedChunk {
@@ -84,6 +84,53 @@ export async function retrieveSongVerse(
     return []; // the register is additive — its failure must never break the exegetical answer
   }
 }
+
+// ── the REUSABLE prose-register LANE (sermon-lane slice 2026-07-18) ──
+// A prose register (sermon, theology) retrieved in its OWN pool + labeled payload.
+// Retrieve-and-quote — never fed to the composer, never counted toward the
+// exegetical ≥2-voices floor. Verse-anchored items first (a sermon ON this
+// passage), semantic fill behind. This is the reusable sermon-search core; a
+// caller passes its register key + corpusFilter (a routing constant, not user
+// input). Fail-soft: the lane is additive and must never break the exegetical answer.
+export interface RegisterLaneChunk extends RetrievedChunk {
+  metadata: RetrievedChunk['metadata'] & { work: string; register?: string };
+  lane: string; // 'sermon' | 'theology'
+}
+
+export async function retrieveRegisterLane(
+  laneKey: string,
+  corpusFilter: string,
+  queryVec: number[],
+  ranges: readonly VerseRange[],
+  limit = LANE_LIMIT,
+): Promise<RegisterLaneChunk[]> {
+  const sql = getDb();
+  const vecStr = `[${queryVec.join(',')}]`;
+  const hydrate = (rows: Array<{ source_id: string; score: number; content: string; metadata: unknown }>): RegisterLaneChunk[] =>
+    rows.map((r) => ({
+      sourceId: r.source_id,
+      score: Number(r.score),
+      content: r.content,
+      metadata: (typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata) as RegisterLaneChunk['metadata'],
+      lane: laneKey,
+    }));
+  try {
+    const onRange = ranges.length > 0
+      ? hydrate((await sql.query(laneOnRangeSql(corpusFilter, ranges, limit), [vecStr])) as Parameters<typeof hydrate>[0])
+      : [];
+    if (onRange.length >= limit) return onRange.slice(0, limit);
+    const fill = hydrate((await sql.query(lanePoolSql(corpusFilter, limit), [vecStr])) as Parameters<typeof hydrate>[0]);
+    const seen = new Set(onRange.map((c) => c.sourceId));
+    return [...onRange, ...fill.filter((c) => !seen.has(c.sourceId))].slice(0, limit);
+  } catch {
+    return []; // additive — its failure must never break the exegetical answer
+  }
+}
+
+export const retrieveSermonLane = (queryVec: number[], ranges: readonly VerseRange[], limit = LANE_LIMIT) =>
+  retrieveRegisterLane('sermon', SERMON_CORPUS_FILTER, queryVec, ranges, limit);
+export const retrieveTheologyLane = (queryVec: number[], ranges: readonly VerseRange[], limit = LANE_LIMIT) =>
+  retrieveRegisterLane('theology', THEOLOGY_CORPUS_FILTER, queryVec, ranges, limit);
 
 export async function retrieveCommentary(
   queryVec: number[],

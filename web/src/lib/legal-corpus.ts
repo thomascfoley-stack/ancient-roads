@@ -2,7 +2,7 @@
 // Mirrors LEGAL_CORPUS_FILTER in teacher/routing.ts (embeddings metadata JSON).
 // Permanent fix at GA: sources.status='published' column (docs/MIGRATION_DESIGN.md).
 
-import { SERVED_PROSE_WORKS, SERVED_SONG_VERSE_WORKS } from './teacher/routing';
+import { SERVED_PROSE_WORKS, SERVED_SONG_VERSE_WORKS, SERVED_LANE_WORKS } from './teacher/routing';
 
 export { LEGAL_CORPUS_FILTER } from './teacher/routing';
 
@@ -57,7 +57,11 @@ const PUBLISHED_BOOK_SCOPED: Record<string, number[]> = {
 // URL condition. (Provenance of the biblehub/blogspot sources is flagged for owner
 // review in docs/AUTHOR_TRIAGE.md; these authors are all pre-1929 PD.)
 const sqlList = (xs: readonly string[]) => xs.map((a) => `'${a.replace(/'/g, "''")}'`).join(',');
-const REGISTER_SERVED_SLUGS: readonly string[] = [...SERVED_PROSE_WORKS, ...SERVED_SONG_VERSE_WORKS];
+// ALL served works across surfaces: exegetical prose + song/verse + the sermon/
+// theology lanes. Drives PUBLISHED_WORKS (the READER shows every served work) and
+// the FTS row-gate. The exegetical FTS SEARCH then removes hymn/poetry + lane
+// works via EXEGETICAL_FTS_EXCLUSION, so those surface only in their own lane.
+const REGISTER_SERVED_SLUGS: readonly string[] = [...SERVED_PROSE_WORKS, ...SERVED_SONG_VERSE_WORKS, ...SERVED_LANE_WORKS];
 // The register go-live adds `work IN (published slugs)` — migration 019 adds the
 // column + rebuilds idx_commentary_fts_legal in lockstep (fts-legal-index-sync).
 export const LEGAL_COMMENTARY_ENTRIES_PREDICATE = `(author IN (${sqlList(PUBLISHED_WHOLE_BIBLE_AUTHORS)})
