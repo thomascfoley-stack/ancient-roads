@@ -18,7 +18,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_embeddings_vector_legal
     OR (metadata->>'author'='John Chrysostom'    AND (metadata->>'verseId')::int/1000000 IN (40,43,44))
     OR (metadata->>'author'='Augustine of Hippo' AND (metadata->>'verseId')::int/1000000 IN (19,43))
     OR (metadata->>'author' IN ('Albert Barnes','John Wesley','John Calvin') AND metadata->>'sourceUrl' ILIKE '%crosswire%')
-    OR metadata->>'work' IN ('keil-delitzsch','catena-aurea','spurgeon-sermons','maclaren-expositions','chrysostom-homilies','augustine-homilies','owen-works','watson-works','flavel-works','edwards-works','wesley-sermons','hodge-systematic','calvin-institutes','schaff-creeds','whitefield-works')
+    OR metadata->>'work' IN ('keil-delitzsch','catena-aurea','spurgeon-sermons','maclaren-expositions','chrysostom-homilies','augustine-homilies','owen-works','watson-works','flavel-works','edwards-works','wesley-sermons','hodge-systematic','calvin-institutes','schaff-creeds')
   ));
 --SPLIT--
 DROP INDEX CONCURRENTLY IF EXISTS idx_embeddings_vector_song_verse;

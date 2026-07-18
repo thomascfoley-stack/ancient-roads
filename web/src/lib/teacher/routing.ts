@@ -59,8 +59,7 @@ export const SERVED_PROSE_WORKS = [
   'maclaren-expositions', 'chrysostom-homilies', 'augustine-homilies', 'owen-works',
   'watson-works', 'flavel-works', 'edwards-works', 'wesley-sermons',
   'hodge-systematic', 'calvin-institutes', 'schaff-creeds',
-  'whitefield-works',
-] as const;
+] as const; // whitefield-works quarantined 2026-07-18 (PG vol 1/6, no clean sermon boundaries)
 // herbert-temple/montgomery-sacred-poems/rossetti-verses RECOVERED 2026-07-17
 // (archive.org Cassell 1887 / CCEL title-div fallback / PG title-line splitter).
 // Still quarantined: bramley-carols (all sources are engraved-music editions,

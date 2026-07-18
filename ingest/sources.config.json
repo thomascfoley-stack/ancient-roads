@@ -1323,7 +1323,9 @@
         "adapter": "gutenberg",
         "ebook_id": 68976
       }
-    }
+    },
+    "serve": false,
+    "quarantine": "A6 run 2026-07-18: PG 68976 is only Vol 1 of 6 and mixes letters/sermons/tracts with no clean sermon-boundary markers — needs a multi-volume sermon-segmentation profile. Follow-up."
   },
   {
     "id": "barnes-crosswire-nt",
