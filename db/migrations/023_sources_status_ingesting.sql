@@ -1,4 +1,4 @@
--- 020: allow sources.status='ingesting' — the in-flight marker register-writer
+-- 023: allow sources.status='ingesting' — the in-flight marker register-writer
 -- stamps until a work's write SUCCEEDS (publish/staged only on success, so a
 -- crash mid-write can never leave a published shell — the K&D 3-row lesson,
 -- A6 2026-07-17). Idempotent: drop+re-add the CHECK.

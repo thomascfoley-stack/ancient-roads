@@ -98,14 +98,14 @@ into /ask. But this is explicitly flagged for you, not decided.
 #                                  # this flag is the deliberate prod override.
 cd <repo>
 
-# 1. Migrations in dependency order (all additive). NOTE the two 020s (duplicate
-#    number — both idempotent; apply BOTH, order below):
+# 1. Migrations in dependency order (all additive; unique numbers 016-023 — the
+#    old duplicate-020 was renamed 020_sources_status_ingesting -> 023):
 node db/apply-migration.mjs           db/migrations/016_history_sections.sql
 node db/apply-migration.mjs           db/migrations/017_source_type_registers.sql
 node db/apply-migration.mjs           db/migrations/020_embeddings_source_type_registers.sql
-node db/apply-migration.mjs           db/migrations/020_sources_status_ingesting.sql
 node db/apply-migration.mjs           db/migrations/021_revoke_app_runtime_anchor_writes.sql
 node db/apply-migration.mjs           db/migrations/022_embeddings_write_policy_user_scope.sql
+node db/apply-migration.mjs           db/migrations/023_sources_status_ingesting.sql
 # 018/019 build partial indexes. ⚠ On prod DO NOT use the dev drop-then-create
 # (rebuild-register-indexes.ts / the committed 018/019) — that DROPs the live
 # serving index first and opens the ef=40 starvation window (how migration 009
