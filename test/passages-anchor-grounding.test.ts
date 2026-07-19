@@ -96,3 +96,26 @@ describe('anchor_offbase — off-by-one boundary of the overlap operator', () =>
     expect(v.some((x) => x.check === 'anchor_order'), 'start>end must be caught by anchor_order').toBe(true);
   });
 });
+
+// A6 line-by-line 2026-07-17 regressions — the overlap operator let two holes through.
+describe('A6: containment closes the overlap holes', () => {
+  const EPH_5_18 = 49005018;
+  it('REJECTS a canon-spanning anchor (Gen 1:1–Rev 22:21) even though it overlaps the section', async () => {
+    const r = validResponse();
+    (r.blocks[1] as { anchors: Array<{ start: number; end: number }> }).anchors = [{ start: 1001001, end: 66022021 }];
+    const v = violations(await verifyV1(r, corpus, retrieval));
+    expect(v.some((x) => x.check === 'anchor_offbase'), 'a canon-spanning anchor must be offbase').toBe(true);
+  });
+
+  it('REJECTS a passage that extends far beyond its grounding anchor (passages_grounded)', async () => {
+    // voice anchors Eph 5:18 (in-section); the passages block shows Eph 5:18–6:24 —
+    // grounded only by a sliver of overlap under the old rule, ungrounded under containment.
+    const r = validResponse();
+    (r.blocks[1] as { anchors: Array<{ start: number; end: number }> }).anchors = [{ start: EPH_5_18, end: EPH_5_18 }];
+    (r.blocks[3] as { items: Array<{ start: number; end: number; translation: string }> }).items = [
+      { start: EPH_5_18, end: 49006024, translation: 'web' },
+    ];
+    const v = violations(await verifyV1(r, corpus, retrieval));
+    expect(v.some((x) => x.check === 'passages_grounded'), 'a passage beyond its anchor must be ungrounded').toBe(true);
+  });
+});

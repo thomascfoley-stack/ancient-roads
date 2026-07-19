@@ -30,10 +30,13 @@ function assertNoForbiddenAuthors(authors: string[], pathLabel: string): void {
 }
 
 function assertAllPublished(
-  entries: Array<{ author: string; book: number; sourceUrl?: string | null }>,
+  entries: Array<{ author: string; book: number; sourceUrl?: string | null; work?: string | null }>,
   pathLabel: string,
 ): void {
-  const bad = entries.filter((e) => !isPublishedCommentaryEntry({ author: e.author, book: e.book, sourceUrl: e.sourceUrl }));
+  // work MUST ride along: register works publish BY SLUG, and dropping it makes
+  // every register author read as non-published (the gate-ingest L3 bug class,
+  // A6 2026-07-17)
+  const bad = entries.filter((e) => !isPublishedCommentaryEntry({ author: e.author, book: e.book, sourceUrl: e.sourceUrl, work: e.work }));
   expect(
     bad.map((e) => e.author),
     `${pathLabel} returned non-published authors: ${bad.map((e) => e.author).join(', ')}`,
@@ -99,9 +102,12 @@ describe.skipIf(!dbUrl)('Layer 1 — licensing invariant (behavioral)', () => {
     });
     assertNoForbiddenAuthors(authors, 'legalBasePoolSql');
     for (const forbidden of MUST_NOT_SERVE_AUTHORS) {
+      // NO source_type scoping: the served pool spans commentary + the register
+      // types (father/sermon/hymn/…) — the old ='commentary' scope let Origen's
+      // 'father' rows slide past this sweep unseen (A6 2026-07-17)
       const leaked = (await sql.query(
         `SELECT count(*)::int AS n FROM embeddings
-         WHERE user_id IS NULL AND source_type = 'commentary'
+         WHERE user_id IS NULL
            AND ${LEGAL_CORPUS_FILTER}
            AND metadata->>'author' = $1`,
         [forbidden],
@@ -140,6 +146,7 @@ describe.skipIf(!dbUrl)('Layer 1 — licensing invariant (behavioral)', () => {
         author: c.metadata.author,
         book: Math.floor(c.metadata.verseId / 1_000_000),
         sourceUrl: c.metadata.sourceUrl,
+        work: (c.metadata as { work?: string }).work,
       })),
       'retrieveCommentary',
     );

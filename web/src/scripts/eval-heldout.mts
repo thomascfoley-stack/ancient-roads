@@ -11,13 +11,15 @@ import { resolveIntent } from '../bible/pericopes';
 import { CANDIDATE_POOL, RERANK_MODEL, RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse, PASSAGE_CAP, legalBasePool, HNSW_EF_SEARCH, LEGAL_CORPUS_FILTER, chapterKeysOf, diversityBackfillSql, insertBackfill, BACKFILL_TOP_CHAPTERS } from '../lib/teacher/routing';
 import { PILOT, FROZEN, type Q, type Cat } from './heldout-queries.mjs';
 import { FROZEN_V3 } from './heldout-v3-queries.mjs';
+import { FROZEN_V4 } from './heldout-v4-queries.mjs';
 
 // The ONE resolver for which query set every entry point runs on. Previously main(),
 // validate(), diagnose() and availability() each re-derived this and three of them
 // hardcoded FROZEN — so `--v3 --availability` (etc.) silently reported on v2. A diagnostic
 // that reports on the wrong set is worse than none. All four now call this.
-//   --v3 → FROZEN_V3 · --frozen → FROZEN · (default) → PILOT
+//   --v4 → FROZEN_V4 · --v3 → FROZEN_V3 · --frozen → FROZEN · (default) → PILOT
 function activeSet(): { name: string; set: Q[] } {
+  if (process.argv.includes('--v4')) return { name: 'FROZEN_V4', set: FROZEN_V4 };
   if (process.argv.includes('--v3')) return { name: 'FROZEN_V3', set: FROZEN_V3 };
   if (process.argv.includes('--frozen')) return { name: 'FROZEN', set: FROZEN };
   return { name: 'PILOT', set: PILOT };
@@ -34,6 +36,17 @@ const EF = Number(argVal('--ef') ?? HNSW_EF_SEARCH); // hnsw.ef_search sweep kno
 const CAT_FILTER = argVal('--cats')?.split(',');
 const CAP = Number(argVal('--cap') ?? PASSAGE_CAP); // per-passage cap sweep knob
 const NO_RERANK = process.argv.includes('--no-rerank'); // §2 diagnosis: keep pure vector order
+// Sermon-lane diagnosis (2026-07-18): read-only pool-exclusion knobs. Measure the
+// exegetical pool with certain source_types/works removed, through the SHIPPED
+// legalBasePool path. --exclude-types sermon · --exclude-works spurgeon-sermons.
+const EXCLUDE_TYPES = argVal('--exclude-types')?.split(',');
+const EXCLUDE_WORKS = argVal('--exclude-works')?.split(',');
+const EXCLUDE_FILTER = [
+  EXCLUDE_TYPES ? `source_type NOT IN (${EXCLUDE_TYPES.map((t) => `'${t}'`).join(',')})` : '',
+  EXCLUDE_WORKS ? `(metadata->>'work' IS NULL OR metadata->>'work' NOT IN (${EXCLUDE_WORKS.map((w) => `'${w}'`).join(',')}))` : '',
+].filter(Boolean).join(' AND ');
+const WORK_CAP = Number(argVal('--work-cap') ?? 0); // max chunks per work in the pool (0 = off)
+const PRE_POOL = Number(argVal('--pre-pool') ?? 200); // pre-cap pool size when --work-cap is on
 // §1b LABEL AUDIT: the v3 doctrinal labels are model-authored and DEMONSTRABLY incomplete —
 // a correct retrieval is scored a miss. Each addition below is grounded in the KJV TEXT
 // (verbatim phrase in the query, or a direct synoptic parallel of a labelled chapter),
@@ -48,7 +61,9 @@ const RELABEL: Record<string, string[]> = {
   'v3-tp-06': ['Deuteronomy 5'],
   'v3-tp-09': ['Deuteronomy 5'],
   'v3-tp-11': ['John 15'],
-  'v3-tp-12': ['Psalm 113', 'Psalm 117', 'Psalm 146', 'Psalm 147', 'Psalm 148', 'Psalm 149'],
+  // v3-tp-12 REMOVED (A6 2026-07-17): its label additions were derived from what
+  // retrieval returned, violating the harness's own non-circularity rule
+  // ("derived from the query's scripture, NOT from what retrieval returned").
   'v3-tp-16': ['Matthew 18'],
   'v3-tp-18': ['Luke 12'],
   'v3-tp-19': ['John 15'],
@@ -110,10 +125,26 @@ async function rerankAll(q: string, rows: Row[]): Promise<Row[]> {
 // rerank → floor), returning the top-K voices' verseId + author.
 async function retrieveLegal(query: string, vec: string): Promise<Array<{ verseId: number; author: string }>> {
   // Base pool via the SHARED builder — byte-identical to production retrieveCommentary.
-  let rows = (await legalBasePool(sql, vec, POOL, EF)) as Row[];
+  // EXCLUDE_FILTER is a read-only diagnostic (default '' → production SQL).
+  let rows = (await legalBasePool(sql, vec, WORK_CAP ? PRE_POOL : POOL, EF, EXCLUDE_FILTER)) as Row[];
+  // Per-work cap diagnostic (2026-07-18): retrieve a larger PRE_POOL, keep the top
+  // WORK_CAP vector-scored chunks per work (so one huge work — Spurgeon's 118k —
+  // can't dominate), then trim to POOL. Vector score is already DESC from the SQL.
+  if (WORK_CAP) {
+    const perWork = new Map<string, number>();
+    const capped: Row[] = [];
+    for (const r of rows) {
+      const w = (meta(r.metadata).work as string) ?? `author:${meta(r.metadata).author}`;
+      const n = perWork.get(w) ?? 0;
+      if (n < WORK_CAP) { perWork.set(w, n + 1); capped.push(r); }
+      if (capped.length >= POOL) break;
+    }
+    rows = capped;
+  }
   const intent = resolveIntent(query);
   if (intent.inject.length) {
-    const inj = (await sql.query(injectionSql(intent.inject, PUBLISHABLE), [vec])) as Row[];
+    const injFilter = EXCLUDE_FILTER ? `${PUBLISHABLE} AND ${EXCLUDE_FILTER}` : PUBLISHABLE;
+    const inj = (await sql.query(injectionSql(intent.inject, injFilter), [vec])) as Row[];
     rows = mergeById(inj, rows, (r) => r.source_id);
   }
   const ranked = NO_RERANK ? rows : await rerankAll(query, rows);

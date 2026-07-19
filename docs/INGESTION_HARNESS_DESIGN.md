@@ -1,8 +1,24 @@
 # Ingestion Harness — Design
 
-**Status: SUPERSEDED — Phase 1 BUILT (as of 2026-07-12).** The harness shipped: `src/ingest/ingest-harness.ts`
-(per-work digest, auto-decide/escalate; publish remains a hard human gate). Retained as design rationale,
-**not a pending proposal.** Owner: Thomas. Author: PM.
+**Status (honest, 2026-07-16): GATES IMPLEMENTED ON THE LEGACY PATH; the full status-gated harness lands
+with migration 006.** The earlier "Phase 1 BUILT" stamp overstated it — `src/ingest/ingest-harness.ts` is a
+thin per-work digest over existing adapters, and this doc's full `staged → published` status machine is
+coupled to the 006 `sources.status` column, which now holds 4 works (the 2-work commentary pilot plus the
+v2 josephus-whiston historian and spurgeon-talks-to-farmers sermon, both staged). What IS live:
+
+- **`pnpm gate:ingest`** (`src/ingest/gate-ingest.ts`) — the gates wired as one entrypoint that CALLS the
+  existing modules (license-manifest, licensing, legal-corpus, check-corpus-coverage, content-sanity,
+  resource-textmatch, verse-key-gate), ordered by reversibility: irreversible license/provenance gates
+  first. Corpus mode + per-work mode (`--work --jsonl --match-author`).
+- Gates proven **red on the real Barnes defect, then green after repair** (2026-07-16): verse-key
+  distribution, count-parity (caught the matthew-henry chunk-duplication in the 006 pilot), sampled
+  content-sanity, chapter-grain text-match (caught that biblehub Calvin is a different edition — 36%
+  repair ⇒ re-source, not flag-flip), staged-source provenance (caught barnes-notes staged with a
+  biblehub URL).
+- `ingest-harness.ts` now imports the Gate B rules instead of re-inlining them.
+
+The state machine, digest batching, decision tree, and fresh-vN generation below remain the design of
+record for the 006 cutover. Owner: Thomas. Author: PM.
 _(Original status: awaiting owner go-ahead for Phase 1; no harness code until approved.)_
 
 ## Purpose

@@ -28,10 +28,98 @@ export const RERANK_DOC_CHARS = 1200; // per-doc truncation fed to the reranker
 // authors are all non-verified provenance. KNOWN residual: Augustine + Chrysostom rows
 // carry historicalchristian.faith provenance (text PD-verified vs New Advent NPNF/ANF,
 // provenance repair to New Advent pending) — flagged as pre-beta debt in the work order.
+// ── REGISTERS (CONTENT_GO_LIVE.md decision 2, 2026-07-16) ──
+// The served corpus is register-aware. PROSE registers (commentary, sermons,
+// fathers, theology, confessions, lexicons) share ONE pool — they are exegetical
+// voices. SONG/VERSE registers (hymns, poetry) are a DISTINCT labeled register:
+// retrieved by their own pool + partial index, surfaced separately, NEVER blended
+// into the exegetical voices and NEVER counted toward the exegetical ≥2-voices
+// floor. Membership below IS the publish switch for the flat table (the owner
+// authorized auto-publish of the verified-PD clean tier once Gate B + quality
+// gates pass): a work's rows are served iff its slug is in the served list and
+// the row's metadata->>'work' carries it. The 006 status column remains the
+// permanent fix (GA cutover, tracked separately).
+export const SERVED_PROSE_TYPES = ['commentary', 'sermon', 'father', 'theology', 'confession', 'lexicon'] as const;
+export const SERVED_SONG_VERSE_TYPES = ['hymn', 'poetry'] as const;
+
+// Auto-publish tier (Gate B verified-PD/CC-BY; owner-authorized). Deliberately
+// EXCLUDED and staged instead: origen-commentary (standing MUST_NOT_SERVE
+// 'Origen' ruling — escalated, owner reconciles), thayers-lexicon (OCR tier),
+// the three historians (no read path), and the v2 staged commentaries
+// (poole-tcp/scofield/pnt — the parked LEGAL_CORPUS_FILTER collision call).
+// ONLY works that are ingested (or in tonight's gated queue) AND clean. A slug
+// here is the publish switch — a work that was never ingested, or is
+// quarantined, must NOT be pre-authorized (A6 2026-07-17: the full 46-work list
+// made one-line publishes of quarantined/never-verified works invisible).
+// Removed pending follow-ups: spurgeon-treasury (CCEL = page scans), ryle/
+// vincent (author-page mislabeling), isbe/eastons/smiths/naves/bdb/thayers
+// (zLD/RawLD + structured-data decoders not built).
+// EXEGETICAL pool (the /ask ≥2-voices commentary pool) = verse-anchored
+// commentary + fathers ONLY. Sermons and systematic-theology are DISTINCT
+// registers with their own lanes below — they are not exegetical verse-commentary
+// and (measured, docs/SERMON_LANE_DIAGNOSIS.md 2026-07-18) diluted broad-query
+// retrieval when pooled together. Owner decision (c): keep verse-commentary +
+// fathers exegetical; route sermons + theology to labeled lanes.
+export const SERVED_PROSE_WORKS = [
+  'keil-delitzsch', 'catena-aurea', 'chrysostom-homilies', 'augustine-homilies',
+] as const;
+// The SERMON register lane (homiletical exposition — Spurgeon, Maclaren, the
+// Puritans). Retrieve-and-quote in its own pool + labeled payload; the reusable
+// sermon-search retrieval core. NEVER in the exegetical pool or its voice floor.
+export const SERVED_SERMON_WORKS = [
+  'spurgeon-sermons', 'maclaren-expositions', 'watson-works', 'flavel-works',
+  'edwards-works', 'wesley-sermons',
+] as const;
+// The THEOLOGY/CONFESSION register lane (systematic + confessional — topical
+// treatises, not verse-commentary). Same lane machinery, its own labeled payload.
+export const SERVED_THEOLOGY_WORKS = [
+  'owen-works', 'hodge-systematic', 'calvin-institutes', 'schaff-creeds',
+] as const;
+// whitefield-works quarantined 2026-07-18 (PG vol 1/6, no clean sermon boundaries)
+// herbert-temple/montgomery-sacred-poems/rossetti-verses RECOVERED 2026-07-17
+// (archive.org Cassell 1887 / CCEL title-div fallback / PG title-line splitter).
+// Still quarantined: bramley-carols (all sources are engraved-music editions,
+// 27-31% OCR garbage), donne-divine-poems/herrick-noble-numbers (A6: whole
+// secular volumes under sacred titles — need section-scoped profiles).
+export const SERVED_SONG_VERSE_WORKS = [
+  'olney-hymns', 'scottish-psalter-1650', 'neale-eastern-hymns',
+  'watts-hymns', 'watts-psalms',
+  'keble-christian-year', 'herbert-temple', 'montgomery-sacred-poems',
+  'rossetti-verses',
+  'traherne-poems', 'milton-poetical-works', 'hopkins-poems',
+  'tennyson-in-memoriam', 'dante-divine-comedy', 'wheatley-poems',
+] as const;
+
+const sqlStrList = (xs: readonly string[]) => xs.map((s) => `'${s.replace(/'/g, "''")}'`).join(',');
+export const PROSE_TYPE_SQL = `source_type IN (${sqlStrList(SERVED_PROSE_TYPES)})`;
+export const SONG_VERSE_TYPE_SQL = `source_type IN (${sqlStrList(SERVED_SONG_VERSE_TYPES)})`;
+
+// The two prose LANES (sermon, theology) — distinct registers, their own pools.
+// SERVED_LANE_WORKS = every work routed to a lane (never exegetical). Used by the
+// register wall + FTS exclusion so a lane work can never re-enter the /ask
+// exegetical pool or the FTS commentary search.
+export const SERVED_LANE_WORKS = [...SERVED_SERMON_WORKS, ...SERVED_THEOLOGY_WORKS] as const;
+export const SERMON_CORPUS_FILTER = `(metadata->>'work' IN (${sqlStrList(SERVED_SERMON_WORKS)}))`;
+export const THEOLOGY_CORPUS_FILTER = `(metadata->>'work' IN (${sqlStrList(SERVED_THEOLOGY_WORKS)}))`;
+
+// Exegetical-surface exclusion for commentary_entries (the FTS search). Excludes
+// song/verse AND lane (sermon/theology/confession) rows TWO ways so neither a
+// NULL/missing register column NOR a slug rename/NULL work can fail the wall
+// open (A6 line-by-line 2026-07-17; sermon lane 2026-07-18; deep-audit
+// 2026-07-18 closed the sermon/theology register leg — before that, lane rows
+// were excluded by slug enumeration ONLY). Legacy commentary rows (register
+// NULL, work NULL) still pass.
+export const EXEGETICAL_FTS_EXCLUSION = `(register IS NULL OR register NOT IN ('hymn','poetry','sermon','theology','confession')) AND (work IS NULL OR work NOT IN (${sqlStrList([...SERVED_SONG_VERSE_WORKS, ...SERVED_LANE_WORKS])}))`;
+
 export const LEGAL_CORPUS_FILTER = `(metadata->>'author' IN ('John Gill','Jamieson, Fausset & Brown','Adam Clarke','Matthew Henry')
    OR (metadata->>'author'='John Chrysostom'    AND (metadata->>'verseId')::int/1000000 IN (40,43,44))
    OR (metadata->>'author'='Augustine of Hippo' AND (metadata->>'verseId')::int/1000000 IN (19,43))
-   OR (metadata->>'author' IN ('Albert Barnes','John Wesley','John Calvin') AND metadata->>'sourceUrl' ILIKE '%crosswire%'))`;
+   OR (metadata->>'author' IN ('Albert Barnes','John Wesley','John Calvin') AND metadata->>'sourceUrl' ILIKE '%crosswire%')
+   OR metadata->>'work' IN (${sqlStrList(SERVED_PROSE_WORKS)}))`;
+
+// The song/verse register's own served filter (its partial index twin lives in
+// migration 018; legal-hnsw-index-sync-style lockstep applies).
+export const SONG_VERSE_CORPUS_FILTER = `(metadata->>'work' IN (${sqlStrList(SERVED_SONG_VERSE_WORKS)}))`;
 
 // hnsw.ef_search for the base-pool KNN walk. With the partial legal HNSW index (migration
 // 012) every neighbour is already legal, so a modest ef fills the pool — no iterative_scan,
@@ -45,10 +133,14 @@ export const HNSW_EF_SEARCH = 64;
 // legalBasePool(), which wraps this in a transaction that sets hnsw.ef_search. Exporting
 // the raw string is exactly how a 4th call site silently ships at the default ef_search=40
 // and starves (asking for 50 legal rows returned 5, diagnostic 2026-07-14). One way in.
-function legalBasePoolSql(pool: number): string {
+function legalBasePoolSql(pool: number, extraFilter = ''): string {
+  // extraFilter: a read-only DIAGNOSTIC knob (default '' → identical production
+  // SQL). The sermon-lane slice (2026-07-18) uses it to measure the pool with
+  // certain source_types/works excluded, through THIS shipped path — never a
+  // lookalike. Production callers never pass it.
   return `SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
      FROM embeddings
-     WHERE user_id IS NULL AND source_type = 'commentary' AND ${LEGAL_CORPUS_FILTER}
+     WHERE user_id IS NULL AND ${PROSE_TYPE_SQL} AND ${LEGAL_CORPUS_FILTER}${extraFilter ? ` AND ${extraFilter}` : ''}
      ORDER BY embedding <=> $1::vector LIMIT ${pool}`;
 }
 
@@ -66,10 +158,11 @@ export async function legalBasePool(
   vec: string,
   pool: number = CANDIDATE_POOL,
   ef: number = HNSW_EF_SEARCH,
+  extraFilter = '', // read-only diagnostic knob; default '' = production SQL
 ): Promise<BasePoolRow[]> {
   const results = await sql.transaction([
     sql`SELECT set_config('hnsw.ef_search', ${String(ef)}, true)`,
-    sql.query(legalBasePoolSql(pool), [vec]),
+    sql.query(legalBasePoolSql(pool, extraFilter), [vec]),
   ]);
   return results[1] as BasePoolRow[];
 }
@@ -86,10 +179,67 @@ export function injectionSql(ranges: readonly VerseRange[], corpusFilter = ''): 
     .join(' OR ');
   return `WITH inrange AS MATERIALIZED (
      SELECT source_id, content, metadata, embedding FROM embeddings
-     WHERE user_id IS NULL AND source_type = 'commentary'${corpusFilter ? ` AND ${corpusFilter}` : ''} AND (${conds})
+     WHERE user_id IS NULL AND ${PROSE_TYPE_SQL}${corpusFilter ? ` AND ${corpusFilter}` : ''} AND (${conds})
    )
    SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
    FROM inrange ORDER BY embedding <=> $1::vector LIMIT ${INJECT_CAP}`;
+}
+
+// ── the SONG/VERSE register pool (hymns + poetry) ──
+// Retrieve-and-quote, never composed over: results surface as a separate labeled
+// payload in /api/ask, so no verifier surface is added and the exegetical
+// ≥2-voices floor never counts them. Verse-anchored items first (a hymn ON this
+// passage), semantic fill behind them. Served by the 018 partial HNSW twin.
+export const SONG_VERSE_LIMIT = 3;
+
+export function songVerseOnRangeSql(ranges: readonly VerseRange[]): string {
+  const conds = ranges
+    .map((r) => `(metadata->>'verseId')::int BETWEEN ${r.start} AND ${r.end}`)
+    .join(' OR ');
+  return `WITH inrange AS MATERIALIZED (
+     SELECT source_id, content, metadata, embedding FROM embeddings
+     WHERE user_id IS NULL AND ${SONG_VERSE_TYPE_SQL} AND ${SONG_VERSE_CORPUS_FILTER} AND (${conds})
+   )
+   SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
+   FROM inrange ORDER BY embedding <=> $1::vector LIMIT ${SONG_VERSE_LIMIT}`;
+}
+
+export function songVersePoolSql(pool: number = SONG_VERSE_LIMIT): string {
+  return `SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
+     FROM embeddings
+     WHERE user_id IS NULL AND ${SONG_VERSE_TYPE_SQL} AND ${SONG_VERSE_CORPUS_FILTER}
+     ORDER BY embedding <=> $1::vector LIMIT ${pool}`;
+}
+
+// ── the REUSABLE prose-register LANE primitive (sermon-lane slice 2026-07-18) ──
+// A register lane is retrieve-and-quote over ONE work list, in its own pool,
+// surfaced as a labeled payload — never composed over, never in the exegetical
+// ≥2-voices floor. Same shape as the song/verse lane (kept separate so the proven
+// hymn wall is untouched), but parameterized by corpusFilter so sermon, theology,
+// and any future prose register share ONE machinery. This is the sermon-search
+// retrieval core. `corpusFilter` MUST be a routing constant (SERMON_CORPUS_FILTER
+// / THEOLOGY_CORPUS_FILTER), never user input — it interpolates work slugs only.
+export const LANE_LIMIT = 3;
+
+export function laneOnRangeSql(corpusFilter: string, ranges: readonly VerseRange[], limit = LANE_LIMIT): string {
+  const conds = ranges.map((r) => `(metadata->>'verseId')::int BETWEEN ${r.start} AND ${r.end}`).join(' OR ');
+  // PROSE_TYPE_SQL is redundant with the work filter for row selection, but the
+  // 018 verseId btree's predicate requires it — without the conjunct the planner
+  // cannot use idx_embeddings_verseid_registers and seq-scans the table on the
+  // /ask request path (deep-audit 2026-07-18, measured seq scan → index scan).
+  return `WITH inrange AS MATERIALIZED (
+     SELECT source_id, content, metadata, embedding FROM embeddings
+     WHERE user_id IS NULL AND ${PROSE_TYPE_SQL} AND ${corpusFilter} AND (${conds})
+   )
+   SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
+   FROM inrange ORDER BY embedding <=> $1::vector LIMIT ${limit}`;
+}
+
+export function lanePoolSql(corpusFilter: string, pool = LANE_LIMIT): string {
+  return `SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
+     FROM embeddings
+     WHERE user_id IS NULL AND ${corpusFilter}
+     ORDER BY embedding <=> $1::vector LIMIT ${pool}`;
 }
 
 // Merge injected candidates AHEAD of the base pool, de-duped by id (injected win).
@@ -145,7 +295,7 @@ export function diversityBackfillSql(chapterKeys: readonly number[], corpusFilte
   return `SELECT DISTINCT ON ((metadata->>'verseId')::int/1000, metadata->>'author')
      source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
    FROM embeddings
-   WHERE user_id IS NULL AND source_type = 'commentary'${corpusFilter ? ` AND ${corpusFilter}` : ''} AND (${conds})
+   WHERE user_id IS NULL AND ${PROSE_TYPE_SQL}${corpusFilter ? ` AND ${corpusFilter}` : ''} AND (${conds})
    ORDER BY (metadata->>'verseId')::int/1000, metadata->>'author', embedding <=> $1::vector
    LIMIT ${chapterKeys.length * 12 + 6}`;
 }

@@ -12,9 +12,9 @@
 //    structurally impossible.
 import { parseRef, type VerseRange } from '@/bible/ref-parse';
 import { decodeVerseId } from '@/bible/verse-id';
-import { pickDiverse } from '@/components/commentary-panel';
+import { pickDiverse, isLaneWork } from '@/components/commentary-panel';
 import { isPublishedCommentaryEntry } from '@/lib/legal-corpus';
-import type { CommentaryEntry } from '@/lib/bible';
+import { isSongVerse, type CommentaryEntry } from '@/lib/bible';
 
 // ---- date resolution (§3): LOCAL calendar date + MM-DD key, never ordinal day-of-year --------
 /** The user's LOCAL month-day as "MM-DD". Never an ordinal index: day 60 is Feb 29 in a leap
@@ -107,8 +107,16 @@ export function voicesForPassage(
   chapterEntries: CommentaryEntry[],
   bookNum: number,
 ): { voices: CommentaryEntry[]; rung: Rung } {
+  // Register wall: Today's voices are EXEGETICAL only (verse-anchored commentary +
+  // fathers). Hymns/poems AND sermon/theology lane works are their own registers —
+  // none may fill a voice slot or satisfy the >=2-voices floor (A6 line-by-line
+  // 2026-07-17 excluded song/verse; the sermon-lane slice 2026-07-18 excludes
+  // sermon + theology the same way — a Spurgeon sermon on a verse is not a
+  // commentator, and neither is a systematic-theology or confession excerpt).
   const published = chapterEntries.filter((e) =>
-    isPublishedCommentaryEntry({ author: e.author, sourceUrl: e.sourceUrl, book: bookNum }),
+    !isSongVerse(e) &&
+    !isLaneWork(e) &&
+    isPublishedCommentaryEntry({ author: e.author, sourceUrl: e.sourceUrl, book: bookNum, work: (e as { work?: string }).work }),
   );
   const startV = passage.start % 1000;
   const endV = passage.end % 1000;

@@ -2,14 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import type { CommentaryEntry } from '@/lib/bible';
+import { type CommentaryEntry } from '@/lib/bible';
 import { HIGHLIGHT_COLORS } from '@/lib/highlight-colors';
 import { fetchLexEntry, decodeMorph, type OWord, type LexEntry } from '@/lib/original';
 import { useDragDismiss } from '@/lib/use-drag-dismiss';
 import {
   eraLabel,
   pickDiverse,
+  partitionByRegister,
   EntryCard,
+  RegisterLaneSections,
   type AnnotationControls,
 } from './commentary-panel';
 
@@ -191,9 +193,15 @@ function HighlightRow({ annotation }: { annotation: AnnotationControls }) {
 }
 
 function CommentariesTab({ entries }: { entries: CommentaryEntry[] }) {
-  const diverse = pickDiverse(entries, 10);
+  // Register wall (reader side): sermons, theology/confessions, and hymns/poems are
+  // DISTINCT registers — each renders in its OWN labeled section, never blended
+  // into (or displacing) the exegetical voices (A6 line-by-line 2026-07-17 landed
+  // hymns/poetry on this LIVE reader tab; the sermon-lane slice 2026-07-18 extends
+  // the same treatment to sermon + theology).
+  const { exegetical, sermon, theology, songVerse } = partitionByRegister(entries);
+  const diverse = pickDiverse(exegetical, 10);
   let lastEra = '';
-  if (diverse.length === 0) {
+  if (diverse.length === 0 && sermon.length === 0 && theology.length === 0 && songVerse.length === 0) {
     return <p className="py-16 text-center text-sm text-stone-400">No commentary on this verse yet.</p>;
   }
   return (
@@ -215,11 +223,14 @@ function CommentariesTab({ entries }: { entries: CommentaryEntry[] }) {
           </div>
         );
       })}
-      {diverse.length < entries.length && (
+      {diverse.length < exegetical.length && (
         <p className="pt-1 text-center text-xs text-stone-400">
-          Showing {diverse.length} of {entries.length} voices
+          Showing {diverse.length} of {exegetical.length} voices
         </p>
       )}
+      <div className="pt-2">
+        <RegisterLaneSections sermon={sermon} theology={theology} songVerse={songVerse} />
+      </div>
     </div>
   );
 }

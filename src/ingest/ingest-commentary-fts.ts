@@ -9,6 +9,8 @@ interface RawEntry {
   verseStart: number;
   verseEnd: number;
   author: string;
+  work?: string;
+  register?: string;
   year: number | null;
   tradition?: string;
   sourceTitle: string;
@@ -38,6 +40,13 @@ async function main() {
     process.exit(1);
   }
 
+  // Branch guard (deep-audit 2026-07-16, H3): this script TRUNCATEs the serving
+  // FTS table — allow-list dev/test, read from the same env source as DATABASE_URL.
+  if (process.env.NEON_BRANCH !== 'dev' && process.env.NEON_BRANCH !== 'test') {
+    console.error(`STOP: NEON_BRANCH="${process.env.NEON_BRANCH ?? '(unset)'}" — export NEON_BRANCH=dev|test alongside DATABASE_URL to run the destructive re-ingest`);
+    process.exit(1);
+  }
+
   const client = new pg.Client({ connectionString: url.replace(/^"|"$/g, ''), ssl: { rejectUnauthorized: false } });
   await client.connect();
   console.log('Connected.');
@@ -45,13 +54,16 @@ async function main() {
   const beforeCount = await client.query('SELECT count(*)::int AS total FROM commentary_entries');
   console.log(`Before: ${beforeCount.rows[0].total} rows`);
 
-  console.log('Truncating...');
+  // TRUNCATE + COPY in ONE transaction: a COPY failure must not leave the FTS
+  // corpus empty or partial (was autocommitted — deep-audit H3).
+  await client.query('BEGIN');
+  console.log('Truncating (transactional)...');
   await client.query('TRUNCATE commentary_entries RESTART IDENTITY');
 
   console.log('Starting COPY...');
   const stream = client.query(
     copyFrom(
-      `COPY commentary_entries (book, chapter, verse_start, verse_end, author, year, tradition, source_title, source_url, body, entry_index) FROM STDIN`
+      `COPY commentary_entries (book, chapter, verse_start, verse_end, author, year, tradition, source_title, source_url, body, entry_index, work, register) FROM STDIN`
     )
   );
 
@@ -88,6 +100,8 @@ async function main() {
           escapeCopy(e.sourceUrl ?? ''),
           escapeCopy(e.text),
           entryIndex,
+          e.work ? escapeCopy(e.work) : null,
+          e.register ? escapeCopy(e.register) : null,
         ]
           .map((v) => (v === null ? '\\N' : String(v)))
           .join('\t');
@@ -108,10 +122,17 @@ async function main() {
   }
 
   stream.end();
-  await new Promise<void>((resolve, reject) => {
-    stream.on('finish', resolve);
-    stream.on('error', reject);
-  });
+  try {
+    await new Promise<void>((resolve, reject) => {
+      stream.on('finish', resolve);
+      stream.on('error', reject);
+    });
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    await client.end();
+    throw e;
+  }
 
   const afterCount = await client.query('SELECT count(*)::int AS total FROM commentary_entries');
   console.log(`After: ${afterCount.rows[0].total} rows`);

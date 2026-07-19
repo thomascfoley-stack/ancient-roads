@@ -265,10 +265,12 @@ CREATE POLICY embeddings_read_policy ON embeddings FOR SELECT
     OR user_id = current_setting('app.current_user_id', true)
   );
 
+-- Write policy is user-scoped (migration 022): app_runtime may INSERT only the
+-- caller's OWN user rows, never platform rows (user_id IS NULL). Platform ingest
+-- runs as the OWNER, which BYPASSES RLS, so it is unaffected.
 CREATE POLICY embeddings_write_policy ON embeddings FOR INSERT
   WITH CHECK (
-    user_id IS NULL
-    OR user_id = current_setting('app.current_user_id', true)
+    user_id = current_setting('app.current_user_id', true)
   );
 
 CREATE POLICY user_integrations_policy ON user_integrations

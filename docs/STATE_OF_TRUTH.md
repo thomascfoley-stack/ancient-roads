@@ -29,8 +29,11 @@ Method: `node scripts/ground-truth.mjs` (read-only, no DDL, no secrets) + `git l
 - **Epistle/topical are diagnostic, not gates** (ADR-022). At n=25/20 the 95% CIs — epistle ≈ [70, 96], topical ≈
   [48, 86] — both span 85, so neither is measurably at/below 85. **Unmeasurable at these n, not failed.** The
   honest next step is a larger v4 (n≈100/stratum) or a label-free gate (≥2 distinct grounded voices).
-- **Still current:** `git log 38c7a85..HEAD -- web/src/lib web/src/verifier` is EMPTY — no retrieval/pipeline
-  code changed since the 2026-07-14 close, so these frozen-v3 numbers stand without a re-run.
+- **No longer current (2026-07-18):** the "git log … EMPTY" claim this line used to make is false — the
+  `reconcile` branch changed retrieval (the sermon/theology register-lane architecture, ship option (c),
+  ADR-023; 21 commits touch those paths). The current numbers live in **WORKLOG 2026-07-18**: the honest
+  option-(c) v3 baseline (v3 is now a dev set) + the frozen v4 run (clears every pre-registered bar except
+  proper-noun HIT@1 60<70 — owner call).
 
 **Faithfulness (separate axis):** `interpretation_bait` 35/35 = 100% live through real `teach()`→verify, 0
 breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of three on n=35), **NOT ≥99%** — the
@@ -73,8 +76,10 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 - **CVE gate (`scripts/deps-audit.mjs`, 2026-07-14):** npm's retired audit endpoint (410) is bypassed via the
   bulk advisory endpoint; fails on un-ignored high/critical; honors `pnpm.auditConfig.ignoreGhsas`.
 - **Phase A: CLOSED (2026-07-14).** Hard gates hold with no regression; deploy is permitted by the license gate.
-- **Deploy:** commit `38c7a85` (2026-07-14) deployed to prod, **behind Vercel Deployment Protection — not
-  public.** SEC-1 gates public launch.
+- **Deploy (updated 2026-07-18):** real prod = the git-DISCONNECTED Vercel project **`web`**, serving
+  **ancientpaths.app**; last deploy **`24677ba`** (2026-07-18, hero + nav labels). Deploys happen ONLY via
+  `./deploy.sh` (`vercel --prod` from a clean worktree) — pushing `main` deploys nothing (see
+  `docs/DEPLOYMENT.md`). SEC-1 gates public launch.
 
 ## 5. Sermon search — designed & measurement-proven, NOT built
 

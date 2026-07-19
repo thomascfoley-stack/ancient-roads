@@ -3,14 +3,18 @@ import type { TeacherResponse } from '@/contract/types';
 import type { Violation } from '@/verifier/types';
 import { verifyV1 } from '@/verifier/v1';
 import { embedQuery, compose } from './deepinfra';
-import { retrieveCommentary, type RetrievedChunk } from './retrieve';
+import { retrieveCommentary, retrieveSongVerse, retrieveSermonLane, retrieveTheologyLane, type RetrievedChunk, type SongVerseChunk, type RegisterLaneChunk } from './retrieve';
+import { resolveIntent } from '../../bible/pericopes';
 import { buildCorpusLookup } from './corpus';
 import { normalizeContract } from './normalize-contract';
 import { buildSystemPrompt, buildUserPrompt } from './prompt';
 
+// Register-lane payloads (song_verse, sermons, theology) ride alongside the
+// exegetical answer — labeled, retrieve-and-quote, never composed/floored.
+type LanePayloads = { song_verse?: SongVerseChunk[]; sermons?: RegisterLaneChunk[]; theology?: RegisterLaneChunk[] };
 export type TeacherResult =
-  | { kind: 'composed'; response: TeacherResponse; retrieval: RetrievedChunk[] }
-  | { kind: 'fallback'; retrieval: RetrievedChunk[]; violations: Violation[] }
+  | ({ kind: 'composed'; response: TeacherResponse; retrieval: RetrievedChunk[] } & LanePayloads)
+  | ({ kind: 'fallback'; retrieval: RetrievedChunk[]; violations: Violation[] } & LanePayloads)
   | { kind: 'empty'; reason: string };
 
 // A safe-to-stream preview of a retrieved source. This is CORPUS text (never
@@ -83,7 +87,27 @@ export async function teach(
 
   emit({ stage: 'retrieving' });
   const queryVec = await embedQuery(query);
+  // The song/verse register rides ALONGSIDE the exegetical pipeline: verbatim
+  // corpus text, its own pool, surfaced as a separate labeled payload — never
+  // composed over, never counted toward the ≥2-voices floor (CONTENT_GO_LIVE
+  // decision 2). Its failure returns [] and must never break the answer.
+  // Sermon + theology ride the SAME alongside pattern as song/verse — their own
+  // pools, labeled payloads, never composed over, never in the ≥2-voices floor
+  // (sermon-lane slice 2026-07-18). All three lanes fail-soft to [].
+  const ranges = resolveIntent(query).inject;
+  const songVersePromise = retrieveSongVerse(queryVec, ranges);
+  const sermonPromise = retrieveSermonLane(queryVec, ranges);
+  const theologyPromise = retrieveTheologyLane(queryVec, ranges);
   const retrieval = await retrieveCommentary(queryVec, RETRIEVE_K, { query });
+  const [songVerse, sermons, theology] = await Promise.all([songVersePromise, sermonPromise, theologyPromise]);
+  const withRegister = <T extends TeacherResult>(r: T): T => {
+    if (r.kind === 'empty') return r;
+    let out = r;
+    if (songVerse.length > 0) out = { ...out, song_verse: songVerse };
+    if (sermons.length > 0) out = { ...out, sermons };
+    if (theology.length > 0) out = { ...out, theology };
+    return out;
+  };
   if (retrieval.length === 0) {
     return finish({ kind: 'empty', reason: 'No relevant sources found for this question.' });
   }
@@ -160,10 +184,10 @@ export async function teach(
     if (result.ok) {
       // Return the normalized object: its attribution is the authoritative
       // source attribution the verifier just checked the quote against.
-      return finish({ kind: 'composed', response: parsed as TeacherResponse, retrieval });
+      return finish(withRegister({ kind: 'composed', response: parsed as TeacherResponse, retrieval }));
     }
     lastViolations = result.violations;
   }
 
-  return finish({ kind: 'fallback', retrieval, violations: lastViolations });
+  return finish(withRegister({ kind: 'fallback', retrieval, violations: lastViolations }));
 }

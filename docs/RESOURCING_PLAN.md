@@ -108,7 +108,7 @@ Owner approved **full provenance cleanup before any publish**; parity taken **by
 | `john-gill` | John Gill | 28,300 | Public Domain |
 | `matthew-henry` | Matthew Henry | 4,124 | Public Domain |
 
-That's **62,708 entries (the entire no-provenance-commentary bucket) from one clean, permitted, structured API** — and the repo already has `ingest-helloao-commentaries.ts` for its shape. helloao also has `keil-delitzsch` (PD) and `tyndale` (CC BY-SA). It does **not** carry the biblehub 14 (Barnes/Calvin/Wesley/…) — those still need Wikisource/archive.org.
+That's **62,708 entries (the entire no-provenance-commentary bucket) from one clean, permitted, structured API** — and the repo already has a fetcher for its shape (`src/ingest/adapter-helloao.ts` — the current helloao adapter, which superseded the original since-deleted ingest script this line cited). helloao also has `keil-delitzsch` (PD) and `tyndale` (CC BY-SA). It does **not** carry the biblehub 14 (Barnes/Calvin/Wesley/…) — those still need Wikisource/archive.org.
 
 **Revised sourcing map:**
 - **helloao (PD, structured):** Gill, JFB, Clarke, Matthew Henry, Keil-Delitzsch → text-match → provenance-repair (helloao url + PD).
