@@ -102,3 +102,44 @@ no-ship until fixed.
 - Faithfulness axis (interpretation_bait / compose-verify) — separate gate, unchanged here.
 - Fixing anything this eval surfaces — findings only; fixes are later slices.
 - Full-corpus measurement — this gate is about the *legal* (publishable) corpus.
+
+---
+
+# v4 (2026-07-18, Phase 3 reconcile) — the fresh held-out for the option-(c) ship config
+
+**Why a v4:** v3 has been measured against repeatedly (pool fix, ef sweep, sermon-lane
+diagnosis configs) — by rule 4 it is now a **dev set**. The ship decision for the
+reconcile config (sermon-lane option (c): exegetical pool = verse-commentary + fathers;
+sermons/theology in labeled lanes) needs a set no fix was ever tuned against.
+Set: `web/src/scripts/heldout-v4-queries.mts` (`FROZEN_V4`), same composition as v3
+(verse-ref 40 · pericope 15 · epistle 25 · topical 20 · proper-noun 10 · control 10 =
+120), disjoint from pilot/v2/v3, content-hash-pinned in
+`test/heldout-frozen-hash.test.ts` BEFORE any accuracy number existed.
+
+**v4 labeling discipline (fixes the v3 RELABEL circularity flagged by A6):** every
+label derives from the query's own scripture reference or quoted wording — never from
+retrieval output. Doctrinal (epistle/topical) queries quote identifiable KJV phrases;
+the label = the chapters containing those phrases, each anchor recorded in `source`
+and mechanically verified against the in-repo KJV (200/200 anchor checks) before the
+freeze. There is NO relabel path for v4: a label correction requires an
+authority-grounded, uniform re-freeze as v4.1 with a new pinned hash — never an
+in-place edit, never a scoring-time merge.
+
+## v4 pre-registered per-category bars (registered BEFORE the first run)
+
+Carried from this doc's original bar rationale above (same metrics, same levels, same
+CI caveats at n=10–40; no bar was derived from any v3/v4 result):
+
+| category | primary metric | bar | gates |
+|---|---|---|---|
+| **Topical + epistle** | **HIT@2 (≥2 distinct-author voices)** | **≥ 85%** | GA target (miss = documented beta limitation, per the v3 disposition; not auto-no-ship for beta) |
+| Canon-coverage verse-ref | HIT@1 | ≥ 85% | beta core gate |
+| Held-out pericopes | HIT@1 | ≥ 70% | beta core gate |
+| Proper-noun / rare | HIT@1 | ≥ 70% | beta core gate |
+| Corpus sufficiency (all blocks) | no-content where content should exist | ≤ 8% | beta core gate |
+| **Negative controls** | hijacks | **0** | any hijack is a bug — no-ship until fixed |
+
+**Verdict logic (unchanged from v2/v3):** core gates met → clear for beta behind the
+security gate; topical/epistle ≥85 remains the GA bar; misses are failure-coded and
+reported, never tuned against. One run, one number; the ship/no-ship call is the
+owner's.

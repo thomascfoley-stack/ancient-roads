@@ -11,13 +11,15 @@ import { resolveIntent } from '../bible/pericopes';
 import { CANDIDATE_POOL, RERANK_MODEL, RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse, PASSAGE_CAP, legalBasePool, HNSW_EF_SEARCH, LEGAL_CORPUS_FILTER, chapterKeysOf, diversityBackfillSql, insertBackfill, BACKFILL_TOP_CHAPTERS } from '../lib/teacher/routing';
 import { PILOT, FROZEN, type Q, type Cat } from './heldout-queries.mjs';
 import { FROZEN_V3 } from './heldout-v3-queries.mjs';
+import { FROZEN_V4 } from './heldout-v4-queries.mjs';
 
 // The ONE resolver for which query set every entry point runs on. Previously main(),
 // validate(), diagnose() and availability() each re-derived this and three of them
 // hardcoded FROZEN — so `--v3 --availability` (etc.) silently reported on v2. A diagnostic
 // that reports on the wrong set is worse than none. All four now call this.
-//   --v3 → FROZEN_V3 · --frozen → FROZEN · (default) → PILOT
+//   --v4 → FROZEN_V4 · --v3 → FROZEN_V3 · --frozen → FROZEN · (default) → PILOT
 function activeSet(): { name: string; set: Q[] } {
+  if (process.argv.includes('--v4')) return { name: 'FROZEN_V4', set: FROZEN_V4 };
   if (process.argv.includes('--v3')) return { name: 'FROZEN_V3', set: FROZEN_V3 };
   if (process.argv.includes('--frozen')) return { name: 'FROZEN', set: FROZEN };
   return { name: 'PILOT', set: PILOT };
