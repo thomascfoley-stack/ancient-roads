@@ -144,23 +144,29 @@ async function main() {
     await client.query(`DELETE FROM section_anchors sa USING sections s WHERE sa.section_id=s.id AND s.source_id=$1`, [sourcePk]);
     await client.query(`DELETE FROM sections WHERE source_id=$1`, [sourcePk]);
 
-    // 2. Stage the work's embeddings with a stable ordinal.
-    await client.query(`CREATE TEMP TABLE _stage ON COMMIT DROP AS ${STAGE_SELECT}`, [slug]);
-    const { rows: staged } = await client.query<{ n: number }>(`SELECT count(*)::int AS n FROM _stage`);
+    // 2. No vector-carrying temp stage — a rows+vectors temp table exhausts
+    //    temp_buffers on works past ~10k rows ("no empty local buffer available").
+    //    Direct INSERT…SELECT from the STAGE_SELECT subquery instead; the window
+    //    ordinal is recomputed per statement, and STAGE_SELECT's ORDER BY ends in
+    //    a unique source_id tiebreak, so every computation is identical. Vectors
+    //    stream table→table in the final insert, never staged in local buffers.
+    //    (STAGE_SELECT's work param is $1; shift it when embedded after other params.)
+    const stageSql = (param: string) => STAGE_SELECT.replace('$1', () => param);
+    const { rows: staged } = await client.query<{ n: number }>(`SELECT count(*)::int AS n FROM (${STAGE_SELECT}) t`, [slug]);
     const stagedCount = staged[0]!.n;
     if (stagedCount === 0) throw new Error(`no embeddings matched work "${slug}" — nothing to re-point`);
 
     // 3. sections <- staged text; 4. section_embeddings <- REUSED vectors.
     await client.query(
       `INSERT INTO sections (source_id, ordinal, heading, body)
-       SELECT $1, ordinal, COALESCE(NULLIF(heading, ''), $2 || ' — chunk ' || ordinal), body FROM _stage`,
-      [sourcePk, headingBase],
+       SELECT $1, ordinal, COALESCE(NULLIF(heading, ''), $2 || ' — chunk ' || ordinal), body FROM (${stageSql('$3')}) t`,
+      [sourcePk, headingBase, slug],
     );
     await client.query(
       `INSERT INTO section_embeddings (section_id, model_slug, embedding)
-       SELECT s.id, $2, st.embedding FROM sections s JOIN _stage st ON st.ordinal = s.ordinal WHERE s.source_id=$1
+       SELECT s.id, $2, t.embedding FROM sections s JOIN (${stageSql('$3')}) t ON t.ordinal = s.ordinal WHERE s.source_id=$1
        ON CONFLICT (section_id, model_slug) DO NOTHING`,
-      [sourcePk, MODEL_SLUG],
+      [sourcePk, MODEL_SLUG, slug],
     );
 
     const { rows: c } = await client.query<{ sections: string; embeddings: string }>(
