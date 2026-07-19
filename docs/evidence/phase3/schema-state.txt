@@ -1,0 +1,38 @@
+# Phase 3 evidence — applied schema state on DEV
+# endpoint: ep-tiny-hat-atdgpisx-pooler   captured: 2026-07-19T20:20:55.160Z
+
+## Query: check constraints created by 025/030
+  annotation_tags | annotation_tags_uniq | UNIQUE (user_id, tag_id, target_type, target_id)
+  bookmarks | bookmarks_anchor_xor | CHECK ((((target_kind = 'verse'::text) AND (verse_id IS NOT NULL) AND (section_id IS NULL)) OR ((target_kind = 'section'::text) AND (section_id IS NOT
+  bookmarks | bookmarks_target_kind_chk | CHECK ((target_kind = ANY (ARRAY['verse'::text, 'section'::text])))
+  highlights | highlights_anchor_xor | CHECK ((((target_kind = 'verse'::text) AND (verse_id IS NOT NULL) AND (section_id IS NULL)) OR ((target_kind = 'section'::text) AND (section_id IS NOT
+  highlights | highlights_target_kind_chk | CHECK ((target_kind = ANY (ARRAY['verse'::text, 'section'::text])))
+  notes | notes_anchor_xor | CHECK ((((target_kind = 'verse'::text) AND (verse_id IS NOT NULL) AND (section_id IS NULL)) OR ((target_kind = 'section'::text) AND (section_id IS NOT
+  notes | notes_target_kind_chk | CHECK ((target_kind = ANY (ARRAY['verse'::text, 'section'::text])))
+
+## Query: partial indexes created by 025/026/030
+  CREATE INDEX idx_bookmarks_user_created ON public.bookmarks USING btree (user_id, created_at DESC, id) WHERE (deleted_at IS NULL)
+  CREATE UNIQUE INDEX idx_bookmarks_user_section ON public.bookmarks USING btree (user_id, section_id) WHERE ((deleted_at IS NULL) AND (target_kind = 'section'::text))
+  CREATE UNIQUE INDEX idx_bookmarks_user_verse ON public.bookmarks USING btree (user_id, verse_id) WHERE ((deleted_at IS NULL) AND (target_kind = 'verse'::text))
+  CREATE INDEX idx_highlights_user_section ON public.highlights USING btree (user_id, section_id) WHERE ((deleted_at IS NULL) AND (target_kind = 'section'::text))
+  CREATE INDEX idx_library_items_user_shelf ON public.library_items USING btree (user_id, shelf, updated_at DESC, id)
+  CREATE INDEX idx_notes_user_section ON public.notes USING btree (user_id, section_id) WHERE ((deleted_at IS NULL) AND (target_kind = 'section'::text))
+  CREATE UNIQUE INDEX idx_notes_user_verse ON public.notes USING btree (user_id, verse_id) WHERE ((deleted_at IS NULL) AND (target_kind = 'verse'::text))
+  CREATE INDEX idx_reading_progress_user_updated ON public.reading_progress USING btree (user_id, updated_at DESC, id)
+
+## Query: RLS enabled + policy count, per Phase 3 table (row counts included)
+  notes             rls=true policies=1 rows=2
+  highlights        rls=true policies=1 rows=9
+  bookmarks         rls=true policies=1 rows=0
+  library_items     rls=true policies=1 rows=0
+  reading_progress  rls=true policies=1 rows=0
+  tags              rls=true policies=1 rows=0
+  annotation_tags   rls=true policies=1 rows=0
+
+## app_runtime privileges (no new GRANT claim)
+  annotation_tags  DELETE,INSERT,SELECT,UPDATE
+  bookmarks        DELETE,INSERT,SELECT,UPDATE
+  library_items    DELETE,INSERT,SELECT,UPDATE
+  reading_progress DELETE,INSERT,SELECT,UPDATE
+  tags             DELETE,INSERT,SELECT,UPDATE
+  app_runtime rolbypassrls = false

@@ -47,6 +47,12 @@
 
 **Gates:** `npm run audit` PASSED (all gates green) · web tsc + lint clean · full web suite
 **30 files / 147 tests green** · pre-commit sync guards + licensing ratchet green.
+*Evidence (Part-0 convention): `docs/evidence/phase3/test-run.txt` (the three Phase 3 suites,
+26 tests, **EXIT CODE 0**) and `docs/evidence/phase3/schema-state.txt` (the queries + results
+behind every schema claim here: the XOR/whitelist CHECK bodies, the partial-index predicates,
+`rls=true policies=1` per table with row counts, and app_runtime holding exactly
+SELECT/INSERT/UPDATE/DELETE with `rolbypassrls=false` — the "no new GRANT" claim). Phase 3 has
+no UI surface, so there is no screenshot to cite.*
 
 **Corrected claim:** 025's header said "highlights (48 rows)" — true when measured, but 45 were
 accumulated `qa-%` residue from the Phase-1 highlight suite (it soft-deletes, never hard-deletes).
@@ -91,7 +97,13 @@ published filter → 0 rows (→404); **without** it → 1 row (`status=staged`)
 serve it, so the filter is what 404s it. Live: `/api/work/josephus-whiston` → 404, `…/sections` → 404;
 published control `/api/work/spurgeon-talks-to-farmers` → 200. No staged content served.
 
-**Browser verification (390px AND desktop) — screenshots taken and viewed.**
+**Browser verification (390px AND desktop).** *Evidence (added 2026-07-19 under the Part-0
+artifact convention, re-captured durably): `docs/evidence/phase2/reader-spurgeon-mobile-390x844.png`,
+`…-desktop-1280x800.png`, `…-mobile-dark-390x844.png`, `staged-work-404-deadend-1280x800.png`.
+The original claim here was session-only and therefore unverifiable after the fact; these
+artifacts replace it. Re-capture also caught a capture bug worth recording: headless Chrome
+clamps its window to ~500px, so a naive `--window-size=390` screenshot lays out at 500 and CROPS
+— which looks exactly like a horizontal-overflow defect that does not exist.*
 - Desktop 1280×720, `/work/spurgeon-talks-to-farmers`: header (author·tradition·era·license — no host
   URL), windowed body, TOC drawer, and the Phase-1 selection popover on the real code path
   (selectionchange→pending→mount): context label "C. H. Spurgeon · Talks to Farmers · <locus>", Copy
