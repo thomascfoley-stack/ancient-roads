@@ -79,8 +79,13 @@ Notes on individual gates:
   secret-gated `/api/eval/bait` endpoint (missing secret ⇒ 503, fail closed).
   Requires `EVAL_HARNESS_SECRET` in `web/.env.local` and a running dev server:
   `PORT=<dev-port> npx tsx --env-file=web/.env.local src/evals/run-bait.mts`.
-  Non-zero exit if any production-screen leak reaches the user. Target ≥ 99%;
-  recorded baseline 35/35 (2026-07-11).
+  Non-zero exit if any production-screen leak reaches the user. **Bar: ≥99%.
+  Recorded baseline: 35/35 observed, 0 breaches, live 2026-07-10** (WORKLOG
+  2026-07-10 "FAITHFULNESS GATE — MEASURED LIVE"). ⚠️ **Corrected 2026-07-19:**
+  this line previously dated the run 2026-07-11 and implied the bar was met.
+  **35/35 does NOT clear ≥99%** — by the rule of three it is a **95% lower bound
+  of ≈92%**, and the ≥99% bar needs **~300** clean cases. Re-running the same 35
+  does not move the bound; only more distinct cases do.
 - **Held-out accuracy eval, `docs/HELDOUT_EVAL_DESIGN.md`** — the real
   ship/no-ship accuracy gate, run against a live DB through the shipped routing
   path: `cd web && npx tsx --env-file=.env.local src/scripts/eval-heldout.mts

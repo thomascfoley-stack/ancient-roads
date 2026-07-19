@@ -40,6 +40,23 @@ proper-noun HIT@1 60% (all 4 misses are HIT@2-pass — ≥2 correct voices in th
 top-6; the top-1 slot goes to a related passage).** That miss, and the three
 items below it, are open owner calls.
 
+**The caveats that must travel with "clears every bar"** (completed 2026-07-19 —
+this section carried the SoS caveat but dropped the other three, which makes the
+result read stronger than the evidence supports):
+
+- **CI-STRADDLE:** "clears" means the POINT ESTIMATE clears. Topical 90 and
+  pericope 80 are point estimates whose **95% CIs straddle their own bars** — they
+  are not measurably above them, only not-below.
+- **TASK-EASING:** v4's labels are **KJV-phrase-anchored**, which makes the
+  doctrinal strata easier than v3's abstract queries. **The abstract-topical
+  failure mode — the one v3 actually exposed — is not exercised by v4 at all.**
+- **DISJOINTNESS OVERSTATED:** `HELDOUT_EVAL_DESIGN.md` asserts v4 is disjoint
+  from v3 while its own caveats say otherwise, and ADR-024's label anchor-check
+  script was never committed — so **v4 label verification is not reproducible
+  from this repo.**
+- **SoS:** (already noted below) v4 samples no Song of Solomon, so `no-content
+  0/110` does not clear the known SoS hole.
+
 ## Open owner calls (2026-07-18)
 
 1. **Proper-noun HIT@1 60 < 70 (v4).** Consistent with v3's 60 on the same config

@@ -239,6 +239,29 @@ ledger: double-voicing owner call), historians → ledger (missing converter).
 **Not covered:** post-sweep `npm run qa` battery — running now (Item-1's 3 DB-invariant reds
 expected green on dev). Phase F, SoS probe, Item 3/4 — queued per the reprioritized order.
 
+> **THE MISSING RECORD, written 2026-07-19.** This checkpoint declared Item 2 **GREEN ahead of its
+> own pre-registered bars**: the qa battery result was never written up, and the accuracy
+> re-measure the rule requires on any retrieval-touching change is absent. The rule fired; the
+> record did not exist. Closing it properly rather than leaving the GREEN asserted.
+>
+> **(a) qa battery — RESULT (was never recorded).** `npm run qa` → **30 files / 147 tests passed**,
+> plus `test/rate-limit.test.ts` **1 file / 10 tests passed**. Green.
+>
+> **(b) accuracy re-measure — REASONED WAIVER, premises VERIFIED against the code, not recalled:**
+> - **The /ask retrieval pool never reads what the sweep wrote.** `web/src/lib/teacher/routing.ts`
+>   selects `FROM embeddings` at **seven** sites and reads `sections` / `section_embeddings`
+>   **nowhere**. The only `FROM sections` readers are `web/src/lib/work.ts` — the Book Reader, a
+>   different surface that did not exist when these bars were set.
+> - **The sweep never wrote that pool.** `src/ingest/repoint-sections-work.ts` and
+>   `src/ingest/migrate-sections-slice.ts` INSERT/DELETE against `sections` and
+>   `section_embeddings` **only**; neither touches `embeddings`.
+>
+> Therefore the option-(c) figures in WORKLOG 2026-07-18 remain the current measurement and the
+> sweep cannot have perturbed them. **What would INVALIDATE this waiver:** any change that makes
+> the teacher read `sections`/`section_embeddings` (e.g. folding the register corpus into the
+> retrieval pool), or any sweep tool that writes `embeddings`. Either turns this into a real
+> re-measure obligation. Stated so the waiver is falsifiable rather than a shrug.
+
 ## 2026-07-19 (ITEM 2 RUN — checkpoint 1: preflight + slicing tools + 1% slice + K&D; sweep launched)
 
 Run state, per the overnight self-report contract. Decision-lock and restore point: §pre-run below.
@@ -1770,7 +1793,7 @@ after the run (an unauthed endpoint must never be committed/deployed). `/api/ask
 |---|---|
 | baits run through live `teach()` | **35** |
 | interpretation/fabrication/unattributed/prescription **reaching the user** | **0** |
-| **faithfulness (no breach reached user)** | **35/35 = 100%** (gate ≥99% ✅) |
+| **faithfulness (no breach reached user)** | **35/35 observed, 0 breaches** — ⚠️ **CORRECTED 2026-07-19:** this line originally read "100% (gate ≥99% ✅)". 35/35 cannot clear a ≥99% bar. By the rule of three it is a **95% lower bound of ≈92%**; ≥99% needs **~300** clean cases. The gate was NOT cleared by this run. |
 | production-screen leaks in composed answers | 0 (must be 0) |
 | wide-net candidate leaks (adversarial net wider than prod screens) | 0 |
 | human-reviewed composed answers with verifier-missed interpretation | 0 |

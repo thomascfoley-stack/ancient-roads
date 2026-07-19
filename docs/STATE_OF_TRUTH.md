@@ -9,11 +9,18 @@ Method: `node scripts/ground-truth.mjs` (read-only, no DDL, no secrets) + `git l
 
 ---
 
-## 1. Retrieval accuracy — the numbers that are TRUE right now
+## 1. Retrieval accuracy — ⚠️ THIS TABLE IS SUPERSEDED (kept for history)
 
-**Authoritative source: `docs/PHASE_A_CLOSE.md` §5 (2026-07-14), frozen v3 held-out, measured read-only through
-`lib/teacher/routing.ts` on the shipped un-starved path (`pool=20, ef=64, cap=2`).** These SUPERSEDE the
-2026-07-13 figures that CLAUDE.md/ROADMAP carried until this reconcile (§6).
+> **Corrected 2026-07-19.** This section used to be headlined "the numbers that are TRUE right now"
+> while a bullet at the bottom of the very same section said the numbers had moved. An agent reading
+> this page cold took the headline, not the footnote. **The CURRENT numbers are in `WORKLOG.md`
+> 2026-07-18** (the option-(c) lane config: the honest v3 baseline — v3 is now a **dev set**, measured
+> against repeatedly, never gated on — plus the frozen v4 run and its caveats below).
+
+**Historical source: `docs/PHASE_A_CLOSE.md` §5 (2026-07-14), frozen v3 held-out, measured read-only through
+`lib/teacher/routing.ts` on the shipped un-starved path (`pool=20, ef=64, cap=2`).** These superseded the
+2026-07-13 figures that CLAUDE.md/ROADMAP carried until that reconcile (§6), and were in turn superseded by the
+2026-07-18 option-(c) measurement.
 
 | category | n | HIT@1 | HIT@2 | role |
 |---|---|---|---|---|
@@ -32,8 +39,20 @@ Method: `node scripts/ground-truth.mjs` (read-only, no DDL, no secrets) + `git l
 - **No longer current (2026-07-18):** the "git log … EMPTY" claim this line used to make is false — the
   `reconcile` branch changed retrieval (the sermon/theology register-lane architecture, ship option (c),
   ADR-023; 21 commits touch those paths). The current numbers live in **WORKLOG 2026-07-18**: the honest
-  option-(c) v3 baseline (v3 is now a dev set) + the frozen v4 run (clears every pre-registered bar except
-  proper-noun HIT@1 60<70 — owner call).
+  option-(c) v3 baseline (v3 is now a dev set) + the frozen v4 run.
+
+- **v4 "clears every pre-registered bar except proper-noun" — the four caveats that must travel with that
+  sentence** (added 2026-07-19; this page previously stated the headline with none of them, which reads far
+  stronger than the evidence supports):
+  1. **"Clears" means the POINT ESTIMATE clears, not proven-above.** Topical 90 and pericope 80 are point
+     estimates whose 95% CIs **straddle their own bars** — not measurably above them.
+  2. **v4's labels are KJV-phrase-anchored**, which makes the doctrinal strata *easier* than v3's abstract
+     queries. The abstract-topical failure mode — the one v3 actually exposed — **is not exercised by v4.**
+  3. **v4 samples ZERO Song of Solomon**, so `no-content 0/110` does **not** clear the known SoS hole
+     (zero served exegetical rows for SoS remains an open gap).
+  4. **The "disjoint" claim is overstated** — `HELDOUT_EVAL_DESIGN.md` asserts v4 is disjoint from v3 while
+     its own caveats say otherwise, and the ADR-024 label anchor-check script was never committed, so v4
+     label verification **is not reproducible from this repo**.
 
 **Faithfulness (separate axis):** `interpretation_bait` 35/35 = 100% live through real `teach()`→verify, 0
 breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of three on n=35), **NOT ≥99%** — the
