@@ -1,5 +1,56 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-19 (READER P2 — INTEGRATION DoD closeout: dev-server root-cause, staged-404 proof, browser verification 390px+desktop, 2 findings)
+
+New orchestrator took the baton (single-orchestrator rule, BUILD_MODEL §0). **Baton verified before
+any work:** main `1885a4d` clean; reader `e82f80c` (9 ahead / 0 behind); migrations main→023,
+reader→024 (`unit_ordinal` applied + fully backfilled on dev: 306,993 sections, 0 NULLs, 39 sources);
+env dev-only (`ep-tiny-hat`, `NEON_BRANCH=dev`); `ingest-preflight` green. Closes the three open ends
+P2c left (the P2c note said "no browser pass — DoD runs at integration").
+
+**Dev-server instability — ROOT-CAUSED (not just stale `.next`).** The HTTP 000 hang was a **zombie
+`next dev --turbopack` process (PID 31625) from a prior session, pegged at ~109% CPU for 42 min**,
+squatting a port and returning HTTP 000 (curl 6s timeout). `rm -rf web/.next` alone did not prevent
+recurrence because the spinning process persisted — that is why it "recurred." Fix: killed the zombie +
+parent, cleared `web/.next`, clean restart via `golive-dev` (:3012) → **HTTP 200 in 0.22s, stable across
+the entire verification pass**. Follow-up logged: a dev-launch guard that reaps a stale next-server
+before starting.
+
+**Staged-historian 404 — PROVEN red→green.** `josephus-whiston` is staged (4,124 sections). Route filters
+`WHERE slug=$1 AND status='published'` (`lib/work.ts`: `getWorkWithToc` + `publishedSourceId`; sections
+keyset `ordinal>$2 LIMIT $3`, max 100 — bounded). DB red/green: the route's exact query **with** the
+published filter → 0 rows (→404); **without** it → 1 row (`status=staged`) — dropping the filter WOULD
+serve it, so the filter is what 404s it. Live: `/api/work/josephus-whiston` → 404, `…/sections` → 404;
+published control `/api/work/spurgeon-talks-to-farmers` → 200. No staged content served.
+
+**Browser verification (390px AND desktop) — screenshots taken and viewed.**
+- Desktop 1280×720, `/work/spurgeon-talks-to-farmers`: header (author·tradition·era·license — no host
+  URL), windowed body, TOC drawer, and the Phase-1 selection popover on the real code path
+  (selectionchange→pending→mount): context label "C. H. Spurgeon · Talks to Farmers · <locus>", Copy
+  styled/lines/Text-only, Ask; swatches correctly gate to "Sign in to highlight" signed-out. 0 console errors.
+- Mobile 390×844: clean reflow, meta truncates (no horizontal overflow), bottom nav present. 0 console errors.
+- Windowing proven at scale: `/work/calvin-institutes` (3,448 sections) mounts only **40** section
+  containers (±overscan) — body render is bounded.
+- Staged dead-end: `/work/josephus-whiston` renders the calm "This work isn't available" UI — no leak.
+
+**TWO FINDINGS (derived fresh — the prior run's were never written to the repo):**
+1. **Soft-404 on non-published works — LOW.** `/work/<staged|unknown>` returns HTTP **200** with a
+   client-rendered dead-end while the API 404s. **No content leak** (`WorkReader` mounts only on a 200;
+   sections API also 404s). Cause: `work/[slug]/page.tsx` is a client component, so it cannot emit a 404
+   status without a server check. Impact: crawler/correctness only, moot while the site is gated.
+   Rec: optional server-side published check for a true 404, or accept the soft-404 pre-launch.
+2. **TOC drawer renders one button per section chunk — UNBOUNDED, MEDIUM.** `groupTocByUnit` and the
+   `unit_ordinal` data are correct (spurgeon 16 units/300 sections verified), but `work-toc.tsx` renders
+   **every chunk row**: Calvin's drawer mounts **3,448 buttons at once** on open (measured). This is a
+   client-side analogue of the repo's "never return unbounded result sets" rule — a perf + scannability
+   defect, worse on mobile. Rec (next slice, red-first: assert the drawer mounts O(units) not
+   O(sections) for a large work): collapse multi-chunk units to their unit header (click → unit start)
+   with chunk rows lazily expandable, or virtualize the list.
+
+**Phase 2 literal DoD: met** (renders · real interaction · both widths · no overflow/overlap · 0 console
+errors · windowing bounded · staged 404 proven). Findings #1/#2 are follow-ups, not DoD failures; **#2
+must be fixed before the Phase-5 deep-audit.** Phase 3 (annotation migrations MIG-A..E) may open.
+
 ## 2026-07-19 (READER P2c — Book Reader UI: `/work/[slug]` windowed reader + TOC drawer + resume + Phase-1 popover mounted)
 
 **New surface (branch `reader-p2-ui`, on the reader tip with the P2b `/api/work` routes).**

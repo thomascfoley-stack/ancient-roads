@@ -8,6 +8,23 @@ git history — not from memory or the earlier hit list.
 > priority narrative below predates the 2026-07-14 Phase A close + license gate + Slice 0; trust
 > STATE_OF_TRUTH for facts, and treat the section priorities here as owner-set direction, not current status.
 
+## Update 2026-07-19 (Library Reader Phase 2 — INTEGRATION DoD CLOSED) — new orchestrator
+
+Phase 2 closed to its literal DoD at integration (the browser pass P2c deferred). Dev-server
+HTTP-000 instability root-caused (a zombie `next dev --turbopack` at ~109% CPU, not just stale
+`.next`) and fixed → 200 in 0.22s, stable. Staged-historian 404 proven red→green
+(`josephus-whiston` staged → 404; published control → 200; the `status='published'` filter is
+demonstrably what 404s it). Browser-verified at 390px AND desktop: reader renders, TOC drawer,
+selection popover on the real code path, windowing bounded (Calvin 3,448 sections → 40 mounted),
+0 console errors, staged dead-end leaks nothing. **Two findings (fresh):** (1) soft-404 on
+non-published works — HTTP 200 + not-found UI, no leak, LOW; (2) TOC drawer renders one button per
+section chunk — Calvin mounts 3,448 buttons on open, an unbounded client render, MEDIUM, fix before
+the Phase-5 deep-audit. Details: WORKLOG 2026-07-19 (READER P2 integration closeout).
+
+**Next:** Phase 3 — annotation migrations MIG-A..E on dev (pre-authorized this run), RLS proven with
+two accounts, ADR-027 content-hash drift. Then Phase 4 (Library hub + catalogs + sermon search).
+STOP before Phase 5 (owner-run prod cutover).
+
 ## Update 2026-07-19 (Library Reader Phase 2c — branch `reader-p2-ui`) — Book Reader UI built, browser DoD at integration
 
 Phase 2's UI surface (`/work/[slug]`) is built on the P2b API: windowed keyset body
