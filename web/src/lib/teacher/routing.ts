@@ -103,11 +103,13 @@ export const SERMON_CORPUS_FILTER = `(metadata->>'work' IN (${sqlStrList(SERVED_
 export const THEOLOGY_CORPUS_FILTER = `(metadata->>'work' IN (${sqlStrList(SERVED_THEOLOGY_WORKS)}))`;
 
 // Exegetical-surface exclusion for commentary_entries (the FTS search). Excludes
-// song/verse AND lane (sermon/theology) rows TWO ways so a NULL/missing register
-// column can't fail the wall open (A6 line-by-line 2026-07-17; sermon lane
-// 2026-07-18): by register AND by the known lane work slugs. Legacy commentary
-// rows (register NULL, work NULL) still pass.
-export const EXEGETICAL_FTS_EXCLUSION = `(register IS NULL OR register NOT IN ('hymn','poetry')) AND (work IS NULL OR work NOT IN (${sqlStrList([...SERVED_SONG_VERSE_WORKS, ...SERVED_LANE_WORKS])}))`;
+// song/verse AND lane (sermon/theology/confession) rows TWO ways so neither a
+// NULL/missing register column NOR a slug rename/NULL work can fail the wall
+// open (A6 line-by-line 2026-07-17; sermon lane 2026-07-18; deep-audit
+// 2026-07-18 closed the sermon/theology register leg — before that, lane rows
+// were excluded by slug enumeration ONLY). Legacy commentary rows (register
+// NULL, work NULL) still pass.
+export const EXEGETICAL_FTS_EXCLUSION = `(register IS NULL OR register NOT IN ('hymn','poetry','sermon','theology','confession')) AND (work IS NULL OR work NOT IN (${sqlStrList([...SERVED_SONG_VERSE_WORKS, ...SERVED_LANE_WORKS])}))`;
 
 export const LEGAL_CORPUS_FILTER = `(metadata->>'author' IN ('John Gill','Jamieson, Fausset & Brown','Adam Clarke','Matthew Henry')
    OR (metadata->>'author'='John Chrysostom'    AND (metadata->>'verseId')::int/1000000 IN (40,43,44))
@@ -221,9 +223,13 @@ export const LANE_LIMIT = 3;
 
 export function laneOnRangeSql(corpusFilter: string, ranges: readonly VerseRange[], limit = LANE_LIMIT): string {
   const conds = ranges.map((r) => `(metadata->>'verseId')::int BETWEEN ${r.start} AND ${r.end}`).join(' OR ');
+  // PROSE_TYPE_SQL is redundant with the work filter for row selection, but the
+  // 018 verseId btree's predicate requires it — without the conjunct the planner
+  // cannot use idx_embeddings_verseid_registers and seq-scans the table on the
+  // /ask request path (deep-audit 2026-07-18, measured seq scan → index scan).
   return `WITH inrange AS MATERIALIZED (
      SELECT source_id, content, metadata, embedding FROM embeddings
-     WHERE user_id IS NULL AND ${corpusFilter} AND (${conds})
+     WHERE user_id IS NULL AND ${PROSE_TYPE_SQL} AND ${corpusFilter} AND (${conds})
    )
    SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
    FROM inrange ORDER BY embedding <=> $1::vector LIMIT ${limit}`;

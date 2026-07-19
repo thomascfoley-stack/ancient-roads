@@ -208,7 +208,15 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
         )}
         {entry.paraphrase && <ParaphraseChip />}
       </div>
-      <p className="font-scripture text-[15px] leading-relaxed text-stone-600 dark:text-stone-300">
+      {/* Lane/song-verse text is lineated (stanzas, sermon headings) — preserve
+          line breaks like the library and /ask surfaces do; exegetical prose
+          stays flowing (deep-audit 2026-07-18: collapsing stanzas destroys the
+          content of the register). */}
+      <p
+        className={`font-scripture text-[15px] leading-relaxed text-stone-600 dark:text-stone-300${
+          registerLane(entry) === 'exegetical' ? '' : ' whitespace-pre-line'
+        }`}
+      >
         {displayText}
       </p>
       {isLong && (

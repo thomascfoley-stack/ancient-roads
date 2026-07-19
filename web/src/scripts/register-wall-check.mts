@@ -9,7 +9,7 @@
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { neon } from '@neondatabase/serverless';
-import { legalBasePool, injectionSql, diversityBackfillSql, songVersePoolSql, songVerseOnRangeSql, LEGAL_CORPUS_FILTER, EXEGETICAL_FTS_EXCLUSION, SERVED_SONG_VERSE_WORKS, SERVED_LANE_WORKS } from '../lib/teacher/routing.js';
+import { legalBasePool, injectionSql, diversityBackfillSql, songVersePoolSql, songVerseOnRangeSql, LEGAL_CORPUS_FILTER, EXEGETICAL_FTS_EXCLUSION, PROSE_TYPE_SQL, SERVED_SONG_VERSE_WORKS, SERVED_LANE_WORKS } from '../lib/teacher/routing.js';
 import { LEGAL_COMMENTARY_ENTRIES_PREDICATE } from '../lib/legal-corpus.js';
 import { resolveIntent } from '../bible/pericopes.js';
 // The REAL reader/library/Today register classifier — we probe the shipped code
@@ -74,11 +74,14 @@ for (const q of QUERIES) {
 // verse (hymn/poetry) AND lane (sermon/theology/confession) — matched TWO ways,
 // by register AND by served work slug, so a NULL/missing register can't fail the
 // wall open (sermon-lane extension 2026-07-18). If the exclusion has a hole, n>0.
+// PREDICATE-LEVEL, no tsquery narrowing: an earlier version counted leaks only
+// among rows matching an 8-term probe query, which 0 of 955 hymn rows and ~10%
+// of lane rows matched — the checker could print green through a real leak
+// (deep-audit 2026-07-18). This count sees every row the serving predicate sees.
 const wallWorkSql = [...SERVED_SONG_VERSE_WORKS, ...SERVED_LANE_WORKS].map((w) => `'${w}'`).join(',');
 const ftsLeak = (await sql.query(
   `SELECT count(*)::int n FROM commentary_entries
-   WHERE tsv @@ websearch_to_tsquery('english', 'shepherd God grace faith love mercy salvation preached')
-     AND (${LEGAL_COMMENTARY_ENTRIES_PREDICATE})
+   WHERE (${LEGAL_COMMENTARY_ENTRIES_PREDICATE})
      AND (${EXEGETICAL_FTS_EXCLUSION})
      AND (register IN ('hymn','poetry','sermon','theology','confession') OR work IN (${wallWorkSql}))`,
 )) as Array<{ n: number }>;
@@ -90,6 +93,19 @@ const ftsAll = (await sql.query(
 )) as Array<{ sv: number; lane: number }>;
 console.log(`\nFTS surface: ${ftsAll[0]!.sv} hymn/poetry + ${ftsAll[0]!.lane} sermon/theology rows exist; ${ftsLeak[0]!.n} leak past the live search predicate (must be 0)`);
 wallBreaches += ftsLeak[0]!.n;
+
+// ── surface 2b: the exegetical VECTOR pool, predicate-level. The per-query legs
+// above sample 5 embeddings × top-20 — a hole admitting rows that never rank in
+// those pools passes green (deep-audit 2026-07-18). This counts EVERY embeddings
+// row the exegetical serving predicate admits that is a song/verse or lane work
+// (by slug) or carries a song/verse register. Deterministic; must be 0.
+const vecLeak = (await sql.query(
+  `SELECT count(*)::int n FROM embeddings
+   WHERE user_id IS NULL AND ${PROSE_TYPE_SQL} AND ${LEGAL_CORPUS_FILTER}
+     AND (metadata->>'work' IN (${wallWorkSql}) OR metadata->>'register' IN ('hymn','poetry'))`,
+)) as Array<{ n: number }>;
+console.log(`vector surface (predicate-level): ${vecLeak[0]!.n} song/verse or lane rows admitted by the exegetical pool predicate (must be 0)`);
+wallBreaches += vecLeak[0]!.n;
 
 // ── surface 3: the READER static corpus. The reader, the library browse, and
 // Today all segregate entries through partitionByRegister() (imported above — the
