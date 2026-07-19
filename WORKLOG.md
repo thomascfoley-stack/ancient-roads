@@ -1,5 +1,59 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-19 (READER P2c — Book Reader UI: `/work/[slug]` windowed reader + TOC drawer + resume + Phase-1 popover mounted)
+
+**New surface (branch `reader-p2-ui`, on the reader tip with the P2b `/api/work` routes).**
+`web/src/app/work/[slug]/page.tsx` + `components/{work-reader,work-section,work-header,work-toc}.tsx`
++ `lib/{work-reader.ts,use-work-sections.ts}`. Design of record: `docs/LIBRARY_READER_DESIGN.md`
+§2/§3/§10.1. The Bible reader files are untouched (verse-display / commentary-panel / study-panel
+byte-identical).
+
+- **Windowed body** (`WorkReader` over `useWorkSectionPages`): renders the active section
+  +12/−28 overscan (≈40 mounted max), everything else collapses into two spacers sized from
+  measured section heights; next page prefetches 15 sections from the loaded tail; a
+  scrollbar-jump chase keeps the window converging on fling/End-key jumps. A 3,448-section
+  work never mounts all sections.
+- **Keyset only:** initial fetch `after = pageAfterContaining(savedOrdinal)` (resume); every
+  forward fetch `after = last rendered ordinal`; prepend `after = firstOrdinal-1-PAGE` with
+  viewport anchoring ("↑ Earlier in this work" button). No offset pagination anywhere.
+- **Container-concat invariant (owner-mandated, §3):** `WorkSection`'s `data-section-text`
+  container concatenates to EXACTLY `sections.body` — `splitBodyParagraphs` keeps separator
+  whitespace inside the paragraph slices, heading/chrome outside the container, highlight
+  washes via flatten-then-clip (the VerseDisplay segment idiom), body rendered as TEXT never
+  HTML. Seeded a one-char insert → 3 tests RED with a byte-level diff → restored → green.
+- **Phase-1 popover mounted:** `resolveTarget` walks to `dataset.sectionText`
+  (`{kind:'section', key:id, textLen, container}`); copy chips + Ask (prefill, no host URL)
+  fully live; swatches paint a LOCAL wash (persistence is Phase 3 / MIG-A); onAddNote +
+  onBookmark unwired — same popover contract as Phase 1 (button renders only with a handler;
+  onBookmark was already unwired in Phase 1).
+- **TOC drawer** (`WorkToc`): StudyPanel bottom-sheet shell + `useDragDismiss`; rows grouped
+  by reading unit via `groupTocByUnit` (ADR-026, unit label = first heading); click →
+  seek `#s{ordinal}`.
+- **Header** (`WorkHeader`): title · author · tradition · era · license — never a host URL
+  (API whitelist means provenance can't reach the client). Reuses `ReaderSettings` (the
+  reader honors the same font-size/dark prefs — `reading-scale` + `dark:` tokens, no-flash
+  script already applies them).
+- **Resume + progress:** `{slug, ordinal, scrollPct}` → localStorage throttled 500ms on
+  scroll (`lib/work-reader.ts`); hash tracks position via `replaceState` (shareable
+  `#s{ordinal}`, no history spam); saved position auto-restores (deep-link wins); "Continue"
+  chip appears when a deep-link landed away from the saved spot; accent progress rail on the
+  right edge.
+
+**Tests (13 new, `web/test/invariants/work-reader-{ui,toc-grouping,paging}.*`):** container-
+concat ×4 (jsdom, real `WorkSection`), unit grouping (1,1,1,2,3,3 → 3 units + null/heading
+edges), resume initial-fetch params (`after=136` for saved ordinal 137), keyset walk
+(`after = last rendered ordinal`, no `offset`/`page` params), prepend seam, end-of-work,
+error-resumability. New jsdom component-test idiom: devDeps `jsdom` +
+`@testing-library/react` (+`@testing-library/dom`, pnpm-lock updated), vitest `include` +
+automatic JSX transform, per-file `@vitest-environment jsdom` docblock + explicit
+`afterEach(cleanup)` (suite runs `globals:false`).
+
+**Gates:** `tsc --noEmit` (src) + `-p tsconfig.test.json` clean; `next lint` clean; web
+suite 27 files / 120 passed (+1 pre-existing skip); `npm run qa` green (exit 0).
+**UNVERIFIED:** no browser pass (per orchestrator — the 390px/desktop DoD runs at
+integration); local wash/persistence boundary needs the Phase-3 schema before swatches
+survive reload.
+
 ## 2026-07-19 (READER P2 — migration 024: `sections.unit_ordinal` (ADR-026) built red-first, applied on dev)
 
 **`db/migrations/024_sections_unit_ordinal.sql` — additive, idempotent, zero-window (ADR-025).**

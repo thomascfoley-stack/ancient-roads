@@ -8,6 +8,22 @@ git history — not from memory or the earlier hit list.
 > priority narrative below predates the 2026-07-14 Phase A close + license gate + Slice 0; trust
 > STATE_OF_TRUTH for facts, and treat the section priorities here as owner-set direction, not current status.
 
+## Update 2026-07-19 (Library Reader Phase 2c — branch `reader-p2-ui`) — Book Reader UI built, browser DoD at integration
+
+Phase 2's UI surface (`/work/[slug]`) is built on the P2b API: windowed keyset body
+(active ±12/28 overscan, measured spacers — a 3,448-section work never mounts all sections),
+reading-unit TOC drawer (ADR-026), header (title·author·tradition·era·license, never a host
+URL), progress rail + localStorage resume with auto-restore and a Continue chip, and the
+Phase-1 SelectionPopover mounted over `data-section-text` (copy/Ask live; swatches paint a
+local wash pending Phase 3; note/bookmark unwired per the Phase-1 popover contract).
+Container-concat invariant (§3) enforced by a jsdom test that went RED on a seeded one-char
+render bug. 13 new invariant tests; `tsc` (src+test) / lint / `npm run qa` green. Bible
+reader files untouched. **No browser pass here — the 390px/desktop DoD runs at integration.**
+Details: WORKLOG 2026-07-19 (READER P2c).
+
+Next: integration browser DoD → Phase 3 migrations (owner-run: polymorphic annotations,
+bookmarks, library_items, reading_progress) → Phase 4 Library hub/catalogs → Phase 5 cutover.
+
 ## Update 2026-07-19 (Item 1 — doc-hygiene sweep LANDED; Kimi orchestrating)
 
 Operating docs now canonical on main: `docs/BUILD_MODEL.md` + `docs/PORTABILITY.md` +

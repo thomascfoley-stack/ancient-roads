@@ -9,6 +9,11 @@ const webRoot = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   root: webRoot,
+  esbuild: {
+    // Next's tsconfig uses "jsx": "preserve"; vitest's esbuild defaults to the classic
+    // runtime, so component tests need the automatic one set explicitly.
+    jsx: 'automatic',
+  },
   resolve: {
     alias: {
       '@': path.join(webRoot, 'src'),
@@ -18,7 +23,9 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['test/**/*.test.ts'],
+    // .tsx for the Book Reader component tests (jsdom per-file via the
+    // `@vitest-environment jsdom` docblock — the suite default stays node).
+    include: ['test/**/*.test.{ts,tsx}'],
     environment: 'node',
   },
 });
