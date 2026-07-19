@@ -8,6 +8,29 @@ git history — not from memory or the earlier hit list.
 > priority narrative below predates the 2026-07-14 Phase A close + license gate + Slice 0; trust
 > STATE_OF_TRUTH for facts, and treat the section priorities here as owner-set direction, not current status.
 
+## Update 2026-07-19 (Library Reader Phase 3 — annotation migrations DONE on dev, audited + remediated)
+
+Migrations 025-029 (MIG-A..E) authored, applied on dev, each red-first: polymorphic
+highlights/notes with a verse-XOR-section CHECK and a verse-only notes unique index (plus the
+paired `upsertNote` ON CONFLICT fix), then bookmarks, library_items, reading_progress, and
+tags/annotation_tags. Identical RLS block everywhere, no new GRANT (verified). A fresh-agent
+audit then found real defects, including that the "RLS proven with two accounts" claim in the
+commit messages existed only as a throwaway script — the in-tree check merely counted policies.
+Fixed by an executed two-account tenancy test over all seven tables, proven falsifiable by
+widening a policy and watching it go red. Also fixed a live bug (section rows leaking into the
+verse-scoped Bible lists as "Book 0 0:0") and added migration 030 tightening ADR-027 (section
+highlights must pin a content hash), the target_kind whitelist, per-user tag-link uniqueness,
+and keyset tiebreaks. `npm run audit` green; 30 files / 147 tests. Details: WORKLOG 2026-07-19
+(READER PHASE 3).
+
+**Carried into Phase 5 (gate):** `upsertNote` hard-depends on 025 and there is no migration
+ledger — prod migrations MUST be applied before the web deploy. **Carried into Phase 4:** every
+library query must re-assert `status='published'` (the FK cannot).
+
+**Next:** Phase 4 — Library hub + catalogs (Commentaries / Sermons / Hymns & Poetry) +
+searchSections + /api/search/works (sermon search), plus the deferred unbounded-TOC fix.
+STOP before Phase 5 (owner-run prod cutover).
+
 ## Update 2026-07-19 (Library Reader Phase 2 — INTEGRATION DoD CLOSED) — new orchestrator
 
 Phase 2 closed to its literal DoD at integration (the browser pass P2c deferred). Dev-server

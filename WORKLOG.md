@@ -1,5 +1,73 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-19 (READER PHASE 3 — annotation migrations MIG-A..E on dev, fresh audit, and its remediation)
+
+**Migrations 025-029 authored, applied on dev, each red-first; 030 added after an independent audit.**
+
+- **025 MIG-A (the data-shape-risk one):** `highlights`+`notes` polymorphic —
+  `target_kind` NOT NULL DEFAULT 'verse', `section_id` → `sections(id)`,
+  `source_content_hash` (ADR-027), `verse_id` NOT NULL dropped, XOR CHECK tying kind to exactly
+  one anchor. `notes`' active-unique index → verse-ONLY so section notes go many-per-section.
+  `upsertNote`'s ON CONFLICT predicate updated in the same slice to name `target_kind='verse'`
+  (a partial index is only an arbiter when the ON CONFLICT predicate implies its predicate).
+  **Red-first: 8 RED pre-apply → 9 GREEN post-apply**, seeding all three corrupt shapes.
+- **026-029 MIG-B..E:** `bookmarks` (polymorphic, one active per target), `library_items`
+  (shelf over the corpus; deliberately NOT `user_library` = uploaded files), `reading_progress`
+  (one upsert-able cursor; deliberately NOT `reading_history` = Bible-chapter append-only log),
+  `tags`+`annotation_tags`. Both disambiguations were VERIFIED against dev before writing.
+  Identical RLS block on every table, **no new GRANT** (001's ALTER DEFAULT PRIVILEGES covers
+  them — verified empirically). **Red-first: 8 RED → 8 GREEN.**
+
+**FRESH-AGENT AUDIT (fixer ≠ verifier) found real defects. The sharpest one was mine:**
+
+- **I claimed "RLS proven with TWO accounts" in both commit messages, but that proof existed only
+  as a throwaway script — never in the tree.** The only in-tree assertion counted `pg_policies`
+  rows, which passes for a policy of `USING (true)`. That is precisely what CLAUDE.md §Security
+  forbids ("verify with two accounts, not by reading policy"), and the claim was wider than the
+  evidence (THE_LOOP rule 7). **Fixed:** `annotation-rls-tenancy.test.ts` now proves isolation
+  two-account and EXECUTED through the app's own `runAsUser`, over all seven tables, via
+  `requireDbInCi()` so the db-invariants CI job actually runs it. **Proven falsifiable:** widening
+  `bookmarks_policy` to `USING (true)` turned it RED ("B must not see A bookmarks: expected 1 to
+  be 0"); policy restored, green.
+- **Live bug — dropping `verse_id NOT NULL` broke the verse-scoped read paths.** `listNotes` /
+  `listHighlights` filtered only `(user_id, deleted_at)`, so the first section row would surface
+  in the Bible notes list with `verse_id: null` and render "Book 0 0:0" linking to `#`. Both now
+  filter `target_kind='verse'`. **Proven red-first:** reverting the filter produced
+  `expected [ null ] to deeply equal []`.
+- **030 (remediation migration):** ADR-027 made fail-closed — a section HIGHLIGHT now REQUIRES
+  `source_content_hash` (without it a re-ingest that shifts `sections.body` is undetectable and
+  the span paints at wrong offsets). Scoped deliberately to highlights: `notes`/`bookmarks` have
+  no span columns, so no span can go corrupt there — a narrower fix than the audit proposed, with
+  the reason written into the migration header rather than deviating silently. Also: `translation`
+  forbidden on section rows (verse-only, 015); an explicit `target_kind` whitelist (previously
+  enforced only as a side effect of the XOR); `annotation_tags` uniqueness scoped per-user (unique
+  indexes bypass RLS, so the old key allowed a cross-user collision/existence oracle); and the
+  `id` keyset tiebreak added to the three Phase-4 list indexes (015 added it for exactly this).
+  Applying 030 turned the existing section-highlight case RED — the constraint bites.
+
+**Gates:** `npm run audit` PASSED (all gates green) · web tsc + lint clean · full web suite
+**30 files / 147 tests green** · pre-commit sync guards + licensing ratchet green.
+
+**Corrected claim:** 025's header said "highlights (48 rows)" — true when measured, but 45 were
+accumulated `qa-%` residue from the Phase-1 highlight suite (it soft-deletes, never hard-deletes).
+Real count is 5. Header corrected; the leak is logged as a follow-up.
+
+**OPEN, carried forward (not fixed this phase):**
+1. **PHASE 5 GATE (critical):** `upsertNote` now hard-depends on 025, and there is **no migration
+   ledger** anywhere. Apply 025-030 to prod BEFORE deploying web, or every note write throws
+   42703 and the route's bare catch reports a misleading 401. Prod is currently unaffected —
+   nothing from this run has shipped. Add a startup probe or ledger so ordering is machine-checked.
+2. `annotations-polymorphic` + `annotation-tables` need an owner-role URL and silently skip in CI.
+3. `db/schema.sql` + `docs/SCHEMA_AS_BUILT.md` are stale for 025-030 (and `/security` treats
+   schema.sql as a source of truth).
+4. `migration-zero-window.test.ts` has a static 018/019 allowlist and cannot fail for any later
+   migration.
+5. `annotation_tags` has no constraint that `tag_id`'s owner equals its `user_id`.
+6. **Phase 4 requirement:** `library_items`/`reading_progress` reference `sources(id)` with no
+   status predicate (a FK cannot express one). Every Phase-4 library query MUST re-assert
+   `status='published'`, or a shelved work later staged/quarantined still lists and links while
+   `/api/work` 404s — an inconsistent surface and a licensing exposure.
+
 ## 2026-07-19 (READER P2 — INTEGRATION DoD closeout: dev-server root-cause, staged-404 proof, browser verification 390px+desktop, 2 findings)
 
 New orchestrator took the baton (single-orchestrator rule, BUILD_MODEL §0). **Baton verified before

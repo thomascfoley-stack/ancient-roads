@@ -156,20 +156,65 @@ describe.skipIf(!url)('MIG-A polymorphic annotations — anchor XOR CHECK + vers
     });
   });
 
-  it('applies the same anchor XOR CHECK to highlights', async () => {
+  it('highlights: accepts a valid section span (hash pinned), rejects all three corrupt shapes', async () => {
     await inTx(async (c) => {
-      // valid section highlight
       const { rows } = await c.query(
-        `INSERT INTO highlights (user_id, target_kind, section_id, span_start, span_end, color)
-         VALUES ($1, 'section', $2, 0, 5, 'yellow') RETURNING target_kind, verse_id`,
+        `INSERT INTO highlights (user_id, target_kind, section_id, source_content_hash, span_start, span_end, color)
+         VALUES ($1, 'section', $2, 'deadbeefhash', 0, 5, 'yellow') RETURNING target_kind, verse_id`,
         [USER, sectionId2 ?? sectionId],
       );
       expect(rows[0]).toMatchObject({ target_kind: 'section', verse_id: null });
     });
+    // both anchors
     await expect(
       inTx((c) =>
-        c.query(`INSERT INTO highlights (user_id, target_kind, verse_id, section_id, color) VALUES ($1, 'verse', 1001001, $2, 'yellow')`, [USER, sectionId]),
+        c.query(`INSERT INTO highlights (user_id, target_kind, verse_id, section_id, color) VALUES ($1,'verse',1001001,$2,'yellow')`, [USER, sectionId]),
       ),
     ).rejects.toThrow(/highlights_anchor_xor|check constraint/i);
+    // neither anchor
+    await expect(
+      inTx((c) => c.query(`INSERT INTO highlights (user_id, target_kind, color) VALUES ($1,'verse','yellow')`, [USER])),
+    ).rejects.toThrow(/highlights_anchor_xor|check constraint/i);
+    // kind/anchor mismatch
+    await expect(
+      inTx((c) => c.query(`INSERT INTO highlights (user_id, target_kind, verse_id, color) VALUES ($1,'section',1001001,'yellow')`, [USER])),
+    ).rejects.toThrow(/highlights_anchor_xor|check constraint/i);
+  });
+
+  // 030 (audit remediation): ADR-027 says a section span must never render corrupt. A section
+  // HIGHLIGHT carries span offsets into sections.body, so without a pinned content hash a later
+  // re-ingest that shifts the body is undetectable and the span paints at wrong offsets. The
+  // constraint therefore REQUIRES the hash on section highlights, and forbids `translation`
+  // there (offsets are translation-relative, so it is meaningless for a section).
+  it('highlights: a section span WITHOUT source_content_hash is rejected (ADR-027 fail-closed)', async () => {
+    await expect(
+      inTx((c) =>
+        c.query(`INSERT INTO highlights (user_id, target_kind, section_id, span_start, span_end, color) VALUES ($1,'section',$2,0,5,'yellow')`, [USER, sectionId]),
+      ),
+    ).rejects.toThrow(/highlights_anchor_xor|check constraint/i);
+  });
+
+  it('highlights: a section span may not carry a translation (verse-only)', async () => {
+    await expect(
+      inTx((c) =>
+        c.query(
+          `INSERT INTO highlights (user_id, target_kind, section_id, source_content_hash, span_start, span_end, color, translation)
+           VALUES ($1,'section',$2,'hash',0,5,'yellow','kjv')`,
+          [USER, sectionId],
+        ),
+      ),
+    ).rejects.toThrow(/highlights_anchor_xor|check constraint/i);
+  });
+
+  it('rejects a target_kind outside the whitelist on notes, highlights and bookmarks', async () => {
+    await expect(
+      inTx((c) => c.query(`INSERT INTO notes (user_id, target_kind, verse_id, body) VALUES ($1,'bogus',1001001,'x')`, [USER])),
+    ).rejects.toThrow(/target_kind_chk|anchor_xor|check constraint/i);
+    await expect(
+      inTx((c) => c.query(`INSERT INTO highlights (user_id, target_kind, verse_id, color) VALUES ($1,'bogus',1001001,'yellow')`, [USER])),
+    ).rejects.toThrow(/target_kind_chk|anchor_xor|check constraint/i);
+    await expect(
+      inTx((c) => c.query(`INSERT INTO bookmarks (user_id, target_kind, verse_id) VALUES ($1,'bogus',1001001)`, [USER])),
+    ).rejects.toThrow(/target_kind_chk|anchor_xor|check constraint/i);
   });
 });

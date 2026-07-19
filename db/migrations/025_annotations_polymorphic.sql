@@ -34,7 +34,11 @@
 -- section-level indicator (never a corrupt span, never a silent drop). This
 -- migration stores the column; the degrade logic lives in the reader/render path.
 --
--- SCOPE / SAFETY: notes (2 rows) + highlights (48 rows) on dev — trivial. ADD
+-- SCOPE / SAFETY: notes (2 rows) + highlights on dev — trivial either way. (This header
+-- originally said "highlights (48 rows)", true when measured; 45 of those turned out to be
+-- accumulated `qa-%` test residue from the Phase-1 highlight suite, which soft-deletes but
+-- never hard-deletes. After cleanup the real count is 5. Corrected rather than left to read
+-- as a measurement that no longer matches the DB.) ADD
 -- COLUMN without a stored default is catalog-only (no rewrite); the CHECK/FK
 -- validations scan a handful of rows. Runs atomically (single implicit txn via
 -- db/apply-migration.mjs). RLS is unchanged: highlights_policy / notes_policy

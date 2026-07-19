@@ -62,7 +62,8 @@ describe.skipIf(!url)('MIG-B..E — bookmarks, library_items, reading_progress, 
 
   it('RLS is ENABLED with a policy on every new table', async () => {
     const { rows } = await client!.query<{ relname: string; relrowsecurity: boolean; policies: number }>(
-      `SELECT c.relname, c.relrowsecurity, (SELECT count(*)::int FROM pg_policies p WHERE p.tablename = c.relname) AS policies
+      `SELECT c.relname, c.relrowsecurity,
+              (SELECT count(*)::int FROM pg_policies p WHERE p.tablename = c.relname AND p.schemaname = 'public') AS policies
        FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
        WHERE n.nspname='public' AND c.relname IN ('bookmarks','library_items','reading_progress','tags','annotation_tags')
        ORDER BY c.relname`,
@@ -72,6 +73,9 @@ describe.skipIf(!url)('MIG-B..E — bookmarks, library_items, reading_progress, 
       expect(r.relrowsecurity, `${r.relname} RLS enabled`).toBe(true);
       expect(r.policies, `${r.relname} has a policy`).toBeGreaterThan(0);
     }
+    // NOTE: this is a STRUCTURAL check only — it would pass for a policy of USING (true).
+    // The actual isolation boundary is proven two-account and executed in
+    // annotation-rls-tenancy.test.ts. Do not treat this test as the RLS proof.
   });
 
   // ---- bookmarks (026) ----
