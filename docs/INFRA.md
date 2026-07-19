@@ -1,5 +1,7 @@
 # Document 4: Fresh infrastructure checklist
 
+> **⛔ SUPERSEDED (2026-07-19).** Supabase-era infrastructure plan — the system runs on Neon + Vercel; see `docs/DEPLOYMENT.md` and `docs/STATE_OF_TRUTH.md`. Kept for history; do not build from this.
+
 Everything net-new, zero overlap with composio.dev or any existing personal
 project accounts. Create a dedicated email first; every account below hangs
 off it.

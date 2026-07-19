@@ -57,7 +57,7 @@ Real someday-ideas that must NOT be built early ("wide before deep"):
 Public-domain content only (see `DATA_SOURCES.md` / `ACQUISITION_MANIFEST.md`); copyrighted translations are display-only via licensed API, never embedded. Decide what you're allowed to host **before** building the pipes.
 
 ## Pre-signup gate (before anyone but the owner uses the teacher)
-V2 summary-faithfulness · rate-limit `/api/ask` · `rejectUnauthorized` guard · bait ≥99%. SEC-1 auth migration gates *public* launch.
+V2 summary-faithfulness · rate-limit `/api/ask` · `rejectUnauthorized` guard · bait clean through the live loop (35/35 = 0 breaches, a ~92% lower bound; the ≥99% bar needs ~300 clean cases). SEC-1 auth migration gates *public* launch.
 
 ## Sequencing — the discipline
 1. **Prove the engine** — retrieval accuracy to 10/10 (near there: 9/10), then dogfood.

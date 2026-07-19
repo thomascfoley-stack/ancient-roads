@@ -1,5 +1,7 @@
 # Document 1: Database schema
 
+> **⛔ SUPERSEDED (2026-07-19).** Supabase-era target design — the system runs on Neon Postgres + pgvector + RLS. The as-built schema is `docs/SCHEMA_AS_BUILT.md`; the prod-verified state is `docs/STATE_OF_TRUTH.md`. Kept for history; do not build from this.
+
 Target: Postgres 16 on Supabase (auth, RLS, pgvector, storage in one system).
 All new infra, no shared accounts with any existing project.
 

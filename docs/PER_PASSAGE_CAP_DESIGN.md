@@ -31,7 +31,7 @@ topical 65→50. The cap dimension was wrong.
 ## Measurement (the gate — deterministic, one run exact)
 Re-measure the **WHOLE frozen v2** (`--frozen`): recover the 7 surfaced=1 (topical/epistle HIT@2 up), **zero
 regression** on verse-ref / pericope / proper-noun / controls / no-content. Report p50/p95 of retrieval.
-Then DoD: `npm run audit`, `/audit`, **interpretation_bait ≥99% LIVE** (harness), record in WORKLOG +
+Then DoD: `npm run audit`, `/audit`, **interpretation_bait 0-breaches LIVE** (harness — 35/35 = a ~92% lower bound; ≥99% needs ~300 clean cases), record in WORKLOG +
 WORKORDER_PHASE_A §2. surfaced=0 is NOT addressed here (item 3).
 
 ## Request-path cost

@@ -183,7 +183,8 @@ Pipeline per query (SCHEMA.md §8 generalized):
      `verse_id` (book N = `verse_id between N*1e6 and (N+1)*1e6 - 1`) —
      no joins.
    - Corpus sections: BM25 (`sections.tsv`) + pgvector HNSW
-     (`section_embeddings`, bge-m3) in parallel, RRF-merged, reranked
+     (`section_embeddings`, bge-large-en-v1.5 — pinned, ADR-005 — Models
+     pinned) in parallel, RRF-merged, reranked
      (bge-reranker-v2-m3 via DeepInfra) top-50 → top-10.
    - Guides: `topics` title/alias trigram match.
    - User library (when toggled): same hybrid over `user_sections`,
@@ -228,8 +229,8 @@ What we DO train (unchanged from the brief, sharpened):
 
 The one legitimate "train on the Bible" idea — domain-adapting the
 embedding model on scripture + commentary — improves retrieval and has
-zero interpretive surface. Do it when eval numbers say bge-m3 stock is
-the bottleneck, not before.
+zero interpretive surface. Do it when eval numbers say bge-large-en-v1.5
+stock is the bottleneck, not before.
 
 ## 7. Build order
 
