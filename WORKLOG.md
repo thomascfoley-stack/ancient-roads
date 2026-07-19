@@ -1,5 +1,43 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-19 (ITEM 2 PRE-RUN — decision-lock, blocker evidence, restore point) — NO WRITES YET
+
+**Decision-lock (overnight-run Phase 1, owner-approved via the Item-2 GO + safety gate):**
+1. **Question:** does the declared queue in `ingest/sources.config.json` ingest cleanly to
+   *staged* — gates green, writes idempotent, works sliced into `sections` — so reader Phase 2 unblocks?
+2. **Hypothesis:** the harness (adapter → license/provenance gate → text-match → stage) runs the
+   queue with no real-time stops except genuine novel forks; staged-backlog pacing (≤2 source-works
+   unreviewed) and the >30% quarantine alarm bound the run.
+3. **Decision rule:** per work — gates green → stage; gate fail → quarantine (reversible); novel
+   fork or >30% quarantine → real-time stop + escalate. **Abort conditions (immediate, no
+   workaround):** `ep-odd-fog` or `NEON_BRANCH=production` resolves anywhere; any entrypoint
+   assert fails; post-run `qa` or licensing red (stop + re-diagnose, per owner).
+4. **Pre-registered bars:** (a) all entrypoint asserts pass before every run segment;
+   (b) 1% slice — vector dims = 1024, embedder = `BAAI/bge-large-en-v1.5` (the only model
+   `docs/INGESTION_RUNBOOK.md` permits), identical re-run leaves row count unchanged;
+   (c) post-run — `npm run qa` green on dev (Item-1's 3 DB-invariant reds must pass), licensing
+   absence+presence green (9 served voices present, biblehub-collapsed set absent), row counts
+   vs manifest.
+5. **Out of scope:** prod in every form (no deploy, no prod writes, no branch-promote — Part C is
+   the owner's), publish flips (owner's), `reader` branch files, migrations (dev at 023; none
+   planned; 025+ and owner-run if one arises), the reader build itself.
+
+**Blocker evidence (all read-only checks, this clone's `web/.env.local`):**
+endpoint grep → ONLY `ep-tiny-hat-atdgpisx` (+pooler); `NEON_BRANCH=dev`; `current_user` =
+`app_runtime` on host `ep-tiny-hat-atdgpisx-pooler.c-9.us-east-1.aws.neon.tech`;
+`rolbypassrls=false`; RLS probe `highlights` → **0 rows** (policy enforced; dev holds 24 rows,
+so the probe is meaningful); migration level = 023 (markers 016/019/023 present).
+
+**Restore point (before any write):** Neon snapshots reject non-root branches, so the restore
+point is a zero-copy backup branch off dev's head — **`item2-pre-ingest-backup-20260719`
+(`br-late-mountain-atz68a9y`)**, created 2026-07-19T06:18Z. Verified holding dev state exactly:
+commentary_entries **191,749** · embeddings **422,014** · sources **43** · sections **9,934**
+(dev = backup, compared row-for-row).
+**Exact rollback command (owner-run):**
+`neonctl branches restore dev item2-pre-ingest-backup-20260719 --project-id spring-heart-74819093 --org-id org-bitter-cherry-28741499`
+
+**Baseline counts (dev, pre-run):** as above — ce 191,749 · emb 422,014 · sources 43 · sections 9,934.
+
 ## 2026-07-19 (ITEM 1 — DOC-HYGIENE SWEEP; first item run by Kimi as orchestrator of record)
 
 First item of `KIMI_WORKORDER.md` under `docs/BUILD_MODEL.md` + `docs/PORTABILITY.md`
