@@ -50,11 +50,36 @@ function loadEntries(): Entry[] {
   return out;
 }
 
-describe('§3 verse-key distribution (live gate; skips only when the gitignored corpus is absent, e.g. CI)', () => {
-  // loadEntries() is called INSIDE each `it` (not at describe-body level) so the suite
-  // never touches the filesystem at collection time — web/public/commentaries is
-  // gitignored and absent in CI, where loadEntries() returns [] and the suite passes
-  // vacuously (the corpus gate runs where the corpus lives: pnpm gate:ingest).
+// VACUOUS-PASS FIX (2026-07-19). This suite's title claimed it "skips" when the corpus is
+// absent, but nothing skipped: `web/public/commentaries` is gitignored and absent in CI, so
+// loadEntries() returned [], `offenders` was [], and `expect([]).toEqual([])` went GREEN with
+// zero assertions. Demonstrated by pointing CORPUS_DIR at a missing directory: "2 passed" in
+// 2ms. That is worse than no test — it guards the ADR-020 scar (verse keys collapsing to the
+// chapter number, 200,385 biblehub rows) and CI reported it enforced while it enforced nothing.
+//
+// Now: a VISIBLE skip when the corpus is absent (never a green pass), a LOUD throw in a job
+// that declares the corpus required (REQUIRE_CORPUS=1 — same idiom as requireDbInCi), and an
+// in-test floor so a present-but-empty/partial corpus cannot pass vacuously either.
+const CORPUS_AVAILABLE = existsSync(CORPUS_DIR);
+if (!CORPUS_AVAILABLE && process.env.REQUIRE_CORPUS === '1') {
+  throw new Error(
+    `REQUIRE_CORPUS=1 but no corpus at ${CORPUS_DIR}. This job must run against the real static ` +
+      'corpus (the ADR-020 verse-key gate is meaningless without it). Run `pnpm gate:ingest` where the corpus lives.',
+  );
+}
+
+/** The guard can only catch anything if some author clears MIN_ENTRIES. Asserting that turns a
+ *  vacuous green (empty/partial corpus) into a failure. */
+function assertGuardIsLive(byAuthor: Map<string, { n: number; collapsed: number }>): void {
+  const eligible = [...byAuthor.values()].filter((v) => v.n >= MIN_ENTRIES).length;
+  expect(
+    eligible,
+    `VACUOUS GUARD: no author reached MIN_ENTRIES=${MIN_ENTRIES}, so this assertion could not have failed. ` +
+      'The corpus is empty or partial — fix the corpus, do not trust this green.',
+  ).toBeGreaterThan(0);
+}
+
+describe.skipIf(!CORPUS_AVAILABLE)('§3 verse-key distribution (live gate; VISIBLY skipped when the gitignored corpus is absent, e.g. CI)', () => {
   it('no author (≥200 entries) has >20% of entries keyed verse_start=verse_end=chapter', () => {
     const entries = loadEntries();
     const byAuthor = new Map<string, { n: number; collapsed: number }>();
@@ -64,6 +89,7 @@ describe('§3 verse-key distribution (live gate; skips only when the gitignored 
       if (e.verseStart === e.verseEnd && e.verseStart === e.chapter) rec.collapsed++;
       byAuthor.set(e.author, rec);
     }
+    assertGuardIsLive(byAuthor);
     const offenders = [...byAuthor.entries()]
       .filter(([, v]) => v.n >= MIN_ENTRIES && v.collapsed / v.n >= COLLAPSE_MAX)
       .map(([a, v]) => `${a} ${(100 * v.collapsed / v.n).toFixed(1)}% (n=${v.n})`);
@@ -72,6 +98,12 @@ describe('§3 verse-key distribution (live gate; skips only when the gitignored 
 
   it('no SERVED (published) entry carries a biblehub.com / studylight.org sourceUrl', () => {
     const entries = loadEntries();
+    // Same anti-vacuity floor: with zero entries loaded, `served.length === 0` is trivially true
+    // and proves nothing about provenance.
+    expect(
+      entries.length,
+      'VACUOUS GUARD: zero corpus entries loaded, so the forbidden-provenance assertion could not have failed.',
+    ).toBeGreaterThan(MIN_ENTRIES);
     const served = entries.filter((e) => isPublishedAuthor(e.author) && FORBIDDEN_HOST.test(e.sourceUrl ?? ''));
     const byAuthor = [...new Set(served.map((e) => e.author))];
     expect(served.length, `served entries with forbidden aggregator provenance (${byAuthor.join(', ')})`).toBe(0);

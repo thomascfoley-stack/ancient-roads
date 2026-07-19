@@ -26,6 +26,7 @@ import {
   type WorkSource,
   type WorkTocRow,
 } from '@/lib/work';
+import { getDb } from '@/lib/db';
 import { runtimeDbUrl } from '../helpers/env';
 
 const dbUrl = runtimeDbUrl();
@@ -62,6 +63,16 @@ function ordinals(rows: { ordinal: number }[]): number[] {
 
 describe.skipIf(!dbUrl)('Book Reader API — /api/work/[slug] + /sections (executed against the real DB)', () => {
   it('404s a staged source on BOTH routes (published-only boundary)', async () => {
+    // FIXTURE PRECONDITION (added 2026-07-19). Without this the test is fixture-dependent and
+    // can pass for the WRONG reason: against a DB where `josephus-whiston` is simply ABSENT,
+    // deleting the `status = 'published'` filter entirely would STILL yield 404, and this test
+    // would certify a boundary that no longer exists. Asserting the row exists AND is staged is
+    // what makes the 404s below attributable to the filter.
+    const sql = getDb();
+    const fixture = (await sql`SELECT status FROM sources WHERE slug = ${STAGED_SLUG}`) as { status: string }[];
+    expect(fixture.length, `fixture missing: '${STAGED_SLUG}' must exist in this DB, else the 404 proves nothing`).toBe(1);
+    expect(fixture[0]!.status, `fixture wrong: '${STAGED_SLUG}' must be staged for this boundary probe`).toBe('staged');
+
     // sanity: a published work IS served on both routes — so the 404s below are the
     // status filter doing its job, not broken wiring.
     expect((await callWork(BIG_SLUG)).status).toBe(200);

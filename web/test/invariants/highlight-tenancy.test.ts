@@ -7,6 +7,7 @@
 // user B would read/delete user A's span and these assertions would go RED.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createHighlight, getChapterAnnotations, removeHighlightById, type Highlight } from '@/lib/annotations';
+import { runAsUser } from '@/lib/db';
 import { requireDbInCi } from '../helpers/env';
 
 const dbUrl = requireDbInCi();
@@ -34,7 +35,13 @@ describe.skipIf(!dbUrl)('§7 sub-verse highlight tenancy (two-account, executed)
 
   afterAll(async () => {
     if (!created || !dbUrl) return;
-    await removeHighlightById(userA, spanId);
+    // HARD-delete this run's seeded rows. removeHighlightById SOFT-deletes (right for the app —
+    // deleted_at preserves history), but as a TEST teardown it leaves the row in the shared dev
+    // DB, so every full-suite run leaked ~2 rows: 45 had accumulated by 2026-07-19. The user ids
+    // are unique per run, so deleting by user_id removes exactly what this file created.
+    for (const u of [userA, userB]) {
+      await runAsUser(u, (sql) => [sql`DELETE FROM highlights WHERE user_id = ${u}`]);
+    }
   }, 30_000);
 
   it('round-trips the span: A reads back its offsets, color, and translation', async () => {

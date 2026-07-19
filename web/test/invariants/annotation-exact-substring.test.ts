@@ -17,6 +17,7 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { flattenToSegments, rangeToOffsets, snapToWords } from '@/lib/highlight-range';
 import { createHighlight, getChapterAnnotations, removeHighlightById, type Highlight } from '@/lib/annotations';
+import { runAsUser } from '@/lib/db';
 import { requireDbInCi } from '../helpers/env';
 
 // John 3:16 (KJV), the canonical verse text the offsets anchor into.
@@ -80,7 +81,11 @@ let spanId = '';
 
 describe.skipIf(!dbUrl)('§P1 the exact substring survives the persistence round-trip (RLS)', () => {
   afterAll(async () => {
-    if (spanId) await removeHighlightById(userA, spanId);
+    // HARD-delete this run's seeded rows — removeHighlightById only SOFT-deletes, which left the
+    // row in the shared dev DB on every run (see highlight-tenancy.test.ts for the same fix).
+    for (const u of [userA, userB]) {
+      await runAsUser(u, (sql) => [sql`DELETE FROM highlights WHERE user_id = ${u}`]);
+    }
   }, 30_000);
 
   it('span_start/span_end read back slice the verse to the EXACT selected substring', async () => {

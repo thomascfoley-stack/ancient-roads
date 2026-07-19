@@ -60,8 +60,18 @@ describe('WorkSection — container-concat invariant (§3)', () => {
     render(<WorkSection section={sectionWith(body)} spans={spans} />);
 
     expect(textContainer().textContent).toBe(body);
-    // The wash actually rendered (soft color wash behind the words, §10.1).
-    expect(textContainer().textContent?.length).toBe(body.length);
+
+    // The previous assertion in this test was `textContent?.length === body.length`, which the
+    // line above already guarantees — a tautology. It passed with NO wash rendered at all
+    // (seed `segments = null` at work-section.tsx:61 and it stayed green), so the "wash actually
+    // rendered" claim had no assertion behind it. Assert the wash markup itself: a coloured
+    // segment renders as <span class="rounded-[3px] …">, CLIPPED per paragraph, so a range
+    // crossing the boundary must produce exactly two washed spans whose text rejoins to the range.
+    const washed = [...textContainer().querySelectorAll('span[class*="rounded-"]')];
+    expect(washed.length, 'the wash must render, clipped into one span per paragraph').toBe(2);
+    expect(washed.map((s) => s.textContent).join(''), 'washed text must be exactly the requested range').toBe(
+      body.slice(6, 24),
+    );
   });
 
   it('a body with no blank lines renders as one exact paragraph', () => {
