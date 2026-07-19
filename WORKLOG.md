@@ -1,5 +1,31 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-19 (ITEM 2 — checkpoint 2: 33-work sweep GREEN, biblehub backup rescued, reader build reprioritized next)
+
+**Sweep (bash-2fxixl93): all 33 register works re-pointed, zero failures, 1:1 on every work.**
+Dev totals after sweep + K&D + wheatley: **sections 306,993** (baseline 9,934 + 273,888 sweep
++ 23,073 K&D + 98 wheatley — exact), section_embeddings 1:1, section_anchors 29,041
+(verse-anchored paths only). By status: published 31 works / 248,302 sections · staged 9 /
+57,391 · quarantined 3. Only non-quarantined zero-section works left: **edersheim-lifetimes,
+schaff-history** (blocked on the missing CCEL→006-historian converter — escalation ledger).
+All writes were $0 (vectors reused) and off the network.
+
+**Biblehub backup — RESCUED to durable storage (lock item).** The 235MB
+`biblehub-collapsed-2026-07-17.jsonl` existed only as two local copies (ap-golive, ap-ingest —
+verified byte-identical, SHA-256 d9d5e45f…). Gzipped (63MB) and uploaded as a release asset on
+the private repo: `releases/tag/biblehub-quarantine-backup-2026-07-19`. Restore instructions in
+the release notes. Local copies left in place.
+
+**Reprioritization (owner, overnight):** the Library Reader build (Phases 2–4 on the `reader`
+branch) now runs BEFORE the broad Phase-F ingestion. The corpus fuel the reader needed is now
+present (spurgeon-talks-to-farmers 300 = vertical slice; matthew-henry 4,210 = scale work;
+plus the full sliced corpus above). Phase F groups queue after the reader: G1 CCEL staged
+(treasury/ryle/vincent), G2/G3 (scofield/pnt/poole with serve:false; barnes/wesley/calvin →
+ledger: double-voicing owner call), historians → ledger (missing converter).
+
+**Not covered:** post-sweep `npm run qa` battery — running now (Item-1's 3 DB-invariant reds
+expected green on dev). Phase F, SoS probe, Item 3/4 — queued per the reprioritized order.
+
 ## 2026-07-19 (ITEM 2 RUN — checkpoint 1: preflight + slicing tools + 1% slice + K&D; sweep launched)
 
 Run state, per the overnight self-report contract. Decision-lock and restore point: §pre-run below.
