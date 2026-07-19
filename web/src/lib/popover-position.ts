@@ -40,18 +40,22 @@ export function placePopover(
   let side: 'above' | 'below' = 'above';
   let top = anchor.top - gap - pop.height;
   if (top < margin) {
+    // Flip below when there is no headroom above.
     const below = anchor.bottom + gap;
     if (below + pop.height <= viewport.height - margin) {
-      // Flip below when there is no headroom above.
       side = 'below';
       top = below;
-    } else {
-      // Neither side fits: clamp inside the viewport — never off-screen, never clipped.
-      top = Math.min(Math.max(top, margin), viewport.height - margin - pop.height);
     }
   }
+  // Never clipped, whatever the anchor did (it may have scrolled partly out of view):
+  // clamp fully inside the viewport. The top margin wins when the viewport is shorter
+  // than the card.
+  top = Math.min(Math.max(top, margin), Math.max(margin, viewport.height - margin - pop.height));
   // Shift horizontally: center on the anchor, clamped to the viewport with margin.
   const center = anchor.left + anchor.width / 2;
-  const left = Math.min(Math.max(center - pop.width / 2, margin), viewport.width - margin - pop.width);
+  const left = Math.min(
+    Math.max(center - pop.width / 2, margin),
+    Math.max(margin, viewport.width - margin - pop.width),
+  );
   return { top, left, side };
 }

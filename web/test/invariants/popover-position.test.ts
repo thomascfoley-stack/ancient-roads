@@ -47,4 +47,10 @@ describe('placePopover — flip / shift / clamp', () => {
     const p = placePopover(anchor(5, 500, 200, 185), pop, shortVp);
     expect(p.top).toBe(POPOVER_MARGIN); // pinned to the top margin, on-screen — not at -115
   });
+
+  it('an anchor scrolled half out of view still yields an on-screen position (never negative)', () => {
+    // The selection's rect went above the viewport (inner scroll container moved it up).
+    const p = placePopover(anchor(-100, 500), pop, vp);
+    expect(p.top).toBe(POPOVER_MARGIN);
+  });
 });

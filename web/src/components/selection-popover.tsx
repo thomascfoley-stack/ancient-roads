@@ -69,6 +69,12 @@ export function SelectionPopover({
       sel && !sel.isCollapsed && sel.rangeCount > 0 ? sel.getRangeAt(0).getBoundingClientRect() : null;
     const anchor = live ?? pending.rect;
     if (!anchor) return;
+    // The selection scrolled fully out of view — hide the card until it comes back
+    // (a floating toolbar with no visible anchor is noise, not help).
+    if (anchor.bottom < 0 || anchor.top > window.innerHeight) {
+      setPos(null);
+      return;
+    }
     setPos(
       placePopover(
         anchor,
