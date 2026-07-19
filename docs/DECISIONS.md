@@ -218,8 +218,30 @@ regression. Until that re-measure exists, do not describe the 60 as either "a re
 > that confidently cites 1 Corinthians when asked about Song of Solomon is not a coverage gap; it
 > is the product guarantee (ADR-001) breaking.
 >
-> **FIX: NOT inside Phase 4.** A relevance floor trades recall for precision, and that tradeoff must
-> be MEASURED, not assumed — so it is its own slice with the held-out accuracy re-measure attached
+> **FIX — CORRECTED 2026-07-19 (a relevance floor is FALSIFIED; do not re-propose it).** Measured on
+> frozen v4 (120/120, real path): best ON-label score min **0.9957** vs worst OFF-label junk max
+> **0.9999** — no separation exists. And `score` is TWO quantities: leads carry reranker scores,
+> BACKFILLED SECOND VOICES carry vector cosine (0.55-0.75), so any floor >=0.9 silently deletes every
+> backfilled second voice and breaks the >=2-voices guarantee **on healthy queries**; the only floor
+> that changes anything (T~0.55) clears 0/8 SoS queries. The scores are right about TEXT and wrong
+> about PASSAGE. **The fix is ON-PASSAGE COVERAGE DETECTION at the routing layer**: fire
+> `kind:'empty'` when zero returned chunks have a `verseId` intersecting the asked range (for
+> verse-ref queries `resolveIntent` already computes it). **Topical queries are coverage-blind by
+> construction and are NOT solved by this** — they need a separate answer.
+>
+> **SCOPE, verified independently against the LEGAL pool:** Song of Solomon is the **ONLY**
+> zero-coverage book in the canon and there are **ZERO** thin chapters (controls: John 6,829 rows/9
+> authors, Psalms 5,157/5). Structural mechanism, one book of exposure today — not systemic.
+>
+> **AND THE SoS GAP IS A LICENSING GAP, NOT AN INGESTION GAP:** the raw corpus holds **915 SoS rows
+> from 35 authors**; `LEGAL_CORPUS_FILTER` excludes all of them. The remedy is an allowlist/provenance
+> fix, not re-ingesting Song of Solomon — Item 2 currently tracks it as ingestion breadth, which on
+> this evidence would spend effort re-fetching text the corpus already has.
+> *(Recorded honestly: reaching this took three measurements, two of mine wrong and pointing in
+> opposite directions, because I twice queried a table the code does not retrieve from. See
+> `docs/evidence/part1/coverage-census.txt`.)*
+>
+> **NOT inside Phase 4.** It is a single-lane retrieval change and must carry the held-out re-measure — so it is its own slice with the held-out accuracy re-measure attached
 > (CLAUDE.md requires the re-measure on any retrieval change). Tracked as a named post-Phase-4 slice.
 > Ingestion coverage for SoS remains tracked to Item 2 separately; it is a different problem and
 > closing it would hide, not fix, this one.

@@ -1,0 +1,67 @@
+# Coverage census — verifying the 3b scope claim, and correcting TWO of my own artifact errors
+# Captured 2026-07-19 against dev (ep-tiny-hat). Convention: docs/evidence/README.md
+
+## VERDICT: the relayed census is CORRECT. My own two attempts were both wrong, oppositely.
+
+  LEGAL exegetical pool (what /ask can actually retrieve — LEGAL_CORPUS_FILTER, routing.ts:114):
+    Song of Solomon (book 22)     LEGAL rows =     0   authors = 0
+    CONTROL John (43)             LEGAL rows =  6829   authors = 9
+    CONTROL Psalms (19)           LEGAL rows =  5157   authors = 5
+    zero-LEGAL-coverage books across the canon:  22   <- exactly one, Song of Solomon
+    chapters with <2 LEGAL authors:              0    <- zero thin chapters
+
+  So: "Song of Songs is the ONLY zero-coverage book, and there are ZERO thin chapters" is CONFIRMED,
+  independently, with controls that return non-zero. The mechanism is structural; today's exposure
+  is exactly one book of the canon.
+
+## MY TWO ERRORS, both reaching a confident conclusion from the wrong table
+
+  ERROR 1 (earlier, when the SoS finding was first reported).
+  I queried `commentary_entries WHERE verse_start >= 22000000 AND verse_start < 23000000` -> 0 rows,
+  and reported "commentary_entries has 0 Song of Solomon rows (control: the query shape works)".
+  BOTH halves were wrong:
+    * `commentary_entries.verse_start` is a VERSE NUMBER WITHIN A CHAPTER (observed range 1..71),
+      not a book*1e6 canonical id. That predicate returns 0 for EVERY book; it measured nothing.
+    * the "control" I cited had ERRORED ("column verse_start does not exist" on `embeddings`), not
+      passed. I described a failed probe as a passing control.
+  I got the right answer (0) for entirely the wrong reason — a false negative that happened to
+  coincide with the truth. THE_LOOP rule 1, exactly: name the artifact before you trust the number.
+
+  ERROR 2 (this session, while "correcting" error 1).
+  I censused `embeddings` by metadata verseId and found SoS = 915 rows / 35 authors, and announced
+  that SoS is NOT zero-coverage and that the retriever was failing to surface content that exists.
+  That was the RAW pool. The teacher retrieves under LEGAL_CORPUS_FILTER, and under that filter SoS
+  is 0/0. I had swapped one wrong table for a different wrong table and stated the reversal
+  confidently.
+
+  Net: three measurements, two wrong, and the wrong ones pointed in opposite directions. The only
+  one that means anything is the one taken through the filter the code actually applies.
+
+## A NEW FACT THAT CHANGES THE REMEDY (this is the useful part)
+
+  The raw corpus DOES hold Song of Solomon material: 915 rows from 35 distinct authors.
+  LEGAL_CORPUS_FILTER excludes all of it.
+
+  => The SoS gap is a LICENSING / ALLOWLIST gap, NOT an ingestion gap.
+     The remedy is getting a legally-clean SoS commentary into the allowlist (or clearing the
+     provenance of what is already there), NOT going and ingesting Song of Solomon.
+     Item 2 tracks SoS as ingestion breadth; on this evidence that framing is wrong and would spend
+     effort re-fetching text the corpus already has.
+
+## Why this matters for row 3b's prescription
+
+  The falsified fix was a RELEVANCE FLOOR. The scores cannot separate on-label from off-label
+  (best on-label 0.9957 vs worst off-label 0.9999), and `score` is two different quantities —
+  reranker for leads, vector cosine (0.55-0.75) for backfilled second voices — so any floor >=0.9
+  deletes every backfilled second voice and breaks the >=2-voices guarantee on HEALTHY queries.
+  The scores are right about TEXT and wrong about PASSAGE.
+
+  The corrected fix is ON-PASSAGE COVERAGE DETECTION: fire kind:'empty' when zero returned chunks
+  have a verseId intersecting the asked range. For a SoS verse-ref query that is exactly right —
+  there are genuinely 0 legal rows for that book, so "no sources" is the honest answer, not a mask
+  over a ranking bug. (Had error 2 been true, coverage detection WOULD have been masking a ranking
+  bug; it is worth recording that the two diagnoses imply different fixes, which is why the artifact
+  mattered so much here.)
+
+  Topical queries have no asked range and are coverage-blind by construction — not solved by this,
+  and stated as such in row 3b rather than implied away.
