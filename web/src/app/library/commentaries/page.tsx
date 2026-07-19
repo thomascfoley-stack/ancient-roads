@@ -614,7 +614,7 @@ export default function CommentariesPage() {
       )}
 
       <p className="mt-12 border-t border-stone-200/60 pt-6 text-center font-scripture text-sm italic text-stone-400 dark:border-stone-800">
-        These are the words of men. Open your Bible and pray on it.
+        Nevertheless, not as I will, but as you will. . . . Your will be done!
       </p>
     </div>
   );

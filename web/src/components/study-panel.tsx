@@ -143,7 +143,7 @@ export function StudyPanel({
 
         <div className="border-t border-stone-200/60 px-5 py-3 text-center dark:border-stone-800">
           <p className="font-scripture text-xs italic text-stone-400">
-            These are the words of men. Open your Bible and pray on it.
+            Nevertheless, not as I will, but as you will. . . . Your will be done!
           </p>
         </div>
       </div>
