@@ -1,5 +1,105 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-18 (PHASE 3 RECONCILE — MEASURE, part 1: determinism + honest v3 re-baseline)
+
+Branch `reconcile-measure` @ 45b5bab (all 4 blocker streams integrated). DEV Neon only
+(ep-tiny-hat). Read-only on the ship path; no knobs, no relabel, no tuning.
+
+**Determinism / noise floor (measured before sizing anything).** v3 topical (n=20) run
+twice back-to-back through the shipped path (`eval-heldout.mts --v3 --cats topical`,
+pool=20 ef=64 cap=2): outputs byte-identical — every per-query HIT@1/HIT@2, voice count
+and failure code. Run-to-run noise on a fixed DB+config = **0**; the pipeline
+(embed → HNSW → rerank → floor → backfill → select) is deterministic. Deltas between
+configs/corpus states are therefore real differences, not run noise. (Sampling noise
+from small n is a separate matter: n=20/25 per broad axis still carries wide CIs.)
+
+**Honest v3 re-baseline — the number for what reconcile actually ships.**
+Artifact: FROZEN_V3 (120 q, sha256 f7a771a5…8f295 — hash-guard test green before the
+run), `--v3`, NO `--relabeled`, dev DB ep-tiny-hat after stream-C cleanup (biblehub rows
+removed), ship config = sermon-lane option (c): exegetical pool = legacy 4 commentators
++ Chrysostom/Augustine verse-scoped + CrossWire Barnes/Wesley/Calvin + SERVED_PROSE_WORKS
+(keil-delitzsch, catena-aurea, chrysostom-homilies, augustine-homilies); sermons +
+theology routed to labeled lanes, excluded from the ≥2-voices pool. pool=20 ef=64 cap=2.
+
+| category | n | HIT@1 | HIT@2 | pass / <2 / wrong / none |
+|---|---|---|---|---|
+| verse-ref | 40 | 95% | 95% | 38 / 1 / 0 / 1 |
+| pericope | 15 | 87% | 100% | 15 / 0 / 0 / 0 |
+| epistle | 25 | 68% | 80% | 20 / 0 / 5 / 0 |
+| topical | 20 | 45% | 75% | 15 / 0 / 5 / 0 |
+| proper-noun | 10 | 60% | 90% | 9 / 0 / 1 / 0 |
+| control | 10 | clean 10/10 | — | 0 hijacks |
+
+Misses by id: verse-ref — vr-21 Song2 `no-content` (the known legal-corpus hole),
+vr-29 Matt5 `<2-voices`. epistle `wrong-passage` — ep-01 atonement, ep-04 humiliation,
+ep-09 saving faith, ep-11 priesthood-of-believers, ep-14 baptism. topical
+`wrong-passage` — tp-08 justice/poor, tp-09 truthfulness, tp-12 praise, tp-15 wisdom,
+tp-17 stewardship. proper-noun — pn-09 manna/quail `wrong-passage`.
+
+**Baseline honesty note.** "70/88" (topical/epistle, recorded 2026-07-14) is NOT the
+comparison point: it was propped up by forbidden-provenance rows B2 has since removed
+and by the circular tp-12 relabel A6 struck; SERMON_LANE_DIAGNOSIS.md already found it
+unreproducible. The honest priors are: v3 first run 2026-07-11 (legacy corpus,
+pre-pool-fix: vr 95/93 · pc 87/93 · ep H2 64 · tp H2 70 · pn 70/90) and the 2026-07-18
+diagnosis configs (best 60/76, pre-biblehub-removal). **No prior honest number exists
+under this exact corpus+config — this run IS the baseline for option (c).** Against
+those priors: topical 75 and epistle 80 are the highest honest broad-axis numbers yet
+recorded; verse-ref/pericope/controls hold. **Proper-noun HIT@1 = 60% (6/10) is below
+its 70% design bar** (HIT@2 90%; 3 of 4 H1 misses still pass on voices; n=10 so ±1
+query = ±10 pts) — logged, not tuned. Ship/no-ship on that is the owner's call; v4
+(below) gives a fresh out-of-sample read.
+
+## 2026-07-18 (PHASE 3 RECONCILE — MEASURE, part 2: v4 minted, frozen, run ONCE)
+
+**The freeze (all before any accuracy number existed):** minted `FROZEN_V4`
+(`web/src/scripts/heldout-v4-queries.mts`, 120 q, same composition as v3, disjoint from
+pilot/v2/v3), content-hash-pinned `sha256 90de5dc3…b2313` in
+`test/heldout-frozen-hash.test.ts`, and pre-registered the per-category bars in
+`docs/HELDOUT_EVAL_DESIGN.md` §v4 (carried from the doc's original bar rationale:
+topical+epistle HIT@2 ≥85 · verse-ref H1 ≥85 · pericope H1 ≥70 · proper-noun H1 ≥70 ·
+no-content ≤8% · controls 0 hijacks). Commit a9dac8c; hash verified intact after the
+pre-commit eslint --fix hook. `--v4 --validate`: 120 parse, 0 dups.
+
+**The v4 labeling fix (A6's RELABEL-circularity finding):** every label derives from
+the query's own scripture reference or quoted KJV wording — never from retrieval
+output. Doctrinal queries quote identifiable KJV phrases; labels = the chapters
+containing them; every anchor recorded in `source` and mechanically verified against
+the in-repo KJV (200/200 checks) before the freeze. v4 has NO relabel path — a label
+correction is a v4.1 re-freeze with a new pin, never an in-place edit.
+
+**The run (ONCE):** `eval-heldout.mts --v4`, dev ep-tiny-hat, ship config option (c),
+pool=20 ef=64 cap=2, single pass, exit 0. (A first background invocation died at
+~q19 with no summary — harness restart, not a result; the pipeline is measured
+deterministic, part 1, so the single complete re-run is the number.)
+
+| category | n | HIT@1 | HIT@2 | pass / <2 / wrong / none | bar | verdict |
+|---|---|---|---|---|---|---|
+| verse-ref | 40 | **100%** | 100% | 40 / 0 / 0 / 0 | H1 ≥85 | ✅ CLEARS |
+| pericope | 15 | **80%** | 100% | 15 / 0 / 0 / 0 | H1 ≥70 | ✅ CLEARS |
+| epistle | 25 | 96% | **100%** | 25 / 0 / 0 / 0 | H2 ≥85 | ✅ CLEARS |
+| topical | 20 | 80% | **90%** | 18 / 0 / 2 / 0 | H2 ≥85 | ✅ CLEARS |
+| proper-noun | 10 | **60%** | 100% | 10 / 0 / 0 / 0 | H1 ≥70 | ❌ MISSES (6/10) |
+| control | 10 | clean 10/10 | — | 0 hijacks | 0 | ✅ CLEARS |
+| no-content (all) | 110 | — | — | **0** | ≤8% | ✅ CLEARS |
+
+Misses by id — topical `wrong-passage`: tp-10 (envy/rottenness-of-bones), tp-16
+(father-of-the-fatherless). proper-noun H1 (all four still HIT@2 pass with 2 voices,
+i.e. top-1 off-target but ≥2 on-target voices in top-6; failure-code row is all
+`pass`): pn-01 Achan, pn-03 witch of Endor, pn-09 Naboth, pn-10 Nehushtan.
+
+**Read.** The GA broad-axis bars are MET out-of-sample for the first time (epistle
+HIT@2 100%, topical 90% — vs 80/75 on the v3 dev-set under the identical config). The
+one pre-registered miss is proper-noun HIT@1 60% — and v3 measured the same 60% on this
+config, so it is consistent, not noise: rare-narrative queries surface ≥2 correct
+voices (HIT@2 100%, no wrong-passage, no no-content) but the top-1 slot goes to a
+related passage. That is a top-1 ranking characteristic on rare narratives, a
+*ranking* layer question by the failure-code map. **Per pre-registration: STOP — no
+tuning, no config change; the ship/no-ship call on proper-noun H1 is the owner's.**
+Note the v3↔v4 doctrinal gap (75/80 → 90/100) is partly instrument: v4's
+phrase-anchored labels are objective and complete where v3's unattended catechism
+labels were known-incomplete (the old §1b finding) — v4 is the cleaner instrument, and
+its number is the honest one for the option-(c) gate.
+
 ## 2026-07-18 (DEPLOY) — 24677ba LIVE on ancientpaths.app (hero swap + nav labels)
 
 Owner said ship. Ran `./deploy.sh` from an isolated worktree at origin/main (the main
