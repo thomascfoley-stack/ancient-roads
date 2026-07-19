@@ -54,9 +54,17 @@ describe.skipIf(!url)('Phase 4 §A — a shelved work that is later staged/quara
   beforeAll(async () => {
     owner = new pg.Client({ connectionString: url!, ssl: { rejectUnauthorized: false } });
     await owner.connect();
+    // license MUST be a value in ALLOWED_LICENSES ('Public Domain' | 'CC BY' | 'CC BY-SA').
+    // This test necessarily seeds a PUBLISHED source, and Gate B (src/ingest/check-licenses.ts)
+    // fail-closes on any published row whose license is not in that set. Seeding
+    // 'public-domain' (lower-hyphen) leaked twice on 2026-07-19 and turned the SHARED audit gate
+    // red — a test poisoning a shared gate, the same class this suite's neighbours were fixed for.
+    // Using an allowed value means even leaked residue cannot fail Gate B.
+    // (The 024 seed uses 'public-domain' but seeds status='staged'; Gate B only inspects
+    // published rows, which is why it never bit there.)
     const { rows } = await owner.query<{ id: string }>(
       `INSERT INTO sources (slug, title, author, source_type, tradition, era, license, provenance, status)
-       VALUES ($1, 'QA published-boundary work', 'QA', 'sermon', 'qa', 'qa', 'public-domain', '{}', 'published')
+       VALUES ($1, 'QA published-boundary work', 'QA', 'sermon', 'qa', 'qa', 'Public Domain', '{}', 'published')
        RETURNING id`,
       [SLUG],
     );
@@ -72,15 +80,40 @@ describe.skipIf(!url)('Phase 4 §A — a shelved work that is later staged/quara
     ]);
   }, 60_000);
 
+  // Teardown is BELT-AND-BRACES on purpose. The last case leaves the source PUBLISHED, so an
+  // abort between there and here strands a published QA row — which is precisely what failed
+  // Gate B on 2026-07-19. Each step is independent (one failure must not skip the rest), the
+  // source is forced OUT of 'published' before deletion, and the final sweep is by slug PREFIX so
+  // it also reaps rows leaked by earlier interrupted runs, not just this one.
   afterAll(async () => {
     if (!owner) return;
-    await runAsUser(USER, (sql) => [
-      sql`DELETE FROM reading_progress WHERE user_id = ${USER}`,
-      sql`DELETE FROM library_items WHERE user_id = ${USER}`,
-    ]);
-    await owner.query('DELETE FROM sections WHERE source_id = $1', [sourceId]);
-    await owner.query('DELETE FROM sources WHERE slug = $1', [SLUG]);
-    await owner.end();
+    const attempt = async (label: string, fn: () => Promise<unknown>) => {
+      try {
+        await fn();
+      } catch (e) {
+        console.error(`[teardown] ${label} failed: ${(e as Error).message}`);
+      }
+    };
+    await attempt('quarantine seeded source', () =>
+      owner!.query(`UPDATE sources SET status = 'quarantined' WHERE slug LIKE 'qa-published-boundary-%'`),
+    );
+    await attempt('user rows', () =>
+      runAsUser(USER, (sql) => [
+        sql`DELETE FROM reading_progress WHERE user_id = ${USER}`,
+        sql`DELETE FROM library_items WHERE user_id = ${USER}`,
+      ]),
+    );
+    await attempt('orphaned shelf/progress rows', () =>
+      owner!.query(
+        `DELETE FROM library_items WHERE source_id IN (SELECT id FROM sources WHERE slug LIKE 'qa-published-boundary-%');
+         DELETE FROM reading_progress WHERE source_id IN (SELECT id FROM sources WHERE slug LIKE 'qa-published-boundary-%')`,
+      ),
+    );
+    await attempt('sections', () =>
+      owner!.query(`DELETE FROM sections WHERE source_id IN (SELECT id FROM sources WHERE slug LIKE 'qa-published-boundary-%')`),
+    );
+    await attempt('sources', () => owner!.query(`DELETE FROM sources WHERE slug LIKE 'qa-published-boundary-%'`));
+    await attempt('close', () => owner!.end());
   }, 60_000);
 
   it('BASELINE: while published, the work IS shelved, IS in continue-reading, and the reader serves it', async () => {

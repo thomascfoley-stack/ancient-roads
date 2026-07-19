@@ -13,7 +13,13 @@
 // So this prints, per query, what the REAL retrieval returns and which books those sources are
 // actually about — and says plainly whether the fallback fired.
 //
-//   cd web && npx tsx --env-file=.env.local src/scripts/verify-sos-fallback.mts
+//   cd web && npx tsx --conditions=react-server --env-file=.env.local src/scripts/verify-sos-fallback.mts
+//
+// The --conditions=react-server flag is REQUIRED: this imports the real teacher path, which
+// imports 'server-only'. That package's default export THROWS by design; its non-throwing entry
+// sits behind the react-server condition. Without the flag you get "cannot be imported from a
+// Client Component". (routing.ts is deliberately kept free of server-only so eval-heldout can
+// import it without this flag — see its header.)
 //
 // Costs one embedding call per query (no compose calls — we stop at retrieval, which is where the
 // fallback decision is made).

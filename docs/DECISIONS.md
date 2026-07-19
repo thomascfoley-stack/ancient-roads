@@ -198,10 +198,35 @@ regression. Until that re-measure exists, do not describe the 60 as either "a re
 > **The v4 figure (60/100) is the current one** because it measures the shipped config. The
 > PHASE_A_CLOSE 80/90 is historical and must not be quoted as current — it is annotated in place.
 
-**2. Song of Solomon — RULING HELD; ITS CONDITION FAILED VERIFICATION (2026-07-19).**
-The ruling was "ACCEPTED LIMITATION for beta (coverage hole, not a quality failure), **on condition
-that the fallback is verified to actually fire** rather than assumed." **It was verified, and it
-does not fire.** Evidence: `docs/evidence/part4/sos-fallback-verification.txt`.
+**2. Song of Solomon — RE-RULED 2026-07-19 after the condition failed. RECLASSIFIED.**
+
+> **SoS is NOT an accepted coverage hole. It is the visible SYMPTOM of a guarantee-class retrieval
+> defect: `retrieveCommentary` takes top-K with NO RELEVANCE FLOOR, so ANY zero- or thin-coverage
+> passage returns confident irrelevant sources. Song of Solomon is the case we happened to look at,
+> not the scope of the problem.**
+>
+> **STATUS: BLOCKING FOR PUBLIC LAUNCH** — alongside SEC-1 and proper-noun. Acceptable for the gated
+> beta **only on the explicit basis that the site is single-user today**, and expressly **NOT** on
+> the basis that the guard works. It does not work.
+>
+> **THE NEAR-MISS, RECORDED HONESTLY — do NOT record this as "the fallback held".** `kind:'empty'`
+> never fired. The two probe responses were rejected by the **verifier**, for reasons unrelated to
+> coverage: malformed schema, and an invalid anchor `46080604` (book 46 = 1 Corinthians) on a Song
+> of Solomon query. **We were protected by luck.** A schema-valid answer with valid anchors,
+> grounded in those same wrong sources, has no obvious reason to be rejected — and would be served
+> as a composed answer about Song of Solomon built from New Testament commentary. A concordance
+> that confidently cites 1 Corinthians when asked about Song of Solomon is not a coverage gap; it
+> is the product guarantee (ADR-001) breaking.
+>
+> **FIX: NOT inside Phase 4.** A relevance floor trades recall for precision, and that tradeoff must
+> be MEASURED, not assumed — so it is its own slice with the held-out accuracy re-measure attached
+> (CLAUDE.md requires the re-measure on any retrieval change). Tracked as a named post-Phase-4 slice.
+> Ingestion coverage for SoS remains tracked to Item 2 separately; it is a different problem and
+> closing it would hide, not fix, this one.
+
+The original ruling was "ACCEPTED LIMITATION for beta (coverage hole, not a quality failure), **on
+condition that the fallback is verified to actually fire** rather than assumed." **It was verified,
+and it does not fire.** Evidence: `docs/evidence/part4/sos-fallback-verification.txt`.
 - 0 of 4 SoS queries reach the no-content fallback. `retrieveCommentary` takes top-K with **no
   relevance floor**, so a zero-coverage book returns six irrelevant chunks — Barnes on the **New
   Testament**, Wesley on the **New Testament**, Chrysostom on Matthew/John/Acts, Augustine on
@@ -214,9 +239,13 @@ does not fire.** Evidence: `docs/evidence/part4/sos-fallback-verification.txt`.
   shown six sources that are not about Song of Solomon.
 **Therefore "coverage hole, not a quality failure" does not hold as stated.** The gap is not that
 SoS returns nothing; it is that SoS returns the wrong thing and is caught downstream for unrelated
-reasons. **ESCALATED — the owner should re-rule.** The obvious candidate fix is a relevance floor so
-a zero-coverage book reaches `kind:'empty'` honestly; that is a retrieval change and needs its own
-measured slice. Ingestion coverage remains tracked to Item 2 either way.
+reasons. Escalated 2026-07-19 and **re-ruled by the owner the same day** — see the reclassification
+box above, which supersedes the original framing.
+
+**Method note worth keeping:** this defect was found only because the ruling carried a verification
+condition ("accept it, PROVIDED X is verified"). That pattern has now caught two false premises in
+one day — one the agent's, one the owner's. It is cheap and it works; attach it by default to any
+"accepted limitation".
 
 **3. ~14% verifier fallback — ACCEPTED and EXPLICITLY UNMONITORED.**
 `PRODUCTION_AUDIT.md`'s "ACCEPTABLE (with monitoring)" was an unearned claim: there is no

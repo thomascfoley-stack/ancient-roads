@@ -9,7 +9,13 @@
 //   kind:'composed' -> the user is served a composed answer about Song of Solomon built from
 //                      sources that are not about Song of Solomon. That is the bad case.
 //
-//   cd web && npx tsx --env-file=.env.local src/scripts/verify-sos-endtoend.mts
+//   cd web && npx tsx --conditions=react-server --env-file=.env.local src/scripts/verify-sos-endtoend.mts
+//
+// The --conditions=react-server flag is REQUIRED: this imports the real teacher path, which
+// imports 'server-only'. That package's default export THROWS by design; its non-throwing entry
+// sits behind the react-server condition. Without the flag you get "cannot be imported from a
+// Client Component". (routing.ts is deliberately kept free of server-only so eval-heldout can
+// import it without this flag — see its header.)
 
 import { teach } from '../lib/teacher/teach.ts';
 
