@@ -8,6 +8,25 @@ git history — not from memory or the earlier hit list.
 > priority narrative below predates the 2026-07-14 Phase A close + license gate + Slice 0; trust
 > STATE_OF_TRUTH for facts, and treat the section priorities here as owner-set direction, not current status.
 
+## Update 2026-07-18 (Library Reader Phase 1 — branch `reader-P1`) — DONE, PM review pending
+
+Phase 1 of `docs/LIBRARY_READER_BUILD.md` (shared annotation engine + Logos-style highlighter in the
+EXISTING Bible reader) is built, red-first proven, audited, and browser-verified at 390px + desktop:
+
+- `useTextAnnotation` extracted (target-generic; Phase 2 mounts it over `dataset.sectionText`);
+  `rangeToVerseOffsets` → `rangeToOffsetsInContainer`.
+- `SelectionPopover` built once: swatches · Add note · Ask (prefill-only) · commentaries · three copy
+  chips · `locus · translation` context label; portal + collision-aware on desktop, docked-low bar on
+  mobile; Bookmark in the API but rendered only when Phase 3 provides a handler.
+- Red-first: multi-text-node selection persists the EXACT verse substring (two seeds watched red);
+  DB round-trip + two-account RLS executed on dev; existing highlight/tenancy suites untouched, green.
+- Tap-verse → commentaries byte-identical (panel files untouched). `npm run audit` all green.
+- Deferred to owner: a signed-in browser E2E pass (agents don't create accounts); test-level
+  persistence proof stands in. Details: WORKLOG 2026-07-18 (READER PHASE 1).
+
+Next: Phase 2 Book Reader (`/work/[slug]`, keyset-paginated sections) → Phase 3 migrations (owner-run)
+→ Phase 4 Library hub/catalogs → Phase 5 owner cutover.
+
 ## Update 2026-07-18 (go-live reconciliation — branch `reconcile`)
 
 Five gated streams integrated onto `reconcile` (from main `0491e6e`), verified, deep-audited, fixed:
