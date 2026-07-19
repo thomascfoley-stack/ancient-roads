@@ -1,0 +1,88 @@
+# Phase 4 build — Library hub + corpus catalogs + sermon search
+# Captured 2026-07-19, dev branch + dev server :3012. Convention: docs/evidence/README.md
+
+## Surfaces
+  lib/catalog.ts         CATALOGS taxonomy + listCatalogWorks + catalogTraditions
+  lib/search-sections.ts searchSections (THE sermon search)
+  api/search/works       validated edge; unknown catalog = 400, never a widened query
+  /library               hub: Continue reading · Yours · The corpus  (server component)
+  /library/[catalog]     Commentaries · Sermons · Hymns & Poetry + facets + in-catalog search
+  components/catalog-search.tsx
+
+## Routes (live)
+  /library                                   -> 200
+  /library/sermons                           -> 200
+  /library/commentaries                      -> 200
+  /library/hymns-poetry                      -> 200
+  /library/hymns-poetry?sub=hymns            -> 200
+  /library/not-a-catalog                     -> 404   (fence, not a silent widen)
+  /api/search/works?q=grace&catalog=sermons  -> 200
+  /api/search/works?q=grace&catalog=bogus    -> 400   (rejected, not ignored)
+
+## REQUIREMENT A — the published predicate TRAVELS to the new surfaces
+library-published-boundary.test.ts grew from 5 to 9 cases: catalog listing + searchSections +
+in-work search, each asserted while published and after staged/quarantined.
+  RED (predicate deleted from catalog.ts AND search-sections.ts):
+    × STAGED: the work must vanish from the CATALOG
+      → expected [ 'maclaren-expositions', …(7) ] to not include 'qa-published-boundary-…'
+    × STAGED: the work must vanish from SEARCH — results AND the reported count
+      → expected [ Array(1) ] to not include 'qa-published-boundary-…'
+    × QUARANTINED: catalog and search stay clean …
+    Tests  3 failed | 6 passed (9)
+  GREEN (restored): Tests 9 passed (9)
+Note the count is asserted separately from the rows: a surface that hides the row but still counts
+it leaks the existence of a withdrawn work.
+
+## REQUIREMENT B — deduped to READING UNITS, capped
+search-sections.test.ts, 6 cases, each with an anti-vacuity precondition (raw section hits must
+EXCEED the deduped count, else a green proves nothing).
+  RED (DISTINCT ON removed):
+    × collapses many chunks of one reading unit into ONE result
+      → every result must be a DISTINCT reading unit: expected 17 to be 100
+    i.e. 100 result rows came from just 17 reading units — the "twenty hits from one chapter" bug.
+  GREEN (restored): 6 passed.
+Also asserted: limit clamps to 100 however large the caller asks; the count is capped at 1000 and
+reports "N+"; an empty query short-circuits; in-work search is fenced to one work.
+
+## REQUIREMENT C — the register wall RE-PROVEN on the new doors
+register-wall-surfaces.test.ts, 6 cases. The wall was proven across 1,212 chapters on the FOUR
+surfaces that existed then; catalogs and cross-corpus search are new doors into the same content.
+  RED (folded 'theology' into the Commentaries catalog):
+    × the taxonomy is disjoint: no source_type is reachable through two catalogs
+      → "theology" is lane/other content and must appear in NO catalog
+    × no catalog surfaces lane/other content that exists in the corpus
+      → "theology" reached a catalog — the wall is breached in the UI layer
+    Tests  2 failed | 4 passed (6)
+  GREEN (restored): 6 passed.
+The wall is structural: each catalog names an explicit disjoint type set, there is NO
+"everything else" bucket, and theology/confession/lexicon reach no catalog by construction.
+Every search result carries a non-empty sourceType so the caller can label it — visible as the
+"SERMON" chip in the screenshots.
+
+## A PERFORMANCE DEFECT FOUND BY THE BROWSER PASS (and fixed)
+The first search screenshot captured "Searching…" — the query had not returned. Measured:
+    raw match count (no headline)          152ms   (27,738 matching sections for 'grace')
+    dedupe + rank, NO ts_headline          219ms
+    same WITH ts_headline inside          3781ms   (17x)
+ts_headline re-parses the whole document and was being computed for EVERY match before the LIMIT
+discarded them. Restructured to rank+page on cheap columns first, then join back and compute
+snippets for only the <=100 returned rows.
+  END-TO-END THROUGH THE REAL API, after:
+    q=grace&catalog=sermons        200   954ms   (was ~4s)
+    q=God (cross-corpus)           200  2827ms   (was 21s+ in-suite)
+    q=faith&catalog=commentaries   200   632ms
+  All 21 tests across the three suites still pass — the fix is a plan change, not a semantics change.
+
+## Screenshots (true viewports asserted by the capture script; scheme pinned)
+  library-hub-mobile-390x844.png              library-hub-desktop-1280x800.png
+  catalog-sermons-search-mobile-390x844.png   catalog-sermons-search-desktop-1280x800.png
+  catalog-hymns-poetry-desktop-1280x800.png
+The sermons search shot shows "1000+ matches" (capped count rendering as N+), FOUR DISTINCT
+sermons rather than four chunks of one (dedupe working, visibly), <mark> hit highlighting, unit
+headings ("Sermon 3553. The Fullness and the Filling"), and the SERMON register chip on each row.
+
+## Gates
+  console: no errors on /library/sermons
+  web tsc --noEmit: clean
+  npm run audit: PASSED — all gates green, including the new post-suite residue gate
+  (dev left clean: "no test-seeded residue in 7 user tables or sources")

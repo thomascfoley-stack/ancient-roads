@@ -22,7 +22,9 @@
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { GET as getWork } from '@/app/api/work/[slug]/route';
+import { listCatalogWorks } from '@/lib/catalog';
 import { listContinueReading, listLibraryItems } from '@/lib/library';
+import { searchSections } from '@/lib/search-sections';
 import { runAsUser } from '@/lib/db';
 import { ensureDbEnv, localEnv } from '../helpers/env';
 
@@ -40,6 +42,8 @@ function ownerUrl(): string | undefined {
 const url = ownerUrl();
 const SLUG = `qa-published-boundary-${Date.now()}`;
 const USER = `qa-libbound-${Date.now()}`;
+// Unique, unlikely-to-collide search token for the searchSections leg of this proof.
+const TOKEN = `zzqatoken${Date.now()}`;
 let owner: pg.Client | undefined;
 let sourceId = '';
 
@@ -70,8 +74,11 @@ describe.skipIf(!url)('Phase 4 §A — a shelved work that is later staged/quara
     );
     sourceId = rows[0]!.id;
     await owner.query(
-      `INSERT INTO sections (source_id, ordinal, unit_ordinal, heading, body) VALUES ($1, 1, 1, 'QA heading', 'QA body text.')`,
-      [sourceId],
+      // A UNIQUE token so full-text search can find this work deterministically — the catalog and
+      // search surfaces are read paths with the same published hazard, and requirement A says the
+      // proof must travel to them, not stop at the two surfaces that existed when it was written.
+      `INSERT INTO sections (source_id, ordinal, unit_ordinal, heading, body) VALUES ($1, 1, 1, 'QA heading', $2)`,
+      [sourceId, `QA body text mentioning ${TOKEN} exactly once.`],
     );
     // The user shelves it and starts reading it, while it is legitimately published.
     await runAsUser(USER, (sql) => [
@@ -123,6 +130,48 @@ describe.skipIf(!url)('Phase 4 §A — a shelved work that is later staged/quara
     expect(items.map((i) => i.slug), 'a published shelved work must appear in the library').toContain(SLUG);
     expect(reading.map((r) => r.slug), 'a published in-progress work must appear in continue-reading').toContain(SLUG);
     expect((await callWork(SLUG)).status).toBe(200);
+  }, 60_000);
+
+  // ── Requirement A extended (2026-07-19): the CATALOGS and searchSections are NEW read paths
+  // with the SAME hazard. The original proof only covered listLibraryItems/listContinueReading —
+  // the surfaces that existed when it was written — so on its own it does not travel. These cases
+  // make it travel. The seeded work is source_type='sermon', so its catalog is 'sermons'.
+
+  it('BASELINE: while published, the work IS in its catalog and IS findable by search', async () => {
+    await setStatus('published');
+    const works = await listCatalogWorks({ catalog: 'sermons', limit: 100 });
+    expect(works.map((w) => w.slug), 'a published work must appear in its catalog').toContain(SLUG);
+
+    const hits = await searchSections({ query: TOKEN });
+    expect(hits.results.map((r) => r.slug), 'a published work must be findable by search').toContain(SLUG);
+    expect(hits.total, 'the capped count must see it too').toBeGreaterThan(0);
+  }, 60_000);
+
+  it('STAGED: the work must vanish from the CATALOG', async () => {
+    await setStatus('staged');
+    const works = await listCatalogWorks({ catalog: 'sermons', limit: 100 });
+    expect(works.map((w) => w.slug), 'a staged work must NOT be listed in the catalog').not.toContain(SLUG);
+  }, 60_000);
+
+  it('STAGED: the work must vanish from SEARCH — results AND the reported count', async () => {
+    await setStatus('staged');
+    const hits = await searchSections({ query: TOKEN });
+    expect(hits.results.map((r) => r.slug), 'a staged work must NOT be searchable').not.toContain(SLUG);
+    // The count is a separate query with its own copy of the predicate; a surface that hides the
+    // row but still counts it leaks the fact that a withdrawn work exists.
+    expect(hits.total, 'the capped count must not count a staged work').toBe(0);
+  }, 60_000);
+
+  it('QUARANTINED: catalog and search stay clean, and an in-work search finds nothing', async () => {
+    await setStatus('quarantined');
+    const works = await listCatalogWorks({ catalog: 'sermons', limit: 100 });
+    expect(works.map((w) => w.slug)).not.toContain(SLUG);
+    const hits = await searchSections({ query: TOKEN });
+    expect(hits.results.map((r) => r.slug)).not.toContain(SLUG);
+    // in-work search scoped directly AT the withdrawn work must also return nothing
+    const inWork = await searchSections({ query: TOKEN, sourceSlug: SLUG });
+    expect(inWork.results, 'in-work search on a quarantined work must return nothing').toEqual([]);
+    expect(inWork.total).toBe(0);
   }, 60_000);
 
   it('STAGED: the shelf row survives in the DB, but the work must vanish from the library listing', async () => {

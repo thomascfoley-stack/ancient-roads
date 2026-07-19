@@ -8,6 +8,21 @@ git history — not from memory or the earlier hit list.
 > priority narrative below predates the 2026-07-14 Phase A close + license gate + Slice 0; trust
 > STATE_OF_TRUTH for facts, and treat the section priorities here as owner-set direction, not current status.
 
+## Update 2026-07-19 (Library Reader Phase 4 — hub + catalogs + sermon search) — BUILT on dev
+
+`/library` hub, the three corpus catalogs (Commentaries · Sermons · Hymns & Poetry) with facets and
+search-within-type, `searchSections` + `GET /api/search/works` — the sermon search — and the
+deferred unbounded-TOC fix (landed earlier this phase). The owner's three requirements were baked in
+from the start and each proven red-first: the published-status predicate now travels to the catalog
+and search read paths; search dedupes to reading units (removing DISTINCT ON → "expected 17 to be
+100") and stays capped; the register wall is re-proven on the new doors (folding `theology` into
+Commentaries → "the wall is breached in the UI layer"). The browser pass also caught a 17×
+`ts_headline` performance defect — searches went 21s → 2.8s cross-corpus. `npm run audit` green.
+Details: WORKLOG 2026-07-19 (READER PHASE 4); evidence in `docs/evidence/phase4/`.
+
+**Next:** Phase 5 PREP only — the migration ledger, a fresh-agent deep-audit, and the cutover
+runbook — then STOP at the confirmation gate before any prod-touching command.
+
 ## Update 2026-07-19 (Library Reader Phase 3 — annotation migrations DONE on dev, audited + remediated)
 
 Migrations 025-029 (MIG-A..E) authored, applied on dev, each red-first: polymorphic

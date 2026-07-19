@@ -1,5 +1,45 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-19 (READER PHASE 4 — Library hub + corpus catalogs + sermon search; 3 requirements proven red-first)
+
+**Built:** `lib/catalog.ts` (the CATALOGS taxonomy + work lists + tradition facets),
+`lib/search-sections.ts` (**the sermon search**), `GET /api/search/works` (validated edge — an
+unknown catalog is a 400, never a silently-widened query), `/library` hub (Continue reading ·
+Yours · The corpus), `/library/[catalog]` (Commentaries · Sermons · Hymns & Poetry, sub-filter +
+tradition facets + search-within-type), `components/catalog-search.tsx`.
+Evidence: `docs/evidence/phase4/build-hub-catalogs-search.txt` + 5 committed screenshots.
+
+**The three owner requirements, each proven RED-FIRST (a green here would have meant nothing):**
+
+- **A — the published predicate TRAVELS.** The Phase-3 proof only covered the two surfaces that
+  existed when it was written. `library-published-boundary.test.ts` grew 5 → 9 cases (catalog,
+  cross-corpus search, in-work search). Deleting the predicate from `catalog.ts` + `search-sections.ts`
+  turns 3 cases red (`expected [ 'maclaren-expositions', …(7) ] to not include 'qa-published-boundary-…'`).
+  The reported COUNT is asserted separately from the rows: a surface that hides a withdrawn work but
+  still counts it leaks its existence.
+- **B — deduped to READING UNITS, capped.** Removing `DISTINCT ON` turns it red with
+  **"expected 17 to be 100"** — 100 result rows drawn from just 17 units, the "twenty hits from one
+  chapter" failure quantified. Every case carries an anti-vacuity precondition (raw hits must exceed
+  the deduped count). Limit clamps to 100; the count caps at 1000 and renders "N+".
+- **C — the register wall RE-PROVEN on the new doors.** The wall was proven across 1,212 chapters on
+  the FOUR surfaces that existed then. Folding `theology` into Commentaries turns the new suite red at
+  two levels (taxonomy disjointness, and against real data: *"theology reached a catalog — the wall is
+  breached in the UI layer"*). The wall is structural: explicit disjoint type sets, NO "everything
+  else" bucket, so theology/confession/lexicon reach no catalog by construction.
+
+**A PERFORMANCE DEFECT THE BROWSER PASS CAUGHT.** The first search screenshot captured
+*"Searching…"* — the query had not returned. Measured: raw match count 152ms · dedupe+rank without
+`ts_headline` 219ms · **the same query with `ts_headline` inside 3,781ms (17×)**. `ts_headline`
+re-parses the whole document and was being computed for all 27,738 matches before the LIMIT threw
+them away. Restructured to rank+page on cheap columns, then compute snippets for only the ≤100
+returned rows. End-to-end: **grace/sermons 954ms (was ~4s), cross-corpus "God" 2,827ms (was 21s+),
+faith/commentaries 632ms**; all 21 tests still pass, so it is a plan change, not a semantics change.
+Worth noting the screenshot is what surfaced it — the tests were green and slow, and slow is
+invisible to a green.
+
+**Gates:** console clean on /library/sermons · web tsc clean · `npm run audit` **PASSED — all gates
+green**, including the new post-suite residue gate, which reports dev left clean.
+
 ## 2026-07-19 (READER PHASE 3 — annotation migrations MIG-A..E on dev, fresh audit, and its remediation)
 
 **Migrations 025-029 authored, applied on dev, each red-first; 030 added after an independent audit.**
