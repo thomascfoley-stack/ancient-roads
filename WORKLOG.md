@@ -1,5 +1,33 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-19 (READER P2 — migration 024: `sections.unit_ordinal` (ADR-026) built red-first, applied on dev)
+
+**`db/migrations/024_sections_unit_ordinal.sql` — additive, idempotent, zero-window (ADR-025).**
+Plain `ADD COLUMN unit_ordinal INTEGER` (catalog-only, no default ⇒ no rewrite of the 307k-row
+table) → one set-based backfill `UPDATE` (row locks only; serving SELECTs never blocked) →
+`CREATE INDEX CONCURRENTLY sections_unit_ordinal_idx (source_id, unit_ordinal, ordinal)`
+(new index, nothing serving dropped). Applied via `db/apply-migration-concurrent.mjs`
+(`--SPLIT--` structure, post-assert VALID+READY); full-file re-apply proven (40s, idempotent).
+
+**Backfill rule (dev-evidenced):** `(i/n)`-suffixed sermon chunks group globally per stripped
+title (interleave-tolerant — 0 split keys in the real corpus, so it coincides with run-grouping
+there); bare identical headings group by consecutive run ONLY (136 real refrain keys — owen-works
+"Chapter III." ×11 books/509 sections, milton "THE ARGUMENT." ×3 — global merging would weld
+false mega-units); NULL-heading verse-anchored sections group per chapter
+(`min(verse_id_start)/1000`, chapter-ordered — repairs ordinal drift); fallback singleton.
+
+**Red-first** (`web/test/invariants/sections-unit-ordinal.test.ts`, runs the migration's own
+extracted UPDATE against a seeded mis-ordered source): RED pre-apply (`column "unit_ordinal"
+does not exist`), GREEN post-apply — interleaved sermon chunks reassemble, chapter 1 re-sorts
+before chapter 3, dense gapless 1..N, idempotent second run.
+
+**Dev state:** 306,993 sections → **49,807 units** across 39 sources; 0 NULLs; every source
+dense-gapless (min=1, max=count(distinct)). Spot works: spurgeon-talks-to-farmers 300→16,
+wheatley-poems 98→45, keil-delitzsch 23,073→894. `npm run qa` green (23 files / 100 tests +
+rate-limit 10/10). Rollback: `DROP INDEX CONCURRENTLY sections_unit_ordinal_idx` +
+`ALTER TABLE sections DROP COLUMN unit_ordinal` (safe — nothing references the column yet).
+Ingest-time population (ADR-026 "populated at ingest") is the reader lane's next slice.
+
 ## 2026-07-19 (ITEM 2 — checkpoint 2: 33-work sweep GREEN, biblehub backup rescued, reader build reprioritized next)
 
 **Sweep (bash-2fxixl93): all 33 register works re-pointed, zero failures, 1:1 on every work.**
