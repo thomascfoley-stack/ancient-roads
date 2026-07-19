@@ -1,5 +1,7 @@
 # Design brief
 
+> **⛔ SUPERSEDED (2026-07-19).** Early design brief — the current design of record is `docs/PRODUCT_ARCHITECTURE.md`; the verified system state is `docs/STATE_OF_TRUTH.md`. Kept for history; do not build from this.
+
 Working title: theology study app — "What others have said"
 
 A subscription Bible study product intended to replace Logos: an LLM study
@@ -22,7 +24,8 @@ all-new personal infrastructure.
    generation on Qwen3 32B via DeepInfra (primary, $0.08/$0.28 per Mtok,
    version pinning) with Nebius Token Factory as failover (verified July
    2026; Fireworks and Together no longer serve Qwen3 dense serverless).
-   Distill to a small model after ~50k real transcripts. Embeddings: bge-m3.
+   Distill to a small model after ~50k real transcripts. Embeddings:
+   BAAI/bge-large-en-v1.5 (pinned, ADR-005 — Models pinned).
    Synthetic data only from permissively licensed models. Provider-side
    retention terms are a tiebreaker, not a gate (decided 2026-07-05).
 3. **Slack-shaped workspace: channels = studies, teachers = @mentions.** A

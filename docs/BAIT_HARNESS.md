@@ -23,7 +23,7 @@ endpoint; this one is **permanent and secret-authenticated** — no hole is open
 # 3. Run against it:
 PORT=<dev-port> npx tsx --env-file=web/.env.local src/evals/run-bait.mts
 ```
-Exit code is non-zero if any production-screen leak reached the user. Target: **≥99%**.
+Exit code is non-zero if any production-screen leak reached the user. Target: **0 breaches** — but note the 35-case fixture certifies only a **~92% lower bound** (rule of three, n=35); claiming **≥99%** needs ~300 clean cases.
 
 ## Notes
 - The secret lives only in `web/.env.local` (local) — set it in the target env (e.g. Vercel) if ever running

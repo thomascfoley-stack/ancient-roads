@@ -195,6 +195,9 @@
         "commentary_id": "keil-delitzsch",
         "api": "https://bible.helloao.org/api"
       }
+    },
+    "backfill": {
+      "match_author": "C.F. Keil & Franz Delitzsch"
     }
   },
   {

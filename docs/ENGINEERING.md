@@ -73,7 +73,7 @@ Current tests live in `test/` and run via `vitest` in the `/audit` gate. Target 
 | **Unit** | Pure logic: parser, verifier reject paths, normalizer, checks | `test/*.test.ts` | Strong (`v1.ts` 100%) |
 | **Contract** | Behavioral contracts with fakes (retrieval ranking/limit/hydration) | `test/retrieval.contract.test.ts` | Present (6/6) |
 | **Integration** | Real DB/API path (gated behind `RUN_INTEGRATION`, no paid calls in CI) | `test/*.integration.test.ts` | Skipped by default |
-| **Eval** | The product's *promise* — the interpretation-bait + diversity/format suites | `src/evals/`, `evals/cases/` | **Not run ≥99% through the live teacher** |
+| **Eval** | The product's *promise* — the interpretation-bait + diversity/format suites | `src/evals/`, `evals/cases/` | **Not run at its ≥99% bar through the live teacher — that bar needs ~300 clean cases; n=35 certifies only a ~92% lower bound** |
 | **E2E / web** | User flows in `web/` | — | **Missing (biggest gap)** |
 
 **Standards:** test behavior, not implementation; a bug fix ships with a failing-without-the-fix test; don't over-mock (tests exercise the real `verifyV1`). **Coverage:** measured (`vitest --coverage`, `all:true`) but **not yet gated** — set a threshold on the critical modules (`src/verifier`, `src/retrieval`, teacher) rather than a global %.
@@ -92,7 +92,7 @@ Current tests live in `test/` and run via `vitest` in the `/audit` gate. Target 
 
 The eval suites in `evals/cases/` (`interpretation_bait`, `diversity`, `format`, `refusal_shape`) are how you prove the guarantee, not just that code runs. Two distinct quality axes, both required:
 
-- **Faithfulness (guardrails):** never interpret, never fabricate, always attribute, ≥2–3 grounded voices. Measured by the bait suite through the live compose→verify loop at **≥99%**. *Outstanding.*
+- **Faithfulness (guardrails):** never interpret, never fabricate, always attribute, ≥2–3 grounded voices. Measured by the bait suite through the live compose→verify loop: currently 35/35 clean = a **~92% lower bound** (rule of three, n=35); the **≥99%** bar needs ~300 clean cases. *Outstanding.*
 - **Accuracy (relevance):** the retrieved sources are the *right* ones (the "good shepherd → John 10, not Luke 2" test). Measured by the **10-query true-success-rate diagnostic** — currently 4/10. This must become a **tracked regression metric**, re-run on every retrieval change (corpus/hybrid/reranker), with the number recorded in WORKLOG.
 
 Release QA (manual, pre-deploy): sign-in→sign-out cycle, reader touch highlighting, a real `/ask` question on mobile, and the two-account RLS check.
@@ -120,7 +120,7 @@ Honest gaps, roughly by leverage:
 - [ ] **`CLAUDE.md` doesn't exist** — the enforced coding standard is referenced by `/audit` but absent. Create it (§5). *High — cheap.*
 - [ ] **`web/` is outside the gate** — no web tests, no web coverage, web typecheck/lint only partially wired. Your entire user-facing surface is unverified. *High.*
 - [ ] **Observability = zero** — no error tracking, analytics, or alerting. Blind in production. *High.*
-- [ ] **Eval suites unexecuted at target** — `interpretation_bait` not run ≥99% through the live pipeline; accuracy diagnostic (4/10) not yet a tracked metric. *High — it's the product promise.*
+- [ ] **Eval suites unexecuted at target** — `interpretation_bait` not run at its ≥99% bar through the live pipeline (35/35 clean = a ~92% lower bound; ≥99% needs ~300 clean cases); accuracy diagnostic (4/10) not yet a tracked metric. *High — it's the product promise.*
 - [ ] **Coverage measured but not gated** — set thresholds on critical modules. *Medium.*
 - [ ] **No decision log (ADRs)** — rationale is scattered. *Medium.*
 - [ ] **No release runbook / documented rollback.** *Medium.*
@@ -129,4 +129,4 @@ Honest gaps, roughly by leverage:
 - [ ] **No accessibility standard documented** (WCAG-AA is the intent; write it down). *Low.*
 - [ ] **No SLOs / error budget** — aspirational at this stage, but the target. *Low.*
 
-**Working definition of "excellent" for this project:** every user-facing surface is inside the gate; the two quality axes (faithfulness ≥99%, accuracy tracked and rising) are measured on every relevant change; the product is observable in production; decisions are logged; and nothing ships red or unbacked.
+**Working definition of "excellent" for this project:** every user-facing surface is inside the gate; the two quality axes (faithfulness at the ≥99% bar — certifiable only with ~300 clean cases, not the current n=35 — accuracy tracked and rising) are measured on every relevant change; the product is observable in production; decisions are logged; and nothing ships red or unbacked.

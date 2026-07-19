@@ -81,7 +81,7 @@ launch (SEC-1 still gates that).
 | Proper-noun / rare | HIT@1 | ≥ 70% |
 | Corpus sufficiency (all blocks) | no-content where content should exist | ≤ 8% |
 | **Negative controls** | hijacks + fabrications | **0 (any is a bug, not a miss)** |
-| Faithfulness (separate live axis) | interpretation_bait pass | ≥ 99% |
+| Faithfulness (separate live axis) | interpretation_bait pass | 0 breaches; ≥ 99% certifiable only at ~300 clean cases (35/35 = a ~92% lower bound) |
 
 **Verdict logic:** meet all bars → clear to open **beta behind the security gate**. Misses that
 localize to one block the failure codes explain (e.g. epistle <2-voices high → the CrossWire /

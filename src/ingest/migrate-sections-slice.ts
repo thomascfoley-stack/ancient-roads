@@ -85,37 +85,41 @@ async function main() {
     await client.query(`DELETE FROM section_anchors sa USING sections s WHERE sa.section_id=s.id AND s.source_id=$1`, [sourcePk]);
     await client.query(`DELETE FROM sections WHERE source_id=$1`, [sourcePk]);
 
-    // 3. Stage the source's embeddings with a stable ordinal. One embeddings row
-    //    (source_id, chunk_index) => one section (MIGRATION_DESIGN §5.1). Verse
-    //    range + text come straight from embeddings (metadata/content); vectors
-    //    stay in SQL and are never round-tripped through JS.
-    await client.query(
-      `CREATE TEMP TABLE _stage ON COMMIT DROP AS
-         SELECT row_number() OVER (ORDER BY (e.metadata->>'verseId')::int, e.source_id, e.chunk_index) AS ordinal,
-                e.content                        AS body,
-                (e.metadata->>'verseId')::int    AS vstart,
-                (e.metadata->>'verseEnd')::int   AS vend,
-                e.embedding                      AS embedding
-         FROM embeddings e
-         WHERE e.user_id IS NULL AND e.source_type='commentary'
-           AND e.metadata->>'author' = $1`,
-      [matchAuthor],
-    );
-    const { rows: staged } = await client.query<{ n: number }>(`SELECT count(*)::int AS n FROM _stage`);
+    // 3. sections/anchors/embeddings via direct INSERT…SELECT — NO temp stage.
+    //    Staging rows+vectors in a temp table exhausts temp_buffers on works
+    //    past ~10k rows ("no empty local buffer available" on K&D, 23k rows).
+    //    The window ordinal is recomputed per statement; the ORDER BY ends in
+    //    unique tiebreakers, so every computation is identical. Vectors stream
+    //    table→table in the final insert — never staged in local buffers.
+    //    (SRC_FILTER takes its author param explicitly — PG rejects a query
+    //    that uses $2 without $1 present.)
+    const SRC_FILTER = (p: string) => `FROM embeddings e WHERE e.user_id IS NULL AND e.source_type='commentary' AND e.metadata->>'author' = ${p}`;
+    const ORDINAL = `row_number() OVER (ORDER BY (e.metadata->>'verseId')::int, e.source_id, e.chunk_index)`;
+    const { rows: staged } = await client.query<{ n: number }>(`SELECT count(*)::int AS n ${SRC_FILTER('$1')}`, [matchAuthor]);
     const stagedCount = staged[0]!.n;
     if (stagedCount === 0) throw new Error(`no embeddings matched author "${matchAuthor}" — nothing to migrate`);
 
-    // 4. sections <- staged text; 5. anchors <- verse range; 6. section_embeddings <- REUSED vectors.
-    await client.query(`INSERT INTO sections (source_id, ordinal, body) SELECT $1, ordinal, body FROM _stage`, [sourcePk]);
+    // 4. sections <- text; 5. anchors <- verse range; 6. section_embeddings <- REUSED vectors.
+    await client.query(
+      `INSERT INTO sections (source_id, ordinal, body)
+       SELECT $1, ${ORDINAL}, e.content ${SRC_FILTER('$2')}`,
+      [sourcePk, matchAuthor],
+    );
     await client.query(
       `INSERT INTO section_anchors (section_id, verse_id_start, verse_id_end)
-       SELECT s.id, st.vstart, st.vend FROM sections s JOIN _stage st ON st.ordinal = s.ordinal WHERE s.source_id=$1`,
-      [sourcePk],
+       SELECT s.id, n.vstart, n.vend FROM sections s
+       JOIN (SELECT ${ORDINAL} AS ordinal, (e.metadata->>'verseId')::int AS vstart, (e.metadata->>'verseEnd')::int AS vend ${SRC_FILTER('$2')}) n
+         ON n.ordinal = s.ordinal
+       WHERE s.source_id = $1`,
+      [sourcePk, matchAuthor],
     );
     await client.query(
       `INSERT INTO section_embeddings (section_id, model_slug, embedding)
-       SELECT s.id, $2, st.embedding FROM sections s JOIN _stage st ON st.ordinal = s.ordinal WHERE s.source_id=$1`,
-      [sourcePk, MODEL_SLUG],
+       SELECT s.id, $3, n.embedding FROM sections s
+       JOIN (SELECT ${ORDINAL} AS ordinal, e.embedding ${SRC_FILTER('$2')}) n
+         ON n.ordinal = s.ordinal
+       WHERE s.source_id = $1`,
+      [sourcePk, matchAuthor, MODEL_SLUG],
     );
 
     const { rows: c } = await client.query<{ sections: string; anchors: string; embeddings: string }>(

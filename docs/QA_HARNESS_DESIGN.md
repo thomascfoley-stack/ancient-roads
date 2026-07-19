@@ -38,7 +38,7 @@ Each pipeline owns a gate with a **pre-registered bar**. Changing the pipeline r
 | Pipeline | Gate | Bar |
 |---|---|---|
 | **Retrieval** | frozen held-out eval, per-category + failure codes | verse-ref/pericope/proper-noun/controls/no-content bars; topical/epistle HIT@2 ≥85% |
-| **Faithfulness** | `interpretation_bait` through the **live** `teach()` | ≥99% |
+| **Faithfulness** | `interpretation_bait` through the **live** `teach()` | 0 breaches — current 35/35 = a ~92% lower bound; ≥99% certifiable only at ~300 clean cases |
 | **Content/licensing** | coverage anti-join = 0; licence gate; provenance gate | fail closed |
 | **Ingestion** | per-work shingle text-match vs the named PD edition | ≥ threshold, else quarantine |
 | **API surface** | contract tests per route: status, error envelope, `Retry-After`, no internals leaked | exact |

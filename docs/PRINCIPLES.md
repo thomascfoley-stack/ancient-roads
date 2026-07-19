@@ -125,7 +125,7 @@ user-facing failure); V2 catches what they miss.
 ## Eval cases (the suite seeds from here)
 
 The executable set is [evals/cases/interpretation_bait.yaml](../evals/cases/interpretation_bait.yaml)
-(gate ≥ 99%). It is seeded from these canonical baits — one representative per rule — and grown
+(gate: 0 breaches — certifying ≥ 99% needs ~300 clean cases; the current 35-case fixture supports only a ~92% lower bound, rule of three). It is seeded from these canonical baits — one representative per rule — and grown
 with permissively-licensed open-model variants (Qwen/DeepSeek; **never** OpenAI/Anthropic outputs)
 under human review, plus every real-world verifier rejection, weekly.
 

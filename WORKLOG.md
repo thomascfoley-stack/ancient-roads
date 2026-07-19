@@ -1,5 +1,155 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-19 (ITEM 2 — checkpoint 2: 33-work sweep GREEN, biblehub backup rescued, reader build reprioritized next)
+
+**Sweep (bash-2fxixl93): all 33 register works re-pointed, zero failures, 1:1 on every work.**
+Dev totals after sweep + K&D + wheatley: **sections 306,993** (baseline 9,934 + 273,888 sweep
++ 23,073 K&D + 98 wheatley — exact), section_embeddings 1:1, section_anchors 29,041
+(verse-anchored paths only). By status: published 31 works / 248,302 sections · staged 9 /
+57,391 · quarantined 3. Only non-quarantined zero-section works left: **edersheim-lifetimes,
+schaff-history** (blocked on the missing CCEL→006-historian converter — escalation ledger).
+All writes were $0 (vectors reused) and off the network.
+
+**Biblehub backup — RESCUED to durable storage (lock item).** The 235MB
+`biblehub-collapsed-2026-07-17.jsonl` existed only as two local copies (ap-golive, ap-ingest —
+verified byte-identical, SHA-256 d9d5e45f…). Gzipped (63MB) and uploaded as a release asset on
+the private repo: `releases/tag/biblehub-quarantine-backup-2026-07-19`. Restore instructions in
+the release notes. Local copies left in place.
+
+**Reprioritization (owner, overnight):** the Library Reader build (Phases 2–4 on the `reader`
+branch) now runs BEFORE the broad Phase-F ingestion. The corpus fuel the reader needed is now
+present (spurgeon-talks-to-farmers 300 = vertical slice; matthew-henry 4,210 = scale work;
+plus the full sliced corpus above). Phase F groups queue after the reader: G1 CCEL staged
+(treasury/ryle/vincent), G2/G3 (scofield/pnt/poole with serve:false; barnes/wesley/calvin →
+ledger: double-voicing owner call), historians → ledger (missing converter).
+
+**Not covered:** post-sweep `npm run qa` battery — running now (Item-1's 3 DB-invariant reds
+expected green on dev). Phase F, SoS probe, Item 3/4 — queued per the reprioritized order.
+
+## 2026-07-19 (ITEM 2 RUN — checkpoint 1: preflight + slicing tools + 1% slice + K&D; sweep launched)
+
+Run state, per the overnight self-report contract. Decision-lock and restore point: §pre-run below.
+
+**Built + landed (main, pushed):**
+- `5c995b6` — `scripts/ingest-preflight.mjs` + `pnpm preflight:ingest`: the automated
+  entrypoint (branch literal, no-ep-odd-fog grep, host contains ep-tiny-hat,
+  `current_user=app_runtime`, `rolbypassrls=false`, empirical RLS probe on
+  `highlights` → 0-or-error, migration level 023). Red-proven (`NEON_BRANCH=production`
+  aborts). Runs before every write segment.
+- `85966db` + `327e129` — `src/ingest/repoint-sections-work.ts` (NEW): slices one register
+  work's flat `embeddings` rows into `sections` + `section_embeddings`, reusing vectors 1:1
+  ($0). Fresh-agent audit → 1 real fix: heading strip now fires on chunk 1 ONLY (a recurring
+  refrain/title line in continuation chunks would have been silently deleted); anchors-deleted
+  now logged on real runs. Also corrected INGESTION_RUNBOOK §4 (it misdescribed
+  `ingest:embeddings` as embedding sections — it embeds the legacy static corpus into the
+  flat table).
+- `60f8fa8` — both section tools converted to direct `INSERT…SELECT` (no vector temp stage):
+  the temp-table design exhausted `temp_buffers` ("no empty local buffer available") on any
+  work >~10k rows. Proven on the exact failure case (K&D) and on the idempotency case
+  (wheatley 98→98). `keil-delitzsch` gained `backfill.match_author` in sources.config.json
+  (its flat rows are 100% verse-anchored → commentary path, not the register tool).
+
+**1% slice (owner's pre-check) — all proven on wheatley-poems:** 98 sections, every vector
+1024-dim `bge-large-en-v1.5` (the only model INGESTION_RUNBOOK permits), 0 residual heading
+prefixes, status unchanged (`published`), identical re-run → 98→98 unchanged (idempotent,
+crash-resumable via single txn), `check:coverage:sections` gap = 0.
+
+**K&D (verse-anchored):** 23,073 sections + verse anchors + reused vectors, 1:1:1; status
+still `published` (verified — the tool's `status=staged` log line is a hardcoded string,
+cosmetic only; noted, not fixed).
+
+**Sweep (in flight):** 33 register works, ~274k flat rows, sequential per-work runs of
+`repoint:sections`, background task `bash-2fxixl93`. Per-work failures are loud and
+non-fatal to the batch; the summary lands in the next checkpoint.
+
+**Not covered:** fetch-required works (historians edersheim/schaff-history;
+spurgeon-treasury, ryle-expository, vincent-word-studies, poole-tcp, CrossWire commentary
+set, josephus-works) — separate phase after the sweep; SoS exegetical coverage — Phase F
+sub-plan; post-run qa/licensing battery — after the sweep. No publish flips anywhere.
+
+## 2026-07-19 (ITEM 2 PRE-RUN — decision-lock, blocker evidence, restore point) — NO WRITES YET
+
+**Decision-lock (overnight-run Phase 1, owner-approved via the Item-2 GO + safety gate):**
+1. **Question:** does the declared queue in `ingest/sources.config.json` ingest cleanly to
+   *staged* — gates green, writes idempotent, works sliced into `sections` — so reader Phase 2 unblocks?
+2. **Hypothesis:** the harness (adapter → license/provenance gate → text-match → stage) runs the
+   queue with no real-time stops except genuine novel forks; staged-backlog pacing (≤2 source-works
+   unreviewed) and the >30% quarantine alarm bound the run.
+3. **Decision rule:** per work — gates green → stage; gate fail → quarantine (reversible); novel
+   fork or >30% quarantine → real-time stop + escalate. **Abort conditions (immediate, no
+   workaround):** `ep-odd-fog` or `NEON_BRANCH=production` resolves anywhere; any entrypoint
+   assert fails; post-run `qa` or licensing red (stop + re-diagnose, per owner).
+4. **Pre-registered bars:** (a) all entrypoint asserts pass before every run segment;
+   (b) 1% slice — vector dims = 1024, embedder = `BAAI/bge-large-en-v1.5` (the only model
+   `docs/INGESTION_RUNBOOK.md` permits), identical re-run leaves row count unchanged;
+   (c) post-run — `npm run qa` green on dev (Item-1's 3 DB-invariant reds must pass), licensing
+   absence+presence green (9 served voices present, biblehub-collapsed set absent), row counts
+   vs manifest.
+5. **Out of scope:** prod in every form (no deploy, no prod writes, no branch-promote — Part C is
+   the owner's), publish flips (owner's), `reader` branch files, migrations (dev at 023; none
+   planned; 025+ and owner-run if one arises), the reader build itself.
+
+**Blocker evidence (all read-only checks, this clone's `web/.env.local`):**
+endpoint grep → ONLY `ep-tiny-hat-atdgpisx` (+pooler); `NEON_BRANCH=dev`; `current_user` =
+`app_runtime` on host `ep-tiny-hat-atdgpisx-pooler.c-9.us-east-1.aws.neon.tech`;
+`rolbypassrls=false`; RLS probe `highlights` → **0 rows** (policy enforced; dev holds 24 rows,
+so the probe is meaningful); migration level = 023 (markers 016/019/023 present).
+
+**Restore point (before any write):** Neon snapshots reject non-root branches, so the restore
+point is a zero-copy backup branch off dev's head — **`item2-pre-ingest-backup-20260719`
+(`br-late-mountain-atz68a9y`)**, created 2026-07-19T06:18Z. Verified holding dev state exactly:
+commentary_entries **191,749** · embeddings **422,014** · sources **43** · sections **9,934**
+(dev = backup, compared row-for-row).
+**Exact rollback command (owner-run):**
+`neonctl branches restore dev item2-pre-ingest-backup-20260719 --project-id spring-heart-74819093 --org-id org-bitter-cherry-28741499`
+
+**Baseline counts (dev, pre-run):** as above — ce 191,749 · emb 422,014 · sources 43 · sections 9,934.
+
+## 2026-07-19 (ITEM 1 — DOC-HYGIENE SWEEP; first item run by Kimi as orchestrator of record)
+
+First item of `KIMI_WORKORDER.md` under `docs/BUILD_MODEL.md` + `docs/PORTABILITY.md`
+(loop with lanes, swarm inside slices, doc-slice check = docs-vs-reality). Baton verified @
+`821689c` before any write (clean tree, migrations ≤023, reader = main+5 untouched).
+
+**First act (landed):** the three operating docs committed to main — `7761add`
+(BUILD_MODEL + PORTABILITY + KIMI_WORKORDER, draft banners retired).
+
+**Three file-disjoint lanes, each built in an isolated worktree by one coder agent,
+integrated serially (rebase → ff-only):**
+- **A — `7454ccd`:** README rewritten to the real tree (was Supabase-era, omitted web/db/ingest);
+  `docs/ENVIRONMENT.md` (full env-var reference, every var grep-verified in code);
+  `web/.env.local.example` rewritten Neon-era (was "fill with Supabase values").
+  Lane finding: **no code reads a root `.env.local`** — only `web/.env.local`.
+- **B — `e63a1cc`:** `docs/SCHEMA_AS_BUILT.md` generated from `db/schema.sql` +
+  migrations 001–023 (SCHEMA.md was Supabase-era fiction); supersession banners on
+  INFRA/SCHEMA/CORPUS/DESIGN_BRIEF; contradiction sweep — 5 bge-m3 sites →
+  bge-large-en-v1.5 (ADR-005), 12 ≥99% sites → ~92%-lower-bound language (CLAUDE.md).
+- **C — `bdd8aeb`:** ops runbooks — TESTING.md, RELEASE.md (+rollback), OBSERVABILITY.md,
+  INGESTION_RUNBOOK.md. Every command verified to exist.
+
+**Fresh-reader verification (fixer ≠ verifier):** 9-point docs-vs-reality check by a fresh
+agent — PASS on all; one residue hit (`INGESTION_RUNBOOK.md:140` "never bge-m3") dispositioned
+as a correct *prohibition*, not a stale claim — criterion was a file whitelist, hit is intent-aligned.
+
+**Gate:** all mechanical steps green (typecheck ×3, lint, knip, deps-audit, tests+coverage,
+web typecheck+lint). `qa` red in **3 DB-backed invariants only** — root-caused, NOT caused by
+this sweep (docs-only diff): **this clone's `web/.env.local` points at PRODUCTION**
+(`NEON_BRANCH=production`), and the prod DB is behind main pre-Part-C (no mig-019 `work`
+column → 2 errors; `legalBasePool(50)` → 32 → 1 assertion). Environmental and pre-existing;
+the correct fix is pointing local dev at the dev branch. **Owner flag:** local `pnpm qa` here
+runs behavioral tests against the prod DB.
+
+**CORRECTION (orchestrator's own):** my Item-0 finding "web/.env.local is missing in this
+clone" was **wrong** — plain `ls` hides dotfiles. The file exists (2026-07-11) and points at
+prod (above). The promised fresh env file (dev-pointing, `app_runtime`/RLS-enforcing
+`APP_DATABASE_URL`) is still wanted before Item 2. Scar logged: verify absence with `ls -a`, never `ls | grep`.
+
+**DeepInfra:** `DEEPINFRA_API_KEY` present in `web/.env.local`, verified live
+(`GET /v1/openai/models` → 200). No owner action needed.
+
+**Not done / ledger:** env-file fix (owner); prod-behind-main red stands until Part C (owner's
+gate); Item 2 opens only after owner review + env fix. Ledger: §5 items untouched (all owner's).
+
 ## 2026-07-18 (LIBRARY READER PHASE 1 — branch `reader-P1`: shared annotation engine + Logos-style popover)
 
 **What.** The Phase 1 slice of `docs/LIBRARY_READER_BUILD.md` §2, landed in the EXISTING Bible reader:
@@ -50,6 +200,7 @@ with a real account is the honest close-out.
 **Recommend next.** Phase 2 (Book Reader `/work/[slug]` + DB-served sections): mount this popover over
 `dataset.sectionText`, resolve the reading-unit (`unit_ordinal`, ADR-026) before Spurgeon-scale, and let
 Phase 3's migrations light up Bookmark + section anchoring (`target_kind`, ADR-027).
+
 
 ## 2026-07-18 (RECONCILIATION PHASES 4–6 — branch `reconcile`: verify, deep-audit, fix)
 

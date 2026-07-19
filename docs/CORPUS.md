@@ -1,5 +1,7 @@
 # Document 3: Corpus acquisition and ingestion
 
+> **⛔ SUPERSEDED (2026-07-19).** Supabase-era corpus design — the running sources and pipeline are `DATA_SOURCES.md` + `docs/INGESTION_TASK.md`; sourcing decisions are ADR-008 ("Commentary sourcing: SWORD/CrossWire primary; never scrape aggregators") and ADR-010 ("`sources` + `sections` is the corpus ingestion target") in `docs/DECISIONS.md`. Kept for history; do not build from this.
+
 Two content streams with a hard wall between them:
 
 1. The curated corpus: open-licensed works you ingest, review, and publish.
@@ -90,7 +92,7 @@ Stages:
    carrying heading context down into each chunk.
 6. **Tag**: tradition + era + source_type from a per-source config file
    (checked into the repo; this is editorial data you author once per work).
-7. **Embed**: bge-m3 -> section_embeddings.
+7. **Embed**: bge-large-en-v1.5 (pinned, ADR-005 — Models pinned) -> section_embeddings.
 8. **QA gate**: every source lands as status=staged. A review script samples
    N random sections for eyeballing (mangled text, footnote bleed, broken
    anchors) before flipping to published. Retrieval only sees published.

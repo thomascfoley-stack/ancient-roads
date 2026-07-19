@@ -49,7 +49,7 @@ Verified current as of July 2026; re-check at build time — the field moves mon
 | **Generation / extraction / composition** (the brain) | **Qwen3.5-35B-A3B-Instruct** | Apache 2.0 | MoE (~3B active) = cheap + fast, strong tool/JSON, long context. Primary. |
 | Composition upgrade (only if evals demand) | DeepSeek V4 / Qwen3.5-397B-A17B | MIT / Apache | bigger, pricier; rarely needed in a retrieval-grounded design |
 | **High-volume classifier tier** (stance, per-claim extraction) | **Granite 4.0 (3–8B)** or Qwen3.5-small | Apache | tuned for reliable structured JSON; cheap enough to call many times per sermon |
-| **Embeddings** | Qwen3-Embedding or BGE-M3 (or keep Jina v3) | open | 1024-dim; retrieval quality > model size |
+| **Embeddings** | **BAAI/bge-large-en-v1.5** (pinned, ADR-005 — Models pinned) | open | 1024-dim; retrieval quality > model size |
 | **Reranker** | BGE-reranker-v2-m3 | open | cross-encoder; biggest precision win per dollar |
 | **Fine-tuned classifiers** (Phase D) | LoRA on Granite 4.0 3–8B | Apache | verifier-V2 + stance, from your logged data |
 
