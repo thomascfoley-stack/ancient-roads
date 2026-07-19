@@ -7,11 +7,14 @@
 //
 //   cd web && npx tsx --env-file=.env.local src/scripts/register-wall-check.mts
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { neon } from '@neondatabase/serverless';
 import { legalBasePool, injectionSql, diversityBackfillSql, songVersePoolSql, songVerseOnRangeSql, LEGAL_CORPUS_FILTER, EXEGETICAL_FTS_EXCLUSION, SERVED_SONG_VERSE_WORKS, SERVED_LANE_WORKS } from '../lib/teacher/routing.js';
 import { LEGAL_COMMENTARY_ENTRIES_PREDICATE } from '../lib/legal-corpus.js';
 import { resolveIntent } from '../bible/pericopes.js';
+// The REAL reader/library/Today register classifier — we probe the shipped code
+// path, never a lookalike (A6 discipline).
+import { partitionByRegister } from '../components/commentary-panel.js';
 
 const SONG_VERSE_SLUGS = new Set<string>(SERVED_SONG_VERSE_WORKS);
 const LANE_SLUGS = new Set<string>(SERVED_LANE_WORKS); // sermon + theology — must NEVER be in the exegetical pool
@@ -63,47 +66,71 @@ for (const q of QUERIES) {
   console.log(`  "${q.slice(0, 44)}" → base ${base.length} (leaked ${leaked.length}) · song_verse ${sv.length} (${bad.length} non-register)`);
   wallBreaches += bad.length;
 }
-// ── surface 2: the FTS commentary search — REAL breach detector (A6 line-by-
-// line 2026-07-17: the old probe was `register IN (hymn,poetry) AND register NOT
-// IN (hymn,poetry)` = 0 by construction, a tautology). Apply the EXACT serving
-// predicates (legal + exegetical exclusion) and count any song/verse row that
-// slips through. If the exclusion has a hole, n > 0 → breach.
+// ── surface 2: the FTS commentary search (library search + /ask fallback share
+// EXEGETICAL_FTS_EXCLUSION) — REAL breach detector (A6 line-by-line 2026-07-17:
+// the old probe was `register IN (hymn,poetry) AND register NOT IN (hymn,poetry)`
+// = 0 by construction, a tautology). Apply the EXACT serving predicates (legal +
+// exegetical exclusion) and count ANY register-work row that slips through: song/
+// verse (hymn/poetry) AND lane (sermon/theology/confession) — matched TWO ways,
+// by register AND by served work slug, so a NULL/missing register can't fail the
+// wall open (sermon-lane extension 2026-07-18). If the exclusion has a hole, n>0.
+const wallWorkSql = [...SERVED_SONG_VERSE_WORKS, ...SERVED_LANE_WORKS].map((w) => `'${w}'`).join(',');
 const ftsLeak = (await sql.query(
   `SELECT count(*)::int n FROM commentary_entries
-   WHERE tsv @@ websearch_to_tsquery('english', 'shepherd God grace faith love mercy')
+   WHERE tsv @@ websearch_to_tsquery('english', 'shepherd God grace faith love mercy salvation preached')
      AND (${LEGAL_COMMENTARY_ENTRIES_PREDICATE})
      AND (${EXEGETICAL_FTS_EXCLUSION})
-     AND (register IN ('hymn','poetry') OR work IN (${SERVED_SONG_VERSE_WORKS.map((w) => `'${w}'`).join(',')}))`,
+     AND (register IN ('hymn','poetry','sermon','theology','confession') OR work IN (${wallWorkSql}))`,
 )) as Array<{ n: number }>;
 const ftsAll = (await sql.query(
-  `SELECT count(*)::int n FROM commentary_entries WHERE register IN ('hymn','poetry')`,
-)) as Array<{ n: number }>;
-console.log(`\nFTS surface: ${ftsAll[0]!.n} hymn/poetry rows exist; ${ftsLeak[0]!.n} leak past the live search predicate (must be 0)`);
+  `SELECT
+     (count(*) FILTER (WHERE register IN ('hymn','poetry')))::int AS sv,
+     (count(*) FILTER (WHERE register IN ('sermon','theology','confession')))::int AS lane
+   FROM commentary_entries`,
+)) as Array<{ sv: number; lane: number }>;
+console.log(`\nFTS surface: ${ftsAll[0]!.sv} hymn/poetry + ${ftsAll[0]!.lane} sermon/theology rows exist; ${ftsLeak[0]!.n} leak past the live search predicate (must be 0)`);
 wallBreaches += ftsLeak[0]!.n;
 
-// ── surface 3: the reader static corpus — every register-work entry MUST carry
-// its register so the panel can segregate it. Path is resolved against BOTH web-
-// cwd and repo-root cwd (the old cwd-relative path silently skipped, A6). An
-// unlabeled register-work entry is a real breach (it would render as commentary).
-let unlabeled = 0, labeled = 0, chaptersProbed = 0;
-for (const probe of ['psa/23', 'jhn/3', 'mat/5', 'gen/3', 'luk/2']) {
-  const p = [`public/commentaries/${probe}.json`, `web/public/commentaries/${probe}.json`].find((x) => existsSync(x));
-  if (!p) continue;
-  chaptersProbed++;
-  const j = JSON.parse(readFileSync(p, 'utf8')) as { entries: Array<{ register?: string; work?: string }> };
-  for (const e of j.entries) {
-    if (!e.work) continue; // legacy commentary rows have no register — fine
-    if (SONG_VERSE_SLUGS.has(e.work)) {
-      if (e.register === 'hymn' || e.register === 'poetry') labeled++;
-      else unlabeled++; // a song/verse work entry with no/other register — breach
+// ── surface 3: the READER static corpus. The reader, the library browse, and
+// Today all segregate entries through partitionByRegister() (imported above — the
+// REAL classifier, not a lookalike). Probe EVERY chapter file under the served
+// corpus (not 5 hardcoded probes): no lane (sermon/theology) or song/verse WORK
+// may land in the exegetical bucket, where it would render as plain commentary and
+// (on Today) satisfy the >=2-voices floor. The oracle is INDEPENDENT of the
+// classifier — it re-derives lane/song-verse membership by register AND by served
+// work slug — so a register-less lane row (data drift) the register-only
+// classifier would miss still trips the wall. Path resolves against BOTH web-cwd
+// and repo-root cwd (A6: the old cwd-relative path silently skipped).
+const readerBase = ['public/commentaries', 'web/public/commentaries'].find((x) => existsSync(x));
+if (!readerBase) { console.error('✗ reader probe found NO commentaries dir — check cwd'); process.exit(1); }
+const svOracle = (e: { register?: string; work?: string }) =>
+  e.register === 'hymn' || e.register === 'poetry' || (!!e.work && SONG_VERSE_SLUGS.has(e.work));
+const laneOracle = (e: { register?: string; work?: string }) =>
+  e.register === 'sermon' || e.register === 'theology' || e.register === 'confession' || (!!e.work && LANE_SLUGS.has(e.work));
+let unlabeledLane = 0, unlabeledSV = 0, laneLabeled = 0, svLabeled = 0, chaptersProbed = 0;
+for (const book of readdirSync(readerBase)) {
+  let files: string[];
+  try { files = readdirSync(`${readerBase}/${book}`); } catch { continue; } // skip _manifest.json (a file, not a dir)
+  for (const file of files) {
+    if (!file.endsWith('.json')) continue;
+    chaptersProbed++;
+    const j = JSON.parse(readFileSync(`${readerBase}/${book}/${file}`, 'utf8')) as { entries: Array<{ register?: string; work?: string }> };
+    const part = partitionByRegister(j.entries);
+    // Anything the reader routes to the exegetical bucket that is REALLY a lane or
+    // song/verse work = an unlabeled register-wall breach.
+    for (const e of part.exegetical) {
+      if (laneOracle(e)) unlabeledLane++;
+      else if (svOracle(e)) unlabeledSV++;
     }
+    laneLabeled += part.sermon.length + part.theology.length;
+    svLabeled += part.songVerse.length;
   }
 }
-console.log(`reader surface: ${chaptersProbed}/5 probe chapters found; ${labeled} song/verse entries labeled, ${unlabeled} UNLABELED`);
+console.log(`reader surface: ${chaptersProbed} chapter files probed; song/verse labeled ${svLabeled} (UNLABELED ${unlabeledSV}); sermon/theology labeled ${laneLabeled} (UNLABELED ${unlabeledLane})`);
 if (chaptersProbed === 0) { console.error('✗ reader probe found NO chapter files — check cwd'); process.exit(1); }
-wallBreaches += unlabeled;
+wallBreaches += unlabeledLane + unlabeledSV;
 
-console.log(`\nregister-wall breaches (hymn/poetry inside ANY exegetical pool, or prose inside song_verse): ${wallBreaches}`);
+console.log(`\nregister-wall breaches (song/verse OR sermon/theology inside ANY exegetical pool/search/reader, or prose inside song_verse): ${wallBreaches}`);
 console.log(`song_verse pools empty: ${svEmpty}/${QUERIES.length} (should be 0 — ${SERVED_SONG_VERSE_WORKS.length} works served)`);
 console.log(`new served prose authors seen in base pools: ${[...newProseAuthors].slice(0, 8).join(' · ') || '(none yet — prose ingest pending)'}`);
 if (wallBreaches > 0) { console.error('✗ REGISTER WALL BREACHED'); process.exit(1); }

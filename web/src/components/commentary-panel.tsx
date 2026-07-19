@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { isSongVerse, type CommentaryEntry } from '@/lib/bible';
+import { type CommentaryEntry } from '@/lib/bible';
 import { HIGHLIGHT_COLORS } from '@/lib/highlight-colors';
 
 export interface AnnotationControls {
@@ -14,6 +14,118 @@ export interface AnnotationControls {
   onSaveNote: (body: string) => void;
   onDeleteNote: () => void;
 }
+
+// ── The register wall, shared across the reader, the library browse, and Today.
+// Song/verse (hymn, poetry), sermon, and theology/confession are DISTINCT prose
+// registers: each renders in its OWN labeled section and NEVER blends into the
+// exegetical commentary voices (nor counts toward Today's >=2-voices floor). The
+// served static corpus reliably carries `register` for every such work (the
+// register-wall-check probes this across the whole corpus), so classification is
+// by the register string — ONE source of truth consumed by every surface.
+export type RegisterLane = 'exegetical' | 'sermon' | 'theology' | 'song_verse';
+export function registerLane(e: { register?: string }): RegisterLane {
+  switch (e.register) {
+    case 'hymn':
+    case 'poetry':
+      return 'song_verse';
+    case 'sermon':
+      return 'sermon';
+    case 'theology':
+    case 'confession':
+      return 'theology';
+    default:
+      return 'exegetical'; // commentary/father + legacy (null register) rows
+  }
+}
+// Sermon + theology/confession are a register of their OWN — like song/verse they
+// must never fill an exegetical voice slot or satisfy Today's >=2-voices floor.
+export function isLaneWork(e: { register?: string }): boolean {
+  const lane = registerLane(e);
+  return lane === 'sermon' || lane === 'theology';
+}
+
+export interface RegisterPartition<T> {
+  exegetical: T[]; // verse-anchored commentary + fathers (the >=2-voices pool)
+  sermon: T[];
+  theology: T[];
+  songVerse: T[];
+}
+// Split reader/library entries into the four register lanes. The reader, the
+// library browse, and register-wall-check all call THIS one function, so the wall
+// is provably consistent across surfaces (the checker asserts no lane/song-verse
+// work ever lands in `.exegetical`).
+export function partitionByRegister<T extends { register?: string }>(entries: T[]): RegisterPartition<T> {
+  const p: RegisterPartition<T> = { exegetical: [], sermon: [], theology: [], songVerse: [] };
+  for (const e of entries) {
+    switch (registerLane(e)) {
+      case 'song_verse':
+        p.songVerse.push(e);
+        break;
+      case 'sermon':
+        p.sermon.push(e);
+        break;
+      case 'theology':
+        p.theology.push(e);
+        break;
+      default:
+        p.exegetical.push(e); // commentary/father + legacy (null register) rows only
+    }
+  }
+  return p;
+}
+
+// The register chip shown on a card so a voice is legible OUT of its section too
+// (e.g. a single result). Exegetical commentary/fathers carry no chip.
+export function registerChipLabel(register?: string): string | null {
+  switch (register) {
+    case 'hymn':
+      return 'Hymn';
+    case 'poetry':
+      return 'Poetry';
+    case 'sermon':
+      return 'Sermon';
+    case 'theology':
+      return 'Theology';
+    case 'confession':
+      return 'Confession';
+    default:
+      return null;
+  }
+}
+
+// A metrical psalter (Watts' Psalms Imitated, the 1650 Scottish Psalter) is a
+// PARAPHRASE — a sung response, never the Scripture text. This marker rides
+// wherever such a voice can appear (reader, library, /ask) so it is never mistaken
+// for the Bible. Guarantee (b) of the register wall.
+export function ParaphraseChip() {
+  return (
+    <span
+      className="rounded-full bg-accent-700/10 px-2 py-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300"
+      title="A metrical paraphrase — not the Scripture text itself."
+    >
+      paraphrase · not Scripture
+    </span>
+  );
+}
+
+// Shared header for a labeled register section (Sermons / Theology & confessions /
+// Hymns & sacred poetry) — the same treatment across reader and library.
+export function RegisterSectionHeading({ title, note }: { title: string; note: string }) {
+  return (
+    <>
+      <p className="pt-4 pb-1 text-[10px] font-bold uppercase tracking-widest text-stone-300 dark:text-stone-600">
+        {title}
+      </p>
+      <p className="mb-2 text-[11px] italic text-stone-400">{note}</p>
+    </>
+  );
+}
+
+// The copy for each labeled register section, shared so every surface reads the
+// same way.
+export const SERMON_NOTE = 'Preached expositions — not verse-by-verse commentary; read them in full for the argument.';
+export const THEOLOGY_NOTE = 'Systematic and confessional reflections on this passage — topical, not verse-commentary.';
+export const SONG_VERSE_NOTE = 'Sung and poetic responses to this passage — not commentary, and (where marked) a metrical paraphrase, not the Scripture text itself.';
 
 export function eraLabel(year: number | null): string {
   if (!year) return '';
@@ -89,12 +201,12 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
             {entry.tradition}
           </span>
         )}
-        {(entry.register === 'hymn' || entry.register === 'poetry') && (
+        {registerChipLabel(entry.register) && (
           <span className="rounded-full bg-accent-700/10 px-2 py-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300">
-            {entry.register === 'hymn' ? 'Hymn' : 'Poetry'}
-            {entry.paraphrase ? ' · paraphrase' : ''}
+            {registerChipLabel(entry.register)}
           </span>
         )}
+        {entry.paraphrase && <ParaphraseChip />}
       </div>
       <p className="font-scripture text-[15px] leading-relaxed text-stone-600 dark:text-stone-300">
         {displayText}
@@ -119,6 +231,43 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
           {entry.license && /^cc/i.test(entry.license) ? ` · ${entry.license}` : ''}
         </p>
       )}
+    </div>
+  );
+}
+
+// The labeled register sections (sermon, theology/confession, song/verse) rendered
+// BELOW the exegetical commentary on the reader surfaces. Same treatment as the
+// long-standing hymns/poetry section — each register in its OWN section, never
+// blended into the exegetical voices. Shared by the study panel and the browse
+// panel so the reader wall is identical wherever it renders.
+export function RegisterLaneSections({
+  sermon,
+  theology,
+  songVerse,
+  limit = 4,
+}: {
+  sermon: CommentaryEntry[];
+  theology: CommentaryEntry[];
+  songVerse: CommentaryEntry[];
+  limit?: number;
+}) {
+  if (sermon.length === 0 && theology.length === 0 && songVerse.length === 0) return null;
+  const section = (title: string, note: string, entries: CommentaryEntry[]) =>
+    entries.length === 0 ? null : (
+      <div>
+        <RegisterSectionHeading title={title} note={note} />
+        <div className="space-y-2">
+          {entries.slice(0, limit).map((e, i) => (
+            <EntryCard key={i} entry={e} />
+          ))}
+        </div>
+      </div>
+    );
+  return (
+    <div className="space-y-2">
+      {section('Sermons', SERMON_NOTE, sermon)}
+      {section('Theology & confessions', THEOLOGY_NOTE, theology)}
+      {section('Hymns & sacred poetry', SONG_VERSE_NOTE, songVerse)}
     </div>
   );
 }
@@ -151,10 +300,10 @@ export function CommentaryPanel({
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  // Register wall (reader side): hymns/poems NEVER mix with or displace
-  // exegetical voices — they render in their own labeled section below.
-  const exegetical = entries.filter((e) => !isSongVerse(e));
-  const songVerse = entries.filter(isSongVerse);
+  // Register wall (reader side): sermons, theology/confessions, and hymns/poems are
+  // DISTINCT registers — each renders in its OWN labeled section below, never
+  // blended into (or displacing) the exegetical commentary voices.
+  const { exegetical, sermon, theology, songVerse } = partitionByRegister(entries);
   const diverse = pickDiverse(exegetical, 10);
   let lastEra = '';
 
@@ -222,22 +371,9 @@ export function CommentaryPanel({
           )}
         </div>
 
-        {songVerse.length > 0 && (
-          <div className="px-5 pb-4">
-            <p className="pt-2 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300">
-              Hymns &amp; sacred poetry
-            </p>
-            <p className="mb-2 text-[11px] text-stone-400 italic">
-              Sung and poetic responses to this passage — not commentary, and (where
-              marked) a metrical paraphrase, not the Scripture text itself.
-            </p>
-            <div className="space-y-2">
-              {songVerse.slice(0, 4).map((entry, i) => (
-                <EntryCard key={`sv-${i}`} entry={entry} />
-              ))}
-            </div>
-          </div>
-        )}
+        <div className="px-5 pb-4">
+          <RegisterLaneSections sermon={sermon} theology={theology} songVerse={songVerse} />
+        </div>
 
         {diverse.length < exegetical.length && (
           <div className="px-5 pb-3">

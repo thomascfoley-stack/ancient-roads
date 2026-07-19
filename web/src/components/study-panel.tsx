@@ -2,14 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { isSongVerse, type CommentaryEntry } from '@/lib/bible';
+import { type CommentaryEntry } from '@/lib/bible';
 import { HIGHLIGHT_COLORS } from '@/lib/highlight-colors';
 import { fetchLexEntry, decodeMorph, type OWord, type LexEntry } from '@/lib/original';
 import { useDragDismiss } from '@/lib/use-drag-dismiss';
 import {
   eraLabel,
   pickDiverse,
+  partitionByRegister,
   EntryCard,
+  RegisterLaneSections,
   type AnnotationControls,
 } from './commentary-panel';
 
@@ -191,15 +193,15 @@ function HighlightRow({ annotation }: { annotation: AnnotationControls }) {
 }
 
 function CommentariesTab({ entries }: { entries: CommentaryEntry[] }) {
-  // Register wall (reader side): hymns/poems NEVER mix with or displace
-  // exegetical voices — they render in their own labeled section (A6 line-by-line
-  // 2026-07-17: this LIVE reader tab had no wall; the fix had landed only in the
-  // unused CommentaryPanel component).
-  const exegetical = entries.filter((e) => !isSongVerse(e));
-  const songVerse = entries.filter(isSongVerse);
+  // Register wall (reader side): sermons, theology/confessions, and hymns/poems are
+  // DISTINCT registers — each renders in its OWN labeled section, never blended
+  // into (or displacing) the exegetical voices (A6 line-by-line 2026-07-17 landed
+  // hymns/poetry on this LIVE reader tab; the sermon-lane slice 2026-07-18 extends
+  // the same treatment to sermon + theology).
+  const { exegetical, sermon, theology, songVerse } = partitionByRegister(entries);
   const diverse = pickDiverse(exegetical, 10);
   let lastEra = '';
-  if (diverse.length === 0 && songVerse.length === 0) {
+  if (diverse.length === 0 && sermon.length === 0 && theology.length === 0 && songVerse.length === 0) {
     return <p className="py-16 text-center text-sm text-stone-400">No commentary on this verse yet.</p>;
   }
   return (
@@ -226,22 +228,9 @@ function CommentariesTab({ entries }: { entries: CommentaryEntry[] }) {
           Showing {diverse.length} of {exegetical.length} voices
         </p>
       )}
-      {songVerse.length > 0 && (
-        <div className="pt-2">
-          <p className="pt-4 pb-1 text-[10px] font-bold uppercase tracking-widest text-stone-300 dark:text-stone-600">
-            Hymns &amp; sacred poetry
-          </p>
-          <p className="mb-2 text-[11px] italic text-stone-400">
-            Sung and poetic responses to this passage — not commentary, and (where
-            marked) a metrical paraphrase, not the Scripture text itself.
-          </p>
-          {songVerse.slice(0, 4).map((entry, i) => (
-            <div key={`sv-${i}`} className="mb-2">
-              <EntryCard entry={entry} />
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="pt-2">
+        <RegisterLaneSections sermon={sermon} theology={theology} songVerse={songVerse} />
+      </div>
     </div>
   );
 }

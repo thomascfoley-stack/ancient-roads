@@ -314,7 +314,7 @@ function LaneSection({ title, note, chunks }: { title: string; note: string; chu
             <figcaption className="mt-2 text-sm text-stone-500 dark:text-stone-400">
               <span className="font-semibold text-stone-800 dark:text-stone-300">{c.metadata.author}</span>
               {c.metadata.sourceTitle ? `, ${c.metadata.sourceTitle}` : ''}
-              {c.metadata.paraphrase ? <span className="ml-2 rounded-full bg-accent-700/10 px-2 py-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300">paraphrase</span> : null}
+              {c.metadata.paraphrase ? <span title="A metrical paraphrase — not the Scripture text itself." className="ml-2 rounded-full bg-accent-700/10 px-2 py-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300">paraphrase · not Scripture</span> : null}
             </figcaption>
           </figure>
         ))}
