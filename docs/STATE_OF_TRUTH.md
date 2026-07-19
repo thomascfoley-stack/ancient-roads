@@ -49,7 +49,12 @@ Method: `node scripts/ground-truth.mjs` (read-only, no DDL, no secrets) + `git l
   2. **v4's labels are KJV-phrase-anchored**, which makes the doctrinal strata *easier* than v3's abstract
      queries. The abstract-topical failure mode — the one v3 actually exposed — **is not exercised by v4.**
   3. **v4 samples ZERO Song of Solomon**, so `no-content 0/110` does **not** clear the known SoS hole
-     (zero served exegetical rows for SoS remains an open gap).
+     (zero served exegetical rows for SoS remains an open gap). **And the hole is worse than
+     "coverage" (verified 2026-07-19, ADR-028):** 0/4 SoS queries reach the no-content fallback —
+     retrieval has no relevance floor, so SoS returns six NON-SoS sources (Barnes/Wesley on the New
+     Testament, Chrysostom on Matthew/John/Acts). The user is still safe today only because the
+     **verifier** rejects the result downstream. Evidence:
+     `docs/evidence/part4/sos-fallback-verification.txt`.
   4. **The "disjoint" claim is overstated** — `HELDOUT_EVAL_DESIGN.md` asserts v4 is disjoint from v3 while
      its own caveats say otherwise, and the ADR-024 label anchor-check script was never committed, so v4
      label verification **is not reproducible from this repo**.
