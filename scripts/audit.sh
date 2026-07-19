@@ -28,6 +28,7 @@ gate "unused — knip (files/exports/deps)" $PNPM exec knip
 gate "deps — advisory bulk-endpoint (prod, high+ CVEs)" node scripts/deps-audit.mjs
 gate "tests + coverage — vitest"          $PNPM exec vitest run --coverage
 gate "qa — Layer 1 invariants + regressions" $PNPM run qa
+gate "hygiene — no test residue in dev (post-suite)" node scripts/check-test-residue.mjs
 gate "data — Gate B license (fail-closed)" $PNPM exec tsx src/ingest/check-licenses.ts
 
 # Informational: source files the test suite never touches.

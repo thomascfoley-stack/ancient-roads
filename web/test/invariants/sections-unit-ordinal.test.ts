@@ -93,9 +93,15 @@ describe.skipIf(!url)('ADR-026 red-first — 024 backfill reassembles mis-ordere
     client = new pg.Client({ connectionString: url!, ssl: { rejectUnauthorized: false } });
     await client.connect();
     await deleteSeed(client); // clear any leftover from a crashed run
+    // license is 'Public Domain' (an ALLOWED_LICENSES value), changed 2026-07-19 from
+    // 'public-domain'. The old literal was safe ONLY because this seed is status='staged' and
+    // Gate B inspects published rows — a latent landmine that would arm itself the moment this
+    // status changed. The sibling library-published-boundary test tripped exactly that on a
+    // published seed and failed Gate B repo-wide. scripts/check-test-residue.mjs is the
+    // class-level guard; this is defence in depth.
     const { rows } = await client.query<{ id: string }>(
       `INSERT INTO sources (slug, title, author, source_type, tradition, era, license, provenance, status)
-       VALUES ($1, 'QA unit-ordinal seed', 'QA', 'sermon', 'qa', 'qa', 'public-domain', '{}', 'staged')
+       VALUES ($1, 'QA unit-ordinal seed', 'QA', 'sermon', 'qa', 'qa', 'Public Domain', '{}', 'staged')
        RETURNING id`,
       [SLUG],
     );

@@ -76,6 +76,12 @@ FIXES:
   - re-verified: test 5/5 green, 0 residue, `npm run audit` PASSED — all gates green.
 
 NOTE for the neighbours: `sections-unit-ordinal.test.ts` also seeds `'public-domain'`, but seeds
-`status='staged'`, and Gate B only inspects PUBLISHED rows — so it is not currently exposed. It
-would become exposed the moment that seed's status changed. Left as-is; noted here so the next
-person does not have to rediscover why one is safe and the other was not.
+`status='staged'`, and Gate B only inspects PUBLISHED rows — so it was not exposed. It would have
+become exposed the moment that seed's status changed.
+
+  UPDATE 2026-07-19 (same day): re-verified directly at the owner's request rather than trusting
+  this note — the literal WAS really there (`sections-unit-ordinal.test.ts:98`), so the landmine was
+  real, not misremembered. It is now DISARMED (changed to 'Public Domain'). The earlier "left as-is"
+  disposition is superseded: leaving a known latent landmine documented-but-armed is not a
+  disposition, it is a deferral with a note attached. See docs/evidence/part4/test-residue-guard.txt
+  for the class-level fix.
