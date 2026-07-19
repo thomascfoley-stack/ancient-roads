@@ -49,6 +49,57 @@ its 70% design bar** (HIT@2 90%; 3 of 4 H1 misses still pass on voices; n=10 so 
 query = ±10 pts) — logged, not tuned. Ship/no-ship on that is the owner's call; v4
 (below) gives a fresh out-of-sample read.
 
+## 2026-07-18 (PHASE 3 RECONCILE — MEASURE, part 2: v4 minted, frozen, run ONCE)
+
+**The freeze (all before any accuracy number existed):** minted `FROZEN_V4`
+(`web/src/scripts/heldout-v4-queries.mts`, 120 q, same composition as v3, disjoint from
+pilot/v2/v3), content-hash-pinned `sha256 90de5dc3…b2313` in
+`test/heldout-frozen-hash.test.ts`, and pre-registered the per-category bars in
+`docs/HELDOUT_EVAL_DESIGN.md` §v4 (carried from the doc's original bar rationale:
+topical+epistle HIT@2 ≥85 · verse-ref H1 ≥85 · pericope H1 ≥70 · proper-noun H1 ≥70 ·
+no-content ≤8% · controls 0 hijacks). Commit a9dac8c; hash verified intact after the
+pre-commit eslint --fix hook. `--v4 --validate`: 120 parse, 0 dups.
+
+**The v4 labeling fix (A6's RELABEL-circularity finding):** every label derives from
+the query's own scripture reference or quoted KJV wording — never from retrieval
+output. Doctrinal queries quote identifiable KJV phrases; labels = the chapters
+containing them; every anchor recorded in `source` and mechanically verified against
+the in-repo KJV (200/200 checks) before the freeze. v4 has NO relabel path — a label
+correction is a v4.1 re-freeze with a new pin, never an in-place edit.
+
+**The run (ONCE):** `eval-heldout.mts --v4`, dev ep-tiny-hat, ship config option (c),
+pool=20 ef=64 cap=2, single pass, exit 0. (A first background invocation died at
+~q19 with no summary — harness restart, not a result; the pipeline is measured
+deterministic, part 1, so the single complete re-run is the number.)
+
+| category | n | HIT@1 | HIT@2 | pass / <2 / wrong / none | bar | verdict |
+|---|---|---|---|---|---|---|
+| verse-ref | 40 | **100%** | 100% | 40 / 0 / 0 / 0 | H1 ≥85 | ✅ CLEARS |
+| pericope | 15 | **80%** | 100% | 15 / 0 / 0 / 0 | H1 ≥70 | ✅ CLEARS |
+| epistle | 25 | 96% | **100%** | 25 / 0 / 0 / 0 | H2 ≥85 | ✅ CLEARS |
+| topical | 20 | 80% | **90%** | 18 / 0 / 2 / 0 | H2 ≥85 | ✅ CLEARS |
+| proper-noun | 10 | **60%** | 100% | 10 / 0 / 0 / 0 | H1 ≥70 | ❌ MISSES (6/10) |
+| control | 10 | clean 10/10 | — | 0 hijacks | 0 | ✅ CLEARS |
+| no-content (all) | 110 | — | — | **0** | ≤8% | ✅ CLEARS |
+
+Misses by id — topical `wrong-passage`: tp-10 (envy/rottenness-of-bones), tp-16
+(father-of-the-fatherless). proper-noun H1 (all four still HIT@2 pass with 2 voices,
+i.e. top-1 off-target but ≥2 on-target voices in top-6; failure-code row is all
+`pass`): pn-01 Achan, pn-03 witch of Endor, pn-09 Naboth, pn-10 Nehushtan.
+
+**Read.** The GA broad-axis bars are MET out-of-sample for the first time (epistle
+HIT@2 100%, topical 90% — vs 80/75 on the v3 dev-set under the identical config). The
+one pre-registered miss is proper-noun HIT@1 60% — and v3 measured the same 60% on this
+config, so it is consistent, not noise: rare-narrative queries surface ≥2 correct
+voices (HIT@2 100%, no wrong-passage, no no-content) but the top-1 slot goes to a
+related passage. That is a top-1 ranking characteristic on rare narratives, a
+*ranking* layer question by the failure-code map. **Per pre-registration: STOP — no
+tuning, no config change; the ship/no-ship call on proper-noun H1 is the owner's.**
+Note the v3↔v4 doctrinal gap (75/80 → 90/100) is partly instrument: v4's
+phrase-anchored labels are objective and complete where v3's unattended catechism
+labels were known-incomplete (the old §1b finding) — v4 is the cleaner instrument, and
+its number is the honest one for the option-(c) gate.
+
 ## 2026-07-18 (DEPLOY) — 24677ba LIVE on ancientpaths.app (hero swap + nav labels)
 
 Owner said ship. Ran `./deploy.sh` from an isolated worktree at origin/main (the main
