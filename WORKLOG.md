@@ -1,5 +1,65 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-18 (LIBRARY READER PHASE 2 — branch `reader-P2`: STOP at step-0 inventory; no published work has `sections` rows)
+
+**What.** Phase 2 (Book Reader `/work/[slug]` served from `sections`) opened with the mandated
+read-only inventory of dev (ep-tiny-hat) before building anything. The inventory falsifies the design
+assumption that the reader's works are readable from `sections`. Per the work order ("if the works the
+reader needs are NOT in `sections`, STOP and report; do not improvise a backfill; that is a PM/owner
+call"), this is the STOP. Nothing was built; zero writes were made to the DB.
+
+**Found (dev, read-only, 2026-07-18).**
+- `sections` holds exactly 4 sources, and none is published:
+  `matthew-henry` 4,210 rows (staged, commentary, avg body ~1,146 ch) · `josephus-whiston` 4,124
+  (staged, historian) · `barnes-notes` 1,300 (quarantined) · `spurgeon-talks-to-farmers` 300
+  (staged, sermon; headings in the `ingest-sermon.ts` shape `"TITLE — REF (i/n)"`).
+- **Zero published sources have `sections` rows.** The Phase-2 API contract (join `sources`,
+  `status='published'`) would serve nothing on dev; there is no work to be the vertical slice.
+- The works the design names are `status='published'` in `sources` (39 rows: `calvin-institutes`,
+  `spurgeon-sermons` 63 vols, `edwards-works`, `maclaren-expositions`, `hodge-systematic`, the
+  hymn/poetry set, ...) but their text lives ONLY in `commentary_entries` (verse-anchored:
+  book/chapter/verse_start/verse_end + work/register; e.g. spurgeon-sermons = 3,462 entries with
+  bodies up to ~39k chars, ordered by verse, not by reading order) and `embeddings` (chunk rows,
+  verseId metadata, no work slug). Neither is an ordered reading representation. This is the known
+  mid-flight corpus-model state (006 "dual-read until parity, then cutover"): only 4 works have been
+  through `migrate-sections-slice.ts` / the sermon lane on dev.
+- Heading-shape census across existing `sections` (input for the future 024 backfill rule): 5,510 NULL
+  · 2,746 chunked `"... (i/n)"` · 1,678 plain. In the existing data no unit title recurs in more than
+  one non-consecutive run, so the mis-collapse hazard ADR-026 guards against is not yet present.
+- `sections.unit_ordinal` does not exist (expected; migration 024 is unauthored).
+
+**Why this is a PM/owner call, not an agent improvisation.** The backfill machinery exists
+(`src/ingest/migrate-sections-slice.ts --source=<slug>`: re-points one source from
+commentary_entries/embeddings into sources/sections, Path A, vectors reused, additive + idempotent),
+but (1) it runs as `neondb_owner` against the shared dev DB, the same class as migrations, which are
+owner-run by hard boundary; (2) flipping `status` to published is the licensing/QA human gate; and
+(3) whether a verse-ordered work (`commentary_entries` has no reading ordinal for, say, the
+Institutes' book/chapter structure) can be given an honest reading order is exactly the ADR-026 shape
+question, and the answer differs per work.
+
+**Options for the unblock (then Phase 2 restarts).**
+- (a) Publish `spurgeon-talks-to-farmers` on dev: already correctly sliced and ordered, real sermon
+  headings, exercises the `(i/n)` grouping for real. Smallest honest unblock, but 300 sections is not
+  scale.
+- (b) Also publish `matthew-henry` on dev: 4,210 sections already sliced; the scale test for
+  windowing + keyset pagination.
+- (c) PM/owner runs `migrate-sections-slice.ts` on dev for a design-named work (Institutes /
+  spurgeon-sermons) and publishes it; requires deciding that work's reading order first (ADR-026).
+- (d) Re-scope the reader to serve from `commentary_entries`. Recommend against: contradicts the
+  design of record (§2 "served from the DB" = sections), forfeits `unit_ordinal` + annotation
+  anchoring to `sections.body`, and builds the new surface on the table the corpus model is
+  migrating off of.
+
+**Recommend.** (a) + (b) now (two dev-only status flips of already-sliced works), Phase 2 runs its
+full slice against both; (c) per-work as licensing/order calls are made. If dev-publish of those two
+is not acceptable, name the work that IS cleared and Phase 2 slices to it.
+
+**Deliberately not built.** APIs, migration 024, WorkReader UI, annotation mount. The 024 backfill
+grouping rule is specced to be written from the ACTUAL heading shapes of the works the reader serves;
+those works are not in `sections` yet, so authoring it now would encode the wrong corpus. Building
+the reader against staged-only data would mean either dropping the `status='published'` filter (a
+licensing hole) or shipping a reader that provably serves nothing.
+
 ## 2026-07-18 (LIBRARY READER PHASE 1 — branch `reader-P1`: shared annotation engine + Logos-style popover)
 
 **What.** The Phase 1 slice of `docs/LIBRARY_READER_BUILD.md` §2, landed in the EXISTING Bible reader:

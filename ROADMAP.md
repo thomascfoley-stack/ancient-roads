@@ -8,6 +8,18 @@ git history — not from memory or the earlier hit list.
 > priority narrative below predates the 2026-07-14 Phase A close + license gate + Slice 0; trust
 > STATE_OF_TRUTH for facts, and treat the section priorities here as owner-set direction, not current status.
 
+## Update 2026-07-18 (Library Reader Phase 2 — branch `reader-P2`) — BLOCKED at step-0 inventory
+
+Phase 2 (Book Reader `/work/[slug]` from `sections`) stopped at the mandated pre-build inventory:
+**no published source has any `sections` rows on dev** (only 4 sources are sliced, all
+staged/quarantined; the design-named works, Institutes / spurgeon-sermons / etc., live only in
+`commentary_entries` + `embeddings` with no reading order). The published-filtered reader would serve
+nothing, and backfilling `sections` is owner-run machinery plus a licensing/publish gate, so this is
+a PM/owner call, not an agent improvisation. Unblock options + recommendation (dev-publish the two
+already-sliced works `spurgeon-talks-to-farmers` + `matthew-henry`, or owner-run
+`migrate-sections-slice.ts` for a design-named work): WORKLOG 2026-07-18 (READER PHASE 2). Nothing
+was built; no DB writes. Phase 2 restarts the moment a published work exists in `sections`.
+
 ## Update 2026-07-18 (Library Reader Phase 1 — branch `reader-P1`) — DONE, PM review pending
 
 Phase 1 of `docs/LIBRARY_READER_BUILD.md` (shared annotation engine + Logos-style highlighter in the
