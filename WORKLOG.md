@@ -1,5 +1,50 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-19 (ITEM 1 — DOC-HYGIENE SWEEP; first item run by Kimi as orchestrator of record)
+
+First item of `KIMI_WORKORDER.md` under `docs/BUILD_MODEL.md` + `docs/PORTABILITY.md`
+(loop with lanes, swarm inside slices, doc-slice check = docs-vs-reality). Baton verified @
+`821689c` before any write (clean tree, migrations ≤023, reader = main+5 untouched).
+
+**First act (landed):** the three operating docs committed to main — `7761add`
+(BUILD_MODEL + PORTABILITY + KIMI_WORKORDER, draft banners retired).
+
+**Three file-disjoint lanes, each built in an isolated worktree by one coder agent,
+integrated serially (rebase → ff-only):**
+- **A — `7454ccd`:** README rewritten to the real tree (was Supabase-era, omitted web/db/ingest);
+  `docs/ENVIRONMENT.md` (full env-var reference, every var grep-verified in code);
+  `web/.env.local.example` rewritten Neon-era (was "fill with Supabase values").
+  Lane finding: **no code reads a root `.env.local`** — only `web/.env.local`.
+- **B — `e63a1cc`:** `docs/SCHEMA_AS_BUILT.md` generated from `db/schema.sql` +
+  migrations 001–023 (SCHEMA.md was Supabase-era fiction); supersession banners on
+  INFRA/SCHEMA/CORPUS/DESIGN_BRIEF; contradiction sweep — 5 bge-m3 sites →
+  bge-large-en-v1.5 (ADR-005), 12 ≥99% sites → ~92%-lower-bound language (CLAUDE.md).
+- **C — `bdd8aeb`:** ops runbooks — TESTING.md, RELEASE.md (+rollback), OBSERVABILITY.md,
+  INGESTION_RUNBOOK.md. Every command verified to exist.
+
+**Fresh-reader verification (fixer ≠ verifier):** 9-point docs-vs-reality check by a fresh
+agent — PASS on all; one residue hit (`INGESTION_RUNBOOK.md:140` "never bge-m3") dispositioned
+as a correct *prohibition*, not a stale claim — criterion was a file whitelist, hit is intent-aligned.
+
+**Gate:** all mechanical steps green (typecheck ×3, lint, knip, deps-audit, tests+coverage,
+web typecheck+lint). `qa` red in **3 DB-backed invariants only** — root-caused, NOT caused by
+this sweep (docs-only diff): **this clone's `web/.env.local` points at PRODUCTION**
+(`NEON_BRANCH=production`), and the prod DB is behind main pre-Part-C (no mig-019 `work`
+column → 2 errors; `legalBasePool(50)` → 32 → 1 assertion). Environmental and pre-existing;
+the correct fix is pointing local dev at the dev branch. **Owner flag:** local `pnpm qa` here
+runs behavioral tests against the prod DB.
+
+**CORRECTION (orchestrator's own):** my Item-0 finding "web/.env.local is missing in this
+clone" was **wrong** — plain `ls` hides dotfiles. The file exists (2026-07-11) and points at
+prod (above). The promised fresh env file (dev-pointing, `app_runtime`/RLS-enforcing
+`APP_DATABASE_URL`) is still wanted before Item 2. Scar logged: verify absence with `ls -a`, never `ls | grep`.
+
+**DeepInfra:** `DEEPINFRA_API_KEY` present in `web/.env.local`, verified live
+(`GET /v1/openai/models` → 200). No owner action needed.
+
+**Not done / ledger:** env-file fix (owner); prod-behind-main red stands until Part C (owner's
+gate); Item 2 opens only after owner review + env fix. Ledger: §5 items untouched (all owner's).
+
 ## 2026-07-18 (RECONCILIATION PHASES 4–6 — branch `reconcile`: verify, deep-audit, fix)
 
 Five gated streams integrated onto `reconcile` (from main 0491e6e), then verified

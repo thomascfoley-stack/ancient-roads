@@ -8,6 +8,20 @@ git history — not from memory or the earlier hit list.
 > priority narrative below predates the 2026-07-14 Phase A close + license gate + Slice 0; trust
 > STATE_OF_TRUTH for facts, and treat the section priorities here as owner-set direction, not current status.
 
+## Update 2026-07-19 (Item 1 — doc-hygiene sweep LANDED; Kimi orchestrating)
+
+Operating docs now canonical on main: `docs/BUILD_MODEL.md` + `docs/PORTABILITY.md` +
+`KIMI_WORKORDER.md` (`7761add`). Punch-list landed in three gated lanes: README +
+`docs/ENVIRONMENT.md` + Neon-era `web/.env.local.example` (`7454ccd`);
+`docs/SCHEMA_AS_BUILT.md` (from migrations, replaces the Supabase-era SCHEMA.md) +
+supersession banners (INFRA/SCHEMA/CORPUS/DESIGN_BRIEF) + bge-m3/≥99% contradiction
+sweep (`e63a1cc`); ops runbooks TESTING/RELEASE/OBSERVABILITY/INGESTION_RUNBOOK
+(`bdd8aeb`). Fresh-reader verified; mechanical gate green; 3 DB-invariant reds are
+environmental (local env points at prod DB, pre-Part-C — see WORKLOG 2026-07-19).
+**Next:** Item 2 (ingestion + corpus run — unblocks reader Phase 2) after owner review
+and the dev-pointing env file. Ledger holds: §5 owner calls (proper-noun bar, v4.1
+scope, publish list, biblehub backup), env fix, Part C.
+
 ## Update 2026-07-18 (go-live reconciliation — branch `reconcile`)
 
 Five gated streams integrated onto `reconcile` (from main `0491e6e`), verified, deep-audited, fixed:
