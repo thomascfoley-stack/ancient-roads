@@ -40,8 +40,13 @@ const parts = text.split(/^--SPLIT--$/m).map((s) => s.trim()).filter(Boolean);
 // final serving name it RENAMEs to. Parsed from the file so the guard can never
 // drift from the migration text.
 const cleanName = (s) => s.replace(/[;,\s]+$/, '');
-const createdNames = [...text.matchAll(/CREATE INDEX CONCURRENTLY(?: IF NOT EXISTS)?\s+(\S+)/gi)].map((m) => cleanName(m[1]));
-const renamedTo = [...text.matchAll(/ALTER INDEX\s+\S+\s+RENAME TO\s+(\S+)/gi)].map((m) => cleanName(m[1]));
+// Parse SQL only — `--` comment lines can contain the keywords in prose (018's
+// header says "…CREATE INDEX CONCURRENTLY nor DROP…", which yielded a phantom
+// created name "nor" before comments were stripped).
+const sqlOnly = text.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
+const createdNames = [...sqlOnly.matchAll(/CREATE INDEX CONCURRENTLY(?: IF NOT EXISTS)?\s+(\S+)/gi)].map((m) => cleanName(m[1]));
+const renameSources = [...sqlOnly.matchAll(/ALTER INDEX\s+(\S+)\s+RENAME TO\s+\S+/gi)].map((m) => cleanName(m[1]));
+const renamedTo = [...sqlOnly.matchAll(/ALTER INDEX\s+\S+\s+RENAME TO\s+(\S+)/gi)].map((m) => cleanName(m[1]));
 
 const client = new pg.Client({ connectionString: url.replace(/^"|"$/g, ''), ssl: { rejectUnauthorized: false } });
 await client.connect();
@@ -63,8 +68,10 @@ try {
     console.log(`  ✓ part ${i + 1}/${parts.length}`);
   }
 
-  // (2) Post-assert: every index this file touches must exist, be VALID and READY.
-  const finalNames = [...new Set(renamedTo.length > 0 ? renamedTo : createdNames)];
+  // (2) Post-assert: every index this file touches must exist, be VALID and READY —
+  // the rename targets plus any created index NOT consumed by a rename (a file
+  // mixing renamed and bare creates asserts both sets).
+  const finalNames = [...new Set([...renamedTo, ...createdNames.filter((n) => !renameSources.includes(n))])];
   if (finalNames.length > 0) {
     const { rows } = await client.query(
       `SELECT c.relname, i.indisvalid, i.indisready FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid
