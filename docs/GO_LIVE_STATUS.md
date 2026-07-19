@@ -86,7 +86,7 @@ items below it, are open owner calls.
 
 | Work | State | Why / next step |
 |---|---|---|
-| origen-commentary | staged, NOT served | standing MUST_NOT_SERVE 'Origen'. NOTE: Catena Aurea (served) carries Origen EXCERPTS attributed "as quoted by Aquinas" — your editorial call whether that's acceptable |
+| origen-commentary | staged, NOT served | **TWO independent reasons.** (1) standing MUST_NOT_SERVE 'Origen' — editorial. NOTE: Catena Aurea (served) carries Origen EXCERPTS attributed "as quoted by Aquinas" — your editorial call whether that's acceptable. (2) **DATA DEFECT (found 2026-07-19, work-order Phase A): ~129 of 1,224 sections are NOT Origen — they are 1 Clement and 2 Clement**, all stamped `metadata.author='Origen of Alexandria'`. ANF vol 9 prints the Epistles of Clement alongside Origen's Commentary on John; the CCEL scrape took both. §1 = "The First Epistle of Clement to the Corinthians"; §100 = 1 Clement ch. 65; §101–129 = 2 Clement ch. 1–20; real Origen starts ~§130. **Reason (2) survives reason (1):** clearing the editorial ruling would still publish Clement under Origen's name. Repair = re-ingest with a volume-boundary profile |
 | whitefield-works | quarantined | PG 68976 is only vol 1/6 and mixes letters/sermons/tracts with no clean boundaries — needs a multi-volume segmentation profile |
 | bramley-carols | quarantined | all 5 archive.org copies are engraved-music editions (27-31% OCR garbage), titles unrecoverable |
 | donne-divine-poems, herrick-noble-numbers | quarantined | whole secular volumes (Grierson, Hesperides) under sacred titles — need section-scoped profiles |

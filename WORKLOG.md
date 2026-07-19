@@ -1,5 +1,106 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-19 (WORK ORDER Phase A — A1 register census; two premise corrections; origen misattribution found)
+
+**A1 — published works per register (DEV `ep-tiny-hat`, `status='published'` AND sections rows):**
+
+| register | pub works | pub sections | staged works | staged sections |
+|---|---|---|---|---|
+| sermon | 7 | 162,827 | 0 | 0 |
+| theology | 3 | 29,050 | 0 | 0 |
+| father | 3 | 18,472 | 1 | 1,224 |
+| confession | 1 | 5,437 | 0 | 0 |
+| poetry | 10 | 3,543 | 0 | 0 |
+| hymn | 5 | 1,690 | 0 | 0 |
+| commentary | 2 | 27,283 | 0 | 0 |
+| historian | **0** | **0** | 3 | 4,124 |
+| lexicon | **0** | **0** | 5 | 52,043 |
+
+Quarantined, excluded above: barnes-notes (1,300), donne-divine-poems (0), herrick-noble-numbers (0).
+
+**Premise correction 1 — sermons and hymns are already populated.** The work order's Phase A goal
+names "sermons, hymns, and historians". Two of the three need no data work: sermon is the LARGEST
+register in the corpus (7 works / 162,827 sections) and hymn is complete (5 works / 1,690). The
+registers that actually render empty are **historian** and **lexicon** (lexicon unnamed in the order).
+Any parallel-agent slicing lane aimed at sermon/hymn would have been a no-op.
+
+**Premise correction 2 — the browse blocker is the unmerged `reader` branch, not the corpus.**
+`main` carries only `library/{books,commentaries,notes,uploads,word-study}`. The Library hub
+(`library/page.tsx`), the catalogs (`library/[catalog]/page.tsx`) and the Book Reader
+(`work/[slug]/page.tsx`) exist ONLY on `reader`. There is no route on main that browses a register at
+all, so no amount of Phase-A slicing makes sermons/hymns/historians browsable. `reader` is 25 commits
+ahead, 0 behind, and `git merge-tree` reports **zero conflicts**. Phase C's entire screenshot list is
+reader-branch surface — that merge (work order B3) is the real unblocker and must precede Phase C.
+
+**A4 case — `origen-commentary` must NOT be published, for a NEW reason.** The existing ledger entry
+(GO_LIVE_STATUS §quarantine) rules it staged on a *standing MUST_NOT_SERVE 'Origen'* — an EDITORIAL
+call about whether a father condemned in 553 ships as a served voice. That is not the only problem.
+**~129 of its 1,224 sections are not Origen at all — they are 1 Clement and 2 Clement**, all carrying
+`metadata.author='Origen of Alexandria'`. ANF vol 9 prints the Epistles of Clement in the same volume
+as Origen's Commentary on John, and the CCEL scrape swept both under one author. Evidence: §1 body
+opens "The First Epistle of Clement to the Corinthians"; §100 is 1 Clement ch. 65; §101–129 track
+2 Clement ch. 1–20; genuine Origen (Comm. John Bk I ch. 1, "the spiritual Israel") begins ~§130 and
+the Heracleon material runs §300+. **This is independent of the editorial ruling** — resolving
+MUST_NOT_SERVE in Origen's favour would still publish Clement's epistles under Origen's name, a direct
+breach of the attribution guarantee. Left staged, logged, not repaired (repair = re-ingest with a
+volume-boundary profile; not attempted this run).
+
+**A3 — josephus-whiston read path: FOLLOW-ON, and here is the cost.** The data is ready and verified:
+4,124 sections, 4,124 section_embeddings (1:1), content clean (Whiston 1737, spans "The Life of
+Flavius Josephus" → "Discourse to the Greeks Concerning Hades"). What is missing is not slicing, it is
+four decisions/changes:
+1. **No `historians` catalog exists.** `web/src/lib/catalog.ts` declares exactly three
+   (commentaries=[commentary,father], sermons=[sermon], hymns-poetry=[hymn,poetry]) and its header
+   states the fail-closed default explicitly: an unlisted type "appears in NO catalog… adding a type
+   to a catalog must be a decision someone makes".
+2. **The register wall has no ruling for `historian`, and the fallthrough is wrong.**
+   `registerLane()` (commentary-panel.tsx) has cases for hymn/poetry/sermon/theology/confession and
+   `default: return 'exegetical'`. So `historian` → **exegetical** — a first-century Jewish historian
+   would count toward the /ask ≥2-voices EXEGETICAL floor and render as verse-commentary. This is
+   currently LATENT, not live: `SERVED_PROSE_TYPES` (teacher/routing.ts) omits `historian`, so no
+   historian row reaches the served pool. It goes live the instant a historian is published. Needs an
+   ADR + a `case 'historian'`, not a code tweak.
+3. `SERVED_PROSE_TYPES` / `PUBLISHED_WORKS` additions (the publish switch).
+4. status flip staged→published — a hard human gate (INGESTION_HARNESS_DESIGN).
+Code cost ≈ 2–3h (catalog def, lane case, invariant-test updates, hub card). The blocking cost is
+decision 2, which is the owner's.
+
+**Writes this run (dev only, $0 — vectors reused 1:1, nothing published):**
+All three commentary slices landed and were **independently re-queried** (not read off the tool's own
+printout): sections == section_embeddings == section_anchors == matched flat rows, exactly, on each.
+0 empty bodies, 0 duplicate ordinals, 0 null anchors, 0 out-of-range anchors on all three. status
+stayed `staged` on all three — no publish flips.
+
+| work | rows | wall-clock | **sec per 10k rows** | anchor span | content check |
+|---|---|---|---|---|---|
+| john-gill | 28,843 | 548s (16:37:24→16:46:32) | **190.1** | 1001001→66022021 | Gill `",...."` lemma style |
+| jfb | 15,473 | 179s (16:46:54→16:49:53) | **115.7** | 1001002→66022021 | JFB `--` gloss style |
+| adam-clarke | 12,693 | 163s (16:50:06→16:52:49) | **128.4** | 1001001→66022021 | Clarke, incl. Hebrew script |
+
+**SLICE RATE (sizes the prod run — work-order Part 1.3, feeds D2):**
+- All three combined: 890s / 56,009 rows = **158.9 s per 10k rows**.
+- Excluding gill: 342s / 28,166 rows = **121.4 s per 10k rows**.
+- **gill is the outlier at 190 s/10k and it ran FIRST** — most likely Neon compute cold-start/autoscale,
+  not size. Treat 121 s/10k as the warm rate and 190 s/10k as the cold/first-run rate; the honest
+  planning band is **121–190 s per 10k rows**.
+- **This is measured on DEV compute. Prod compute size is not assumed equal** — the projection in D2
+  must state that as an unverified input, not fold it in silently.
+- Rate is dominated by the `INSERT INTO section_embeddings` vector copy (1024-dim, table→table);
+  every run spent >90% of its wall-clock in that one statement, observed live in `pg_stat_activity`.
+
+**Residue note (pre-existing, NOT introduced here):** 7 jfb and 5 gill sections are sub-30-char
+fragments ("aith?", "im and them."). Verified **byte-identical to the flat store**, so the truncation
+is upstream chunk-tail damage, already documented in `sources.config.json` (`truncated: 1174` jfb /
+`12487` gill, with a rebuild recipe). Faithful slice, upstream defect. Will render as orphan sections.
+
+**Not done / open:** the 10–15 parallel agent lane was NOT run — the slice tool is one serialized
+transaction against a single Neon compute (28,843 rows took ~7min in the vector copy), so twelve
+concurrent slices contend rather than parallelize, and the work list that serves the goal is far
+smaller than 10–15 works. Lexicon publish-eligibility (5 works / 52,043 sections, all PD or CC BY,
+clean CrossWire/openscriptures provenance, ISBE spot-check reads correctly) is assessed but NOT
+flipped — GO_LIVE_STATUS records "Serving UX is your design call — do NOT blend into the exegetical
+pool without deciding", which is still open. No publishes anywhere. Phases B–E not started.
+
 ## 2026-07-19 (ITEM 2 — checkpoint 2: 33-work sweep GREEN, biblehub backup rescued, reader build reprioritized next)
 
 **Sweep (bash-2fxixl93): all 33 register works re-pointed, zero failures, 1:1 on every work.**
