@@ -67,6 +67,13 @@ export function AskClient() {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [turns]);
 
+  // Prefill from ?q= (the reader's "Ask Ancient Paths" hand-off). Prefill ONLY — never
+  // auto-submit, so a reload or shared link can't spend a teacher run uninvited.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('q');
+    if (q) setQuestion(q);
+  }, []);
+
   const patch = useCallback((id: number, p: Partial<Turn>) => {
     setTurns((prev) => prev.map((t) => (t.id === id ? { ...t, ...p } : t)));
   }, []);

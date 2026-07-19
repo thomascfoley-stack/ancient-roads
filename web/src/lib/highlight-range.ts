@@ -1,6 +1,8 @@
 // Sub-verse highlight anchoring (build task §1). Two silent-break bugs live here, so the
-// load-bearing logic is PURE and unit-tested; only the unavoidable DOM glue (rangeToVerseOffsets)
-// touches the browser, and it delegates all arithmetic to the tested core.
+// load-bearing logic is PURE and unit-tested; only the unavoidable DOM glue
+// (rangeToOffsetsInContainer) touches the browser, and it delegates all arithmetic to the
+// tested core. The math is container-generic: it anchors offsets into ANY canonical text whose
+// container's text nodes concatenate to it — a verse today, a work section (Phase 2) tomorrow.
 //
 // BUG 1 — anchor from the canonical verse text, never from a DOM-relative selection offset.
 //   The verse element holds a <sup> number and, once highlighted, nested <span> segments, so
@@ -119,9 +121,10 @@ export function flattenToSegments(textLen: number, highlights: HighlightRange[])
 }
 
 // ---- DOM glue (browser only) -----------------------------------------------------------------
-// Walk the verse-text container's text nodes and hand the arithmetic to the tested core above.
-// The container is the element that holds ONLY the verse text (never the <sup> number), so its
-// text nodes concatenate to v.text (plus any trailing space, which clamps away).
+// Walk the annotatable container's text nodes and hand the arithmetic to the tested core above.
+// The container is the element that holds ONLY the canonical text (for a verse: never the <sup>
+// number), so its text nodes concatenate to that text (plus any trailing space, which clamps
+// away). This is the §3 offset invariant both readers share.
 
 function textNodesOf(root: Element): Text[] {
   const doc = root.ownerDocument;
@@ -146,8 +149,10 @@ function pieceIndexOf(nodes: Text[], node: Node, offset: number): { piece: numbe
   return nodes.length ? { piece: nodes.length - 1, offset: nodes[nodes.length - 1]!.length } : null;
 }
 
-/** Browser adapter: DOM Range + verse-text container → { start, end } offsets into v.text. */
-export function rangeToVerseOffsets(range: Range, container: Element, textLen: number): { start: number; end: number } | null {
+/** Browser adapter: DOM Range + annotatable container → { start, end } offsets into the
+ *  container's canonical text (v.text / sections.body). Formerly `rangeToVerseOffsets`; the
+ *  logic was always container-generic — the name was the only verse coupling. */
+export function rangeToOffsetsInContainer(range: Range, container: Element, textLen: number): { start: number; end: number } | null {
   if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) return null;
   const nodes = textNodesOf(container);
   if (nodes.length === 0) return null;

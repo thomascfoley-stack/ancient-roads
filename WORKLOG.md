@@ -1,5 +1,56 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-18 (LIBRARY READER PHASE 1 — branch `reader-P1`: shared annotation engine + Logos-style popover)
+
+**What.** The Phase 1 slice of `docs/LIBRARY_READER_BUILD.md` §2, landed in the EXISTING Bible reader:
+
+- **Engine extracted.** `useTextAnnotation(rootRef, resolveTarget)` (`web/src/lib/use-text-annotation.ts`)
+  now owns the selection→snap→pending pipeline from `verse-display.tsx`; targets are generic
+  (`{kind, key, textLen, container}`). VerseDisplay resolves `dataset.verseText`; Phase 2's WorkReader
+  supplies `dataset.sectionText` with zero engine change. `rangeToVerseOffsets` renamed
+  `rangeToOffsetsInContainer` (was already container-generic; the name was the only coupling).
+  Not in any byte-sync set (checked `test/web-core-sync.test.ts` + `test/bible-sync.test.ts` file lists).
+- **Popover built once** (`web/src/components/selection-popover.tsx`), mounted by VerseDisplay against
+  `pending`: existing palette swatches (signed-out shows the sign-in link, as the old bar did), Add note
+  (opens the study panel Notes tab), Ask Ancient Paths (routes to `/ask?q=` PREFILL, never auto-submit),
+  commentaries quote, Copy styled / Copy lines / Text only, context label `locus · translation`
+  (never a host URL). Desktop: portal + collision-aware `placePopover` (pure, unit-tested: prefer-above,
+  flip-below, clamp; follows scroll/resize; hides while the selection is off-screen; Escape dismisses).
+  Mobile (<md): the docked-low bar pattern kept, actions scroll horizontally, so the OS copy callout is
+  never contested. `Bookmark` exists in the component API but renders ONLY when an `onBookmark` handler
+  is provided; Phase 3 wires it, no dead button today.
+- **Red-first proof** (`web/test/invariants/annotation-exact-substring.test.ts`): a selection spanning
+  three text nodes must persist the EXACT verse substring (hardcoded oracle, offsets 11..58 of John 3:16
+  KJV). Watched RED under seed A (BUG-1 piece-sum drop: substring collapsed to "loved") and seed B
+  (off-by-one on the persisted end: "…begotte"), GREEN restored. Note: word-snapping deliberately absorbs
+  raw ±1 drift mid-word, so the honest seed points are the piece-sum and the persisted offsets. DB half
+  runs the two-account pattern against dev: `createHighlight` → read back → slice equals the oracle; user
+  B cannot see the row. `flattenToSegments` tiling invariant composed in; the existing
+  `highlight-range` + `highlight-tenancy` suites are untouched and green.
+
+**Verified.** Root suite + web suite green; `npm run audit` all gates green. Browser (own dev server,
+port 3013), BOTH widths: desktop select → popover floats above the selection, repositions on
+scroll/resize, hides/returns as the selection leaves/re-enters the viewport, Note opens the Notes tab,
+Ask lands on /ask with the prefilled question; 390px select → docked bar with all actions, no page
+overflow; tap-verse → commentaries opens the study panel exactly as before at both widths
+(commentary-panel.tsx / study-panel.tsx untouched, verse onClick byte-identical); console 0 errors.
+
+**Found.** (1) The reader scrolls in an inner `<main>` container, so the popover listens for scroll in
+the capture phase; the first cut left a clipped card when the selection scrolled off the top; fixed +
+unit-guarded same session. (2) The embedded verification browser denies all clipboard access
+(page-context `writeText` too), so the "Copied" tick could not be observed there; the graceful catch
+path ran (0 console errors) and payloads are unit-tested in `copy-format.test.ts`. (3) Study-panel ×
+resisted the pane's synthetic clicks (untouched pre-existing code; Escape and real touch work).
+
+**Deferred to owner.** Signed-in BROWSER E2E (swatch → optimistic wash → reload persists): requires a
+real session and creating accounts via the browser is out of bounds for agents. Persistence is proven at
+the test level (above); the render path is the already-shipped segments code. A 2-minute owner check
+with a real account is the honest close-out.
+
+**Recommend next.** Phase 2 (Book Reader `/work/[slug]` + DB-served sections): mount this popover over
+`dataset.sectionText`, resolve the reading-unit (`unit_ordinal`, ADR-026) before Spurgeon-scale, and let
+Phase 3's migrations light up Bookmark + section anchoring (`target_kind`, ADR-027).
+
 ## 2026-07-18 (RECONCILIATION PHASES 4–6 — branch `reconcile`: verify, deep-audit, fix)
 
 Five gated streams integrated onto `reconcile` (from main 0491e6e), then verified
