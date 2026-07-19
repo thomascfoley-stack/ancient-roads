@@ -1,0 +1,62 @@
+# Part 4 ruling 2 — the SoS condition: "verify the fallback actually fires rather than assuming it"
+# Captured 2026-07-19 against dev (ep-tiny-hat) through the REAL code path.
+# Scripts: web/src/scripts/verify-sos-fallback.mts (retrieval) and verify-sos-endtoend.mts (full teach()).
+# REPRO CAVEAT: both need `server-only` resolvable under tsx. It is NOT installed; a local
+# node_modules/server-only stub was created (gitignored, uncommitted). deepinfra.ts imports it.
+
+## VERDICT: THE CONDITION IS NOT MET. The no-content fallback does NOT fire on SoS queries.
+## The user-facing outcome is nonetheless SAFE today — but by accident, not by design.
+
+## Premise (confirmed)
+  commentary_entries rows for Song of Solomon (book 22): 0
+  (control: the same query shape returns rows for other books, so 0 is real)
+
+## Stage 1 — retrieval (verify-sos-fallback.mts): 0 of 4 SoS queries fall back
+  "Song of Solomon 2, I am the rose of Sharon..."          retrieval.length = 6  -> NO fallback
+  "Song of Solomon 4, thou art all fair my love..."        retrieval.length = 6  -> NO fallback
+  "What do the commentators say about the Song of Songs?"  retrieval.length = 6  -> NO fallback
+  "Canticles 8, love is strong as death..."                retrieval.length = 6  -> NO fallback
+  CONTROL "John 10, I am the good shepherd"                retrieval.length = 6  (pipeline alive)
+
+  WHAT IT RETURNS INSTEAD — sources that CANNOT contain Song of Solomon commentary:
+    - Barnes' Notes on the NEW TESTAMENT              (SoS is Old Testament)
+    - Wesley's Explanatory Notes on the NEW TESTAMENT (same)
+    - Homilies of John Chrysostom (Matthew, John, Acts, Romans, Corinthians, Hebrews, Paulines)
+    - Augustine, Exposition on PSALM 45
+  Scores as low as 0.005 / 0.007 / 0.012 are still returned: retrieveCommentary takes top-K with
+  NO RELEVANCE FLOOR, so an empty-coverage book yields six confident-looking irrelevant chunks
+  rather than nothing. That is the mechanism, and it is structural, not query-specific.
+
+## Stage 2 — full teach() loop (verify-sos-endtoend.mts): user outcome is `kind:'fallback'`
+  "Song of Solomon 2..."  -> kind = fallback; verifier violations: a wall of SCHEMA errors
+                             (/blocks/N must have required property 'text', type must equal
+                             constant, anchors start/end must be integer, ...)
+  "Canticles 8..."        -> kind = fallback; verifier violations:
+                             anchor_valid   "anchor 46080604-46080604 is not a valid canonical verse range"
+                             passage_valid  "passage 46080604-46080604 is not a valid canonical verse range"
+  Both: retrieval kept = 6 sources; the user sees RAW SOURCES, not composed prose.
+
+## Why this matters (the honest reading)
+1. NO fabricated Song of Solomon exposition reached a user. Fail-closed held. Good.
+2. But the guard that held was the VERIFIER, catching INCIDENTAL downstream symptoms — malformed
+   schema, and an anchor (46080604 = book 46, 1 Corinthians) that is not a valid verse range. The
+   system never detected "we have no Song of Solomon sources". `kind:'empty'` never fired.
+3. So the safety is not attributable to coverage detection. A well-formed, schema-valid answer
+   with valid anchors, grounded in the retrieved NON-SoS sources, has no obvious reason to be
+   rejected — and would be served as a composed answer about Song of Solomon built out of New
+   Testament commentary. Nothing measured here rules that out; the two runs simply did not
+   produce one.
+4. Even on the safe path, the user asking about Song of Solomon is shown six sources that are not
+   about Song of Solomon, presented as what others have said. That is a relevance failure at
+   minimum.
+
+## Consequence for the ruling
+"ACCEPTED LIMITATION (coverage hole, not a quality failure)" does not survive contact with this
+evidence as stated, because the condition attached to it is not met. The gap is not that SoS
+returns nothing; it is that SoS returns the wrong thing and is caught downstream for unrelated
+reasons. ESCALATED back to the owner rather than written up as ruled.
+
+## Sample size
+n=4 SoS queries. Small — but 4/4 consistent, and the mechanism (no relevance floor on a
+zero-coverage book) is structural rather than query-specific, so the mechanism claim is robust
+even though the rate is not precisely estimated.

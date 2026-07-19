@@ -1,5 +1,11 @@
 # Held-out launch-gate eval — design
 
+> ⚠️ **The v2 numbers in this Status block are HISTORICAL (annotated 2026-07-19).** In particular
+> `proper-noun 80%` here is **v2**, and `PHASE_A_CLOSE.md` records **80/90** on **v3** — the current
+> shipped-config figure is **60/100 on frozen v4**. Per **ADR-028** that 60 is an **ACCEPTED
+> LIMITATION for gated beta and BLOCKING for public launch**, pending a re-measure at larger n.
+> ADR-028 is the single place this status is ruled.
+
 **Status:** RUN COMPLETE. v1 (`sha256 49685727…5ab8e`) → v2 re-freeze with authoritative
 WSC/HC labels (`sha256 56c00104…c98c`). Result (v2): verse-ref HIT@1 100%, pericope 80%,
 proper-noun 80%, controls 0 hijacks, no-content 0% → PASS; epistle HIT@2 68%, topical 70%

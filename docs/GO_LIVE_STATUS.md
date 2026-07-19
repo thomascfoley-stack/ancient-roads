@@ -59,9 +59,23 @@ result read stronger than the evidence supports):
 
 ## Open owner calls (2026-07-18)
 
-1. **Proper-noun HIT@1 60 < 70 (v4).** Consistent with v3's 60 on the same config
-   — a top-1 ranking characteristic on rare narratives, not noise. HIT@2 is 100.
-   Ship as a documented limitation, or hold for a ranking fix?
+1. **Proper-noun HIT@1 60 < 70 (v4). → RULED 2026-07-19, see ADR-028.** ACCEPTED
+   LIMITATION for the gated beta; **BLOCKING for public launch**; re-measure at
+   larger n before public (60/100 on n=10 has a wide CI and may not be a true
+   regression). Note `PHASE_A_CLOSE.md`'s proper-noun **80/90** is the v3 set on
+   the pre-option-(c) config and is **historical** — v4's 60/100 measures what
+   ships. ADR-028 is the only place this status is ruled.
+
+   **1b. Song of Solomon → the beta ruling's CONDITION FAILED verification
+   (2026-07-19).** SoS was to be an accepted coverage hole *provided the fallback
+   was verified to fire*. It was verified and **it does not fire**: 0/4 SoS queries
+   reach the no-content path — `retrieveCommentary` has no relevance floor, so a
+   zero-coverage book returns six irrelevant chunks (Barnes/Wesley on the **New
+   Testament**, Chrysostom on Matthew/John/Acts, Augustine on **Psalm 45**), scores
+   as low as 0.005. End-to-end the user is still safe (`kind:'fallback'`, raw
+   sources) — but only because the **verifier** rejected malformed schema and an
+   invalid anchor, not because the system noticed it has no SoS sources.
+   **Re-ruling needed.** Evidence: `docs/evidence/part4/sos-fallback-verification.txt`.
 2. **Copyrighted static corpus — publicly fetchable on prod TODAY (pre-existing).**
    16,360 copyrighted-author entries (Tyndale Study Notes 15,161 · CS Lewis 1,102
    · Screwtape 70 · Douglas Wilson 16 · Tolkien 11) sit in `web/public/commentaries`

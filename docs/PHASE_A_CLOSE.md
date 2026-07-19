@@ -69,6 +69,14 @@ re-ingest (`ingest-scrollmapper-bibles.ts`), not git.**
 | control | 10 | clean 10/10 | hijacks=0 | guard |
 
 ### §6 Hard-gate verdict → Phase A CLOSES
+> ⚠️ **HISTORICAL — do not quote these as current (annotated 2026-07-19, ADR-028).** The proper-noun
+> **80/90** below is the **v3 set on the pre-option-(c) config**. The shipped config now measures
+> proper-noun **60/100** on frozen **v4**. The two are NOT comparable (different frozen sets,
+> different configs, both n=10), and neither supersedes the other by date alone — but **v4 is the
+> current figure because it measures what ships.** Quoting 80/90 as today's proper-noun number is
+> the falsified premise ADR-028 exists to prevent. Per ADR-028 the 60 is an **accepted limitation
+> for gated beta and BLOCKING for public launch**, pending a re-measure at larger n.
+
 - **verse-ref 95/98, pericope 87/100, proper-noun 80/90** — all hold vs the last recorded hard-gate figures
   (proper-noun H1 even improved 70→80 on the un-starved pool). **No hard gate regressed.** Per ADR-022 the hard
   gates are the close condition; they hold → **Phase A closes.**
