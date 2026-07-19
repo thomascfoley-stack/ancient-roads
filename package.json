@@ -28,7 +28,8 @@
     "check:coverage:sections": "tsx src/ingest/check-corpus-coverage.ts --target=sections",
     "check:licenses": "tsx src/ingest/check-licenses.ts",
     "check:data": "pnpm check:licenses && pnpm check:coverage",
-    "migrate:sections-slice": "tsx src/ingest/migrate-sections-slice.ts"
+    "migrate:sections-slice": "tsx src/ingest/migrate-sections-slice.ts",
+    "preflight:ingest": "node scripts/ingest-preflight.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
