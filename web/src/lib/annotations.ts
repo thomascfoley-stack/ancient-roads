@@ -104,7 +104,7 @@ export async function upsertNote(
 ): Promise<Note> {
   const [rows] = await runAsUser(userId, (sql) => [
     sql`INSERT INTO notes (user_id, verse_id, body) VALUES (${userId}, ${verseId}, ${body})
-        ON CONFLICT (user_id, verse_id) WHERE deleted_at IS NULL
+        ON CONFLICT (user_id, verse_id) WHERE deleted_at IS NULL AND target_kind = 'verse'
         DO UPDATE SET body = EXCLUDED.body, updated_at = now()
         RETURNING id, verse_id, verse_end, body, updated_at`,
   ]);
