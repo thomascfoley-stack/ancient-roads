@@ -42,6 +42,9 @@ const settle = Number(rest.find((a) => a.startsWith('--settle='))?.split('=')[1]
 // depends on a browser default — the artifact would not be reproducible. Default to light
 // (what most users see); pass --scheme=dark to evidence the dark theme deliberately.
 const scheme = rest.find((a) => a.startsWith('--scheme='))?.split('=')[1] ?? 'light';
+// Optional JS run AFTER the page settles and BEFORE the capture, so evidence can show an
+// interactive state (a drawer open, a panel expanded) rather than only first paint.
+const evalJs = rest.find((a) => a.startsWith('--eval='))?.slice('--eval='.length);
 const port = 9222 + Math.floor(Number(process.pid) % 500);
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -93,6 +96,12 @@ try {
 
   // ASSERT the viewport is what we asked for — otherwise the artifact misrepresents the layout
   // and is worse than no artifact at all. This is the check that could fail.
+  if (evalJs) {
+    const r = await send('Runtime.evaluate', { expression: evalJs, returnByValue: true, awaitPromise: true });
+    if (r?.result?.exceptionDetails) throw new Error(`--eval threw: ${r.result.exceptionDetails.text}`);
+    await sleep(1200); // let the resulting render settle before capturing
+  }
+
   const probe = await send('Runtime.evaluate', { expression: 'window.innerWidth', returnByValue: true });
   const actual = probe?.result?.result?.value;
   if (actual !== width) throw new Error(`viewport assertion failed: asked ${width}, got ${actual}`);
