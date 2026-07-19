@@ -1,5 +1,54 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-18 (PHASE 3 RECONCILE — MEASURE, part 1: determinism + honest v3 re-baseline)
+
+Branch `reconcile-measure` @ 45b5bab (all 4 blocker streams integrated). DEV Neon only
+(ep-tiny-hat). Read-only on the ship path; no knobs, no relabel, no tuning.
+
+**Determinism / noise floor (measured before sizing anything).** v3 topical (n=20) run
+twice back-to-back through the shipped path (`eval-heldout.mts --v3 --cats topical`,
+pool=20 ef=64 cap=2): outputs byte-identical — every per-query HIT@1/HIT@2, voice count
+and failure code. Run-to-run noise on a fixed DB+config = **0**; the pipeline
+(embed → HNSW → rerank → floor → backfill → select) is deterministic. Deltas between
+configs/corpus states are therefore real differences, not run noise. (Sampling noise
+from small n is a separate matter: n=20/25 per broad axis still carries wide CIs.)
+
+**Honest v3 re-baseline — the number for what reconcile actually ships.**
+Artifact: FROZEN_V3 (120 q, sha256 f7a771a5…8f295 — hash-guard test green before the
+run), `--v3`, NO `--relabeled`, dev DB ep-tiny-hat after stream-C cleanup (biblehub rows
+removed), ship config = sermon-lane option (c): exegetical pool = legacy 4 commentators
++ Chrysostom/Augustine verse-scoped + CrossWire Barnes/Wesley/Calvin + SERVED_PROSE_WORKS
+(keil-delitzsch, catena-aurea, chrysostom-homilies, augustine-homilies); sermons +
+theology routed to labeled lanes, excluded from the ≥2-voices pool. pool=20 ef=64 cap=2.
+
+| category | n | HIT@1 | HIT@2 | pass / <2 / wrong / none |
+|---|---|---|---|---|
+| verse-ref | 40 | 95% | 95% | 38 / 1 / 0 / 1 |
+| pericope | 15 | 87% | 100% | 15 / 0 / 0 / 0 |
+| epistle | 25 | 68% | 80% | 20 / 0 / 5 / 0 |
+| topical | 20 | 45% | 75% | 15 / 0 / 5 / 0 |
+| proper-noun | 10 | 60% | 90% | 9 / 0 / 1 / 0 |
+| control | 10 | clean 10/10 | — | 0 hijacks |
+
+Misses by id: verse-ref — vr-21 Song2 `no-content` (the known legal-corpus hole),
+vr-29 Matt5 `<2-voices`. epistle `wrong-passage` — ep-01 atonement, ep-04 humiliation,
+ep-09 saving faith, ep-11 priesthood-of-believers, ep-14 baptism. topical
+`wrong-passage` — tp-08 justice/poor, tp-09 truthfulness, tp-12 praise, tp-15 wisdom,
+tp-17 stewardship. proper-noun — pn-09 manna/quail `wrong-passage`.
+
+**Baseline honesty note.** "70/88" (topical/epistle, recorded 2026-07-14) is NOT the
+comparison point: it was propped up by forbidden-provenance rows B2 has since removed
+and by the circular tp-12 relabel A6 struck; SERMON_LANE_DIAGNOSIS.md already found it
+unreproducible. The honest priors are: v3 first run 2026-07-11 (legacy corpus,
+pre-pool-fix: vr 95/93 · pc 87/93 · ep H2 64 · tp H2 70 · pn 70/90) and the 2026-07-18
+diagnosis configs (best 60/76, pre-biblehub-removal). **No prior honest number exists
+under this exact corpus+config — this run IS the baseline for option (c).** Against
+those priors: topical 75 and epistle 80 are the highest honest broad-axis numbers yet
+recorded; verse-ref/pericope/controls hold. **Proper-noun HIT@1 = 60% (6/10) is below
+its 70% design bar** (HIT@2 90%; 3 of 4 H1 misses still pass on voices; n=10 so ±1
+query = ±10 pts) — logged, not tuned. Ship/no-ship on that is the owner's call; v4
+(below) gives a fresh out-of-sample read.
+
 ## 2026-07-18 (DEPLOY) — 24677ba LIVE on ancientpaths.app (hero swap + nav labels)
 
 Owner said ship. Ran `./deploy.sh` from an isolated worktree at origin/main (the main
