@@ -37,8 +37,15 @@ const STAGE_SELECT = `
                NULLIF(split_part(split_part(e.source_id, ':', 3), '.', 2), '')::int, 1),
              e.source_id) AS ordinal,
          e.metadata->>'heading' AS heading,
+         -- Strip the composed heading from CHUNK 1 ONLY. The writer composes
+         -- "heading + newline + body" and chunks sequentially, so the heading
+         -- can only begin the first chunk; on continuation chunks (.2+) a
+         -- recurring refrain / title line is body text and must stay
+         -- (fresh-audit 2026-07-19: arms firing on continuation chunks
+         -- silently deleted legit body).
          CASE
            WHEN NULLIF(e.metadata->>'heading', '') IS NULL THEN e.content
+           WHEN COALESCE(NULLIF(split_part(split_part(e.source_id, ':', 3), '.', 2), ''), '1') <> '1' THEN e.content
            WHEN starts_with(e.content, e.metadata->>'heading' || chr(10))
              THEN substr(e.content, char_length(e.metadata->>'heading') + 2)
            WHEN starts_with(e.content, e.metadata->>'heading')
@@ -170,6 +177,7 @@ async function main() {
     console.log(`  matched embeddings (work="${slug}"): ${stagedCount}`);
     console.log(`  sections inserted:                            ${c[0]!.sections}`);
     console.log(`  section_embeddings (reused, model=${MODEL_SLUG}): ${c[0]!.embeddings}`);
+    console.log(`  prior rows replaced: sections=${prior[0]!.sections} section_embeddings=${prior[0]!.embeddings} section_anchors=${prior[0]!.anchors} (anchors deleted per FK; this tool writes none)`);
     const ok = c[0]!.sections === c[0]!.embeddings && Number(c[0]!.sections) === stagedCount;
     console.log(ok
       ? '\n✓ 1:1 — sections == section_embeddings == matched embeddings.'
