@@ -134,12 +134,19 @@ discovered → acquired → matched → staged → (digest) → published | quar
 
 ## 4. Embed — `corepack pnpm ingest:embeddings`
 
-`tsx src/ingest/ingest-embeddings.ts`. Requires **`DEEPINFRA_API_KEY`** and
-**`DATABASE_URL_UNPOOLED`** (falls back to `DATABASE_URL`), from env or
-`web/.env.local`; it throws loudly if either is missing. The embedder is pinned
-— **`BAAI/bge-large-en-v1.5` (1024-dim)**, never `bge-m3`, never a mix of
-models (`docs/INGESTION_TASK.md` hard rules; `model_slug` is recorded per row).
-R1 coverage in the gate is how you prove zero un-embedded sections afterwards.
+`tsx src/ingest/ingest-embeddings.ts` embeds ONE book of the legacy static
+commentary corpus into the **flat** `embeddings` table — positional book-slug
+arg (`corepack pnpm ingest:embeddings jhn`), no `--slug` flag. It does **not**
+embed `sections`: section embedding is inline in the writers
+(`ingest-sermon.ts` / `ingest-historian.ts`), or free by vector reuse —
+`migrate:sections-slice` for commentary, and `corepack pnpm repoint:sections --
+--source=<slug>` for register works already in the flat store. Requires
+**`DEEPINFRA_API_KEY`** and **`DATABASE_URL_UNPOOLED`** (falls back to
+`DATABASE_URL`), from env or `web/.env.local`; it throws loudly if either is
+missing. The embedder is pinned — **`BAAI/bge-large-en-v1.5` (1024-dim)**,
+never `bge-m3`, never a mix of models (`docs/INGESTION_TASK.md` hard rules;
+`model_slug` is recorded per row). R1 coverage in the gate is how you prove
+zero un-embedded sections afterwards.
 
 ## 5. Per-work digest — the human touchpoint
 
