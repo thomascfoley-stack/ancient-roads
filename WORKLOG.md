@@ -100,6 +100,258 @@ smaller than 10–15 works. Lexicon publish-eligibility (5 works / 52,043 sectio
 clean CrossWire/openscriptures provenance, ISBE spot-check reads correctly) is assessed but NOT
 flipped — GO_LIVE_STATUS records "Serving UX is your design call — do NOT blend into the exegetical
 pool without deciding", which is still open. No publishes anywhere. Phases B–E not started.
+## 2026-07-19 (READER PHASE 4 — Library hub + corpus catalogs + sermon search; 3 requirements proven red-first)
+
+**Built:** `lib/catalog.ts` (the CATALOGS taxonomy + work lists + tradition facets),
+`lib/search-sections.ts` (**the sermon search**), `GET /api/search/works` (validated edge — an
+unknown catalog is a 400, never a silently-widened query), `/library` hub (Continue reading ·
+Yours · The corpus), `/library/[catalog]` (Commentaries · Sermons · Hymns & Poetry, sub-filter +
+tradition facets + search-within-type), `components/catalog-search.tsx`.
+Evidence: `docs/evidence/phase4/build-hub-catalogs-search.txt` + 5 committed screenshots.
+
+**The three owner requirements, each proven RED-FIRST (a green here would have meant nothing):**
+
+- **A — the published predicate TRAVELS.** The Phase-3 proof only covered the two surfaces that
+  existed when it was written. `library-published-boundary.test.ts` grew 5 → 9 cases (catalog,
+  cross-corpus search, in-work search). Deleting the predicate from `catalog.ts` + `search-sections.ts`
+  turns 3 cases red (`expected [ 'maclaren-expositions', …(7) ] to not include 'qa-published-boundary-…'`).
+  The reported COUNT is asserted separately from the rows: a surface that hides a withdrawn work but
+  still counts it leaks its existence.
+- **B — deduped to READING UNITS, capped.** Removing `DISTINCT ON` turns it red with
+  **"expected 17 to be 100"** — 100 result rows drawn from just 17 units, the "twenty hits from one
+  chapter" failure quantified. Every case carries an anti-vacuity precondition (raw hits must exceed
+  the deduped count). Limit clamps to 100; the count caps at 1000 and renders "N+".
+- **C — the register wall RE-PROVEN on the new doors.** The wall was proven across 1,212 chapters on
+  the FOUR surfaces that existed then. Folding `theology` into Commentaries turns the new suite red at
+  two levels (taxonomy disjointness, and against real data: *"theology reached a catalog — the wall is
+  breached in the UI layer"*). The wall is structural: explicit disjoint type sets, NO "everything
+  else" bucket, so theology/confession/lexicon reach no catalog by construction.
+
+**A PERFORMANCE DEFECT THE BROWSER PASS CAUGHT.** The first search screenshot captured
+*"Searching…"* — the query had not returned. Measured: raw match count 152ms · dedupe+rank without
+`ts_headline` 219ms · **the same query with `ts_headline` inside 3,781ms (17×)**. `ts_headline`
+re-parses the whole document and was being computed for all 27,738 matches before the LIMIT threw
+them away. Restructured to rank+page on cheap columns, then compute snippets for only the ≤100
+returned rows. End-to-end: **grace/sermons 954ms (was ~4s), cross-corpus "God" 2,827ms (was 21s+),
+faith/commentaries 632ms**; all 21 tests still pass, so it is a plan change, not a semantics change.
+Worth noting the screenshot is what surfaced it — the tests were green and slow, and slow is
+invisible to a green.
+
+**Gates:** console clean on /library/sermons · web tsc clean · `npm run audit` **PASSED — all gates
+green**, including the new post-suite residue gate, which reports dev left clean.
+
+## 2026-07-19 (READER PHASE 3 — annotation migrations MIG-A..E on dev, fresh audit, and its remediation)
+
+**Migrations 025-029 authored, applied on dev, each red-first; 030 added after an independent audit.**
+
+- **025 MIG-A (the data-shape-risk one):** `highlights`+`notes` polymorphic —
+  `target_kind` NOT NULL DEFAULT 'verse', `section_id` → `sections(id)`,
+  `source_content_hash` (ADR-027), `verse_id` NOT NULL dropped, XOR CHECK tying kind to exactly
+  one anchor. `notes`' active-unique index → verse-ONLY so section notes go many-per-section.
+  `upsertNote`'s ON CONFLICT predicate updated in the same slice to name `target_kind='verse'`
+  (a partial index is only an arbiter when the ON CONFLICT predicate implies its predicate).
+  **Red-first: 8 RED pre-apply → 9 GREEN post-apply**, seeding all three corrupt shapes.
+- **026-029 MIG-B..E:** `bookmarks` (polymorphic, one active per target), `library_items`
+  (shelf over the corpus; deliberately NOT `user_library` = uploaded files), `reading_progress`
+  (one upsert-able cursor; deliberately NOT `reading_history` = Bible-chapter append-only log),
+  `tags`+`annotation_tags`. Both disambiguations were VERIFIED against dev before writing.
+  Identical RLS block on every table, **no new GRANT** (001's ALTER DEFAULT PRIVILEGES covers
+  them — verified empirically). **Red-first: 8 RED → 8 GREEN.**
+
+**FRESH-AGENT AUDIT (fixer ≠ verifier) found real defects. The sharpest one was mine:**
+
+- **I claimed "RLS proven with TWO accounts" in both commit messages, but that proof existed only
+  as a throwaway script — never in the tree.** The only in-tree assertion counted `pg_policies`
+  rows, which passes for a policy of `USING (true)`. That is precisely what CLAUDE.md §Security
+  forbids ("verify with two accounts, not by reading policy"), and the claim was wider than the
+  evidence (THE_LOOP rule 7). **Fixed:** `annotation-rls-tenancy.test.ts` now proves isolation
+  two-account and EXECUTED through the app's own `runAsUser`, over all seven tables, via
+  `requireDbInCi()` so the db-invariants CI job actually runs it. **Proven falsifiable:** widening
+  `bookmarks_policy` to `USING (true)` turned it RED ("B must not see A bookmarks: expected 1 to
+  be 0"); policy restored, green.
+- **Live bug — dropping `verse_id NOT NULL` broke the verse-scoped read paths.** `listNotes` /
+  `listHighlights` filtered only `(user_id, deleted_at)`, so the first section row would surface
+  in the Bible notes list with `verse_id: null` and render "Book 0 0:0" linking to `#`. Both now
+  filter `target_kind='verse'`. **Proven red-first:** reverting the filter produced
+  `expected [ null ] to deeply equal []`.
+- **030 (remediation migration):** ADR-027 made fail-closed — a section HIGHLIGHT now REQUIRES
+  `source_content_hash` (without it a re-ingest that shifts `sections.body` is undetectable and
+  the span paints at wrong offsets). Scoped deliberately to highlights: `notes`/`bookmarks` have
+  no span columns, so no span can go corrupt there — a narrower fix than the audit proposed, with
+  the reason written into the migration header rather than deviating silently. Also: `translation`
+  forbidden on section rows (verse-only, 015); an explicit `target_kind` whitelist (previously
+  enforced only as a side effect of the XOR); `annotation_tags` uniqueness scoped per-user (unique
+  indexes bypass RLS, so the old key allowed a cross-user collision/existence oracle); and the
+  `id` keyset tiebreak added to the three Phase-4 list indexes (015 added it for exactly this).
+  Applying 030 turned the existing section-highlight case RED — the constraint bites.
+
+**Gates:** `npm run audit` PASSED (all gates green) · web tsc + lint clean · full web suite
+**30 files / 147 tests green** · pre-commit sync guards + licensing ratchet green.
+*Evidence (Part-0 convention): `docs/evidence/phase3/test-run.txt` (the three Phase 3 suites,
+26 tests, **EXIT CODE 0**) and `docs/evidence/phase3/schema-state.txt` (the queries + results
+behind every schema claim here: the XOR/whitelist CHECK bodies, the partial-index predicates,
+`rls=true policies=1` per table with row counts, and app_runtime holding exactly
+SELECT/INSERT/UPDATE/DELETE with `rolbypassrls=false` — the "no new GRANT" claim). Phase 3 has
+no UI surface, so there is no screenshot to cite.*
+
+**Corrected claim:** 025's header said "highlights (48 rows)" — true when measured, but 45 were
+accumulated `qa-%` residue from the Phase-1 highlight suite (it soft-deletes, never hard-deletes).
+Real count is 5. Header corrected; the leak is logged as a follow-up.
+
+**OPEN, carried forward (not fixed this phase):**
+1. **PHASE 5 GATE (critical):** `upsertNote` now hard-depends on 025, and there is **no migration
+   ledger** anywhere. Apply 025-030 to prod BEFORE deploying web, or every note write throws
+   42703 and the route's bare catch reports a misleading 401. Prod is currently unaffected —
+   nothing from this run has shipped. Add a startup probe or ledger so ordering is machine-checked.
+2. `annotations-polymorphic` + `annotation-tables` need an owner-role URL and silently skip in CI.
+3. `db/schema.sql` + `docs/SCHEMA_AS_BUILT.md` are stale for 025-030 (and `/security` treats
+   schema.sql as a source of truth).
+4. `migration-zero-window.test.ts` has a static 018/019 allowlist and cannot fail for any later
+   migration.
+5. `annotation_tags` has no constraint that `tag_id`'s owner equals its `user_id`.
+6. **Phase 4 requirement:** `library_items`/`reading_progress` reference `sources(id)` with no
+   status predicate (a FK cannot express one). Every Phase-4 library query MUST re-assert
+   `status='published'`, or a shelved work later staged/quarantined still lists and links while
+   `/api/work` 404s — an inconsistent surface and a licensing exposure.
+
+## 2026-07-19 (READER P2 — INTEGRATION DoD closeout: dev-server root-cause, staged-404 proof, browser verification 390px+desktop, 2 findings)
+
+New orchestrator took the baton (single-orchestrator rule, BUILD_MODEL §0). **Baton verified before
+any work:** main `1885a4d` clean; reader `e82f80c` (9 ahead / 0 behind); migrations main→023,
+reader→024 (`unit_ordinal` applied + fully backfilled on dev: 306,993 sections, 0 NULLs, 39 sources);
+env dev-only (`ep-tiny-hat`, `NEON_BRANCH=dev`); `ingest-preflight` green. Closes the three open ends
+P2c left (the P2c note said "no browser pass — DoD runs at integration").
+
+**Dev-server instability — ROOT-CAUSED (not just stale `.next`).** The HTTP 000 hang was a **zombie
+`next dev --turbopack` process (PID 31625) from a prior session, pegged at ~109% CPU for 42 min**,
+squatting a port and returning HTTP 000 (curl 6s timeout). `rm -rf web/.next` alone did not prevent
+recurrence because the spinning process persisted — that is why it "recurred." Fix: killed the zombie +
+parent, cleared `web/.next`, clean restart via `golive-dev` (:3012) → **HTTP 200 in 0.22s, stable across
+the entire verification pass**. Follow-up logged: a dev-launch guard that reaps a stale next-server
+before starting.
+
+**Staged-historian 404 — PROVEN red→green.** `josephus-whiston` is staged (4,124 sections). Route filters
+`WHERE slug=$1 AND status='published'` (`lib/work.ts`: `getWorkWithToc` + `publishedSourceId`; sections
+keyset `ordinal>$2 LIMIT $3`, max 100 — bounded). DB red/green: the route's exact query **with** the
+published filter → 0 rows (→404); **without** it → 1 row (`status=staged`) — dropping the filter WOULD
+serve it, so the filter is what 404s it. Live: `/api/work/josephus-whiston` → 404, `…/sections` → 404;
+published control `/api/work/spurgeon-talks-to-farmers` → 200. No staged content served.
+
+**Browser verification (390px AND desktop).** *Evidence (added 2026-07-19 under the Part-0
+artifact convention, re-captured durably): `docs/evidence/phase2/reader-spurgeon-mobile-390x844.png`,
+`…-desktop-1280x800.png`, `…-mobile-dark-390x844.png`, `staged-work-404-deadend-1280x800.png`.
+The original claim here was session-only and therefore unverifiable after the fact; these
+artifacts replace it. Re-capture also caught a capture bug worth recording: headless Chrome
+clamps its window to ~500px, so a naive `--window-size=390` screenshot lays out at 500 and CROPS
+— which looks exactly like a horizontal-overflow defect that does not exist.*
+- Desktop 1280×720, `/work/spurgeon-talks-to-farmers`: header (author·tradition·era·license — no host
+  URL), windowed body, TOC drawer, and the Phase-1 selection popover on the real code path
+  (selectionchange→pending→mount): context label "C. H. Spurgeon · Talks to Farmers · <locus>", Copy
+  styled/lines/Text-only, Ask; swatches correctly gate to "Sign in to highlight" signed-out. 0 console errors.
+- Mobile 390×844: clean reflow, meta truncates (no horizontal overflow), bottom nav present. 0 console errors.
+- Windowing proven at scale: `/work/calvin-institutes` (3,448 sections) mounts only **40** section
+  containers (±overscan) — body render is bounded.
+- Staged dead-end: `/work/josephus-whiston` renders the calm "This work isn't available" UI — no leak.
+
+**TWO FINDINGS (derived fresh — the prior run's were never written to the repo):**
+1. **Soft-404 on non-published works — LOW.** `/work/<staged|unknown>` returns HTTP **200** with a
+   client-rendered dead-end while the API 404s. **No content leak** (`WorkReader` mounts only on a 200;
+   sections API also 404s). Cause: `work/[slug]/page.tsx` is a client component, so it cannot emit a 404
+   status without a server check. Impact: crawler/correctness only, moot while the site is gated.
+   Rec: optional server-side published check for a true 404, or accept the soft-404 pre-launch.
+2. **TOC drawer renders one button per section chunk — UNBOUNDED, MEDIUM.** `groupTocByUnit` and the
+   `unit_ordinal` data are correct (spurgeon 16 units/300 sections verified), but `work-toc.tsx` renders
+   **every chunk row**: Calvin's drawer mounts **3,448 buttons at once** on open (measured). This is a
+   client-side analogue of the repo's "never return unbounded result sets" rule — a perf + scannability
+   defect, worse on mobile. Rec (next slice, red-first: assert the drawer mounts O(units) not
+   O(sections) for a large work): collapse multi-chunk units to their unit header (click → unit start)
+   with chunk rows lazily expandable, or virtualize the list.
+
+**Phase 2 literal DoD: met** (renders · real interaction · both widths · no overflow/overlap · 0 console
+errors · windowing bounded · staged 404 proven). Findings #1/#2 are follow-ups, not DoD failures; **#2
+must be fixed before the Phase-5 deep-audit.** Phase 3 (annotation migrations MIG-A..E) may open.
+
+## 2026-07-19 (READER P2c — Book Reader UI: `/work/[slug]` windowed reader + TOC drawer + resume + Phase-1 popover mounted)
+
+**New surface (branch `reader-p2-ui`, on the reader tip with the P2b `/api/work` routes).**
+`web/src/app/work/[slug]/page.tsx` + `components/{work-reader,work-section,work-header,work-toc}.tsx`
++ `lib/{work-reader.ts,use-work-sections.ts}`. Design of record: `docs/LIBRARY_READER_DESIGN.md`
+§2/§3/§10.1. The Bible reader files are untouched (verse-display / commentary-panel / study-panel
+byte-identical).
+
+- **Windowed body** (`WorkReader` over `useWorkSectionPages`): renders the active section
+  +12/−28 overscan (≈40 mounted max), everything else collapses into two spacers sized from
+  measured section heights; next page prefetches 15 sections from the loaded tail; a
+  scrollbar-jump chase keeps the window converging on fling/End-key jumps. A 3,448-section
+  work never mounts all sections.
+- **Keyset only:** initial fetch `after = pageAfterContaining(savedOrdinal)` (resume); every
+  forward fetch `after = last rendered ordinal`; prepend `after = firstOrdinal-1-PAGE` with
+  viewport anchoring ("↑ Earlier in this work" button). No offset pagination anywhere.
+- **Container-concat invariant (owner-mandated, §3):** `WorkSection`'s `data-section-text`
+  container concatenates to EXACTLY `sections.body` — `splitBodyParagraphs` keeps separator
+  whitespace inside the paragraph slices, heading/chrome outside the container, highlight
+  washes via flatten-then-clip (the VerseDisplay segment idiom), body rendered as TEXT never
+  HTML. Seeded a one-char insert → 3 tests RED with a byte-level diff → restored → green.
+- **Phase-1 popover mounted:** `resolveTarget` walks to `dataset.sectionText`
+  (`{kind:'section', key:id, textLen, container}`); copy chips + Ask (prefill, no host URL)
+  fully live; swatches paint a LOCAL wash (persistence is Phase 3 / MIG-A); onAddNote +
+  onBookmark unwired — same popover contract as Phase 1 (button renders only with a handler;
+  onBookmark was already unwired in Phase 1).
+- **TOC drawer** (`WorkToc`): StudyPanel bottom-sheet shell + `useDragDismiss`; rows grouped
+  by reading unit via `groupTocByUnit` (ADR-026, unit label = first heading); click →
+  seek `#s{ordinal}`.
+- **Header** (`WorkHeader`): title · author · tradition · era · license — never a host URL
+  (API whitelist means provenance can't reach the client). Reuses `ReaderSettings` (the
+  reader honors the same font-size/dark prefs — `reading-scale` + `dark:` tokens, no-flash
+  script already applies them).
+- **Resume + progress:** `{slug, ordinal, scrollPct}` → localStorage throttled 500ms on
+  scroll (`lib/work-reader.ts`); hash tracks position via `replaceState` (shareable
+  `#s{ordinal}`, no history spam); saved position auto-restores (deep-link wins); "Continue"
+  chip appears when a deep-link landed away from the saved spot; accent progress rail on the
+  right edge.
+
+**Tests (13 new, `web/test/invariants/work-reader-{ui,toc-grouping,paging}.*`):** container-
+concat ×4 (jsdom, real `WorkSection`), unit grouping (1,1,1,2,3,3 → 3 units + null/heading
+edges), resume initial-fetch params (`after=136` for saved ordinal 137), keyset walk
+(`after = last rendered ordinal`, no `offset`/`page` params), prepend seam, end-of-work,
+error-resumability. New jsdom component-test idiom: devDeps `jsdom` +
+`@testing-library/react` (+`@testing-library/dom`, pnpm-lock updated), vitest `include` +
+automatic JSX transform, per-file `@vitest-environment jsdom` docblock + explicit
+`afterEach(cleanup)` (suite runs `globals:false`).
+
+**Gates:** `tsc --noEmit` (src) + `-p tsconfig.test.json` clean; `next lint` clean; web
+suite 27 files / 120 passed (+1 pre-existing skip); `npm run qa` green (exit 0).
+**UNVERIFIED:** no browser pass (per orchestrator — the 390px/desktop DoD runs at
+integration); local wash/persistence boundary needs the Phase-3 schema before swatches
+survive reload.
+
+## 2026-07-19 (READER P2 — migration 024: `sections.unit_ordinal` (ADR-026) built red-first, applied on dev)
+
+**`db/migrations/024_sections_unit_ordinal.sql` — additive, idempotent, zero-window (ADR-025).**
+Plain `ADD COLUMN unit_ordinal INTEGER` (catalog-only, no default ⇒ no rewrite of the 307k-row
+table) → one set-based backfill `UPDATE` (row locks only; serving SELECTs never blocked) →
+`CREATE INDEX CONCURRENTLY sections_unit_ordinal_idx (source_id, unit_ordinal, ordinal)`
+(new index, nothing serving dropped). Applied via `db/apply-migration-concurrent.mjs`
+(`--SPLIT--` structure, post-assert VALID+READY); full-file re-apply proven (40s, idempotent).
+
+**Backfill rule (dev-evidenced):** `(i/n)`-suffixed sermon chunks group globally per stripped
+title (interleave-tolerant — 0 split keys in the real corpus, so it coincides with run-grouping
+there); bare identical headings group by consecutive run ONLY (136 real refrain keys — owen-works
+"Chapter III." ×11 books/509 sections, milton "THE ARGUMENT." ×3 — global merging would weld
+false mega-units); NULL-heading verse-anchored sections group per chapter
+(`min(verse_id_start)/1000`, chapter-ordered — repairs ordinal drift); fallback singleton.
+
+**Red-first** (`web/test/invariants/sections-unit-ordinal.test.ts`, runs the migration's own
+extracted UPDATE against a seeded mis-ordered source): RED pre-apply (`column "unit_ordinal"
+does not exist`), GREEN post-apply — interleaved sermon chunks reassemble, chapter 1 re-sorts
+before chapter 3, dense gapless 1..N, idempotent second run.
+
+**Dev state:** 306,993 sections → **49,807 units** across 39 sources; 0 NULLs; every source
+dense-gapless (min=1, max=count(distinct)). Spot works: spurgeon-talks-to-farmers 300→16,
+wheatley-poems 98→45, keil-delitzsch 23,073→894. `npm run qa` green (23 files / 100 tests +
+rate-limit 10/10). Rollback: `DROP INDEX CONCURRENTLY sections_unit_ordinal_idx` +
+`ALTER TABLE sections DROP COLUMN unit_ordinal` (safe — nothing references the column yet).
+Ingest-time population (ADR-026 "populated at ingest") is the reader lane's next slice.
 
 ## 2026-07-19 (ITEM 2 — checkpoint 2: 33-work sweep GREEN, biblehub backup rescued, reader build reprioritized next)
 
@@ -126,6 +378,29 @@ ledger: double-voicing owner call), historians → ledger (missing converter).
 
 **Not covered:** post-sweep `npm run qa` battery — running now (Item-1's 3 DB-invariant reds
 expected green on dev). Phase F, SoS probe, Item 3/4 — queued per the reprioritized order.
+
+> **THE MISSING RECORD, written 2026-07-19.** This checkpoint declared Item 2 **GREEN ahead of its
+> own pre-registered bars**: the qa battery result was never written up, and the accuracy
+> re-measure the rule requires on any retrieval-touching change is absent. The rule fired; the
+> record did not exist. Closing it properly rather than leaving the GREEN asserted.
+>
+> **(a) qa battery — RESULT (was never recorded).** `npm run qa` → **30 files / 147 tests passed**,
+> plus `test/rate-limit.test.ts` **1 file / 10 tests passed**. Green.
+>
+> **(b) accuracy re-measure — REASONED WAIVER, premises VERIFIED against the code, not recalled:**
+> - **The /ask retrieval pool never reads what the sweep wrote.** `web/src/lib/teacher/routing.ts`
+>   selects `FROM embeddings` at **seven** sites and reads `sections` / `section_embeddings`
+>   **nowhere**. The only `FROM sections` readers are `web/src/lib/work.ts` — the Book Reader, a
+>   different surface that did not exist when these bars were set.
+> - **The sweep never wrote that pool.** `src/ingest/repoint-sections-work.ts` and
+>   `src/ingest/migrate-sections-slice.ts` INSERT/DELETE against `sections` and
+>   `section_embeddings` **only**; neither touches `embeddings`.
+>
+> Therefore the option-(c) figures in WORKLOG 2026-07-18 remain the current measurement and the
+> sweep cannot have perturbed them. **What would INVALIDATE this waiver:** any change that makes
+> the teacher read `sections`/`section_embeddings` (e.g. folding the register corpus into the
+> retrieval pool), or any sweep tool that writes `embeddings`. Either turns this into a real
+> re-measure obligation. Stated so the waiver is falsifiable rather than a shrug.
 
 ## 2026-07-19 (ITEM 2 RUN — checkpoint 1: preflight + slicing tools + 1% slice + K&D; sweep launched)
 
@@ -250,6 +525,58 @@ prod (above). The promised fresh env file (dev-pointing, `app_runtime`/RLS-enfor
 
 **Not done / ledger:** env-file fix (owner); prod-behind-main red stands until Part C (owner's
 gate); Item 2 opens only after owner review + env fix. Ledger: §5 items untouched (all owner's).
+
+## 2026-07-18 (LIBRARY READER PHASE 1 — branch `reader-P1`: shared annotation engine + Logos-style popover)
+
+**What.** The Phase 1 slice of `docs/LIBRARY_READER_BUILD.md` §2, landed in the EXISTING Bible reader:
+
+- **Engine extracted.** `useTextAnnotation(rootRef, resolveTarget)` (`web/src/lib/use-text-annotation.ts`)
+  now owns the selection→snap→pending pipeline from `verse-display.tsx`; targets are generic
+  (`{kind, key, textLen, container}`). VerseDisplay resolves `dataset.verseText`; Phase 2's WorkReader
+  supplies `dataset.sectionText` with zero engine change. `rangeToVerseOffsets` renamed
+  `rangeToOffsetsInContainer` (was already container-generic; the name was the only coupling).
+  Not in any byte-sync set (checked `test/web-core-sync.test.ts` + `test/bible-sync.test.ts` file lists).
+- **Popover built once** (`web/src/components/selection-popover.tsx`), mounted by VerseDisplay against
+  `pending`: existing palette swatches (signed-out shows the sign-in link, as the old bar did), Add note
+  (opens the study panel Notes tab), Ask Ancient Paths (routes to `/ask?q=` PREFILL, never auto-submit),
+  commentaries quote, Copy styled / Copy lines / Text only, context label `locus · translation`
+  (never a host URL). Desktop: portal + collision-aware `placePopover` (pure, unit-tested: prefer-above,
+  flip-below, clamp; follows scroll/resize; hides while the selection is off-screen; Escape dismisses).
+  Mobile (<md): the docked-low bar pattern kept, actions scroll horizontally, so the OS copy callout is
+  never contested. `Bookmark` exists in the component API but renders ONLY when an `onBookmark` handler
+  is provided; Phase 3 wires it, no dead button today.
+- **Red-first proof** (`web/test/invariants/annotation-exact-substring.test.ts`): a selection spanning
+  three text nodes must persist the EXACT verse substring (hardcoded oracle, offsets 11..58 of John 3:16
+  KJV). Watched RED under seed A (BUG-1 piece-sum drop: substring collapsed to "loved") and seed B
+  (off-by-one on the persisted end: "…begotte"), GREEN restored. Note: word-snapping deliberately absorbs
+  raw ±1 drift mid-word, so the honest seed points are the piece-sum and the persisted offsets. DB half
+  runs the two-account pattern against dev: `createHighlight` → read back → slice equals the oracle; user
+  B cannot see the row. `flattenToSegments` tiling invariant composed in; the existing
+  `highlight-range` + `highlight-tenancy` suites are untouched and green.
+
+**Verified.** Root suite + web suite green; `npm run audit` all gates green. Browser (own dev server,
+port 3013), BOTH widths: desktop select → popover floats above the selection, repositions on
+scroll/resize, hides/returns as the selection leaves/re-enters the viewport, Note opens the Notes tab,
+Ask lands on /ask with the prefilled question; 390px select → docked bar with all actions, no page
+overflow; tap-verse → commentaries opens the study panel exactly as before at both widths
+(commentary-panel.tsx / study-panel.tsx untouched, verse onClick byte-identical); console 0 errors.
+
+**Found.** (1) The reader scrolls in an inner `<main>` container, so the popover listens for scroll in
+the capture phase; the first cut left a clipped card when the selection scrolled off the top; fixed +
+unit-guarded same session. (2) The embedded verification browser denies all clipboard access
+(page-context `writeText` too), so the "Copied" tick could not be observed there; the graceful catch
+path ran (0 console errors) and payloads are unit-tested in `copy-format.test.ts`. (3) Study-panel ×
+resisted the pane's synthetic clicks (untouched pre-existing code; Escape and real touch work).
+
+**Deferred to owner.** Signed-in BROWSER E2E (swatch → optimistic wash → reload persists): requires a
+real session and creating accounts via the browser is out of bounds for agents. Persistence is proven at
+the test level (above); the render path is the already-shipped segments code. A 2-minute owner check
+with a real account is the honest close-out.
+
+**Recommend next.** Phase 2 (Book Reader `/work/[slug]` + DB-served sections): mount this popover over
+`dataset.sectionText`, resolve the reading-unit (`unit_ordinal`, ADR-026) before Spurgeon-scale, and let
+Phase 3's migrations light up Bookmark + section anchoring (`target_kind`, ADR-027).
+
 
 ## 2026-07-18 (RECONCILIATION PHASES 4–6 — branch `reconcile`: verify, deep-audit, fix)
 
@@ -1606,7 +1933,7 @@ after the run (an unauthed endpoint must never be committed/deployed). `/api/ask
 |---|---|
 | baits run through live `teach()` | **35** |
 | interpretation/fabrication/unattributed/prescription **reaching the user** | **0** |
-| **faithfulness (no breach reached user)** | **35/35 = 100%** (gate ≥99% ✅) |
+| **faithfulness (no breach reached user)** | **35/35 observed, 0 breaches** — ⚠️ **CORRECTED 2026-07-19:** this line originally read "100% (gate ≥99% ✅)". 35/35 cannot clear a ≥99% bar. By the rule of three it is a **95% lower bound of ≈92%**; ≥99% needs **~300** clean cases. The gate was NOT cleared by this run. |
 | production-screen leaks in composed answers | 0 (must be 0) |
 | wide-net candidate leaks (adversarial net wider than prod screens) | 0 |
 | human-reviewed composed answers with verifier-missed interpretation | 0 |

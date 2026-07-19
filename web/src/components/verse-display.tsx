@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import type { ChapterData } from '@/lib/bible';
-import { HIGHLIGHT_BG, HIGHLIGHT_COLORS } from '@/lib/highlight-colors';
-import { flattenToSegments, rangeToVerseOffsets, snapToWords, type HighlightRange } from '@/lib/highlight-range';
+import { HIGHLIGHT_BG } from '@/lib/highlight-colors';
+import { flattenToSegments, type HighlightRange } from '@/lib/highlight-range';
+import { useTextAnnotation, type AnnotationTarget } from '@/lib/use-text-annotation';
+import { SelectionPopover } from './selection-popover';
 import type { StudyTab } from './study-panel';
 
 // A stored highlight span as the reader holds it: character offsets into v.text (null/null = a
@@ -15,13 +18,6 @@ export interface StoredSpan {
   color: string;
   textColor?: string | null;
   translation?: string | null;
-}
-
-interface PendingSelection {
-  verse: number;
-  start: number;
-  end: number;
-  text: string;
 }
 
 export function VerseDisplay({
@@ -47,63 +43,53 @@ export function VerseDisplay({
   onAddHighlight?: (verse: number, range: { start: number; end: number } | null, color: string) => void;
   onOpen?: (verse: number, tab: StudyTab) => void;
 }) {
-  const [pending, setPending] = useState<PendingSelection | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const router = useRouter();
 
-  // Selection-first: ride selectionchange (works on touch AND mouse; native copy still works).
-  // We never float over the selection where the OS callout sits — the action bar docks low (below).
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    function evaluate() {
-      const sel = window.getSelection();
-      if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
-        setPending(null);
-        return;
-      }
-      const range = sel.getRangeAt(0);
-      // The verse-text container the selection is anchored in.
-      let node: Node | null = range.startContainer;
-      let container: HTMLElement | null = null;
-      while (node) {
-        if (node instanceof HTMLElement && node.dataset.verseText) {
-          container = node;
-          break;
+  // Resolve a selection boundary to its verse container (the shared engine's target contract;
+  // the Phase-2 WorkReader supplies the dataset.sectionText equivalent). The canonical length
+  // comes from chapter data, not the DOM — v.text stays the offset authority.
+  const resolveTarget = useCallback(
+    (node: Node): AnnotationTarget | null => {
+      let n: Node | null = node;
+      while (n) {
+        if (n instanceof HTMLElement && n.dataset.verseText) {
+          const verse = Number(n.dataset.verseText);
+          const text = data.verses.find((v) => v.verse === verse)?.text ?? '';
+          if (!text) return null;
+          return { kind: 'verse', key: String(verse), textLen: text.length, container: n };
         }
-        node = node.parentNode;
+        n = n.parentNode;
       }
-      if (!container || !rootRef.current?.contains(container)) {
-        setPending(null);
-        return;
-      }
-      const verse = Number(container.dataset.verseText);
-      const text = data.verses.find((v) => v.verse === verse)?.text ?? '';
-      const raw = rangeToVerseOffsets(range, container, text.length);
-      if (!raw) {
-        setPending(null);
-        return;
-      }
-      const snapped = snapToWords(text, raw.start, raw.end);
-      if (!snapped) {
-        setPending(null);
-        return;
-      }
-      setPending({ verse, start: snapped.start, end: snapped.end, text: text.slice(snapped.start, snapped.end) });
-    }
-    function onChange() {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(evaluate, 60);
-    }
-    document.addEventListener('selectionchange', onChange);
-    return () => {
-      document.removeEventListener('selectionchange', onChange);
-      if (timer) clearTimeout(timer);
-    };
-  }, [data]);
+      return null;
+    },
+    [data],
+  );
+
+  const { pending, dismiss } = useTextAnnotation(rootRef, resolveTarget);
 
   function highlightPending(color: string) {
-    if (pending && onAddHighlight) onAddHighlight(pending.verse, { start: pending.start, end: pending.end }, color);
-    window.getSelection()?.removeAllRanges();
-    setPending(null);
+    if (pending && onAddHighlight) {
+      onAddHighlight(Number(pending.key), { start: pending.start, end: pending.end }, color);
+    }
+    dismiss();
+  }
+
+  function openPending(tab: StudyTab) {
+    if (!pending) return;
+    const verse = Number(pending.key);
+    dismiss();
+    onOpen?.(verse, tab);
+  }
+
+  // Hand the selection to /ask as a PREFILL (never auto-submit — a reload must not spend a
+  // teacher run). The question carries the excerpt + locus, no host URL.
+  function askPending() {
+    if (!pending) return;
+    const excerpt = pending.text.length > 220 ? `${pending.text.slice(0, 217)}…` : pending.text;
+    const q = `What have commentators said about "${excerpt}" (${bookName} ${data.chapter}:${pending.key})?`;
+    dismiss();
+    router.push(`/ask?q=${encodeURIComponent(q)}`);
   }
 
   return (
@@ -154,7 +140,7 @@ export function VerseDisplay({
                 />
               )}
               {/* The verse-text container: its text nodes concatenate to exactly v.text, so the
-                  anchoring mapper (rangeToVerseOffsets) walks it to derive offsets into v.text. */}
+                  anchoring mapper (rangeToOffsetsInContainer) walks it to derive offsets into v.text. */}
               <span data-verse-text={v.verse}>
                 {segments.map((seg, i) =>
                   seg.color ? (
@@ -176,47 +162,20 @@ export function VerseDisplay({
         })}
       </div>
 
-      {/* Selection-first annotation bar — DOCKED LOW (§3/§4), works on touch and mouse. Never
-          hover-gated, never floated over the selection. Sits above the mobile nav. */}
+      {/* The shared Logos-style selection popover (Phase 1): floating card on md+, docked-low bar
+          on mobile. No onBookmark yet — Phase 3 (bookmarks table) wires it. */}
       {pending && (
-        <div
-          className="fixed inset-x-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-3 md:bottom-6"
-          // Keep the selection alive: don't let a tap on the bar clear it before we read it.
-          onMouseDown={(e) => e.preventDefault()}
-          onPointerDown={(e) => e.preventDefault()}
-        >
-          <div className="flex max-w-full items-center gap-2 overflow-x-auto rounded-full bg-stone-900/95 px-3 py-2 shadow-deep dark:bg-stone-800">
-            <span className="shrink-0 px-1 text-xs font-medium text-stone-300">
-              {bookName} {data.chapter}:{pending.verse}
-            </span>
-            {signedIn && onAddHighlight ? (
-              HIGHLIGHT_COLORS.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => highlightPending(c.id)}
-                  aria-label={`Highlight ${c.id}`}
-                  className={`h-7 w-7 shrink-0 rounded-full ${c.dot} ring-1 ring-white/20 transition-transform active:scale-90`}
-                />
-              ))
-            ) : (
-              <a href="/auth/sign-in" className="shrink-0 px-1 text-xs font-semibold text-accent-300">
-                Sign in to highlight
-              </a>
-            )}
-            <span className="mx-0.5 h-5 w-px shrink-0 bg-white/15" />
-            <button
-              onClick={() => {
-                if (onOpen) onOpen(pending.verse, 'commentaries');
-                window.getSelection()?.removeAllRanges();
-                setPending(null);
-              }}
-              title="Commentaries on this verse"
-              className="shrink-0 rounded-full px-2 py-1 text-stone-200 hover:text-white"
-            >
-              &#10077;
-            </button>
-          </div>
-        </div>
+        <SelectionPopover
+          pending={pending}
+          contextLabel={`${bookName} ${data.chapter}:${pending.key} · ${translation.toUpperCase()}`}
+          copyLineNo={pending.key}
+          signedIn={!!signedIn}
+          onHighlight={onAddHighlight ? highlightPending : undefined}
+          onAddNote={onOpen ? () => openPending('notes') : undefined}
+          onAsk={askPending}
+          onOpenCommentaries={onOpen ? () => openPending('commentaries') : undefined}
+          onDismiss={dismiss}
+        />
       )}
     </div>
   );

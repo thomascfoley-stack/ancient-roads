@@ -8,6 +8,77 @@ git history — not from memory or the earlier hit list.
 > priority narrative below predates the 2026-07-14 Phase A close + license gate + Slice 0; trust
 > STATE_OF_TRUTH for facts, and treat the section priorities here as owner-set direction, not current status.
 
+## Update 2026-07-19 (Library Reader Phase 4 — hub + catalogs + sermon search) — BUILT on dev
+
+`/library` hub, the three corpus catalogs (Commentaries · Sermons · Hymns & Poetry) with facets and
+search-within-type, `searchSections` + `GET /api/search/works` — the sermon search — and the
+deferred unbounded-TOC fix (landed earlier this phase). The owner's three requirements were baked in
+from the start and each proven red-first: the published-status predicate now travels to the catalog
+and search read paths; search dedupes to reading units (removing DISTINCT ON → "expected 17 to be
+100") and stays capped; the register wall is re-proven on the new doors (folding `theology` into
+Commentaries → "the wall is breached in the UI layer"). The browser pass also caught a 17×
+`ts_headline` performance defect — searches went 21s → 2.8s cross-corpus. `npm run audit` green.
+Details: WORKLOG 2026-07-19 (READER PHASE 4); evidence in `docs/evidence/phase4/`.
+
+**Next:** Phase 5 PREP only — the migration ledger, a fresh-agent deep-audit, and the cutover
+runbook — then STOP at the confirmation gate before any prod-touching command.
+
+## Update 2026-07-19 (Library Reader Phase 3 — annotation migrations DONE on dev, audited + remediated)
+
+Migrations 025-029 (MIG-A..E) authored, applied on dev, each red-first: polymorphic
+highlights/notes with a verse-XOR-section CHECK and a verse-only notes unique index (plus the
+paired `upsertNote` ON CONFLICT fix), then bookmarks, library_items, reading_progress, and
+tags/annotation_tags. Identical RLS block everywhere, no new GRANT (verified). A fresh-agent
+audit then found real defects, including that the "RLS proven with two accounts" claim in the
+commit messages existed only as a throwaway script — the in-tree check merely counted policies.
+Fixed by an executed two-account tenancy test over all seven tables, proven falsifiable by
+widening a policy and watching it go red. Also fixed a live bug (section rows leaking into the
+verse-scoped Bible lists as "Book 0 0:0") and added migration 030 tightening ADR-027 (section
+highlights must pin a content hash), the target_kind whitelist, per-user tag-link uniqueness,
+and keyset tiebreaks. `npm run audit` green; 30 files / 147 tests. Details: WORKLOG 2026-07-19
+(READER PHASE 3).
+
+**Carried into Phase 5 (gate):** `upsertNote` hard-depends on 025 and there is no migration
+ledger — prod migrations MUST be applied before the web deploy. **Carried into Phase 4:** every
+library query must re-assert `status='published'` (the FK cannot).
+
+**Next:** Phase 4 — Library hub + catalogs (Commentaries / Sermons / Hymns & Poetry) +
+searchSections + /api/search/works (sermon search), plus the deferred unbounded-TOC fix.
+STOP before Phase 5 (owner-run prod cutover).
+
+## Update 2026-07-19 (Library Reader Phase 2 — INTEGRATION DoD CLOSED) — new orchestrator
+
+Phase 2 closed to its literal DoD at integration (the browser pass P2c deferred). Dev-server
+HTTP-000 instability root-caused (a zombie `next dev --turbopack` at ~109% CPU, not just stale
+`.next`) and fixed → 200 in 0.22s, stable. Staged-historian 404 proven red→green
+(`josephus-whiston` staged → 404; published control → 200; the `status='published'` filter is
+demonstrably what 404s it). Browser-verified at 390px AND desktop: reader renders, TOC drawer,
+selection popover on the real code path, windowing bounded (Calvin 3,448 sections → 40 mounted),
+0 console errors, staged dead-end leaks nothing. **Two findings (fresh):** (1) soft-404 on
+non-published works — HTTP 200 + not-found UI, no leak, LOW; (2) TOC drawer renders one button per
+section chunk — Calvin mounts 3,448 buttons on open, an unbounded client render, MEDIUM, fix before
+the Phase-5 deep-audit. Details: WORKLOG 2026-07-19 (READER P2 integration closeout).
+
+**Next:** Phase 3 — annotation migrations MIG-A..E on dev (pre-authorized this run), RLS proven with
+two accounts, ADR-027 content-hash drift. Then Phase 4 (Library hub + catalogs + sermon search).
+STOP before Phase 5 (owner-run prod cutover).
+
+## Update 2026-07-19 (Library Reader Phase 2c — branch `reader-p2-ui`) — Book Reader UI built, browser DoD at integration
+
+Phase 2's UI surface (`/work/[slug]`) is built on the P2b API: windowed keyset body
+(active ±12/28 overscan, measured spacers — a 3,448-section work never mounts all sections),
+reading-unit TOC drawer (ADR-026), header (title·author·tradition·era·license, never a host
+URL), progress rail + localStorage resume with auto-restore and a Continue chip, and the
+Phase-1 SelectionPopover mounted over `data-section-text` (copy/Ask live; swatches paint a
+local wash pending Phase 3; note/bookmark unwired per the Phase-1 popover contract).
+Container-concat invariant (§3) enforced by a jsdom test that went RED on a seeded one-char
+render bug. 13 new invariant tests; `tsc` (src+test) / lint / `npm run qa` green. Bible
+reader files untouched. **No browser pass here — the 390px/desktop DoD runs at integration.**
+Details: WORKLOG 2026-07-19 (READER P2c).
+
+Next: integration browser DoD → Phase 3 migrations (owner-run: polymorphic annotations,
+bookmarks, library_items, reading_progress) → Phase 4 Library hub/catalogs → Phase 5 cutover.
+
 ## Update 2026-07-19 (Item 1 — doc-hygiene sweep LANDED; Kimi orchestrating)
 
 Operating docs now canonical on main: `docs/BUILD_MODEL.md` + `docs/PORTABILITY.md` +
@@ -21,6 +92,25 @@ environmental (local env points at prod DB, pre-Part-C — see WORKLOG 2026-07-1
 **Next:** Item 2 (ingestion + corpus run — unblocks reader Phase 2) after owner review
 and the dev-pointing env file. Ledger holds: §5 owner calls (proper-noun bar, v4.1
 scope, publish list, biblehub backup), env fix, Part C.
+
+## Update 2026-07-18 (Library Reader Phase 1 — branch `reader-P1`) — DONE, PM review pending
+
+Phase 1 of `docs/LIBRARY_READER_BUILD.md` (shared annotation engine + Logos-style highlighter in the
+EXISTING Bible reader) is built, red-first proven, audited, and browser-verified at 390px + desktop:
+
+- `useTextAnnotation` extracted (target-generic; Phase 2 mounts it over `dataset.sectionText`);
+  `rangeToVerseOffsets` → `rangeToOffsetsInContainer`.
+- `SelectionPopover` built once: swatches · Add note · Ask (prefill-only) · commentaries · three copy
+  chips · `locus · translation` context label; portal + collision-aware on desktop, docked-low bar on
+  mobile; Bookmark in the API but rendered only when Phase 3 provides a handler.
+- Red-first: multi-text-node selection persists the EXACT verse substring (two seeds watched red);
+  DB round-trip + two-account RLS executed on dev; existing highlight/tenancy suites untouched, green.
+- Tap-verse → commentaries byte-identical (panel files untouched). `npm run audit` all green.
+- Deferred to owner: a signed-in browser E2E pass (agents don't create accounts); test-level
+  persistence proof stands in. Details: WORKLOG 2026-07-18 (READER PHASE 1).
+
+Next: Phase 2 Book Reader (`/work/[slug]`, keyset-paginated sections) → Phase 3 migrations (owner-run)
+→ Phase 4 Library hub/catalogs → Phase 5 owner cutover.
 
 ## Update 2026-07-18 (go-live reconciliation — branch `reconcile`)
 

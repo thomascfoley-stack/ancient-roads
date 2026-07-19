@@ -1,0 +1,48 @@
+# Part 1 evidence — four tests that could not fail, each fixed AND proven red-first
+# Captured 2026-07-19 against the DEV branch (ep-tiny-hat). Artifact convention: docs/evidence/README.md
+
+## 1. verse-keys.test.ts — VACUOUS PASS (highest value; guards the ADR-020 scar)
+The suite title claimed it "skips" when the gitignored corpus is absent. Nothing skipped:
+loadEntries() returned [], offenders was [], expect([]).toEqual([]) went green with zero assertions.
+
+  DEMONSTRATED (before fix), CORPUS_DIR pointed at a missing directory:
+      ✓ test/invariants/verse-keys.test.ts (2 tests) 2ms
+      Tests  2 passed (2)                      <-- green, 2ms, nothing enforced
+
+  AFTER FIX, three states:
+    corpus PRESENT  ->  ✓ 2 passed, 2461ms + 2222ms   (real work, real assertions)
+    corpus ABSENT   ->  ↓ 2 skipped                    (VISIBLY skipped, never green)
+    corpus EMPTY    ->  × 2 failed:
+        "VACUOUS GUARD: no author reached MIN_ENTRIES=200, so this assertion could not
+         have failed. The corpus is empty or partial — do not trust this green."
+        "VACUOUS GUARD: zero corpus entries loaded ... expected 0 to be greater than 200"
+  Also added: REQUIRE_CORPUS=1 throws loudly (same idiom as requireDbInCi).
+
+## 2. work-reader.test.ts — staged-404 was fixture-dependent
+Against a DB lacking josephus-whiston, deleting the status='published' filter would STILL yield
+404, so the test could certify a boundary that no longer exists. Added a fixture precondition.
+
+  SEEDED (STAGED_SLUG -> 'no-such-staged-work'):
+      × 404s a staged source on BOTH routes (published-only boundary)
+        → fixture missing: 'no-such-staged-work' must exist in this DB, else the 404 proves
+          nothing: expected +0 to be 1
+  RESTORED:  Tests  7 passed (7)
+
+## 3. work-reader-ui.test.tsx — the "wash actually rendered" claim had no assertion
+Old assertion was `textContent?.length === body.length`, a tautology implied by the line above it.
+Now asserts the wash MARKUP: a coloured segment renders <span class="rounded-[3px] ...">, clipped
+per paragraph, so a range crossing the boundary yields exactly 2 spans rejoining to body.slice(6,24).
+
+  SEEDED (work-section.tsx: `const segments = null;`):
+      × stays exact through the highlight-segment path, even across a paragraph boundary
+        → the wash must render, clipped into one span per paragraph: expected +0 to be 2
+  RESTORED:  Tests  4 passed (4)
+
+## 4. Phase-1 highlight tests leaked ~2 rows per full-suite run into shared dev
+Teardown called removeHighlightById, which SOFT-deletes (right for the app, wrong for a teardown),
+so the row stayed. 45 rows had accumulated. Both files now HARD-delete their own seeded user ids.
+
+  BASELINE:     highlights total=5 qa=0
+  AFTER RUN 1:  highlights total=5 qa=0
+  AFTER RUN 2:  highlights total=5 qa=0     <-- no growth (was +2 per run)
+  Full suite still green:  Test Files 30 passed (30)   Tests 147 passed (147)

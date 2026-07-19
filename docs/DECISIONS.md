@@ -111,6 +111,10 @@ historians as clean tier; applying 016 to prod this cycle.
 cited "ADR-022" for this decision since 2026-07-14/15, but no entry existed here — this records it properly,
 dated to the decision. **Context:** at n=25/20 the epistle/topical 95% CIs both span the 85 bar, so
 pass/fail is unmeasurable at those n; verse-ref/pericope/proper-noun are objective and adequately powered.
+> **Status qualifier (ADR-028, 2026-07-19):** "hard launch gate" below means **public launch**. For the
+> **gated beta**, proper-noun HIT@1 60<70 is an **ACCEPTED LIMITATION**, pending a re-measure at larger n.
+> ADR-028 is the single place that status is ruled; do not restate it elsewhere.
+
 **Decision:** verse-ref, pericope, and proper-noun are the **hard launch gates**; epistle and topical HIT@2
 are **diagnostic** — reported, failure-coded, and tracked toward the 85 GA bar, but a miss is a documented
 limitation, not an auto-no-ship. **Why:** gating on a statistically unmeasurable number is theater; the
@@ -171,3 +175,106 @@ hand-typed prod SQL diverging from the committed migrations (the drift this reco
 
 ## ADR-027 — Section-anchored annotations pin a content hash; degrade to a section indicator on drift, never a corrupt highlight (2026-07-18)
 **Context:** A highlight/note/bookmark on a *work* anchors to `section_id` + char offsets into `sections.body`. Re-ingesting a source (better OCR, edition repair) can shift `sections.body`, which would silently move every offset — the exact class of failure the translation-pin lesson (verse offsets are translation-relative) already taught us to fear. **Decision:** every section-anchored annotation stores `source_content_hash` (a hash of the anchored `sections.body` at capture time). On render, if the current body's hash ≠ the stored hash, the annotation **degrades to a section-level indicator** ("you highlighted something in this section") rather than painting a now-wrong span — and is flagged for optional re-anchoring. It is **never** rendered as a corrupt/mis-placed highlight, and never silently dropped. **Why:** a wrong-span highlight is worse than an honest "this moved" marker; failing closed to a section indicator preserves the user's intent without asserting a false location. **Rejected:** trusting offsets across re-ingest (silent corruption); deleting drifted annotations (data loss the user never chose); auto-re-anchoring by fuzzy match (guesses a location — the interpretive-guess failure mode; offer it, never do it silently). Red-first: re-ingest a section with shifted text, prove a pinned annotation degrades to the indicator and does not paint the wrong span. See `docs/LIBRARY_READER_DESIGN.md` §4, §8.2. *(Authored as "ADR-022" in the reader-WIP docs; renumbered here per the collision note.)*
+
+## ADR-028 — Launch-blocking vs accepted-limitation: the three standing rulings (owner, 2026-07-19)
+
+**Context:** The same three known gaps were framed inconsistently across the docs — each was called
+both "hard launch gate" and "accepted limitation" depending on which file an agent happened to read
+first. An agent reading one file adopts a premise the next file contradicts. **This ADR is the ONE
+place these are ruled.** Where any other doc states a status for these three, it must point here.
+
+**Decision (owner):**
+
+**1. proper-noun HIT@1 60 < 70 — ACCEPTED LIMITATION for gated beta; BLOCKING for public launch.**
+Re-measure at larger n before public launch: 60/100 on n=10 carries a wide CI and may not be a true
+regression. Until that re-measure exists, do not describe the 60 as either "a regression" or
+"cleared".
+
+> **Reconciling the two live numbers (this is the falsified-premise risk):** `PHASE_A_CLOSE.md`
+> records proper-noun **80/90** and calls the hard gates held; frozen v4 records **60/100**. Both
+> were true of their own run and neither supersedes the other by date alone. They are NOT
+> comparable: PHASE_A_CLOSE is **v3, n=10, the pre-option-(c) config**; v4 is **a different frozen
+> set, n=10, the option-(c) lane config**. Two n=10 samples on different sets and different configs.
+> **The v4 figure (60/100) is the current one** because it measures the shipped config. The
+> PHASE_A_CLOSE 80/90 is historical and must not be quoted as current — it is annotated in place.
+
+**2. Song of Solomon — RE-RULED 2026-07-19 after the condition failed. RECLASSIFIED.**
+
+> **SoS is NOT an accepted coverage hole. It is the visible SYMPTOM of a guarantee-class retrieval
+> defect: `retrieveCommentary` takes top-K with NO RELEVANCE FLOOR, so ANY zero- or thin-coverage
+> passage returns confident irrelevant sources. Song of Solomon is the case we happened to look at,
+> not the scope of the problem.**
+>
+> **STATUS: BLOCKING FOR PUBLIC LAUNCH** — alongside SEC-1 and proper-noun. Acceptable for the gated
+> beta **only on the explicit basis that the site is single-user today**, and expressly **NOT** on
+> the basis that the guard works. It does not work.
+>
+> **THE NEAR-MISS, RECORDED HONESTLY — do NOT record this as "the fallback held".** `kind:'empty'`
+> never fired. The two probe responses were rejected by the **verifier**, for reasons unrelated to
+> coverage: malformed schema, and an invalid anchor `46080604` (book 46 = 1 Corinthians) on a Song
+> of Solomon query. **We were protected by luck.** A schema-valid answer with valid anchors,
+> grounded in those same wrong sources, has no obvious reason to be rejected — and would be served
+> as a composed answer about Song of Solomon built from New Testament commentary. A concordance
+> that confidently cites 1 Corinthians when asked about Song of Solomon is not a coverage gap; it
+> is the product guarantee (ADR-001) breaking.
+>
+> **FIX — CORRECTED 2026-07-19 (a relevance floor is FALSIFIED; do not re-propose it).** Measured on
+> frozen v4 (120/120, real path): best ON-label score min **0.9957** vs worst OFF-label junk max
+> **0.9999** — no separation exists. And `score` is TWO quantities: leads carry reranker scores,
+> BACKFILLED SECOND VOICES carry vector cosine (0.55-0.75), so any floor >=0.9 silently deletes every
+> backfilled second voice and breaks the >=2-voices guarantee **on healthy queries**; the only floor
+> that changes anything (T~0.55) clears 0/8 SoS queries. The scores are right about TEXT and wrong
+> about PASSAGE. **The fix is ON-PASSAGE COVERAGE DETECTION at the routing layer**: fire
+> `kind:'empty'` when zero returned chunks have a `verseId` intersecting the asked range (for
+> verse-ref queries `resolveIntent` already computes it). **Topical queries are coverage-blind by
+> construction and are NOT solved by this** — they need a separate answer.
+>
+> **SCOPE, verified independently against the LEGAL pool:** Song of Solomon is the **ONLY**
+> zero-coverage book in the canon and there are **ZERO** thin chapters (controls: John 6,829 rows/9
+> authors, Psalms 5,157/5). Structural mechanism, one book of exposure today — not systemic.
+>
+> **AND THE SoS GAP IS A LICENSING GAP, NOT AN INGESTION GAP:** the raw corpus holds **915 SoS rows
+> from 35 authors**; `LEGAL_CORPUS_FILTER` excludes all of them. The remedy is an allowlist/provenance
+> fix, not re-ingesting Song of Solomon — Item 2 currently tracks it as ingestion breadth, which on
+> this evidence would spend effort re-fetching text the corpus already has.
+> *(Recorded honestly: reaching this took three measurements, two of mine wrong and pointing in
+> opposite directions, because I twice queried a table the code does not retrieve from. See
+> `docs/evidence/part1/coverage-census.txt`.)*
+>
+> **NOT inside Phase 4.** It is a single-lane retrieval change and must carry the held-out re-measure — so it is its own slice with the held-out accuracy re-measure attached
+> (CLAUDE.md requires the re-measure on any retrieval change). Tracked as a named post-Phase-4 slice.
+> Ingestion coverage for SoS remains tracked to Item 2 separately; it is a different problem and
+> closing it would hide, not fix, this one.
+
+The original ruling was "ACCEPTED LIMITATION for beta (coverage hole, not a quality failure), **on
+condition that the fallback is verified to actually fire** rather than assumed." **It was verified,
+and it does not fire.** Evidence: `docs/evidence/part4/sos-fallback-verification.txt`.
+- 0 of 4 SoS queries reach the no-content fallback. `retrieveCommentary` takes top-K with **no
+  relevance floor**, so a zero-coverage book returns six irrelevant chunks — Barnes on the **New
+  Testament**, Wesley on the **New Testament**, Chrysostom on Matthew/John/Acts, Augustine on
+  **Psalm 45** — with scores as low as 0.005.
+- End-to-end the user IS safe today: both queries end `kind:'fallback'` (raw sources, no composed
+  prose). But the guard that held was **the verifier**, catching incidental symptoms — malformed
+  schema, and an anchor `46080604` (book 46 = 1 Corinthians) that is not a valid verse range.
+  `kind:'empty'` never fired; the system never detected "we have no SoS sources".
+- So the safety is **not attributable to coverage detection**, and even on the safe path the user is
+  shown six sources that are not about Song of Solomon.
+**Therefore "coverage hole, not a quality failure" does not hold as stated.** The gap is not that
+SoS returns nothing; it is that SoS returns the wrong thing and is caught downstream for unrelated
+reasons. Escalated 2026-07-19 and **re-ruled by the owner the same day** — see the reclassification
+box above, which supersedes the original framing.
+
+**Method note worth keeping:** this defect was found only because the ruling carried a verification
+condition ("accept it, PROVIDED X is verified"). That pattern has now caught two false premises in
+one day — one the agent's, one the owner's. It is cheap and it works; attach it by default to any
+"accepted limitation".
+
+**3. ~14% verifier fallback — ACCEPTED and EXPLICITLY UNMONITORED.**
+`PRODUCTION_AUDIT.md`'s "ACCEPTABLE (with monitoring)" was an unearned claim: there is no
+observability provider wired, so nothing is monitoring it. The phrase "with monitoring" is struck.
+The rate is accepted **as an unmonitored risk**; wiring observability
+(`docs/OBSERVABILITY_DESIGN.md`) is a **stated prerequisite** before the claim may be restored.
+
+**Why:** each of these was already true; what was missing was one authoritative statement, so a doc
+sweep could not keep re-inventing a different status. **Rejected:** leaving the status distributed
+across five docs (the condition that produced the contradiction).

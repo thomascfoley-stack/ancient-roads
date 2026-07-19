@@ -1,8 +1,8 @@
 # Schema as built — Neon Postgres + pgvector + RLS
 
-**Generated from `db/schema.sql` + `db/migrations/001_*.sql`–`023_*.sql` on 2026-07-19.** Every
+**Generated from `db/schema.sql` + `db/migrations/001_*.sql`–`024_*.sql` on 2026-07-19.** Every
 statement below was read from those files, not remembered. To regenerate: re-read `db/schema.sql`
-and every migration in `db/migrations/` (including any newer than 023) and rewrite this file.
+and every migration in `db/migrations/` (including any newer than 024) and rewrite this file.
 Prod-verified state (live row counts, deployed indexes, what is actually applied where) lives in
 `docs/STATE_OF_TRUTH.md` — this file is the *committed DDL*; STATE_OF_TRUTH is the *measured
 database*.
@@ -130,7 +130,7 @@ writes on `sources`/`sections`; 016 on dev + **021 on prod** revoked writes on
 | `provenance` | JSONB NOT NULL | |
 | `status` | TEXT NOT NULL DEFAULT `'staged'` | CHECK per **023**: `('staged','published','quarantined','ingesting')` — 023 added `'ingesting'` as the in-flight marker so a crash mid-write can never leave a `published` shell; the QA gate flips `staged → published` only on success |
 
-### 3.2 `sections` (006; extended by 016) — the retrieval unit
+### 3.2 `sections` (006; extended by 016 and 024) — the retrieval unit
 
 | column | type | notes |
 |---|---|---|
@@ -141,8 +141,9 @@ writes on `sources`/`sections`; 016 on dev + **021 on prod** revoked writes on
 | `body` | TEXT NOT NULL | the exact text that produced the vector |
 | `tsv` | tsvector GENERATED … STORED | 006: body only; **016 conditionally swapped** it to `to_tsvector('english', coalesce(heading,'') || ' ' || body)` (dated headings were unsearchable) — the DO block only swaps if the expression still lacks `heading` |
 | `period_start_year`, `period_end_year` | SMALLINT | added by **016** — the history spine; signed, negative = BC; `sections_period_idx` partial WHERE `period_start_year IS NOT NULL` |
+| `unit_ordinal` | INTEGER (nullable) | added by **024** (ADR-026) — the reading-unit key; dense gapless 1..N per source in reading order, backfilled by 024 and populated at ingest going forward. The reader orders by `(unit_ordinal, ordinal)`; annotation anchoring is unchanged (still `section_id` + offset into `body`) |
 
-Indexes: `sections_tsv_idx` GIN(tsv), `sections_source_idx` (source_id), `sections_period_idx`.
+Indexes: `sections_tsv_idx` GIN(tsv), `sections_source_idx` (source_id), `sections_period_idx`, `sections_unit_ordinal_idx` (source_id, unit_ordinal, ordinal) (024, CONCURRENTLY).
 
 ### 3.3 `section_anchors` (006) — the verse join
 
@@ -264,9 +265,6 @@ VALID+READY. Never drop-first on a serving index, dev included.
   CASCADE delete chain, deliberately **no HNSW** (per-user brute-force; a partition tripwire is a
   future migration). Targets a Neon dev branch that does not exist yet; must never be applied to
   prod as-is.
-- **`sections.unit_ordinal`** — decided (ADR-026 — "`sections` is a retrieval unit; add a
-  first-class `unit_ordinal` reading-unit grouping", 2026-07-18) as an owner-run migration, but
-  no migration file exists in `db/migrations/` as of 2026-07-19.
 
 ## 8. RLS policies by table (summary)
 

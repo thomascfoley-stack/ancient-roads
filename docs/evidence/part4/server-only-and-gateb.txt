@@ -1,0 +1,87 @@
+# Part 4 item 5 — the `server-only` slice, and a Gate B incident I caused
+# Captured 2026-07-19. Convention: docs/evidence/README.md
+
+## 1. MY EARLIER CLAIM WAS WRONG — correcting it on the record
+
+I reported: "the documented accuracy-gate command — the one CLAUDE.md requires on EVERY retrieval
+change — does not run as documented." **That is false.** I inferred it from a grep for the string
+`server-only` and did not check whether the hits were imports or comments.
+
+  routing.ts:10   "// This module must stay free of `server-only` and any server-only import so a
+                   [script can import it]"          <- a COMMENT, and a deliberate design rule
+  deepinfra.ts:5  import 'server-only';             <- a real import
+  teach.ts:1      import 'server-only';             <- a real import
+  rerank.ts:1     import 'server-only';             <- a real import
+
+`eval-heldout.mts` imports `../lib/teacher/routing` (kept server-only-free ON PURPOSE) and does its
+own fetch-based embed + rerank. It never touches the broken modules.
+
+PROOF THE GATE RUNS END-TO-END (PILOT set, default; the frozen sets are untouched, so held-out
+discipline is not disturbed):
+
+    cd web && npx tsx --env-file=.env.local src/scripts/eval-heldout.mts
+
+    category        n   HIT@1  HIT@2   pass / <2 / wrong / none
+      verse-ref      4   100%  100%    4 / 0 / 0 / 0
+      pericope       3   100%  100%    3 / 0 / 0 / 0
+      epistle        4    75%   75%    3 / 0 / 1 / 0
+      topical        3    67%   67%    2 / 0 / 1 / 0
+      proper-noun    3   100%  100%    3 / 0 / 0 / 0
+      control        3   clean 3/3  hijacks=0
+    TAG corpus=legal(shared) pool=20 ef=64 cap=2 :: topicalH2=67 pericopeH1=100 epistleH2=75 verserefH1=100
+
+The accuracy gate executes. The false-confidence concern does NOT apply to it.
+
+## 2. The real (narrower) breakage, and the real fix
+
+TRUE STATEMENT: any script importing the REAL teacher path (`deepinfra` / `teach` / `rerank`) under
+tsx failed, because `server-only` was not installed. That is the two SoS verification scripts.
+
+FIX (two parts, both needed):
+  a. `server-only` added as a devDependency of `web` (pnpm). Resolves now.
+  b. Installing it is NOT sufficient. The package's default entry THROWS by design
+     ("This module cannot be imported from a Client Component module"); its non-throwing entry is
+     behind the `react-server` export condition. Scripts must run with:
+
+        npx tsx --conditions=react-server --env-file=.env.local src/scripts/<script>.mts
+
+     Verified: without the flag -> "cannot be imported from a Client Component";
+               with the flag    -> "deepinfra imports OK", and both SoS scripts run with no stub.
+  Both SoS script headers now document the flag and why.
+
+## 3. AN INCIDENT I CAUSED: my own test turned Gate B red
+
+`npm run audit` failed:
+    ✗ GATE B FAILED: 2 license/provenance violation(s):
+      - 141: published source license "public-domain" not in allowed set
+      - 142: published source license "public-domain" not in allowed set
+
+Both rows were `qa-published-boundary-*` sources seeded by the test I wrote in this same phase.
+ALLOWED_LICENSES is `['Public Domain','CC BY','CC BY-SA']`; I seeded `'public-domain'`. The test
+necessarily seeds a PUBLISHED source, and its final case deliberately leaves it published — so a
+run that aborted before teardown stranded a published row with a disallowed license and failed a
+SHARED gate for the whole repo.
+
+This is exactly the class of defect I flagged in the Phase-1 highlight tests earlier today (a test
+poisoning shared state). I did the same thing, and worse: theirs leaked rows, mine leaked a gate
+failure. Recorded rather than quietly fixed.
+
+FIXES:
+  - residue deleted (2 sources + dependents); verified 0 qa sources and 0 published rows with a
+    disallowed/null license remain.
+  - the seed now uses `'Public Domain'`, so even leaked residue cannot fail Gate B.
+  - teardown is belt-and-braces: every step independent (one failure cannot skip the rest), the
+    source forced OUT of 'published' before deletion, and the final sweep matches by slug PREFIX so
+    it reaps rows leaked by earlier interrupted runs too.
+  - re-verified: test 5/5 green, 0 residue, `npm run audit` PASSED — all gates green.
+
+NOTE for the neighbours: `sections-unit-ordinal.test.ts` also seeds `'public-domain'`, but seeds
+`status='staged'`, and Gate B only inspects PUBLISHED rows — so it was not exposed. It would have
+become exposed the moment that seed's status changed.
+
+  UPDATE 2026-07-19 (same day): re-verified directly at the owner's request rather than trusting
+  this note — the literal WAS really there (`sections-unit-ordinal.test.ts:98`), so the landmine was
+  real, not misremembered. It is now DISARMED (changed to 'Public Domain'). The earlier "left as-is"
+  disposition is superseded: leaving a known latent landmine documented-but-armed is not a
+  disposition, it is a deferral with a note attached. See docs/evidence/part4/test-residue-guard.txt
+  for the class-level fix.

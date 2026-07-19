@@ -1,0 +1,78 @@
+# Part 3 — CI wiring: what is proven, and what is NOT
+# Captured 2026-07-19 against the Neon `ci` branch (ep-holy-rice-athhpp5z).
+# Convention: docs/evidence/README.md
+
+## HEADLINE: the acceptance criterion is HALF met, and the unmet half is blocked on a token scope.
+
+  PROVEN     — the previously-dark suites RUN and CATCH a real regression, using the CI job's exact
+               commands against the CI database.
+  NOT PROVEN — that this happens INSIDE GitHub Actions. The workflow file cannot be pushed by this
+               agent (no `workflow` scope), so the job has never executed. Labelled UNVERIFIED
+               rather than implied.
+
+## The blocker, exactly
+
+    $ git push origin reader
+    ! [remote rejected] reader -> reader (refusing to allow an OAuth App to create or
+      update workflow `.github/workflows/audit.yml` without `workflow` scope)
+
+  Token scopes: gist, read:org, repo — no `workflow`.
+  The workflow edit is therefore parked as an applyable patch: docs/ci/db-invariants-job.patch
+  (see docs/ci/README.md for the two ways to land it). Everything else in this slice IS pushed.
+
+  Second, separate fact: audit.yml triggers on `push: [main]` and `pull_request`. A push to `reader`
+  would not have run it anyway — the job has to be exercised via a PR (same-repo PRs run the
+  workflow from the PR head), or from main. Recorded so nobody expects a reader push to prove it.
+
+## CI branch verified BEFORE wiring anything to it
+    owner + app_runtime both connect (passwords carried from dev, no reset needed)
+    migration 025 columns on notes .... 3/3
+    migrations 026-029 tables ......... 5/5
+    migration 030 constraints ......... 3/3
+    sections .......................... 306,993
+    published sources ................. 31
+    josephus-whiston .................. staged   <- work-reader's fixture precondition holds
+    app_runtime rolbypassrls .......... false
+
+## Guard widened to EXACTLY one new endpoint
+  All six sites now read, identically:
+      /ep-tiny-hat|ep-holy-rice-athhpp5z|localhost|127\.0\.0\.1/
+  (4 suites + scripts/verify-sermon-search.mjs + scripts/check-test-residue.mjs)
+  No wildcard endpoint pattern anywhere — it stays a literal allowlist, because that guard is the
+  only thing stopping these suites from seeding a non-dev database.
+  scripts/ingest-preflight.mjs deliberately NOT widened: it gates ingestion WRITES to dev and has no
+  business knowing about CI.
+
+## THE PROOF — red then green, on a previously-dark suite, against the CI branch
+
+  [1] BASELINE, the CI owner-group command verbatim:
+        Test Files  5 passed (5)      Tests  38 passed (38)
+      (and separately, 3 files / 27 tests with ZERO skips — the suites RUN here, they do not skip.
+       A skipping green is exactly the vacuous pass this exercise exists to avoid.)
+
+  [2] SEEDED A REAL REGRESSION in lib/work.ts — `publishedSourceId` no longer filters on status,
+      i.e. the published-only boundary is removed:
+        × Book Reader API — 404s a staged source on BOTH routes (published-only boundary)
+          → staged source must 404 on the sections route: expected 200 to be 404
+        Test Files  1 failed (1)      Tests  1 failed | 6 passed (7)
+      work-reader is one of the suites that previously ran NOWHERE. It caught a regression that
+      would have served a staged/quarantined work.
+
+  [3] RESTORED:
+        Test Files  7 passed (7)      Tests  50 passed (50)   (full owner group)
+
+  [4] RESIDUE GATE (the job's last step) against the ci branch:
+        ✓ dev is clean — no test-seeded residue in 7 user tables or sources.   EXIT=0
+
+## What the job runs once the patch lands
+
+  app_runtime group (APP_DATABASE_URL_TEST) — RLS is under test, so it MUST be the non-BYPASSRLS
+  role; running these as owner would silently prove nothing:
+      licensing, tenancy, highlight-tenancy, annotation-exact-substring, annotation-rls-tenancy
+  owner group (DATABASE_URL_TEST) — these SEED and DELETE fixtures, which app_runtime cannot:
+      work-reader, sections-unit-ordinal, annotations-polymorphic, annotation-tables,
+      library-published-boundary, search-sections, register-wall-surfaces
+  hygiene, LAST:
+      scripts/check-test-residue.mjs
+  Each secret has its own guard and its own ::warning::, so a missing secret is a VISIBLE
+  placeholder rather than a quiet pass.

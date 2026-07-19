@@ -40,11 +40,42 @@ proper-noun HIT@1 60% (all 4 misses are HIT@2-pass — ≥2 correct voices in th
 top-6; the top-1 slot goes to a related passage).** That miss, and the three
 items below it, are open owner calls.
 
+**The caveats that must travel with "clears every bar"** (completed 2026-07-19 —
+this section carried the SoS caveat but dropped the other three, which makes the
+result read stronger than the evidence supports):
+
+- **CI-STRADDLE:** "clears" means the POINT ESTIMATE clears. Topical 90 and
+  pericope 80 are point estimates whose **95% CIs straddle their own bars** — they
+  are not measurably above them, only not-below.
+- **TASK-EASING:** v4's labels are **KJV-phrase-anchored**, which makes the
+  doctrinal strata easier than v3's abstract queries. **The abstract-topical
+  failure mode — the one v3 actually exposed — is not exercised by v4 at all.**
+- **DISJOINTNESS OVERSTATED:** `HELDOUT_EVAL_DESIGN.md` asserts v4 is disjoint
+  from v3 while its own caveats say otherwise, and ADR-024's label anchor-check
+  script was never committed — so **v4 label verification is not reproducible
+  from this repo.**
+- **SoS:** (already noted below) v4 samples no Song of Solomon, so `no-content
+  0/110` does not clear the known SoS hole.
+
 ## Open owner calls (2026-07-18)
 
-1. **Proper-noun HIT@1 60 < 70 (v4).** Consistent with v3's 60 on the same config
-   — a top-1 ranking characteristic on rare narratives, not noise. HIT@2 is 100.
-   Ship as a documented limitation, or hold for a ranking fix?
+1. **Proper-noun HIT@1 60 < 70 (v4). → RULED 2026-07-19, see ADR-028.** ACCEPTED
+   LIMITATION for the gated beta; **BLOCKING for public launch**; re-measure at
+   larger n before public (60/100 on n=10 has a wide CI and may not be a true
+   regression). Note `PHASE_A_CLOSE.md`'s proper-noun **80/90** is the v3 set on
+   the pre-option-(c) config and is **historical** — v4's 60/100 measures what
+   ships. ADR-028 is the only place this status is ruled.
+
+   **1b. Song of Solomon → the beta ruling's CONDITION FAILED verification
+   (2026-07-19).** SoS was to be an accepted coverage hole *provided the fallback
+   was verified to fire*. It was verified and **it does not fire**: 0/4 SoS queries
+   reach the no-content path — `retrieveCommentary` has no relevance floor, so a
+   zero-coverage book returns six irrelevant chunks (Barnes/Wesley on the **New
+   Testament**, Chrysostom on Matthew/John/Acts, Augustine on **Psalm 45**), scores
+   as low as 0.005. End-to-end the user is still safe (`kind:'fallback'`, raw
+   sources) — but only because the **verifier** rejected malformed schema and an
+   invalid anchor, not because the system noticed it has no SoS sources.
+   **Re-ruling needed.** Evidence: `docs/evidence/part4/sos-fallback-verification.txt`.
 2. **Copyrighted static corpus — publicly fetchable on prod TODAY (pre-existing).**
    16,360 copyrighted-author entries (Tyndale Study Notes 15,161 · CS Lewis 1,102
    · Screwtape 70 · Douglas Wilson 16 · Tolkien 11) sit in `web/public/commentaries`

@@ -1,5 +1,11 @@
 # Held-out launch-gate eval — design
 
+> ⚠️ **The v2 numbers in this Status block are HISTORICAL (annotated 2026-07-19).** In particular
+> `proper-noun 80%` here is **v2**, and `PHASE_A_CLOSE.md` records **80/90** on **v3** — the current
+> shipped-config figure is **60/100 on frozen v4**. Per **ADR-028** that 60 is an **ACCEPTED
+> LIMITATION for gated beta and BLOCKING for public launch**, pending a re-measure at larger n.
+> ADR-028 is the single place this status is ruled.
+
 **Status:** RUN COMPLETE. v1 (`sha256 49685727…5ab8e`) → v2 re-freeze with authoritative
 WSC/HC labels (`sha256 56c00104…c98c`). Result (v2): verse-ref HIT@1 100%, pericope 80%,
 proper-noun 80%, controls 0 hijacks, no-content 0% → PASS; epistle HIT@2 68%, topical 70%
@@ -113,8 +119,25 @@ reconcile config (sermon-lane option (c): exegetical pool = verse-commentary + f
 sermons/theology in labeled lanes) needs a set no fix was ever tuned against.
 Set: `web/src/scripts/heldout-v4-queries.mts` (`FROZEN_V4`), same composition as v3
 (verse-ref 40 · pericope 15 · epistle 25 · topical 20 · proper-noun 10 · control 10 =
-120), disjoint from pilot/v2/v3, content-hash-pinned in
-`test/heldout-frozen-hash.test.ts` BEFORE any accuracy number existed.
+120), content-hash-pinned in `test/heldout-frozen-hash.test.ts` BEFORE any accuracy
+number existed.
+
+**"Disjoint" — now MEASURED, and narrower than this doc used to claim** (corrected
+2026-07-19; run `node scripts/check-heldout-disjoint.mjs`, artifact
+`docs/evidence/part1/heldout-disjoint.txt`):
+
+- **Queries: fully disjoint, verified.** v4 ∩ v3 = 0, v4 ∩ (pilot+v2) = 0,
+  v3 ∩ (pilot+v2) = 0, by normalised query text. This is now reproducible from the
+  repo instead of asserted.
+- **Ground truth: only PARTLY disjoint.** v4 has 179 distinct expected labels, v3 has
+  165, and **47 appear in both — 26% of v4's labels.** So a fix tuned on v3 can still
+  lift v4 wherever the labels coincide. v4 is a fresh *set of questions*, not a fully
+  independent *sample of the corpus*. Read the v4 numbers with that in mind.
+- **Label anchors: NOT reproducible.** The claim below of "200/200 anchor checks"
+  against the in-repo KJV rests on a script ADR-024 called for that **was never
+  committed** (see the TODO further down this same file). Until it exists, treat the
+  anchor verification as **UNVERIFIED** — the disjointness checker deliberately does
+  not pretend to cover it.
 
 **v4 labeling discipline (fixes the v3 RELABEL circularity flagged by A6):** every
 label derives from the query's own scripture reference or quoted wording — never from

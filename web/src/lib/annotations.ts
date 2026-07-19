@@ -104,7 +104,7 @@ export async function upsertNote(
 ): Promise<Note> {
   const [rows] = await runAsUser(userId, (sql) => [
     sql`INSERT INTO notes (user_id, verse_id, body) VALUES (${userId}, ${verseId}, ${body})
-        ON CONFLICT (user_id, verse_id) WHERE deleted_at IS NULL
+        ON CONFLICT (user_id, verse_id) WHERE deleted_at IS NULL AND target_kind = 'verse'
         DO UPDATE SET body = EXCLUDED.body, updated_at = now()
         RETURNING id, verse_id, verse_end, body, updated_at`,
   ]);
@@ -137,11 +137,11 @@ export async function listNotes(
   const [rows] = await runAsUser(userId, (sql) => [
     cursor
       ? sql`SELECT id, verse_id, verse_end, body, updated_at FROM notes
-            WHERE user_id = ${userId} AND deleted_at IS NULL
+            WHERE user_id = ${userId} AND deleted_at IS NULL AND target_kind = 'verse'
               AND (updated_at, id) < (${cursor.updatedAt}::timestamptz, ${cursor.id}::uuid)
             ORDER BY updated_at DESC, id DESC LIMIT ${lim}`
       : sql`SELECT id, verse_id, verse_end, body, updated_at FROM notes
-            WHERE user_id = ${userId} AND deleted_at IS NULL
+            WHERE user_id = ${userId} AND deleted_at IS NULL AND target_kind = 'verse'
             ORDER BY updated_at DESC, id DESC LIMIT ${lim}`,
   ]);
   return rows as Note[];
@@ -159,12 +159,12 @@ export async function listHighlights(
     cursor
       ? sql`SELECT id, verse_id, verse_end, coalesce(background_color, color) AS color, text_color, span_start, span_end, translation
             FROM highlights
-            WHERE user_id = ${userId} AND deleted_at IS NULL
+            WHERE user_id = ${userId} AND deleted_at IS NULL AND target_kind = 'verse'
               AND (created_at, id) < (${cursor.createdAt}::timestamptz, ${cursor.id}::uuid)
             ORDER BY created_at DESC, id DESC LIMIT ${lim}`
       : sql`SELECT id, verse_id, verse_end, coalesce(background_color, color) AS color, text_color, span_start, span_end, translation
             FROM highlights
-            WHERE user_id = ${userId} AND deleted_at IS NULL
+            WHERE user_id = ${userId} AND deleted_at IS NULL AND target_kind = 'verse'
             ORDER BY created_at DESC, id DESC LIMIT ${lim}`,
   ]);
   return rows as Highlight[];

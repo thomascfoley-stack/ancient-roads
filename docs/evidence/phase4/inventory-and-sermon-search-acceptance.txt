@@ -1,0 +1,69 @@
+# Phase 4 — (1) published inventory per register, (2) sermon-search acceptance proof
+# Captured 2026-07-19 against dev (ep-tiny-hat) + dev server :3012.
+# Convention: docs/evidence/README.md   Script: scripts/verify-sermon-search.mjs
+
+## 1. PUBLISHED INVENTORY PER REGISTER — no hollow catalogs
+Owner's concern was that hymn/poetry might be ZERO and a catalog would render empty, photographing
+an empty state as a passing DoD. Measured (published sources, and how many actually have sections):
+
+  register        pubWorks  withSections  sections  readingUnits   catalog
+  poetry               10            10      3543          1551   Hymns & Poetry
+  sermon                7             7    162827          5897   Sermons
+  hymn                  5             5      1690          1334   Hymns & Poetry
+  father                3             3     18472          1561   Commentaries
+  theology              3             3     29050          1145   (NONE)
+  commentary            2             2     27283          2052   Commentaries
+  confession            1             1      5437           226   (NONE)
+
+  PER CATALOG (works that would actually RENDER):
+    Commentaries       5 works    3613 reading units
+    Sermons            7 works    5897 reading units
+    Hymns & Poetry    15 works    2885 reading units
+
+  VERDICT: NO catalog renders empty. Hymns & Poetry is in fact the LARGEST by work count (15), not
+  zero. Every published work has sections — there are no hollow entries. So no owner call is needed
+  on dev-publishing more works, and no "deliberate empty state" is required for these three.
+
+  BUT THE INVENTORY SURFACED A DIFFERENT OWNER CALL:
+  `theology` (3 works, 1,145 units) and `confession` (1 work, 226 units) are reachable from NO
+  catalog — 4 published works / 1,371 reading units a user cannot browse to. That is the deliberate
+  fail-closed taxonomy in lib/catalog.ts (they are lane content; filing them under "Commentaries"
+  would breach the register wall in the UI), but the CONSEQUENCE is real published content with no
+  door. Options: leave them lane-only, or add a fourth "Theology & Confessions" catalog. ESCALATED.
+
+## 2. SERMON-SEARCH ACCEPTANCE — end-to-end, through the real HTTP endpoint
+"The tests pass" is not "search finds the sermon". The unit tests assert properties against scoped
+inputs; this walks the user's path. Ground truth comes from the DB, so the assertions are anchored
+to reality rather than to the search engine's opinion of itself.
+
+  GROUND TRUTH: "Eyes and no eyes" is in 3 published sections;
+                "sluggard" hits 35 chunks inside spurgeon-sermons unit 2006.
+
+  (a) FINDABILITY — GET /api/search/works?q="Eyes and no eyes"&catalog=sermons
+      ✓ returns results at all — 25 result(s), total=90
+      ✓ the known sermon "spurgeon-sermons" is returned
+      ✓ the known sermon "spurgeon-talks-to-farmers" is returned
+      ✓ every result is register-labelled as a sermon
+
+  (b) DEDUPE — 35 chunk hits inside ONE reading unit must return ONE row
+      ✓ precondition: the term really does hit many chunks in one unit — 35 chunks
+      ✓ unit 2006 yields exactly ONE result — got 1 (raw chunk hits: 35)
+      ✓ no reading unit appears twice anywhere in the page
+
+  (c) DEEP LINK — the URL must land in the right place, not merely look well-formed
+      ✓ the linked ordinal exists in that work — ordinal=67492
+      ✓ the linked ordinal belongs to the SAME reading unit the hit claims — 2006 vs 2006
+      ✓ the reader sections API serves that position — HTTP 200
+      ✓ the reader returns exactly the linked section — got ordinal=67492
+
+      USER-FACING LINK: /work/spurgeon-sermons#s67492
+      heading: Sermon 2027. The Sluggard's Farm
+
+  ✓ SERMON SEARCH ACCEPTANCE PASSED — findable, deduped to its reading unit, deep link lands.
+
+  VISUAL CONFIRMATION: docs/evidence/phase4/sermon-search-deeplink-mobile-390x844.png
+  shows that exact URL rendering "Sermon 2027. The Sluggard's Farm" at 390px — the search result's
+  promise honoured in the reader, not just in JSON.
+
+  Note the 35 -> 1 collapse is the whole point: without dedupe this single sermon would have
+  occupied 35 of the 25 slots on page one and buried every other work.
