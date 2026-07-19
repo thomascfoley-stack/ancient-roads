@@ -11,6 +11,15 @@ import {
   type CommentaryEntry,
   type CommentarySource,
 } from '@/lib/bible';
+import {
+  partitionByRegister,
+  registerChipLabel,
+  ParaphraseChip,
+  RegisterSectionHeading,
+  SERMON_NOTE,
+  THEOLOGY_NOTE,
+  SONG_VERSE_NOTE,
+} from '@/components/commentary-panel';
 
 const BOOK_BY_NUM = new Map(BOOKS.map((b) => [b.bookNum, b]));
 const DEBOUNCE_MS = 300;
@@ -164,6 +173,81 @@ function SearchResultCard({
   );
 }
 
+// Register-lane browse groups are keyed by WORK, not author: a metrical psalter
+// (Watts' Psalms Imitated, paraphrase) and a hymnal (Watts' Hymns, not) share the
+// author "Isaac Watts" but are DIFFERENT works with different paraphrase status —
+// grouping by work keeps the "not Scripture" marker precise.
+interface WorkGroup {
+  key: string;
+  author: string;
+  year: number | null;
+  tradition: string | null;
+  sourceTitle: string;
+  register?: string;
+  paraphrase: boolean;
+  notes: CommentaryEntry[];
+}
+function groupByWork(entries: CommentaryEntry[]): WorkGroup[] {
+  const byWork = new Map<string, CommentaryEntry[]>();
+  for (const e of entries) {
+    const key = e.work ?? e.author;
+    const arr = byWork.get(key);
+    if (arr) arr.push(e);
+    else byWork.set(key, [e]);
+  }
+  return [...byWork.entries()]
+    .map(([key, list]) => ({
+      key,
+      author: list[0]!.author,
+      year: list[0]!.year,
+      tradition: list[0]!.tradition ?? null,
+      sourceTitle: list[0]!.sourceTitle,
+      register: list[0]!.register,
+      paraphrase: list.some((e) => e.paraphrase),
+      notes: [...list].sort((a, b) => a.verseStart - b.verseStart),
+    }))
+    .sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999) || a.author.localeCompare(b.author));
+}
+
+// A labeled register section (Sermons / Theology & confessions / Hymns & sacred
+// poetry) in the library browse — the register wall, consistent with the reader:
+// these registers are NEVER blended into the exegetical commentary above.
+function RegisterBrowseSection({ title, note, groups }: { title: string; note: string; groups: WorkGroup[] }) {
+  if (groups.length === 0) return null;
+  return (
+    <section className="mt-10">
+      <RegisterSectionHeading title={title} note={note} />
+      <div className="space-y-8">
+        {groups.map((g) => (
+          <article key={g.key} className="rounded-2xl bg-paper p-5 shadow-paper dark:bg-stone-800/60 dark:shadow-none">
+            <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b border-stone-200/60 pb-3 dark:border-stone-700/60">
+              <h3 className="font-scripture text-xl font-medium text-stone-800 dark:text-stone-100">{g.author}</h3>
+              {g.year != null && <span className="text-xs text-stone-400">{yearLabel(g.year)}</span>}
+              {registerChipLabel(g.register) && (
+                <span className="rounded-full bg-accent-700/10 px-2 py-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300">
+                  {registerChipLabel(g.register)}
+                </span>
+              )}
+              {g.paraphrase && <ParaphraseChip />}
+              <span className="ml-auto text-[11px] text-stone-400">{g.sourceTitle}</span>
+            </div>
+            <div className="space-y-3">
+              {g.notes.map((n, i) => (
+                <p key={i} className="font-scripture text-[15px] leading-relaxed text-stone-700 dark:text-stone-300">
+                  <span className="mr-2 select-none font-sans text-xs font-semibold text-accent-600/80 dark:text-accent-300/80">
+                    {n.verseStart === n.verseEnd ? `v${n.verseStart}` : `v${n.verseStart}–${n.verseEnd}`}
+                  </span>
+                  <EntryText text={n.text} />
+                </p>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function CommentariesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -280,9 +364,16 @@ export default function CommentariesPage() {
     return [...set].sort();
   }, [searchResults]);
 
+  // Register wall (library browse): partition the chapter's entries into their
+  // registers, then group ONLY the exegetical commentary by author for the browse +
+  // author filter. Sermons, theology/confessions, and hymns/poetry render in their
+  // own labeled sections below (never blended into the commentary voices) — the
+  // same wall the reader enforces.
+  const part = useMemo(() => partitionByRegister(entries), [entries]);
+
   const grouped = useMemo(() => {
     const byAuthor = new Map<string, CommentaryEntry[]>();
-    for (const e of entries) {
+    for (const e of part.exegetical) {
       const arr = byAuthor.get(e.author);
       if (arr) arr.push(e);
       else byAuthor.set(e.author, [e]);
@@ -297,7 +388,11 @@ export default function CommentariesPage() {
         notes: [...list].sort((a, b) => a.verseStart - b.verseStart),
       }))
       .sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999) || a.author.localeCompare(b.author));
-  }, [entries]);
+  }, [part]);
+
+  const sermonGroups = useMemo(() => groupByWork(part.sermon), [part]);
+  const theologyGroups = useMemo(() => groupByWork(part.theology), [part]);
+  const songVerseGroups = useMemo(() => groupByWork(part.songVerse), [part]);
 
   const visible = authorFilter === 'all' ? grouped : grouped.filter((g) => g.author === authorFilter);
 
@@ -466,35 +561,54 @@ export default function CommentariesPage() {
 
           {loading ? (
             <p className="py-16 text-center text-sm text-stone-400">Loading…</p>
-          ) : visible.length === 0 ? (
+          ) : entries.length === 0 ? (
             <p className="py-16 text-center text-sm text-stone-400">
               No commentary available for {book.name} {book.chapterCount === 1 ? '' : chapter} yet.
             </p>
           ) : (
-            <div className="space-y-8">
-              {visible.map((g) => (
-                <article key={g.author} className="rounded-2xl bg-paper p-5 shadow-paper dark:bg-stone-800/60 dark:shadow-none">
-                  <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b border-stone-200/60 pb-3 dark:border-stone-700/60">
-                    <h2 className="font-scripture text-xl font-medium text-stone-800 dark:text-stone-100">{g.author}</h2>
-                    {g.year != null && <span className="text-xs text-stone-400">{yearLabel(g.year)}</span>}
-                    <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-stone-500 dark:bg-stone-700 dark:text-stone-400">
-                      {g.tradition ?? eraLabel(g.year)}
-                    </span>
-                    <span className="ml-auto text-[11px] text-stone-400">{g.sourceTitle}</span>
-                  </div>
-                  <div className="space-y-3">
-                    {g.notes.map((n, i) => (
-                      <p key={i} className="font-scripture text-[15px] leading-relaxed text-stone-700 dark:text-stone-300">
-                        <span className="mr-2 select-none font-sans text-xs font-semibold text-accent-600/80 dark:text-accent-300/80">
-                          {n.verseStart === n.verseEnd ? `v${n.verseStart}` : `v${n.verseStart}–${n.verseEnd}`}
+            <>
+              {visible.length > 0 ? (
+                <div className="space-y-8">
+                  {visible.map((g) => (
+                    <article key={g.author} className="rounded-2xl bg-paper p-5 shadow-paper dark:bg-stone-800/60 dark:shadow-none">
+                      <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b border-stone-200/60 pb-3 dark:border-stone-700/60">
+                        <h2 className="font-scripture text-xl font-medium text-stone-800 dark:text-stone-100">{g.author}</h2>
+                        {g.year != null && <span className="text-xs text-stone-400">{yearLabel(g.year)}</span>}
+                        <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-stone-500 dark:bg-stone-700 dark:text-stone-400">
+                          {g.tradition ?? eraLabel(g.year)}
                         </span>
-                        <EntryText text={n.text} />
-                      </p>
-                    ))}
-                  </div>
-                </article>
-              ))}
-            </div>
+                        <span className="ml-auto text-[11px] text-stone-400">{g.sourceTitle}</span>
+                      </div>
+                      <div className="space-y-3">
+                        {g.notes.map((n, i) => (
+                          <p key={i} className="font-scripture text-[15px] leading-relaxed text-stone-700 dark:text-stone-300">
+                            <span className="mr-2 select-none font-sans text-xs font-semibold text-accent-600/80 dark:text-accent-300/80">
+                              {n.verseStart === n.verseEnd ? `v${n.verseStart}` : `v${n.verseStart}–${n.verseEnd}`}
+                            </span>
+                            <EntryText text={n.text} />
+                          </p>
+                        ))}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p className="py-10 text-center text-sm text-stone-400">
+                  No verse-by-verse commentary{authorFilter !== 'all' ? ' from this source' : ''} here.
+                </p>
+              )}
+
+              {/* The register wall: sermons, theology/confessions, and hymns/poetry
+                  in their OWN labeled sections — never blended into the commentary
+                  above. Shown in the full (unfiltered) browse view. */}
+              {authorFilter === 'all' && (
+                <>
+                  <RegisterBrowseSection title="Sermons" note={SERMON_NOTE} groups={sermonGroups} />
+                  <RegisterBrowseSection title="Theology & confessions" note={THEOLOGY_NOTE} groups={theologyGroups} />
+                  <RegisterBrowseSection title="Hymns & sacred poetry" note={SONG_VERSE_NOTE} groups={songVerseGroups} />
+                </>
+              )}
+            </>
           )}
         </>
       )}
