@@ -1,5 +1,46 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-19 (ITEM 2 RUN — checkpoint 1: preflight + slicing tools + 1% slice + K&D; sweep launched)
+
+Run state, per the overnight self-report contract. Decision-lock and restore point: §pre-run below.
+
+**Built + landed (main, pushed):**
+- `5c995b6` — `scripts/ingest-preflight.mjs` + `pnpm preflight:ingest`: the automated
+  entrypoint (branch literal, no-ep-odd-fog grep, host contains ep-tiny-hat,
+  `current_user=app_runtime`, `rolbypassrls=false`, empirical RLS probe on
+  `highlights` → 0-or-error, migration level 023). Red-proven (`NEON_BRANCH=production`
+  aborts). Runs before every write segment.
+- `85966db` + `327e129` — `src/ingest/repoint-sections-work.ts` (NEW): slices one register
+  work's flat `embeddings` rows into `sections` + `section_embeddings`, reusing vectors 1:1
+  ($0). Fresh-agent audit → 1 real fix: heading strip now fires on chunk 1 ONLY (a recurring
+  refrain/title line in continuation chunks would have been silently deleted); anchors-deleted
+  now logged on real runs. Also corrected INGESTION_RUNBOOK §4 (it misdescribed
+  `ingest:embeddings` as embedding sections — it embeds the legacy static corpus into the
+  flat table).
+- `60f8fa8` — both section tools converted to direct `INSERT…SELECT` (no vector temp stage):
+  the temp-table design exhausted `temp_buffers` ("no empty local buffer available") on any
+  work >~10k rows. Proven on the exact failure case (K&D) and on the idempotency case
+  (wheatley 98→98). `keil-delitzsch` gained `backfill.match_author` in sources.config.json
+  (its flat rows are 100% verse-anchored → commentary path, not the register tool).
+
+**1% slice (owner's pre-check) — all proven on wheatley-poems:** 98 sections, every vector
+1024-dim `bge-large-en-v1.5` (the only model INGESTION_RUNBOOK permits), 0 residual heading
+prefixes, status unchanged (`published`), identical re-run → 98→98 unchanged (idempotent,
+crash-resumable via single txn), `check:coverage:sections` gap = 0.
+
+**K&D (verse-anchored):** 23,073 sections + verse anchors + reused vectors, 1:1:1; status
+still `published` (verified — the tool's `status=staged` log line is a hardcoded string,
+cosmetic only; noted, not fixed).
+
+**Sweep (in flight):** 33 register works, ~274k flat rows, sequential per-work runs of
+`repoint:sections`, background task `bash-2fxixl93`. Per-work failures are loud and
+non-fatal to the batch; the summary lands in the next checkpoint.
+
+**Not covered:** fetch-required works (historians edersheim/schaff-history;
+spurgeon-treasury, ryle-expository, vincent-word-studies, poole-tcp, CrossWire commentary
+set, josephus-works) — separate phase after the sweep; SoS exegetical coverage — Phase F
+sub-plan; post-run qa/licensing battery — after the sweep. No publish flips anywhere.
+
 ## 2026-07-19 (ITEM 2 PRE-RUN — decision-lock, blocker evidence, restore point) — NO WRITES YET
 
 **Decision-lock (overnight-run Phase 1, owner-approved via the Item-2 GO + safety gate):**
