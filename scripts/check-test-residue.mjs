@@ -40,7 +40,7 @@ if (!url) {
   console.log('⚠ SKIPPED (visibly): no owner DATABASE_URL — cannot check dev for test residue.');
   process.exit(0);
 }
-if (!/ep-tiny-hat|localhost|127\.0\.0\.1/.test(url)) {
+if (!/ep-tiny-hat|ep-holy-rice-athhpp5z|localhost|127\.0\.0\.1/.test(url)) {
   console.log('⚠ SKIPPED (visibly): DATABASE_URL is not the dev endpoint; this gate only inspects dev.');
   process.exit(0);
 }

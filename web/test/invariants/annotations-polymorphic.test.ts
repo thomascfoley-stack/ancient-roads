@@ -14,8 +14,9 @@
 // inside a transaction that is ROLLED BACK, so nothing persists and RLS never needs
 // to be disabled (owner bypasses RLS to seed arbitrary user_ids; the RLS boundary
 // itself is proven separately with two app_runtime accounts). SKIPS unless an owner
-// DATABASE_URL pointing at the dev endpoint is available — so it can never run on prod
-// or in CI (which holds only the app_runtime URL).
+// DATABASE_URL pointing at the dev OR ci endpoint is available — so it can never run on prod.
+// (Since 2026-07-19 CI DOES hold an owner URL — the disposable Neon `ci` branch — so this suite
+// now runs there for real instead of skipping.)
 
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -24,7 +25,7 @@ import { localEnv } from '../helpers/env';
 function ownerUrl(): string | undefined {
   const url = localEnv('DATABASE_URL') ?? localEnv('DATABASE_URL_UNPOOLED');
   if (!url) return undefined;
-  if (!/ep-tiny-hat|localhost|127\.0\.0\.1/.test(url)) return undefined;
+  if (!/ep-tiny-hat|ep-holy-rice-athhpp5z|localhost|127\.0\.0\.1/.test(url)) return undefined;
   return url;
 }
 

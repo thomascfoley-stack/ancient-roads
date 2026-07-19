@@ -28,7 +28,7 @@ const envVal = (n) =>
   process.env[n] ?? (existsSync(ENV) ? readFileSync(ENV, 'utf8').match(new RegExp(`^${n}=(.*)`, 'm'))?.[1]?.trim().replace(/^"|"$/g, '') : undefined);
 
 const url = envVal('DATABASE_URL');
-if (!url || !/ep-tiny-hat|localhost|127\.0\.0\.1/.test(url)) {
+if (!url || !/ep-tiny-hat|ep-holy-rice-athhpp5z|localhost|127\.0\.0\.1/.test(url)) {
   console.log('⚠ SKIPPED (visibly): no dev owner DATABASE_URL — cannot establish ground truth.');
   process.exit(0);
 }

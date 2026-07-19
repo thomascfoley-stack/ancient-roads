@@ -10,9 +10,9 @@
 // Owner-only: the seed inserts/deletes throwaway sources/sections, and
 // app_runtime is SELECT-only on the corpus (006/010). The dev-endpoint guard is
 // the same one db/apply-migration.mjs enforces — the suite SKIPS unless an
-// owner DATABASE_URL pointing at the dev branch (ep-tiny-hat|localhost) is
-// available, so it can never seed or delete on prod. CI's db-invariants job
-// holds only the app_runtime URL, so it skips there by construction.
+// owner DATABASE_URL pointing at the dev branch (ep-tiny-hat | ep-holy-rice-athhpp5z | localhost) is
+// available, so it can never seed or delete on prod. CI's db-invariants job now ALSO holds an owner URL
+// (the disposable Neon ci branch, 2026-07-19), so this suite runs there for real.
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -26,7 +26,7 @@ function ownerUrl(): string | undefined {
   const url = localEnv('DATABASE_URL') ?? localEnv('DATABASE_URL_UNPOOLED');
   if (!url) return undefined;
   // never run seed+delete against anything but the dev endpoint
-  if (!/ep-tiny-hat|localhost|127\.0\.0\.1/.test(url)) return undefined;
+  if (!/ep-tiny-hat|ep-holy-rice-athhpp5z|localhost|127\.0\.0\.1/.test(url)) return undefined;
   return url;
 }
 

@@ -26,7 +26,7 @@ import { localEnv } from '../helpers/env';
 function ownerUrl(): string | undefined {
   const url = localEnv('DATABASE_URL') ?? localEnv('DATABASE_URL_UNPOOLED');
   if (!url) return undefined;
-  if (!/ep-tiny-hat|localhost|127\.0\.0\.1/.test(url)) return undefined;
+  if (!/ep-tiny-hat|ep-holy-rice-athhpp5z|localhost|127\.0\.0\.1/.test(url)) return undefined;
   return url;
 }
 
