@@ -1,5 +1,5 @@
 {
-  "count": 63111,
-  "recordedAt": "2026-07-17",
+  "count": 0,
+  "recordedAt": "2026-07-19",
   "description": "Forbidden-provenance rows in web/public/commentaries/*.json (biblehub/studylight/historicalchristian.faith). Ratchet: pnpm qa fails if this count goes UP. When content fixes lower it, commit the new count here. At 0, CI hard-fails on any violation."
 }
