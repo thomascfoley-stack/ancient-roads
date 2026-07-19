@@ -143,3 +143,25 @@ CI caveats at n=10–40; no bar was derived from any v3/v4 result):
 security gate; topical/epistle ≥85 remains the GA bar; misses are failure-coded and
 reported, never tuned against. One run, one number; the ship/no-ship call is the
 owner's.
+
+## v4 known caveats (2026-07-18 deep-audit) — read before citing the v4 number
+
+- **The disjointness claim above is overstated.** "Disjoint from pilot/v2/v3" holds at
+  the query level, but 18/70 objective (verse-ref/pericope/proper-noun) queries reuse a
+  chapter that also appears in v3 (measured). Some passage-level overlap is inherent at
+  this canon size; the header's claim should be scoped, not absolute.
+- **Style shift:** v4's doctrinal queries quote identifiable KJV phrases — that is
+  exactly what makes the labels objective and non-circular — but the phrase-anchored
+  style is easier for retrieval than v3's abstract catechism-style queries. The
+  abstract-topical failure mode is NOT exercised by v4; treat the doctrinal-strata
+  lift (v3 75/80 → v4 90/100) as partly instrument.
+- **Small-n point estimates:** topical 90 and pericope 80 clear their bars as point
+  estimates, but their 95% CIs straddle the bars at n=20/15.
+- **No Song of Solomon queries:** v4's no-content 0/110 does NOT clear the known SoS
+  hole (0 rows in the served exegetical pool for the entire book). Disclosure: v4 was
+  minted minutes after that SoS no-content miss was recorded and does not sample the
+  book — the omission was not disclosed at mint time.
+- **v4.1 checklist (any of these lands only as a re-freeze with a new pinned hash,
+  never an in-place edit of the frozen query file):** scope the disjointness claim
+  honestly; add SoS/rare-book sampling; commit the label anchor-check script; add a
+  runtime hash assert on the query file; add a RELABEL guard rejecting v3-only keys.

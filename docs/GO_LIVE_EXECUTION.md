@@ -45,7 +45,7 @@ Continuation of the go-live run (branch `golive`, Phases 0–2 done: verifier ho
 
 **Precondition:** Part A green + audited, eval clean, Part B verified on dev.
 
-**C1. Apply migrations to prod** (owner-run or owner-supervised): `016`→`021`, in order. All additive/reversible. Verify each landed (`role_table_grants` for `021`; CHECK constraints for the source_type widenings).
+**C1. Apply migrations to prod** (owner-run or owner-supervised): `016`→`023`, in order (`022` = embeddings write-policy RLS fix, `023` = sources status `'ingesting'`; `018`/`019` via the concurrent runner — see the Part C runbook in `GO_LIVE_STATUS.md`). All additive/reversible. Verify each landed (`role_table_grants` for `021`; CHECK constraints for the source_type widenings).
 
 **C2. Deploy code to prod** (Vercel) — the verifier fix, `routing.ts` register path, reader changes. This is the irreversible outward step; owner runs it or explicitly authorizes it in-session.
 
@@ -53,7 +53,7 @@ Continuation of the go-live run (branch `golive`, Phases 0–2 done: verifier ho
 
 **C4. Apply the landmines to prod:** the `021` REVOKE (C1 covers it) and the B2 removal of the forbidden-provenance rows.
 
-**C5. Verify on prod:** both surfaces serve the content (spot-check a hymn/poem/K&D/Spurgeon); re-run the eval against prod — **no commentary regression**; `app_runtime` = SELECT only; forbidden-provenance ratchet green; verifier fails closed on a seeded bad block. Record all numbers in `WORKLOG.md`.
+**C5. Verify on prod:** both surfaces serve the content (spot-check a hymn/poem/K&D/Spurgeon); run `eval-heldout --v4` against prod — **v4 is the frozen instrument** (v3 is a dev set per `HELDOUT_EVAL_DESIGN.md`; do not gate prod on it) — **no regression vs the dev v4 run**; `app_runtime` = SELECT only; forbidden-provenance ratchet green; verifier fails closed on a seeded bad block. Record all numbers in `WORKLOG.md`.
 
 **Rollback:** code → redeploy the prior Vercel build; content → the new register rows are additive and can be filtered out by reverting the `routing.ts` register constant; migrations are additive (no destructive change); the B2-removed rows are re-ingestable. Nothing in this cutover hard-deletes prod data.
 

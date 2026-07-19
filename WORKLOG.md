@@ -1,5 +1,53 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-18 (RECONCILIATION PHASES 4–6 — branch `reconcile`: verify, deep-audit, fix)
+
+Five gated streams integrated onto `reconcile` (from main 0491e6e), then verified
+(Phase 4), deep-audited by fresh agents (Phase 5), and the audit's mechanical
+conditions fixed (Phase 6). Docs reconciled to the tree in the same pass.
+
+**Streams:**
+- **A — zero-window migrations:** 018/019 rewritten `CREATE INDEX CONCURRENTLY _v5`
+  → `DROP` old → `RENAME`, applied via `db/apply-migration-concurrent.mjs` (splits
+  on `--SPLIT--`); serving-index lockstep invariants green.
+- **B — register wall:** labeled + consistent on all 4 surfaces via shared
+  `partitionByRegister`; sermon/theology LANES = ship config option (c) (ADR-023):
+  exegetical pool = verse-commentary + fathers ONLY; lanes never satisfy the
+  ≥2-voices floor. 0 breaches.
+- **C — forbidden-provenance ratchet 0/0 both stores:** 15,537 biblehub embeddings
+  rows removed; backup at
+  `data/quarantine/forbidden-provenance-removed-2026-07-19T00-24-08-742Z.jsonl`
+  (rescued from an ephemeral worktree by the PM; content verified 15,537/15,537;
+  the backup carries NO embedding vectors — restore requires re-embed).
+- **D — housekeeping.** **M — measure:** honest v3 re-baseline + frozen v4 (the two
+  Phase 3 entries below).
+
+**Phase 4 (verification):** root 231 + web 82 tests green; npm audit green;
+register-wall-check 0 breaches; ratchet 0/0; RLS two-account 6/6 on dev; browser
+matrix 390px + desktop clean (console 0 errors); live interpretation_bait 35/35,
+0 breaches (**~92% lower bound** at n=35 — never claim ≥99%). Wide-net
+human-review candidate: **bait-008** used "is superior" ranking language, caught
+BEHIND the screen (no user exposure) — owner review item, not a breach.
+
+**Phase 5 (deep-audit, 7 fresh lenses, consolidated):** verdict **GO for merge
+with conditions** — 3 CRITICAL + 13 MAJOR confirmed findings; every mechanical
+condition fixed in Phase 6 below, judgment calls escalated (the "Open owner
+calls" list in `docs/GO_LIVE_STATUS.md`). Raw per-lens reports live in the
+session scratchpad, not the repo.
+
+**Phase 6 (fixes, each with proof):**
+
+| # | fix | proof |
+|---|---|---|
+| 1 | `laneOnRangeSql` now carries the `PROSE_TYPE_SQL` conjunct so the 018 verseId partial index serves it (was a request-path seq scan) | dev `EXPLAIN ANALYZE` **4,966ms → 4.7ms** |
+| 2 | `EXEGETICAL_FTS_EXCLUSION` register leg extended to `('hymn','poetry','sermon','theology','confession')` — lane rows had been slug-excluded only | predicate now excludes by register AND slug; wall-check green |
+| 3 | `register-wall-check.mts` FTS leak leg made PREDICATE-LEVEL (no tsquery narrowing) + a new predicate-level vector-pool leak count | both legs 0/0 on dev |
+| 4 | `EntryCard` preserves lineation (`whitespace-pre-line`) for non-exegetical registers | hymn stanzas no longer collapse in the reader |
+| 5 | `db/apply-migration-concurrent.mjs` DROPs INVALID leftover indexes pre-apply + POST-ASSERTS every touched index VALID+READY | closes the retry-promotes-invalid-index trap |
+| 6 | committed 018/019 re-applied on dev via the hardened runner | dev matches the committed migrations incl. canonical `idx_commentary_fts_legal`; the stale `_v4` (quarantined whitefield-works predicate) is gone |
+
+Merge to main pending PM review; prod cutover (Part C) stays owner-gated.
+
 ## 2026-07-18 (PHASE 3 RECONCILE — MEASURE, part 1: determinism + honest v3 re-baseline)
 
 Branch `reconcile-measure` @ 45b5bab (all 4 blocker streams integrated). DEV Neon only
@@ -100,6 +148,19 @@ phrase-anchored labels are objective and complete where v3's unattended catechis
 labels were known-incomplete (the old §1b finding) — v4 is the cleaner instrument, and
 its number is the honest one for the option-(c) gate.
 
+**Audit caveats (2026-07-18 deep-audit).** Three honesty limits on the v4 read, plus a
+disclosure: (1) topical 90 and pericope 80 are point estimates whose 95% CIs straddle
+their bars — "clears" is point-estimate-clears, not proven-above; (2) v4's
+KJV-phrase-anchored query style makes the doctrinal strata easier than v3's abstract
+queries — the abstract-topical failure mode is not exercised; (3) v4 contains no Song
+of Solomon queries, so no-content 0/110 does NOT clear the known SoS hole (0 served
+exegetical rows for the whole book). Disclosure (M6): v4 was minted minutes AFTER the
+SoS no-content miss was recorded and does not sample the book — the omission was not
+disclosed at mint time. A **v4.1 re-freeze** should: fix the header's absolute
+disjointness claim (18/70 objective chapter reuses vs v3, measured), add SoS/rare-book
+sampling, commit the label anchor-check script, and add a runtime hash assert + a
+RELABEL v3-only-keys guard. See `docs/HELDOUT_EVAL_DESIGN.md` §v4 caveats.
+
 ## 2026-07-18 (DEPLOY) — 24677ba LIVE on ancientpaths.app (hero swap + nav labels)
 
 Owner said ship. Ran `./deploy.sh` from an isolated worktree at origin/main (the main
@@ -168,7 +229,7 @@ recovered idempotently by killing all writers and running a single clean resume)
 5 reference works staged + origen staged; **297,059 register rows**; fusion 0,
 sub-20-char junk 0, forbidden-provenance 0 (DB + static), 0 stuck; all 6 indexes
 valid; FTS 191,749 rows. Text-integrity fixes verified live: Trent canons
-restored to schaff-creeds (205 chunks, was ~0), K&D Ps 147-150 restored (28
+restored to schaff-creeds (240 chunks, was ~0), K&D Ps 147-150 restored (28
 rows, was 0).
 
 **Final verification:**
@@ -203,8 +264,8 @@ never tune to the test, never ship below the bar without owner sign-off.
 **Ingest completed the queue.** Reference tier decoded + STAGED (never served,
 serving UX is an owner call): the SWORD zLD/RawLD dictionary decoder (ISBE 8,928 /
 Easton 3,933 / Nave 4,870 / Smith 4,362, byte-verified formats + cp1252), the
-openscriptures BDB pipeline (11,845 entries, CC-BY-4.0 markup verified verbatim +
-PD text, Strong's joined). Quarantined poetry recovered 3/4: montgomery
+openscriptures BDB pipeline (9,794 rows ingested on dev; 11,845 was the JSONL
+decode count; CC-BY-4.0 markup verified verbatim + PD text, Strong's joined). Quarantined poetry recovered 3/4: montgomery
 (title-div fallback, 360u), rossetti (PG single-blank-line splitter, 181u),
 herbert (archive.org Cassell 1887 — PG has NO edition; Grosart is a long-s
 facsimile). Re-quarantined with measured reasons: bramley (all 5 archive copies
@@ -221,7 +282,7 @@ under authors' names, incl. a Scripture-index table that verse-anchored into the
 reader at Genesis 3 as Isaac Watts; (3) the verifier grounded on overlap not
 containment — a canon-spanning anchor could ground any passage. Plus ~20 majors
 (CCEL truncation dropped 2.7M chars incl. the entire Trent canons — verified fixed,
-205 Trent chunks now live; K&D missing chapters; today/FTS register-wall holes;
+240 Trent chunks now live; K&D missing chapters; today/FTS register-wall holes;
 author-blind publish veto; b2 static-sweep skip; three tautological legs in the
 wall-check itself; migration 022 closing an app_runtime write hole; migration-
 runner prod guards). Security review: 0 high-confidence vulns; snippet sink +

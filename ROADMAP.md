@@ -8,6 +8,31 @@ git history — not from memory or the earlier hit list.
 > priority narrative below predates the 2026-07-14 Phase A close + license gate + Slice 0; trust
 > STATE_OF_TRUTH for facts, and treat the section priorities here as owner-set direction, not current status.
 
+## Update 2026-07-18 (go-live reconciliation — branch `reconcile`)
+
+Five gated streams integrated onto `reconcile` (from main `0491e6e`), verified, deep-audited, fixed:
+
+- **A — zero-window migrations:** 018/019 rewritten `CREATE CONCURRENTLY _v5` → `DROP` old → `RENAME`,
+  applied via the hardened `db/apply-migration-concurrent.mjs` (invalid-leftover pre-clean + VALID/READY
+  post-assert). Dev converged to the committed migrations 2026-07-18.
+- **B — register wall + lanes:** labeled + consistent on all 4 surfaces via shared `partitionByRegister`;
+  **ship config = option (c)** (ADR-023): exegetical pool = verse-commentary + fathers ONLY;
+  sermons/theology/hymns in labeled lanes, never in the ≥2-voices floor.
+- **C — forbidden-provenance ratchet 0/0 both stores:** 15,537 biblehub embeddings rows removed, backed
+  up (JSONL, no vectors — restore = re-embed).
+- **D — housekeeping. M — honest re-baseline + v4:** the old "70/88" baseline was a myth (propped up by
+  since-removed forbidden rows + a struck circular relabel); honest option-(c) v3 baseline recorded, then
+  a frozen v4 (bars pre-registered) run ONCE — **clears every bar except proper-noun HIT@1 60<70** (all 4
+  misses HIT@2-pass; owner call). Numbers + caveats: WORKLOG 2026-07-18.
+- **Verification (Phase 4):** root 231 + web 82 tests green; npm audit green; register-wall-check 0
+  breaches; ratchet 0/0; RLS two-account 6/6 (dev); browser matrix 390px + desktop clean; live
+  interpretation_bait 35/35, 0 breaches (~92% lower bound).
+- **Deep-audit (Phase 5):** GO for merge **with conditions**; all mechanical conditions fixed in Phase 6
+  (lane SQL index conjunct 4,966ms→4.7ms · FTS exclusion register leg · predicate-level wall-check ·
+  hymn lineation · hardened migration runner · dev 018/019 convergence — WORKLOG 2026-07-18).
+- **State:** merge to main pending PM review; prod cutover (Part C) stays owner-gated — open owner calls
+  in `docs/GO_LIVE_STATUS.md`.
+
 ## Update 2026-07-12 (reconciled to the actual tree — supersedes the 07-11 plan below)
 
 The three beta walls are **DONE and DEPLOYED**, not "NEXT":
@@ -17,13 +42,12 @@ The three beta walls are **DONE and DEPLOYED**, not "NEXT":
    `MIGRATION_DESIGN.md` now stamped SUPERSEDED). Prod serves legal-only.
 3. **Observability** — shipped (`observability.ts` `logEvent`).
 
-**Held-out v3 (2026-07-14, re-measured on the un-starved pool — `docs/PHASE_A_CLOSE.md` §5, supersedes ADR-018):**
-verse-ref 95/98 · pericope 87/100 · proper-noun 80/90 · epistle HIT@2 **88**
-(n=25) · topical HIT@2 **70** (n=20; **70 is the true number, NOT an improvement — the earlier 75 was a
-5-doc-pool artifact**) · control clean. **Neither category is statistically below 85 at these n:** topical's 95% CI
-is [48, 86] and epistle's is [70, 96], both containing 85. So the 85/85 gate is **unmeasurable, not failed** —
-the honest next step is a larger v4 (n≈100/stratum) or a label-free gate (≥2 distinct grounded voices per
-answer). See WORKLOG §7 for the owner decision. Do NOT re-embed (ADR-019).
+**Held-out numbers — ⚠ SUPERSEDED (2026-07-18):** the 2026-07-14 v3 figures this block carried (topical
+70 / epistle 88, "unmeasurable not failed", "the honest next step is a larger v4") no longer describe the
+tree: that baseline was propped up by since-removed forbidden-provenance rows plus a struck circular
+relabel, the `reconcile` branch changed retrieval (register lanes, ADR-023), and the larger v4 has since
+been minted, frozen, and run. Current numbers: honest option-(c) v3 baseline + frozen v4 — see the
+**Update 2026-07-18** section above and WORKLOG 2026-07-18. Do NOT re-embed (ADR-019).
 
 **THE ACTIVE P0 IS CONTENT** (`docs/CONTENT_RECOVERY_PIPELINE.md`), which the 07-11 plan omitted entirely.
 Status 2026-07-12: the cross-copy match proof is **UNBLOCKED** — the "9.3% failure" that parked it for two

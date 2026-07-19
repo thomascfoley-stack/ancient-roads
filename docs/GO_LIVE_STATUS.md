@@ -1,56 +1,65 @@
 # GO-LIVE STATUS — morning readout (runs of 2026-07-16 → 18)
 
-**Branch `golive`, everything DEV-only. Part C NOT executed (hard stop honored).**
-The whole corpus was re-ingested through the fixed adapters after the A6 line-by-
-line audit. **One BLOCKER for the owner: the full-corpus /ask retrieval accuracy
-regressed on broad queries (A5 check 1 below) — a corpus-balance decision, not a
-bug.** Everything else is green.
+**Branch `reconcile` (from main 0491e6e), everything DEV-only. Part C NOT executed
+(hard stop honored).** The whole corpus was re-ingested through the fixed adapters
+after the A6 line-by-line audit; the 5 gated reconcile streams then landed
+(zero-window 018/019 · register lanes · forbidden-provenance 0/0 · housekeeping ·
+honest re-measure). Deep-audit verdict: **GO for merge, with conditions** — the
+Phase 6 fixes are done (WORKLOG 2026-07-18); the open owner calls below are yours.
 
-## ⚠ HEADLINE DECISION — the /ask exegetical pool regressed (read first)
+## ⚠ HEADLINE — the lane config IS applied; these are the honest numbers (read first)
 
-The frozen v3 eval on the FULL re-ingested corpus:
+**The sermon/theology register-lane config — ship option (c) — is applied on this
+branch** (ADR-023): the exegetical pool = verse-commentary + fathers ONLY;
+sermons/theology/hymns surface in labeled lanes on all 4 surfaces (shared
+`partitionByRegister`) and never count toward the ≥2-voices floor.
 
-| category | HIT@1 | HIT@2 | vs baseline HIT@2 |
-|---|---|---|---|
-| verse-ref (n=40) | 95 | 95 | 98 → **95** (held) |
-| pericope (n=15) | 93 | 100 | 100 → **100** (held) |
-| epistle (n=25) | 40 | 72 | 88 → **72** ↓ |
-| topical (n=20) | 10 | 45 | 70 → **45** ↓↓ |
-| proper-noun (n=10) | 70 | 80 | 90 → **80** ↓ |
-| control (n=10) | clean 10/10, 0 hijacks | | ✓ |
+The earlier "A5.1 REGRESSED, options (a)/(b)/(c) — none applied, your call"
+readout is OBSOLETE, and so is its comparison point: **the 2026-07-14 "70/88"
+topical/epistle baseline is a myth** — it was propped up by forbidden-provenance
+rows that stream C has since removed and by a circular tp-12 relabel that A6
+struck. `docs/SERMON_LANE_DIAGNOSIS.md` found it unreproducible and showed the
+regression was **NOT purely the sermon flood** (the whole prose expansion shifted
+broad-query ranking).
 
-**Precise queries held; broad/thematic queries regressed.** Root cause (diagnosed,
-not guessed): the exegetical pool went from ~commentary-only to **297,059 rows,
-~40% of them Spurgeon's 118k sermon chunks**, plus Maclaren/Owen/Edwards/fathers.
-For a broad query ("loving one another") the pool fills with genuine, correctly-
-anchored **sermons ON the theme** that anchor to *related-but-different* passages,
-crowding out the single labeled passage. The content is clean — no bad anchors, no
-duplicates, no pollution (verified by direct pool inspection). It is a **corpus-
-balance tradeoff**, and per the standing rule ("never ship a pipeline below the
-accuracy bar; any regression the tree can't self-fix → LOG for the owner") it is
-**yours to decide.**
+The honest option-(c) numbers (WORKLOG 2026-07-18; H1/H2 per category):
 
-**Critical scoping — this only affects /ask, NOT the reader.** The eval measures the
-teacher's ranked retrieval (`legalBasePool`→rerank). The **reader** (per-verse
-commentary panel, static JSON) shows ALL published voices for a verse with no
-ranking competition — it is *richer*, not worse, with the new works, and is
-verified clean (below). So the reader can ship; the /ask pool is the open question.
+| category | v3 honest baseline (dev set) | v4 frozen (90de5dc3) | pre-registered bar | v4 verdict |
+|---|---|---|---|---|
+| verse-ref (n=40) | 95 / 95 | **100 / 100** | H1 ≥85 | clears |
+| pericope (n=15) | 87 / 100 | **80 / 100** | H1 ≥70 | clears |
+| epistle (n=25) | 68 / 80 | **96 / 100** | H2 ≥85 | clears |
+| topical (n=20) | 45 / 75 | **80 / 90** | H2 ≥85 | clears |
+| proper-noun (n=10) | 60 / 90 | **60 / 100** | H1 ≥70 | **MISSES (60 < 70)** |
+| control (n=10) | clean 10/10 | clean 10/10, 0 hijacks | 0 | clears |
+| no-content (all) | — | 0/110 | ≤8% | clears (but see SoS below) |
 
-Options (all reversible; none applied — your call):
-- **(a) Ship the expanded pool as-is.** Broader voices; lower passage-precision on
-  broad queries. Users get thematically-relevant Spurgeon/Maclaren instead of the
-  one "textbook" passage.
-- **(b) Reader = all works; /ask pool = commentary-only baseline.** Preserves the
-  95/98·87/100·88·70·80/90 accuracy. Mechanically: keep the new work slugs in the
-  reader allowlist (`PUBLISHED_WORKS`) but drop them from `LEGAL_CORPUS_FILTER` /
-  `SERVED_PROSE_WORKS` (the /ask pool). One-constant change, fully reversible.
-- **(c) Rebalance ranking** (per-work pool cap so Spurgeon can't dominate, or a
-  sermon down-weight) and re-measure on a fresh held-out v4 — NOT tuned to this
-  eval (held-out discipline). The real fix if you want both breadth AND precision.
+v4 was minted + frozen (`sha256 90de5dc3…`) with bars pre-registered before any
+number existed, run ONCE, no tuning. **It clears every pre-registered bar EXCEPT
+proper-noun HIT@1 60% (all 4 misses are HIT@2-pass — ≥2 correct voices in the
+top-6; the top-1 slot goes to a related passage).** That miss, and the three
+items below it, are open owner calls.
 
-My recommendation: **(b) for the immediate go-live** (ship the reader's richer
-corpus + keep /ask accuracy), then **(c)** as the follow-up to earn the sermons
-into /ask. But this is explicitly flagged for you, not decided.
+## Open owner calls (2026-07-18)
+
+1. **Proper-noun HIT@1 60 < 70 (v4).** Consistent with v3's 60 on the same config
+   — a top-1 ranking characteristic on rare narratives, not noise. HIT@2 is 100.
+   Ship as a documented limitation, or hold for a ranking fix?
+2. **Copyrighted static corpus — publicly fetchable on prod TODAY (pre-existing).**
+   16,360 copyrighted-author entries (Tyndale Study Notes 15,161 · CS Lewis 1,102
+   · Screwtape 70 · Douglas Wilson 16 · Tolkien 11) sit in `web/public/commentaries`
+   AND the dev DB with EMPTY `sourceUrl` — served as raw JSON on prod right now.
+   The ratchets are blind to them because they key on `sourceUrl`.
+   `docs/OWNER_ACTIONS.md:159` (bucket (a), "remove from corpus") is still unchecked.
+3. **~131 empty-provenance patristic rows in the served pool** carry ACCS-style
+   titles — possibly a copyrighted modern translation. Needs a provenance ruling
+   (quarantine / re-source / serve).
+4. **Song of Solomon: 0 rows in the served exegetical pool for the entire book** —
+   below the ≥2-voices floor. v4 contains no SoS queries, so its no-content 0/110
+   does NOT clear this hole (a v4.1 should sample it — `HELDOUT_EVAL_DESIGN.md` §v4).
+5. **bait-008 (wide-net human review).** One live-bait candidate used "is superior"
+   ranking language — caught BEHIND the screen (never reached a user). Editorial
+   review item, not a breach.
 
 ## Green / red per phase
 
@@ -58,11 +67,11 @@ into /ask. But this is explicitly flagged for you, not decided.
 |---|---|---|
 | 0 — verifier fail-open | ✅ GREEN | dispatch default fails closed; 41 verifier + grounding tests green; both src/ & web/ copies byte-identical |
 | 1 — schema (017/020/022) | ✅ GREEN | hymn/poetry/art + 'ingesting' in the CHECKs; embeddings write-policy user-scoped (022) — all applied idempotently on dev |
-| 2 — register read path | ✅ GREEN | 018/019 applied; song/verse + FTS lockstep tests green; licensing recall 50/50 |
+| 2 — register read path | ✅ GREEN | 018/019 (zero-window rewrite) re-applied on dev 2026-07-18 via the hardened concurrent runner — dev matches the committed migrations; song/verse + FTS lockstep tests green; licensing recall 50/50 |
 | A2 — adapters | ✅ GREEN | ccel/gutenberg/helloao/sword-bridge/sword-ld/bdb/archive; text-integrity fixes verified (Trent canons restored, K&D Ps147-150 restored, 0 fused rows) |
 | A3 — ingest | ✅ GREEN | 34 works served (all re-ingested via fixed adapters), 5 reference works staged, origen staged; 297,059 register rows; fusion 0 · junk 0 · forbidden 0 · 0 stuck |
-| A4 — static JSON + FTS | ✅ GREEN | FTS 191,749 rows (work/register columns); all 6 indexes valid |
-| A5.1 — commentary accuracy | 🔴 **REGRESSED** | see the HEADLINE DECISION above — broad-query HIT@2 down; owner call |
+| A4 — static JSON + FTS | ✅ GREEN | FTS 191,749 rows (work/register columns); all 6 serving indexes VALID+READY — dev converged 2026-07-18 via the hardened concurrent runner (the stale `_v4` with the quarantined whitefield-works predicate is gone) |
+| A5.1 — commentary accuracy | ✅ RE-BASELINED | the old "70/88" comparison was a myth (see HEADLINE); option-(c) honest v3 baseline + frozen v4 clear every pre-registered bar except proper-noun H1 60<70 — owner call |
 | A5.2 — register wall | ✅ GREEN | **0 breaches** on the full corpus: vector pools (incl. "amazing grace"), FTS (955 hymn rows, 0 leak), reader (21 labeled, 0 unlabeled); song_verse non-empty 5/5 |
 | A5.3 — reader surface | ✅ GREEN | Ps 23 @375px: "Hymns & sacred poetry" labeled section, Hymn/paraphrase/Poetry chips, **0 external host links**, Calvin/Augustine render full+clean, "words of men" line, console clean |
 | A6 — deep-audit + line-by-line | ✅ DONE | 83 confirmed findings; 3 criticals + all serving-correctness majors fixed; escalations logged. `docs/GO_LIVE_A6_FINDINGS.md` |
@@ -89,7 +98,7 @@ into /ask. But this is explicitly flagged for you, not decided.
 
 ## PART C — the deliberate prod cutover (YOUR eyes-open step; needs prod creds)
 
-**Precondition:** every ⏳ above green; A5 both checks pass; A6 findings resolved/logged.
+**Precondition:** `reconcile` merged to main; the open owner calls above ruled on.
 
 ```bash
 # 0. From a session WITH prod credentials (this one has none by design):
@@ -98,22 +107,27 @@ into /ask. But this is explicitly flagged for you, not decided.
 #                                  # this flag is the deliberate prod override.
 cd <repo>
 
-# 1. Migrations in dependency order (all additive; unique numbers 016-023 — the
-#    old duplicate-020 was renamed 020_sources_status_ingesting -> 023):
+# 1. Migrations in dependency order, 016 → 023 — ALL as committed, no hand-typed SQL
+#    (unique numbers; the old duplicate-020 was renamed -> 023). Plain runner first:
 node db/apply-migration.mjs           db/migrations/016_history_sections.sql
 node db/apply-migration.mjs           db/migrations/017_source_type_registers.sql
 node db/apply-migration.mjs           db/migrations/020_embeddings_source_type_registers.sql
 node db/apply-migration.mjs           db/migrations/021_revoke_app_runtime_anchor_writes.sql
 node db/apply-migration.mjs           db/migrations/022_embeddings_write_policy_user_scope.sql
 node db/apply-migration.mjs           db/migrations/023_sources_status_ingesting.sql
-# 018/019 build partial indexes. ⚠ On prod DO NOT use the dev drop-then-create
-# (rebuild-register-indexes.ts / the committed 018/019) — that DROPs the live
-# serving index first and opens the ef=40 starvation window (how migration 009
-# died). Instead build the replacement under a NEW name FIRST, then drop the old:
-#   CREATE INDEX CONCURRENTLY idx_embeddings_vector_legal_v2 ON … WHERE <predicate>;
-#   DROP INDEX CONCURRENTLY idx_embeddings_vector_legal;   -- only after v2 is VALID
-#   ALTER INDEX idx_embeddings_vector_legal_v2 RENAME TO idx_embeddings_vector_legal;
-# (repeat for the song_verse HNSW twin + the FTS legal index). Zero-window.
+# 018/019 (partial indexes) are ZERO-WINDOW AS COMMITTED: each index is built as
+# CREATE INDEX CONCURRENTLY …_v5 → DROP old → RENAME, and the old app keeps index
+# service throughout (old predicates imply the new ones). Apply via the concurrent
+# runner (splits on --SPLIT--; CONCURRENTLY can't run inside a txn block):
+node db/apply-migration-concurrent.mjs db/migrations/018_register_partial_indexes.sql
+node db/apply-migration-concurrent.mjs db/migrations/019_register_columns_fts.sql
+# The runner DROPs any INVALID leftover indexes before applying and POST-ASSERTS
+# every touched index is VALID+READY. If a CONCURRENTLY build fails mid-way,
+# re-run the SAME command — the pre-clean removes the invalid leftover and rebuilds.
+# Then verify the 6 serving indexes exist, VALID+READY:
+#   idx_embeddings_vector_legal        idx_embeddings_vector_song_verse
+#   idx_embeddings_vector_sermon       idx_embeddings_vector_theology
+#   idx_embeddings_verseid_registers   idx_commentary_fts_legal
 # verify: role_table_grants → SELECT-only on the 3 anchor/embedding tables AND
 #         embeddings write-policy WITH CHECK is user-scoped (no user_id IS NULL);
 #         sources CHECK includes hymn/poetry/art + 'ingesting'; tsv expr includes heading.
@@ -139,9 +153,12 @@ npx tsx src/ingest/b2-remove-forbidden-provenance.ts          # dry run first
 npx tsx src/ingest/b2-remove-forbidden-provenance.ts --apply  # backup → delete → ratchet=0
 
 # 5. Verify on prod: spot-check a hymn/poem/K&D/Spurgeon on both surfaces;
-#    re-run eval-heldout --v3 against prod (no commentary regression);
-#    register-wall-check (0 breaches); role_table_grants (SELECT-only);
-#    seeded bad block → verifier fails closed. Record all numbers in WORKLOG.
+#    run eval-heldout --v4 against prod (v4 is the frozen instrument; v3 is a
+#    dev set per HELDOUT_EVAL_DESIGN — do NOT gate prod on v3);
+#    register-wall-check (now predicate-level, incl. the vector-pool leak count);
+#    predeploy forbidden-provenance ratchet (0/0 both stores); live
+#    interpretation_bait; role_table_grants (SELECT-only); seeded bad block →
+#    verifier fails closed. Record all numbers in WORKLOG.
 ```
 
 **Read `docs/GO_LIVE_A6_FINDINGS.md` before Part C** — the full line-by-line audit

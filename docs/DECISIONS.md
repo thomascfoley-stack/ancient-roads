@@ -105,3 +105,63 @@ CCEL text only via CrossWire/SWORD — is unsatisfiable for Schaff; substituting
 execution call, but *sourcing Schaff at all* is the owner's (escalated, not guessed). **Rejected:** blind
 token-window chunking; bootstrapped entity tagging without human curation; treating archive.org OCR
 historians as clean tier; applying 016 to prod this cycle.
+
+## ADR-022 — Epistle/topical are diagnostic, not launch gates (2026-07-14)
+**Recorded 2026-07-18; cited-but-unrecorded until now.** `STATE_OF_TRUTH.md` and `PHASE_A_CLOSE.md` have
+cited "ADR-022" for this decision since 2026-07-14/15, but no entry existed here — this records it properly,
+dated to the decision. **Context:** at n=25/20 the epistle/topical 95% CIs both span the 85 bar, so
+pass/fail is unmeasurable at those n; verse-ref/pericope/proper-noun are objective and adequately powered.
+**Decision:** verse-ref, pericope, and proper-noun are the **hard launch gates**; epistle and topical HIT@2
+are **diagnostic** — reported, failure-coded, and tracked toward the 85 GA bar, but a miss is a documented
+limitation, not an auto-no-ship. **Why:** gating on a statistically unmeasurable number is theater; the
+honest instrument fix (a larger held-out) came later as v4 (ADR-024). **Rejected:** treating 70/88-at-small-n
+as a hard fail; quietly dropping the 85 bar (it stays, as the GA target).
+
+> **Numbering-collision note (2026-07-18):** the uncommitted Library-Reader design docs (in the main
+> checkout) cite "ADR-021/ADR-022" for *reader* decisions. Those citations collide with the entries
+> recorded here (historians/006 and diagnostic-gates), and the collision is resolved in favor of this log:
+> the reader decisions must be renumbered **ADR-026/ADR-027** when those docs land.
+
+## ADR-023 — Sermon/theology register lanes = ship config option (c) (2026-07-18)
+**Context:** the go-live re-ingest expanded the exegetical pool to ~297k rows (~40% sermon chunks) and
+broad-query accuracy dropped. `docs/SERMON_LANE_DIAGNOSIS.md` measured 6 pool configs and found the old
+"70/88" baseline unreproducible (propped up by since-removed forbidden-provenance rows + a struck circular
+relabel) and the regression **NOT purely the sermon flood** — no exclusion config recovered it; the whole
+prose expansion shifts broad-query ranking. Sermons/theology are also categorically not verse exegesis:
+ranking them against commentators inside one pool misrepresents both. **Decision:** ship config **option
+(c)** — the exegetical pool (and the ≥2-voices floor) = verse-commentary + fathers ONLY; sermons, theology,
+and hymns surface in **labeled register lanes** on all 4 surfaces via the shared `partitionByRegister`, with
+a two-leg register wall (register column + work slug) on both the vector and FTS paths. **Why:** lanes keep
+the breadth users want while the concordance floor stays exegetical; measured honestly on v3+v4 (ADR-024)
+rather than against a mythical baseline. **Rejected:** shipping the mixed pool as-is (broad-query precision
+loss); /ask commentary-only with no lanes (hides the new corpus from /ask entirely); per-work caps/down-
+weights (measured insufficient in the diagnosis; tuning-to-the-test risk).
+
+## ADR-024 — Held-out v4: mint/freeze with self-anchored labels (2026-07-18)
+**Context:** v3 had been measured against repeatedly (pool fix, ef sweeps, lane diagnosis) — by held-out
+discipline it is a **dev set**; and A6 flagged v3's RELABEL path as circular. The option-(c) ship decision
+needed a set nothing was tuned against. **Decision:** mint `FROZEN_V4` (120 q, same composition as v3),
+**labels derived only from the query's own scripture reference or quoted KJV wording** (never from
+retrieval output; anchors checked against the in-repo KJV at mint time, though the check script was not
+committed — re-runnable verification is a v4.1 item, and 3 labels are disclosed conceptual parallels
+rather than phrase-containing chapters; the audit's independent 46-anchor spot-check passed 46/46),
+content-hash-pinned
+(`90de5dc3…`) before any accuracy number existed, bars pre-registered (carried unchanged from this doc
+suite's 2026-07-10 bar rationale — 8 days prior); **no relabel path** — any label fix is a v4.1 re-freeze
+with a new pin. Run ONCE: clears every bar except proper-noun HIT@1 60<70 (owner call). **Known caveats
+(recorded at audit, 2026-07-18):** topical 90 / pericope 80 are point estimates whose CIs straddle their
+bars; the KJV-phrase-anchored style under-exercises the abstract-topical failure mode; no Song of Solomon
+sampling, so no-content 0/110 does not clear the SoS hole — see `HELDOUT_EVAL_DESIGN.md` §v4 caveats and
+the v4.1 checklist. **Rejected:** relabeling v3 again (circular); gating the ship on the v3 dev set.
+
+## ADR-025 — Zero-window index migration policy (2026-07-18)
+**Context:** the original 018/019 dropped the live serving index before rebuilding — on prod that opens the
+ef=40 starvation window that killed migration 009. **Decision:** any migration touching a **serving** index
+is zero-window by construction: `CREATE INDEX CONCURRENTLY <name>_vN` (new name, new predicate) → `DROP
+INDEX CONCURRENTLY` old → `ALTER INDEX … RENAME` — the old index serves throughout, and old predicates must
+imply the new so it *can*. Applied only via `db/apply-migration-concurrent.mjs` (splits on `--SPLIT--`,
+since CONCURRENTLY cannot run in a txn block), which pre-cleans INVALID leftover indexes and post-asserts
+every touched index VALID+READY (a failed CONCURRENTLY build leaves an INVALID index; re-running the same
+command rebuilds it). **Never drop-first on a serving index — dev included** (dev must converge to the
+committed files, not to a hand-run variant). **Rejected:** drop-then-create (the 009 failure mode);
+hand-typed prod SQL diverging from the committed migrations (the drift this reconcile just cleaned up).
