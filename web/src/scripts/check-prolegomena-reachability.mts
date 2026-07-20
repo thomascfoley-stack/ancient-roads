@@ -28,6 +28,14 @@ const sql = neon((process.env.APP_DATABASE_URL ?? process.env.DATABASE_URL ?? ''
 
 const PROLEGOMENA_MAX_SECTION = 16;
 
+// Round 2 (--comparative-table): the SAME question for chrysostom's "Comparative Table of the
+// Works of St. Chrysostom in the American and in Migne's Editions" — 6 rows of editor's
+// edition-concordance (page ranges across two printings) stamped with Chrysostom's name.
+// These are the ONLY rows in the round-2 suppression that sit inside the exegetical pool the
+// frozen v4 eval measures, so they are the only ones that could owe a re-measure.
+const COMPARATIVE_TABLE_RE = /Comparative Table of the Works/i;
+const MODE_COMPARATIVE = process.argv.includes('--comparative-table');
+
 /** True iff this source_id is one of the 95 Schaff-Prolegomena rows. */
 function isProlegomena(sourceId: string): boolean {
   // "father:chrysostom-homilies:<sec>[.<chunk>]"
@@ -36,6 +44,18 @@ function isProlegomena(sourceId: string): boolean {
   const sec = Number(parts[2]!.split('.')[0]);
   return Number.isFinite(sec) && sec <= PROLEGOMENA_MAX_SECTION;
 }
+
+/** True iff this pool row is one of the 6 Comparative-Table rows (matched on its heading,
+ *  the same key the round-2 suppression deletes by). */
+function isComparativeTable(row: { source_id: string; metadata: unknown }): boolean {
+  if (!row.source_id.includes('chrysostom-homilies')) return false;
+  const h = (row.metadata as { heading?: string } | null)?.heading ?? '';
+  return COMPARATIVE_TABLE_RE.test(h);
+}
+
+const isTarget = MODE_COMPARATIVE
+  ? (r: { source_id: string; metadata: unknown }) => isComparativeTable(r)
+  : (r: { source_id: string; metadata: unknown }) => isProlegomena(r.source_id);
 
 async function embed(text: string): Promise<string> {
   const res = await fetch('https://api.deepinfra.com/v1/openai/embeddings', {
@@ -54,23 +74,34 @@ async function embed(text: string): Promise<string> {
 async function main() {
   // Sanity: the target set must be non-empty, or a clean result is meaningless
   // (a check that cannot fail proves nothing — false-confidence-audit rule).
-  const target = (await sql.query(
-    `SELECT COUNT(*)::int AS n FROM embeddings
-      WHERE user_id IS NULL AND metadata->>'work'='chrysostom-homilies'
-        AND split_part(split_part(source_id,':',3),'.',1)::int <= $1`,
-    [PROLEGOMENA_MAX_SECTION],
-  )) as Array<{ n: number }>;
+  const target = MODE_COMPARATIVE
+    ? ((await sql.query(
+        `SELECT COUNT(*)::int AS n FROM embeddings
+          WHERE user_id IS NULL AND metadata->>'work'='chrysostom-homilies'
+            AND metadata->>'heading' ~* 'Comparative Table of the Works'`,
+      )) as Array<{ n: number }>)
+    : ((await sql.query(
+        `SELECT COUNT(*)::int AS n FROM embeddings
+          WHERE user_id IS NULL AND metadata->>'work'='chrysostom-homilies'
+            AND split_part(split_part(source_id,':',3),'.',1)::int <= $1`,
+        [PROLEGOMENA_MAX_SECTION],
+      )) as Array<{ n: number }>);
   const targetCount = target[0]!.n;
-  console.log(`target rows (Schaff Prolegomena, sections 1-${PROLEGOMENA_MAX_SECTION}): ${targetCount}`);
+  console.log(MODE_COMPARATIVE
+    ? `target rows (Comparative Table of the Works, by heading): ${targetCount}`
+    : `target rows (Schaff Prolegomena, sections 1-${PROLEGOMENA_MAX_SECTION}): ${targetCount}`);
   if (targetCount === 0) throw new Error('target set is EMPTY — the check would pass vacuously; abort');
 
-  // Positive control: prove the detector fires. Embed text taken from the
-  // Prolegomena itself; if THAT does not surface a target row, the check is blind
-  // and a clean run over v4 would be meaningless.
-  const controlText = 'Prolegomena. The Life and Work of St. John Chrysostom by Philip Schaff. '
-    + 'Editions of Chrysostom\'s works, the Benedictine edition reprinted at Venice, Migne Patrologia Graeca.';
+  // Positive control: prove the detector fires. Embed text taken from the target itself;
+  // if THAT does not surface a target row, the check is blind and a clean run over v4 would
+  // be meaningless.
+  const controlText = MODE_COMPARATIVE
+    ? 'Comparative Table of the Works of St. Chrysostom in the American and in Migne\'s Editions. '
+      + 'Anglo-american edition, Græco-latin edition, Homily concerning Lowliness of Mind, pages 145-155.'
+    : 'Prolegomena. The Life and Work of St. John Chrysostom by Philip Schaff. '
+      + 'Editions of Chrysostom\'s works, the Benedictine edition reprinted at Venice, Migne Patrologia Graeca.';
   const controlPool = await legalBasePool(sql, await embed(controlText), CANDIDATE_POOL, HNSW_EF_SEARCH);
-  const controlHits = controlPool.filter((r) => isProlegomena(r.source_id));
+  const controlHits = controlPool.filter((r) => isTarget(r));
   console.log(`positive control: ${controlHits.length} target row(s) in a ${controlPool.length}-row pool`
     + (controlHits[0] ? ` (top hit ${controlHits[0].source_id} score=${controlHits[0].score.toFixed(4)})` : ''));
   if (controlHits.length === 0) {
@@ -88,7 +119,7 @@ async function main() {
     const pool = await legalBasePool(sql, await embed(q.query), CANDIDATE_POOL, HNSW_EF_SEARCH);
     poolRowsScanned += pool.length;
     pool.forEach((r, i) => {
-      if (isProlegomena(r.source_id)) {
+      if (isTarget(r)) {
         hits.push({ id: q.id, cat: q.cat, query: q.query, sourceId: r.source_id, rank: i + 1, score: r.score });
       }
     });
@@ -96,13 +127,13 @@ async function main() {
 
   console.log(`queries run:        ${FROZEN_V4.length}`);
   console.log(`pool rows scanned:  ${poolRowsScanned}`);
-  console.log(`Prolegomena hits:   ${hits.length}`);
+  console.log(`target hits:        ${hits.length}`);
 
   if (hits.length === 0) {
-    console.log('\n✓ CLEAN — no FROZEN v4 query reaches any of the 95 Prolegomena rows.');
+    console.log(`\n✓ CLEAN — no FROZEN v4 query reaches any of the ${targetCount} target rows.`);
     console.log('  Suppressing them cannot change any v4 number, so NO held-out re-measure is required.');
   } else {
-    console.log('\n✗ REACHABLE — these v4 queries pull Prolegomena rows into the candidate pool:');
+    console.log('\n✗ REACHABLE — these v4 queries pull target rows into the candidate pool:');
     for (const h of hits) {
       console.log(`   ${h.id} [${h.cat}] rank=${h.rank} score=${h.score.toFixed(4)} ${h.sourceId}`);
       console.log(`      query: ${h.query}`);

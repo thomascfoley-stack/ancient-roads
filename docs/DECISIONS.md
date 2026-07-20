@@ -378,3 +378,63 @@ takes effect on every surface at once, with no risk that one read path misses th
 **STILL OPEN — the durable repair:** the CCEL adapter has no per-work attribution boundary inside a
 composite volume. Until it does, the next composite CCEL ingest reproduces this defect. Suppression
 is tactical; the adapter fix is the repair and must land before any further CCEL ingest.
+
+### ADR-029 addendum 2 — the class is NON-AUTHORIAL MATTER, not "composite volume" (2026-07-19)
+
+**The framing in ADR-029 was too narrow, twice.** The ship committee found instances the
+follow-up sweep could not have caught:
+
+1. **Wrong sourcing scope.** The sweep looked only at CCEL works, because origen was CCEL.
+   `tennyson-in-memoriam` and `traherne-poems` are **Gutenberg** and were never swept — yet
+   they fail on their head and tail respectively, exactly the way the CCEL method would have
+   caught had it been pointed at them. Generalising to the *adapter* instead of to the
+   *pattern* was the error.
+2. **Wrong shape.** It is not only "another author's work bound in". It is **any non-authorial
+   matter carried in with the text**: another father's epistles (Origen/Clement), an editor's
+   prologue (Chrysostom/Schaff), a publisher's price list (Tennyson, Traherne, Spurgeon), and
+   machine-generated word indexes (929 rows). A detector written against "is this a different
+   author" misses three of those four.
+
+**Suppressed (dev, 947 sections + 943 flat rows, all backed up with vectors):** word/phrase
+indexes in schaff-creeds 585 · hodge-systematic 283 · owen-works 41 · watson-works 17 ·
+maclaren-expositions 2 · edwards-works 1; chrysostom's edition-concordance 6; publisher
+catalogues in tennyson-in-memoriam §1–5, traherne-poems §413–417, spurgeon-talks-to-farmers
+§299–300.
+
+**Rigor check.** Only 6 of the 947 (chrysostom's Comparative Table) sit inside the exegetical
+pool the frozen v4 eval measures; the rest are lane content (sermon/theology/song-verse), which
+v4 does not reach by construction. Those 6 were checked by the same method as the Prolegomena —
+positive control fires (5 target rows in a 20-row pool, score 0.8372), **0 hits across 120
+queries / 2,400 pool rows**. No re-measure owed. Honest limit: the lanes have their own
+retrieval and are covered by no frozen eval, so "v4 unaffected" is narrower than "no retrieval
+effect". Evidence: `docs/evidence/part2/comparative-table-reachability.txt`.
+
+**KEPT deliberately** (verified real content, do not "clean" these): schaff-creeds "Comparative
+Table of the Ante-Nicene Rules of Faith" (7 — comparing creeds *is* the book's subject, and the
+body is creed text); calvin-institutes "General Index of Chapters" (6 — a legible TOC);
+spurgeon-talks-to-farmers §298, a **mixed** chunk that opens with real Spurgeon and ends inside
+another book's preface — deleting it would destroy sermon text, so it is flagged for a re-slice
+instead.
+
+**A BUG I INTRODUCED AND THE CHECK THAT CAUGHT IT.** The suppression targeted `sections` by
+ORDINAL but re-expressed the same range against the flat store's SOURCE SECTION number from
+`source_id`. Those are different axes: repoint makes sections 1:1 with flat *rows*, so a chunked
+source section (`2.1`, `2.2`) spends two ordinals while staying one source section. Consequences,
+both real:
+- **tennyson over-deleted** — flat `BETWEEN 1 AND 5` also removed source sections 4–5, i.e.
+  **3 rows of real verse**: the Prologue ("Whom we, that have not seen thy face") and canto I.
+- **traherne under-deleted** — its ads are source sections 282–286, so the range matched
+  *nothing* and the catalogue stayed **served**.
+Caught by the post-apply check that compared sections-vs-flat per work and demanded 1:1 — the
+two works that broke it were the only two with an ordinal-range target *and* chunking. Repaired
+by `src/ingest/repair-tennyson-traherne-flat.ts`: the Tennyson rows were fully recoverable
+because only the flat copy was lost while `sections` + `section_embeddings` survived. Final
+state verified independently: all ten works exactly 1:1, 0 genuine residual rows (the single
+match was a false positive — Spurgeon using "buckram" metaphorically).
+
+**Lesson for the prod cutover:** any suppression that spans both stores must express its target
+in each store's OWN key, and must assert 1:1 per work afterwards. A range that is correct in one
+store is not automatically correct in the other.
+
+**STILL the durable repair:** the ingest adapters carry publisher/editor matter into a work with
+no per-work attribution boundary. Until that lands, the next ingest reproduces all of this.
