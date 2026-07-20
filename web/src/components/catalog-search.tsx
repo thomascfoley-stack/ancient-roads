@@ -89,7 +89,17 @@ export function CatalogSearch({ catalog, label }: { catalog: CatalogId; label: s
                     {/* the register label — the wall requires the reader can always tell what this is */}
                     <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-stone-400">{r.sourceType}</span>
                   </span>
-                  {r.heading && <span className="mt-0.5 block truncate text-xs text-stone-500 dark:text-stone-400">{r.heading}</span>}
+                  {/* WHO SAID IT. The snippet below is a QUOTATION from the corpus, and this
+                      product's promise is that quotations are attributed (CLAUDE.md / PRINCIPLES
+                      I1–I6). The API has always returned `author`; this card used to drop it, so a
+                      hit on "Expositions of Holy Scripture" never revealed it was Maclaren. Search
+                      is where attribution matters most — there is no surrounding page to infer the
+                      voice from. Null (a psalter, a compiled work) degrades to an explicit marker,
+                      never to a blank and never to the slug. */}
+                  <span className="mt-0.5 block truncate text-xs text-stone-500 dark:text-stone-400">
+                    {r.author ?? 'Unattributed'}
+                    {r.heading && <span className="text-stone-400 dark:text-stone-500"> · {r.heading}</span>}
+                  </span>
                   <span
                     className="mt-1 block text-sm leading-relaxed text-stone-600 [&_mark]:bg-accent-100 [&_mark]:text-stone-900 dark:text-stone-300 dark:[&_mark]:bg-accent-900/60 dark:[&_mark]:text-stone-100"
                     /* ts_headline output: corpus text with <mark> around the hit. Server-generated
