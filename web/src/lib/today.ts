@@ -121,8 +121,20 @@ export function voicesForPassage(
   const startV = passage.start % 1000;
   const endV = passage.end % 1000;
   const verseExact = published.filter((e) => intersectsVerses(e, startV, endV));
-  if (verseExact.length >= 2) return { voices: pickDiverse(verseExact, 2), rung: 'verse' };
-  if (published.length >= 1) return { voices: pickDiverse(published, 2), rung: 'chapter' };
+
+  // A VOICE IS AN AUTHOR. Both rungs used to gate on ENTRY COUNT — `verseExact.length >= 2` and
+  // `published.length >= 1` — so a passage covered by one commentator many times satisfied a
+  // "≥2 voices" floor, and the chapter rung satisfied it with a SINGLE entry. Measured over the
+  // whole served corpus (src/scripts/measure-voice-floor.mts): 100 sets rendered two cards
+  // carrying ONE author (all John Wesley, all Song of Solomon) plus 17 that rendered one card.
+  //
+  // Worse than a miscount: Song of Solomon is a KNOWN zero-coverage book (GO_LIVE_STATUS), and
+  // showing Wesley twice CONCEALED that hole behind an apparently-satisfied floor. Degrading to
+  // 'lead-only' does not restore coverage — it stops overstating it.
+  const distinctAuthors = (es: CommentaryEntry[]) => new Set(es.map((e) => e.author)).size;
+
+  if (distinctAuthors(verseExact) >= 2) return { voices: pickDiverse(verseExact, 2), rung: 'verse' };
+  if (distinctAuthors(published) >= 2) return { voices: pickDiverse(published, 2), rung: 'chapter' };
   return { voices: [], rung: 'lead-only' };
 }
 

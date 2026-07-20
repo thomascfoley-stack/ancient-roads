@@ -163,18 +163,42 @@ export function pickDiverse(entries: CommentaryEntry[], max: number): Commentary
   const picked: CommentaryEntry[] = [];
   const traditions = [...byTradition.keys()];
 
+  // AUTHOR-FIRST PASS. The round-robin below rotates over TRADITION buckets, so two entries by
+  // the same author land in one bucket and are drawn on successive rounds — spending both slots
+  // of a ≥2-voices floor on a single voice. Measured: 100 corpus sets did exactly that (all John
+  // Wesley). So take at most ONE entry per author first, in the same tradition rotation; only if
+  // that cannot fill `max` do we fall through and allow an author to repeat.
+  const seenAuthors = new Set<string>();
   let round = 0;
   while (picked.length < max) {
     let added = false;
     for (const t of traditions) {
       const arr = byTradition.get(t)!;
       if (round < arr.length && picked.length < max) {
-        picked.push(arr[round]!);
-        added = true;
+        const cand = arr[round]!;
+        if (!seenAuthors.has(cand.author)) {
+          picked.push(cand);
+          seenAuthors.add(cand.author);
+          added = true;
+        }
       }
     }
-    if (!added) break;
+    if (!added && round >= Math.max(...traditions.map((t) => byTradition.get(t)!.length))) break;
     round++;
+  }
+
+  // SECOND PASS — the panels call pickDiverse(entries, 10) to show a work in DEPTH, and a single
+  // commentator with several notes on a verse is legitimate there. Author dedupe must therefore
+  // narrow the FLOOR, not starve the panel: once every distinct author is represented, top up in
+  // the original diversity order. (The floor's own guarantee is enforced in voicesForPassage,
+  // which now counts distinct authors before it ever calls this.)
+  if (picked.length < max) {
+    for (const t of traditions) {
+      for (const cand of byTradition.get(t)!) {
+        if (picked.length >= max) break;
+        if (!picked.includes(cand)) picked.push(cand);
+      }
+    }
   }
 
   return picked.sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999));
