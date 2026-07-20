@@ -278,3 +278,52 @@ The rate is accepted **as an unmonitored risk**; wiring observability
 **Why:** each of these was already true; what was missing was one authoritative statement, so a doc
 sweep could not keep re-inventing a different status. **Rejected:** leaving the status distributed
 across five docs (the condition that produced the contradiction).
+
+## ADR-029 — CCEL composite-volume misattribution: per-work attribution is required before any CCEL work publishes (2026-07-19)
+
+**Context:** `origen-commentary` (staged, 1,224 sections) declares `author='Origen of Alexandria'`,
+but sections §1–~129 are **1 Clement and 2 Clement** — ANF vol 9 prints the Epistles of Clement in
+the same volume as Origen's *Commentary on John*, and the CCEL ingest swept the whole volume under
+one author. Genuine Origen (Comm. John Bk I ch. 1, "the spiritual Israel") begins ~§130; the
+Heracleon material runs §300+. This is **independent of** the standing editorial `MUST_NOT_SERVE
+'Origen'` ruling: clearing that ruling would still publish Clement's epistles under Origen's name.
+
+The failure is **scrape-shaped, not author-shaped** — the CCEL adapter has no per-work attribution
+boundary inside a composite volume — so it was assumed to repeat until shown otherwise. A sweep of
+all 17 CCEL-sourced works carrying sections (heads AND tails, since front-matter bleed and appended
+works present differently) found **one further instance**: `chrysostom-homilies` (**published**,
+8,941 sections) carries **Philip Schaff's *Prolegomena* in §1–95** (1.06%) — a 19th-century editor's
+biographical/bibliographic essay ("The Life and Work of St. John Chrysostom. By Philip Schaff")
+attributed to a 4th-century father, and present in the **served** flat pool (all 8,941 rows).
+The other 15 works' heads and tails match their declared author.
+
+**Decision:**
+1. `origen-commentary` **stays staged**. Publishing it would breach citation integrity (C1 /
+   ADR-001): a reader would receive Clement's theology as Origen's.
+2. **What would have to be true to publish it:** re-slice the CCEL source with **correct per-work
+   attribution** — the composite volume split at its work boundaries, each work carrying its own
+   `sources` row and author, with the Clement material either dropped or published as its own work.
+   Nothing short of that (e.g. deleting §1–129 by ordinal) is acceptable, because ordinal surgery
+   leaves the adapter defect in place to recur on the next CCEL ingest.
+3. **No CCEL work publishes** until it has been checked for a composite-volume boundary. This is a
+   standing precondition on the lexicon/reference publish batch and on any future CCEL ingest.
+4. `chrysostom-homilies` §1–95 is a **live** misattribution on a published, served work. Ruling it
+   is an owner call (severity is materially lower than origen — the content is *about* Chrysostom
+   and is bibliographic apparatus, not a rival father's doctrine — but it is still Schaff's prose
+   under Chrysostom's name, with Early-Church era metadata on 1889 text). Logged, not silently
+   repaired.
+
+**Why:** the product guarantee is that every displayed voice is *quoted and attributed*. A composite
+volume swept under one author breaks attribution at the source, and no downstream verifier can catch
+it — the text is genuine and the citation is confidently wrong, which is the worst shape a
+misattribution can take. **Rejected:** publishing origen with a caveat (the caveat does not travel
+with a retrieved chunk); ordinal-range deletion (leaves the adapter defect); assuming the defect was
+origen-specific (it was not — the sweep found chrysostom).
+
+**Also found (distinct, lower-severity class): index/apparatus residue.** 935 sections across 7
+published works are back-matter indexes whose bodies are page-number lists, not prose —
+`schaff-creeds` 585, `hodge-systematic` 283, `owen-works` 41, `watson-works` 17, `calvin-institutes`
+6, `maclaren-expositions` 2, `edwards-works` 1 (sample body: "Influxu Spiritus\nIsta a Domino facta
+sunt\nJanua paradisi…"). Not misattribution — they belong to their volumes — but they render as
+garbage in the Book Reader and are retrievable as "voices". Filed as a separate cleanup, not a
+publish blocker.
