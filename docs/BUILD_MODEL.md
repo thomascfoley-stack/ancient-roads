@@ -17,6 +17,15 @@ The failure this model exists to prevent is two, learned the hard way: (a) gener
 - A second agent may **read** freely (audits, syntheses, design passes are read-only and safe to run in parallel with anything). It may not **write** to the owned tree. If a second agent must produce a file mid-flight, it writes to a scratch/outputs location and hands it over for the orchestrator to land.
 - *Scar:* three orchestrators on one repo in one session produced a triple-booked ADR-021, a dirty `DECISIONS.md` sitting in the merge lane, and a `main` that was a stale snapshot while the real work lived on a feature branch. None of it was intra-swarm concurrency; all of it was missing this rule.
 
+### 0a. The PM/advisor rule — don't interject; trust the borders
+
+**The system was built so it does not need watching. An advisor who narrates over live work is adding noise, not oversight.**
+
+- **Do:** verify *state* before anyone acts on it (`git status`, the sha, the endpoint, the migration list); attach a **falsifiable condition** to any ruling or accepted limitation; set requirements **before** a phase opens. These are cheap and they have repeatedly caught real defects.
+- **Don't:** interrupt a running slice to re-assert a guardrail that is already running, ask an agent to re-prove a guard that was proven red-first, or hand over a prompt for work already in flight. Read the report; check its claims; then respond.
+- If something genuinely *missing* is spotted mid-flight, raise it to the owner as an observation — not as a prompt to paste. A missing guard is worth an interruption. "The guard exists and I'd feel better if it proved itself again" is not.
+- *Scar (2026-07-19):* of roughly eight mid-flight interruptions in one session, two changed an outcome; the rest restated what the gates already enforced or told an agent to do what it was already doing. In the same session the advisor's two substantive technical proposals — a relevance floor, and a data-driven corpus boundary — would each have **broken a standing guarantee** (≥2-voices, and the ADR-023 register wall). Both were caught by *measurement*, not by the advisor's judgment. Weight advisory instinct accordingly: it is not reliably better than the gates, and twice it was worse.
+
 ---
 
 ## 1. The unit of work — the slice loop
