@@ -1,0 +1,11 @@
+target rows (Schaff Prolegomena, sections 1-16): 95
+positive control: 15 target row(s) in a 20-row pool (top hit father:chrysostom-homilies:1.1 score=0.8823)
+
+running 120 FROZEN_V4 queries through legalBasePool (pool=20, ef_search=64)…
+
+queries run:        120
+pool rows scanned:  2400
+Prolegomena hits:   0
+
+✓ CLEAN — no FROZEN v4 query reaches any of the 95 Prolegomena rows.
+  Suppressing them cannot change any v4 number, so NO held-out re-measure is required.

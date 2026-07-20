@@ -327,3 +327,54 @@ published works are back-matter indexes whose bodies are page-number lists, not 
 sunt\nJanua paradisi…"). Not misattribution — they belong to their volumes — but they render as
 garbage in the Book Reader and are retrievable as "voices". Filed as a separate cleanup, not a
 publish blocker.
+
+### ADR-029 addendum — chrysostom §1–95 RULED: suppress from served, keep the work (owner, 2026-07-19)
+
+**Ruling:** misattribution is the product guarantee (ADR-001/C1), not a nice-to-have, so Schaff's
+1889 prose served under a 4th-century father's name does not get to sit as a log line. But pulling
+`chrysostom-homilies` would remove **8,846 legitimate Chrysostom rows to suppress 95** — the wrong
+trade. So: **suppress the 95, keep the rest, and treat the CCEL adapter fix as the durable repair.**
+
+**Rigor check (owner-required precondition).** Before suppressing, it had to be shown that no frozen
+held-out query resolves into the 95 rows — otherwise the suppression moves a measured number and a
+re-measure is owed. `web/src/scripts/check-prolegomena-reachability.mts` runs all **120 FROZEN_V4**
+queries through the **shipped** `legalBasePool` path (not a lookalike), at production
+`CANDIDATE_POOL=20` / `hnsw.ef_search=64`, and counts target rows in the candidate pool.
+
+- Base pool, not scored top-K, **on purpose**: the pool is strictly wider than anything downstream,
+  so a row absent from the pool cannot reach rerank, diversity, or the floor. A clean pool is the
+  stronger negative.
+- **Positive control** (a check that cannot fail proves nothing): querying with Prolegomena text
+  returns **15 target rows in a 20-row pool**, top score 0.8823 — the detector demonstrably fires.
+- **Result: 0 hits across 120 queries / 2,400 pool rows.**
+
+**Therefore NO held-out re-measure is required**, and the reason is structural rather than lucky:
+the Prolegomena is bibliographic apparatus (editions, print history, Migne/Benedictine citations)
+whose embedding neighbourhood is disjoint from every v4 query, all of which are Scripture-anchored
+(v4 labels are KJV-phrase-derived by construction — ADR-024). Evidence:
+`docs/evidence/part1/prolegomena-reachability.txt`.
+
+**Executed:** `src/ingest/suppress-chrysostom-prolegomena.ts --apply` (dev only, dev-guarded,
+dry-run by default, backs up before deleting). Removed 95 flat `embeddings` + 95 `sections` + 95
+`section_embeddings`. Verified by independent re-query: 8,846 / 8,846 / 8,846 exactly 1:1, 0 target
+rows remaining, **0 sections mentioning Schaff**, work still `published`, first section now
+`#96 "Homily 1"`. Restore path: `docs/evidence/part1/chrysostom-prolegomena-suppressed.jsonl`
+(95 rows **with vectors** — no hard delete without a restore path).
+
+**Why deletion and not a filter predicate:** the served boundary (`LEGAL_CORPUS_FILTER`) is mirrored
+by the partial HNSW index predicates (migration 018) and held in lockstep by
+`test/invariants/legal-hnsw-index-sync`. Fencing 95 rows by predicate would mean a predicate change
+plus a `CONCURRENTLY` rebuild of a multi-hundred-thousand-row HNSW index on dev *and* in the prod
+cutover — enormous machinery for 95 rows, and a new permanent clause in the most safety-critical
+string in the system. Row removal is the established pattern (`b2-remove-forbidden-provenance`) and
+takes effect on every surface at once, with no risk that one read path misses the new clause.
+
+**Side effect, accepted:** `chrysostom-homilies` `sections.ordinal` now starts at 96 and
+`unit_ordinal` at 17 rather than 1. Both remain **contiguous** (8,846 rows over ordinals 96–8941;
+378 distinct units over 17–394). The reader groups units by *equality* of `unit_ordinal`
+(`lib/work-reader.ts`), never by assuming a 1-based origin, and the full web suite is green
+(34 files / 171 tests) — including `sections-unit-ordinal` and the register-wall re-proof.
+
+**STILL OPEN — the durable repair:** the CCEL adapter has no per-work attribution boundary inside a
+composite volume. Until it does, the next composite CCEL ingest reproduces this defect. Suppression
+is tactical; the adapter fix is the repair and must land before any further CCEL ingest.
