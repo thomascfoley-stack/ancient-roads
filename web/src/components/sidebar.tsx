@@ -188,15 +188,25 @@ export function SidebarNavContent({
             </span>
           </div>
           {/* The corpus hub. Was UNREACHABLE: no `a[href="/library"]` existed anywhere
-              in the shell, so the Library hub, both rendering catalogs and every
-              /work/<slug> Book Reader page could only be reached by typing a URL
-              (ship-committee LENS 1, BROKEN #1). The nav item labelled "Library"
-              pointed at /library/commentaries — the one catalog that does not render. */}
+              in the shell, so the Library hub, every catalog and every /work/<slug>
+              Book Reader page could only be reached by typing a URL (ship-committee
+              LENS 1, BROKEN #1). The nav item labelled "Library" pointed at
+              /library/commentaries — which was then shadowed by the passage-browse
+              page and never rendered the catalog (BROKEN #2, now resolved: the browse
+              moved to /library/passages per LIBRARY_READER_DESIGN §18). */}
           <SidebarLink
             href="/library"
             icon={<BookStackIcon />}
             label="The corpus"
             active={pathname === '/library'}
+            row={row}
+            onNavigate={onNavigate}
+          />
+          <SidebarLink
+            href="/library/commentaries"
+            icon={<QuoteIcon />}
+            label="Commentaries"
+            active={pathname.startsWith('/library/commentaries')}
             row={row}
             onNavigate={onNavigate}
           />
@@ -216,19 +226,22 @@ export function SidebarNavContent({
             row={row}
             onNavigate={onNavigate}
           />
+          {/* The passage-by-passage browse/search. Kept linked: moving it off
+              /library/commentaries would otherwise orphan a working surface —
+              the same failure this block exists to fix. */}
+          <SidebarLink
+            href="/library/passages"
+            icon={<QuoteIcon />}
+            label="Passage search"
+            active={pathname.startsWith('/library/passages')}
+            row={row}
+            onNavigate={onNavigate}
+          />
           <SidebarLink
             href="/library/notes"
             icon={<BookStackIcon />}
             label="My library"
             active={pathname.startsWith('/library/notes')}
-            row={row}
-            onNavigate={onNavigate}
-          />
-          <SidebarLink
-            href="/library/commentaries"
-            icon={<QuoteIcon />}
-            label="Commentaries"
-            active={pathname.startsWith('/library/commentaries')}
             row={row}
             onNavigate={onNavigate}
           />

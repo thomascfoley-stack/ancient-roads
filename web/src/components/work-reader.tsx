@@ -400,7 +400,7 @@ export function WorkReader({
 
         <div className="reading-scale font-scripture leading-[1.9] text-stone-800 dark:text-stone-200">
           {visible.map((s) => (
-            <WorkSection key={s.id} section={s} spans={washes.get(String(s.id))} registerEl={registerEl} />
+            <WorkSection key={s.id} section={s} spans={washes.get(String(s.id))} registerEl={registerEl} sourceType={source.source_type} />
           ))}
         </div>
 

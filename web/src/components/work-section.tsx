@@ -46,18 +46,34 @@ function renderClippedSegments(segments: Segment[], body: string, start: number,
   return out;
 }
 
+/** Registers whose line breaks are SEMANTIC. In verse the line is the unit of the form, so a
+ *  single "\n" must render as a line break; in prose the same character is a source hard-wrap
+ *  artifact (maclaren stores "…after our likeness;\nand let them have dominion…") and must
+ *  collapse. Anything unrecognised collapses — the safe side, since a wrongly-preserved
+ *  newline shatters a sentence while a wrongly-collapsed one only loses a line break. */
+const LINEATED_REGISTERS = new Set(['hymn', 'poetry']);
+
 export function WorkSection({
   section,
   spans,
   registerEl,
+  sourceType,
 }: {
   section: WorkSectionRow;
   /** Local (Phase-2, unpersisted) highlight preview ranges, as offsets into section.body. */
   spans?: HighlightRange[];
   /** Windowing hook: the reader tracks rendered elements for measurement/active-section. */
   registerEl?: (ordinal: number, el: HTMLElement | null) => void;
+  /** The work's `source_type`. Decides whether newlines inside a paragraph are rendered
+   *  (verse) or collapsed (prose) — CSS only, so the render invariant above is untouched:
+   *  the character stream is identical either way. */
+  sourceType?: string;
 }) {
   const paragraphs = splitBodyParagraphs(section.body);
+  // CSS-only: `pre-wrap` renders the newlines ALREADY PRESENT in the text nodes and still
+  // wraps long lines. It adds and drops nothing, so text nodes keep concatenating to exactly
+  // section.body and every highlight offset stays valid.
+  const bodyWhitespace = LINEATED_REGISTERS.has(sourceType ?? '') ? ' whitespace-pre-wrap' : '';
   const segments = spans?.length ? flattenToSegments(section.body.length, spans) : null;
 
   let offset = 0;
@@ -79,7 +95,7 @@ export function WorkSection({
           const start = offset;
           offset += slice.length;
           return (
-            <p key={pi} className="mb-5 last:mb-0">
+            <p key={pi} className={`mb-5 last:mb-0${bodyWhitespace}`}>
               {segments ? renderClippedSegments(segments, section.body, start, start + slice.length) : slice}
             </p>
           );
