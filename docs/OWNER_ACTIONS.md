@@ -245,3 +245,76 @@ modern-translation preachers.** For them the uncited-quote channel drops toward 
 the **semantic channel** (spine 2), whose recall for that population is unmeasured. Net: this feature is strongest
 for KJV/PD-quoting (Reformed, traditional) users and weakest for modern-translation users. Which audience the
 product serves is above the agent's call — it's yours.
+
+---
+
+## §1b — CI does not run the reader/annotation DB invariants (measured, 2026-07-19)
+
+**Status: OPEN. Two owner-only steps; neither can be done from an agent session.**
+
+### What is actually true today
+
+The web suite *does* run in CI — `scripts/audit.sh:30` invokes the `qa` gate
+(`vitest run --config web/vitest.config.ts`), which the `audit` job runs. What does **not** run
+is every test that needs a database. Measured by moving `web/.env.local` aside and running the
+suite under CI conditions:
+
+```
+Test Files  25 passed | 10 skipped (35)
+Tests      108 passed | 69 skipped (177)      ← 39% of the web suite
+```
+
+The 69 skipped tests are exactly the ones that matter most for a licensing/tenancy story: the
+published-status boundary, the register wall against real data, RLS tenancy on all five new user
+tables, the annotation schema, keyset paging, and `sections.unit_ordinal`.
+
+The separate `db-invariants` job is not a substitute: it targets **two** files
+(`licensing`, `tenancy`) and short-circuits to green-with-a-warning while the
+`APP_DATABASE_URL_TEST` secret is unset — which it is.
+
+### Why this was worse than a coverage gap
+
+Two suites — `annotations-polymorphic` and `sections-unit-ordinal` — carried headers dated
+2026-07-19 asserting that CI ran them for real. Commit `f229a93` parked the workflow edit for
+lack of the `workflow` token scope, so the *documentation* half landed and the *enforcement* half
+did not. Those headers are now corrected, and
+`test/invariants/ci-claims-match-reality.test.ts` (root suite → genuinely runs in CI) fails if
+anyone re-introduces a claim the workflow does not back. Proven red-first by seeding the false
+claim and watching it fail.
+
+### Step 1 — add the repo secret (owner)
+
+Per §1 above: a Neon **test branch** app_runtime connection string, never prod.
+
+```
+gh secret set APP_DATABASE_URL_TEST --body "<test app_runtime pooled string>"
+```
+
+### Step 2 — widen the `db-invariants` targets (needs `workflow` token scope)
+
+The `ancient-roads` token lacks the `workflow` scope, so a push touching
+`.github/workflows/**` is rejected — this is the same block that produced the false claims.
+The prepared patch is committed at **`docs/evidence/part2/audit.yml.proposed`**; it changes one
+line, expanding the target list from 2 files to 13 (all verified to exist):
+
+```
+licensing · tenancy · library-published-boundary · register-wall-surfaces · search-sections
+sections-unit-ordinal · annotations-polymorphic · annotation-rls-tenancy · annotation-tables
+annotation-exact-substring · highlight-tenancy · work-reader · verse-keys
+```
+
+Apply it with a token that has `workflow` scope (or via the GitHub web editor):
+
+```
+cp docs/evidence/part2/audit.yml.proposed .github/workflows/audit.yml
+git add .github/workflows/audit.yml && git commit -m "CI: run the reader/annotation DB invariants"
+git push
+```
+
+### Verify it actually took (do not assume)
+
+After both steps, push any commit and check the `db-invariants` job: the
+`DB invariants NOT RUN` warning must disappear and the run must report the expanded file list.
+Then seed a bug — drop `AND s.status = 'published'` from a catalog query in `web/src/lib/catalog.ts`
+— and confirm `library-published-boundary` goes **red** in CI. A gate you have not watched fail
+is not a gate.

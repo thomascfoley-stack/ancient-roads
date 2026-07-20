@@ -11,8 +11,17 @@
 // app_runtime is SELECT-only on the corpus (006/010). The dev-endpoint guard is
 // the same one db/apply-migration.mjs enforces — the suite SKIPS unless an
 // owner DATABASE_URL pointing at the dev branch (ep-tiny-hat | ep-holy-rice-athhpp5z | localhost) is
-// available, so it can never seed or delete on prod. CI's db-invariants job now ALSO holds an owner URL
-// (the disposable Neon ci branch, 2026-07-19), so this suite runs there for real.
+// available, so it can never seed or delete on prod.
+//
+// ⚠ THIS SUITE DOES **NOT** RUN IN CI TODAY. The previous header asserted the opposite — that
+// the db-invariants job held an owner connection string and executed this suite. That was FALSE:
+// commit `f229a93` parked the workflow edit for lack of the `workflow` token scope, so
+// `db-invariants` still targets exactly two files (`licensing`, `tenancy`) and short-circuits to
+// green when the `APP_DATABASE_URL_TEST` secret is absent — which it is. Measured under CI
+// conditions (no `web/.env.local`): **69 of 177 web tests skip, including every test here.**
+// Tracked in `docs/OWNER_ACTIONS.md` §1; enforced by `test/invariants/ci-claims-match-reality.test.ts`.
+// (That guard matches claim-phrases anywhere in a file, so describe the old claim — do not
+// reproduce its wording verbatim, or the guard will read the quotation as a fresh assertion.)
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
