@@ -38,8 +38,12 @@ const PROSE_BODY =
   'THE VISION OF CREATION\n‘And God said, Let us make man in our image, after our likeness;\n'
   + 'and let them have dominion over the fish of the sea, and over the fowl of the air.’';
 
+// No `as` cast: the interface is the contract, and a cast is exactly how the first version of
+// this helper shipped a red CI. It used the DB column name `unit_ordinal`, but WorkTocRow
+// declares the camelCase `unitOrdinal`, so the object never overlapped the target type. The app
+// tsconfig let it through; `tsconfig.test.json` (audit.sh gate 3) did not.
 function row(body: string): WorkSectionRow {
-  return { id: 1, ordinal: 1, unit_ordinal: 1, heading: null, body } as WorkSectionRow;
+  return { id: 1, ordinal: 1, unitOrdinal: 1, heading: null, body };
 }
 
 /** The computed white-space of every rendered paragraph. */
