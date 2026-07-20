@@ -44,7 +44,10 @@ export function MobileNav() {
     { href: '/', label: 'Home', active: pathname === '/', icon: <HomeIcon /> },
     { href: '/read/jhn/1', label: 'Bible', active: pathname.startsWith('/read'), icon: <BookIcon /> },
     { href: '/ask', label: 'AP', active: pathname.startsWith('/ask'), icon: <AskIcon /> },
-    { href: '/library/commentaries', label: 'Library', active: pathname.startsWith('/library'), icon: <LibraryIcon /> },
+    // → the hub, not /library/commentaries: that slug is shadowed by the old
+    // passage-browse page, so the tab labelled "Library" landed on the one catalog
+    // that does not render (ship-committee LENS 1, BROKEN #1/#2).
+    { href: '/library', label: 'Library', active: pathname.startsWith('/library'), icon: <LibraryIcon /> },
   ];
   const tabClass = (active: boolean) =>
     `flex min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 pt-1.5 pb-1 text-[10px] font-semibold tracking-wide transition-colors active:bg-stone-200/50 dark:active:bg-stone-800/70 ${

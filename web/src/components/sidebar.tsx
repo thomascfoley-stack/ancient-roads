@@ -187,6 +187,35 @@ export function SidebarNavContent({
               Library
             </span>
           </div>
+          {/* The corpus hub. Was UNREACHABLE: no `a[href="/library"]` existed anywhere
+              in the shell, so the Library hub, both rendering catalogs and every
+              /work/<slug> Book Reader page could only be reached by typing a URL
+              (ship-committee LENS 1, BROKEN #1). The nav item labelled "Library"
+              pointed at /library/commentaries — the one catalog that does not render. */}
+          <SidebarLink
+            href="/library"
+            icon={<BookStackIcon />}
+            label="The corpus"
+            active={pathname === '/library'}
+            row={row}
+            onNavigate={onNavigate}
+          />
+          <SidebarLink
+            href="/library/sermons"
+            icon={<QuoteIcon />}
+            label="Sermons"
+            active={pathname.startsWith('/library/sermons')}
+            row={row}
+            onNavigate={onNavigate}
+          />
+          <SidebarLink
+            href="/library/hymns-poetry"
+            icon={<span className="text-stone-400">♪</span>}
+            label="Hymns &amp; poetry"
+            active={pathname.startsWith('/library/hymns-poetry')}
+            row={row}
+            onNavigate={onNavigate}
+          />
           <SidebarLink
             href="/library/notes"
             icon={<BookStackIcon />}
