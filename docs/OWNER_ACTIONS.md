@@ -318,3 +318,53 @@ After both steps, push any commit and check the `db-invariants` job: the
 Then seed a bug — drop `AND s.status = 'published'` from a catalog query in `web/src/lib/catalog.ts`
 — and confirm `library-published-boundary` goes **red** in CI. A gate you have not watched fail
 is not a gate.
+
+---
+
+## §7 — ★ PROD DB CREDENTIAL IS STALE — refresh before ANY cutover (found 2026-07-20)
+
+**Status: OPEN. Owner-only — you rotate/refresh the credential; the agent cannot.**
+
+### The finding
+
+A read-only prod census attempt failed at connect. The `neondb_owner` password in the root
+`/Users/tfoley/theology-study-app/.env.local` (prod, `ep-odd-fog-atnykudm`) is **rejected**:
+`password authentication failed for user 'neondb_owner'`. Both `DATABASE_URL` (pooled) and
+`DATABASE_URL_UNPOOLED` fail identically.
+
+**Verified it is the credential, not the harness, by control:** the *same code* connecting to the
+DEV branch (`ep-tiny-hat`) succeeds as `neondb_owner`. Dev connects, prod rejects the password —
+so the prod `neondb_owner` password was rotated at Neon since that env file was written. **Zero
+rows were read; the read-only transaction never opened.**
+
+### Why this is a CUTOVER finding, not just a census one
+
+The Part 5 cutover script connects to prod at **E1** to run migrations 016–030, then again at
+E2/E4 to build the corpus. As things stand it would **fail auth at 2am, mid-run, after E1 had
+already applied some migrations** — the half-applied cutover the whole chunked design exists to
+prevent, triggered by a stale password nobody knew was stale. `deploy.sh` needs a working prod
+credential too.
+
+### The blind spot this exposes
+
+`scripts/ingest-preflight.mjs` asserts you are **NOT** on prod (it aborts if `ep-odd-fog` appears
+anywhere). **Nothing asserts you CAN reach prod when you intend to.** The Part 5 script closes this
+with a STEP ZERO prod-credential preflight (connect → assert `current_user` → assert endpoint =
+`ep-odd-fog` → assert WRITE capability via `BEGIN; <no-op write>; ROLLBACK;` → ABORT before
+touching anything if any assertion fails). That turns "dies mid-migration" into "refuses to start".
+
+### What you do
+
+1. In the Neon console (or `neonctl`), get the current `neondb_owner` connection strings for the
+   **production** branch (`ep-odd-fog-atnykudm`), pooled and unpooled.
+2. Update the root `.env.local` `DATABASE_URL` / `DATABASE_URL_UNPOOLED` with them — **do not paste
+   them into the chat.** Then tell the agent it's refreshed.
+3. Note the tension with §0-class safety: a working prod owner string in the root env file re-arms
+   exactly what `ingest-preflight` is built to reject. Keep it there only for the cutover window, or
+   store it where the gates do not scan and pass it to the Part 5 script explicitly.
+
+### Verify (do not assume)
+
+After refreshing, the agent re-runs the read-only census (`BEGIN; SET TRANSACTION READ ONLY; …;
+ROLLBACK`) and confirms `current_user` + a non-zero positive control (John Gill rows). If that
+returns rows, the credential is good and the cutover's STEP ZERO will pass.
