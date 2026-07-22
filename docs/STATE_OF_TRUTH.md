@@ -67,7 +67,7 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 
 | fact | value | verified |
 |---|---|---|
-| Legal commentary authors served | **9** (Gill, JFB, Clarke, Henry, Barnes, Wesley, Calvin, Augustine, Chrysostom) | ✅ |
+| Legal commentary authors served | **11 distinct authors** (re-measured on dev 2026-07-20) — see note below | ✅ |
 | `commentary_entries` | **371,406** rows | ✅ |
 | commentary `embeddings` (user_id IS NULL, source_type='commentary') | **190,635** rows | ✅ |
 | user rows in `embeddings` | **0** — no user row can be served as corpus | ✅ |
@@ -77,6 +77,19 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 | `legalBasePool(50)` | returns **50** (starvation fixed) | ✅ |
 | `sources` / `sections`≈`section_anchors`≈`section_embeddings` (Barnes pilot) | 2 / **5,510 each** (equal invariant holds) | ✅ |
 | App runtime connection | connects as **`app_runtime`**, `rolbypassrls=false` (RLS not bypassed) | ✅ |
+
+> **The 9-vs-11-vs-12 author count, settled (dev, 2026-07-20; positive control fires, Gill=28,843).**
+> `LEGAL_CORPUS_FILTER` (`web/src/lib/teacher/routing.ts`) names **9 author STRINGS** literally — Gill,
+> JFB, Clarke, Henry, Chrysostom, Augustine, Barnes, Wesley, Calvin — and that "9" is what most docs
+> mean and is not wrong *as a count of named strings*. But the filter's final leg admits by WORK
+> (`SERVED_PROSE_WORKS`), and two of those works carry an author no other leg names: `keil-delitzsch`
+> → "C.F. Keil & Franz Delitzsch" and `catena-aurea` → "Thomas Aquinas (comp.), trans. J.H. Newman".
+> (`chrysostom-homilies`/`augustine-homilies` resolve to already-named authors.) So the filter ADMITS
+> **11 distinct `metadata->>'author'` values**, measured. The stray **"12" is wrong**: it double-counts
+> "C.F. Keil & Franz Delitzsch" as two people — it is a single author string, hence one voice. Use
+> **11** for "distinct authors served"; use **9** only when explicitly meaning "author names written
+> into the filter". Historical docs that say "9 authors" pre-date the work-leg expansion and are left
+> as point-in-time record. Re-measured after today's suppressions, which did not change this set.
 
 ## 3. Bible text plane — served from files, NOT a prod DB schema
 

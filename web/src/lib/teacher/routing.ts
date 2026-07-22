@@ -111,6 +111,12 @@ export const THEOLOGY_CORPUS_FILTER = `(metadata->>'work' IN (${sqlStrList(SERVE
 // NULL, work NULL) still pass.
 export const EXEGETICAL_FTS_EXCLUSION = `(register IS NULL OR register NOT IN ('hymn','poetry','sermon','theology','confession')) AND (work IS NULL OR work NOT IN (${sqlStrList([...SERVED_SONG_VERSE_WORKS, ...SERVED_LANE_WORKS])}))`;
 
+// AUTHOR COUNT, settled (dev-measured 2026-07-20, positive control fires): this filter names 9
+// author STRINGS below but ADMITS 11 distinct authors — the final `work IN (SERVED_PROSE_WORKS)`
+// leg adds "C.F. Keil & Franz Delitzsch" (keil-delitzsch) and "Thomas Aquinas (comp.), trans.
+// J.H. Newman" (catena-aurea), which no name leg covers. Use 11 for "authors served"; 9 only means
+// "names written here". A "12" anywhere is a miscount — it reads "Keil & Delitzsch" as two people;
+// it is one metadata->>'author' string. See docs/STATE_OF_TRUTH.md §2.
 export const LEGAL_CORPUS_FILTER = `(metadata->>'author' IN ('John Gill','Jamieson, Fausset & Brown','Adam Clarke','Matthew Henry')
    OR (metadata->>'author'='John Chrysostom'    AND (metadata->>'verseId')::int/1000000 IN (40,43,44))
    OR (metadata->>'author'='Augustine of Hippo' AND (metadata->>'verseId')::int/1000000 IN (19,43))
