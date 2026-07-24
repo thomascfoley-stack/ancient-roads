@@ -76,6 +76,16 @@ so `npm run audit` / CI is not permanently red on an unfixable transitive set. T
 the relevant GHSAs from the ignore list the moment the dependency fix lands, so any
 regression re-reds the gate.
 
+### Resolved framework/tooling CVEs (2026-07-24) — FIXED, not ignored
+Six HIGH advisories (unrelated to the SEC-1 better-auth cluster) were CVE-disclosure drift
+on existing deps. All fixed by bump/override, verified `deps-audit` green + full audit green:
+- **next 15.5.20 → 15.5.21** (`web/package.json`): clears GHSA-89xv-2m56-2m9x (SSRF), GHSA-m99w-x7hq-7vfj (DoS), GHSA-p9j2-gv94-2wf4 (SSRF). A patch, not the 14→15 major first assumed.
+- **postcss → 8.5.16** (root `pnpm.overrides`): 8.4.31 was exact-pinned by next. GHSA-6g55-p6wh-862q (arbitrary file read via sourceMappingURL).
+- **fast-uri → 3.1.4** (root `pnpm.overrides`): transitive via ajv. GHSA-v2hh-gcrm-f6hx (host confusion).
+- **sharp → 0.35.3** (root `pnpm.overrides`): transitive via next/image optionalDeps, one minor above next's `^0.34.3`. GHSA-f88m-g3jw-g9cj (libvips). Runtime-verified: native binary + libvips 8.18.3 load; webp/png encode (the next/image path) works.
+
+These are FIXES (real version moves), distinct from the ignored SEC-1 GHSAs above which remain unfixable until the auth move-off.
+
 ### Pending evidence from Neon (drafted question sent 2026-07-08)
 Two-pronged written question to Neon (below in the PR/thread). Paste the written answer
 here as SEC-1 evidence. A "yes" to either prong closes the *active* hole short-term; it

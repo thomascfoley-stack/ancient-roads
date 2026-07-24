@@ -1,5 +1,20 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-24 (Dependency CVEs — audit deps gate back to green)
+
+`pnpm run audit` was red on 6 un-ignored HIGH advisories (CVE-disclosure drift, zero from any
+code change). Recon (parallel, per-package) reframed the scope: the chip assumed a next 14→15
+MAJOR, but next was already 15.5.20, so the fix is a one-patch bump. All 6 fixed:
+- next 15.5.20 → 15.5.21 (web/package.json floor `^15.5.21`): 3 SSRF/DoS GHSAs.
+- postcss → 8.5.16, fast-uri → 3.1.4, sharp → 0.35.3 via root `pnpm.overrides` (all were
+  transitive/pinned below the patched floor; overrides applied at the workspace root).
+- sharp is 0.34→0.35 (medium risk, 0.x minor + libvips ABI). Runtime-verified directly:
+  binary + libvips 8.18.3 load, webp+png encode (the next/image path) works.
+
+Verified: `deps-audit` green (0 un-ignored across 401 prod pkgs), and full `pnpm run audit`
+PASSED all gates (next patch regressed nothing). Documented as FIXED (not ignored) in
+docs/SECURITY.md. No owner decision was needed after all — the major-bump concern evaporated.
+
 ## 2026-07-24 (B2 — the coverage floor + the SoS parser gap it exposed)
 
 Closed the Song of Solomon hole (ADR-028 / part4 evidence): retrieveCommentary has no
