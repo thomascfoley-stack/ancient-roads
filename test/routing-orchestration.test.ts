@@ -3,7 +3,7 @@
 // exact functions, so the measured number can't drift from the shipped floor/merge.
 
 import { describe, expect, it } from 'vitest';
-import { floorOnRange, mergeById, selectDiverse, chapterKeysOf, insertBackfill } from '../web/src/lib/teacher/routing';
+import { floorOnRange, mergeById, selectDiverse, chapterKeysOf, insertBackfill, hasPassageCoverage } from '../web/src/lib/teacher/routing';
 
 type Item = { id: string; v: number };
 const items = (...vs: Array<[string, number]>): Item[] => vs.map(([id, v]) => ({ id, v }));
@@ -83,6 +83,54 @@ describe('insertBackfill (2nd-voice on surfaced passages)', () => {
   });
   it('drops backfill on a chapter retrieval never surfaced', () => {
     expect(run(bf(['a1', 1, 'Gill']), bf(['z1', 9, 'Henry']))).toEqual(['a1']);
+  });
+});
+
+describe('hasPassageCoverage (the relevance floor retrieveCommentary lacks)', () => {
+  // Encoding: book·1_000_000 + chapter·1_000 + verse. SoS = book 22, John = 43.
+  const chunk = (verseId: number, verseEnd = verseId) => ({ verseId, verseEnd });
+  const SOS_2 = [{ start: 22_002_001, end: 22_002_999 }]; // Song of Solomon 2 (chapter range)
+  const JOHN_3_16 = [{ start: 43_003_016, end: 43_003_016 }]; // a single verse
+
+  it('reports NO coverage when the confidently-asked book is wholly absent (the SoS hole)', () => {
+    // The exact off-passage pool the SoS evidence captured: Barnes/Wesley on the NT,
+    // Chrysostom on Matthew/John/Acts, Augustine on Psalm 45 — nothing in Song of Solomon.
+    const offPassage = [
+      chunk(45_008_001), // Romans 8 (Barnes)
+      chunk(43_010_011), // John 10 (Chrysostom)
+      chunk(19_045_001), // Psalm 45 (Augustine)
+      chunk(40_005_003), // Matthew 5
+    ];
+    expect(hasPassageCoverage(offPassage, SOS_2)).toBe(false);
+  });
+
+  it('reports coverage when a retrieved chunk is in the asked chapter', () => {
+    const pool = [chunk(45_008_001), chunk(22_002_007)]; // one chunk IS Song of Solomon 2:7
+    expect(hasPassageCoverage(pool, SOS_2)).toBe(true);
+  });
+
+  it('counts a same-chapter neighbouring verse as covered (chapter granularity, not verse)', () => {
+    // Asked John 3:16; nearest chunk is John 3:2 — different verse, SAME chapter. Covered.
+    expect(hasPassageCoverage([chunk(43_003_002)], JOHN_3_16)).toBe(true);
+  });
+
+  it('does NOT count a different chapter of the same book as coverage', () => {
+    // Asked John 3:16; only John 1:14 retrieved — same book, wrong chapter. Not covered.
+    expect(hasPassageCoverage([chunk(43_001_014)], JOHN_3_16)).toBe(false);
+  });
+
+  it('counts a chunk whose own range straddles the asked chapter as covered', () => {
+    // A pericope-level chunk spanning John 3:14–3:21 covers the asked John 3:16.
+    expect(hasPassageCoverage([chunk(43_003_014, 43_003_021)], JOHN_3_16)).toBe(true);
+  });
+
+  it('is always "covered" for a topical query (no floor ranges) — not a coverage question', () => {
+    expect(hasPassageCoverage([chunk(45_008_001)], [])).toBe(true);
+    expect(hasPassageCoverage([], [])).toBe(true);
+  });
+
+  it('reports NO coverage for an empty retrieval against a real reference', () => {
+    expect(hasPassageCoverage([], SOS_2)).toBe(false);
   });
 });
 

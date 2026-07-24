@@ -4,7 +4,9 @@ import type { Violation } from '@/verifier/types';
 import { verifyV1 } from '@/verifier/v1';
 import { embedQuery, compose } from './deepinfra';
 import { retrieveCommentary, retrieveSongVerse, retrieveSermonLane, retrieveTheologyLane, type RetrievedChunk, type SongVerseChunk, type RegisterLaneChunk } from './retrieve';
+import { hasPassageCoverage } from './routing';
 import { resolveIntent } from '../../bible/pericopes';
+import { formatVerseId } from '../../bible/verse-id';
 import { buildCorpusLookup } from './corpus';
 import { normalizeContract } from './normalize-contract';
 import { buildSystemPrompt, buildUserPrompt } from './prompt';
@@ -94,7 +96,8 @@ export async function teach(
   // Sermon + theology ride the SAME alongside pattern as song/verse — their own
   // pools, labeled payloads, never composed over, never in the ≥2-voices floor
   // (sermon-lane slice 2026-07-18). All three lanes fail-soft to [].
-  const ranges = resolveIntent(query).inject;
+  const intent = resolveIntent(query);
+  const ranges = intent.inject;
   const songVersePromise = retrieveSongVerse(queryVec, ranges);
   const sermonPromise = retrieveSermonLane(queryVec, ranges);
   const theologyPromise = retrieveTheologyLane(queryVec, ranges);
@@ -110,6 +113,16 @@ export async function teach(
   };
   if (retrieval.length === 0) {
     return finish({ kind: 'empty', reason: 'No relevant sources found for this question.' });
+  }
+
+  // Coverage floor (B2): the query confidently NAMES a passage but nothing retrieved
+  // is on it. retrieveCommentary has no relevance floor, so a book with zero rows (e.g.
+  // Song of Solomon) returns off-passage chunks scoring ~0.005 — composing over them
+  // presents New-Testament commentary as an answer about the asked passage, caught today
+  // only incidentally by the verifier. Report the gap honestly instead. Only fires on
+  // the high-confidence `floor` (corroborated refs), never on soft-matched topical idioms.
+  if (!hasPassageCoverage(retrieval.map((r) => r.metadata), intent.floor)) {
+    return finish({ kind: 'empty', reason: `Our corpus has no commentary on ${formatVerseId(intent.floor[0]!.start)} yet.` });
   }
 
   const traditions = new Set(retrieval.map((r) => r.metadata.tradition ?? 'unknown'));

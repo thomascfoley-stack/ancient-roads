@@ -1,5 +1,32 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-24 (B2 — the coverage floor + the SoS parser gap it exposed)
+
+Closed the Song of Solomon hole (ADR-028 / part4 evidence): retrieveCommentary has no
+relevance floor, so a zero-coverage book returned 6 off-passage chunks and the user was safe
+only incidentally (verifier caught downstream symptoms). Two independent fixes, both red-first:
+
+- **B2a — coverage gate.** `hasPassageCoverage()` in routing.ts (chapter-granularity, floor-
+  only); wired into `teach.ts` to return `kind:'empty'` with a passage-named reason when the
+  query confidently names a passage nothing retrieved covers. Placed in `teach()`, DOWNSTREAM
+  of the eval's measurement point (eval measures `retrieveCommentary`), so it cannot move a
+  frozen-v4 number — it's a safety layer, not a retrieval change.
+- **B2b — reference-parser gap (found while proving B2a).** `SCAN_RE` scanned only single-word
+  book names, so "Song of Solomon 2" / "Song of Songs 8:7" resolved to NOTHING — the gate had
+  no floor to fire on. Added a targeted, additive multi-word scan (`MULTIWORD_SCAN_RE`, derived
+  from the alias table) to `src/` + `web/src/` ref-parse (byte-identical). Blast radius is
+  provably Song-of-Solomon-only (the sole multi-word non-ordinal aliases); v4 has no SoS, so
+  the frozen eval is unaffected by construction.
+
+Proof: 7 `hasPassageCoverage` cases + 6 `scanReferences` cases (both seeded-bug-proven red),
+the shipped-seam `coverage-floor.test.ts` (real teach()+resolveIntent, `Song of Solomon 2` →
+`kind:'empty'`, compose never called), bible-sync green, full `pnpm run audit` green. Design +
+decisions in `docs/B2_COVERAGE_FLOOR.md`.
+
+**STILL OWED before prod:** the live frozen-v4 re-measure (`eval-heldout.mts --v4`, needs
+DeepInfra+DB) to confirm-by-measurement what is argued by construction; optionally
+`verify-sos-endtoend.mts` (should now show `empty` where it showed `fallback`).
+
 ## 2026-07-23 (Prod census — build-vs-repair SETTLED: it is a BUILD)
 
 Owner refreshed the stale prod `neondb_owner` credential (OWNER_ACTIONS §7, was found 2026-07-20).

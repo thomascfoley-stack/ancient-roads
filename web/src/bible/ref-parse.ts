@@ -420,6 +420,25 @@ export function typeahead(input: string, opts: ParseOptions = {}): TypeaheadResu
 const SCAN_RE =
   /\b((?:[1-3]|i{1,3}|first|second|third)\s+)?([a-z]{2,})\s+(\d{1,3}(?::\d{1,3})?(?:\s*[-–]\s*\d{1,3}(?::\d{1,3})?)?)\b/gi;
 
+// SCAN_RE's book group is a SINGLE word (after an optional numeric ordinal), so a
+// multi-word name with no ordinal is invisible to prose scanning. Book 22 is the only
+// such book: "Song of Solomon 2" / "Song of Songs 8:7" resolve to nothing, while the
+// one-word "Canticles 2" resolves fine — the reader who quotes the book by its KJV name
+// gets no routing at all. This second pass scans for exactly the multi-word aliases,
+// derived from the table so it stays correct if any are added. Additive: it never alters
+// a single-word match; parseRef still validates every span, so precision is unaffected.
+const MULTIWORD_ALIASES = [...new Set(ALIAS_ENTRIES.map((e) => e.alias))]
+  .filter((a) => a.includes(' ') && !/^[1-3]\s/.test(a))
+  .sort((a, b) => b.length - a.length); // longest-first: "song of songs" before any prefix
+
+const MULTIWORD_SCAN_RE =
+  MULTIWORD_ALIASES.length > 0
+    ? new RegExp(
+        `\\b(${MULTIWORD_ALIASES.map((a) => a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\s+(\\d{1,3}(?::\\d{1,3})?(?:\\s*[-–]\\s*\\d{1,3}(?::\\d{1,3})?)?)\\b`,
+        'gi',
+      )
+    : null;
+
 // Find scripture references embedded in prose — "1 Corinthians 13 the greatest
 // of these…", "Isaiah 53", "John 3:16" — and return the resolved refs. Unlike
 // parseRef (whole-string typeahead), this scans candidate spans anywhere in the
@@ -428,12 +447,19 @@ const SCAN_RE =
 export function scanReferences(text: string, opts: ParseOptions = {}): ResolvedRef[] {
   const out: ResolvedRef[] = [];
   const seen = new Set<string>();
-  for (const m of text.matchAll(SCAN_RE)) {
-    const span = `${m[1] ?? ''}${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim();
+  const consider = (span: string) => {
     const outcome = parseRef(span, opts);
     if (outcome.ok && !seen.has(outcome.ref.display)) {
       seen.add(outcome.ref.display);
       out.push(outcome.ref);
+    }
+  };
+  for (const m of text.matchAll(SCAN_RE)) {
+    consider(`${m[1] ?? ''}${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim());
+  }
+  if (MULTIWORD_SCAN_RE) {
+    for (const m of text.matchAll(MULTIWORD_SCAN_RE)) {
+      consider(`${m[1]} ${m[2]}`.replace(/\s+/g, ' ').trim());
     }
   }
   return out;

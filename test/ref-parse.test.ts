@@ -3,6 +3,7 @@ import {
   parseRef,
   matchBooks,
   typeahead,
+  scanReferences,
   CHAPTER_END_SENTINEL,
   type VerseCountProvider,
 } from '../src/bible/ref-parse';
@@ -274,5 +275,30 @@ describe('typeahead routing', () => {
     } else {
       throw new Error('expected parsed ref');
     }
+  });
+});
+
+describe('scanReferences — multi-word book names in prose (B2b: the Song of Solomon gap)', () => {
+  const scan = (t: string) => scanReferences(t).map((r) => r.display);
+
+  it('resolves "Song of Solomon" quoted by its canonical KJV name', () => {
+    expect(scan('Song of Solomon 2, I am the rose of Sharon')).toEqual(['Song of Songs 2']);
+  });
+  it('resolves "Song of Songs" with a verse', () => {
+    expect(scan('as it says in Song of Songs 8:7, love is strong as death')).toEqual(['Song of Songs 8:7']);
+  });
+  it('still finds a single-word reference embedded in prose (no regression)', () => {
+    expect(scan('in John 3 we read that God so loved the world')).toEqual(['John 3']);
+  });
+  it('does not let the multi-word scan swallow a preceding word', () => {
+    // The failure mode a naive broadening of SCAN_RE would cause: "in John 3" parsed
+    // as a failed "in john 3" span, losing the reference entirely.
+    expect(scan('sitting in John 3 today')).toEqual(['John 3']);
+  });
+  it('keeps numbered books working', () => {
+    expect(scan('1 Corinthians 13 the greatest of these is love')).toEqual(['1 Corinthians 13']);
+  });
+  it('does not false-resolve a topical mention of "song"', () => {
+    expect(scan('there is a song in the night for the weary soul')).toEqual([]);
   });
 });

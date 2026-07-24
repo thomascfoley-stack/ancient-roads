@@ -275,6 +275,33 @@ export function floorOnRange<T>(
   return [...promote, ...rest];
 }
 
+// COVERAGE FLOOR: does the retrieved set actually cover a CONFIDENTLY-named passage?
+// retrieveCommentary takes top-K with NO relevance floor, so a book with zero rows
+// (e.g. Song of Solomon) still yields K confident-looking chunks from OTHER books
+// scoring as low as 0.005. When the query floors to a passage (high-confidence
+// `ranges`) but no retrieved chunk shares a CHAPTER with it, the pool is off-passage
+// and the caller must not compose over it. Granularity is CHAPTER, not verse, on
+// purpose: a verse-ref we DO cover whose nearest chunk is a neighbouring verse in the
+// same chapter still counts as covered — only a wholly-absent book/chapter trips the
+// floor. Empty `ranges` (topical queries) are never a coverage question ⇒ covered.
+// Chapter key = verseId/1000 (book·1000+chapter), the same key floorOnRange/backfill use.
+export function hasPassageCoverage(
+  chunks: readonly { verseId: number; verseEnd: number }[],
+  ranges: readonly VerseRange[],
+): boolean {
+  if (ranges.length === 0) return true;
+  const asked = new Set<number>();
+  for (const r of ranges) {
+    for (let ck = Math.floor(r.start / 1000); ck <= Math.floor(r.end / 1000); ck++) asked.add(ck);
+  }
+  return chunks.some((c) => {
+    const lo = Math.floor(Math.min(c.verseId, c.verseEnd) / 1000);
+    const hi = Math.floor(Math.max(c.verseId, c.verseEnd) / 1000);
+    for (const ck of asked) if (ck >= lo && ck <= hi) return true;
+    return false;
+  });
+}
+
 export const PASSAGE_CAP = 2; // max entries per PASSAGE (chapter) in the final top-K (off-reference)
 // Backfill only the top-N surfaced chapters (not all K). The on-target chapter for a
 // surfaced=1 miss is almost always among the top reranked; scoping to 3 roughly halves
