@@ -65,6 +65,17 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 
 ## 2. Corpus & prod DB — verified rows (`ground-truth.mjs`, 2026-07-15)
 
+> **Prod cutover state, measured read-only 2026-07-23** (`docs/evidence/census/prod-census-2026-07-23.txt`).
+> Prod is **pre-cutover BUILD state**: schema is **pre-migration-016** (no register source_type,
+> no work column, no unit_ordinal, no library_items, no ingesting CHECK); **100% of the 190,635
+> flat embeddings carry NO work key** (register ingest never ran on prod); the sections model holds
+> only the **Barnes pilot** (2 sources / 5,510 sections). **Forbidden provenance is live on prod:
+> 71,884 rows** (15,707 biblehub + 56,177 historicalchristian.faith) — E3 cleanup is real. **Live
+> user data exists and must be preserved:** 34 highlights (6 users), 2 notes (1 user), 1 chat. None
+> of the dev-only suppression defects (chrysostom prolegomena, tennyson, traherne, indexes, ads)
+> exist on prod. This settles build-vs-repair: **the cutover is a BUILD.** See `CUTOVER_DESIGN.md`.
+
+
 | fact | value | verified |
 |---|---|---|
 | Legal commentary authors served | **11 distinct authors** (re-measured on dev 2026-07-20) — see note below | ✅ |

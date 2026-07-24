@@ -1,10 +1,11 @@
 # Prod cutover — design of record (the Part 5 script, before it is built)
 
 **Status: DESIGN ONLY. No script exists yet and nothing here runs.** The cutover is gated behind
-(a) the ship-committee GO, (b) a working prod credential (`OWNER_ACTIONS.md` §7 — currently STALE),
-and (c) Kimi's read-only prod-branch census, which settles build-vs-repair. This doc captures the
-requirements so they are not lost between now and the build. It is the spec the Part 5 script must
-satisfy; the owner approves the plan before it is written, and again before the first prod write.
+(a) the ship-committee GO and (b) a working prod credential (`OWNER_ACTIONS.md` §7 — refreshed
+2026-07-23). The prod census ran 2026-07-23 and **confirmed BUILD** (see §Census below). This doc
+captures the requirements so they are not lost between now and the build. It is the spec the Part 5
+script must satisfy; the owner approves the plan before it is written, and again before the first
+prod write.
 
 ## The shape (from the work order Part 5)
 
@@ -33,18 +34,31 @@ the inverse guard.
    — a real write that leaves nothing behind. A read-only or lapsed credential fails here.
 5. ABORT with a clear message if any assertion fails. Do not proceed to E1.
 
-## Working assumption: the cutover is a BUILD, not a repair (confirm via census)
+## CONFIRMED: the cutover is a BUILD, not a repair (census 2026-07-23)
 
-Prod never received the register ingest — that ran dev-only. So prod most likely has **zero sections
-corpus** and **none of the 947 non-authorial rows** suppressed on dev today. Kimi's one-query census
-(`SELECT metadata->>'work', count(*) … GROUP BY 1`) confirms it. Until it reports, design for BUILD:
+The prod census ran read-only on 2026-07-23 (`docs/evidence/census/prod-census-2026-07-23.txt`)
+and confirmed every assumption:
 
-- **E2/E4 build the corpus against a live prod DB from scratch** — they do not repair existing rows.
+- **Zero work keys.** All 190,635 flat embeddings have `metadata->>'work' IS NULL` (100%). The
+  register ingest never ran on prod.
+- **Zero migrations past 015.** No history anchors (016), no work column (019), no unit_ordinal
+  (024), no library_items (027), no ingesting CHECK (023), no register source_type CHECK (017).
+  Prod is on the original schema.
+- **Zero suppression-class defects.** Chrysostom prolegomena, tennyson, traherne, word indexes,
+  publisher ads -- none exist on prod. Dev-only artifacts that never need cleanup here.
+- **Forbidden provenance IS present:** 15,707 BibleHub + 56,177 HCF = 71,884 rows. E3 is real work.
+- **Sections model:** only Barnes pilot (2 sources, 5,510 sections). Everything else gets built.
+- **Live user data (tiny but real):** 34 highlights (6 users), 2 notes (1 user), 1 chat (1 user).
+  Migrations MUST preserve these. No bookmarks/reading_progress/library_items tables exist yet.
+- **Compute params:** Neon did not expose SHOW for compute_size/max_connections/shared_buffers/
+  work_mem. Plan conservatively on the 121-190 s/10k slice rate measured on dev.
+
+Design for BUILD:
+
+- **E2/E4 build the corpus against a live prod DB from scratch** -- they do not repair existing rows.
 - **Every "assert counts match dev" step RE-MEASURES prod's actual flat pool at runtime.** Do NOT
-  hardcode dev counts into prod assertions. Two reasons: (1) prod's flat pool is a different
-  population; (2) the dev baseline itself moved by ~1,040 rows after today's suppressions, so any
-  figure captured before 2026-07-20 is already stale. The assertion is "prod's rebuilt sections
-  equal prod's own flat-pool count for that work," never "prod equals a literal from a doc."
+  hardcode dev counts into prod assertions. The assertion is "prod's rebuilt sections equal prod's
+  own flat-pool count for that work," never "prod equals a literal from a doc."
 
 ## The suppression lesson, carried from ADR-029 addendum 2
 
@@ -57,10 +71,15 @@ caught it. The prod script inherits that check as a postcondition, not a hope.
 ## Steps (per the work order, to be built against this spec)
 
 - **E0** — prod-credential preflight (above). STOP-on-fail.
-- **E1** — migrations 016–030 in order; assert each index `indisvalid=t` before proceeding.
+- **E1** — migrations 016–030 in order; assert each index `indisvalid=t` before proceeding. Census
+  confirms prod is pre-016, so ALL of 016–030 apply fresh. **Live user data exists (34 highlights /
+  6 users, 2 notes, 1 chat) — every migration that touches an annotation table must preserve it;
+  assert row counts unchanged across each such migration.**
 - **E2** — register-label prod's flat embeddings (dev got this from the 33-work sweep; prod never
   has). Assert label coverage against prod's own re-measured shape.
-- **E3** — forbidden-provenance cleanup on prod; assert the ratchet reads 0 after.
+- **E3** — forbidden-provenance cleanup on prod; assert the ratchet reads 0 after. Census 2026-07-23
+  measured the target: **71,884 rows** (15,707 biblehub + 56,177 hcf; studylight 0). Backup-before-
+  delete; the ratchet re-counts prod at runtime, not against this literal.
 - **E4** — slice works into sections on prod, reusing vectors 1:1; assert per-register counts against
   prod's own flat pool.
 - **E5** — `deploy.sh` (clean-tree → licensing ratchet → build → `vercel --prod`).

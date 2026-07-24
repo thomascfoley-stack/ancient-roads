@@ -321,11 +321,17 @@ is not a gate.
 
 ---
 
-## §7 — ★ PROD DB CREDENTIAL IS STALE — refresh before ANY cutover (found 2026-07-20)
+## §7 — ★ PROD DB CREDENTIAL — RESOLVED 2026-07-23 (was STALE, found 2026-07-20)
 
-**Status: OPEN. Owner-only — you rotate/refresh the credential; the agent cannot.**
+**Status: RESOLVED. The owner refreshed the `neondb_owner` credential in root `.env.local`; the
+read-only census then connected as `neondb_owner` against `ep-odd-fog` with a non-zero positive
+control (John Gill = 28,843 rows). STEP ZERO's write-capability assertion is expected to pass at
+cutover time. The tension noted in "What you do" step 3 still stands — a working prod owner string
+in the root env file re-arms what `ingest-preflight` rejects, so keep it there only for the cutover
+window. The census results are recorded in `docs/CUTOVER_DESIGN.md` §Census and
+`docs/evidence/census/prod-census-2026-07-23.txt`.**
 
-### The finding
+### The finding (historical — kept for the STEP ZERO rationale)
 
 A read-only prod census attempt failed at connect. The `neondb_owner` password in the root
 `/Users/tfoley/theology-study-app/.env.local` (prod, `ep-odd-fog-atnykudm`) is **rejected**:

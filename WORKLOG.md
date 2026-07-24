@@ -1,5 +1,25 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-23 (Prod census — build-vs-repair SETTLED: it is a BUILD)
+
+Owner refreshed the stale prod `neondb_owner` credential (OWNER_ACTIONS §7, was found 2026-07-20).
+Ran the read-only census (`scripts/prod-census.cjs`, copied from scratchpad so it resolves `pg`):
+`BEGIN; SET TRANSACTION READ ONLY;` throughout, host-asserted `ep-odd-fog` before any query,
+positive control John Gill = 28,843 (probe fires), ROLLBACK, zero writes.
+
+**Findings (`docs/evidence/census/prod-census-2026-07-23.txt`):**
+- Prod schema is **pre-migration-016** — all of 016–030 apply fresh at E1.
+- **100% of 190,635 flat embeddings carry NO work key** — register ingest never ran on prod.
+- Sections model = **Barnes pilot only** (2 sources / 5,510 sections).
+- **Forbidden provenance IS live: 71,884 rows** (15,707 biblehub + 56,177 hcf) — E3 is real.
+- **Live user data to preserve:** 34 highlights (6 users), 2 notes (1 user), 1 chat.
+- None of the dev-only suppression defects exist on prod (nothing to clean there).
+- Compute params not exposed by Neon `SHOW`; wall-clock projection stays on the dev slice rate.
+
+**Recorded to:** `CUTOVER_DESIGN.md` (§Census + E1/E3 annotations), `STATE_OF_TRUTH.md` §2,
+`OWNER_ACTIONS.md` §7 (RESOLVED). **Recommend next:** B2 coverage detection (dev, red-first) while
+the CI-secret and workflow-scope owner items remain open; then build the Part 5 cutover script.
+
 ## 2026-07-19 (WORK ORDER Phase A — A1 register census; two premise corrections; origen misattribution found)
 
 **A1 — published works per register (DEV `ep-tiny-hat`, `status='published'` AND sections rows):**
