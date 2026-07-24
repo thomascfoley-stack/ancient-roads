@@ -1,5 +1,28 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-24 (OVERNIGHT RUN — populate, prove, prep)
+
+Env safety first: quarantined the prod owner string to `.env.prod` (gitignored, chmod 600) and
+repointed root `.env.local` at dev, proven by `scripts/assert-ingest-env-dev.mjs` (RED while it
+pointed at prod, GREEN after: dev owner, Gill control = 28,843). All slice work is dev-only.
+
+**Slice A — dev population (DONE).** Sweep-first (`scripts/sweep-composite-defect.mjs`, red-proven
+on origen=Clement + josephus=pseudo-Josephus). Published gill/jfb/clarke to the commentary register
+through an inline fail-closed license+provenance gate (`scripts/publish-works.mjs`, red-proven on a
+seeded copyright + biblehub row). Commentary 2→5 published, 27,283→84,292 sections. Gate B green,
+catalog fence holds. PARKED (logged): josephus (spurious Hades tail), lexicon×5 (reference-pane open
+call), origen (composite + editorial), donne/herrick (quarantined). Evidence:
+`docs/evidence/overnight-2026-07-24/A-dev-population.md`.
+
+**Slice E — v4 re-measure (DONE).** verse-ref 100/100 (positive control alive), pericope 67/100
+(H1 wobble, H2 still 100), epistle 92/96, topical 80/95, proper-noun 60/100, controls clean. The
+pericope H1 drop is entirely HIT@2-pass ranking wobble from this week's ~1,040-row suppressions, NOT
+B2. Two true wrong-passage misses, both "fatherless" (James 1:27 / Ps 68:5), a likely embedding
+collision handed to slice D. Re-running frozen v4 = a dev-set drift check, not a re-gate.
+`docs/evidence/overnight-2026-07-24/E-v4-remeasure.md`.
+
+**Slices C (D2 runtime), F (uploader design) — DONE by fresh agents**, committed separately.
+
 ## 2026-07-24 (Dependency CVEs — audit deps gate back to green)
 
 `pnpm run audit` was red on 6 un-ignored HIGH advisories (CVE-disclosure drift, zero from any
