@@ -295,8 +295,12 @@ export function hasPassageCoverage(
     for (let ck = Math.floor(r.start / 1000); ck <= Math.floor(r.end / 1000); ck++) asked.add(ck);
   }
   return chunks.some((c) => {
-    const lo = Math.floor(Math.min(c.verseId, c.verseEnd) / 1000);
-    const hi = Math.floor(Math.max(c.verseId, c.verseEnd) / 1000);
+    // verseId is the authoritative start. verseEnd can be 0/null/invalid under data
+    // drift; NEVER let a bogus verseEnd pull the low end to 0 (a min() with 0 would
+    // span [0, chapter] and false-cover every lower asked chapter, defeating the floor).
+    // Fall back to verseId when verseEnd is not a valid end (>= verseId).
+    const lo = Math.floor(c.verseId / 1000);
+    const hi = Math.floor((typeof c.verseEnd === 'number' && c.verseEnd >= c.verseId ? c.verseEnd : c.verseId) / 1000);
     for (const ck of asked) if (ck >= lo && ck <= hi) return true;
     return false;
   });

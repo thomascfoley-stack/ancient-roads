@@ -132,6 +132,17 @@ describe('hasPassageCoverage (the relevance floor retrieveCommentary lacks)', ()
   it('reports NO coverage for an empty retrieval against a real reference', () => {
     expect(hasPassageCoverage([], SOS_2)).toBe(false);
   });
+
+  it('does NOT false-cover when a chunk has a bogus verseEnd (0/null/<verseId)', () => {
+    // Data-drift regression (deep-audit 2026-07-24): a min(verseId, verseEnd) with
+    // verseEnd=0 spanned [0, chapter] and covered any lower asked chapter. An off-passage
+    // Romans-8 chunk must NOT satisfy a Song-of-Songs-2 ask, whatever its verseEnd.
+    expect(hasPassageCoverage([{ verseId: 45_008_001, verseEnd: 0 }], SOS_2)).toBe(false);
+    expect(hasPassageCoverage([{ verseId: 45_008_001, verseEnd: null as unknown as number }], SOS_2)).toBe(false);
+    expect(hasPassageCoverage([{ verseId: 45_008_001, verseEnd: 1 }], SOS_2)).toBe(false);
+    // ...and a genuinely on-passage chunk with a bogus verseEnd is still covered (via verseId).
+    expect(hasPassageCoverage([{ verseId: 22_002_007, verseEnd: 0 }], SOS_2)).toBe(true);
+  });
 });
 
 describe('mergeById (shared pool merge)', () => {

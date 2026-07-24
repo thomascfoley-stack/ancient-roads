@@ -10,6 +10,7 @@
 import { useCallback, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { CatalogId } from '@/lib/catalog';
+import { sanitizeSnippet } from '@/lib/snippet';
 import type { SectionSearchResult } from '@/lib/search-sections';
 
 export function CatalogSearch({ catalog, label }: { catalog: CatalogId; label: string }) {
@@ -103,8 +104,9 @@ export function CatalogSearch({ catalog, label }: { catalog: CatalogId; label: s
                   <span
                     className="mt-1 block text-sm leading-relaxed text-stone-600 [&_mark]:bg-accent-100 [&_mark]:text-stone-900 dark:text-stone-300 dark:[&_mark]:bg-accent-900/60 dark:[&_mark]:text-stone-100"
                     /* ts_headline output: corpus text with <mark> around the hit. Server-generated
-                       from the stored body, never model output. */
-                    dangerouslySetInnerHTML={{ __html: r.snippet }}
+                       from the stored body, never model output — but ts_headline does NOT escape the
+                       body, so sanitize (escape all, restore only <mark>) before rendering. */
+                    dangerouslySetInnerHTML={{ __html: sanitizeSnippet(r.snippet) }}
                   />
                 </Link>
               </li>

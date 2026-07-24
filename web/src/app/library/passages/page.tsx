@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { sanitizeSnippet } from '@/lib/snippet';
 import {
   BOOKS,
   BOOK_BY_BOOK_SLUG,
@@ -24,16 +25,6 @@ import {
 const BOOK_BY_NUM = new Map(BOOKS.map((b) => [b.bookNum, b]));
 const DEBOUNCE_MS = 300;
 const PAGE_SIZE = 20;
-
-// The ts_headline snippet is rendered as HTML so <mark> highlights work — but
-// ts_headline does NOT escape the surrounding body text, so any tag-shaped text
-// that survives ingest would render live. Escape everything, then restore ONLY
-// the <mark> pairs ts_headline itself inserted (security hardening 2026-07-17).
-function sanitizeSnippet(snippet: string): string {
-  return snippet
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/&lt;mark&gt;/g, '<mark>').replace(/&lt;\/mark&gt;/g, '</mark>');
-}
 
 interface SearchResult {
   id: number;
