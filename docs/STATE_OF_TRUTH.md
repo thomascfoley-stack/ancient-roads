@@ -65,6 +65,15 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 
 ## 2. Corpus & prod DB — verified rows (`ground-truth.mjs`, 2026-07-15)
 
+> **Two corrections (deep-audit 2026-07-24).** (1) This table's "verified against the running
+> **prod** system" framing is inaccurate: `scripts/ground-truth.mjs` reads
+> `web/.env.local` → the **DEV** branch (ep-tiny-hat), not prod. Read every row here as a DEV
+> snapshot; the authoritative PROD state is the census (`docs/evidence/census/`, §2 note below).
+> (2) It is now stale by a corpus rebuild: tonight's publish took **commentary to 5 published
+> works / 84,292 sections** (was 2 / 27,283). Re-run `ground-truth.mjs` before trusting the
+> counts below.
+
+
 > **Prod cutover state, measured read-only 2026-07-23** (`docs/evidence/census/prod-census-2026-07-23.txt`).
 > Prod is **pre-cutover BUILD state**: schema is **pre-migration-016** (no register source_type,
 > no work column, no unit_ordinal, no library_items, no ingesting CHECK); **100% of the 190,635
