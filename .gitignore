@@ -34,3 +34,4 @@ spike/
 web/public/concordance/
 
 .env.prod
+.cutover-checkpoint.json
