@@ -26,6 +26,12 @@ function assertTarget(url) {
   const cutover = process.env.CUTOVER_ALLOW === '1' || process.env.B2_ALLOW_PROD === '1' || process.env.MIGRATE_ALLOW_PROD === '1';
   if (host.includes('ep-tiny-hat')) return;
   if (cutover && (host.includes('ep-wispy-violet') || host.includes('ep-odd-fog'))) return;
+  // A rehearsal runs against a FRESH fork of prod whose endpoint nobody can know in
+  // advance (ADR-031 forbids reusing the old ones). The operator declares that
+  // endpoint once in CUTOVER_EXPECT_HOST; STEP ZERO has already validated it. This
+  // is additive — the hardcoded prod/dev allowances above are unchanged.
+  const declared = process.env.CUTOVER_EXPECT_HOST;
+  if (cutover && declared && declared.length >= 6 && host.includes(declared)) return;
   throw new Error(`STOP: host ${host} is not dev and cutover override not set`);
 }
 

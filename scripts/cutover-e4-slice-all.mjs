@@ -21,9 +21,14 @@ const url = urlFromEnv();
 if (!url) throw new Error('no DATABASE_URL');
 const host = new URL(url).host;
 const cutover = process.env.CUTOVER_ALLOW === '1' || process.env.MIGRATE_ALLOW_PROD === '1';
-if (!host.includes('ep-tiny-hat') && !(cutover && (host.includes('ep-wispy-violet') || host.includes('ep-odd-fog')))) {
-  throw new Error(`STOP: host ${host} not allowed`);
-}
+// CUTOVER_EXPECT_HOST is the operator's declared target, validated by STEP ZERO —
+// it is how a fresh rehearsal fork becomes a legal target without hardcoding an
+// endpoint nobody could know in advance. Additive to the fixed allowances.
+const declared = process.env.CUTOVER_EXPECT_HOST;
+const allowed = host.includes('ep-tiny-hat')
+  || (cutover && (host.includes('ep-wispy-violet') || host.includes('ep-odd-fog')))
+  || (cutover && declared && declared.length >= 6 && host.includes(declared));
+if (!allowed) throw new Error(`STOP: host ${host} not allowed`);
 console.log(`host: ${host} (credentials redacted)`);
 
 const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'ingest/sources.config.json'), 'utf8'));

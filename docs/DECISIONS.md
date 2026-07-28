@@ -483,3 +483,44 @@ assumed `prod-census` was gone. **Owner elected to keep both.** They are storage
 of prod user data outside the prod blast radius, so this is a standing item, not a closed one.
 Neither is a restore point and **neither may be rehearsed on** — Session 2 creates a fresh fork
 and confirms its parent is `production` first.
+
+## ADR-032 — The cutover regression gate is DB-level, runs after every chunk, and its checkpoint is bound to one target (2026-07-27, Session 2)
+
+`CUTOVER_DESIGN.md` requires a regression gate after **every** chunk ("`/ask` still answers with
+≥2 distinct voices · reader renders + tap-verse opens commentaries · highlights/notes load AND
+write · register wall holds"). Building it forced three calls worth recording, because each one
+narrows or widens what a green gate is allowed to mean.
+
+**1. The gate is DATABASE-level, and says so.** `scripts/cutover-regression-gate.mts` imports the
+shipped predicates (`LEGAL_CORPUS_FILTER`, `EXEGETICAL_FTS_EXCLUSION`, `isPublishedCommentaryEntry`)
+rather than retyping them, so it probes the real serving boundary — but it does **not** run
+compose→verify. What it proves is that the served **pool** can satisfy the ≥2-voices floor, not
+that the live loop did. The live HTTP probe (`CUTOVER_ASK_URL`) is opt-in and only meaningful
+**after E5**, which is owner-gated; during a rehearsal it does not run at all. Stating this in the
+script's own header is deliberate: a green gate that reads as "/ask works" would be exactly the
+over-wide claim `THE_LOOP.md` rule 7 exists to stop.
+
+**2. The annotation write probe commits nothing.** G4 runs the shipped statement shapes —
+`createHighlight`'s INSERT and `upsertNote`'s `ON CONFLICT (user_id, verse_id) WHERE deleted_at IS
+NULL AND target_kind = 'verse'` — twice, asserting the second is an UPDATE and not a second row,
+then **ROLLBACKs**. That proves migration 025's partial index still arbitrates (the failure mode
+that would break `upsertNote` in production) without committing a test row into live user data.
+The honest limit: it does not prove a committed write survives. Committing probe rows into 37 real
+user rows to prove they can be written to is a worse trade than the gap it closes.
+
+**3. A checkpoint is bound to the target it was written for.** The 2026-07-24 census-clone
+rehearsal left a **complete** `.cutover-checkpoint.json` on disk (E1–E4 all "done"). Resumability
+read that file by name only, so a later run against any other endpoint would have skipped the
+entire cutover and reported success having written nothing. The checkpoint now records its target
+endpoint; a mismatch — or a pre-binding checkpoint with steps recorded and no target — is a hard
+abort with instructions, never a replay. Proven red against the real stale file before the fix was
+trusted.
+
+**Corollary, same shape:** the delegate scripts (`register-label-embeddings.mjs`,
+`cutover-e4-slice-all.mjs`) hardcoded an endpoint allowlist that a fresh rehearsal fork can never
+be on — and ADR-031 forbids reusing the old forks. They now **additionally** accept the operator's
+declared `CUTOVER_EXPECT_HOST`, which STEP ZERO has already validated. The dev and prod allowances
+are untouched; this widens the guard by exactly one explicitly-named endpoint per run.
+
+**Related:** ADR-029 addendum 2 (each store, its own key), ADR-030 (E3 proceeds), ADR-031 (the
+forks stay; rehearse on a fresh one).
