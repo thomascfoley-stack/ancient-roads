@@ -21,7 +21,7 @@
 // this suite in earnest. That was FALSE and is corrected here: commit `f229a93` parked the
 // `.github/workflows/audit.yml` edit (the push lacked the `workflow` token scope), so the
 // documentation half of that change landed and the enforcement half did not. Measured under CI
-// conditions (no `web/.env.local`): **69 of 177 web tests skip, including every test here.**
+// conditions (no `web/.env.local`): **75 of 200 web tests skip, including every test here.**
 // Believing the old claim is how a PR that drops a `status='published'` predicate merges green.
 // Tracked in `docs/OWNER_ACTIONS.md` §1; enforced against re-introduction by
 // `test/invariants/ci-claims-match-reality.test.ts`. (That guard matches claim-phrases anywhere
