@@ -1,0 +1,23 @@
+==============================================================================
+RED-PROOF: checkpoint ownership — a SECOND LIVE cutover process is refused
+date: 2026-07-28T06:03:10Z
+
+This is not a simulation. The re-rehearsal (pid below) is RUNNING against the fork
+right now and owns .cutover-checkpoint.json. A second orchestrator is started
+against the same repo — the exact situation that clobbered this file three times
+during the 2026-07-27 deep-audit, once mid-proof.
+==============================================================================
+
+--- the live owner recorded in .cutover-checkpoint.json ---------------------
+pid=53257 host=Thomas--MacBook-Pro.local claimed=2026-07-28T05:48:32.825Z (session id withheld)
+--- is that pid alive? ------------------------------------------------------
+53257 19:42 node scripts/cutover.mjs
+
+--- SECOND orchestrator, same repo, same checkpoint (expect REFUSAL) --------
+
+✗ ABORT at checkpoint: CHECKPOINT OWNERSHIP: the checkpoint is owned by a LIVE cutover process (session 5a2fb256-fdf3-4807-a153-da08a971e4bc, pid 53257 on Thomas--MacBook-Pro.local, claimed 2026-07-28T05:48:32.825Z). Refusing — two runs sharing one checkpoint is how a step gets marked done that never ran. Wait for that run to finish, or kill it and re-run this one.
+  rollback: nothing written
+[exit: 1]
+
+--- checkpoint after the refusal (must be untouched) ------------------------
+owner pid=53257 still the first process; 15 step(s) recorded; file parses

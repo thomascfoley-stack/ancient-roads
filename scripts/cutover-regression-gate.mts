@@ -6,23 +6,38 @@
 //
 //   CUTOVER_DATABASE_URL=<owner> CUTOVER_EXPECT_HOST=ep-odd-fog \
 //     npx tsx scripts/cutover-regression-gate.mts --phase=E0 --capture
-//   ... --phase=E1 | E2 | E3 | E4 | E6
+//   ... --phase=E1 | E2 | E4 | E6      (there is no E3 — see cutover.mjs)
 //
-// The five gates, mapped to the four surfaces the design names:
-//   G1 user-data invariant   — the 37 rows (34 highlights / 6 users, 2 notes / 1
-//                              user, 1 chat) captured at E0 and re-measured here.
-//   G2 >=2 distinct voices   — the SERVED pool (real LEGAL_CORPUS_FILTER, imported
-//                              from web/src/lib/teacher/routing.ts, never retyped)
-//                              still yields >=2 distinct authors on known-good refs.
+// The gates, mapped to the surfaces the design names:
+//   G1 user-data invariant   — a per-table md5 DIGEST over ordered rows, the ACTIVE
+//                              row count and the OWNER DISTRIBUTION, captured at E0
+//                              and re-measured here. NOT count(*): three seeded
+//                              corruptions passed the count-only version green
+//                              (scripts/lib/user-data-invariant.mjs).
+//   G2 >=2 distinct voices   — CORPUS-WIDE. Every verse in the served pool, one
+//                              GROUP BY: how many meet the >=2-distinct-authors
+//                              floor and how many have any voice at all, compared
+//                              against the E0 reading. The old version sampled 3
+//                              verses of 22,794 and its own comment said they had
+//                              been chosen to be immune to the step it guarded.
 //   G3 reader tap-verse      — the static reader corpus AND commentary_entries both
-//                              still return published commentary for those refs.
-//   G4 annotation round-trip — highlights and notes LOAD, and the shipped write
-//                              shapes (createHighlight / upsertNote's ON CONFLICT)
-//                              still execute. Wrapped in BEGIN..ROLLBACK: proves the
-//                              write path without leaving one row behind.
+//                              still return published commentary for known-good refs.
+//   G4 annotation round-trip — the SHIPPED load query returns the baseline number of
+//                              active rows, and the shipped write shapes
+//                              (createHighlight / upsertNote's ON CONFLICT) still
+//                              execute. Wrapped in BEGIN..ROLLBACK: proves the write
+//                              path without leaving one row behind.
 //   G5 register wall         — no song/verse or lane work is reachable through the
 //                              exegetical serving predicates.
-//   G6 forbidden ratchet     — monotone: never increases; 0 from E3 onward.
+//   G6 forbidden ratchet     — MONOTONE: never increases against the E0 reading.
+//                              It is NOT "0 from E3 onward" any more: E3 is dropped
+//                              from the cutover, so those rows stay by design and
+//                              their cleanup is a later slice.
+//   G7 live /ask             — the ONLY leg that touches the deployed app. Opt-in via
+//                              CUTOVER_ASK_URL. When it is unset the gate prints an
+//                              explicit LIVE PROBE NOT RUN line and stamps the final
+//                              verdict DB-ONLY, so a green gate can never be misread
+//                              as end-to-end.
 //
 // HONEST LIMITS, stated so nobody reads this wider than it is:
 //   - This is a DATABASE-level gate. It proves the served POOL can satisfy the
@@ -33,10 +48,17 @@
 //     write survives, because committing test rows into live user data is not
 //     something a cutover gate gets to do.
 import pg from 'pg';
-import { readFileSync, existsSync, writeFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
+import { hostOf, declaredMatches } from './lib/target-guard.mjs';
+import { loadCheckpoint, saveCheckpoint, OWNERSHIP_ERROR } from './lib/checkpoint.mjs';
+import type { CheckpointFile } from './lib/checkpoint.d.mts';
+import {
+  USER_TABLES, measureSql, ownersSql, ABSENT, userShape, diffUserData,
+} from './lib/user-data-invariant.mjs';
+import type { UserDataMeasure } from './lib/user-data-invariant.d.mts';
 import {
   LEGAL_CORPUS_FILTER,
   EXEGETICAL_FTS_EXCLUSION,
@@ -57,10 +79,11 @@ const argOf = (f: string) => process.argv.find((a) => a.startsWith(`--${f}=`))?.
 const PHASE = argOf('phase') ?? 'E0';
 const CAPTURE = process.argv.includes('--capture');
 
-// ── known-good references. Chosen because every one of them is covered by the
-// UNCONSTRAINED legal authors (Gill / JFB / Clarke / Henry), so E3 (which removes
-// only Chrysostom + Augustine rows) must NOT be able to drop any of them below the
-// floor. If it does, that is the over-deletion this gate exists to catch.
+// ── known-good references, used by G3 (the reader) and as G2's named spot check.
+// These are a SPOT CHECK ONLY. They are covered by the unconstrained legal authors
+// (Gill / JFB / Clarke / Henry) and are therefore among the hardest verses in the
+// corpus to break — which is exactly why G2's real leg is corpus-wide and these
+// three are no longer allowed to stand in for it.
 const REFS = [
   { label: 'John 3:16', book: 43, chapter: 3, verse: 16, dir: 'jhn' },
   { label: 'Psalm 23:1', book: 19, chapter: 23, verse: 1, dir: 'psa' },
@@ -72,18 +95,14 @@ const verseId = (r: { book: number; chapter: number; verse: number }) =>
 const sqlList = (xs: readonly string[]) => xs.map((s) => `'${s.replace(/'/g, "''")}'`).join(',');
 const NON_EXEGETICAL_SLUGS = [...SERVED_SONG_VERSE_WORKS, ...SERVED_LANE_WORKS];
 
+interface VoiceFloor { anyVoice: number; floor: number }
 interface Baseline {
   host?: string;
-  userData?: Record<string, { rows: number; users: number }>;
+  userData?: UserDataMeasure;
   forbidden?: number;
+  voices?: VoiceFloor;
 }
-interface Checkpoint { done: string[]; baseline: Record<string, unknown> & { regression?: Baseline } }
-
-function loadCheckpoint(): Checkpoint {
-  return existsSync(CHECKPOINT)
-    ? (JSON.parse(readFileSync(CHECKPOINT, 'utf8')) as Checkpoint)
-    : { done: [], baseline: {} };
-}
+type Checkpoint = CheckpointFile & { baseline: Record<string, unknown> & { regression?: Baseline } };
 
 const failures: string[] = [];
 const fail = (gate: string, msg: string) => { failures.push(`${gate}: ${msg}`); console.error(`  ✗ ${gate} — ${msg}`); };
@@ -98,41 +117,74 @@ async function hasColumn(c: pg.Client, table: string, col: string): Promise<bool
 }
 
 // ── G1 ────────────────────────────────────────────────────────────────────────
-// The 37 user rows are the invariant across every chunk. Captured at E0 from the
-// TARGET itself (never a literal from a doc) and re-measured identically here.
-const USER_TABLES = ['highlights', 'notes', 'chats'] as const;
-
-async function measureUserData(c: pg.Client): Promise<Record<string, { rows: number; users: number }>> {
-  const out: Record<string, { rows: number; users: number }> = {};
+// The user rows are the invariant across every chunk. Captured at E0 from the TARGET
+// itself (never a literal from a doc) and re-measured identically here. The property
+// measured is the DIGEST + ACTIVE COUNT + OWNER DISTRIBUTION, not count(*) — see
+// scripts/lib/user-data-invariant.mjs for the three seeded corruptions that count(*)
+// waved through.
+async function measureUserData(c: pg.Client): Promise<UserDataMeasure> {
+  const out: UserDataMeasure = {};
   for (const t of USER_TABLES) {
     const exists = await c.query<{ ok: boolean }>(`SELECT to_regclass($1) IS NOT NULL AS ok`, [t]);
-    if (!exists.rows[0]!.ok) { out[t] = { rows: -1, users: -1 }; continue; }
-    const r = await c.query<{ n: number; u: number }>(
-      `SELECT count(*)::int AS n, count(DISTINCT user_id)::int AS u FROM ${t}`,
-    );
-    out[t] = { rows: r.rows[0]!.n, users: r.rows[0]!.u };
+    if (!exists.rows[0]!.ok) { out[t] = { ...ABSENT }; continue; }
+    const m = await c.query<{ rows: number; users: number; active: number; digest: string }>(measureSql(t));
+    const o = await c.query<{ owner: string; n: number }>(ownersSql(t));
+    out[t] = { ...m.rows[0]!, owners: Object.fromEntries(o.rows.map((r) => [r.owner, r.n])) };
   }
   return out;
 }
 
-function g1(now: Record<string, { rows: number; users: number }>, base?: Record<string, { rows: number; users: number }>) {
-  const shape = USER_TABLES.map((t) => `${t}=${now[t]!.rows}/${now[t]!.users}u`).join(' ');
-  if (!base) { pass('G1 user-data', `baseline captured: ${shape}`); return; }
-  for (const t of USER_TABLES) {
-    const b = base[t], n = now[t]!;
-    if (!b) continue;
-    if (b.rows !== n.rows || b.users !== n.users) {
-      fail('G1 user-data', `${t} moved ${b.rows}/${b.users}u -> ${n.rows}/${n.users}u — the user-row invariant broke`);
-      return;
-    }
+function g1(now: UserDataMeasure, base?: UserDataMeasure) {
+  const shape = userShape(now);
+  if (!base) {
+    // Even at capture there is one thing to assert: a baseline of nothing is not a
+    // baseline. If the tables are missing or empty on the target, every later
+    // comparison is vacuous and the operator needs to know now, not at E6.
+    const total = USER_TABLES.reduce((s, t) => s + Math.max(0, now[t]?.rows ?? 0), 0);
+    if (total === 0) fail('G1 user-data', `baseline is EMPTY (${shape}) — nothing to protect, so every later comparison would be vacuous`);
+    else pass('G1 user-data', `baseline captured: ${shape}`);
+    return;
   }
-  pass('G1 user-data', `unchanged vs E0 baseline: ${shape}`);
+  const moved = diffUserData(base, now);
+  if (moved.length > 0) fail('G1 user-data', `the user-data invariant broke — ${moved.join('; ')}`);
+  else pass('G1 user-data', `unchanged vs E0 baseline (rows/active/owners/digest): ${shape}`);
 }
 
 // ── G2 ────────────────────────────────────────────────────────────────────────
-async function g2(c: pg.Client) {
+// CORPUS-WIDE, not a sample. One GROUP BY over the served exegetical pool: for every
+// verse, how many DISTINCT authors serve it. Two numbers come out — verses with any
+// served voice, and verses meeting the >=2-distinct-authors floor — and both are
+// compared against the E0 reading. An absolute threshold would not do: the floor is a
+// property of this corpus at this moment, and what the cutover must not do is LOWER it.
+async function measureVoiceFloor(c: pg.Client): Promise<VoiceFloor> {
+  const q = await c.query<{ any_voice: number; floor: number }>(
+    `SELECT count(*)::int AS any_voice, count(*) FILTER (WHERE voices >= 2)::int AS floor
+       FROM (SELECT (metadata->>'verseId')::int AS vid,
+                    count(DISTINCT metadata->>'author') AS voices
+               FROM embeddings
+              WHERE user_id IS NULL
+                AND metadata->>'verseId' ~ '^[0-9]+$'
+                AND ${PROSE_TYPE_SQL}
+                AND ${LEGAL_CORPUS_FILTER}
+              GROUP BY 1) t`);
+  return { anyVoice: q.rows[0]!.any_voice, floor: q.rows[0]!.floor };
+}
+
+async function g2(c: pg.Client, base?: VoiceFloor): Promise<VoiceFloor> {
+  const now = await measureVoiceFloor(c);
+  if (!base) {
+    // Positive control at capture: a measurement of zero is a broken instrument, and a
+    // broken instrument that reports green is the failure mode this whole round closes.
+    if (now.floor === 0) fail('G2 >=2 voices', `corpus-wide baseline is 0 verses at the floor (${now.anyVoice} with any voice) — the measurement is broken or the target is empty`);
+    else pass('G2 >=2 voices', `corpus-wide baseline: ${now.floor} verses meet the >=2-distinct-authors floor, ${now.anyVoice} have any served voice`);
+  } else {
+    if (now.floor < base.floor) fail('G2 >=2 voices', `${base.floor - now.floor} verse(s) DROPPED BELOW the >=2-distinct-authors floor (${base.floor} -> ${now.floor}) — this is the product's headline guarantee`);
+    else if (now.anyVoice < base.anyVoice) fail('G2 >=2 voices', `${base.anyVoice - now.anyVoice} verse(s) LOST EVERY served voice (${base.anyVoice} -> ${now.anyVoice})`);
+    else pass('G2 >=2 voices', `corpus-wide: ${now.floor} verses at the floor (E0 ${base.floor}), ${now.anyVoice} with any voice (E0 ${base.anyVoice})`);
+  }
+  // The named spot check stays, clearly labelled as a spot check — it is the design's
+  // "known-good query", and it is NOT what makes this gate falsifiable.
   for (const r of REFS) {
-    const vid = verseId(r);
     const q = await c.query<{ voices: number; rows: number }>(
       `SELECT count(DISTINCT metadata->>'author')::int AS voices, count(*)::int AS rows
          FROM embeddings
@@ -140,12 +192,13 @@ async function g2(c: pg.Client) {
           AND (metadata->>'verseId')::int = $1
           AND ${PROSE_TYPE_SQL}
           AND ${LEGAL_CORPUS_FILTER}`,
-      [vid],
+      [verseId(r)],
     );
     const { voices, rows } = q.rows[0]!;
-    if (voices < 2) fail('G2 >=2 voices', `${r.label}: served pool has ${voices} distinct author(s) (${rows} rows) — below the floor`);
-    else pass('G2 >=2 voices', `${r.label}: ${voices} distinct authors, ${rows} served rows`);
+    if (voices < 2) fail('G2 spot check', `${r.label}: served pool has ${voices} distinct author(s) (${rows} rows) — below the floor`);
+    else pass('G2 spot check', `${r.label}: ${voices} distinct authors, ${rows} served rows`);
   }
+  return now;
 }
 
 // ── G3 ────────────────────────────────────────────────────────────────────────
@@ -190,12 +243,30 @@ async function g3(c: pg.Client) {
 // ── G4 ────────────────────────────────────────────────────────────────────────
 // LOAD, then WRITE. The write half runs the SHIPPED statement shapes and is rolled
 // back — a real exercise of the constraints/arbiters with zero residue.
-async function g4(c: pg.Client) {
+// The SHIPPED load statements (web/src/lib/annotations.ts getChapterAnnotations),
+// column list and all, with the per-user/per-chapter predicate widened to the whole
+// table. Retyping the column list is deliberate here and is the point: if a migration
+// drops or renames background_color / text_color / span_start / span_end / translation,
+// THIS query errors and the gate goes red, where a `count(*)` would sail through.
+const LOAD_SQL: Record<string, string> = {
+  highlights: `SELECT id, verse_id, verse_end, coalesce(background_color, color) AS color,
+                      text_color, span_start, span_end, translation
+                 FROM highlights WHERE deleted_at IS NULL ORDER BY created_at`,
+  notes: `SELECT id, verse_id, verse_end, body, updated_at
+            FROM notes WHERE deleted_at IS NULL ORDER BY verse_id`,
+};
+
+async function g4(c: pg.Client, base?: UserDataMeasure) {
+  // LOAD — an assertion, not a print. This leg used to be `pass()` with no comparison,
+  // so seeded state printed "✓ G4 load — 0 active rows load" and the gate passed.
   for (const t of ['highlights', 'notes'] as const) {
-    const r = await c.query<{ n: number }>(
-      `SELECT count(*)::int AS n FROM ${t} WHERE deleted_at IS NULL`,
-    );
-    pass('G4 load', `${t}: ${r.rows[0]!.n} active rows load`);
+    let n: number;
+    try { n = (await c.query(LOAD_SQL[t]!)).rowCount ?? -1; }
+    catch (e) { fail('G4 load', `${t}: the SHIPPED load query no longer executes: ${(e as Error).message}`); continue; }
+    const want = base?.[t]?.active;
+    if (want === undefined) pass('G4 load', `${t}: shipped load query returns ${n} active row(s) (baseline capture)`);
+    else if (n !== want) fail('G4 load', `${t}: shipped load query returns ${n} active row(s), E0 baseline was ${want} — the rows a user would actually see changed`);
+    else pass('G4 load', `${t}: shipped load query returns ${n} active row(s), unchanged vs E0`);
   }
   const polymorphic = await hasColumn(c, 'notes', 'target_kind'); // migration 025
   const probeUser = `__cutover_probe__${randomUUID()}`;
@@ -315,12 +386,15 @@ async function g6(c: pg.Client, base?: number): Promise<number> {
         OR metadata->>'sourceUrl' ILIKE '%studylight%' OR metadata->>'sourceUrl' ILIKE '%historicalchristian%')`,
   );
   const n = r.rows[0]!.n;
+  // MONOTONE ONLY. The old second leg required 0 from E3 onward; E3 is dropped from the
+  // cutover (its premise was false — see the ADR-030 correction), so those rows remain
+  // here by design and their removal is a later slice. Requiring 0 would abort every run.
   if (base !== undefined && n > base) fail('G6 ratchet', `forbidden-provenance rows INCREASED ${base} -> ${n}`);
-  else if (['E3', 'E4', 'E6'].includes(PHASE) && n !== 0) fail('G6 ratchet', `${n} forbidden-provenance rows remain at ${PHASE} (must be 0 from E3 on)`);
-  else pass('G6 ratchet', `${n} forbidden-provenance rows${base !== undefined ? ` (baseline ${base}, monotone)` : ''}`);
+  else pass('G6 ratchet', `${n} forbidden-provenance rows${base !== undefined ? ` (baseline ${base}, not increased)` : ''} — E3 deferred, cleanup is a later slice`);
 
   // ── the THIRD store the ratchet does not count ──────────────────────────────
-  // E3 (b2-remove-forbidden-provenance) sweeps flat `embeddings` and the static
+  // The deferred provenance-cleanup slice (b2-remove-forbidden-provenance) sweeps flat
+  // `embeddings` and the static
   // reader corpus. It does NOT touch `sources`/`sections`, where provenance lives
   // in sources.provenance->>'url'. Production carries `barnes-notes` there with a
   // biblehub URL and 1,300 sections, so a green ratchet is narrower than it reads.
@@ -352,18 +426,45 @@ async function g6(c: pg.Client, base?: number): Promise<number> {
   for (const row of secStore.rows) {
     const reachable = row.status === 'published' || servedSlugs.has(row.slug);
     if (reachable) fail('G6 sections-store', `${row.slug} is REACHABLE (status=${row.status}) with forbidden provenance ${row.url} and ${row.sections} sections`);
-    else console.warn(`  ⚠ G6 sections-store — ${row.slug}: ${row.sections} sections carry forbidden provenance (${row.url}), status=${row.status}, not reachable via the reader's publish switch. E3's ratchet does not count this store. Standing debt — owner call.`);
+    else console.warn(`  ⚠ G6 sections-store — ${row.slug}: ${row.sections} sections carry forbidden provenance (${row.url}), status=${row.status}, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.`);
   }
   if (secStore.rows.length === 0) pass('G6 sections-store', 'no forbidden provenance in sources/sections');
   return n;
 }
 
-// ── optional live probe (only meaningful after E5, which is owner-gated) ───────
+// ── G7: the ONLY leg that touches the deployed app ────────────────────────────
+// It is opt-in, and it had never run: CUTOVER_ASK_URL was unset in both rehearsals, so
+// the leg was skipped in silence while the gate printed PASSED and E6 claimed a "full
+// regression battery" (deep-audit finding 21).
+//
+// THE CHOICE MADE HERE, and why. The two options were (a) require CUTOVER_ASK_URL at E6,
+// or (b) print an explicit LIVE PROBE NOT RUN line beside the pass. This is (b), for two
+// reasons that are properties of the design, not preferences:
+//   1. E6 runs on rehearsal forks that HAVE no deployed app — E5 is skipped there by
+//      design. Requiring the URL would make every rehearsal end in a red gate, which
+//      trains an operator to ignore red. A gate you must override is not a gate.
+//   2. E6 runs immediately AFTER `vercel --prod`. A required probe that fails there
+//      aborts with "roll back this chunk" where the chunk is the live deploy — the gate
+//      would be dictating an emergency rollback of production on a single HTTP read.
+// So the leg stays opt-in and the DISCLOSURE becomes loud: the not-run line is printed
+// at every phase, and the final verdict is stamped DB-ONLY so no reader can mistake a
+// green gate for end-to-end. The operator sets CUTOVER_ASK_URL at E6 after E5 to make it
+// end-to-end, and the verdict line then says so.
+const LIVE_PROBE_NOT_RUN =
+  '  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is\n' +
+  '     DATABASE-ONLY. Nothing in this gate touched the deployed application. Set\n' +
+  '     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result.';
+
 async function liveAsk(url: string) {
-  const res = await fetch(url, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question: 'What does John 3:16 mean?' }),
-  });
+  // A DNS failure or a refused connection must be a FAILED gate leg with a readable
+  // message, not an unhandled rejection that kills the process before the verdict line.
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: 'What does John 3:16 mean?' }),
+    });
+  } catch (e) { fail('G7 live /ask', `could not reach ${url}: ${(e as Error).message}`); return; }
   if (!res.ok) { fail('G7 live /ask', `HTTP ${res.status}`); return; }
   // The payload is `{ kind, response, retrieval } & LanePayloads` (teacher/teach.ts:18)
   // — authors live in `retrieval[].metadata.author`. An earlier version of this read a
@@ -380,15 +481,19 @@ async function liveAsk(url: string) {
 // ──────────────────────────────────────────────────────────────────────────────
 const url = process.env.CUTOVER_DATABASE_URL;
 if (!url) { console.error('✗ CUTOVER_DATABASE_URL is unset'); process.exit(1); }
-const host = new URL(url).host;
+// hostOf() lowercases (new URL() will not, for postgresql:) and declaredMatches()
+// compares the ENDPOINT ID exactly — the old `host.includes(expect)` accepted
+// CUTOVER_EXPECT_HOST=neon.tech for every endpoint in the account. One guard module,
+// scripts/lib/target-guard.mjs, never a hand-rolled comparison.
+const host = hostOf(url);
 const expect = process.env.CUTOVER_EXPECT_HOST;
 if (!expect) { console.error('✗ CUTOVER_EXPECT_HOST is unset — declare the target endpoint explicitly'); process.exit(1); }
-if (!host.includes(expect)) { console.error(`✗ host ${host} is not the declared target '${expect}'`); process.exit(1); }
+if (!declaredMatches(url, expect)) { console.error(`✗ host ${host} is not the declared target '${expect}' (it must name the endpoint id exactly)`); process.exit(1); }
 
 console.log(`\nREGRESSION GATE — phase ${PHASE}`);
 console.log(`  target: ${host} (credentials redacted)`);
 
-const cp = loadCheckpoint();
+const cp = loadCheckpoint(CHECKPOINT) as Checkpoint;
 const stored: Baseline = cp.baseline.regression ?? {};
 if (stored.host && stored.host !== host) {
   console.error(`✗ baseline in .cutover-checkpoint.json belongs to ${stored.host}, not ${host}. Refusing to compare across targets.`);
@@ -397,19 +502,38 @@ if (stored.host && stored.host !== host) {
 
 const c = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
 await c.connect();
+let liveProbeRan = false;
 try {
-  const now = await measureUserData(c);
-  g1(now, CAPTURE ? undefined : stored.userData);
-  await g2(c);
+  // A column the invariant covers being GONE is itself the regression, and it must read
+  // as one. Unwrapped, it surfaced as a raw pg stack trace: red, but unreadable.
+  let now: UserDataMeasure = {};
+  let measured = true;
+  try { now = await measureUserData(c); }
+  catch (e) {
+    measured = false;
+    fail('G1 user-data', `the invariant could not be MEASURED: ${(e as Error).message}. A column it covers has been dropped or renamed — a schema regression on live user data.`);
+  }
+  // Do NOT run the comparison on a reading that failed: it would print a green
+  // "unchanged" line off nothing.
+  if (measured) g1(now, CAPTURE ? undefined : stored.userData);
+  const voices = await g2(c, CAPTURE ? undefined : stored.voices);
   await g3(c);
-  await g4(c);
+  await g4(c, CAPTURE ? undefined : stored.userData);
   await g5(c);
   const forbidden = await g6(c, CAPTURE ? undefined : stored.forbidden);
-  if (process.env.CUTOVER_ASK_URL) await liveAsk(process.env.CUTOVER_ASK_URL);
+  if (process.env.CUTOVER_ASK_URL) { liveProbeRan = true; await liveAsk(process.env.CUTOVER_ASK_URL); }
+  else console.warn(LIVE_PROBE_NOT_RUN);
 
-  if (CAPTURE) {
-    cp.baseline.regression = { host, userData: now, forbidden };
-    writeFileSync(CHECKPOINT, JSON.stringify(cp, null, 2));
+  // Never persist a baseline from a run that already failed — a baseline captured off a
+  // broken reading is a check that can never fail again.
+  if (CAPTURE && failures.length === 0) {
+    cp.baseline.regression = { host, userData: now, forbidden, voices };
+    try { saveCheckpoint(CHECKPOINT, cp); }
+    catch (e) {
+      const m = (e as Error).message;
+      console.error(m.startsWith(OWNERSHIP_ERROR) ? `✗ ${m}` : `✗ could not write the baseline: ${m}`);
+      process.exit(1);
+    }
     console.log('  baseline written to .cutover-checkpoint.json');
   }
 } finally {
@@ -422,4 +546,6 @@ if (failures.length > 0) {
   console.error('  ABORT the cutover and roll back this chunk. Do NOT fix forward mid-cutover.');
   process.exit(1);
 }
-console.log(`✓ REGRESSION GATE PASSED at ${PHASE}`);
+// The verdict states its own scope. "PASSED" with no qualifier is exactly how a DB-only
+// result got read as a full regression battery.
+console.log(`✓ REGRESSION GATE PASSED at ${PHASE} — ${liveProbeRan ? 'including the live /ask probe (end-to-end)' : 'DB-ONLY, LIVE PROBE NOT RUN'}`);

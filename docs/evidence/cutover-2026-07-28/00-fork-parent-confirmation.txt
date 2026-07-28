@@ -1,0 +1,16 @@
+FRESH REHEARSAL FORK — parent confirmation (read-only, 2026-07-28T05:41:18Z)
+
+cutover-rerehearsal-20260727       id=br-rough-recipe-atw6vsl8     parent=production
+production                         id=br-nameless-brook-atzgh1gq   parent=(none)
+dev                                id=br-cool-flower-at4lx4ge      parent=production
+cutover-rehearsal-20260727b        id=br-withered-pine-atr1el66    parent=production
+audit-lens3-migrations             id=br-crimson-silence-atwg8d6k  parent=production
+audit-lens4-invariant              id=br-square-mud-at1rxzr5       parent=production
+cutover-rehearsal-20260727         id=br-little-cloud-atrw8d9z     parent=production
+census-clone                       id=br-crimson-mode-atm9sqf6     parent=production
+sec2-stage                         id=br-snowy-glitter-at361fgm    parent=production
+sec2-verify                        id=br-long-cake-atoxtidi        parent=production
+betterauth-spike                   id=br-steep-mountain-atnvjbaf   parent=production
+prod-census                        id=br-crimson-lake-atn3h75o     parent=production
+ci                                 id=br-purple-frog-at4sxexf      parent=dev
+item2-pre-ingest-backup-20260719   id=br-late-mountain-atz68a9y    parent=dev

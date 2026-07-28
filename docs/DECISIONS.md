@@ -453,6 +453,48 @@ the Book Reader. edersheim / schaff remain staged (0 sections); no other histori
 
 ## ADR-030 — E3 proceeds in the cutover; the 4,174 served forbidden rows go now, not after a re-source (owner, 2026-07-27)
 
+> **⛔ CORRECTED (owner, 2026-07-27, after the deep-audit). E3 IS DROPPED FROM THE CUTOVER.**
+> The original decision below is kept for history; it is **not** current, and it was made on a
+> premise that is false.
+>
+> **The false premise.** The decision rests on the sentence "The clean NPNF/CCEL editions of those
+> same authors land in the same cutover, so the coverage dip is transient, not a standing hole."
+> **The cutover has no ingest step.** Its steps are E0 preflight · E1 migrations · E2 label existing
+> rows · E3 delete · E4 slice · E5 deploy · E6 smoke. Nothing in `scripts/cutover.mjs` imports a
+> work; the NPNF/CCEL re-ingest is a separate, unbuilt step (WORKLOG 2026-07-24 lists it as a
+> to-do). So the "transient dip" was a **permanent subtraction** — the ADR approved a trade whose
+> other half did not exist. This was the main session's own error, surfaced by a fresh auditor.
+>
+> **The measured cost** (read-only on production 2026-07-27, NULL-safe via COALESCE, independently
+> reproduced by a second lens; the served exegetical pool, per-verse `count(DISTINCT author)`):
+>
+> | per-verse ≥2-DISTINCT-AUTHORS floor | verses |
+> |---|---|
+> | verses with any served voice | 29,629 |
+> | meet the floor BEFORE E3 | 22,794 |
+> | meet the floor AFTER E3 | 22,214 |
+> | **drop below the floor** | **580** |
+> | **lose every served voice** | **24** |
+>
+> (The first attempt at this measurement returned 16,593/20,887 and was wrong: `NOT forbidden` is
+> NULL when `sourceUrl` is NULL and prod holds 74,234 such rows, so the FILTER silently dropped
+> legitimate voices. Recorded because the wrong number was the alarming one.)
+>
+> **The ruling.** E3 is **removed from the cutover**. The cutover is now **E0, E1, E2, E4, E5, E6**.
+> Provenance cleanup is **DEFERRED to its own slice, after a re-ingest exists to refill the corpus** —
+> at which point the same 580/24 measurement is re-run against the refilled pool and must come back
+> at or above the pre-deletion floor before the deletion runs. `src/ingest/b2-remove-forbidden-provenance.ts`
+> is deliberately kept: it is the tool that slice will use.
+>
+> **What this does NOT change.** The rows are still forbidden provenance and are still a standing
+> licensing debt; deferring the deletion defers a fix, it does not retract one. The gate's G6 ratchet
+> is now **monotone-only** (the count may never increase against the E0 baseline) instead of
+> "must read 0 from E3 onward", because the latter would abort every run of the re-scoped cutover.
+> The parts of the original decision that survive on their own evidence are the measurement of what
+> E3 *would* have removed and the "no v5 is owed" reasoning, both below.
+>
+> **Related:** ADR-033 (the falsifiable-gate round this correction came out of).
+
 **Decision.** The cutover proceeds with E3 as designed. E3 deletes 4,174 rows that production
 serves today (John Chrysostom 2,515 · Augustine of Hippo 1,659 — 4.97% of the 83,993-row served
 pool, measured live on prod 2026-07-27). The clean NPNF/CCEL editions of those same authors land
@@ -524,3 +566,60 @@ are untouched; this widens the guard by exactly one explicitly-named endpoint pe
 
 **Related:** ADR-029 addendum 2 (each store, its own key), ADR-030 (E3 proceeds), ADR-031 (the
 forks stay; rehearse on a fresh one).
+
+## ADR-033 — Every cutover gate must be falsifiable through the orchestrator; four calls that came out of enforcing it (2026-07-27)
+
+The 2026-07-27 deep-audit found the same defect in six places: **a check that measures a proxy
+instead of the property it names.** The previous round's red-proofs missed the worst of them
+because they invoked the gate **directly** rather than through `scripts/cutover.mjs`, so the
+orchestrator's own legs were never exercised. The standing rule for this chain is therefore:
+**a gate is not a gate until it has been watched go red THROUGH THE ORCHESTRATOR**, on a seeded
+break, on a fresh fork of production. Four calls worth recording:
+
+**1. The user-data invariant is a DIGEST, not a count.** `count(*)` + `count(DISTINCT user_id)`
+passed three seeded corruptions on a prod fork — soft-delete every visible annotation, permute
+every highlight's owner (a cross-user leak), repoint every anchor. All three leave 34 rows and 6
+users. The invariant is now a per-table **md5 over ordered rows** (id, user_id, anchor columns,
+tombstone, body hash), an **ACTIVE row count** (prod: 34 rows, **24** active — the two already
+disagreed by 10 and nothing noticed), and the **owner distribution**. Owner ids are hashed before
+they are recorded: the checkpoint is a file in the repo tree. One definition, in
+`scripts/lib/user-data-invariant.mjs`, imported by both the orchestrator and the gate, because two
+copies of an invariant is how they drift into measuring different things.
+
+**2. The ≥2-voices gate is corpus-wide.** It sampled 3 verses of 22,794 and its own comment said
+they had been chosen so the step it guarded "must NOT be able to drop any of them below the floor".
+It is now one `GROUP BY` over the served pool (~20 s on prod-sized data): verses meeting the
+≥2-**distinct-authors** floor, and verses with any served voice, **baselined at E0 and compared
+thereafter**. An absolute threshold would not do — the floor is a property of this corpus at this
+moment, and what must never happen is a decrease. The three named refs survive, relabelled
+"spot check", so nobody mistakes them for the gate.
+
+**3. The live probe stays opt-in, and the gate says so out loud.** G7 is the only leg that touches
+the deployed app, `CUTOVER_ASK_URL` was never set, and E6 nonetheless claimed a "full regression
+battery" — zero occurrences of G7 in either rehearsal log. The options were to require the URL at E6
+or to disclose. **Disclosure**, for two reasons that are properties of the design rather than
+preferences: (a) E6 runs on rehearsal forks that have no deployed app by construction, so requiring
+it would end every rehearsal red and train the operator to ignore red; (b) E6 runs immediately after
+`vercel --prod`, so a required probe that fails there orders an emergency rollback of production off
+a single HTTP read. The gate now prints an explicit `LIVE PROBE NOT RUN` line and stamps its verdict
+`DB-ONLY`; setting `CUTOVER_ASK_URL` at E6 flips the verdict to "including the live /ask probe
+(end-to-end)". Proven both ways against a local stub.
+
+**4. Order the migration to the data, not the data to the migration.** 024 backfills
+`sections.unit_ordinal`; E4 creates the sections. Running 024 in E1 left **71,563 of 72,863**
+sections NULL on the last rehearsal fork, and the postcondition — 1:1 counts — reported green,
+because both consumers (`web/src/lib/work-reader.ts`, `web/src/lib/search-sections.ts`) COALESCE and
+degrade silently. 024 now runs **inside E4, after the slice**, and E4 asserts the column is
+POPULATED. The general form: *a postcondition that counts rows does not check the column the step
+exists to fill.*
+
+**Also decided, without ceremony because each is one obvious thing:** a Neon branch snapshot of the
+target is created before the first write and its id is quoted in every rollback string (five
+`die()` paths said "restore from the pre-E1 Neon branch snapshot" while nothing created one, against
+6 h of PITR retention); the checkpoint is written **atomically** (tmp + rename) and carries a
+**session/pid/host ownership marker** that refuses a second live writer (it was clobbered three
+times during the audit, once mid-proof); and E5/E6 got the completion guard every other step already
+had, so a resume cannot re-run `deploy.sh`.
+
+**Related:** ADR-030 (corrected — E3 dropped), ADR-031 (rehearse on a fresh fork), ADR-032 (the gate
+is DB-level, runs after every chunk, checkpoint bound to one target).

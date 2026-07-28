@@ -79,8 +79,13 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 > no work column, no unit_ordinal, no library_items, no ingesting CHECK); **100% of the 190,635
 > flat embeddings carry NO work key** (register ingest never ran on prod); the sections model holds
 > only the **Barnes pilot** (2 sources / 5,510 sections). **Forbidden provenance is live on prod:
-> 71,884 rows** (15,707 biblehub + 56,177 historicalchristian.faith) — E3 cleanup is real. **Live
-> user data exists and must be preserved:** 34 highlights (6 users), 2 notes (1 user), 1 chat. None
+> 71,884 rows** (15,707 biblehub + 56,177 historicalchristian.faith) — real work, but **NOT part of
+> the cutover**: E3 was dropped 2026-07-27 (owner) because it would drop 580 verses below the
+> ≥2-distinct-authors floor and leave 24 with no served voice, and the cutover has no ingest step to
+> refill them. The cutover is **E0, E1, E2, E4, E5, E6**; provenance cleanup is its own later slice.
+> See the ADR-030 correction. **Live
+> user data exists and must be preserved:** 34 highlights (6 users, **only 24 active**), 2 notes
+> (1 user), 1 chat. None
 > of the dev-only suppression defects (chrysostom prolegomena, tennyson, traherne, indexes, ads)
 > exist on prod. This settles build-vs-repair: **the cutover is a BUILD.** See `CUTOVER_DESIGN.md`.
 

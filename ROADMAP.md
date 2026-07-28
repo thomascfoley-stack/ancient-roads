@@ -8,6 +8,19 @@ git history — not from memory or the earlier hit list.
 > priority narrative below predates the 2026-07-14 Phase A close + license gate + Slice 0; trust
 > STATE_OF_TRUTH for facts, and treat the section priorities here as owner-set direction, not current status.
 
+## Update 2026-07-27 (Phase 5 cutover — RE-SCOPED to E0/E1/E2/E4/E5/E6, re-rehearsed, still owner-gated)
+
+**E3 is dropped** (owner; ADR-030 corrected in place): it was approved on the premise that the
+NPNF/CCEL re-ingest lands in the same cutover, and the cutover has no ingest step — 580 verses would
+fall below the ≥2-distinct-authors floor and 24 would lose every served voice. Provenance cleanup is
+its own later slice, after a re-ingest exists. The eight owner rulings from the deep-audit are
+implemented and **each new gate was watched go red through the orchestrator** on a fresh fork of
+production, which then ran E0→E6 (E5 not run) green. Prod untouched; `deploy.sh` never run.
+**Still owner-gated: nothing has run against `ep-odd-fog`.** Known blocker carried forward — E4 now
+copies 6,257 forbidden-provenance rows into `sections` under sources whose provenance says otherwise
+(nothing served today, no gate can see it); spun off as its own slice. Details: WORKLOG 2026-07-27
+SESSION 3; evidence in `docs/evidence/cutover-2026-07-28/`.
+
 ## Update 2026-07-19 (Library Reader Phase 4 — hub + catalogs + sermon search) — BUILT on dev
 
 `/library` hub, the three corpus catalogs (Commentaries · Sermons · Hymns & Poetry) with facets and

@@ -1,5 +1,152 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-27 (SESSION 3 — the eight owner rulings; every gate proven red THROUGH THE ORCHESTRATOR; PROD UNTOUCHED)
+
+Closes the deep-audit finding list below. The owner ruled on eight items; this session implemented
+exactly those and re-rehearsed the re-scoped cutover on a **fresh fork of production**
+(`cutover-rerehearsal-20260727`, `ep-sweet-river-at1qf82b`, parent confirmed `production` before
+anything ran — `docs/evidence/cutover-2026-07-28/00-fork-parent-confirmation.txt`). **Production was
+never written**; `deploy.sh` never ran; no Neon branch was deleted.
+
+**The standing rule this round enforces:** the previous round's red-proofs invoked the gate
+**directly** and so missed the worst bug. Every proof here runs `node scripts/cutover.mjs` — the
+orchestrator — and watches the abort come out of it.
+
+### 1. E3 is DROPPED. The cutover is E0, E1, E2, E4, E5, E6.
+
+ADR-030 approved E3 because "the clean NPNF/CCEL re-ingest replaces those voices in the same
+cutover". **The cutover has no ingest step**, so E3 was a pure subtraction — 580 verses below the
+≥2-distinct-authors floor, 24 with no served voice at all (read-only on prod). ADR-030 is
+**corrected in place**, original text kept, with the false premise, the measured cost, the ruling
+and the deferral all recorded. `src/ingest/b2-remove-forbidden-provenance.ts` is **kept** — it is
+the tool the later slice uses.
+
+Carried through, because dropping a step is not just deleting a function: G6 is **monotone-only**
+(the count may never increase) instead of "must read 0 from E3 on"; E6's smoke no longer aborts on a
+non-zero ratchet; every E3 mention is out of `printPlan`, the checkpoint phases and the rollback
+text. Both of those would otherwise have aborted every run of the re-scoped cutover.
+
+### 2. The other seven, in one line each
+
+| # | ruling | what shipped |
+|---|---|---|
+| 3 | snapshot before the first prod write | `preCutoverSnapshot()` — `neonctl branches create --parent <target branch>`, asserted to exist, id + name in the checkpoint, quoted by `restoreFrom(cp)` in **every** rollback string. Aborts if creation fails. |
+| 4 | the user-data invariant must measure the property | `scripts/lib/user-data-invariant.mjs`: per-table **md5 digest over ordered rows** (id, user_id, anchors, tombstone, body hash) + **ACTIVE count** + **owner distribution** (ids hashed — the checkpoint is a file in the repo). One definition, imported by BOTH `cutover.mjs` and the gate's G1. G4's load leg is now the **shipped** load query compared against the E0 active count. |
+| 5 | G2 must not sample an immune set | corpus-wide `GROUP BY` over the served pool: verses at the ≥2-**distinct-authors** floor and verses with any voice, **baselined at E0** and compared thereafter. The 3 named refs stay, relabelled `G2 spot check`. |
+| 6 | G7 has never run | **chose disclosure over requirement** (reasons in ADR-033): an explicit `LIVE PROBE NOT RUN` line prints at every phase and the verdict reads `PASSED at <phase> — DB-ONLY, LIVE PROBE NOT RUN`. With `CUTOVER_ASK_URL` set it reads `including the live /ask probe (end-to-end)`. |
+| 7 | checkpoint safety | `scripts/lib/checkpoint.mjs`: merge → **tmp file + rename** (atomic) → **session/pid/host ownership marker**. A second LIVE process is refused before it connects; a dead owner is a resume and ownership transfers with a notice. |
+| 8 | E5/E6 guards + `unit_ordinal` | both steps got the `if (cp.done.includes('EN')) return` guard. **024 moved out of E1 into E4, after the slice**, and E4 now asserts `unit_ordinal` is POPULATED. Also fixed: `e5_deploy` called `isProdHost(url)` with no `url` in scope — a `ReferenceError` that made **every** E5, production included, abort as `unhandled` with no rollback text. |
+
+### 3. The re-rehearsal — E0, E1, E2, E4, E6 green end to end; E5 NOT RUN
+
+Fresh fork of production, `cutover-rerehearsal-20260727` / `ep-sweet-river-at1qf82b`. None of the
+forbidden branches was reused. Full log: `docs/evidence/cutover-2026-07-28/02-rehearsal-E0-to-E6.log`.
+
+| step | result, every count re-measured on the target at runtime |
+|---|---|
+| SNAPSHOT | branch **`pre-cutover-ep-sweet-river-at1qf82b-20260728054331` (`br-hidden-smoke-atb9o0w5`)** created off the target and asserted to exist BEFORE the first write; its id is what `restoreFrom()` prints in every rollback |
+| E0 | baseline captured: user data 34r/24a/6u · 2r/2a/1u · 1r/1a/1u; **corpus-wide voice floor 22,794 verses at ≥2 distinct authors, 29,629 with any voice** — independently equal to the deep-audit's read-only prod measurement; forbidden 71,884 |
+| E1 | 14 migrations (016–023, 025–030, 018/019 concurrent) — **024 is no longer here**; user-data digest unchanged after every one; no INVALID index |
+| E2 | **77,820 rows labeled across 10 mapped authors**, every author 1:1 against the target's own author counts; 190,635 in = 190,635 out |
+| E4 | 11 works sliced, **every one 1:1** flat↔sections; then 024 applied; **`unit_ordinal` populated on all 79,120 sections — 11,534 reading units across 11 sources** (previous rehearsal: 71,563 of 72,863 NULL and the postcondition said green) |
+| E5 | **not run** (rehearsal) |
+| E6 | smoke: Gill 28,843 · sections 79,120 · forbidden 71,884 (baseline 71,884, not increased) |
+| gate | PASSED at E0/E1/E2/E4/E6, each stamped `DB-ONLY, LIVE PROBE NOT RUN` |
+
+**User data, before and after — identical to the byte, and now provably so:**
+
+| table | prod (read-only, BEFORE) | fork AFTER E0–E6 |
+|---|---|---|
+| highlights | 34 rows / **24 active** / 6 owners · `0542059b3b38cf33086e8a7f58d4d24d` | 34 / 24 / 6 · `0542059b…` — identical |
+| notes | 2 / 2 / 1 · `afd05479b8f7d1517b9a8e3d063a8663` | 2 / 2 / 1 · `afd05479…` — identical |
+| chats | 1 / 1 / 1 · `2fe94349e1e706afc6f5b8da51802a97` | 1 / 1 / 1 · `2fe94349…` — identical |
+
+Owner distribution unchanged too (5 owners × 1 highlight, 1 owner × 29). Unlike the last round,
+**the digest is inside the gate**, not a manual one-off reading beside it.
+
+### 4. What was proven RED — through the orchestrator, never the gate directly
+
+Every proof runs `node scripts/cutover.mjs`. Evidence in `docs/evidence/cutover-2026-07-28/`.
+
+| gate | seeded break | what went red |
+|---|---|---|
+| orchestrator `assertUserDataVsE0` | `UPDATE highlights SET deleted_at=now()` | `ABORT at E1: ACTIVE rows 24 -> 0; DIGEST 0542059b -> d1d9749f` (10) |
+| " | cyclic permutation of every highlight's `user_id` | `ABORT at E1: DIGEST …; OWNER DISTRIBUTION …:29 moved to a different owner` — **34 rows / 6 users unchanged throughout** (11) |
+| " | `verse_id=43003016`, spans cleared, on every row | `ABORT at E1: DIGEST 0542059b -> b99c3462` (12) |
+| gate G1 + G4 load | all three at once | `✗ G1 … ACTIVE 24->0; DIGEST; OWNER DISTRIBUTION` and `✗ G4 load … returns 0 active row(s), E0 baseline was 24` (13) |
+| gate G2 | **one row** of 190,635 re-authored, taking **one verse** of 22,794 off the floor | `✗ G2 — 1 verse(s) DROPPED BELOW the >=2-distinct-authors floor (22794 -> 22793)` (14). The old 3-verse sample could not see this by construction. |
+| gate G7 | stub `/ask` returning 1 voice; then unreachable | `✗ G7 — 1 distinct voice(s) … below the floor`; `✗ G7 — could not reach …: fetch failed`. With 2 voices the verdict flips to `PASSED — including the live /ask probe (end-to-end)` (15) |
+| gate G1 + G4 load | `ALTER TABLE highlights DROP COLUMN background_color` | `✗ G1 — the invariant could not be MEASURED`; `✗ G4 load — the SHIPPED load query no longer executes` (16) |
+| checkpoint ownership | a **real** second orchestrator started while the rehearsal was mid-run | `ABORT at checkpoint: CHECKPOINT OWNERSHIP … owned by a LIVE cutover process (pid 53257)` — refused before it connected (17) |
+| E4 `unit_ordinal` | **the actual defect**: 024 put back in E1's concurrent list and not applied after E4, then E4 re-run through the orchestrator | `ABORT at E4: sections.unit_ordinal is NULL for 77,820 of 79,120 sections`. Every other E4 check — all eleven 1:1 legs and the no-work-skipped leg — was **green in the same run**, which is exactly how this shipped unnoticed last time (18) |
+| checkpoint atomic write | the writer crashed at the same point twice: once with the shipped tmp+rename, once with the original truncate-then-write | tmp+rename → **checkpoint still parses, 19 steps, no stray temp file**. Non-atomic → **checkpoint DOES NOT PARSE (120 bytes, unterminated string)**, and the next run aborts with `Unterminated string in JSON at position 120` (21) |
+| E6 completion guard | guard deleted from `e6_smoke` | with it deleted E6 **re-ran the entire battery** on a resume; with it, `E6 — (checkpoint) already done`. The duplicate `'E6'` entry the previous checkpoint carries is now *doubly* prevented — the guard stops the re-run and the new merge de-duplicates `done` (22) |
+| E5 | the shipped `e5_deploy` body extracted verbatim and called with the production host | `THROWS ReferenceError: url is not defined` — the OLD E5 could not reach `deploy.sh` on ANY target. Fixed version refuses a non-prod host cleanly and returns early when `cp.done` holds `E5` (19) |
+
+Two things the proofs themselves exposed and that were fixed on the spot, both the same shape as
+the round's headline defect: when a column the invariant covers was dropped, the measurement threw
+a raw pg stack trace under `ABORT at unhandled` (unreadable at 3am — now a named `G1` failure), and
+`diffUserData` **skipped** a table missing from the current reading, printing a green "unchanged"
+line off a measurement that had failed. A comparison against nothing must be a failure, not a skip.
+
+### 5. What is STILL WRONG — and the biggest of it is a consequence of dropping E3
+
+**Dropping E3 turned a provenance problem into a provenance-LAUNDERING problem in E4.** E4 selects
+flat rows by `metadata->>'author'` and copies their text into `sections.body` under a `sources` row
+whose `provenance` record describes a different origin. With E3 gone those rows are no longer
+deleted first, so on this fork E4 copied **6,257 biblehub/historicalchristian.faith rows** into
+sections: `poole-tcp` 1,308/1,308 · `barnes-crosswire-nt` 1,300/1,300 · `scofield-crosswire`
+1,215/1,215 · `pnt-crosswire` 288/288 · `calvin-crosswire` 1,125/6,215 · `wesley-crosswire`
+1,021/6,275. **The flat rows keep their `sourceUrl` so the ratchet still counts them; the section
+COPIES carry no sourceUrl at all.** Nothing is served today (`status='staged'`, none of those slugs
+is in `SERVED_PROSE_WORKS`), so this is not a live breach — but publishing any of those sources
+later ships forbidden-aggregator text under a clean provenance record, and **no gate can see it**:
+G6's sections-store leg scans `sources.provenance` text only. Spun off as its own slice; it needs a
+design decision (skip mixed-provenance rows / carry per-row provenance onto the section / refuse to
+slice a mixed work) and an owner call, not an improvised fix mid-cutover.
+
+Related and unfixed: `"Barnes' Notes"` is claimed by BOTH `barnes-notes` (quarantined) and
+`barnes-crosswire-nt` (not), so E2 labels those 1,300 rows `barnes-notes` while E4 slices the same
+1,300 into `barnes-crosswire-nt` — the same rows now exist as sections under two sources, and E4's
+1:1 drift check exempts `barnes-crosswire-nt` because its flat count *under that slug* is 0. This is
+deep-audit finding 13 biting exactly as predicted once E3 stopped hiding it.
+
+Still open, unchanged by this round: the E1→E5 note-save outage (G4 window warns, does not veto);
+`unit_ordinal` renumbering on a 024 re-run (finding 12) and its guard that cannot fire; the
+`commentary_entries` store the ratchet does not count (finding 9); the staged-is-reachable
+contradiction (finding 10), which is also the one pre-existing red in `npm run audit`
+(`work-reader.test.ts` "404s a staged source on BOTH routes") — **verified pre-existing by stashing
+this branch's changes and re-running**. The other pre-existing audit red is `deps-audit`
+(postcss + better-auth advisories), likewise unrelated.
+
+**One instruction of the owner's own I would push back on.** Item 3 says to make the snapshot "the
+first action after STEP ZERO passes", which is what shipped — but a Neon branch is a copy-on-write
+pointer at the parent's current LSN, so it protects against everything the cutover does and against
+nothing that happened before it. It is a restore point, not a backup: if the project itself is lost,
+so is the snapshot. Naming it in five rollback strings should not be read as "the data is backed
+up".
+
+### 6. Prod, before and after
+
+Read-only both times. 190,635 flat embeddings · 100% NULL work key · migrations 016–030 absent ·
+forbidden 15,707 biblehub + 56,177 HCF · 34 highlights (24 active, 6 owners) / 2 notes / 1 chat,
+digests `0542059b…` / `afd05479…` / `2fe94349…`. **Not one INSERT/UPDATE/DELETE/DDL ran against
+`ep-odd-fog`. `deploy.sh` never ran. No Neon branch was deleted.** Two branches were CREATED: the
+rehearsal fork `cutover-rerehearsal-20260727` (`br-rough-recipe-atw6vsl8`) and the orchestrator's
+own restore point `pre-cutover-ep-sweet-river-at1qf82b-20260728054331` (`br-hidden-smoke-atb9o0w5`).
+Both are storage cost and copies of prod user data outside the prod blast radius — the ADR-031
+standing item, now with two more entries.
+
+`npm run audit`: every gate green except the **two that were already red at `3caa11c`** —
+`deps-audit` (postcss GHSA-r28c-9q8g-f849, better-auth GHSA-qq9h-g4jm-xgf3) and `qa`
+(`work-reader.test.ts` staged-source boundary, i.e. deep-audit finding 10). Confirmed pre-existing
+by stashing this branch's changes and re-running both. `npx knip` clean.
+
+**Evidence** — `docs/evidence/cutover-2026-07-28/`: `00` fork parent · `01` prod digest before ·
+`02` the full rehearsal log · `10`–`14`, `16` seeded-corruption red-proofs · `15` G7 ·
+`17` checkpoint ownership · `18` unit_ordinal · `19` E5 scoping + guard ·
+`20` fork digest after · `21` atomic write · `22` E6 guard · `23` prod read-only after.
+
 ## 2026-07-27 (DEEP-AUDIT of the Part 5 cutover — 7 fresh agents — VERDICT: DO NOT RUN ON PROD)
 
 Mandated by CLAUDE.md (before any production deploy; after any long autonomous run). Seven
