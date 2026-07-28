@@ -31,7 +31,6 @@ import { runtimeDbUrl } from '../helpers/env';
 
 const dbUrl = runtimeDbUrl();
 
-const STAGED_SLUG = 'josephus-whiston'; // staged on dev — the boundary probe
 const BIG_SLUG = 'calvin-institutes'; // published, 3,448 sections — the unbounded probe
 const SMALL_SLUG = 'herbert-temple'; // published, 246 sections — walkable end-to-end
 
@@ -64,14 +63,33 @@ function ordinals(rows: { ordinal: number }[]): number[] {
 describe.skipIf(!dbUrl)('Book Reader API — /api/work/[slug] + /sections (executed against the real DB)', () => {
   it('404s a staged source on BOTH routes (published-only boundary)', async () => {
     // FIXTURE PRECONDITION (added 2026-07-19). Without this the test is fixture-dependent and
-    // can pass for the WRONG reason: against a DB where `josephus-whiston` is simply ABSENT,
+    // can pass for the WRONG reason: against a DB where the probed slug is simply ABSENT,
     // deleting the `status = 'published'` filter entirely would STILL yield 404, and this test
-    // would certify a boundary that no longer exists. Asserting the row exists AND is staged is
-    // what makes the 404s below attributable to the filter.
+    // would certify a boundary that no longer exists. The probe must be a source that really
+    // exists, really is staged, and really has sections to withhold.
+    //
+    // The slug is CHOSEN AT RUNTIME rather than hardcoded (2026-07-28). It used to be
+    // `josephus-whiston`, which the owner published on 2026-07-24 (DECISIONS.md, "Josephus
+    // (josephus-whiston): excise" — excise 12 spurious sections, publish the ~4,112 remainder).
+    // That turned a correct editorial decision into a red test, and the tempting "fix" is to
+    // un-publish the work — i.e. to edit the data to suit the test. Selecting any staged source
+    // keeps the invariant honest and immune to the next publish decision.
     const sql = getDb();
-    const fixture = (await sql`SELECT status FROM sources WHERE slug = ${STAGED_SLUG}`) as { status: string }[];
-    expect(fixture.length, `fixture missing: '${STAGED_SLUG}' must exist in this DB, else the 404 proves nothing`).toBe(1);
-    expect(fixture[0]!.status, `fixture wrong: '${STAGED_SLUG}' must be staged for this boundary probe`).toBe('staged');
+    const candidates = (await sql`
+      SELECT s.slug
+      FROM sources s
+      JOIN sections sec ON sec.source_id = s.id
+      WHERE s.status = 'staged'
+      GROUP BY s.slug
+      HAVING count(sec.id) > 0
+      ORDER BY s.slug
+      LIMIT 1`) as { slug: string }[];
+    expect(
+      candidates.length,
+      'no staged source with sections exists in this DB — the published-only boundary cannot be probed, ' +
+        'and passing without a probe would be fake-green',
+    ).toBe(1);
+    const STAGED_SLUG = candidates[0]!.slug;
 
     // sanity: a published work IS served on both routes — so the 404s below are the
     // status filter doing its job, not broken wiring.
