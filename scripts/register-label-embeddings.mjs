@@ -45,7 +45,25 @@ assertTarget(url);
 console.log(`host: ${new URL(url).host} (credentials redacted)`);
 console.log(`entries with match_author: ${entries.length}`);
 
-const c = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+// OBSERVED, not theoretical (rehearsal 2026-07-27): the John Gill UPDATE (28,843
+// rows) completed server-side, its result never reached the client, and this script
+// then slept at 0% CPU for 10+ minutes with its backend showing `idle` — a cutover
+// stalled indefinitely with no error and no output. `pg` has no read timeout by
+// default, so a blackholed socket waits forever. query_timeout converts that hang
+// into a failure, keepAlive lets the OS notice a dead peer, and application_name
+// makes the connection identifiable in pg_stat_activity (it was blank, which made
+// the diagnosis slower than it should have been). The step is idempotent — it only
+// touches rows whose `work` is still NULL — so failing and resuming is safe, and is
+// strictly better than hanging.
+const c = new pg.Client({
+  connectionString: url,
+  ssl: { rejectUnauthorized: false },
+  application_name: 'cutover-e2-register-label',
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10_000,
+  query_timeout: 900_000,        // 15 min: the largest legitimate UPDATE measured ~5 min
+  statement_timeout: 900_000,    // server-side twin, so the server also gives up
+});
 await c.connect();
 
 try {

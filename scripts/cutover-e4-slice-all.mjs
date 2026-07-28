@@ -36,7 +36,17 @@ const entries = manifest.filter((e) => e.backfill?.match_author && !e.quarantine
 console.log(`works to slice: ${entries.length}`);
 
 const env = { ...process.env, DATABASE_URL: url, DATABASE_URL_UNPOOLED: url, MIGRATE_ALLOW_PROD: '1', CUTOVER_ALLOW: '1' };
-const c = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+// Same hang hazard as E2 (see register-label-embeddings.mjs): a long statement whose
+// result never returns leaves the cutover asleep with no error. Fail instead of hang.
+const c = new pg.Client({
+  connectionString: url,
+  ssl: { rejectUnauthorized: false },
+  application_name: 'cutover-e4-slice-all',
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10_000,
+  query_timeout: 900_000,
+  statement_timeout: 900_000,
+});
 await c.connect();
 
 const failures = [];
