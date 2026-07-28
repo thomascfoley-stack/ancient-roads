@@ -476,3 +476,29 @@ residue ✓ · Gate B ✓.
 
 Until one is chosen, **`deps` stays red and the gate stays honest.** I would rather hand you a red
 gate with one named, understood advisory than a green one bought by an acceptance I made for you.
+
+---
+
+## §1e — GHSA-qq9h-g4jm-xgf3 is an ACCEPTED RED (owner, 2026-07-29)
+
+**Ruling:** `better-auth` GHSA-qq9h-g4jm-xgf3 (account takeover via pre-account hijacking on
+magic-link / email-OTP) stays a **RED `deps` gate**. It is **NOT** added to
+`pnpm.auditConfig.ignoreGhsas`, and the override is **NOT** forced.
+
+**Status: accepted-red. Closes with SEC-1.**
+
+Why this shape rather than the two alternatives:
+- **Not ignored.** The same list's header calls the sibling account-takeover advisory
+  GHSA-g38m-r43w-p2q7 "a tracked LAUNCH BLOCKER, not accepted". Silencing a second one of the same
+  class from the same pinned package would make the ignore list mean less than it currently does.
+- **Not overridden.** Measured 2026-07-29: `better-auth: ^1.6.22` resolves to 1.6.25 and then
+  `tsc --noEmit` fails with TS2322 in `web/src/app/layout.tsx` — `@neondatabase/auth@0.4.2-beta`
+  expects the 1.4.18 client shape — plus four unmet peers. Verified, not assumed; reverted.
+
+**Consequence, stated so nobody "fixes" it by accident:** `npm run audit` and CI's `audit` job are
+expected to be RED on exactly this one advisory until SEC-1 closes. A green `deps` gate before then
+means someone silenced it. Every other gate is green; the redness is carrying one specific, named,
+understood risk in the open rather than hiding it.
+
+Root cause is the pinned `@neondatabase/auth@0.4.2-beta`, which is also SEC-1's subject — hence
+closing together rather than separately.
