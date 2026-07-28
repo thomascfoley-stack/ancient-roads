@@ -1,0 +1,48 @@
+§B0 SEEDED-DEFECT SWEEP — throwaway fork of DEV, 2026-07-29
+Fork: throwaway-b0-seed-20260729 / ep-fragrant-moon-at1lodho
+  (asserted NOT dev and NOT prod before the corrupting script would run)
+
+CLASS 1 — a work sliced with unit_ordinal left NULL
+  seed:   UPDATE sections SET unit_ordinal=NULL for milton-poetical-works (903 rows)
+  CAUGHT: §B1 per-register end-to-end ->
+          "poetry/milton-poetical-works: 903/903 TOC rows have no unitOrdinal —
+           the reader would list one 'unit' per retrieval chunk"
+  NOTE:   the PRE-EXISTING suite did NOT catch it. work-reader.test.ts checks the TOC of
+          calvin-institutes only, and work-toc-grouping.test.ts is a pure unit test. This
+          is precisely what per-register coverage buys.
+
+CLASS 2 — a section whose body does not match its embedding (content<->vector mispair)
+  seed:   rotate herbert-temple's 246 section vectors by ONE section, so every body
+          carries its neighbour's embedding.
+  Bodies unchanged. Row counts unchanged (246 == 246). The multiset of vectors unchanged.
+  NOT CAUGHT by anything that existed: the full 23-test DB-backed suite ran GREEN against
+  the seeded fork. No test in the repo referenced section_embeddings at all.
+  Why counting can never catch it: a rotation is a PERMUTATION — each vector still appears
+  exactly once, and every section is still its own nearest neighbour at distance 0. The
+  only signal that separates a paired corpus from a permuted one is the TEXT.
+  => NEW CHECK WRITTEN: web/test/invariants/section-vector-pairing.test.ts
+     re-embeds each published work's body with the SHIPPED embedder and compares to the
+     stored vector, with a discrimination control in the same run.
+     PROVEN:  clean dev  -> GREEN, 35/35 published works covered
+              seeded fork -> RED on exactly the seeded work:
+              "poetry/herbert-temple#1: body vs its OWN stored vector cos=0.7828 < 0.9"
+
+  TWO DEFECTS IN MY OWN CHECK, found and fixed before trusting it:
+   (a) first version sampled one section per REGISTER — it missed the seed entirely,
+       because the seeded work was not the poetry representative. A mispair is per-WORK,
+       so the sample is now per-work, and works with no sampleable section are NAMED.
+   (b) threshold was set to taste (0.95). Recalibrated against both populations actually
+       measured: prose 0.98-1.00, verse 0.9246-0.94, seeded mispair 0.7828.
+
+CALIBRATION FINDING (real, pre-existing, on clean dev): five verse-register works score
+0.92-0.94 against their own stored vectors — hopkins-poems, milton-poetical-works,
+olney-hymns, rossetti-verses, scottish-psalter-1650. That is a FIDELITY gap, not a
+mispairing: the passage is right, but the vector was computed on a whitespace-normalised
+rendering while sections.body keeps its lineation (verse is pre-wrap, §B2). Exit condition:
+re-embed the verse registers from the stored body. Not done tonight — it is a corpus change.
+
+CLASSES NOT SEEDED THIS RUN (time): staged-work-reachable (already proven red separately,
+see 02-redproof-work-reader-boundary.txt), hymn lineation collapsed (a check exists:
+work-section-lineation.test.tsx), composite-volume head (NO standing check found — only
+the one-off scripts/sweep-composite-defect.mjs), search result linking to the wrong section
+(covered by §B1 check 4 but not seeded), verse below the >=2-distinct-authors floor.
