@@ -18,6 +18,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { listHighlights, listNotes } from '@/lib/annotations';
 import { getDb, runAsUser } from '@/lib/db';
 import { requireDbInCi } from '../helpers/env';
+import { announceSkip } from '../helpers/loud-skip';
 
 const dbUrl = requireDbInCi();
 const A = `qa-rls-a-${Date.now()}`;
@@ -27,7 +28,14 @@ let sectionId = '';
 let sourceId = '';
 let tagId = '';
 
-describe.skipIf(!dbUrl)('Phase 3 annotation tables — two-account RLS tenancy (executed)', () => {
+// A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
+const SKIP = announceSkip(
+  'Phase 3 annotation tables — two-account RLS tenancy (executed)',
+  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(dbUrl) }],
+  'two-account RLS tenancy across the Phase 3 annotation tables',
+);
+
+describe.skipIf(SKIP)('Phase 3 annotation tables — two-account RLS tenancy (executed)', () => {
   beforeAll(async () => {
     // corpus reads are public (sources/sections policies are `using (true)`)
     const [secs] = await runAsUser(A, (sql) => [sql`SELECT id FROM sections ORDER BY id LIMIT 1`]);

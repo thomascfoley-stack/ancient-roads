@@ -21,6 +21,7 @@ import { searchCommentaries } from '@/lib/commentary-search';
 import { retrieveCommentary } from '@/lib/teacher/retrieve';
 import { requireDbInCi } from '../helpers/env';
 import { evaluateForbiddenProvenanceRatchet } from '../helpers/corpus-scan';
+import { announceSkip } from '../helpers/loud-skip';
 
 const dbUrl = requireDbInCi();
 
@@ -43,7 +44,14 @@ function assertAllPublished(
   ).toEqual([]);
 }
 
-describe.skipIf(!dbUrl)('Layer 1 — licensing invariant (behavioral)', () => {
+// A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
+const SKIP = announceSkip(
+  'Layer 1 — licensing invariant (behavioral)',
+  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(dbUrl) }],
+  'the licensing invariant — that no MUST_NOT_SERVE author reaches a read path',
+);
+
+describe.skipIf(SKIP)('Layer 1 — licensing invariant (behavioral)', () => {
   let sampleVec: number[] = [];
   let tyndaleInCorpus = 0;
 

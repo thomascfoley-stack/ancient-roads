@@ -16,15 +16,19 @@
 // permuted one is the TEXT ITSELF, so this check re-embeds the body with the SHIPPED embedder
 // and compares it to the stored vector.
 //
-// Cost control: 4 sections per run, bodies only where the body is short enough that the
-// embedder's input is byte-identical to what ingest embedded (no truncation), so a correct
-// pairing scores ~1.0 rather than "high-ish". Skips without a DB or an API key.
+// Cost control: ONE section per published work (35 embed calls on dev), and only where the
+// body is short enough that the embedder's input is byte-identical to what ingest embedded
+// (no truncation), so a correct pairing scores ~1.0 rather than "high-ish".
+//
+// Without a DB or DEEPINFRA_API_KEY it does not silently skip — it announces NOT RUN through
+// helpers/loud-skip.ts, because neither CI job supplies the key today.
 
 import { describe, expect, it } from 'vitest';
 import { getDb } from '@/lib/db';
 import { embedQuery } from '@/lib/teacher/deepinfra';
 import { runtimeDbUrl } from '../helpers/env';
 import { localEnv } from '../helpers/env';
+import { announceSkip } from '../helpers/loud-skip';
 
 const dbUrl = runtimeDbUrl();
 const hasKey = Boolean(process.env.DEEPINFRA_API_KEY ?? localEnv('DEEPINFRA_API_KEY'));
@@ -61,7 +65,21 @@ function parseVector(v: unknown): number[] {
 
 interface Sample { slug: string; sourceType: string; ordinal: number; body: string; embedding: unknown }
 
-describe.skipIf(!dbUrl || !hasKey)('§B0 class 2 — every section body matches its own stored vector', () => {
+// THIS CHECK IS THE ONE MOST LIKELY TO SILENTLY NOT RUN, and it is the only thing standing
+// between the corpus and a content↔vector mispairing that every counting check waves through.
+// Neither CI job supplies DEEPINFRA_API_KEY today, so without this announcement it would skip
+// in silence forever while `npm run audit` stayed green — a fresh instance of exactly the
+// green-by-skip pattern this repo already documents for the DB invariants.
+const SKIP = announceSkip(
+  '§B0 class 2 — content↔vector pairing',
+  [
+    { name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(dbUrl) },
+    { name: 'DEEPINFRA_API_KEY', present: hasKey },
+  ],
+  'that every published section body still matches its OWN stored embedding — the mispairing class that leaves row counts, 1:1 assertions, the reader, the TOC and FTS all green while semantic search returns the passage next door',
+);
+
+describe.skipIf(SKIP)('§B0 class 2 — every section body matches its own stored vector', () => {
   it('re-embedding the body reproduces the stored vector, and discriminates against a neighbour', async () => {
     if (!process.env.DEEPINFRA_API_KEY) process.env.DEEPINFRA_API_KEY = localEnv('DEEPINFRA_API_KEY');
     const sql = getDb();

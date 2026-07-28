@@ -30,6 +30,7 @@
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { localEnv } from '../helpers/env';
+import { announceSkip } from '../helpers/loud-skip';
 
 function ownerUrl(): string | undefined {
   const url = localEnv('DATABASE_URL') ?? localEnv('DATABASE_URL_UNPOOLED');
@@ -54,7 +55,14 @@ async function inTx<T>(fn: (c: pg.Client) => Promise<T>): Promise<T> {
   }
 }
 
-describe.skipIf(!url)('MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index', () => {
+// A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
+const SKIP = announceSkip(
+  'MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index',
+  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(url) }],
+  'the 025 anchor XOR CHECK and the verse-only partial unique index',
+);
+
+describe.skipIf(SKIP)('MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index', () => {
   beforeAll(async () => {
     client = new pg.Client({ connectionString: url!, ssl: { rejectUnauthorized: false } });
     await client.connect();
