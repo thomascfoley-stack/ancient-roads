@@ -1,0 +1,12 @@
+fork A (E2 interrupted mid-sweep): ep-shy-moon-atto4vs4.c-9.us-east-1.aws.neon.tech
+  ok   Barnes' Notes                  1300/1300 -> barnes-notes|barnes-crosswire-nt
+  ok   John Gill                      28843/28843 -> john-gill
+  FAIL Jamieson, Fausset & Brown      0/15473 -> jfb
+  FAIL Adam Clarke                    0/12693 -> adam-clarke
+  FAIL Matthew Henry                  0/4210 -> matthew-henry
+  FAIL John Wesley                    0/6275 -> wesley-crosswire
+  FAIL John Calvin                    0/6215 -> calvin-crosswire
+  FAIL C.I. Scofield                  0/1215 -> scofield-crosswire
+  FAIL B.W. Johnson                   0/288 -> pnt-crosswire
+  FAIL Matthew Poole                  0/1308 -> poole-tcp
+E2 postcondition would ABORT (8 author(s) under-labeled) — the corrected assertion still catches a real miss

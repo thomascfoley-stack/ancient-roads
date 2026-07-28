@@ -1,0 +1,2 @@
+E3 served-subset query on PROD: 4174 (ADR-030 measured 4174)
+[{"a":"Augustine of Hippo","n":1659},{"a":"John Chrysostom","n":2515}]
