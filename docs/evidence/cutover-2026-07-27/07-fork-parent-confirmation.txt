@@ -1,0 +1,19 @@
+Fork provenance for the 2026-07-27 rehearsals (ADR-031 requires confirming the parent is production BEFORE anything runs).
+production default branch id = br-nameless-brook-atzgh1gq
+
+  "id": "br-little-cloud-atrw8d9z",
+  "parent_id": "br-nameless-brook-atzgh1gq",
+  "parent_lsn": "1/96867218",
+  "name": "cutover-rehearsal-20260727",
+  "created_at": "2026-07-28T01:49:27Z",
+    "name": "Thomas",
+  "init_source": "parent-data"
+
+  "id": "br-withered-pine-atr1el66",
+  "parent_id": "br-nameless-brook-atzgh1gq",
+  "parent_lsn": "1/9688A260",
+  "name": "cutover-rehearsal-20260727b",
+  "created_at": "2026-07-28T02:07:51Z",
+    "name": "Thomas",
+  "init_source": "parent-data"
+

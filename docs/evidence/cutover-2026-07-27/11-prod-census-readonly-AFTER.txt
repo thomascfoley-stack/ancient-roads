@@ -1,0 +1,54 @@
+host:   ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+
+read-only txn: on
+role: neondb_owner
+
+=== POSITIVE CONTROL: John Gill rows on prod = 28843 ✓ (probe fires)
+
+=== PROD flat embeddings WITH a work key: 0 distinct works
+   (none — prod never received the register ingest)
+
+=== WORK-KEY COVERAGE (gates E2)
+   platform rows:        190635
+   without a work key:   190635  (100.0%)
+
+=== BY source_type
+   commentary    190635   no-work: 190635
+
+=== SECTIONS MODEL ON PROD
+   sources=2  sections=5510  section_embeddings=5510
+
+=== DO THE DEV-SUPPRESSED DEFECTS EXIST ON PROD?
+   {"chrysostom":0,"tennyson":0,"traherne":0,"word_index":0,"ads":0}
+
+=== FORBIDDEN PROVENANCE ON PROD
+   {"biblehub":15707,"studylight":0,"hcf":56177}
+
+=== MIGRATION MARKERS (true = applied)
+   {
+ "m016_history_anchors": false,
+ "m019_work_col": false,
+ "m024_unit_ordinal": false,
+ "m027_library_items": false,
+ "m023_ingesting": false,
+ "m017_registers": false
+}
+
+=== LIVE USER DATA (counts only, no content read)
+   highlights         rows=34  distinct_users=6
+   notes              rows=2  distinct_users=1
+   bookmarks          (table absent)
+   reading_progress   (table absent)
+   user_library       rows=0  distinct_users=0
+   library_items      (table absent)
+   chats              rows=1  distinct_users=1
+   messages           rows=0  distinct_users=0
+
+=== COMPUTE (calibrates the 121-190 s/10k slice rate measured on dev)
+   neon.compute_size    (unavailable)
+   max_connections      (unavailable)
+   shared_buffers       (unavailable)
+   work_mem             (unavailable)
+
+✓ ROLLBACK issued. Zero writes performed (transaction was READ ONLY throughout).

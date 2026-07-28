@@ -1,0 +1,298 @@
+
+CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27)
+  STEP ZERO  preflight: host~ep-still-shape, role=neondb_owner, write-capability, positive control
+  E0  regression gate --capture: the pre-cutover baseline (user rows, voices, reader,
+      annotation write path, register wall, forbidden ratchet), measured on the TARGET
+  E1  migrations 016-030 in order (018/019 concurrent)
+      after EVERY migration: user rows unchanged + no INVALID index
+      HAZARD 2 guard: refuse if a section-ordinal annotation precedes 024's renumber
+  E2  register-label the flat embeddings (UPDATE); assert per-work label coverage
+      against the TARGET's own author counts, and that no row was added or lost
+  E3  DELETE forbidden-provenance rows (backup first, backup artifact verified);
+      assert ratchet = 0 and exactly that many rows gone (ADR-030: the served subset
+      is approved, printed, and not an abort condition)
+  E4  slice served works into sections reusing vectors 1:1; re-assert per-work 1:1
+      across every sliced work (ADR-029 addendum 2: each store, its own key)
+  E5  [HARD STOP] deploy.sh
+  E6  smoke counts + the full regression battery
+  REGRESSION GATE RUNS AFTER EVERY CHUNK (E0/E1/E2/E3/E4/E6), not just at the end.
+  Any gate failure ABORTS and rolls back that chunk — never fix forward mid-cutover.
+  Every count re-measured at runtime; NO dev literals baked into a target assertion.
+  Resumable: completed steps recorded in .cutover-checkpoint.json, which is BOUND to
+  the target endpoint — a checkpoint from another target is refused, not replayed.
+
+
+STEP ZERO — prod-credential preflight
+  target host: ep-still-shape-atutpemq.c-9.us-east-1.aws.neon.tech
+  ✓ endpoint contains ep-still-shape
+  ✓ current_user = neondb_owner
+  ✓ write capability proven (BEGIN; CREATE TEMP; ROLLBACK)
+  positive control (Gill rows): 28843
+  ✓ positive control fires
+STEP ZERO PASSED — safe to proceed.
+
+E0 — (checkpoint) baseline already captured
+
+E1 — (checkpoint) all migrations applied; re-asserting postconditions
+  ✓ postcondition (resume): no invalid index; user rows highlights=34/6u notes=2/1u chats=1/1u
+
+REGRESSION GATE — phase E1
+  target: ep-still-shape-atutpemq.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+
+  ✓ G1 user-data — unchanged vs E0 baseline: highlights=34/6u notes=2/1u chats=1/1u
+  ✓ G2 >=2 voices — John 3:16: 6 distinct authors, 9 served rows
+  ✓ G2 >=2 voices — Psalm 23:1: 2 distinct authors, 2 served rows
+  ✓ G2 >=2 voices — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G4 load — highlights: 24 active rows load
+  ✓ G4 load — notes: 2 active rows load
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G5 register wall — FTS exclusion holds against the independent sources.source_type signal
+  ✓ G6 ratchet — 0 forbidden-provenance rows (baseline 71884, monotone)
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. E3's ratchet does not count this store. Standing debt — owner call.
+✓ REGRESSION GATE PASSED at E1
+
+E2 — (checkpoint) already done
+
+REGRESSION GATE — phase E2
+  target: ep-still-shape-atutpemq.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+
+  ✓ G1 user-data — unchanged vs E0 baseline: highlights=34/6u notes=2/1u chats=1/1u
+  ✓ G2 >=2 voices — John 3:16: 6 distinct authors, 9 served rows
+  ✓ G2 >=2 voices — Psalm 23:1: 2 distinct authors, 2 served rows
+  ✓ G2 >=2 voices — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G4 load — highlights: 24 active rows load
+  ✓ G4 load — notes: 2 active rows load
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G5 register wall — FTS exclusion holds against the independent sources.source_type signal
+  ✓ G6 ratchet — 0 forbidden-provenance rows (baseline 71884, monotone)
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. E3's ratchet does not count this store. Standing debt — owner call.
+✓ REGRESSION GATE PASSED at E2
+
+E3 — (checkpoint) already done
+
+REGRESSION GATE — phase E3
+  target: ep-still-shape-atutpemq.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+
+  ✓ G1 user-data — unchanged vs E0 baseline: highlights=34/6u notes=2/1u chats=1/1u
+  ✓ G2 >=2 voices — John 3:16: 6 distinct authors, 9 served rows
+  ✓ G2 >=2 voices — Psalm 23:1: 2 distinct authors, 2 served rows
+  ✓ G2 >=2 voices — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G4 load — highlights: 24 active rows load
+  ✓ G4 load — notes: 2 active rows load
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G5 register wall — FTS exclusion holds against the independent sources.source_type signal
+  ✓ G6 ratchet — 0 forbidden-provenance rows (baseline 71884, monotone)
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. E3's ratchet does not count this store. Standing debt — owner call.
+✓ REGRESSION GATE PASSED at E3
+
+E4 — slice works into sections, reusing vectors 1:1
+  per served work: migrate-sections-slice, then assert sections == flat-pool count FOR THAT WORK (hazard 1: each store its own key; assert 1:1).
+host: ep-still-shape-atutpemq.c-9.us-east-1.aws.neon.tech (credentials redacted)
+works to slice: 11
+
+
+
+--- john-gill (author="John Gill") ---
+
+
+==================================================================
+RE-POINT SLICE — John Gill's Exposition of the Bible (source_id=4, status=staged)
+==================================================================
+  matched embeddings (author="John Gill"): 28843
+  sections inserted:                            28843
+  section_anchors inserted:                     28843
+  section_embeddings (reused, model=bge-large-en-v1.5): 28843
+
+✓ 1:1:1 — sections == section_embeddings == matched embeddings. Coverage will be 0.
+  ✓ 1:1 flat=28843 sections=28843
+
+--- jfb (author="Jamieson, Fausset & Brown") ---
+
+
+==================================================================
+RE-POINT SLICE — Jamieson-Fausset-Brown Bible Commentary (source_id=5, status=staged)
+==================================================================
+  matched embeddings (author="Jamieson, Fausset & Brown"): 15473
+  sections inserted:                            15473
+  section_anchors inserted:                     15473
+  section_embeddings (reused, model=bge-large-en-v1.5): 15473
+
+✓ 1:1:1 — sections == section_embeddings == matched embeddings. Coverage will be 0.
+  ✓ 1:1 flat=15473 sections=15473
+
+--- adam-clarke (author="Adam Clarke") ---
+
+
+==================================================================
+RE-POINT SLICE — Adam Clarke's Commentary on the Bible (source_id=6, status=staged)
+==================================================================
+  matched embeddings (author="Adam Clarke"): 12693
+  sections inserted:                            12693
+  section_anchors inserted:                     12693
+  section_embeddings (reused, model=bge-large-en-v1.5): 12693
+
+✓ 1:1:1 — sections == section_embeddings == matched embeddings. Coverage will be 0.
+  ✓ 1:1 flat=12693 sections=12693
+
+--- matthew-henry (author="Matthew Henry") ---
+
+
+==================================================================
+RE-POINT SLICE — Matthew Henry's Complete Commentary (source_id=3, status=staged)
+==================================================================
+  matched embeddings (author="Matthew Henry"): 4210
+  sections inserted:                            4210
+  section_anchors inserted:                     4210
+  section_embeddings (reused, model=bge-large-en-v1.5): 4210
+
+✓ 1:1:1 — sections == section_embeddings == matched embeddings. Coverage will be 0.
+  ✓ 1:1 flat=4210 sections=4210
+
+--- keil-delitzsch (author="C.F. Keil & Franz Delitzsch") ---
+  skip: 0 flat rows (E3 removed forbidden or not on prod)
+
+--- barnes-crosswire-nt (author="Barnes' Notes") ---
+  skip: 0 flat rows (E3 removed forbidden or not on prod)
+
+--- wesley-crosswire (author="John Wesley") ---
+
+
+==================================================================
+RE-POINT SLICE — Wesley's Explanatory Notes (source_id=8, status=staged)
+==================================================================
+  matched embeddings (author="John Wesley"): 5254
+  sections inserted:                            5254
+  section_anchors inserted:                     5254
+  section_embeddings (reused, model=bge-large-en-v1.5): 5254
+
+✓ 1:1:1 — sections == section_embeddings == matched embeddings. Coverage will be 0.
+  ✓ 1:1 flat=5254 sections=5254
+
+--- calvin-crosswire (author="John Calvin") ---
+
+
+==================================================================
+RE-POINT SLICE — Calvin's Commentaries (source_id=9, status=staged)
+==================================================================
+  matched embeddings (author="John Calvin"): 5090
+  sections inserted:                            5090
+  section_anchors inserted:                     5090
+  section_embeddings (reused, model=bge-large-en-v1.5): 5090
+
+✓ 1:1:1 — sections == section_embeddings == matched embeddings. Coverage will be 0.
+  ✓ 1:1 flat=5090 sections=5090
+
+--- scofield-crosswire (author="C.I. Scofield") ---
+  skip: 0 flat rows (E3 removed forbidden or not on prod)
+
+--- pnt-crosswire (author="B.W. Johnson") ---
+  skip: 0 flat rows (E3 removed forbidden or not on prod)
+
+--- poole-tcp (author="Matthew Poole") ---
+  skip: 0 flat rows (E3 removed forbidden or not on prod)
+
+OK: E4 slice-all complete
+    matthew-henry: sections=4210 flat=4210
+    wesley-crosswire: sections=5254 flat=5254
+    calvin-crosswire: sections=5090 flat=5090
+    jfb: sections=15473 flat=15473
+    adam-clarke: sections=12693 flat=12693
+    barnes-notes: sections=1300 flat=0 (pre-register source, no flat work key — not a 1:1 target)
+    john-gill: sections=28843 flat=28843
+  ✓ postcondition: 1:1 sections↔flat pool for every sliced register work (7 source(s) with sections), and no work with flat rows was skipped
+
+REGRESSION GATE — phase E4
+  target: ep-still-shape-atutpemq.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+
+  ✓ G1 user-data — unchanged vs E0 baseline: highlights=34/6u notes=2/1u chats=1/1u
+  ✓ G2 >=2 voices — John 3:16: 6 distinct authors, 9 served rows
+  ✓ G2 >=2 voices — Psalm 23:1: 2 distinct authors, 2 served rows
+  ✓ G2 >=2 voices — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G4 load — highlights: 24 active rows load
+  ✓ G4 load — notes: 2 active rows load
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G5 register wall — FTS exclusion holds against the independent sources.source_type signal
+  ✓ G6 ratchet — 0 forbidden-provenance rows (baseline 71884, monotone)
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. E3's ratchet does not count this store. Standing debt — owner call.
+✓ REGRESSION GATE PASSED at E4
+
+E5 — skipped (CUTOVER_REHEARSAL)
+
+E6 — smoke + regression gate
+  Gill rows: 28843  sections: 72863  forbidden-provenance: 0
+  ✓ smoke counts pass
+
+REGRESSION GATE — phase E6
+  target: ep-still-shape-atutpemq.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+
+  ✓ G1 user-data — unchanged vs E0 baseline: highlights=34/6u notes=2/1u chats=1/1u
+  ✓ G2 >=2 voices — John 3:16: 6 distinct authors, 9 served rows
+  ✓ G2 >=2 voices — Psalm 23:1: 2 distinct authors, 2 served rows
+  ✓ G2 >=2 voices — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G4 load — highlights: 24 active rows load
+  ✓ G4 load — notes: 2 active rows load
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G5 register wall — FTS exclusion holds against the independent sources.source_type signal
+  ✓ G6 ratchet — 0 forbidden-provenance rows (baseline 71884, monotone)
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. E3's ratchet does not count this store. Standing debt — owner call.
+✓ REGRESSION GATE PASSED at E6
+
+CUTOVER COMPLETE.
+EXIT=0

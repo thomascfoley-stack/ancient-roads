@@ -1,5 +1,186 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-27 (SESSION 2 — the Part 5 cutover script, built and rehearsed; PROD UNTOUCHED)
+
+Built `docs/CUTOVER_DESIGN.md` as approved. **The E-steps and their order are unchanged.** What was
+missing was machinery the design already specified and the script did not have: a regression gate
+after every chunk (there was none), a real E6 (it was a `die("PARKED")` stub), the user-row
+invariant across migrations, and an E2 coverage assertion.
+
+**PROD IS UNTOUCHED — verified read-only before and after.** 190,635 flat rows · 100% NULL work key
+· sections 2 sources/5,510 · migrations 016–030 absent · forbidden 15,707 biblehub + 56,177 HCF ·
+34 highlights (6 users), 2 notes (1 user), 1 chat. **Not one INSERT / UPDATE / DELETE / DDL ran
+against `ep-odd-fog`, and `deploy.sh` was never run.** Every rehearsal ran on forks I created:
+`cutover-rehearsal-20260727` (`ep-shy-moon`) and `cutover-rehearsal-20260727b` (`ep-still-shape`),
+both confirmed `parent_id = br-nameless-brook-atzgh1gq` (production) before anything ran.
+`census-clone` / `prod-census` were not touched (ADR-031).
+
+**User-data invariant — before/after.** What the SCRIPT enforces is counts and distinct-user counts
+(`highlights`/`notes`/`chats`), measured on the target before the first write and re-asserted after
+every migration and after E2/E3/E4. That is the design's stated requirement, and it is what is
+mechanised. **Counts alone are weaker than they look** — an UPDATE that rewrote a note body keeps
+34/2/1 intact — so I also took a content digest, `md5(string_agg(...))` over the pre-cutover columns
+in a stable order. **The digest is a one-off manual reading, NOT part of the gate**; folding it into
+G1 is a named follow-up, not something this session shipped.
+
+| table | prod (read-only, BEFORE) | fork B AFTER full E0–E6 |
+|---|---|---|
+| highlights | 34 rows / 6 users · `0be9734fd402f2d196b92eb97a901899` | **34 / 6 · `0be9734f…901899` — identical** |
+| notes | 2 rows / 1 user · `4af279f11ee47c44da3f48b5c4c6701e` | **2 / 1 · `4af279f1…c6701e` — identical** |
+| chats | 1 row / 1 user · `b8b8ab9ad54905131c5345c9c539840b` | **1 / 1 · `b8b8ab9a…39840b` — identical** |
+
+**All three byte-identical, not merely equal in count.** 15 migrations, 77,820 metadata UPDATEs,
+71,884 DELETEs and 71,563 section INSERTs later, the 37 user rows are unchanged to the byte.
+
+**The rehearsal, end to end on fork B (`ep-still-shape`, parent `production`):**
+
+| step | result (all counts re-measured on the target at runtime) |
+|---|---|
+| E0 | baseline captured: 34/6u · 2/1u · 1/1u, forbidden 71,884 — matches prod exactly |
+| E1 | 15 migrations 016–030 applied; **user rows unchanged after every one**; no INVALID index |
+| E2 | **77,820 rows labeled across 10 mapped authors**, every author 1:1 vs the target's own author counts; 190,635 rows in = 190,635 out; user rows unchanged |
+| E3 | 71,884 rows backed up to JSONL then deleted; ratchet **0**; exactly 71,884 gone, **118,751 remain**; coverage guard held; user rows unchanged |
+| E4 | **6 works sliced 1:1** — gill 28,843 · jfb 15,473 · clarke 12,693 · henry 4,210 · wesley 5,254 · calvin 5,090 (= 71,563). 5 skipped (0 flat rows after E3). No work with flat rows was skipped |
+| E5 | **NOT RUN** — owner-gated, and the script now refuses a non-prod target outright |
+| E6 | Gill 28,843 · sections **72,863** · forbidden 0; full gate green |
+| gate | ran and PASSED after E0, E1, E2, E3, E4 and E6 |
+
+`sections` 72,863 = 71,563 newly sliced + 1,300 pre-existing `barnes-notes`. **It matches the
+2026-07-24 census-clone rehearsal's 72,863 exactly**, and E2's 77,820 matches that run's 77,820 —
+two rehearsals, different forks, three weeks of code changes between them, same numbers.
+
+`matthew-henry` was the one I expected might break: prod already carries it as a *populated* source
+(4,210 sections), so a second slice could have doubled it. It came out **4,210, 1:1** — the slice
+deletes and rebuilds per source. Checked, not assumed.
+
+**The gate can fail through the ORCHESTRATOR, not just when called directly.** That distinction is
+the whole lesson of the E0-clobber bug, so it got its own proof: seed one extra highlight on the
+fork → `node scripts/cutover.mjs` → `✗ G1 user-data — highlights moved 34/6u -> 35/7u`, gate FAILED
+at E1, `✗ ABORT at E1`, exit 1, rollback printed. Remove the row → re-run → green through E6, exit 0.
+
+**ADR-030's 4,174 reproduced twice, by two independent paths.** The main session measured it
+directly against `ep-odd-fog` read-only; this session's E3 re-measured it at RUNTIME on the fork
+(`ep-still-shape`) as its own precondition, from the target's own rows, with no doc literal in the
+query. Both return **4,174** — John Chrysostom 2,515 + Augustine of Hippo 1,659, 4.97% of the
+83,993-row served pool. The `>=2 voices` projection agrees the same way: a read-only projection
+against prod predicted John 3:16 → 6 voices, Psalm 23:1 → 2, Romans 8:28 → 6 after E3, and the
+fork's own post-E3 gate measured exactly 6 / 2 / 6. Psalm 23:1 at exactly 2 is the narrowest margin
+in the corpus and is the one to watch if E3's scope ever widens.
+
+**TWO FRESH AUDITS FOUND THREE CHECKS THAT COULD NOT FAIL — in my own work.** `THE_LOOP.md` rule 6
+(fixer ≠ verifier) earned its place again. Both auditors independently found the same blocking bug:
+
+1. **The E0 baseline was captured and destroyed one statement later.** The gate runs as a CHILD
+   process and writes `baseline.regression` into `.cutover-checkpoint.json`; the parent then wrote
+   its own copy — loaded before the child ran — wiping it. With the baseline gone the gate took its
+   "no baseline yet" branch and printed a GREEN *"baseline captured"* at E1/E2/E3/E4/E6 instead of
+   comparing. **The 37-user-row invariant, G6's monotone leg, and the cross-target baseline refusal
+   were all checks that could not fail.** Confirmed from my own artifacts before fixing: the
+   checkpoint had `E0` done with no `baseline.regression`, and the rehearsal log shows the *E1*
+   gate printing "baseline captured". **My red-proofs missed it because they invoked the gate
+   DIRECTLY and never through the orchestrator — the seeded bug was real but aimed at the wrong
+   seam.** Fixed (`saveCheckpoint` merges) and re-proven: the E1 gate now prints *"unchanged vs E0
+   baseline"*, and the recaptured baseline (34/6u, 2/1u, 1/1u, forbidden 71,884) matches prod's
+   independently-measured values exactly.
+2. **G5's FTS leg was `P AND NOT P`.** It asked for rows non-exegetical *by register or slug* that
+   survive `EXEGETICAL_FTS_EXCLUSION` — which is the exact negation of that same pair of tests. Zero
+   for any table contents, forever. **This repo already caught this identical tautology once**
+   (2026-07-17, `register-wall-check`: *"register IN (hymn,poetry) AND register NOT IN
+   (hymn,poetry) = 0 by construction"*) and I reproduced it. Replaced with an independent signal,
+   `sources.source_type`, which a slug rename or a NULL register cannot hide a leak from.
+3. **G7's live `/ask` probe read `body.citations` — a field that exists nowhere in the response**
+   (`{kind, response, retrieval}`). `voices.size` was always 0, so setting `CUTOVER_ASK_URL` would
+   have guaranteed a FAILED E6 gate immediately **after** `vercel --prod` had shipped, with abort
+   text telling the operator to roll back a chunk that was the live deploy.
+
+Also fixed from the audits: `CUTOVER_REHEARSAL=1` suppressed the first-prod-write owner gate with
+**no host check** (that env plus a prod URL would have applied 16 migrations and deleted 71,884 rows
+on production with zero confirmation); `CUTOVER_EXPECT_HOST=""` made STEP ZERO's endpoint assertion a
+no-op because `includes('')` is always true; E3 false-aborted on every resume claiming "no backup"
+and advising a snapshot restore of a delete that had already succeeded; E2 had no user-data
+assertion; E4 could not see a work that produced ZERO sections; a resumed E1 skipped its own
+postconditions; G2 dropped `PROSE_TYPE_SQL`, half the shipped base-pool predicate; G4's residue check
+queried only `notes`; and the red-proof harness restored `idx_notes_user_verse` from a hardcoded
+PRE-025 predicate, which the green re-run could not notice because arbiter inference only needs
+implication — it now captures `pg_get_indexdef` and replays that.
+
+**Every gate proven RED before it was trusted GREEN** (`THE_LOOP.md` rule 4). On a throwaway fork,
+`scripts/cutover-gate-redproof.mjs` breaks the target one way per gate and requires red-then-green:
+G1 an extra highlight row · G2 all but one served author removed from Psalm 23:1 · G3 the chapter
+file the reader renders deleted · G4 `idx_notes_user_verse` dropped · G5 a sermon-lane work made
+reachable through the exegetical filter · G6 a new biblehub row. 6/6 PROVEN
+(`docs/evidence/cutover-2026-07-27/01-gate-seeded-bug-proof.txt`). It refuses to run against prod
+or dev.
+
+**A stale checkpoint would have skipped the entire cutover.** The 2026-07-24 rehearsal left a
+COMPLETE `.cutover-checkpoint.json` (E1–E4 "done") on disk. Resumability read it by filename only,
+so a run against any other endpoint would have skipped every step and printed success having
+written nothing. Checkpoints are now bound to their target endpoint; a mismatch, or a pre-binding
+checkpoint with steps recorded, is a hard abort. Proven red against the real stale file.
+
+**TWO BUGS FOUND BY REHEARSING, both of which would have hit the real cutover:**
+
+1. **A false abort I introduced.** My first E2 postcondition asserted coverage per manifest ENTRY,
+   which assumes a 1:1 author→slug map. The manifest is not one — `Barnes' Notes` is claimed by
+   both `barnes-notes` (quarantined) and `barnes-crosswire-nt`, and the labeler only writes rows
+   whose `work` is still NULL, so the first entry wins and the second sees 1,300 "mislabeled" rows.
+   That would have aborted the prod cutover at E2. Corrected to a per-AUTHOR invariant, then
+   proven BOTH ways on the fork: it no longer false-aborts (`Barnes' Notes` 1300/1300 across two
+   slugs) and it still catches a genuine miss (8 authors at 0/N on a fork whose E2 was
+   interrupted) — `04-e2-assertion-redproof.txt`.
+2. **E3's ratchet does not cover the store `sources`/`sections`.** `b2-remove-forbidden-provenance`
+   sweeps flat `embeddings` and the static reader corpus. Production's `sources` row `barnes-notes`
+   carries `provenance.url = https://biblehub.com/commentaries/barnes/` with 1,300 sections, and
+   nothing counts it — so "ratchet = 0 after E3" reads wider than it is. This is ADR-029 addendum
+   2's rule ("express a cross-store removal in each store's OWN key") applied to a store the design
+   never enumerated. It is `status='staged'` and in no served slug set, so it is **not** a live
+   breach. The gate now REPORTS it every run and HARD FAILS only if such a work becomes reachable.
+   **Purging or re-sourcing it is an owner call — not done.**
+
+**A THIRD finding, measured, that the design does not address: live note-saving breaks between E1
+and E5.** The deployed build is `24677ba` (2026-07-18), whose `upsertNote` issues `ON CONFLICT
+(user_id, verse_id) WHERE deleted_at IS NULL`. Migration 025 replaces `idx_notes_user_verse` with a
+predicate that adds `target_kind = 'verse'`, and the old predicate does not IMPLY the new one, so
+Postgres rejects the statement outright: *"there is no unique or exclusion constraint matching the
+ON CONFLICT specification"* — reproduced on a prod fork, and again live during the rehearsal's E1
+gate. E5 is where the matching code ships, so the window is E1→E5 (~40 min at rehearsal pace).
+Exposure is small (2 notes / 1 user today) but real. **I did NOT reorder the E-steps** — the
+ordering is the approved design's. The gate warns loudly at E1–E4 and names the choice: shorten the
+window (deploy the code with/ before E1, or make 025's index additive until E5) or accept it.
+**Owner call.**
+
+**Not run, deliberately:** E5 / `deploy.sh` (owner-gated; the script now also refuses to deploy when
+the target is not `ep-odd-fog`), the frozen v4 eval (not re-run, not tuned), and the live `/ask`
+HTTP probe (`CUTOVER_ASK_URL`) — it is only meaningful after E5, so the gate's ≥2-voices check is a
+DB-level pool check, and the script says so rather than implying the compose→verify loop was
+exercised.
+
+**Wall time on a prod-sized fork** (Neon default compute — the real cutover should be comparable, but
+this is a MEASUREMENT OF ONE RUN, not a benchmark): E1 ~5 min · E2 ~13 min · E3 ~3 min · E4 ~9 min,
+with the gate adding ~20 s per chunk. **Highly variable**: the first fork's E1 took ~25 min for the
+same work, all of it inside the `idx_embeddings_vector_legal_v5` HNSW rebuild in 018 — so plan for
+the slow case. E2's cost is 12 sequential full-table UPDATEs over 190,635 rows; it is the longest
+single step and the one that stalled. **Budget ~30–60 min of prod write window, not 30.**
+
+**E2 STALLED INDEFINITELY on the first attempt, and that is the most operationally important thing
+this rehearsal found.** The Gill UPDATE (28,843 rows) completed server-side; its result never
+reached the client. `register-label` then slept at 0% CPU for 10+ minutes, its backend showing
+`idle`, its last query that UPDATE, nothing in the log to say anything was wrong. `pg` has no read
+timeout by default, so a blackholed socket waits forever — on prod that is a silent hang in the
+middle of the cutover window with the site half-migrated. Both long-running runners now set
+`query_timeout` + `statement_timeout` (15 min), TCP `keepAlive`, and an `application_name` (it was
+blank, which made the diagnosis slower than it should have been). **Failing beats hanging here**
+because both steps are idempotent and the orchestrator is resumable — proven twice for real: the
+killed run aborted with a clear message, did NOT checkpoint E2, and the resume continued from the
+30,143 rows already labeled; a later E4 died to `read ETIMEDOUT` during a network outage and resumed
+from the E3 checkpoint with no rework.
+
+Evidence: `docs/evidence/cutover-2026-07-27/`. ADR-032 records the three architectural calls (gate
+scope, the rolled-back write probe, checkpoint binding). `npx knip` output is byte-identical before
+and after (3 pre-existing config hints) — but that is a weak statement, not a strong one: `knip.json`
+scopes entries to `scripts/*.{ts,sh}`, so the new `.mts`/`.mjs` files are outside its graph entirely
+and knip could not have reported on them either way.
+
 ## 2026-07-27 (SESSION 1 — infra decision tree, read-only; cutover BLOCKED on credential)
 
 Read-only diagnosis before the Part 5 build. Full topology, decision tree and evidence in
