@@ -299,6 +299,31 @@ async function g6(c: pg.Client, base?: number): Promise<number> {
   if (base !== undefined && n > base) fail('G6 ratchet', `forbidden-provenance rows INCREASED ${base} -> ${n}`);
   else if (['E3', 'E4', 'E6'].includes(PHASE) && n !== 0) fail('G6 ratchet', `${n} forbidden-provenance rows remain at ${PHASE} (must be 0 from E3 on)`);
   else pass('G6 ratchet', `${n} forbidden-provenance rows${base !== undefined ? ` (baseline ${base}, monotone)` : ''}`);
+
+  // ── the THIRD store the ratchet does not count ──────────────────────────────
+  // E3 (b2-remove-forbidden-provenance) sweeps flat `embeddings` and the static
+  // reader corpus. It does NOT touch `sources`/`sections`, where provenance lives
+  // in sources.provenance->>'url'. Production carries `barnes-notes` there with a
+  // biblehub URL and 1,300 sections, so a green ratchet is narrower than it reads.
+  // ADR-029 addendum 2's rule — express a cross-store removal in EACH store's own
+  // key — applies to a store the design did not enumerate. REPORTED always; a HARD
+  // FAIL only if such a work is actually reachable (status='published' or in a
+  // served slug set), because that would be a live licensing breach. Deleting the
+  // staged rows is an owner call, not something a gate improvises mid-cutover.
+  const secStore = await c.query<{ slug: string; url: string; status: string; sections: number }>(
+    `SELECT s.slug, s.provenance->>'url' AS url, s.status, count(sec.id)::int AS sections
+       FROM sources s LEFT JOIN sections sec ON sec.source_id = s.id
+      WHERE s.provenance->>'url' ILIKE '%biblehub%' OR s.provenance->>'url' ILIKE '%studylight%'
+         OR s.provenance->>'url' ILIKE '%historicalchristian%'
+      GROUP BY s.slug, s.provenance->>'url', s.status`,
+  );
+  const servedSlugs = new Set<string>([...SERVED_PROSE_WORKS, ...NON_EXEGETICAL_SLUGS]);
+  for (const row of secStore.rows) {
+    const reachable = row.status === 'published' || servedSlugs.has(row.slug);
+    if (reachable) fail('G6 sections-store', `${row.slug} is REACHABLE (status=${row.status}) with forbidden provenance ${row.url} and ${row.sections} sections`);
+    else console.warn(`  ⚠ G6 sections-store — ${row.slug}: ${row.sections} sections carry forbidden provenance (${row.url}), status=${row.status}, not served. E3's ratchet does not count this store. Standing debt — owner call.`);
+  }
+  if (secStore.rows.length === 0) pass('G6 sections-store', 'no forbidden provenance in sources/sections');
   return n;
 }
 

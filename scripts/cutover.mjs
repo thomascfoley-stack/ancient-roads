@@ -251,22 +251,33 @@ async function e2_label(sql, url, cp) {
   // prod's own re-measured shape"): for every manifest work, the rows now carrying
   // that slug must equal the rows this target holds for that author. Never a dev
   // literal, never a doc's number — the target's own shape, both sides.
+  // NOTE the manifest is NOT a 1:1 author->slug map: "Barnes' Notes" is claimed by
+  // both `barnes-notes` (quarantined) and `barnes-crosswire-nt`, and the labeler
+  // only writes rows whose work is still NULL, so the first entry wins. A per-entry
+  // 1:1 assertion therefore false-aborts on the second entry — it did, on the first
+  // rehearsal fork. The real invariant is per AUTHOR: every row of a mapped author
+  // must carry one of the slugs that author maps to.
   const manifest = JSON.parse(readFileSync(path.join(ROOT, 'ingest/sources.config.json'), 'utf8'));
-  let covered = 0, works = 0;
+  const byAuthor = new Map();
   for (const e of manifest.filter((x) => x.backfill?.match_author)) {
-    const author = e.backfill.match_author, slug = e.slug ?? e.id;
+    const a = e.backfill.match_author;
+    if (!byAuthor.has(a)) byAuthor.set(a, []);
+    byAuthor.get(a).push(e.slug ?? e.id);
+  }
+  let covered = 0, authors = 0;
+  for (const [author, slugs] of byAuthor) {
     const r = (await sql.query(
       `SELECT count(*) FILTER (WHERE metadata->>'author' = $1)::int AS by_author,
-              count(*) FILTER (WHERE metadata->>'work' = $2)::int AS by_work,
-              count(*) FILTER (WHERE metadata->>'author' = $1 AND metadata->>'work' IS DISTINCT FROM $2)::int AS mislabeled
-         FROM embeddings WHERE user_id IS NULL`, [author, slug]))[0];
+              count(*) FILTER (WHERE metadata->>'author' = $1 AND metadata->>'work' = ANY($2::text[]))::int AS labeled
+         FROM embeddings WHERE user_id IS NULL`, [author, slugs]))[0];
     if (r.by_author === 0) continue;
-    works++;
-    if (r.mislabeled > 0) die('E2', `${slug}: ${r.mislabeled} of ${r.by_author} rows for "${author}" did NOT receive the work key`, `UPDATE embeddings SET metadata = metadata - 'work' WHERE metadata->>'work' = '${slug}'`);
-    if (r.by_work < r.by_author) die('E2', `${slug}: work-key rows ${r.by_work} < author rows ${r.by_author}`, `UPDATE embeddings SET metadata = metadata - 'work' WHERE metadata->>'work' = '${slug}'`);
+    authors++;
+    if (r.labeled !== r.by_author) die('E2', `"${author}": ${r.by_author - r.labeled} of ${r.by_author} rows carry no manifest work key (expected one of ${slugs.join('|')})`,
+      `UPDATE embeddings SET metadata = metadata - 'work' WHERE metadata->>'work' = ANY(ARRAY[${slugs.map((s) => `'${s}'`).join(',')}])`);
+    console.log(`    ${author} -> ${slugs.join('|')}: ${r.labeled}/${r.by_author}`);
     covered += r.by_author;
   }
-  ok(`postcondition: ${works} work(s) labeled 1:1 against the target's own author counts (${covered} rows)`);
+  ok(`postcondition: ${authors} mapped author(s), every row labeled, ${covered} rows — measured against the target's own author counts`);
   cp.done.push('E2'); saveCheckpoint(cp);
 }
 
