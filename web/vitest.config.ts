@@ -20,6 +20,9 @@ export default defineConfig({
       // mirror tsconfig paths — some app modules (e.g. lib/bible.ts) import via @bible;
       // without this a web test that pulls one in fails to resolve @bible/* (LONG_NIGHT).
       '@bible': path.join(webRoot, 'src', 'bible'),
+      // see test/helpers/server-only-stub.ts — lets invariants import the SHIPPED
+      // server modules rather than re-implementing them.
+      'server-only': path.join(webRoot, 'test', 'helpers', 'server-only-stub.ts'),
     },
   },
   test: {
