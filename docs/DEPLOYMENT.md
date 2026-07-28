@@ -366,3 +366,76 @@ address, deliberately separating this solo project from employer identity. Archi
 GitHub release would have republished exactly what the rewrite removed. If that history is ever
 wanted, it is an owner decision, not a backup side effect — and the retired disk is the only
 copy, so decide before wiping it.
+
+---
+
+## Running the cutover from a droplet (not from a laptop)
+
+Written 2026-07-28. The original operator laptop was retired, and the cutover execution model
+now requires that **nothing depends on it**: work in a fresh clone on a server, push every
+completed slice, and keep a dead-man's status file in git so a run that dies at 3am can still be
+diagnosed from a phone. This section is the provisioning spec that makes that true.
+
+### Why a laptop cannot host this run
+
+`vercel --prod` and the cutover both operate on a **local working tree**, so whichever machine
+runs them is load-bearing for hours. A laptop sleeps, loses network, and gets wiped. An
+unattended prod cutover that dies mid-flight because the lid closed leaves production
+half-migrated with nobody able to finish it — strictly worse than a controlled abort.
+
+### The corpus is NOT in the clone — get it before anything else
+
+**Verify this first, not at hour five.** `web/public/{commentaries,bible,lexicon,original,concordance}`
+is gitignored and reaches no clone. A fresh droplet has code and no content. E3 rewrites the
+local deployable static tree on *any* target, so this is an E0–E4 dependency, not only an E5 one.
+Restore it from the release before running any step — see "Restoring this project onto a new
+machine" above, which is the authoritative procedure and includes the SHA-256 verification.
+
+The archived corpus is the **clean** one (191,749 entries, 0 forbidden-provenance rows), verified
+by extracting the tarball and re-counting it. Two of the three copies on the retired machine were
+clean and one carried 63,111 `historicalchristian.faith` rows; disk size distinguishes them the
+wrong way round. Do not substitute another copy.
+
+### Droplet spec
+
+- Ubuntu 24.04, 4 GB RAM minimum. The corpus is ~658 MB and `data/` another ~440 MB, so give it
+  **≥25 GB disk**.
+- Node 22.x, `corepack enable` (the repo pins `pnpm@9.15.0` via `packageManager` — do not install
+  pnpm globally), plus `git`, `gh`, `unzip`, and `tmux` or a systemd unit so the run survives
+  disconnection.
+- `gh auth login` with at least `repo` and `workflow` scope. Without `workflow`, any push touching
+  `.github/workflows/**` is remote-rejected.
+- `corepack pnpm install` — this runs `prepare`, which sets `core.hooksPath` to `.githooks`.
+  **A fresh clone has no hooks until this runs**, so commits silently bypass the licensing ratchet.
+
+### Credentials: set them on the droplet, never in the tree
+
+Export `DATABASE_URL`, `APP_DATABASE_URL`, and the cutover DSN as **environment variables on the
+droplet** (or a root-owned `.env.local`, which is gitignored and must stay that way). They do not
+belong in git, in a commit, in evidence files, or in a status file. If a step appears to need a
+secret committed, that is always the wrong fix — park it.
+
+The same applies to PII: evidence records **locations and counts, never contents**. User emails
+and provider subs live in the database and do not enter the tree.
+
+### Preconditions before E0 touches production
+
+E0 must abort before any write if the credential is stale, `current_user` is not owner, the host
+is not the real production endpoint, or a temp-table write probe fails. Production is
+`ep-odd-fog-atnykudm`; the dev branch used by worktrees is `ep-tiny-hat-atdgpisx` — a run pointed
+at the wrong one is the failure this check exists to prevent. Every count assertion must
+re-measure production at runtime; never assert prod against a literal in a doc, and never against
+dev's numbers.
+
+A pre-write snapshot is not a backup until a **restore from it has been proven** into a scratch
+branch. An unverified snapshot is the biblehub-quarantine pattern repeating: one copy, never
+tested. Record the restore's elapsed time and exact commands.
+
+### What a Vercel rollback does and does not recover
+
+`deploy.sh` ships a frontend bundle. A Vercel Instant Rollback restores **that bundle only**. It
+does **not** roll back a schema migration and does not invalidate sessions. Once E0→E4 have run,
+production's schema is already at head — so rolling back E5 returns an **old bundle to a new
+schema**. Before treating bundle rollback as a recovery path for E5, establish whether the
+pre-cutover bundle can actually run against the post-cutover schema. If it cannot, bundle
+rollback is **not** a recovery path, and the recovery path must be named explicitly instead.
