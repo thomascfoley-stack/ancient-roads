@@ -205,6 +205,44 @@ done
 `biblehub-collapsed-2026-07-17.jsonl` is **not** in the 07-28 release — it is already preserved
 in the `biblehub-quarantine-backup-2026-07-19` release and was not duplicated.
 
+Ingest inputs and intermediates. **Not needed to run the app** — the served artifact is
+`web/public/`, restored above — but needed to re-ingest, and ADR-030's correction notes the
+re-ingest is a separate, *unbuilt* step, so these are not trivially recreatable:
+
+```bash
+mkdir -p data
+for d in raw commentaries-api commentaries; do
+  tar -xzf /tmp/ar-restore/ancient-roads-data-$d-2026-07-28.tar.gz -C data
+done
+```
+
+The **source acquisitions** (ccel / gutenberg / archive / sword / helloao / poole / sermons /
+historians, 1,198 files) are a *separate* archive taken from the `~/ap-golive` worktree, because
+the main clone's `data/raw` held only `commentaries.sqlite` + `web-usfm`. Both are called
+`raw/`, so extract this one somewhere distinct or it will merge with the above:
+
+```bash
+mkdir -p data/acquisition
+tar -xzf /tmp/ar-restore/ancient-roads-acquisition-raw-golive-2026-07-28.tar.gz -C data/acquisition
+```
+
+The 8 public-domain Bible translation directories under `data/` (`kjv`, `asv`, `web`, `bsb`,
+`ylt`, `lsv`, `bbe`, `darby`) were deliberately not archived — re-downloadable, and the served
+copies are already in the `bible/` corpus archive.
+
+The gitignored `spike/` scratch directory (SEC-2 proof scripts — `sec2-proof.mjs`,
+`sec2-crux.mjs`, `proofs.mjs`, `auth.mjs`, `stub-oauth.mjs`, `migrate.mjs`), which was never
+committed on any branch:
+
+```bash
+tar -xzf /tmp/ar-restore/spike-sources-2026-07-28.tar.gz -C .
+```
+
+Only the 7 source files are in that archive. `spike/.env.local` and `spike/.app-runtime-url`
+carry live connection strings and were **excluded** — recreate them by hand like every other
+secret. If you re-archive `spike/` in future, build the tar from an explicit file list rather
+than sweeping the directory, or those two dotfiles ride along.
+
 Cutover checkpoint and the local-only stash bundle:
 
 ```bash
