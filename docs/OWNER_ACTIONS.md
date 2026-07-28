@@ -374,3 +374,60 @@ touching anything if any assertion fails). That turns "dies mid-migration" into 
 After refreshing, the agent re-runs the read-only census (`BEGIN; SET TRANSACTION READ ONLY; …;
 ROLLBACK`) and confirms `current_user` + a non-zero positive control (John Gill rows). If that
 returns rows, the credential is good and the cutover's STEP ZERO will pass.
+
+---
+
+## §1c — CI: two secrets, one allowlist, and a trigger that misses every feature branch (2026-07-29)
+
+**Report only. I changed no workflow file — CI policy is yours.** Three separate things stop CI
+being evidence today. They compound: fixing any one alone still leaves the checks not running.
+
+### (a) THE TRIGGER — tonight's branch ran NO workflow at all
+
+`.github/workflows/audit.yml` fires on `push: branches: [main]` and `pull_request`. A push to
+`claude/adoring-babbage-7ac774` matches neither, so **zero workflow runs existed for five commits**
+until a PR was opened by hand. Any future work on a feature branch has the identical blind spot:
+the gate is silent, and silence is easy to read as green.
+
+Two fixes, both yours to pick:
+
+| option | effect | cost |
+|---|---|---|
+| `push:` with no `branches:` filter | every push to every branch is gated, PR or not | more Actions minutes; runs on WIP commits |
+| require a PR for all work (keep the trigger as-is) | gate is enforced at the point that matters | depends on the discipline never lapsing — which is what failed tonight |
+
+I'd take the first: it does not depend on anyone remembering. But it is a policy call about
+minutes and noise, so it is yours.
+
+### (b) THE SECRETS — exact names and jobs
+
+| secret name | job that needs it | what it unblocks | set today? |
+|---|---|---|---|
+| `APP_DATABASE_URL_TEST` | `db-invariants` | the DB-backed invariants (already wired: the guard step reads it and `REQUIRE_DB: '1'` makes a missing URL a hard failure) | **NO** |
+| `DEEPINFRA_API_KEY` | `db-invariants` | `section-vector-pairing` — the content↔vector mispairing check | **NO — referenced by no job at all** |
+
+`APP_DATABASE_URL_TEST` must be the **app_runtime connection string of a Neon TEST branch, never
+prod** — the tenancy suite writes rows.
+
+### (c) THE ALLOWLIST — the part that makes (b) insufficient on its own
+
+`db-invariants` does not run the suite; it runs an **explicit list of 13 test files**. Both checks
+added tonight are absent from it:
+
+- `web/test/invariants/register-end-to-end.test.ts` — the five per-register reader checks
+- `web/test/invariants/section-vector-pairing.test.ts` — the mispairing class nothing else catches
+
+So setting both secrets and changing nothing else leaves both new checks **not running**, silently
+by omission rather than by configuration. The allowlist needs those two paths appended, and
+`DEEPINFRA_API_KEY` added to that step's `env:`.
+
+A standing hazard worth naming beyond this fix: an explicit file list means every future invariant
+is opt-in to CI, and forgetting to add one is invisible. A glob over `test/invariants/` would fail
+closed instead. That is a workflow change and therefore yours.
+
+### (d) The stale number in the workflow's own warning
+
+The `db-invariants` guard prints "Measured: 69 of 177 web tests do not execute without it." The
+current figure, measured 2026-07-29 by moving `web/.env.local` aside and unsetting the key, is
+**75 of 200** — and 14 suites now announce themselves via `helpers/loud-skip.ts`, so the annotation
+is no longer the only signal.
