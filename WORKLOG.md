@@ -359,6 +359,32 @@ nothing was written to `embeddings`. Recording that as a deliberate non-run, not
 **Am I clear to run the cutover? No, and this run did not change that** — nothing tonight touched
 prod or the cutover path, and the audit above is unaddressed by design.
 
+### 7. THE FIRST REAL CI RESULT ON THIS WORK (PR #27, 2026-07-28)
+
+Tonight's five commits triggered **no workflow at all** until a PR was opened by hand —
+`audit.yml` fires on `push: branches: [main]` and `pull_request`, and a feature-branch push
+matches neither. Every green reported before this point was local-only.
+
+**Verdict: `audit` FAILED, `db-invariants` "succeeded".** Neither number means what it looks like.
+
+- **The only failing gate is `deps`** — `AUDIT FAILED (1): deps — advisory bulk-endpoint (prod,
+  high+ CVEs)`, naming two un-ignored high advisories: `better-auth` GHSA-qq9h-g4jm-xgf3 (account
+  takeover via pre-account hijacking) and `postcss` GHSA-r28c-9q8g-f849 (path traversal). **Both
+  pre-existing and unrelated to this work** — already recorded as the standing red. Everything else
+  in the gate passed in CI: typecheck ×3, lint ×2, knip, tests+coverage, and Gate B licensing
+  (`✓ GATE B PASSED: no license/provenance violations`).
+- **`db-invariants` was green WITHOUT RUNNING ANYTHING.** `APP_DATABASE_URL_TEST` is unset, so its
+  guard short-circuits and the job reports success. That is the repo's deliberate design — but it
+  means a green tick there is the absence of a measurement, not a passing one.
+- **15 invariant suites skipped in CI, and every one of them said so.** The loud-skip work landed:
+  15 distinct `::warning … NOT RUN` annotations fired on the run summary, including
+  `§B0 class 2 — content↔vector pairing NOT RUN` and `§B1 per-register end-to-end … NOT RUN`.
+  Before tonight those 14 would have skipped in silence behind a green tick.
+
+**So the honest status of this PR: nothing tonight broke CI, and CI did not verify most of tonight.**
+The per-register checks and the mispairing check have been proven only on my machine. Making CI
+prove them needs the two secrets AND the `db-invariants` allowlist extended — see OWNER_ACTIONS §1c.
+
 ## 2026-07-27 (SESSION 3 — the eight owner rulings; every gate proven red THROUGH THE ORCHESTRATOR; PROD UNTOUCHED)
 
 Closes the deep-audit finding list below. The owner ruled on eight items; this session implemented
