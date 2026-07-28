@@ -1,5 +1,59 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-27 (SESSION 1 — infra decision tree, read-only; cutover BLOCKED on credential)
+
+Read-only diagnosis before the Part 5 build. Full topology, decision tree and evidence in
+`docs/INFRA.md` §"Live topology + cutover decision tree". Nothing was written to any database.
+
+**Blocking finding — Session 2 cannot start.** `.env.prod` still points at the 2026-07-24
+census clone (`ep-wispy-violet`); the swap-back to `ep-odd-fog` that the rehearsal entry listed
+as pending never happened. The only `ep-odd-fog` credential on this machine **fails password
+auth** and carried `NEON_BRANCH=census-clone`, so it was never live prod access. Ruled out a
+network/SSL cause: the identical probe against `ep-wispy-violet` authenticates and passes a
+temp-table write probe. **Owner action: refresh prod `neondb_owner` (`OWNER_ACTIONS.md` §7) and
+repoint `.env.prod`.** Also note the census clone did **not** auto-delete as assumed — it is
+still alive, which is a stray fork of prod data worth deleting deliberately.
+
+**1c-1 — forbidden provenance is PARTIALLY served, bounded ≤7,019 / 71,884 (9.8%).** Gill/JFB/
+Clarke/Henry (the four legs with no provenance constraint) have **zero** forbidden rows — E6
+smoke on the fork shows Gill = 28,843, identical to the pre-E3 census. `work IN
+SERVED_PROSE_WORKS` matches 0 on prod (100% NULL work key). Barnes/Wesley/Calvin require a
+`crosswire` URL and so fail by construction. The only overlap is the book-scoped legs:
+Chrysostom (4,464 rows, served in books 40/43/44) and Augustine (2,555, in 19/43). Exact figure
+needs one prod query — blocked above. **Correction for the record:** the E3 `REFUSE (coverage
+gap)` in the rehearsal log is *not* evidence these rows are served; it was a guard defect (NULL
+`sourceUrl` counted as unclean), fixed the same day. It should not be cited as proof.
+
+**1c-2 — v4 was measured on an already-clean dev corpus. Confirmed, so no v5 is owed for E3.**
+Commit ordering on 2026-07-18: B2 widening `daa7b15` 17:26 → biblehub removal `45b5bab` 17:40 →
+re-baseline `a070e1e` 18:30 (its message says "on cleaned dev DB") → v4 mint/freeze `a9dac8c`
+18:34 → v4 run `f2b5297` 18:39. Dev measures 0/0/0 forbidden today. v4 never saw those rows, so
+E3 cannot move its numbers; E3 moves prod *toward* the measured config. The workorder's
+"served → v5 owed" conditional is defeated by this ordering.
+
+**`ground-truth.mjs` fixed (deep-audit 2026-07-24).** It read `web/.env.local` — dev — while its
+header claimed "checked against production", so every row was dev truth wearing a prod label. It
+now requires `--env=dev|prod`, prints the host before any check, and aborts on env/endpoint
+mismatch. Proven three ways: no flag refuses; `--env=prod` aborts (`.env.prod` = clone);
+`--env=dev` connects to `ep-tiny-hat` and reports. Its row 5 surfaces a dev drift — `app_runtime`
+holds INSERT/UPDATE/DELETE on `embeddings` against the SELECT-only claim. **Noted, not acted on.**
+
+**Not verified — do not treat as clean.** Whether either Vercel project can deploy on push, and
+which Neon branch each Vercel environment points at. `vercel project inspect` does not print git
+linkage, and reading the env values would mean pulling prod secrets to disk.
+
+**HANDOFF (cold read).** The cutover is designed (`docs/CUTOVER_DESIGN.md`, approved — build it,
+do not redesign it) and rehearsed end-to-end on a fork of prod, where E1–E6 completed: migrations
+016–030 applied, 77,820/190,635 rows register-labeled, 71,884 forbidden rows deleted, 6 works
+sliced 1:1, smoke green. What stands between here and a real cutover is **one owner action**: a
+live `ep-odd-fog` credential in `.env.prod`. Until then E0 aborts by design and Session 2 is
+wasted motion. Two owner calls are open before the first prod write: (1) E3 will remove up to
+7,019 rows the live site serves today — licensing-positive and the clean NPNF/CCEL re-ingest
+replaces those voices, but the cutover-now-vs-re-source-first timeline is the owner's; (2) the
+still-live census clone `ep-wispy-violet` is an undeleted fork of prod data. Session 2 must
+rehearse on a **fresh** fork (confirm its parent is production first), never on prod. The 37 user
+rows (34 highlights/6 users, 2 notes/1 user, 1 chat) are the invariant across every chunk.
+
 ## 2026-07-24 (Census-clone cutover rehearsal — E1–E6 COMPLETE)
 
 Task 3 done: `.env.prod` → `census-clone` (`ep-wispy-violet`), STEP ZERO green. Full rehearsal

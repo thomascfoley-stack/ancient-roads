@@ -111,3 +111,101 @@ the full 300-600k-section corpus wants Large compute.
 4. Entity -> Stripe (first paying web users)
 5. Apple/Play/RevenueCat/Expo (mobile phase)
 6. Sentry/PostHog (pre-launch)
+
+---
+
+# Live topology + cutover decision tree (Session 1, 2026-07-27)
+
+Read-only diagnosis before the Part 5 cutover build. Method: `scripts/prod-census.cjs`
+evidence (2026-07-23), `scripts/ground-truth.mjs --env=dev`, direct read-only SQL on dev,
+`vercel projects ls`, git history. **No prod write. No prod read this session — see BLOCKER 1.**
+
+## Neon topology
+
+| endpoint | role | state (2026-07-27) | consumers |
+|---|---|---|---|
+| `ep-odd-fog-atnykudm` | **production** | last verified read 2026-07-23 (census). Pre-migration-016. | Vercel project `web` (ancientpaths.app); `NEON_AUTH_*` in `web/.env.local` |
+| `ep-tiny-hat-atdgpisx` | **dev** | live, 420,974 platform rows, 296,019 with work key, migrations 016-030 applied | `web/.env.local` `DATABASE_URL(_UNPOOLED)`; ingest scripts |
+| `ep-wispy-violet-atiddys9` | census-clone (fork of prod, 2026-07-24 rehearsal) | **STILL ALIVE and authenticating** — it did *not* auto-delete | `.env.prod` (currently pointed here) |
+
+**Corpus gap that motivates the cutover** — prod 190,635 flat embeddings, **100% with NO work
+key** (register ingest never ran), sections = Barnes pilot only (2 sources / 5,510 sections).
+Dev carries 35 works across registers: prose 290,796 (20 works, incl. spurgeon-sermons 118,371),
+poetry 3,533 (10 works), hymn 1,690 (5 works). **None of it is in prod.**
+
+## BLOCKER 1 — no working prod credential (cutover cannot start)
+
+`.env.prod` points at the **census clone**, not prod (WORKLOG 2026-07-24 flagged the swap-back as
+pending and it never happened). The only `ep-odd-fog` credential recoverable on this machine (from
+the pre-sanitization `.env.prod.example`) **fails password authentication**, and its `NEON_BRANCH`
+said `census-clone`, so it was never a live prod credential in the first place.
+
+- *Rival explanation ruled out:* not a network/SSL fault — the same probe against
+  `ep-wispy-violet` with the same client authenticates and passes a temp-table write probe.
+- **Action: owner refreshes the prod `neondb_owner` credential (`OWNER_ACTIONS.md` §7) and points
+  `.env.prod` back at `ep-odd-fog`.** This is the decision-tree row "prod credential stale ->
+  cutover cannot start". E0 would catch it, but catching it at E0 wastes Session 2.
+
+## Vercel
+
+| project | production URL | git-connected? | notes |
+|---|---|---|---|
+| `web` | **ancientpaths.app** (the real site) | not shown by `vercel project inspect` — **UNRESOLVED** | CLI-deployed; last deploy of record `24677ba` (2026-07-18) |
+| `theology-study-app` | `theology-study-app-home-network-hardening.vercel.app` | **UNRESOLVED** | `24677ba` disconnected the misspelled stray project |
+| `project-nl2ey` | none (22d idle) | — | unrelated |
+
+**Not verified this session:** whether either project can still deploy on push, and which Neon
+branch each environment's `DATABASE_URL` points at. `vercel project inspect` does not print git
+linkage, and reading Vercel env values would mean pulling prod secrets to disk. **Do not treat the
+"two deploy paths" row as cleared** — it is unmeasured, not clean.
+
+## The two checks that change the plan (1c)
+
+**1c-1 — is forbidden provenance inside the served pool? PARTIALLY, bounded ≤7,019 of 71,884.**
+Prod's 71,884 forbidden rows (56,177 `historicalchristian.faith` + 15,707 `biblehub.com`,
+studylight 0) break down by author (rehearsal log, prod fork). Against `LEGAL_CORPUS_FILTER`:
+
+- The four **unconstrained** authors (John Gill, JFB, Adam Clarke, Matthew Henry) have **ZERO**
+  forbidden rows. Corroborated end-to-end: E6 smoke on the fork reports Gill = 28,843, *identical*
+  to the pre-E3 census. The bulk of the served pool is untouched by E3.
+- `work IN SERVED_PROSE_WORKS` matches **0 rows on prod** (100% NULL work key).
+- Barnes/Wesley/Calvin require `sourceUrl ILIKE '%crosswire%'`, which biblehub/HCF rows fail **by
+  construction** — not served. (Note the forbidden list's string is `Barnes' Notes`, which the
+  filter's `Albert Barnes` never matches either way.)
+- **The only served overlap is the two book-scoped legs:** John Chrysostom (4,464 forbidden rows,
+  served only in books 40/43/44) and Augustine of Hippo (2,555, served only in 19/43). Upper bound
+  **7,019 rows = 9.8%** of the forbidden set; the true figure is lower and needs one prod query.
+- *Correction:* the E3 `REFUSE (coverage gap)` in the rehearsal is **not** evidence that forbidden
+  rows are served. It was a **guard defect** — NULL `sourceUrl` was miscounted as unclean — fixed
+  same day ("NULL sourceUrl = clean; post-delete per-cell invariant"). Do not cite it as proof.
+
+**1c-2 — was v4 measured on an already-cleaned dev corpus? YES, confirmed by commit ordering.**
+
+| time (2026-07-18) | commit | event |
+|---|---|---|
+| 17:26:25 | `daa7b15` | B2 widened to all forbidden domains -> 0/0 across served stores |
+| 17:40:08 | `45b5bab` | 15,537 biblehub embeddings rows removed, ratchet 0/0 |
+| 18:30:03 | `a070e1e` | honest v3 re-baseline **"on cleaned dev DB"** (its own words) |
+| 18:34:55 | `a9dac8c` | v4 minted + FROZEN (`90de5dc3`) |
+| 18:39:46 | `f2b5297` | v4 run once |
+
+Cleanup precedes the v4 mint by ~1 hour. Dev measured **0 biblehub / 0 studylight / 0 HCF** today.
+**Therefore E3 does not touch the v4 numbers, and no v5 is owed on account of E3.** The workorder's
+"if served -> v5 owed" conditional is defeated here: v4 was never measured against those rows,
+because it was measured on dev, and dev was already clean. E3 moves prod *toward* the measured
+configuration, not away from it.
+
+**Owner call this still leaves:** E3 removes up to 7,019 rows that prod serves *today*, so the
+live corpus changes for real users. That is a licensing-positive change (the rows are
+forbidden-provenance) and the clean re-ingest replaces those voices from NPNF/CCEL, but the
+timeline call — cutover now vs. re-source first — is the owner's.
+
+## Findings noted, deliberately not acted on
+
+- **Dev drift:** `app_runtime` holds `INSERT/UPDATE/DELETE` on `embeddings` on dev, against the
+  documented SELECT-only claim (`ground-truth.mjs --env=dev` row 5). Dev correctness is not this
+  session's job. Do not "fix" it on prod by reflex — the prod grant is a separate owner item.
+- **`ground-truth.mjs` fixed this session:** it hardcoded `web/.env.local` (dev) while its header
+  claimed prod truth. It now requires `--env=dev|prod`, prints the host before any check, and
+  aborts on an endpoint/env mismatch. Proven red-first: `--env=prod` currently aborts because
+  `.env.prod` points at the clone.

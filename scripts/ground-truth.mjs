@@ -6,19 +6,53 @@
  * production. Each row: claim · source(file:line) · expected · actual · VERIFIED?
  * Every FAIL is a finding — this repo has a documented habit of docs that lie.
  *
- * No writes, no DDL, no secrets printed.  Run: node scripts/ground-truth.mjs
+ * No writes, no DDL, no secrets printed.
+ *
+ * TARGET IS EXPLICIT — `--env=dev|prod`, no default (deep-audit 2026-07-24: this
+ * script read `web/.env.local` (DEV, ep-tiny-hat) while its own header claimed
+ * "checked against production", so every row it printed was dev truth wearing a
+ * prod label). It now prints the host it connected to BEFORE any check, and
+ * asserts the endpoint matches the requested env — a prod run against a dev
+ * endpoint (or the reverse) aborts instead of reporting.
+ *
+ *   node scripts/ground-truth.mjs --env=dev     # reads web/.env.local
+ *   node scripts/ground-truth.mjs --env=prod    # reads .env.prod
  */
 import { readFileSync } from 'node:fs';
 import { Client } from 'pg';
 
-const raw = readFileSync(new URL('../web/.env.local', import.meta.url), 'utf8');
+const PROD_ENDPOINT = 'ep-odd-fog'; // the production Neon endpoint; the only host --env=prod accepts
+const ENV_FILES = { dev: '../web/.env.local', prod: '../.env.prod' };
+
+const envArg = process.argv.find((a) => a.startsWith('--env='))?.slice('--env='.length);
+if (!envArg || !(envArg in ENV_FILES)) {
+  console.error('Refusing to guess the target. Pass --env=dev or --env=prod.');
+  process.exit(1);
+}
+
+const raw = readFileSync(new URL(ENV_FILES[envArg], import.meta.url), 'utf8');
 const env = Object.fromEntries(
   raw.split('\n').filter((l) => l.trim() && !l.trim().startsWith('#') && l.includes('='))
     .map((l) => { const i = l.indexOf('='); return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^["']|["']$/g, '')]; }),
 );
-const OWNER = env.DATABASE_URL_UNPOOLED || env.DATABASE_URL;
+const OWNER = env.DATABASE_URL_UNPOOLED || env.DATABASE_URL || env.CUTOVER_DATABASE_URL;
 const APP = env.APP_DATABASE_URL || OWNER;
-if (!OWNER) { console.error('No DATABASE_URL'); process.exit(1); }
+if (!OWNER) { console.error(`No DATABASE_URL in ${ENV_FILES[envArg]}`); process.exit(1); }
+
+// Print the target before any claim is checked, and refuse a mismatched endpoint.
+// A host that merely *contains* the prod endpoint is prod; anything else is not.
+const HOST = OWNER.match(/@([^/:?]+)/)?.[1] ?? '(unparseable)';
+const isProdHost = HOST.includes(PROD_ENDPOINT);
+console.log(`env:  ${envArg}`);
+console.log(`host: ${HOST} (credentials redacted)`);
+if (envArg === 'prod' && !isProdHost) {
+  console.error(`ABORT: --env=prod but host is not ${PROD_ENDPOINT}. Refusing to report non-prod numbers as prod.`);
+  process.exit(1);
+}
+if (envArg === 'dev' && isProdHost) {
+  console.error(`ABORT: --env=dev but host IS the prod endpoint ${PROD_ENDPOINT}. Refusing to run a dev audit against prod.`);
+  process.exit(1);
+}
 const conn = (url) => new Client({ connectionString: url, ssl: { rejectUnauthorized: true } });
 const q = async (c, sql, p = []) => (await c.query(sql, p)).rows;
 
