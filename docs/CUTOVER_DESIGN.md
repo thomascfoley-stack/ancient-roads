@@ -48,8 +48,27 @@ and confirmed every assumption:
   publisher ads -- none exist on prod. Dev-only artifacts that never need cleanup here.
 - **Forbidden provenance IS present:** 15,707 BibleHub + 56,177 HCF = 71,884 rows. E3 is real work.
 - **Sections model:** only Barnes pilot (2 sources, 5,510 sections). Everything else gets built.
-- **Live user data (tiny but real):** 34 highlights (6 users), 2 notes (1 user), 1 chat (1 user).
-  Migrations MUST preserve these. No bookmarks/reading_progress/library_items tables exist yet.
+- **Live user data: CLEARED 2026-07-28 (owner decision) — this row is now historical.**
+  The census measured 34 highlights (6 users), 2 notes (1 user), 1 chat (1 user), and this
+  doc required migrations to preserve them. On 2026-07-28 the owner ruled it all disposable
+  test data and it was deleted from prod in one verified transaction. What it actually was,
+  read before deleting:
+    - **5 of the 6 "users" were never people.** They were `qa-hl-a-<epoch>` synthetic IDs
+      from the Phase-1 highlight suite, one soft-deleted row each — the residue class the
+      025 header already names (the suite soft-deletes, never hard-deletes). It had reached
+      PROD: `scripts/check-test-residue.mjs` has only ever been pointed at dev.
+    - **The 6th was the owner** (a single uuid): 24 live highlights + 5 he had deleted
+      himself, 2 notes (both the string "love this", on John 1:3 and 1:8), and 1 chat
+      titled "test" with zero messages. `user_profiles` was EMPTY — no early-access user
+      ever completed a profile, so no third party's work was in the database.
+  Deleted: highlights 34, notes 2, chats 1. Also zeroed (already empty): messages,
+  chat_memories, reading_history, user_library, study_guides, user_profiles,
+  user_integrations. `api_rate_limit` (41 rows) deliberately KEPT — operational, not user
+  content. A JSON receipt of every deleted row was taken first.
+- **Consequence for E1:** the preserve-these-rows assertions are NOT relaxed and must stay.
+  They now hold trivially (0 == 0). Do not weaken them to match this state — the guard is
+  what protects the FIRST real user, and the next cutover may run against one.
+- No bookmarks/reading_progress/library_items tables exist yet.
 - **Compute params:** Neon did not expose SHOW for compute_size/max_connections/shared_buffers/
   work_mem. Plan conservatively on the 121-190 s/10k slice rate measured on dev.
 
