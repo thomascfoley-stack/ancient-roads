@@ -1,0 +1,24 @@
+RED-PROOF — published-only boundary (work-reader), 2026-07-29
+Driven through the PRODUCTION entry point: the route handlers
+GET /api/work/[slug] and /sections, not lib functions.
+
+BEFORE (fixture drift, the pre-existing red in `npm run audit`):
+  AssertionError: fixture wrong: 'josephus-whiston' must be staged for this
+  boundary probe: expected 'published' to be 'staged'
+  -> the check went RED for the WRONG REASON (a fixture that drifted when
+     josephus-whiston was published on dev on 2026-07-24), not a regression.
+
+PIPE FIX (not a row fix): the staged probe is now DISCOVERED from the DB
+  (staged AND has sections, ORDER BY slug LIMIT 1) and the absence of any such
+  source is itself a FAILURE, not a skip.
+
+AFTER fix, unseeded:  7 passed.
+
+SEEDED BREAK — removed `AND status = 'published'` from web/src/lib/work.ts
+  (the filter the invariant exists to guard):
+  ✗ FAIL  404s a staged source on BOTH routes (published-only boundary)
+    AssertionError: staged source must 404 on the work route:
+    expected 200 to be 404
+  Tests  1 failed | 6 passed (7)
+
+RESTORED: filter back in place, suite green.
