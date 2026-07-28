@@ -18,7 +18,7 @@
 // commit `f229a93` parked the workflow edit for lack of the `workflow` token scope, so
 // `db-invariants` still targets exactly two files (`licensing`, `tenancy`) and short-circuits to
 // green when the `APP_DATABASE_URL_TEST` secret is absent — which it is. Measured under CI
-// conditions (no `web/.env.local`): **69 of 177 web tests skip, including every test here.**
+// conditions (no `web/.env.local`): **75 of 200 web tests skip, including every test here.**
 // Tracked in `docs/OWNER_ACTIONS.md` §1; enforced by `test/invariants/ci-claims-match-reality.test.ts`.
 // (That guard matches claim-phrases anywhere in a file, so describe the old claim — do not
 // reproduce its wording verbatim, or the guard will read the quotation as a fresh assertion.)

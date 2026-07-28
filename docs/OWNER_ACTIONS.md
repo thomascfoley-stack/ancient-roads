@@ -427,7 +427,52 @@ closed instead. That is a workflow change and therefore yours.
 
 ### (d) The stale number in the workflow's own warning
 
-The `db-invariants` guard prints "Measured: 69 of 177 web tests do not execute without it." The
+The `db-invariants` guard prints "Measured: 75 of 200 web tests do not execute without it." The
 current figure, measured 2026-07-29 by moving `web/.env.local` aside and unsetting the key, is
 **75 of 200** — and 14 suites now announce themselves via `helpers/loud-skip.ts`, so the annotation
 is no longer the only signal.
+
+---
+
+## §1d — better-auth GHSA-qq9h-g4jm-xgf3: fixed what I could, escalating what I can't (2026-07-29)
+
+CI's `deps` gate failed on **two** high advisories. One is fixed; one is yours.
+
+### FIXED — postcss GHSA-r28c-9q8g-f849 (path traversal, source-map auto-loading)
+
+The `pnpm.overrides` entry was `postcss: ^8.5.12`, resolving to **8.5.16**; the advisory covers
+`<=8.5.17`. Bumped the override to `^8.5.22` → resolves **8.5.24**. In-range patch bump, no major.
+Full local audit after it: typecheck ×3 ✓ · lint ×2 ✓ · knip ✓ · tests+coverage ✓ · qa ✓ ·
+residue ✓ · Gate B ✓.
+
+### ESCALATED — better-auth GHSA-qq9h-g4jm-xgf3 (account takeover, magic-link / email-OTP)
+
+`better-auth@1.4.18` is **not a direct dependency** — it is pinned transitively by
+`@neondatabase/auth@0.4.2-beta`. Three findings, all measured rather than assumed:
+
+1. **An override does not work.** I tried `better-auth: ^1.6.22`. It resolves (1.6.25) but **breaks
+   the build**: `src/app/layout.tsx` fails `tsc --noEmit` with TS2322 — `@neondatabase/auth` expects
+   the 1.4.18 client shape and 1.6.25 drops/moves `updateSession`. Also four unmet peers
+   (`@better-auth/core`, `better-call`, `@better-auth/utils`, `@better-fetch/fetch`). This confirms
+   the existing `auditConfig` note ("override breaks the build") — it is now verified, not folklore.
+   **Reverted.**
+2. **It appears NOT to be in-path.** The advisory is specific to **magic-link and email-OTP sign-in**.
+   A repo-wide grep for `magic.?link | emailOTP | email-otp | sendVerificationOTP | oneTimeToken`
+   across `web/src` and `src` returns **zero hits**. If those flows are genuinely unused, exposure is
+   latent rather than live — but that is a security judgement about the auth surface, not a grep
+   result, so I am not converting it into an acceptance.
+3. **I did not add it to `ignoreGhsas`.** That list's own header says the sibling account-takeover
+   advisory GHSA-g38m-r43w-p2q7 is "a tracked LAUNCH BLOCKER, **not accepted**". Accepting a second
+   account-takeover advisory from the same pinned package is a security decision with the same shape,
+   and it is yours.
+
+**Your options, in the order I'd rank them:**
+
+| # | action | effect |
+|---|---|---|
+| 1 | wait for `@neondatabase/auth` to ship a build pinning better-auth ≥1.6.22 | the only fix that removes the vulnerability; blocks on their release |
+| 2 | confirm magic-link/email-OTP are unused and unreachable, then add GHSA-qq9h-g4jm-xgf3 to `ignoreGhsas` with that justification in `docs/SECURITY.md` | unblocks CI now; accepts a latent advisory, consistent only if finding 2 is confirmed at the auth-config level |
+| 3 | drop `@neondatabase/auth` for a directly-managed better-auth | removes the pin entirely; a real auth migration |
+
+Until one is chosen, **`deps` stays red and the gate stays honest.** I would rather hand you a red
+gate with one named, understood advisory than a green one bought by an acceptance I made for you.
