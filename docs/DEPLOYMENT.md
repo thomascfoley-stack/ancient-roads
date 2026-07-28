@@ -116,3 +116,215 @@ worktree commits `af34b7f` / `3afa9f8`.
 Production database endpoint is `ep-odd-fog-atnykudm` (separate from the dev branch used by
 worktrees). This doc covers Vercel/hosting only; database migration and go-live steps live in
 the go-live runbook. No production DB change is implied by a `web` frontend deploy.
+
+---
+
+## Restoring this project onto a new machine
+
+Written 2026-07-28 when the original laptop was retired. The hard part of this project is not
+the code — the code is on GitHub. The hard part is that **the served corpus is gitignored**
+(see "Why `web` must never be git-connected" above), so a fresh clone gives you an app that
+builds, passes CI, and serves nothing. The corpus lives in GitHub **release assets**, not in
+git, and the restore is not finished until the verification block at the end passes.
+
+### 0. Prerequisites
+
+Node 22.x, `corepack` enabled (`corepack enable`), and the `gh`, `vercel`, and `neonctl` CLIs.
+The repo pins `pnpm@9.15.0` via `packageManager`; corepack will fetch that exact version, so do
+not install pnpm globally.
+
+### 1. Clone
+
+```bash
+git clone https://github.com/thomascfoley-stack/ancient-roads.git
+cd ancient-roads
+```
+
+Every branch that existed on the retired machine is on `origin` — verified branch-by-branch
+with `git ls-remote` on 2026-07-28, not by trusting upstream-tracking config (a branch with no
+configured upstream is not the same as a branch that was never pushed; two branches on that
+machine looked unpushed and were in fact already on `origin`).
+
+### 2. Re-authenticate
+
+```bash
+gh auth login          # needs at least: repo, workflow, read:org
+vercel login           # team: home-network-hardening
+neonctl auth
+```
+
+The `workflow` scope matters: without it, any push touching `.github/workflows/**` is rejected
+by GitHub, which is how `feat/teacher-pipeline` got stuck unpushed earlier in this project.
+
+**Secrets are not in any archive and never were.** No `.env`, connection string, or API key is
+in git or in any release asset. Recreate `.env` by hand from the owner's password manager, and
+pull the Neon connection strings from the Neon console. `docs/ENVIRONMENT.md` lists the
+variables by name.
+
+### 3. Download and verify the corpus archives
+
+The current backup is release **`corpus-backup-2026-07-28`** ("Machine-migration backup").
+It supersedes `corpus-backup-2026-07-19` for the corpus and additionally carries the quarantine
+records, the cutover checkpoint, and a bundle of local-only git work.
+
+```bash
+gh release download corpus-backup-2026-07-28 --repo thomascfoley-stack/ancient-roads --dir /tmp/ar-restore
+```
+
+**Verify before extracting.** The release notes list a SHA-256 for every asset; compare against
+what you downloaded:
+
+```bash
+cd /tmp/ar-restore && shasum -a 256 *
+```
+
+A mismatch means a truncated or corrupted download — re-download, do not extract. (The
+2026-07-28 upload was itself proven by downloading all 12 assets back from GitHub and
+confirming every SHA-256 matched the local original — 0 mismatches.)
+
+### 4. Extract to the right paths
+
+From the repo root. Each corpus tarball expands to `web/public/<dir>/`:
+
+```bash
+for d in commentaries bible lexicon original concordance; do
+  tar -xzf /tmp/ar-restore/ancient-roads-corpus-$d-2026-07-28.tar.gz -C web/public
+done
+```
+
+Quarantine records (not needed to run the app; keep them — they are the audit trail of what was
+removed from the corpus and why):
+
+```bash
+mkdir -p data/quarantine
+for f in /tmp/ar-restore/quarantine-*.jsonl.gz; do
+  gunzip -c "$f" > "data/quarantine/$(basename "${f%.gz}" | sed 's/^quarantine-//')"
+done
+```
+
+`biblehub-collapsed-2026-07-17.jsonl` is **not** in the 07-28 release — it is already preserved
+in the `biblehub-quarantine-backup-2026-07-19` release and was not duplicated.
+
+Cutover checkpoint and the local-only stash bundle:
+
+```bash
+cp /tmp/ar-restore/cutover-checkpoint-2026-07-28.json .cutover-checkpoint.json
+git bundle verify /tmp/ar-restore/local-stashes-2026-07-28.bundle
+git fetch /tmp/ar-restore/local-stashes-2026-07-28.bundle 'refs/tags/*:refs/tags/*'
+```
+
+That bundle holds the two `git stash` entries that were the only git content on the retired
+machine not reachable from any `origin` ref (a 913-line `ingest/sources.config.json` plus a
+teacher-routing/eval slice). It is a thin bundle; its prerequisites are on `origin/main`, so it
+only applies to a real clone, not an empty repo. After fetching, the work is at tags
+`backup/stash-0-2026-07-28` and `backup/stash-1-2026-07-28` — inspect with `git show`, and
+apply with `git cherry-pick -n` or `git checkout <tag> -- <path>`.
+
+### 5. Install (this is what wires the git hooks)
+
+```bash
+corepack pnpm install
+```
+
+The `prepare` script runs `git config core.hooksPath .githooks`, which is what installs the
+pre-commit gate. **A fresh clone has no hooks until this runs** — commits will bypass the
+ratchet silently until you do.
+
+### 6. Link Vercel
+
+```bash
+cd web && vercel link   # team home-network-hardening → project `web`
+```
+
+Confirm `web/.vercel/project.json` reads `prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR`. If it names
+`prj_a3OXQsM5RSvstgfL0VuF7FAU6nX5` you have linked the misspelled stray, not production — see
+the section above. **Do not git-connect the `web` project.**
+
+### VERIFY — the restore is not done until all four pass
+
+A restore nobody has verified is a hope. Run all four; each one can fail.
+
+**1. Corpus file counts match the archive.** Expected counts, from the 2026-07-28 backup:
+
+```bash
+for d in commentaries:1213 bible:22590 original:1189 concordance:295 lexicon:2; do
+  n=${d%%:*}; want=${d##*:}; got=$(find web/public/$n -type f | wc -l | tr -d ' ')
+  [ "$got" = "$want" ] && echo "OK   $n $got" || echo "FAIL $n got=$got want=$want"
+done
+```
+
+A short count means a partial extract. The reader will still build and serve — it will just be
+missing books, silently, which is exactly the failure this check exists to catch.
+
+**2. The corpus is the CLEAN one.** Three copies of `commentaries/` existed on the retired
+machine and they were **not** interchangeable: two were clean (191,749 entries, **0**
+forbidden-provenance rows) and one was dirty (239,593 entries, **63,111** rows sourced from
+`historicalchristian.faith`). Disk size points the wrong way — the clean copy is *larger*
+(407 MB vs 248 MB) and all three have the same 1,213 files. The archived one is the clean one,
+verified by extracting the tarball and re-counting it. Confirm:
+
+```bash
+node web/test/scripts/update-forbidden-provenance-baseline.mjs   # expect: "Unchanged at 0."
+```
+
+Any output other than `Unchanged at 0.` means you restored the wrong corpus. (This script
+rewrites the baseline file if the count is *lower* than baseline; at 0 it cannot go lower, so on
+a correct restore it only reads.)
+
+**3. The pre-deploy ratchet passes.**
+
+```bash
+DEPLOYING=1 npx tsx scripts/predeploy-gate.ts
+```
+
+Expected: `forbidden-provenance entries : 0`, `committed baseline : 0`, `✓ Ratchet holds.`, and
+`✓ Every translation dir present has a shipping license record.` This gate is the only point in
+the pipeline that sees the actual artifact being shipped, and `DEPLOYING=1` makes the
+Bible-translation licensing check hard-fail rather than warn. If it reports missing corpus, step
+4 did not land where it should.
+
+**4. The full gate runs.**
+
+```bash
+npm run audit
+```
+
+Typecheck (strict) · lint · knip · `pnpm audit` high/critical · tests + coverage · web
+typecheck + lint. This is the same gate CI enforces.
+
+**This gate is not hermetic and it was RED on the retired machine on 2026-07-28.** Recorded here
+so a future restorer can tell "I broke something" from "it arrived like this." Exit code 1, two
+failing gates:
+
+- `deps — advisory bulk-endpoint`: 2 un-ignored high advisories — `postcss`
+  GHSA-r28c-9q8g-f849 (path traversal via `sourceMappingURL`, ≤8.5.17) and `better-auth`
+  GHSA-qq9h-g4jm-xgf3 (account takeover via pre-account hijacking on magic-link / email-OTP,
+  ≥1.1.3 <1.6.22). The `better-auth` one is the SEC-1 auth-beta CVE that already gates public
+  launch. Both are dependency bumps, not restore problems.
+- `qa — Layer 1 invariants`: one test, `test/invariants/work-reader.test.ts` → "404s a staged
+  source on BOTH routes". It fails with `fixture wrong: 'josephus-whiston' must be staged …
+  expected 'published' to be 'staged'`. `josephus-whiston` is supposed to be staged-never-served
+  (GO_LIVE_STATUS "historians … staged, never served"), so this is **dev-database state drift**,
+  not a code regression — something flipped that work to `published` in the Neon dev branch. It
+  is an owner call, not a restore step.
+
+Note what that second failure implies for a restore: several `test/invariants/*` suites execute
+**against the real database** (they say so in their test names). `npm run audit` therefore needs
+a populated `.env` and a reachable Neon dev branch, and its result depends on DB state as well as
+on the code. A fresh clone with no `.env` will fail these for a third, different reason. Checks
+1–3 above are the ones that actually validate *the restore*; check 4 validates the repo.
+
+Deploy only once 1–3 pass and you understand every remaining red in 4. Then `./deploy.sh` from
+the repo root, and record the shipped SHA in `WORKLOG.md`.
+
+### What was deliberately NOT backed up
+
+`refs/original/` — the `filter-branch` backup from the author-identity rewrite — was left on the
+retired machine. It contains **zero unique content** (the pre-rewrite `main` tip tree is
+byte-identical to on-origin commit `cd897b4`; the pre-rewrite teacher-pipeline tree is
+byte-identical to the current branch, 0 differing files). It differs only in author identity:
+the rewrite replaced `thomas@composio.dev` and a local-hostname address with the personal
+address, deliberately separating this solo project from employer identity. Archiving it to a
+GitHub release would have republished exactly what the rewrite removed. If that history is ever
+wanted, it is an owner decision, not a backup side effect — and the retired disk is the only
+copy, so decide before wiping it.
