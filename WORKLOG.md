@@ -385,6 +385,40 @@ matches neither. Every green reported before this point was local-only.
 The per-register checks and the mispairing check have been proven only on my machine. Making CI
 prove them needs the two secrets AND the `db-invariants` allowlist extended — see OWNER_ACTIONS §1c.
 
+### 8. CI, after the three owner rulings (2026-07-29) — measured, not badged
+
+**The new trigger works, and its first test was itself.** The push produced BOTH a `push` run
+(30372698363) and a `pull_request` run (30372700923) on the same SHA. Under the old
+`branches: [main]` filter the push run would not have existed.
+
+**EXECUTED vs SKIPPED, as CI actually ran it** — this is the number, not the badge:
+
+| suite | executed | skipped | files |
+|---|---|---|---|
+| root (`test/`) | **262 passed** | 1 | 26 passed / 1 skipped (27) |
+| web (`web/test/`) | **125 passed** | **75** | 28 passed / 13 skipped (41) |
+| bible-sync project | 10 passed | 0 | 1 (1) |
+
+So on the web side CI executes **125 of 200**. The 75 skipped are the DB-backed invariants, and
+**15 distinct suites announced `NOT RUN`** on the run summary rather than skipping in silence — the
+loud-skip work doing its job in the environment it was written for. That 75/200 exactly matches the
+local CI-simulation figure, so the prediction was sound and the doc's old "69 of 177" is retired.
+
+**Gate results:** typecheck ×3 ✓ · lint ×2 ✓ · knip ✓ · tests+coverage ✓ · qa ✓ · residue ✓ ·
+Gate B ✓ · **deps ✗**. `db-invariants` reports success while running nothing (`APP_DATABASE_URL_TEST`
+still unset) — green-by-guard, as designed and as disclosed.
+
+**The deps gate is down from 2 advisories to 1**, and the remaining one is deliberate:
+- `postcss` GHSA-r28c-9q8g-f849 — **FIXED**, zero mentions in the CI log. Override `^8.5.12`
+  (resolving 8.5.16, inside the advisory's `<=8.5.17`) → `^8.5.22`, resolving 8.5.24.
+- `better-auth` GHSA-qq9h-g4jm-xgf3 — **escalated, not accepted** (OWNER_ACTIONS §1d). The override
+  was TESTED and breaks the build; the advisory's magic-link/email-OTP flows appear unused; the
+  acceptance is a security decision belonging to the owner.
+
+**CI is therefore red on purpose, on one named and understood advisory.** Everything else the gate
+can currently check is green — and 75 of 200 web tests still do not run, which the two secrets plus
+the now-globbed job will fix.
+
 ## 2026-07-27 (SESSION 3 — the eight owner rulings; every gate proven red THROUGH THE ORCHESTRATOR; PROD UNTOUCHED)
 
 Closes the deep-audit finding list below. The owner ruled on eight items; this session implemented
