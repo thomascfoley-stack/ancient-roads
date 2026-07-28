@@ -438,3 +438,15 @@ store is not automatically correct in the other.
 
 **STILL the durable repair:** the ingest adapters carry publisher/editor matter into a work with
 no per-work attribution boundary. Until that lands, the next ingest reproduces all of this.
+
+## Owner editorial calls — dev population (2026-07-24)
+
+**Lexicons (5 staged dictionaries): pane.** Serve via the existing Word Study / reference-pane
+surface (`web/public/lexicon/*.json`, `library/word-study`), **not** by publishing into the
+teacher's `/ask` prose pool. Lexicons stay **staged** until the reference-pane UX ships; do not
+flip them to `published` for teacher retrieval.
+
+**Josephus (josephus-whiston): excise.** Whiston's edition appends the spurious pseudo-Josephus
+"Discourse to the Greeks concerning Hades" (sections §4113–4124 / units u2688–u2696). **Excise**
+those 12 sections, then publish the remainder (~4,112 sections) to the historian register for
+the Book Reader. edersheim / schaff remain staged (0 sections); no other historian publish yet.

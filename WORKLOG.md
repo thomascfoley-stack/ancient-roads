@@ -1,5 +1,30 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-24 (Census-clone cutover rehearsal — E1–E6 COMPLETE)
+
+Task 3 done: `.env.prod` → `census-clone` (`ep-wispy-violet`), STEP ZERO green. Full rehearsal
+(`CUTOVER_REHEARSAL=1`) on the throwaway clone — **CUTOVER COMPLETE** (E5 deploy skipped).
+
+| Step | Result | Wall time (approx) |
+|---|---|---|
+| E1 migrations 016–030 | All applied, indexes VALID | ~5 min |
+| E2 register-label | 77,820 / 190,635 rows labeled (12 author→slug maps) | ~4 min |
+| E3 forbidden cleanup | 71,884 rows deleted, ratchet 0 | ~2 min |
+| E4 section slice | 6 works @ 1:1 (71,563 sections); 5 skipped (E3 removed biblehub rows) | ~11 min |
+| E5 deploy | Skipped (rehearsal) | — |
+| E6 smoke | Gill=28,843, sections=72,863, forbidden=0 | instant |
+
+**Fixes landed during loop:** cutover 024→concurrent runner; E1 resume checkpoint; built
+`register-label-embeddings.mjs` + `cutover-e4-slice-all.mjs`; b2 coverage guard (NULL sourceUrl
+= clean; post-delete per-cell invariant). Owner calls: lexicon:pane, josephus:excise (dev).
+
+Evidence: `docs/evidence/census/cutover-rehearsal-20260724.log`. Live prod untouched.
+
+**Still owner-only:** Task 4 (CI `APP_DATABASE_URL_TEST` secret). **Before real prod cutover:**
+swap `.env.prod` back to `ep-odd-fog`; re-ingest register works dev has but prod lacks.
+
+## 2026-07-24 (Census-clone cutover rehearsal — E1 measured)
+
 ## 2026-07-24 (OVERNIGHT RUN — populate, prove, prep)
 
 Env safety first: quarantined the prod owner string to `.env.prod` (gitignored, chmod 600) and

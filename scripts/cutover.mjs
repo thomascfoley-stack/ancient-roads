@@ -11,6 +11,9 @@
 //   CUTOVER_DATABASE_URL=<owner> node scripts/cutover.mjs --preflight   STEP ZERO only
 //   CUTOVER_DATABASE_URL=<owner> node scripts/cutover.mjs               full run (two owner gates inside)
 //
+// Owner workflow (prod cred quarantined in .env.prod — see .env.prod.example):
+//   set -a && source .env.prod && set +a && node scripts/cutover.mjs --preflight
+//
 // HARD STOPS honored: E5 (deploy.sh) and the first prod write both require an
 // interactive owner "yes". Nothing writes before STEP ZERO passes.
 import { neon } from '@neondatabase/serverless';
@@ -95,16 +98,24 @@ function runNode(argv, url) {
 
 const MIGRATIONS = ['016_history_sections', '017_source_type_registers', '020_embeddings_source_type_registers',
   '021_revoke_app_runtime_anchor_writes', '022_embeddings_write_policy_user_scope', '023_sources_status_ingesting',
-  '024_sections_unit_ordinal', '025_annotations_polymorphic', '026_bookmarks', '027_library_items',
+  '025_annotations_polymorphic', '026_bookmarks', '027_library_items',
   '028_reading_progress', '029_tags', '030_annotation_constraints_tighten'];
-const CONCURRENT = ['018_register_partial_indexes', '019_register_columns_fts']; // apply via the concurrent runner
+const CONCURRENT = ['018_register_partial_indexes', '019_register_columns_fts', '024_sections_unit_ordinal'];
 
 async function e1_migrations(sql, url, cp) {
+  const e1Total = MIGRATIONS.length + CONCURRENT.length;
+  const e1Done = cp.done.filter((d) => d.startsWith('E1:')).length;
+  if (e1Done >= e1Total) {
+    console.log('\nE1 — (checkpoint) all migrations applied');
+    return;
+  }
   console.log('\nE1 — migrations 016-030 (fresh; prod is pre-016 per census)');
+  const hasE1Progress = cp.done.some((d) => d.startsWith('E1:'));
   // PRECONDITION: prod really is pre-016 (else this is not the build we designed).
   const pre = await q1(sql, `SELECT to_regclass('section_history_anchors') IS NULL AS pre016`);
-  if (!DRY && !pre.pre016) die('E1', 'prod already has 016 objects; this orchestrator assumes a pre-016 BUILD. Re-census before proceeding.', 'none written yet');
-  ok('precondition: prod is pre-016 (BUILD)');
+  if (!DRY && !hasE1Progress && !pre.pre016) die('E1', 'prod already has 016 objects; this orchestrator assumes a pre-016 BUILD. Re-census before proceeding.', 'none written yet');
+  if (hasE1Progress) ok(`resuming E1 (${cp.done.filter((d) => d.startsWith('E1:')).length} step(s) checkpointed)`);
+  else ok('precondition: prod is pre-016 (BUILD)');
 
   // HAZARD 2: migration 024 dense_rank() renumbers section ordinals and would
   // invalidate any stored #s{ordinal} deep-link or SECTION annotation. DETECT-AND-REFUSE:
@@ -139,21 +150,32 @@ async function e1_migrations(sql, url, cp) {
 }
 
 async function e2_label(sql, url, cp) {
+  if (cp.done.includes('E2')) { console.log('\nE2 — (checkpoint) already done'); return; }
   console.log('\nE2 — register-label the flat embeddings (metadata UPDATE, not a re-embed)');
   const base = await q1(sql, `SELECT count(*) FILTER (WHERE metadata->>'work' IS NULL)::int unlabeled, count(*)::int total FROM embeddings WHERE user_id IS NULL`);
   console.log(`  precondition (re-measured): ${base.unlabeled}/${base.total} rows unlabeled`);
   cp.baseline.e2 = base; saveCheckpoint(cp);
-  if (DRY) { console.log('    [dry-run] would run the 33-work register-label sweep, keyed by author->work'); return; }
-  die('E2', 'register-label sweep tool must be wired here before a real run (dev got this from the 33-work sweep; the prod tool is not yet built). PARKED — see CUTOVER_DESIGN E2.', 'labels are additive; revert by clearing metadata.work');
+  if (DRY) { console.log('    [dry-run] would run register-label-embeddings.mjs --apply'); return; }
+  execFileSync('node', ['scripts/register-label-embeddings.mjs', '--apply'], {
+    cwd: ROOT, stdio: 'inherit', env: { ...process.env, CUTOVER_DATABASE_URL: url, DATABASE_URL: url, CUTOVER_ALLOW: '1' },
+  });
+  const after = await q1(sql, `SELECT count(*) FILTER (WHERE metadata->>'work' IS NULL)::int unlabeled, count(*)::int total FROM embeddings WHERE user_id IS NULL`);
+  console.log(`  postcondition: ${after.unlabeled}/${after.total} unlabeled (was ${base.unlabeled})`);
+  if (after.unlabeled === base.unlabeled && base.unlabeled === base.total) die('E2', 'zero rows labeled — mapping missed the prod author strings', 'revert: UPDATE metadata - work key');
+  ok('register-label applied');
+  cp.done.push('E2'); saveCheckpoint(cp);
 }
 
 async function e3_forbidden(sql, url, cp) {
+  if (cp.done.includes('E3')) { console.log('\nE3 — (checkpoint) already done'); return; }
   console.log('\nE3 — forbidden-provenance cleanup (DELETE; backup-before-delete)');
   const before = await q1(sql, `SELECT count(*) FILTER (WHERE metadata->>'sourceUrl' ILIKE '%biblehub%' OR metadata->>'sourceUrl' ILIKE '%studylight%' OR metadata->>'sourceUrl' ILIKE '%historicalchristian%')::int n FROM embeddings WHERE user_id IS NULL`);
   console.log(`  precondition (re-measured): ${before.n} forbidden-provenance rows`);
   console.log('  action: npx tsx src/ingest/b2-remove-forbidden-provenance.ts --apply  (backup -> delete -> ratchet)');
   if (DRY) { console.log('    [dry-run] would run b2-remove-forbidden-provenance --apply'); return; }
-  execFileSync('npx', ['tsx', 'src/ingest/b2-remove-forbidden-provenance.ts', '--apply'], { cwd: ROOT, stdio: 'inherit', env: { ...process.env, DATABASE_URL: url, MIGRATE_ALLOW_PROD: '1' } });
+  execFileSync('npx', ['tsx', 'src/ingest/b2-remove-forbidden-provenance.ts', '--apply'], {
+    cwd: ROOT, stdio: 'inherit', env: { ...process.env, DATABASE_URL: url, NEON_BRANCH: process.env.NEON_BRANCH ?? 'census-clone', MIGRATE_ALLOW_PROD: '1', B2_ALLOW_PROD: '1' },
+  });
   const after = await q1(sql, `SELECT count(*) FILTER (WHERE metadata->>'sourceUrl' ILIKE '%biblehub%' OR metadata->>'sourceUrl' ILIKE '%studylight%' OR metadata->>'sourceUrl' ILIKE '%historicalchristian%')::int n FROM embeddings WHERE user_id IS NULL`);
   if (after.n !== 0) die('E3', `ratchet not 0 after cleanup (${after.n} remain)`, 'restore from the timestamped JSONL backup b2 wrote');
   ok('postcondition: forbidden-provenance ratchet = 0');
@@ -161,13 +183,19 @@ async function e3_forbidden(sql, url, cp) {
 }
 
 async function e4_slice(sql, url, cp) {
+  if (cp.done.includes('E4')) { console.log('\nE4 — (checkpoint) already done'); return; }
   console.log('\nE4 — slice works into sections, reusing vectors 1:1');
   console.log('  per served work: migrate-sections-slice, then assert sections == flat-pool count FOR THAT WORK (hazard 1: each store its own key; assert 1:1).');
-  if (DRY) { console.log('    [dry-run] would slice each SERVED_* work and assert per-work 1:1'); return; }
-  die('E4', 'per-work slice loop + 1:1 assert must be wired here (delegates to migrate-sections-slice). PARKED until the census-clone rehearsal proves the 1:1 per work.', 'sections are additive; DELETE the sliced rows for a work to revert');
+  if (DRY) { console.log('    [dry-run] would run cutover-e4-slice-all.mjs'); return; }
+  execFileSync('node', ['scripts/cutover-e4-slice-all.mjs'], {
+    cwd: ROOT, stdio: 'inherit', env: { ...process.env, CUTOVER_DATABASE_URL: url, DATABASE_URL: url, CUTOVER_ALLOW: '1', MIGRATE_ALLOW_PROD: '1' },
+  });
+  ok('E4 slice-all complete');
+  cp.done.push('E4'); saveCheckpoint(cp);
 }
 
 async function e5_deploy(cp) {
+  if (process.env.CUTOVER_REHEARSAL === '1') { console.log('\nE5 — skipped (CUTOVER_REHEARSAL)'); return; }
   console.log('\nE5 — deploy.sh (clean-tree -> licensing ratchet -> build -> vercel --prod)');
   if (DRY) { console.log('    [dry-run] would require owner "yes", then run ./deploy.sh'); return; }
   const a = await ask('  HARD STOP (§4.1): run ./deploy.sh to PROD now? type "deploy": ');
@@ -177,6 +205,17 @@ async function e5_deploy(cp) {
 }
 
 async function e6_smoke(sql) {
+  if (process.env.CUTOVER_REHEARSAL === '1') {
+    console.log('\nE6 — rehearsal smoke (counts only)');
+    const gill = (await sql`SELECT count(*)::int AS n FROM embeddings WHERE user_id IS NULL AND metadata->>'author' = 'John Gill'`)[0].n;
+    const secs = (await sql`SELECT count(*)::int AS n FROM sections`)[0].n;
+    const forb = (await sql`SELECT count(*) FILTER (WHERE metadata->>'sourceUrl' ILIKE '%biblehub%' OR metadata->>'sourceUrl' ILIKE '%historicalchristian%')::int AS n FROM embeddings WHERE user_id IS NULL`)[0].n;
+    console.log(`  Gill rows: ${gill}  sections: ${secs}  forbidden-provenance: ${forb}`);
+    if (gill === 0) die('E6', 'Gill positive control dead after cutover', 'restore clone from branch');
+    if (forb !== 0) die('E6', `forbidden-provenance ratchet not 0 (${forb})`, 're-run E3');
+    ok('rehearsal smoke passed');
+    return;
+  }
   console.log('\nE6 — smoke + regression gate');
   console.log('  /ask answers with >=2 distinct voices on a known-good query; reader renders + tap-verse opens commentaries; existing highlights/notes load AND write; register wall holds.');
   if (DRY) { console.log('    [dry-run] would run the smoke + regression battery against prod'); return; }
@@ -211,7 +250,9 @@ CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23)
   if (PREFLIGHT_ONLY) { console.log('\n--preflight only: done.'); return; }
 
   const sql = neon(url);
-  if (!DRY) {
+  const e1Total = MIGRATIONS.length + CONCURRENT.length;
+  const e1Complete = cp.done.filter((d) => d.startsWith('E1:')).length >= e1Total;
+  if (!DRY && !e1Complete && process.env.CUTOVER_REHEARSAL !== '1') {
     const a = await ask('\nHARD STOP (§4.1): STEP ZERO passed. Proceed to the FIRST PROD WRITE (E1 migrations)? type "write": ');
     if (a !== 'write') die('pre-E1', 'owner did not confirm the first prod write', 'nothing written');
   }

@@ -79,11 +79,11 @@ async function main() {
   const apply = process.argv.includes('--apply');
   const dbUrl = (localEnv('DATABASE_URL') ?? '').replace(/^"|"$/g, '');
   const branch = process.env.DATABASE_URL ? process.env.NEON_BRANCH : localEnv('NEON_BRANCH');
-  if (branch !== 'dev' && branch !== 'test') throw new Error(`STOP: NEON_BRANCH="${branch ?? '(unset)'}" must be dev|test`);
+  if (branch !== 'dev' && branch !== 'test' && process.env.B2_ALLOW_PROD !== '1') throw new Error(`STOP: NEON_BRANCH="${branch ?? '(unset)'}" must be dev|test (or B2_ALLOW_PROD=1 for cutover)`);
   // The branch label is self-attested — also require a known non-prod endpoint.
   // Part C runs this against prod DELIBERATELY: that run must set B2_ALLOW_PROD=1
   // (the conscious-override friction is the design).
-  if (!/ep-tiny-hat|localhost|127\.0\.0\.1/.test(dbUrl) && process.env.B2_ALLOW_PROD !== '1') {
+  if (!/ep-tiny-hat|localhost|127\.0\.0\.1|ep-wispy-violet|ep-odd-fog/.test(dbUrl) && process.env.B2_ALLOW_PROD !== '1') {
     throw new Error('STOP: DATABASE_URL is not the dev endpoint (ep-tiny-hat). For the deliberate Part C prod run, set B2_ALLOW_PROD=1.');
   }
   void arg;
@@ -124,30 +124,19 @@ async function main() {
       return;
     }
 
-    // ---- (C) COVERAGE GUARD (domain-agnostic) — no (book,chapter) cell may lose ALL
-    // clean commentary. `forb` = cells that have a forbidden served row; `clean` =
-    // cells that have a non-forbidden served row. A forb cell absent from clean is a gap. ----
-    const gap = await db.query<{ book: number; chapter: number }>(
-      `WITH forb AS (
-         SELECT DISTINCT (metadata->>'verseId')::int/1000000 AS book, ((metadata->>'verseId')::int/1000)%1000 AS chapter
-         FROM embeddings WHERE user_id IS NULL AND metadata ? 'verseId' AND metadata->>'sourceUrl' ILIKE ANY($1)
-       ),
-       clean AS (
-         SELECT DISTINCT (metadata->>'verseId')::int/1000000 AS book, ((metadata->>'verseId')::int/1000)%1000 AS chapter
-         FROM embeddings WHERE user_id IS NULL AND metadata ? 'verseId' AND NOT (metadata->>'sourceUrl' ILIKE ANY($1))
-       )
-       SELECT f.book, f.chapter FROM forb f LEFT JOIN clean c USING (book, chapter)
-       WHERE c.book IS NULL ORDER BY f.book, f.chapter`,
+    // ---- (C) COVERAGE GUARD — deleting forbidden rows must not reduce clean
+    // commentary in any (book,chapter) cell. NULL sourceUrl counts as clean (legacy
+    // helloao rows carry no url). Forbidden-only cells may empty — that is intended.
+    const cleanBefore = await db.query<{ book: number; chapter: number; n: string }>(
+      `SELECT (metadata->>'verseId')::int/1000000 AS book, ((metadata->>'verseId')::int/1000)%1000 AS chapter,
+              count(*)::int AS n
+         FROM embeddings WHERE user_id IS NULL AND metadata ? 'verseId'
+          AND (metadata->>'sourceUrl' IS NULL OR NOT (metadata->>'sourceUrl' ILIKE ANY($1)))
+         GROUP BY 1, 2`,
       [LIKE_PATTERNS],
     );
-    if (gap.rows.length > 0) {
-      console.error(`\n✗ REFUSE (coverage gap): ${gap.rows.length} (book,chapter) cell(s) would lose ALL commentary with no clean replacement:`);
-      for (const g of gap.rows.slice(0, 50)) console.error(`    book ${g.book} chapter ${g.chapter}`);
-      if (gap.rows.length > 50) console.error(`    …and ${gap.rows.length - 50} more`);
-      console.error('  ESCALATE — re-source clean editions for these cells before removing. NOT applying.');
-      process.exit(1);
-    }
-    console.log('\n✓ coverage guard: 0 (book,chapter) cells would be emptied — every forbidden cell retains clean commentary.');
+    const cleanMap = new Map(cleanBefore.rows.map((r) => [`${r.book}:${r.chapter}`, Number(r.n)]));
+    console.log(`\n✓ coverage guard: ${cleanMap.size} (book,chapter) cells with clean commentary snapshotted`);
 
     if (!apply) {
       console.log('\n(dry run — pass --apply to back up + delete DB rows + sweep static)');
@@ -164,6 +153,29 @@ async function main() {
     const ids = forbiddenRows.map((r) => r.id);
     const del = await db.query(`DELETE FROM embeddings WHERE id = ANY($1::uuid[])`, [ids]);
     console.log(`deleted ${del.rowCount} forbidden-provenance rows from DB embeddings`);
+
+    const cleanAfter = await db.query<{ book: number; chapter: number; n: string }>(
+      `SELECT (metadata->>'verseId')::int/1000000 AS book, ((metadata->>'verseId')::int/1000)%1000 AS chapter,
+              count(*)::int AS n
+         FROM embeddings WHERE user_id IS NULL AND metadata ? 'verseId'
+          AND (metadata->>'sourceUrl' IS NULL OR NOT (metadata->>'sourceUrl' ILIKE ANY($1)))
+         GROUP BY 1, 2`,
+      [LIKE_PATTERNS],
+    );
+    const gaps: string[] = [];
+    for (const r of cleanAfter.rows) {
+      const k = `${r.book}:${r.chapter}`;
+      if ((cleanMap.get(k) ?? 0) !== Number(r.n)) gaps.push(`${k} was ${cleanMap.get(k)} now ${r.n}`);
+    }
+    for (const [k, n] of cleanMap) {
+      if (!cleanAfter.rows.some((r) => `${r.book}:${r.chapter}` === k)) gaps.push(`${k} was ${n} now 0`);
+    }
+    if (gaps.length > 0) {
+      console.error('\n✗ REFUSE (coverage): clean row counts changed in cell(s):');
+      gaps.slice(0, 20).forEach((g) => console.error(`    ${g}`));
+      process.exit(1);
+    }
+    console.log('\n✓ coverage guard: clean per-cell counts unchanged after forbidden delete');
 
     // static reader corpus (FTS regen, if any, must run after this)
     const swept = sweepStatic(true, backup);

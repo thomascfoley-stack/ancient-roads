@@ -12,7 +12,9 @@
 const pg = require('pg');
 const fs = require('fs');
 
-const ROOT = '/Users/tfoley/theology-study-app';
+const path = require('path');
+const ROOT = path.resolve(__dirname, '..');
+const ENV_FILE = process.env.PROD_ENV_FILE ?? path.join(ROOT, '.env.prod');
 
 function envVal(file, name) {
   const t = fs.readFileSync(file, 'utf8');
@@ -21,12 +23,14 @@ function envVal(file, name) {
 }
 
 (async () => {
-  const url = envVal(`${ROOT}/.env.local`, 'DATABASE_URL_UNPOOLED')
-    ?? envVal(`${ROOT}/.env.local`, 'DATABASE_URL');
-  if (!url) throw new Error('no DATABASE_URL in root .env.local');
+  const url = process.env.CUTOVER_DATABASE_URL
+    ?? envVal(ENV_FILE, 'CUTOVER_DATABASE_URL')
+    ?? envVal(ENV_FILE, 'DATABASE_URL_UNPOOLED')
+    ?? envVal(ENV_FILE, 'DATABASE_URL');
+  if (!url) throw new Error(`no CUTOVER_DATABASE_URL in ${ENV_FILE} (or env)`);
 
   const host = new URL(url).host;
-  const branch = envVal(`${ROOT}/.env.local`, 'NEON_BRANCH');
+  const branch = envVal(ENV_FILE, 'NEON_BRANCH');
   if (!host.includes('ep-odd-fog')) {
     throw new Error(`STOP: host ${host} is NOT the prod endpoint — refusing to report dev numbers as prod`);
   }
