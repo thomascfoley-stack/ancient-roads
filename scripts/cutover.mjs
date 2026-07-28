@@ -27,7 +27,10 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CHECKPOINT = path.join(ROOT, '.cutover-checkpoint.json');
 const DRY = process.argv.includes('--dry-run');
 const PREFLIGHT_ONLY = process.argv.includes('--preflight');
-const EXPECT_HOST = process.env.CUTOVER_EXPECT_HOST ?? 'ep-odd-fog'; // prod endpoint; overridable for a census-clone rehearsal
+// `||` not `??`: CUTOVER_EXPECT_HOST="" is an empty string, not undefined, and
+// `host.includes('')` is TRUE for every host — which turned STEP ZERO's endpoint-identity
+// assertion into a no-op that printed "✓ endpoint contains " and passed against dev.
+const EXPECT_HOST = process.env.CUTOVER_EXPECT_HOST || 'ep-odd-fog'; // prod endpoint; overridable for a fork rehearsal
 const EXPECT_ROLE = 'neondb_owner';
 
 const die = (step, msg, rollback) => {
@@ -38,7 +41,20 @@ const die = (step, msg, rollback) => {
 const ok = (m) => console.log(`  ✓ ${m}`);
 
 function loadCheckpoint() { return existsSync(CHECKPOINT) ? JSON.parse(readFileSync(CHECKPOINT, 'utf8')) : { done: [], baseline: {} }; }
-function saveCheckpoint(cp) { writeFileSync(CHECKPOINT, JSON.stringify(cp, null, 2)); }
+// MERGE, never blind-overwrite. The regression gate runs as a CHILD PROCESS and writes
+// its E0 baseline into this same file. The parent then saved its own copy — loaded
+// before the child ran — and silently destroyed that baseline. The gate reads
+// `baseline.regression ?? {}`, so with it missing G1 took its "no baseline yet" branch
+// and printed a GREEN "baseline captured" at E1/E2/E3/E4/E6 instead of comparing:
+// the 37-user-row invariant became a check that could not fail, and G6's monotone leg
+// and the cross-target baseline refusal died with it. Found by a fresh auditor, then
+// confirmed against this session's own checkpoint (E0 marked done, baseline.regression
+// absent) and against the rehearsal log, where the E1 gate printed "baseline captured".
+function saveCheckpoint(cp) {
+  const onDisk = existsSync(CHECKPOINT) ? JSON.parse(readFileSync(CHECKPOINT, 'utf8')) : { baseline: {} };
+  cp.baseline = { ...(onDisk.baseline ?? {}), ...(cp.baseline ?? {}) };
+  writeFileSync(CHECKPOINT, JSON.stringify(cp, null, 2));
+}
 const ask = (q) => new Promise((res) => { const rl = readline.createInterface({ input: process.stdin, output: process.stdout }); rl.question(q, (a) => { rl.close(); res(a.trim()); }); });
 
 // A checkpoint is only resumable against the target it was written for. The
@@ -171,7 +187,15 @@ async function e1_migrations(sql, url, cp) {
   const e1Total = MIGRATIONS.length + CONCURRENT.length;
   const e1Done = cp.done.filter((d) => d.startsWith('E1:')).length;
   if (e1Done >= e1Total) {
-    console.log('\nE1 — (checkpoint) all migrations applied');
+    // Still re-assert E1's postconditions on a resume. The early return used to skip
+    // them, so a fully-resumed E1 never re-checked "no INVALID index" or the user rows.
+    console.log('\nE1 — (checkpoint) all migrations applied; re-asserting postconditions');
+    if (!DRY) {
+      const inv = await q1(sql, `SELECT count(*)::int AS n FROM pg_index i JOIN pg_class c ON c.oid=i.indexrelid
+        JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname='public' AND NOT i.indisvalid`);
+      if (inv.n > 0) die('E1', `${inv.n} index(es) are INVALID`, 'DROP the invalid index and re-run the concurrent step (idempotent)');
+      ok(`postcondition (resume): no invalid index; user rows ${userShape(await measureUserData(sql))}`);
+    }
     return;
   }
   console.log('\nE1 — migrations 016-030 (fresh; prod is pre-016 per census)');
@@ -239,6 +263,10 @@ async function e2_label(sql, url, cp) {
   console.log(`  precondition (re-measured): ${base.unlabeled}/${base.total} rows unlabeled`);
   cp.baseline.e2 = base; saveCheckpoint(cp);
   if (DRY) { console.log('    [dry-run] would run register-label-embeddings.mjs --apply'); return; }
+  // E2 was the ONE chunk with no user-data assertion, which (with the gate's G1 dead)
+  // left the 37-row invariant genuinely unguarded across it. A metadata UPDATE has no
+  // business touching an annotation table; assert that it didn't.
+  const userBase = await measureUserData(sql);
   execFileSync('node', ['scripts/register-label-embeddings.mjs', '--apply'], {
     cwd: ROOT, stdio: 'inherit', env: { ...process.env, CUTOVER_DATABASE_URL: url, DATABASE_URL: url, CUTOVER_ALLOW: '1' },
   });
@@ -278,6 +306,8 @@ async function e2_label(sql, url, cp) {
     covered += r.by_author;
   }
   ok(`postcondition: ${authors} mapped author(s), every row labeled, ${covered} rows — measured against the target's own author counts`);
+  await assertUserDataUnchanged(sql, userBase, 'E2', "UPDATE embeddings SET metadata = metadata - 'work' for the slugs this step wrote");
+  ok(`postcondition: user rows unchanged (${userShape(userBase)})`);
   cp.done.push('E2'); saveCheckpoint(cp);
 }
 
@@ -288,13 +318,17 @@ async function e3_forbidden(sql, url, cp) {
   console.log(`  precondition (re-measured): ${before.n} forbidden-provenance rows of ${before.total} platform rows`);
   // ADR-030: 4,174 of these are rows prod SERVES today (Chrysostom 2,515 / Augustine
   // 1,659). That is APPROVED and expected — measure it, print it, do not abort on it.
+  // NOTE this reproduces only the AUTHOR legs of LEGAL_CORPUS_FILTER (cutover.mjs is
+  // .mjs and cannot import the .ts constant). The `work IN SERVED_PROSE_WORKS` leg is
+  // NOT evaluated here, so on a target where those slugs carry rows this under-counts.
+  // It is printed for the operator's awareness and is deliberately NOT an assertion.
   const served = await q1(sql, `SELECT count(*)::int n FROM embeddings WHERE user_id IS NULL
      AND (metadata->>'sourceUrl' ILIKE '%biblehub%' OR metadata->>'sourceUrl' ILIKE '%studylight%' OR metadata->>'sourceUrl' ILIKE '%historicalchristian%')
      AND (metadata->>'author' IN ('John Gill','Jamieson, Fausset & Brown','Adam Clarke','Matthew Henry')
        OR (metadata->>'author'='John Chrysostom'    AND (metadata->>'verseId')::int/1000000 IN (40,43,44))
        OR (metadata->>'author'='Augustine of Hippo' AND (metadata->>'verseId')::int/1000000 IN (19,43))
        OR (metadata->>'author' IN ('Albert Barnes','John Wesley','John Calvin') AND metadata->>'sourceUrl' ILIKE '%crosswire%'))`);
-  console.log(`  of which SERVED today: ${served.n} (ADR-030 approved this removal; expected, not a surprise)`);
+  console.log(`  of which SERVED today (author legs only, informational): ${served.n} (ADR-030 approved this removal; expected, not a surprise)`);
   const userBase = await measureUserData(sql);
   const backupsBefore = existsSync(path.join(ROOT, 'data/quarantine'))
     ? readdirSync(path.join(ROOT, 'data/quarantine')).filter((f) => f.startsWith('forbidden-provenance-removed-')).length : 0;
@@ -304,12 +338,23 @@ async function e3_forbidden(sql, url, cp) {
     cwd: ROOT, stdio: 'inherit', env: { ...process.env, DATABASE_URL: url, NEON_BRANCH: process.env.NEON_BRANCH ?? 'cutover-target', MIGRATE_ALLOW_PROD: '1', B2_ALLOW_PROD: '1' },
   });
   // BACKUP-BEFORE-DELETE is a precondition of the design, so verify the artifact
-  // exists rather than trusting that the delegate wrote one.
-  const backups = readdirSync(path.join(ROOT, 'data/quarantine')).filter((f) => f.startsWith('forbidden-provenance-removed-'));
-  if (backups.length <= backupsBefore) die('E3', 'no new forbidden-provenance backup JSONL was written — refusing to accept a delete with no backup', 'restore embeddings from the pre-E3 Neon branch snapshot');
-  const newest = backups.sort().at(-1);
-  const lines = readFileSync(path.join(ROOT, 'data/quarantine', newest), 'utf8').split('\n').filter(Boolean).length;
-  ok(`backup written: data/quarantine/${newest} (${lines} row(s))`);
+  // exists rather than trusting that the delegate wrote one — but ONLY when there was
+  // something to delete. b2 returns early ("already clean") without writing a backup,
+  // which is correct; demanding one anyway made every RESUME of E3 abort with
+  // "refusing to accept a delete with no backup" and advise a full snapshot restore of
+  // a delete that had in fact already succeeded and was already backed up. E3 is the
+  // most interruptible step in the script, so that false abort was reachable.
+  const backups = existsSync(path.join(ROOT, 'data/quarantine'))
+    ? readdirSync(path.join(ROOT, 'data/quarantine')).filter((f) => f.startsWith('forbidden-provenance-removed-')) : [];
+  const newest = backups.sort().at(-1) ?? '(no backup file)';
+  if (before.n === 0) {
+    ok('nothing to delete (already clean) — no backup expected; this is the resume path');
+  } else if (backups.length <= backupsBefore) {
+    die('E3', 'no new forbidden-provenance backup JSONL was written — refusing to accept a delete with no backup', 'restore embeddings from the pre-E3 Neon branch snapshot');
+  } else {
+    const lines = readFileSync(path.join(ROOT, 'data/quarantine', newest), 'utf8').split('\n').filter(Boolean).length;
+    ok(`backup written: data/quarantine/${newest} (${lines} row(s))`);
+  }
 
   const after = await q1(sql, `SELECT count(*) FILTER (WHERE metadata->>'sourceUrl' ILIKE '%biblehub%' OR metadata->>'sourceUrl' ILIKE '%studylight%' OR metadata->>'sourceUrl' ILIKE '%historicalchristian%')::int n, count(*)::int total FROM embeddings WHERE user_id IS NULL`);
   if (after.n !== 0) die('E3', `ratchet not 0 after cleanup (${after.n} remain)`, `restore from data/quarantine/${newest}`);
@@ -343,7 +388,21 @@ async function e4_slice(sql, url, cp) {
   const mismatched = drift.filter((r) => r.flat > 0 && r.flat !== r.sections);
   for (const r of drift) console.log(`    ${r.slug}: sections=${r.sections} flat=${r.flat}${r.flat === 0 ? ' (pre-register source, no flat work key — not a 1:1 target)' : ''}`);
   if (mismatched.length > 0) die('E4', `sections vs flat-pool 1:1 broken for: ${mismatched.map((r) => `${r.slug} (${r.sections} vs ${r.flat})`).join(', ')}`, 'DELETE the sections rows for the failing slug(s) and re-run E4 for those works only');
-  ok(`postcondition: 1:1 sections↔flat pool for every sliced register work (${drift.length} source(s) with sections)`);
+  // The query above only sees sources that HAVE sections, so a work whose slice produced
+  // ZERO sections — a total failure for that work — was invisible to the 1:1 check.
+  // Assert the other direction too: every non-quarantined work that still has flat rows
+  // after E3 must have produced sections.
+  const sliced = new Set(drift.map((r) => r.slug));
+  const manifest4 = JSON.parse(readFileSync(path.join(ROOT, 'ingest/sources.config.json'), 'utf8'));
+  const missing = [];
+  for (const e of manifest4.filter((x) => x.backfill?.match_author && !x.quarantine)) {
+    const slug = e.slug ?? e.id;
+    if (sliced.has(slug)) continue;
+    const n = (await sql.query(`SELECT count(*)::int AS n FROM embeddings WHERE user_id IS NULL AND metadata->>'work' = $1`, [slug]))[0].n;
+    if (n > 0) missing.push(`${slug} (${n} flat rows, 0 sections)`);
+  }
+  if (missing.length > 0) die('E4', `work(s) with flat rows produced NO sections: ${missing.join(', ')}`, 're-run E4 for those works only');
+  ok(`postcondition: 1:1 sections↔flat pool for every sliced register work (${drift.length} source(s) with sections), and no work with flat rows was skipped`);
   await assertUserDataUnchanged(sql, userBase, 'E4', 'DELETE the sections rows written by this step and re-run');
   cp.done.push('E4'); saveCheckpoint(cp);
 }
@@ -361,7 +420,7 @@ async function e5_deploy(cp, host) {
   cp.done.push('E5'); saveCheckpoint(cp);
 }
 
-async function e6_smoke(sql, url, host) {
+async function e6_smoke(sql, url, host, cp) {
   console.log('\nE6 — smoke + regression gate');
   if (DRY) { console.log('    [dry-run] would run the smoke counts + the full regression battery'); return; }
   // (a) corpus smoke — the positive control and the two ratchets.
@@ -375,6 +434,7 @@ async function e6_smoke(sql, url, host) {
   // (b) the full regression battery — the same gate every chunk ran, once more at the
   // end. Set CUTOVER_ASK_URL to add the live /ask probe (only meaningful after E5).
   regressionGate('E6', url, host);
+  cp.done.push('E6'); saveCheckpoint(cp);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -406,13 +466,21 @@ CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27
 
 (async () => {
   const cp = loadCheckpoint();
-  if (DRY) printPlan();
+  printPlan(); // the design says "prints a dry-run plan FIRST" — a real run gets it too
   // STEP ZERO runs in dry-run too IF a target is supplied (proves reachability read-only);
   // with no target it prints the parked-rehearsal message and exits 0 for --dry-run.
   if (DRY && !process.env.CUTOVER_DATABASE_URL) { console.log('(no CUTOVER_DATABASE_URL set — STEP ZERO parked; supply the census clone to rehearse)'); return; }
 
   const { url, host } = await stepZero();
   if (PREFLIGHT_ONLY) { console.log('\n--preflight only: done.'); return; }
+  // CUTOVER_REHEARSAL=1 suppresses the FIRST-PROD-WRITE owner gate (and E5). It existed
+  // to let a fork run unattended — but it never checked the target, so
+  // CUTOVER_REHEARSAL=1 with a prod URL would apply all 16 migrations, relabel 190,635
+  // rows and delete 71,884 of them on PRODUCTION with zero owner confirmation. The
+  // design allows exactly two gates; it does not allow an env var to reach zero.
+  if (process.env.CUTOVER_REHEARSAL === '1' && host.includes('ep-odd-fog')) {
+    die('pre-E1', 'CUTOVER_REHEARSAL=1 is set and the target is PRODUCTION. Rehearsal mode suppresses the owner gate and must never point at prod.', 'nothing written');
+  }
   if (!DRY) bindCheckpoint(cp, host);
 
   const sql = neon(url);
@@ -435,6 +503,6 @@ CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27
   await e3_forbidden(sql, url, cp);  regressionGate('E3', url, host);
   await e4_slice(sql, url, cp);      regressionGate('E4', url, host);
   await e5_deploy(cp, host);
-  await e6_smoke(sql, url, host);
+  await e6_smoke(sql, url, host, cp);
   console.log('\nCUTOVER COMPLETE.');
 })().catch((e) => die('unhandled', e.message));

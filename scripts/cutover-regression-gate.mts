@@ -40,6 +40,7 @@ import { randomUUID } from 'node:crypto';
 import {
   LEGAL_CORPUS_FILTER,
   EXEGETICAL_FTS_EXCLUSION,
+  PROSE_TYPE_SQL,
   SERVED_PROSE_WORKS,
   SERVED_SONG_VERSE_WORKS,
   SERVED_LANE_WORKS,
@@ -137,6 +138,7 @@ async function g2(c: pg.Client) {
          FROM embeddings
         WHERE user_id IS NULL
           AND (metadata->>'verseId')::int = $1
+          AND ${PROSE_TYPE_SQL}
           AND ${LEGAL_CORPUS_FILTER}`,
       [vid],
     );
@@ -228,10 +230,13 @@ async function g4(c: pg.Client) {
   } finally {
     await c.query('ROLLBACK').catch(() => {});
   }
+  // Check BOTH tables the probe writes — an earlier version queried only `notes`, so a
+  // leaked `highlights` row would have gone uncounted.
   const residue = await c.query<{ n: number }>(
-    `SELECT count(*)::int AS n FROM notes WHERE user_id LIKE '\\_\\_cutover\\_probe\\_\\_%'`,
+    `SELECT (SELECT count(*) FROM notes      WHERE user_id LIKE '\\_\\_cutover\\_probe\\_\\_%')
+          + (SELECT count(*) FROM highlights WHERE user_id LIKE '\\_\\_cutover\\_probe\\_\\_%') AS n`,
   );
-  if (residue.rows[0]!.n !== 0) fail('G4 write', `probe left ${residue.rows[0]!.n} row(s) behind — ROLLBACK did not hold`);
+  if (Number(residue.rows[0]!.n) !== 0) fail('G4 write', `probe left ${residue.rows[0]!.n} row(s) behind — ROLLBACK did not hold`);
   else pass('G4 write', 'rolled back clean, zero residue');
 
   // ── the E1→E5 window, surfaced (not vetoed) ────────────────────────────────
@@ -272,19 +277,33 @@ async function g5(c: pg.Client) {
   if (leak.rows[0]!.n > 0) fail('G5 register wall', `${leak.rows[0]!.n} song/verse or lane row(s) are reachable through the exegetical serving filter`);
   else pass('G5 register wall', 'no song/verse or lane work reachable through LEGAL_CORPUS_FILTER');
 
-  // The FTS surface: a row that IS non-exegetical (hymn/poetry/sermon/theology by
-  // register OR by served slug) and yet SURVIVES the shipped exclusion is a leak.
-  // EXEGETICAL_FTS_EXCLUSION is imported, never retyped, so a slug added upstream
-  // is covered here automatically.
+  // The FTS surface. THE SIGNAL MUST BE INDEPENDENT OF THE PREDICATE UNDER TEST.
+  // The first version of this check asked for rows that are non-exegetical *by
+  // register or slug* AND survive EXEGETICAL_FTS_EXCLUSION — but the exclusion is
+  // exactly the negation of that same pair of tests, so the query was `P AND NOT P`
+  // and returned 0 for any table contents, forever. That is precisely the tautology
+  // the 2026-07-17 line-by-line already caught once in register-wall-check
+  // ("register IN (hymn,poetry) AND register NOT IN (hymn,poetry) = 0 by
+  // construction") and I reproduced it. A check that cannot fail is worse than none.
+  //
+  // The wall can only fail OPEN when a row is genuinely non-exegetical but BOTH
+  // signals the exclusion reads are missing or wrong on it. So the detector needs a
+  // third signal: the row's own source. `sources.source_type` is set by ingest,
+  // independent of commentary_entries.register and of the routing slug lists, so a
+  // slug rename or a NULL register cannot hide a leak from it.
+  // HONEST LIMIT: this can only see rows whose `work` resolves to a source. On a
+  // target where commentary_entries.work is entirely NULL it matches nothing — that
+  // is vacuous, but it is not tautological: populate the column and it can fire.
   if (await hasColumn(c, 'commentary_entries', 'register')) {
     const fts = await c.query<{ n: number }>(
-      `SELECT count(*)::int AS n FROM commentary_entries
-        WHERE (register IN ('hymn','poetry','sermon','theology','confession')
-               OR work IN (${sqlList(NON_EXEGETICAL_SLUGS)}))
+      `SELECT count(*)::int AS n
+         FROM commentary_entries ce
+         JOIN sources s ON s.slug = ce.work
+        WHERE s.source_type IN ('hymn','poetry','sermon','theology','confession')
           AND ${EXEGETICAL_FTS_EXCLUSION}`,
     );
-    if (fts.rows[0]!.n > 0) fail('G5 register wall', `${fts.rows[0]!.n} non-exegetical commentary_entries survive EXEGETICAL_FTS_EXCLUSION`);
-    else pass('G5 register wall', 'FTS exclusion holds on commentary_entries');
+    if (fts.rows[0]!.n > 0) fail('G5 register wall', `${fts.rows[0]!.n} commentary_entries from a non-exegetical SOURCE survive EXEGETICAL_FTS_EXCLUSION`);
+    else pass('G5 register wall', 'FTS exclusion holds against the independent sources.source_type signal');
   }
 }
 
@@ -310,18 +329,30 @@ async function g6(c: pg.Client, base?: number): Promise<number> {
   // FAIL only if such a work is actually reachable (status='published' or in a
   // served slug set), because that would be a live licensing breach. Deleting the
   // staged rows is an owner call, not something a gate improvises mid-cutover.
+  // Scan the WHOLE provenance object as text, not just `provenance->>'url'` — a source
+  // that records its origin under any other key would otherwise yield NULL ILIKE ...
+  // = NULL, drop out of the WHERE, and be reported as clean.
   const secStore = await c.query<{ slug: string; url: string; status: string; sections: number }>(
-    `SELECT s.slug, s.provenance->>'url' AS url, s.status, count(sec.id)::int AS sections
+    `SELECT s.slug, coalesce(s.provenance->>'url', s.provenance::text) AS url, s.status, count(sec.id)::int AS sections
        FROM sources s LEFT JOIN sections sec ON sec.source_id = s.id
-      WHERE s.provenance->>'url' ILIKE '%biblehub%' OR s.provenance->>'url' ILIKE '%studylight%'
-         OR s.provenance->>'url' ILIKE '%historicalchristian%'
-      GROUP BY s.slug, s.provenance->>'url', s.status`,
+      WHERE s.provenance::text ILIKE '%biblehub%' OR s.provenance::text ILIKE '%studylight%'
+         OR s.provenance::text ILIKE '%historicalchristian%'
+      GROUP BY s.slug, s.provenance, s.status`,
   );
+  // Reachability for the SECTIONS store specifically: a section is served only via the
+  // reader's publish switch, which is `status='published'` or membership in the routing
+  // slug sets. LEGAL_CORPUS_FILTER's author legs govern `embeddings`, NOT `sections`, so
+  // they deliberately do not count here.
+  // STATED PLAINLY so nobody reads this as a live gate: given today's manifest and prod
+  // data, NOTHING sets status='published' (migrate-sections-slice writes 'staged') and
+  // none of the affected slugs is in a SERVED_* list — so this fail() does not fire, by
+  // construction. It exists to catch the day such a work IS published. The warning below
+  // is the part that actually reports today's state.
   const servedSlugs = new Set<string>([...SERVED_PROSE_WORKS, ...NON_EXEGETICAL_SLUGS]);
   for (const row of secStore.rows) {
     const reachable = row.status === 'published' || servedSlugs.has(row.slug);
     if (reachable) fail('G6 sections-store', `${row.slug} is REACHABLE (status=${row.status}) with forbidden provenance ${row.url} and ${row.sections} sections`);
-    else console.warn(`  ⚠ G6 sections-store — ${row.slug}: ${row.sections} sections carry forbidden provenance (${row.url}), status=${row.status}, not served. E3's ratchet does not count this store. Standing debt — owner call.`);
+    else console.warn(`  ⚠ G6 sections-store — ${row.slug}: ${row.sections} sections carry forbidden provenance (${row.url}), status=${row.status}, not reachable via the reader's publish switch. E3's ratchet does not count this store. Standing debt — owner call.`);
   }
   if (secStore.rows.length === 0) pass('G6 sections-store', 'no forbidden provenance in sources/sections');
   return n;
@@ -334,9 +365,15 @@ async function liveAsk(url: string) {
     body: JSON.stringify({ question: 'What does John 3:16 mean?' }),
   });
   if (!res.ok) { fail('G7 live /ask', `HTTP ${res.status}`); return; }
-  const body = (await res.json()) as { citations?: Array<{ author?: string }> };
-  const voices = new Set((body.citations ?? []).map((x) => x.author).filter(Boolean));
-  if (voices.size < 2) fail('G7 live /ask', `${voices.size} distinct voice(s) in the response`);
+  // The payload is `{ kind, response, retrieval } & LanePayloads` (teacher/teach.ts:18)
+  // — authors live in `retrieval[].metadata.author`. An earlier version of this read a
+  // `citations` field that does not exist anywhere in the response, so `voices.size`
+  // was always 0 and enabling CUTOVER_ASK_URL would have guaranteed a FAILED E6 gate
+  // immediately AFTER `vercel --prod` had already shipped — with the abort text telling
+  // the operator to "roll back this chunk", the chunk being the live deploy.
+  const body = (await res.json()) as { retrieval?: Array<{ metadata?: { author?: string } }> };
+  const voices = new Set((body.retrieval ?? []).map((x) => x.metadata?.author).filter(Boolean));
+  if (voices.size < 2) fail('G7 live /ask', `${voices.size} distinct voice(s) in retrieval — below the floor`);
   else pass('G7 live /ask', `${voices.size} distinct voices`);
 }
 

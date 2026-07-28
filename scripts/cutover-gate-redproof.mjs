@@ -77,9 +77,20 @@ await proof('G3 reader/static — the chapter file the reader renders goes missi
   () => { if (existsSync(`${f}.redproof`)) renameSync(`${f}.redproof`, f); });
 
 // ── G4: upsertNote's arbiter index ───────────────────────────────────────────
+// Capture the index's ACTUAL definition and replay that, rather than hardcoding one.
+// A literal `WHERE deleted_at IS NULL` restore is wrong on a post-025 target, where the
+// predicate also carries `target_kind = 'verse'` — and the green re-run does NOT catch
+// it, because arbiter inference only needs the index predicate to be IMPLIED by the
+// ON CONFLICT clause, and the post-025 clause implies the weaker pre-025 predicate. The
+// harness would have silently left the fork with a degraded index and reported success.
+const notesIdx = (await c.query(
+  `SELECT pg_get_indexdef(i.indexrelid) d FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid
+    WHERE c.relname = 'idx_notes_user_verse'`)).rows[0];
+if (!notesIdx) throw new Error('idx_notes_user_verse not present — refusing to drop what cannot be restored');
+console.log(`(captured for restore: ${notesIdx.d})`);
 await proof('G4 write — upsertNote loses its partial unique index (the 025 hazard)',
   () => c.query(`DROP INDEX IF EXISTS idx_notes_user_verse`),
-  () => c.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_user_verse ON notes (user_id, verse_id) WHERE deleted_at IS NULL`));
+  () => c.query(notesIdx.d));
 
 // ── G5: the register wall ────────────────────────────────────────────────────
 const donor = (await c.query(
