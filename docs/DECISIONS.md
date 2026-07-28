@@ -450,3 +450,36 @@ flip them to `published` for teacher retrieval.
 "Discourse to the Greeks concerning Hades" (sections §4113–4124 / units u2688–u2696). **Excise**
 those 12 sections, then publish the remainder (~4,112 sections) to the historian register for
 the Book Reader. edersheim / schaff remain staged (0 sections); no other historian publish yet.
+
+## ADR-030 — E3 proceeds in the cutover; the 4,174 served forbidden rows go now, not after a re-source (owner, 2026-07-27)
+
+**Decision.** The cutover proceeds with E3 as designed. E3 deletes 4,174 rows that production
+serves today (John Chrysostom 2,515 · Augustine of Hippo 1,659 — 4.97% of the 83,993-row served
+pool, measured live on prod 2026-07-27). The clean NPNF/CCEL editions of those same authors land
+in the same cutover, so the coverage dip is transient, not a standing hole.
+
+**Why this was an owner call and not an agent call.** It changes what real users are served. The
+agent measured the size and named the tradeoff; the timeline was the owner's.
+
+**What the measurement ruled out.** The four `LEGAL_CORPUS_FILTER` legs with no provenance
+constraint (Gill, JFB, Clarke, Henry) contribute **zero** forbidden rows — corroborated by E6
+smoke on the prod fork reporting Gill = 28,843, identical to the pre-E3 census. The `work IN
+SERVED_PROSE_WORKS` leg matches zero on prod (100% NULL work key). Barnes/Wesley/Calvin require a
+`crosswire` URL, which biblehub/HCF fail by construction. Only the two book-scoped legs overlap.
+
+**No v5 is owed.** v4 was minted (18:34) and run (18:39) on 2026-07-18, after B2 cleaned dev at
+17:26/17:40 — the re-baseline commit `a070e1e` says "on cleaned dev DB" in its own message, and
+dev measures 0/0/0 forbidden today. v4 never saw these rows, so E3 cannot move its numbers. E3
+moves prod *toward* the measured configuration. The "served -> v5 owed" conditional is defeated
+by the ordering, not by assertion.
+
+**Related:** ADR-028 (launch-blocking vs accepted-limitation), ADR-029 (per-work attribution).
+
+## ADR-031 — The two prod forks stay, for now (owner, 2026-07-27)
+
+`census-clone` (`ep-wispy-violet`, 5,972 MB) and `prod-census` (`ep-young-hat`, 4,477 MB) are
+undeleted forks of production, ~10.4 GB total. Neither auto-deleted; the cutover workorder had
+assumed `prod-census` was gone. **Owner elected to keep both.** They are storage cost and a copy
+of prod user data outside the prod blast radius, so this is a standing item, not a closed one.
+Neither is a restore point and **neither may be rehearsed on** — Session 2 creates a fresh fork
+and confirms its parent is `production` first.
