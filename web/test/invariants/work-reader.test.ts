@@ -31,9 +31,33 @@ import { runtimeDbUrl } from '../helpers/env';
 
 const dbUrl = runtimeDbUrl();
 
-const STAGED_SLUG = 'josephus-whiston'; // staged on dev — the boundary probe
+// The staged probe is DISCOVERED, never named. It used to be the literal
+// 'josephus-whiston', which was published on dev on 2026-07-24 (the Hades excision)
+// and turned this invariant red on a fixture drift rather than a real regression —
+// the check went red for the wrong reason, which is the same failure as going green
+// for the wrong reason. What the boundary needs is "some source is staged and 404s",
+// not "this particular source is staged", so ask the DB which one. Picking one that
+// HAS sections keeps the 404 attributable to the status filter rather than to the
+// work being empty, and ORDER BY slug keeps the choice deterministic across runs.
 const BIG_SLUG = 'calvin-institutes'; // published, 3,448 sections — the unbounded probe
 const SMALL_SLUG = 'herbert-temple'; // published, 246 sections — walkable end-to-end
+
+async function discoverStagedSlug(): Promise<string> {
+  const sql = getDb();
+  const rows = (await sql`
+    SELECT s.slug FROM sources s
+     WHERE s.status = 'staged'
+       AND EXISTS (SELECT 1 FROM sections sec WHERE sec.source_id = s.id)
+     ORDER BY s.slug LIMIT 1`) as { slug: string }[];
+  // No staged-with-sections source means the boundary CANNOT be proven on this DB.
+  // That is a failure, not a skip: a 404 from an absent row would certify a filter
+  // that might no longer exist.
+  expect(
+    rows.length,
+    'no staged source with sections exists in this DB — the published-only boundary is unprovable here, so this check would pass vacuously',
+  ).toBe(1);
+  return rows[0]!.slug;
+}
 
 function callWork(slug: string): Promise<Response> {
   return getWork(new Request(`https://test.local/api/work/${slug}`), { params: Promise.resolve({ slug }) });
@@ -63,11 +87,12 @@ function ordinals(rows: { ordinal: number }[]): number[] {
 
 describe.skipIf(!dbUrl)('Book Reader API — /api/work/[slug] + /sections (executed against the real DB)', () => {
   it('404s a staged source on BOTH routes (published-only boundary)', async () => {
-    // FIXTURE PRECONDITION (added 2026-07-19). Without this the test is fixture-dependent and
-    // can pass for the WRONG reason: against a DB where `josephus-whiston` is simply ABSENT,
+    // FIXTURE PRECONDITION (added 2026-07-19, made drift-proof 2026-07-29). Without this the
+    // test can pass for the WRONG reason: against a DB where the probe slug is simply ABSENT,
     // deleting the `status = 'published'` filter entirely would STILL yield 404, and this test
-    // would certify a boundary that no longer exists. Asserting the row exists AND is staged is
-    // what makes the 404s below attributable to the filter.
+    // would certify a boundary that no longer exists. Discovering a row that exists AND is
+    // staged is what makes the 404s below attributable to the filter.
+    const STAGED_SLUG = await discoverStagedSlug();
     const sql = getDb();
     const fixture = (await sql`SELECT status FROM sources WHERE slug = ${STAGED_SLUG}`) as { status: string }[];
     expect(fixture.length, `fixture missing: '${STAGED_SLUG}' must exist in this DB, else the 404 proves nothing`).toBe(1);

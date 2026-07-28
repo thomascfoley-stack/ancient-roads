@@ -1,0 +1,91 @@
+host: ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+
+read-only txn: on   role: neondb_owner
+
+POSITIVE CONTROL: sources rows = 46 ✓ probe fires
+
+=== PER-REGISTER (sources x status) ===
+  register      status       works  sections  unit_ordinal NULL
+  commentary    published        5     84292                 0
+  commentary    quarantined      1      1300                 0
+  confession    published        1      4852                 0
+  father        published        3     18371                 0
+  father        staged           1      1224                 0
+  historian     published        1      4112                 0
+  historian     staged           2         0                 0
+  hymn          published        5      1690                 0
+  lexicon       staged           5     52043                 0
+  poetry        published       10      3533                 0
+  poetry        quarantined      2         0                 0
+  sermon        published        7    162805                 0
+  theology      published        3     28726                 0
+
+=== WORK-BY-WORK ===
+  status    register     slug                        sections   units  vectors  anchors    flat  q
+  published commentary   adam-clarke                    12693     727    12693    12693       0  
+  quarantined commentary   barnes-notes                    1300    1189     1300     1300       0  Q
+  published commentary   jfb                            15473    1086    15473    15473       0  
+  published commentary   john-gill                      28843    1169    28843    28843       0  
+  published commentary   keil-delitzsch                 23073     894    23073    23073   23073  
+  published commentary   matthew-henry                   4210    1158     4210     4210       0  
+  published confession   schaff-creeds                   4852     223     4852        0    4852  
+  published father       augustine-homilies              3723     346     3723        0    3723  
+  published father       catena-aurea                    5808     821     5808        0    5808  
+  published father       chrysostom-homilies             8840     377     8840        0    8840  
+  staged    father       origen-commentary               1224     371     1224        0    1224  
+  staged    historian    edersheim-lifetimes                0       0        0        0       0  
+  published historian    josephus-whiston                4293    2687     4293      439       0  
+  staged    historian    schaff-history                     0       0        0        0       0  
+  published hymn         neale-eastern-hymns               86      60       86        0      86  
+  published hymn         olney-hymns                      416     349      416        0     416  
+  published hymn         scottish-psalter-1650            326     184      326        0     326  
+  published hymn         watts-hymns                      434     391      434        0     434  
+  published hymn         watts-psalms                     428     350      428        0     428  
+  staged    lexicon      bdb-lexicon                     9794    9770     9794        0    9794  
+  staged    lexicon      eastons-dictionary              4841    3931     4841        0    4841  
+  staged    lexicon      isbe                           26475    8928    26475        0   26475  
+  staged    lexicon      naves-topical                   5357    4868     5357        0    5357  
+  staged    lexicon      smiths-dictionary               5576    4288     5576        0    5576  
+  published poetry       dante-divine-comedy              620     106      620        0     620  
+  quarantined poetry       donne-divine-poems                 0       0        0        0       0  Q
+  published poetry       herbert-temple                   246     157      246        0     246  
+  quarantined poetry       herrick-noble-numbers              0       0        0        0       0  Q
+  published poetry       hopkins-poems                    167      77      167        0     167  
+  published poetry       keble-christian-year             281     111      281        0     281  
+  published poetry       milton-poetical-works            903      95      903        0     903  
+  published poetry       montgomery-sacred-poems          417     360      417        0     417  
+  published poetry       rossetti-verses                  241     181      241        0     241  
+  published poetry       tennyson-in-memoriam             148     130      148        0     148  
+  published poetry       traherne-poems                   412     281      412        0     412  
+  published poetry       wheatley-poems                    98      45       98        0      98  
+  published sermon       edwards-works                  16968     628    16968        0   16968  
+  published sermon       flavel-works                    3577     123     3577        0    3577  
+  published sermon       maclaren-expositions           17128    1323    17128        0   17128  
+  published sermon       spurgeon-sermons              118371    3540   118371        0  118371  
+  published sermon       spurgeon-talks-to-farmers        301      16      301       19       0  
+  published sermon       watson-works                    3134     122     3134        0    3134  
+  published sermon       wesley-sermons                  3329     140     3329        0    3329  
+  published theology     calvin-institutes               3448     103     3448        0    3448  
+  published theology     hodge-systematic                5224     327     5224        0    5224  
+  published theology     owen-works                     20054     702    20054        0   20054  
+
+=== MANIFEST entries with NO sources row (never ingested) ===
+  thayers-lexicon                lexicon      QUARANTINED: A6 run 2026-07-17: archive.org OCR headword recognizability 50.2% fuzzy / 6.2% strict, 0% 
+  spurgeon-treasury              commentary   
+  ryle-expository                commentary   
+  vincent-word-studies           lexicon      
+  josephus-works                 historian    
+  bramley-carols                 hymn         QUARANTINED: A6 run 2026-07-17: no clean-text source — CCEL serves HTML landing (no ThML); all 5 archiv
+  whitefield-works               sermon       QUARANTINED: A6 run 2026-07-18: PG 68976 is only Vol 1 of 6 and mixes letters/sermons/tracts with no cl
+  barnes-crosswire-nt            commentary   
+  wesley-crosswire               commentary   
+  calvin-crosswire               commentary   
+  scofield-crosswire             commentary   
+  pnt-crosswire                  commentary   
+  geneva-notes-crosswire         commentary   QUARANTINED: CrossWire module .conf has NO DistributionLicense and the module page lists it as null — n
+  poole-tcp                      commentary   
+
+=== OTHER STORES ===
+  commentary_entries: 191749
+  embeddings (served): 420974, unlabeled work key: 124955
