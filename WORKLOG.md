@@ -5,16 +5,37 @@
 Read-only diagnosis before the Part 5 build. Full topology, decision tree and evidence in
 `docs/INFRA.md` §"Live topology + cutover decision tree". Nothing was written to any database.
 
-**Blocking finding — Session 2 cannot start.** `.env.prod` still points at the 2026-07-24
-census clone (`ep-wispy-violet`); the swap-back to `ep-odd-fog` that the rehearsal entry listed
-as pending never happened. The only `ep-odd-fog` credential on this machine **fails password
-auth** and carried `NEON_BRANCH=census-clone`, so it was never live prod access. Ruled out a
-network/SSL cause: the identical probe against `ep-wispy-violet` authenticates and passes a
-temp-table write probe. **Owner action: refresh prod `neondb_owner` (`OWNER_ACTIONS.md` §7) and
-repoint `.env.prod`.** Also note the census clone did **not** auto-delete as assumed — it is
-still alive, which is a stray fork of prod data worth deleting deliberately.
+**CORRECTED WITHIN THE SESSION — Session 2 is NOT blocked.** The first pass of this entry said
+"cutover cannot start, owner must refresh the credential." **That was wrong.** `neonctl` is
+installed and authenticated as project owner, so a live prod credential is available on demand
+(`neonctl connection-string production --project-id spring-heart-74819093 --role-name
+neondb_owner`). Proven by re-running the full read-only census against `ep-odd-fog`. The error
+was concluding "no access" from the `.env` files alone without checking the provisioning CLI.
+**No owner credential action is required.** What remains true: the credential in the old
+`.env.prod.example` is stale, and `.env.prod` still points at the census clone — file hygiene,
+not access. Prefer passing the string in-process over writing prod credentials to disk.
 
-**1c-1 — forbidden provenance is PARTIALLY served, bounded ≤7,019 / 71,884 (9.8%).** Gill/JFB/
+**Prod re-verified live 2026-07-27: byte-identical to the 2026-07-23 census.** 190,635 rows,
+100% NULL work key, sections 2/5,510, migrations 016-030 all absent, forbidden 15,707+56,177,
+user data 34 highlights / 2 notes / 1 chat. **Prod is genuinely untouched.**
+
+**Vercel RESOLVED — no project deploys on push.** All three projects report `link.type = NONE`
+via `GET /v9/projects` (the field `vercel project inspect` omits). One path to ancientpaths.app:
+a manual CLI deploy of `web`. Confirms that pushing `main` does not update production.
+
+**Two undeleted forks of prod, ~10.4 GB.** `census-clone` (`ep-wispy-violet`, 5,972 MB) and
+`prod-census` (`ep-young-hat`, 4,477 MB) are both still `ready` — the workorder assumed the
+latter had auto-deleted. Neither is a restore point; both hold copies of prod user data.
+**Recommend deliberate deletion (owner call; destructive, not done this session.)**
+
+**Minor defect noted:** `prod-census.cjs` printed `branch: census-clone` while its own host guard
+correctly asserted `ep-odd-fog`. The branch label is decorative and can lie — same class as the
+`ground-truth.mjs` bug fixed above. Trust the host assertion, not the branch line.
+
+**1c-1 — MEASURED on live prod: E3 removes exactly 4,174 served rows (4.97% of the 83,993-row
+served pool)** — John Chrysostom 2,515 + Augustine of Hippo 1,659, every other leg zero. This
+confirms the bound reasoned out below (≤7,019) and its two predicted legs. Original reasoning,
+kept because it is what makes the number checkable: Gill/JFB/
 Clarke/Henry (the four legs with no provenance constraint) have **zero** forbidden rows — E6
 smoke on the fork shows Gill = 28,843, identical to the pre-E3 census. `work IN
 SERVED_PROSE_WORKS` matches 0 on prod (100% NULL work key). Barnes/Wesley/Calvin require a
@@ -45,14 +66,16 @@ linkage, and reading the env values would mean pulling prod secrets to disk.
 **HANDOFF (cold read).** The cutover is designed (`docs/CUTOVER_DESIGN.md`, approved — build it,
 do not redesign it) and rehearsed end-to-end on a fork of prod, where E1–E6 completed: migrations
 016–030 applied, 77,820/190,635 rows register-labeled, 71,884 forbidden rows deleted, 6 works
-sliced 1:1, smoke green. What stands between here and a real cutover is **one owner action**: a
-live `ep-odd-fog` credential in `.env.prod`. Until then E0 aborts by design and Session 2 is
-wasted motion. Two owner calls are open before the first prod write: (1) E3 will remove up to
-7,019 rows the live site serves today — licensing-positive and the clean NPNF/CCEL re-ingest
-replaces those voices, but the cutover-now-vs-re-source-first timeline is the owner's; (2) the
-still-live census clone `ep-wispy-violet` is an undeleted fork of prod data. Session 2 must
-rehearse on a **fresh** fork (confirm its parent is production first), never on prod. The 37 user
-rows (34 highlights/6 users, 2 notes/1 user, 1 chat) are the invariant across every chunk.
+sliced 1:1, smoke green. **Access is NOT a blocker** — mint the prod string from `neonctl` (see
+the correction above) and pass it in-process; do not write prod credentials to disk. Prod was
+re-verified live on 2026-07-27 and is unchanged, so every count in `CUTOVER_DESIGN.md` still
+holds. **One owner call is open before the first prod write:** E3 removes **4,174 rows the live
+site serves today** (Chrysostom 2,515, Augustine 1,659 — 4.97% of the 83,993-row served pool).
+Licensing-positive, and the clean NPNF/CCEL re-ingest replaces those voices, but cutover-now vs.
+re-source-first is the owner's timeline decision, not the agent's. Session 2 must rehearse on a
+**fresh** fork (confirm its parent is `production` first), never on prod, and must not reuse
+`census-clone` or `prod-census` — both are stale forks pending deletion. The 37 user rows (34
+highlights/6 users, 2 notes/1 user, 1 chat) are the invariant across every chunk.
 
 ## 2026-07-24 (Census-clone cutover rehearsal — E1–E6 COMPLETE)
 

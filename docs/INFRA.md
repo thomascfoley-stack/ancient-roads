@@ -122,46 +122,89 @@ evidence (2026-07-23), `scripts/ground-truth.mjs --env=dev`, direct read-only SQ
 
 ## Neon topology
 
-| endpoint | role | state (2026-07-27) | consumers |
-|---|---|---|---|
-| `ep-odd-fog-atnykudm` | **production** | last verified read 2026-07-23 (census). Pre-migration-016. | Vercel project `web` (ancientpaths.app); `NEON_AUTH_*` in `web/.env.local` |
-| `ep-tiny-hat-atdgpisx` | **dev** | live, 420,974 platform rows, 296,019 with work key, migrations 016-030 applied | `web/.env.local` `DATABASE_URL(_UNPOOLED)`; ingest scripts |
-| `ep-wispy-violet-atiddys9` | census-clone (fork of prod, 2026-07-24 rehearsal) | **STILL ALIVE and authenticating** — it did *not* auto-delete | `.env.prod` (currently pointed here) |
+Neon project **Ancient Paths** = `spring-heart-74819093`, org `org-bitter-cherry-28741499`.
+Enumerated with `neonctl branches list` (2026-07-27); every branch below is a real branch, and
+every endpoint mapping was read back from `neonctl connection-string` (host extracted, credential
+never printed).
+
+| branch | endpoint | parent | size | state | consumers / purpose |
+|---|---|---|---|---|---|
+| `production` (default) | `ep-odd-fog-atnykudm` | root | 4,477 MB | ready | Vercel `web` -> ancientpaths.app; `NEON_AUTH_*` in `web/.env.local`. **Re-verified read-only 2026-07-27: identical to the 2026-07-23 census, prod is untouched.** |
+| `dev` | `ep-tiny-hat-atdgpisx` | production | 17,464 MB | ready | `web/.env.local` `DATABASE_URL(_UNPOOLED)`; ingest scripts. 420,974 rows, 296,019 with work key, migrations 016-030 applied |
+| `census-clone` | `ep-wispy-violet-atiddys9` | production | 5,972 MB | ready | 2026-07-24 rehearsal fork. **Did NOT auto-delete.** `.env.prod` still points here |
+| `prod-census` | `ep-young-hat-at34uhfy` | production | 4,477 MB | ready | 2026-07-22 census fork. **Also did NOT auto-delete** — the workorder assumed it was gone |
+| `ci` | `ep-holy-rice-athhpp5z` | dev | 16,676 MB | ready | CI |
+| `item2-pre-ingest-backup-20260719` | `ep-misty-firefly-atz9pgg1` | dev | 11,167 MB | ready | deliberate restore point |
+| `sec2-stage`, `sec2-verify`, `betterauth-spike` | — | production | 32 MB each | archived | spent spikes |
+
+**Housekeeping finding:** `census-clone` (5,972 MB) + `prod-census` (4,477 MB) = **~10.4 GB of
+undeleted forks of production data**, both still live and both authenticating. Neither is a
+restore point. They are storage cost and a copy of prod user data sitting outside the prod
+blast radius. **Recommend deliberate deletion** (owner call — deleting a branch is destructive
+and was not done this session).
 
 **Corpus gap that motivates the cutover** — prod 190,635 flat embeddings, **100% with NO work
 key** (register ingest never ran), sections = Barnes pilot only (2 sources / 5,510 sections).
 Dev carries 35 works across registers: prose 290,796 (20 works, incl. spurgeon-sermons 118,371),
 poetry 3,533 (10 works), hymn 1,690 (5 works). **None of it is in prod.**
 
-## BLOCKER 1 — no working prod credential (cutover cannot start)
+## Prod credential — NOT blocked (this reverses the first finding of this session)
 
-`.env.prod` points at the **census clone**, not prod (WORKLOG 2026-07-24 flagged the swap-back as
-pending and it never happened). The only `ep-odd-fog` credential recoverable on this machine (from
-the pre-sanitization `.env.prod.example`) **fails password authentication**, and its `NEON_BRANCH`
-said `census-clone`, so it was never a live prod credential in the first place.
+**Correction, same session.** The first pass concluded "cutover cannot start, owner must refresh
+the credential". That was wrong, and the error was not looking past the `.env` files. **`neonctl`
+is installed and authenticated as the project owner**, so a live prod `neondb_owner` connection
+string can be minted on demand:
 
-- *Rival explanation ruled out:* not a network/SSL fault — the same probe against
-  `ep-wispy-violet` with the same client authenticates and passes a temp-table write probe.
-- **Action: owner refreshes the prod `neondb_owner` credential (`OWNER_ACTIONS.md` §7) and points
-  `.env.prod` back at `ep-odd-fog`.** This is the decision-tree row "prod credential stale ->
-  cutover cannot start". E0 would catch it, but catching it at E0 wastes Session 2.
+```
+npx neonctl connection-string production --project-id spring-heart-74819093 --role-name neondb_owner
+```
+
+Verified by re-running the full read-only census against `ep-odd-fog` on 2026-07-27 with a
+freshly minted credential (below). **No owner credential action is required for Session 2.**
+
+What *is* true from the first pass: the credential stored in the pre-sanitization
+`.env.prod.example` is stale and fails auth, and `.env.prod` still points at the census clone
+rather than prod. Both are file hygiene, not access. Pass the connection string in-process
+(`export CUTOVER_DATABASE_URL=$(neonctl connection-string ...)`) rather than writing prod
+credentials to disk at all; the `.env.prod` swap-back the rehearsal called for is then unnecessary.
+
+**Two roles exist on every branch** (`app_runtime`, `neondb_owner`), so `neonctl connection-string`
+requires `--role-name` or it errors. Prefer `app_runtime` for read-only work.
 
 ## Vercel
 
-| project | production URL | git-connected? | notes |
-|---|---|---|---|
-| `web` | **ancientpaths.app** (the real site) | not shown by `vercel project inspect` — **UNRESOLVED** | CLI-deployed; last deploy of record `24677ba` (2026-07-18) |
-| `theology-study-app` | `theology-study-app-home-network-hardening.vercel.app` | **UNRESOLVED** | `24677ba` disconnected the misspelled stray project |
-| `project-nl2ey` | none (22d idle) | — | unrelated |
+Team `home-network-hardening` (`team_TQ3BYCSyzQ3m0yatlkKmUzM0`). Git linkage read from the Vercel
+REST API (`GET /v9/projects`), which returns the `link` object `vercel project inspect` omits.
 
-**Not verified this session:** whether either project can still deploy on push, and which Neon
-branch each environment's `DATABASE_URL` points at. `vercel project inspect` does not print git
-linkage, and reading Vercel env values would mean pulling prod secrets to disk. **Do not treat the
-"two deploy paths" row as cleared** — it is unmeasured, not clean.
+| project | production URL | git linkage | notes |
+|---|---|---|---|
+| `web` | **ancientpaths.app** (the real site) | **`NONE`** | CLI-deployed only; last deploy of record `24677ba` (2026-07-18) |
+| `theology-study-app` | `theology-study-app-home-network-hardening.vercel.app` | **`NONE`** | `24677ba` disconnected the misspelled stray project; it stayed disconnected |
+| `project-nl2ey` | none (22d idle) | **`NONE`** | unrelated |
+
+**RESOLVED — the "extra project can deploy on push" row is CLOSED.** All three projects report
+`link.type = NONE`, so **no project deploys on git push**, and there is exactly one path to
+ancientpaths.app: a manual CLI deploy of `web`. This also confirms the standing gotcha —
+**pushing `main` does not update production.** E5 must be an explicit deploy.
+
+*Still unmeasured (deliberately):* which Neon branch each Vercel *environment* variable points at.
+Reading those values means pulling prod secrets to disk, and the question it would answer is
+already settled from the other side: prod's data was re-verified directly against `ep-odd-fog`.
 
 ## The two checks that change the plan (1c)
 
-**1c-1 — is forbidden provenance inside the served pool? PARTIALLY, bounded ≤7,019 of 71,884.**
+**1c-1 — is forbidden provenance inside the served pool? YES, PARTIALLY — measured at exactly
+4,174 rows (4.97% of the served pool), live on prod 2026-07-27.**
+
+| measure | prod, live |
+|---|---|
+| served rows (`LEGAL_CORPUS_FILTER`) | 83,993 |
+| forbidden-provenance rows | 71,884 |
+| **served AND forbidden — what E3 removes from the live corpus** | **4,174 (4.97% of served)** |
+| by author | John Chrysostom 2,515 · Augustine of Hippo 1,659 |
+
+The measurement lands inside the ≤7,019 bound derived below and hits exactly the two predicted
+legs, with every other leg contributing zero. The reasoning that produced the bound:
 Prod's 71,884 forbidden rows (56,177 `historicalchristian.faith` + 15,707 `biblehub.com`,
 studylight 0) break down by author (rehearsal log, prod fork). Against `LEGAL_CORPUS_FILTER`:
 
