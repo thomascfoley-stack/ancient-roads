@@ -1,0 +1,30 @@
+§1 CI — what was PROVEN and what is BLOCKED (2026-07-29)
+
+BLOCKED (§1a, §1b, §1c) — the two secrets are NOT set.
+  gh api repos/thomascfoley-stack/ancient-roads/actions/secrets
+    -> {"total_count":0,"secrets":[]}
+  Token scopes: gist, read:org, repo, workflow  (i.e. it CAN read secrets; they are absent)
+  Consequence: db-invariants still short-circuits, so section-vector-pairing and the
+  per-register reader checks STILL have not executed anywhere but the author's laptop.
+  §1c's condition is therefore live right now: db-invariants reports SUCCESS while
+  running NOTHING. Stated loudly, as instructed.
+
+PROVEN (§1d) — the glob fails closed.
+  Run: https://github.com/thomascfoley-stack/ancient-roads/actions/runs/30374070563 (push event)
+  A throwaway invariant (web/test/invariants/zz-glob-canary.test.ts) was added with NO
+  edit to .github/workflows/audit.yml, and CI executed it:
+      ✓ test/invariants/zz-glob-canary.test.ts (1 test) 3ms
+  Web suite went 200 -> 201 tests (126 passed | 75 skipped) purely by the file existing.
+  Canary removed in the following commit.
+
+  HONEST SCOPE: this proves the glob picks a new invariant up in the `audit` job, which
+  runs the whole web suite. It does NOT prove the db-invariants glob, because that job
+  never got past its guard — that half needs APP_DATABASE_URL_TEST.
+
+EXECUTED vs SKIPPED in CI, this run:
+  root  262 passed |  1 skipped (263)
+  web   126 passed | 75 skipped (201)      <-- 75 still not executing
+  bible-sync 10 passed (10)
+  15 suites announced NOT RUN rather than skipping silently.
+
+Only failing gate: AUDIT FAILED (1): deps — the accepted-red better-auth advisory (§1e).
