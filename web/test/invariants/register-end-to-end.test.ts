@@ -27,6 +27,7 @@ import { listCatalogWorks } from '@/lib/catalog';
 import { getDb } from '@/lib/db';
 import type { WorkSectionsPage, WorkTocRow } from '@/lib/work';
 import { runtimeDbUrl } from '../helpers/env';
+import { announceSkip } from '../helpers/loud-skip';
 
 const dbUrl = runtimeDbUrl();
 
@@ -105,7 +106,14 @@ interface SearchHit {
   ordinal: number; unitOrdinal: number | null; heading: string | null; snippet: string;
 }
 
-describe.skipIf(!dbUrl)('§B1 per-register end-to-end (real route handlers, real DB)', () => {
+// A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
+const SKIP = announceSkip(
+  '§B1 per-register end-to-end (real route handlers, real DB)',
+  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(dbUrl) }],
+  'the five per-register reader checks: catalog, reader, search, link-lands-on-passage, attribution',
+);
+
+describe.skipIf(SKIP)('§B1 per-register end-to-end (real route handlers, real DB)', () => {
   it('every published register has a representative work, and the no-catalog set is exactly as declared', async () => {
     const reps = await representatives();
     // POSITIVE CONTROL: a corpus with no published registers would make every per-register

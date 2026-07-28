@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createChannel, addMessage, getMessages } from '@/lib/chat';
 import { getDb, runAsUser } from '@/lib/db';
 import { runtimeDbUrl, requireDbInCi } from '../helpers/env';
+import { announceSkip } from '../helpers/loud-skip';
 
 const dbUrl = requireDbInCi();
 const userA = `qa-tenancy-a-${Date.now()}`;
@@ -12,7 +13,14 @@ const userB = `qa-tenancy-b-${Date.now()}`;
 let channelId = '';
 let created = false;
 
-describe.skipIf(!dbUrl)('Layer 1 — tenancy invariant (two-account, executed)', () => {
+// A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
+const SKIP = announceSkip(
+  'Layer 1 — tenancy invariant (two-account, executed)',
+  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(dbUrl) }],
+  'the two-account tenancy invariant on user data',
+);
+
+describe.skipIf(SKIP)('Layer 1 — tenancy invariant (two-account, executed)', () => {
   beforeAll(async () => {
     const ch = await createChannel(userA, 'qa-tenancy-channel');
     channelId = ch.id;

@@ -27,6 +27,7 @@ import { listContinueReading, listLibraryItems } from '@/lib/library';
 import { searchSections } from '@/lib/search-sections';
 import { runAsUser } from '@/lib/db';
 import { ensureDbEnv, localEnv } from '../helpers/env';
+import { announceSkip } from '../helpers/loud-skip';
 
 // runAsUser()/getDb() read process.env; ensureDbEnv copies the URL out of web/.env.local into it.
 // Without this the user-scoped writes below throw "APP_DATABASE_URL or DATABASE_URL must be set".
@@ -54,7 +55,14 @@ function callWork(slug: string): Promise<Response> {
   return getWork(new Request(`https://test.local/api/work/${slug}`), { params: Promise.resolve({ slug }) });
 }
 
-describe.skipIf(!url)('Phase 4 §A — a shelved work that is later staged/quarantined disappears from every surface', () => {
+// A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
+const SKIP = announceSkip(
+  'Phase 4 §A — a shelved work that is later staged/quarantined disappears from every surface',
+  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(url) }],
+  'the published-status boundary across every read surface',
+);
+
+describe.skipIf(SKIP)('Phase 4 §A — a shelved work that is later staged/quarantined disappears from every surface', () => {
   beforeAll(async () => {
     owner = new pg.Client({ connectionString: url!, ssl: { rejectUnauthorized: false } });
     await owner.connect();

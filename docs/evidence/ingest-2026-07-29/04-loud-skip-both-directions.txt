@@ -1,0 +1,28 @@
+LOUD-SKIP — proven BOTH directions, 2026-07-29
+
+DIRECTION A — DEEPINFRA_API_KEY + DB present: the check RUNS.
+  §B0 class 2 — pairing probed on 35/35 published works; all covered
+  ✓ re-embedding the body reproduces the stored vector, and discriminates against a neighbour
+  Tests  1 passed (1)
+
+DIRECTION B — DEEPINFRA_API_KEY="" , GITHUB_ACTIONS=true: WARNS, and does NOT report pass.
+  ::warning title=§B0 class 2 — content↔vector pairing NOT RUN::§B0 class 2 — content↔vector
+  pairing DID NOT RUN — missing DEEPINFRA_API_KEY. It covers: that every published section body
+  still matches its OWN stored embedding — the mispairing class that leaves row counts, 1:1
+  assertions, the reader, the TOC and FTS all green while semantic search returns the passage
+  next door. A green suite without it is not evidence that any of those hold.
+  Tests  1 skipped (1)      <-- SKIPPED, never PASSED
+
+FULL SUITE, the two environments side by side:
+  DB + key present ............ 197 passed |  3 skipped (200)
+  no .env.local, no key ....... 125 passed | 75 skipped (200), 14 NOT RUN annotations
+
+  ^ That second line IS the CI `audit` job today. 75 of 200 tests do not execute there.
+    (The repo's existing workflow warning says "69 of 177"; the true current figure is 75/200.)
+
+The 14 suites that announce NOT RUN without a DB / key:
+  MIG-A polymorphic annotations · MIG-B..E bookmarks/library_items/reading_progress/tags ·
+  §B0 class 2 content<->vector pairing · Book Reader API · Phase 4 §A shelved-work boundary ·
+  §B1 per-register end-to-end · Layer 1 licensing · Phase 3 annotation RLS tenancy ·
+  ADR-026 024 backfill reassembly · register wall surfaces · §P1 exact-substring round-trip ·
+  searchSections dedupe/caps · §7 sub-verse highlight tenancy · Layer 1 tenancy

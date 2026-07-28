@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { localEnv } from '../helpers/env';
+import { announceSkip } from '../helpers/loud-skip';
 
 const MIGRATION = fileURLToPath(new URL('../../../db/migrations/024_sections_unit_ordinal.sql', import.meta.url));
 
@@ -97,7 +98,14 @@ const deleteSeed = async (c: pg.Client) => {
   await c.query(`DELETE FROM sources WHERE slug = $1`, [SLUG]);
 };
 
-describe.skipIf(!url)('ADR-026 red-first — 024 backfill reassembles mis-ordered chunks in (unit_ordinal, ordinal) order', () => {
+// A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
+const SKIP = announceSkip(
+  'ADR-026 red-first — 024 backfill reassembles mis-ordered chunks in (unit_ordinal, ordinal) order',
+  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(url) }],
+  'the 024 backfill reassembly of mis-ordered chunks in (unit_ordinal, ordinal) order',
+);
+
+describe.skipIf(SKIP)('ADR-026 red-first — 024 backfill reassembles mis-ordered chunks in (unit_ordinal, ordinal) order', () => {
   beforeAll(async () => {
     client = new pg.Client({ connectionString: url!, ssl: { rejectUnauthorized: false } });
     await client.connect();
