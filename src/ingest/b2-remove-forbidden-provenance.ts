@@ -83,7 +83,14 @@ async function main() {
   // The branch label is self-attested — also require a known non-prod endpoint.
   // Part C runs this against prod DELIBERATELY: that run must set B2_ALLOW_PROD=1
   // (the conscious-override friction is the design).
-  if (!/ep-tiny-hat|localhost|127\.0\.0\.1|ep-wispy-violet|ep-odd-fog/.test(dbUrl) && process.env.B2_ALLOW_PROD !== '1') {
+  //
+  // ep-odd-fog is DELIBERATELY ABSENT from this list (deep-audit 2026-07-27). It used to
+  // sit here beside localhost, which meant a self-attested NEON_BRANCH=dev plus a prod
+  // DATABASE_URL deleted production rows with B2_ALLOW_PROD never set — the guard
+  // allowlisted the one endpoint it exists to protect. Lowercased because DNS is
+  // case-insensitive and an uppercase URL otherwise slipped past every branch of this test.
+  const lowerUrl = dbUrl.toLowerCase();
+  if (!/ep-tiny-hat|localhost|127\.0\.0\.1|ep-wispy-violet/.test(lowerUrl) && process.env.B2_ALLOW_PROD !== '1') {
     throw new Error('STOP: DATABASE_URL is not the dev endpoint (ep-tiny-hat). For the deliberate Part C prod run, set B2_ALLOW_PROD=1.');
   }
   void arg;

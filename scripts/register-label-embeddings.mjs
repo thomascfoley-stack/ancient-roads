@@ -8,6 +8,7 @@ import pg from 'pg';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertCutoverTarget } from './lib/target-guard.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const apply = process.argv.includes('--apply');
@@ -22,17 +23,15 @@ function urlFromEnv() {
 }
 
 function assertTarget(url) {
-  const host = new URL(url).host;
-  const cutover = process.env.CUTOVER_ALLOW === '1' || process.env.B2_ALLOW_PROD === '1' || process.env.MIGRATE_ALLOW_PROD === '1';
-  if (host.includes('ep-tiny-hat')) return;
-  if (cutover && (host.includes('ep-wispy-violet') || host.includes('ep-odd-fog'))) return;
   // A rehearsal runs against a FRESH fork of prod whose endpoint nobody can know in
-  // advance (ADR-031 forbids reusing the old ones). The operator declares that
-  // endpoint once in CUTOVER_EXPECT_HOST; STEP ZERO has already validated it. This
-  // is additive — the hardcoded prod/dev allowances above are unchanged.
-  const declared = process.env.CUTOVER_EXPECT_HOST;
-  if (cutover && declared && declared.length >= 6 && host.includes(declared)) return;
-  throw new Error(`STOP: host ${host} is not dev and cutover override not set`);
+  // advance (ADR-031 forbids reusing the old ones). The operator declares that endpoint
+  // in CUTOVER_EXPECT_HOST and it must match EXACTLY — the old substring test let
+  // CUTOVER_EXPECT_HOST=neon.tech authorize every endpoint in the account, prod included.
+  assertCutoverTarget(url, {
+    allow: process.env.CUTOVER_ALLOW === '1' || process.env.B2_ALLOW_PROD === '1' || process.env.MIGRATE_ALLOW_PROD === '1',
+    declared: process.env.CUTOVER_EXPECT_HOST,
+    what: 'label target',
+  });
 }
 
 const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'ingest/sources.config.json'), 'utf8'));

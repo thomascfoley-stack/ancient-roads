@@ -22,6 +22,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import readline from 'node:readline';
+import { hostOf, isProdHost } from './lib/target-guard.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CHECKPOINT = path.join(ROOT, '.cutover-checkpoint.json');
@@ -103,12 +104,18 @@ async function stepZero() {
   if (!url) die('STEP ZERO', 'CUTOVER_DATABASE_URL is unset. This is the parked-rehearsal state: supply the census-clone (ep-young-hat) or prod owner string explicitly. Never sourced from .env.local.');
 
   let host;
-  try { host = new URL(url).host; } catch { die('STEP ZERO', 'CUTOVER_DATABASE_URL is not a valid URL'); }
+  // hostOf() LOWERCASES. `new URL()` does not normalize the host for the non-special
+  // `postgresql:` scheme, so every downstream `includes('ep-odd-fog')` used to miss an
+  // UPPERCASE prod URL — including the CUTOVER_REHEARSAL guard at the bottom of this file.
+  try { host = hostOf(url); } catch { die('STEP ZERO', 'CUTOVER_DATABASE_URL is not a valid URL'); }
   console.log(`  target host: ${host}`);
 
   // (3) endpoint identity — this IS the intended branch, not dev or a stale copy.
-  if (!host.includes(EXPECT_HOST)) die('STEP ZERO', `host ${host} does not contain expected endpoint '${EXPECT_HOST}'. Refusing (wrong target).`);
-  ok(`endpoint contains ${EXPECT_HOST}`);
+  // startsWith, not includes: the endpoint id is the FIRST dns label, so a generic
+  // declared value such as "neon.tech" can no longer satisfy this for every endpoint
+  // in the account. A bare prefix ('ep-odd-fog') and a full id both still work.
+  if (!host.startsWith(EXPECT_HOST.toLowerCase())) die('STEP ZERO', `host ${host} does not begin with expected endpoint '${EXPECT_HOST}'. Refusing (wrong target).`);
+  ok(`endpoint is ${EXPECT_HOST}`);
 
   const sql = neon(url);
   // (2) role — migrations run as owner, not app_runtime.
@@ -237,8 +244,15 @@ async function e1_migrations(sql, url, cp) {
         WHERE n.nspname = 'public' AND NOT i.indisvalid`);
       if (invalid.n > 0) die(`E1/${m}`, `${invalid.n} INVALID index(es) after ${m}: ${invalid.names}`,
         'DROP the invalid index and re-run this migration (idempotent)');
+      // CHECKPOINT ONLY ON A REAL APPLY. This push used to sit outside the !DRY guard,
+      // so `--dry-run` recorded all 15 migrations as applied without applying any. A
+      // later REAL run then read that checkpoint, skipped every migration (the E1
+      // early-return only re-checks for INVALID indexes, trivially true on a pre-016
+      // schema), and — because `e1Complete` was true — SUPPRESSED THE OWNER GATE that
+      // stands in front of the first prod write. Net: no migrations, prod rows deleted
+      // unattended, and "CUTOVER COMPLETE" printed. A dry run must leave no trace.
+      cp.done.push(`E1:${m}`); saveCheckpoint(cp);
     }
-    cp.done.push(`E1:${m}`); saveCheckpoint(cp);
   };
 
   for (const m of MIGRATIONS) await applyOne(m, 'db/apply-migration.mjs');
@@ -411,7 +425,7 @@ async function e5_deploy(cp, host) {
   if (process.env.CUTOVER_REHEARSAL === '1') { console.log('\nE5 — skipped (CUTOVER_REHEARSAL)'); return; }
   // Deploying is only ever correct when the database this run just built IS prod.
   // A rehearsal fork that reached E5 must never push a build to ancientpaths.app.
-  if (host && !host.includes('ep-odd-fog')) die('E5', `target is ${host}, not the prod endpoint — refusing to deploy a build from a non-prod cutover`, 'none; nothing deployed');
+  if (host && !isProdHost(url)) die('E5', `target is ${host}, not the prod endpoint — refusing to deploy a build from a non-prod cutover`, 'none; nothing deployed');
   console.log('\nE5 — deploy.sh (clean-tree -> licensing ratchet -> build -> vercel --prod)');
   if (DRY) { console.log('    [dry-run] would require owner "yes", then run ./deploy.sh'); return; }
   const a = await ask('  HARD STOP (§4.1): run ./deploy.sh to PROD now? type "deploy": ');
@@ -478,7 +492,7 @@ CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27
   // CUTOVER_REHEARSAL=1 with a prod URL would apply all 16 migrations, relabel 190,635
   // rows and delete 71,884 of them on PRODUCTION with zero owner confirmation. The
   // design allows exactly two gates; it does not allow an env var to reach zero.
-  if (process.env.CUTOVER_REHEARSAL === '1' && host.includes('ep-odd-fog')) {
+  if (process.env.CUTOVER_REHEARSAL === '1' && isProdHost(url)) {
     die('pre-E1', 'CUTOVER_REHEARSAL=1 is set and the target is PRODUCTION. Rehearsal mode suppresses the owner gate and must never point at prod.', 'nothing written');
   }
   if (!DRY) bindCheckpoint(cp, host);

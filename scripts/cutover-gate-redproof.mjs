@@ -16,15 +16,16 @@ import { execFileSync } from 'node:child_process';
 import { renameSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertThrowawayTarget } from './lib/target-guard.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const url = process.env.CUTOVER_DATABASE_URL;
 if (!url) throw new Error('CUTOVER_DATABASE_URL is unset');
 const declared = process.env.CUTOVER_EXPECT_HOST;
-if (!declared || declared.length < 6) throw new Error('CUTOVER_EXPECT_HOST must name the throwaway fork endpoint');
-const host = new URL(url).host;
-if (!host.includes(declared)) throw new Error(`host ${host} is not the declared target '${declared}'`);
-if (/ep-odd-fog|ep-tiny-hat/.test(host)) throw new Error(`REFUSING: ${host} is production or dev — this script corrupts its target`);
+if (!declared) throw new Error('CUTOVER_EXPECT_HOST must name the throwaway fork endpoint');
+// Case-insensitive, exact-endpoint-id. An UPPERCASE prod URL used to satisfy both legs
+// of the old test and reach this script, which corrupts whatever it is pointed at.
+const host = assertThrowawayTarget(url, declared);
 console.log(`red-proof target: ${host}\n`);
 
 function gate(phase = 'E1') {
