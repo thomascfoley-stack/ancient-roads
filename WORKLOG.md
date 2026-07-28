@@ -1,5 +1,183 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-27 (DEEP-AUDIT of the Part 5 cutover — 7 fresh agents — VERDICT: DO NOT RUN ON PROD)
+
+Mandated by CLAUDE.md (before any production deploy; after any long autonomous run). Seven
+non-overlapping lenses, none written by the cutover's author. Six ran to completion; the licensing
+lens died to an API stall and was relaunched as two tighter scopes. Every lens forked production to
+work on; **production was never written** (re-verified read-only after: 190,635 embeddings, 34
+highlights, 2 notes, m019 false). `deploy.sh` never ran.
+
+**The pattern, stated once:** every severe finding is the same defect — *a check that measures a
+proxy instead of the property it names*. The gate is not weak in detail; it is aimed slightly
+beside the target in six places.
+
+### THE HEADLINE — ADR-030 rests on a false premise (author: the main session; this is a self-correction)
+
+ADR-030 recorded, and the owner approved, that E3's deletions were acceptable because "the clean
+NPNF/CCEL re-ingest replaces those voices in the same cutover." **The cutover has no ingest step.**
+E0 preflight · E1 migrations · E2 label existing rows · E3 delete · E4 slice · E5 deploy · E6 smoke.
+Nothing imports a work; the re-ingest is a separate unbuilt step (WORKLOG 2026-07-24 lists it as a
+to-do). Measured on prod, read-only, NULL-safe, and independently reproduced by lens 1:
+
+| per-verse ≥2 DISTINCT AUTHORS floor (served exegetical pool) | verses |
+|---|---|
+| verses with any served voice | 29,629 |
+| meet the floor BEFORE E3 | 22,794 |
+| meet the floor AFTER E3 | 22,214 |
+| **drop below the floor** | **580** |
+| **lose every served voice** | **24** |
+
+**ADR-030 must be re-decided with these numbers.** (First attempt at this measurement returned
+16,593/20,887 — wrong: `NOT forbidden` is NULL when `sourceUrl` is NULL and prod has 74,234 such
+rows, so the FILTER silently dropped legitimate voices. Corrected with COALESCE. Recorded because
+the wrong number was the alarming one.)
+
+### CRITICAL — each of these alone blocks the prod run
+
+1. **`--dry-run` writes a full "E1 complete" checkpoint without applying anything.**
+   `scripts/cutover.mjs:241` — `cp.done.push()` sits outside the `if (!DRY)` guard. A later real run
+   skips all 15 migrations (`:189-200` only checks for invalid indexes, trivially true pre-016),
+   `:205` disables the pre-016 precondition, and `:497` **suppresses the only owner gate before the
+   71,884-row DELETE**. Net: zero migrations, prod rows deleted unattended, code shipped that
+   hard-depends on 025, and `CUTOVER COMPLETE` printed. Reproduced by execution.
+2. **Case-sensitive host guards fail open.** `new URL()` does not lowercase the host for the
+   non-special `postgresql:` scheme. `scripts/cutover-gate-redproof.mjs:27` and
+   `scripts/cutover.mjs:481` both use case-sensitive `.test()`/`.includes()`. An uppercase prod URL
+   passes both — verified. The redproof script's own header says it "DELIBERATELY CORRUPTS ITS
+   TARGET" (`DROP INDEX`, `INSERT INTO highlights`, `UPDATE embeddings`). The `CUTOVER_REHEARSAL`
+   path additionally runs 16 migrations and the delete **with zero owner gates**.
+3. **The prod endpoint is inside b2's non-prod allowlist.**
+   `src/ingest/b2-remove-forbidden-provenance.ts:86` — the comment says "require a known non-prod
+   endpoint"; the regex is `/ep-tiny-hat|localhost|127\.0\.0\.1|ep-wispy-violet|ep-odd-fog/`.
+4. **`CUTOVER_EXPECT_HOST` is a substring test with a length≥6 floor.** `CUTOVER_EXPECT_HOST=neon.tech`
+   satisfies every host check in the chain. New in this branch at
+   `scripts/register-label-embeddings.mjs:29-31` and `scripts/cutover-e4-slice-all.mjs:27-30`, both
+   directly invocable without STEP ZERO.
+5. **G2 samples 3 verses chosen for immunity to the deletion it guards.**
+   `scripts/cutover-regression-gate.mts:60-68` says so in its own comment. 22,794 verses meet the
+   floor; it checks 3, and all 580 that move are invisible to it. This is the product's headline
+   guarantee.
+6. **The 37-row invariant is `count(*)` + `count(DISTINCT user_id)`. Nothing checks identity.**
+   `scripts/cutover.mjs:148-167`, `cutover-regression-gate.mts:105-130`. Three seeded corruptions
+   passed green on a prod fork: soft-delete every visible annotation; **reassign every highlight to a
+   different owner (a cross-user leak)**; repoint every anchor. No md5/digest exists anywhere in the
+   code — the "byte-identical" claim in 7d5e363 was a manual one-off rehearsal observation and will
+   not run on the production cutover.
+7. **G4's "annotation load" is `pass()` with no assertion**, `cutover-regression-gate.mts:194-199`,
+   and G1 counts tombstones. **Prod is 34 highlight rows of which only 24 are active** — the two
+   already disagree by 10 and neither notices. Seeded state printed `✓ G4 load — 0 active rows load`.
+8. **No user-data backup exists.** Five `die()` paths instruct "restore from the pre-E1 Neon branch
+   snapshot" (`cutover.mjs:231,253,276,353,431`); nothing creates one. Neon
+   `history_retention_seconds = 21600` (**6 hours**) against a multi-hour run — and since findings
+   6/7 make corruption invisible, discovery happens days later. Fix is one `neonctl branches create`.
+9. **"Ratchet = 0" counts 2 of 4 stores.** `commentary_entries` holds **263,496** forbidden-provenance
+   rows (200,385 biblehub + 63,111 HCF) of 371,406; **50,618 sit inside the served predicate**
+   = 44.1% of the 114,834-row served FTS pool, returned by the unauthenticated
+   `GET /api/search/commentaries`. Independently re-measured by the main session. `sources`/`sections`/
+   `section_embeddings`/`section_anchors` (barnes-notes, 1×1,300×3) are also uncounted.
+10. **"staged is unreachable" is false.** `commentary_entries` and `embeddings` have **no `status`
+    column at all**; 90.4% of staged `barnes-notes` and 95.9% of staged `matthew-henry` bodies live
+    there byte-identically under a serving allowlist. Proved live: `/api/work/barnes-notes` → 404
+    while `/api/search/commentaries?author=Barnes' Notes` → 200 with 494 hits of the same work. All
+    4,210 staged Matthew Henry rows are admitted by `LEGAL_CORPUS_FILTER` today, so `/ask` serves a
+    staged work now. `barnes-notes` escapes `/ask` only by an author-string accident ("Barnes' Notes"
+    vs "Albert Barnes"). **`db/migrations/019:22-27` hard-codes Barnes into the serving FTS index, so
+    the cutover publishes what it calls staged** — and `fts-legal-index-sync.test.ts` pins the
+    contradiction in place with a passing test.
+
+### HIGH
+
+11. **`unit_ordinal` is NULL for 71,563 of 72,863 sections** on the "green" rehearsal fork — every
+    work E4 created. 024 runs in E1, before E4 creates the rows it backfills
+    (`cutover.mjs:184` vs `:405`), and `migrate-sections-slice.ts:104` never sets it. Consumers
+    (`work-reader.ts`, `search-sections.ts`) COALESCE and degrade silently. E4's postcondition checks
+    1:1 counts only and reported green.
+12. **024's re-run renumbers a whole source.** Proven: insert one section below existing ordinals and
+    every `unit_ordinal` shifts, invalidating `reading_progress.last_ordinal` cursors and deep links.
+    The hazard-2 guard (`cutover.mjs:214-218`) tests for `section_annotations`/`annotations`, tables
+    **no migration creates** — it cannot fire, and prints `ok(...)` regardless.
+13. **E4 keys the two stores differently and both 1:1 legs are blind to it.**
+    `migrate-sections-slice.ts:96` selects by `metadata->>'author'`; the destination is keyed by slug,
+    and the author→slug map is not injective (`Barnes' Notes` → `barnes-notes` *and*
+    `barnes-crosswire-nt`). `cutover.mjs:388` exempts `flat=0` — exactly the mismatch signature — and
+    `:398` filters `!x.quarantine`. It only failed to bite because E3 had already deleted the rows.
+14. **Three stores joined by a recomputed `row_number()` ordinal** under READ COMMITTED
+    (`migrate-sections-slice.ts:97,105,111,119`) — the ADR-029 class. Latent (tiebreakers measured
+    unique on dev today); nothing enforces it stays that way.
+15. **The gate degrades to green when the E0 baseline is absent.** `cutover-regression-gate.mts:120`
+    early-passes; `cutover.mjs:490-493` skips the E0 capture on `done` alone without verifying the
+    artifact. Proven: baseline deleted → `✓ G1 baseline captured` → GATE PASSED, against a target
+    whose highlights had genuinely moved.
+16. **G5's FTS leg cannot fire at any phase.** `commentary_entries.work` is 0 of 371,406 populated and
+    `sources` holds only `source_type='commentary'`, so both join sides are empty. Second consecutive
+    audit to find this check non-functional.
+17. **The invariant is under-scoped.** `waitlist` (**4 rows**, named in GO_LIVE_STATUS as must-survive),
+    `channels` (1), `messages`, `neon_auth.*` — none measured.
+18. **The E1→E5 note-save outage is hours, not minutes**, and surfaces to users as **HTTP 401
+    "Unauthorized"** (`web/src/app/api/annotations/route.ts:54-55` swallows the 42P10), pointing
+    diagnosis at auth instead of the migration. Confirmed 42P10 on a fork before/after 025.
+    **Scope is honestly bounded: lens 3 enumerated every deployed statement and found this is a class
+    of ONE** — no other added NOT NULL, dropped column, type change or default lands on a table the
+    deployed bundle writes.
+19. **The static plane deploys with client-side-only filtering.** `web/public/commentaries` (407 MB,
+    191,749 entries) is retained by `.vercelignore` and served raw: 15,161 Tyndale Study Notes, 1,102
+    CS Lewis, 714 GK Chesterton, 1,272 Origen. Prevented on prod **only** by the `SITE_PASSWORD`
+    middleware, which the code itself marks temporary ("Remove the gate when SEC-1 closes").
+20. **`predeploy-gate.ts` is author-blind** — it checks provenance URLs only, so the baseline reports a
+    truthful `0` while in-copyright authors sit in the same files.
+21. **G7, the only leg that touches the deployed app, fails open when `CUTOVER_ASK_URL` is unset and
+    has never run** (0 occurrences in either rehearsal log). E6's "full regression battery" is DB-only.
+22. **Timeouts cover 2 of 7 connections** — not the migration runners (018's four HNSW builds), not the
+    71,884-row DELETE, not the gate, and no `execFileSync` passes `timeout`.
+23. **Every delegate failure aborts as `unhandled` with no rollback text** (`cutover.mjs:508`), and
+    `regressionGate`'s bare catch reports a missing `tsx` or an empty env var as "a pre-existing
+    surface regressed — roll back this chunk."
+24. **The checkpoint has no lock, no atomic write, no ownership marker.** Demonstrated during this very
+    audit: concurrent auditors clobbered `.cutover-checkpoint.json` three times, once mid-proof.
+    (Restored from backup; the audit's own parallelism caused it, but the defect is real.)
+
+### MEDIUM / LOW (recorded, not expanded)
+
+E0 writes to live user tables before the first-prod-write gate · E2's coverage postcondition goes
+vacuous on any resume · E3 rewrites the local deployable static tree on *any* target, so a rehearsal
+alters what a later real deploy ships · E5/E6 lack completion guards (E6 pushed twice) · `--dry-run`
+hard-aborts at E5 before printing the plan · G4's write probe retypes a 3-column subset of the
+shipped 8-column `createHighlight` (proven: dropping `background_color` breaks production while the
+gate passes) · G3(b) hand-retypes an imported predicate · migration 020 silently drops five
+previously-legal `source_type` values including `user_upload`, foreclosing the My Work path · 016 is
+the only non-zero-window rebuild and drops a live serving index · 020 validates a CHECK under ACCESS
+EXCLUSIVE on the 3.5 GB embeddings table · no migration ledger exists (and git shows a real
+duplicate-020 renumber) · `check-test-residue.mjs` does not know this branch's two new seed prefixes ·
+six divergent copies of the forbidden-domain list, one already drifted
+(`web/test/invariants/verse-keys.test.ts:30` omits `historicalchristian.faith`).
+
+### VERIFIED CLEAN — coverage is provable, not assumed
+
+- **No dev-derived literal is used as a runtime assertion anywhere in the chain.** 71,884 / 190,635 /
+  4,174 appear only in comments. **This standing scar is closed.**
+- **≥2 voices counts `count(DISTINCT author)`, not entries.** That standing scar is *not* present.
+- **018/019 are genuinely zero-window and idempotent**, proven on prod-sized data (242 s / 14 s), all
+  indexes VALID after.
+- **`/ask` survives 018** — deployed predicate still implies the widened one; scope delta exactly 0.
+- **Grants are correct**; no migration leaves `app_runtime` with DML it should not have; all five new
+  tables are born with RLS enabled and both `USING` and `WITH CHECK`.
+- **`src/` ↔ `web/` byte-identical**, 14/14 sync tests pass, zero drift, no one-sided file.
+- **No secret in any of the 6 commits** (2,812 lines scanned); evidence files print hosts only.
+- **knip clean**; no dead code introduced. E5 refuses a non-prod target (fails *closed*).
+- **The redproof evidence is genuine** — all six gates went red on a seeded break and green on restore.
+- **The deployed-statement breakage is a class of one** — actively looked for others, found none, and
+  said so rather than padding the finding count.
+
+### Housekeeping
+
+`.cutover-checkpoint.json` restored (target `ep-still-shape`, 21 steps). Tree clean. Six Neon forks of
+production now exist: `census-clone`, `prod-census`, `cutover-rehearsal-20260727`,
+`cutover-rehearsal-20260727b`, `audit-lens3-migrations`, `audit-lens4-invariant`. **`audit-lens4-invariant`
+carries three deliberately seeded corruptions and must never be reused.** `audit-lens3-migrations` has
+016-030 applied over real prod data and doubles as a genuine pre-E1 snapshot — the artifact finding 8
+says does not exist. Deletion is an owner call and was not done.
+
 ## 2026-07-27 (SESSION 2 — the Part 5 cutover script, built and rehearsed; PROD UNTOUCHED)
 
 Built `docs/CUTOVER_DESIGN.md` as approved. **The E-steps and their order are unchanged.** What was
