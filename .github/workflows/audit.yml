@@ -78,6 +78,15 @@ jobs:
         working-directory: web
         env:
           REQUIRE_DB: '1'
+          # app_runtime — the read paths, RLS and tenancy suites. Least privilege on purpose:
+          # owner would BYPASS RLS and make the tenancy suites pass while proving nothing.
           APP_DATABASE_URL: ${{ secrets.APP_DATABASE_URL_TEST }}
+          # owner on the SAME test branch — four suites SEED fixtures (INSERT INTO sources),
+          # which app_runtime is correctly refused (migration 010). Without this they skip.
+          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST_OWNER }}
+          # The declared seed target, by exact endpoint id. NOT a secret — it is the reviewable
+          # statement of which database may be seeded and deleted from. seedOwnerUrl() refuses
+          # production regardless of what is declared here.
+          SEED_TEST_ENDPOINT: ep-tiny-bonus-at3izo3y
           DEEPINFRA_API_KEY: ${{ secrets.DEEPINFRA_API_KEY }}
         run: corepack pnpm exec vitest run test/invariants/
