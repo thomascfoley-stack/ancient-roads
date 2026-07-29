@@ -1,0 +1,64 @@
+==============================================================================
+E4 RED-PROOF: seed biblehub row into clean john-gill pool → slice REFUSES → revert → green
+date: 2026-07-29T15:44:11Z
+fork: rehearsal-20260729
+endpoint: ep-rough-violet-at9bsoq7 (NOT production)
+==============================================================================
+E4 redproof target: ep-rough-violet-at9bsoq7.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+(node:93500) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+donor id=c08c2adb-daac-4fad-bd56-fef30969aaba original sourceUrl=NULL
+
+--- SEED biblehub sourceUrl on one Gill row ---
+seed: ok
+
+--- RUN john-gill slice (expect REFUSE) ---
+(node:93523) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Error: REFUSE (provenance): 1 of 28843 flat rows for "john-gill" carry forbidden-aggregator provenance (biblehub.com) and the manifest declares no policy. Copying them would land aggregator text under this source's clean provenance record with no row-level signal. Two legal fixes, one line each in ingest/sources.config.json: backfill.forbidden_provenance="exclude" (slice only the clean rows, exclusion counted on the sources row) or "skip" (write nothing) — both with forbidden_provenance_reason. Neither declares the work legitimate; quarantine-vs-re-source is the owner's ruling.
+    at main (/Users/foley/Projects/ancient-roads-runbook/src/ingest/migrate-sections-slice.ts:145:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[slice exit code: 1]
+✓ slice REFUSED as expected (exit 1)
+
+--- REVERT seed ---
+revert: ok
+
+--- RE-RUN john-gill slice (expect GREEN) ---
+(node:93546) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+==================================================================
+RE-POINT SLICE — John Gill's Exposition of the Bible (source_id=4, status=staged)
+==================================================================
+  flat pool (author="John Gill"):            28843
+  excluded (forbidden provenance, declared):     0
+  sections inserted:                            28843
+  section_anchors inserted:                     28843
+  section_embeddings (reused, model=bge-large-en-v1.5): 28843
+
+✓ sections == section_embeddings, and sections + excluded == flat pool (28843 + 0 == 28843). Coverage will be 0.
+
+E4 RED-PROOF PASSED
+EXIT_CODE=0

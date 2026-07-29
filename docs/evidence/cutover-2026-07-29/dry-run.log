@@ -1,0 +1,36 @@
+
+CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27)
+  THE CUTOVER IS E0, E1, E2, E4, E5, E6. There is no E3 — forbidden-provenance
+  deletion is DEFERRED to its own slice after a re-ingest exists to refill the
+  corpus (owner ruling 2026-07-27; ADR-030 correction).
+  STEP ZERO  preflight: host~ep-odd-fog, role=neondb_owner, write-capability, positive control
+  SNAPSHOT   a Neon branch off the target, created BEFORE the first write and
+      asserted to exist; its id is quoted in every rollback (Neon PITR retention on
+      this project is 6 h against a ~2 h 20 m run — the window can close first)
+  E0  regression gate --capture: the pre-cutover baseline (user-data digests +
+      active counts + owner distribution, the corpus-wide >=2-distinct-authors
+      floor, reader, annotation write path, register wall, forbidden ratchet)
+  E1  migrations 016-023 + 025-031 in order (018/019 concurrent; 031 adds
+      sections.source_url — row-level content provenance, required by E4)
+      after EVERY migration: user data unchanged (digest, not count) + no INVALID index
+      HAZARD 2 guard: refuse if a section-ordinal annotation precedes 024's renumber
+  E2  register-label the flat embeddings (UPDATE); assert per-work label coverage
+      against the TARGET's own author counts, and that no row was added or lost
+  E4  slice served works into sections reusing vectors 1:1, carrying each row's
+      sourceUrl into sections.source_url; the slice FAILS CLOSED on undeclared
+      forbidden provenance in a work's flat pool, and honors the manifest's
+      declared policy (exclude|skip, SECTION_PROVENANCE_DESIGN R2-R3); re-assert
+      per-work sections + excluded == flat across every sliced work (ADR-029
+      addendum 2: each store, its own key), THEN apply 024 and assert
+      sections.unit_ordinal is POPULATED (it backfills what E4 creates; in E1 it
+      left 71,563 of 72,863 NULL and the old 1:1 check said green)
+  E5  [HARD STOP] deploy.sh
+  E6  smoke counts + the full regression battery
+  REGRESSION GATE RUNS AFTER EVERY CHUNK (E0/E1/E2/E4/E6), not just at the end.
+  Any gate failure ABORTS and rolls back that chunk — never fix forward mid-cutover.
+  Every count re-measured at runtime; NO dev literals baked into a target assertion.
+  Resumable: completed steps recorded in .cutover-checkpoint.json, which is BOUND to
+  the target endpoint and to ONE writing session — a checkpoint from another target
+  is refused, and a second live process is refused rather than allowed to clobber it.
+
+(no CUTOVER_DATABASE_URL set — STEP ZERO parked; supply the census clone to rehearse)

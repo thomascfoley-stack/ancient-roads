@@ -1,5 +1,65 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-29 (SESSION 6 — Phase 1 STOP GATE 1: fork rehearsal GREEN; E4 provenance red-proved; gate redproof partial; PROD UNTOUCHED)
+
+**Headline: Phase 1 rehearsal passed end-to-end on a fresh prod fork. E4 provenance abort path
+red-proved. Gate redproof harness ran on a second fork after E0–E1; 7/10 legs PROVEN, 3 legs need
+follow-up before trusting them on prod. Production (`ep-odd-fog`) never touched.**
+
+### Merge plan (cursor-merge-plan.md)
+
+- Steps 1–3, 5: done in prior session (lint fix #33 merged; dependabot batch merged/skipped per plan;
+  dependabot-automerge.yml on main).
+- Step 4: PR #27 closed (superseded by #35 test/ingest-prove-rebased merge).
+- PR #35 + #36 merged to main (`2af2ce9`).
+
+### Phase 1 rehearsal — fork `rehearsal-20260729` (`ep-rough-violet-at9bsoq7`)
+
+- Parent: `production`. Runtime ~34 min. `EXIT_CODE=0`, `CUTOVER COMPLETE`.
+- Evidence: `docs/evidence/cutover-2026-07-29/rehearsal-E0-E6.log`
+- E0/E1/E2/E4/E6 regression gates: **PASSED** (DB-only; G7 live `/ask` skipped — no session cookie).
+- E5: skipped (`CUTOVER_REHEARSAL=1`).
+- E2: 190,635 flat rows register-labeled across 12 manifest authors.
+- E4: 72,863 sections sliced across 7 works; `unit_ordinal` populated on all (5,824 reading units).
+  - calvin-crosswire: 5,090 + 1,125 excluded == 6,215 flat ✓
+  - wesley-crosswire: 5,254 + 1,021 excluded == 6,275 flat ✓
+  - 3 declared forbidden-provenance skips (scofield, pnt, poole) reported as EXPECTED.
+- G8 provenance leg: **green** — no forbidden content under clean declared provenance.
+- G5 register wall: vacuous (0 lane rows — prod has never had register ingest; expected).
+- G6 barnes-notes sections-store warning: standing debt (1,300 staged sections, not published).
+
+### E4 provenance redproof — same rehearsal fork
+
+- Seeded `https://biblehub.com/...` on one John Gill embedding → `migrate-sections-slice.ts
+  --source=john-gill` **REFUSED** (`REFUSE (provenance): 1 of 28843...`).
+- Reverted seed → re-slice **green** (28,843 sections 1:1).
+- Evidence: `docs/evidence/cutover-2026-07-29/e4-provenance-redproof.log`,
+  `e4-redproof-biblehub.log`.
+
+### Gate redproof — fork `redproof-20260729` after E0–E1 (`ep-icy-leaf-atunndkc`)
+
+- Fresh prod fork cannot host the harness (pre-025/030) — documented in
+  `gate-redproof-pre-migration-failed.log`.
+- Ran E0–E1 on `redproof-20260729`, then `cutover-gate-redproof.mjs`.
+- Evidence: `docs/evidence/cutover-2026-07-29/gate-redproof.log`, `redproof-fork-E0-E1.log`.
+- **PROVEN (7):** G1 user-data, G2 >=2 voices, G3 reader/static, G4 write (025 index hazard),
+  G5 register wall, G9 constraints (030 revert + notes_anchor_xor drop).
+- **FAILED / UNPROVEN (3):**
+  - G6 ratchet — seeded biblehub row stayed GREEN (harness could not trip the leg on this target).
+  - G8 unembedded — G3 file-rename side effect caused unattributed red during G8 run (ordering bug
+    in harness when run sequentially on laptop).
+  - G2 durable floor — seeded forbidden voice stayed GREEN (needs investigation on prod census shape).
+- **Owner call before Phase 2:** re-run G6/G8/G2-durable on a post-E4 fork (or droplet) in isolation,
+  or accept the 7 proven legs plus the full rehearsal gate battery as sufficient for cutover.
+
+### Fork cleanup
+
+- Deleted disposable forks: `rehearsal-20260729`, `redproof-20260729` (+ their pre-cutover snapshots).
+
+### STOP GATE 1 — awaiting owner "go" for Phase 2 prod cutover
+
+Prod cutover (E0–E6 on `ep-odd-fog`) is **NOT STARTED**. Need explicit owner go + droplet per
+`docs/DEPLOYMENT.md`.
 
 ## 2026-07-29 (SESSION 5 — E4 provenance: SECTION_PROVENANCE_DESIGN R1–R5 implemented on owner ruling; NOT yet fork-rehearsed; PROD UNTOUCHED)
 

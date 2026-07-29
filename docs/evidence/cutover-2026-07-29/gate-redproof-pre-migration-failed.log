@@ -1,0 +1,61 @@
+==============================================================================
+GATE REDPROOF — cutover-gate-redproof.mjs
+date: 2026-07-29T15:48:39Z
+fork: redproof-20260729
+endpoint: ep-little-queen-atrmhku4 (NOT production ep-odd-fog)
+==============================================================================
+red-proof target: ep-little-queen-atrmhku4.c-9.us-east-1.aws.neon.tech
+
+capturing an E0 baseline on this fork (the ratcheted legs cannot go red without one)...
+✓ baseline captured for ep-little-queen-atrmhku4.c-9.us-east-1.aws.neon.tech — ratcheted legs are live
+
+(node:94659) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAILED (still red after restore — the restore did not land) G1 user-data — an extra highlight row
+           red output:   ✗ G1 user-data — the user-data invariant broke — highlights: row count 0 -> 1; highlights: distinct owners 0 -> 1; highlights: ACTIVE rows 0 -> 1 (soft-delete or un-delete); highlights: DIGEST EMPTY -> e15fa413 (row identity/anchor/body changed); highlights: OWNER DISTRIBUTION (none) -> 37945d627988:1 (rows changed hands) |   ✗ G2 >=2 voices — 1 verse(s) DROPPED BELOW the >=2-distinct-authors floor (22794 -> 22793) — this is the product's headline guarantee
+
+(Psalm 23:1 authors on the fork: Keil & Delitzsch, Ambrose of Milan, Matthew Henry, Cassiodorus, Hippolytus of Rome, Thomas Aquinas, John Gill, Arnobius the Younger, Augustine of Hippo, Theodoret of Cyrus, Tyndale Study Notes)
+FAILED (still red after restore — the restore did not land) G2 >=2 voices — all but one served author removed from Psalm 23:1
+           red output:   ✗ G2 >=2 voices — 1 verse(s) DROPPED BELOW the >=2-distinct-authors floor (22794 -> 22793) — this is the product's headline guarantee |   ✗ G2 durable floor — 1 verse(s) dropped below the >=2-author floor among rows that SURVIVE the deferred provenance cleanup (22214 -> 22213). The headline number may still look fine; this is the one that will still be true afterwards.
+
+FAILED (still red after restore — the restore did not land) G3 reader/static — the chapter file the reader renders goes missing
+           red output:   ✗ G3 reader/static — Psalm 23:1: /Users/foley/Projects/ancient-roads-runbook/web/public/commentaries/psa/23.json missing — the reader would render an empty chapter |   ✗ G9 constraints — notes.target_kind does not exist at E1, but migration 025 runs inside E1 — E1 did not apply, or applied and was rolled back.
+
+(captured for restore: CREATE UNIQUE INDEX idx_notes_user_verse ON public.notes USING btree (user_id, verse_id) WHERE (deleted_at IS NULL))
+FAILED (still red after restore — the restore did not land) G4 write — upsertNote loses its partial unique index (the 025 hazard)
+           red output:   ✗ G4 write — annotation write path threw: there is no unique or exclusion constraint matching the ON CONFLICT specification |   ✗ G5 register wall — 1 song/verse or lane row(s) are reachable through the exegetical serving filter
+
+FAILED (red, but NOT from "G5 register wall" — another gate fired; unattributed) G5 register wall — a sermon-lane work made reachable through the exegetical filter
+           red output: ✗ baseline in .cutover-checkpoint.json belongs to ep-rough-violet-at9bsFAILED (red, but NOT from "G6 ratchet" — another gate fired; unattributed) G6 ratchet — one new biblehub-provenance row appeFAILED (red, but NOT from "G6 ratchet" — another gate fired; unattributed) G6 ratchet — one new biblehub-provenance row appears
+           red output: ✗ baseline in .cutover-checkpoint.json belongs to ep-rough-violet-at9bsoq7.c-9.us-east-1.aws.neon.tech, not ep-little-queen-atrmhku4.c-9.us-east-1.aws.neon.tech. Refusing to compare across targets.
+
+FAILED (red, but NOT from "G8 unembedded" — another gate fired; unattributed) G8 unembedded — a section loses its embedding(s) (the slice wrote text, not vectors) [1 row(s) captured]
+           red output: ✗ baseline in .cutover-checkpoint.json belongs to ep-rough-violet-at9bsoq7.c-9.us-east-1.aws.neon.tech, not ep-little-queen-atrmhku4.c-9.us-east-1.aws.neon.tech. Refusing to compare across targets.
+
+SKIPPED  G9 — highlights_anchor_xor is absent on this fork (pre-025/030); nothing to drop.
+
+FAILED (red, but NOT from "G2 durable floor" — another gate fired; unattributed) G2 durable floor — verse 1001005 loses its 2nd clean voice "Jamieson, Fausset & Brown" to forbidden provenance (1 row(s))
+           red output: ✗ baseline in .cutover-checkpoint.json belongs to ep-rough-violet-at9bsoq7.c-9.us-east-1.aws.neon.tech, not ep-little-queen-atrmhku4.c-9.us-east-1.aws.neon.tech. Refusing to compare across targets.
+
+
+=== SUMMARY ===
+  FAILED (still red after restore — the restore did not land) G1 user-data — an extra highlight row
+  FAILED (still red after restore — the restore did not land) G2 >=2 voices — all but one served author removed from Psalm 23:1
+  FAILED (still red after restore — the restore did not land) G3 reader/static — the chapter file the reader renders goes missing
+  FAILED (still red after restore — the restore did not land) G4 write — upsertNote loses its partial unique index (the 025 hazard)
+  FAILED (red, but NOT from "G5 register wall" — another gate fired; unattributed) G5 register wall — a sermon-lane work made reachable through the exegetical filter
+  FAILED (red, but NOT from "G6 ratchet" — another gate fired; unattributed) G6 ratchet — one new biblehub-provenance row appears
+  FAILED (red, but NOT from "G8 unembedded" — another gate fired; unattributed) G8 unembedded — a section loses its embedding(s) (the slice wrote text, not vectors) [1 row(s) captured]
+  SKIPPED  G9 constraints (skipped: pre-025 fork)
+  FAILED (red, but NOT from "G2 durable floor" — another gate fired; unattributed) G2 durable floor — verse 1001005 loses its 2nd clean voice "Jamieson, Fausset & Brown" to forbidden provenance (1 row(s))
+
+✗ 1 scenario(s) could not be seeded on this fork — those checks are UNPROVEN here, not passing.
+  Pick a fork that carries sections, section_embeddings and the 025/030 constraints, and re-run.
+EXIT_CODE=1

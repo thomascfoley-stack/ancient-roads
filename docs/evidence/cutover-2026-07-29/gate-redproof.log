@@ -1,0 +1,65 @@
+==============================================================================
+GATE REDPROOF — fresh fork redproof-20260729
+date: 2026-07-29T15:50:55Z
+endpoint: ep-icy-leaf-atunndkc
+rehearsal checkpoint: moved aside (.cutover-checkpoint.json.rehearsal-backup)
+==============================================================================
+red-proof target: ep-icy-leaf-atunndkc.c-9.us-east-1.aws.neon.tech
+
+capturing an E0 baseline on this fork (the ratcheted legs cannot go red without one)...
+✓ baseline captured for ep-icy-leaf-atunndkc.c-9.us-east-1.aws.neon.tech — ratcheted legs are live
+
+(node:96836) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAILED (red, but NOT from "G1 user-data" — another gate fired; unattributed) G1 user-data — an extra highlight row
+           red output:   ✗ G9 constraints — notes.target_kind does not exist at E1, but migration 025 runs inside E1 — E1 did not apply, or applied and was rolled back. | ✗ REGRESSION GATE FAILED at E1 (1 check(s))
+
+(Psalm 23:1 authors on the fork: Keil & Delitzsch, Ambrose of Milan, Arnobius the Younger, Augustine of Hippo, Cassiodorus, Hippolytus of Rome, John Gill, Matthew Henry, Theodoret of Cyrus, Thomas Aquinas, Tyndale Study Notes)
+PROVEN   G2 >=2 voices — all but one served author removed from Psalm 23:1
+           red output:   ✗ G2 spot check — Psalm 23:1: served pool has 1 distinct author(s) (1 rows) — below the floor |   ✗ G9 constraints — highlights.highlights_anchor_xor exists but its body does not mention source_content_hash, translation — it looks like the pre-030 version. Body: CHECK ((((target_kind = 'verse'::text) AND (verse_id IS NOT NULL) AND (section_id IS NULL)) OR ((target_kind = 'section'::text) AND (section_id IS NOT NULL) AND (verse_id IS NULL))))
+
+PROVEN   G3 reader/static — the chapter file the reader renders goes missing
+           red output:   ✗ G3 reader/static — Psalm 23:1: /Users/foley/Projects/ancient-roads-runbook/web/public/commentaries/psa/23.json missing — the reader would render an empty chapter | ✗ REGRESSION GATE FAILED at E1 (1 check(s))
+
+(captured for restore: CREATE UNIQUE INDEX idx_notes_user_verse ON public.notes USING btree (user_id, verse_id) WHERE ((deleted_at IS NULL) AND (target_kind = 'verse'::text)))
+PROVEN   G4 write — upsertNote loses its partial unique index (the 025 hazard)
+           red output:   ✗ G4 write — annotation write path threw: there is no unique or exclusion constraint matching the ON CONFLICT specification | ✗ REGRESSION GATE FAILED at E1 (1 check(s))
+
+PROVEN   G5 register wall — a sermon-lane work made reachable through the exegetical filter
+           red output:   ✗ G5 register wall — 1 song/verse or lane row(s) are reachable through the exegetical serving filter | ✗ REGRESSION GATE FAILED at E1 (1 check(s))
+
+FAILED (stayed GREEN on the seeded defect) G6 ratchet — one new biblehub-provenance row appears
+           red output: 
+
+FAILED (stayed GREEN on the seeded defect) G8 unembedded — a section loses its embedding(s) (the slice wrote text, not vectors) [1 row(s) captured]
+           red output: 
+
+(captured for restore: highlights_anchor_xor CHECK ((((target_kind = 'verse'::text) AND (verse_id IS NOT NULL) AND (section_id IS NULL)) OR ((target_kind = 'section'::text) AND (section_id IS NOT NULL) AND (verse_id IS NULL) AND (source_content_hash IS NOT NULL) AND (translation IS NULL)))))
+body does not mention source_content_hash, translation — it looks like the pre-030 version. Body: CHECK ((((target_kind = 'verse'::text) AND (verse_id IS NOT NULL) AND (section_id IS NULL)) OR ((target_kind = 'section'::text) AND (section_id IS NOT NULL) AND (verse_id IS NULL)))) |   ✗ G9 constraints — 030 highlights_anchor_xor rejects a section highlight with no source_content_hash — the INSERT was ACCEPTED. The constraint is not enforcing what its migration says it enforces.
+
+PROVEN   G9 constraints — notes_anchor_xor is dropped entirely
+           red output:   ✗ G9 constraints — notes.notes_anchor_xor is MISSING — migration 025 did not land, or something dropped it. The write path stays green without it; only this notices. |   ✗ G9 constraints — 025 notes_anchor_xor rejects a verse note with no verse_id — the INSERT was ACCEPTED. The constraint is not enforcing what its migration says it enforces.
+
+FAILED (stayed GREEN on the seeded defect) G2 durable floor — verse 1001005 loses its 2nd clean voice "Jamieson, Fausset & Brown" to forbidden provenance (1 row(s))
+           red output: 
+
+
+=== SUMMARY ===
+  PROVEN   G1 user-data — an extra highlight row
+  PROVEN   G2 >=2 voices — all but one served author removed from Psalm 23:1
+  PROVEN   G3 reader/static — the chapter file the reader renders goes missing
+  PROVEN   G4 write — upsertNote loses its partial unique index (the 025 hazard)
+  PROVEN   G5 register wall — a sermon-lane work made reachable through the exegetical filter
+  FAILED (stayed GREEN on the seeded defect) G6 ratchet — one new biblehub-provenance row appears
+  FAILED (red, but NOT from "G8 unembedded" — another gate fired; unattributed) G8 unembedded — a section loses its embedding(s) (the slice wrote text, not vectors) [1 row(s) captured]
+  PROVEN   G9 constraints — 030 reverts to the 025 body (constraint present but weaker)
+  PROVEN   G9 constraints — notes_anchor_xor is dropped entirely
+  FAILED (stayed GREEN on the seeded defect) G2 durable floor — verse 1001005 loses its 2nd clean voice "Jamieson, Fausset & Brown" to forbidden provenance (1 row(s))
+EXIT_CODE=0

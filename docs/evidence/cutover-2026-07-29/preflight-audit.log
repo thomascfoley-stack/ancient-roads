@@ -1,0 +1,387 @@
+
+> theology-study-app@0.1.0 audit
+> bash scripts/audit.sh
+
+
+[1m▶ typecheck — tsc --noEmit (strict)[0m
+[32m✓ typecheck — tsc --noEmit (strict)[0m
+
+[1m▶ typecheck — cutover gate (scripts/)[0m
+[32m✓ typecheck — cutover gate (scripts/)[0m
+
+[1m▶ typecheck — web/ tsc --noEmit[0m
+[32m✓ typecheck — web/ tsc --noEmit[0m
+
+[1m▶ typecheck — web/test tsc --noEmit[0m
+[32m✓ typecheck — web/test tsc --noEmit[0m
+
+[1m▶ lint — eslint src/ test/[0m
+
+/Users/foley/Projects/ancient-roads-runbook/src/ingest/ingest-biblehub.ts
+  145:67  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  153:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  171:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  171:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/foley/Projects/ancient-roads-runbook/src/ingest/ingest-scrollmapper-bibles.ts
+  98:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/foley/Projects/ancient-roads-runbook/src/ingest/ingest-strongs.ts
+  44:3  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-implied-eval')
+
+/Users/foley/Projects/ancient-roads-runbook/test/evals.test.ts
+  11:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  17:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/foley/Projects/ancient-roads-runbook/test/verifier.test.ts
+   17:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   24:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   39:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   46:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   53:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   60:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   67:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   74:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   81:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   95:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  124:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  131:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  138:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  145:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  159:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  168:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  175:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  182:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  189:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  196:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  240:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  268:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 34 problems (0 errors, 34 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+
+[32m✓ lint — eslint src/ test/[0m
+
+[1m▶ lint — web/ eslint[0m
+
+/Users/foley/Projects/ancient-roads-runbook/web/src/scripts/blocker2-boundary-census.mts
+   38:69   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   56:48   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:48   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   76:48   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   84:96   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   95:64   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:50   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  109:86   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:50   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  117:86   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  129:100  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  144:50   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  148:59   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 13 problems (13 errors, 0 warnings)
+
+[31m✗ lint — web/ eslint[0m
+
+[1m▶ unused — knip (files/exports/deps)[0m
+Configuration hints (3)
+[src/ingest/*.ts, …]    knip.json  Remove, or move unused top-level entry to one of "workspaces"  
+[src/**/*.ts, …]        knip.json  Remove, or move unused top-level project to one of "workspaces"
+src/evals/run.ts        knip.json  Remove redundant entry pattern                                 
+[32m✓ unused — knip (files/exports/deps)[0m
+
+[1m▶ deps — advisory bulk-endpoint (prod, high+ CVEs)[0m
+
+[31m✗ deps-audit: 2 un-ignored high/critical advisory(ies):[0m
+  [high] postcss — GHSA-r28c-9q8g-f849 — PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure (<=8.5.17)
+  [high] better-auth — GHSA-qq9h-g4jm-xgf3 — Better Auth: Account takeover via pre-account hijacking on magic-link and email-OTP sign-in (>=1.1.3 <1.6.22)
+
+Fix the dependency, or (if lawful + accepted) add the GHSA id to package.json → pnpm.auditConfig.ignoreGhsas with a note in docs/SECURITY.md.
+[31m✗ deps — advisory bulk-endpoint (prod, high+ CVEs)[0m
+
+[1m▶ tests + coverage — vitest[0m
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-runbook
+      Coverage enabled with v8
+
+ ✓ test/routing-orchestration.test.ts (21 tests) 3ms
+ ✓ test/resource-textmatch-calibration.test.ts (9 tests) 12ms
+ ✓ test/license-manifest.test.ts (20 tests) 13ms
+ ✓ test/normalize-contract.test.ts (10 tests) 15ms
+ ✓ test/ref-parse.test.ts (39 tests) 16ms
+file:///Users/foley/Projects/ancient-roads-runbook/scripts/lib/target-guard.mjs:86
+    throw new Error(`REFUSING: ${host} is production or dev — this script corrupts its target`);
+          ^
+
+Error: REFUSING: ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech.invalid is production or dev — this script corrupts its target
+    at assertThrowawayTarget (file:///Users/foley/Projects/ancient-roads-runbook/scripts/lib/target-guard.mjs:86:11)
+    at file:///Users/foley/Projects/ancient-roads-runbook/scripts/cutover-gate-redproof.mjs:33:14
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+file:///Users/foley/Projects/ancient-roads-runbook/scripts/lib/target-guard.mjs:86
+    throw new Error(`REFUSING: ${host} is production or dev — this script corrupts its target`);
+          ^
+
+Error: REFUSING: ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech.invalid is production or dev — this script corrupts its target
+    at assertThrowawayTarget (file:///Users/foley/Projects/ancient-roads-runbook/scripts/lib/target-guard.mjs:86:11)
+    at file:///Users/foley/Projects/ancient-roads-runbook/scripts/cutover-gate-redproof.mjs:33:14
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+ ✓ test/verifier.test.ts (30 tests) 13ms
+ ✓ test/passages-anchor-grounding.test.ts (10 tests) 8ms
+file:///Users/foley/Projects/ancient-roads-runbook/scripts/lib/target-guard.mjs:68
+    throw new Error(
+          ^
+
+Error: STOP: label target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech.invalid is not the declared endpoint (CUTOVER_EXPECT_HOST=neon.tech). It must name the endpoint id exactly.
+    at assertCutoverTarget (file:///Users/foley/Projects/ancient-roads-runbook/scripts/lib/target-guard.mjs:68:11)
+    at assertTarget (file:///Users/foley/Projects/ancient-roads-runbook/scripts/register-label-embeddings.mjs:30:3)
+    at file:///Users/foley/Projects/ancient-roads-runbook/scripts/register-label-embeddings.mjs:43:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+ ✓ test/teacher.test.ts (6 tests) 8ms
+ ❯ test/invariants/ci-claims-match-reality.test.ts (3 tests | 3 failed) 7ms
+   × CI claims match CI reality > the workflow and the web invariant dir both exist (otherwise this test is vacuous) 6ms
+     → /Users/foley/Projects/ancient-roads-runbook/.github/workflows/audit.yml missing: expected false to be true // Object.is equality
+   × CI claims match CI reality > no web invariant claims CI runs it unless the workflow actually names it 1ms
+     → ENOENT: no such file or directory, open '/Users/foley/Projects/ancient-roads-runbook/.github/workflows/audit.yml'
+   × CI claims match CI reality > the db-invariants job still enumerates its targets explicitly (so the check above can see them) 0ms
+     → ENOENT: no such file or directory, open '/Users/foley/Projects/ancient-roads-runbook/.github/workflows/audit.yml'
+file:///Users/foley/Projects/ancient-roads-runbook/scripts/lib/target-guard.mjs:68
+    throw new Error(
+          ^
+
+Error: STOP: slice target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech.invalid is not the declared endpoint (CUTOVER_EXPECT_HOST=neon.tech). It must name the endpoint id exactly.
+    at assertCutoverTarget (file:///Users/foley/Projects/ancient-roads-runbook/scripts/lib/target-guard.mjs:68:11)
+    at file:///Users/foley/Projects/ancient-roads-runbook/scripts/cutover-e4-slice-all.mjs:26:14
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+ ✓ test/invariants/target-guard.test.ts (13 tests) 263ms
+ ✓ test/invariants/manifest-provenance.test.ts (3 tests) 18ms
+stdout | test/rate-limit.test.ts > checkAskRateLimit > allows exactly at the per-minute cap (10), blocks the 11th
+{"evt":"rate_limit_hit","ts":"2026-07-29T15:05:15.855Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > blocks over the per-day cap (100)
+{"evt":"rate_limit_hit","ts":"2026-07-29T15:05:15.855Z","userId":"u1","cap":"day","count":101,"limit":100}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > FAILS OPEN (allows) when the limiter DB call throws
+{"evt":"rate_limit_fail_open","ts":"2026-07-29T15:05:15.856Z","userId":"u1","error":"db down"}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > H4: a minute-refused request does NOT touch the day bucket
+{"evt":"rate_limit_hit","ts":"2026-07-29T15:05:15.856Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks the 11th attempt in a minute (default cap 10)
+{"evt":"gate_rate_limit_hit","ts":"2026-07-29T15:05:15.856Z","ip":"1.2.3.4","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks a slow drip over the hourly cap (default 60)
+{"evt":"gate_rate_limit_hit","ts":"2026-07-29T15:05:15.856Z","ip":"1.2.3.4","cap":"hour","count":61,"limit":60}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > FAILS OPEN (allows) when the limiter DB call throws — password still required by the caller
+{"evt":"rate_limit_fail_open","ts":"2026-07-29T15:05:15.856Z","userId":"gate:1.2.3.4","error":"db down"}
+
+ ✓ test/rate-limit.test.ts (10 tests) 3ms
+ ✓ test/retrieval.contract.test.ts (6 tests) 11ms
+ ✓ test/resource-textmatch.test.ts (7 tests) 3ms
+ ✓ test/reference-intent.test.ts (8 tests) 4ms
+ ✓ test/passages-grounding.test.ts (4 tests) 11ms
+ ✓ test/normalize.test.ts (12 tests) 17ms
+ ✓ test/gate-decision.test.ts (7 tests) 4ms
+ ✓ test/heldout-frozen-hash.test.ts (2 tests) 4ms
+ ✓ test/api-error.test.ts (6 tests) 7ms
+ ✓ test/deps-audit-core.test.ts (5 tests) 3ms
+ ✓ test/content-sanity.test.ts (7 tests) 4ms
+ ✓ test/web-core-sync.test.ts (7 tests) 3ms
+ ✓ test/observability.test.ts (2 tests) 5ms
+ ✓ test/verse-id.test.ts (5 tests) 2ms
+ ↓ test/retrieval.integration.test.ts (1 test | 1 skipped)
+ ✓ test/evals.test.ts (5 tests) 4ms
+ ✓ test/bible-sync.test.ts (7 tests) 4ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/invariants/ci-claims-match-reality.test.ts > CI claims match CI reality > the workflow and the web invariant dir both exist (otherwise this test is vacuous)
+AssertionError: /Users/foley/Projects/ancient-roads-runbook/.github/workflows/audit.yml missing: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ test/invariants/ci-claims-match-reality.test.ts:60:65
+     58| describe('CI claims match CI reality', () => {
+     59|   it('the workflow and the web invariant dir both exist (otherwise thi…
+     60|     expect(existsSync(workflowPath), `${workflowPath} missing`).toBe(t…
+       |                                                                 ^
+     61|     expect(existsSync(webTestDir), `${webTestDir} missing`).toBe(true);
+     62|     expect(readdirSync(webTestDir).filter((f) => /\.test\.tsx?$/.test(…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  test/invariants/ci-claims-match-reality.test.ts > CI claims match CI reality > no web invariant claims CI runs it unless the workflow actually names it
+Error: ENOENT: no such file or directory, open '/Users/foley/Projects/ancient-roads-runbook/.github/workflows/audit.yml'
+ ❯ filesRunByCi test/invariants/ci-claims-match-reality.test.ts:50:15
+     48| /** The web invariant files `db-invariants` actually executes, parsed …
+     49| function filesRunByCi(): string[] {
+     50|   const yml = readFileSync(workflowPath, 'utf8');
+       |               ^
+     51|   // the job's run line enumerates its targets explicitly, e.g.
+     52|   //   run: corepack pnpm exec vitest run test/invariants/licensing.te…
+ ❯ test/invariants/ci-claims-match-reality.test.ts:66:29
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  test/invariants/ci-claims-match-reality.test.ts > CI claims match CI reality > the db-invariants job still enumerates its targets explicitly (so the check above can see them)
+Error: ENOENT: no such file or directory, open '/Users/foley/Projects/ancient-roads-runbook/.github/workflows/audit.yml'
+ ❯ filesRunByCi test/invariants/ci-claims-match-reality.test.ts:50:15
+     48| /** The web invariant files `db-invariants` actually executes, parsed …
+     49| function filesRunByCi(): string[] {
+     50|   const yml = readFileSync(workflowPath, 'utf8');
+       |               ^
+     51|   // the job's run line enumerates its targets explicitly, e.g.
+     52|   //   run: corepack pnpm exec vitest run test/invariants/licensing.te…
+ ❯ test/invariants/ci-claims-match-reality.test.ts:86:19
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+ Test Files  1 failed | 26 passed | 1 skipped (28)
+      Tests  3 failed | 261 passed | 1 skipped (265)
+   Start at  08:05:15
+   Duration  1.23s (transform 485ms, setup 0ms, collect 1.78s, tests 465ms, environment 3ms, prepare 1.84s)
+
+[31m✗ tests + coverage — vitest[0m
+
+[1m▶ qa — Layer 1 invariants + regressions[0m
+
+> theology-study-app@0.1.0 qa /Users/foley/Projects/ancient-roads-runbook
+> vitest run --config web/vitest.config.ts && vitest run test/rate-limit.test.ts
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-runbook/web
+
+ ↓ test/invariants/sections-unit-ordinal.test.ts (2 tests | 2 skipped)
+ ↓ test/invariants/annotation-tables.test.ts (8 tests | 8 skipped)
+ ↓ test/invariants/annotations-polymorphic.test.ts (12 tests | 12 skipped)
+ ↓ test/invariants/annotation-rls-tenancy.test.ts (6 tests | 6 skipped)
+ ↓ test/invariants/work-reader.test.ts (7 tests | 7 skipped)
+ ↓ test/invariants/library-published-boundary.test.ts (9 tests | 9 skipped)
+ ✓ test/invariants/today.test.ts (7 tests) 10ms
+ ✓ test/invariants/voice-floor-authors.test.ts (8 tests) 4ms
+stderr | test/invariants/licensing.test.ts > Layer 1 — static reader forbidden-provenance ratchet > forbidden-provenance count may only decrease (or must be zero)
+
+⚠️  RATCHET NOT ENFORCED HERE — static corpus absent (gitignored).
+    Committed debt baseline: 0 forbidden-provenance entries.
+    This invariant is enforced at deploy time by scripts/predeploy-gate.ts, not in CI.
+
+
+ ✓ test/invariants/licensing.test.ts (6 tests | 6 skipped) 30ms
+ ↓ test/invariants/verse-keys.test.ts (2 tests | 2 skipped)
+ ✓ test/invariants/migration-zero-window.test.ts (8 tests) 1ms
+ ↓ test/invariants/register-wall-surfaces.test.ts (6 tests | 6 skipped)
+ ✓ test/invariants/highlight-range.test.ts (11 tests) 7ms
+ ✓ test/invariants/annotation-exact-substring.test.ts (5 tests | 2 skipped) 5ms
+ ✓ test/invariants/legal-hnsw-index-sync.test.ts (5 tests) 7ms
+ ✓ test/invariants/translation-licensing.test.ts (6 tests) 11ms
+ ↓ test/invariants/search-sections.test.ts (6 tests | 6 skipped)
+ ✓ test/invariants/published-authors.test.ts (6 tests) 2ms
+ ✓ test/invariants/wallet.test.ts (2 tests) 3ms
+ ✓ test/invariants/gate-ugc-blindness.test.ts (3 tests) 2ms
+ ↓ test/invariants/highlight-tenancy.test.ts (3 tests | 3 skipped)
+ ✓ test/regression/get-messages-filters-by-user-id.test.ts (2 tests) 17ms
+ ✓ test/middleware-gate.test.ts (3 tests) 6ms
+ ✓ test/regression/bait-route-production-gate.test.ts (4 tests) 44ms
+ ✓ test/invariants/popover-position.test.ts (6 tests) 4ms
+ ✓ test/invariants/coverage-floor.test.ts (3 tests) 242ms
+ ✓ test/invariants/fts-legal-index-sync.test.ts (1 test) 2ms
+ ✓ test/invariants/work-toc-grouping.test.ts (3 tests) 3ms
+ ✓ test/invariants/bible-translation-gate.test.ts (4 tests) 8ms
+ ✓ test/invariants/copy-format.test.ts (6 tests) 3ms
+ ↓ test/invariants/tenancy.test.ts (3 tests | 3 skipped)
+ ✓ test/regression/add-message-rejects-foreign-channel.test.ts (2 tests) 5ms
+ ✓ test/invariants/snippet-sanitize.test.ts (4 tests) 2ms
+ ✓ test/invariants/work-reader-ui.test.tsx (4 tests) 21ms
+ ✓ test/invariants/work-section-lineation.test.tsx (6 tests) 22ms
+ ✓ test/invariants/work-reader-paging.test.tsx (6 tests) 25ms
+ ✓ test/invariants/search-result-attribution.test.tsx (5 tests) 61ms
+ ✓ test/invariants/work-toc-bounded.test.tsx (3 tests) 71ms
+stderr | test/db-boot-assert.test.ts > assertAppRuntimeRole — a boot canary, not a single point of total failure > does NOT brick the app when the DB is unreachable (retries, then serves)
+[boot] assertAppRuntimeRole: could not reach the DB to verify the runtime role after 4 attempts; serving anyway (per-request RLS still binds). Last error: fetch failed: other side closed
+
+ ✓ test/db-boot-assert.test.ts (4 tests) 1708ms
+   ✓ assertAppRuntimeRole — a boot canary, not a single point of total failure > does NOT brick the app when the DB is unreachable (retries, then serves) 1706ms
+
+ Test Files  28 passed | 11 skipped (39)
+      Tests  125 passed | 72 skipped (197)
+   Start at  08:05:16
+   Duration  2.75s (transform 926ms, setup 0ms, collect 2.44s, tests 2.33s, environment 2.20s, prepare 3.50s)
+
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-runbook
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > allows exactly at the per-minute cap (10), blocks the 11th
+{"evt":"rate_limit_hit","ts":"2026-07-29T15:05:20.008Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > blocks over the per-day cap (100)
+{"evt":"rate_limit_hit","ts":"2026-07-29T15:05:20.008Z","userId":"u1","cap":"day","count":101,"limit":100}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > FAILS OPEN (allows) when the limiter DB call throws
+{"evt":"rate_limit_fail_open","ts":"2026-07-29T15:05:20.008Z","userId":"u1","error":"db down"}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > H4: a minute-refused request does NOT touch the day bucket
+{"evt":"rate_limit_hit","ts":"2026-07-29T15:05:20.008Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks the 11th attempt in a minute (default cap 10)
+{"evt":"gate_rate_limit_hit","ts":"2026-07-29T15:05:20.009Z","ip":"1.2.3.4","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks a slow drip over the hourly cap (default 60)
+{"evt":"gate_rate_limit_hit","ts":"2026-07-29T15:05:20.009Z","ip":"1.2.3.4","cap":"hour","count":61,"limit":60}
+
+ ✓ test/rate-limit.test.ts (10 tests) 2ms
+stdout | test/rate-limit.test.ts > checkGateRateLimit > FAILS OPEN (allows) when the limiter DB call throws — password still required by the caller
+{"evt":"rate_limit_fail_open","ts":"2026-07-29T15:05:20.009Z","userId":"gate:1.2.3.4","error":"db down"}
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  08:05:19
+   Duration  207ms (transform 21ms, setup 0ms, collect 27ms, tests 2ms, environment 0ms, prepare 25ms)
+
+[32m✓ qa — Layer 1 invariants + regressions[0m
+
+[1m▶ hygiene — no test residue in dev (post-suite)[0m
+⚠ SKIPPED (visibly): no owner DATABASE_URL — cannot check dev for test residue.
+⚠ SKIPPED (visibly): no target to inspect.
+[32m✓ hygiene — no test residue in dev (post-suite)[0m
+
+[1m▶ data — Gate B license (fail-closed)[0m
+======================================================================
+GATE B — LICENSE (fail closed)
+======================================================================
+Manifest: ingest/sources.config.json (60 source entries)
+Published sources (DB): skipped (no DATABASE_URL).
+
+✓ GATE B PASSED: no license/provenance violations.
+[32m✓ data — Gate B license (fail-closed)[0m
+
+[1m▶ coverage gaps (informational)[0m
+(no coverage summary produced)
+
+════════════════════════════════════
+[31mAUDIT FAILED (3): lint — web/ eslint deps — advisory bulk-endpoint (prod, high+ CVEs) tests + coverage — vitest[0m
