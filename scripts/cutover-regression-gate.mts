@@ -45,6 +45,11 @@
 //                              had ever compared them to their vectors, so a slice that
 //                              wrote text and dropped the embedding half was green
 //                              everywhere. Non-vacuous: zero sections is a failure.
+//                              PLUS the provenance leg (SECTION_PROVENANCE_DESIGN R5):
+//                              no section whose CONTENT provenance (source_url, 031) is
+//                              a forbidden aggregator may live under a source whose
+//                              DECLARED provenance is clean — the laundering shape G6's
+//                              sources.provenance scan is structurally blind to.
 //   G9 constraints reject    — the negative half of G4. The annotation CHECKs really
 //                              refuse the shapes 025/030 forbid, verified by SQLSTATE
 //                              23514 AND the constraint NAME (a bare catch counts a
@@ -228,10 +233,16 @@ function g1(now: UserDataMeasure, base?: UserDataMeasure) {
 // ZERO: with no forbidden rows the two numbers must be IDENTICAL, and a 15,358-verse gap
 // was the bug announcing itself. coalesce() to '' so the predicate is total, and the
 // invariant `forbidden == 0 => durable == headline` becomes a self-check anyone can rerun.
-const FORBIDDEN_PROVENANCE_SQL =
-  `(coalesce(metadata->>'sourceUrl','') ILIKE '%biblehub%'
-    OR coalesce(metadata->>'sourceUrl','') ILIKE '%studylight%'
-    OR coalesce(metadata->>'sourceUrl','') ILIKE '%historicalchristian%')`;
+// Parameterized over the SQL expression carrying the provenance, because the same word
+// must mean the same thing in every store that records one: flat embeddings
+// (metadata->>'sourceUrl'), sections (source_url, migration 031) and sources
+// (provenance::text). Three hand-inlined copies is how G6 and the durable floor drifted
+// before; one template is the fix that survives the next domain addition.
+const forbiddenProvenanceSqlOn = (expr: string) =>
+  `(coalesce(${expr},'') ILIKE '%biblehub%'
+    OR coalesce(${expr},'') ILIKE '%studylight%'
+    OR coalesce(${expr},'') ILIKE '%historicalchristian%')`;
+const FORBIDDEN_PROVENANCE_SQL = forbiddenProvenanceSqlOn(`metadata->>'sourceUrl'`);
 
 // --print-predicates: emit the routing-derived SQL this gate measures with, as JSON, and
 // exit. It exists so scripts/cutover-gate-redproof.mjs — which is plain .mjs and therefore
@@ -628,11 +639,17 @@ async function g6(c: pg.Client, base?: number): Promise<number> {
   // Scan the WHOLE provenance object as text, not just `provenance->>'url'` — a source
   // that records its origin under any other key would otherwise yield NULL ILIKE ...
   // = NULL, drop out of the WHERE, and be reported as clean.
+  // The whole-object scan below deliberately survives the audit keys an "exclude" slice
+  // writes (excluded_forbidden_domains/-reason, SECTION_PROVENANCE_DESIGN R3): those keys
+  // NAME forbidden domains as a record of what was withheld, and scanning them would flag
+  // every correctly-excluded source as carrying forbidden provenance. They are stripped
+  // from the scanned text — and ONLY they are — so a source recording its real origin
+  // under any other key still trips this, exactly as before.
+  const PROVENANCE_SCAN_SQL = `(s.provenance - 'excluded_forbidden_domains' - 'excluded_forbidden_reason')::text`;
   const secStore = await c.query<{ slug: string; url: string; status: string; sections: number }>(
     `SELECT s.slug, coalesce(s.provenance->>'url', s.provenance::text) AS url, s.status, count(sec.id)::int AS sections
        FROM sources s LEFT JOIN sections sec ON sec.source_id = s.id
-      WHERE s.provenance::text ILIKE '%biblehub%' OR s.provenance::text ILIKE '%studylight%'
-         OR s.provenance::text ILIKE '%historicalchristian%'
+      WHERE ${forbiddenProvenanceSqlOn(PROVENANCE_SCAN_SQL)}
       GROUP BY s.slug, s.provenance, s.status`,
   );
   // Reachability for the SECTIONS store specifically: a section is served only via the
@@ -715,6 +732,52 @@ async function g8(c: pg.Client, phase: string, base?: SectionIntegrity): Promise
   // did not rewrite, which is the ADR-029 suppression class in the sections store.
   if (base && now.sections < base.sections) {
     fail('G8 sections/embeddings', `sections DECREASED ${base.sections} -> ${now.sections} — the cutover removed ${base.sections - now.sections} section(s); E4 is additive and nothing in this cutover deletes sections`);
+  }
+
+  // ── G8 provenance (SECTION_PROVENANCE_DESIGN R5) ────────────────────────────
+  // THE PROPERTY: no section whose CONTENT provenance (sections.source_url, carried
+  // row-for-row from the flat pool by the slice, migration 031) is a forbidden
+  // aggregator may live under a source whose DECLARED provenance is clean. That is
+  // the laundering shape G6 cannot see: G6's sections-store leg reads
+  // sources.provenance, which is exactly the field that lies. Both legs stay —
+  // they read different keys and neither subsumes the other.
+  //
+  // HONEST LIMIT, stated so nobody reads this wider than it is: G8 can only see
+  // provenance that is RECORDED. source_url is NULL for the clean helloao works
+  // (their flat rows carry no sourceUrl) and for every section written by
+  // ingest-sermon.ts / ingest-historian.ts / repoint-sections-work.ts, which do not
+  // populate it. A writer introducing forbidden content with a NULL source_url is
+  // invisible here and must be caught by G6 or the ingest-time licence gate.
+  const hasSrcUrl = await hasColumn(c, 'sections', 'source_url');
+  if (!hasSrcUrl) {
+    console.warn(`  ⚠ G8 provenance — sections.source_url does not exist (pre-031); the content-vs-declared provenance check did NOT run at ${phase}. Expected before E1; from E1 on, 031 is in the migration list and this column's absence would mean E1 did not finish.`);
+  } else {
+    const laundered = await c.query<{ slug: string; status: string; declared: string; n: number }>(
+      `SELECT src.slug, src.status, coalesce(src.provenance->>'url', '(no url key)') AS declared, count(*)::int AS n
+         FROM sections s JOIN sources src ON src.id = s.source_id
+        WHERE ${forbiddenProvenanceSqlOn('s.source_url')}
+          AND NOT ${forbiddenProvenanceSqlOn(`coalesce(src.provenance->>'url', src.provenance::text)`)}
+        GROUP BY src.slug, src.status, src.provenance
+        ORDER BY n DESC`,
+    );
+    for (const row of laundered.rows) {
+      fail('G8 provenance', `${row.slug}: ${row.n} section(s) whose CONTENT provenance is a forbidden aggregator live under declared provenance ${row.declared} (status=${row.status}). The slice's fail-closed policy was bypassed or predates 031 — those rows are laundered and must be re-sliced or the work quarantined.`);
+    }
+    if (laundered.rows.length === 0) pass('G8 provenance', 'no section carries forbidden content provenance under a clean declared provenance');
+
+    // Per-source census of content-provenance hosts, so the store's actual composition
+    // is VISIBLE rather than inferred from the absence of a red line above.
+    const census = await c.query<{ slug: string; host: string; n: number }>(
+      `SELECT src.slug,
+              coalesce(substring(s.source_url FROM '^(?:[a-zA-Z][a-zA-Z0-9+.-]*://)?(?:www\\.)?([^/:]+)'), '(none recorded)') AS host,
+              count(*)::int AS n
+         FROM sections s JOIN sources src ON src.id = s.source_id
+        GROUP BY 1, 2 ORDER BY 1, 3 DESC`,
+    );
+    if (census.rows.length > 0) {
+      console.log('    G8 provenance census (sections.source_url host per source):');
+      for (const r of census.rows) console.log(`      ${r.slug}: ${r.host} ×${r.n}`);
+    }
   }
   return now;
 }

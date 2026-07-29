@@ -31,8 +31,13 @@ const host = assertCutoverTarget(url, {
 console.log(`host: ${host} (credentials redacted)`);
 
 const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'ingest/sources.config.json'), 'utf8'));
-const entries = manifest.filter((e) => e.backfill?.match_author && !e.quarantine);
-console.log(`works to slice: ${entries.length}`);
+const eligible = manifest.filter((e) => e.backfill?.match_author && !e.quarantine);
+// SECTION_PROVENANCE_DESIGN R3: a declared "skip" writes nothing and is an EXPECTED
+// skip — reported here so the run's coverage is visible, never inferred from silence.
+const declaredSkips = eligible.filter((e) => e.backfill?.forbidden_provenance === 'skip');
+const entries = eligible.filter((e) => e.backfill?.forbidden_provenance !== 'skip');
+console.log(`works to slice: ${entries.length} (+${declaredSkips.length} declared forbidden-provenance skip(s))`);
+for (const e of declaredSkips) console.log(`  skip (declared): ${e.id} — ${e.backfill.forbidden_provenance_reason ?? '(no reason recorded — the manifest invariant test fails on this)'}`);
 
 const env = { ...process.env, DATABASE_URL: url, DATABASE_URL_UNPOOLED: url, MIGRATE_ALLOW_PROD: '1', CUTOVER_ALLOW: '1' };
 // Same hang hazard as E2 (see register-label-embeddings.mjs): a long statement whose
@@ -81,11 +86,19 @@ for (const e of entries) {
       `SELECT count(*)::int n FROM sections s JOIN sources src ON src.id = s.source_id WHERE src.slug = $1`,
       [e.slug ?? id],
     )).rows[0].n;
-    if (flat !== sec) {
-      failures.push({ id, flat, sec });
-      console.error(`  ✗ 1:1 FAIL flat=${flat} sections=${sec}`);
+    // Postcondition RESTATED (SECTION_PROVENANCE_DESIGN §5): sections + excluded ==
+    // flat pool, where `excluded` is what a declared "exclude" policy withheld and
+    // recorded on the sources row. 0 for every work without the policy, so the old
+    // 1:1 is unchanged there. A silent inequality is still a failure.
+    const excluded = (await c.query(
+      `SELECT coalesce((provenance->>'excluded_forbidden_rows')::int, 0) n FROM sources WHERE slug = $1`,
+      [e.slug ?? id],
+    )).rows[0]?.n ?? 0;
+    if (flat !== sec + excluded) {
+      failures.push({ id, flat, sec, excluded });
+      console.error(`  ✗ 1:1 FAIL flat=${flat} sections=${sec} excluded=${excluded}`);
     } else {
-      console.log(`  ✓ 1:1 flat=${flat} sections=${sec}`);
+      console.log(`  ✓ 1:1 flat=${flat} sections=${sec}${excluded > 0 ? ` + excluded=${excluded} (declared forbidden-provenance exclusion)` : ''}`);
     }
   } catch (err) {
     failures.push({ id, error: String(err) });

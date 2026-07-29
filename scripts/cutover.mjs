@@ -271,7 +271,11 @@ function runNode(argv, url) {
 const MIGRATIONS = ['016_history_sections', '017_source_type_registers', '020_embeddings_source_type_registers',
   '021_revoke_app_runtime_anchor_writes', '022_embeddings_write_policy_user_scope', '023_sources_status_ingesting',
   '025_annotations_polymorphic', '026_bookmarks', '027_library_items',
-  '028_reading_progress', '029_tags', '030_annotation_constraints_tighten'];
+  '028_reading_progress', '029_tags', '030_annotation_constraints_tighten',
+  // 031 adds sections.source_url (catalog-only, no rewrite). It MUST precede E4: the
+  // slice fails closed without the column — that refusal is the R1 contract, not a
+  // dependency to be soft-pedaled (SECTION_PROVENANCE_DESIGN R1).
+  '031_sections_source_url'];
 const CONCURRENT = ['018_register_partial_indexes', '019_register_columns_fts'];
 // 024 IS NOT IN E1. It backfills sections.unit_ordinal, and E4 is what creates the
 // sections it backfills — running it here left 71,563 of 72,863 sections NULL on the
@@ -297,7 +301,7 @@ async function e1_migrations(sql, url, cp) {
     }
     return;
   }
-  console.log('\nE1 — migrations 016-023 + 025-030 (fresh; prod is pre-016 per census; 024 runs in E4)');
+  console.log('\nE1 — migrations 016-023 + 025-031 (fresh; prod is pre-016 per census; 024 runs in E4)');
   const hasE1Progress = cp.done.some((d) => d.startsWith('E1:'));
   // PRECONDITION: prod really is pre-016 (else this is not the build we designed).
   const pre = await q1(sql, `SELECT to_regclass('section_history_anchors') IS NULL AS pre016`);
@@ -438,7 +442,7 @@ async function e2_label(sql, url, cp) {
 async function e4_slice(sql, url, cp) {
   if (cp.done.includes('E4')) { console.log('\nE4 — (checkpoint) already done'); return; }
   console.log('\nE4 — slice works into sections, reusing vectors 1:1');
-  console.log('  per served work: migrate-sections-slice, then assert sections == flat-pool count FOR THAT WORK (hazard 1: each store its own key; assert 1:1).');
+  console.log('  per served work: migrate-sections-slice, then assert sections + excluded == flat-pool count FOR THAT WORK (hazard 1: each store its own key; `excluded` is a declared forbidden-provenance exclusion recorded on the sources row, 0 without one — SECTION_PROVENANCE_DESIGN §5).');
   console.log(`  then ${POST_SLICE_MIGRATION} (it backfills the sections THIS step creates — running it in E1 left 71,563 of 72,863 NULL).`);
   if (DRY) { console.log(`    [dry-run] would run cutover-e4-slice-all.mjs, then ${POST_SLICE_MIGRATION}`); return; }
   await assertUserDataVsE0(sql, cp, 'E4');
@@ -450,18 +454,26 @@ async function e4_slice(sql, url, cp) {
   // key. The slice runner asserts this per work as it goes; re-assert it here across
   // every sliced work as this step's own contract, because "the runner checked" is
   // the kind of claim this project has been burned by.
+  // RESTATED (SECTION_PROVENANCE_DESIGN §5): `sections == flat` became
+  // `sections + excluded == flat`, where `excluded` is what a declared
+  // forbidden-provenance "exclude" policy withheld — measured by the slice, recorded
+  // on the sources row, and 0 for every work without the policy. A silent inequality
+  // is still an abort.
   const drift = await sql.query(`
     SELECT src.slug, count(s.id)::int AS sections,
+           coalesce((src.provenance->>'excluded_forbidden_rows')::int, 0) AS excluded,
            (SELECT count(*)::int FROM embeddings e WHERE e.user_id IS NULL AND e.metadata->>'work' = src.slug) AS flat
       FROM sources src LEFT JOIN sections s ON s.source_id = src.id
-     GROUP BY src.slug HAVING count(s.id) > 0`);
-  const mismatched = drift.filter((r) => r.flat > 0 && r.flat !== r.sections);
-  for (const r of drift) console.log(`    ${r.slug}: sections=${r.sections} flat=${r.flat}${r.flat === 0 ? ' (pre-register source, no flat work key — not a 1:1 target)' : ''}`);
-  if (mismatched.length > 0) die('E4', `sections vs flat-pool 1:1 broken for: ${mismatched.map((r) => `${r.slug} (${r.sections} vs ${r.flat})`).join(', ')}`, 'DELETE the sections rows for the failing slug(s) and re-run E4 for those works only');
+     GROUP BY src.slug, src.provenance HAVING count(s.id) > 0`);
+  const mismatched = drift.filter((r) => r.flat > 0 && r.flat !== r.sections + r.excluded);
+  for (const r of drift) console.log(`    ${r.slug}: sections=${r.sections}${r.excluded > 0 ? ` excluded=${r.excluded}` : ''} flat=${r.flat}${r.flat === 0 ? ' (pre-register source, no flat work key — not a 1:1 target)' : ''}`);
+  if (mismatched.length > 0) die('E4', `sections(+excluded) vs flat-pool 1:1 broken for: ${mismatched.map((r) => `${r.slug} (${r.sections}+${r.excluded} vs ${r.flat})`).join(', ')}`, 'DELETE the sections rows for the failing slug(s) and re-run E4 for those works only');
   // The query above only sees sources that HAVE sections, so a work whose slice produced
   // ZERO sections — a total failure for that work — was invisible to the 1:1 check.
   // Assert the other direction too: every non-quarantined work that has flat rows must
-  // have produced sections.
+  // have produced sections — UNLESS the manifest declares forbidden_provenance="skip"
+  // for it, in which case zero sections is the DECLARED outcome (the four all-forbidden
+  // works, SECTION_PROVENANCE_DESIGN §2) and is reported as such, never inferred.
   const sliced = new Set(drift.map((r) => r.slug));
   const manifest4 = JSON.parse(readFileSync(path.join(ROOT, 'ingest/sources.config.json'), 'utf8'));
   const missing = [];
@@ -469,10 +481,15 @@ async function e4_slice(sql, url, cp) {
     const slug = e.slug ?? e.id;
     if (sliced.has(slug)) continue;
     const n = (await sql.query(`SELECT count(*)::int AS n FROM embeddings WHERE user_id IS NULL AND metadata->>'work' = $1`, [slug]))[0].n;
-    if (n > 0) missing.push(`${slug} (${n} flat rows, 0 sections)`);
+    if (n === 0) continue;
+    if (e.backfill?.forbidden_provenance === 'skip') {
+      console.log(`    ${slug}: ${n} flat rows, 0 sections — DECLARED skip (forbidden provenance): ${e.backfill.forbidden_provenance_reason ?? '(no reason recorded)'}`);
+      continue;
+    }
+    missing.push(`${slug} (${n} flat rows, 0 sections)`);
   }
   if (missing.length > 0) die('E4', `work(s) with flat rows produced NO sections: ${missing.join(', ')}`, 're-run E4 for those works only');
-  ok(`postcondition: 1:1 sections↔flat pool for every sliced register work (${drift.length} source(s) with sections), and no work with flat rows was skipped`);
+  ok(`postcondition: sections + excluded == flat pool for every sliced register work (${drift.length} source(s) with sections), and no undeclared work with flat rows was skipped`);
 
   // 024 runs HERE, after the rows it backfills exist. In E1 it ran against a sections
   // table that E4 had not filled yet.
@@ -569,15 +586,20 @@ CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27
   E0  regression gate --capture: the pre-cutover baseline (user-data digests +
       active counts + owner distribution, the corpus-wide >=2-distinct-authors
       floor, reader, annotation write path, register wall, forbidden ratchet)
-  E1  migrations 016-023 + 025-030 in order (018/019 concurrent)
+  E1  migrations 016-023 + 025-031 in order (018/019 concurrent; 031 adds
+      sections.source_url — row-level content provenance, required by E4)
       after EVERY migration: user data unchanged (digest, not count) + no INVALID index
       HAZARD 2 guard: refuse if a section-ordinal annotation precedes 024's renumber
   E2  register-label the flat embeddings (UPDATE); assert per-work label coverage
       against the TARGET's own author counts, and that no row was added or lost
-  E4  slice served works into sections reusing vectors 1:1; re-assert per-work 1:1
-      across every sliced work (ADR-029 addendum 2: each store, its own key), THEN
-      apply 024 and assert sections.unit_ordinal is POPULATED (it backfills what E4
-      creates; in E1 it left 71,563 of 72,863 NULL and the old 1:1 check said green)
+  E4  slice served works into sections reusing vectors 1:1, carrying each row's
+      sourceUrl into sections.source_url; the slice FAILS CLOSED on undeclared
+      forbidden provenance in a work's flat pool, and honors the manifest's
+      declared policy (exclude|skip, SECTION_PROVENANCE_DESIGN R2-R3); re-assert
+      per-work sections + excluded == flat across every sliced work (ADR-029
+      addendum 2: each store, its own key), THEN apply 024 and assert
+      sections.unit_ordinal is POPULATED (it backfills what E4 creates; in E1 it
+      left 71,563 of 72,863 NULL and the old 1:1 check said green)
   E5  [HARD STOP] deploy.sh
   E6  smoke counts + the full regression battery
   REGRESSION GATE RUNS AFTER EVERY CHUNK (E0/E1/E2/E4/E6), not just at the end.

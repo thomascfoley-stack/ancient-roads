@@ -1,5 +1,52 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-29 (SESSION 5 — E4 provenance: SECTION_PROVENANCE_DESIGN R1–R5 implemented on owner ruling; NOT yet fork-rehearsed; PROD UNTOUCHED)
+
+**The owner ruled** ("fix the e4 sectioning") — the ruling `docs/SECTION_PROVENANCE_DESIGN.md` §7's
+preamble was waiting on. What the design measured (fresh prod fork, 2026-07-28): E4 copies flat rows
+into `sections` by author and drops their `sourceUrl`, so **6,257 forbidden-aggregator rows would
+land under clean provenance records** — four works 100% forbidden (their manifest entries name
+CrossWire/TCP editions that were never ingested), two mixed, and one laundering-by-rename
+(`barnes-crosswire-nt` sharing `match_author` with the quarantined `barnes-notes`). Implemented
+exactly the design, nothing more:
+
+- **R1** `031_sections_source_url.sql` (additive, catalog-only) + `migrate-sections-slice.ts`
+  carries `embeddings.metadata->>'sourceUrl'` into `sections.source_url` row-for-row through the
+  same window-ordinal join as the body and vector. The slice REFUSES to run without 031 — failing
+  closed is the contract, not a dependency inconvenience. 031 joins E1's migration list.
+- **R2** the slice measures the pool's real per-row provenance BEFORE writing (coarse ILIKE
+  pre-filter + the exact host-aware `forbiddenProvenanceDomain`, the same two-step b2 uses) and
+  ABORTS on undeclared forbidden rows, naming the count, the domains and the two legal fixes.
+- **R3** policy lives in the manifest: `backfill.forbidden_provenance` = `exclude` (slice clean rows
+  only, by EXACT flagged id — never a re-run ILIKE that could disagree; the exclusion counted on the
+  sources row as `excluded_forbidden_rows`/`_domains`/`_reason`) or `skip` (write NOTHING, exit
+  before connecting). Declared per §5's table: exclude for calvin/wesley-crosswire, skip for the
+  four all-forbidden works. **Neither declares a work legitimate** — quarantine-vs-re-source stays
+  the owner's §7 call, still open.
+- **R4** `test/invariants/manifest-provenance.test.ts` (static, no DB): two non-quarantined entries
+  may never share a `match_author`; a non-quarantined entry sharing one with a QUARANTINED entry
+  must declare the policy; every policy carries a reason.
+- **R5** G8 gains the provenance leg: FAIL on any section whose CONTENT provenance is forbidden
+  under a source whose DECLARED provenance is clean, plus a per-source census of
+  `sections.source_url` hosts so composition is visible, not inferred. G6's sections-store scan now
+  strips ONLY the exclusion-audit keys (`excluded_forbidden_domains`/`_reason`) from its whole-object
+  scan — they name forbidden domains as a record of what was withheld, and scanning them would flag
+  every correctly-excluded source. The forbidden-SQL predicate became one template
+  (`forbiddenProvenanceSqlOn(expr)`) over the three stores that record provenance, closing the
+  hand-inlined-copy drift class G6 already got burned by.
+- **Postcondition restated everywhere it lives** (slice, `cutover-e4-slice-all.mjs`, `cutover.mjs`
+  E4, `printPlan`): `sections == flat` became `sections + excluded == flat`, excluded printed per
+  work, declared skips reported as EXPECTED (never inferred from silence), and a work with flat rows
+  and no sections still aborts unless its skip is declared.
+
+**NOT DONE / UNVERIFIED — read before trusting.** No fork rehearsal has run this code: written and
+syntax/parse-checked only; the E4 slice, the abort paths and the G8 leg have NOT been watched go red
+or green on a live target. Like every cutover-path change in this repo, it must be rehearsed on a
+fresh fork (and red-proved: seed one biblehub row into a clean pool → undeclared abort; run
+calvin-crosswire → 5,090 + 1,125 == 6,215) before any prod run. The §7 owner calls (four
+all-forbidden works: quarantine or re-ingest; the 1,300 staged `barnes-notes` prod sections; the
+50,618 `commentary_entries` finding) remain open. Prod untouched; `deploy.sh` never ran.
+
 ## 2026-07-28 (SESSION 4 — E6 hardening; SIX fresh auditors found TWO cutover-blockers IN MY OWN NEW CODE; PROD UNTOUCHED)
 
 **Headline: the work order I was handed was written against a stale branch, and two of the checks I
