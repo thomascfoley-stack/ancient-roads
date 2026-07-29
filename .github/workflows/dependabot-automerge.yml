@@ -1,0 +1,27 @@
+name: dependabot-automerge
+on:
+  workflow_run:
+    workflows: ["audit"]
+    types: [completed]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  automerge:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: merge green dependabot patch/minor PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for pr in $(gh pr list -R "$GITHUB_REPOSITORY" --author "app/dependabot" --json number -q '.[].number'); do
+            title=$(gh pr view $pr -R "$GITHUB_REPOSITORY" --json title -q .title)
+            case "$title" in
+              *" from "*)
+                from=$(echo "$title" | sed -E 's/.* from ([0-9]+)\..*/\1/')
+                to=$(echo "$title" | sed -E 's/.* to ([0-9]+)\..*/\1/')
+                [ "$from" = "$to" ] || { echo "skip #$pr (major)"; continue; } ;;
+            esac
+            gh pr checks $pr -R "$GITHUB_REPOSITORY" && gh pr merge $pr -R "$GITHUB_REPOSITORY" --merge --delete-branch || true
+          done
