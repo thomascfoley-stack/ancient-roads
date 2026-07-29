@@ -40,7 +40,8 @@ function ownerUrl(): string | undefined {
   return seedOwnerUrl();
 }
 
-const url = ownerUrl();
+const ownerConn = ownerUrl();
+const appConn = process.env.APP_DATABASE_URL ?? process.env.DATABASE_URL;
 const SLUG = `qa-published-boundary-${Date.now()}`;
 const USER = `qa-libbound-${Date.now()}`;
 // Unique, unlikely-to-collide search token for the searchSections leg of this proof.
@@ -58,13 +59,16 @@ function callWork(slug: string): Promise<Response> {
 // A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
 const SKIP = announceSkip(
   'Phase 4 §A — a shelved work that is later staged/quarantined disappears from every surface',
-  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(url) }],
+  [
+    { name: 'APP_DATABASE_URL (app_runtime via requireDbInCi)', present: Boolean(appConn) },
+    { name: 'DATABASE_URL (owner seed connection via seedOwnerUrl)', present: Boolean(ownerConn) },
+  ],
   'the published-status boundary across every read surface',
 );
 
 describe.skipIf(SKIP)('Phase 4 §A — a shelved work that is later staged/quarantined disappears from every surface', () => {
   beforeAll(async () => {
-    owner = new pg.Client({ connectionString: url!, ssl: { rejectUnauthorized: false } });
+    owner = new pg.Client({ connectionString: ownerConn!, ssl: { rejectUnauthorized: false } });
     await owner.connect();
     // license MUST be a value in ALLOWED_LICENSES ('Public Domain' | 'CC BY' | 'CC BY-SA').
     // This test necessarily seeds a PUBLISHED source, and Gate B (src/ingest/check-licenses.ts)

@@ -434,6 +434,15 @@ is no longer the only signal.
 
 ---
 
+## §1f — PROTECTED Neon rollback branch (standing, 2026-07-29)
+
+**Do not delete** Neon branch `br-late-recipe-atxl68sh` (`pre-cutover-ep-odd-fog-atnykudm-20260729164220`) —
+the Phase 2 prod pre-cutover snapshot. Every rollback string in `scripts/cutover.mjs` names it.
+Deletion requires an owner ruling in `docs/DECISIONS.md`. Guard: `scripts/lib/neon-branch-guard.mjs`.
+See `docs/CUTOVER_DESIGN.md` § PROTECTED BRANCHES.
+
+---
+
 ## §1d — better-auth GHSA-qq9h-g4jm-xgf3: fixed what I could, escalating what I can't (2026-07-29)
 
 CI's `deps` gate failed on **two** high advisories. One is fixed; one is yours.

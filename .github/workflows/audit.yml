@@ -129,4 +129,8 @@ jobs:
           # production regardless of what is declared here.
           SEED_TEST_ENDPOINT: ep-tiny-bonus-at3izo3y
           DEEPINFRA_API_KEY: ${{ secrets.DEEPINFRA_API_KEY }}
-        run: corepack pnpm exec vitest run test/invariants/
+          DB_INVARIANTS_SKIP_CEILING: '2'
+        run: |
+          corepack pnpm exec vitest run test/invariants/ \
+            --reporter=default --reporter=json --outputFile=../vitest-db-invariants.json
+          node ../scripts/ci-skip-ceiling.mjs ../vitest-db-invariants.json

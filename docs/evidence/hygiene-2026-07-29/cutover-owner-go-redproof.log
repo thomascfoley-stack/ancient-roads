@@ -1,0 +1,3 @@
+
+✗ ABORT at pre-E1: CUTOVER_OWNER_PHASE2_GO is retired (same-branch self-authorization defect). Use CUTOVER_OWNER_GO_QUOTE at invocation instead.
+  rollback: nothing written

@@ -255,3 +255,18 @@ disposable, but there is no sweep for corpus-level residue. Tracked, not closed.
 `.env.prod` carries the URL and not the host, and the documented cutover workflow sources it into
 the shell — so keying off the URL alone made `npm run audit` red for reasons unrelated to the tree,
 at the moment an operator most needs a trustworthy green. A missing declaration is a visible skip.
+
+## PROTECTED BRANCHES — may not delete without owner ruling
+
+The following Neon branch ids are **rollback points** and must not be deleted, renamed for reuse, or
+bulk-pruned by pattern without an explicit owner ruling recorded in [`docs/DECISIONS.md`](DECISIONS.md).
+
+| branch id | name | created | purpose |
+|---|---|---|---|
+| `br-late-recipe-atxl68sh` | `pre-cutover-ep-odd-fog-atnykudm-20260729164220` | 2026-07-29 Phase 2 prod cutover | pre-cutover prod snapshot — every rollback string in `scripts/cutover.mjs` names it |
+
+Enforcement: `scripts/lib/neon-branch-guard.mjs` refuses deletion of protected ids and of names matching
+`pre-cutover-ep-odd-fog-*`. Any future Neon branch-delete script must call that guard before acting.
+Measured 2026-07-29: **no repo script deletes Neon branches by pattern** — only `neonctl branches create`
+in `scripts/cutover.mjs` (snapshot creation). Deletion refusal is red-proved in
+`docs/evidence/hygiene-2026-07-29/protected-branch-refusal.log`.

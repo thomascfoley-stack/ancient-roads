@@ -1,0 +1,16 @@
+db-invariants skip ceiling: 1; observed fully-skipped files: 12
+  skipped: /Users/foley/Projects/ancient-roads-git/web/test/invariants/annotation-rls-tenancy.test.ts
+  skipped: /Users/foley/Projects/ancient-roads-git/web/test/invariants/annotation-tables.test.ts
+  skipped: /Users/foley/Projects/ancient-roads-git/web/test/invariants/annotations-polymorphic.test.ts
+  skipped: /Users/foley/Projects/ancient-roads-git/web/test/invariants/highlight-tenancy.test.ts
+  skipped: /Users/foley/Projects/ancient-roads-git/web/test/invariants/library-published-boundary.test.ts
+  skipped: /Users/foley/Projects/ancient-roads-git/web/test/invariants/register-end-to-end.test.ts
+  skipped: /Users/foley/Projects/ancient-roads-git/web/test/invariants/register-wall-surfaces.test.ts
+  skipped: /Users/foley/Projects/ancient-roads-git/web/test/invariants/search-sections.test.ts
+  skipped: /Users/foley/Projects/ancient-roads-git/web/test/invariants/section-vector-pairing.test.ts
+  skipped: /Users/foley/Projects/ancient-roads-git/web/test/invariants/sections-unit-ordinal.test.ts
+  skipped: /Users/foley/Projects/ancient-roads-git/web/test/invariants/tenancy.test.ts
+  skipped: /Users/foley/Projects/ancient-roads-git/web/test/invariants/work-reader.test.ts
+
+REFUSING green: 12 suite(s) fully skipped, ceiling is 1. Raise DB_INVARIANTS_SKIP_CEILING only with owner approval (ADR-035).
+exit=1

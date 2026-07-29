@@ -58,7 +58,7 @@ async function inTx<T>(fn: (c: pg.Client) => Promise<T>): Promise<T> {
 // A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
 const SKIP = announceSkip(
   'MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index',
-  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(url) }],
+  [{ name: 'DATABASE_URL (owner seed connection via seedOwnerUrl)', present: Boolean(url) }],
   'the 025 anchor XOR CHECK and the verse-only partial unique index',
 );
 

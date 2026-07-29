@@ -100,7 +100,7 @@ const deleteSeed = async (c: pg.Client) => {
 // A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
 const SKIP = announceSkip(
   'ADR-026 red-first — 024 backfill reassembles mis-ordered chunks in (unit_ordinal, ordinal) order',
-  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(url) }],
+  [{ name: 'DATABASE_URL (owner seed connection via seedOwnerUrl)', present: Boolean(url) }],
   'the 024 backfill reassembly of mis-ordered chunks in (unit_ordinal, ordinal) order',
 );
 
