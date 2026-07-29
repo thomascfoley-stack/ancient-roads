@@ -56,21 +56,14 @@
     "overrides": {
       "postcss": "^8.5.22",
       "fast-uri": "^3.1.4",
-      "sharp": "^0.35.0"
+      "sharp": "^0.35.0",
+      "better-auth": "^1.6.25",
+      "@better-auth/passkey": "^1.6.25",
+      "@better-fetch/fetch": "^1.3.1"
     },
     "auditConfig": {
-      "//": "Documented + justified in docs/SECURITY.md. All rooted in the pinned @neondatabase/auth@0.4.2-beta (better-auth@1.4.18); unfixable today (override breaks the build). GHSA-g38m is a real in-path account-takeover and is a tracked LAUNCH BLOCKER, not accepted.",
-      "ignoreGhsas": [
-        "GHSA-5xrq-8626-4rwp",
-        "GHSA-fx2h-pf6j-xcff",
-        "GHSA-pw9m-5jxm-xr6h",
-        "GHSA-7w99-5wm4-3g79",
-        "GHSA-fmh4-wcc4-5jm3",
-        "GHSA-g38m-r43w-p2q7",
-        "GHSA-86j7-9j95-vpqj",
-        "GHSA-9h47-pqcx-hjr4",
-        "GHSA-392p-2q2v-4372"
-      ]
+      "//": "SEC-1 fix attempt 2026-07-29 (docs/SECURITY.md): pnpm.overrides force the ENTIRE better-auth subtree to >=1.6.25 (better-auth + @better-auth/passkey + @better-fetch/fetch move together - the 2026-07-08 attempt moved only better-auth and broke the build on the 1.4.18 remainder). GHSA-g38m and GHSA-qq9h are both patched at 1.6.22+. Ignore list cleared so the advisory gate re-arms; if a specific advisory still fires on the 1.6.x tree, re-add ONLY that id with a dated note here and in docs/SECURITY.md.",
+      "ignoreGhsas": []
     }
   }
 }
