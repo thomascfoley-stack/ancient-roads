@@ -66,8 +66,8 @@ importers:
   web:
     dependencies:
       '@composio/client':
-        specifier: 0.1.0-alpha.75
-        version: 0.1.0-alpha.75
+        specifier: 0.1.0-alpha.76
+        version: 0.1.0-alpha.76
       '@neondatabase/auth':
         specifier: 0.4.2-beta
         version: 0.4.2-beta(rjylb7wfitv55vm4lvc3z6236i)
@@ -276,8 +276,8 @@ packages:
   '@captchafox/types@1.6.0':
     resolution: {integrity: sha512-isJBepZntzO++rE2i9rP4FGh5XPwoXXle4H2POkNR6bYwjBaWI1D7XwbW5oylLnXMMELGksNnOX0QGHYHuQ2PQ==}
 
-  '@composio/client@0.1.0-alpha.75':
-    resolution: {integrity: sha512-bS2yYAkgieeVGxqmkBUmtRKa6bojLhLnA/OJM8BdYvlsR0HST57aCCg9NCqYIvYQd3L08ZKzOWeGqIqzHu/2tQ==}
+  '@composio/client@0.1.0-alpha.76':
+    resolution: {integrity: sha512-MXC5JGRVdiQ4EgLricy9o/mqBa1+1T7wHFZ6Q4ZJkrjzZqOMvxTgy21Zlb5J/1oGkB2bg9UDzpH8PkXCp/D4zA==}
 
   '@csstools/color-helpers@6.1.0':
     resolution: {integrity: sha512-064IFJdjTfUqnjpCVpMOdbr8FLQBhinbZj6yRv2An2E41O/pLEXqfFRWqGq/SxlE5PEUYTlvWsG2r8MswAVvkg==}
@@ -4755,7 +4755,7 @@ snapshots:
 
   '@captchafox/types@1.6.0': {}
 
-  '@composio/client@0.1.0-alpha.75': {}
+  '@composio/client@0.1.0-alpha.76': {}
 
   '@csstools/color-helpers@6.1.0': {}
 
