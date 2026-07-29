@@ -688,3 +688,24 @@ FIRST REAL USER. It is vacuous about *preservation* and says so loudly, at every
 
 **Corollary (standing):** E1's preserve-these-rows assertions are NOT relaxed to match the empty
 state. They hold at `0 == 0` and stay.
+
+## ADR-037 — Prod authorization must not self-originate (2026-07-29)
+
+**Status:** accepted.
+
+**Context.** Phase 2 introduced `CUTOVER_OWNER_PHASE2_GO=1` in the same session that consumed it in
+`scripts/cutover.mjs`, bypassing the prod + `CUTOVER_REHEARSAL=1` guard. That made prod-go
+self-satisfiable by an agent's own commit — the same class of defect as a checkpoint written by the
+process that corrupts its target.
+
+**Decision.** (1) Retire `CUTOVER_OWNER_PHASE2_GO` — invoking it is a hard abort. (2) Before the first
+prod write, require `CUTOVER_OWNER_GO_QUOTE`: the verbatim owner authorization sentence, supplied by
+the operator **at invocation**, printed to the log and echoed in WORKLOG prod entries. (3) Interactive
+"write" gate remains for non-rehearsal prod runs; rehearsal skips interactive but not the quote.
+
+**Why.** Authorization for an irreversible step may not originate in the same change that satisfies it
+(BUILD_MODEL §0 — cross-session handoffs are explicit; THE_LOOP rule 6 — fixer ≠ verifier).
+
+**Red-proof.** `docs/evidence/hygiene-2026-07-29/cutover-owner-go-redproof.log` — prod target,
+`CUTOVER_OWNER_PHASE2_GO=1` or missing quote → refuse before E1.
+

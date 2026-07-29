@@ -3,6 +3,13 @@
 Audited from the actual repo on 2026-07-08 — code, tests, `/audit` output, `docs/`, and
 git history — not from memory or the earlier hit list.
 
+> **Update 2026-07-29 (hygiene/docs/CI — NOT Phase 3):** Protected prod rollback branch
+> (`br-late-recipe-atxl68sh`) documented; PR #39 CI seed-owner URL merged; loud-skip +
+> skip-ceiling ratchet; `CUTOVER_OWNER_GO_QUOTE` replaces self-satisfiable `CUTOVER_OWNER_PHASE2_GO`
+> (ADR-037); `STATE_OF_TRUTH` §2b from Phase 2 prod log; owner decision sheet at
+> `docs/OWNER_DECISIONS_2026-07-29.md`. **`npm run audit` expected red on `deps` only**
+> (GHSA-qq9h accepted-red). **HOLD before Phase 3 / E5 deploy / register ingest.**
+
 > **For the current VERIFIED system state (numbers, corpus, gates, open gaps) read
 > [`docs/STATE_OF_TRUTH.md`](docs/STATE_OF_TRUTH.md)** — reconciled to prod 2026-07-15. This ROADMAP's
 > priority narrative below predates the 2026-07-14 Phase A close + license gate + Slice 0; trust

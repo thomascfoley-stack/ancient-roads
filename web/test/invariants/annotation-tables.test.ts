@@ -50,7 +50,7 @@ async function inTx<T>(fn: (c: pg.Client) => Promise<T>): Promise<T> {
 // A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
 const SKIP = announceSkip(
   'MIG-B..E — bookmarks, library_items, reading_progress, tags',
-  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(url) }],
+  [{ name: 'DATABASE_URL (owner seed connection via seedOwnerUrl)', present: Boolean(url) }],
   'bookmarks, library_items, reading_progress and tags schema invariants',
 );
 

@@ -94,9 +94,37 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 > of the dev-only suppression defects (chrysostom prolegomena, tennyson, traherne, indexes, ads)
 > exist on prod. This settles build-vs-repair: **the cutover is a BUILD.** See `CUTOVER_DESIGN.md`.
 
+### 2b. Prod DB post-Phase-2 cutover (2026-07-29) — evidence: `docs/evidence/cutover-2026-07-29/prod-E0-E6.log`
+
+> **E3 does not exist** (ADR-030). **E5 (`deploy.sh`) never ran** (log line 729). **Deployed app is
+> pre-cutover code** on post-031 schema — G4 note-saving window OPEN from E1 until E5 (log lines 335–337).
+> **G7 live `/ask` never run** — E6 gate DB-ONLY (log lines 793–800). Rollback snapshot **KEPT**:
+> `br-late-recipe-atxl68sh` (`pre-cutover-ep-odd-fog-atnykudm-20260729164220`, log line 50).
+
+| fact | value | evidence |
+|---|---|---|
+| Schema | post-031 (migrations 016–023, 025–031 + 018/019 concurrent + 024 in E4) | log E1 lines 112–300, E4 lines 642–657 |
+| E3 forbidden-provenance delete | **NOT RUN** — deferred slice | log dry-run lines 8–10; G6 ratchet 71,884 unchanged |
+| Flat embeddings labeled (E2) | **77,820** rows updated; **112,815/190,635** remain unlabeled | log lines 384–406 |
+| Sections after E4 | **72,863** sections; **5,824** reading units (`unit_ordinal` populated) | log lines 631–657, 732 |
+| Forbidden flat provenance | **71,884** (unchanged vs E0 baseline) | log lines 90, 732–733 |
+| Gill rows (smoke) | **28,843** | log line 732 |
+| G1 user-data | **empty baseline** — 0 highlights/notes/chats; vacuous on preservation, valid on "nothing added" | log lines 63–69, 746 |
+| G2 ≥2 voices floor | **22,794** verses at floor; **29,629** with any voice | log lines 70–71, 747 |
+| G2 durable floor (excl. forbidden) | **22,214** at floor; **29,605** with any voice | log lines 71, 748 |
+| G5 register wall | **VACUOUS** — 0 lane/song slug rows (register ingest never on prod) | log lines 89, 767 |
+| G6 barnes-notes sections-store | **1,300** staged sections, biblehub provenance — owner call | log lines 91, 769 |
+| G8 sections↔embeddings | **72,863/72,863** — FK makes orphans unrepresentable; not proof of healthy slice | log lines 92, 770 + gate comment |
+| G4 window | **OPEN** — deployed upsertNote rejected post-025 schema until E5 | log lines 335–337 |
+| G7 live probe | **NOT RUN** (`CUTOVER_ASK_URL` unset) | log lines 96–102 |
+| Protected snapshot branch | `br-late-recipe-atxl68sh` | log line 50; `docs/CUTOVER_DESIGN.md` PROTECTED BRANCHES |
+
+**UNVERIFIED (owner decision sheet §1):** G1 does not assert row **identity** — only counts/digest; the historical
+"37 user rows" invariant was never identity-proved on prod post-cutover. See `docs/OWNER_DECISIONS_2026-07-29.md` §1.
+
+### 2c. Dev branch snapshot (historical — `ground-truth.mjs`, 2026-07-15)
 
 | fact | value | verified |
-|---|---|---|
 | Legal commentary authors served | **11 distinct authors** (re-measured on dev 2026-07-20) — see note below | ✅ |
 | `commentary_entries` | **371,406** rows | ✅ |
 | commentary `embeddings` (user_id IS NULL, source_type='commentary') | **190,635** rows | ✅ |

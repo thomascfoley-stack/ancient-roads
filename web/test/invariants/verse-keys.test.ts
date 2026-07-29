@@ -23,6 +23,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { isPublishedAuthor } from '@/lib/legal-corpus';
+import { announceSkip } from '../helpers/loud-skip';
 
 const CORPUS_DIR = fileURLToPath(new URL('../../public/commentaries', import.meta.url));
 const MIN_ENTRIES = 200;
@@ -68,6 +69,12 @@ if (!CORPUS_AVAILABLE && process.env.REQUIRE_CORPUS === '1') {
   );
 }
 
+const SKIP = announceSkip(
+  '§3 verse-key distribution',
+  [{ name: 'web/public/commentaries (gitignored static corpus)', present: CORPUS_AVAILABLE }],
+  'verse-key collapse (>20% chapter-keyed) and forbidden biblehub/studylight provenance on served entries',
+);
+
 /** The guard can only catch anything if some author clears MIN_ENTRIES. Asserting that turns a
  *  vacuous green (empty/partial corpus) into a failure. */
 function assertGuardIsLive(byAuthor: Map<string, { n: number; collapsed: number }>): void {
@@ -79,7 +86,7 @@ function assertGuardIsLive(byAuthor: Map<string, { n: number; collapsed: number 
   ).toBeGreaterThan(0);
 }
 
-describe.skipIf(!CORPUS_AVAILABLE)('§3 verse-key distribution (live gate; VISIBLY skipped when the gitignored corpus is absent, e.g. CI)', () => {
+describe.skipIf(SKIP)('§3 verse-key distribution (live gate; announces NOT RUN when the gitignored corpus is absent, e.g. CI)', () => {
   it('no author (≥200 entries) has >20% of entries keyed verse_start=verse_end=chapter', () => {
     const entries = loadEntries();
     const byAuthor = new Map<string, { n: number; collapsed: number }>();

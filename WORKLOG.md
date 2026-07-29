@@ -1,5 +1,61 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-29 (SESSION 8 — hygiene/docs/CI work order §0–§7; NOT Phase 3)
+
+**Headline:** Protected prod rollback branch; CI/db-invariants hardening (PR #39 landed in branch);
+loud-skip + skip-ceiling; cutover prod-go ADR-037; STATE_OF_TRUTH + owner decision sheet; stale git
+branches deleted. **Phase 3 / E5 / deploy NOT started.**
+
+### §0 PROTECTED BRANCHES — DONE
+- `br-late-recipe-atxl68sh` in `docs/CUTOVER_DESIGN.md` + `docs/OWNER_ACTIONS.md` §1f.
+- `scripts/lib/neon-branch-guard.mjs`; no Neon delete-by-pattern scripts in repo (measured).
+- Red-proof: `docs/evidence/hygiene-2026-07-29/protected-branch-refusal.log`.
+
+### §1 better-auth — BLOCKED-ON-OWNER
+- Posture A vs B on `docs/OWNER_DECISIONS_2026-07-29.md` §2; recommend A (accepted-red).
+- `package.json` / SECURITY.md contradiction (g38m in ignoreGhsas vs "not accepted") documented; no implementation.
+
+### §2 CI green while tests skip — PARTIAL
+- **2a PR #39:** merged `ci/owner-url-via-neon-api` into this branch (NEON_API_KEY runtime owner URL).
+- **2b loud-skip:** seeding suites say `DATABASE_URL`; library-published-boundary dual-requirement.
+- **2c verse-keys:** `announceSkip` when gitignored corpus absent.
+- **2d DEEPINFRA:** decision sheet §3 only.
+- **2e skip ceiling:** `scripts/ci-skip-ceiling.mjs` + `DB_INVARIANTS_SKIP_CEILING=2` in workflow.
+- Red-proof: `skip-ceiling-redproof.log` (ceiling=1 → exit 1).
+
+### §3 ENGINEERING demotion — DONE
+- §2 → `STATE_OF_TRUTH.md`; §3 → README + AGENTS.md pointers.
+- Fresh-agent verify (877f6a89): retrieval numbers → STATE_OF_TRUTH; docs of record → README § + AGENTS; §2 no longer claims ~4/10 blocker.
+
+### §4 Repo hygiene — PARTIAL
+- `.b0seed.mjs` → `scripts/b0-seed.mjs` with ep-odd-fog/ep-tiny-hat refusal.
+- Deleted merged remote branches (log: `deleted-git-branches.log`).
+- Dependabot #11/#14/#37: all fail `deps` on GHSA-qq9h only (`dependabot-audit-report.txt`).
+
+### §5 Prod-go gate — DONE
+- Retired `CUTOVER_OWNER_PHASE2_GO`; require `CUTOVER_OWNER_GO_QUOTE` before prod E1 (ADR-037).
+- Red-proof: `cutover-owner-go-redproof.log`.
+
+### §6 STATE_OF_TRUTH — DONE
+- §2b post-Phase-2 prod rows from `prod-E0-E6.log`.
+
+### §7 Decision sheet — DONE
+- `docs/OWNER_DECISIONS_2026-07-29.md` (7 items; rule none).
+
+### NOT DONE / UNVERIFIED
+- **Phase 3, E5 deploy, register ingest** — explicitly not started (hard rail).
+- **db-invariants in GitHub Actions** with secrets — UNVERIFIED until push + CI run with secrets.
+- **§2a falsifiable** (≤2 skipped, none for DB URL want) — UNVERIFIED in CI; locally 12 suites skip without secrets.
+- **§1 better-auth** — BLOCKED-ON-OWNER (no ruling).
+- **§3 §10 stale ~4/10** in ENGINEERING.md §10 — not demoted this pass (out of §2–§3 scope).
+- **G1 37-row identity invariant** — UNVERIFIED on prod (decision sheet §1).
+- **`npm run audit` green** — NOT expected; `deps` red on GHSA-qq9h-g4jm-xgf3 (accepted-red).
+
+### Audit (local, 2026-07-29)
+- Red gate: `deps — advisory bulk-endpoint (prod, high+ CVEs)` → GHSA-qq9h-g4jm-xgf3 (better-auth).
+- Green: typecheck ×4, lint ×2, knip, tests+coverage, qa, Gate B license.
+- Log: `docs/evidence/hygiene-2026-07-29/npm-run-audit.log`.
+
 ## 2026-07-29 (SESSION 7 — Phase 2 preflight: E4 + gate redproof 10/10 PROVEN; Phase 2 prod started)
 
 **Headline: Stop-gate redproofs completed on disposable forks. Gate harness fixed (E1 phase on

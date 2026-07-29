@@ -15,31 +15,11 @@ The single "start here" for how this project is built, tested, shipped, and gove
 
 ## 2. What's built vs. scoped (pointer)
 
-`ROADMAP.md` is authoritative and audited-from-the-repo. Summary as of the last reconciliation: content plane shipped (22 translations, 371k commentary, reader, word-study, FTS live in prod); intelligence plane partial (teacher done-on-John, wired to `/ask`, but **retrieval accuracy is the current blocker** — diagnostic shows ~4/10 true success due to Gospels-only embedding + dead BM25). Security: SEC-2 closed; SEC-1 (auth CVEs) open. See ROADMAP for the row-by-row table and the strict **Definition of Done** (§8).
+For current verified numbers, corpus counts, gates, and open gaps read **[`docs/STATE_OF_TRUTH.md`](STATE_OF_TRUTH.md)** — reconciled from evidence logs and read-only probes, not from this handbook's narrative. For status rows and priority direction see [`ROADMAP.md`](../ROADMAP.md).
 
-## 3. Document map (index of record)
+## 3. Document map (pointer)
 
-**Product & design**
-- [`docs/DESIGN_BRIEF.md`](DESIGN_BRIEF.md) — product thesis, decisions of record, stack
-- [`PRODUCT_ARCHITECTURE`] (vision: three modes — Explore/Workspace/Studies) *(add to repo)*
-- [`docs/PRINCIPLES.md`](PRINCIPLES.md) — the concordance-not-commentator contract (I1–I6/C1/G1)
-- [`docs/DESIGN_BRIEF.md`](DESIGN_BRIEF.md) + the redesign — visual/UX style
-
-**Architecture & data**
-- [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) — system design, model choices, planes
-- [`docs/SCHEMA.md`](SCHEMA.md) — database schema (source of truth for data model)
-- [`docs/OUTPUT_CONTRACT.md`](OUTPUT_CONTRACT.md) — the JSON contract + V1/V2 verifier spec
-- [`docs/CORPUS.md`](CORPUS.md) + `DATA_SOURCES.md` — corpus acquisition, licensing, provenance
-- [`docs/NAVIGATION_AND_SEARCH.md`](NAVIGATION_AND_SEARCH.md) — reference nav + search
-- [`docs/INFRA.md`](INFRA.md) — infrastructure checklist + the model-drift hazard
-- [`docs/USER_DATA.md`](USER_DATA.md) — user-data model (highlights/notes/library)
-
-**Process & quality (this handbook + these)**
-- [`AUDITING.md`](../AUDITING.md) — the CI gate, `/audit`, `/security`, when to run each
-- [`docs/SECURITY.md`](SECURITY.md) — SEC-1/SEC-2, the pre-signup gate, threat notes
-- [`docs/AUTH_MIGRATION_SPIKE.md`](AUTH_MIGRATION_SPIKE.md) — the SEC-1 remediation plan
-
-**To create (gaps — see §15):** `CLAUDE.md`, `docs/TESTING.md`, `docs/QA.md`, `docs/OBSERVABILITY.md`, `docs/RELEASE.md`, `docs/DECISIONS.md`, `CONTRIBUTING.md`.
+**Start here for docs of record:** [`README.md`](../README.md) § Documents of record and [`AGENTS.md`](../AGENTS.md) § Facts and records — binding order, task entry points, and where status/history live. This handbook covers *process* (§4 onward); it does not duplicate the index.
 
 ## 4. Engineering values
 

@@ -612,6 +612,10 @@ CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27
 }
 
 (async () => {
+  // Retired self-authorization flags must abort before any target contact (ADR-037).
+  if (process.env.CUTOVER_OWNER_PHASE2_GO === '1') {
+    die('pre-E1', 'CUTOVER_OWNER_PHASE2_GO is retired (same-branch self-authorization defect). Use CUTOVER_OWNER_GO_QUOTE at invocation instead.', 'nothing written');
+  }
   // Before anything else: is another cutover already running against this checkpoint?
   // Waiting for the first write would mean discovering it after connecting, snapshotting
   // and possibly migrating.
@@ -656,16 +660,6 @@ CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27
     console.log('\n--e6-only: done.');
     return;
   }
-  // CUTOVER_REHEARSAL=1 suppresses the FIRST-PROD-WRITE owner gate (and E5). It existed
-  // to let a fork run unattended — but it never checked the target, so
-  // CUTOVER_REHEARSAL=1 with a prod URL would apply all 16 migrations, relabel 190,635
-  // rows and delete 71,884 of them on PRODUCTION with zero owner confirmation. The
-  // design allows exactly two gates; it does not allow an env var to reach zero.
-  // Owner Phase 2 (2026-07-29): explicit go for prod E0–E4/E6 with E5 skipped — the only
-  // case where prod + rehearsal is permitted. Every other prod run still requires the gates.
-  if (process.env.CUTOVER_REHEARSAL === '1' && isProdHost(url) && process.env.CUTOVER_OWNER_PHASE2_GO !== '1') {
-    die('pre-E1', 'CUTOVER_REHEARSAL=1 is set and the target is PRODUCTION. Rehearsal mode suppresses the owner gate and must never point at prod.', 'nothing written');
-  }
   if (!DRY) bindCheckpoint(cp, host);
 
   // THE RESTORE POINT, before anything else. Every rollback string in this file names
@@ -691,6 +685,16 @@ CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27
 
   const e1Total = MIGRATIONS.length + CONCURRENT.length;
   const e1Complete = cp.done.filter((d) => d.startsWith('E1:')).length >= e1Total;
+  if (!DRY && !e1Complete && isProdHost(url)) {
+    const quote = process.env.CUTOVER_OWNER_GO_QUOTE?.trim();
+    if (!quote) {
+      die('pre-E1',
+        'CUTOVER_OWNER_GO_QUOTE is missing. The operator must supply the verbatim owner authorization sentence at invocation before the first prod write. '
+        + 'Authorization for an irreversible step may not originate in the same change that satisfies it (ADR-037).',
+        'nothing written');
+    }
+    console.log(`\nOwner authorization (CUTOVER_OWNER_GO_QUOTE): ${quote}\n`);
+  }
   if (!DRY && !e1Complete && process.env.CUTOVER_REHEARSAL !== '1') {
     const a = await ask('\nHARD STOP (§4.1): STEP ZERO passed. Proceed to the FIRST PROD WRITE (E1 migrations)? type "write": ');
     if (a !== 'write') die('pre-E1', 'owner did not confirm the first prod write', 'nothing written');

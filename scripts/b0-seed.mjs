@@ -1,17 +1,27 @@
-import pg from 'pg'; import fs from 'node:fs';
-const url = fs.readFileSync(process.env.THROWAWAY_URL_FILE,'utf8').trim();
-const host = new URL(url).host;
-if (host.includes('ep-tiny-hat') || host.includes('ep-odd-fog')) throw new Error(`REFUSING: ${host} is dev or prod — this script corrupts its target`);
-const c = new pg.Client({connectionString:url, ssl:{rejectUnauthorized:false}, statement_timeout:600000, query_timeout:600000});
-await c.connect();
+#!/usr/bin/env node
+/** Seed defects on a DISPOSABLE fork for redproof — never dev or prod. */
+import pg from 'pg';
+import fs from 'node:fs';
+
+const REFUSE_HOST_FRAGMENTS = ['ep-tiny-hat', 'ep-odd-fog'];
+
+const urlFile = process.env.THROWAWAY_URL_FILE;
+if (!urlFile) throw new Error('THROWAWAY_URL_FILE must point at a disposable fork connection string file');
+const url = fs.readFileSync(urlFile, 'utf8').trim();
+const host = new URL(url).host.toLowerCase();
+if (REFUSE_HOST_FRAGMENTS.some((r) => host.includes(r))) {
+  throw new Error(`REFUSING: ${host} is dev or prod — this script corrupts its target`);
+}
+
 const cls = process.argv[2];
-const q = (s,p=[]) => c.query(s,p);
+const c = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false }, statement_timeout: 600000, query_timeout: 600000 });
+await c.connect();
+const q = (s, p = []) => c.query(s, p);
+
 if (cls === 'unit-null') {
   const r = await q(`UPDATE sections SET unit_ordinal = NULL WHERE source_id = (SELECT id FROM sources WHERE slug='milton-poetical-works')`);
   console.log(`SEEDED class 1 (unit_ordinal NULL): ${r.rowCount} sections of milton-poetical-works`);
 } else if (cls === 'mispair') {
-  // class 2: content<->vector mispair. Rotate one work's vectors by one section:
-  // every body now carries its NEIGHBOUR's embedding. Bodies unchanged, counts unchanged.
   const r = await q(`
     WITH ord AS (
       SELECT sec.id, se.embedding, row_number() OVER (ORDER BY sec.ordinal) rn
@@ -28,5 +38,8 @@ if (cls === 'unit-null') {
 } else if (cls === 'census') {
   const r = await q(`SELECT count(*) FILTER (WHERE unit_ordinal IS NULL)::int nulls, count(*)::int total FROM sections`);
   console.log(`sections: ${r.rows[0].total}, unit_ordinal NULL: ${r.rows[0].nulls}`);
+} else {
+  throw new Error(`unknown class ${cls ?? '(none)'} — expected unit-null | mispair | verify-mispair | census`);
 }
+
 await c.end();

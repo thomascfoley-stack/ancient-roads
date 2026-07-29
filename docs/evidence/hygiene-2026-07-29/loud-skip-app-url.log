@@ -1,0 +1,10 @@
+LOUD-SKIP flip direction B — APP unset, DATABASE + SEED_TEST_ENDPOINT set (2026-07-29)
+
+Command: SEED_TEST_ENDPOINT=ep-tiny-bonus-at3izo3y DATABASE_URL=<ci test owner url> env -u APP_DATABASE_URL
+        GITHUB_ACTIONS=true vitest run test/invariants/library-published-boundary.test.ts
+
+Expected (dual-requirement suite): missing APP_DATABASE_URL only.
+
+::warning title=Phase 4 §A … NOT RUN::… DID NOT RUN — missing APP_DATABASE_URL (app_runtime via requireDbInCi). …
+
+(Direction A — APP set, DATABASE unset — proven in loud-skip-database-url.log: missing DATABASE_URL.)

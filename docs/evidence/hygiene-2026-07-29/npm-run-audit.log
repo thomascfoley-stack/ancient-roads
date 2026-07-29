@@ -1,0 +1,456 @@
+
+> theology-study-app@0.1.0 audit
+> bash scripts/audit.sh
+
+
+[1m▶ typecheck — tsc --noEmit (strict)[0m
+[32m✓ typecheck — tsc --noEmit (strict)[0m
+
+[1m▶ typecheck — cutover gate (scripts/)[0m
+[32m✓ typecheck — cutover gate (scripts/)[0m
+
+[1m▶ typecheck — web/ tsc --noEmit[0m
+[32m✓ typecheck — web/ tsc --noEmit[0m
+
+[1m▶ typecheck — web/test tsc --noEmit[0m
+[32m✓ typecheck — web/test tsc --noEmit[0m
+
+[1m▶ lint — eslint src/ test/[0m
+
+/Users/foley/Projects/ancient-roads-git/src/ingest/ingest-biblehub.ts
+  145:67  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  153:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  171:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  171:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/foley/Projects/ancient-roads-git/src/ingest/ingest-scrollmapper-bibles.ts
+  98:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/foley/Projects/ancient-roads-git/src/ingest/ingest-strongs.ts
+  44:3  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-implied-eval')
+
+/Users/foley/Projects/ancient-roads-git/test/evals.test.ts
+  11:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  17:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/foley/Projects/ancient-roads-git/test/verifier.test.ts
+   17:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   24:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   39:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   46:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   53:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   60:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   67:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   74:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   81:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   95:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  124:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  131:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  138:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  145:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  159:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  168:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  175:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  182:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  189:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  196:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  240:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  268:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 34 problems (0 errors, 34 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+
+[32m✓ lint — eslint src/ test/[0m
+
+[1m▶ lint — web/ eslint[0m
+[32m✓ lint — web/ eslint[0m
+
+[1m▶ unused — knip (files/exports/deps)[0m
+Configuration hints (3)
+[src/ingest/*.ts, …]    knip.json  Remove, or move unused top-level entry to one of "workspaces"  
+[src/**/*.ts, …]        knip.json  Remove, or move unused top-level project to one of "workspaces"
+src/evals/run.ts        knip.json  Remove redundant entry pattern                                 
+[32m✓ unused — knip (files/exports/deps)[0m
+
+[1m▶ deps — advisory bulk-endpoint (prod, high+ CVEs)[0m
+
+[31m✗ deps-audit: 1 un-ignored high/critical advisory(ies):[0m
+  [high] better-auth — GHSA-qq9h-g4jm-xgf3 — Better Auth: Account takeover via pre-account hijacking on magic-link and email-OTP sign-in (>=1.1.3 <1.6.22)
+
+Fix the dependency, or (if lawful + accepted) add the GHSA id to package.json → pnpm.auditConfig.ignoreGhsas with a note in docs/SECURITY.md.
+[31m✗ deps — advisory bulk-endpoint (prod, high+ CVEs)[0m
+
+[1m▶ tests + coverage — vitest[0m
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git
+      Coverage enabled with v8
+
+ ✓ test/invariants/ci-claims-match-reality.test.ts (4 tests) 4ms
+ ✓ test/routing-orchestration.test.ts (21 tests) 3ms
+ ✓ test/license-manifest.test.ts (20 tests) 4ms
+ ✓ test/resource-textmatch-calibration.test.ts (9 tests) 10ms
+ ✓ test/normalize-contract.test.ts (10 tests) 4ms
+ ✓ test/ref-parse.test.ts (39 tests) 12ms
+ ✓ test/teacher.test.ts (6 tests) 5ms
+ ✓ test/passages-anchor-grounding.test.ts (10 tests) 10ms
+ ✓ test/verifier.test.ts (30 tests) 27ms
+ ✓ test/invariants/manifest-provenance.test.ts (3 tests) 3ms
+stdout | test/rate-limit.test.ts > checkAskRateLimit > allows exactly at the per-minute cap (10), blocks the 11th
+{"evt":"rate_limit_hit","ts":"2026-07-29T17:20:00.551Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > blocks over the per-day cap (100)
+{"evt":"rate_limit_hit","ts":"2026-07-29T17:20:00.552Z","userId":"u1","cap":"day","count":101,"limit":100}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > FAILS OPEN (allows) when the limiter DB call throws
+{"evt":"rate_limit_fail_open","ts":"2026-07-29T17:20:00.552Z","userId":"u1","error":"db down"}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > H4: a minute-refused request does NOT touch the day bucket
+{"evt":"rate_limit_hit","ts":"2026-07-29T17:20:00.552Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks the 11th attempt in a minute (default cap 10)
+{"evt":"gate_rate_limit_hit","ts":"2026-07-29T17:20:00.552Z","ip":"1.2.3.4","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks a slow drip over the hourly cap (default 60)
+{"evt":"gate_rate_limit_hit","ts":"2026-07-29T17:20:00.553Z","ip":"1.2.3.4","cap":"hour","count":61,"limit":60}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > FAILS OPEN (allows) when the limiter DB call throws — password still required by the caller
+{"evt":"rate_limit_fail_open","ts":"2026-07-29T17:20:00.553Z","userId":"gate:1.2.3.4","error":"db down"}
+
+ ✓ test/retrieval.contract.test.ts (6 tests) 6ms
+ ✓ test/rate-limit.test.ts (10 tests) 7ms
+ ✓ test/resource-textmatch.test.ts (7 tests) 2ms
+file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:86
+    throw new Error(`REFUSING: ${host} is production or dev — this script corrupts its target`);
+          ^
+
+Error: REFUSING: ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech.invalid is production or dev — this script corrupts its target
+    at assertThrowawayTarget (file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:86:11)
+    at file:///Users/foley/Projects/ancient-roads-git/scripts/cutover-gate-redproof.mjs:33:14
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+ ✓ test/normalize.test.ts (12 tests) 3ms
+file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:86
+    throw new Error(`REFUSING: ${host} is production or dev — this script corrupts its target`);
+          ^
+
+Error: REFUSING: ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech.invalid is production or dev — this script corrupts its target
+    at assertThrowawayTarget (file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:86:11)
+    at file:///Users/foley/Projects/ancient-roads-git/scripts/cutover-gate-redproof.mjs:33:14
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+ ✓ test/passages-grounding.test.ts (4 tests) 5ms
+ ✓ test/gate-decision.test.ts (7 tests) 6ms
+ ✓ test/reference-intent.test.ts (8 tests) 11ms
+file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:68
+    throw new Error(
+          ^
+
+Error: STOP: label target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech.invalid is not the declared endpoint (CUTOVER_EXPECT_HOST=neon.tech). It must name the endpoint id exactly.
+    at assertCutoverTarget (file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:68:11)
+    at assertTarget (file:///Users/foley/Projects/ancient-roads-git/scripts/register-label-embeddings.mjs:30:3)
+    at file:///Users/foley/Projects/ancient-roads-git/scripts/register-label-embeddings.mjs:43:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+ ✓ test/heldout-frozen-hash.test.ts (2 tests) 5ms
+file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:68
+    throw new Error(
+          ^
+
+Error: STOP: slice target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech.invalid is not the declared endpoint (CUTOVER_EXPECT_HOST=neon.tech). It must name the endpoint id exactly.
+    at assertCutoverTarget (file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:68:11)
+    at file:///Users/foley/Projects/ancient-roads-git/scripts/cutover-e4-slice-all.mjs:26:14
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+ ✓ test/deps-audit-core.test.ts (5 tests) 4ms
+ ✓ test/invariants/target-guard.test.ts (13 tests) 303ms
+ ✓ test/api-error.test.ts (6 tests) 5ms
+ ✓ test/content-sanity.test.ts (7 tests) 4ms
+ ✓ test/web-core-sync.test.ts (7 tests) 8ms
+ ✓ test/observability.test.ts (2 tests) 4ms
+ ↓ test/retrieval.integration.test.ts (1 test | 1 skipped)
+ ✓ test/verse-id.test.ts (5 tests) 2ms
+ ✓ test/bible-sync.test.ts (7 tests) 2ms
+ ✓ test/evals.test.ts (5 tests) 5ms
+
+ Test Files  27 passed | 1 skipped (28)
+      Tests  265 passed | 1 skipped (266)
+   Start at  10:19:59
+   Duration  1.33s (transform 587ms, setup 0ms, collect 1.83s, tests 465ms, environment 4ms, prepare 1.81s)
+
+ % Coverage report from v8
+
+=============================== Coverage summary ===============================
+Statements   : 16.21% ( 1304/8040 )
+Branches     : 81.15% ( 478/589 )
+Functions    : 56.12% ( 87/155 )
+Lines        : 16.21% ( 1304/8040 )
+================================================================================
+[32m✓ tests + coverage — vitest[0m
+
+[1m▶ qa — Layer 1 invariants + regressions[0m
+
+> theology-study-app@0.1.0 qa /Users/foley/Projects/ancient-roads-git
+> vitest run --config web/vitest.config.ts && vitest run test/rate-limit.test.ts
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git/web
+
+ ↓ test/invariants/sections-unit-ordinal.test.ts (2 tests | 2 skipped)
+stderr | test/invariants/sections-unit-ordinal.test.ts
+
+⚠  NOT RUN — ADR-026 red-first — 024 backfill reassembles mis-ordered chunks in (unit_ordinal, ordinal) order DID NOT RUN — missing DATABASE_URL (owner seed connection via seedOwnerUrl). It covers: the 024 backfill reassembly of mis-ordered chunks in (unit_ordinal, ordinal) order. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/invariants/annotation-rls-tenancy.test.ts (6 tests | 6 skipped)
+stderr | test/invariants/annotation-rls-tenancy.test.ts
+
+⚠  NOT RUN — Phase 3 annotation tables — two-account RLS tenancy (executed) DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL). It covers: two-account RLS tenancy across the Phase 3 annotation tables. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/invariants/annotation-tables.test.ts (8 tests | 8 skipped)
+stderr | test/invariants/annotation-tables.test.ts
+
+⚠  NOT RUN — MIG-B..E — bookmarks, library_items, reading_progress, tags DID NOT RUN — missing DATABASE_URL (owner seed connection via seedOwnerUrl). It covers: bookmarks, library_items, reading_progress and tags schema invariants. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/invariants/annotations-polymorphic.test.ts (12 tests | 12 skipped)
+stderr | test/invariants/annotations-polymorphic.test.ts
+
+⚠  NOT RUN — MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index DID NOT RUN — missing DATABASE_URL (owner seed connection via seedOwnerUrl). It covers: the 025 anchor XOR CHECK and the verse-only partial unique index. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/invariants/section-vector-pairing.test.ts (1 test | 1 skipped)
+stderr | test/invariants/section-vector-pairing.test.ts
+
+⚠  NOT RUN — §B0 class 2 — content↔vector pairing DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL) and DEEPINFRA_API_KEY. It covers: that every published section body still matches its OWN stored embedding — the mispairing class that leaves row counts, 1:1 assertions, the reader, the TOC and FTS all green while semantic search returns the passage next door. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/invariants/work-reader.test.ts (7 tests | 7 skipped)
+stderr | test/invariants/work-reader.test.ts
+
+⚠  NOT RUN — Book Reader API — /api/work/[slug] + /sections (executed against the real DB) DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL). It covers: the Book Reader routes — published-only boundary, keyset paging, TOC shape, no host URL. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/invariants/register-end-to-end.test.ts (2 tests | 2 skipped)
+stderr | test/invariants/register-end-to-end.test.ts
+
+⚠  NOT RUN — §B1 per-register end-to-end (real route handlers, real DB) DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL). It covers: the five per-register reader checks: catalog, reader, search, link-lands-on-passage, attribution. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/invariants/library-published-boundary.test.ts (9 tests | 9 skipped)
+stderr | test/invariants/library-published-boundary.test.ts
+
+⚠  NOT RUN — Phase 4 §A — a shelved work that is later staged/quarantined disappears from every surface DID NOT RUN — missing APP_DATABASE_URL (app_runtime via requireDbInCi) and DATABASE_URL (owner seed connection via seedOwnerUrl). It covers: the published-status boundary across every read surface. A green suite without it is not evidence that any of those hold.
+
+
+stderr | test/invariants/licensing.test.ts
+
+⚠  NOT RUN — Layer 1 — licensing invariant (behavioral) DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL). It covers: the licensing invariant — that no MUST_NOT_SERVE author reaches a read path. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/invariants/migration-zero-window.test.ts (8 tests) 4ms
+stderr | test/invariants/annotation-exact-substring.test.ts
+
+⚠  NOT RUN — §P1 the exact substring survives the persistence round-trip (RLS) DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL). It covers: that the exact highlighted substring survives the persistence round-trip under RLS. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/invariants/annotation-exact-substring.test.ts (5 tests | 2 skipped) 2ms
+ ↓ test/invariants/register-wall-surfaces.test.ts (6 tests | 6 skipped)
+stderr | test/invariants/register-wall-surfaces.test.ts
+
+⚠  NOT RUN — register wall — the NEW catalog + search surfaces DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL). It covers: the register wall on real data — catalog fence, disjoint taxonomy, labelled search. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/invariants/highlight-range.test.ts (11 tests) 4ms
+ ↓ test/invariants/search-sections.test.ts (6 tests | 6 skipped)
+stderr | test/invariants/search-sections.test.ts
+
+⚠  NOT RUN — searchSections — deduped to reading units, and capped DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL). It covers: section search dedupe-to-reading-unit, the page cap and the count cap. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/invariants/voice-floor-authors.test.ts (8 tests) 5ms
+ ✓ test/invariants/today.test.ts (7 tests) 11ms
+ ✓ test/invariants/translation-licensing.test.ts (6 tests) 4ms
+ ✓ test/invariants/legal-hnsw-index-sync.test.ts (5 tests) 17ms
+ ✓ test/invariants/seed-owner-url.test.ts (5 tests) 3ms
+ ✓ test/invariants/published-authors.test.ts (6 tests) 5ms
+ ↓ test/invariants/highlight-tenancy.test.ts (3 tests | 3 skipped)
+stderr | test/invariants/highlight-tenancy.test.ts
+
+⚠  NOT RUN — §7 sub-verse highlight tenancy (two-account, executed) DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL). It covers: two-account RLS tenancy for sub-verse highlights. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/invariants/wallet.test.ts (2 tests) 4ms
+ ✓ test/invariants/gate-ugc-blindness.test.ts (3 tests) 2ms
+ ✓ test/middleware-gate.test.ts (3 tests) 16ms
+ ✓ test/regression/get-messages-filters-by-user-id.test.ts (2 tests) 17ms
+ ✓ test/invariants/coverage-floor.test.ts (3 tests) 264ms
+ ✓ test/invariants/popover-position.test.ts (6 tests) 1ms
+ ✓ test/regression/bait-route-production-gate.test.ts (4 tests) 40ms
+ ✓ test/invariants/fts-legal-index-sync.test.ts (1 test) 7ms
+ ↓ test/invariants/tenancy.test.ts (3 tests | 3 skipped)
+stderr | test/invariants/tenancy.test.ts
+
+⚠  NOT RUN — Layer 1 — tenancy invariant (two-account, executed) DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL). It covers: the two-account tenancy invariant on user data. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/invariants/bible-translation-gate.test.ts (4 tests) 5ms
+ ✓ test/invariants/work-toc-grouping.test.ts (3 tests) 6ms
+ ✓ test/invariants/copy-format.test.ts (6 tests) 1ms
+ ✓ test/invariants/snippet-sanitize.test.ts (4 tests) 4ms
+ ✓ test/regression/add-message-rejects-foreign-channel.test.ts (2 tests) 6ms
+ ✓ test/invariants/work-reader-paging.test.tsx (6 tests) 43ms
+ ✓ test/invariants/work-reader-ui.test.tsx (4 tests) 49ms
+ ✓ test/invariants/work-section-lineation.test.tsx (6 tests) 55ms
+ ✓ test/invariants/search-result-attribution.test.tsx (5 tests) 86ms
+ ✓ test/invariants/work-toc-bounded.test.tsx (3 tests) 116ms
+stderr | test/db-boot-assert.test.ts > assertAppRuntimeRole — a boot canary, not a single point of total failure > does NOT brick the app when the DB is unreachable (retries, then serves)
+[boot] assertAppRuntimeRole: could not reach the DB to verify the runtime role after 4 attempts; serving anyway (per-request RLS still binds). Last error: fetch failed: other side closed
+
+ ✓ test/db-boot-assert.test.ts (4 tests) 1709ms
+   ✓ assertAppRuntimeRole — a boot canary, not a single point of total failure > does NOT brick the app when the DB is unreachable (retries, then serves) 1707ms
+ ✓ test/invariants/licensing.test.ts (6 tests | 5 skipped) 2520ms
+   ✓ Layer 1 — static reader forbidden-provenance ratchet > forbidden-provenance count may only decrease (or must be zero) 2519ms
+ ✓ test/invariants/verse-keys.test.ts (2 tests) 3848ms
+   ✓ §3 verse-key distribution (live gate; announces NOT RUN when the gitignored corpus is absent, e.g. CI) > no author (≥200 entries) has >20% of entries keyed verse_start=verse_end=chapter 2527ms
+   ✓ §3 verse-key distribution (live gate; announces NOT RUN when the gitignored corpus is absent, e.g. CI) > no SERVED (published) entry carries a biblehub.com / studylight.org sourceUrl 1320ms
+
+ Test Files  30 passed | 12 skipped (42)
+      Tests  133 passed | 72 skipped (205)
+   Start at  10:20:01
+   Duration  4.42s (transform 928ms, setup 0ms, collect 2.85s, tests 8.85s, environment 3.36s, prepare 2.53s)
+
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > allows exactly at the per-minute cap (10), blocks the 11th
+{"evt":"rate_limit_hit","ts":"2026-07-29T17:20:06.540Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > blocks over the per-day cap (100)
+{"evt":"rate_limit_hit","ts":"2026-07-29T17:20:06.540Z","userId":"u1","cap":"day","count":101,"limit":100}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > FAILS OPEN (allows) when the limiter DB call throws
+{"evt":"rate_limit_fail_open","ts":"2026-07-29T17:20:06.540Z","userId":"u1","error":"db down"}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > H4: a minute-refused request does NOT touch the day bucket
+{"evt":"rate_limit_hit","ts":"2026-07-29T17:20:06.540Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+ ✓ test/rate-limit.test.ts (10 tests) 2ms
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks the 11th attempt in a minute (default cap 10)
+{"evt":"gate_rate_limit_hit","ts":"2026-07-29T17:20:06.541Z","ip":"1.2.3.4","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks a slow drip over the hourly cap (default 60)
+{"evt":"gate_rate_limit_hit","ts":"2026-07-29T17:20:06.541Z","ip":"1.2.3.4","cap":"hour","count":61,"limit":60}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > FAILS OPEN (allows) when the limiter DB call throws — password still required by the caller
+{"evt":"rate_limit_fail_open","ts":"2026-07-29T17:20:06.541Z","userId":"gate:1.2.3.4","error":"db down"}
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  10:20:06
+   Duration  198ms (transform 22ms, setup 0ms, collect 27ms, tests 2ms, environment 0ms, prepare 35ms)
+
+[32m✓ qa — Layer 1 invariants + regressions[0m
+
+[1m▶ hygiene — no test residue in dev (post-suite)[0m
+⚠ SKIPPED (visibly): no owner DATABASE_URL — cannot check dev for test residue.
+⚠ SKIPPED (visibly): no target to inspect.
+[32m✓ hygiene — no test residue in dev (post-suite)[0m
+
+[1m▶ data — Gate B license (fail-closed)[0m
+======================================================================
+GATE B — LICENSE (fail closed)
+======================================================================
+Manifest: ingest/sources.config.json (60 source entries)
+Published sources (DB): skipped (no DATABASE_URL).
+
+✓ GATE B PASSED: no license/provenance violations.
+[32m✓ data — Gate B license (fail-closed)[0m
+
+[1m▶ coverage gaps (informational)[0m
+Files with ZERO coverage (64):
+  src/bible/verse-counts.ts
+  src/evals/run.ts
+  src/ingest/adapter-archive.ts
+  src/ingest/adapter-bdb.ts
+  src/ingest/adapter-ccel.ts
+  src/ingest/adapter-gutenberg.ts
+  src/ingest/adapter-helloao.ts
+  src/ingest/adapter-loop.ts
+  src/ingest/b2-remove-forbidden-provenance.ts
+  src/ingest/build-commentary-manifest.ts
+  src/ingest/build-concordance.ts
+  src/ingest/check-corpus-coverage.ts
+  src/ingest/check-licenses.ts
+  src/ingest/clean-crossref-authors.ts
+  src/ingest/consolidate-bibles.ts
+  src/ingest/embed-full-corpus.ts
+  src/ingest/gate-ingest.ts
+  src/ingest/helloao-source.ts
+  src/ingest/historian-contract-backfill.ts
+  src/ingest/history-gazetteer.ts
+  src/ingest/ingest-api.ts
+  src/ingest/ingest-biblehub.ts
+  src/ingest/ingest-commentaries.ts
+  src/ingest/ingest-commentary-api.ts
+  src/ingest/ingest-commentary-fts.ts
+  src/ingest/ingest-embeddings.ts
+  src/ingest/ingest-harness.ts
+  src/ingest/ingest-historian.ts
+  src/ingest/ingest-original.ts
+  src/ingest/ingest-scrollmapper-bibles.ts
+  src/ingest/ingest-sermon.ts
+  src/ingest/ingest-strongs.ts
+  src/ingest/ingest-web.ts
+  src/ingest/insert-static-author.ts
+  src/ingest/measure-embedding-gap.ts
+  src/ingest/merge-commentaries.ts
+  src/ingest/migrate-sections-slice.ts
+  src/ingest/newadvent-crawl.ts
+  src/ingest/newadvent-source.ts
+  src/ingest/parity-probe-sections.ts
+  src/ingest/poole-tcp.ts
+  src/ingest/rebuild-register-indexes.ts
+  src/ingest/reference-register-bridge.ts
+  src/ingest/regen-crosswire-static.ts
+  src/ingest/register-writer.ts
+  src/ingest/repair-tennyson-traherne-flat.ts
+  src/ingest/repoint-sections-work.ts
+  src/ingest/resource-classify-patristic.ts
+  src/ingest/resource-classify-topn.ts
+  src/ingest/resource-match-probe.ts
+  src/ingest/resource-probe-patristic.ts
+  src/ingest/resource-repair-helloao.ts
+  src/ingest/source-id.ts
+  src/ingest/suppress-chrysostom-prolegomena.ts
+  src/ingest/suppress-nonauthorial-matter.ts
+  src/ingest/sword-genbook.ts
+  src/ingest/sword-ld.ts
+  src/ingest/sword-register-bridge.ts
+  src/ingest/sword-zverse.ts
+  src/ingest/usfm.ts
+  src/ingest/verse-key-gate.ts
+  src/ingest/versification-gate.ts
+  src/teacher/llm.ts
+  src/teacher/run.ts
+
+════════════════════════════════════
+[31mAUDIT FAILED (1): deps — advisory bulk-endpoint (prod, high+ CVEs)[0m
