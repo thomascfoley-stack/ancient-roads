@@ -52,7 +52,7 @@ async function composeOnce(system: string, user: string): Promise<string> {
     body: JSON.stringify({ model: MODEL, messages: [{ role: 'system', content: system }, { role: 'user', content: user }], response_format: { type: 'json_object' }, temperature: 0.3, max_tokens: 6000, chat_template_kwargs: { enable_thinking: false } }),
     signal: AbortSignal.timeout(180_000),
   });
-  let c = ((await res.json()) as { choices: { message: { content: string } }[] }).choices[0]!.message.content;
+  const c = ((await res.json()) as { choices: { message: { content: string } }[] }).choices[0]!.message.content;
   return c.replace(/<think>[\s\S]*?<\/think>/g, '').trim().replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/, '').trim();
 }
 function selectVoices(pool: RetrievedChunk[], n: number): RetrievedChunk[] {
