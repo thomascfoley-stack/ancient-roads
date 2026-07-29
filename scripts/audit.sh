@@ -26,7 +26,7 @@ gate "typecheck — cutover gate (scripts/)" $PNPM exec tsc --noEmit -p tsconfig
 gate "typecheck — web/ tsc --noEmit"      bash -c "cd web && npx tsc --noEmit"
 gate "typecheck — web/test tsc --noEmit"  bash -c "cd web && npx tsc --noEmit -p tsconfig.test.json"
 gate "lint — eslint src/ test/"           $PNPM exec eslint src test
-gate "lint — web/ next lint"              bash -c "cd web && npx next lint --quiet"
+gate "lint — web/ eslint"                    bash -c "cd web && npx eslint --quiet ."
 gate "unused — knip (files/exports/deps)" $PNPM exec knip
 gate "deps — advisory bulk-endpoint (prod, high+ CVEs)" node scripts/deps-audit.mjs
 gate "tests + coverage — vitest"          $PNPM exec vitest run --coverage

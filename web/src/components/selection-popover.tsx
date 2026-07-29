@@ -13,6 +13,7 @@
 // `onBookmark` is Phase 3 (bookmarks table): the button renders ONLY when a handler exists.
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { HIGHLIGHT_COLORS } from '@/lib/highlight-colors';
 import {
@@ -149,9 +150,9 @@ export function SelectionPopover({
       />
     ))
   ) : (
-    <a href="/auth/sign-in" className="shrink-0 px-1 text-xs font-semibold text-accent-300">
+    <Link href="/auth/sign-in" className="shrink-0 px-1 text-xs font-semibold text-accent-300">
       Sign in to highlight
-    </a>
+    </Link>
   );
 
   const divider = <span className="mx-0.5 h-5 w-px shrink-0 bg-white/15" aria-hidden />;
