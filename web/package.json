@@ -16,7 +16,7 @@
     "ajv": "^8.17.1",
     "next": "^16.2.11",
     "react": "^19.2.8",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
