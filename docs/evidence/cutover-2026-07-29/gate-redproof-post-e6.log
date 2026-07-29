@@ -1,0 +1,18 @@
+==============================================================================
+GATE REDPROOF — post-E6 rehearsal fork (migrations + sections present)
+date: 2026-07-29T15:54:09Z
+fork: rehearsal-20260729 / ep-rough-violet-at9bsoq7
+note: uses .cutover-redproof-checkpoint.json only; rehearsal checkpoint aside
+==============================================================================
+file:///Users/foley/Projects/ancient-roads-runbook/scripts/cutover-gate-redproof.mjs:28
+if (!url) throw new Error('CUTOVER_DATABASE_URL is unset');
+                ^
+
+Error: CUTOVER_DATABASE_URL is unset
+    at file:///Users/foley/Projects/ancient-roads-runbook/scripts/cutover-gate-redproof.mjs:28:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+EXIT_CODE=1
