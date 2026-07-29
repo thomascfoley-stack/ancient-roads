@@ -1,10 +1,10 @@
 # WORKLOG — Autonomous session 2026-07-08
 
-## 2026-07-29 (SESSION 6 — Phase 1 STOP GATE 1: fork rehearsal GREEN; E4 provenance red-proved; gate redproof partial; PROD UNTOUCHED)
+## 2026-07-29 (SESSION 6 — Phase 1 STOP GATE 1: fork rehearsal GREEN; E4 provenance red-proved; gate redproof 10/10; PROD UNTOUCHED)
 
 **Headline: Phase 1 rehearsal passed end-to-end on a fresh prod fork. E4 provenance abort path
-red-proved. Gate redproof harness ran on a second fork after E0–E1; 7/10 legs PROVEN, 3 legs need
-follow-up before trusting them on prod. Production (`ep-odd-fog`) never touched.**
+red-proved. Gate redproof harness ran on a second fork after E0–E1; **10/10 legs PROVEN**
+(red-then-green on every seeded defect). Production (`ep-odd-fog`) never touched.**
 
 ### Merge plan (cursor-merge-plan.md)
 
@@ -36,21 +36,16 @@ follow-up before trusting them on prod. Production (`ep-odd-fog`) never touched.
 - Evidence: `docs/evidence/cutover-2026-07-29/e4-provenance-redproof.log`,
   `e4-redproof-biblehub.log`.
 
-### Gate redproof — fork `redproof-20260729` after E0–E1 (`ep-icy-leaf-atunndkc`)
+### Gate redproof — fork `redproof-20260729` after E0–E1 (`ep-super-bar-atsfkwf3`)
 
-- Fresh prod fork cannot host the harness (pre-025/030) — documented in
-  `gate-redproof-pre-migration-failed.log`.
-- Ran E0–E1 on `redproof-20260729`, then `cutover-gate-redproof.mjs`.
+- First attempt on a fresh prod fork (pre-025/030) failed as expected — documented in
+  `gate-redproof-pre-migration-failed.log` (checkpoint cross-contamination + G9 absent).
+- Ran E0–E1 on a fresh `redproof-20260729` (rehearsal checkpoint moved aside), then
+  `cutover-gate-redproof.mjs`.
 - Evidence: `docs/evidence/cutover-2026-07-29/gate-redproof.log`, `redproof-fork-E0-E1.log`.
-- **PROVEN (7):** G1 user-data, G2 >=2 voices, G3 reader/static, G4 write (025 index hazard),
-  G5 register wall, G9 constraints (030 revert + notes_anchor_xor drop).
-- **FAILED / UNPROVEN (3):**
-  - G6 ratchet — seeded biblehub row stayed GREEN (harness could not trip the leg on this target).
-  - G8 unembedded — G3 file-rename side effect caused unattributed red during G8 run (ordering bug
-    in harness when run sequentially on laptop).
-  - G2 durable floor — seeded forbidden voice stayed GREEN (needs investigation on prod census shape).
-- **Owner call before Phase 2:** re-run G6/G8/G2-durable on a post-E4 fork (or droplet) in isolation,
-  or accept the 7 proven legs plus the full rehearsal gate battery as sufficient for cutover.
+- **PROVEN (10/10):** G1 user-data, G2 >=2 voices, G2 durable floor, G3 reader/static, G4 write
+  (025 index hazard), G5 register wall, G6 ratchet, G8 unembedded, G9 constraints ×2 (030 revert +
+  notes_anchor_xor drop). `EXIT_CODE=0`.
 
 ### Fork cleanup
 

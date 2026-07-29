@@ -3,7 +3,7 @@ CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27
   THE CUTOVER IS E0, E1, E2, E4, E5, E6. There is no E3 — forbidden-provenance
   deletion is DEFERRED to its own slice after a re-ingest exists to refill the
   corpus (owner ruling 2026-07-27; ADR-030 correction).
-  STEP ZERO  preflight: host~ep-icy-leaf-atunndkc, role=neondb_owner, write-capability, positive control
+  STEP ZERO  preflight: host~ep-super-bar-atsfkwf3, role=neondb_owner, write-capability, positive control
   SNAPSHOT   a Neon branch off the target, created BEFORE the first write and
       asserted to exist; its id is quoted in every rollback (Neon PITR retention on
       this project is 6 h against a ~2 h 20 m run — the window can close first)
@@ -35,18 +35,18 @@ CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27
 
 
 STEP ZERO — prod-credential preflight
-  target host: ep-icy-leaf-atunndkc.c-9.us-east-1.aws.neon.tech
-  ✓ endpoint is ep-icy-leaf-atunndkc
+  target host: ep-super-bar-atsfkwf3.c-9.us-east-1.aws.neon.tech
+  ✓ endpoint is ep-super-bar-atsfkwf3
   ✓ current_user = neondb_owner
   ✓ write capability proven (BEGIN; CREATE TEMP; ROLLBACK)
   positive control (Gill rows): 28843
   ✓ positive control fires
 STEP ZERO PASSED — safe to proceed.
-  ✓ pre-cutover snapshot: branch pre-cutover-ep-icy-leaf-atunndkc-20260729155110 (br-lively-feather-at5myjgh) off br-summer-wildflower-atw87qp0 — every rollback below restores from it
+  ✓ pre-cutover snapshot: branch pre-cutover-ep-super-bar-atsfkwf3-20260729155645 (br-hidden-bird-ats4kuxb) off br-empty-band-atpexjhs — every rollback below restores from it
 
 REGRESSION GATE — phase E0
-  target: ep-icy-leaf-atunndkc.c-9.us-east-1.aws.neon.tech (credentials redacted)
-(node:97161) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+  target: ep-super-bar-atsfkwf3.c-9.us-east-1.aws.neon.tech (credentials redacted)
+(node:99576) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -105,7 +105,7 @@ E1 — migrations 016-023 + 025-031 (fresh; prod is pre-016 per census; 024 runs
   ✓ user data matches the E0 baseline (highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY)
   ✓ user-data baseline (measured on target): highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY
   apply 016_history_sections
-(node:97195) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:99596) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -116,7 +116,7 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 (Use `node --trace-warnings ...` to show where the warning was created)
 ✓ applied db/migrations/016_history_sections.sql
   apply 017_source_type_registers
-(node:97201) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:99600) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -127,7 +127,7 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 (Use `node --trace-warnings ...` to show where the warning was created)
 ✓ applied db/migrations/017_source_type_registers.sql
   apply 020_embeddings_source_type_registers
-(node:97204) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:99606) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -138,7 +138,7 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 (Use `node --trace-warnings ...` to show where the warning was created)
 ✓ applied db/migrations/020_embeddings_source_type_registers.sql
   apply 021_revoke_app_runtime_anchor_writes
-(node:97230) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:99609) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -149,7 +149,7 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 (Use `node --trace-warnings ...` to show where the warning was created)
 ✓ applied db/migrations/021_revoke_app_runtime_anchor_writes.sql
   apply 022_embeddings_write_policy_user_scope
-(node:97254) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:99611) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -160,7 +160,7 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 (Use `node --trace-warnings ...` to show where the warning was created)
 ✓ applied db/migrations/022_embeddings_write_policy_user_scope.sql
   apply 023_sources_status_ingesting
-(node:97259) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:99613) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -171,7 +171,7 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 (Use `node --trace-warnings ...` to show where the warning was created)
 ✓ applied db/migrations/023_sources_status_ingesting.sql
   apply 025_annotations_polymorphic
-(node:97262) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:99616) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -182,7 +182,7 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 (Use `node --trace-warnings ...` to show where the warning was created)
 ✓ applied db/migrations/025_annotations_polymorphic.sql
   apply 026_bookmarks
-(node:97265) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:99619) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -193,7 +193,7 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 (Use `node --trace-warnings ...` to show where the warning was created)
 ✓ applied db/migrations/026_bookmarks.sql
   apply 027_library_items
-(node:97267) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:99621) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -204,7 +204,7 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 (Use `node --trace-warnings ...` to show where the warning was created)
 ✓ applied db/migrations/027_library_items.sql
   apply 028_reading_progress
-(node:97292) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:99623) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -215,7 +215,7 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 (Use `node --trace-warnings ...` to show where the warning was created)
 ✓ applied db/migrations/028_reading_progress.sql
   apply 029_tags
-(node:97298) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:99625) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -226,7 +226,7 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 (Use `node --trace-warnings ...` to show where the warning was created)
 ✓ applied db/migrations/029_tags.sql
   apply 030_annotation_constraints_tighten
-(node:97301) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:99635) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -237,7 +237,7 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 (Use `node --trace-warnings ...` to show where the warning was created)
 ✓ applied db/migrations/030_annotation_constraints_tighten.sql
   apply 031_sections_source_url
-(node:97329) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:99637) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -248,7 +248,7 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 (Use `node --trace-warnings ...` to show where the warning was created)
 ✓ applied db/migrations/031_sections_source_url.sql
   apply (concurrent) 018_register_partial_indexes
-(node:97331) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:99640) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -257,3 +257,120 @@ To prepare for this change:
 
 See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
 (Use `node --trace-warnings ...` to show where the warning was created)
+  ✓ part 1/15
+  ✓ part 2/15
+  ✓ part 3/15
+  ✓ part 4/15
+  ✓ part 5/15
+  ✓ part 6/15
+  ✓ part 7/15
+  ✓ part 8/15
+  ✓ part 9/15
+  ✓ part 10/15
+  ✓ part 11/15
+  ✓ part 12/15
+  ✓ part 13/15
+  ✓ part 14/15
+  ✓ part 15/15
+  ✓ post-apply: 5 index(es) VALID and READY (idx_embeddings_vector_legal, idx_embeddings_vector_song_verse, idx_embeddings_vector_sermon, idx_embeddings_vector_theology, idx_embeddings_verseid_registers)
+✓ applied db/migrations/018_register_partial_indexes.sql
+  apply (concurrent) 019_register_columns_fts
+(node:854) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓ part 1/7
+  ✓ part 2/7
+  ✓ part 3/7
+  ✓ part 4/7
+  ✓ part 5/7
+  ✓ part 6/7
+  ✓ part 7/7
+  ✓ post-apply: 1 index(es) VALID and READY (idx_commentary_fts_legal)
+✓ applied db/migrations/019_register_columns_fts.sql
+  ✓ postcondition: user rows unchanged across all 15 migrations (highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY)
+  ✓ postcondition: no invalid index
+
+REGRESSION GATE — phase E1
+  target: ep-super-bar-atsfkwf3.c-9.us-east-1.aws.neon.tech (credentials redacted)
+(node:989) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓ G1 user-data — unchanged vs E0 baseline (rows/active/owners/digest): highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY
+  ✓ G2 >=2 voices — corpus-wide: 22794 verses at the floor (E0 22794), 29629 with any voice (E0 29629)
+  ✓ G2 durable floor — excluding forbidden provenance: 22214 at the floor (E0 22214), 29605 with any voice (E0 29605)
+  ⚠ G2 work leg — 0 rows carry any metadata->>'work' key at E1. Expected before E2 (the census found this true of 190,635 of 190,635 prod rows); it is a hard failure from E2 on.
+  ✓ G2 spot check — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 spot check — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 spot check — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G2 spot check — John 10:11: 7 distinct authors, 7 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/static — John 10:11: 9 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G3 reader/db — John 10:11: 6 legal commentary_entries
+  ✓ G4 load — highlights: shipped load query returns 0 active row(s), unchanged vs E0
+  ✓ G4 load — notes: shipped load query returns 0 active row(s), unchanged vs E0
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ⚠ G5 register wall — VACUOUS at E1: 0 rows carry any of the 25 song/verse or lane slugs, so "no leak" is 0-of-0 and proves nothing on this target. Expected on production, which has never had the register ingest. On dev this number is large; if it is 0 THERE, something removed the labels.
+  ✓ G6 ratchet — 71884 forbidden-provenance rows (baseline 71884, not increased) — E3 deferred, cleanup is a later slice
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.
+  ✓ G8 sections/embeddings — no orphan embeddings — 5510 embedding row(s) over 5510 section(s). NOTE: section_embeddings.section_id is NOT NULL REFERENCES sections(id), so an orphan is unrepresentable while that FK stands; this leg only becomes informative if the FK is ever dropped. It is not evidence of a healthy slice. Also note embeddings > sections is NORMAL — the PK is (section_id, model_slug), so a second model legitimately adds rows.
+  ✓ G8 unembedded — 0 section(s) without an embedding (E0 0, not increased) over 5510 sections
+  ✓ G8 provenance — no section carries forbidden content provenance under a clean declared provenance
+    G8 provenance census (sections.source_url host per source):
+      barnes-notes: (none recorded) ×1300
+      matthew-henry: (none recorded) ×4210
+  ✓ G9 constraints — notes.notes_anchor_xor present with the 025 body
+  ✓ G9 constraints — highlights.highlights_anchor_xor present with the 030 body
+  ✓ G9 constraints — notes.notes_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — highlights.highlights_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — bookmarks.bookmarks_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — 025 notes_anchor_xor rejects a verse note with no verse_id
+  ✓ G9 constraints — 025 notes_anchor_xor rejects a note anchored to BOTH a verse and a section
+  ✓ G9 constraints — 030 highlights_anchor_xor rejects a section highlight with no source_content_hash
+  ✓ G9 constraints — 030 highlights_anchor_xor rejects a section highlight carrying a translation
+  ✓ G9 constraints — positive twin: the SAME row with a content hash and no translation is ACCEPTED (so the rejections above are about those fields, not about the insert)
+  ✓ G9 constraints — probes rolled back clean, zero residue
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+     DATABASE-ONLY. Nothing in this gate touched the deployed application: not routing,
+     not legalBasePool, not hnsw.ef_search, not the reranker, not compose, and NOT THE
+     VERIFIER — the artifact that actually implements the product guarantee. Set
+     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result. You will also need
+     CUTOVER_ASK_COOKIE carrying a logged-in SESSION cookie (/api/ask is authed-only);
+     the site_gate password cookie alone yields 401.
+✓ REGRESSION GATE PASSED at E1 — DB-ONLY, LIVE PROBE NOT RUN
+
+E2 — register-label the flat embeddings (metadata UPDATE, not a re-embed)
+  precondition (re-measured): 190635/190635 rows unlabeled
+  ✓ user data matches the E0 baseline (highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY)
+host: ep-super-bar-atsfkwf3.c-9.us-east-1.aws.neon.tech (credentials redacted)
+entries with match_author: 12
+(node:1029) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+before: 190635/190635 unlabeled
