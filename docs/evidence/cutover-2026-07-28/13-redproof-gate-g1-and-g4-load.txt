@@ -1,0 +1,174 @@
+==============================================================================
+RED-PROOF: 13-redproof-gate-g1-and-g4-load
+target: fresh fork of production, endpoint ep-sweet-river-at1qf82b
+date:   2026-07-28T06:20:27Z
+method: seed the break -> run scripts/cutover.mjs (THE ORCHESTRATOR, not the
+        gate directly) -> capture RED -> restore -> re-run -> capture GREEN
+==============================================================================
+
+--- SEED -------------------------------------------------------------------
+-- UPDATE highlights SET deleted_at = now(), verse_id = 43003016, span_start = NULL, span_end = NULL; WITH u AS (
+   undefined 
+highlights=34r/0a/6u/70f8dcc9 notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349
+
+park: ok (orchestrator baseline parked; gate baseline untouched)
+
+--- RUN (expect RED) -------------------------------------------------------
+STEP ZERO — prod-credential preflight
+  target host: ep-sweet-river-at1qf82b.c-9.us-east-1.aws.neon.tech
+  ✓ endpoint is ep-sweet-river-at1qf82b
+  ✓ current_user = neondb_owner
+  ✓ write capability proven (BEGIN; CREATE TEMP; ROLLBACK)
+  positive control (Gill rows): 28843
+  ✓ positive control fires
+STEP ZERO PASSED — safe to proceed.
+  ✓ pre-cutover snapshot already recorded: pre-cutover-ep-sweet-river-at1qf82b-20260728054331 (br-hidden-smoke-atb9o0w5)
+E0 — (checkpoint) baseline already captured
+E1 — (checkpoint) all migrations applied; re-asserting postconditions
+  ✓ postcondition (resume): no invalid index
+REGRESSION GATE — phase E1
+  target: ep-sweet-river-at1qf82b.c-9.us-east-1.aws.neon.tech (credentials redacted)
+  ✗ G1 user-data — the user-data invariant broke — highlights: ACTIVE rows 24 -> 0 (soft-delete or un-delete); highlights: DIGEST 0542059b -> 70f8dcc9 (row identity/anchor/body changed); highlights: OWNER DISTRIBUTION 1451cd869c27:1,21610c1901fb:1,2defd2506d75:1,4c09354a5782:1,ba5d501bc04c:1,d50598130eec:29 -> 1451cd869c27:1,21610c1901fb:1,2defd2506d75:1,4c09354a5782:29,ba5d501bc04c:1,d50598130eec:1 (rows changed hands)
+  ✓ G2 >=2 voices — corpus-wide: 22794 verses at the floor (E0 22794), 29629 with any voice (E0 29629)
+  ✓ G2 spot check — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 spot check — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 spot check — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✗ G4 load — highlights: shipped load query returns 0 active row(s), E0 baseline was 24 — the rows a user would actually see changed
+  ✓ G4 load — notes: shipped load query returns 2 active row(s), unchanged vs E0
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G5 register wall — FTS exclusion holds against the independent sources.source_type signal
+  ✓ G6 ratchet — 71884 forbidden-provenance rows (baseline 71884, not increased) — E3 deferred, cleanup is a later slice
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+     DATABASE-ONLY. Nothing in this gate touched the deployed application. Set
+     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result.
+✗ REGRESSION GATE FAILED at E1 (2 check(s))
+    G1 user-data: the user-data invariant broke — highlights: ACTIVE rows 24 -> 0 (soft-delete or un-delete); highlights: DIGEST 0542059b -> 70f8dcc9 (row identity/anchor/body changed); highlights: OWNER DISTRIBUTION 1451cd869c27:1,21610c1901fb:1,2defd2506d75:1,4c09354a5782:1,ba5d501bc04c:1,d50598130eec:29 -> 1451cd869c27:1,21610c1901fb:1,2defd2506d75:1,4c09354a5782:29,ba5d501bc04c:1,d50598130eec:1 (rows changed hands)
+    G4 load: highlights: shipped load query returns 0 active row(s), E0 baseline was 24 — the rows a user would actually see changed
+  ABORT the cutover and roll back this chunk. Do NOT fix forward mid-cutover.
+✗ ABORT at E1: REGRESSION GATE FAILED — a pre-existing surface regressed
+  rollback: roll back the E1 chunk (see that step's stated rollback). Do NOT fix forward mid-cutover.
+[orchestrator exit: 1]
+
+restore: ok (orchestrator baseline restored; gate baseline untouched)
+
+--- RESTORE ----------------------------------------------------------------
+-- UPDATE highlights h SET deleted_at=b.deleted_at, verse_id=b.verse_id, verse_end=b.verse_end, span_start=b.span
+   UPDATE 34
+highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349
+
+--- RUN (expect GREEN) -----------------------------------------------------
+STEP ZERO — prod-credential preflight
+  target host: ep-sweet-river-at1qf82b.c-9.us-east-1.aws.neon.tech
+  ✓ endpoint is ep-sweet-river-at1qf82b
+  ✓ current_user = neondb_owner
+  ✓ write capability proven (BEGIN; CREATE TEMP; ROLLBACK)
+  positive control (Gill rows): 28843
+  ✓ positive control fires
+STEP ZERO PASSED — safe to proceed.
+  ✓ pre-cutover snapshot already recorded: pre-cutover-ep-sweet-river-at1qf82b-20260728054331 (br-hidden-smoke-atb9o0w5)
+E0 — (checkpoint) baseline already captured
+E1 — (checkpoint) all migrations applied; re-asserting postconditions
+  ✓ postcondition (resume): no invalid index
+  ✓ user data matches the E0 baseline (highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349)
+REGRESSION GATE — phase E1
+  target: ep-sweet-river-at1qf82b.c-9.us-east-1.aws.neon.tech (credentials redacted)
+  ✓ G1 user-data — unchanged vs E0 baseline (rows/active/owners/digest): highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349
+  ✓ G2 >=2 voices — corpus-wide: 22794 verses at the floor (E0 22794), 29629 with any voice (E0 29629)
+  ✓ G2 spot check — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 spot check — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 spot check — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G4 load — highlights: shipped load query returns 24 active row(s), unchanged vs E0
+  ✓ G4 load — notes: shipped load query returns 2 active row(s), unchanged vs E0
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G5 register wall — FTS exclusion holds against the independent sources.source_type signal
+  ✓ G6 ratchet — 71884 forbidden-provenance rows (baseline 71884, not increased) — E3 deferred, cleanup is a later slice
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+     DATABASE-ONLY. Nothing in this gate touched the deployed application. Set
+     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result.
+✓ REGRESSION GATE PASSED at E1 — DB-ONLY, LIVE PROBE NOT RUN
+E2 — (checkpoint) already done
+REGRESSION GATE — phase E2
+  target: ep-sweet-river-at1qf82b.c-9.us-east-1.aws.neon.tech (credentials redacted)
+  ✓ G1 user-data — unchanged vs E0 baseline (rows/active/owners/digest): highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349
+  ✓ G2 >=2 voices — corpus-wide: 22794 verses at the floor (E0 22794), 29629 with any voice (E0 29629)
+  ✓ G2 spot check — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 spot check — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 spot check — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G4 load — highlights: shipped load query returns 24 active row(s), unchanged vs E0
+  ✓ G4 load — notes: shipped load query returns 2 active row(s), unchanged vs E0
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G5 register wall — FTS exclusion holds against the independent sources.source_type signal
+  ✓ G6 ratchet — 71884 forbidden-provenance rows (baseline 71884, not increased) — E3 deferred, cleanup is a later slice
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+     DATABASE-ONLY. Nothing in this gate touched the deployed application. Set
+     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result.
+✓ REGRESSION GATE PASSED at E2 — DB-ONLY, LIVE PROBE NOT RUN
+E4 — (checkpoint) already done
+REGRESSION GATE — phase E4
+  target: ep-sweet-river-at1qf82b.c-9.us-east-1.aws.neon.tech (credentials redacted)
+  ✓ G1 user-data — unchanged vs E0 baseline (rows/active/owners/digest): highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349
+  ✓ G2 >=2 voices — corpus-wide: 22794 verses at the floor (E0 22794), 29629 with any voice (E0 29629)
+  ✓ G2 spot check — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 spot check — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 spot check — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G4 load — highlights: shipped load query returns 24 active row(s), unchanged vs E0
+  ✓ G4 load — notes: shipped load query returns 2 active row(s), unchanged vs E0
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G5 register wall — FTS exclusion holds against the independent sources.source_type signal
+  ✓ G6 ratchet — 71884 forbidden-provenance rows (baseline 71884, not increased) — E3 deferred, cleanup is a later slice
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+     DATABASE-ONLY. Nothing in this gate touched the deployed application. Set
+     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result.
+✓ REGRESSION GATE PASSED at E4 — DB-ONLY, LIVE PROBE NOT RUN
+E5 — skipped (CUTOVER_REHEARSAL)
+E6 — (checkpoint) already done
+CUTOVER COMPLETE.
+[orchestrator exit: 0]

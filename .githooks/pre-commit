@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# Fast pre-commit gate for Ancient Paths — <10s, NO LLM, auto-fixes where it can.
+# This is a PRE-FILTER, not a replacement for `npm run audit` (the full gate lives
+# in CI / scripts/audit.sh). It catches the cheap-to-detect, expensive-to-miss
+# breakages: lint slop, src/ <-> web/ byte-drift, and forbidden-provenance creep.
+#
+# Portable to macOS's stock bash 3.2 (no mapfile/readarray; no `set -u` empty-array
+# landmine). Bypass in a genuine emergency with:  git commit --no-verify
+set -o pipefail
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+FAIL=0
+step() { printf '\n\033[1m▶ %s\033[0m\n' "$1"; }
+ok()   { printf '\033[32m  ✓ %s\033[0m\n' "$1"; }
+bad()  { printf '\033[31m  ✗ %s\033[0m\n' "$1"; FAIL=1; }
+
+# Staged files (Added/Copied/Modified/Renamed). newline-delimited strings, grep-filtered.
+STAGED="$(git diff --cached --name-only --diff-filter=ACMR)"
+[ -z "$STAGED" ] && exit 0
+
+# --- 1. eslint --fix on staged TS (the only --fix step) -----------------------
+TS="$(printf '%s\n' "$STAGED" | grep -E '^(src|test|web)/.*\.(ts|tsx)$')"
+if [ -n "$TS" ]; then
+  N="$(printf '%s\n' "$TS" | wc -l | tr -d ' ')"
+  step "eslint --fix ($N staged TS file(s))"
+  # shellcheck disable=SC2086
+  if printf '%s\n' "$TS" | xargs npx eslint --fix; then
+    # Re-stage anything --fix rewrote so the fix is part of THIS commit.
+    printf '%s\n' "$TS" | xargs git add --
+    ok "lint clean"
+  else
+    bad "eslint reported errors — fix them or re-run (warnings do not block)"
+  fi
+fi
+
+# --- 2. src/ <-> web/ byte-identical sync guards (rail) ------------------------
+if printf '%s\n' "$STAGED" | grep -qE '^(src|web/src)/'; then
+  step "sync guards (src/ <-> web/ byte-identical: verifier, contract, bible/*)"
+  if npx vitest run test/web-core-sync.test.ts test/bible-sync.test.ts >/tmp/precommit-sync.log 2>&1; then
+    ok "core + bible copies in sync"
+  else
+    bad "src/ and web/ copies diverged — copy the change across (see /tmp/precommit-sync.log)"
+  fi
+fi
+
+# --- 3. licensing / forbidden-provenance ratchet (existential, no LLM) --------
+# Only when the static corpus is actually present (it is gitignored; absent in most
+# checkouts), so a normal commit pays nothing. When present, the count may not rise.
+if [ -d web/public/commentaries ]; then
+  step "licensing ratchet (forbidden-provenance may only shrink)"
+  if npx tsx scripts/predeploy-gate.ts >/tmp/precommit-license.log 2>&1; then
+    ok "ratchet holds"
+  else
+    bad "forbidden-provenance increased or gate failed (see /tmp/precommit-license.log)"
+  fi
+fi
+
+if [ "$FAIL" -ne 0 ]; then
+  printf '\n\033[31mpre-commit blocked. Fix the above, or bypass with: git commit --no-verify\033[0m\n'
+  exit 1
+fi
+printf '\n\033[32mpre-commit passed.\033[0m\n'
+exit 0

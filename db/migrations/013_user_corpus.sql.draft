@@ -1,0 +1,150 @@
+-- ============================================================
+-- 013 (DRAFT — NOT APPLIED): user corpus — Slice 1 of sermon search
+-- ============================================================
+-- Personal-corpus storage for docs/SERMON_SEARCH_DESIGN.md Slice 1 (upload → parse → chunk →
+-- anchor → embed → store). FOUR user-scoped tables mirroring the corpus's
+-- sources/sections/section_embeddings/section_anchors shape, so the tradition-gap JOIN (§3) is
+-- a verse-id equijoin across the two planes.
+--
+-- ★ THIS IS A .sql.draft — it is NOT applied and MUST NOT be applied to prod. It targets a
+--   Neon DEV BRANCH that does not exist yet (OWNER_ACTIONS §1). Apply order, once the branch
+--   exists, as neondb_owner:
+--     DATABASE_URL=<dev-owner-url> node db/apply-migration.mjs db/migrations/013_user_corpus.sql
+--   (drop the .draft suffix only when the dev branch is the target — never prod).
+--
+-- Dialect = NEON (this repo's db/migrations), NOT the Supabase dialect in docs/SCHEMA.md:
+--   - TEXT primary keys (opaque, client- or server-generatable), NOT BIGINT IDENTITY;
+--   - user_id TEXT compared to current_setting('app.current_user_id', true) (Neon Auth subject);
+--   - RLS ENABLED with a per-user policy on EVERY table (these are USER DATA, unlike the
+--     public corpus tables in 006 which are RLS-free + SELECT-only).
+--
+-- Isolation invariant (mirror of the corpus): every row here has user_id NOT NULL. The deploy
+-- gate's corpus scan reads only `user_id IS NULL` rows + public/ files (PHASE_A_CLOSE §4), so
+-- these tables are structurally disjoint from the corpus and can never be served as corpus.
+-- ============================================================
+
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pgcrypto; -- gen_random_uuid()
+
+-- --- 1. the uploaded document --------------------------------------------------------------
+-- One row per upload (sermon / paper / notes / book). blob_url points at Vercel Blob (the raw
+-- file); checksum dedupes re-uploads and keys the embedding cache (§11 cost control). status is
+-- the lifecycle (§8) — 'empty' is an explicit terminal state for a scan-only PDF, NOT a silent drop.
+CREATE TABLE IF NOT EXISTS user_documents (
+  id              TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  user_id         TEXT NOT NULL,
+  title           TEXT NOT NULL,
+  doc_type        TEXT NOT NULL DEFAULT 'unknown'
+                  CHECK (doc_type IN ('sermon','paper','notes','book','unknown')),
+  source_filename TEXT,
+  blob_url        TEXT,                 -- Vercel Blob ref; deletion is an app-layer cascade (§ below)
+  byte_size       BIGINT,
+  checksum        TEXT,                 -- sha256 of the raw file — dedupe + embedding cache key
+  status          TEXT NOT NULL DEFAULT 'queued'
+                  CHECK (status IN ('queued','parsing','chunking','embedding','ready','failed','empty')),
+  parse_error     TEXT,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS user_documents_user_idx ON user_documents (user_id, created_at DESC);
+
+-- --- 2. the retrieval unit (chunk) ---------------------------------------------------------
+-- Type-aware chunk (§4). user_id is DENORMALIZED here (and in 3/4) so every table's RLS policy
+-- is a direct user_id match — no cross-table subquery in a policy. body = the exact text that
+-- produced the vector. tsv powers the per-user FTS mode (§3).
+CREATE TABLE IF NOT EXISTS user_sections (
+  id          TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  document_id TEXT NOT NULL REFERENCES user_documents(id) ON DELETE CASCADE,
+  user_id     TEXT NOT NULL,
+  ordinal     INT NOT NULL,
+  heading     TEXT,
+  body        TEXT NOT NULL,
+  kind        TEXT NOT NULL DEFAULT 'body' CHECK (kind IN ('body','footnote','heading')),
+  tsv         TSVECTOR GENERATED ALWAYS AS (to_tsvector('english', body)) STORED,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (document_id, ordinal)
+);
+CREATE INDEX IF NOT EXISTS user_sections_doc_idx  ON user_sections (document_id);
+CREATE INDEX IF NOT EXISTS user_sections_user_idx ON user_sections (user_id);
+CREATE INDEX IF NOT EXISTS user_sections_tsv_idx  ON user_sections USING GIN (tsv);
+
+-- --- 3. per-user embeddings — NO global HNSW (brute-force, §5) ------------------------------
+-- PK (section_id, model_slug) => one vector per section per model, A/B-safe and model-parity
+-- ready (§6): the tradition-gap join refuses user vectors whose model_slug != the corpus's.
+-- ★ NO hnsw index by design: one user's chunks are ~1% of the table; a shared HNSW starves the
+-- way the corpus index did. Brute-force cosine over ONE user's rows (WHERE user_id=$1) is 100%
+-- recall + fast for the common case (low thousands of chunks). The btree on user_id makes that
+-- per-user scan cheap. The escape hatch (a per-user HNSW PARTITION above ~20-30k chunks/user) is
+-- a SEPARATE future migration fired by the tripwire (§5) — not premature generality here.
+CREATE TABLE IF NOT EXISTS user_section_embeddings (
+  section_id TEXT NOT NULL REFERENCES user_sections(id) ON DELETE CASCADE,
+  user_id    TEXT NOT NULL,
+  model_slug TEXT NOT NULL,            -- 'bge-large-en-v1.5' (ADR-005, pinned) — parity with corpus
+  embedding  VECTOR(1024) NOT NULL,
+  PRIMARY KEY (section_id, model_slug)
+);
+CREATE INDEX IF NOT EXISTS user_embeddings_user_idx ON user_section_embeddings (user_id);
+
+-- --- 4. per-user verse anchors — the fast presence path (§3) --------------------------------
+-- The verse-anchor scan ("have I written on Romans 8") is its own fast path, NOT the vector
+-- index — an exact/overlap match on (user_id, verse_id). channel/confidence record HOW the
+-- anchor was found (explicit citation vs uncited-quote shingle, Slice 0) for later ranking/UX.
+CREATE TABLE IF NOT EXISTS user_section_anchors (
+  section_id     TEXT NOT NULL REFERENCES user_sections(id) ON DELETE CASCADE,
+  user_id        TEXT NOT NULL,
+  verse_id_start INT NOT NULL,
+  verse_id_end   INT NOT NULL,
+  channel        TEXT NOT NULL DEFAULT 'explicit' CHECK (channel IN ('explicit','prose','uncited')),
+  confidence     REAL NOT NULL DEFAULT 1.0,
+  PRIMARY KEY (section_id, verse_id_start)
+);
+-- the presence fast-path index: one user's anchors, range-overlap on verse id
+CREATE INDEX IF NOT EXISTS user_anchors_scan_idx ON user_section_anchors (user_id, verse_id_start, verse_id_end);
+
+-- ============================================================
+-- DELETE CASCADE (§8: "document → sections → embeddings → anchors → blob")
+-- ------------------------------------------------------------
+-- The FK ON DELETE CASCADE chain above makes `DELETE FROM user_documents WHERE id=$1` remove its
+-- sections, and each section's embeddings + anchors, in ONE statement. The BLOB (blob_url) is
+-- NOT in Postgres — the app must delete it in the same operation (a delete that leaves orphaned
+-- vectors or a dangling blob is a bug, §8). The delete runs under RLS, so a user can only
+-- cascade-delete their OWN documents.
+-- ============================================================
+
+-- ============================================================
+-- RLS — every table, per-user, keyed on the session subject (mirrors 001)
+-- ============================================================
+ALTER TABLE user_documents          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_sections           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_section_embeddings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_section_anchors    ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS user_documents_policy ON user_documents;
+CREATE POLICY user_documents_policy ON user_documents
+  USING (user_id = current_setting('app.current_user_id', true))
+  WITH CHECK (user_id = current_setting('app.current_user_id', true));
+
+DROP POLICY IF EXISTS user_sections_policy ON user_sections;
+CREATE POLICY user_sections_policy ON user_sections
+  USING (user_id = current_setting('app.current_user_id', true))
+  WITH CHECK (user_id = current_setting('app.current_user_id', true));
+
+DROP POLICY IF EXISTS user_section_embeddings_policy ON user_section_embeddings;
+CREATE POLICY user_section_embeddings_policy ON user_section_embeddings
+  USING (user_id = current_setting('app.current_user_id', true))
+  WITH CHECK (user_id = current_setting('app.current_user_id', true));
+
+DROP POLICY IF EXISTS user_section_anchors_policy ON user_section_anchors;
+CREATE POLICY user_section_anchors_policy ON user_section_anchors
+  USING (user_id = current_setting('app.current_user_id', true))
+  WITH CHECK (user_id = current_setting('app.current_user_id', true));
+
+-- ============================================================
+-- Grants — these are USER-WRITABLE (unlike the SELECT-only corpus tables in 006/010).
+-- RLS confines every statement to the session's own user_id. (001's ALTER DEFAULT PRIVILEGES
+-- already grants app_runtime DML on new tables; this is explicit for reviewability.) NOTE: this
+-- does NOT reintroduce the shared-corpus `embeddings` write-grant gap (STATE_OF_TRUTH §7.1) —
+-- these are separate per-user tables; the shared corpus `embeddings` stays a different question.
+-- ============================================================
+GRANT SELECT, INSERT, UPDATE, DELETE ON
+  user_documents, user_sections, user_section_embeddings, user_section_anchors TO app_runtime;

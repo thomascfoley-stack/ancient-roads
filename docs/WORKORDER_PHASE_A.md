@@ -1,0 +1,139 @@
+# Work Order — Phase A (Retrieval: the ≥2-voices guarantee)
+
+**The bar is the product guarantee, not a target.** Ancient Paths promises **≥2–3 grounded, attributed voices**. Anything less on a doctrine query is the product failing its defining promise. **There is no beta. Production grade only. The bar does not move.**
+
+**Gate:** `topical HIT@2 ≥85%` AND `epistle HIT@2 ≥85%` on a **fresh, never-tuned held-out set**, with **no regression** on verse-ref / pericope / proper-noun / controls / no-content.
+
+**Current:** topical **70%**, epistle **64%** (v3, out-of-sample).
+
+---
+
+## 0. Blocking prerequisite — the eval/production divergence
+
+The eval measures **pure-vector over a legal author filter**; production runs **hybrid_search over the full corpus**. **Every Phase A number is fiction until these are one code path.** Unify them (single-sourced) before any fix is measured, or you are tuning a lab configuration that no user will ever hit.
+
+**Status: DONE (2026-07-11, `e5677a0`).** Single-sourced `LEGAL_CORPUS_FILTER` + `legalBasePoolSql()` in
+`web/src/lib/teacher/routing.ts`; **both** production `retrieveCommentary` and the eval `retrieveLegal` import
+and call it — the base pool is now byte-identical. Hybrid BM25 dropped (owner-measured no-loss: vector 97% ≈
+hybrid 97%; reranker carries the lift). Re-measured through the unified path: **frozen v2 = 65/72 (identical),
+v3 = 95/87/70/70/64 (identical)** — held by construction, no tuning. Real `retrieveCommentary` confirmed
+legal-only over 8 diverse queries. Deployed to prod. **All Phase A numbers below are now on the real path.**
+
+**Licensing-manifest disagreement → PARKED (§6) — a licensing boundary; not guessed.**
+
+---
+
+## 1. The diagnosed gap (14 failures — do not re-diagnose from scratch, build on this)
+
+| Bucket | n | What's happening | Known fix | Status |
+|---|---|---|---|---|
+| **surfaced = 1** | 7 | Right passage reaches top-6, but only **one author** on it. The 2nd voice exists in the corpus but never enters the candidate pool. | **Per-passage cap** in selection. *(The first attempt capped per-**author** and flooded the top-6 with one chapter — regressed topical 65→50. The correction is per-**passage**, preserving cross-passage coverage.)* | **DONE — attempt 1.** `<2-voices`→0; v2 topical 65→70, epistle 72→76; v3 epistle 64→84; zero regression. |
+| **surfaced = 0** | 7 | The on-doctrine passage **never reaches top-6** — the reranker drifts to a semantically similar wrong passage on abstract terms (perseverance, glorification, effectual calling). | **Doctrine→passage routing** from an **independent** source. **NEVER build this from the catechism eval labels — that is circular and makes the number meaningless.** | in progress (item 3) — all remaining topical/epistle fails are now `wrong-passage` |
+
+---
+
+## 2. Attempt log — **every attempt, including failures. This is the point of the doc.**
+
+For each attempt: the hypothesis, the exact change, the measured result on the frozen set, the verdict, and what the failure *taught* you. A failed attempt that produces a sharper diagnosis is progress. A failed attempt that isn't recorded is waste.
+
+### Attempt 1 — surfaced=1 fix (per-passage cap + on-passage backfill) — item 2
+- **Hypothesis:** the 2nd voice on the on-target chapter is below the pool; fetch it (on-passage backfill)
+  and select with a **per-PASSAGE** cap (≤2/chapter) so it survives without collapsing coverage (the prior
+  per-author cap collapsed the top-6 onto one chapter → 65→50).
+- **Change:** `routing.ts` — `selectDiverse` cap dimension author→**chapter**; add `chapterKeysOf` /
+  `diversityBackfillSql` / `insertBackfill`; `BACKFILL_TOP_CHAPTERS=3`. Wired identically into prod
+  `retrieveCommentary` + eval `retrieveLegal` (single-sourced). +1 bounded DB range-scan.
+- **Measured (whole frozen v2):** topical **70** (65→70) · epistle **76** (72→76) · verse-ref HIT@1 **100**
+  (HIT@2 93→100) · pericope HIT@1 **73** (=) · proper-noun HIT@1 **80** (HIT@2 90→**100**) · controls **0** ·
+  no-content **0**. **`<2-voices` bucket → 0** (surfaced=1 fully resolved; remaining fails all `wrong-passage`
+  = surfaced=0). **v3 (out-of-sample):** epistle **64→84**, topical **70→75**, zero regression.
+- **Verdict:** **improvement, ZERO regression on any category.** Below the 85 bar (surfaced=0 remains → item 3).
+- **Latency:** backfill query p50 **427ms** / p95 561ms (top-3; was 558/859 at top-6) — added to a retrieval
+  whose embed(~400ms)+rerank(~1-2s) dominate and are UNCHANGED. Notable; flagged for a GA optimization.
+- **DoD:** `npm run audit` green · `/audit` clean (added a defensive LIMIT to the backfill query) · 13 unit
+  tests · **interpretation_bait = 35/35 = 100% LIVE** (1 wide-net flag was a false positive — a negated
+  "superior", clean on re-query). ADR in DECISIONS.
+- **Reverted?** No — kept. **surfaced=1 row of §1 = DONE.**
+
+---
+
+## 3. If retrieval hits a wall — the corpus is the answer, not the bar
+
+If the diagnosis shows the remaining failures are passages where **fewer than 2 PD authors exist in the corpus**, that is a **content** problem, not a retrieval problem. **Do not lower the bar. Do not redefine the metric.** Report the exact passages and author counts, and recommend the specific commentators to ingest to close it. Adding voices is the fix; moving the goalposts is not.
+
+*(Note: the last `≥2-available` diagnostic said every label had 4–9 authors available — so this wall is not currently expected. If it appears, prove it with numbers.)*
+
+---
+
+## 4. Final gate (fresh v4 — v3 is now a dev set)
+
+Mint a **fresh v4 held-out**: same methodology, stratified sampling, **authority-fetched** doctrinal labels (never from memory — park if the authority is unreachable), disjoint from v2 and v3, **frozen + hashed before any number exists**. Run **once**.
+
+| category | metric | bar | v4 | verdict |
+|---|---|---|---|---|
+| topical | HIT@2 | ≥85% | | |
+| epistle | HIT@2 | ≥85% | | |
+| verse-ref | HIT@1 | ≥85% (no regression) | | |
+| pericope | HIT@1 | ≥70% (no regression) | | |
+| proper-noun | HIT@1 | ≥70% (no regression) | | |
+| controls | hijacks | 0 | | |
+| all | no-content | ≤8% | | |
+
+---
+
+## 5. Bugs found (including ones you did NOT fix)
+
+| Bug | Where | Severity | Fixed? | Commit / why not |
+|---|---|---|---|---|
+
+---
+
+## 6. Forks parked
+
+**ITEM 3 — surfaced=0 doctrine→passage routing (PARKED as a scoped build; NOT unreachable).**
+- **Source CONFIRMED reachable + clean:** fetched Torrey's New Topical Textbook via CCEL
+  (`ccel.org/ccel/torrey/ttt.html?term=<topic>`) — returns a complete, parseable verse list per topic (tested
+  on "Sanctification" → 44 refs). Nave's + Torrey's are PD and independent of the WSC/HC eval labels, so
+  routing from them is **not circular**. This is NOT a "park because unreachable" — it is reachable.
+- **Why parked (honest — scope/budget, not a blocker):** a router that is **not circular must be GENERAL** —
+  it must route *any* doctrine query via an independent topic index, not a lookup table of the eval's 12
+  failing doctrines (selecting topics by the eval failures is the exact test-awareness the work order forbids,
+  and v4 would expose it). A general router needs the **bulk** topic→verse index (~25–30+ independent
+  systematic-theology topics, fetched one CCEL page each) + a general query→topic matcher + inject/floor
+  (reuse ADR-015) + a whole-frozen-set re-measure + full DoD. That is a substantial, careful slice; rushing it
+  at the tail of a very long session risks the low-quality/circular outcome the rails explicitly forbid.
+- **Design (ready to build):** (1) fetch a general set of Torrey's doctrinal topics (chosen by systematic
+  loci — God/Christ's offices/atonement/calling/regeneration/justification/sanctification/perseverance/
+  glorification/prayer/etc. — NOT the eval queries); (2) build a doctrine gazetteer (topic → verse ranges via
+  the tested `parseRef`); (3) extend `resolveIntent` with a **doctrine tier** that keyword-matches a query to a
+  topic and injects+floors its ranges (same machinery as the reference/pericope tier, ADR-015); (4) measure
+  the whole frozen set, zero regression, DoD (bait live). Circularity guard: topics chosen by doctrine, verses
+  from Torrey's, matcher is general vocabulary — v4 (disjoint) is the honest test.
+- **Recommendation:** build it as its own focused slice (est. ~half a day). Highest-leverage remaining lever:
+  after item 2, **all** remaining topical/epistle failures are `wrong-passage` (surfaced=0) — exactly item 3's
+  target. **v4 is deferred until this lands** (held-out economics: v4 is spent once, after all retrieval work).
+
+**LICENSING-MANIFEST DISAGREEMENT (parked — do not guess a licensing boundary).**
+- **The disagreement:** `ingest/sources.config.json` (the Gate-B licensing authority) records **5 works** —
+  Gill / JFB / Clarke / Matthew Henry (helloao PD) + Barnes (biblehub provenance). But the operative legal
+  filter now in production (`LEGAL_CORPUS_FILTER`) admits **9 authors** — it adds **John Wesley, John Calvin,
+  John Chrysostom, Augustine of Hippo** and **CrossWire-Barnes**, none of which have a manifest license record.
+- **So production serves 4 authors + a re-sourced Barnes with NO machine-checkable license entry.** Their
+  licensing was established only in prior-session ROADMAP prose (Wesley/Calvin/Barnes = CrossWire
+  `DistributionLicense=Public Domain`; Chrysostom/Augustine = PD text verified vs New Advent NPNF/ANF **but
+  carrying `historicalchristian.faith` provenance, repair pending**).
+- **Options:** (a) extend the manifest to the 9-author set with each work's confirmed license + provenance
+  (the honest fix — but it asserts the licensing of the historicalchristian.faith patristic, which I will not
+  guess); (b) narrow the filter to the 5 manifest works (drops Wesley/Calvin/Barnes/patristic → **changes the
+  measured number**, a real accuracy cost); (c) leave as-is (documented gap).
+- **Recommendation:** (a) — but only after the owner/authority confirms the license class + a clean provenance
+  for Wesley, Calvin, Chrysostom, Augustine, and CrossWire-Barnes (esp. repairing the patristic provenance to
+  New Advent). **This is a production-blocker for a licensing-clean launch** (also raised in the Phase-B audit,
+  item 6). **Need:** owner confirmation of the 9-work license records, then I reconcile the manifest ↔ filter
+  under one source of truth.
+
+---
+
+## 7. Risks
+
+*(Anything that worries you. Say it plainly.)*

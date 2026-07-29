@@ -1,0 +1,32 @@
+==============================================================================
+PROOF: E5 and E6 completion guards (deep-audit finding: E6 pushed twice)
+date: 2026-07-28T06:44:50Z
+==============================================================================
+
+--- the artifact of the missing guard, from the PREVIOUS rehearsal ----------
+  target ep-still-shape-atutpemq
+  'E6' recorded 2 times  <-- no completion guard on E6
+   21 entries total
+
+--- SEED: remove the guard from e6_smoke -----------------------------------
+  guard removed
+  cp.done contains 'E6' 1 time(s); 20 entries total
+
+--- RUN with no guard (expect E6 to run again and be recorded twice) --------
+  E6  smoke counts + the full regression battery
+E6 — smoke + regression gate
+  ✓ smoke counts pass (forbidden-provenance 71884, baseline 71884, not increased; E3 deferred — cleanup is a later slice)
+✓ REGRESSION GATE PASSED at E6 — DB-ONLY, LIVE PROBE NOT RUN
+CUTOVER COMPLETE.
+  cp.done contains 'E6' 1 time(s); 20 entries total
+
+--- RESTORE the guard ------------------------------------------------------
+  guard restored
+  duplicate entry removed from the checkpoint
+
+--- RUN with the guard (expect E6 to be skipped) ----------------------------
+  E6  smoke counts + the full regression battery
+E5 — skipped (CUTOVER_REHEARSAL)
+E6 — (checkpoint) already done
+CUTOVER COMPLETE.
+  cp.done contains 'E6' 1 time(s); 20 entries total

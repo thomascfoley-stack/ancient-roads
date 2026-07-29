@@ -1,0 +1,11 @@
+target rows (Comparative Table of the Works, by heading): 6
+positive control: 5 target row(s) in a 20-row pool (top hit father:chrysostom-homilies:276.1 score=0.8372)
+
+running 120 FROZEN_V4 queries through legalBasePool (pool=20, ef_search=64)…
+
+queries run:        120
+pool rows scanned:  2400
+target hits:        0
+
+✓ CLEAN — no FROZEN v4 query reaches any of the 6 target rows.
+  Suppressing them cannot change any v4 number, so NO held-out re-measure is required.

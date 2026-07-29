@@ -1,0 +1,13 @@
+PRODUCTION — READ-ONLY re-verification AFTER the whole session, 2026-07-28T06:45:54Z
+
+-- SELECT count(*)::int AS flat_embeddings, count(*) FILTER (WHERE metadata->>'work' IS NOT NULL)::int AS with_wo
+[{"flat_embeddings":190635,"with_work_key":0}]
+-- SELECT to_regclass('section_history_anchors') IS NULL AS pre_016, to_regclass('bookmarks') IS NULL AS pre_026,
+[{"pre_016":true,"pre_026":true,"pre_028":true}]
+-- SELECT count(*)::int AS sections FROM sections
+[{"sections":5510}]
+-- SELECT count(*) FILTER (WHERE metadata->>'sourceUrl' ILIKE '%biblehub%')::int AS biblehub, count(*) FILTER (WH
+[{"biblehub":15707,"hcf":56177}]
+
+host: ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech
+highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349

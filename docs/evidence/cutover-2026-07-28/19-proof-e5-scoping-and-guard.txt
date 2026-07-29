@@ -1,0 +1,30 @@
+==============================================================================
+PROOF: the OLD e5_deploy() could never reach deploy.sh — not even on production
+date: 2026-07-28T06:06:29Z
+method: the function body is EXTRACTED VERBATIM (brace-matched) from the file,
+        not retyped, and called with the production host. die/ask/execFileSync
+        are stubs so nothing can deploy; 'REACHED THE OWNER PROMPT' would print
+        if control ever got that far.
+==============================================================================
+
+--- OLD (git HEAD 3caa11c), called with the PRODUCTION host ----------------
+async function e5_deploy(cp, host) {
+  if (process.env.CUTOVER_REHEARSAL === '1') { console.log('\nE5 — skipped (CUTOVER_REHEARSAL)'); return; }
+  // Deploying is only ever correct when the database this run just built IS prod.
+  // A rehearsal fork that reached E5 must never push a build to ancientpaths.app.
+  if (host && !isProdHost(url)) die('E5', `target is ${host}, not the prod endpoint — refusing to deploy a build from a non-prod cutover`, 'none; nothing deployed');
+  ->
+  THROWS ReferenceError: url is not defined
+
+  `url` is not a parameter and there is no module-scope `url`. cutover.mjs's
+  bottom-level .catch() turns this into 'ABORT at unhandled' with NO rollback
+  text — so E5 aborted on every target, production included.
+
+--- FIXED (url is a parameter), called with a NON-prod fork host -----------
+  die(E5): target is ep-sweet-river-at1qf82b.c-9.us-east-1.aws.neon.tech, not the prod endpoint — refusing to deploy a build from a non-prod cutover | rollback: none; nothing deployed
+  THROWS Error: died
+
+--- FIXED, completion guard: cp.done already contains E5 -------------------
+
+E5 — (checkpoint) already deployed
+  (returned normally)

@@ -1,0 +1,15 @@
+  v4        120 queries  (web/src/scripts/heldout-v4-queries.mts)
+  v3        120 queries  (web/src/scripts/heldout-v3-queries.mts)
+  pilot+v2  140 queries  (web/src/scripts/heldout-queries.mts)
+✓ v4 ∩ v3 = 0 (disjoint)
+✓ v4 ∩ pilot+v2 = 0 (disjoint)
+✓ v3 ∩ pilot+v2 = 0 (disjoint)
+
+✓ all held-out sets are pairwise disjoint by query text.
+
+  LABEL overlap (reported, not enforced): v4 has 179 distinct expected labels, v3 has 165;
+  47 appear in BOTH (26% of v4's labels).
+  So "disjoint" is true of the QUERIES and only partly true of the GROUND TRUTH — a fix tuned
+  on v3 can still lift v4 wherever the labels coincide. State it that way, not as full independence.
+  NOTE: this does NOT verify label anchors — the ADR-024 anchor-check script was never
+  committed, so the "200/200 anchor checks" claim remains NOT reproducible from this repo.

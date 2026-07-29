@@ -1,0 +1,1568 @@
+[
+  {
+    "id": "barnes-notes",
+    "slug": "barnes-notes",
+    "title": "Barnes' Notes on the Bible",
+    "author": "Albert Barnes",
+    "author_died": 1870,
+    "year_written": 1834,
+    "source_type": "commentary",
+    "tradition": "reformed",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://biblehub.com/commentaries/barnes/",
+      "edition": "Barnes' Notes on the Bible (Albert Barnes)",
+      "year": 1834,
+      "retrieved_via": "biblehub aggregator — text is public domain (Barnes d. 1870); re-source from CrossWire/PD per ADR-008 before wide rollout"
+    },
+    "quarantine": "biblehub provenance (ADR-008 forbidden aggregator) — held until re-sourced from a permitted PD source per docs/RESOURCING_PLAN.md; text is PD so re-sourcing should be a $0 provenance-repair (existing vectors kept if the permitted text matches)",
+    "backfill": {
+      "match_author": "Barnes' Notes"
+    }
+  },
+  {
+    "id": "john-gill",
+    "slug": "john-gill",
+    "title": "John Gill's Exposition of the Bible",
+    "author": "John Gill",
+    "year_written": 1763,
+    "source_type": "commentary",
+    "tradition": "reformed",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://bible.helloao.org/api/c/john-gill",
+      "edition": "John Gill's Exposition of the Bible (helloao john-gill, CC Public Domain Mark 1.0)",
+      "year": 1763,
+      "license_ref": "CC Public Domain Mark 1.0",
+      "rebuild": {
+        "source": "helloao",
+        "commentary_id": "john-gill",
+        "api": "https://bible.helloao.org/api",
+        "books_endpoint": "https://bible.helloao.org/api/c/john-gill/books.json",
+        "verse_endpoint": "https://bible.helloao.org/api/c/john-gill/{helloao_book_id}/{chapter}.json  (verse = content item where type='verse', item.number)",
+        "book_id_map": "src/ingest/helloao-source.ts#HELLOAO_BOOK_MAP",
+        "note": "stored section body is the vector-backing text (some verses truncated); a full-text rebuild re-fetches untruncated text via this recipe"
+      },
+      "text_match": {
+        "verses_compared": 28279,
+        "repair": 28279,
+        "repair_pct": 100,
+        "match": 15792,
+        "truncated": 12487,
+        "genuine_differ": 0,
+        "note": "truncated = same PD text, our stored copy cut short (vector kept as-is; full text via rebuild recipe)"
+      }
+    },
+    "backfill": {
+      "match_author": "John Gill"
+    }
+  },
+  {
+    "id": "jfb",
+    "slug": "jfb",
+    "title": "Jamieson-Fausset-Brown Bible Commentary",
+    "author": "Jamieson, Fausset & Brown",
+    "year_written": 1871,
+    "source_type": "commentary",
+    "tradition": "presbyterian",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://bible.helloao.org/api/c/jamieson-fausset-brown",
+      "edition": "Jamieson-Fausset-Brown Bible Commentary (helloao jamieson-fausset-brown, CC Public Domain Mark 1.0)",
+      "year": 1871,
+      "license_ref": "CC Public Domain Mark 1.0",
+      "rebuild": {
+        "source": "helloao",
+        "commentary_id": "jamieson-fausset-brown",
+        "api": "https://bible.helloao.org/api",
+        "books_endpoint": "https://bible.helloao.org/api/c/jamieson-fausset-brown/books.json",
+        "verse_endpoint": "https://bible.helloao.org/api/c/jamieson-fausset-brown/{helloao_book_id}/{chapter}.json  (verse = content item where type='verse', item.number)",
+        "book_id_map": "src/ingest/helloao-source.ts#HELLOAO_BOOK_MAP",
+        "note": "stored section body is the vector-backing text (some verses truncated); a full-text rebuild re-fetches untruncated text via this recipe"
+      },
+      "text_match": {
+        "verses_compared": 15267,
+        "repair": 15267,
+        "repair_pct": 100,
+        "match": 14093,
+        "truncated": 1174,
+        "genuine_differ": 0,
+        "note": "truncated = same PD text, our stored copy cut short (vector kept as-is; full text via rebuild recipe)"
+      }
+    },
+    "backfill": {
+      "match_author": "Jamieson, Fausset & Brown"
+    }
+  },
+  {
+    "id": "adam-clarke",
+    "slug": "adam-clarke",
+    "title": "Adam Clarke's Commentary on the Bible",
+    "author": "Adam Clarke",
+    "year_written": 1832,
+    "source_type": "commentary",
+    "tradition": "methodist",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://bible.helloao.org/api/c/adam-clarke",
+      "edition": "Adam Clarke's Commentary on the Bible (helloao adam-clarke, CC Public Domain Mark 1.0)",
+      "year": 1832,
+      "license_ref": "CC Public Domain Mark 1.0",
+      "rebuild": {
+        "source": "helloao",
+        "commentary_id": "adam-clarke",
+        "api": "https://bible.helloao.org/api",
+        "books_endpoint": "https://bible.helloao.org/api/c/adam-clarke/books.json",
+        "verse_endpoint": "https://bible.helloao.org/api/c/adam-clarke/{helloao_book_id}/{chapter}.json  (verse = content item where type='verse', item.number)",
+        "book_id_map": "src/ingest/helloao-source.ts#HELLOAO_BOOK_MAP",
+        "note": "stored section body is the vector-backing text (some verses truncated); a full-text rebuild re-fetches untruncated text via this recipe"
+      },
+      "text_match": {
+        "verses_compared": 12571,
+        "repair": 12570,
+        "repair_pct": 99.99,
+        "match": 10296,
+        "truncated": 2274,
+        "genuine_differ": 1,
+        "note": "truncated = same PD text, our stored copy cut short (vector kept as-is; full text via rebuild recipe)"
+      }
+    },
+    "backfill": {
+      "match_author": "Adam Clarke"
+    }
+  },
+  {
+    "id": "matthew-henry",
+    "slug": "matthew-henry",
+    "title": "Matthew Henry's Complete Commentary",
+    "author": "Matthew Henry",
+    "year_written": 1710,
+    "source_type": "commentary",
+    "tradition": "nonconformist",
+    "era": "puritan",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://bible.helloao.org/api/c/matthew-henry",
+      "edition": "Matthew Henry's Complete Commentary (helloao matthew-henry, CC Public Domain Mark 1.0)",
+      "year": 1710,
+      "license_ref": "CC Public Domain Mark 1.0",
+      "rebuild": {
+        "source": "helloao",
+        "commentary_id": "matthew-henry",
+        "api": "https://bible.helloao.org/api",
+        "books_endpoint": "https://bible.helloao.org/api/c/matthew-henry/books.json",
+        "verse_endpoint": "https://bible.helloao.org/api/c/matthew-henry/{helloao_book_id}/{chapter}.json  (verse = content item where type='verse', item.number)",
+        "book_id_map": "src/ingest/helloao-source.ts#HELLOAO_BOOK_MAP",
+        "note": "stored section body is the vector-backing text (some verses truncated); a full-text rebuild re-fetches untruncated text via this recipe"
+      },
+      "text_match": {
+        "verses_compared": 4124,
+        "repair": 4122,
+        "repair_pct": 99.95,
+        "match": 498,
+        "truncated": 3624,
+        "genuine_differ": 2,
+        "note": "truncated = same PD text, our stored copy cut short (vector kept as-is; full text via rebuild recipe)"
+      }
+    },
+    "backfill": {
+      "match_author": "Matthew Henry"
+    }
+  },
+  {
+    "id": "keil-delitzsch",
+    "slug": "keil-delitzsch",
+    "title": "Keil & Delitzsch Commentary on the Old Testament",
+    "author": "C.F. Keil & Franz Delitzsch",
+    "author_died": 1890,
+    "year_written": 1866,
+    "source_type": "commentary",
+    "tradition": "lutheran",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 1,
+    "provenance": {
+      "url": "https://bible.helloao.org/api/c/keil-delitzsch",
+      "edition": "K&D, T&T Clark English trans. (helloao, CC Public Domain Mark 1.0) — complete OT",
+      "year": 1866,
+      "license_ref": "CC Public Domain Mark 1.0",
+      "acquire": {
+        "adapter": "helloao",
+        "commentary_id": "keil-delitzsch",
+        "api": "https://bible.helloao.org/api"
+      }
+    },
+    "backfill": {
+      "match_author": "C.F. Keil & Franz Delitzsch"
+    }
+  },
+  {
+    "id": "catena-aurea",
+    "slug": "catena-aurea",
+    "title": "Catena Aurea (Golden Chain) on the Four Gospels",
+    "author": "Thomas Aquinas (comp.), trans. J.H. Newman",
+    "author_died": 1274,
+    "year_written": 1841,
+    "source_type": "father",
+    "tradition": "catholic",
+    "era": "medieval",
+    "license": "Public Domain",
+    "tier": 1,
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/",
+      "edition": "Catena Aurea, Newman trans. 1841-45 (CrossWire SWORD 'Catena')",
+      "year": 1841,
+      "acquire": {
+        "adapter": "sword",
+        "module": "Catena",
+        "verify_conf": "DistributionLicense=Public Domain"
+      }
+    }
+  },
+  {
+    "id": "isbe",
+    "slug": "isbe",
+    "title": "International Standard Bible Encyclopedia (1915)",
+    "author": "James Orr (ed.)",
+    "author_died": 1913,
+    "year_written": 1915,
+    "source_type": "lexicon",
+    "tradition": "reference",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 1,
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/",
+      "edition": "ISBE 1915 (CrossWire SWORD 'ISBE')",
+      "year": 1915,
+      "acquire": {
+        "adapter": "sword",
+        "module": "ISBE",
+        "verify_conf": "DistributionLicense=Public Domain"
+      }
+    }
+  },
+  {
+    "id": "eastons-dictionary",
+    "slug": "eastons-dictionary",
+    "title": "Easton's Bible Dictionary (1897)",
+    "author": "Matthew George Easton",
+    "author_died": 1894,
+    "year_written": 1897,
+    "source_type": "lexicon",
+    "tradition": "reference",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 1,
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/",
+      "edition": "Easton's Bible Dictionary (CrossWire SWORD 'Easton')",
+      "year": 1897,
+      "acquire": {
+        "adapter": "sword",
+        "module": "Easton",
+        "verify_conf": "DistributionLicense=Public Domain"
+      }
+    }
+  },
+  {
+    "id": "smiths-dictionary",
+    "slug": "smiths-dictionary",
+    "title": "Smith's Bible Dictionary (1863)",
+    "author": "William Smith",
+    "author_died": 1893,
+    "year_written": 1863,
+    "source_type": "lexicon",
+    "tradition": "reference",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 1,
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/",
+      "edition": "Smith's Bible Dictionary, condensed 1-vol (CrossWire SWORD 'Smith')",
+      "year": 1863,
+      "acquire": {
+        "adapter": "sword",
+        "module": "Smith",
+        "verify_conf": "DistributionLicense=Public Domain"
+      }
+    }
+  },
+  {
+    "id": "naves-topical",
+    "slug": "naves-topical",
+    "title": "Nave's Topical Bible (1897)",
+    "author": "Orville J. Nave",
+    "author_died": 1917,
+    "year_written": 1897,
+    "source_type": "lexicon",
+    "tradition": "reference",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 1,
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/",
+      "edition": "Nave's Topical Bible (CrossWire SWORD 'Nave')",
+      "year": 1897,
+      "acquire": {
+        "adapter": "sword",
+        "module": "Nave",
+        "verify_conf": "DistributionLicense=Public Domain"
+      }
+    }
+  },
+  {
+    "id": "thayers-lexicon",
+    "slug": "thayers-lexicon",
+    "title": "Thayer's Greek-English Lexicon of the New Testament (1889)",
+    "author": "Joseph Henry Thayer",
+    "author_died": 1901,
+    "year_written": 1889,
+    "source_type": "lexicon",
+    "tradition": "reference",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://archive.org/details/greekenglishlexi00grimuoft",
+      "edition": "Thayer's Greek-English Lexicon (Grimm-Wilke), 1889",
+      "year": 1889,
+      "acquire": {
+        "adapter": "archive",
+        "identifier": "greekenglishlexi00grimuoft",
+        "note": "TEI-XML edition preferred if available; else OCR"
+      }
+    },
+    "serve": false,
+    "quarantine": "A6 run 2026-07-17: archive.org OCR headword recognizability 50.2% fuzzy / 6.2% strict, 0% Greek script (Latin-script OCR) — systemic across 3 scans, keys unrecoverable. Path forward: TEI-XML/structured Thayer keyed by Strong's, or Greek re-OCR. NOT a parser problem."
+  },
+  {
+    "id": "bdb-lexicon",
+    "slug": "bdb-lexicon",
+    "title": "Brown-Driver-Briggs Hebrew and English Lexicon (1906)",
+    "author": "Brown, Driver & Briggs",
+    "author_died": 1913,
+    "year_written": 1906,
+    "source_type": "lexicon",
+    "tradition": "reference",
+    "era": "modern",
+    "license": "CC BY",
+    "tier": 1,
+    "provenance": {
+      "url": "https://github.com/openscriptures/HebrewLexicon",
+      "edition": "BDB via openscriptures/HebrewLexicon (BrownDriverBriggs.xml)",
+      "year": 1906,
+      "license_ref": "CC BY 4.0 — attribution required (openscriptures)",
+      "acquire": {
+        "adapter": "github",
+        "repo": "openscriptures/HebrewLexicon",
+        "path": "BrownDriverBriggs.xml"
+      }
+    }
+  },
+  {
+    "id": "spurgeon-sermons",
+    "slug": "spurgeon-sermons",
+    "title": "Spurgeon: New Park Street & Metropolitan Tabernacle Pulpit (63 vols)",
+    "author": "Charles Haddon Spurgeon",
+    "author_died": 1892,
+    "year_written": 1855,
+    "source_type": "sermon",
+    "tradition": "baptist",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/spurgeon",
+      "edition": "NPSP + MTP, CCEL clean text (re-provenance to the year-edition; ~3,560 sermons)",
+      "year": 1855,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_id_pattern": "spurgeon/sermons{01..63}",
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "spurgeon-treasury",
+    "slug": "spurgeon-treasury",
+    "title": "The Treasury of David (Psalms)",
+    "author": "Charles Haddon Spurgeon",
+    "author_died": 1892,
+    "year_written": 1869,
+    "source_type": "commentary",
+    "tradition": "baptist",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/spurgeon",
+      "edition": "Treasury of David, CCEL (6 vols, all 150 Psalms)",
+      "year": 1869,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_id_pattern": "spurgeon/treasury{1..6}",
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "maclaren-expositions",
+    "slug": "maclaren-expositions",
+    "title": "Expositions of Holy Scripture",
+    "author": "Alexander Maclaren",
+    "author_died": 1910,
+    "year_written": 1904,
+    "source_type": "sermon",
+    "tradition": "baptist",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/maclaren",
+      "edition": "Expositions of Holy Scripture, CCEL (14 whole-Bible vols, ~1,500 expositions)",
+      "year": 1904,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "maclaren/gen_num",
+          "maclaren/deut",
+          "maclaren/2kings_eccl",
+          "maclaren/psalms",
+          "maclaren/isa_jer",
+          "maclaren/ezek_matt1",
+          "maclaren/matt2",
+          "maclaren/mark",
+          "maclaren/luke",
+          "maclaren/john1",
+          "maclaren/john2",
+          "maclaren/acts",
+          "maclaren/rom_cor",
+          "maclaren/iicor_tim"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "chrysostom-homilies",
+    "slug": "chrysostom-homilies",
+    "title": "Homilies of John Chrysostom (Matthew, John, Acts, Romans, Corinthians, Hebrews, Paulines)",
+    "author": "John Chrysostom",
+    "author_died": 407,
+    "year_written": 390,
+    "source_type": "father",
+    "tradition": "patristic",
+    "era": "patristic",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff",
+      "edition": "NPNF-1, Schaff 1886-89 (CCEL, re-provenance) — completes the partial Chrysostom ingest",
+      "year": 1889,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/npnf109",
+          "schaff/npnf110",
+          "schaff/npnf111",
+          "schaff/npnf112",
+          "schaff/npnf113",
+          "schaff/npnf114"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "augustine-homilies",
+    "slug": "augustine-homilies",
+    "title": "Homilies and Expositions (NPNF 1-06/07/08)",
+    "author": "Augustine of Hippo",
+    "author_died": 430,
+    "year_written": 410,
+    "source_type": "father",
+    "tradition": "patristic",
+    "era": "patristic",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff",
+      "edition": "NPNF-1 vols 6-8, Schaff 1888 (CCEL, re-provenance) — completes the partial Augustine ingest",
+      "year": 1888,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/npnf106",
+          "schaff/npnf107",
+          "schaff/npnf108"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "origen-commentary",
+    "slug": "origen-commentary",
+    "title": "Origen: Commentary on John & Matthew",
+    "author": "Origen of Alexandria",
+    "author_died": 253,
+    "year_written": 240,
+    "source_type": "father",
+    "tradition": "patristic",
+    "era": "patristic",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff",
+      "edition": "ANF vol 9, Roberts & Donaldson 1885-87 (CCEL)",
+      "year": 1887,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/anf09"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "owen-works",
+    "slug": "owen-works",
+    "title": "The Works of John Owen (Goold ed.)",
+    "author": "John Owen",
+    "author_died": 1683,
+    "year_written": 1850,
+    "source_type": "theology",
+    "tradition": "reformed",
+    "era": "puritan",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/owen",
+      "edition": "Owen's Works, Goold ed. (CCEL clean text, not Banner of Truth typesetting)",
+      "year": 1850,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_author": "owen",
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "watson-works",
+    "slug": "watson-works",
+    "title": "The Works of Thomas Watson (Body of Divinity, catechism sermons)",
+    "author": "Thomas Watson",
+    "author_died": 1686,
+    "year_written": 1692,
+    "source_type": "sermon",
+    "tradition": "reformed",
+    "era": "puritan",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/watson",
+      "edition": "Watson (CCEL clean text)",
+      "year": 1692,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_author": "watson",
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "flavel-works",
+    "slug": "flavel-works",
+    "title": "The Works of John Flavel",
+    "author": "John Flavel",
+    "author_died": 1691,
+    "year_written": 1820,
+    "source_type": "sermon",
+    "tradition": "reformed",
+    "era": "puritan",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/flavel",
+      "edition": "Flavel (CCEL clean text)",
+      "year": 1820,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_author": "flavel",
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "edwards-works",
+    "slug": "edwards-works",
+    "title": "The Works of Jonathan Edwards (Hickman ed.)",
+    "author": "Jonathan Edwards",
+    "author_died": 1758,
+    "year_written": 1834,
+    "source_type": "sermon",
+    "tradition": "reformed",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/edwards",
+      "edition": "Edwards, Hickman 2-vol Works (CCEL, NOT the copyrighted Yale WJE)",
+      "year": 1834,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_author": "edwards",
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "wesley-sermons",
+    "slug": "wesley-sermons",
+    "title": "The Sermons of John Wesley (Standard Sermons)",
+    "author": "John Wesley",
+    "author_died": 1791,
+    "year_written": 1771,
+    "source_type": "sermon",
+    "tradition": "methodist",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/wesley",
+      "edition": "Wesley Standard Sermons, CCEL (Sugden/Jackson — NOT Abingdon critical ed.)",
+      "year": 1771,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "wesley/sermons"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "ryle-expository",
+    "slug": "ryle-expository",
+    "title": "Expository Thoughts on the Gospels",
+    "author": "J.C. Ryle",
+    "author_died": 1900,
+    "year_written": 1856,
+    "source_type": "commentary",
+    "tradition": "anglican",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/ryle",
+      "edition": "Ryle, Expository Thoughts (CCEL)",
+      "year": 1856,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_author": "ryle",
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "vincent-word-studies",
+    "slug": "vincent-word-studies",
+    "title": "Word Studies in the New Testament",
+    "author": "Marvin R. Vincent",
+    "author_died": 1922,
+    "year_written": 1887,
+    "source_type": "lexicon",
+    "tradition": "reference",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/vincent",
+      "edition": "Vincent, Word Studies in the NT (CCEL)",
+      "year": 1887,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_author": "vincent",
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "hodge-systematic",
+    "slug": "hodge-systematic",
+    "title": "Systematic Theology (3 vols)",
+    "author": "Charles Hodge",
+    "author_died": 1878,
+    "year_written": 1872,
+    "source_type": "theology",
+    "tradition": "reformed",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/hodge",
+      "edition": "Hodge, Systematic Theology (CCEL)",
+      "year": 1872,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "hodge/theology1",
+          "hodge/theology2",
+          "hodge/theology3"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "calvin-institutes",
+    "slug": "calvin-institutes",
+    "title": "Institutes of the Christian Religion",
+    "author": "John Calvin",
+    "author_died": 1564,
+    "year_written": 1559,
+    "source_type": "theology",
+    "tradition": "reformed",
+    "era": "reformation",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/calvin/institutes",
+      "edition": "Calvin, Institutes, Beveridge trans. 1845 (CCEL, NOT Battles/McNeill)",
+      "year": 1845,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "calvin/institutes"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "schaff-creeds",
+    "slug": "schaff-creeds",
+    "title": "The Creeds of Christendom (3 vols)",
+    "author": "Philip Schaff",
+    "author_died": 1893,
+    "year_written": 1877,
+    "source_type": "confession",
+    "tradition": "reference",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff",
+      "edition": "Schaff, Creeds of Christendom (CCEL) — the whole confessional corpus in vol III",
+      "year": 1877,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/creeds1",
+          "schaff/creeds2",
+          "schaff/creeds3"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "josephus-works",
+    "slug": "josephus-works",
+    "title": "The Works of Flavius Josephus (Whiston trans.)",
+    "author": "Flavius Josephus, trans. William Whiston",
+    "author_died": 100,
+    "year_written": 1737,
+    "source_type": "historian",
+    "tradition": "jewish",
+    "era": "patristic",
+    "license": "Public Domain",
+    "tier": 2,
+    "serve": false,
+    "note": "STAGED not served — no history read-path yet (HISTORY_RETRIEVAL_DESIGN)",
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/josephus/complete",
+      "edition": "Josephus, Whiston 1737 (CCEL, NOT Loeb) — Antiquities 20 books + Wars 7",
+      "year": 1737,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "josephus/complete"
+        ],
+        "strip_markup": true,
+        "chunk_on_headings": true
+      }
+    }
+  },
+  {
+    "id": "edersheim-lifetimes",
+    "slug": "edersheim-lifetimes",
+    "title": "The Life and Times of Jesus the Messiah",
+    "author": "Alfred Edersheim",
+    "author_died": 1889,
+    "year_written": 1883,
+    "source_type": "historian",
+    "tradition": "anglican",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "serve": false,
+    "note": "STAGED not served — no history read-path yet",
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/edersheim/lifetimes",
+      "edition": "Edersheim, Life and Times (CCEL)",
+      "year": 1883,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "edersheim/lifetimes"
+        ],
+        "strip_markup": true,
+        "chunk_on_headings": true
+      }
+    }
+  },
+  {
+    "id": "schaff-history",
+    "slug": "schaff-history",
+    "title": "History of the Christian Church (8 vols)",
+    "author": "Philip Schaff",
+    "author_died": 1893,
+    "year_written": 1882,
+    "source_type": "historian",
+    "tradition": "reference",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "serve": false,
+    "note": "STAGED not served — chunk on Schaff's dated section headings (HISTORY_RETRIEVAL_DESIGN)",
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff",
+      "edition": "Schaff, History of the Christian Church, 8 vols (CCEL) — dated section headings",
+      "year": 1882,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_id_pattern": "schaff/hcc{1..8}",
+        "strip_markup": true,
+        "chunk_on_headings": true
+      }
+    }
+  },
+  {
+    "id": "olney-hymns",
+    "slug": "olney-hymns",
+    "title": "Olney Hymns",
+    "author": "John Newton & William Cowper",
+    "author_died": 1807,
+    "year_written": 1779,
+    "source_type": "hymn",
+    "tradition": "anglican",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "note": "requires additive migration adding 'hymn' to source_type CHECK",
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/newton/olneyhymns",
+      "edition": "Olney Hymns 1779 (CCEL) — Book I is Scripture-indexed",
+      "year": 1779,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "newton/olneyhymns"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "scottish-psalter-1650",
+    "slug": "scottish-psalter-1650",
+    "title": "The Scottish Metrical Psalter (1650)",
+    "author": "Church of Scotland (based on Francis Rous)",
+    "author_died": 1659,
+    "year_written": 1650,
+    "source_type": "hymn",
+    "tradition": "reformed",
+    "era": "puritan",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "note": "metrical psalms map 1:1 to Psalm chapters — highest verse-anchor value; tag as paraphrase-voice, never Scripture text",
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/anonymous/scotpsalter",
+      "edition": "Scottish Metrical Psalter 1650 (CCEL, per-psalm) — complete 1-150",
+      "year": 1650,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "anonymous/scotpsalter"
+        ],
+        "strip_markup": true,
+        "heading_filter": "^psalm "
+      }
+    }
+  },
+  {
+    "id": "neale-eastern-hymns",
+    "slug": "neale-eastern-hymns",
+    "title": "Hymns of the Eastern Church",
+    "author": "trans. John Mason Neale",
+    "author_died": 1866,
+    "year_written": 1862,
+    "source_type": "hymn",
+    "tradition": "anglican",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "note": "PD translation (Neale d.1866) of Greek hymns; 57 hymns, per-hymn CCEL pages",
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/neale/easternhymns",
+      "edition": "Neale, Hymns of the Eastern Church (CCEL)",
+      "year": 1862,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "neale/easternhymns"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "bramley-carols",
+    "slug": "bramley-carols",
+    "title": "Christmas Carols New and Old",
+    "author": "H.R. Bramley & John Stainer",
+    "author_died": 1917,
+    "year_written": 1871,
+    "source_type": "hymn",
+    "tradition": "anglican",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/bramley/carols",
+      "edition": "Christmas Carols New and Old, 1871 (CCEL) — text only, skip tunes",
+      "year": 1871,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "bramley/carols"
+        ],
+        "strip_markup": true
+      }
+    },
+    "serve": false,
+    "quarantine": "A6 run 2026-07-17: no clean-text source — CCEL serves HTML landing (no ThML); all 5 archive.org copies are engraved-music editions, 27-31% OCR-garbage lines (>5% guardrail), engraved titles unrecoverable"
+  },
+  {
+    "id": "herbert-temple",
+    "slug": "herbert-temple",
+    "title": "The Temple: Sacred Poems and Private Ejaculations",
+    "author": "George Herbert",
+    "author_died": 1633,
+    "year_written": 1633,
+    "source_type": "poetry",
+    "tradition": "anglican",
+    "era": "puritan",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "note": "requires additive migration adding 'poetry' to source_type CHECK; ~167 poems; shaped poems need layout-aware ingest",
+    "provenance": {
+      "url": "https://archive.org/details/temple00herb_0",
+      "edition": "Herbert, The Temple (1633) — Cassell's National Library ed., London/New York: Cassell, 1887 (archive.org temple00herb_0; PG has no edition)",
+      "year": 1633,
+      "acquire": {
+        "adapter": "gutenberg",
+        "archive_id": "temple00herb_0"
+      }
+    },
+    "serve": true
+  },
+  {
+    "id": "montgomery-sacred-poems",
+    "slug": "montgomery-sacred-poems",
+    "title": "Sacred Poems and Hymns",
+    "author": "James Montgomery",
+    "author_died": 1854,
+    "year_written": 1853,
+    "source_type": "poetry",
+    "tradition": "moravian",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/montgomery/sacredpoems",
+      "edition": "Montgomery, Sacred Poems and Hymns (CCEL clean)",
+      "year": 1853,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "montgomery/sacredpoems"
+        ],
+        "strip_markup": true,
+        "heading_filter": "^Hymn \\d+:"
+      }
+    },
+    "serve": true
+  },
+  {
+    "id": "watts-hymns",
+    "slug": "watts-hymns",
+    "title": "Hymns and Spiritual Songs",
+    "author": "Isaac Watts",
+    "author_died": 1748,
+    "year_written": 1707,
+    "source_type": "hymn",
+    "tradition": "nonconformist",
+    "era": "puritan",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "note": "Book I 'Collected from the Scriptures' is verse-keyed",
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/13341",
+      "edition": "Watts, Hymns and Spiritual Songs (Gutenberg #13341, clean)",
+      "year": 1707,
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 13341
+      }
+    }
+  },
+  {
+    "id": "watts-psalms",
+    "slug": "watts-psalms",
+    "title": "The Psalms of David Imitated in the Language of the New Testament",
+    "author": "Isaac Watts",
+    "author_died": 1748,
+    "year_written": 1719,
+    "source_type": "hymn",
+    "tradition": "nonconformist",
+    "era": "puritan",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "note": "138/150 Psalms; interpretive imitation — tag as paraphrase-voice",
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/13166",
+      "edition": "Watts, Psalms of David Imitated (Gutenberg #13166, clean)",
+      "year": 1719,
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 13166
+      }
+    }
+  },
+  {
+    "id": "keble-christian-year",
+    "slug": "keble-christian-year",
+    "title": "The Christian Year",
+    "author": "John Keble",
+    "author_died": 1866,
+    "year_written": 1827,
+    "source_type": "poetry",
+    "tradition": "anglican",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "note": "each poem headed by a Scripture epigraph — natural verse anchor",
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/4272",
+      "edition": "Keble, The Christian Year (Gutenberg #4272, clean)",
+      "year": 1827,
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 4272
+      }
+    }
+  },
+  {
+    "id": "donne-divine-poems",
+    "slug": "donne-divine-poems",
+    "title": "Divine Poems & Holy Sonnets (in Poems, vol. I)",
+    "author": "John Donne",
+    "author_died": 1631,
+    "year_written": 1633,
+    "source_type": "poetry",
+    "tradition": "anglican",
+    "era": "puritan",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "note": "Grierson ed. vol I is the poem text; isolate Divine Poems from secular",
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/48688",
+      "edition": "Donne, Poems vol I, Grierson 1912 (Gutenberg #48688)",
+      "year": 1633,
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 48688
+      }
+    },
+    "serve": false,
+    "quarantine": "A6 2026-07-17: gutenberg profile served the WHOLE secular volume (Hesperides / Grierson vol I) under the sacred title; needs a section-scoped profile before re-serve"
+  },
+  {
+    "id": "herrick-noble-numbers",
+    "slug": "herrick-noble-numbers",
+    "title": "His Noble Numbers (sacred poems)",
+    "author": "Robert Herrick",
+    "author_died": 1674,
+    "year_written": 1648,
+    "source_type": "poetry",
+    "tradition": "anglican",
+    "era": "puritan",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "note": "isolate Noble Numbers from the secular Hesperides",
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/22421",
+      "edition": "Herrick, Hesperides & Noble Numbers, Pollard 1891 (Gutenberg #22421)",
+      "year": 1648,
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 22421
+      }
+    },
+    "serve": false,
+    "quarantine": "A6 2026-07-17: gutenberg profile served the WHOLE secular volume (Hesperides / Grierson vol I) under the sacred title; needs a section-scoped profile before re-serve"
+  },
+  {
+    "id": "traherne-poems",
+    "slug": "traherne-poems",
+    "title": "The Poetical Works of Thomas Traherne",
+    "author": "Thomas Traherne",
+    "author_died": 1674,
+    "year_written": 1903,
+    "source_type": "poetry",
+    "tradition": "anglican",
+    "era": "puritan",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/61586",
+      "edition": "Traherne, Poetical Works, Dobell ed. (Gutenberg #61586)",
+      "year": 1903,
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 61586
+      }
+    }
+  },
+  {
+    "id": "milton-poetical-works",
+    "slug": "milton-poetical-works",
+    "title": "The Poetical Works of John Milton",
+    "author": "John Milton",
+    "author_died": 1674,
+    "year_written": 1667,
+    "source_type": "poetry",
+    "tradition": "puritan",
+    "era": "puritan",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "note": "Paradise Lost (Gen 1-3), Paradise Regained (Matt/Luke 4), Samson (Judges) — verse-anchor by subject",
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/1745",
+      "edition": "Milton, Poetical Works, Beeching 1900 (Gutenberg #1745)",
+      "year": 1667,
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 1745
+      }
+    }
+  },
+  {
+    "id": "rossetti-verses",
+    "slug": "rossetti-verses",
+    "title": "Verses (devotional poems)",
+    "author": "Christina Rossetti",
+    "author_died": 1894,
+    "year_written": 1893,
+    "source_type": "poetry",
+    "tradition": "anglican",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/77809",
+      "edition": "Rossetti, Verses — New York: E. & J. B. Young & Co., 1894 (Gutenberg #77809)",
+      "year": 1893,
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 77809
+      }
+    },
+    "serve": true
+  },
+  {
+    "id": "hopkins-poems",
+    "slug": "hopkins-poems",
+    "title": "Poems of Gerard Manley Hopkins (1918 first ed.)",
+    "author": "Gerard Manley Hopkins",
+    "author_died": 1889,
+    "year_written": 1918,
+    "source_type": "poetry",
+    "tradition": "catholic",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "note": "ONLY the 1918 first ed. (Bridges) is PD — never Gardner/MacKenzie critical eds",
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/22403",
+      "edition": "Hopkins, Poems, Bridges 1918 first ed. (Gutenberg #22403)",
+      "year": 1918,
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 22403
+      }
+    }
+  },
+  {
+    "id": "tennyson-in-memoriam",
+    "slug": "tennyson-in-memoriam",
+    "title": "In Memoriam A.H.H.",
+    "author": "Alfred Tennyson",
+    "author_died": 1892,
+    "year_written": 1850,
+    "source_type": "poetry",
+    "tradition": "anglican",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/70950",
+      "edition": "Tennyson, In Memoriam (Gutenberg #70950)",
+      "year": 1850,
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 70950
+      }
+    }
+  },
+  {
+    "id": "dante-divine-comedy",
+    "slug": "dante-divine-comedy",
+    "title": "The Divine Comedy (Longfellow translation)",
+    "author": "Dante Alighieri, trans. H.W. Longfellow",
+    "author_died": 1321,
+    "year_written": 1867,
+    "source_type": "poetry",
+    "tradition": "catholic",
+    "era": "medieval",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "note": "PD translation (Longfellow 1867) — NEVER Binyon (1933-43, copyright)",
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/1004",
+      "edition": "Dante, Divine Comedy, Longfellow 1867 (Gutenberg #1004)",
+      "year": 1867,
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 1004
+      }
+    }
+  },
+  {
+    "id": "wheatley-poems",
+    "slug": "wheatley-poems",
+    "title": "Poems on Various Subjects, Religious and Moral",
+    "author": "Phillis Wheatley",
+    "author_died": 1784,
+    "year_written": 1773,
+    "source_type": "poetry",
+    "tradition": "evangelical",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/409",
+      "edition": "Wheatley, Poems 1773 (Gutenberg #409)",
+      "year": 1773,
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 409
+      }
+    }
+  },
+  {
+    "id": "whitefield-works",
+    "slug": "whitefield-works",
+    "title": "The Works of George Whitefield (sermons, journals, letters)",
+    "author": "George Whitefield",
+    "author_died": 1770,
+    "year_written": 1771,
+    "source_type": "sermon",
+    "tradition": "methodist",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/68976",
+      "edition": "Whitefield, Works 1771 (Gutenberg #68976) — NOT the 1960 Banner journals",
+      "year": 1771,
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 68976
+      }
+    },
+    "serve": false,
+    "quarantine": "A6 run 2026-07-18: PG 68976 is only Vol 1 of 6 and mixes letters/sermons/tracts with no clean sermon-boundary markers — needs a multi-volume sermon-segmentation profile. Follow-up."
+  },
+  {
+    "id": "barnes-crosswire-nt",
+    "slug": "barnes-crosswire-nt",
+    "title": "Barnes' New Testament Notes",
+    "author": "Albert Barnes",
+    "author_died": 1870,
+    "year_written": 1834,
+    "source_type": "commentary",
+    "tradition": "presbyterian",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=Barnes",
+      "edition": "Barnes' New Testament Notes (CrossWire SWORD module Barnes, ThML)",
+      "year": 1834,
+      "license_ref": "module .conf DistributionLicense=Public Domain, verified 2026-07-16",
+      "rebuild": {
+        "source": "crosswire-sword",
+        "module": "Barnes",
+        "decoder": "src/ingest/sword-zverse.ts"
+      }
+    },
+    "backfill": {
+      "match_author": "Barnes' Notes",
+      "forbidden_provenance": "skip",
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,300 flat rows under this author are biblehub's, not the CrossWire module this entry names — and the author string is shared with the QUARANTINED barnes-notes entry, so slicing here would relabel quarantined content into a non-quarantined slug. Nothing is written until the owner rules: re-ingest from the named CrossWire edition, or quarantine this entry too."
+    }
+  },
+  {
+    "id": "wesley-crosswire",
+    "slug": "wesley-crosswire",
+    "title": "Wesley's Explanatory Notes",
+    "author": "John Wesley",
+    "author_died": 1791,
+    "year_written": 1765,
+    "source_type": "commentary",
+    "tradition": "methodist",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=Wesley",
+      "edition": "John Wesley's Notes on the Bible (CrossWire SWORD module Wesley, ThML)",
+      "year": 1765,
+      "license_ref": "module .conf DistributionLicense=Public Domain, verified 2026-07-16",
+      "rebuild": {
+        "source": "crosswire-sword",
+        "module": "Wesley",
+        "decoder": "src/ingest/sword-zverse.ts"
+      }
+    },
+    "backfill": {
+      "match_author": "John Wesley",
+      "forbidden_provenance": "exclude",
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): 1,021 of 6,275 flat rows (16.3%) carry biblehub provenance; the 5,254 CrossWire rows are clean. The exclusion is strictly subtractive, counted on the sources row, and does not declare the work legitimate — the cleanup of the flat store stays the deferred b2 slice."
+    }
+  },
+  {
+    "id": "calvin-crosswire",
+    "slug": "calvin-crosswire",
+    "title": "Calvin's Commentaries",
+    "author": "John Calvin",
+    "author_died": 1564,
+    "year_written": 1555,
+    "source_type": "commentary",
+    "tradition": "reformed",
+    "era": "reformation",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=CalvinCommentaries",
+      "edition": "Calvin's Collected Commentaries (CrossWire SWORD module CalvinCommentaries, OSIS, KJV v11n)",
+      "year": 1555,
+      "license_ref": "module .conf DistributionLicense=Public Domain, verified 2026-07-16",
+      "rebuild": {
+        "source": "crosswire-sword",
+        "module": "CalvinCommentaries",
+        "decoder": "src/ingest/sword-zverse.ts"
+      }
+    },
+    "backfill": {
+      "match_author": "John Calvin",
+      "forbidden_provenance": "exclude",
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): 1,125 of 6,215 flat rows (18.1%) carry biblehub provenance; 5,088 CrossWire + 2 books.google rows are clean. The exclusion is strictly subtractive, counted on the sources row, and does not declare the work legitimate — the cleanup of the flat store stays the deferred b2 slice."
+    }
+  },
+  {
+    "id": "scofield-crosswire",
+    "slug": "scofield-crosswire",
+    "title": "Scofield Reference Notes (1917)",
+    "author": "C.I. Scofield",
+    "author_died": 1921,
+    "year_written": 1917,
+    "source_type": "commentary",
+    "tradition": "dispensationalist",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=Scofield",
+      "edition": "Scofield Reference Notes 1917 Edition (CrossWire SWORD module Scofield, OSIS, KJV v11n) — pre-1929 US PD",
+      "year": 1917,
+      "license_ref": "module .conf DistributionLicense=Public Domain, verified 2026-07-16",
+      "rebuild": {
+        "source": "crosswire-sword",
+        "module": "Scofield",
+        "decoder": "src/ingest/sword-zverse.ts"
+      }
+    },
+    "backfill": {
+      "match_author": "C.I. Scofield",
+      "forbidden_provenance": "skip",
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,215 flat rows are biblehub's — the CrossWire edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named edition, or quarantine this entry."
+    }
+  },
+  {
+    "id": "pnt-crosswire",
+    "slug": "pnt-crosswire",
+    "title": "The People's New Testament",
+    "author": "B.W. Johnson",
+    "author_died": 1894,
+    "year_written": 1891,
+    "source_type": "commentary",
+    "tradition": "restoration",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=PNT",
+      "edition": "The People's New Testament (CrossWire SWORD module PNT, ThML)",
+      "year": 1891,
+      "license_ref": "module .conf DistributionLicense=Public Domain, verified 2026-07-16",
+      "rebuild": {
+        "source": "crosswire-sword",
+        "module": "PNT",
+        "decoder": "src/ingest/sword-zverse.ts"
+      }
+    },
+    "backfill": {
+      "match_author": "B.W. Johnson",
+      "forbidden_provenance": "skip",
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 288 flat rows are biblehub's — the CrossWire edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named edition, or quarantine this entry."
+    }
+  },
+  {
+    "id": "geneva-notes-crosswire",
+    "slug": "geneva-notes-crosswire",
+    "title": "Geneva Bible Translation Notes",
+    "author": "Geneva Study Bible",
+    "year_written": 1599,
+    "source_type": "commentary",
+    "tradition": "reformed",
+    "era": "reformation",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=Geneva",
+      "edition": "Geneva Bible Translation Notes (CrossWire SWORD module Geneva)",
+      "year": 1599
+    },
+    "quarantine": "CrossWire module .conf has NO DistributionLicense and the module page lists it as null — no license grant to rely on (fail closed 2026-07-16). Text is 1599 (PD-in-fact); held until the owner rules or a licensed PD edition is found. Old biblehub-collapsed rows quarantined to data/quarantine/, never served."
+  },
+  {
+    "id": "poole-tcp",
+    "slug": "poole-tcp",
+    "title": "Annotations upon the Holy Bible",
+    "author": "Matthew Poole",
+    "author_died": 1679,
+    "year_written": 1685,
+    "source_type": "commentary",
+    "tradition": "puritan",
+    "era": "puritan",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://github.com/textcreationpartnership/A55363",
+      "edition": "Annotations upon the Holy Bible, London 1685 (Vol I, A55363, Gen–Isa) + 1685–96 continuation (Vol II, A55368, Jer–Rev, completed posthumously by other divines) — EEBO-TCP Phase I keyboarded transcription",
+      "year": 1685,
+      "license_ref": "CC0 1.0 Universal — grant verbatim in each TEI header (creativecommons.org/publicdomain/zero/1.0), verified 2026-07-16",
+      "rebuild": {
+        "source": "eebo-tcp",
+        "ids": [
+          "A55363",
+          "A55368"
+        ],
+        "decoder": "src/ingest/poole-tcp.ts"
+      },
+      "quality_note": "TCP Phase I vs damaged microfilm: ~7 illegibility gaps/1000 words preserved as ⟨…⟩ lacunae (16% of Vol I entries, 33% of Vol II entries carry at least one); Lev 11 annotations lost to a damaged chapter head; canon validation drops <0.25% miskeyed entries"
+    },
+    "backfill": {
+      "match_author": "Matthew Poole",
+      "forbidden_provenance": "skip",
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,308 flat rows are biblehub's — the TCP edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named TCP transcription, or quarantine this entry."
+    }
+  },
+  {
+    "id": "josephus-whiston",
+    "slug": "josephus-whiston",
+    "title": "Josephus: The Complete Works (Whiston)",
+    "author": "Flavius Josephus",
+    "author_died": 100,
+    "year_written": 94,
+    "source_type": "historian",
+    "tradition": "jewish",
+    "era": "second-temple",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=Josephus",
+      "edition": "The Complete Works of Josephus, tr. William Whiston 1737 (CrossWire SWORD module Josephus, RawGenBook/ThML)",
+      "year": 1737,
+      "license_ref": "module .conf DistributionLicense=Public Domain, verified 2026-07-16",
+      "rebuild": {
+        "source": "crosswire-sword",
+        "module": "Josephus",
+        "decoder": "src/ingest/sword-genbook.ts"
+      }
+    }
+  },
+  {
+    "id": "spurgeon-talks-to-farmers",
+    "slug": "spurgeon-talks-to-farmers",
+    "title": "Talks to Farmers",
+    "author": "C. H. Spurgeon",
+    "author_died": 1892,
+    "year_written": 1882,
+    "source_type": "sermon",
+    "tradition": "baptist",
+    "era": "modern",
+    "license": "Public Domain",
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/42518",
+      "edition": "Talks to Farmers (Farm Sermons), C. H. Spurgeon — Project Gutenberg #42518 plain text",
+      "year": 1882,
+      "license_ref": "Project Gutenberg — US public domain (author d. 1892, pre-1929 work), verified 2026-07-16",
+      "rebuild": {
+        "source": "gutenberg",
+        "id": 42518,
+        "decoder": "src/ingest/ingest-sermon.ts"
+      }
+    }
+  }
+]

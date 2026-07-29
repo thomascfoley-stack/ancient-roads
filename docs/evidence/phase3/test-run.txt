@@ -1,0 +1,24 @@
+# Phase 3 evidence — annotation migrations 025-030 (no UI surface)
+# Captured 2026-07-19T20:20:29Z against the DEV branch (ep-tiny-hat).
+
+## Command: npx vitest run <the three Phase 3 invariant suites>
+     ✓ test/invariants/annotation-rls-tenancy.test.ts (6 tests) 2379ms
+       ✓ Phase 3 annotation tables — two-account RLS tenancy (executed) > with NO app.current_user_id set, the tables return zero rows (fail-closed backstop) 426ms
+     ✓ test/invariants/annotation-tables.test.ts (8 tests) 4846ms
+       ✓ MIG-B..E — bookmarks, library_items, reading_progress, tags > bookmarks: accepts verse and section anchors, REJECTS a both-anchor row 612ms
+       ✓ MIG-B..E — bookmarks, library_items, reading_progress, tags > bookmarks: only ONE active bookmark per target (toggle semantics) 344ms
+       ✓ MIG-B..E — bookmarks, library_items, reading_progress, tags > library_items: shelf whitelist, and a work sits on exactly ONE shelf per user 588ms
+       ✓ MIG-B..E — bookmarks, library_items, reading_progress, tags > reading_progress: one cursor per (user, work); upsert overwrites it 433ms
+       ✓ MIG-B..E — bookmarks, library_items, reading_progress, tags > reading_progress: percent bounded 0..1 and last_ordinal >= 1 501ms
+       ✓ MIG-B..E — bookmarks, library_items, reading_progress, tags > tags: per-user unique names, non-empty 575ms
+       ✓ MIG-B..E — bookmarks, library_items, reading_progress, tags > annotation_tags: target_type whitelist and no duplicate links 836ms
+     ✓ test/invariants/annotations-polymorphic.test.ts (12 tests) 5735ms
+       ✓ MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index > allows MANY section notes on the same (user, section) — verse-only unique index 503ms
+       ✓ MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index > still enforces ONE active VERSE note per (user, verse) — a second raw insert violates the unique index 327ms
+       ✓ MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index > upsertNote NEW predicate (…AND target_kind='verse') upserts in place; OLD predicate no longer matches an arbiter index 650ms
+       ✓ MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index > highlights: accepts a valid section span (hash pinned), rejects all three corrupt shapes 999ms
+       ✓ MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index > rejects a target_kind outside the whitelist on notes, highlights and bookmarks 769ms
+     Test Files  3 passed (3)
+          Tests  26 passed (26)
+
+EXIT CODE: 0

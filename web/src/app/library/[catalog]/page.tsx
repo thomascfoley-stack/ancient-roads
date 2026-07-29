@@ -1,0 +1,108 @@
+// A corpus catalog (design §10.2): Commentaries · Sermons · Hymns & Poetry. Work list + tradition
+// facets + search-within-type; every work opens in the Book Reader.
+//
+// SERVER component. The catalog fence (which source_types this page may show) lives in
+// lib/catalog.ts and is applied in SQL — never trusted from the URL. An unknown catalog is a 404,
+// not a page that quietly shows everything: silently widening a fence is how the register wall
+// gets breached in the UI while retrieval stays clean.
+
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { CATALOGS, catalogTraditions, isCatalogId, listCatalogWorks } from '@/lib/catalog';
+import { CatalogSearch } from '@/components/catalog-search';
+
+export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({ params }: { params: Promise<{ catalog: string }> }) {
+  const { catalog } = await params;
+  return { title: isCatalogId(catalog) ? CATALOGS[catalog].label : 'Library' };
+}
+
+export default async function CatalogPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ catalog: string }>;
+  searchParams: Promise<{ sub?: string; tradition?: string }>;
+}) {
+  const { catalog } = await params;
+  if (!isCatalogId(catalog)) notFound();
+  const { sub, tradition } = await searchParams;
+  const def = CATALOGS[catalog];
+  const subFilter = sub && def.subFilters?.[sub] ? sub : undefined;
+
+  const [works, traditions] = await Promise.all([
+    listCatalogWorks({ catalog, subFilter, tradition, limit: 100 }),
+    catalogTraditions(catalog, subFilter),
+  ]);
+
+  const chip =
+    'inline-flex min-h-[36px] items-center rounded-full border px-3 text-xs transition-colors';
+  const on = 'border-accent-400 bg-accent-50 text-accent-800 dark:bg-accent-950/40 dark:text-accent-200';
+  const off = 'border-stone-200/70 text-stone-600 hover:bg-accent-50/50 dark:border-stone-800 dark:text-stone-400';
+
+  return (
+    <div className="mx-auto w-full max-w-3xl px-5 pb-24 pt-8">
+      <nav className="mb-2 text-xs text-stone-400">
+        <Link href="/library" className="hover:underline">Library</Link> · {def.label}
+      </nav>
+      <h1 className="mb-5 font-scripture text-2xl text-stone-800 dark:text-stone-100">{def.label}</h1>
+
+      <CatalogSearch catalog={catalog} label={def.label} />
+
+      {def.subFilters && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          <Link href={`/library/${catalog}`} className={`${chip} ${!subFilter ? on : off}`}>All</Link>
+          {Object.keys(def.subFilters).map((k) => (
+            <Link key={k} href={`/library/${catalog}?sub=${k}`} className={`${chip} ${subFilter === k ? on : off}`}>
+              {k[0]!.toUpperCase() + k.slice(1)}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {traditions.length > 1 && (
+        <div className="mb-6 flex flex-wrap gap-2">
+          <Link href={`/library/${catalog}${subFilter ? `?sub=${subFilter}` : ''}`} className={`${chip} ${!tradition ? on : off}`}>
+            All traditions
+          </Link>
+          {traditions.map((t) => (
+            <Link
+              key={t.tradition}
+              href={`/library/${catalog}?${subFilter ? `sub=${subFilter}&` : ''}tradition=${encodeURIComponent(t.tradition)}`}
+              className={`${chip} ${tradition === t.tradition ? on : off}`}
+            >
+              {t.tradition} <span className="ml-1 tabular-nums text-stone-400">{t.works}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {works.length === 0 ? (
+        <p className="text-sm text-stone-500 dark:text-stone-400">No works here yet.</p>
+      ) : (
+        <ul className="space-y-2">
+          {works.map((w) => (
+            <li key={w.slug}>
+              <Link
+                href={`/work/${w.slug}`}
+                className="flex min-h-[44px] items-center justify-between gap-3 rounded-xl border border-stone-200/70 px-4 py-3 hover:bg-accent-50/50 dark:border-stone-800 dark:hover:bg-accent-950/20"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate font-scripture text-stone-800 dark:text-stone-100">{w.title}</span>
+                  <span className="block truncate text-xs text-stone-500 dark:text-stone-400">
+                    {w.author ?? '—'}
+                    {w.tradition ? ` · ${w.tradition}` : ''}
+                    {/* the register label: a reader must always be able to tell what kind of work this is */}
+                    {` · ${w.sourceType}`}
+                  </span>
+                </span>
+                <span className="shrink-0 text-xs tabular-nums text-stone-400">{w.units}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

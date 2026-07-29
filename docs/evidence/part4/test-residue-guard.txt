@@ -1,0 +1,59 @@
+# Closing the test-residue CLASS (not the three instances)
+# Captured 2026-07-19. Convention: docs/evidence/README.md
+# Gate: scripts/check-test-residue.mjs, wired into scripts/audit.sh after the test gates.
+
+## The class
+Three tests poisoned shared dev state in one day, each patched individually, with NOTHING asserting
+the invariant:
+  1. Phase-1 highlight tests leaked ~2 rows per full-suite run (teardown SOFT-deleted); 45 had
+     accumulated unnoticed.
+  2. library-published-boundary stranded PUBLISHED qa sources with a disallowed license and turned
+     Gate B red for the whole repo.
+  3. sections-unit-ordinal seeds a disallowed license literal, safe only because it seeds
+     status='staged' and Gate B inspects published rows.
+Patching three instances does not stop the fourth. Hence one guard.
+
+## What it asserts
+  - zero test-seeded rows (user_id LIKE qa-% / qa_% / rls-% / rls2-%) in all SEVEN user tables:
+    highlights, notes, bookmarks, library_items, reading_progress, tags, annotation_tags
+  - zero test-seeded sources left in status='published'  (called out separately, because that one
+    ALSO fails Gate B repo-wide)
+  - zero test-seeded sources surviving in any other status
+
+## Why a GATE and not a test in the suite
+Tests legitimately hold qa- rows WHILE running. An in-suite residue assertion would race its
+neighbours and fail at random. Running after the suite, as an audit.sh gate, is race-free.
+It is also VISIBLY skipped (never silently green) when no dev owner URL is available — the same
+failure mode the verse-keys guard was fixed for earlier today.
+
+## RED-FIRST PROOF (green -> red -> green)
+
+1. baseline, dev clean:
+     ✓ dev is clean — no test-seeded residue in 7 user tables or sources.
+     EXIT=0
+
+2. seeded the bug — stranded one qa highlight row AND one PUBLISHED qa source:
+     seeded: 1 qa highlight row + 1 PUBLISHED qa source
+
+3. guard goes RED, naming both classes distinctly:
+     ✗ TEST RESIDUE SURVIVED A TEST RUN (2 problem(s)):
+       - highlights: 1 test-seeded row(s) survived (user_id matching qa-% / qa_% / rls-% / rls2-%)
+       - sources: test fixture 155 (qa-residue-guard-src) left status='published'
+         [license="Public Domain"] — this ALSO fails Gate B for the whole repo
+       A test seeded shared dev state and did not clean it up. Fix the TEARDOWN, not this gate.
+     EXIT=1
+
+4. cleaned, guard goes GREEN again:
+     ✓ dev is clean — no test-seeded residue in 7 user tables or sources.
+     EXIT=0
+
+## Also done in this slice
+The latent literal in sections-unit-ordinal.test.ts was re-verified directly (it WAS really there,
+line 98 — the earlier note was accurate, not misremembered) and DISARMED: 'public-domain' ->
+'Public Domain'. Leaving a known armed landmine with a note attached is a deferral, not a
+disposition.
+
+## Maintenance note
+USER_TABLES and TEST_PREFIXES in the script are the two lists that must grow when a new user table
+or a new test-user prefix appears. That is a real weakness of this guard — it enumerates rather
+than infers — and it is stated here so it is not mistaken for total coverage.

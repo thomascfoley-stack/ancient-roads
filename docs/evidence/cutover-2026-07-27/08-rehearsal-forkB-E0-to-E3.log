@@ -1,0 +1,385 @@
+
+CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27)
+  STEP ZERO  preflight: host~ep-still-shape, role=neondb_owner, write-capability, positive control
+  E0  regression gate --capture: the pre-cutover baseline (user rows, voices, reader,
+      annotation write path, register wall, forbidden ratchet), measured on the TARGET
+  E1  migrations 016-030 in order (018/019 concurrent)
+      after EVERY migration: user rows unchanged + no INVALID index
+      HAZARD 2 guard: refuse if a section-ordinal annotation precedes 024's renumber
+  E2  register-label the flat embeddings (UPDATE); assert per-work label coverage
+      against the TARGET's own author counts, and that no row was added or lost
+  E3  DELETE forbidden-provenance rows (backup first, backup artifact verified);
+      assert ratchet = 0 and exactly that many rows gone (ADR-030: the served subset
+      is approved, printed, and not an abort condition)
+  E4  slice served works into sections reusing vectors 1:1; re-assert per-work 1:1
+      across every sliced work (ADR-029 addendum 2: each store, its own key)
+  E5  [HARD STOP] deploy.sh
+  E6  smoke counts + the full regression battery
+  REGRESSION GATE RUNS AFTER EVERY CHUNK (E0/E1/E2/E3/E4/E6), not just at the end.
+  Any gate failure ABORTS and rolls back that chunk — never fix forward mid-cutover.
+  Every count re-measured at runtime; NO dev literals baked into a target assertion.
+  Resumable: completed steps recorded in .cutover-checkpoint.json, which is BOUND to
+  the target endpoint — a checkpoint from another target is refused, not replayed.
+
+
+STEP ZERO — prod-credential preflight
+  target host: ep-still-shape-atutpemq.c-9.us-east-1.aws.neon.tech
+  ✓ endpoint contains ep-still-shape
+  ✓ current_user = neondb_owner
+  ✓ write capability proven (BEGIN; CREATE TEMP; ROLLBACK)
+  positive control (Gill rows): 28843
+  ✓ positive control fires
+STEP ZERO PASSED — safe to proceed.
+
+REGRESSION GATE — phase E0
+  target: ep-still-shape-atutpemq.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+
+  ✓ G1 user-data — baseline captured: highlights=34/6u notes=2/1u chats=1/1u
+  ✓ G2 >=2 voices — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 >=2 voices — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 >=2 voices — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G4 load — highlights: 24 active rows load
+  ✓ G4 load — notes: 2 active rows load
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G5 register wall — FTS exclusion holds against the independent sources.source_type signal
+  ✓ G6 ratchet — 71884 forbidden-provenance rows
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. E3's ratchet does not count this store. Standing debt — owner call.
+  baseline written to .cutover-checkpoint.json
+✓ REGRESSION GATE PASSED at E0
+
+E1 — (checkpoint) all migrations applied; re-asserting postconditions
+  ✓ postcondition (resume): no invalid index; user rows highlights=34/6u notes=2/1u chats=1/1u
+
+REGRESSION GATE — phase E1
+  target: ep-still-shape-atutpemq.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+
+  ✓ G1 user-data — unchanged vs E0 baseline: highlights=34/6u notes=2/1u chats=1/1u
+  ✓ G2 >=2 voices — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 >=2 voices — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 >=2 voices — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G4 load — highlights: 24 active rows load
+  ✓ G4 load — notes: 2 active rows load
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G5 register wall — FTS exclusion holds against the independent sources.source_type signal
+  ✓ G6 ratchet — 71884 forbidden-provenance rows (baseline 71884, monotone)
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. E3's ratchet does not count this store. Standing debt — owner call.
+✓ REGRESSION GATE PASSED at E1
+
+E2 — register-label the flat embeddings (metadata UPDATE, not a re-embed)
+  precondition (re-measured): 145019/190635 rows unlabeled
+host: ep-still-shape-atutpemq.c-9.us-east-1.aws.neon.tech (credentials redacted)
+entries with match_author: 12
+
+
+before: 145019/190635 unlabeled
+  labeled 12693 rows: "Adam Clarke" -> adam-clarke
+  labeled 4210 rows: "Matthew Henry" -> matthew-henry
+  labeled 6275 rows: "John Wesley" -> wesley-crosswire
+  labeled 6215 rows: "John Calvin" -> calvin-crosswire
+  labeled 1215 rows: "C.I. Scofield" -> scofield-crosswire
+  labeled 288 rows: "B.W. Johnson" -> pnt-crosswire
+  labeled 1308 rows: "Matthew Poole" -> poole-tcp
+after: 112815/190635 unlabeled (32204 rows updated)
+
+OK: register-label complete
+  postcondition: 112815/190635 unlabeled (was 145019)
+    Barnes' Notes -> barnes-notes|barnes-crosswire-nt: 1300/1300
+    John Gill -> john-gill: 28843/28843
+    Jamieson, Fausset & Brown -> jfb: 15473/15473
+    Adam Clarke -> adam-clarke: 12693/12693
+    Matthew Henry -> matthew-henry: 4210/4210
+    John Wesley -> wesley-crosswire: 6275/6275
+    John Calvin -> calvin-crosswire: 6215/6215
+    C.I. Scofield -> scofield-crosswire: 1215/1215
+    B.W. Johnson -> pnt-crosswire: 288/288
+    Matthew Poole -> poole-tcp: 1308/1308
+  ✓ postcondition: 10 mapped author(s), every row labeled, 77820 rows — measured against the target's own author counts
+  ✓ postcondition: user rows unchanged (highlights=34/6u notes=2/1u chats=1/1u)
+
+REGRESSION GATE — phase E2
+  target: ep-still-shape-atutpemq.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+
+  ✓ G1 user-data — unchanged vs E0 baseline: highlights=34/6u notes=2/1u chats=1/1u
+  ✓ G2 >=2 voices — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 >=2 voices — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 >=2 voices — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G4 load — highlights: 24 active rows load
+  ✓ G4 load — notes: 2 active rows load
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G5 register wall — FTS exclusion holds against the independent sources.source_type signal
+  ✓ G6 ratchet — 71884 forbidden-provenance rows (baseline 71884, monotone)
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. E3's ratchet does not count this store. Standing debt — owner call.
+✓ REGRESSION GATE PASSED at E2
+
+E3 — forbidden-provenance cleanup (DELETE; backup-before-delete)
+  precondition (re-measured): 71884 forbidden-provenance rows of 190635 platform rows
+  of which SERVED today (author legs only, informational): 4174 (ADR-030 approved this removal; expected, not a surprise)
+  action: npx tsx src/ingest/b2-remove-forbidden-provenance.ts --apply  (backup -> delete -> ratchet)
+forbidden domains (canonical, license-manifest): biblehub.com, studylight.org, historicalchristian.faith
+
+
+
+forbidden-provenance rows in DB `embeddings` (served, user_id IS NULL):
+  [historicalchristian.faith] 56177
+  [biblehub.com] 15707
+    - Thomas Aquinas: 7788
+    - Theophylact of Ohrid: 5671
+    - Bede: 4551
+    - John Chrysostom: 4464
+    - Bonaventure: 3674
+    - Jerome: 3479
+    - Augustine of Hippo: 2555
+    - Gregory the Dialogist: 2453
+    - Tertullian: 2094
+    - Oecumenius: 1561
+    - Augustine of Hippo  (as quoted by Aquinas, AD 1274): 1412
+    - J.P. Lange: 1360
+    - Alexander MacLaren: 1326
+    - Pulpit Commentary: 1322
+    - J.N. Darby: 1308
+    - Matthew Poole: 1308
+    - Joseph Benson: 1300
+    - Barnes' Notes: 1300
+    - Ambrose of Milan: 1271
+    - Cambridge Bible: 1264
+    - C.I. Scofield: 1215
+    - Geneva Study Bible: 1194
+    - John Calvin: 1125
+    - Bede  (as quoted by Aquinas, AD 1274): 1107
+    - Origen of Alexandria: 1057
+    - Cyril of Alexandria: 1030
+    - John Wesley: 1021
+    - Theophylact of Ohrid  (as quoted by Aquinas, AD 1274): 880
+    - Clement of Alexandria: 751
+    - Irenaeus: 673
+    - Cyprian: 657
+    - Jerome  (as quoted by Aquinas, AD 1274): 653
+    - John Chrysostom  (as quoted by Aquinas, AD 1274): 595
+    - Origen of Alexandria  (as quoted by Aquinas, AD 1274): 488
+    - Philoxenus of Mabbug: 453
+    - Gregory the Dialogist  (as quoted by Aquinas, AD 1274): 452
+    - Ambrose of Milan  (as quoted by Aquinas, AD 1274): 443
+    - Pseudo-Chrysostom  (as quoted by Aquinas, AD 1274): 430
+    - Hippolytus of Rome: 396
+    - Hilary of Poitiers  (as quoted by Aquinas, AD 1274): 380
+    - Johann Bengel: 376
+    - Glossa Ordinaria  (as quoted by Aquinas, AD 1274): 352
+    - Cyril of Alexandria  (as quoted by Aquinas, AD 1274): 325
+    - Remigius of Rheims  (as quoted by Aquinas, AD 1274): 316
+    - B.W. Johnson: 288
+    - Rabanus Maurus  (as quoted by Aquinas, AD 1274): 270
+    - Cosmas Indicopleustes: 258
+    - Ignatius of Antioch: 216
+    - Alcuin of York: 187
+    - Pseudo-Jerome  (as quoted by Aquinas, AD 1274): 186
+    - Bernard of Clairvaux: 180
+    - Justin Martyr: 165
+    - Apostolic Constitutions: 164
+    - Alcuin of York  (as quoted by Aquinas, AD 1274): 160
+    - Victorinus of Pettau: 143
+    - Clement of Rome: 124
+    - Shepherd of Hermas: 114
+    - Robert of Tombelaine: 107
+    - Basil of Caesarea  (as quoted by Aquinas, AD 1274): 99
+    - Ancient Greek Expositor  (as quoted by Aquinas, AD 1274): 94
+    - Pseudo-Clement: 89
+    - Titus of Bostra  (as quoted by Aquinas, AD 1274): 88
+    - Eusebius of Caesarea  (as quoted by Aquinas, AD 1274): 84
+    - Lucius Caecilius Firmianus Lactantius: 78
+    - Gregory of Nyssa  (as quoted by Aquinas, AD 1274): 76
+    - Clement of Alexandria  (as quoted by Cassiodorus): 70
+    - Methodius of Olympus: 61
+    - Polycarp of Smyrna: 56
+    - Didache: 53
+    - Athanasius of Alexandria  (as quoted by Aquinas, AD 1274): 40
+    - Dionysius of Alexandria: 38
+    - Pseudo-Augustine  (as quoted by Aquinas, AD 1274): 33
+    - Hilary of Poitiers: 28
+    - Leo the Great  (as quoted by Aquinas, AD 1274): 28
+    - Peter Chrysologus  (as quoted by Aquinas, AD 1274): 28
+    - Alexander of Alexandria: 24
+    - Irenaeus (Reporting Valentinian Views): 24
+    - Peter of Alexandria: 21
+    - Gregory of Nazianzus  (as quoted by Aquinas, AD 1274): 20
+    - Eusebius of Caesarea: 18
+    - Cyprian  (as quoted by Aquinas, AD 1274): 17
+    - Epistle of Barnabas: 16
+    - Pseudo-Origen  (as quoted by Aquinas, AD 1274): 15
+    - Arnobius of Sicca: 14
+    - John Damascene  (as quoted by Aquinas, AD 1274): 14
+    - Tatian the Assyrian: 12
+    - Haymo of Halberstadt  (as quoted by Aquinas, AD 1274): 10
+    - Isidore of Pelusium  (as quoted by Aquinas, AD 1274): 10
+    - Cyril of Jerusalem: 10
+    - Theophilus of Antioch: 9
+    - Athanasius of Alexandria: 9
+    - Maximus the Confessor  (as quoted by Aquinas, AD 1274): 9
+    - Commodian: 8
+    - Vigilius of Thapsus  (as quoted by Aquinas, AD 1274): 7
+    - Epiphanius of Salamis  (as quoted by Aquinas, AD 1274): 7
+    - Theonas of Alexandria: 7
+    - Papias of Hierapolis  (as quoted by Eusebius of Caesarea, AD 339): 6
+    - Pseudo-Dionysius the Areopagite  (as quoted by Aquinas, AD 1274): 6
+    - John Cassian: 6
+    - Basil of Caesarea: 6
+    - Didymus the Blind  (as quoted by Aquinas, AD 1274): 6
+    - Cosmas Indicopleustes (quoting Timotheus of Alexandria): 5
+    - Clement of Alexandria  (as quoted by Cassiodorus, AD 585): 5
+    - Gregory of Nazianzus: 5
+    - John Cassian  (as quoted by Aquinas, AD 1274): 5
+    - Hegesippus  (as quoted by Eusebius of Caesarea, AD 339): 5
+    - Cosmas Indicopleustes (quoting Severianus of Gabala, Hexaemeron): 5
+    - Council of Ephesus  (as quoted by Aquinas, AD 1274): 4
+    - Clement of Alexandria  (as quoted by Nicetas of Heraclea, AD 1100): 4
+    - Odes of Solomon: 4
+    - Pseudo-Dionysius the Areopagite: 4
+    - Ambrosiaster: 4
+    - Theodotus of Ancyra  (as quoted by Aquinas, AD 1274): 3
+    - Ambrosiaster  (as quoted by Aquinas, AD 1274): 3
+    - Isidore of Seville  (as quoted by Aquinas, AD 1274): 3
+    - Papias of Hierapolis: 3
+    - The Liturgy Of The Blessed Apostles: 3
+    - Cosmas Indicopleustes (quoting John Chrysostom, Commentary on Ephesians): 3
+    - Cosmas Indicopleustes (quoting Severianus of Gabala, Hexaemeron, Book 1): 3
+    - Cosmas Indicopleustes (quoting Theophilus of Alexandria, First Festal Epistle): 3
+    - The Passion of Saints Perpetua and Felicity: 3
+    - Pseudo-Basil  (as quoted by Aquinas, AD 1274): 3
+    - Hegemonius: 3
+    - Gennadius of Massilia  (as quoted by Aquinas, AD 1274): 2
+    - Ignatius of Antioch  (as quoted by Origen, AD 235): 2
+    - Josephus  (as quoted by Aquinas, AD 1274): 2
+    - Maximus of Turin  (as quoted by Aquinas, AD 1274): 2
+    - Nemesius of Emesa  (as quoted by Aquinas, AD 1274): 2
+    - JB Lightfoot: 2
+    - Leo the Great: 2
+    - Gregory of Nyssa: 2
+    - Polycrates Of Ephesus: 2
+    - Cosmas Indicopleustes (quoting John Chrysostom, Commentary on Hebrews): 2
+    - Pope Dionysius: 2
+    - Clement of Alexandria  (as quoted by Corderius, AD 1564): 2
+    - Irenaeus (Reporting Marcosian Views): 2
+    - Cosmas Indicopleustes (quoting Severianus of Gabala, Hexaemeron, Book 4): 2
+    - Cosmas Indicopleustes (quoting Philon of Carpathus, Commentary on Canticles): 2
+    - Petrus Alphonsi  (as quoted by Aquinas, AD 1274): 1
+    - Cyril of Jerusalem  (as quoted by Aquinas, AD 1274): 1
+    - Anselm of Canterbury  (as quoted by Aquinas, AD 1274): 1
+    - Julius Africanus: 1
+    - Council of Carthage of 419: 1
+    - Caius Presbyter of Rome: 1
+    - Irenaeus (Reporting Heretical Views): 1
+    - Hippolytus of Rome  is referenced above by Jerome (AD 420): 1
+    - Origen of Alexandria  is referenced above by Jerome (AD 420): 1
+    - Socrates Scholasticus: 1
+    - Clement of Alexandria  (as quoted by Eusebius, AD 339): 1
+    - Irenaeus (Reporting Heretical Practices): 1
+    - Cosmas Indicopleustes (quoting Epiphanius of Cyprus, On Measures and Weights): 1
+    - Cosmas Indicopleustes (quoting Severianus of Gabala, Hexaemeron, Book 2): 1
+    - Papias of Hierapolis  is referenced above by Eusebius of Caesarea: 1
+    - Cosmas Indicopleustes (quoting John Chrysostom, On Alms): 1
+    - Clement of Alexandria  (as quoted by Aquinas, AD 1274): 1
+    - Dionysius of Alexandria  (as quoted by Aquinas, AD 1274): 1
+    - Cosmas Indicopleustes (quoting Theodosius of Alexandria): 1
+    - Gospel of the Hebrews  (as quoted by Jerome, AD 420): 1
+    - Second Council of Constantinople  (as quoted by Aquinas, AD 1274): 1
+    - Lanfranc of Canterbury  (as quoted by Aquinas, AD 1274): 1
+    - Paschasius Radbertus  (as quoted by Aquinas, AD 1274): 1
+    - Salvian the Presbyter: 1
+    - Theodoret of Cyrus: 1
+  DB total: 71884
+
+forbidden-provenance entries in STATIC corpus (web/public/commentaries): 0 across 0 chapter files
+
+✓ coverage guard: 1211 (book,chapter) cells with clean commentary snapshotted
+
+backed up 71884 DB rows → data/quarantine/forbidden-provenance-removed-2026-07-28T03-00-37-916Z.jsonl
+deleted 71884 forbidden-provenance rows from DB embeddings
+
+✓ coverage guard: clean per-cell counts unchanged after forbidden delete
+static corpus: removed 0 entries from 0 files (backed up to same JSONL)
+
+✓ RATCHET GREEN: 0 forbidden-provenance rows in served embeddings AND static corpus
+  ✓ backup written: data/quarantine/forbidden-provenance-removed-2026-07-28T03-00-37-916Z.jsonl (71884 row(s))
+  ✓ postcondition: ratchet = 0; exactly 71884 rows removed, 118751 remain
+  ✓ postcondition: user rows unchanged (highlights=34/6u notes=2/1u chats=1/1u)
+
+REGRESSION GATE — phase E3
+  target: ep-still-shape-atutpemq.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+
+  ✓ G1 user-data — unchanged vs E0 baseline: highlights=34/6u notes=2/1u chats=1/1u
+  ✓ G2 >=2 voices — John 3:16: 6 distinct authors, 9 served rows
+  ✓ G2 >=2 voices — Psalm 23:1: 2 distinct authors, 2 served rows
+  ✓ G2 >=2 voices — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G4 load — highlights: 24 active rows load
+  ✓ G4 load — notes: 2 active rows load
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G5 register wall — FTS exclusion holds against the independent sources.source_type signal
+  ✓ G6 ratchet — 0 forbidden-provenance rows (baseline 71884, monotone)
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. E3's ratchet does not count this store. Standing debt — owner call.
+✓ REGRESSION GATE PASSED at E3
+
+E4 — slice works into sections, reusing vectors 1:1
+  per served work: migrate-sections-slice, then assert sections == flat-pool count FOR THAT WORK (hazard 1: each store its own key; assert 1:1).
+host: ep-still-shape-atutpemq.c-9.us-east-1.aws.neon.tech (credentials redacted)
+works to slice: 11
+
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+Error: read ETIMEDOUT
+    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -60,
+  code: 'ETIMEDOUT',
+  syscall: 'read'
+}
+
+Node.js v22.17.1
+
+✗ ABORT at unhandled: Command failed: node scripts/cutover-e4-slice-all.mjs
+EXIT=1

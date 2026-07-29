@@ -1,0 +1,32 @@
+==============================================================================
+RED-PROOF: G7 — the live /ask probe. It had NEVER run (0 occurrences in either
+rehearsal log) while the gate printed PASSED and E6 claimed a full battery.
+date: 2026-07-28T06:22:27Z
+method: a local stub stands in for the deployed endpoint and answers in the same
+        { retrieval: [{ metadata: { author } }] } shape teach.ts returns.
+==============================================================================
+
+--- (a) CUTOVER_ASK_URL UNSET — what a reader now sees ---------------------
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+✓ REGRESSION GATE PASSED at E1 — DB-ONLY, LIVE PROBE NOT RUN
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+
+--- (b) probe pointed at an endpoint returning ONE voice (expect RED) ------
+ask-stub on 127.0.0.1:8788 with 1 voice(s)
+  ✗ G7 live /ask — 1 distinct voice(s) in retrieval — below the floor
+✗ REGRESSION GATE FAILED at E1 (1 check(s))
+    G7 live /ask: 1 distinct voice(s) in retrieval — below the floor
+✗ ABORT at E1: REGRESSION GATE FAILED — a pre-existing surface regressed
+
+--- (c) probe pointed at an endpoint returning TWO voices (expect GREEN) ---
+ask-stub on 127.0.0.1:8789 with 2 voice(s)
+  ✓ G7 live /ask — 2 distinct voices
+✓ REGRESSION GATE PASSED at E1 — including the live /ask probe (end-to-end)
+  ✓ G7 live /ask — 2 distinct voices
+  ✓ G7 live /ask — 2 distinct voices
+
+--- (d) probe pointed at nothing at all (expect RED, not a crash) ----------
+  ✗ G7 live /ask — could not reach http://127.0.0.1:8790/api/ask: fetch failed
+✗ REGRESSION GATE FAILED at E1 (1 check(s))
+    G7 live /ask: could not reach http://127.0.0.1:8790/api/ask: fetch failed

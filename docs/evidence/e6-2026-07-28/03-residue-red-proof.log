@@ -1,0 +1,11 @@
+
+
+PROVEN   qa-hl-a-<epoch> soft-deleted highlight (the class that reached PROD)
+         red line:   - dev highlights: 1 seeded row(s) survived (user_id matching qa- / qa_ / rls- / rls2- / __cutover_probe__ / __cutover_e6_probe__ / __redproof__)
+
+PROVEN   __cutover_e6_probe__ row left behind by a crashed gate run
+         red line:   - dev notes: 1 seeded row(s) survived (user_id matching qa- / qa_ / rls- / rls2- / __cutover_probe__ / __cutover_e6_probe__ / __redproof__)
+
+PROVEN   negative control — a NON-prefixed user row does NOT trip the gate
+
+ALL PROVEN

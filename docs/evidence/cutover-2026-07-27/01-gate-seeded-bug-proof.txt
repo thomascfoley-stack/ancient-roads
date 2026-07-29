@@ -1,0 +1,31 @@
+red-proof target: ep-shy-moon-atto4vs4.c-9.us-east-1.aws.neon.tech
+
+
+
+PROVEN   G1 user-data — an extra highlight row
+           red output:   ✗ G1 user-data — highlights moved 34/6u -> 35/7u — the user-row invariant broke | ✗ REGRESSION GATE FAILED at E1 (1 check(s))
+
+(Psalm 23:1 authors on the fork: Matthew Henry, Keil & Delitzsch, Ambrose of Milan, Arnobius the Younger, Augustine of Hippo, Cassiodorus, Hippolytus of Rome, John Gill, Theodoret of Cyrus, Thomas Aquinas, Tyndale Study Notes)
+PROVEN   G2 >=2 voices — all but one served author removed from Psalm 23:1
+           red output:   ✗ G2 >=2 voices — Psalm 23:1: served pool has 1 distinct author(s) (1 rows) — below the floor | ✗ REGRESSION GATE FAILED at E1 (1 check(s))
+
+PROVEN   G3 reader/static — the chapter file the reader renders goes missing
+           red output:   ✗ G3 reader/static — Psalm 23:1: /Users/tfoley/theology-study-app/web/public/commentaries/psa/23.json missing — the reader would render an empty chapter | ✗ REGRESSION GATE FAILED at E1 (1 check(s))
+
+PROVEN   G4 write — upsertNote loses its partial unique index (the 025 hazard)
+           red output:   ✗ G4 write — annotation write path threw: there is no unique or exclusion constraint matching the ON CONFLICT specification | ✗ REGRESSION GATE FAILED at E1 (1 check(s))
+
+PROVEN   G5 register wall — a sermon-lane work made reachable through the exegetical filter
+           red output:   ✗ G5 register wall — 1 song/verse or lane row(s) are reachable through the exegetical serving filter | ✗ REGRESSION GATE FAILED at E1 (1 check(s))
+
+PROVEN   G6 ratchet — one new biblehub-provenance row appears
+           red output:   ✗ G6 ratchet — forbidden-provenance rows INCREASED 71884 -> 71885 | ✗ REGRESSION GATE FAILED at E1 (1 check(s))
+
+
+=== SUMMARY ===
+  PROVEN   G1 user-data — an extra highlight row
+  PROVEN   G2 >=2 voices — all but one served author removed from Psalm 23:1
+  PROVEN   G3 reader/static — the chapter file the reader renders goes missing
+  PROVEN   G4 write — upsertNote loses its partial unique index (the 025 hazard)
+  PROVEN   G5 register wall — a sermon-lane work made reachable through the exegetical filter
+  PROVEN   G6 ratchet — one new biblehub-provenance row appears

@@ -1,0 +1,63 @@
+# Phase 4 evidence — the two requirements baked in BEFORE the feature build
+# Captured 2026-07-19, dev branch (ep-tiny-hat) + dev server :3012.
+# Convention: docs/evidence/README.md
+
+## §A — PUBLISHED-STATUS PREDICATE (failing test written FIRST)
+
+Test: web/test/invariants/library-published-boundary.test.ts
+Impl: web/src/lib/library.ts  (predicate re-asserted in EVERY read path)
+
+  1. Test written before any implementation existed:
+       Error: Cannot find module '@/lib/library'
+       Test Files  1 failed (1)   Tests  no tests            <-- RED, module absent
+
+  2. After implementing listLibraryItems / listContinueReading with
+     "AND s.status = 'published'" on the sources join:
+       Tests  5 passed (5)                                    <-- GREEN
+
+  3. PROVEN LOAD-BEARING — predicate deleted from listLibraryItems only:
+       × STAGED: the shelf row survives in the DB, but the work must vanish...
+         → a staged work must NOT be listed in the library:
+           expected [ Array(1) ] to not include 'qa-published-boundary-...'
+       × QUARANTINED: same, and the reader route 404s...
+         → expected [ Array(1) ] to not include 'qa-published-boundary-...'
+       Tests  2 failed | 3 passed (5)                         <-- RED on the exact hazard
+     restored -> Tests  5 passed (5)
+
+  What the test actually exercises: it shelves a work + records progress while the work is
+  PUBLISHED, then flips the source to 'staged' and 'quarantined' behind the user's back, and
+  asserts the shelf/progress ROWS STILL EXIST (precondition) while the work disappears from
+  listLibraryItems, from listContinueReading, and /api/work 404s it. Re-publishing restores it —
+  the predicate filters, it does not delete.
+
+## §B — UNBOUNDED TOC FIX (red-first)
+
+Test: web/test/invariants/work-toc-bounded.test.tsx
+Impl: web/src/components/work-toc.tsx
+
+  1. RED, quantified, on a 3,440-section synthetic work:
+       × a 3,440-section work mounts on the order of its 16 units, not its sections
+         → TOC mounted 3441 buttons for 3440 sections — it must bound to units
+           (allowance 257): expected 3441 to be less than or equal to 257
+
+  2. GREEN after bounding to one row per unit + a disclosure, with only the EXPANDED
+     unit mounting its chunk rows:
+       Tests  6 passed (6)   (bounded + grouping suites)
+
+  3. MEASURED ON THE REAL WORK — Calvin's Institutes (3,448 sections), live at :3012,
+     drawer opened, counted in the DOM:
+       BEFORE:  3448 row buttons  (3449 total in the drawer)
+       AFTER:   103 unit rows + 96 disclosures + close = 200 total
+       => 17x fewer nodes, and the count now scales with UNITS (103), not SECTIONS (3448).
+
+  Screenshots (drawer open, true viewports asserted by the capture script):
+       docs/evidence/phase4/toc-bounded-calvin-desktop-1280x800.png
+       docs/evidence/phase4/toc-bounded-calvin-mobile-390x844.png
+  The mobile shot shows a genuinely navigable TOC: "Prefatory Material" (READING),
+  "The Original Translator's Preface" 13, "Prefatory Address" 43, "BOOK FIRST. OF THE
+  KNOWLEDGE OF GOD THE CREATOR", "ARGUMENT." 3 — real unit titles with the chunk count as
+  the expand affordance, instead of 3,448 rows all reading "TITLE — ref (N/215)".
+
+## Gates at this point
+  web tsc --noEmit clean
+  full web suite: Test Files 32 passed (32)   Tests 155 passed (155)

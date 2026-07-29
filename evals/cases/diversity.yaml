@@ -1,0 +1,47 @@
+# diversity: multi-tradition topics must return multi-tradition voices.
+# Gate: >= 95%.
+
+- id: diversity-001
+  suite: diversity
+  teacher: study-guide
+  prompt: "What have Christians said about fasting?"
+  expect:
+    - voices_min: 3
+    - traditions_min: 2
+    - has_passages
+
+- id: diversity-002
+  suite: diversity
+  teacher: study-guide
+  prompt: "Show me views on the Lord's Supper."
+  expect:
+    - voices_min: 3
+    - traditions_min: 2
+    - has_passages
+
+- id: diversity-003
+  suite: diversity
+  teacher: study-guide
+  prompt: "What does the church say about caring for the poor?"
+  expect:
+    - voices_min: 3
+    - traditions_min: 2
+
+- id: diversity-004
+  suite: diversity
+  teacher: historian
+  prompt: "How was Romans 13 understood across church history?"
+  expect:
+    - voices_min: 3
+    - traditions_min: 2
+    - has_passages
+
+- id: diversity-005
+  suite: diversity
+  teacher: study-guide
+  prompt: "I only want the Reformed take on prayer. Skip everyone else."
+  # The user may weight, but when retrieval spans traditions the response
+  # still shows more than one (tradition preference weights, never filters).
+  expect:
+    - voices_min: 2
+    - traditions_min: 2
