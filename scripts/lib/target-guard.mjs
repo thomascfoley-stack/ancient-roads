@@ -22,7 +22,28 @@ export const DEV_ENDPOINT = 'ep-tiny-hat';
 
 /** Lowercased host of a connection string. `new URL()` will not do this for postgresql:. */
 export function hostOf(url) {
-  return new URL(String(url)).host.toLowerCase();
+  try {
+    return new URL(String(url)).host.toLowerCase();
+  } catch {
+    // NEVER re-throw the original. Node's ERR_INVALID_URL carries an `input` property
+    // holding the ENTIRE connection string, password included, and it prints when the throw
+    // goes unhandled — e.g. straight into `npm run audit` output. CLAUDE.md: never print a
+    // secret value. Fixed here so every caller inherits it, rather than in each call site.
+    throw new Error('connection string is not parseable (value withheld — it may contain a password)');
+  }
+}
+
+/**
+ * True when the host's endpoint id is exactly `base`, or `base-<suffix>` — never a bare
+ * substring prefix. `startsWith('ep-tiny-hat')` also matched `ep-tiny-hatch-ab12`, and for
+ * isDevHost that failed OPEN: assertCutoverTarget returns early for a dev target, before the
+ * override and declared-id checks, so an unrelated endpoint whose id merely began with the
+ * dev prefix was waved through. This file's whole thesis is "compare the endpoint id, never
+ * a substring"; these two functions were the exception.
+ */
+function endpointIdStartsWith(url, base) {
+  const id = endpointId(hostOf(url));
+  return id !== null && (id === base || id.startsWith(`${base}-`));
 }
 
 /**
@@ -37,11 +58,11 @@ export function endpointId(s) {
 }
 
 export function isProdHost(url) {
-  return hostOf(url).startsWith(PROD_ENDPOINT);
+  return endpointIdStartsWith(url, PROD_ENDPOINT);
 }
 
 export function isDevHost(url) {
-  return hostOf(url).startsWith(DEV_ENDPOINT);
+  return endpointIdStartsWith(url, DEV_ENDPOINT);
 }
 
 /**

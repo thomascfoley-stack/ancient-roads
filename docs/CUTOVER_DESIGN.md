@@ -207,8 +207,13 @@ Two properties the gate must have, both earned the hard way:
   `web/src/lib/legal-corpus.ts` exports the canonical form. That is pre-existing and is the same
   drift class this rule forbids — tracked as its own fix, not claimed as done.
 - **A green line must not be able to mean two things.** Every leg that can be satisfied by an
-  *absent* population says which case it is in: the register wall prints its denominator and fails
-  outright if it is zero from E2 onward; section integrity fails on zero sections; and the final
+  *absent* population says which case it is in: the register wall prints its denominator, WARNS when it is
+  zero, and **ratchets** the population (it may never shrink). It does **not** fail on a zero
+  denominator: production legitimately has zero lane/song rows forever, because E2 labels only the
+  manifest works carrying `backfill.match_author` — none of which is a lane or song slug — and the
+  register ingest has never run there. A gate that fails on the target's designed state is a gate
+  the operator learns to override. The only unambiguous failure is **zero rows carrying any work
+  key at all from E2 onward**, since writing that key is E2's entire job (ADR-035); section integrity fails on zero sections; and the final
   verdict is stamped `NO E0 BASELINE … (survey, not regression gate)` whenever the ratcheted legs
   had nothing to compare against. Roughly half the battery is a ratchet, and with no baseline those
   legs cannot go red at all — a run without one is a measurement, and it now says so.

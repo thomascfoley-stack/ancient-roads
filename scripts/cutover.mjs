@@ -113,7 +113,11 @@ function regressionGate(phase, url, host, { capture = false } = {}) {
   try {
     execFileSync('npx', argv, {
       cwd: ROOT, stdio: 'inherit',
-      env: { ...process.env, CUTOVER_DATABASE_URL: url, CUTOVER_EXPECT_HOST: process.env.CUTOVER_EXPECT_HOST ?? EXPECT_HOST, CUTOVER_GATE_HOST: host },
+      env: { ...process.env, CUTOVER_DATABASE_URL: url, // EXPECT_HOST directly, never `process.env.CUTOVER_EXPECT_HOST ?? EXPECT_HOST`: `??` only
+      // guards null/undefined, so CUTOVER_EXPECT_HOST="" was forwarded to the child as an empty
+      // expectation while THIS process quietly used the default — re-opening, one process down,
+      // exactly the empty-string hole the comment above EXPECT_HOST describes closing.
+      CUTOVER_EXPECT_HOST: EXPECT_HOST, CUTOVER_GATE_HOST: host },
     });
   } catch {
     die(phase, 'REGRESSION GATE FAILED — a pre-existing surface regressed',
@@ -213,7 +217,13 @@ async function assertUserDataUnchanged(sql, base, where, rollback) {
 // taken before anything wrote; every step re-checks against that too.
 async function assertUserDataVsE0(sql, cp, where) {
   const base = cp.baseline?.userData;
-  if (!base) return;
+  if (!base) {
+    // AUDIBLE. A silent `return` meant E1/E2/E4 printed nothing at all and the whole-cutover
+    // invariant was skipped invisibly — the same false-green shape this round exists to close,
+    // and the one the --e6-only path is already loud about.
+    console.log(`  ⚠ ${where}: NO E0 user-data reading on the checkpoint — the WHOLE-CUTOVER invariant is NOT being asserted here (only the within-step one).`);
+    return;
+  }
   const now = await measureUserData(sql);
   const moved = diffUserData(base, now);
   if (moved.length > 0) die(where, `USER DATA MOVED since the E0 baseline — ${moved.join('; ')}`, restoreFrom(cp));

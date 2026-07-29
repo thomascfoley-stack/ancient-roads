@@ -192,6 +192,109 @@ prevents — passed a substring test); G9's `sections` lookup is guarded and its
 visible; G8's message states plainly that `orphans` is FK-prevented and therefore **not** evidence of
 a healthy slice.
 
+### 2b. THE RED-PROOF RAN (2026-07-29) — 10/10, on a disposable fork, with one seed corrected mid-flight
+
+Owner supplied a throwaway Neon branch (`ep-little-brook-atyj6fc0-pooler`). Confirmed before
+anything ran: `isProdHost=false`, `isDevHost=false`, `declaredMatches=true`. The exact form the
+guard wants is the **whole first DNS label including `-pooler`**. The branch is dev-SHAPED
+(420,974 embeddings, 362,948 sections, migrations 016/025/026 + all four 030 constraints), **not a
+fresh prod fork** — so it exercises G8/G9 properly but does NOT exercise the pre-016 -> post-030 path.
+
+**Pooler was fine.** Before running anything destructive I tested every DDL/transaction pattern the
+proof uses on a scratch table: multi-statement `DROP`+`ADD CONSTRAINT`, `DROP`/`CREATE UNIQUE INDEX`
+round-trip, `BEGIN`/`ROLLBACK` across separate calls, and a failed statement inside a transaction
+followed by `ROLLBACK`. All seven passed; the scratch table was dropped. **No direct (non-pooled)
+endpoint needed.**
+
+```
+PROVEN   G1 user-data — an extra highlight row
+FAILED   G2 >=2 voices — all but one served author removed from Psalm 23:1   <-- BAD SEED, see below
+PROVEN   G3 reader/static — the chapter file the reader renders goes missing
+PROVEN   G4 write — upsertNote loses its partial unique index (the 025 hazard)
+PROVEN   G5 register wall — a sermon-lane work made reachable through the exegetical filter
+PROVEN   G6 ratchet — one new biblehub-provenance row appears
+PROVEN   G8 unembedded — a section loses its embedding(s) (the slice wrote text, not vectors)
+PROVEN   G9 constraints — 030 reverts to the 025 body (constraint present but weaker)
+PROVEN   G9 constraints — notes_anchor_xor is dropped entirely
+PROVEN   G2 durable floor — a verse loses its 2nd clean voice "Augustine of Hippo" (304 rows)
+REDPROOF EXIT=1
+```
+
+Representative reds, each attributed to the leg it names:
+```
+✗ G1 user-data — the user-data invariant broke — highlights: row count 5 -> 6; distinct owners 1 -> 2;
+  ACTIVE rows 2 -> 3 (soft-delete or un-delete); DIGEST f3a70622 -> f49d2b8e; OWNER DISTRIBUTION
+  d50598130eec:5 -> 37945d627988:1,d50598130eec:5 (rows changed hands)
+✗ G4 write — annotation write path threw: there is no unique or exclusion constraint matching the ON CONFLICT specification
+✗ G5 register wall — 1 song/verse or lane row(s) are reachable through the exegetical serving filter
+✗ G6 ratchet — forbidden-provenance rows INCREASED 0 -> 1
+✗ G8 unembedded — 1 section(s) GAINED no-embedding status (0 -> 1). The slice wrote section text
+  without reusing the vector, so those sections exist in the reader and retrieve nothing.
+```
+
+**The one FAILED case was the SEED, not the check — and that is the most useful result of the run.**
+The old seed renamed every row but one at Psalm 23:1 to `__redproof_author__`. Its comment claimed
+that left "exactly ONE author served". It left **two**: the kept author *plus the sentinel*.
+Renaming does not remove an author, it adds one. Measured on the fork:
+
+| author | work | rows | admitted via |
+|---|---|---|---|
+| C.F. Keil & Franz Delitzsch | `keil-delitzsch` | 2 | **the `work` leg** |
+| John Calvin / John Gill / Matthew Henry | — | 1 each | author legs |
+
+Only **5 of the 97** rows at that verse are admitted at all, and the two Keil rows are admitted by
+`metadata->>'work'`, which an author rename does not touch. So the verse still had 2 distinct
+admitted authors, still cleared the floor, and G2 was **right** to stay green. This means G2's
+corpus-wide floor had never actually been proven on any branch whose `work` leg is populated.
+
+Corrected seed: **collapse the victims into the kept author** (so `DISTINCT` genuinely falls to 1)
+and scope to the rows the filter admits (4 UPDATEs, not 96). Re-proved:
+
+```
+Psalm 23:1 ADMITTED rows: 5, distinct served authors: John Gill | John Calvin | Matthew Henry | C.F. Keil & Franz Delitzsch
+collapsing 4 row(s) into "John Gill" -> DISTINCT should fall 4 -> 1
+seeded: distinct served authors at Psalm 23:1 is now 1 (must be 1)
+  ✗ G2 >=2 voices — 1 verse(s) DROPPED BELOW the >=2-distinct-authors floor (24296 -> 24295)
+  ✗ G2 durable floor — 1 verse(s) dropped below the >=2-author floor among rows that SURVIVE the cleanup (24296 -> 24295)
+  ✗ G2 spot check — Psalm 23:1: served pool has 1 distinct author(s) (5 rows) — below the floor
+PROVEN  G2 >=2 voices — Psalm 23:1 collapsed from 4 served authors to 1
+```
+
+**Branch left clean**, verified after the run: 0 `__redproof__`/sentinel rows, 0 seeded sourceUrls,
+all 4 constraints back with the 030 body, `idx_notes_user_verse` back, sections 362,948 ==
+section_embeddings 362,948, `psa/23.json` restored with no stray `.redproof`.
+
+### 2c. `--e6-only` GREEN on the same branch (2026-07-29), no live 6H
+
+`CUTOVER_ASK_URL` deliberately unset. **Exit 0.** Full log:
+`docs/evidence/e6-2026-07-29/01-e6-only-rehearsal-branch.log`. All nine gates green, including the
+legs that had never run on a real target before:
+
+```
+✓ smoke counts pass (forbidden-provenance 0; E3 deferred — cleanup is a later slice)
+✓ G2 work leg — 290796 row(s) carry a work key; 41444 admitted by the exegetical work leg across 4/4 slug(s)
+✓ G2 durable floor — 24296 verses at the floor, 29716 with any voice     <-- == the headline floor
+✓ G2 spot check — John 10:11: 6 distinct authors, 12 served rows
+✓ G5 register wall — no leak: 0 of 201308 song/verse or lane row(s) reachable
+✓ G8 sections/embeddings — no orphan embeddings — 362948 over 362948
+✓ G9 constraints — all five present (three exact-body), all four behavioural probes reject, positive twin accepted, zero residue
+⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset)
+✓ REGRESSION GATE PASSED at E6 — DB-ONLY, LIVE PROBE NOT RUN; NO E0 BASELINE, so the ratcheted legs
+  REPORTED rather than asserted (survey, not regression gate)
+  (--e6-only: not checkpointed — this run makes no claim about a cutover)
+```
+
+The durable floor reading **24,296 == the headline 24,296** is the NULL-safety fix confirming itself
+on a target with zero forbidden rows; the self-check added alongside it would fail if they diverged.
+
+### 2d. Found AFTER the merge of #29 — a check that had silently stopped running
+
+`return laneRows;` (added when the lane ratchet was threaded through) sat **before** G5's
+FTS-exclusion leg, making ~30 lines unreachable. The gate printed a green G5 for two runs while the
+independent `sources.source_type` signal never executed. Dead code in a gate is worse than no gate:
+it reads as coverage. Caught by CodeRabbit on #29, confirmed by reading the merged file, fixed with
+a single exit at the bottom of `g5` plus a visible warning when the pre-019 branch is taken.
+
 ### 3. What actually shipped
 
 - **G8** `sections` ↔ `section_embeddings` — zero orphans, unembedded **ratcheted**, sections may not
@@ -245,7 +348,7 @@ anything here. My new gate — `typecheck — cutover gate (scripts/)` — is **
 
 ### 6. NOT DONE / UNVERIFIED — do not read this section as pessimism, it is the deliverable
 
-- **`scripts/e6-prove.mjs` was NOT run.** It needs a disposable Neon branch URL I do not have. Every
+- ~~**`scripts/cutover-gate-redproof.mjs` was NOT run.**~~ **SUPERSEDED 2026-07-29 — it ran; see §2b.** (The work order called it `scripts/e6-prove.mjs`; no such file exists — the red-proof is `scripts/cutover-gate-redproof.mjs`.) It needs a disposable Neon branch URL I do not have. Every
   new seeded case (G8, G9 ×2, G2-durable) is therefore **UNPROVEN on a real target** — written and
   typechecked, never watched go red. This is the single largest gap.
 - **6H has never executed.** No live `/api/ask` probe has ever run, in any rehearsal. Work-order

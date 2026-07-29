@@ -1,0 +1,102 @@
+
+CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27)
+  THE CUTOVER IS E0, E1, E2, E4, E5, E6. There is no E3 — forbidden-provenance
+  deletion is DEFERRED to its own slice after a re-ingest exists to refill the
+  corpus (owner ruling 2026-07-27; ADR-030 correction).
+  STEP ZERO  preflight: host~ep-little-brook-atyj6fc0-pooler, role=neondb_owner, write-capability, positive control
+  SNAPSHOT   a Neon branch off the target, created BEFORE the first write and
+      asserted to exist; its id is quoted in every rollback (Neon PITR retention on
+      this project is 6 h against a ~2 h 20 m run — the window can close first)
+  E0  regression gate --capture: the pre-cutover baseline (user-data digests +
+      active counts + owner distribution, the corpus-wide >=2-distinct-authors
+      floor, reader, annotation write path, register wall, forbidden ratchet)
+  E1  migrations 016-023 + 025-030 in order (018/019 concurrent)
+      after EVERY migration: user data unchanged (digest, not count) + no INVALID index
+      HAZARD 2 guard: refuse if a section-ordinal annotation precedes 024's renumber
+  E2  register-label the flat embeddings (UPDATE); assert per-work label coverage
+      against the TARGET's own author counts, and that no row was added or lost
+  E4  slice served works into sections reusing vectors 1:1; re-assert per-work 1:1
+      across every sliced work (ADR-029 addendum 2: each store, its own key), THEN
+      apply 024 and assert sections.unit_ordinal is POPULATED (it backfills what E4
+      creates; in E1 it left 71,563 of 72,863 NULL and the old 1:1 check said green)
+  E5  [HARD STOP] deploy.sh
+  E6  smoke counts + the full regression battery
+  REGRESSION GATE RUNS AFTER EVERY CHUNK (E0/E1/E2/E4/E6), not just at the end.
+  Any gate failure ABORTS and rolls back that chunk — never fix forward mid-cutover.
+  Every count re-measured at runtime; NO dev literals baked into a target assertion.
+  Resumable: completed steps recorded in .cutover-checkpoint.json, which is BOUND to
+  the target endpoint and to ONE writing session — a checkpoint from another target
+  is refused, and a second live process is refused rather than allowed to clobber it.
+
+
+STEP ZERO — prod-credential preflight
+  target host: ep-little-brook-atyj6fc0-pooler.c-9.us-east-1.aws.neon.tech
+  ✓ endpoint is ep-little-brook-atyj6fc0-pooler
+  ✓ current_user = neondb_owner
+  ✓ write capability proven (BEGIN; CREATE TEMP; ROLLBACK)
+  positive control (Gill rows): 28843
+  ✓ positive control fires
+STEP ZERO PASSED — safe to proceed.
+
+=== --e6-only: E6 smoke + regression battery ONLY ===
+  No migrations, no labelling, no slicing, NO DEPLOY. Nothing is checkpointed.
+  ⚠ NO E0 BASELINE on this checkpoint. Every ratcheted check (user data, the
+    voice floors, the forbidden ratchet, section integrity) has nothing to compare
+    against and will REPORT its reading instead of asserting on it. That is a
+    weaker run than a cutover E6 — read the gate's own verdict line, which says so.
+
+E6 — smoke + regression gate
+  Gill rows: 28843  sections: 362948  forbidden-provenance: 0
+  ✓ smoke counts pass (forbidden-provenance 0; E3 deferred — cleanup is a later slice)
+
+REGRESSION GATE — phase E6
+  target: ep-little-brook-atyj6fc0-pooler.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+
+  ✓ G1 user-data — baseline captured: highlights=5r/2a/1u/f3a70622 notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349
+  ✓ G2 >=2 voices — corpus-wide baseline: 24296 verses meet the >=2-distinct-authors floor, 29716 have any served voice
+  ✓ G2 durable floor — baseline EXCLUDING forbidden provenance: 24296 verses at the floor, 29716 with any voice (what remains after the deferred cleanup)
+  ✓ G2 work leg — 290796 row(s) carry a work key; 41444 of them are admitted by the exegetical work leg across 4/4 slug(s), 4 author(s)
+  ✓ G2 spot check — John 3:16: 7 distinct authors, 16 served rows
+  ✓ G2 spot check — Psalm 23:1: 4 distinct authors, 5 served rows
+  ✓ G2 spot check — Romans 8:28: 7 distinct authors, 34 served rows
+  ✓ G2 spot check — John 10:11: 6 distinct authors, 12 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/static — John 10:11: 9 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 17 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 10 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 10 legal commentary_entries
+  ✓ G3 reader/db — John 10:11: 9 legal commentary_entries
+  ✓ G4 load — highlights: shipped load query returns 2 active row(s) (baseline capture)
+  ✓ G4 load — notes: shipped load query returns 2 active row(s) (baseline capture)
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ✓ G5 register wall — no leak: 0 of 201308 song/verse or lane row(s) are reachable through LEGAL_CORPUS_FILTER
+  ✓ G6 ratchet — 0 forbidden-provenance rows — E3 deferred, cleanup is a later slice
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=quarantined, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.
+  ✓ G8 sections/embeddings — no orphan embeddings — 362948 embedding row(s) over 362948 section(s). NOTE: section_embeddings.section_id is NOT NULL REFERENCES sections(id), so an orphan is unrepresentable while that FK stands; this leg only becomes informative if the FK is ever dropped. It is not evidence of a healthy slice. Also note embeddings > sections is NORMAL — the PK is (section_id, model_slug), so a second model legitimately adds rows.
+  ✓ G8 unembedded — baseline: 0 of 362948 section(s) carry no embedding
+  ✓ G9 constraints — notes.notes_anchor_xor present with the 025 body
+  ✓ G9 constraints — highlights.highlights_anchor_xor present with the 030 body
+  ✓ G9 constraints — notes.notes_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — highlights.highlights_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — bookmarks.bookmarks_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — 025 notes_anchor_xor rejects a verse note with no verse_id
+  ✓ G9 constraints — 025 notes_anchor_xor rejects a note anchored to BOTH a verse and a section
+  ✓ G9 constraints — 030 highlights_anchor_xor rejects a section highlight with no source_content_hash
+  ✓ G9 constraints — 030 highlights_anchor_xor rejects a section highlight carrying a translation
+  ✓ G9 constraints — positive twin: the SAME row with a content hash and no translation is ACCEPTED (so the rejections above are about those fields, not about the insert)
+  ✓ G9 constraints — probes rolled back clean, zero residue
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+     DATABASE-ONLY. Nothing in this gate touched the deployed application: not routing,
+     not legalBasePool, not hnsw.ef_search, not the reranker, not compose, and NOT THE
+     VERIFIER — the artifact that actually implements the product guarantee. Set
+     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result. You will also need
+     CUTOVER_ASK_COOKIE carrying a logged-in SESSION cookie (/api/ask is authed-only);
+     the site_gate password cookie alone yields 401.
+✓ REGRESSION GATE PASSED at E6 — DB-ONLY, LIVE PROBE NOT RUN; NO E0 BASELINE, so the ratcheted legs REPORTED rather than asserted (survey, not regression gate)
+  (--e6-only: not checkpointed — this run makes no claim about a cutover)
+
+--e6-only: done.

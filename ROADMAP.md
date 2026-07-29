@@ -38,7 +38,7 @@ NPNF/CCEL re-ingest lands in the same cutover, and the cutover has no ingest ste
 fall below the ≥2-distinct-authors floor and 24 would lose every served voice. Provenance cleanup is
 its own later slice, after a re-ingest exists. The eight owner rulings from the deep-audit are
 implemented and **each new gate was watched go red through the orchestrator** on a fresh fork of
-production, which then ran E0→E6 (E5 not run) green. Prod untouched; `deploy.sh` never run.
+production, which then ran E0, E1, E2, E4 and E6 green; E5 was not run (there is no E3). Prod untouched; `deploy.sh` never run.
 **Still owner-gated: nothing has run against `ep-odd-fog`.** Known blocker carried forward — E4 now
 copies 6,257 forbidden-provenance rows into `sections` under sources whose provenance says otherwise
 (nothing served today, no gate can see it); spun off as its own slice. Details: WORKLOG 2026-07-27

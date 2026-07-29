@@ -513,7 +513,7 @@ async function g4(c: pg.Client, base?: UserDataMeasure) {
   // rejects the statement and note-saving on the live site fails until E5 ships the
   // matching code. This probe reports that window; it is a WARNING, not an abort,
   // because the ordering is the approved design's and closing it is an owner call.
-  if (polymorphic && ['E1', 'E2', 'E3', 'E4'].includes(PHASE)) {
+  if (polymorphic && ['E1', 'E2', 'E4'].includes(PHASE)) {
     try {
       await c.query('BEGIN');
       await c.query(
@@ -575,7 +575,6 @@ async function g5(c: pg.Client, phase: string, baseLaneRows?: number): Promise<n
   if (baseLaneRows !== undefined && laneRows < baseLaneRows) {
     fail('G5 register wall', `the song/verse + lane population SHRANK ${baseLaneRows} -> ${laneRows}: ${baseLaneRows - laneRows} row(s) lost their register slug. Those works stop being served by their lane pools, and the wall silently stops being testable.`);
   }
-  return laneRows;
 
   // The FTS surface. THE SIGNAL MUST BE INDEPENDENT OF THE PREDICATE UNDER TEST.
   // The first version of this check asked for rows that are non-exegetical *by
@@ -604,7 +603,17 @@ async function g5(c: pg.Client, phase: string, baseLaneRows?: number): Promise<n
     );
     if (fts.rows[0]!.n > 0) fail('G5 register wall', `${fts.rows[0]!.n} commentary_entries from a non-exegetical SOURCE survive EXEGETICAL_FTS_EXCLUSION`);
     else pass('G5 register wall', 'FTS exclusion holds against the independent sources.source_type signal');
+  } else {
+    // Visibly, not silently: leg 1 warns when vacuous, this one used to say nothing at all,
+    // so the output looked identical whether the check ran or not.
+    console.warn('  ⚠ G5 register wall — commentary_entries.register does not exist (pre-019), so the independent FTS signal was NOT checked.');
   }
+  // RETURNED HERE, LAST. When the lane-population ratchet was added, this `return` went in
+  // directly after it — which put it BEFORE the FTS leg and made ~30 lines of check
+  // unreachable. The gate went on printing a green G5 while the independent
+  // sources.source_type signal never ran. Dead code in a gate is worse than no gate: it
+  // reads as coverage. Keep the single exit at the bottom of the function.
+  return laneRows;
 }
 
 // ── G6 ────────────────────────────────────────────────────────────────────────

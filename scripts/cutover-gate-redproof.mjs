@@ -135,19 +135,44 @@ await proof('G1 user-data — an extra highlight row',
   'G1 user-data');
 
 // ── G2: the >=2-voices floor ─────────────────────────────────────────────────
-// EVERY row at that verse, not just the four unconstrained authors — the served
-// pool for Psalm 23 also admits Augustine (book 19), and a seed that leaves two
-// authors standing proves nothing. Leave exactly ONE author served.
+// TWO CORRECTIONS, both found by RUNNING this against a branch whose `work` leg is
+// populated (2026-07-28) — where the previous seed STAYED GREEN and the harness correctly
+// reported FAILED:
+//
+//  (a) RENAMING TO A SENTINEL DOES NOT REMOVE AN AUTHOR, IT ADDS ONE. The old seed set every
+//      row but one to '__redproof_author__' and its comment claimed that left "exactly ONE
+//      author served". It left TWO — the kept author plus the sentinel — so the verse still
+//      cleared the >=2 floor and G2 was right to stay green. Measured at Psalm 23:1: 5
+//      admitted rows / 4 authors, of which the two keil-delitzsch rows are admitted by the
+//      `metadata->>'work'` leg, which an author rename does not touch. The fix is to COLLAPSE
+//      the victims into the kept author's own name, so DISTINCT genuinely falls to 1.
+//  (b) SEED ONLY WHAT THE FILTER ADMITS. The old seed rewrote all 97 rows at the verse when
+//      only 5 are in the served pool; the other 92 were invisible to the check, and every
+//      UPDATE on `embeddings` costs ~5s because each one maintains the HNSW indexes.
+//      Scoping to the admitted rows is both more precise and ~20x faster.
+const PSA_VID = 19023001;
 const psa = (await c.query(
   `SELECT id, metadata->>'author' AS author FROM embeddings
-    WHERE user_id IS NULL AND (metadata->>'verseId')::int = 19023001`)).rows;
-console.log(`(Psalm 23:1 authors on the fork: ${[...new Set(psa.map((r) => r.author))].join(', ')})`);
-const keep = psa.find((r) => r.author === 'John Gill') ?? psa[0];
-const victims = psa.filter((r) => r.id !== keep.id);
-await proof('G2 >=2 voices — all but one served author removed from Psalm 23:1',
-  async () => { for (const v of victims) await c.query(`UPDATE embeddings SET metadata = jsonb_set(metadata,'{author}','"__redproof_author__"') WHERE id = $1`, [v.id]); },
-  async () => { for (const v of victims) await c.query(`UPDATE embeddings SET metadata = jsonb_set(metadata,'{author}',to_jsonb($2::text)) WHERE id = $1`, [v.id, v.author]); },
-  'G2');
+    WHERE user_id IS NULL AND (metadata->>'verseId')::int = $1
+      AND ${PROSE_TYPE_SQL} AND ${LEGAL_CORPUS_FILTER}`, [PSA_VID])).rows;
+const psaAuthors = [...new Set(psa.map((r) => r.author))];
+console.log(`(Psalm 23:1 ADMITTED rows: ${psa.length}, distinct served authors: ${psaAuthors.join(', ')})`);
+if (psaAuthors.length < 2) {
+  console.log('SKIPPED  G2 — Psalm 23:1 is already below the >=2-author floor on this fork; nothing to knock down.\n');
+  results.push({ name: 'G2 >=2 voices (skipped: verse already below the floor)', verdict: 'SKIPPED' });
+} else {
+  const keepAuthor = psa.find((r) => r.author === 'John Gill')?.author ?? psa[0].author;
+  const victims = psa.filter((r) => r.author !== keepAuthor);
+  await proof(`G2 >=2 voices — Psalm 23:1 collapsed from ${psaAuthors.length} served authors to 1 ("${keepAuthor}"), ${victims.length} row(s)`,
+    async () => { for (const v of victims) await c.query(
+      `UPDATE embeddings SET metadata = jsonb_set(metadata,'{author}',to_jsonb($2::text)) WHERE id = $1`, [v.id, keepAuthor]); },
+    async () => { for (const v of victims) await c.query(
+      `UPDATE embeddings SET metadata = jsonb_set(metadata,'{author}',to_jsonb($2::text)) WHERE id = $1`, [v.id, v.author]); },
+    // NOT the bare 'G2': that also matches "G2 durable floor", "G2 work leg" and
+    // "G2 spot check", any of which this seed also moves — so a corpus-wide-leg regression
+    // could be scored PROVEN off the wrong red line. Name the leg exactly.
+    'G2 >=2 voices');
+}
 
 // ── G3: the reader's static chapter file ─────────────────────────────────────
 const f = `${ROOT}/web/public/commentaries/psa/23.json`;
@@ -174,8 +199,10 @@ await proof('G4 write — upsertNote loses its partial unique index (the 025 haz
   'G4 write');
 
 // ── G5: the register wall ────────────────────────────────────────────────────
-const donor = (await c.query(
-  `SELECT id FROM embeddings WHERE user_id IS NULL AND metadata->>'author' = 'John Gill' LIMIT 1`)).rows[0].id;
+const donorRow = (await c.query(
+  `SELECT id FROM embeddings WHERE user_id IS NULL AND metadata->>'author' = 'John Gill' LIMIT 1`)).rows[0];
+if (!donorRow) throw new Error('no John Gill row on this fork — the G5 seed cannot be built; pick a fork with the served corpus');
+const donor = donorRow.id;
 await proof('G5 register wall — a sermon-lane work made reachable through the exegetical filter',
   () => c.query(`UPDATE embeddings SET metadata = jsonb_set(metadata,'{work}','"spurgeon-sermons"') WHERE id = $1`, [donor]),
   () => c.query(`UPDATE embeddings SET metadata = metadata - 'work' WHERE id = $1`, [donor]),

@@ -35,3 +35,4 @@ web/public/concordance/
 
 .env.prod
 .cutover-checkpoint.json
+.cutover-redproof-checkpoint.json

@@ -1,0 +1,11 @@
+PROVEN   G1 user-data — an extra highlight row
+FAILED (stayed GREEN on the seeded defect) G2 >=2 voices — all but one served author removed from Psalm 23:1
+PROVEN   G3 reader/static — the chapter file the reader renders goes missing
+PROVEN   G4 write — upsertNote loses its partial unique index (the 025 hazard)
+PROVEN   G5 register wall — a sermon-lane work made reachable through the exegetical filter
+PROVEN   G6 ratchet — one new biblehub-provenance row appears
+PROVEN   G8 unembedded — a section loses its embedding(s) (the slice wrote text, not vectors) [1 row(s) captured]
+PROVEN   G9 constraints — 030 reverts to the 025 body (constraint present but weaker)
+PROVEN   G9 constraints — notes_anchor_xor is dropped entirely
+PROVEN   G2 durable floor — verse 0 loses its 2nd clean voice "Augustine of Hippo" to forbidden provenance (304 row(s))
+REDPROOF EXIT=1
