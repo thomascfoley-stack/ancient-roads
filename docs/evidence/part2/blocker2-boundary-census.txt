@@ -1,0 +1,70 @@
+CONSTANTS AS IMPORTED FROM routing.ts (not retyped)
+  PROSE_TYPE_SQL      = source_type IN ('commentary','sermon','father','theology','confession','lexicon')
+  SERVED_PROSE_WORKS  = 4 slugs: keil-delitzsch, catena-aurea, chrysostom-homilies, augustine-homilies
+  LEGAL_CORPUS_FILTER = (metadata->>'author' IN ('John Gill','Jamieson, Fausset & Brown','Adam Clarke','Matthew Henry') OR (metadata->>'author'='John Chrysostom' AND (metadata->>'verseId')::int/1000000 IN (40,43,44)) OR (metadata->>'author'='Augustine of Hippo' AND (metadata->>'verseId')::int/1000000 IN (19,43)) OR (metadata->>'author' IN ('Albert Barnes','John Wesley','John Calvin') AND metadata->>'sourceUrl' ILIKE '%crosswire%') OR metadata->>'work' IN ('keil-delitzsch','catena-aurea','chrysostom-homilies','augustine-homilies'))
+
+── Q1  DOES A JOIN KEY EXIST? ─────────────────────────────────────────────
+  prose_rows           416781    <- CONTROL: must be ~127k+
+  has_work_key         291826  (70.0%)
+  has_author_key       416781  (100.0%)
+  distinct_works           20
+  distinct_authors        300
+  CONTROL PASS
+
+── Q2  HOW MUCH OF THE POOL MAPS TO A sources ROW? ────────────────────────
+  JOIN ON s.slug = metadata->>'work'
+    works_in_pool         20  works_matched         20  rows_total     416781  rows_unmatched     124955 (30.0%)
+  JOIN ON s.author = metadata->>'author'
+    authors_in_pool        300 authors_matched         22 rows_total     422218  rows_unmatched      92978 (22.0%)
+  BETTER KEY: s.author = metadata->>'author'
+  unmatched works (slug join), top 15:
+        124955  (null work key)
+
+── Q3  CURRENT LEGAL POOL (baseline) ──────────────────────────────────────
+  legal_rows        127568   <- CONTROL: must be ~127k
+  legal_authors         11   <- CONTROL: must be ~9
+
+── Q4  CANDIDATE POOL IF THE BOUNDARY WERE THE DATA (key: s.author = e.metadata->>'author') ──
+  candidate_rows      262892
+  candidate_works         15
+
+── Q5  THE DELTA, BOTH DIRECTIONS ─────────────────────────────────────────
+  GAINS  (in data-driven, NOT in hardcoded): 197014 rows
+        118371  Charles Haddon Spurgeon · spurgeon-sermons
+         20095  John Owen · owen-works
+         17130  Alexander Maclaren · maclaren-expositions
+         16969  Jonathan Edwards · edwards-works
+          5507  Charles Hodge · hodge-systematic
+          5437  Philip Schaff · schaff-creeds
+          3577  John Flavel · flavel-works
+          3448  John Calvin · calvin-institutes
+          3329  John Wesley · wesley-sermons
+          3151  Thomas Watson · watson-works
+  LOSSES (in hardcoded, NOT in data-driven): 63859 rows
+         28843  John Gill · ?
+         15473  Jamieson, Fausset & Brown · ?
+         12693  Adam Clarke · ?
+          6850  Albert Barnes · ?
+
+── Q6  DOES SONG OF SOLOMON GAIN? ─────────────────────────────────────────
+  SoS (22)             Q3(hardcoded) rows=      0 authors=  0   |   Q4(data) rows=    630 authors=  6
+  CONTROL John (43)    Q3(hardcoded) rows=   8105 authors= 10   |   Q4(data) rows=  19786 authors= 14
+  CONTROL Psalms (19)  Q3(hardcoded) rows=   7136 authors=  6   |   Q4(data) rows=  22355 authors= 14
+
+── Q7  BOUNDARY DRIFT (a fact, not a risk) ────────────────────────────────
+  rows in the legal pool with no sources row, or a non-published one: 63859
+         28843  John Gill · ?  [(no sources row)]
+         15473  Jamieson, Fausset & Brown · ?  [(no sources row)]
+         12693  Adam Clarke · ?  [(no sources row)]
+          6850  Albert Barnes · ?  [quarantined]
+
+── INTEGRITY CHECKS ON THIS MEASUREMENT ITSELF ────────────────────────────
+1. THE AUTHOR JOIN FANS OUT. rows_total is 422,218 on the author join vs 416,781 on the slug join —
+   MORE rows than exist in the pool. One embedding row matches several `sources` rows sharing an
+   author (e.g. two Calvin works), so the author key is NOT a unique mapping. "Fewer unmatched rows"
+   was therefore the wrong criterion for "better key", and Q4/Q5/Q7 computed on it inherit that
+   fan-out. Reported rather than silently used.
+2. Q3 legal_authors = 11, but the stated control was ~9. Close, not equal. The 9-author figure in
+   the docs does not match what the shipped filter actually admits.
+3. Q5 LOSSES (63,859) equals Q7 drift (63,859) exactly — consistent, since the losses ARE the rows
+   whose author/work has no published `sources` row.
