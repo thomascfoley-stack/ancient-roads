@@ -23,7 +23,7 @@
 //
 // The real coverage gap is a separate, owner-gated item (repo secret `APP_DATABASE_URL_TEST` +
 // a workflow edit needing `workflow` scope) tracked in `docs/OWNER_ACTIONS.md` §1. Measured under
-// CI conditions (no `web/.env.local`): 69 of 177 web tests skip.
+// CI conditions (no `web/.env.local`): 75 of 200 web tests skip.
 //
 // This suite runs in the ROOT vitest project, which `scripts/audit.sh` invokes on every CI push —
 // so unlike the web DB invariants, it genuinely executes in CI.
@@ -45,14 +45,27 @@ const CLAIMS_CI_RUNS_IT = [
   /now\s+runs\s+(?:there\s+)?for\s+real\s+instead\s+of\s+skipping/i,
 ];
 
-/** The web invariant files `db-invariants` actually executes, parsed from the workflow. */
-function filesRunByCi(): string[] {
+/** How `db-invariants` selects its targets. The job used to enumerate 13 files; as of the
+ *  2026-07-29 owner ruling it globs the whole directory, because an allowlist made every new
+ *  invariant opt-in to CI and forgetting one was invisible (both checks written that day were
+ *  missing from it). This parser handles BOTH shapes, and returns 'none' for anything else so
+ *  the vacuity guard below can fire. */
+function ciTargets(): { mode: 'glob' | 'explicit' | 'none'; files: string[] } {
   const yml = readFileSync(workflowPath, 'utf8');
-  // the job's run line enumerates its targets explicitly, e.g.
-  //   run: corepack pnpm exec vitest run test/invariants/licensing.test.ts test/invariants/tenancy.test.ts
   const runLine = yml.split('\n').find((l) => l.includes('vitest run') && l.includes('test/invariants/'));
-  if (!runLine) return [];
-  return [...runLine.matchAll(/test\/invariants\/([\w.-]+\.test\.tsx?)/g)].map((m) => m[1]!);
+  if (!runLine) return { mode: 'none', files: [] };
+  const explicit = [...runLine.matchAll(/test\/invariants\/([\w.-]+\.test\.tsx?)/g)].map((m) => m[1]!);
+  if (explicit.length > 0) return { mode: 'explicit', files: explicit };
+  // A bare directory target — `vitest run test/invariants/` — runs EVERY file under it.
+  if (/vitest run\s+test\/invariants\/?(\s|$)/.test(runLine)) {
+    return { mode: 'glob', files: readdirSync(webTestDir).filter((f) => /\.test\.tsx?$/.test(f)) };
+  }
+  return { mode: 'none', files: [] };
+}
+
+/** The web invariant files `db-invariants` actually executes. */
+function filesRunByCi(): string[] {
+  return ciTargets().files;
 }
 
 describe('CI claims match CI reality', () => {
@@ -80,14 +93,28 @@ describe('CI claims match CI reality', () => {
     ).toEqual([]);
   });
 
-  it('the db-invariants job still enumerates its targets explicitly (so the check above can see them)', () => {
-    // If someone rewrites the job to a glob, filesRunByCi() silently returns [] and the test above
-    // starts passing for the wrong reason. Fail loudly instead.
-    const files = filesRunByCi();
+  it('the db-invariants job selects its targets in a shape this test can actually read', () => {
+    // The vacuity guard. If the workflow is rewritten into a shape ciTargets() does not
+    // understand, `files` is empty and the check above starts passing for the wrong reason.
+    // Fail loudly instead. (This test did its job on 2026-07-29: the allowlist→glob rewrite
+    // turned it red, which is what forced the parser to be taught the new shape rather than
+    // the check quietly becoming vacuous.)
+    const { mode, files } = ciTargets();
     expect(
-      files.length,
-      'could not parse any test/invariants/*.test.ts targets out of audit.yml — the check above would '
-        + 'pass vacuously. Update filesRunByCi() to match the new workflow shape.',
-    ).toBeGreaterThan(0);
+      mode,
+      'could not parse the db-invariants target selection out of audit.yml — the check above would '
+        + 'pass vacuously. Teach ciTargets() the new workflow shape.',
+    ).not.toBe('none');
+    expect(files.length, `mode=${mode} resolved to zero files`).toBeGreaterThan(0);
+  });
+
+  it('a directory glob really does cover EVERY web invariant (no file is opt-in to CI)', () => {
+    const { mode, files } = ciTargets();
+    if (mode !== 'glob') return; // explicit mode is covered by the liar check above
+    const onDisk = readdirSync(webTestDir).filter((f) => /\.test\.tsx?$/.test(f)).sort();
+    // The whole point of the glob ruling: coverage is a property of the directory, not of
+    // anyone remembering to add a line. If these ever diverge, the glob is not a glob.
+    expect(files.slice().sort(), 'the parsed glob target does not match the directory contents').toEqual(onDisk);
+    expect(onDisk.length, 'no web invariants on disk — this check would be vacuous').toBeGreaterThan(0);
   });
 });

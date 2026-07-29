@@ -21,7 +21,7 @@
 // this suite in earnest. That was FALSE and is corrected here: commit `f229a93` parked the
 // `.github/workflows/audit.yml` edit (the push lacked the `workflow` token scope), so the
 // documentation half of that change landed and the enforcement half did not. Measured under CI
-// conditions (no `web/.env.local`): **69 of 177 web tests skip, including every test here.**
+// conditions (no `web/.env.local`): **75 of 200 web tests skip, including every test here.**
 // Believing the old claim is how a PR that drops a `status='published'` predicate merges green.
 // Tracked in `docs/OWNER_ACTIONS.md` §1; enforced against re-introduction by
 // `test/invariants/ci-claims-match-reality.test.ts`. (That guard matches claim-phrases anywhere
@@ -29,13 +29,14 @@
 
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { localEnv } from '../helpers/env';
+import {seedOwnerUrl } from '../helpers/env';
+import { announceSkip } from '../helpers/loud-skip';
 
 function ownerUrl(): string | undefined {
-  const url = localEnv('DATABASE_URL') ?? localEnv('DATABASE_URL_UNPOOLED');
-  if (!url) return undefined;
-  if (!/ep-tiny-hat|ep-holy-rice-athhpp5z|localhost|127\.0\.0\.1/.test(url)) return undefined;
-  return url;
+  // ONE definition, in helpers/env.ts: refuses production LOUDLY, allows dev/localhost,
+  // and allows any other endpoint only when declared by exact id in SEED_TEST_ENDPOINT.
+  // Was a hardcoded dev-endpoint regex, which made this suite un-runnable in CI.
+  return seedOwnerUrl();
 }
 
 const url = ownerUrl();
@@ -54,7 +55,14 @@ async function inTx<T>(fn: (c: pg.Client) => Promise<T>): Promise<T> {
   }
 }
 
-describe.skipIf(!url)('MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index', () => {
+// A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
+const SKIP = announceSkip(
+  'MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index',
+  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(url) }],
+  'the 025 anchor XOR CHECK and the verse-only partial unique index',
+);
+
+describe.skipIf(SKIP)('MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index', () => {
   beforeAll(async () => {
     client = new pg.Client({ connectionString: url!, ssl: { rejectUnauthorized: false } });
     await client.connect();

@@ -21,13 +21,14 @@
 
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { localEnv } from '../helpers/env';
+import {seedOwnerUrl } from '../helpers/env';
+import { announceSkip } from '../helpers/loud-skip';
 
 function ownerUrl(): string | undefined {
-  const url = localEnv('DATABASE_URL') ?? localEnv('DATABASE_URL_UNPOOLED');
-  if (!url) return undefined;
-  if (!/ep-tiny-hat|ep-holy-rice-athhpp5z|localhost|127\.0\.0\.1/.test(url)) return undefined;
-  return url;
+  // ONE definition, in helpers/env.ts: refuses production LOUDLY, allows dev/localhost,
+  // and allows any other endpoint only when declared by exact id in SEED_TEST_ENDPOINT.
+  // Was a hardcoded dev-endpoint regex, which made this suite un-runnable in CI.
+  return seedOwnerUrl();
 }
 
 const url = ownerUrl();
@@ -46,7 +47,14 @@ async function inTx<T>(fn: (c: pg.Client) => Promise<T>): Promise<T> {
   }
 }
 
-describe.skipIf(!url)('MIG-B..E — bookmarks, library_items, reading_progress, tags', () => {
+// A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
+const SKIP = announceSkip(
+  'MIG-B..E — bookmarks, library_items, reading_progress, tags',
+  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(url) }],
+  'bookmarks, library_items, reading_progress and tags schema invariants',
+);
+
+describe.skipIf(SKIP)('MIG-B..E — bookmarks, library_items, reading_progress, tags', () => {
   beforeAll(async () => {
     client = new pg.Client({ connectionString: url!, ssl: { rejectUnauthorized: false } });
     await client.connect();

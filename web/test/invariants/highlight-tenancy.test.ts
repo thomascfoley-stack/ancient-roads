@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createHighlight, getChapterAnnotations, removeHighlightById, type Highlight } from '@/lib/annotations';
 import { runAsUser } from '@/lib/db';
 import { requireDbInCi } from '../helpers/env';
+import { announceSkip } from '../helpers/loud-skip';
 
 const dbUrl = requireDbInCi();
 const userA = `qa-hl-a-${Date.now()}`;
@@ -20,7 +21,14 @@ const VERSE_ID = 43 * 1_000_000 + 3 * 1_000 + 16;
 let spanId = '';
 let created = false;
 
-describe.skipIf(!dbUrl)('§7 sub-verse highlight tenancy (two-account, executed)', () => {
+// A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
+const SKIP = announceSkip(
+  '§7 sub-verse highlight tenancy (two-account, executed)',
+  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(dbUrl) }],
+  'two-account RLS tenancy for sub-verse highlights',
+);
+
+describe.skipIf(SKIP)('§7 sub-verse highlight tenancy (two-account, executed)', () => {
   beforeAll(async () => {
     const h = await createHighlight(userA, {
       verseId: VERSE_ID,

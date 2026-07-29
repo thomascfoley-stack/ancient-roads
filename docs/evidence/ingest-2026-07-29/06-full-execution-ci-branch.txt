@@ -1,0 +1,52 @@
+FULL EXECUTION of the db-invariants glob, in the EXACT CI shape (2026-07-29)
+
+Target: Neon branch ci-test-20260729 / br-cold-wind-at8ey06h, forked from DEV
+        (not production — the tenancy suite writes rows), endpoint ep-tiny-bonus-at3izo3y,
+        pooled, 1-2 CU. Created via Composio's Neon toolkit.
+
+Shape: web/.env.local MOVED ASIDE (so nothing falls back to a dev laptop file), and only
+       the env the workflow sets:
+         APP_DATABASE_URL   = app_runtime  @ ep-tiny-bonus-at3izo3y (pooled)
+         DATABASE_URL       = neondb_owner @ ep-tiny-bonus-at3izo3y
+         SEED_TEST_ENDPOINT = ep-tiny-bonus-at3izo3y
+         DEEPINFRA_API_KEY  = set
+         REQUIRE_DB         = 1
+
+RESULT:  Test Files  36 passed | 1 skipped (37)
+         Tests      187 passed | 3 skipped (190)
+         NOT RUN annotations: 0
+
+The two checks that had NEVER run anywhere but the author's laptop both executed:
+  ✓ §B1 per-register end-to-end — the five reader checks for every published register
+  ✓ §B0 class 2 — content<->vector pairing, 35/35 published works probed
+
+THE 3 REMAINING SKIPS — both legitimate, self-declared, and loud:
+  verse-keys.test.ts (2) — needs the gitignored corpus; its own describe title says
+    "VISIBLY skipped when the gitignored corpus is absent, e.g. CI".
+  licensing.test.ts (1 of 6) — the forbidden-provenance ratchet needs the gitignored
+    static corpus. It warns "RATCHET NOT ENFORCED HERE" and names the real enforcement
+    point: scripts/predeploy-gate.ts, run by deploy.sh on the machine holding the files.
+So 187/190 is the true ceiling for this glob in CI, not a shortfall.
+
+WHY THE FOUR SUITES COULD NOT RUN BEFORE (diagnosed, not guessed):
+  library-published-boundary, sections-unit-ordinal, annotations-polymorphic and
+  annotation-tables SEED fixtures — INSERT INTO sources — which app_runtime is correctly
+  refused (probed: "permission denied for table sources"; grants on sources = SELECT).
+  They each resolved a separate OWNER url via localEnv('DATABASE_URL'), which in CI is
+  unset (no web/.env.local), so ownerUrl() returned undefined and all four skipped.
+  Behind that, each hardcoded /ep-tiny-hat|ep-holy-rice-athhpp5z|localhost/ — so even a
+  correct owner URL on a CI branch would still have been rejected.
+
+FIX: one shared seedOwnerUrl() in web/test/helpers/env.ts.
+  - production REFUSED LOUDLY (throw, not skip) and no declaration overrides it
+  - dev + localhost allowed as before
+  - any other endpoint allowed only when DECLARED by exact endpoint id in SEED_TEST_ENDPOINT
+  Proven by web/test/invariants/seed-owner-url.test.ts (5 tests): declaring prod does NOT
+  unlock it; an uppercase prod host is still refused; "neon.tech" authorises nothing; a
+  prefix of an endpoint id is not that endpoint.
+
+CORRECTION TO AN EARLIER CLAIM IN THIS SESSION: the first failure I saw on this branch
+("library_items_source_id_fkey") was NOT a defect. My harness exported only
+APP_DATABASE_URL, so the suite's owner client fell back to web/.env.local and inserted the
+source into DEV while the library_items row went to the FORK. Two databases, one test.
+Grants on the fork and dev are identical.

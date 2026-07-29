@@ -19,6 +19,7 @@ import { flattenToSegments, rangeToOffsets, snapToWords } from '@/lib/highlight-
 import { createHighlight, getChapterAnnotations, removeHighlightById, type Highlight } from '@/lib/annotations';
 import { runAsUser } from '@/lib/db';
 import { requireDbInCi } from '../helpers/env';
+import { announceSkip } from '../helpers/loud-skip';
 
 // John 3:16 (KJV), the canonical verse text the offsets anchor into.
 const VERSE =
@@ -79,7 +80,14 @@ const CHAPTER = 3;
 const VERSE_ID = BOOK * 1_000_000 + CHAPTER * 1_000 + 16; // John 3:16
 let spanId = '';
 
-describe.skipIf(!dbUrl)('§P1 the exact substring survives the persistence round-trip (RLS)', () => {
+// A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
+const SKIP = announceSkip(
+  '§P1 the exact substring survives the persistence round-trip (RLS)',
+  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(dbUrl) }],
+  'that the exact highlighted substring survives the persistence round-trip under RLS',
+);
+
+describe.skipIf(SKIP)('§P1 the exact substring survives the persistence round-trip (RLS)', () => {
   afterAll(async () => {
     // HARD-delete this run's seeded rows — removeHighlightById only SOFT-deletes, which left the
     // row in the shared dev DB on every run (see highlight-tenancy.test.ts for the same fix).

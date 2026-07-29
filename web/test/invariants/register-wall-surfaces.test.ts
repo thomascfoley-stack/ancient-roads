@@ -24,13 +24,21 @@ import { CATALOGS, CATALOG_IDS, listCatalogWorks, type CatalogId } from '@/lib/c
 import { searchSections } from '@/lib/search-sections';
 import { getDb } from '@/lib/db';
 import { ensureDbEnv } from '../helpers/env';
+import { announceSkip } from '../helpers/loud-skip';
 
 const dbUrl = ensureDbEnv();
 
 /** Types that must never appear in ANY catalog: lane content + the Word Study surface. */
 const NON_CATALOG_TYPES = ['theology', 'confession', 'lexicon'];
 
-describe.skipIf(!dbUrl)('register wall — the NEW catalog + search surfaces', () => {
+// A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
+const SKIP = announceSkip(
+  'register wall — the NEW catalog + search surfaces',
+  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(dbUrl) }],
+  'the register wall on real data — catalog fence, disjoint taxonomy, labelled search',
+);
+
+describe.skipIf(SKIP)('register wall — the NEW catalog + search surfaces', () => {
   it('the taxonomy is disjoint: no source_type is reachable through two catalogs', () => {
     const seen = new Map<string, CatalogId>();
     for (const id of CATALOG_IDS) {

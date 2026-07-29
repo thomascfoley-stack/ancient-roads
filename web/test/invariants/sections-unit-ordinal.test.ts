@@ -18,7 +18,7 @@
 // commit `f229a93` parked the workflow edit for lack of the `workflow` token scope, so
 // `db-invariants` still targets exactly two files (`licensing`, `tenancy`) and short-circuits to
 // green when the `APP_DATABASE_URL_TEST` secret is absent — which it is. Measured under CI
-// conditions (no `web/.env.local`): **69 of 177 web tests skip, including every test here.**
+// conditions (no `web/.env.local`): **75 of 200 web tests skip, including every test here.**
 // Tracked in `docs/OWNER_ACTIONS.md` §1; enforced by `test/invariants/ci-claims-match-reality.test.ts`.
 // (That guard matches claim-phrases anywhere in a file, so describe the old claim — do not
 // reproduce its wording verbatim, or the guard will read the quotation as a fresh assertion.)
@@ -27,16 +27,16 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { localEnv } from '../helpers/env';
+import {seedOwnerUrl } from '../helpers/env';
+import { announceSkip } from '../helpers/loud-skip';
 
 const MIGRATION = fileURLToPath(new URL('../../../db/migrations/024_sections_unit_ordinal.sql', import.meta.url));
 
 function ownerUrl(): string | undefined {
-  const url = localEnv('DATABASE_URL') ?? localEnv('DATABASE_URL_UNPOOLED');
-  if (!url) return undefined;
-  // never run seed+delete against anything but the dev endpoint
-  if (!/ep-tiny-hat|ep-holy-rice-athhpp5z|localhost|127\.0\.0\.1/.test(url)) return undefined;
-  return url;
+  // ONE definition, in helpers/env.ts: refuses production LOUDLY, allows dev/localhost,
+  // and allows any other endpoint only when declared by exact id in SEED_TEST_ENDPOINT.
+  // Was a hardcoded dev-endpoint regex, which made this suite un-runnable in CI.
+  return seedOwnerUrl();
 }
 
 function backfillSql(): string {
@@ -97,7 +97,14 @@ const deleteSeed = async (c: pg.Client) => {
   await c.query(`DELETE FROM sources WHERE slug = $1`, [SLUG]);
 };
 
-describe.skipIf(!url)('ADR-026 red-first — 024 backfill reassembles mis-ordered chunks in (unit_ordinal, ordinal) order', () => {
+// A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
+const SKIP = announceSkip(
+  'ADR-026 red-first — 024 backfill reassembles mis-ordered chunks in (unit_ordinal, ordinal) order',
+  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(url) }],
+  'the 024 backfill reassembly of mis-ordered chunks in (unit_ordinal, ordinal) order',
+);
+
+describe.skipIf(SKIP)('ADR-026 red-first — 024 backfill reassembles mis-ordered chunks in (unit_ordinal, ordinal) order', () => {
   beforeAll(async () => {
     client = new pg.Client({ connectionString: url!, ssl: { rejectUnauthorized: false } });
     await client.connect();

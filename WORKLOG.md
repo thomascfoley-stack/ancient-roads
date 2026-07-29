@@ -1,5 +1,6 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+
 ## 2026-07-29 (SESSION 5 — E4 provenance: SECTION_PROVENANCE_DESIGN R1–R5 implemented on owner ruling; NOT yet fork-rehearsed; PROD UNTOUCHED)
 
 **The owner ruled** ("fix the e4 sectioning") — the ruling `docs/SECTION_PROVENANCE_DESIGN.md` §7's
@@ -198,6 +199,225 @@ anything here. My new gate — `typecheck — cutover gate (scripts/)` — is **
    checkable.
 5. **Close PR #28** as superseded (owner call).
 6. **Merge `fix/work-reader-staged-fixture-2026-07-28` first** to clear the `qa` red.
+
+## 2026-07-29 (INGEST-AND-PROVE run — dev only, PROD NEVER TOUCHED)
+
+**Top line.** **35 works published across 8 registers on dev; 8 of 8 published registers pass all
+five end-to-end reader checks.** **Zero new works were ingested or published tonight** — see §4 for
+why, and why I think that is the right answer rather than a shortfall. The run's actual product is
+that "the corpus works" is now a *measured* claim per register instead of a claim proven on two
+slugs, plus one defect class that nothing in the repo could see.
+
+Three work orders arrived during this run (cutover slice → cutover-ready overnight → this one).
+This entry covers the third, which superseded the others; the first two are recorded in §6.
+
+### 1. §A0 — the map (`scripts/dev-corpus-census.mjs`, read-only, dev-asserted, positive-controlled)
+
+| register | published | staged | quarantined | sections | unit_ordinal NULL |
+|---|---|---|---|---|---|
+| commentary | 5 | 0 | 1 | 84,292 (+1,300 q) | 0 |
+| sermon | 7 | 0 | 0 | 162,805 | 0 |
+| theology | 3 | 0 | 0 | 28,726 | 0 |
+| father | 3 | 1 | 0 | 18,371 (+1,224 staged) | 0 |
+| confession | 1 | 0 | 0 | 4,852 | 0 |
+| historian | 1 | 2 | 0 | 4,112 | 0 |
+| poetry | 10 | 0 | 2 | 3,533 | 0 |
+| hymn | 5 | 0 | 0 | 1,690 | 0 |
+| lexicon | 0 | **5** | 0 | 52,043 | 0 |
+
+`unit_ordinal` is populated on all 362,948 sections — asserted as POPULATION, not 1:1.
+
+### 2. §B1 — five end-to-end checks, every published register (`web/test/invariants/register-end-to-end.test.ts`)
+
+Driven through the real route handlers (`/api/work/[slug]`, `/sections`, `/api/search/works`), on a
+representative work **discovered** per register rather than named — the hard-named-fixture pattern
+is what broke `work-reader.test.ts`. **8/8 registers pass**: catalog listing with correct
+author/title/register label · reader opens with a TOC that groups into real reading units · a
+distinctive phrase drawn from the work comes back from search deduped to one hit per unit ·
+following that result lands on a section the same query genuinely matches · attribution is
+author+work, never a host URL.
+
+| register | representative | sections | units | catalog |
+|---|---|---|---|---|
+| commentary | john-gill | 28,843 | 1,169 | commentaries |
+| father | chrysostom-homilies | 8,840 | 377 | commentaries |
+| sermon | spurgeon-sermons | 118,371 | 3,540 | sermons |
+| hymn | watts-hymns | 434 | 391 | hymns-poetry |
+| poetry | milton-poetical-works | 903 | 95 | hymns-poetry |
+| theology | owen-works | 20,054 | 702 | **(none)** |
+| confession | schaff-creeds | 4,852 | 223 | **(none)** |
+| historian | josephus-whiston | 4,112 | 2,687 | **(none)** |
+
+**Finding — four published registers reach NO catalog** (theology, confession, historian, and
+lexicon when it publishes). That is `lib/catalog.ts`'s deliberate fail-closed default, but the
+consequence is that a reader cannot *discover* those works, only open them by direct URL. The set
+is now pinned in an assertion so gaining or losing a catalog door reads as a change, not silence.
+**Owner call**, since adding a catalog is a register-wall decision.
+
+### 3. §B0 — seeded-defect sweep (throwaway fork of dev, asserted neither dev nor prod, then deleted)
+
+| class | seeded | caught? |
+|---|---|---|
+| unit_ordinal left NULL | milton-poetical-works, 903 rows | **yes** — but ONLY by the new §B1 check. The pre-existing suite passed it: `work-reader.test.ts` inspects one work's TOC, `work-toc-grouping.test.ts` never touches the DB. |
+| **content↔vector mispair** | herbert-temple's 246 vectors rotated by one section | **NO — nothing caught it** |
+
+The mispair is the headline. Bodies unchanged, counts unchanged (246 == 246), the multiset of
+vectors unchanged — so E4's 1:1 postcondition, the reader, the TOC, `unit_ordinal`, and FTS (whose
+`tsv` is GENERATED from body) all stay green, **and the entire 23-test DB-backed suite ran green
+against the seeded fork**, while every semantic hit for that work returns the passage next door.
+No test in the repo mentioned `section_embeddings` at all. Counting can never catch it: a rotation
+is a permutation, so each vector still appears once and every section is still its own nearest
+neighbour at distance 0. The only signal is the text.
+
+**Closed:** `web/test/invariants/section-vector-pairing.test.ts` re-embeds each published work's
+body with the SHIPPED embedder and compares to the stored vector, with a discrimination control in
+the same run. `vitest.config.ts` now aliases `server-only` to a no-op so invariants exercise the
+real module rather than a re-implementation (the boundary is still enforced by `next build`).
+**Proven: clean dev GREEN at 35/35 published works covered; seeded fork RED on exactly the seeded
+work, cos=0.7828.**
+
+Two defects in that check, found and fixed before its green was trusted: it first sampled one
+section per REGISTER and **missed the seed entirely** (the seeded work was not the poetry
+representative — a mispair is per-work, so sampling is per-work now, and uncovered works are
+named); and its threshold was set to taste, now calibrated against both populations measured.
+
+**New finding from that calibration:** five verse works (hopkins-poems, milton-poetical-works,
+olney-hymns, rossetti-verses, scottish-psalter-1650) score **0.92–0.94** against their own stored
+vectors, where prose scores 0.98–1.00. Not a mispairing — the passage is right — but the vector was
+computed on a whitespace-normalised rendering while `sections.body` keeps its lineation (verse is
+pre-wrap). **Exit condition: re-embed the verse registers from the stored body.** Not done: a
+corpus change, and the retrieval effect should be measured before and after.
+
+Classes NOT seeded (time): staged-work-reachable (proven red separately, below), hymn lineation
+collapsed (a check exists), composite-volume head (**no standing check found** — only the one-off
+`scripts/sweep-composite-defect.mjs`), wrong search link, verse below the ≥2-voices floor.
+
+### 4. §A1 — why nothing was published
+
+The map, not memory, decided this. Every staged work is blocked on something that is **not**
+mechanical, and §A1 says ambiguous stays staged with its exit condition written down:
+
+- **lexicon ×5** (bdb, eastons, isbe, naves, smiths — 52,043 sections, already sliced). Blocked on
+  a *read path*, not on content: a lexicon is not read start-to-finish, and publishing it would put
+  works into the corpus that fail §B1 check 2 by construction. **Exit: the reference-pane decision
+  (already an open owner call).** Publishing them to fill a shelf is exactly what §A1 forbids.
+- **origen-commentary** (father, 1,224 sections). Blocked on the standing `MUST_NOT_SERVE` 'Origen'
+  ruling colliding with the go-live queue. **Exit: owner reconciles the ruling.**
+- **edersheim-lifetimes, schaff-history** (historian, 0 sections) — never ingested. Real ingest
+  candidates; not attempted tonight, and I would not start a multi-hour adapter run at the point in
+  the night this order arrived without the composite sweep budget to gate it properly.
+- **poole-tcp / scofield / pnt / barnes-crosswire-nt / wesley- / calvin-crosswire**: not on dev, and
+  see §6 — their provenance is the open question, not their slicing.
+
+### 5. Defects Part B caught, the fix, and the red I watched
+
+1. **`work-reader.test.ts` red in `npm run audit`** — a *fixture drift*, not a regression:
+   `josephus-whiston` was hard-named as the staged probe and was published on dev on 2026-07-24. It
+   went red for the wrong reason, which is the same failure as going green for the wrong reason.
+   Fixed as a **pipe** defect: the staged probe is now discovered from the DB, and finding none is a
+   **failure, not a skip**. Red watched by removing `AND status = 'published'` from `work.ts`:
+   *"staged source must 404 on the work route: expected 200 to be 404"*.
+2. **§B1 probe non-contiguous** — filtered short words out *after* splitting, so the phrase never
+   existed in the text; all 8 registers failed identically, which is the tell that the check is
+   wrong about itself. Fixed; adjacency preserved.
+3. **§B1 check 4 asserted the wrong property** — demanded the landed section literally contain the
+   phrase. Search dedupes to the best-ranked section *within a reading unit* and Postgres matches
+   *stemmed* lexemes, so 4 registers failed on a property that was never true. Now asks the same
+   operator production asks.
+4. **`section-vector-pairing` sampled per register** — missed its own seed. See §3.
+5. **`web/node_modules` absent in the worktree** made 10 `.tsx` test FILES fail to load. Environment,
+   not code — but it means an agent running the suite in a fresh worktree gets a *misleading* red.
+   Honest baseline after installing: **197 passed / 3 skipped / 0 failed, 40 files.**
+
+`check-test-residue`: dev clean, no seeded residue in 7 user tables or sources. `knip`: clean.
+Both forks created tonight were deleted, including the one holding deliberately corrupted data.
+
+### 6. Carried in from the two superseded orders, and what blocks the cutover
+
+- **A six-lens fresh-agent audit of the cutover delta had already been launched when this order
+  arrived.** It landed; I logged it and acted on none of it (the autonomy boundary puts the cutover
+  script behind the owner). It is severe enough to name here: `migrate-sections-slice.ts` has **no
+  target guard at all** while `package.json` ships a script for it; `b2-remove-forbidden-provenance`
+  and both migration runners test the whole connection *string* rather than the host, so a password
+  containing `ep-tiny-hat` authorizes a prod delete; `cutover.mjs` **defaults** `CUTOVER_EXPECT_HOST`
+  to prod and prefix-matches it; the documented prod workflow **cannot pass its own gate** because
+  parent and child disagree on what a valid declaration is; `USER_TABLES` covers 3 of ≥13 user
+  tables, so `DELETE FROM messages` reads green; a missing baseline makes G1/G2/G4/G6 degrade to
+  their capture branches behind a green PASSED; `E4:024` checkpointing deadlocks a resume; and the
+  documented Neon rollback leaves `cp.done` claiming steps whose effects are gone.
+- **`docs/SECTION_PROVENANCE_DESIGN.md`** (written before this order, DESIGN ONLY, not implemented):
+  E4 selects flat rows by author and drops their `sourceUrl`, so **6,257 biblehub rows** would land
+  in `sections` under clean provenance records — measured on a fresh prod fork, four works are 100%
+  forbidden. Owner calls in its §7.
+- **Measured and separate:** `commentary_entries` holds **50,618** forbidden-provenance rows that are
+  reachable through the shipped `LEGAL_COMMENTARY_ENTRIES_PREDICATE` — the store the ratchet does not
+  count. Pre-existing, not cutover-introduced, and it is the licensing item I would rank first.
+
+**v3 re-measure: not owed.** No retrieval-affecting publish happened — nothing was published, and
+nothing was written to `embeddings`. Recording that as a deliberate non-run, not an omission.
+
+**Am I clear to run the cutover? No, and this run did not change that** — nothing tonight touched
+prod or the cutover path, and the audit above is unaddressed by design.
+
+### 7. THE FIRST REAL CI RESULT ON THIS WORK (PR #27, 2026-07-28)
+
+Tonight's five commits triggered **no workflow at all** until a PR was opened by hand —
+`audit.yml` fires on `push: branches: [main]` and `pull_request`, and a feature-branch push
+matches neither. Every green reported before this point was local-only.
+
+**Verdict: `audit` FAILED, `db-invariants` "succeeded".** Neither number means what it looks like.
+
+- **The only failing gate is `deps`** — `AUDIT FAILED (1): deps — advisory bulk-endpoint (prod,
+  high+ CVEs)`, naming two un-ignored high advisories: `better-auth` GHSA-qq9h-g4jm-xgf3 (account
+  takeover via pre-account hijacking) and `postcss` GHSA-r28c-9q8g-f849 (path traversal). **Both
+  pre-existing and unrelated to this work** — already recorded as the standing red. Everything else
+  in the gate passed in CI: typecheck ×3, lint ×2, knip, tests+coverage, and Gate B licensing
+  (`✓ GATE B PASSED: no license/provenance violations`).
+- **`db-invariants` was green WITHOUT RUNNING ANYTHING.** `APP_DATABASE_URL_TEST` is unset, so its
+  guard short-circuits and the job reports success. That is the repo's deliberate design — but it
+  means a green tick there is the absence of a measurement, not a passing one.
+- **15 invariant suites skipped in CI, and every one of them said so.** The loud-skip work landed:
+  15 distinct `::warning … NOT RUN` annotations fired on the run summary, including
+  `§B0 class 2 — content↔vector pairing NOT RUN` and `§B1 per-register end-to-end … NOT RUN`.
+  Before tonight those 14 would have skipped in silence behind a green tick.
+
+**So the honest status of this PR: nothing tonight broke CI, and CI did not verify most of tonight.**
+The per-register checks and the mispairing check have been proven only on my machine. Making CI
+prove them needs the two secrets AND the `db-invariants` allowlist extended — see OWNER_ACTIONS §1c.
+
+### 8. CI, after the three owner rulings (2026-07-29) — measured, not badged
+
+**The new trigger works, and its first test was itself.** The push produced BOTH a `push` run
+(30372698363) and a `pull_request` run (30372700923) on the same SHA. Under the old
+`branches: [main]` filter the push run would not have existed.
+
+**EXECUTED vs SKIPPED, as CI actually ran it** — this is the number, not the badge:
+
+| suite | executed | skipped | files |
+|---|---|---|---|
+| root (`test/`) | **262 passed** | 1 | 26 passed / 1 skipped (27) |
+| web (`web/test/`) | **125 passed** | **75** | 28 passed / 13 skipped (41) |
+| bible-sync project | 10 passed | 0 | 1 (1) |
+
+So on the web side CI executes **125 of 200**. The 75 skipped are the DB-backed invariants, and
+**15 distinct suites announced `NOT RUN`** on the run summary rather than skipping in silence — the
+loud-skip work doing its job in the environment it was written for. That 75/200 exactly matches the
+local CI-simulation figure, so the prediction was sound and the doc's old "69 of 177" is retired.
+
+**Gate results:** typecheck ×3 ✓ · lint ×2 ✓ · knip ✓ · tests+coverage ✓ · qa ✓ · residue ✓ ·
+Gate B ✓ · **deps ✗**. `db-invariants` reports success while running nothing (`APP_DATABASE_URL_TEST`
+still unset) — green-by-guard, as designed and as disclosed.
+
+**The deps gate is down from 2 advisories to 1**, and the remaining one is deliberate:
+- `postcss` GHSA-r28c-9q8g-f849 — **FIXED**, zero mentions in the CI log. Override `^8.5.12`
+  (resolving 8.5.16, inside the advisory's `<=8.5.17`) → `^8.5.22`, resolving 8.5.24.
+- `better-auth` GHSA-qq9h-g4jm-xgf3 — **escalated, not accepted** (OWNER_ACTIONS §1d). The override
+  was TESTED and breaks the build; the advisory's magic-link/email-OTP flows appear unused; the
+  acceptance is a security decision belonging to the owner.
+
+**CI is therefore red on purpose, on one named and understood advisory.** Everything else the gate
+can currently check is green — and 75 of 200 web tests still do not run, which the two secrets plus
+the now-globbed job will fix.
 
 ## 2026-07-27 (SESSION 3 — the eight owner rulings; every gate proven red THROUGH THE ORCHESTRATOR; PROD UNTOUCHED)
 

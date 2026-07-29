@@ -18,6 +18,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { searchSections } from '@/lib/search-sections';
 import { getDb } from '@/lib/db';
 import { ensureDbEnv } from '../helpers/env';
+import { announceSkip } from '../helpers/loud-skip';
 
 const dbUrl = ensureDbEnv();
 
@@ -37,7 +38,14 @@ async function rawSectionHits(slug: string, term: string): Promise<number> {
   return rows[0]?.n ?? 0;
 }
 
-describe.skipIf(!dbUrl)('searchSections — deduped to reading units, and capped', () => {
+// A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
+const SKIP = announceSkip(
+  'searchSections — deduped to reading units, and capped',
+  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(dbUrl) }],
+  'section search dedupe-to-reading-unit, the page cap and the count cap',
+);
+
+describe.skipIf(SKIP)('searchSections — deduped to reading units, and capped', () => {
   afterAll(() => {
     /* read-only: seeds nothing, so there is nothing to tear down */
   });

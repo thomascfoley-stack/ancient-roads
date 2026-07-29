@@ -28,11 +28,13 @@ import {
 } from '@/lib/work';
 import { getDb } from '@/lib/db';
 import { runtimeDbUrl } from '../helpers/env';
+import { announceSkip } from '../helpers/loud-skip';
 
 const dbUrl = runtimeDbUrl();
 
 const BIG_SLUG = 'calvin-institutes'; // published, 3,448 sections — the unbounded probe
 const SMALL_SLUG = 'herbert-temple'; // published, 246 sections — walkable end-to-end
+
 
 function callWork(slug: string): Promise<Response> {
   return getWork(new Request(`https://test.local/api/work/${slug}`), { params: Promise.resolve({ slug }) });
@@ -60,7 +62,14 @@ function ordinals(rows: { ordinal: number }[]): number[] {
   return rows.map((r) => r.ordinal);
 }
 
-describe.skipIf(!dbUrl)('Book Reader API — /api/work/[slug] + /sections (executed against the real DB)', () => {
+// A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
+const SKIP = announceSkip(
+  'Book Reader API — /api/work/[slug] + /sections (executed against the real DB)',
+  [{ name: 'a runtime DB URL (APP_DATABASE_URL)', present: Boolean(dbUrl) }],
+  'the Book Reader routes — published-only boundary, keyset paging, TOC shape, no host URL',
+);
+
+describe.skipIf(SKIP)('Book Reader API — /api/work/[slug] + /sections (executed against the real DB)', () => {
   it('404s a staged source on BOTH routes (published-only boundary)', async () => {
     // FIXTURE PRECONDITION (added 2026-07-19). Without this the test is fixture-dependent and
     // can pass for the WRONG reason: against a DB where the probed slug is simply ABSENT,

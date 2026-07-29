@@ -374,3 +374,131 @@ touching anything if any assertion fails). That turns "dies mid-migration" into 
 After refreshing, the agent re-runs the read-only census (`BEGIN; SET TRANSACTION READ ONLY; …;
 ROLLBACK`) and confirms `current_user` + a non-zero positive control (John Gill rows). If that
 returns rows, the credential is good and the cutover's STEP ZERO will pass.
+
+---
+
+## §1c — CI: two secrets, one allowlist, and a trigger that misses every feature branch (2026-07-29)
+
+**Report only. I changed no workflow file — CI policy is yours.** Three separate things stop CI
+being evidence today. They compound: fixing any one alone still leaves the checks not running.
+
+### (a) THE TRIGGER — tonight's branch ran NO workflow at all
+
+`.github/workflows/audit.yml` fires on `push: branches: [main]` and `pull_request`. A push to
+`claude/adoring-babbage-7ac774` matches neither, so **zero workflow runs existed for five commits**
+until a PR was opened by hand. Any future work on a feature branch has the identical blind spot:
+the gate is silent, and silence is easy to read as green.
+
+Two fixes, both yours to pick:
+
+| option | effect | cost |
+|---|---|---|
+| `push:` with no `branches:` filter | every push to every branch is gated, PR or not | more Actions minutes; runs on WIP commits |
+| require a PR for all work (keep the trigger as-is) | gate is enforced at the point that matters | depends on the discipline never lapsing — which is what failed tonight |
+
+I'd take the first: it does not depend on anyone remembering. But it is a policy call about
+minutes and noise, so it is yours.
+
+### (b) THE SECRETS — exact names and jobs
+
+| secret name | job that needs it | what it unblocks | set today? |
+|---|---|---|---|
+| `APP_DATABASE_URL_TEST` | `db-invariants` | the DB-backed invariants (already wired: the guard step reads it and `REQUIRE_DB: '1'` makes a missing URL a hard failure) | **NO** |
+| `DEEPINFRA_API_KEY` | `db-invariants` | `section-vector-pairing` — the content↔vector mispairing check | **NO — referenced by no job at all** |
+
+`APP_DATABASE_URL_TEST` must be the **app_runtime connection string of a Neon TEST branch, never
+prod** — the tenancy suite writes rows.
+
+### (c) THE ALLOWLIST — the part that makes (b) insufficient on its own
+
+`db-invariants` does not run the suite; it runs an **explicit list of 13 test files**. Both checks
+added tonight are absent from it:
+
+- `web/test/invariants/register-end-to-end.test.ts` — the five per-register reader checks
+- `web/test/invariants/section-vector-pairing.test.ts` — the mispairing class nothing else catches
+
+So setting both secrets and changing nothing else leaves both new checks **not running**, silently
+by omission rather than by configuration. The allowlist needs those two paths appended, and
+`DEEPINFRA_API_KEY` added to that step's `env:`.
+
+A standing hazard worth naming beyond this fix: an explicit file list means every future invariant
+is opt-in to CI, and forgetting to add one is invisible. A glob over `test/invariants/` would fail
+closed instead. That is a workflow change and therefore yours.
+
+### (d) The stale number in the workflow's own warning
+
+The `db-invariants` guard prints "Measured: 75 of 200 web tests do not execute without it." The
+current figure, measured 2026-07-29 by moving `web/.env.local` aside and unsetting the key, is
+**75 of 200** — and 14 suites now announce themselves via `helpers/loud-skip.ts`, so the annotation
+is no longer the only signal.
+
+---
+
+## §1d — better-auth GHSA-qq9h-g4jm-xgf3: fixed what I could, escalating what I can't (2026-07-29)
+
+CI's `deps` gate failed on **two** high advisories. One is fixed; one is yours.
+
+### FIXED — postcss GHSA-r28c-9q8g-f849 (path traversal, source-map auto-loading)
+
+The `pnpm.overrides` entry was `postcss: ^8.5.12`, resolving to **8.5.16**; the advisory covers
+`<=8.5.17`. Bumped the override to `^8.5.22` → resolves **8.5.24**. In-range patch bump, no major.
+Full local audit after it: typecheck ×3 ✓ · lint ×2 ✓ · knip ✓ · tests+coverage ✓ · qa ✓ ·
+residue ✓ · Gate B ✓.
+
+### ESCALATED — better-auth GHSA-qq9h-g4jm-xgf3 (account takeover, magic-link / email-OTP)
+
+`better-auth@1.4.18` is **not a direct dependency** — it is pinned transitively by
+`@neondatabase/auth@0.4.2-beta`. Three findings, all measured rather than assumed:
+
+1. **An override does not work.** I tried `better-auth: ^1.6.22`. It resolves (1.6.25) but **breaks
+   the build**: `src/app/layout.tsx` fails `tsc --noEmit` with TS2322 — `@neondatabase/auth` expects
+   the 1.4.18 client shape and 1.6.25 drops/moves `updateSession`. Also four unmet peers
+   (`@better-auth/core`, `better-call`, `@better-auth/utils`, `@better-fetch/fetch`). This confirms
+   the existing `auditConfig` note ("override breaks the build") — it is now verified, not folklore.
+   **Reverted.**
+2. **It appears NOT to be in-path.** The advisory is specific to **magic-link and email-OTP sign-in**.
+   A repo-wide grep for `magic.?link | emailOTP | email-otp | sendVerificationOTP | oneTimeToken`
+   across `web/src` and `src` returns **zero hits**. If those flows are genuinely unused, exposure is
+   latent rather than live — but that is a security judgement about the auth surface, not a grep
+   result, so I am not converting it into an acceptance.
+3. **I did not add it to `ignoreGhsas`.** That list's own header says the sibling account-takeover
+   advisory GHSA-g38m-r43w-p2q7 is "a tracked LAUNCH BLOCKER, **not accepted**". Accepting a second
+   account-takeover advisory from the same pinned package is a security decision with the same shape,
+   and it is yours.
+
+**Your options, in the order I'd rank them:**
+
+| # | action | effect |
+|---|---|---|
+| 1 | wait for `@neondatabase/auth` to ship a build pinning better-auth ≥1.6.22 | the only fix that removes the vulnerability; blocks on their release |
+| 2 | confirm magic-link/email-OTP are unused and unreachable, then add GHSA-qq9h-g4jm-xgf3 to `ignoreGhsas` with that justification in `docs/SECURITY.md` | unblocks CI now; accepts a latent advisory, consistent only if finding 2 is confirmed at the auth-config level |
+| 3 | drop `@neondatabase/auth` for a directly-managed better-auth | removes the pin entirely; a real auth migration |
+
+Until one is chosen, **`deps` stays red and the gate stays honest.** I would rather hand you a red
+gate with one named, understood advisory than a green one bought by an acceptance I made for you.
+
+---
+
+## §1e — GHSA-qq9h-g4jm-xgf3 is an ACCEPTED RED (owner, 2026-07-29)
+
+**Ruling:** `better-auth` GHSA-qq9h-g4jm-xgf3 (account takeover via pre-account hijacking on
+magic-link / email-OTP) stays a **RED `deps` gate**. It is **NOT** added to
+`pnpm.auditConfig.ignoreGhsas`, and the override is **NOT** forced.
+
+**Status: accepted-red. Closes with SEC-1.**
+
+Why this shape rather than the two alternatives:
+- **Not ignored.** The same list's header calls the sibling account-takeover advisory
+  GHSA-g38m-r43w-p2q7 "a tracked LAUNCH BLOCKER, not accepted". Silencing a second one of the same
+  class from the same pinned package would make the ignore list mean less than it currently does.
+- **Not overridden.** Measured 2026-07-29: `better-auth: ^1.6.22` resolves to 1.6.25 and then
+  `tsc --noEmit` fails with TS2322 in `web/src/app/layout.tsx` — `@neondatabase/auth@0.4.2-beta`
+  expects the 1.4.18 client shape — plus four unmet peers. Verified, not assumed; reverted.
+
+**Consequence, stated so nobody "fixes" it by accident:** `npm run audit` and CI's `audit` job are
+expected to be RED on exactly this one advisory until SEC-1 closes. A green `deps` gate before then
+means someone silenced it. Every other gate is green; the redness is carrying one specific, named,
+understood risk in the open rather than hiding it.
+
+Root cause is the pinned `@neondatabase/auth@0.4.2-beta`, which is also SEC-1's subject — hence
+closing together rather than separately.
