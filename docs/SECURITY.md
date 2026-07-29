@@ -1,11 +1,28 @@
 # Known security issues (tracked)
 
 ## SEC-1 — better-auth 1.4.18 vulnerabilities via `@neondatabase/auth` beta
-**Status: OPEN — LAUNCH BLOCKER (must be resolved before the app is public with real accounts).**
+**Status: FIX IN FLIGHT 2026-07-29 — full-subtree override to better-auth 1.6.25 (see "Fix attempt 2026-07-29" below). Remains a LAUNCH BLOCKER until the web build AND a real sign-in are verified green on that override.**
 **ESCALATED 2026-07-08:** app-level mitigation of the in-path account-takeover (GHSA-g38m)
 was investigated and is **not possible** on this beta SDK (see "App-level mitigation" below).
 Moving off `@neondatabase/auth` is therefore an **urgent** blocker, not a later cleanup.
 **Owner decision required: whether to ship auth with SEC-1 open is the founder's call, not the audit script's.**
+
+### Fix attempt 2026-07-29 (supersedes the 2026-07-08 "unfixable" verdict — different override set)
+The 2026-07-08 attempt overrode ONLY `better-auth` and broke the build because
+`@better-auth/passkey@1.4.18` and the Neon UI packages still expected `@better-auth/core@1.4.18`.
+This attempt moves the ENTIRE subtree together via three pnpm overrides —
+`better-auth@^1.6.25`, `@better-auth/passkey@^1.6.25`, `@better-fetch/fetch@^1.3.1` — which
+resolves with ZERO 1.4-era packages left in the closure and no peer warnings (verified
+lockfile-only, 2026-07-29). Both in-path account takeovers are patched at this version:
+GHSA-g38m (OAuth auto-link, fixed 1.6.11) and GHSA-qq9h-g4jm-xgf3 (magic-link/email-OTP
+pre-account hijacking, fixed 1.6.22 — surfaced 2026-07-29 when the advisory endpoint
+recovered). `ignoreGhsas` is CLEARED so the advisory gate re-arms; if a specific advisory
+still fires on the 1.6.x tree, re-add only that id with a dated note. **NOT yet verified:
+`next build` and a real sign-in against the override — the PR carrying this change must not
+merge until both pass.** If the build still breaks the way 2026-07-08 did, revert the PR,
+restore the previous ignore list, and this section records the second failed attempt; the
+fix then escalates to the auth migration (docs/AUTH_MIGRATION_SPIKE.md), off
+`@neondatabase/auth` entirely.
 
 ### What
 `pnpm audit` surfaced **15 advisories, all rooted in one pinned dependency**:
@@ -26,6 +43,7 @@ Moving off `@neondatabase/auth` is therefore an **urgent** blocker, not a later 
 | GHSA | Sev | In our path? | Notes |
 |---|---|---|---|
 | **GHSA-g38m-r43w-p2q7** | HIGH | **YES — real** | Account takeover: attacker pre-registers victim's email via `/sign-up/email` (unverified); victim's later Google/GitHub login auto-links to the attacker's account. Hits apps with both email/password *and* social login = us. |
+| **GHSA-qq9h-g4jm-xgf3** | HIGH | **YES — real** | Account takeover via pre-account hijacking on magic-link / email-OTP sign-in (patched 1.6.22; surfaced 2026-07-29). The Neon prefab sign-in UI wires these flows and they are not app-disableable on this SDK. |
 | GHSA-86j7-9j95-vpqj | HIGH | assess | Stored XSS in auth-server origin — determine if reachable in our render path. |
 | GHSA-9h47-pqcx-hjr4 | HIGH | assess | Insecure cryptographic defaults — determine if it affects our session/token config. |
 | GHSA-392p-2q2v-4372 | HIGH | assess | OAuth refresh-token rotation fork — depends on refresh usage. |
