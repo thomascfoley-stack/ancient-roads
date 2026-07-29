@@ -83,9 +83,14 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 > the cutover**: E3 was dropped 2026-07-27 (owner) because it would drop 580 verses below the
 > ≥2-distinct-authors floor and leave 24 with no served voice, and the cutover has no ingest step to
 > refill them. The cutover is **E0, E1, E2, E4, E5, E6**; provenance cleanup is its own later slice.
-> See the ADR-030 correction. **Live
-> user data exists and must be preserved:** 34 highlights (6 users, **only 24 active**), 2 notes
-> (1 user), 1 chat. None
+> See the ADR-030 correction. **Live user data: CLEARED 2026-07-28 by owner decision — the figures
+> that stood here are HISTORICAL.** The 2026-07-23 census measured 34 highlights (6 users, **only 24
+> active**), 2 notes (1 user), 1 chat; 5 of the 6 "users" were `qa-hl-a-<epoch>` test residue that had
+> reached prod, and the 6th was the owner. **E1's preserve-these-rows assertions are NOT relaxed** —
+> they now hold at `0 == 0`, and that guard is what protects the FIRST REAL USER.
+> **UNVERIFIED:** no deletion receipt or post-delete read-only artifact is committed, and
+> `docs/evidence/cutover-2026-07-28/23-prod-readonly-AFTER.txt` still reports the pre-deletion counts.
+> Treat "prod user data is empty" as owner-asserted, not as measured here. None
 > of the dev-only suppression defects (chrysostom prolegomena, tennyson, traherne, indexes, ads)
 > exist on prod. This settles build-vs-repair: **the cutover is a BUILD.** See `CUTOVER_DESIGN.md`.
 

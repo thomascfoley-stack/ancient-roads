@@ -20,6 +20,9 @@ gate() {
 }
 
 gate "typecheck — tsc --noEmit (strict)"  $PNPM exec tsc --noEmit
+# The cutover gate is TypeScript and was never compiled by CI: the root tsconfig includes
+# only src/ and test/. See tsconfig.cutover.json for what this does and does not cover.
+gate "typecheck — cutover gate (scripts/)" $PNPM exec tsc --noEmit -p tsconfig.cutover.json
 gate "typecheck — web/ tsc --noEmit"      bash -c "cd web && npx tsc --noEmit"
 gate "typecheck — web/test tsc --noEmit"  bash -c "cd web && npx tsc --noEmit -p tsconfig.test.json"
 gate "lint — eslint src/ test/"           $PNPM exec eslint src test

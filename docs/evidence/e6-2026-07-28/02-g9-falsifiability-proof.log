@@ -1,0 +1,11 @@
+
+
+WITH 030 body   : accepted=false  sqlstate=23514  constraint=highlights_anchor_xor
+WITH 025 body   : accepted=true  sqlstate=null  constraint=null
+
+PROVEN   the G9 030-probe is rejected under the 030 body and ACCEPTED under the 025 body.
+         It therefore detects "030 silently did not apply" — it is not a tautology.
+
+SELECTIVITY: a target_kind='bogus' row is rejected by sqlstate=23514 constraint=highlights_anchor_xor
+             -> confirms the review's point: target_kind='bogus' trips the XOR, so a
+                target_kind_chk probe would 'pass' even with 030 absent. Catalog-only is correct.

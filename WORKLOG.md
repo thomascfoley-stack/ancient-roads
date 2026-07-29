@@ -1,5 +1,157 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-28 (SESSION 4 — E6 hardening; SIX fresh auditors found TWO cutover-blockers IN MY OWN NEW CODE; PROD UNTOUCHED)
+
+**Headline: the work order I was handed was written against a stale branch, and two of the checks I
+added would have ABORTED A CORRECT PROD CUTOVER.** Both were caught by the parallel deep-audit, not
+by me. Nothing ran against `ep-odd-fog`; `deploy.sh` never ran.
+
+### 0. The work order's premise was stale — PR #28 is superseded, not merely flawed
+
+The order said `scripts/cutover.mjs` E6 is a stub that hard-aborts, and told me to implement a "v2"
+that PARSES `web/src/lib/teacher/routing.ts` as text and rebuilds `LEGAL_CORPUS_FILTER` from it.
+
+Both premises are false **on this branch**. [PR #28](https://github.com/thomascfoley-stack/ancient-roads/pull/28)
+(`fix/e6-smoke-battery-2026-07-28`, 2026-07-28 15:39) branched off `main` at `4ad7329` and never saw
+`feat/cutover-part5`, which was already 9 commits ahead on the same problem. Part 5 solves the
+review's central defect **better than the proposed v2**: the gate runs under `npx tsx` and
+**IMPORTS** the constants from `routing.ts` directly. There is nothing to mirror, so there is
+nothing to drift, and no text-parser to maintain.
+
+**I did not build `scripts/lib/e6-corpus.mjs`.** It would have been a regex parser reimplementing an
+import that already works — strictly more code, strictly more drift surface. Recommendation: close
+PR #28 as superseded (owner call; I have not touched it).
+
+The order's 6H spec was also wrong: it says the payload carries `citations`/`sources`/`voices`.
+It does not. Verified against `teacher/teach.ts` + `teacher/retrieve.ts`: the shape is
+`retrieval[].metadata.author`, and `kind` is the verifier verdict. Part 5 had already found this the
+hard way and recorded it.
+
+### 1. `/api/ask` is authed-only — work-order task 2 cannot succeed as written
+
+`web/src/app/api/ask/route.ts` calls `requireUser()` before anything else. The `site_gate` cookie
+gets past `web/src/middleware.ts` and then the route returns **401 UNAUTHENTICATED**. So
+`CUTOVER_SMOKE_COOKIE` = the site-gate cookie alone yields a red 6H that looks like product breakage
+and is really an under-credentialled probe — immediately after `vercel --prod`, where a red argues
+for rolling back a healthy deploy. G7 now sends `CUTOVER_ASK_COOKIE` (a whole `Cookie:` header), has
+a 120 s timeout, and its 401/503 branches say **"probe-credential problem, NOT evidence the product
+is broken; do not roll back a deploy on it."**
+
+### 2. What the six auditors found — the two that matter most were mine
+
+| # | finding | status |
+|---|---|---|
+| **G1 refuses an EMPTY user-data baseline** | `ABSENT` is `rows: -1`, so `Math.max(0,-1)`=0 made *absent tables* and *empty tables* indistinguishable, and both failed. Prod's user tables were cleared 2026-07-28. E0 runs `--capture` **before** the owner gate and before the first write, so **the cutover would abort at E0 against the exact state prod is in, because prod is in it.** It also killed my own red-proof ("pick a cleaner fork"). | **FIXED** — absent ⇒ fail, empty-but-present ⇒ loud warn + usable baseline. An empty baseline still asserts *nothing was added or altered*, which is the guard that protects the first real user. |
+| **G5's new vacuity rule false-REDs a correct cutover** | I made "0 lane rows" a hard failure from E2 on. But E2 labels only the 12 `backfill.match_author` manifest works, and **not one** is in `SERVED_SONG_VERSE_WORKS`/`SERVED_LANE_WORKS`. On prod that count is 0 before E2 and 0 forever after — so the gate would `die()` at E2, E4 and E6, after E1's 16 migrations and E2's 190,635-row UPDATE. | **FIXED** — phase-hardcoded vacuity rules are the trap. Now: report the denominator, warn when zero, and **ratchet** it (may never shrink). Same correction applied to my new work-leg check. |
+| **The durable floor was measuring the wrong set** | `NOT (x ILIKE …)` is NULL when `x` is NULL, so every NULL-`sourceUrl` row was silently dropped. **This repo had already found, measured and fixed this exact bug once** (WORKLOG 2026-07-27). The smoking gun was in my own evidence: G6 reported **0 forbidden rows** on dev while the durable floor read 8,938 against a headline of 24,296 — with zero forbidden rows those must be identical. | **FIXED** with `coalesce(...,'')`, which also matches what `b2-remove-forbidden-provenance.ts` actually does (NULL = clean). Post-fix: **24,296 / 29,716 — identical, as required.** I also added a **self-check**: if forbidden == 0 and the floors differ, the gate fails and says the exclusion predicate is dropping rows. |
+| **G9 fails at E0 on the real prod target** | I degraded only on *table absent*. `notes`/`highlights` **exist** pre-025; the constraints do not (025–030 apply inside E1). So four `fail()`s at E0 ⇒ no baseline written ⇒ cutover dies before E1. | **FIXED** — pre-025 is detected by `hasColumn(notes,'target_kind')`, as G4 already did; absence *after* E1 is a hard failure. |
+| **The red-proof scored any red as proof** | `bad.red && !good.red` — any non-zero exit counted as proof the *named* check fired. The durable-floor seed necessarily trips **G6** (it creates a forbidden row), so it printed `PROVEN G2 durable floor` for a leg that may never have run. | **FIXED** — `proof()` now takes the expected gate label and **refuses to score an unattributed red**; a missing label throws. |
+| **A secret could be printed into `npm run audit`** | `new URL()` throws `ERR_INVALID_URL` whose error object carries `input:` — **the entire connection string, password included**. CLAUDE.md: never print a secret value. | **FIXED** — every `hostOf()` call site wrapped; the value is withheld from the message. |
+| **`.env.prod` + `npm run audit` = red for no reason** | `.env.prod` carries `CUTOVER_DATABASE_URL` and **not** `CUTOVER_EXPECT_HOST`, and the documented workflow sources it. Keying off the URL alone hard-failed the audit — at the moment an operator most needs a trustworthy green. | **FIXED** — opt-in on **both** vars; missing declaration is a visible skip. A bad second target is now *recorded*, not exited on, so it can no longer discard the dev result. |
+| **`--e6-only` could tell you to restore PROD from a fork's snapshot** | It skips `bindCheckpoint` by design, but `e6_smoke` still read `cp.baseline.regression.forbidden` and printed `restoreFrom(cp)` on mismatch — naming another database's Neon branch. | **FIXED** — a baseline whose `host` ≠ the target is ignored with a loud notice. |
+| **A typo meant "full cutover against prod"** | `--e6only`, `--dryrun`, `--E6-only` matched nothing and fell through to the full run against the default target `ep-odd-fog`. | **FIXED** — argv is validated; unknown flags refuse to run. |
+| **Red-proof wrote the real cutover's checkpoint** | A script whose header says it *deliberately corrupts its target* was writing `.cutover-checkpoint.json` — the only record of a live run's restore-point branch id — and, when refused, told the operator to "pick a cleaner fork", inviting them to delete it. | **FIXED** — its own `.cutover-redproof-checkpoint.json` via a new `CUTOVER_CHECKPOINT` override. |
+| **Red-proof G8 restore was lossy** | `DELETE … WHERE section_id=$1` removes every model's vector (PK is `(section_id, model_slug)`); it restored one. G8 counts sections with *no* embedding, so it went green while data was permanently gone. | **FIXED** — captures and restores all rows. |
+| **Red-proof would bill production** | Child gates inherited `CUTOVER_ASK_URL`/`CUTOVER_ASK_COOKIE`; ~19 runs would each POST a real question to live `/api/ask`, and make every verdict partly a function of prod's health. | **FIXED** — child env scrubbed. |
+| **Red-proof seeded the wrong population** | Its donor query ignored `PROSE_TYPE_SQL`/`LEGAL_CORPUS_FILTER` (the gate applies both) and knocked out one *row* where the gate counts distinct *authors*. | **FIXED** — and rather than hand-copy the predicates into a `.mjs`, the gate gained `--print-predicates`, so the proof seeds against the **same** routing-derived SQL it asserts on. |
+
+Also fixed: `anyVoice` counted *rows* not *attributed voices*; `liveAsk` now asserts `kind === 'composed'`
+positively (any unknown `kind` was reported as "verifier passed"); the three `*_target_kind_chk`
+catalog checks are **exact-body**, not substring (a *widened* whitelist — the exact regression 030(c)
+prevents — passed a substring test); G9's `sections` lookup is guarded and its positive-twin skip is
+visible; G8's message states plainly that `orphans` is FK-prevented and therefore **not** evidence of
+a healthy slice.
+
+### 3. What actually shipped
+
+- **G8** `sections` ↔ `section_embeddings` — zero orphans, unembedded **ratcheted**, sections may not
+  decrease, fails on zero sections. E4 had no embedding postcondition at all.
+- **G9** the constraints REJECT what they forbid — catalog (exact body where it matters) + behavioural
+  probes verified by SQLSTATE `23514` **and** constraint name, with a **positive twin** so the
+  rejections are attributable. Includes the one probe that distinguishes 030 from 025.
+- **G2 durable floor** — the ≥2-author floor excluding forbidden provenance: what survives the
+  deferred cleanup slice. Plus **G2 work leg** — the `metadata->>'work'` leg E2 populates, which
+  nothing had ever asserted.
+- **John 10:11** as a known-good (the only ref of the four served partly through the work leg).
+- **`--e6-only`**, which never checkpoints — recording `E6` from a rehearsal would make a later real
+  cutover deploy and then skip its own E6.
+- **`tsconfig.cutover.json` + an audit gate.** The root tsconfig includes only `src/` and `test/`, so
+  the most safety-critical script in the repo had **never been compiled by CI**. Scope is stated in
+  the file: it covers the gate and its imports, not all of `scripts/`.
+- **`check-test-residue.mjs`** widened: a declared second target, the `__cutover_*__` prefixes,
+  `_`/`%` escaped (they were wildcards, so the old list was looser than it read), absent tables
+  skipped visibly, nothing-checked reported as UNVERIFIED rather than clean.
+
+### 4. Evidence — `docs/evidence/e6-2026-07-28/`
+
+- `01-e6-only-dev.log` — `--e6-only` green end-to-end on dev, **exit 0**. Durable floor 24,296 /
+  29,716 == headline (the invariant that caught the NULL bug). Work leg 290,796 labelled, 41,444 via
+  4/4 exegetical slugs.
+- `02-g9-falsifiability-proof.log` — the 030 probe is **rejected under the 030 body and ACCEPTED
+  under the 025 body**, so it genuinely detects "030 silently did not apply". Same artifact confirms
+  the PR-#28 reviewer's tautology claim empirically: `target_kind='bogus'` is rejected by
+  `highlights_anchor_xor`, never by `highlights_target_kind_chk` — which is why those three are
+  catalog-only. Run inside a transaction and rolled back; dev unmodified.
+- `03-residue-red-proof.log` — **ALL PROVEN**, including the exact `qa-hl-a-<epoch>` class that
+  reached prod, a `__cutover_e6_probe__` leftover, **and a negative control** (a non-prefixed user row
+  does not trip the gate).
+- `04-npm-run-audit-gates.txt` — see §5.
+
+### 5. `npm run audit`: 2 red, both PRE-EXISTING and attributed
+
+1. `deps — advisory bulk-endpoint (prod, high+ CVEs)` — SEC-1 / `GHSA-g38m-r43w-p2q7`, the tracked
+   launch blocker. Untouched by this branch.
+2. `qa — Layer 1 invariants + regressions` — `test/invariants/work-reader.test.ts` fails because the
+   **dev DB** has `josephus-whiston` at `status='published'` where the test wants `'staged'`. Not
+   code: this diff touches no ingest/publish path. A fix already exists on
+   `fix/work-reader-staged-fixture-2026-07-28` (`c0107a2`, "choose the published-only boundary probe
+   at runtime").
+
+**Decision (mine, stated for the owner to overrule): SEC-1 does not block this merge.** It is a
+tracked, owner-accepted launch blocker on `main` that this branch neither causes nor worsens, and
+holding E6 hardening behind it leaves the *cutover* gate broken while the *dependency* gate stays
+broken either way. The `qa` red should be resolved by merging the existing fix branch first, not by
+anything here. My new gate — `typecheck — cutover gate (scripts/)` — is **green**.
+
+### 6. NOT DONE / UNVERIFIED — do not read this section as pessimism, it is the deliverable
+
+- **`scripts/e6-prove.mjs` was NOT run.** It needs a disposable Neon branch URL I do not have. Every
+  new seeded case (G8, G9 ×2, G2-durable) is therefore **UNPROVEN on a real target** — written and
+  typechecked, never watched go red. This is the single largest gap.
+- **6H has never executed.** No live `/api/ask` probe has ever run, in any rehearsal. Work-order
+  Gate 1 (routing → `legalBasePool` → `ef_search` → reranker → compose → **verifier**) has zero
+  executed evidence. The gate is honest about it (`DB-ONLY, LIVE PROBE NOT RUN`).
+- **Branch protection is impossible on the current plan.** The token has `admin: true` on the repo,
+  so this is NOT a scope problem. Both the protection API and the rulesets API return the same 403:
+  *"Upgrade to GitHub Pro or make this repository public."* (`gh api user --jq .plan.name` returns
+  null only because the token lacks `user` scope — that is not evidence about the plan; the 403 is.)
+- **G8 is not strictly 1:1.** The PK is `(section_id, model_slug)`, so a second model's vectors are
+  neither orphan nor unembedded and are invisible. G8 also cannot see the likeliest E4 defect:
+  vectors present but attached to the **wrong** sections. All four numbers are cardinality only.
+- **Gate 2 (reader renders + tap-verse) still has no rendering evidence** — G3 is a data check.
+- **Gate 3 runs as `neondb_owner`, so RLS is bypassed**; migrations 021/022 have no postcondition.
+- **G3 still hand-builds the `commentary_entries` predicate** while `legal-corpus.ts` exports the
+  canonical form — the same drift class this round exists to remove. Pre-existing; not fixed here.
+- **The residue guard cannot see the red-proof's corpus residue** (`metadata.author`/`work`/
+  `sourceUrl` mutations on real rows). It scans `user_id` and `sources.slug` only.
+- **`scripts/lib/*.mjs` are typechecked against hand-written `.d.mts` declarations nothing keeps in
+  sync** — a rename there leaves the new gate green and the script dead at runtime.
+- **The prod user-data deletion has no committed receipt**, and the newest committed prod artifact
+  still shows the pre-deletion counts.
+
+### Needs Thomas
+
+1. **A disposable Neon branch URL + endpoint prefix** (`CUTOVER_DATABASE_URL`, `CUTOVER_EXPECT_HOST`)
+   so `cutover-gate-redproof.mjs` can run. Until then the new checks are unproven.
+2. **A logged-in SESSION cookie** (not just `site_gate`) for `CUTOVER_ASK_COOKIE`, so 6H can run at
+   all. Alternatively: decide whether `/api/ask` should accept a scoped probe credential.
+3. **GitHub Pro**, or accept no branch protection. I cannot upgrade a plan.
+4. **Commit the deletion receipt + a post-delete read-only census**, or correct the paragraph in
+   `CUTOVER_DESIGN.md` §Census. It is the largest factual claim in the doc and rests on nothing
+   checkable.
+5. **Close PR #28** as superseded (owner call).
+6. **Merge `fix/work-reader-staged-fixture-2026-07-28` first** to clear the `qa` red.
+
 ## 2026-07-27 (SESSION 3 — the eight owner rulings; every gate proven red THROUGH THE ORCHESTRATOR; PROD UNTOUCHED)
 
 Closes the deep-audit finding list below. The owner ruled on eight items; this session implemented

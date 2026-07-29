@@ -8,6 +8,29 @@ git history — not from memory or the earlier hit list.
 > priority narrative below predates the 2026-07-14 Phase A close + license gate + Slice 0; trust
 > STATE_OF_TRUTH for facts, and treat the section priorities here as owner-set direction, not current status.
 
+## Update 2026-07-28 (E6 regression battery hardened — G8/G9/durable-floor/work-leg; NOT rehearsed on a fork)
+
+Six fresh auditors on non-overlapping lenses found **two cutover-BLOCKERS in the newly added checks**:
+G1 refused an empty user-data baseline (prod's tables were cleared 2026-07-28, so E0 would abort
+before the first write), and G5's new vacuity rule would have false-RED at E2/E4/E6 because E2 never
+writes a lane/song slug. Both fixed, plus a NULL-safety bug that made the new "durable floor"
+measure the wrong set — the same `NOT (x ILIKE …)`-is-NULL defect this repo had already found once.
+The gate now carries a self-check that makes that class self-announcing.
+
+Added: **G8** sections↔section_embeddings, **G9** the annotation constraints actually reject what
+025/030 forbid (SQLSTATE 23514 + constraint name + a positive twin), **G2 durable floor** (the floor
+that survives the deferred provenance cleanup), **G2 work leg** (the `metadata->>'work'` leg E2
+populates, previously unasserted by any gate), John 10:11 as a known-good, `--e6-only`, and a
+`tsconfig.cutover.json` audit gate — the cutover gate had **never been typechecked by CI**.
+
+**Status: NOT READY TO RUN.** `--e6-only` is green on dev and the residue + G9-falsifiability proofs
+are recorded, but `cutover-gate-redproof.mjs` has **not** run (needs a disposable Neon branch), so
+every new seeded case is UNPROVEN on a real target; and **6H has never executed** — no live `/api/ask`
+probe has run in any rehearsal, so the verifier is still untested end-to-end. `/api/ask` is
+authed-only, so 6H needs a SESSION cookie, not the site-gate cookie. Branch protection is blocked by
+the GitHub plan (403 on both the protection and rulesets APIs), not by token scope. Details +
+"Needs Thomas": WORKLOG 2026-07-28 SESSION 4; evidence in `docs/evidence/e6-2026-07-28/`.
+
 ## Update 2026-07-27 (Phase 5 cutover — RE-SCOPED to E0/E1/E2/E4/E5/E6, re-rehearsed, still owner-gated)
 
 **E3 is dropped** (owner; ADR-030 corrected in place): it was approved on the premise that the

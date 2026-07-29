@@ -623,3 +623,68 @@ had, so a resume cannot re-run `deploy.sh`.
 
 **Related:** ADR-030 (corrected — E3 dropped), ADR-031 (rehearse on a fresh fork), ADR-032 (the gate
 is DB-level, runs after every chunk, checkpoint bound to one target).
+
+## ADR-034 — The cutover gate IMPORTS routing.ts; it never mirrors or parses it (2026-07-28)
+
+**Status:** accepted. **Supersedes** the "v2 e6-corpus parser" design proposed in the E6 work order.
+
+**Context.** [PR #28](https://github.com/thomascfoley-stack/ancient-roads/pull/28) hand-copied
+`LEGAL_CORPUS_FILTER` into `scripts/cutover.mjs` and was rejected by a 4-lens review: the copy had
+drifted 27.8% from production by dropping the `metadata->>'work'` leg — the leg E2 populates — so the
+gate was structurally blind to the step directly upstream of it. The proposed fix was a module that
+PARSES `routing.ts` as text and rebuilds the SQL, asserting the reconstruction matches.
+
+**Decision.** Neither mirror nor parse: **import**. `scripts/cutover-regression-gate.mts` runs under
+`npx tsx` and imports `LEGAL_CORPUS_FILTER`, `PROSE_TYPE_SQL`, `EXEGETICAL_FTS_EXCLUSION` and the
+`SERVED_*` lists from `web/src/lib/teacher/routing.ts` directly. A text parser is strictly more code
+and strictly more drift surface than the import it would emulate, and it can be wrong in ways the
+import cannot. `scripts/cutover-gate-redproof.mjs` is plain `.mjs` and cannot import TypeScript, so
+the gate exposes `--print-predicates`; the proof seeds defects against the SAME predicates the gate
+asserts on rather than retyping them.
+
+**Consequence.** `tsconfig.cutover.json` exists because this couples the gate to `web/`: a web change
+can now redden a gate named "cutover". That is the correct trade — the coupling is real either way,
+and this makes it visible at compile time instead of at 3am on a production cutover.
+
+**Not covered by this ADR:** G3's `commentary_entries` predicate is still hand-built while
+`web/src/lib/legal-corpus.ts` exports the canonical form. Same drift class, tracked separately.
+
+## ADR-035 — Vacuity is reported and ratcheted, never phase-hardcoded (2026-07-28)
+
+**Status:** accepted, after two of these hard-fails were caught by deep-audit before ever running.
+
+**Context.** A check that passes because its population is empty is not a check. The obvious fix —
+"after step N this population must be non-empty" — was written into two new legs and **both were
+wrong**, in a way that would have ABORTED A CORRECT PRODUCTION CUTOVER:
+- G5 required lane/song rows from E2 on. E2 labels only the manifest works carrying
+  `backfill.match_author`; not one is a lane/song slug, and the register ingest has never run on
+  prod. That count is 0 forever, by design.
+- The work-leg check required the exegetical slugs from E2 on. Only `keil-delitzsch` of the four is
+  in E2's manifest set.
+
+**Decision.** A gate may not hardcode "population P must be non-empty at phase N" unless the step is
+what creates P. Instead: (a) always print the denominator so a green line cannot mean two things;
+(b) **ratchet** the population against the E0 baseline — it may never shrink; (c) hard-fail only on
+the unambiguous case (for E2: *zero rows carry any work key at all*, since writing that key is
+E2's entire job). This holds on prod, dev and a fork without the gate needing to know the manifest.
+
+**The general rule this encodes:** a gate the operator must override is not a gate — it trains them
+to ignore red. Prefer a loud, specific warning over a failure the target's designed state triggers.
+
+## ADR-036 — An empty user-data baseline is valid; an ABSENT one is not (2026-07-28)
+
+**Status:** accepted. Unblocks the cutover against production's current state.
+
+**Context.** Prod's user tables were cleared 2026-07-28 by owner decision. G1 summed rows across
+`USER_TABLES` and failed on 0 — but `ABSENT` is recorded as `rows: -1`, so `Math.max(0, -1)` made
+*missing tables* and *empty tables* indistinguishable. E0 runs the gate with `--capture` **before**
+the owner gate and before the first write, so the cutover would have refused to start against the
+exact state production is in, for the reason that production is in it.
+
+**Decision.** Tables MISSING is a broken instrument and fails. Tables PRESENT and empty is a **valid**
+baseline: the digest, active count and owner distribution remain comparable, and what they then
+assert is *nothing was added, altered or mis-owned* — which is precisely the guard that protects the
+FIRST REAL USER. It is vacuous about *preservation* and says so loudly, at every phase.
+
+**Corollary (standing):** E1's preserve-these-rows assertions are NOT relaxed to match the empty
+state. They hold at `0 == 0` and stay.

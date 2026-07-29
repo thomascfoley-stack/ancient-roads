@@ -34,6 +34,26 @@ const NEON_PROJECT = process.env.NEON_PROJECT_ID ?? 'spring-heart-74819093';
 process.env.CUTOVER_SESSION_ID = SESSION_ID;
 const DRY = process.argv.includes('--dry-run');
 const PREFLIGHT_ONLY = process.argv.includes('--preflight');
+// --e6-only: run STEP ZERO and then E6's smoke + the full regression battery, and NOTHING
+// else. It exists so the gate can be re-run and re-proven WITHOUT the cutover — the only
+// alternative was to run the whole thing, which is not a thing you do to check a check.
+// It takes no snapshot and never writes (E6 is read-only apart from its rolled-back
+// probes), so the completion guard is deliberately bypassed: re-running the gate must
+// always actually re-run it, never report "(checkpoint) already done".
+const E6_ONLY = process.argv.includes('--e6-only');
+// ARGV IS VALIDATED. `process.argv.includes()` means a typo — `--e6only`, `--e6-only=1`,
+// `--E6-only`, `--dryrun` — matches nothing and falls through to a FULL CUTOVER against the
+// default target, which is production. Two owner gates still stand in front of a migration
+// and the deploy, but a typo in the read-only mode should not reach STEP ZERO, a real Neon
+// branch creation on prod, and a checkpoint write. Reject anything not on the list.
+const KNOWN_FLAGS = new Set(['--dry-run', '--preflight', '--e6-only']);
+const unknownFlags = process.argv.slice(2).filter((a) => a.startsWith('-') && !KNOWN_FLAGS.has(a));
+if (unknownFlags.length > 0) {
+  console.error(`✗ unknown flag(s): ${unknownFlags.join(' ')}`);
+  console.error(`  known flags: ${[...KNOWN_FLAGS].join(' ')}`);
+  console.error('  Refusing to run. An unrecognised flag used to mean "full cutover against the default target".');
+  process.exit(1);
+}
 // `||` not `??`: CUTOVER_EXPECT_HOST="" is an empty string, not undefined, and
 // `host.includes('')` is TRUE for every host — which turned STEP ZERO's endpoint-identity
 // assertion into a no-op that printed "✓ endpoint contains " and passed against dev.
@@ -502,10 +522,13 @@ async function e5_deploy(cp, url, host) {
   cp.done.push('E5'); saveCheckpoint(cp);
 }
 
-async function e6_smoke(sql, url, host, cp) {
+async function e6_smoke(sql, url, host, cp, { standalone = false } = {}) {
   // COMPLETION GUARD. Without it a resume re-ran the whole battery and pushed a second
   // 'E6' onto cp.done (the rehearsal checkpoint carried it twice).
-  if (cp.done.includes('E6')) { console.log('\nE6 — (checkpoint) already done'); return; }
+  // In --e6-only the guard is SKIPPED on purpose: the whole point of that mode is to
+  // re-run the battery on demand, and a checkpoint that made it print "already done" and
+  // exit 0 would be a gate that stops gating after its first success.
+  if (!standalone && cp.done.includes('E6')) { console.log('\nE6 — (checkpoint) already done'); return; }
   console.log('\nE6 — smoke + regression gate');
   if (DRY) { console.log('    [dry-run] would run the smoke counts + the full regression battery'); return; }
   // (a) corpus smoke — the positive control and the forbidden-provenance count.
@@ -524,6 +547,11 @@ async function e6_smoke(sql, url, host, cp) {
   // (b) the full regression battery — the same gate every chunk ran, once more at the
   // end. Set CUTOVER_ASK_URL to add the live /ask probe (only meaningful after E5).
   regressionGate('E6', url, host);
+  // Do NOT checkpoint in --e6-only. Recording 'E6' from a standalone gate run would make a
+  // LATER real cutover skip its own E6 entirely — the cutover would deploy and then report
+  // the battery "already done" on the strength of a run that happened against a different
+  // moment, possibly a different database. A gate rehearsal must leave no claim behind.
+  if (standalone) { console.log('  (--e6-only: not checkpointed — this run makes no claim about a cutover)'); return; }
   cp.done.push('E6'); saveCheckpoint(cp);
 }
 
@@ -575,6 +603,37 @@ CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27
 
   const { url, host } = await stepZero();
   if (PREFLIGHT_ONLY) { console.log('\n--preflight only: done.'); return; }
+
+  // --e6-only: the gate, standalone. No snapshot (nothing writes), no checkpoint binding
+  // (this run is not a cutover and must not inherit or create one's state), no owner gate,
+  // and above all no E5. It is the mode you use to prove the battery still works.
+  if (E6_ONLY) {
+    console.log('\n=== --e6-only: E6 smoke + regression battery ONLY ===');
+    console.log('  No migrations, no labelling, no slicing, NO DEPLOY. Nothing is checkpointed.');
+    // CROSS-TARGET BASELINE, refused here rather than 200 lines later. --e6-only deliberately
+    // skips bindCheckpoint (this run is not a cutover and must not create or inherit one's
+    // state) — but e6_smoke then read cp.baseline.regression.forbidden and ratcheted THIS
+    // target against a number measured on ANOTHER one, and on a mismatch printed
+    // restoreFrom(cp), i.e. "restore the target from the pre-cutover Neon branch
+    // pre-cutover-<other-fork>". Against production that is an instruction to restore prod
+    // from a fork's snapshot. The child gate has this guard; the orchestrator's own leg did not.
+    const baseHost = cp.baseline?.regression?.host;
+    if (baseHost && baseHost !== host) {
+      console.log(`  ⚠ the checkpoint's baseline belongs to ${baseHost}, not ${host}. IGNORING it for this run —`);
+      console.log('    a ratchet against another database is meaningless, and its rollback text names another');
+      console.log("    database's snapshot branch. This run reports readings instead of asserting on them.");
+      cp.baseline = { ...cp.baseline, regression: undefined };
+    }
+    if (!cp.baseline?.regression) {
+      console.log('  ⚠ NO E0 BASELINE on this checkpoint. Every ratcheted check (user data, the');
+      console.log('    voice floors, the forbidden ratchet, section integrity) has nothing to compare');
+      console.log('    against and will REPORT its reading instead of asserting on it. That is a');
+      console.log('    weaker run than a cutover E6 — read the gate\'s own verdict line, which says so.');
+    }
+    await e6_smoke(neon(url), url, host, cp, { standalone: true });
+    console.log('\n--e6-only: done.');
+    return;
+  }
   // CUTOVER_REHEARSAL=1 suppresses the FIRST-PROD-WRITE owner gate (and E5). It existed
   // to let a fork run unattended — but it never checked the target, so
   // CUTOVER_REHEARSAL=1 with a prod URL would apply all 16 migrations, relabel 190,635
