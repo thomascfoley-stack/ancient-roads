@@ -1353,7 +1353,9 @@
       }
     },
     "backfill": {
-      "match_author": "Barnes' Notes"
+      "match_author": "Barnes' Notes",
+      "forbidden_provenance": "skip",
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,300 flat rows under this author are biblehub's, not the CrossWire module this entry names — and the author string is shared with the QUARANTINED barnes-notes entry, so slicing here would relabel quarantined content into a non-quarantined slug. Nothing is written until the owner rules: re-ingest from the named CrossWire edition, or quarantine this entry too."
     }
   },
   {
@@ -1379,7 +1381,9 @@
       }
     },
     "backfill": {
-      "match_author": "John Wesley"
+      "match_author": "John Wesley",
+      "forbidden_provenance": "exclude",
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): 1,021 of 6,275 flat rows (16.3%) carry biblehub provenance; the 5,254 CrossWire rows are clean. The exclusion is strictly subtractive, counted on the sources row, and does not declare the work legitimate — the cleanup of the flat store stays the deferred b2 slice."
     }
   },
   {
@@ -1405,7 +1409,9 @@
       }
     },
     "backfill": {
-      "match_author": "John Calvin"
+      "match_author": "John Calvin",
+      "forbidden_provenance": "exclude",
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): 1,125 of 6,215 flat rows (18.1%) carry biblehub provenance; 5,088 CrossWire + 2 books.google rows are clean. The exclusion is strictly subtractive, counted on the sources row, and does not declare the work legitimate — the cleanup of the flat store stays the deferred b2 slice."
     }
   },
   {
@@ -1431,7 +1437,9 @@
       }
     },
     "backfill": {
-      "match_author": "C.I. Scofield"
+      "match_author": "C.I. Scofield",
+      "forbidden_provenance": "skip",
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,215 flat rows are biblehub's — the CrossWire edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named edition, or quarantine this entry."
     }
   },
   {
@@ -1457,7 +1465,9 @@
       }
     },
     "backfill": {
-      "match_author": "B.W. Johnson"
+      "match_author": "B.W. Johnson",
+      "forbidden_provenance": "skip",
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 288 flat rows are biblehub's — the CrossWire edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named edition, or quarantine this entry."
     }
   },
   {
@@ -1504,7 +1514,9 @@
       "quality_note": "TCP Phase I vs damaged microfilm: ~7 illegibility gaps/1000 words preserved as ⟨…⟩ lacunae (16% of Vol I entries, 33% of Vol II entries carry at least one); Lev 11 annotations lost to a damaged chapter head; canon validation drops <0.25% miskeyed entries"
     },
     "backfill": {
-      "match_author": "Matthew Poole"
+      "match_author": "Matthew Poole",
+      "forbidden_provenance": "skip",
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,308 flat rows are biblehub's — the TCP edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named TCP transcription, or quarantine this entry."
     }
   },
   {

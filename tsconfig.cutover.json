@@ -1,0 +1,24 @@
+{
+  // Typecheck for the cutover's TypeScript. The root tsconfig includes only src/ and
+  // test/, so scripts/ has NEVER been typechecked by `npm run audit` — which meant the
+  // single most safety-critical script in the repo (the regression gate that stands
+  // between a migration and production) was the one file CI never compiled.
+  //
+  // SCOPE, stated rather than implied: this covers the cutover gate and what it imports.
+  // It is NOT "scripts/ is now typechecked". The other scripts/*.mts and predeploy-gate.ts
+  // carry pre-existing errors (an implicit `any` in predeploy-gate.ts among them) and
+  // pulling them in here would turn the gate red on work this branch did not do. Widening
+  // this include to all of scripts/ is tracked as its own slice.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // The gate imports web/src/lib/teacher/routing.ts and web/src/lib/legal-corpus.ts
+    // directly and runs under `npx tsx`, which resolves .ts specifiers as written.
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "scripts/cutover-regression-gate.mts",
+    "scripts/lib/*.d.mts",
+    "web/src/lib/teacher/routing.ts",
+    "web/src/lib/legal-corpus.ts"
+  ]
+}

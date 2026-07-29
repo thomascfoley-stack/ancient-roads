@@ -1,0 +1,59 @@
+==============================================================================
+RED-PROOF: the checkpoint's ATOMIC write (tmp file + rename)
+date: 2026-07-28T06:43:29Z
+
+The checkpoint is the only record of which steps have already written to
+production. The original writer was writeFileSync(path, json), which TRUNCATES
+the live file and then writes; a crash in between leaves a file that no longer
+parses. rename(2) within one filesystem is atomic, so the shipped writer writes
+a sibling temp file and renames it over the target.
+
+Both runs below crash the writer at the same point. The only difference is
+whether the write was atomic.
+==============================================================================
+
+--- baseline state ---------------------------------------------------------
+  checkpoint: PARSES, 2974 bytes, 20 step(s), snapshot=br-hidden-smoke-atb9o0w5
+
+=== (A) SHIPPED writer: crash AFTER the temp write, BEFORE the rename =======
+seed-atomic: ok
+  checkpoint: E6 un-marked so the next run performs a write
+  E6  smoke counts + the full regression battery
+E6 — smoke + regression gate
+  ✓ smoke counts pass (forbidden-provenance 71884, baseline 71884, not increased; E3 deferred — cleanup is a later slice)
+✓ REGRESSION GATE PASSED at E6 — DB-ONLY, LIVE PROBE NOT RUN
+✗ ABORT at unhandled: REDPROOF: simulated crash AFTER the temp write, BEFORE the rename
+  after the crash:
+  checkpoint: PARSES, 2964 bytes, 19 step(s), snapshot=br-hidden-smoke-atb9o0w5
+  stray temp files:
+/private/tmp/claude-501/-Users-tfoley/a9f48ce9-0d2c-418f-8ffa-d949d29b5aa7/scratchpad/redproof-atomic.sh:58: no matches found: /Users/tfoley/theology-study-app/.cutover-checkpoint.json.tmp-*
+    (none — the writer cleaned up)
+
+=== (B) ORIGINAL non-atomic writer: crash PART-WAY THROUGH the write ========
+seed-nonatomic: ok
+  checkpoint: E6 un-marked so the next run performs a write
+  E6  smoke counts + the full regression battery
+E6 — smoke + regression gate
+  ✓ smoke counts pass (forbidden-provenance 71884, baseline 71884, not increased; E3 deferred — cleanup is a later slice)
+✓ REGRESSION GATE PASSED at E6 — DB-ONLY, LIVE PROBE NOT RUN
+✗ ABORT at unhandled: REDPROOF: simulated crash PART-WAY THROUGH a non-atomic write
+  after the crash:
+  checkpoint: DOES NOT PARSE (120 bytes) — Unterminated string starting at: line 6 column 5 (char 95)
+  first 120 bytes: '{\n  "done": [\n    "E0",\n    "E1:016_history_sections",\n    "E1:017_source_type_registers",\n    "E1:020_embeddings_source'
+
+  and what the NEXT run does with that file:
+✗ ABORT at checkpoint: Unterminated string in JSON at position 120 (line 6 column 30)
+
+=== RESTORE =================================================================
+restore: ok
+  checkpoint: E6 un-marked so the next run performs a write
+  checkpoint: PARSES, 2964 bytes, 19 step(s), snapshot=br-hidden-smoke-atb9o0w5
+
+--- RUN (expect GREEN) -----------------------------------------------------
+  E6  smoke counts + the full regression battery
+E6 — smoke + regression gate
+  ✓ smoke counts pass (forbidden-provenance 71884, baseline 71884, not increased; E3 deferred — cleanup is a later slice)
+✓ REGRESSION GATE PASSED at E6 — DB-ONLY, LIVE PROBE NOT RUN
+CUTOVER COMPLETE.
+[orchestrator exit: 0]
+  checkpoint: PARSES, 2974 bytes, 20 step(s), snapshot=br-hidden-smoke-atb9o0w5

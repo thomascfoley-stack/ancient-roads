@@ -1,0 +1,38 @@
+REHEARSAL FORK user-data invariant AFTER the full run (E0,E1,E2,E4,E6) — 2026-07-28T06:18:02Z
+
+host: ep-sweet-river-at1qf82b.c-9.us-east-1.aws.neon.tech
+highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349
+{
+  "highlights": {
+    "rows": 34,
+    "users": 6,
+    "active": 24,
+    "digest": "0542059b3b38cf33086e8a7f58d4d24d",
+    "owners": {
+      "1451cd869c27": 1,
+      "21610c1901fb": 1,
+      "2defd2506d75": 1,
+      "4c09354a5782": 1,
+      "ba5d501bc04c": 1,
+      "d50598130eec": 29
+    }
+  },
+  "notes": {
+    "rows": 2,
+    "users": 1,
+    "active": 2,
+    "digest": "afd05479b8f7d1517b9a8e3d063a8663",
+    "owners": {
+      "d50598130eec": 2
+    }
+  },
+  "chats": {
+    "rows": 1,
+    "users": 1,
+    "active": 1,
+    "digest": "2fe94349e1e706afc6f5b8da51802a97",
+    "owners": {
+      "d50598130eec": 1
+    }
+  }
+}

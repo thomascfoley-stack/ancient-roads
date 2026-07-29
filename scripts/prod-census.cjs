@@ -30,12 +30,17 @@ function envVal(file, name) {
   if (!url) throw new Error(`no CUTOVER_DATABASE_URL in ${ENV_FILE} (or env)`);
 
   const host = new URL(url).host;
-  const branch = envVal(ENV_FILE, 'NEON_BRANCH');
   if (!host.includes('ep-odd-fog')) {
     throw new Error(`STOP: host ${host} is NOT the prod endpoint — refusing to report dev numbers as prod`);
   }
+  // The ONLY identity claim this script makes is the endpoint host, because that is
+  // the one it can actually verify. It used to also print a `branch:` line read from
+  // NEON_BRANCH in .env.prod — a self-attested label with no relationship to the URL
+  // actually connected to. When the connection came from CUTOVER_DATABASE_URL it
+  // printed `branch: census-clone` on top of a correct `ep-odd-fog` host assertion,
+  // i.e. a census of PRODUCTION captioned as a census of a stale clone. A decorative
+  // label that can contradict the verified fact next to it is worse than no label.
   console.log(`host:   ${host} (credentials redacted)`);
-  console.log(`branch: ${branch}`);
 
   const c = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
   await c.connect();

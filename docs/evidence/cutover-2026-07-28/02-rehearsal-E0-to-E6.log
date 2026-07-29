@@ -1,0 +1,471 @@
+==============================================================================
+RE-REHEARSAL of the RE-SCOPED cutover (E0, E1, E2, E4, E6 — E5 NOT RUN)
+target: cutover-rerehearsal-20260727 / ep-sweet-river-at1qf82b
+        FRESH fork of production, parent confirmed (see 00-fork-parent-confirmation.txt)
+captured: 2026-07-28T06:18:02Z
+note: node's repeated pg SSL-mode deprecation warning is stripped; nothing else is.
+==============================================================================
+
+
+CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27)
+  THE CUTOVER IS E0, E1, E2, E4, E5, E6. There is no E3 — forbidden-provenance
+  deletion is DEFERRED to its own slice after a re-ingest exists to refill the
+  corpus (owner ruling 2026-07-27; ADR-030 correction).
+  STEP ZERO  preflight: host~ep-sweet-river-at1qf82b, role=neondb_owner, write-capability, positive control
+  SNAPSHOT   a Neon branch off the target, created BEFORE the first write and
+      asserted to exist; its id is quoted in every rollback (Neon PITR retention on
+      this project is 6 h against a ~2 h 20 m run — the window can close first)
+  E0  regression gate --capture: the pre-cutover baseline (user-data digests +
+      active counts + owner distribution, the corpus-wide >=2-distinct-authors
+      floor, reader, annotation write path, register wall, forbidden ratchet)
+  E1  migrations 016-023 + 025-030 in order (018/019 concurrent)
+      after EVERY migration: user data unchanged (digest, not count) + no INVALID index
+      HAZARD 2 guard: refuse if a section-ordinal annotation precedes 024's renumber
+  E2  register-label the flat embeddings (UPDATE); assert per-work label coverage
+      against the TARGET's own author counts, and that no row was added or lost
+  E4  slice served works into sections reusing vectors 1:1; re-assert per-work 1:1
+      across every sliced work (ADR-029 addendum 2: each store, its own key), THEN
+      apply 024 and assert sections.unit_ordinal is POPULATED (it backfills what E4
+      creates; in E1 it left 71,563 of 72,863 NULL and the old 1:1 check said green)
+  E5  [HARD STOP] deploy.sh
+  E6  smoke counts + the full regression battery
+  REGRESSION GATE RUNS AFTER EVERY CHUNK (E0/E1/E2/E4/E6), not just at the end.
+  Any gate failure ABORTS and rolls back that chunk — never fix forward mid-cutover.
+  Every count re-measured at runtime; NO dev literals baked into a target assertion.
+  Resumable: completed steps recorded in .cutover-checkpoint.json, which is BOUND to
+  the target endpoint and to ONE writing session — a checkpoint from another target
+  is refused, and a second live process is refused rather than allowed to clobber it.
+
+STEP ZERO — prod-credential preflight
+  target host: ep-sweet-river-at1qf82b.c-9.us-east-1.aws.neon.tech
+  ✓ endpoint is ep-sweet-river-at1qf82b
+  ✓ current_user = neondb_owner
+  ✓ write capability proven (BEGIN; CREATE TEMP; ROLLBACK)
+  positive control (Gill rows): 28843
+  ✓ positive control fires
+STEP ZERO PASSED — safe to proceed.
+  (checkpoint: taking ownership from a dead session 12cd7f69-d9b4-45a5-9846-42e1841dd659 / pid 53110 — treating this as a resume)
+  ✓ pre-cutover snapshot: branch pre-cutover-ep-sweet-river-at1qf82b-20260728054331 (br-hidden-smoke-atb9o0w5) off br-rough-recipe-atw6vsl8 — every rollback below restores from it
+
+REGRESSION GATE — phase E0
+  target: ep-sweet-river-at1qf82b.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+  ✓ G1 user-data — baseline captured: highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349
+  ✓ G2 >=2 voices — corpus-wide baseline: 22794 verses meet the >=2-distinct-authors floor, 29629 have any served voice
+  ✓ G2 spot check — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 spot check — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 spot check — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries (pre-019 predicate)
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries (pre-019 predicate)
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries (pre-019 predicate)
+  ✓ G4 load — highlights: shipped load query returns 24 active row(s) (baseline capture)
+  ✓ G4 load — notes: shipped load query returns 2 active row(s) (baseline capture)
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted (pre-025 schema)
+  ✓ G4 write — rolled back clean, zero residue
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G6 ratchet — 71884 forbidden-provenance rows — E3 deferred, cleanup is a later slice
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+     DATABASE-ONLY. Nothing in this gate touched the deployed application. Set
+     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result.
+  baseline written to .cutover-checkpoint.json
+✓ REGRESSION GATE PASSED at E0 — DB-ONLY, LIVE PROBE NOT RUN
+  ✓ E0 user-data baseline: highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349
+
+E1 — migrations 016-030 (fresh; prod is pre-016 per census)
+  ✓ precondition: prod is pre-016 (BUILD)
+  ✓ hazard 2: no section-ordinal annotation precedes 024 (verse-offset highlights are unaffected)
+  ✓ user data matches the E0 baseline (highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349)
+  ✓ user-data baseline (measured on target): highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349
+  apply 016_history_sections
+
+✓ applied db/migrations/016_history_sections.sql
+  apply 017_source_type_registers
+
+✓ applied db/migrations/017_source_type_registers.sql
+  apply 020_embeddings_source_type_registers
+
+✓ applied db/migrations/020_embeddings_source_type_registers.sql
+  apply 021_revoke_app_runtime_anchor_writes
+
+✓ applied db/migrations/021_revoke_app_runtime_anchor_writes.sql
+  apply 022_embeddings_write_policy_user_scope
+
+✓ applied db/migrations/022_embeddings_write_policy_user_scope.sql
+  apply 023_sources_status_ingesting
+
+✓ applied db/migrations/023_sources_status_ingesting.sql
+  apply 025_annotations_polymorphic
+
+✓ applied db/migrations/025_annotations_polymorphic.sql
+  apply 026_bookmarks
+
+✓ applied db/migrations/026_bookmarks.sql
+  apply 027_library_items
+
+✓ applied db/migrations/027_library_items.sql
+  apply 028_reading_progress
+
+✓ applied db/migrations/028_reading_progress.sql
+  apply 029_tags
+
+✓ applied db/migrations/029_tags.sql
+  apply 030_annotation_constraints_tighten
+
+✓ applied db/migrations/030_annotation_constraints_tighten.sql
+  apply (concurrent) 018_register_partial_indexes
+
+  ✓ part 1/15
+  ✓ part 2/15
+  ✓ part 3/15
+  ✓ part 4/15
+  ✓ part 5/15
+  ✓ part 6/15
+  ✓ part 7/15
+  ✓ part 8/15
+  ✓ part 9/15
+  ✓ part 10/15
+  ✓ part 11/15
+  ✓ part 12/15
+  ✓ part 13/15
+  ✓ part 14/15
+  ✓ part 15/15
+  ✓ post-apply: 5 index(es) VALID and READY (idx_embeddings_vector_legal, idx_embeddings_vector_song_verse, idx_embeddings_vector_sermon, idx_embeddings_vector_theology, idx_embeddings_verseid_registers)
+✓ applied db/migrations/018_register_partial_indexes.sql
+  apply (concurrent) 019_register_columns_fts
+
+  ✓ part 1/7
+  ✓ part 2/7
+  ✓ part 3/7
+  ✓ part 4/7
+  ✓ part 5/7
+  ✓ part 6/7
+  ✓ part 7/7
+  ✓ post-apply: 1 index(es) VALID and READY (idx_commentary_fts_legal)
+✓ applied db/migrations/019_register_columns_fts.sql
+  ✓ postcondition: user rows unchanged across all 14 migrations (highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349)
+  ✓ postcondition: no invalid index
+
+REGRESSION GATE — phase E1
+  target: ep-sweet-river-at1qf82b.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+  ✓ G1 user-data — unchanged vs E0 baseline (rows/active/owners/digest): highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349
+  ✓ G2 >=2 voices — corpus-wide: 22794 verses at the floor (E0 22794), 29629 with any voice (E0 29629)
+  ✓ G2 spot check — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 spot check — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 spot check — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G4 load — highlights: shipped load query returns 24 active row(s), unchanged vs E0
+  ✓ G4 load — notes: shipped load query returns 2 active row(s), unchanged vs E0
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G5 register wall — FTS exclusion holds against the independent sources.source_type signal
+  ✓ G6 ratchet — 71884 forbidden-provenance rows (baseline 71884, not increased) — E3 deferred, cleanup is a later slice
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+     DATABASE-ONLY. Nothing in this gate touched the deployed application. Set
+     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result.
+✓ REGRESSION GATE PASSED at E1 — DB-ONLY, LIVE PROBE NOT RUN
+
+E2 — register-label the flat embeddings (metadata UPDATE, not a re-embed)
+  precondition (re-measured): 190635/190635 rows unlabeled
+  ✓ user data matches the E0 baseline (highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349)
+host: ep-sweet-river-at1qf82b.c-9.us-east-1.aws.neon.tech (credentials redacted)
+entries with match_author: 12
+
+before: 190635/190635 unlabeled
+  labeled 1300 rows: "Barnes' Notes" -> barnes-notes
+  labeled 28843 rows: "John Gill" -> john-gill
+  labeled 15473 rows: "Jamieson, Fausset & Brown" -> jfb
+  labeled 12693 rows: "Adam Clarke" -> adam-clarke
+  labeled 4210 rows: "Matthew Henry" -> matthew-henry
+  labeled 6275 rows: "John Wesley" -> wesley-crosswire
+  labeled 6215 rows: "John Calvin" -> calvin-crosswire
+  labeled 1215 rows: "C.I. Scofield" -> scofield-crosswire
+  labeled 288 rows: "B.W. Johnson" -> pnt-crosswire
+  labeled 1308 rows: "Matthew Poole" -> poole-tcp
+after: 112815/190635 unlabeled (77820 rows updated)
+
+OK: register-label complete
+  postcondition: 112815/190635 unlabeled (was 190635)
+    Barnes' Notes -> barnes-notes|barnes-crosswire-nt: 1300/1300
+    John Gill -> john-gill: 28843/28843
+    Jamieson, Fausset & Brown -> jfb: 15473/15473
+    Adam Clarke -> adam-clarke: 12693/12693
+    Matthew Henry -> matthew-henry: 4210/4210
+    John Wesley -> wesley-crosswire: 6275/6275
+    John Calvin -> calvin-crosswire: 6215/6215
+    C.I. Scofield -> scofield-crosswire: 1215/1215
+    B.W. Johnson -> pnt-crosswire: 288/288
+    Matthew Poole -> poole-tcp: 1308/1308
+  ✓ postcondition: 10 mapped author(s), every row labeled, 77820 rows — measured against the target's own author counts
+  ✓ postcondition: user rows unchanged (highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349)
+
+REGRESSION GATE — phase E2
+  target: ep-sweet-river-at1qf82b.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+  ✓ G1 user-data — unchanged vs E0 baseline (rows/active/owners/digest): highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349
+  ✓ G2 >=2 voices — corpus-wide: 22794 verses at the floor (E0 22794), 29629 with any voice (E0 29629)
+  ✓ G2 spot check — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 spot check — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 spot check — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G4 load — highlights: shipped load query returns 24 active row(s), unchanged vs E0
+  ✓ G4 load — notes: shipped load query returns 2 active row(s), unchanged vs E0
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G5 register wall — FTS exclusion holds against the independent sources.source_type signal
+  ✓ G6 ratchet — 71884 forbidden-provenance rows (baseline 71884, not increased) — E3 deferred, cleanup is a later slice
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+     DATABASE-ONLY. Nothing in this gate touched the deployed application. Set
+     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result.
+✓ REGRESSION GATE PASSED at E2 — DB-ONLY, LIVE PROBE NOT RUN
+
+E4 — slice works into sections, reusing vectors 1:1
+  per served work: migrate-sections-slice, then assert sections == flat-pool count FOR THAT WORK (hazard 1: each store its own key; assert 1:1).
+  then 024_sections_unit_ordinal (it backfills the sections THIS step creates — running it in E1 left 71,563 of 72,863 NULL).
+  ✓ user data matches the E0 baseline (highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349)
+host: ep-sweet-river-at1qf82b.c-9.us-east-1.aws.neon.tech (credentials redacted)
+works to slice: 11
+
+--- john-gill (author="John Gill") ---
+
+==================================================================
+RE-POINT SLICE — John Gill's Exposition of the Bible (source_id=4, status=staged)
+==================================================================
+  matched embeddings (author="John Gill"): 28843
+  sections inserted:                            28843
+  section_anchors inserted:                     28843
+  section_embeddings (reused, model=bge-large-en-v1.5): 28843
+
+✓ 1:1:1 — sections == section_embeddings == matched embeddings. Coverage will be 0.
+  ✓ 1:1 flat=28843 sections=28843
+
+--- jfb (author="Jamieson, Fausset & Brown") ---
+
+==================================================================
+RE-POINT SLICE — Jamieson-Fausset-Brown Bible Commentary (source_id=5, status=staged)
+==================================================================
+  matched embeddings (author="Jamieson, Fausset & Brown"): 15473
+  sections inserted:                            15473
+  section_anchors inserted:                     15473
+  section_embeddings (reused, model=bge-large-en-v1.5): 15473
+
+✓ 1:1:1 — sections == section_embeddings == matched embeddings. Coverage will be 0.
+  ✓ 1:1 flat=15473 sections=15473
+
+--- adam-clarke (author="Adam Clarke") ---
+
+==================================================================
+RE-POINT SLICE — Adam Clarke's Commentary on the Bible (source_id=6, status=staged)
+==================================================================
+  matched embeddings (author="Adam Clarke"): 12693
+  sections inserted:                            12693
+  section_anchors inserted:                     12693
+  section_embeddings (reused, model=bge-large-en-v1.5): 12693
+
+✓ 1:1:1 — sections == section_embeddings == matched embeddings. Coverage will be 0.
+  ✓ 1:1 flat=12693 sections=12693
+
+--- matthew-henry (author="Matthew Henry") ---
+
+==================================================================
+RE-POINT SLICE — Matthew Henry's Complete Commentary (source_id=3, status=staged)
+==================================================================
+  matched embeddings (author="Matthew Henry"): 4210
+  sections inserted:                            4210
+  section_anchors inserted:                     4210
+  section_embeddings (reused, model=bge-large-en-v1.5): 4210
+
+✓ 1:1:1 — sections == section_embeddings == matched embeddings. Coverage will be 0.
+  ✓ 1:1 flat=4210 sections=4210
+
+--- keil-delitzsch (author="C.F. Keil & Franz Delitzsch") ---
+  skip: 0 flat rows (E3 removed forbidden or not on prod)
+
+--- barnes-crosswire-nt (author="Barnes' Notes") ---
+
+==================================================================
+RE-POINT SLICE — Barnes' New Testament Notes (source_id=8, status=staged)
+==================================================================
+  matched embeddings (author="Barnes' Notes"): 1300
+  sections inserted:                            1300
+  section_anchors inserted:                     1300
+  section_embeddings (reused, model=bge-large-en-v1.5): 1300
+
+✓ 1:1:1 — sections == section_embeddings == matched embeddings. Coverage will be 0.
+  ✓ 1:1 flat=1300 sections=1300
+
+--- wesley-crosswire (author="John Wesley") ---
+
+==================================================================
+RE-POINT SLICE — Wesley's Explanatory Notes (source_id=9, status=staged)
+==================================================================
+  matched embeddings (author="John Wesley"): 6275
+  sections inserted:                            6275
+  section_anchors inserted:                     6275
+  section_embeddings (reused, model=bge-large-en-v1.5): 6275
+
+✓ 1:1:1 — sections == section_embeddings == matched embeddings. Coverage will be 0.
+  ✓ 1:1 flat=6275 sections=6275
+
+--- calvin-crosswire (author="John Calvin") ---
+
+==================================================================
+RE-POINT SLICE — Calvin's Commentaries (source_id=10, status=staged)
+==================================================================
+  matched embeddings (author="John Calvin"): 6215
+  sections inserted:                            6215
+  section_anchors inserted:                     6215
+  section_embeddings (reused, model=bge-large-en-v1.5): 6215
+
+✓ 1:1:1 — sections == section_embeddings == matched embeddings. Coverage will be 0.
+  ✓ 1:1 flat=6215 sections=6215
+
+--- scofield-crosswire (author="C.I. Scofield") ---
+
+==================================================================
+RE-POINT SLICE — Scofield Reference Notes (1917) (source_id=11, status=staged)
+==================================================================
+  matched embeddings (author="C.I. Scofield"): 1215
+  sections inserted:                            1215
+  section_anchors inserted:                     1215
+  section_embeddings (reused, model=bge-large-en-v1.5): 1215
+
+✓ 1:1:1 — sections == section_embeddings == matched embeddings. Coverage will be 0.
+  ✓ 1:1 flat=1215 sections=1215
+
+--- pnt-crosswire (author="B.W. Johnson") ---
+
+==================================================================
+RE-POINT SLICE — The People's New Testament (source_id=12, status=staged)
+==================================================================
+  matched embeddings (author="B.W. Johnson"): 288
+  sections inserted:                            288
+  section_anchors inserted:                     288
+  section_embeddings (reused, model=bge-large-en-v1.5): 288
+
+✓ 1:1:1 — sections == section_embeddings == matched embeddings. Coverage will be 0.
+  ✓ 1:1 flat=288 sections=288
+
+--- poole-tcp (author="Matthew Poole") ---
+
+==================================================================
+RE-POINT SLICE — Annotations upon the Holy Bible (source_id=13, status=staged)
+==================================================================
+  matched embeddings (author="Matthew Poole"): 1308
+  sections inserted:                            1308
+  section_anchors inserted:                     1308
+  section_embeddings (reused, model=bge-large-en-v1.5): 1308
+
+✓ 1:1:1 — sections == section_embeddings == matched embeddings. Coverage will be 0.
+  ✓ 1:1 flat=1308 sections=1308
+
+OK: E4 slice-all complete
+    matthew-henry: sections=4210 flat=4210
+    barnes-crosswire-nt: sections=1300 flat=0 (pre-register source, no flat work key — not a 1:1 target)
+    wesley-crosswire: sections=6275 flat=6275
+    calvin-crosswire: sections=6215 flat=6215
+    pnt-crosswire: sections=288 flat=288
+    jfb: sections=15473 flat=15473
+    adam-clarke: sections=12693 flat=12693
+    barnes-notes: sections=1300 flat=1300
+    poole-tcp: sections=1308 flat=1308
+    scofield-crosswire: sections=1215 flat=1215
+    john-gill: sections=28843 flat=28843
+  ✓ postcondition: 1:1 sections↔flat pool for every sliced register work (11 source(s) with sections), and no work with flat rows was skipped
+  apply (concurrent) 024_sections_unit_ordinal
+
+  ✓ part 1/3
+  ✓ part 2/3
+  ✓ part 3/3
+  ✓ post-apply: 1 index(es) VALID and READY (sections_unit_ordinal_idx)
+✓ applied db/migrations/024_sections_unit_ordinal.sql
+  ✓ postcondition: unit_ordinal populated on all 79120 sections — 11534 reading unit(s) across 11 source(s)
+
+REGRESSION GATE — phase E4
+  target: ep-sweet-river-at1qf82b.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+  ✓ G1 user-data — unchanged vs E0 baseline (rows/active/owners/digest): highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349
+  ✓ G2 >=2 voices — corpus-wide: 22794 verses at the floor (E0 22794), 29629 with any voice (E0 29629)
+  ✓ G2 spot check — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 spot check — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 spot check — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G4 load — highlights: shipped load query returns 24 active row(s), unchanged vs E0
+  ✓ G4 load — notes: shipped load query returns 2 active row(s), unchanged vs E0
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G5 register wall — FTS exclusion holds against the independent sources.source_type signal
+  ✓ G6 ratchet — 71884 forbidden-provenance rows (baseline 71884, not increased) — E3 deferred, cleanup is a later slice
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+     DATABASE-ONLY. Nothing in this gate touched the deployed application. Set
+     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result.
+✓ REGRESSION GATE PASSED at E4 — DB-ONLY, LIVE PROBE NOT RUN
+
+E5 — skipped (CUTOVER_REHEARSAL)
+
+E6 — smoke + regression gate
+  Gill rows: 28843  sections: 79120  forbidden-provenance: 71884
+  ✓ smoke counts pass (forbidden-provenance 71884, baseline 71884, not increased; E3 deferred — cleanup is a later slice)
+
+REGRESSION GATE — phase E6
+  target: ep-sweet-river-at1qf82b.c-9.us-east-1.aws.neon.tech (credentials redacted)
+
+  ✓ G1 user-data — unchanged vs E0 baseline (rows/active/owners/digest): highlights=34r/24a/6u/0542059b notes=2r/2a/1u/afd05479 chats=1r/1a/1u/2fe94349
+  ✓ G2 >=2 voices — corpus-wide: 22794 verses at the floor (E0 22794), 29629 with any voice (E0 29629)
+  ✓ G2 spot check — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 spot check — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 spot check — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G4 load — highlights: shipped load query returns 24 active row(s), unchanged vs E0
+  ✓ G4 load — notes: shipped load query returns 2 active row(s), unchanged vs E0
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ✓ G5 register wall — no song/verse or lane work reachable through LEGAL_CORPUS_FILTER
+  ✓ G5 register wall — FTS exclusion holds against the independent sources.source_type signal
+  ✓ G6 ratchet — 71884 forbidden-provenance rows (baseline 71884, not increased) — E3 deferred, cleanup is a later slice
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+     DATABASE-ONLY. Nothing in this gate touched the deployed application. Set
+     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result.
+✓ REGRESSION GATE PASSED at E6 — DB-ONLY, LIVE PROBE NOT RUN
+
+CUTOVER COMPLETE.

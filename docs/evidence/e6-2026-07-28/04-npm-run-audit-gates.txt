@@ -1,0 +1,16 @@
+✓ typecheck — tsc --noEmit (strict)
+✓ typecheck — cutover gate (scripts/)
+✓ typecheck — web/ tsc --noEmit
+✓ typecheck — web/test tsc --noEmit
+✓ lint — eslint src/ test/
+✓ lint — web/ next lint
+✓ unused — knip (files/exports/deps)
+✗ deps-audit: 2 un-ignored high/critical advisory(ies):
+✗ deps — advisory bulk-endpoint (prod, high+ CVEs)
+✓ tests + coverage — vitest
+✗ qa — Layer 1 invariants + regressions
+✓ dev is clean — no seeded residue in 8 table(s).
+✓ hygiene — no test residue in dev (post-suite)
+✓ GATE B PASSED: no license/provenance violations.
+✓ data — Gate B license (fail-closed)
+AUDIT FAILED (2): deps — advisory bulk-endpoint (prod, high+ CVEs) qa — Layer 1 invariants + regressions
