@@ -1,0 +1,803 @@
+==============================================================================
+PHASE 2 PROD CUTOVER — ep-odd-fog-atnykudm
+date: 2026-07-29T16:42:18Z
+CUTOVER_REHEARSAL=1 E5 skipped; CUTOVER_OWNER_PHASE2_GO=1
+==============================================================================
+
+CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27)
+  THE CUTOVER IS E0, E1, E2, E4, E5, E6. There is no E3 — forbidden-provenance
+  deletion is DEFERRED to its own slice after a re-ingest exists to refill the
+  corpus (owner ruling 2026-07-27; ADR-030 correction).
+  STEP ZERO  preflight: host~ep-odd-fog-atnykudm, role=neondb_owner, write-capability, positive control
+  SNAPSHOT   a Neon branch off the target, created BEFORE the first write and
+      asserted to exist; its id is quoted in every rollback (Neon PITR retention on
+      this project is 6 h against a ~2 h 20 m run — the window can close first)
+  E0  regression gate --capture: the pre-cutover baseline (user-data digests +
+      active counts + owner distribution, the corpus-wide >=2-distinct-authors
+      floor, reader, annotation write path, register wall, forbidden ratchet)
+  E1  migrations 016-023 + 025-031 in order (018/019 concurrent; 031 adds
+      sections.source_url — row-level content provenance, required by E4)
+      after EVERY migration: user data unchanged (digest, not count) + no INVALID index
+      HAZARD 2 guard: refuse if a section-ordinal annotation precedes 024's renumber
+  E2  register-label the flat embeddings (UPDATE); assert per-work label coverage
+      against the TARGET's own author counts, and that no row was added or lost
+  E4  slice served works into sections reusing vectors 1:1, carrying each row's
+      sourceUrl into sections.source_url; the slice FAILS CLOSED on undeclared
+      forbidden provenance in a work's flat pool, and honors the manifest's
+      declared policy (exclude|skip, SECTION_PROVENANCE_DESIGN R2-R3); re-assert
+      per-work sections + excluded == flat across every sliced work (ADR-029
+      addendum 2: each store, its own key), THEN apply 024 and assert
+      sections.unit_ordinal is POPULATED (it backfills what E4 creates; in E1 it
+      left 71,563 of 72,863 NULL and the old 1:1 check said green)
+  E5  [HARD STOP] deploy.sh
+  E6  smoke counts + the full regression battery
+  REGRESSION GATE RUNS AFTER EVERY CHUNK (E0/E1/E2/E4/E6), not just at the end.
+  Any gate failure ABORTS and rolls back that chunk — never fix forward mid-cutover.
+  Every count re-measured at runtime; NO dev literals baked into a target assertion.
+  Resumable: completed steps recorded in .cutover-checkpoint.json, which is BOUND to
+  the target endpoint and to ONE writing session — a checkpoint from another target
+  is refused, and a second live process is refused rather than allowed to clobber it.
+
+
+STEP ZERO — prod-credential preflight
+  target host: ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech
+  ✓ endpoint is ep-odd-fog-atnykudm
+  ✓ current_user = neondb_owner
+  ✓ write capability proven (BEGIN; CREATE TEMP; ROLLBACK)
+  positive control (Gill rows): 28843
+  ✓ positive control fires
+STEP ZERO PASSED — safe to proceed.
+  ✓ pre-cutover snapshot: branch pre-cutover-ep-odd-fog-atnykudm-20260729164220 (br-late-recipe-atxl68sh) off br-nameless-brook-atzgh1gq — every rollback below restores from it
+
+REGRESSION GATE — phase E0
+  target: ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (credentials redacted)
+(node:13152) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ⚠ G1 user-data — baseline captured but EMPTY (highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY). Every user table EXISTS and holds zero rows.
+     This is the expected post-2026-07-28 production state (owner cleared the test data), NOT a fault.
+     What the invariant still proves from here: that nothing is ADDED, altered or mis-owned across
+     the cutover — the guard that protects the first real user. What it CANNOT prove on this target:
+     that anything was PRESERVED, because there is nothing to preserve. Read every later
+     "user data unchanged" line as 0 == 0.
+  ✓ G1 user-data — baseline captured (empty but present): highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY
+  ✓ G2 >=2 voices — corpus-wide baseline: 22794 verses meet the >=2-distinct-authors floor, 29629 have any served voice
+  ✓ G2 durable floor — baseline EXCLUDING forbidden provenance: 22214 verses at the floor, 29605 with any voice (what remains after the deferred cleanup)
+  ⚠ G2 work leg — 0 rows carry any metadata->>'work' key at E0. Expected before E2 (the census found this true of 190,635 of 190,635 prod rows); it is a hard failure from E2 on.
+  ✓ G2 spot check — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 spot check — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 spot check — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G2 spot check — John 10:11: 7 distinct authors, 7 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/static — John 10:11: 9 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries (pre-019 predicate)
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries (pre-019 predicate)
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries (pre-019 predicate)
+  ✓ G3 reader/db — John 10:11: 6 legal commentary_entries (pre-019 predicate)
+  ✓ G4 load — highlights: shipped load query returns 0 active row(s) (baseline capture)
+  ✓ G4 load — notes: shipped load query returns 0 active row(s) (baseline capture)
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted (pre-025 schema)
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G5 register wall — VACUOUS at E0: 0 rows carry any of the 25 song/verse or lane slugs, so "no leak" is 0-of-0 and proves nothing on this target. Expected on production, which has never had the register ingest. On dev this number is large; if it is 0 THERE, something removed the labels.
+  ✓ G6 ratchet — 71884 forbidden-provenance rows — E3 deferred, cleanup is a later slice
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.
+  ✓ G8 sections/embeddings — no orphan embeddings — 5510 embedding row(s) over 5510 section(s). NOTE: section_embeddings.section_id is NOT NULL REFERENCES sections(id), so an orphan is unrepresentable while that FK stands; this leg only becomes informative if the FK is ever dropped. It is not evidence of a healthy slice. Also note embeddings > sections is NORMAL — the PK is (section_id, model_slug), so a second model legitimately adds rows.
+  ✓ G8 unembedded — baseline: 0 of 5510 section(s) carry no embedding
+  ⚠ G8 provenance — sections.source_url does not exist (pre-031); the content-vs-declared provenance check did NOT run at E0. Expected before E1; from E1 on, 031 is in the migration list and this column's absence would mean E1 did not finish.
+  ⚠ G9 constraints — this target is PRE-025 (notes.target_kind does not exist), so none of the 025/030 constraints can exist yet. Nothing checked. This is the expected state at E0; the constraints are asserted from E1 on, and their ABSENCE after E1 is a hard failure.
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+     DATABASE-ONLY. Nothing in this gate touched the deployed application: not routing,
+     not legalBasePool, not hnsw.ef_search, not the reranker, not compose, and NOT THE
+     VERIFIER — the artifact that actually implements the product guarantee. Set
+     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result. You will also need
+     CUTOVER_ASK_COOKIE carrying a logged-in SESSION cookie (/api/ask is authed-only);
+     the site_gate password cookie alone yields 401.
+  baseline written to .cutover-checkpoint.json
+✓ REGRESSION GATE PASSED at E0 — DB-ONLY, LIVE PROBE NOT RUN; NO E0 BASELINE, so the ratcheted legs REPORTED rather than asserted (survey, not regression gate)
+  ✓ E0 user-data baseline: highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY
+
+E1 — migrations 016-023 + 025-031 (fresh; prod is pre-016 per census; 024 runs in E4)
+  ✓ precondition: prod is pre-016 (BUILD)
+  ✓ hazard 2: no section-ordinal annotation precedes 024 (verse-offset highlights are unaffected)
+  ✓ user data matches the E0 baseline (highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY)
+  ✓ user-data baseline (measured on target): highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY
+  apply 016_history_sections
+(node:13167) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/016_history_sections.sql
+  apply 017_source_type_registers
+(node:13170) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/017_source_type_registers.sql
+  apply 020_embeddings_source_type_registers
+(node:13181) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/020_embeddings_source_type_registers.sql
+  apply 021_revoke_app_runtime_anchor_writes
+(node:13184) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/021_revoke_app_runtime_anchor_writes.sql
+  apply 022_embeddings_write_policy_user_scope
+(node:13191) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/022_embeddings_write_policy_user_scope.sql
+  apply 023_sources_status_ingesting
+(node:13195) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/023_sources_status_ingesting.sql
+  apply 025_annotations_polymorphic
+(node:13201) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/025_annotations_polymorphic.sql
+  apply 026_bookmarks
+(node:13205) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/026_bookmarks.sql
+  apply 027_library_items
+(node:13209) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/027_library_items.sql
+  apply 028_reading_progress
+(node:13213) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/028_reading_progress.sql
+  apply 029_tags
+(node:13216) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/029_tags.sql
+  apply 030_annotation_constraints_tighten
+(node:13219) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/030_annotation_constraints_tighten.sql
+  apply 031_sections_source_url
+(node:13226) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/031_sections_source_url.sql
+  apply (concurrent) 018_register_partial_indexes
+(node:13230) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓ part 1/15
+  ✓ part 2/15
+  ✓ part 3/15
+  ✓ part 4/15
+  ✓ part 5/15
+  ✓ part 6/15
+  ✓ part 7/15
+  ✓ part 8/15
+  ✓ part 9/15
+  ✓ part 10/15
+  ✓ part 11/15
+  ✓ part 12/15
+  ✓ part 13/15
+  ✓ part 14/15
+  ✓ part 15/15
+  ✓ post-apply: 5 index(es) VALID and READY (idx_embeddings_vector_legal, idx_embeddings_vector_song_verse, idx_embeddings_vector_sermon, idx_embeddings_vector_theology, idx_embeddings_verseid_registers)
+✓ applied db/migrations/018_register_partial_indexes.sql
+  apply (concurrent) 019_register_columns_fts
+(node:13803) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓ part 1/7
+  ✓ part 2/7
+  ✓ part 3/7
+  ✓ part 4/7
+  ✓ part 5/7
+  ✓ part 6/7
+  ✓ part 7/7
+  ✓ post-apply: 1 index(es) VALID and READY (idx_commentary_fts_legal)
+✓ applied db/migrations/019_register_columns_fts.sql
+  ✓ postcondition: user rows unchanged across all 15 migrations (highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY)
+  ✓ postcondition: no invalid index
+
+REGRESSION GATE — phase E1
+  target: ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (credentials redacted)
+(node:13865) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓ G1 user-data — unchanged vs E0 baseline (rows/active/owners/digest): highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY
+  ✓ G2 >=2 voices — corpus-wide: 22794 verses at the floor (E0 22794), 29629 with any voice (E0 29629)
+  ✓ G2 durable floor — excluding forbidden provenance: 22214 at the floor (E0 22214), 29605 with any voice (E0 29605)
+  ⚠ G2 work leg — 0 rows carry any metadata->>'work' key at E1. Expected before E2 (the census found this true of 190,635 of 190,635 prod rows); it is a hard failure from E2 on.
+  ✓ G2 spot check — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 spot check — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 spot check — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G2 spot check — John 10:11: 7 distinct authors, 7 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/static — John 10:11: 9 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G3 reader/db — John 10:11: 6 legal commentary_entries
+  ✓ G4 load — highlights: shipped load query returns 0 active row(s), unchanged vs E0
+  ✓ G4 load — notes: shipped load query returns 0 active row(s), unchanged vs E0
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ⚠ G5 register wall — VACUOUS at E1: 0 rows carry any of the 25 song/verse or lane slugs, so "no leak" is 0-of-0 and proves nothing on this target. Expected on production, which has never had the register ingest. On dev this number is large; if it is 0 THERE, something removed the labels.
+  ✓ G6 ratchet — 71884 forbidden-provenance rows (baseline 71884, not increased) — E3 deferred, cleanup is a later slice
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.
+  ✓ G8 sections/embeddings — no orphan embeddings — 5510 embedding row(s) over 5510 section(s). NOTE: section_embeddings.section_id is NOT NULL REFERENCES sections(id), so an orphan is unrepresentable while that FK stands; this leg only becomes informative if the FK is ever dropped. It is not evidence of a healthy slice. Also note embeddings > sections is NORMAL — the PK is (section_id, model_slug), so a second model legitimately adds rows.
+  ✓ G8 unembedded — 0 section(s) without an embedding (E0 0, not increased) over 5510 sections
+  ✓ G8 provenance — no section carries forbidden content provenance under a clean declared provenance
+    G8 provenance census (sections.source_url host per source):
+      barnes-notes: (none recorded) ×1300
+      matthew-henry: (none recorded) ×4210
+  ✓ G9 constraints — notes.notes_anchor_xor present with the 025 body
+  ✓ G9 constraints — highlights.highlights_anchor_xor present with the 030 body
+  ✓ G9 constraints — notes.notes_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — highlights.highlights_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — bookmarks.bookmarks_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — 025 notes_anchor_xor rejects a verse note with no verse_id
+  ✓ G9 constraints — 025 notes_anchor_xor rejects a note anchored to BOTH a verse and a section
+  ✓ G9 constraints — 030 highlights_anchor_xor rejects a section highlight with no source_content_hash
+  ✓ G9 constraints — 030 highlights_anchor_xor rejects a section highlight carrying a translation
+  ✓ G9 constraints — positive twin: the SAME row with a content hash and no translation is ACCEPTED (so the rejections above are about those fields, not about the insert)
+  ✓ G9 constraints — probes rolled back clean, zero residue
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+     DATABASE-ONLY. Nothing in this gate touched the deployed application: not routing,
+     not legalBasePool, not hnsw.ef_search, not the reranker, not compose, and NOT THE
+     VERIFIER — the artifact that actually implements the product guarantee. Set
+     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result. You will also need
+     CUTOVER_ASK_COOKIE carrying a logged-in SESSION cookie (/api/ask is authed-only);
+     the site_gate password cookie alone yields 401.
+✓ REGRESSION GATE PASSED at E1 — DB-ONLY, LIVE PROBE NOT RUN
+
+E2 — register-label the flat embeddings (metadata UPDATE, not a re-embed)
+  precondition (re-measured): 190635/190635 rows unlabeled
+  ✓ user data matches the E0 baseline (highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY)
+host: ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (credentials redacted)
+entries with match_author: 12
+(node:13923) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+before: 190635/190635 unlabeled
+  labeled 1300 rows: "Barnes' Notes" -> barnes-notes
+  labeled 28843 rows: "John Gill" -> john-gill
+  labeled 15473 rows: "Jamieson, Fausset & Brown" -> jfb
+  labeled 12693 rows: "Adam Clarke" -> adam-clarke
+  labeled 4210 rows: "Matthew Henry" -> matthew-henry
+  labeled 6275 rows: "John Wesley" -> wesley-crosswire
+  labeled 6215 rows: "John Calvin" -> calvin-crosswire
+  labeled 1215 rows: "C.I. Scofield" -> scofield-crosswire
+  labeled 288 rows: "B.W. Johnson" -> pnt-crosswire
+  labeled 1308 rows: "Matthew Poole" -> poole-tcp
+after: 112815/190635 unlabeled (77820 rows updated)
+
+OK: register-label complete
+  postcondition: 112815/190635 unlabeled (was 190635)
+    Barnes' Notes -> barnes-notes|barnes-crosswire-nt: 1300/1300
+    John Gill -> john-gill: 28843/28843
+    Jamieson, Fausset & Brown -> jfb: 15473/15473
+    Adam Clarke -> adam-clarke: 12693/12693
+    Matthew Henry -> matthew-henry: 4210/4210
+    John Wesley -> wesley-crosswire: 6275/6275
+    John Calvin -> calvin-crosswire: 6215/6215
+    C.I. Scofield -> scofield-crosswire: 1215/1215
+    B.W. Johnson -> pnt-crosswire: 288/288
+    Matthew Poole -> poole-tcp: 1308/1308
+  ✓ postcondition: 10 mapped author(s), every row labeled, 77820 rows — measured against the target's own author counts
+  ✓ postcondition: user rows unchanged (highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY)
+
+REGRESSION GATE — phase E2
+  target: ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (credentials redacted)
+(node:15810) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓ G1 user-data — unchanged vs E0 baseline (rows/active/owners/digest): highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY
+  ✓ G2 >=2 voices — corpus-wide: 22794 verses at the floor (E0 22794), 29629 with any voice (E0 29629)
+  ✓ G2 durable floor — excluding forbidden provenance: 22214 at the floor (E0 22214), 29605 with any voice (E0 29605)
+  ✓ G2 work leg — 77820 row(s) carry a work key (E0 0, not decreased); 0 of them are admitted by the exegetical work leg across 0/4 slug(s), 0 author(s)
+  ⚠ G2 work leg — none of the 4 exegetical work slug(s) (keil-delitzsch, catena-aurea, chrysostom-homilies, augustine-homilies) is present, so the 2 authors only that leg admits are not served here. Not an abort: E2 does not create those slugs (they come from the register ingest, which has never run on prod).
+  ✓ G2 spot check — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 spot check — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 spot check — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G2 spot check — John 10:11: 7 distinct authors, 7 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/static — John 10:11: 9 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G3 reader/db — John 10:11: 6 legal commentary_entries
+  ✓ G4 load — highlights: shipped load query returns 0 active row(s), unchanged vs E0
+  ✓ G4 load — notes: shipped load query returns 0 active row(s), unchanged vs E0
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ⚠ G5 register wall — VACUOUS at E2: 0 rows carry any of the 25 song/verse or lane slugs, so "no leak" is 0-of-0 and proves nothing on this target. Expected on production, which has never had the register ingest. On dev this number is large; if it is 0 THERE, something removed the labels.
+  ✓ G6 ratchet — 71884 forbidden-provenance rows (baseline 71884, not increased) — E3 deferred, cleanup is a later slice
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.
+  ✓ G8 sections/embeddings — no orphan embeddings — 5510 embedding row(s) over 5510 section(s). NOTE: section_embeddings.section_id is NOT NULL REFERENCES sections(id), so an orphan is unrepresentable while that FK stands; this leg only becomes informative if the FK is ever dropped. It is not evidence of a healthy slice. Also note embeddings > sections is NORMAL — the PK is (section_id, model_slug), so a second model legitimately adds rows.
+  ✓ G8 unembedded — 0 section(s) without an embedding (E0 0, not increased) over 5510 sections
+  ✓ G8 provenance — no section carries forbidden content provenance under a clean declared provenance
+    G8 provenance census (sections.source_url host per source):
+      barnes-notes: (none recorded) ×1300
+      matthew-henry: (none recorded) ×4210
+  ✓ G9 constraints — notes.notes_anchor_xor present with the 025 body
+  ✓ G9 constraints — highlights.highlights_anchor_xor present with the 030 body
+  ✓ G9 constraints — notes.notes_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — highlights.highlights_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — bookmarks.bookmarks_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — 025 notes_anchor_xor rejects a verse note with no verse_id
+  ✓ G9 constraints — 025 notes_anchor_xor rejects a note anchored to BOTH a verse and a section
+  ✓ G9 constraints — 030 highlights_anchor_xor rejects a section highlight with no source_content_hash
+  ✓ G9 constraints — 030 highlights_anchor_xor rejects a section highlight carrying a translation
+  ✓ G9 constraints — positive twin: the SAME row with a content hash and no translation is ACCEPTED (so the rejections above are about those fields, not about the insert)
+  ✓ G9 constraints — probes rolled back clean, zero residue
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+     DATABASE-ONLY. Nothing in this gate touched the deployed application: not routing,
+     not legalBasePool, not hnsw.ef_search, not the reranker, not compose, and NOT THE
+     VERIFIER — the artifact that actually implements the product guarantee. Set
+     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result. You will also need
+     CUTOVER_ASK_COOKIE carrying a logged-in SESSION cookie (/api/ask is authed-only);
+     the site_gate password cookie alone yields 401.
+✓ REGRESSION GATE PASSED at E2 — DB-ONLY, LIVE PROBE NOT RUN
+
+E4 — slice works into sections, reusing vectors 1:1
+  per served work: migrate-sections-slice, then assert sections + excluded == flat-pool count FOR THAT WORK (hazard 1: each store its own key; `excluded` is a declared forbidden-provenance exclusion recorded on the sources row, 0 without one — SECTION_PROVENANCE_DESIGN §5).
+  then 024_sections_unit_ordinal (it backfills the sections THIS step creates — running it in E1 left 71,563 of 72,863 NULL).
+  ✓ user data matches the E0 baseline (highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY)
+host: ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (credentials redacted)
+works to slice: 7 (+4 declared forbidden-provenance skip(s))
+  skip (declared): barnes-crosswire-nt — Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,300 flat rows under this author are biblehub's, not the CrossWire module this entry names — and the author string is shared with the QUARANTINED barnes-notes entry, so slicing here would relabel quarantined content into a non-quarantined slug. Nothing is written until the owner rules: re-ingest from the named CrossWire edition, or quarantine this entry too.
+  skip (declared): scofield-crosswire — Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,215 flat rows are biblehub's — the CrossWire edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named edition, or quarantine this entry.
+  skip (declared): pnt-crosswire — Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 288 flat rows are biblehub's — the CrossWire edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named edition, or quarantine this entry.
+  skip (declared): poole-tcp — Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,308 flat rows are biblehub's — the TCP edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named TCP transcription, or quarantine this entry.
+(node:15819) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+--- john-gill (author="John Gill") ---
+(node:15842) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+==================================================================
+RE-POINT SLICE — John Gill's Exposition of the Bible (source_id=4, status=staged)
+==================================================================
+  flat pool (author="John Gill"):            28843
+  excluded (forbidden provenance, declared):     0
+  sections inserted:                            28843
+  section_anchors inserted:                     28843
+  section_embeddings (reused, model=bge-large-en-v1.5): 28843
+
+✓ sections == section_embeddings, and sections + excluded == flat pool (28843 + 0 == 28843). Coverage will be 0.
+  ✓ 1:1 flat=28843 sections=28843
+
+--- jfb (author="Jamieson, Fausset & Brown") ---
+(node:16133) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+==================================================================
+RE-POINT SLICE — Jamieson-Fausset-Brown Bible Commentary (source_id=5, status=staged)
+==================================================================
+  flat pool (author="Jamieson, Fausset & Brown"):            15473
+  excluded (forbidden provenance, declared):     0
+  sections inserted:                            15473
+  section_anchors inserted:                     15473
+  section_embeddings (reused, model=bge-large-en-v1.5): 15473
+
+✓ sections == section_embeddings, and sections + excluded == flat pool (15473 + 0 == 15473). Coverage will be 0.
+  ✓ 1:1 flat=15473 sections=15473
+
+--- adam-clarke (author="Adam Clarke") ---
+(node:16514) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+==================================================================
+RE-POINT SLICE — Adam Clarke's Commentary on the Bible (source_id=6, status=staged)
+==================================================================
+  flat pool (author="Adam Clarke"):            12693
+  excluded (forbidden provenance, declared):     0
+  sections inserted:                            12693
+  section_anchors inserted:                     12693
+  section_embeddings (reused, model=bge-large-en-v1.5): 12693
+
+✓ sections == section_embeddings, and sections + excluded == flat pool (12693 + 0 == 12693). Coverage will be 0.
+  ✓ 1:1 flat=12693 sections=12693
+
+--- matthew-henry (author="Matthew Henry") ---
+(node:16635) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+==================================================================
+RE-POINT SLICE — Matthew Henry's Complete Commentary (source_id=3, status=staged)
+==================================================================
+  flat pool (author="Matthew Henry"):            4210
+  excluded (forbidden provenance, declared):     0
+  sections inserted:                            4210
+  section_anchors inserted:                     4210
+  section_embeddings (reused, model=bge-large-en-v1.5): 4210
+
+✓ sections == section_embeddings, and sections + excluded == flat pool (4210 + 0 == 4210). Coverage will be 0.
+  ✓ 1:1 flat=4210 sections=4210
+
+--- keil-delitzsch (author="C.F. Keil & Franz Delitzsch") ---
+  skip: 0 flat rows (E3 removed forbidden or not on prod)
+
+--- wesley-crosswire (author="John Wesley") ---
+(node:16670) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+provenance policy "exclude": 1021 of 6275 rows excluded (biblehub.com)
+==================================================================
+RE-POINT SLICE — Wesley's Explanatory Notes (source_id=8, status=staged)
+==================================================================
+  flat pool (author="John Wesley"):            6275
+  excluded (forbidden provenance, declared):     1021 (biblehub.com)
+  sections inserted:                            5254
+  section_anchors inserted:                     5254
+  section_embeddings (reused, model=bge-large-en-v1.5): 5254
+
+✓ sections == section_embeddings, and sections + excluded == flat pool (5254 + 1021 == 6275). Coverage will be 0.
+  ✓ 1:1 flat=6275 sections=5254 + excluded=1021 (declared forbidden-provenance exclusion)
+
+--- calvin-crosswire (author="John Calvin") ---
+(node:16726) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+provenance policy "exclude": 1125 of 6215 rows excluded (biblehub.com)
+==================================================================
+RE-POINT SLICE — Calvin's Commentaries (source_id=9, status=staged)
+==================================================================
+  flat pool (author="John Calvin"):            6215
+  excluded (forbidden provenance, declared):     1125 (biblehub.com)
+  sections inserted:                            5090
+  section_anchors inserted:                     5090
+  section_embeddings (reused, model=bge-large-en-v1.5): 5090
+
+✓ sections == section_embeddings, and sections + excluded == flat pool (5090 + 1125 == 6215). Coverage will be 0.
+  ✓ 1:1 flat=6215 sections=5090 + excluded=1125 (declared forbidden-provenance exclusion)
+
+OK: E4 slice-all complete
+    matthew-henry: sections=4210 flat=4210
+    wesley-crosswire: sections=5254 excluded=1021 flat=6275
+    calvin-crosswire: sections=5090 excluded=1125 flat=6215
+    jfb: sections=15473 flat=15473
+    adam-clarke: sections=12693 flat=12693
+    barnes-notes: sections=1300 flat=1300
+    john-gill: sections=28843 flat=28843
+    scofield-crosswire: 1215 flat rows, 0 sections — DECLARED skip (forbidden provenance): Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,215 flat rows are biblehub's — the CrossWire edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named edition, or quarantine this entry.
+    pnt-crosswire: 288 flat rows, 0 sections — DECLARED skip (forbidden provenance): Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 288 flat rows are biblehub's — the CrossWire edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named edition, or quarantine this entry.
+    poole-tcp: 1308 flat rows, 0 sections — DECLARED skip (forbidden provenance): Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,308 flat rows are biblehub's — the TCP edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named TCP transcription, or quarantine this entry.
+  ✓ postcondition: sections + excluded == flat pool for every sliced register work (7 source(s) with sections), and no undeclared work with flat rows was skipped
+  apply (concurrent) 024_sections_unit_ordinal
+(node:16782) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓ part 1/3
+  ✓ part 2/3
+  ✓ part 3/3
+  ✓ post-apply: 1 index(es) VALID and READY (sections_unit_ordinal_idx)
+✓ applied db/migrations/024_sections_unit_ordinal.sql
+  ✓ postcondition: unit_ordinal populated on all 72863 sections — 5824 reading unit(s) across 7 source(s)
+
+REGRESSION GATE — phase E4
+  target: ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (credentials redacted)
+(node:16816) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓ G1 user-data — unchanged vs E0 baseline (rows/active/owners/digest): highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY
+  ✓ G2 >=2 voices — corpus-wide: 22794 verses at the floor (E0 22794), 29629 with any voice (E0 29629)
+  ✓ G2 durable floor — excluding forbidden provenance: 22214 at the floor (E0 22214), 29605 with any voice (E0 29605)
+  ✓ G2 work leg — 77820 row(s) carry a work key (E0 0, not decreased); 0 of them are admitted by the exegetical work leg across 0/4 slug(s), 0 author(s)
+  ⚠ G2 work leg — none of the 4 exegetical work slug(s) (keil-delitzsch, catena-aurea, chrysostom-homilies, augustine-homilies) is present, so the 2 authors only that leg admits are not served here. Not an abort: E2 does not create those slugs (they come from the register ingest, which has never run on prod).
+  ✓ G2 spot check — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 spot check — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 spot check — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G2 spot check — John 10:11: 7 distinct authors, 7 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/static — John 10:11: 9 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G3 reader/db — John 10:11: 6 legal commentary_entries
+  ✓ G4 load — highlights: shipped load query returns 0 active row(s), unchanged vs E0
+  ✓ G4 load — notes: shipped load query returns 0 active row(s), unchanged vs E0
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G4 window — the DEPLOYED (pre-025) upsertNote is REJECTED by the post-025 schema: there is no unique or exclusion constraint matching the ON CONFLICT specification
+     Live note-saving is broken from E1 until E5 ships the matching code. Expected from the
+     approved E-step ordering; NOT an abort. Shorten the window or accept it — owner call.
+  ⚠ G5 register wall — VACUOUS at E4: 0 rows carry any of the 25 song/verse or lane slugs, so "no leak" is 0-of-0 and proves nothing on this target. Expected on production, which has never had the register ingest. On dev this number is large; if it is 0 THERE, something removed the labels.
+  ✓ G6 ratchet — 71884 forbidden-provenance rows (baseline 71884, not increased) — E3 deferred, cleanup is a later slice
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.
+  ✓ G8 sections/embeddings — no orphan embeddings — 72863 embedding row(s) over 72863 section(s). NOTE: section_embeddings.section_id is NOT NULL REFERENCES sections(id), so an orphan is unrepresentable while that FK stands; this leg only becomes informative if the FK is ever dropped. It is not evidence of a healthy slice. Also note embeddings > sections is NORMAL — the PK is (section_id, model_slug), so a second model legitimately adds rows.
+  ✓ G8 unembedded — 0 section(s) without an embedding (E0 0, not increased) over 72863 sections
+  ✓ G8 provenance — no section carries forbidden content provenance under a clean declared provenance
+    G8 provenance census (sections.source_url host per source):
+      adam-clarke: (none recorded) ×12693
+      barnes-notes: (none recorded) ×1300
+      calvin-crosswire: crosswire.org ×5088
+      calvin-crosswire: books.google.com ×2
+      jfb: (none recorded) ×15473
+      john-gill: (none recorded) ×28843
+      matthew-henry: (none recorded) ×4210
+      wesley-crosswire: crosswire.org ×5254
+  ✓ G9 constraints — notes.notes_anchor_xor present with the 025 body
+  ✓ G9 constraints — highlights.highlights_anchor_xor present with the 030 body
+  ✓ G9 constraints — notes.notes_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — highlights.highlights_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — bookmarks.bookmarks_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — 025 notes_anchor_xor rejects a verse note with no verse_id
+  ✓ G9 constraints — 025 notes_anchor_xor rejects a note anchored to BOTH a verse and a section
+  ✓ G9 constraints — 030 highlights_anchor_xor rejects a section highlight with no source_content_hash
+  ✓ G9 constraints — 030 highlights_anchor_xor rejects a section highlight carrying a translation
+  ✓ G9 constraints — positive twin: the SAME row with a content hash and no translation is ACCEPTED (so the rejections above are about those fields, not about the insert)
+  ✓ G9 constraints — probes rolled back clean, zero residue
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+     DATABASE-ONLY. Nothing in this gate touched the deployed application: not routing,
+     not legalBasePool, not hnsw.ef_search, not the reranker, not compose, and NOT THE
+     VERIFIER — the artifact that actually implements the product guarantee. Set
+     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result. You will also need
+     CUTOVER_ASK_COOKIE carrying a logged-in SESSION cookie (/api/ask is authed-only);
+     the site_gate password cookie alone yields 401.
+✓ REGRESSION GATE PASSED at E4 — DB-ONLY, LIVE PROBE NOT RUN
+
+E5 — skipped (CUTOVER_REHEARSAL)
+
+E6 — smoke + regression gate
+  Gill rows: 28843  sections: 72863  forbidden-provenance: 71884
+  ✓ smoke counts pass (forbidden-provenance 71884, baseline 71884, not increased; E3 deferred — cleanup is a later slice)
+
+REGRESSION GATE — phase E6
+  target: ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (credentials redacted)
+(node:16861) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓ G1 user-data — unchanged vs E0 baseline (rows/active/owners/digest): highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY
+  ✓ G2 >=2 voices — corpus-wide: 22794 verses at the floor (E0 22794), 29629 with any voice (E0 29629)
+  ✓ G2 durable floor — excluding forbidden provenance: 22214 at the floor (E0 22214), 29605 with any voice (E0 29605)
+  ✓ G2 work leg — 77820 row(s) carry a work key (E0 0, not decreased); 0 of them are admitted by the exegetical work leg across 0/4 slug(s), 0 author(s)
+  ⚠ G2 work leg — none of the 4 exegetical work slug(s) (keil-delitzsch, catena-aurea, chrysostom-homilies, augustine-homilies) is present, so the 2 authors only that leg admits are not served here. Not an abort: E2 does not create those slugs (they come from the register ingest, which has never run on prod).
+  ✓ G2 spot check — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 spot check — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 spot check — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G2 spot check — John 10:11: 7 distinct authors, 7 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/static — John 10:11: 9 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries
+  ✓ G3 reader/db — John 10:11: 6 legal commentary_entries
+  ✓ G4 load — highlights: shipped load query returns 0 active row(s), unchanged vs E0
+  ✓ G4 load — notes: shipped load query returns 0 active row(s), unchanged vs E0
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G5 register wall — VACUOUS at E6: 0 rows carry any of the 25 song/verse or lane slugs, so "no leak" is 0-of-0 and proves nothing on this target. Expected on production, which has never had the register ingest. On dev this number is large; if it is 0 THERE, something removed the labels.
+  ✓ G6 ratchet — 71884 forbidden-provenance rows (baseline 71884, not increased) — E3 deferred, cleanup is a later slice
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.
+  ✓ G8 sections/embeddings — no orphan embeddings — 72863 embedding row(s) over 72863 section(s). NOTE: section_embeddings.section_id is NOT NULL REFERENCES sections(id), so an orphan is unrepresentable while that FK stands; this leg only becomes informative if the FK is ever dropped. It is not evidence of a healthy slice. Also note embeddings > sections is NORMAL — the PK is (section_id, model_slug), so a second model legitimately adds rows.
+  ✓ G8 unembedded — 0 section(s) without an embedding (E0 0, not increased) over 72863 sections
+  ✓ G8 provenance — no section carries forbidden content provenance under a clean declared provenance
+    G8 provenance census (sections.source_url host per source):
+      adam-clarke: (none recorded) ×12693
+      barnes-notes: (none recorded) ×1300
+      calvin-crosswire: crosswire.org ×5088
+      calvin-crosswire: books.google.com ×2
+      jfb: (none recorded) ×15473
+      john-gill: (none recorded) ×28843
+      matthew-henry: (none recorded) ×4210
+      wesley-crosswire: crosswire.org ×5254
+  ✓ G9 constraints — notes.notes_anchor_xor present with the 025 body
+  ✓ G9 constraints — highlights.highlights_anchor_xor present with the 030 body
+  ✓ G9 constraints — notes.notes_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — highlights.highlights_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — bookmarks.bookmarks_target_kind_chk present with the 030 body (exact match)
+  ✓ G9 constraints — 025 notes_anchor_xor rejects a verse note with no verse_id
+  ✓ G9 constraints — 025 notes_anchor_xor rejects a note anchored to BOTH a verse and a section
+  ✓ G9 constraints — 030 highlights_anchor_xor rejects a section highlight with no source_content_hash
+  ✓ G9 constraints — 030 highlights_anchor_xor rejects a section highlight carrying a translation
+  ✓ G9 constraints — positive twin: the SAME row with a content hash and no translation is ACCEPTED (so the rejections above are about those fields, not about the insert)
+  ✓ G9 constraints — probes rolled back clean, zero residue
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+     DATABASE-ONLY. Nothing in this gate touched the deployed application: not routing,
+     not legalBasePool, not hnsw.ef_search, not the reranker, not compose, and NOT THE
+     VERIFIER — the artifact that actually implements the product guarantee. Set
+     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result. You will also need
+     CUTOVER_ASK_COOKIE carrying a logged-in SESSION cookie (/api/ask is authed-only);
+     the site_gate password cookie alone yields 401.
+✓ REGRESSION GATE PASSED at E6 — DB-ONLY, LIVE PROBE NOT RUN
+
+CUTOVER COMPLETE.
+EXIT_CODE=0
