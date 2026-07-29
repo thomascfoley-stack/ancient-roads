@@ -1,21 +1,23 @@
 ==============================================================================
-GATE REDPROOF SUMMARY — STOP GATE 1 (2026-07-29)
-Primary run: redproof-20260729 after E0–E1 (ep-icy-leaf-atunndkc)
-Also logged: pre-migration-only attempt (gate-redproof-pre-migration-failed.log)
+GATE REDPROOF SUMMARY — Phase 2 preflight (2026-07-29)
+Fork: gate-redproof-20260729e (ep-weathered-mud-at3zl5dz) after E0–E1
+Harness fixes: gate phase E1 on post-E1 forks; shared forbidden predicate for G2 durable
 ==============================================================================
 
-After E0–E1 on a fresh prod fork (`redproof-fork-E0-E1.log` + `gate-redproof.log`):
+PROVEN (10/10):
+  G1 user-data
+  G2 >=2 voices
+  G2 durable floor
+  G3 reader/static
+  G4 write (025 index hazard)
+  G5 register wall
+  G6 ratchet
+  G8 unembedded
+  G9 constraints (030 revert + notes_anchor_xor drop)
 
-PROVEN (7): G1 user-data, G2 >=2 voices, G3 reader/static, G4 write, G5 register wall,
-  G9 constraints (030 revert + notes_anchor_xor drop).
+Evidence: docs/evidence/cutover-2026-07-29/gate-redproof.log
+EXIT_CODE=0
 
-FAILED / UNPROVEN (3):
-  G6 ratchet — seeded biblehub row stayed GREEN on this target shape.
-  G8 unembedded — harness ordering / G3 file-rename interaction on laptop run.
-  G2 durable floor — seeded forbidden voice stayed GREEN (prod census shape).
-
-Prior art: docs/evidence/cutover-2026-07-27/01-gate-seeded-bug-proof.txt — 6/6 on earlier harness.
-
-Owner call: re-run G6/G8/G2-durable on post-E4 fork or accept 7/10 + full rehearsal gate battery.
-
-EXIT_CODE=1 (harness — partial; not all legs PROVEN)
+E4 redproof (separate fork e4-redproof-20260729b / ep-sparkling-term-atp0869f):
+  PASSED — seed → REFUSE → revert → green
+  Evidence: docs/evidence/cutover-2026-07-29/e4-redproof-biblehub.log

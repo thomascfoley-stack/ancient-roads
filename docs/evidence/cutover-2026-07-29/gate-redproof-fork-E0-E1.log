@@ -1,0 +1,267 @@
+
+CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27)
+  THE CUTOVER IS E0, E1, E2, E4, E5, E6. There is no E3 — forbidden-provenance
+  deletion is DEFERRED to its own slice after a re-ingest exists to refill the
+  corpus (owner ruling 2026-07-27; ADR-030 correction).
+  STEP ZERO  preflight: host~ep-weathered-mud-at3zl5dz, role=neondb_owner, write-capability, positive control
+  SNAPSHOT   a Neon branch off the target, created BEFORE the first write and
+      asserted to exist; its id is quoted in every rollback (Neon PITR retention on
+      this project is 6 h against a ~2 h 20 m run — the window can close first)
+  E0  regression gate --capture: the pre-cutover baseline (user-data digests +
+      active counts + owner distribution, the corpus-wide >=2-distinct-authors
+      floor, reader, annotation write path, register wall, forbidden ratchet)
+  E1  migrations 016-023 + 025-031 in order (018/019 concurrent; 031 adds
+      sections.source_url — row-level content provenance, required by E4)
+      after EVERY migration: user data unchanged (digest, not count) + no INVALID index
+      HAZARD 2 guard: refuse if a section-ordinal annotation precedes 024's renumber
+  E2  register-label the flat embeddings (UPDATE); assert per-work label coverage
+      against the TARGET's own author counts, and that no row was added or lost
+  E4  slice served works into sections reusing vectors 1:1, carrying each row's
+      sourceUrl into sections.source_url; the slice FAILS CLOSED on undeclared
+      forbidden provenance in a work's flat pool, and honors the manifest's
+      declared policy (exclude|skip, SECTION_PROVENANCE_DESIGN R2-R3); re-assert
+      per-work sections + excluded == flat across every sliced work (ADR-029
+      addendum 2: each store, its own key), THEN apply 024 and assert
+      sections.unit_ordinal is POPULATED (it backfills what E4 creates; in E1 it
+      left 71,563 of 72,863 NULL and the old 1:1 check said green)
+  E5  [HARD STOP] deploy.sh
+  E6  smoke counts + the full regression battery
+  REGRESSION GATE RUNS AFTER EVERY CHUNK (E0/E1/E2/E4/E6), not just at the end.
+  Any gate failure ABORTS and rolls back that chunk — never fix forward mid-cutover.
+  Every count re-measured at runtime; NO dev literals baked into a target assertion.
+  Resumable: completed steps recorded in .cutover-checkpoint.json, which is BOUND to
+  the target endpoint and to ONE writing session — a checkpoint from another target
+  is refused, and a second live process is refused rather than allowed to clobber it.
+
+
+STEP ZERO — prod-credential preflight
+  target host: ep-weathered-mud-at3zl5dz.c-9.us-east-1.aws.neon.tech
+  ✓ endpoint is ep-weathered-mud-at3zl5dz
+  ✓ current_user = neondb_owner
+  ✓ write capability proven (BEGIN; CREATE TEMP; ROLLBACK)
+  positive control (Gill rows): 28843
+  ✓ positive control fires
+STEP ZERO PASSED — safe to proceed.
+  ✓ pre-cutover snapshot: branch pre-cutover-ep-weathered-mud-at3zl5dz-20260729163702 (br-fancy-darkness-at1xzhco) off br-sparkling-tooth-atzvzec0 — every rollback below restores from it
+
+REGRESSION GATE — phase E0
+  target: ep-weathered-mud-at3zl5dz.c-9.us-east-1.aws.neon.tech (credentials redacted)
+(node:11247) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ⚠ G1 user-data — baseline captured but EMPTY (highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY). Every user table EXISTS and holds zero rows.
+     This is the expected post-2026-07-28 production state (owner cleared the test data), NOT a fault.
+     What the invariant still proves from here: that nothing is ADDED, altered or mis-owned across
+     the cutover — the guard that protects the first real user. What it CANNOT prove on this target:
+     that anything was PRESERVED, because there is nothing to preserve. Read every later
+     "user data unchanged" line as 0 == 0.
+  ✓ G1 user-data — baseline captured (empty but present): highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY
+  ✓ G2 >=2 voices — corpus-wide baseline: 22794 verses meet the >=2-distinct-authors floor, 29629 have any served voice
+  ✓ G2 durable floor — baseline EXCLUDING forbidden provenance: 22214 verses at the floor, 29605 with any voice (what remains after the deferred cleanup)
+  ⚠ G2 work leg — 0 rows carry any metadata->>'work' key at E0. Expected before E2 (the census found this true of 190,635 of 190,635 prod rows); it is a hard failure from E2 on.
+  ✓ G2 spot check — John 3:16: 8 distinct authors, 14 served rows
+  ✓ G2 spot check — Psalm 23:1: 3 distinct authors, 3 served rows
+  ✓ G2 spot check — Romans 8:28: 6 distinct authors, 6 served rows
+  ✓ G2 spot check — John 10:11: 7 distinct authors, 7 served rows
+  ✓ G3 reader/static — John 3:16: 17 published entries on tap-verse
+  ✓ G3 reader/static — Psalm 23:1: 10 published entries on tap-verse
+  ✓ G3 reader/static — Romans 8:28: 10 published entries on tap-verse
+  ✓ G3 reader/static — John 10:11: 9 published entries on tap-verse
+  ✓ G3 reader/db — John 3:16: 7 legal commentary_entries (pre-019 predicate)
+  ✓ G3 reader/db — Psalm 23:1: 4 legal commentary_entries (pre-019 predicate)
+  ✓ G3 reader/db — Romans 8:28: 4 legal commentary_entries (pre-019 predicate)
+  ✓ G3 reader/db — John 10:11: 6 legal commentary_entries (pre-019 predicate)
+  ✓ G4 load — highlights: shipped load query returns 0 active row(s) (baseline capture)
+  ✓ G4 load — notes: shipped load query returns 0 active row(s) (baseline capture)
+  ✓ G4 write — createHighlight + upsertNote(x2 -> 1 row) accepted under the 025/030 constraints
+  ✓ G4 write — rolled back clean, zero residue
+  ⚠ G5 register wall — VACUOUS at E0: 0 rows carry any of the 25 song/verse or lane slugs, so "no leak" is 0-of-0 and proves nothing on this target. Expected on production, which has never had the register ingest. On dev this number is large; if it is 0 THERE, something removed the labels.
+  ✓ G6 ratchet — 71884 forbidden-provenance rows — E3 deferred, cleanup is a later slice
+  ⚠ G6 sections-store — barnes-notes: 1300 sections carry forbidden provenance (https://biblehub.com/commentaries/barnes/), status=staged, not reachable via the reader's publish switch. The flat-embeddings ratchet does not count this store. Standing debt — owner call.
+  ✓ G8 sections/embeddings — no orphan embeddings — 5510 embedding row(s) over 5510 section(s). NOTE: section_embeddings.section_id is NOT NULL REFERENCES sections(id), so an orphan is unrepresentable while that FK stands; this leg only becomes informative if the FK is ever dropped. It is not evidence of a healthy slice. Also note embeddings > sections is NORMAL — the PK is (section_id, model_slug), so a second model legitimately adds rows.
+  ✓ G8 unembedded — baseline: 0 of 5510 section(s) carry no embedding
+  ⚠ G8 provenance — sections.source_url does not exist (pre-031); the content-vs-declared provenance check did NOT run at E0. Expected before E1; from E1 on, 031 is in the migration list and this column's absence would mean E1 did not finish.
+  ✓ G9 constraints — notes.notes_anchor_xor present with the 025 body
+  ✗ G9 constraints — highlights.highlights_anchor_xor exists but its body does not mention source_content_hash, translation — it looks like the pre-030 version. Body: CHECK ((((target_kind = 'verse'::text) AND (verse_id IS NOT NULL) AND (section_id IS NULL)) OR ((target_kind = 'section'::text) AND (section_id IS NOT NULL) AND (verse_id IS NULL))))
+  ✗ G9 constraints — notes.notes_target_kind_chk is MISSING — migration 030 did not land, or something dropped it. The write path stays green without it; only this notices.
+  ✗ G9 constraints — highlights.highlights_target_kind_chk is MISSING — migration 030 did not land, or something dropped it. The write path stays green without it; only this notices.
+  ✗ G9 constraints — bookmarks.bookmarks_target_kind_chk is MISSING — migration 030 did not land, or something dropped it. The write path stays green without it; only this notices.
+  ✓ G9 constraints — 025 notes_anchor_xor rejects a verse note with no verse_id
+  ✓ G9 constraints — 025 notes_anchor_xor rejects a note anchored to BOTH a verse and a section
+  ✗ G9 constraints — 030 highlights_anchor_xor rejects a section highlight with no source_content_hash — the INSERT was ACCEPTED. The constraint is not enforcing what its migration says it enforces.
+  ✗ G9 constraints — 030 highlights_anchor_xor rejects a section highlight carrying a translation — the INSERT was ACCEPTED. The constraint is not enforcing what its migration says it enforces.
+  ✓ G9 constraints — positive twin: the SAME row with a content hash and no translation is ACCEPTED (so the rejections above are about those fields, not about the insert)
+  ✓ G9 constraints — probes rolled back clean, zero residue
+  ⚠ G7 live /ask — LIVE PROBE NOT RUN (CUTOVER_ASK_URL is unset). Everything above is
+     DATABASE-ONLY. Nothing in this gate touched the deployed application: not routing,
+     not legalBasePool, not hnsw.ef_search, not the reranker, not compose, and NOT THE
+     VERIFIER — the artifact that actually implements the product guarantee. Set
+     CUTOVER_ASK_URL at E6, after E5, for an end-to-end result. You will also need
+     CUTOVER_ASK_COOKIE carrying a logged-in SESSION cookie (/api/ask is authed-only);
+     the site_gate password cookie alone yields 401.
+
+✗ REGRESSION GATE FAILED at E0 (6 check(s))
+    G9 constraints: highlights.highlights_anchor_xor exists but its body does not mention source_content_hash, translation — it looks like the pre-030 version. Body: CHECK ((((target_kind = 'verse'::text) AND (verse_id IS NOT NULL) AND (section_id IS NULL)) OR ((target_kind = 'section'::text) AND (section_id IS NOT NULL) AND (verse_id IS NULL))))
+    G9 constraints: notes.notes_target_kind_chk is MISSING — migration 030 did not land, or something dropped it. The write path stays green without it; only this notices.
+    G9 constraints: highlights.highlights_target_kind_chk is MISSING — migration 030 did not land, or something dropped it. The write path stays green without it; only this notices.
+    G9 constraints: bookmarks.bookmarks_target_kind_chk is MISSING — migration 030 did not land, or something dropped it. The write path stays green without it; only this notices.
+    G9 constraints: 030 highlights_anchor_xor rejects a section highlight with no source_content_hash — the INSERT was ACCEPTED. The constraint is not enforcing what its migration says it enforces.
+    G9 constraints: 030 highlights_anchor_xor rejects a section highlight carrying a translation — the INSERT was ACCEPTED. The constraint is not enforcing what its migration says it enforces.
+  ABORT the cutover and roll back this chunk. Do NOT fix forward mid-cutover.
+
+✗ ABORT at E0: REGRESSION GATE FAILED — a pre-existing surface regressed
+  rollback: roll back the E0 chunk (see that step's stated rollback). Do NOT fix forward mid-cutover.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    labeled 12693 rows: "Adam Clarke" -> adam-clarke
+  labeled 4210 rows: "Matthew Henry" -> matthew-henry
+  labeled 6275 rows: "John Wesley" -> wesley-crosswire
+  labeled 6215 rows: "John Calvin" -> calvin-crosswire
+  labeled 1215 rows: "C.I. Scofield" -> scofield-crosswire
+  labeled 288 rows: "B.W. Johnson" -> pnt-crosswire
+  labeled 1308 rows: "Matthew Poole" -> poole-tcp
+after: 112818/190635 unlabeled (77820 rows updated)
+
+OK: register-label complete
+he current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/027_library_items.sql
+  apply 028_reading_progress
+(node:11277) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/028_reading_progress.sql
+  apply 029_tags
+(node:11281) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/029_tags.sql
+  apply 030_annotation_constraints_tighten
+(node:11285) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/030_annotation_constraints_tighten.sql
+  apply 031_sections_source_url
+(node:11289) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ applied db/migrations/031_sections_source_url.sql
+  apply (concurrent) 018_register_partial_indexes
+(node:11294) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27)
+  THE CUTOVER IS E0, E1, E2, E4, E5, E6. There is no E3 — forbidden-provenance
+  deletion is DEFERRED to its own slice after a re-ingest exists to refill the
+  corpus (owner ruling 2026-07-27; ADR-030 correction).
+  STEP ZERO  preflight: host~ep-weathered-mud-at3zl5dz, role=neondb_owner, write-capability, positive control
+  SNAPSHOT   a Neon branch off the target, created BEFORE the first write and
+      asserted to exist; its id is quoted in every rollback (Neon PITR retention on
+      this project is 6 h against a ~2 h 20 m run — the window can close first)
+  E0  regression gate --capture: the pre-cutover baseline (user-data digests +
+      active counts + owner distribution, the corpus-wide >=2-distinct-authors
+      floor, reader, annotation write path, register wall, forbidden ratchet)
+  E1  migrations 016-023 + 025-031 in order (018/019 concurrent; 031 adds
+      sections.source_url — row-level content provenance, required by E4)
+      after EVERY migration: user data unchanged (digest, not count) + no INVALID index
+      HAZARD 2 guard: refuse if a section-ordinal annotation precedes 024's renumber
+  E2  register-label the flat embeddings (UPDATE); assert per-work label coverage
+      against the TARGET's own author counts, and that no row was added or lost
+  E4  slice served works into sections reusing vectors 1:1, carrying each row's
+      sourceUrl into sections.source_url; the slice FAILS CLOSED on undeclared
+      forbidden provenance in a work's flat pool, and honors the manifest's
+      declared policy (exclude|skip, SECTION_PROVENANCE_DESIGN R2-R3); re-assert
+      per-work sections + excluded == flat across every sliced work (ADR-029
+      addendum 2: each store, its own key), THEN apply 024 and assert
+      sections.unit_ordinal is POPULATED (it backfills what E4 creates; in E1 it
+      left 71,563 of 72,863 NULL and the old 1:1 check said green)
+  E5  [HARD STOP] deploy.sh
+  E6  smoke counts + the full regression battery
+  REGRESSION GATE RUNS AFTER EVERY CHUNK (E0/E1/E2/E4/E6), not just at the end.
+  Any gate failure ABORTS and rolls back that chunk — never fix forward mid-cutover.
+  Every count re-measured at runtime; NO dev literals baked into a target assertion.
+  Resumable: completed steps recorded in .cutover-checkpoint.json, which is BOUND to
+  the target endpoint and to ONE writing session — a checkpoint from another target
+  is refused, and a second live process is refused rather than allowed to clobber it.
+
+
+STEP ZERO — prod-credential preflight
+  target host: ep-weathered-mud-at3zl5dz.c-9.us-east-1.aws.neon.tech
+  ✓ endpoint is ep-weathered-mud-at3zl5dz
+  ✓ current_user = neondb_owner
+  ✓ write capability proven (BEGIN; CREATE TEMP; ROLLBACK)
+  positive control (Gill rows): 28843
+  ✓ positive control fires
+STEP ZERO PASSED — safe to proceed.
+  ✓ pre-cutover snapshot already recorded: pre-cutover-ep-weathered-mud-at3zl5dz-20260729163641 (br-little-night-at3ppc5k)
+
+E0 — (checkpoint) baseline already captured
+
+E1 — migrations 016-023 + 025-031 (fresh; prod is pre-016 per census; 024 runs in E4)
+  ✓ resuming E1 (13 step(s) checkpointed)
+  ✓ hazard 2: no section-ordinal annotation precedes 024 (verse-offset highlights are unaffected)
+  ✓ user data matches the E0 baseline (highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY)
+  ✓ user-data baseline (measured on target): highlights=0r/0a/0u/EMPTY notes=0r/0a/0u/EMPTY chats=0r/0a/0u/EMPTY
+    (checkpoint) 016_history_sections already applied
+    (checkpoint) 017_source_type_registers already applied
+    (checkpoint) 020_embeddings_source_type_registers already applied
+    (checkpoint) 021_revoke_app_runtime_anchor_writes already applied
+    (checkpoint) 022_embeddings_write_policy_user_scope already applied
+    (checkpoint) 023_sources_status_ingesting already applied
+    (checkpoint) 025_annotations_polymorphic already applied
+    (checkpoint) 026_bookmarks already applied
+    (checkpoint) 027_library_items already applied
+    (checkpoint) 028_reading_progress already applied
+    (checkpoint) 029_tags already applied
+    (checkpoint) 030_annotation_constraints_tighten already applied
+    (checkpoint) 031_sections_source_url already applied
+  apply (concurrent) 018_register_partial_indexes
+(node:12177) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ⚠ dropping INVALID leftover index idx_embeddings_vector_legal_v5 from a prior failed run
+✗ db/migrations/018_register_partial_indexes.sql failed: deadlock detected

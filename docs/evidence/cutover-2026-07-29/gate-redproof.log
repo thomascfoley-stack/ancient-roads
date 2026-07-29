@@ -1,16 +1,9 @@
-==============================================================================
-GATE RED-PROOF (retry after E1 on fresh fork)
-date: 2026-07-29T16:02:18Z
-fork: redproof-20260729
-endpoint: ep-super-bar-atsfkwf3 (NOT production)
-note: rehearsal checkpoint moved aside; fork has E1 migrations through 031
-==============================================================================
-red-proof target: ep-super-bar-atsfkwf3.c-9.us-east-1.aws.neon.tech
+red-proof target: ep-weathered-mud-at3zl5dz.c-9.us-east-1.aws.neon.tech
 
 capturing an E0 baseline on this fork (the ratcheted legs cannot go red without one)...
-✓ baseline captured for ep-super-bar-atsfkwf3.c-9.us-east-1.aws.neon.tech — ratcheted legs are live
+✓ baseline captured for ep-weathered-mud-at3zl5dz.c-9.us-east-1.aws.neon.tech — ratcheted legs are live
 
-(node:1103) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:11455) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -20,14 +13,14 @@ To prepare for this change:
 See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
 (Use `node --trace-warnings ...` to show where the warning was created)
 PROVEN   G1 user-data — an extra highlight row
-           red output:   ✗ G1 user-data — the user-data invariant broke — highlights: row count 0 -> 1; highlights: distinct owners 0 -> 1; highlights: ACTIVE rows 0 -> 1 (soft-delete or un-delete); highlights: DIGEST EMPTY -> 1aaeba81 (row identity/anchor/body changed); highlights: OWNER DISTRIBUTION (none) -> 37945d627988:1 (rows changed hands) |   ✗ G4 load — highlights: shipped load query returns 1 active row(s), E0 baseline was 0 — the rows a user would actually see changed
+           red output:   ✗ G1 user-data — the user-data invariant broke — highlights: row count 0 -> 1; highlights: distinct owners 0 -> 1; highlights: ACTIVE rows 0 -> 1 (soft-delete or un-delete); highlights: DIGEST EMPTY -> 304b1adc (row identity/anchor/body changed); highlights: OWNER DISTRIBUTION (none) -> 37945d627988:1 (rows changed hands) |   ✗ G4 load — highlights: shipped load query returns 1 active row(s), E0 baseline was 0 — the rows a user would actually see changed
 
 (Psalm 23:1 authors on the fork: Keil & Delitzsch, Ambrose of Milan, Arnobius the Younger, Augustine of Hippo, Cassiodorus, Hippolytus of Rome, John Gill, Matthew Henry, Theodoret of Cyrus, Thomas Aquinas, Tyndale Study Notes)
 PROVEN   G2 >=2 voices — all but one served author removed from Psalm 23:1
            red output:   ✗ G2 >=2 voices — 1 verse(s) DROPPED BELOW the >=2-distinct-authors floor (22794 -> 22793) — this is the product's headline guarantee |   ✗ G2 durable floor — 1 verse(s) dropped below the >=2-author floor among rows that SURVIVE the deferred provenance cleanup (22214 -> 22213). The headline number may still look fine; this is the one that will still be true afterwards.
 
 PROVEN   G3 reader/static — the chapter file the reader renders goes missing
-           red output:   ✗ G3 reader/static — Psalm 23:1: /Users/foley/Projects/ancient-roads-runbook/web/public/commentaries/psa/23.json missing — the reader would render an empty chapter | ✗ REGRESSION GATE FAILED at E1 (1 check(s))
+           red output:   ✗ G3 reader/static — Psalm 23:1: /Users/foley/Projects/ancient-roads-git/web/public/commentaries/psa/23.json missing — the reader would render an empty chapter | ✗ REGRESSION GATE FAILED at E1 (1 check(s))
 
 (captured for restore: CREATE UNIQUE INDEX idx_notes_user_verse ON public.notes USING btree (user_id, verse_id) WHERE ((deleted_at IS NULL) AND (target_kind = 'verse'::text)))
 PROVEN   G4 write — upsertNote loses its partial unique index (the 025 hazard)
@@ -37,7 +30,7 @@ PROVEN   G5 register wall — a sermon-lane work made reachable through the exeg
            red output:   ✗ G5 register wall — 1 song/verse or lane row(s) are reachable through the exegetical serving filter | ✗ REGRESSION GATE FAILED at E1 (1 check(s))
 
 PROVEN   G6 ratchet — one new biblehub-provenance row appears
-           red output:   ✗ G6 ratchet — forbidden-provenance rows INCREASED 71884 -> 71885 | ✗ REGRESSION GATE FAILED at E1 (1 check(s))
+           red output:   ✗ G2 durable floor — 1 verse(s) dropped below the >=2-author floor among rows that SURVIVE the deferred provenance cleanup (22214 -> 22213). The headline number may still look fine; this is the one that will still be true afterwards. |   ✗ G6 ratchet — forbidden-provenance rows INCREASED 71884 -> 71885
 
 PROVEN   G8 unembedded — a section loses its embedding(s) (the slice wrote text, not vectors) [1 row(s) captured]
            red output:   ✗ G8 unembedded — 1 section(s) GAINED no-embedding status (0 -> 1). The slice wrote section text without reusing the vector, so those sections exist in the reader and retrieve nothing. | ✗ REGRESSION GATE FAILED at E1 (1 check(s))

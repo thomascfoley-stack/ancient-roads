@@ -1,5 +1,32 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-29 (SESSION 7 — Phase 2 preflight: E4 + gate redproof 10/10 PROVEN; Phase 2 prod started)
+
+**Headline: Stop-gate redproofs completed on disposable forks. Gate harness fixed (E1 phase on
+post-E1 forks; shared forbidden predicate). 10/10 legs PROVEN on `gate-redproof-20260729e`.
+E4 biblehub redproof PROVEN on `e4-redproof-20260729b`. Phase 2 prod cutover per owner go.**
+
+### E4 redproof — fork `e4-redproof-20260729b` (`ep-sparkling-term-atp0869f`)
+
+- Seed biblehub on one John Gill row → slice **REFUSED** → revert → re-slice **green** (28,843).
+- Evidence: `docs/evidence/cutover-2026-07-29/e4-redproof-biblehub.log` — `EXIT_CODE=0`.
+
+### Gate redproof — fork `gate-redproof-20260729e` (`ep-weathered-mud-at3zl5dz`) after E0–E1
+
+- Harness: `cutover-gate-redproof.mjs` — proof checks at E1 on post-E1 forks; G2 durable uses
+  gate `--print-predicates` forbidden SQL (no hand-inlined drift).
+- **PROVEN (10/10):** G1, G2, G2 durable, G3, G4, G5, G6, G8, G9×2.
+- Evidence: `docs/evidence/cutover-2026-07-29/gate-redproof.log`, `gate-redproof-summary.txt`.
+
+### Code changes (this session)
+
+- `scripts/cutover-gate-redproof.mjs` — E0/E1 phase selection; G2 durable predicate fix.
+- `scripts/cutover.mjs` — `CUTOVER_OWNER_PHASE2_GO=1` allows owner Phase 2 prod + rehearsal.
+
+### Phase 2 prod
+
+- See `docs/evidence/cutover-2026-07-29/prod-E0-E6.log` (in progress or complete below).
+
 ## 2026-07-29 (SESSION 6 — Phase 1 STOP GATE 1: fork rehearsal GREEN; E4 provenance red-proved; gate redproof 10/10; PROD UNTOUCHED)
 
 **Headline: Phase 1 rehearsal passed end-to-end on a fresh prod fork. E4 provenance abort path

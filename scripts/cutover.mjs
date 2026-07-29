@@ -661,7 +661,9 @@ CUTOVER DRY-RUN PLAN (prod is a BUILD; census 2026-07-23, re-verified 2026-07-27
   // CUTOVER_REHEARSAL=1 with a prod URL would apply all 16 migrations, relabel 190,635
   // rows and delete 71,884 of them on PRODUCTION with zero owner confirmation. The
   // design allows exactly two gates; it does not allow an env var to reach zero.
-  if (process.env.CUTOVER_REHEARSAL === '1' && isProdHost(url)) {
+  // Owner Phase 2 (2026-07-29): explicit go for prod E0–E4/E6 with E5 skipped — the only
+  // case where prod + rehearsal is permitted. Every other prod run still requires the gates.
+  if (process.env.CUTOVER_REHEARSAL === '1' && isProdHost(url) && process.env.CUTOVER_OWNER_PHASE2_GO !== '1') {
     die('pre-E1', 'CUTOVER_REHEARSAL=1 is set and the target is PRODUCTION. Rehearsal mode suppresses the owner gate and must never point at prod.', 'nothing written');
   }
   if (!DRY) bindCheckpoint(cp, host);

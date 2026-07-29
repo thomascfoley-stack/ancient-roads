@@ -1,12 +1,12 @@
 ==============================================================================
 E4 RED-PROOF: seed biblehub row into clean john-gill pool → slice REFUSES → revert → green
-date: 2026-07-29T15:44:11Z
-fork: rehearsal-20260729
-endpoint: ep-rough-violet-at9bsoq7 (NOT production)
+date: 2026-07-29T16:14:44Z
+fork: e4-redproof-20260729b
+endpoint: ep-sparkling-term-atp0869f (NOT production)
 ==============================================================================
-E4 redproof target: ep-rough-violet-at9bsoq7.c-9.us-east-1.aws.neon.tech (credentials redacted)
+E4 redproof target: ep-sparkling-term-atp0869f.c-9.us-east-1.aws.neon.tech (credentials redacted)
 
-(node:93500) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:4471) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -15,13 +15,13 @@ To prepare for this change:
 
 See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
 (Use `node --trace-warnings ...` to show where the warning was created)
-donor id=c08c2adb-daac-4fad-bd56-fef30969aaba original sourceUrl=NULL
+donor id=bfbfd3a6-f7bb-42a7-96b8-74e4691387f5 original sourceUrl=NULL
 
 --- SEED biblehub sourceUrl on one Gill row ---
 seed: ok
 
 --- RUN john-gill slice (expect REFUSE) ---
-(node:93523) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:4523) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -31,7 +31,7 @@ To prepare for this change:
 See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
 (Use `node --trace-warnings ...` to show where the warning was created)
 Error: REFUSE (provenance): 1 of 28843 flat rows for "john-gill" carry forbidden-aggregator provenance (biblehub.com) and the manifest declares no policy. Copying them would land aggregator text under this source's clean provenance record with no row-level signal. Two legal fixes, one line each in ingest/sources.config.json: backfill.forbidden_provenance="exclude" (slice only the clean rows, exclusion counted on the sources row) or "skip" (write nothing) — both with forbidden_provenance_reason. Neither declares the work legitimate; quarantine-vs-re-source is the owner's ruling.
-    at main (/Users/foley/Projects/ancient-roads-runbook/src/ingest/migrate-sections-slice.ts:145:13)
+    at main (/Users/foley/Projects/ancient-roads-git/src/ingest/migrate-sections-slice.ts:145:13)
     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
 [slice exit code: 1]
 ✓ slice REFUSED as expected (exit 1)
@@ -40,7 +40,7 @@ Error: REFUSE (provenance): 1 of 28843 flat rows for "john-gill" carry forbidden
 revert: ok
 
 --- RE-RUN john-gill slice (expect GREEN) ---
-(node:93546) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:4574) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:

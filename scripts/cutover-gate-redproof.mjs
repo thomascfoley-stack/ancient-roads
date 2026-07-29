@@ -37,7 +37,7 @@ console.log(`red-proof target: ${host}\n`);
 // Never hand-copied here: a seed aimed at a population the check does not measure is a proof
 // that cannot fire, and re-typing LEGAL_CORPUS_FILTER in a second place is the precise defect
 // this whole round of work exists to remove.
-const { prose: PROSE_TYPE_SQL, legal: LEGAL_CORPUS_FILTER } = JSON.parse(
+const { prose: PROSE_TYPE_SQL, legal: LEGAL_CORPUS_FILTER, forbidden: FORBIDDEN_PROVENANCE_SQL } = JSON.parse(
   execFileSync('npx', ['tsx', 'scripts/cutover-regression-gate.mts', '--print-predicates'],
     { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }));
 
@@ -110,9 +110,13 @@ const results = [];
 async function proof(name, breakFn, restoreFn, expect) {
   if (!expect) throw new Error(`proof("${name}") has no expected gate label — refusing to score an unattributed red`);
   await breakFn();
-  const bad = gate();
+  // E0 on pre-E1 forks (G9 is a skip at E0, a hard fail at E1). E1 on post-E1 forks
+  // (the normal gate-redproof path after cutover E0–E1). CUTOVER_GATE_REDPROOF_PHASE
+  // overrides when needed.
+  const gatePhase = process.env.CUTOVER_GATE_REDPROOF_PHASE ?? 'E0';
+  const bad = gate(gatePhase);
   await restoreFn();
-  const good = gate();
+  const good = gate(gatePhase);
   const redLines = bad.out.split('\n').filter((l) => l.includes('✗'));
   const attributed = redLines.some((l) => l.includes(expect));
   let verdict;
@@ -267,34 +271,51 @@ if (!hlXor) {
 //  (c) NULL-SAFETY. `NOT (NULL ILIKE …)` is NULL, so the unguarded version silently excluded
 //      every NULL-sourceUrl row — the same bug the gate itself carried. coalesce, as b2
 //      (src/ingest/b2-remove-forbidden-provenance.ts) does: a NULL sourceUrl counts as CLEAN.
-const CLEAN = `NOT (coalesce(metadata->>'sourceUrl','') ILIKE '%biblehub%'
-                 OR coalesce(metadata->>'sourceUrl','') ILIKE '%studylight%'
-                 OR coalesce(metadata->>'sourceUrl','') ILIKE '%historicalchristian%')`;
+// Same NOT-forbidden predicate the gate's durable-floor leg uses — pulled from the gate,
+// not hand-inlined, so a seed aimed at a row the check excludes cannot fire.
+const CLEAN = `NOT (${FORBIDDEN_PROVENANCE_SQL})`;
 const SERVED = `user_id IS NULL AND metadata->>'verseId' ~ '^[0-9]+$'
                 AND ${PROSE_TYPE_SQL} AND ${LEGAL_CORPUS_FILTER}`;
-const durable = (await c.query(
-  `SELECT (metadata->>'verseId')::int AS vid FROM embeddings
-    WHERE ${SERVED} AND ${CLEAN}
-    GROUP BY 1 HAVING count(DISTINCT metadata->>'author') = 2 LIMIT 1`)).rows[0];
-if (!durable) {
-  console.log('SKIPPED  G2 durable floor — no verse in the SERVED pool on this fork has exactly 2 clean voices to knock down.\n');
-  results.push({ name: 'G2 durable floor (skipped: no 2-clean-voice verse in the served pool)', verdict: 'SKIPPED' });
-} else {
-  // One AUTHOR at that verse, and then EVERY clean row of that author on it.
-  const victimAuthor = (await c.query(
-    `SELECT metadata->>'author' AS a FROM embeddings
-      WHERE ${SERVED} AND ${CLEAN} AND (metadata->>'verseId')::int = $1
-      GROUP BY 1 ORDER BY 1 LIMIT 1`, [durable.vid])).rows[0].a;
-  const victims2 = (await c.query(
-    `SELECT id, metadata->>'sourceUrl' AS u FROM embeddings
-      WHERE ${SERVED} AND ${CLEAN} AND (metadata->>'verseId')::int = $1 AND metadata->>'author' = $2`,
-    [durable.vid, victimAuthor])).rows;
-  await proof(`G2 durable floor — verse ${durable.vid} loses its 2nd clean voice "${victimAuthor}" to forbidden provenance (${victims2.length} row(s))`,
-    async () => { for (const v of victims2) await c.query(`UPDATE embeddings SET metadata = jsonb_set(metadata,'{sourceUrl}','"https://biblehub.com/redproof-durable"') WHERE id = $1`, [v.id]); },
-    async () => { for (const v of victims2) await (v.u === null
-      ? c.query(`UPDATE embeddings SET metadata = metadata - 'sourceUrl' WHERE id = $1`, [v.id])
-      : c.query(`UPDATE embeddings SET metadata = jsonb_set(metadata,'{sourceUrl}',to_jsonb($2::text)) WHERE id = $1`, [v.id, v.u])); },
-    'G2 durable floor');
+{
+  const durable = (await c.query(
+    `SELECT (metadata->>'verseId')::int AS vid FROM embeddings
+      WHERE ${SERVED} AND ${CLEAN}
+      GROUP BY 1 HAVING count(DISTINCT metadata->>'author') = 2 LIMIT 1`)).rows[0];
+  if (!durable) {
+    console.log('SKIPPED  G2 durable floor — no verse in the SERVED pool on this fork has exactly 2 clean voices to knock down.\n');
+    results.push({ name: 'G2 durable floor (skipped: no 2-clean-voice verse in the served pool)', verdict: 'SKIPPED' });
+  } else {
+    // Re-query victims inside break/restore so earlier proofs cannot leave stale ids.
+    const pickVictims = async () => {
+      const victimAuthor = (await c.query(
+        `SELECT metadata->>'author' AS a FROM embeddings
+          WHERE ${SERVED} AND ${CLEAN} AND (metadata->>'verseId')::int = $1
+          GROUP BY 1 ORDER BY 1 LIMIT 1`, [durable.vid])).rows[0]?.a;
+      if (!victimAuthor) return [];
+      return (await c.query(
+        `SELECT id, metadata->>'sourceUrl' AS u FROM embeddings
+          WHERE ${SERVED} AND ${CLEAN} AND (metadata->>'verseId')::int = $1 AND metadata->>'author' = $2`,
+        [durable.vid, victimAuthor])).rows;
+    };
+    const preview = await pickVictims();
+    if (preview.length === 0) {
+      console.log(`SKIPPED  G2 durable floor — verse ${durable.vid} had 2 clean voices at selection time but none remain to seed.\n`);
+      results.push({ name: 'G2 durable floor (skipped: victims vanished before seed)', verdict: 'SKIPPED' });
+    } else {
+      const victimAuthor = (await c.query(`SELECT metadata->>'author' AS a FROM embeddings WHERE id = $1`, [preview[0].id])).rows[0].a;
+      let victims2 = preview;
+      await proof(`G2 durable floor — verse ${durable.vid} loses its 2nd clean voice "${victimAuthor}" to forbidden provenance (${preview.length} row(s))`,
+        async () => {
+          victims2 = await pickVictims();
+          if (victims2.length === 0) throw new Error(`G2 durable floor seed: no clean rows left at verse ${durable.vid}`);
+          for (const v of victims2) await c.query(`UPDATE embeddings SET metadata = jsonb_set(metadata,'{sourceUrl}','"https://biblehub.com/redproof-durable"') WHERE id = $1`, [v.id]);
+        },
+        async () => { for (const v of victims2) await (v.u === null
+          ? c.query(`UPDATE embeddings SET metadata = metadata - 'sourceUrl' WHERE id = $1`, [v.id])
+          : c.query(`UPDATE embeddings SET metadata = jsonb_set(metadata,'{sourceUrl}',to_jsonb($2::text)) WHERE id = $1`, [v.id, v.u])); },
+        'G2 durable floor');
+    }
+  }
 }
 
 await c.end();
