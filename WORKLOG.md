@@ -23,9 +23,15 @@ E4 biblehub redproof PROVEN on `e4-redproof-20260729b`. Phase 2 prod cutover per
 - `scripts/cutover-gate-redproof.mjs` — E0/E1 phase selection; G2 durable predicate fix.
 - `scripts/cutover.mjs` — `CUTOVER_OWNER_PHASE2_GO=1` allows owner Phase 2 prod + rehearsal.
 
-### Phase 2 prod
+### Phase 2 prod — COMPLETE (`ep-odd-fog-atnykudm`)
 
-- See `docs/evidence/cutover-2026-07-29/prod-E0-E6.log` (in progress or complete below).
+- Runtime ~26 min. `EXIT_CODE=0`, `CUTOVER COMPLETE`.
+- Evidence: `docs/evidence/cutover-2026-07-29/prod-E0-E6.log`
+- Pre-cutover snapshot (KEPT): `pre-cutover-ep-odd-fog-atnykudm-20260729164220` (`br-late-recipe-atxl68sh`)
+- E5: skipped (`CUTOVER_REHEARSAL=1`). E6 gate: **PASSED** (DB-only; G7 live `/ask` skipped).
+- E2: 77,820 rows labeled (10 authors). E4: 72,863 sections across 7 works; 5,824 reading units.
+- Smoke: Gill 28,843 | sections 72,863 | forbidden 71,884 (unchanged vs E0 baseline).
+- **HOLD before Phase 3** (E5 deploy + live G7).
 
 ## 2026-07-29 (SESSION 6 — Phase 1 STOP GATE 1: fork rehearsal GREEN; E4 provenance red-proved; gate redproof 10/10; PROD UNTOUCHED)
 
