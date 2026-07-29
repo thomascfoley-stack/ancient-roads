@@ -73,6 +73,48 @@ jobs:
       # class no counting check can see (a vector rotation is a permutation, so counts,
       # 1:1 assertions and nearest-neighbour probes all stay green). Without the key that
       # suite announces NOT RUN via web/test/helpers/loud-skip.ts rather than skipping quietly.
+      # ── the OWNER url for the four seeding suites ──────────────────────────────
+      # library-published-boundary, sections-unit-ordinal, annotations-polymorphic and
+      # annotation-tables SEED fixtures (INSERT INTO sources), which app_runtime is correctly
+      # refused (migration 010: SELECT only). They resolve DATABASE_URL via seedOwnerUrl(),
+      # which REFUSES production and accepts a non-dev endpoint only when SEED_TEST_ENDPOINT
+      # declares it by exact id — so this step can never point them anywhere undeclared.
+      #
+      # Two sources, in order:
+      #   1. secrets.DATABASE_URL_TEST_OWNER, if the owner has stored one.
+      #   2. otherwise FETCHED AT RUNTIME with secrets.NEON_API_KEY, scoped to the declared
+      #      test branch — no long-lived owner password stored anywhere. The fetched value is
+      #      ::add-mask::'d BEFORE it is written to GITHUB_ENV (runtime-fetched strings are
+      #      NOT auto-masked the way stored secrets are).
+      # With neither, the suites announce NOT RUN via helpers/loud-skip.ts — never silence.
+      #
+      # This step is the ONLY writer of DATABASE_URL. Deliberately NOT a step-level `env:` on
+      # the vitest step: `${{ secrets.X }}` renders as an EMPTY STRING when unset, and a
+      # step-level empty DATABASE_URL would shadow the value written to GITHUB_ENV here.
+      - if: steps.guard.outputs.run == 'true'
+        name: resolve seed-owner DATABASE_URL (secret, else fetched via NEON_API_KEY)
+        env:
+          OWNER_SECRET: ${{ secrets.DATABASE_URL_TEST_OWNER }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          SEED_BRANCH: ci-test-20260729
+          NEON_PROJECT: spring-heart-74819093
+        run: |
+          if [ -n "$OWNER_SECRET" ]; then
+            echo "DATABASE_URL=$OWNER_SECRET" >> "$GITHUB_ENV"
+            echo "seed owner: using DATABASE_URL_TEST_OWNER secret"
+          elif [ -n "$NEON_API_KEY" ]; then
+            URL=$(npx --yes neonctl connection-string "$SEED_BRANCH" --project-id "$NEON_PROJECT" \
+              --role-name neondb_owner --database-name neondb --api-key "$NEON_API_KEY" 2>/dev/null | tr -d '\n')
+            if [ -z "$URL" ]; then
+              echo "::warning title=seed-owner URL not fetched::neonctl returned nothing for branch $SEED_BRANCH — the four seeding suites will announce NOT RUN."
+            else
+              echo "::add-mask::$URL"
+              echo "DATABASE_URL=$URL" >> "$GITHUB_ENV"
+              echo "seed owner: fetched at runtime for $SEED_BRANCH (no stored owner secret)"
+            fi
+          else
+            echo "::warning title=seed-owner URL absent::neither DATABASE_URL_TEST_OWNER nor NEON_API_KEY is set — the four seeding suites will announce NOT RUN."
+          fi
       - if: steps.guard.outputs.run == 'true'
         name: DB-backed invariants (real DB) — whole directory, no allowlist
         working-directory: web
@@ -80,10 +122,8 @@ jobs:
           REQUIRE_DB: '1'
           # app_runtime — the read paths, RLS and tenancy suites. Least privilege on purpose:
           # owner would BYPASS RLS and make the tenancy suites pass while proving nothing.
+          # (DATABASE_URL — the seed-owner url — arrives via GITHUB_ENV from the step above.)
           APP_DATABASE_URL: ${{ secrets.APP_DATABASE_URL_TEST }}
-          # owner on the SAME test branch — four suites SEED fixtures (INSERT INTO sources),
-          # which app_runtime is correctly refused (migration 010). Without this they skip.
-          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST_OWNER }}
           # The declared seed target, by exact endpoint id. NOT a secret — it is the reviewable
           # statement of which database may be seeded and deleted from. seedOwnerUrl() refuses
           # production regardless of what is declared here.
