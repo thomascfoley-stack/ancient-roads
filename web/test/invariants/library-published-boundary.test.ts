@@ -41,7 +41,8 @@ function ownerUrl(): string | undefined {
 }
 
 const ownerConn = ownerUrl();
-const appConn = process.env.APP_DATABASE_URL ?? process.env.DATABASE_URL;
+// Skip messaging must name the exact missing var — do not treat DATABASE_URL as APP.
+const appConn = process.env.APP_DATABASE_URL;
 const SLUG = `qa-published-boundary-${Date.now()}`;
 const USER = `qa-libbound-${Date.now()}`;
 // Unique, unlikely-to-collide search token for the searchSections leg of this proof.

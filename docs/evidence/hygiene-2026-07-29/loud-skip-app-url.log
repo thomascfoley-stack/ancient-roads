@@ -1,10 +1,11 @@
 LOUD-SKIP flip direction B — APP unset, DATABASE + SEED_TEST_ENDPOINT set (2026-07-29)
 
-Command: SEED_TEST_ENDPOINT=ep-tiny-bonus-at3izo3y DATABASE_URL=<ci test owner url> env -u APP_DATABASE_URL
-        GITHUB_ACTIONS=true vitest run test/invariants/library-published-boundary.test.ts
+Command: SEED_TEST_ENDPOINT=ep-tiny-bonus-at3izo3y DATABASE_URL=postgres://u:p@ep-tiny-bonus-at3izo3y.neon.tech/neondb
+        env -u APP_DATABASE_URL GITHUB_ACTIONS=true
+        vitest run test/invariants/library-published-boundary.test.ts
 
-Expected (dual-requirement suite): missing APP_DATABASE_URL only.
+::warning title=Phase 4 §A — a shelved work that is later staged/quarantined disappears from every surface NOT RUN::Phase 4 §A — a shelved work that is later staged/quarantined disappears from every surface DID NOT RUN — missing APP_DATABASE_URL (app_runtime via requireDbInCi). It covers: the published-status boundary across every read surface. A green suite without it is not evidence that any of those hold.
 
-::warning title=Phase 4 §A … NOT RUN::… DID NOT RUN — missing APP_DATABASE_URL (app_runtime via requireDbInCi). …
+Fix: appConn skip check uses APP_DATABASE_URL only (not DATABASE_URL fallback) — commit after 1bb7324.
 
-(Direction A — APP set, DATABASE unset — proven in loud-skip-database-url.log: missing DATABASE_URL.)
+Direction A — APP set, DATABASE unset — proven in loud-skip-database-url.log: missing DATABASE_URL.
