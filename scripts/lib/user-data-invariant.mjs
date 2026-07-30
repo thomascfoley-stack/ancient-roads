@@ -28,8 +28,19 @@
 // columns to these tables, so the pre-016 list is stable across the whole cutover — and
 // deliberately excludes 025's target_kind/section_id, which the cutover legitimately
 // changes.
+//
+// USER_TABLES is derived from USER_TABLE_SPEC — never hand-maintained (2026-07-29 glob
+// ruling). test/invariants/user-data-invariant.test.ts enumerates user-scoped tables from
+// db/schema.sql + db/migrations/ and fails if any is absent from USER_TABLE_SPEC or
+// USER_TABLE_EXCLUDED.
 
-export const USER_TABLES = ['highlights', 'notes', 'chats', 'waitlist', 'channels'];
+/** Tables with a user_id/auth_user_id column that are NOT user content — must stay explicit. */
+export const USER_TABLE_EXCLUDED = {
+  api_rate_limit:
+    'Operational fixed-window rate-limit counters, not user-readable content (migration 008; no RLS).',
+  embeddings:
+    'Mixed platform corpus (user_id IS NULL) and optional user uploads; G1 inventory tracks annotation/social/profile tables, not the vector store.',
+};
 
 export const USER_TABLE_SPEC = {
   highlights: {
@@ -66,7 +77,83 @@ export const USER_TABLE_SPEC = {
     active: 'true',
     body: ['name', 'description', 'icon', 'pinned_sources', 'settings', 'sort_order'],
   },
+  messages: {
+    anchor: ['channel_id', 'chat_id', 'role', 'created_at'],
+    tombstone: null,
+    active: 'true',
+    body: ['content', 'sources', 'metadata'],
+  },
+  bookmarks: {
+    anchor: ['target_kind', 'verse_id', 'section_id', 'source_content_hash'],
+    tombstone: 'deleted_at',
+    active: 'deleted_at IS NULL',
+    body: ['label'],
+  },
+  library_items: {
+    anchor: ['source_id', 'created_at'],
+    tombstone: null,
+    active: 'true',
+    body: ['shelf', 'updated_at'],
+  },
+  reading_progress: {
+    anchor: ['source_id', 'last_ordinal'],
+    tombstone: null,
+    active: 'true',
+    body: ['char_offset', 'percent', 'updated_at'],
+  },
+  tags: {
+    anchor: ['name', 'created_at'],
+    tombstone: null,
+    active: 'true',
+    body: [],
+  },
+  annotation_tags: {
+    anchor: ['tag_id', 'target_type', 'target_id', 'created_at'],
+    tombstone: null,
+    active: 'true',
+    body: [],
+  },
+  user_profiles: {
+    ownerColumn: 'auth_user_id',
+    anchor: ['created_at'],
+    tombstone: null,
+    active: 'true',
+    body: ['display_name', 'avatar_url', 'preferred_translation', 'encryption_key_hash', 'plan', 'updated_at'],
+  },
+  user_library: {
+    anchor: ['created_at'],
+    tombstone: null,
+    active: 'true',
+    body: ['title', 'file_type', 'storage_key', 'size_bytes', 'mime_type', 'is_purchased', 'metadata'],
+  },
+  user_integrations: {
+    anchor: ['provider', 'composio_account_id', 'created_at'],
+    tombstone: null,
+    active: 'true',
+    body: ['status', 'scopes', 'updated_at'],
+  },
+  chat_memories: {
+    anchor: ['chat_id', 'fact_type', 'created_at'],
+    tombstone: null,
+    active: 'is_active IS TRUE',
+    body: ['content', 'verse_refs', 'confidence', 'updated_at'],
+  },
+  reading_history: {
+    anchor: ['book_slug', 'chapter', 'translation', 'read_at'],
+    tombstone: null,
+    active: 'true',
+    body: ['time_spent_ms'],
+  },
+  study_guides: {
+    anchor: ['channel_id', 'created_at'],
+    tombstone: null,
+    active: 'true',
+    body: ['title', 'topic', 'description', 'sections', 'progress', 'is_template', 'updated_at'],
+  },
 };
+
+/** Derived from USER_TABLE_SPEC — do not hand-edit. */
+export const USER_TABLES = Object.keys(USER_TABLE_SPEC).sort();
 
 // NULL and '' must not hash alike, and a NULL must not shift the field positions the
 // way concat_ws() would by dropping it.
@@ -78,15 +165,16 @@ const RS = `E'\\x1e'`; // record separator
 export function measureSql(table) {
   const s = USER_TABLE_SPEC[table];
   if (!s) throw new Error(`no user-data spec for table ${table}`);
+  const ownerCol = s.ownerColumn ?? 'user_id';
   const identity = (s.hasUserId === false
     ? ['id', ...s.anchor, ...(s.tombstone ? [s.tombstone] : [])]
-    : ['id', 'user_id', ...s.anchor, ...(s.tombstone ? [s.tombstone] : [])]
+    : ['id', ownerCol, ...s.anchor, ...(s.tombstone ? [s.tombstone] : [])]
   ).map(nn);
   const body = s.body.length > 0 ? [`md5(${s.body.map(nn).join(` || ${FS} || `)})`] : [];
   const rowExpr = [...identity, ...body].join(` || ${RS} || `);
   const usersCol = s.hasUserId === false
     ? '0::int AS users'
-    : 'count(DISTINCT user_id)::int AS users';
+    : `count(DISTINCT ${ownerCol})::int AS users`;
   return `SELECT count(*)::int AS rows,
                  ${usersCol},
                  count(*) FILTER (WHERE ${s.active})::int AS active,
@@ -100,7 +188,8 @@ export function ownersSql(table) {
   if (s?.hasUserId === false) {
     return `SELECT NULL::text AS owner, 0::int AS n WHERE false`;
   }
-  return `SELECT substr(md5(user_id), 1, 12) AS owner, count(*)::int AS n
+  const ownerCol = s.ownerColumn ?? 'user_id';
+  return `SELECT substr(md5(${ownerCol}), 1, 12) AS owner, count(*)::int AS n
             FROM ${table} GROUP BY 1 ORDER BY 1`;
 }
 
