@@ -1,0 +1,59 @@
+red-proof target: ep-orange-credit-at9jg3la.c-9.us-east-1.aws.neon.tech
+
+capturing an E0 baseline on this fork (the ratcheted legs cannot go red without one)...
+✓ baseline captured for ep-orange-credit-at9jg3la.c-9.us-east-1.aws.neon.tech — ratcheted legs are live
+
+(node:7613) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAILED (stayed GREEN on the seeded defect) G1 user-data — an extra highlight row
+           red output: 
+
+(Psalm 23:1 authors on the fork: John Gill, Keil & Delitzsch, Ambrose of Milan, Arnobius the Younger, Augustine of Hippo, Cassiodorus, Hippolytus of Rome, Matthew Henry, Theodoret of Cyrus, Thomas Aquinas, Tyndale Study Notes)
+FAILED (red, but NOT from "G2" — another gate fired; unattributed) G2 >=2 voices — all but one served author removed from Psalm 23:1
+           red output: ✗ baseline in .cutover-checkpoint.json belongs to ep-cool-butterfly-atnx1yy6.c-9.us-east-1.aws.neon.tech, not ep-orange-credit-at9jg3la.c-9.us-east-1.aws.neon.tech. Refusing to compare across targets.
+
+FAILED (red, but NOT from "G3 reader/static" — another gate fired; unattributed) G3 reader/static — the chapter file the reader renders goes missing
+           red output: ✗ baseline in .cutover-checkpoint.json belongs to ep-cool-butterfly-atnx1yy6.c-9.us-east-1.aws.neon.tech, not ep-orange-credit-at9jg3la.c-9.us-east-1.aws.neon.tech. Refusing to compare across targets.
+
+(captured for restore: CREATE UNIQUE INDEX idx_notes_user_verse ON public.notes USING btree (user_id, verse_id) WHERE ((deleted_at IS NULL) AND (target_kind = 'verse'::text)))
+FAILED (red, but NOT from "G4 write" — another gate fired; unattributed) G4 write — upsertNote loses its partial unique index (the 025 hazard)
+           red output: ✗ baseline in .cutover-checkpoint.json belongs to ep-cool-butterfly-atnx1yy6.c-9.us-east-1.aws.neon.tech, not ep-orange-credit-at9jg3la.c-9.us-east-1.aws.neon.tech. Refusing to compare across targets.
+
+FAILED (red, but NOT from "G5 register wall" — another gate fired; unattributed) G5 register wall — a sermon-lane work made reachable through the exegetical filter
+           red output: ✗ baseline in .cutover-checkpoint.json belongs to ep-cool-butterfly-atnx1yy6.c-9.us-east-1.aws.neon.tech, not ep-orange-credit-at9jg3la.c-9.us-east-1.aws.neon.tech. Refusing to compare across targets.
+
+FAILED (red, but NOT from "G6 ratchet" — another gate fired; unattributed) G6 ratchet — one new biblehub-provenance row appears
+           red output: ✗ baseline in .cutover-checkpoint.json belongs to ep-cool-butterfly-atnx1yy6.c-9.us-east-1.aws.neon.tech, not ep-orange-credit-at9jg3la.c-9.us-east-1.aws.neon.tech. Refusing to compare across targets.
+
+FAILED (red, but NOT from "G8 unembedded" — another gate fired; unattributed) G8 unembedded — a section loses its embedding(s) (the slice wrote text, not vectors) [1 row(s) captured]
+           red output: ✗ baseline in .cutover-checkpoint.json belongs to ep-cool-butterfly-atnx1yy6.c-9.us-east-1.aws.neon.tech, not ep-orange-credit-at9jg3la.c-9.us-east-1.aws.neon.tech. Refusing to compare across targets.
+
+(captured for restore: highlights_anchor_xor CHECK ((((target_kind = 'verse'::text) AND (verse_id IS NOT NULL) AND (section_id IS NULL)) OR ((target_kind = 'section'::text) AND (section_id IS NOT NULL) AND (verse_id IS NULL) AND (source_content_hash IS NOT NULL) AND (translation IS NULL)))))
+FAILED (red, but NOT from "G9 constraints" — another gate fired; unattributed) G9 constraints — 030 reverts to the 025 body (constraint present but weaker)
+           red output: ✗ baseline in .cutover-checkpoint.json belongs to ep-cool-butterfly-atnx1yy6.c-9.us-east-1.aws.neon.tech, not ep-orange-credit-at9jg3la.c-9.us-east-1.aws.neon.tech. Refusing to compare across targets.
+
+FAILED (red, but NOT from "G9 constraints" — another gate fired; unattributed) G9 constraints — notes_anchor_xor is dropped entirely
+           red output: ✗ baseline in .cutover-checkpoint.json belongs to ep-cool-butterfly-atnx1yy6.c-9.us-east-1.aws.neon.tech, not ep-orange-credit-at9jg3la.c-9.us-east-1.aws.neon.tech. Refusing to compare across targets.
+
+FAILED (red, but NOT from "G2 durable floor" — another gate fired; unattributed) G2 durable floor — verse 1001005 loses its 2nd clean voice "Jamieson, Fausset & Brown" to forbidden provenance (1 row(s))
+           red output: ✗ baseline in .cutover-checkpoint.json belongs to ep-cool-butterfly-atnx1yy6.c-9.us-east-1.aws.neon.tech, not ep-orange-credit-at9jg3la.c-9.us-east-1.aws.neon.tech. Refusing to compare across targets.
+
+
+=== SUMMARY ===
+  FAILED (stayed GREEN on the seeded defect) G1 user-data — an extra highlight row
+  FAILED (red, but NOT from "G2" — another gate fired; unattributed) G2 >=2 voices — all but one served author removed from Psalm 23:1
+  FAILED (red, but NOT from "G3 reader/static" — another gate fired; unattributed) G3 reader/static — the chapter file the reader renders goes missing
+  FAILED (red, but NOT from "G4 write" — another gate fired; unattributed) G4 write — upsertNote loses its partial unique index (the 025 hazard)
+  FAILED (red, but NOT from "G5 register wall" — another gate fired; unattributed) G5 register wall — a sermon-lane work made reachable through the exegetical filter
+  FAILED (red, but NOT from "G6 ratchet" — another gate fired; unattributed) G6 ratchet — one new biblehub-provenance row appears
+  FAILED (red, but NOT from "G8 unembedded" — another gate fired; unattributed) G8 unembedded — a section loses its embedding(s) (the slice wrote text, not vectors) [1 row(s) captured]
+  FAILED (red, but NOT from "G9 constraints" — another gate fired; unattributed) G9 constraints — 030 reverts to the 025 body (constraint present but weaker)
+  FAILED (red, but NOT from "G9 constraints" — another gate fired; unattributed) G9 constraints — notes_anchor_xor is dropped entirely
+  FAILED (red, but NOT from "G2 durable floor" — another gate fired; unattributed) G2 durable floor — verse 1001005 loses its 2nd clean voice "Jamieson, Fausset & Brown" to forbidden provenance (1 row(s))

@@ -1,0 +1,103 @@
+{
+  "done": [
+    "E0",
+    "E1:016_history_sections",
+    "E1:017_source_type_registers",
+    "E1:020_embeddings_source_type_registers",
+    "E1:021_revoke_app_runtime_anchor_writes",
+    "E1:022_embeddings_write_policy_user_scope",
+    "E1:023_sources_status_ingesting",
+    "E1:025_annotations_polymorphic",
+    "E1:026_bookmarks",
+    "E1:027_library_items",
+    "E1:028_reading_progress",
+    "E1:029_tags",
+    "E1:030_annotation_constraints_tighten",
+    "E1:031_sections_source_url",
+    "E1:018_register_partial_indexes",
+    "E1:019_register_columns_fts"
+  ],
+  "baseline": {
+    "regression": {
+      "host": "ep-sparkling-term-atp0869f.c-9.us-east-1.aws.neon.tech",
+      "userData": {
+        "highlights": {
+          "rows": 0,
+          "users": 0,
+          "active": 0,
+          "digest": "EMPTY",
+          "owners": {}
+        },
+        "notes": {
+          "rows": 0,
+          "users": 0,
+          "active": 0,
+          "digest": "EMPTY",
+          "owners": {}
+        },
+        "chats": {
+          "rows": 0,
+          "users": 0,
+          "active": 0,
+          "digest": "EMPTY",
+          "owners": {}
+        }
+      },
+      "forbidden": 71884,
+      "voices": {
+        "anyVoice": 29629,
+        "floor": 22794,
+        "cleanAnyVoice": 29605,
+        "cleanFloor": 22214
+      },
+      "sections": {
+        "sections": 5510,
+        "embeddings": 5510,
+        "unembedded": 0,
+        "orphans": 0
+      },
+      "laneRows": 0,
+      "labeled": 0
+    },
+    "userData": {
+      "highlights": {
+        "rows": 0,
+        "users": 0,
+        "active": 0,
+        "digest": "EMPTY",
+        "owners": {}
+      },
+      "notes": {
+        "rows": 0,
+        "users": 0,
+        "active": 0,
+        "digest": "EMPTY",
+        "owners": {}
+      },
+      "chats": {
+        "rows": 0,
+        "users": 0,
+        "active": 0,
+        "digest": "EMPTY",
+        "owners": {}
+      }
+    },
+    "e2": {
+      "unlabeled": 190635,
+      "total": 190635
+    }
+  },
+  "target": "ep-sparkling-term-atp0869f.c-9.us-east-1.aws.neon.tech",
+  "owner": {
+    "session": "fb472569-4c91-44c3-b09d-94e72d261fe1",
+    "pid": 2925,
+    "host": "Foleys-MacBook-Air.local",
+    "at": "2026-07-29T16:12:15.026Z"
+  },
+  "snapshot": {
+    "id": "br-silent-wave-atche2mx",
+    "name": "pre-cutover-ep-sparkling-term-atp0869f-20260729160652",
+    "parent": "br-young-bread-atzbo1d0",
+    "at": "2026-07-29T16:06:55.462Z"
+  }
+}

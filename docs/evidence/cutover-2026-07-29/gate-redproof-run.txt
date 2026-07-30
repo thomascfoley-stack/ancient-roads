@@ -1,0 +1,3 @@
+red-proof target: ep-cool-butterfly-atnx1yy6.c-9.us-east-1.aws.neon.tech
+
+capturing an E0 baseline on this fork (the ratcheted legs cannot go red without one)...
