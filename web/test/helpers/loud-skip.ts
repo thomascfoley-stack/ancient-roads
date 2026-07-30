@@ -20,6 +20,12 @@ export interface SkipRequirement {
   readonly name: string;
   /** True when the requirement is satisfied. */
   readonly present: boolean;
+  /**
+   * `secret` — CI/db-invariants must FAIL when absent under REQUIRE_SECRETS=1.
+   * `artifact` — gitignored or machine-local files CI cannot have; LOUD SKIP only,
+   * never a failure (enforced instead at deploy via REQUIRE_CORPUS / predeploy-gate).
+   */
+  readonly kind?: 'secret' | 'artifact';
 }
 
 /**
@@ -31,15 +37,17 @@ export function announceSkip(
   requirements: readonly SkipRequirement[],
   covers: string,
 ): boolean {
-  const missing = requirements.filter((r) => !r.present).map((r) => r.name);
-  if (missing.length === 0) return false;
+  const missingSecrets = requirements.filter((r) => !r.present && (r.kind ?? 'secret') === 'secret');
+  const missingArtifacts = requirements.filter((r) => !r.present && r.kind === 'artifact');
+  if (missingSecrets.length === 0 && missingArtifacts.length === 0) return false;
 
+  const missingNames = [...missingSecrets, ...missingArtifacts].map((r) => r.name);
   const msg =
-    `${check} DID NOT RUN — missing ${missing.join(' and ')}. ` +
+    `${check} DID NOT RUN — missing ${missingNames.join(' and ')}. ` +
     `It covers: ${covers}. A green suite without it is not evidence that any of those hold.`;
 
-  // db-invariants with secrets configured must FAIL, not skip green (work-order v2 Stage 1.2).
-  if (process.env.REQUIRE_SECRETS === '1') {
+  // db-invariants: missing SECRETS fail closed; missing GITIGNORED ARTIFACTS loud-skip only.
+  if (process.env.REQUIRE_SECRETS === '1' && missingSecrets.length > 0) {
     throw new Error(`REQUIRE_SECRETS: ${msg}`);
   }
 

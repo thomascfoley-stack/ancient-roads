@@ -15,6 +15,7 @@ jobs:
   # requireDbInCi() only throws under REQUIRE_DB=1, which this job does not set. They get a real run
   # in the `db-invariants` job below. This job is designed to go GREEN on every push.
   audit:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,8 +34,9 @@ jobs:
   #
   # FAIL-CLOSED (work-order v2 Stage 1.2): when APP_DATABASE_URL_TEST is absent this job is RED, not
   # a visible-green skip. A green db-invariants means the invariants ran. Run receipt: vitest JSON
-  # executed-test count + ci-skip-ceiling.mjs output + no NOT RUN annotations for required secrets.
+  # executed-test count + ci-skip-ceiling.mjs output + NOT RUN annotations only for gitignored artifacts.
   db-invariants:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     concurrency:
       group: db-invariants-${{ github.repository }}

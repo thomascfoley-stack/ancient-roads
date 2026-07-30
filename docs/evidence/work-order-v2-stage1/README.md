@@ -3,7 +3,7 @@
 | # | Property | Evidence path |
 |---|----------|---------------|
 | 1.1 | Protected branch delete refused | `1.1-protected-branch-refusal.log` |
-| 1.2 | db-invariants fail-closed when secrets expected | `1.2-db-invariants-fail-closed.log` (+ CI re-run on push) |
+| 1.2 | db-invariants fail-closed when secrets expected | `1.2-db-invariants-fail-closed.log`, `1.2-require-secrets-vs-corpus.log` (+ CI re-run on push) |
 | 1.3 | Manifest forbidden_provenance restored | `1.3-manifest-forbidden-provenance.diff`, `1.3-manifest-provenance-test.log` |
 | 1.4 | Enumerated expect-red both directions | `1.4-expect-red-extra.log`, `1.4-expect-red-missing.log`, `1.4-deps-audit-enumerated-green.log` |
 | 1.5 | Bait route 401 unauthenticated / prod bearer OK | `1.5-bait-route-gate.log` |
