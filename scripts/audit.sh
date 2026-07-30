@@ -19,6 +19,16 @@ gate() {
   fi
 }
 
+# FIRST gate: shell + root ingest env must be on the audit allow-list (fail-fast).
+printf '\n\033[1m▶ env — audit allow-list (shell + ingest env)\033[0m\n'
+if node scripts/assert-ingest-env-dev.mjs; then
+  printf '\033[32m✓ env — audit allow-list (shell + ingest env)\033[0m\n'
+else
+  printf '\033[31m✗ env — audit allow-list (shell + ingest env)\033[0m\n'
+  printf '\033[31mAUDIT REFUSED — point shell DATABASE_URL at dev/localhost or unset it\033[0m\n'
+  exit 1
+fi
+
 gate "typecheck — tsc --noEmit (strict)"  $PNPM exec tsc --noEmit
 # The cutover gate is TypeScript and was never compiled by CI: the root tsconfig includes
 # only src/ and test/. See tsconfig.cutover.json for what this does and does not cover.
