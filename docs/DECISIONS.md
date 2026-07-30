@@ -776,3 +776,21 @@ same-repo PRs were the failure mode (duplicate runs), and fork PRs previously re
 `if:` guard without a guaranteed push anyway.
 
 **Wrong if.** Two check runs with the same job name and different conclusions exist for one sha.
+
+## ADR-041 — unit_ordinal instrument: one core, three surfaces (2026-07-30)
+
+**Status:** accepted (work-order v2 Stage 2.1).
+
+**Context.** Every production `unit_ordinal` came from migration 024's backfill; correctness was
+verified nowhere beyond asserting `(unitOrdinal, ordinal)` is non-decreasing in `work-reader.test.ts`
+(which mostly restates the query's `ORDER BY`). Stage 4 deploys the Book Reader for the first time.
+
+**Decision.** One instrument (`scripts/lib/unit-ordinal-instrument.mjs`) exposed as: (1) db-invariants
+test with standing in-memory perturbations of the committed 024 backfill SQL, (2) cutover gate **G10**
+with per-work digest + rollup ratchet, (3) read-only CLI `--target=<endpoint>` for prod measurement.
+Verification recomputes unit assignment from the migration's own UPDATE, not a re-implementation.
+
+**Why.** Counts and uniqueness pass permutations; digest catches them (ADR-033 lesson). Perturbations
+live in the harness permanently — not one-off screenshots.
+
+**Wrong if.** A published work serves mis-ordered reading units and G10 / the instrument still greens.

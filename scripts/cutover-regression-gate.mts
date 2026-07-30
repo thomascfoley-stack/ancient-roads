@@ -50,6 +50,8 @@
 //                              a forbidden aggregator may live under a source whose
 //                              DECLARED provenance is clean — the laundering shape G6's
 //                              sources.provenance scan is structurally blind to.
+//   G10 unit_ordinal         — Work Order v2 Stage 2.1: NULL/order/recompute/digest on
+//                              every published work; rollup digest ratcheted against E0.
 //   G9 constraints reject    — the negative half of G4. The annotation CHECKs really
 //                              refuse the shapes 025/030 forbid, verified by SQLSTATE
 //                              23514 AND the constraint NAME (a bare catch counts a
@@ -90,6 +92,7 @@ import {
   PUBLISHED_WHOLE_BIBLE_AUTHORS,
   isPublishedCommentaryEntry,
 } from '../web/src/lib/legal-corpus.ts';
+import { measurePublishedUnitOrdinal, rollupDigest } from './lib/unit-ordinal-instrument.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Overridable so the DESTRUCTIVE seeded-defect proof can use its own file. It captures a
@@ -137,6 +140,7 @@ interface Baseline {
   forbidden?: number;
   voices?: VoiceFloor;
   sections?: SectionIntegrity;
+  unitOrdinal?: UnitOrdinalIntegrity;
   laneRows?: number;   // G5's denominator, ratcheted (never phase-hardcoded)
   labeled?: number;    // rows carrying any metadata->>'work' key — the leg E2 populates
 }
@@ -692,6 +696,7 @@ async function g6(c: pg.Client, base?: number): Promise<number> {
 //     That is the defect this exists to catch, expressed so it cannot false-red.
 //   - and it is non-vacuous: zero sections is a broken instrument, not a pass.
 interface SectionIntegrity { sections: number; embeddings: number; unembedded: number; orphans: number }
+interface UnitOrdinalIntegrity { publishedWorks: number; nulls: number; rollupDigest: string }
 
 async function measureSectionIntegrity(c: pg.Client): Promise<SectionIntegrity | null> {
   const has = await c.query<{ ok: boolean }>(
@@ -778,6 +783,34 @@ async function g8(c: pg.Client, phase: string, base?: SectionIntegrity): Promise
       console.log('    G8 provenance census (sections.source_url host per source):');
       for (const r of census.rows) console.log(`      ${r.slug}: ${r.host} ×${r.n}`);
     }
+  }
+  return now;
+}
+
+// ── G10: unit_ordinal instrument (Work Order v2 Stage 2.1) ───────────────────
+// Published works must carry populated, correctly ordered unit_ordinal values matching
+// the 024 backfill recomputation, with a per-work digest ratchet against E0.
+async function g10(c: pg.Client, phase: string, base?: UnitOrdinalIntegrity): Promise<UnitOrdinalIntegrity | undefined> {
+  const result = await measurePublishedUnitOrdinal(c);
+  if (result.publishedWorks === 0) {
+    fail('G10 unit_ordinal', `zero published works at ${phase} — the instrument is blind`);
+    return undefined;
+  }
+  const now: UnitOrdinalIntegrity = {
+    publishedWorks: result.publishedWorks,
+    nulls: result.nulls,
+    rollupDigest: rollupDigest(result.digests),
+  };
+  if (!result.ok) {
+    fail('G10 unit_ordinal', result.errors.join('; '));
+  } else if (!base) {
+    pass('G10 unit_ordinal', `baseline: ${now.publishedWorks} published work(s), ${now.nulls} NULL unit_ordinal, rollup ${now.rollupDigest.slice(0, 12)}…`);
+  } else if (now.rollupDigest !== base.rollupDigest) {
+    fail('G10 unit_ordinal', `rollup digest changed (${base.rollupDigest.slice(0, 12)}… → ${now.rollupDigest.slice(0, 12)}…) — a published work's (slug, section_id, unit_ordinal, ordinal) tuple permuted`);
+  } else if (now.nulls > base.nulls) {
+    fail('G10 unit_ordinal', `NULL unit_ordinal increased ${base.nulls} → ${now.nulls}`);
+  } else {
+    pass('G10 unit_ordinal', `${now.publishedWorks} published work(s), digest unchanged, ${now.nulls} NULL (E0 ${base.nulls})`);
   }
   return now;
 }
@@ -1131,6 +1164,7 @@ try {
   const laneRows = await g5(c, PHASE, CAPTURE ? undefined : stored.laneRows);
   const forbidden = await g6(c, CAPTURE ? undefined : stored.forbidden);
   const sections = await g8(c, PHASE, CAPTURE ? undefined : stored.sections);
+  const unitOrdinal = await g10(c, PHASE, CAPTURE ? undefined : stored.unitOrdinal);
   await g9(c);
   if (process.env.CUTOVER_ASK_URL) { liveProbeRan = true; await liveAsk(process.env.CUTOVER_ASK_URL); }
   else console.warn(LIVE_PROBE_NOT_RUN);
@@ -1138,7 +1172,7 @@ try {
   // Never persist a baseline from a run that already failed — a baseline captured off a
   // broken reading is a check that can never fail again.
   if (CAPTURE && failures.length === 0) {
-    cp.baseline.regression = { host, userData: now, forbidden, voices, sections, laneRows, labeled: g2r.labeled };
+    cp.baseline.regression = { host, userData: now, forbidden, voices, sections, unitOrdinal, laneRows, labeled: g2r.labeled };
     try { saveCheckpoint(CHECKPOINT, cp); }
     catch (e) {
       const m = (e as Error).message;

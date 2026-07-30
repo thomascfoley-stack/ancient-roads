@@ -1,5 +1,25 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-30 (SESSION 11 — work-order v2 Stage 2 tranche 1)
+
+**Headline:** PR #44 merged to `main` @ merge commit `1199a03`. Stage 2.1 **unit_ordinal instrument**
+landed on `chore/work-order-v2-stage2` — shared core, read-only CLI, db-invariants test with standing
+perturbations, cutover gate G10.
+
+### DONE (Stage 2.1)
+- `scripts/lib/unit-ordinal-instrument.mjs` — NULL/order/recompute/digest checks; extracts 024 backfill SQL
+- `scripts/unit-ordinal-instrument.mjs` — `--read-only --target=<endpoint>` for prod measurement
+- `web/test/invariants/unit-ordinal-instrument.test.ts` — perturbations `units-merge-islands`,
+  `unit-sort-storage-ordinal`; published-work leg when `APP_DATABASE_URL` present
+- `scripts/cutover-regression-gate.mts` — **G10** rollup digest ratchet against E0
+- Evidence index: `docs/evidence/work-order-v2-stage2/README.md`
+
+### NOT DONE (Stage 2 remainder)
+- **2.2 prod read-only** on `ep-odd-fog` — BLOCKED: no `UNIT_ORDINAL_DATABASE_URL` / prod owner URL in agent env
+- Human read of first-20-unit excerpts across three registers
+- Stage 2 STOP independent audit
+- Close superseded PR #43
+
 ## 2026-07-30 (SESSION 10 — work-order v2 Stage 1 PR #44 round 3)
 
 **Headline:** CI-only fixes for skip ceiling vs loud-skip artifact exemption and duplicate check runs.
