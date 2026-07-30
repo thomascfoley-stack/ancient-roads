@@ -29,7 +29,7 @@
 // deliberately excludes 025's target_kind/section_id, which the cutover legitimately
 // changes.
 
-export const USER_TABLES = ['highlights', 'notes', 'chats'];
+export const USER_TABLES = ['highlights', 'notes', 'chats', 'waitlist', 'channels'];
 
 export const USER_TABLE_SPEC = {
   highlights: {
@@ -51,6 +51,21 @@ export const USER_TABLE_SPEC = {
     active: 'is_archived IS NOT TRUE',
     body: ['title', 'persona', 'icon_color', 'sort_order'],
   },
+  // Public signup list — no user_id, no deleted_at; every row is live.
+  waitlist: {
+    hasUserId: false,
+    anchor: ['email', 'source', 'created_at'],
+    tombstone: null,
+    active: 'true',
+    body: [],
+  },
+  // Study groups — user-scoped, no tombstone; every row is live.
+  channels: {
+    anchor: ['created_at'],
+    tombstone: null,
+    active: 'true',
+    body: ['name', 'description', 'icon', 'pinned_sources', 'settings', 'sort_order'],
+  },
 };
 
 // NULL and '' must not hash alike, and a NULL must not shift the field positions the
@@ -63,11 +78,17 @@ const RS = `E'\\x1e'`; // record separator
 export function measureSql(table) {
   const s = USER_TABLE_SPEC[table];
   if (!s) throw new Error(`no user-data spec for table ${table}`);
-  const identity = ['id', 'user_id', ...s.anchor, ...(s.tombstone ? [s.tombstone] : [])].map(nn);
+  const identity = (s.hasUserId === false
+    ? ['id', ...s.anchor, ...(s.tombstone ? [s.tombstone] : [])]
+    : ['id', 'user_id', ...s.anchor, ...(s.tombstone ? [s.tombstone] : [])]
+  ).map(nn);
   const body = s.body.length > 0 ? [`md5(${s.body.map(nn).join(` || ${FS} || `)})`] : [];
   const rowExpr = [...identity, ...body].join(` || ${RS} || `);
+  const usersCol = s.hasUserId === false
+    ? '0::int AS users'
+    : 'count(DISTINCT user_id)::int AS users';
   return `SELECT count(*)::int AS rows,
-                 count(DISTINCT user_id)::int AS users,
+                 ${usersCol},
                  count(*) FILTER (WHERE ${s.active})::int AS active,
                  coalesce(md5(string_agg(md5(${rowExpr}), '' ORDER BY id::text)), 'EMPTY') AS digest
             FROM ${table}`;
@@ -75,6 +96,10 @@ export function measureSql(table) {
 
 /** rows-per-owner, keyed by a truncated hash of the account id (never the id itself). */
 export function ownersSql(table) {
+  const s = USER_TABLE_SPEC[table];
+  if (s?.hasUserId === false) {
+    return `SELECT NULL::text AS owner, 0::int AS n WHERE false`;
+  }
   return `SELECT substr(md5(user_id), 1, 12) AS owner, count(*)::int AS n
             FROM ${table} GROUP BY 1 ORDER BY 1`;
 }

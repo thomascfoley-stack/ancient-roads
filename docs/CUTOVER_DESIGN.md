@@ -74,11 +74,16 @@ and confirmed every assumption:
   **not this cutover's** — deferred to the post-re-ingest slice (scope correction above). The gate
   holds a monotone ratchet on the count instead of demanding zero.
 - **Sections model:** only Barnes pilot (2 sources, 5,510 sections). Everything else gets built.
-- **Live user data: CLEARED 2026-07-28 (owner decision) — this row is now historical.**
-  The census measured 34 highlights (6 users), 2 notes (1 user), 1 chat (1 user), and this
-  doc required migrations to preserve them. On 2026-07-28 the owner ruled it all disposable
-  test data and it was deleted from prod in one verified transaction. What it actually was,
-  read before deleting:
+- **Live user data to preserve (G1 inventory — `scripts/lib/user-data-invariant.mjs`):**
+  - **Annotations (CLEARED 2026-07-28, owner decision — historical):** highlights, notes, chats.
+    The 2026-07-23 census measured 34 highlights (6 users), 2 notes (1 user), 1 chat (1 user); on
+    2026-07-28 the owner ruled that disposable test data and deleted it. G1 still measures these
+    tables — they now hold `0 == 0` and guard against anything being added or altered.
+  - **Still live on prod (NOT cleared, must survive cutover):** `waitlist` (4 signup rows per
+    GO_LIVE_STATUS / census) and `channels` (1 study-group row). G1 measures digest + row count for
+    both; `waitlist` has no `user_id` (owner distribution is vacuous) and neither table carries a
+    tombstone (every row counts as active).
+  What the cleared annotation data actually was, read before deleting:
     - **5 of the 6 "users" were never people.** They were `qa-hl-a-<epoch>` synthetic IDs
       from the Phase-1 highlight suite, one soft-deleted row each — the residue class the
       025 header already names (the suite soft-deletes, never hard-deletes). It had reached
@@ -93,8 +98,9 @@ and confirmed every assumption:
       ever completed a profile, so no third party's work was in the database.
   Deleted: highlights 34, notes 2, chats 1. Also zeroed (already empty): messages,
   chat_memories, reading_history, user_library, study_guides, user_profiles,
-  user_integrations. `api_rate_limit` (41 rows) deliberately KEPT — operational, not user
-  content. The owner's own auth/user row was NOT deleted; only the content rows above were.
+  user_integrations. **NOT deleted:** `waitlist` (4 rows), `channels` (1 row),
+  `api_rate_limit` (41 rows, operational). The owner's own auth/user row was NOT deleted;
+  only the content rows above were.
   A JSON receipt of every deleted row was taken first.
   > **UNVERIFIED IN THIS REPO.** Everything in this bullet is prose: no receipt, no
   > post-delete read-only artifact, and no `41` appear anywhere under `docs/evidence/`. The
@@ -135,16 +141,18 @@ caught it. The prod script inherits that check as a postcondition, not a hope.
   in the checkpoint and quoted in every rollback string. Abort if creation fails. Neon PITR retention
   on this project is 21,600 s (6 h) against a ~2 h 20 m run, so PITR is not a restore plan.
 - **E1** — migrations 016–023 and 025–030 in order; assert each index `indisvalid=t` before
-  proceeding. Census confirms prod is pre-016, so they apply fresh. **Prod user data is EMPTY as of
-  2026-07-28** (owner cleared it — see the census row above; the 2026-07-23 figures of 34 highlights /
-  6 users / 2 notes / 1 chat are historical and must not be read as a current precondition). The
-  preserve-these-rows assertions **stay exactly as written** and now hold at `0 == 0`; they are what
+  proceeding. Census confirms prod is pre-016, so they apply fresh. **Annotation tables are EMPTY as of
+  2026-07-28** (owner cleared highlights/notes/chats — see the census row above; the 2026-07-23
+  figures are historical). **`waitlist` and `channels` still hold live rows on prod** and are in the
+  G1 inventory alongside the annotation tables. The preserve-these-rows assertions **stay exactly as
+  written**; annotations now hold at `0 == 0`, while waitlist/channels must not change. They are what
   protects the first real user, and the next run of this script may face one. The invariant asserted
-  across every migration is a **per-table md5 digest over ordered rows** (id, owner, anchors,
-  tombstone, body hash) plus the **active count** and the **owner distribution** — not `count(*)`,
-  which passed three seeded corruptions green. Note the digest-based invariant is *stronger* than a
-  count on an empty table but is **vacuous while the tables are empty**: it can only prove nothing
-  moved, not that anything was preserved. That is a real limit of today's target, not of the check.
+  across every migration is a **per-table md5 digest over ordered rows** (id, owner where present,
+  anchors, tombstone, body hash) plus the **active count** and the **owner distribution** (vacuous
+  for `waitlist`, which has no `user_id`) — not `count(*)`, which passed three seeded corruptions
+  green. Note the digest-based invariant is *stronger* than a count on an empty table but is
+  **vacuous while a table is empty**: it can only prove nothing moved, not that anything was
+  preserved. That is a real limit of today's target, not of the check.
 - **E2** — register-label prod's flat embeddings (dev got this from the 33-work sweep; prod never
   has). Assert label coverage against prod's own re-measured shape.
 - **E4** — slice works into sections on prod, reusing vectors 1:1; assert per-register counts against

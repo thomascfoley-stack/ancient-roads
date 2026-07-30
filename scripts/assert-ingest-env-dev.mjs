@@ -1,23 +1,62 @@
-// Asserts the ROOT .env.local (the ingest env) points at the DEV branch with an
-// owner role, via a read-only probe with a positive control. Prints host/role/counts
-// only — never credentials. Exit 0 = safe to run population against this env.
+// Gate: refuse audit/ingest unless shell + root ingest env are on the allow-list.
+//
+// Two independent hazards, one script:
+//   1. SHELL — DATABASE_URL (etc.) in the environment overrides web/.env.local and poisons
+//      `npm run qa` / vitest. Refuse loudly if any shell DB var is not localhost, a dev
+//      endpoint, or an endpoint declared by exact id (AUDIT_ALLOWED_ENDPOINT / SEED_TEST_ENDPOINT).
+//   2. FILE — root `.env.local` (the ingest env) must point at an allowed owner with a live
+//      control. Skipped visibly when the file is absent (CI has no local ingest env).
+//
+// Allow-list matches web/test/helpers/env.ts seedOwnerUrl() — never a substring.
+// Prints host/role/counts only — never credentials.
 import pg from 'pg';
 import fs from 'node:fs';
+import { endpointId, hostOf, isAuditAllowedHost } from './lib/target-guard.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname;
-const envText = fs.readFileSync(`${ROOT}/.env.local`, 'utf8');
+const ENV_FILE = `${ROOT}/.env.local`;
+
+const SHELL_VARS = ['DATABASE_URL', 'APP_DATABASE_URL', 'DATABASE_URL_UNPOOLED'];
+
+function refuseShell(name, url) {
+  const id = endpointId(hostOf(url));
+  console.error(
+    `FAIL: shell ${name} points at ${id ?? hostOf(url)} — not on the audit allow-list ` +
+    '(dev endpoints, localhost, or AUDIT_ALLOWED_ENDPOINT / SEED_TEST_ENDPOINT by exact id). ' +
+    'Unset it before npm run audit — qa/vitest inherit shell env.',
+  );
+  process.exit(1);
+}
+
+// ── 1. Shell env: only allow-listed targets ──────────────────────────────────
+for (const name of SHELL_VARS) {
+  const v = process.env[name];
+  if (!v) continue;
+  if (!isAuditAllowedHost(v)) refuseShell(name, v);
+}
+console.log('shell:  DATABASE_URL / APP_DATABASE_URL / DATABASE_URL_UNPOOLED on allow-list (or unset)');
+
+// ── 2. Root ingest env file (local only) ─────────────────────────────────────
+if (!fs.existsSync(ENV_FILE)) {
+  console.log('⚠ SKIPPED (visibly): no root .env.local — ingest-env probe not run (expected in CI).');
+  console.log('OK: shell on allow-list; ingest file absent.');
+  process.exit(0);
+}
+
+const envText = fs.readFileSync(ENV_FILE, 'utf8');
 const val = (k) => envText.match(new RegExp(`^${k}="?([^"\n]*)"?$`, 'm'))?.[1];
 
 const url = val('DATABASE_URL_UNPOOLED') ?? val('DATABASE_URL');
 if (!url) { console.error('FAIL: no DATABASE_URL in root .env.local'); process.exit(1); }
-const host = new URL(url).host;
-console.log(`host:   ${host}`);
-console.log(`branch: ${val('NEON_BRANCH')}`);
-
-if (!host.includes('ep-tiny-hat')) {
-  console.error(`FAIL: ingest env points at ${host} — NOT the dev branch. Refusing.`);
+if (!isAuditAllowedHost(url)) {
+  console.error(
+    `FAIL: root .env.local points at ${endpointId(hostOf(url)) ?? hostOf(url)} — not on the audit allow-list.`,
+  );
   process.exit(1);
 }
+const host = hostOf(url);
+console.log(`host:   ${host}`);
+console.log(`branch: ${val('NEON_BRANCH')}`);
 
 const c = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
 await c.connect();
@@ -31,5 +70,5 @@ try {
   console.log(`positive control (Gill on dev): ${gill}`);
   if (gill === 0) { console.error('FAIL: positive control returned 0'); process.exit(1); }
   await c.query('ROLLBACK');
-  console.log('OK: root .env.local -> dev owner, probe fires. Safe for population.');
+  console.log('OK: root .env.local -> allowed owner, probe fires. Safe for population.');
 } finally { await c.end(); }
