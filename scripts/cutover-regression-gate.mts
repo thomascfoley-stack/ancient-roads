@@ -804,7 +804,11 @@ async function g10(c: pg.Client, phase: string, base?: UnitOrdinalIntegrity): Pr
   if (!result.ok) {
     fail('G10 unit_ordinal', result.errors.join('; '));
   } else if (!base) {
-    pass('G10 unit_ordinal', `baseline: ${now.publishedWorks} published work(s), ${now.nulls} NULL unit_ordinal, rollup ${now.rollupDigest.slice(0, 12)}…`);
+    if (CAPTURE) {
+      pass('G10 unit_ordinal', `baseline captured: ${now.publishedWorks} published work(s), ${now.nulls} NULL unit_ordinal, rollup ${now.rollupDigest.slice(0, 12)}…`);
+    } else {
+      pass('G10 unit_ordinal', `BASELINING (no stored unitOrdinal in checkpoint): ${now.publishedWorks} published work(s), ${now.nulls} NULL unit_ordinal, rollup ${now.rollupDigest.slice(0, 12)}… — survey, not ratchet`);
+    }
   } else if (now.rollupDigest !== base.rollupDigest) {
     fail('G10 unit_ordinal', `rollup digest changed (${base.rollupDigest.slice(0, 12)}… → ${now.rollupDigest.slice(0, 12)}…) — a published work's (slug, section_id, unit_ordinal, ordinal) tuple permuted`);
   } else if (now.nulls > base.nulls) {
@@ -1200,6 +1204,12 @@ if (failures.length > 0) {
 // SURVEY, not a regression gate — both end in a green line, and only this qualifier tells
 // them apart. It matters most in --e6-only against a fresh fork, which is exactly the
 // situation in which someone is trying to convince themselves the gate works.
-const compared = !CAPTURE && stored.userData !== undefined;
+const compared = !CAPTURE && stored.userData !== undefined && stored.unitOrdinal !== undefined;
+const g10Baselining = !CAPTURE && stored.unitOrdinal === undefined;
 const scope = liveProbeRan ? 'including the live /ask probe (end-to-end)' : 'DB-ONLY, LIVE PROBE NOT RUN';
-console.log(`✓ REGRESSION GATE PASSED at ${PHASE} — ${scope}${compared ? '' : '; NO E0 BASELINE, so the ratcheted legs REPORTED rather than asserted (survey, not regression gate)'}`);
+const qualifier = compared
+  ? ''
+  : g10Baselining
+    ? '; NO E0 unitOrdinal BASELINE — G10 REPORTED rather than ratcheted (survey, not regression gate)'
+    : '; NO E0 BASELINE, so the ratcheted legs REPORTED rather than asserted (survey, not regression gate)';
+console.log(`✓ REGRESSION GATE PASSED at ${PHASE} — ${scope}${qualifier}`);

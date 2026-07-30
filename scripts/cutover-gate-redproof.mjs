@@ -253,6 +253,25 @@ if (!hlXor) {
     'G9 constraints');
 }
 
+// ── G10: unit_ordinal instrument (Work Order v2 Stage 2.1) ───────────────────
+// Seed NULL unit_ordinal on one published section — the shared instrument must fail.
+const g10Donor = (await c.query(
+  `SELECT sec.id, sec.unit_ordinal
+     FROM sections sec
+     JOIN sources src ON src.id = sec.source_id
+    WHERE src.status = 'published' AND sec.unit_ordinal IS NOT NULL
+    LIMIT 1`)).rows[0];
+if (!g10Donor) {
+  console.log('SKIPPED  G10 — no published section with unit_ordinal on this fork; seed cannot be built.\n');
+  results.push({ name: 'G10 unit_ordinal (skipped: no published sections on fork)', verdict: 'SKIPPED' });
+} else {
+  console.log(`(captured for restore: section ${g10Donor.id} unit_ordinal=${g10Donor.unit_ordinal})`);
+  await proof('G10 unit_ordinal — NULL unit_ordinal on a published section',
+    () => c.query(`UPDATE sections SET unit_ordinal = NULL WHERE id = $1`, [g10Donor.id]),
+    () => c.query(`UPDATE sections SET unit_ordinal = $2 WHERE id = $1`, [g10Donor.id, g10Donor.unit_ordinal]),
+    'G10 unit_ordinal');
+}
+
 // ── G2 durable floor: a forbidden-provenance row is the ONLY thing holding a verse up ──
 // The defect this catches is subtle and is the one ADR-030 was corrected for: the headline
 // floor stays flat while the floor that survives the provenance cleanup quietly drops.

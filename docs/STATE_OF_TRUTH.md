@@ -123,6 +123,26 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 **UNVERIFIED (owner decision sheet §1):** G1 does not assert row **identity** — only counts/digest; the historical
 "37 user rows" invariant was never identity-proved on prod post-cutover. See `docs/OWNER_DECISIONS_2026-07-29.md` §1.
 
+### 2d. Prod `sources.status` — published count (2026-07-30, ADR-042)
+
+> **Measured read-only ~10:09 local 2026-07-30** during an unplanned Cursor session (ADR-042). **Not**
+> instrument output — ad-hoc diagnostics + instrument positive control abort. **Last repo-authoritative
+> prod census before this:** cutover E0–E6 log (2026-07-29) reports 72,863 sections sliced but does not
+> state a publish flip; E4 writes `status='staged'`.
+
+| fact | value | source | verified in repo |
+|---|---|---|---|
+| `sources` total | **7** | ADR-042 session read | recorded, not re-run here |
+| `status = 'staged'` | **7** (all) | same | recorded |
+| `status = 'published'` | **0** | same — instrument positive control abort | recorded |
+| `sections` total | **72,863** | same; matches E4 log | ✅ consistent with §2b |
+| Publish flip on prod | **NOT DONE** (inferred) | staged-only + E4 design | repo does not document a flip |
+
+**Sequencing implication.** Stage 2.2 `unit_ordinal` prod measurement requires `published > 0`. Ordering
+verification on production is **downstream of publish flip**, not parallel to instrument hardening.
+
+**What the repo does not know without a fresh read:** whether status changed after 2026-07-30 10:09.
+
 ### 2c. Dev branch snapshot (historical — `ground-truth.mjs`, 2026-07-15)
 
 | fact | value | verified |

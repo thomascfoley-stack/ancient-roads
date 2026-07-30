@@ -6,9 +6,12 @@ export default defineConfig({
     // (the `qa` gate) which carries the `@` alias; without this, vitest's default glob
     // sweeps web/test/** here too and every `@/…` import 404s.
     include: ['test/**/*.test.ts'],
+    deps: {
+      interopDefault: true,
+    },
     coverage: {
       provider: 'v8',
-      all: true, // include untested source files so they surface as zero-coverage
+      all: true,
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.test.ts', 'src/**/types.ts'],
       reporter: ['text-summary', 'json-summary'],

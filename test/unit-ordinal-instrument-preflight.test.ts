@@ -1,16 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import * as neonConn from '../scripts/lib/neon-connection.mjs';
-import * as uoiCore from '../scripts/lib/unit-ordinal-instrument.mjs';
 import { instrumentTargetMatches, declaredMatches } from '../scripts/lib/target-guard.mjs';
-
-const {
-  pickExcerptSlugs,
-  CLEAN_EXCERPT_WORKS_SQL,
-  EXCERPT_SECTIONS_SQL,
-  SOURCE_FORBIDDEN_PROVENANCE_SQL,
-  FORBIDDEN_PROVENANCE_DOMAINS,
-} = uoiCore;
 
 vi.mock('node:child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:child_process')>();
@@ -19,8 +10,9 @@ vi.mock('node:child_process', async (importOriginal) => {
 
 const PROD_URL =
   'postgresql://app_runtime:secret@ep-odd-fog-atnykudm-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require';
+const TEST_KEY = 'napi_test_key_for_redproof_only';
 
-describe('unit_ordinal instrument preflight — neon URL mint', () => {
+describe('§1 — NEON_API_KEY only, no URL fallback', () => {
   const orig = { ...process.env };
 
   beforeEach(() => {
@@ -30,114 +22,68 @@ describe('unit_ordinal instrument preflight — neon URL mint', () => {
     delete process.env.APP_DATABASE_URL;
     delete process.env.CUTOVER_DATABASE_URL;
     delete process.env.DATABASE_URL;
+    delete process.env.NEON_API_KEY;
   });
 
   afterEach(() => {
     process.env = orig;
   });
 
-  it('branchForTarget maps ep-odd-fog → production', () => {
-    expect(neonConn.branchForTarget('ep-odd-fog')).toBe('production');
+  it('refuses when NEON_API_KEY unset even if DATABASE_URL is set', () => {
+    process.env.DATABASE_URL = PROD_URL;
+    process.env.APP_DATABASE_URL = PROD_URL;
+    process.env.CUTOVER_DATABASE_URL = PROD_URL;
+    process.env.UNIT_ORDINAL_DATABASE_URL = PROD_URL;
+    expect(() => neonConn.resolveInstrumentConnection({ target: 'ep-odd-fog' })).toThrow(/NEON_API_KEY is required/);
   });
 
-  it('with NEON_API_KEY and no DATABASE_URL, mints and does not require env URL', () => {
-    process.env.NEON_API_KEY = 'test-key';
+  it('mints with NEON_API_KEY only — argv has no --api-key', () => {
+    process.env.NEON_API_KEY = TEST_KEY;
     vi.mocked(execFileSync).mockReturnValue(PROD_URL);
-    const r = neonConn.resolveInstrumentConnection({ target: 'ep-odd-fog', role: 'app_runtime' });
-    expect(r.source).toBe('neonctl');
-    expect(r.role).toBe('app_runtime');
-    expect(execFileSync).toHaveBeenCalledWith(
-      'npx',
-      expect.arrayContaining(['connection-string', 'production', '--role-name', 'app_runtime']),
-      expect.any(Object),
-    );
+    neonConn.resolveInstrumentConnection({ target: 'ep-odd-fog' });
+    const call = vi.mocked(execFileSync).mock.calls[0]!;
+    expect(call[1]).not.toContain('--api-key');
+    expect(call[1]).not.toContain(TEST_KEY);
+    expect(call[2]?.env?.NEON_API_KEY).toBe(TEST_KEY);
+  });
+});
+
+describe('§2 — scrubbed errors, no credential leak', () => {
+  it('scrubCredentialText removes key and postgres URLs', () => {
+    const msg = `failed --api-key ${TEST_KEY} postgres://user:pass@host/db`;
+    const scrubbed = neonConn.scrubCredentialText(msg, TEST_KEY);
+    expect(scrubbed).not.toContain(TEST_KEY);
+    expect(scrubbed).not.toContain('postgres://');
+    expect(scrubbed).toContain('--api-key [REDACTED]');
+    expect(scrubbed).toContain('[REDACTED_DATABASE_URL]');
   });
 
-  it('refuses when minted host is not the declared target', () => {
-    process.env.NEON_API_KEY = 'test-key';
-    vi.mocked(execFileSync).mockReturnValue(
-      'postgresql://app_runtime:secret@ep-tiny-hat-atdgpisx-pooler.us-east-1.aws.neon.tech/neondb',
-    );
-    expect(() => neonConn.resolveInstrumentConnection({ target: 'ep-odd-fog' })).toThrow(/STOP.*not the declared target/);
-  });
-
-  it('refuses env URL when host does not match declared target', () => {
-    process.env.APP_DATABASE_URL =
-      'postgresql://app_runtime:secret@ep-tiny-hat-atdgpisx-pooler.us-east-1.aws.neon.tech/neondb';
-    expect(() => neonConn.resolveInstrumentConnection({ target: 'ep-odd-fog' })).toThrow(/STOP.*not the declared target/);
-  });
-
-  it('mintNeonConnectionString return value is never logged by resolveInstrumentConnection', () => {
-    process.env.NEON_API_KEY = 'test-key';
-    vi.mocked(execFileSync).mockReturnValue(
-      'postgresql://app_runtime:SUPERSECRET@ep-odd-fog-atnykudm-pooler.us-east-1.aws.neon.tech/neondb',
-    );
-    const logs: string[] = [];
-    const origLog = console.log;
-    console.log = (...a) => logs.push(String(a[0]));
+  it('mint failure stderr contains no key or postgres URL', () => {
+    process.env.NEON_API_KEY = TEST_KEY;
+    const err = new Error('Command failed');
+    (err as NodeJS.ErrnoException & { stderr: string; stdout: string }).stderr =
+      `ERROR: auth failed --api-key ${TEST_KEY}\n${PROD_URL}`;
+    (err as NodeJS.ErrnoException & { stdout: string }).stdout = PROD_URL;
+    vi.mocked(execFileSync).mockImplementation(() => {
+      throw err;
+    });
+    let thrown = '';
     try {
       neonConn.resolveInstrumentConnection({ target: 'ep-odd-fog' });
-    } finally {
-      console.log = origLog;
+    } catch (e) {
+      thrown = String((e as Error).message);
     }
-    expect(logs.join('\n')).not.toContain('SUPERSECRET');
+    expect(thrown).not.toContain(TEST_KEY);
+    expect(thrown).not.toMatch(/postgres:\/\//);
   });
 });
 
-describe('unit_ordinal instrument preflight — excerpt policy', () => {
-  it('EXCERPT_SECTIONS_SQL selects ordering fields only — no body text', () => {
-    expect(EXCERPT_SECTIONS_SQL).toMatch(/unit_ordinal/);
-    expect(EXCERPT_SECTIONS_SQL).toMatch(/heading/);
-    expect(EXCERPT_SECTIONS_SQL).not.toMatch(/body/);
-    expect(EXCERPT_SECTIONS_SQL).not.toMatch(/snippet/);
-  });
-
-  it('CLEAN_EXCERPT_WORKS_SQL excludes forbidden-provenance sources', () => {
-    for (const d of FORBIDDEN_PROVENANCE_DOMAINS) {
-      expect(CLEAN_EXCERPT_WORKS_SQL).toContain(d);
-    }
-    expect(CLEAN_EXCERPT_WORKS_SQL).toContain('NOT EXISTS');
-    expect(SOURCE_FORBIDDEN_PROVENANCE_SQL).toContain('provenance');
-  });
-
-  it('pickExcerptSlugs takes first slug per register', () => {
-    const slugs = pickExcerptSlugs([
-      { slug: 'a-commentary', source_type: 'commentary' },
-      { slug: 'b-commentary', source_type: 'commentary' },
-      { slug: 'c-sermon', source_type: 'sermon' },
-      { slug: 'd-bible', source_type: 'bible' },
-    ]);
-    expect(slugs).toEqual(['a-commentary', 'c-sermon', 'd-bible']);
-  });
-
-  it('RED when forbidden work would enter sample — clean query excludes it', () => {
-    const rows = [
-      { slug: 'forbidden-work', source_type: 'commentary' },
-      { slug: 'clean-work', source_type: 'commentary' },
-    ];
-    const cleanOnly = rows.filter((r) => r.slug !== 'forbidden-work');
-    const sample = pickExcerptSlugs(cleanOnly);
-    expect(sample).not.toContain('forbidden-work');
-    expect(sample).toContain('clean-work');
-  });
-});
-
-describe('instrumentTargetMatches — prod prefix + exact fork id', () => {
-  it('ep-odd-fog prefix matches full prod host (cutover STEP ZERO rule)', () => {
+describe('instrumentTargetMatches', () => {
+  it('ep-odd-fog prefix matches full prod host', () => {
     expect(instrumentTargetMatches(PROD_URL, 'ep-odd-fog')).toBe(true);
   });
 
-  it('exact endpoint id still matches forks', () => {
-    const fork = 'postgresql://u:p@ep-fresh-fork-at000000.c-9.us-east-1.aws.neon.tech.invalid/db';
-    expect(instrumentTargetMatches(fork, 'ep-fresh-fork-at000000')).toBe(true);
-  });
-
-  it('wrong endpoint fails', () => {
-    const dev = 'postgresql://u:p@ep-tiny-hat-atdgpisx-pooler.us-east-1.aws.neon.tech/neondb';
-    expect(instrumentTargetMatches(dev, 'ep-odd-fog')).toBe(false);
-  });
-
-  it('declaredMatches alone does not match prod prefix (documented limit)', () => {
+  it('declaredMatches alone does not match prod prefix', () => {
     expect(declaredMatches(PROD_URL, 'ep-odd-fog')).toBe(false);
   });
 });

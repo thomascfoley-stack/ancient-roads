@@ -4,22 +4,16 @@
 //   NEON_API_KEY=<key> node scripts/unit-ordinal-instrument.mjs \
 //     --read-only --target=ep-odd-fog [--json] [--out=docs/evidence/...]
 //
-// Mints app_runtime via neonctl in-process — never type or paste a prod connection string.
-// Uses BEGIN READ ONLY + server assert, positive control, target guard, ROLLBACK always.
+// Credential: NEON_API_KEY only (mints app_runtime in-process). No DATABASE_URL fallback.
+// Asserts read-only transaction AND connected role at the server. ROLLBACK always.
 import pg from 'pg';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { endpointId } from './lib/target-guard.mjs';
-import { resolveInstrumentConnection } from './lib/neon-connection.mjs';
-import {
-  measurePublishedUnitOrdinal,
-  rollupDigest,
-  CLEAN_EXCERPT_WORKS_SQL,
-  EXCERPT_SECTIONS_SQL,
-  pickExcerptSlugs,
-  SOURCE_FORBIDDEN_PROVENANCE_SQL,
-} from './lib/unit-ordinal-instrument.mjs';
+import { resolveInstrumentConnection, INSTRUMENT_ROLE } from './lib/neon-connection.mjs';
+import { measurePublishedUnitOrdinal, rollupDigest } from './lib/unit-ordinal-instrument.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -28,19 +22,42 @@ const AS_JSON = args.includes('--json');
 const targetArg = args.find((a) => a.startsWith('--target='))?.split('=')[1];
 const outArg = args.find((a) => a.startsWith('--out='))?.split('=')[1];
 
+const EXCERPT_SECTIONS_SQL = `
+  SELECT sec.unit_ordinal, sec.ordinal, coalesce(sec.heading, '') AS heading
+  FROM sections sec
+  JOIN sources src ON src.id = sec.source_id
+  WHERE src.slug = $1
+  ORDER BY sec.unit_ordinal, sec.ordinal
+  LIMIT 20`;
+
 if (!READ_ONLY) {
   console.error('Usage: NEON_API_KEY=<key> node scripts/unit-ordinal-instrument.mjs --read-only --target=<endpoint-id> [--json] [--out=path]');
   process.exit(2);
 }
 
-const conn = resolveInstrumentConnection({ target: targetArg, role: 'app_runtime' });
+const conn = resolveInstrumentConnection({ target: targetArg, role: INSTRUMENT_ROLE });
 const url = conn.url;
 const host = endpointId(new URL(url).host) ?? new URL(url).host.toLowerCase();
 const say = (s) => { if (!AS_JSON) console.log(s); };
 
+function selectExcerptSample(sources, sectionRows) {
+  const payload = JSON.stringify({ sources, sectionRows });
+  const out = execFileSync('npx', ['tsx', path.join(ROOT, 'scripts/lib/excerpt-sample-policy.mts'), '--select'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    input: payload,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  return JSON.parse(out);
+}
+
+function formatExcerptLine(u) {
+  return `u${u.unit_ordinal}.${u.ordinal}\t${u.heading ?? ''}`;
+}
+
 say('unit_ordinal instrument — read-only');
 say(`  target: ${host} (credentials redacted)`);
-say(`  connection: ${conn.source}${conn.role ? ` role=${conn.role}` : ''}${conn.branch ? ` branch=${conn.branch}` : ''}`);
+say(`  connection: ${conn.source} role=${conn.role} branch=${conn.branch}`);
 
 const c = new pg.Client({
   connectionString: url,
@@ -56,14 +73,19 @@ const report = {
   ts: new Date().toISOString(),
   ok: false,
   connectionSource: conn.source,
-  role: conn.role ?? 'env',
-  excerptPolicy: 'clean-provenance works only; unit_ordinal + ordinal + heading — no body text',
+  role: conn.role,
 };
 try {
   await c.query('BEGIN');
   await c.query('SET TRANSACTION READ ONLY');
   const ro = (await c.query('SHOW transaction_read_only')).rows[0].transaction_read_only;
   if (ro !== 'on') throw new Error('STOP: read-only transaction not in force');
+
+  const roleRow = (await c.query('SELECT current_user')).rows[0];
+  if (roleRow.current_user !== INSTRUMENT_ROLE) {
+    throw new Error(`STOP: connected role is '${roleRow.current_user}', expected '${INSTRUMENT_ROLE}'`);
+  }
+  say(`  server role: ${INSTRUMENT_ROLE} ✓`);
 
   const control = (await c.query(`SELECT count(*)::int AS n FROM sources WHERE status = 'published'`)).rows[0];
   say(`\nPOSITIVE CONTROL: published sources = ${control.n} ${control.n > 0 ? '✓' : '✗ ABORT'}`);
@@ -92,30 +114,35 @@ try {
     say('\n✓ PASS — all published works satisfy unit_ordinal instrument');
   }
 
-  // Stage 2.2 excerpt: ordering only — clean-provenance works, no body text in committed log.
-  const cleanWorks = (await c.query(CLEAN_EXCERPT_WORKS_SQL)).rows;
-  const sampleSlugs = pickExcerptSlugs(cleanWorks, 3);
-  report.excerptSampleSlugs = sampleSlugs;
-  report.excerptExcludedForbidden = (await c.query(`
-    SELECT count(*)::int AS n FROM sources src
-    WHERE src.status = 'published' AND (${SOURCE_FORBIDDEN_PROVENANCE_SQL})
-  `)).rows[0].n;
+  const publishedSources = (await c.query(`
+    SELECT slug, source_type, status, provenance
+    FROM sources WHERE status = 'published'
+    ORDER BY source_type, slug
+  `)).rows;
+  const sectionRows = (await c.query(`
+    SELECT src.slug, sec.source_url
+    FROM sections sec
+    JOIN sources src ON src.id = sec.source_id
+    WHERE src.status = 'published'
+  `)).rows;
 
-  if (sampleSlugs.length === 0) {
-    throw new Error('STOP: no clean-provenance published works available for excerpt sample');
+  const excerpt = selectExcerptSample(publishedSources, sectionRows);
+  report.excerptHeader = excerpt.header;
+  report.excerptSampleSlugs = excerpt.sampleSlugs;
+  report.excerptEligibility = excerpt.eligibility;
+
+  if (excerpt.sampleSlugs.length === 0) {
+    throw new Error('STOP: no manifest-eligible published works for excerpt sample');
   }
 
   report.excerpts = {};
-  for (const slug of sampleSlugs) {
+  for (const slug of excerpt.sampleSlugs) {
     const units = (await c.query(EXCERPT_SECTIONS_SQL, [slug])).rows;
     report.excerpts[slug] = units;
-    say(`\n--- excerpt: ${slug} (first ${units.length} sections in reading order; heading only, no body) ---`);
-    for (const u of units) {
-      say(`  u${String(u.unit_ordinal).padStart(4)}.${String(u.ordinal).padStart(4)}  ${(u.heading || '(no heading)').slice(0, 60)}`);
-    }
+    say(`\n--- excerpt: ${slug} (first ${units.length} sections; ordering fields only) ---`);
+    for (const u of units) say(`  ${formatExcerptLine(u)}`);
   }
-  say(`\nexcerpt policy: ${report.excerptPolicy}`);
-  say(`  forbidden-provenance sources excluded from sample: ${report.excerptExcludedForbidden}`);
+  say(`\n${excerpt.header}`);
 } finally {
   await c.query('ROLLBACK').catch((e) => console.error(`ROLLBACK failed: ${e.message}`));
   await c.end();
@@ -129,15 +156,14 @@ if (outArg) {
     `target: ${report.target}`,
     `ok: ${report.ok}`,
     `rollupDigest: ${report.rollupDigest}`,
-    `excerptPolicy: ${report.excerptPolicy}`,
-    `forbiddenProvenanceSourcesExcluded: ${report.excerptExcludedForbidden}`,
+    `excerptHeader: ${report.excerptHeader ?? ''}`,
     `sampleSlugs: ${(report.excerptSampleSlugs ?? []).join(', ')}`,
     '',
     ...((report.errors ?? []).map((e) => `ERROR: ${e}`)),
     '',
     ...(report.excerpts ? Object.entries(report.excerpts).flatMap(([slug, rows]) => [
       `## ${slug}`,
-      ...rows.map((u) => `u${u.unit_ordinal}.${u.ordinal}\t${u.heading || ''}`),
+      ...rows.map((u) => formatExcerptLine(u)),
       '',
     ]) : []),
   ].join('\n'));
