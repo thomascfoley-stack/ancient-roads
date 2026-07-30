@@ -21,10 +21,17 @@ export function loadManifestById(manifestPath = path.join(ROOT, 'ingest/sources.
   return new Map(raw.map((e) => [e.id, e]));
 }
 
-/** Single eligibility predicate — used for both sample selection and the log header. */
-export function excerptEligibility(source, manifestEntry, forbiddenSectionRowCount) {
+/**
+ * Single eligibility predicate — used for both sample selection and the log header.
+ *
+ * `cohort` is the status the caller is measuring. It used to be the literal 'published',
+ * which meant the excerpt sampler silently rejected every row of any other cohort — so a
+ * staged-cohort run produced "none manifest-eligible" and looked like a provenance result
+ * rather than what it was: the filter refusing to look at the cohort it was handed.
+ */
+export function excerptEligibility(source, manifestEntry, forbiddenSectionRowCount, { cohort = 'published' } = {}) {
   const base = { slug: source.slug, source_type: source.source_type, eligible: false, reason: '' };
-  if (source.status !== 'published') return { ...base, reason: 'not published' };
+  if (source.status !== cohort) return { ...base, reason: `not in cohort '${cohort}' (status=${source.status})` };
   if (!manifestEntry) return { ...base, reason: 'no manifest entry — cannot certify' };
   if (manifestEntry.quarantine?.trim()) return { ...base, reason: 'manifest quarantine' };
   const fp = manifestEntry.backfill?.forbidden_provenance;
@@ -75,13 +82,13 @@ export function countForbiddenSectionRows(sectionRows) {
  *   found in the rows that happened to come back — so a truncated scan makes EVERY work
  *   ineligible rather than silently certifying on a partial read.
  */
-export function buildExcerptReport(sources, sectionScan, manifest) {
+export function buildExcerptReport(sources, sectionScan, manifest, { cohort = 'published' } = {}) {
   if (!sectionScan || typeof sectionScan.truncated !== 'boolean' || !Array.isArray(sectionScan.rows)) {
     throw new Error('buildExcerptReport: sectionScan must be { rows: [], truncated: boolean } — a caller that will not say whether it read every row cannot be certified');
   }
   const forbiddenSectionCounts = countForbiddenSectionRows(sectionScan.rows);
   const eligibility = sources.map((s) => {
-    const verdict = excerptEligibility(s, manifest.get(s.slug), forbiddenSectionCounts.get(s.slug) ?? 0);
+    const verdict = excerptEligibility(s, manifest.get(s.slug), forbiddenSectionCounts.get(s.slug) ?? 0, { cohort });
     if (sectionScan.truncated) {
       return { ...verdict, eligible: false, reason: `section source_url scan truncated at its LIMIT — cannot certify (was: ${verdict.reason})` };
     }
@@ -92,9 +99,9 @@ export function buildExcerptReport(sources, sectionScan, manifest) {
   const truncNote = sectionScan.truncated ? ' — SECTION SCAN TRUNCATED, nothing certified' : '';
   const header =
     sampleSlugs.length > 0
-      ? `excerpt sample: ${sampleSlugs.length} manifest-eligible published work(s) of ${eligibleCount} eligible (${sources.length} published total) — quarantine/skip/forbidden-domain/forbidden section source_url excluded; section body not inspected`
-      : `excerpt sample: none — ${sources.length} published work(s) checked; none manifest-eligible (body not inspected)${truncNote}`;
-  return { eligibility, sampleSlugs, header, eligibleCount, scanTruncated: sectionScan.truncated };
+      ? `excerpt sample [cohort=${cohort}]: ${sampleSlugs.length} manifest-eligible work(s) of ${eligibleCount} eligible (${sources.length} in cohort '${cohort}' total) — quarantine/skip/forbidden-domain/forbidden section source_url excluded; section body not inspected`
+      : `excerpt sample [cohort=${cohort}]: none — ${sources.length} work(s) in cohort '${cohort}' checked; none manifest-eligible (body not inspected)${truncNote}`;
+  return { eligibility, sampleSlugs, header, eligibleCount, cohort, scanTruncated: sectionScan.truncated };
 }
 
 /** Format one excerpt row — identical bytes for terminal and committed log. */

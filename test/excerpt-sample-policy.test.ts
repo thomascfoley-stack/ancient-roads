@@ -17,6 +17,7 @@ import {
   loadManifestById,
   renderExcerptLines,
 } from '../scripts/lib/excerpt-sample-policy.mjs';
+import { renderReportText } from '../scripts/lib/unit-ordinal-instrument.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CLEAN_SCAN = { rows: [], truncated: false };
@@ -137,7 +138,27 @@ describe('one excerpt line formatter (Tranche 0.2)', () => {
     const cli = readFileSync(path.join(ROOT, 'scripts/unit-ordinal-instrument.mjs'), 'utf8');
     expect(cli).not.toMatch(/function\s+formatExcerptLine/);
     expect(cli).toMatch(/import\s*\{[^}]*renderExcerptLines[^}]*\}\s*from\s*'\.\/lib\/excerpt-sample-policy\.mjs'/);
-    // Both write paths — the terminal `say` loop and the --out file body.
-    expect(cli.match(/renderExcerptLines\(/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
+    // Both write paths reach the shared formatter: the terminal `say` loop calls it
+    // directly, and the --out body is rendered by renderReportText, which is handed the
+    // same function rather than being allowed to format rows itself.
+    expect(cli, 'terminal path').toMatch(/for \(const line of renderExcerptLines\(/);
+    expect(cli, '--out path').toMatch(/renderReportText\(report,\s*renderExcerptLines\)/);
+  });
+
+  it('the committed report body is built from the shared formatter', () => {
+    // Behavioural companion to the static check above: change formatExcerptLine and this
+    // moves, because the bytes below came out of it.
+    const row = { unit_ordinal: 2, ordinal: 5, heading: 'Of Faith' };
+    const body = renderReportText(
+      {
+        cohort: 'staged',
+        ts: '2026-07-30T18:00:00.000Z',
+        ok: true,
+        excerpts: { 'john-gill': [row] },
+      },
+      renderExcerptLines,
+    );
+    expect(body).toContain(formatExcerptLine(row));
+    expect(body).toContain('u2.5\tOf Faith');
   });
 });

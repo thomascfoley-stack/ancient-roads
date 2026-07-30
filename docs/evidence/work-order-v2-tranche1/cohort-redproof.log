@@ -1,0 +1,67 @@
+=== Work Order v2 Tranche 1 red-proofs — 2026-07-30T18:42:13Z ===
+
+STATE 1 baseline: 18/18 green (see previous run)
+
+### STATE 2 — SEED 1: positive control re-pinned to 'published' in measureUnitOrdinalForCohort (real product code)
+   × an empty cohort ABORTS, naming the cohort > the abort names the cohort that was empty, not a generic message 3ms
+     → expected true to be false // Object.is equality
+   × the positive control asserts THIS cohort, not published > a non-empty staged cohort passes its control even with zero published works 0ms
+     → expected +0 to be 7 // Object.is equality
+   × the positive control asserts THIS cohort, not published > binds the cohort as a parameter to the control query — not interpolated 1ms
+     → expected [ 'published' ] to deeply equal [ 'staged' ]
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+AssertionError: expected true to be false // Object.is equality
+AssertionError: expected +0 to be 7 // Object.is equality
+AssertionError: expected [ 'published' ] to deeply equal [ 'staged' ]
+      Tests  3 failed | 15 passed (18)
+
+### STATE 3 — SEED 1 REVERTED
+
+### STATE 2 — SEED 2: empty cohort returns ok:true with no error instead of aborting (real product code)
+   × an empty cohort ABORTS, naming the cohort > does not report a clean run over nothing 3ms
+     → expected true to be false // Object.is equality
+   × an empty cohort ABORTS, naming the cohort > the abort names the cohort that was empty, not a generic message 0ms
+     → expected true to be false // Object.is equality
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  2 failed | 16 passed (18)
+
+### STATE 3 — SEED 2 REVERTED
+
+### STATE 2 — SEED 3: assertCohort no longer rejects an unrecognised cohort (real product code)
+   × an invalid cohort selector is REFUSED, not silently zero > refuses a typo 3ms
+     → expected [Function] to throw an error
+   × an invalid cohort selector is REFUSED, not silently zero > names the valid cohorts in the refusal, so the operator can fix it 0ms
+     → expected [Function] to throw an error
+   × an invalid cohort selector is REFUSED, not silently zero > refuses BEFORE any query is issued 2ms
+     → promise resolved "{ ok: false, …(6) }" instead of rejecting
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  3 failed | 15 passed (18)
+
+### STATE 3/4 — SEED 3 REVERTED, green:
+ ✓ test/unit-ordinal-cohort.test.ts (18 tests) 4ms
+      Tests  18 passed (18)
+
+### NOT DONE — the live-on-dev legs
+
+The work order asks for these three to be "watched red/green ON DEV", and for a run over the
+staged AND published cohorts on dev. That was NOT done, and nothing here should be read as if
+it were. This working tree has NO dev credentials: there is no .env.local (root or web/), no
+NEON_API_KEY, and no DATABASE_URL. The instrument's only credential path is NEON_API_KEY ->
+neonctl mint (there is deliberately no DATABASE_URL fallback), so the CLI cannot be run at all
+from here, against dev or anything else.
+
+What IS discharged above is the same three properties driven through the real product code with
+a pg-shaped fake client, plus report distinguishability proved on the rendering function
+directly. What is NOT discharged is that the instrument behaves this way against a live
+Postgres: the fake answers queries by regex, so it cannot catch a malformed statement that
+Postgres would reject. The cohort statements are exercised against a real server nowhere in
+this branch.
+
+TO DISCHARGE (needs dev credentials):
+  NEON_API_KEY=<key> node scripts/unit-ordinal-instrument.mjs \
+    --read-only --target=ep-tiny-hat --cohort=staged \
+    --out=docs/evidence/work-order-v2-tranche1/dev-staged.log
+  NEON_API_KEY=<key> node scripts/unit-ordinal-instrument.mjs \
+    --read-only --target=ep-tiny-hat --cohort=published \
+    --out=docs/evidence/work-order-v2-tranche1/dev-published.log
+  diff the two: they must differ in body, not only in filename.

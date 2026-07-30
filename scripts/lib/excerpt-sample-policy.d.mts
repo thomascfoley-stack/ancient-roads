@@ -38,6 +38,7 @@ export declare function excerptEligibility(
   source: PublishedSourceRow,
   manifestEntry: ManifestEntry | undefined,
   forbiddenSectionRowCount: number,
+  opts?: { cohort?: string },
 ): ExcerptEligibility;
 
 export declare function pickExcerptSlugs(rows: ExcerptEligibility[], limit?: number): string[];
@@ -50,11 +51,13 @@ export declare function buildExcerptReport(
   sources: PublishedSourceRow[],
   sectionScan: SectionScan,
   manifest: Map<string, ManifestEntry>,
+  opts?: { cohort?: string },
 ): {
   eligibility: ExcerptEligibility[];
   sampleSlugs: string[];
   header: string;
   eligibleCount: number;
+  cohort: string;
   scanTruncated: boolean;
 };
 
