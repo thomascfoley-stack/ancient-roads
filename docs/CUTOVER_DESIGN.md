@@ -258,15 +258,16 @@ at the moment an operator most needs a trustworthy green. A missing declaration 
 
 ## PROTECTED BRANCHES — may not delete without owner ruling
 
-The following Neon branch ids are **rollback points** and must not be deleted, renamed for reuse, or
-bulk-pruned by pattern without an explicit owner ruling recorded in [`docs/DECISIONS.md`](DECISIONS.md).
+The authoritative registry is [`docs/PROTECTED_BRANCHES.json`](PROTECTED_BRANCHES.json). Every rollback
+point is listed there with `{id, name, created, phase, rollback_for}`. No Neon branch in that file may be
+deleted, renamed for reuse, or bulk-pruned by pattern without an explicit owner ruling in
+[`docs/DECISIONS.md`](DECISIONS.md).
 
-| branch id | name | created | purpose |
-|---|---|---|---|
-| `br-late-recipe-atxl68sh` | `pre-cutover-ep-odd-fog-atnykudm-20260729164220` | 2026-07-29 Phase 2 prod cutover | pre-cutover prod snapshot — every rollback string in `scripts/cutover.mjs` names it |
+Enforcement: `scripts/lib/neon-branch-guard.mjs` reads the registry and refuses deletion of registered
+ids and of names matching `pre-cutover-ep-odd-fog-*`. Any future Neon branch-delete script must call that
+guard before acting. `web/test/invariants/protected-branches-exist.test.ts` asserts every registered id
+still exists when `NEON_API_KEY` is available.
 
-Enforcement: `scripts/lib/neon-branch-guard.mjs` refuses deletion of protected ids and of names matching
-`pre-cutover-ep-odd-fog-*`. Any future Neon branch-delete script must call that guard before acting.
 Measured 2026-07-29: **no repo script deletes Neon branches by pattern** — only `neonctl branches create`
 in `scripts/cutover.mjs` (snapshot creation). Deletion refusal is red-proved in
-`docs/evidence/hygiene-2026-07-29/protected-branch-refusal.log`.
+`docs/evidence/work-order-v2-stage1/1.1-protected-branch-refusal.log`.

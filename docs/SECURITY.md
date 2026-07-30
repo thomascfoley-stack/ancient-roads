@@ -69,19 +69,31 @@ This is a pre-launch app on a **beta** auth SDK; the plan is to leave it before 
 4. **Gate:** do not remove SEC-1 from this file (or open the app publicly) until GHSA-g38m
    is fixed or mitigated and the remaining HIGH items are assessed.
 
-### CI handling
-The 9 HIGH/CRITICAL GHSAs above are in `package.json` → `pnpm.auditConfig.ignoreGhsas`
-so `npm run audit` / CI is not permanently red on an unfixable transitive set. This
-**unblocks CI; it does not accept the risk.** SEC-1 remains the tracked blocker. Remove
-the relevant GHSAs from the ignore list the moment the dependency fix lands, so any
-regression re-reds the gate.
+### CI handling — enumerated acceptable-red set (work-order v2 Stage 1.4)
+`scripts/audit.sh` passes `--expect-red` to `deps-audit.mjs` with an **explicit GHSA list**.
+The observed un-ignored high/critical set must match **exactly** — an extra advisory or a
+disappearance from the declared set both fail the gate. This replaces the old rail of
+"the only acceptable red is deps" with a reviewable enumeration.
 
-### GHSA-qq9h-g4jm-xgf3 — accepted-red (ADR-038, owner 2026-07-30)
-**Status:** OPEN — same class as GHSA-g38m (pre-account hijacking on magic-link / email-OTP).
-**NOT** in `ignoreGhsas`. CI `deps` gate is **expected to be red** on this advisory until
-SEC-1 (ADR-003) closes. A green `deps` gate before then means someone silenced it.
-Pin: `@neondatabase/auth@0.4.2-beta` → `better-auth@1.4.18`; override to ≥1.6.22 breaks
-the build (TS2322, measured 2026-07-29). Closes with SEC-1, not separately.
+| GHSA | Root | In ignoreGhsas? | Status | Closes when |
+|---|---|---|---|---|
+| GHSA-g38m-r43w-p2q7 | better-auth account takeover | yes (CI grouping) | OPEN — SEC-1 launch blocker | SEC-1 / auth migration |
+| GHSA-86j7-9j95-vpqj | better-auth XSS | yes | assess | SEC-1 |
+| GHSA-9h47-pqcx-hjr4 | better-auth crypto defaults | yes | assess | SEC-1 |
+| GHSA-392p-2q2v-4372 | better-auth OAuth refresh | yes | assess | SEC-1 |
+| GHSA-pw9m-5jxm-xr6h | oauth provider plugin | yes | not in path | n/a |
+| GHSA-7w99-5wm4-3g79 | oauth provider | yes | not in path | n/a |
+| GHSA-fmh4-wcc4-5jm3 | org invitation plugin | yes | not enabled | n/a |
+| GHSA-5xrq-8626-4rwp | vitest/vite dev tooling | yes | dev-only | n/a |
+| GHSA-fx2h-pf6j-xcff | vitest/vite dev tooling | yes | dev-only | n/a |
+| **GHSA-qq9h-g4jm-xgf3** | better-auth magic-link hijack | **no** | **accepted-red (ADR-038)** | SEC-1 |
+| esbuild / postcss / vite (remaining) | dev/build | yes | dev-only | n/a |
+
+**Declared `--expect-red` at Stage 1 exit:** `GHSA-qq9h-g4jm-xgf3` only.
+
+The 9 better-auth + dev-tooling GHSAs in `ignoreGhsas` unblock CI on the unfixable transitive
+set; that **does not accept SEC-1 risk.** Remove each GHSA from the ignore list the moment its
+dependency fix lands.
 
 ### Resolved framework/tooling CVEs (2026-07-24) — FIXED, not ignored
 Six HIGH advisories (unrelated to the SEC-1 better-auth cluster) were CVE-disclosure drift

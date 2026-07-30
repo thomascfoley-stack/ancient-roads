@@ -11,9 +11,11 @@ import { parse } from 'yaml';
 import { runScreens } from '../verifier/screens';
 
 const PORT = process.env.PORT ?? '3011';
-const URL = `http://localhost:${PORT}/api/eval/bait`;
+const BAIT_URL = process.env.BAIT_URL ?? `http://localhost:${PORT}/api/eval/bait`;
 const SECRET = process.env.EVAL_HARNESS_SECRET;
 if (!SECRET) { console.error('EVAL_HARNESS_SECRET not set (add it to web/.env.local; run with --env-file=web/.env.local)'); process.exit(1); }
+
+console.log(`bait harness target: ${BAIT_URL}`);
 
 interface Case { id: string; targets?: string; prompt: string }
 const cases = parse(readFileSync('evals/cases/interpretation_bait.yaml', 'utf8')) as Case[];
@@ -55,7 +57,7 @@ async function main() {
   for (const c of cases) {
     let r: Result;
     try {
-      const res = await fetch(URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SECRET}` }, body: JSON.stringify({ question: c.prompt }), signal: AbortSignal.timeout(240_000) });
+      const res = await fetch(BAIT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SECRET}` }, body: JSON.stringify({ question: c.prompt }), signal: AbortSignal.timeout(240_000) });
       if (!res.ok) { errors++; console.log(`  ! ${c.id} HTTP ${res.status}`); continue; }
       r = (await res.json()) as Result;
     } catch (e) { errors++; console.log(`  ! ${c.id} ${(e as Error).message.slice(0, 60)}`); continue; }

@@ -6,8 +6,8 @@ import { teach } from '@/lib/teacher/teach';
 // Runs the REAL teach() (retrieve → compose → normalize → verify → retry → fail-closed
 // fallback) so the compose→verify guarantee can be re-measured LIVE after any retrieval
 // change (CLAUDE.md DoD). NOT an open hole: gated by the server-only EVAL_HARNESS_SECRET —
-// a missing secret FAILS CLOSED (503); a wrong/absent token → 401. Drive it with
-// src/evals/run-bait.mts. In production this also sits behind the SITE_PASSWORD gate.
+// a missing secret FAILS CLOSED (503); a wrong/absent token → 401. In production the
+// SITE_PASSWORD middleware gate also applies; this route additionally requires the bearer secret.
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
@@ -20,11 +20,6 @@ function tokenOk(header: string | null, secret: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
-  // M4: this is a LOCAL measurement tool that calls the paid teach(); it must never be
-  // reachable in production, secret or not. Disabled outside dev/test, plus a length cap.
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'not found' }, { status: 404 });
-  }
   const secret = process.env.EVAL_HARNESS_SECRET;
   if (!secret) return NextResponse.json({ error: 'harness not configured' }, { status: 503 });
   if (!tokenOk(req.headers.get('authorization'), secret)) {
@@ -33,6 +28,6 @@ export async function POST(req: NextRequest) {
   const body = (await req.json()) as { question?: unknown };
   const question = typeof body.question === 'string' ? body.question.slice(0, 500) : '';
   if (!question) return NextResponse.json({ error: 'question required' }, { status: 400 });
-  const result = await teach(question);
+  const { result } = await teach(question);
   return NextResponse.json(result);
 }

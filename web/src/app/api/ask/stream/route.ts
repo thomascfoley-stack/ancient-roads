@@ -45,9 +45,15 @@ export async function POST(req: NextRequest) {
       };
       const startedAt = Date.now();
       try {
-        const result = await teach(question, { onEvent: write });
-        // Surfaces the production fallback rate (composed vs fallback vs empty).
-        logEvent('ask_outcome', { kind: result.kind, ms: Date.now() - startedAt });
+        const { result, meta } = await teach(question, { onEvent: write });
+        logEvent('ask_outcome', {
+          kind: result.kind,
+          ms: Date.now() - startedAt,
+          attempts: meta.attempts,
+          ...(meta.firstCheck ? { firstCheck: meta.firstCheck } : {}),
+          voices: meta.voices,
+          traditions: meta.traditions,
+        });
       } catch (e) {
         console.error('teacher stream error:', (e as Error).message);
         logEvent('error', { where: 'api/ask/stream', message: (e as Error).message });

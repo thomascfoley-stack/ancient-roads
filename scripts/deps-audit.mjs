@@ -9,13 +9,31 @@
  * (package.json → pnpm.auditConfig.ignoreGhsas, single source of truth). A real advisory fails
  * the build again; the ignore list is documented in docs/SECURITY.md.
  *
- * Run: node scripts/deps-audit.mjs   (wired into scripts/audit.sh)
+ * --expect-red GHSA-a,GHSA-b: enumerated acceptable-red set (work-order v2 Stage 1.4). The
+ * observed un-ignored high/critical GHSA set must match EXACTLY — an extra advisory or a
+ * disappearance from the declared set both fail the gate.
+ *
+ * Run: node scripts/deps-audit.mjs [--expect-red GHSA-...]
+ *      (wired into scripts/audit.sh)
  */
 import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { selectFindings } from './deps-audit-core.mjs';
 
 const BULK = 'https://registry.npmjs.org/-/npm/v1/security/advisories/bulk';
+
+function parseExpectRed(argv) {
+  const i = argv.indexOf('--expect-red');
+  if (i === -1) return null;
+  const val = argv[i + 1];
+  if (!val || val.startsWith('-')) {
+    console.error('\n\x1b[31m✗ deps-audit: --expect-red requires a comma-separated GHSA list\x1b[0m');
+    process.exit(2);
+  }
+  return new Set(val.split(',').map((s) => s.trim()).filter(Boolean));
+}
+
+const expectRed = parseExpectRed(process.argv);
 
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const IGNORE = new Set(pkg.pnpm?.auditConfig?.ignoreGhsas ?? []);
@@ -63,12 +81,44 @@ for (let i = 0; i < entries.length; i += BATCH) {
   findings.push(...selectFindings(data, IGNORE)); // pure decision — unit-tested in deps-audit-core.test.ts
 }
 
+const observed = [...new Set(findings.map((f) => f.ghsa))].sort();
 const counts = { total: pkgs.size, ignored: IGNORE.size };
+
+function compareExpectRed(observedGhsas, declared) {
+  const obs = new Set(observedGhsas);
+  const extra = [...obs].filter((g) => !declared.has(g));
+  const missing = [...declared].filter((g) => !obs.has(g));
+  if (extra.length === 0 && missing.length === 0) return true;
+  if (extra.length > 0) {
+    console.error(`\n\x1b[31m✗ deps-audit: observed red set has EXTRA advisory(ies) not in --expect-red:\x1b[0m`);
+    for (const g of extra) {
+      const f = findings.find((x) => x.ghsa === g);
+      console.error(`  ${g}${f ? ` — ${f.name} [${f.severity}]` : ''}`);
+    }
+  }
+  if (missing.length > 0) {
+    console.error(`\n\x1b[31m✗ deps-audit: declared --expect-red id(s) no longer observed (set changed):\x1b[0m`);
+    for (const g of missing) console.error(`  ${g}`);
+  }
+  console.error('\nUpdate --expect-red in scripts/audit.sh and docs/SECURITY.md together, with owner approval.');
+  return false;
+}
+
+if (expectRed) {
+  if (compareExpectRed(observed, expectRed)) {
+    console.log(
+      `✓ deps-audit: observed red set matches --expect-red exactly (${observed.length} GHSA(s): ${observed.join(', ') || '(none)'}).`,
+    );
+    process.exit(0);
+  }
+  process.exit(1);
+}
+
 if (findings.length === 0) {
   console.log(`✓ deps-audit: no un-ignored high/critical advisories across ${counts.total} prod packages (bulk endpoint; ${counts.ignored} ignored per SECURITY.md).`);
   process.exit(0);
 }
 console.error(`\n\x1b[31m✗ deps-audit: ${findings.length} un-ignored high/critical advisory(ies):\x1b[0m`);
 for (const f of findings) console.error(`  [${f.severity}] ${f.name} — ${f.ghsa} — ${f.title} (${f.range})`);
-console.error(`\nFix the dependency, or (if lawful + accepted) add the GHSA id to package.json → pnpm.auditConfig.ignoreGhsas with a note in docs/SECURITY.md.`);
+console.error(`\nFix the dependency, or (if lawful + accepted) add the GHSA id to package.json → pnpm.auditConfig.ignoreGhsas with a note in docs/SECURITY.md, or declare it in scripts/audit.sh --expect-red.`);
 process.exit(1);

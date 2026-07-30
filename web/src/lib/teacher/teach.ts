@@ -10,6 +10,13 @@ import { formatVerseId } from '../../bible/verse-id';
 import { buildCorpusLookup } from './corpus';
 import { normalizeContract } from './normalize-contract';
 import { buildSystemPrompt, buildUserPrompt } from './prompt';
+import {
+  MAX_RETRIES,
+  TEACH_MAX_DURATION_MS,
+  composeTimeoutMs,
+} from './teach-budget';
+
+export { MAX_RETRIES, TEACH_MAX_DURATION_MS, composeTimeoutMs, teachBudgetFits } from './teach-budget';
 
 // Register-lane payloads (song_verse, sermons, theology) ride alongside the
 // exegetical answer — labeled, retrieve-and-quote, never composed/floored.
@@ -18,6 +25,16 @@ export type TeacherResult =
   | ({ kind: 'composed'; response: TeacherResponse; retrieval: RetrievedChunk[] } & LanePayloads)
   | ({ kind: 'fallback'; retrieval: RetrievedChunk[]; violations: Violation[] } & LanePayloads)
   | { kind: 'empty'; reason: string };
+
+/** Observability fields for ask_outcome — no question text, no secrets. */
+export type TeachMeta = {
+  attempts: number;
+  firstCheck?: string;
+  voices: number;
+  traditions: number;
+};
+
+export type TeachRun = { result: TeacherResult; meta: TeachMeta };
 
 // A safe-to-stream preview of a retrieved source. This is CORPUS text (never
 // model output), so it can be shown to the user before/while composing.
@@ -41,35 +58,26 @@ export type TeacherEvent =
   | { stage: 'rejected'; attempt: number }
   | { stage: 'done'; result: TeacherResult };
 
-// Two retries. Diagnostics traced the residual fallbacks to verbatim-quote
-// drift on long flowing-prose sources (the model quotes an opening sentence,
-// then stitches on a non-adjacent one). The retry carries the specific
-// violations back to the model, so a second retry meaningfully lifts recovery
-// on exactly that class; combined with the snap-to-source repair in
-// normalize-contract, most drift is caught before the last attempt. Compose is
-// ~4–5s, so a worst-case 3 attempts (~15s) is an acceptable tail for the
-// accuracy gate. Still fail-closed: a failed final attempt lands in fallback.
-const MAX_RETRIES = 2;
-
-// Retrieve a pool (for the source preview + diversity headroom) and compose over
-// the top few voices. Latency is output-bound (the model emits ~750 tokens
-// whether it's shown 3 sources or 6), so a smaller compose set does NOT buy
-// speed — it only trades away the model's room to skip an off-topic
-// high-ranked retrieval. 5 keeps the prompt lean while leaving that headroom.
 const RETRIEVE_K = 6;
 const COMPOSE_VOICES = 5;
 
-// Pick the top N voices by score, but guarantee ≥2 traditions are present when
-// the pool offers them, so the verifier's diversity floor stays satisfiable.
 function selectVoices(pool: RetrievedChunk[], n: number): RetrievedChunk[] {
   if (pool.length <= n) return pool;
-  const top = pool.slice(0, n); // pool is score-ordered
+  const top = pool.slice(0, n);
   const traditionsInTop = new Set(top.map((r) => r.metadata.tradition ?? 'unknown'));
   if (traditionsInTop.size >= 2) return top;
   const soleTradition = [...traditionsInTop][0];
   const other = pool.find((r) => (r.metadata.tradition ?? 'unknown') !== soleTradition);
-  if (!other) return top; // pool is single-tradition; nothing to diversify with
+  if (!other) return top;
   return [...top.slice(0, n - 1), other];
+}
+
+function firstViolationCheck(violations: Violation[]): string | undefined {
+  return violations[0]?.check;
+}
+
+function deadlineExceeded(startedAt: number, maxDurationMs: number): boolean {
+  return Date.now() - startedAt >= maxDurationMs - 2_000; // 2s slack for fallback response
 }
 
 // Full teacher pipeline: retrieve → compose → verify → retry-with-feedback →
@@ -79,23 +87,22 @@ function selectVoices(pool: RetrievedChunk[], n: number): RetrievedChunk[] {
 // wait, then the verified result on `done`.
 export async function teach(
   query: string,
-  opts: { onEvent?: (e: TeacherEvent) => void } = {},
-): Promise<TeacherResult> {
+  opts: { onEvent?: (e: TeacherEvent) => void; maxDurationMs?: number } = {},
+): Promise<TeachRun> {
   const emit = opts.onEvent ?? (() => {});
-  const finish = (result: TeacherResult): TeacherResult => {
+  const maxDurationMs = opts.maxDurationMs ?? TEACH_MAX_DURATION_MS;
+  const composeMs = composeTimeoutMs(maxDurationMs);
+  const startedAt = Date.now();
+  let attempts = 0;
+  let firstCheck: string | undefined;
+
+  const finish = (result: TeacherResult, meta: Omit<TeachMeta, 'attempts' | 'firstCheck'>): TeachRun => {
     emit({ stage: 'done', result });
-    return result;
+    return { result, meta: { attempts, firstCheck, ...meta } };
   };
 
   emit({ stage: 'retrieving' });
   const queryVec = await embedQuery(query);
-  // The song/verse register rides ALONGSIDE the exegetical pipeline: verbatim
-  // corpus text, its own pool, surfaced as a separate labeled payload — never
-  // composed over, never counted toward the ≥2-voices floor (CONTENT_GO_LIVE
-  // decision 2). Its failure returns [] and must never break the answer.
-  // Sermon + theology ride the SAME alongside pattern as song/verse — their own
-  // pools, labeled payloads, never composed over, never in the ≥2-voices floor
-  // (sermon-lane slice 2026-07-18). All three lanes fail-soft to [].
   const intent = resolveIntent(query);
   const ranges = intent.inject;
   const songVersePromise = retrieveSongVerse(queryVec, ranges);
@@ -112,17 +119,14 @@ export async function teach(
     return out;
   };
   if (retrieval.length === 0) {
-    return finish({ kind: 'empty', reason: 'No relevant sources found for this question.' });
+    return finish({ kind: 'empty', reason: 'No relevant sources found for this question.' }, { voices: 0, traditions: 0 });
   }
 
-  // Coverage floor (B2): the query confidently NAMES a passage but nothing retrieved
-  // is on it. retrieveCommentary has no relevance floor, so a book with zero rows (e.g.
-  // Song of Solomon) returns off-passage chunks scoring ~0.005 — composing over them
-  // presents New-Testament commentary as an answer about the asked passage, caught today
-  // only incidentally by the verifier. Report the gap honestly instead. Only fires on
-  // the high-confidence `floor` (corroborated refs), never on soft-matched topical idioms.
   if (!hasPassageCoverage(retrieval.map((r) => r.metadata), intent.floor)) {
-    return finish({ kind: 'empty', reason: `Our corpus has no commentary on ${formatVerseId(intent.floor[0]!.start)} yet.` });
+    return finish(
+      { kind: 'empty', reason: `Our corpus has no commentary on ${formatVerseId(intent.floor[0]!.start)} yet.` },
+      { voices: 0, traditions: 0 },
+    );
   }
 
   const traditions = new Set(retrieval.map((r) => r.metadata.tradition ?? 'unknown'));
@@ -139,19 +143,17 @@ export async function teach(
     })),
   });
 
-  // Compose over the top few voices; the verifier and prompt see exactly this set.
   const voices = selectVoices(retrieval, COMPOSE_VOICES);
   const voiceTraditions = new Set(voices.map((r) => r.metadata.tradition ?? 'unknown'));
+  const metaBase = { voices: voices.length, traditions: voiceTraditions.size };
   const systemPrompt = buildSystemPrompt();
   const userPrompt = buildUserPrompt(query, voices);
   const corpusLookup = buildCorpusLookup(voices);
-  // Authoritative attribution per cited section_id (1-based), used to backfill
-  // what the model typed so a correct citation can't be rejected over a mislabel.
   const sectionAttributions = voices.map((r) => ({
     author: r.metadata.author,
     work: r.metadata.sourceTitle,
     tradition: r.metadata.tradition ?? 'unknown',
-    body: r.content, // enables snap-to-source quote repair in normalizeContract
+    body: r.content,
   }));
   const retrievalContext = {
     sectionIds: voices.map((_, i) => i + 1),
@@ -161,6 +163,14 @@ export async function teach(
   let lastViolations: Violation[] = [];
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (deadlineExceeded(startedAt, maxDurationMs)) {
+      lastViolations = lastViolations.length > 0
+        ? lastViolations
+        : [{ check: 'deadline', message: 'Compose retry budget exhausted before maxDuration' }];
+      if (!firstCheck) firstCheck = firstViolationCheck(lastViolations);
+      break;
+    }
+
     if (attempt > 0) emit({ stage: 'rejected', attempt: attempt - 1 });
     emit({ stage: 'composing', attempt });
 
@@ -171,36 +181,33 @@ export async function teach(
             .map((v) => `- [${v.check}] ${v.message}`)
             .join('\n')}\n\nFix these violations and respond again with valid JSON.`;
 
+    attempts++;
     let raw: string;
     try {
-      raw = await compose(systemPrompt, prompt);
+      raw = await compose(systemPrompt, prompt, { timeoutMs: composeMs });
     } catch (e) {
       lastViolations = [{ check: 'llm_error', message: (e as Error).message }];
+      if (!firstCheck) firstCheck = firstViolationCheck(lastViolations);
       continue;
     }
 
     let parsed: unknown;
     try {
-      // Coerce quoted numeric IDs and backfill attribution from the cited
-      // section BEFORE verifying. This is lossless normalization, not a relaxed
-      // gate: the verifier below still enforces verbatim quotes, valid anchors/
-      // passages, screens, and diversity, and still fails closed.
       parsed = normalizeContract(JSON.parse(raw), sectionAttributions);
     } catch {
       lastViolations = [{ check: 'json_parse', message: 'Response is not valid JSON' }];
+      if (!firstCheck) firstCheck = firstViolationCheck(lastViolations);
       continue;
     }
 
-    // The verifier runs server-side here, BEFORE any `done` event is emitted.
     emit({ stage: 'verifying', attempt });
     const result = await verifyV1(parsed, corpusLookup, retrievalContext);
     if (result.ok) {
-      // Return the normalized object: its attribution is the authoritative
-      // source attribution the verifier just checked the quote against.
-      return finish(withRegister({ kind: 'composed', response: parsed as TeacherResponse, retrieval }));
+      return finish(withRegister({ kind: 'composed', response: parsed as TeacherResponse, retrieval }), metaBase);
     }
     lastViolations = result.violations;
+    if (!firstCheck) firstCheck = firstViolationCheck(lastViolations);
   }
 
-  return finish(withRegister({ kind: 'fallback', retrieval, violations: lastViolations }));
+  return finish(withRegister({ kind: 'fallback', retrieval, violations: lastViolations }), metaBase);
 }

@@ -43,7 +43,12 @@ export async function embedQuery(text: string): Promise<number[]> {
 export const composeModel = COMPOSE_MODEL;
 
 // One composition call. Returns the model's raw text (JSON, fences/think stripped).
-export async function compose(systemPrompt: string, userPrompt: string): Promise<string> {
+export async function compose(
+  systemPrompt: string,
+  userPrompt: string,
+  opts: { timeoutMs?: number } = {},
+): Promise<string> {
+  const timeoutMs = opts.timeoutMs ?? 120_000;
   const res = await fetch(`${BASE_URL}/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey()}` },
@@ -59,7 +64,7 @@ export async function compose(systemPrompt: string, userPrompt: string): Promise
       // Qwen3 thinking mode wastes tokens/latency; disable it deterministically.
       chat_template_kwargs: { enable_thinking: false },
     }),
-    signal: AbortSignal.timeout(120_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) throw new Error(`Compose request failed: ${res.status} ${await res.text()}`);
   const json = (await res.json()) as { choices: { message: { content: string } }[] };

@@ -38,6 +38,11 @@ export function announceSkip(
     `${check} DID NOT RUN — missing ${missing.join(' and ')}. ` +
     `It covers: ${covers}. A green suite without it is not evidence that any of those hold.`;
 
+  // db-invariants with secrets configured must FAIL, not skip green (work-order v2 Stage 1.2).
+  if (process.env.REQUIRE_SECRETS === '1') {
+    throw new Error(`REQUIRE_SECRETS: ${msg}`);
+  }
+
   if (process.env.GITHUB_ACTIONS === 'true') {
     // One line, no newlines — GitHub truncates an annotation at the first newline.
     console.warn(`::warning title=${check} NOT RUN::${msg}`);
