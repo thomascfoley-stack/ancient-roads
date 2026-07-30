@@ -91,11 +91,12 @@ src/evals/run.ts        knip.json  Remove redundant entry pattern
  RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git
       Coverage enabled with v8
 
+ ✓ test/invariants/ci-claims-match-reality.test.ts (4 tests) 6ms
+ ✓ test/resource-textmatch-calibration.test.ts (9 tests) 6ms
  ✓ test/routing-orchestration.test.ts (21 tests) 5ms
- ✓ test/invariants/ci-claims-match-reality.test.ts (4 tests) 8ms
- ✓ test/license-manifest.test.ts (20 tests) 4ms
- ✓ test/resource-textmatch-calibration.test.ts (9 tests) 10ms
- ✓ test/normalize-contract.test.ts (10 tests) 5ms
+ ✓ test/license-manifest.test.ts (20 tests) 5ms
+ ✓ test/normalize-contract.test.ts (10 tests) 8ms
+ ✓ test/ref-parse.test.ts (39 tests) 7ms
 file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:109
     throw new Error(`REFUSING: ${host} is production or dev — this script corrupts its target`);
           ^
@@ -108,7 +109,6 @@ Error: REFUSING: ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech.invalid is prod
     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
 
 Node.js v24.5.0
- ✓ test/ref-parse.test.ts (39 tests) 11ms
 file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:109
     throw new Error(`REFUSING: ${host} is production or dev — this script corrupts its target`);
           ^
@@ -121,6 +121,8 @@ Error: REFUSING: ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech.invalid is pro
     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
 
 Node.js v24.5.0
+ ✓ test/verifier.test.ts (30 tests) 18ms
+ ✓ test/passages-anchor-grounding.test.ts (10 tests) 20ms
 file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:91
     throw new Error(
           ^
@@ -134,7 +136,30 @@ Error: STOP: label target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech.invali
     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
 
 Node.js v24.5.0
- ✓ test/verifier.test.ts (30 tests) 21ms
+stdout | test/rate-limit.test.ts > checkAskRateLimit > allows exactly at the per-minute cap (10), blocks the 11th
+{"evt":"rate_limit_hit","ts":"2026-07-30T07:21:26.267Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > blocks over the per-day cap (100)
+{"evt":"rate_limit_hit","ts":"2026-07-30T07:21:26.269Z","userId":"u1","cap":"day","count":101,"limit":100}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > FAILS OPEN (allows) when the limiter DB call throws
+{"evt":"rate_limit_fail_open","ts":"2026-07-30T07:21:26.269Z","userId":"u1","error":"db down"}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > H4: a minute-refused request does NOT touch the day bucket
+{"evt":"rate_limit_hit","ts":"2026-07-30T07:21:26.270Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks the 11th attempt in a minute (default cap 10)
+{"evt":"gate_rate_limit_hit","ts":"2026-07-30T07:21:26.271Z","ip":"1.2.3.4","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks a slow drip over the hourly cap (default 60)
+{"evt":"gate_rate_limit_hit","ts":"2026-07-30T07:21:26.271Z","ip":"1.2.3.4","cap":"hour","count":61,"limit":60}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > FAILS OPEN (allows) when the limiter DB call throws — password still required by the caller
+{"evt":"rate_limit_fail_open","ts":"2026-07-30T07:21:26.272Z","userId":"gate:1.2.3.4","error":"db down"}
+
+ ✓ test/invariants/user-data-invariant.test.ts (6 tests) 4ms
+ ✓ test/invariants/manifest-provenance.test.ts (3 tests) 4ms
+ ✓ test/rate-limit.test.ts (10 tests) 9ms
 file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:91
     throw new Error(
           ^
@@ -147,58 +172,33 @@ Error: STOP: slice target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech.invali
     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
 
 Node.js v24.5.0
- ✓ test/passages-anchor-grounding.test.ts (10 tests) 16ms
- ✓ test/invariants/user-data-invariant.test.ts (6 tests) 4ms
- ✓ test/invariants/manifest-provenance.test.ts (3 tests) 2ms
+ ✓ test/retrieval.contract.test.ts (6 tests) 13ms
 FAIL: shell DATABASE_URL points at ep-odd-fog-atnykudm — not on the audit allow-list (dev endpoints, localhost, or AUDIT_ALLOWED_ENDPOINT / SEED_TEST_ENDPOINT by exact id). Unset it before npm run audit — qa/vitest inherit shell env.
- ✓ test/retrieval.contract.test.ts (6 tests) 16ms
-stdout | test/rate-limit.test.ts > checkAskRateLimit > allows exactly at the per-minute cap (10), blocks the 11th
-{"evt":"rate_limit_hit","ts":"2026-07-30T06:27:40.353Z","userId":"u1","cap":"min","count":11,"limit":10}
-
-stdout | test/rate-limit.test.ts > checkAskRateLimit > blocks over the per-day cap (100)
-{"evt":"rate_limit_hit","ts":"2026-07-30T06:27:40.354Z","userId":"u1","cap":"day","count":101,"limit":100}
-
-stdout | test/rate-limit.test.ts > checkAskRateLimit > FAILS OPEN (allows) when the limiter DB call throws
-{"evt":"rate_limit_fail_open","ts":"2026-07-30T06:27:40.354Z","userId":"u1","error":"db down"}
-
-stdout | test/rate-limit.test.ts > checkAskRateLimit > H4: a minute-refused request does NOT touch the day bucket
-{"evt":"rate_limit_hit","ts":"2026-07-30T06:27:40.354Z","userId":"u1","cap":"min","count":11,"limit":10}
-
-stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks the 11th attempt in a minute (default cap 10)
-{"evt":"gate_rate_limit_hit","ts":"2026-07-30T06:27:40.356Z","ip":"1.2.3.4","cap":"min","count":11,"limit":10}
-
-stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks a slow drip over the hourly cap (default 60)
-{"evt":"gate_rate_limit_hit","ts":"2026-07-30T06:27:40.356Z","ip":"1.2.3.4","cap":"hour","count":61,"limit":60}
-
-stdout | test/rate-limit.test.ts > checkGateRateLimit > FAILS OPEN (allows) when the limiter DB call throws — password still required by the caller
-{"evt":"rate_limit_fail_open","ts":"2026-07-30T06:27:40.356Z","userId":"gate:1.2.3.4","error":"db down"}
-
- ✓ test/rate-limit.test.ts (10 tests) 6ms
+ ✓ test/passages-grounding.test.ts (4 tests) 6ms
+ ✓ test/resource-textmatch.test.ts (7 tests) 3ms
 FAIL: shell DATABASE_URL points at ep-fresh-fork-at000000 — not on the audit allow-list (dev endpoints, localhost, or AUDIT_ALLOWED_ENDPOINT / SEED_TEST_ENDPOINT by exact id). Unset it before npm run audit — qa/vitest inherit shell env.
- ✓ test/invariants/target-guard.test.ts (20 tests) 421ms
- ✓ test/passages-grounding.test.ts (4 tests) 5ms
- ✓ test/normalize.test.ts (12 tests) 6ms
- ✓ test/resource-textmatch.test.ts (7 tests) 4ms
- ✓ test/teacher.test.ts (6 tests) 11ms
- ✓ test/reference-intent.test.ts (8 tests) 7ms
- ✓ test/gate-decision.test.ts (7 tests) 3ms
- ✓ test/heldout-frozen-hash.test.ts (2 tests) 4ms
- ✓ test/api-error.test.ts (6 tests) 19ms
- ✓ test/deps-audit-core.test.ts (5 tests) 5ms
+ ✓ test/teacher.test.ts (6 tests) 39ms
+ ✓ test/normalize.test.ts (12 tests) 8ms
+ ✓ test/invariants/target-guard.test.ts (20 tests) 471ms
+ ✓ test/reference-intent.test.ts (8 tests) 4ms
+ ✓ test/gate-decision.test.ts (7 tests) 7ms
+ ✓ test/deps-audit-expect-red.test.ts (6 tests) 30ms
+ ✓ test/api-error.test.ts (6 tests) 12ms
+ ✓ test/heldout-frozen-hash.test.ts (2 tests) 2ms
+ ✓ test/content-sanity.test.ts (7 tests) 4ms
+ ✓ test/deps-audit-core.test.ts (5 tests) 3ms
  ✓ test/web-core-sync.test.ts (7 tests) 5ms
- ✓ test/deps-audit-expect-red.test.ts (3 tests) 4ms
- ✓ test/content-sanity.test.ts (7 tests) 3ms
- ✓ test/observability.test.ts (2 tests) 7ms
+ ✓ test/observability.test.ts (2 tests) 8ms
  ↓ test/retrieval.integration.test.ts (1 test | 1 skipped)
- ✓ test/invariants/neon-branch-guard.test.ts (4 tests) 2ms
- ✓ test/verse-id.test.ts (5 tests) 2ms
- ✓ test/evals.test.ts (5 tests) 12ms
+ ✓ test/invariants/neon-branch-guard.test.ts (4 tests) 3ms
+ ✓ test/verse-id.test.ts (5 tests) 3ms
  ✓ test/bible-sync.test.ts (7 tests) 3ms
+ ✓ test/evals.test.ts (5 tests) 8ms
 
  Test Files  30 passed | 1 skipped (31)
-      Tests  285 passed | 1 skipped (286)
-   Start at  23:27:39
-   Duration  1.38s (transform 566ms, setup 0ms, collect 1.94s, tests 628ms, environment 5ms, prepare 1.99s)
+      Tests  288 passed | 1 skipped (289)
+   Start at  00:21:25
+   Duration  1.39s (transform 574ms, setup 0ms, collect 1.78s, tests 723ms, environment 3ms, prepare 2.21s)
 
  % Coverage report from v8
 
@@ -219,16 +219,16 @@ Lines        : 16.21% ( 1304/8040 )
 
  RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git/web
 
- ↓ test/invariants/sections-unit-ordinal.test.ts (2 tests | 2 skipped)
-stderr | test/invariants/sections-unit-ordinal.test.ts
-
-⚠  NOT RUN — ADR-026 red-first — 024 backfill reassembles mis-ordered chunks in (unit_ordinal, ordinal) order DID NOT RUN — missing DATABASE_URL (owner seed connection via seedOwnerUrl). It covers: the 024 backfill reassembly of mis-ordered chunks in (unit_ordinal, ordinal) order. A green suite without it is not evidence that any of those hold.
-
-
  ↓ test/invariants/annotations-polymorphic.test.ts (12 tests | 12 skipped)
 stderr | test/invariants/annotations-polymorphic.test.ts
 
 ⚠  NOT RUN — MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index DID NOT RUN — missing DATABASE_URL (owner seed connection via seedOwnerUrl). It covers: the 025 anchor XOR CHECK and the verse-only partial unique index. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/invariants/sections-unit-ordinal.test.ts (2 tests | 2 skipped)
+stderr | test/invariants/sections-unit-ordinal.test.ts
+
+⚠  NOT RUN — ADR-026 red-first — 024 backfill reassembles mis-ordered chunks in (unit_ordinal, ordinal) order DID NOT RUN — missing DATABASE_URL (owner seed connection via seedOwnerUrl). It covers: the 024 backfill reassembly of mis-ordered chunks in (unit_ordinal, ordinal) order. A green suite without it is not evidence that any of those hold.
 
 
  ↓ test/invariants/annotation-tables.test.ts (8 tests | 8 skipped)
@@ -243,16 +243,16 @@ stderr | test/invariants/annotation-rls-tenancy.test.ts
 ⚠  NOT RUN — Phase 3 annotation tables — two-account RLS tenancy (executed) DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL). It covers: two-account RLS tenancy across the Phase 3 annotation tables. A green suite without it is not evidence that any of those hold.
 
 
- ↓ test/invariants/work-reader.test.ts (7 tests | 7 skipped)
-stderr | test/invariants/work-reader.test.ts
-
-⚠  NOT RUN — Book Reader API — /api/work/[slug] + /sections (executed against the real DB) DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL). It covers: the Book Reader routes — published-only boundary, keyset paging, TOC shape, no host URL. A green suite without it is not evidence that any of those hold.
-
-
  ↓ test/invariants/section-vector-pairing.test.ts (1 test | 1 skipped)
 stderr | test/invariants/section-vector-pairing.test.ts
 
 ⚠  NOT RUN — §B0 class 2 — content↔vector pairing DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL) and DEEPINFRA_API_KEY. It covers: that every published section body still matches its OWN stored embedding — the mispairing class that leaves row counts, 1:1 assertions, the reader, the TOC and FTS all green while semantic search returns the passage next door. A green suite without it is not evidence that any of those hold.
+
+
+ ↓ test/invariants/work-reader.test.ts (7 tests | 7 skipped)
+stderr | test/invariants/work-reader.test.ts
+
+⚠  NOT RUN — Book Reader API — /api/work/[slug] + /sections (executed against the real DB) DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL). It covers: the Book Reader routes — published-only boundary, keyset paging, TOC shape, no host URL. A green suite without it is not evidence that any of those hold.
 
 
  ↓ test/invariants/library-published-boundary.test.ts (9 tests | 9 skipped)
@@ -278,110 +278,117 @@ stderr | test/invariants/register-wall-surfaces.test.ts
 ⚠  NOT RUN — register wall — the NEW catalog + search surfaces DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL). It covers: the register wall on real data — catalog fence, disjoint taxonomy, labelled search. A green suite without it is not evidence that any of those hold.
 
 
- ✓ test/invariants/migration-zero-window.test.ts (8 tests) 2ms
- ✓ test/invariants/voice-floor-authors.test.ts (8 tests) 7ms
- ✓ test/invariants/today.test.ts (7 tests) 7ms
+ ✓ test/invariants/migration-zero-window.test.ts (8 tests) 5ms
+ ✓ test/invariants/highlight-range.test.ts (11 tests) 8ms
 stderr | test/invariants/annotation-exact-substring.test.ts
 
 ⚠  NOT RUN — §P1 the exact substring survives the persistence round-trip (RLS) DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL). It covers: that the exact highlighted substring survives the persistence round-trip under RLS. A green suite without it is not evidence that any of those hold.
 
 
- ✓ test/invariants/highlight-range.test.ts (11 tests) 34ms
  ✓ test/invariants/annotation-exact-substring.test.ts (5 tests | 2 skipped) 2ms
+ ✓ test/invariants/today.test.ts (7 tests) 7ms
+ ✓ test/invariants/voice-floor-authors.test.ts (8 tests) 4ms
  ↓ test/invariants/search-sections.test.ts (6 tests | 6 skipped)
 stderr | test/invariants/search-sections.test.ts
 
 ⚠  NOT RUN — searchSections — deduped to reading units, and capped DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL). It covers: section search dedupe-to-reading-unit, the page cap and the count cap. A green suite without it is not evidence that any of those hold.
 
 
+ ✓ test/invariants/legal-hnsw-index-sync.test.ts (5 tests) 7ms
  ✓ test/invariants/translation-licensing.test.ts (6 tests) 5ms
- ✓ test/invariants/seed-owner-url.test.ts (5 tests) 6ms
- ✓ test/invariants/legal-hnsw-index-sync.test.ts (5 tests) 13ms
- ✓ test/invariants/published-authors.test.ts (6 tests) 18ms
- ✓ test/invariants/wallet.test.ts (2 tests) 5ms
+ ✓ test/invariants/seed-owner-url.test.ts (5 tests) 4ms
+ ✓ test/invariants/published-authors.test.ts (6 tests) 5ms
+ ✓ test/invariants/wallet.test.ts (2 tests) 8ms
  ↓ test/invariants/highlight-tenancy.test.ts (3 tests | 3 skipped)
 stderr | test/invariants/highlight-tenancy.test.ts
 
 ⚠  NOT RUN — §7 sub-verse highlight tenancy (two-account, executed) DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL). It covers: two-account RLS tenancy for sub-verse highlights. A green suite without it is not evidence that any of those hold.
 
 
- ✓ test/invariants/gate-ugc-blindness.test.ts (3 tests) 3ms
- ✓ test/regression/get-messages-filters-by-user-id.test.ts (2 tests) 15ms
- ✓ test/invariants/coverage-floor.test.ts (3 tests) 204ms
- ✓ test/invariants/popover-position.test.ts (6 tests) 4ms
- ✓ test/regression/bait-route-production-gate.test.ts (5 tests) 59ms
- ✓ test/middleware-gate.test.ts (3 tests) 13ms
- ✓ test/invariants/bible-translation-gate.test.ts (4 tests) 6ms
- ✓ test/invariants/fts-legal-index-sync.test.ts (1 test) 4ms
+ ✓ test/invariants/gate-ugc-blindness.test.ts (3 tests) 5ms
+ ✓ test/regression/get-messages-filters-by-user-id.test.ts (2 tests) 13ms
+ ✓ test/middleware-gate.test.ts (3 tests) 5ms
+ ✓ test/regression/bait-route-production-gate.test.ts (5 tests) 40ms
+ ✓ test/invariants/coverage-floor.test.ts (3 tests) 242ms
+ ✓ test/teach-budget.test.ts (6 tests) 4ms
+ ✓ test/teach-fallback-deadline.test.ts (1 test) 8ms
+ ✓ test/ask-outcome-discriminator.test.ts (4 tests) 5ms
+ ✓ test/invariants/popover-position.test.ts (6 tests) 3ms
+ ✓ test/invariants/fts-legal-index-sync.test.ts (1 test) 7ms
+ ✓ test/invariants/bible-translation-gate.test.ts (4 tests) 8ms
  ↓ test/invariants/tenancy.test.ts (3 tests | 3 skipped)
 stderr | test/invariants/tenancy.test.ts
 
 ⚠  NOT RUN — Layer 1 — tenancy invariant (two-account, executed) DID NOT RUN — missing a runtime DB URL (APP_DATABASE_URL). It covers: the two-account tenancy invariant on user data. A green suite without it is not evidence that any of those hold.
 
 
- ✓ test/invariants/copy-format.test.ts (6 tests) 2ms
- ✓ test/invariants/work-toc-grouping.test.ts (3 tests) 5ms
- ✓ test/ask-outcome-discriminator.test.ts (1 test) 3ms
  ↓ test/invariants/protected-branches-exist.test.ts (1 test | 1 skipped)
 stderr | test/invariants/protected-branches-exist.test.ts
 
 ⚠  NOT RUN — protected-branches-exist DID NOT RUN — missing NEON_API_KEY (Neon branch inventory). It covers: every registered rollback branch id still exists in Neon. A green suite without it is not evidence that any of those hold.
 
 
- ✓ test/regression/add-message-rejects-foreign-channel.test.ts (2 tests) 4ms
- ✓ test/invariants/snippet-sanitize.test.ts (4 tests) 2ms
- ✓ test/teach-budget.test.ts (2 tests) 3ms
- ✓ test/invariants/work-reader-paging.test.tsx (6 tests) 27ms
- ✓ test/invariants/work-section-lineation.test.tsx (6 tests) 29ms
- ✓ test/invariants/work-reader-ui.test.tsx (4 tests) 49ms
- ✓ test/invariants/work-toc-bounded.test.tsx (3 tests) 92ms
- ✓ test/invariants/search-result-attribution.test.tsx (5 tests) 99ms
- ✓ test/invariants/licensing.test.ts (6 tests | 5 skipped) 2183ms
-   ✓ Layer 1 — static reader forbidden-provenance ratchet > forbidden-provenance count may only decrease (or must be zero) 2182ms
+ ✓ test/invariants/work-toc-grouping.test.ts (3 tests) 5ms
+ ✓ test/invariants/copy-format.test.ts (6 tests) 4ms
+ ✓ test/regression/add-message-rejects-foreign-channel.test.ts (2 tests) 6ms
+stderr | test/invariants/loud-skip.test.ts > loud-skip: secrets fail closed, artifacts loud-skip > REQUIRE_SECRETS=1 + missing artifact only returns skip (no throw)
+
+⚠  NOT RUN — §3 verse-key distribution DID NOT RUN — missing web/public/commentaries (gitignored static corpus). It covers: verse-key collapse. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/invariants/loud-skip.test.ts (2 tests) 3ms
+ ✓ test/invariants/snippet-sanitize.test.ts (4 tests) 5ms
+ ✓ test/invariants/work-section-lineation.test.tsx (6 tests) 28ms
+ ✓ test/invariants/work-reader-ui.test.tsx (4 tests) 31ms
+ ✓ test/invariants/work-reader-paging.test.tsx (6 tests) 34ms
+ ✓ test/invariants/licensing.test.ts (6 tests | 5 skipped) 1996ms
+   ✓ Layer 1 — static reader forbidden-provenance ratchet > forbidden-provenance count may only decrease (or must be zero) 1996ms
+ ✓ test/invariants/search-result-attribution.test.tsx (5 tests) 87ms
+ ✓ test/invariants/work-toc-bounded.test.tsx (3 tests) 104ms
 stderr | test/db-boot-assert.test.ts > assertAppRuntimeRole — a boot canary, not a single point of total failure > does NOT brick the app when the DB is unreachable (retries, then serves)
 [boot] assertAppRuntimeRole: could not reach the DB to verify the runtime role after 4 attempts; serving anyway (per-request RLS still binds). Last error: fetch failed: other side closed
 
  ✓ test/db-boot-assert.test.ts (4 tests) 1707ms
    ✓ assertAppRuntimeRole — a boot canary, not a single point of total failure > does NOT brick the app when the DB is unreachable (retries, then serves) 1705ms
- ✓ test/invariants/verse-keys.test.ts (2 tests) 3262ms
-   ✓ §3 verse-key distribution (live gate; announces NOT RUN when the gitignored corpus is absent, e.g. CI) > no author (≥200 entries) has >20% of entries keyed verse_start=verse_end=chapter 2213ms
-   ✓ §3 verse-key distribution (live gate; announces NOT RUN when the gitignored corpus is absent, e.g. CI) > no SERVED (published) entry carries a biblehub.com / studylight.org sourceUrl 1049ms
+ ✓ test/invariants/verse-keys.test.ts (2 tests) 3362ms
+   ✓ §3 verse-key distribution (live gate; announces NOT RUN when the gitignored corpus is absent, e.g. CI) > no author (≥200 entries) has >20% of entries keyed verse_start=verse_end=chapter 2158ms
+   ✓ §3 verse-key distribution (live gate; announces NOT RUN when the gitignored corpus is absent, e.g. CI) > no SERVED (published) entry carries a biblehub.com / studylight.org sourceUrl 1203ms
 
- Test Files  32 passed | 13 skipped (45)
-      Tests  137 passed | 73 skipped (210)
-   Start at  23:27:41
-   Duration  3.78s (transform 883ms, setup 0ms, collect 2.64s, tests 7.87s, environment 3.30s, prepare 2.30s)
+ Test Files  34 passed | 13 skipped (47)
+      Tests  147 passed | 73 skipped (220)
+   Start at  00:21:27
+   Duration  3.89s (transform 1.05s, setup 0ms, collect 3.06s, tests 7.76s, environment 3.16s, prepare 2.54s)
 
 
  RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git
 
 stdout | test/rate-limit.test.ts > checkAskRateLimit > allows exactly at the per-minute cap (10), blocks the 11th
-{"evt":"rate_limit_hit","ts":"2026-07-30T06:27:45.695Z","userId":"u1","cap":"min","count":11,"limit":10}
+{"evt":"rate_limit_hit","ts":"2026-07-30T07:21:31.786Z","userId":"u1","cap":"min","count":11,"limit":10}
 
 stdout | test/rate-limit.test.ts > checkAskRateLimit > blocks over the per-day cap (100)
-{"evt":"rate_limit_hit","ts":"2026-07-30T06:27:45.695Z","userId":"u1","cap":"day","count":101,"limit":100}
+{"evt":"rate_limit_hit","ts":"2026-07-30T07:21:31.786Z","userId":"u1","cap":"day","count":101,"limit":100}
 
 stdout | test/rate-limit.test.ts > checkAskRateLimit > FAILS OPEN (allows) when the limiter DB call throws
-{"evt":"rate_limit_fail_open","ts":"2026-07-30T06:27:45.695Z","userId":"u1","error":"db down"}
+{"evt":"rate_limit_fail_open","ts":"2026-07-30T07:21:31.786Z","userId":"u1","error":"db down"}
 
- ✓ test/rate-limit.test.ts (10 tests) 2ms
 stdout | test/rate-limit.test.ts > checkAskRateLimit > H4: a minute-refused request does NOT touch the day bucket
-{"evt":"rate_limit_hit","ts":"2026-07-30T06:27:45.696Z","userId":"u1","cap":"min","count":11,"limit":10}
+{"evt":"rate_limit_hit","ts":"2026-07-30T07:21:31.787Z","userId":"u1","cap":"min","count":11,"limit":10}
 
 stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks the 11th attempt in a minute (default cap 10)
-{"evt":"gate_rate_limit_hit","ts":"2026-07-30T06:27:45.696Z","ip":"1.2.3.4","cap":"min","count":11,"limit":10}
+{"evt":"gate_rate_limit_hit","ts":"2026-07-30T07:21:31.787Z","ip":"1.2.3.4","cap":"min","count":11,"limit":10}
 
 stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks a slow drip over the hourly cap (default 60)
-{"evt":"gate_rate_limit_hit","ts":"2026-07-30T06:27:45.696Z","ip":"1.2.3.4","cap":"hour","count":61,"limit":60}
+{"evt":"gate_rate_limit_hit","ts":"2026-07-30T07:21:31.787Z","ip":"1.2.3.4","cap":"hour","count":61,"limit":60}
 
 stdout | test/rate-limit.test.ts > checkGateRateLimit > FAILS OPEN (allows) when the limiter DB call throws — password still required by the caller
-{"evt":"rate_limit_fail_open","ts":"2026-07-30T06:27:45.696Z","userId":"gate:1.2.3.4","error":"db down"}
+{"evt":"rate_limit_fail_open","ts":"2026-07-30T07:21:31.787Z","userId":"gate:1.2.3.4","error":"db down"}
 
+ ✓ test/rate-limit.test.ts (10 tests) 3ms
 
  Test Files  1 passed (1)
       Tests  10 passed (10)
-   Start at  23:27:45
-   Duration  174ms (transform 22ms, setup 0ms, collect 28ms, tests 2ms, environment 0ms, prepare 28ms)
+   Start at  00:21:31
+   Duration  184ms (transform 24ms, setup 0ms, collect 27ms, tests 3ms, environment 0ms, prepare 29ms)
 
 [32m✓ qa — Layer 1 invariants + regressions[0m
 

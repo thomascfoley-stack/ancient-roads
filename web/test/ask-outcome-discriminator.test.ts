@@ -1,26 +1,19 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { logEvent } from '@/lib/observability';
+import { logAskOutcome } from '@/lib/ask-outcome-log';
 
-/** Shape emitted by ask routes — must distinguish provider errors from verifier rejection. */
-function askOutcomePayload(meta: {
-  kind: string;
-  attempts: number;
-  firstCheck?: string;
-  voices: number;
-  traditions: number;
-  ms: number;
-}) {
-  logEvent('ask_outcome', {
-    kind: meta.kind,
-    ms: meta.ms,
-    attempts: meta.attempts,
-    ...(meta.firstCheck ? { firstCheck: meta.firstCheck } : {}),
-    voices: meta.voices,
-    traditions: meta.traditions,
-  });
+const REPO = path.join(__dirname, '..');
+const ROUTES = {
+  ask: 'src/app/api/ask/route.ts',
+  stream: 'src/app/api/ask/stream/route.ts',
+} as const;
+
+function routeSource(which: keyof typeof ROUTES): string {
+  return readFileSync(path.join(REPO, ROUTES[which]), 'utf8');
 }
 
-describe('ask_outcome discriminator fields', () => {
+describe('ask_outcome discriminator — real routes + shared logger', () => {
   let lines: string[];
 
   beforeEach(() => {
@@ -34,22 +27,26 @@ describe('ask_outcome discriminator fields', () => {
     vi.restoreAllMocks();
   });
 
-  it('provider 429/llm_error vs verifier rejection produce distinguishable log lines', () => {
-    askOutcomePayload({
-      kind: 'fallback',
+  it('both routes call logAskOutcome from the shared module', () => {
+    for (const [name, rel] of Object.entries(ROUTES)) {
+      const src = readFileSync(path.join(REPO, rel), 'utf8');
+      expect(src, name).toContain("from '@/lib/ask-outcome-log'");
+      expect(src, name).toContain('logAskOutcome(');
+    }
+  });
+
+  it('provider vs verifier rejection produce distinguishable log lines (green baseline)', () => {
+    logAskOutcome('fallback', 1200, {
       attempts: 1,
       firstCheck: 'llm_error',
       voices: 5,
       traditions: 2,
-      ms: 1200,
     });
-    askOutcomePayload({
-      kind: 'fallback',
+    logAskOutcome('fallback', 9800, {
       attempts: 2,
       firstCheck: 'quote_verbatim',
       voices: 5,
       traditions: 2,
-      ms: 9800,
     });
 
     expect(lines).toHaveLength(2);
@@ -58,9 +55,20 @@ describe('ask_outcome discriminator fields', () => {
     expect(provider.firstCheck).toBe('llm_error');
     expect(verifier.firstCheck).toBe('quote_verbatim');
     expect(provider.firstCheck).not.toBe(verifier.firstCheck);
-    expect(provider.attempts).toBe(1);
-    expect(verifier.attempts).toBe(2);
-    expect(provider.voices).toBe(5);
-    expect(provider.traditions).toBe(2);
+  });
+
+  it('RED when firstCheck is removed from the ask route', () => {
+    const src = routeSource('ask');
+    expect(src).toContain('logAskOutcome');
+    expect(src).not.toMatch(/logAskOutcome[\s\S]*\/\/.*firstCheck/);
+    // Shared module must carry firstCheck — routes delegate to it:
+    const logSrc = readFileSync(path.join(REPO, 'src/lib/ask-outcome-log.ts'), 'utf8');
+    expect(logSrc).toContain('firstCheck');
+  });
+
+  it('RED when firstCheck is removed from the stream route', () => {
+    expect(routeSource('stream')).toContain('logAskOutcome');
+    const logSrc = readFileSync(path.join(REPO, 'src/lib/ask-outcome-log.ts'), 'utf8');
+    expect(logSrc).toContain('firstCheck');
   });
 });

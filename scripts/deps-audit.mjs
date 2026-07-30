@@ -18,7 +18,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
-import { selectFindings } from './deps-audit-core.mjs';
+import { selectFindings, compareExpectRed } from './deps-audit-core.mjs';
 
 const BULK = 'https://registry.npmjs.org/-/npm/v1/security/advisories/bulk';
 
@@ -84,11 +84,10 @@ for (let i = 0; i < entries.length; i += BATCH) {
 const observed = [...new Set(findings.map((f) => f.ghsa))].sort();
 const counts = { total: pkgs.size, ignored: IGNORE.size };
 
-function compareExpectRed(observedGhsas, declared) {
+function reportExpectRedMismatch(observedGhsas, declared) {
   const obs = new Set(observedGhsas);
   const extra = [...obs].filter((g) => !declared.has(g));
   const missing = [...declared].filter((g) => !obs.has(g));
-  if (extra.length === 0 && missing.length === 0) return true;
   if (extra.length > 0) {
     console.error(`\n\x1b[31m✗ deps-audit: observed red set has EXTRA advisory(ies) not in --expect-red:\x1b[0m`);
     for (const g of extra) {
@@ -101,7 +100,6 @@ function compareExpectRed(observedGhsas, declared) {
     for (const g of missing) console.error(`  ${g}`);
   }
   console.error('\nUpdate --expect-red in scripts/audit.sh and docs/SECURITY.md together, with owner approval.');
-  return false;
 }
 
 if (expectRed) {
@@ -111,6 +109,7 @@ if (expectRed) {
     );
     process.exit(0);
   }
+  reportExpectRedMismatch(observed, expectRed);
   process.exit(1);
 }
 

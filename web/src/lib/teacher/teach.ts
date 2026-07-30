@@ -12,11 +12,18 @@ import { normalizeContract } from './normalize-contract';
 import { buildSystemPrompt, buildUserPrompt } from './prompt';
 import {
   MAX_RETRIES,
-  TEACH_MAX_DURATION_MS,
+  ASK_MAX_DURATION_MS,
   composeTimeoutMs,
 } from './teach-budget';
 
-export { MAX_RETRIES, TEACH_MAX_DURATION_MS, composeTimeoutMs, teachBudgetFits } from './teach-budget';
+export {
+  MAX_RETRIES,
+  ASK_MAX_DURATION_MS,
+  ASK_MAX_DURATION_SEC,
+  composeTimeoutMs,
+  teachBudgetFits,
+  PIPELINE_RESERVE_MS,
+} from './teach-budget';
 
 // Register-lane payloads (song_verse, sermons, theology) ride alongside the
 // exegetical answer — labeled, retrieve-and-quote, never composed/floored.
@@ -90,7 +97,7 @@ export async function teach(
   opts: { onEvent?: (e: TeacherEvent) => void; maxDurationMs?: number } = {},
 ): Promise<TeachRun> {
   const emit = opts.onEvent ?? (() => {});
-  const maxDurationMs = opts.maxDurationMs ?? TEACH_MAX_DURATION_MS;
+  const maxDurationMs = opts.maxDurationMs ?? ASK_MAX_DURATION_MS;
   const composeMs = composeTimeoutMs(maxDurationMs);
   const startedAt = Date.now();
   let attempts = 0;

@@ -4,9 +4,11 @@ import { checkAskRateLimit } from '@/lib/rate-limit';
 import { apiError } from '@/lib/api-error';
 import { logEvent } from '@/lib/observability';
 import { teach } from '@/lib/teacher/teach';
+import { ASK_MAX_DURATION_SEC } from '@/lib/teacher/teach-budget';
+import { logAskOutcome } from '@/lib/ask-outcome-log';
 
 export const runtime = 'nodejs';
-export const maxDuration = 300; // composition + retries can take a while
+export const maxDuration = ASK_MAX_DURATION_SEC;
 
 // POST /api/ask { question } → the teacher pipeline (retrieve → compose → verify).
 // Authed-only: the endpoint spends on embeddings + LLM, so it is not public.
@@ -45,14 +47,7 @@ export async function POST(req: NextRequest) {
   const startedAt = Date.now();
   try {
     const { result, meta } = await teach(question);
-    logEvent('ask_outcome', {
-      kind: result.kind,
-      ms: Date.now() - startedAt,
-      attempts: meta.attempts,
-      ...(meta.firstCheck ? { firstCheck: meta.firstCheck } : {}),
-      voices: meta.voices,
-      traditions: meta.traditions,
-    });
+    logAskOutcome(result.kind, Date.now() - startedAt, meta);
     return NextResponse.json(result);
   } catch (e) {
     console.error('teacher pipeline error:', (e as Error).message);

@@ -32,3 +32,15 @@ export function selectFindings(bulkData, ignore) {
   }
   return findings;
 }
+
+/**
+ * Observed vs declared acceptable-red GHSA sets must match EXACTLY — extra advisories
+ * or disappearances from the declared set both fail. Used by scripts/deps-audit.mjs and
+ * test/deps-audit-expect-red.test.ts (ADR-034: import, do not mirror).
+ */
+export function compareExpectRed(observedGhsas, declared) {
+  const obs = new Set(observedGhsas);
+  const extra = [...obs].filter((g) => !declared.has(g));
+  const missing = [...declared].filter((g) => !obs.has(g));
+  return extra.length === 0 && missing.length === 0;
+}
