@@ -709,3 +709,37 @@ the operator **at invocation**, printed to the log and echoed in WORKLOG prod en
 **Red-proof.** `docs/evidence/hygiene-2026-07-29/cutover-owner-go-redproof.log` — prod target,
 `CUTOVER_OWNER_PHASE2_GO=1` or missing quote → refuse before E1.
 
+## ADR-038 — better-auth GHSA-qq9h accepted-red (2026-07-30)
+
+**Status:** accepted (owner ruling; supersedes decision-sheet posture ambiguity).
+
+**Context.** CI `deps` fails on GHSA-qq9h-g4jm-xgf3 (same account-takeover class as GHSA-g38m,
+same pin). Posture B would add it to `ignoreGhsas` and green the gate; Posture A keeps the
+redness visible until SEC-1 (ADR-003) lands.
+
+**Decision.** **Posture A — accepted-red.** Do NOT add GHSA-qq9h to `ignoreGhsas`. Do NOT
+force `better-auth >= 1.6.22` until the auth migration closes SEC-1. Document in
+`docs/SECURITY.md`; align `package.json` audit comment with ADR-038.
+
+**Why.** A permanently silenced second advisory from the same pinned package would make
+`ignoreGhsas` mean less than its comment claims. Honest red on one named advisory preserves
+"nothing merges red" as an enforceable rule.
+
+**Wrong if.** CI `deps` is green before SEC-1 without a documented override.
+
+## ADR-039 — barnes-notes prod repair: quarantine + CrossWire re-source (2026-07-30)
+
+**Status:** accepted (owner ruling; decision sheet §4 Option A).
+
+**Context.** Production carries 1,300 `barnes-notes` sections with biblehub provenance
+(`status=staged`, unreachable). Flat pool rows under `"Barnes' Notes"` are 100% biblehub;
+`barnes-crosswire-nt` was E4-skipped. Author collision blocked clean slicing.
+
+**Decision.** Quarantine `barnes-notes`, delete its staged sections, re-source flat rows from
+CrossWire SWORD, re-embed, slice `barnes-crosswire-nt`. Orchestrator:
+`scripts/repair-barnes-prod.mjs`.
+
+**Why.** CrossWire is the declared edition (ADR-008); dev proved the repair path.
+
+**Wrong if.** Search or reader returns biblehub bodies for the CrossWire slug after publish.
+

@@ -22,6 +22,9 @@ Items requiring an owner ruling before an agent may implement. Each entry: facts
 
 ## 2. better-auth posture (GHSA-qq9h-g4jm-xgf3 + GHSA-g38m contradiction)
 
+**RULING (2026-07-30): Posture A — accepted-red.** Recorded ADR-038. GHSA-qq9h stays OUT of
+`ignoreGhsas`; CI `deps` expected red until SEC-1.
+
 **Facts.** CI `deps` gate is **accepted-red** on GHSA-qq9h-g4jm-xgf3 (OWNER_ACTIONS §1e). `package.json` `ignoreGhsas` still lists GHSA-g38m-r43w-p2q7 with comment "LAUNCH BLOCKER, **not accepted**" — same class, same pin (`@neondatabase/auth@0.4.2-beta` → `better-auth@1.4.18`). Override to ≥1.6.22 breaks build (TS2322, verified 2026-07-29). Magic-link/email-OTP paths: grep finds zero hits in `web/src`/`src` — latent, not proven unreachable at auth-config level.
 
 | Posture | Action | CI | Launch |
@@ -39,6 +42,8 @@ Items requiring an owner ruling before an agent may implement. Each entry: facts
 
 ## 3. DEEPINFRA_API_KEY for CI
 
+**RULING (2026-07-30): Secret set** in GitHub Actions (`DEEPINFRA_API_KEY`, verified via `gh secret list`).
+
 **Facts.** `section-vector-pairing.test.ts` re-embeds with the shipped model to catch content↔vector mispairing. Without `DEEPINFRA_API_KEY`, suite announces `::warning … NOT RUN` (`loud-skip.ts`). Not a workaround candidate — faking embeddings would not catch rotation defects.
 
 | Option | Effect | Cost |
@@ -54,7 +59,10 @@ Items requiring an owner ruling before an agent may implement. Each entry: facts
 
 ## 4. barnes-notes — 1,300 sections, biblehub provenance
 
-**Facts.** `prod-E0-E6.log` G6 sections-store warning (lines 91, 340, 446, 696, 769): 1,300 `barnes-notes` sections carry forbidden biblehub provenance, `status=staged`, not reachable via reader publish switch. Flat-embeddings ratchet does not count this store. E4 skipped `barnes-crosswire-nt` (all 1,300 flat rows biblehub — `log` lines 479, 638).
+**RULING (2026-07-30): Option A — quarantine + CrossWire re-source.** ADR-039.
+Orchestrator: `scripts/repair-barnes-prod.mjs`. Prod apply pending local `DEEPINFRA_API_KEY`.
+
+**Facts.** `prod-E0-E6.log` G6 sections-store warning (lines 91, 340, 446, 696, 769): 1,300 `barnes-notes` sections carry forbidden biblehub provenance, `status=staged`, not reachable via reader publish switch. Flat pool uses collapsed chapter keys (verse=chapter); CrossWire jsonl is per-verse (7,431 NT entries) — delete-and-reinsert repair path.
 
 | Option | Effect | Cost |
 |---|---|---|

@@ -59,7 +59,7 @@
       "sharp": "^0.35.0"
     },
     "auditConfig": {
-      "//": "Documented + justified in docs/SECURITY.md. All rooted in the pinned @neondatabase/auth@0.4.2-beta (better-auth@1.4.18); unfixable today (override breaks the build). GHSA-g38m is a real in-path account-takeover and is a tracked LAUNCH BLOCKER, not accepted.",
+      "//": "Documented in docs/SECURITY.md + ADR-038. Pinned @neondatabase/auth@0.4.2-beta (better-auth@1.4.18). GHSA-g38m-r43w-p2q7: silenced here for pnpm audit grouping only — tracked LAUNCH BLOCKER in SECURITY.md SEC-1, not accepted. GHSA-qq9h-g4jm-xgf3: NOT in this list — accepted-red deps gate per ADR-038 until SEC-1 closes.",
       "ignoreGhsas": [
         "GHSA-5xrq-8626-4rwp",
         "GHSA-fx2h-pf6j-xcff",

@@ -1,5 +1,22 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-30 (SESSION 9 — Posture A + barnes repair prep)
+
+**Headline:** Owner ruled **Posture A** (ADR-038 accepted-red for GHSA-qq9h). **DEEPINFRA_API_KEY**
+set in GitHub Actions secrets (verified `gh secret list`). **barnes-notes repair (ADR-039)**:
+`scripts/repair-barnes-prod.mjs` + manifest skip removed on `barnes-crosswire-nt`; CrossWire
+SWORD Barnes module downloaded; `barnes-nt.jsonl` generated (7,431 NT verses). Dry-run on prod:
+1,300 collapsed biblehub flat rows → replace with 7,431 crosswire rows. **Prod apply NOT run** —
+`DEEPINFRA_API_KEY` not present in agent shell (CI secret only).
+
+### Owner rulings recorded
+- ADR-038: better-auth Posture A — deps stays red until SEC-1
+- ADR-039: barnes Option A — quarantine + CrossWire re-source
+
+### NOT DONE
+- Prod `repair-barnes-prod.mjs --apply` (needs `DEEPINFRA_API_KEY` exported locally + owner quote)
+- CI db-invariants with DEEPINFRA — UNVERIFIED until next audit workflow run
+
 ## 2026-07-29 (SESSION 8 — hygiene/docs/CI work order §0–§7; NOT Phase 3)
 
 **Headline:** Protected prod rollback branch; CI/db-invariants hardening (PR #39 landed in branch);
@@ -11,15 +28,15 @@ branches deleted. **Phase 3 / E5 / deploy NOT started.**
 - `scripts/lib/neon-branch-guard.mjs`; no Neon delete-by-pattern scripts in repo (measured).
 - Red-proof: `docs/evidence/hygiene-2026-07-29/protected-branch-refusal.log`.
 
-### §1 better-auth — BLOCKED-ON-OWNER
-- Posture A vs B on `docs/OWNER_DECISIONS_2026-07-29.md` §2; recommend A (accepted-red).
-- `package.json` / SECURITY.md contradiction (g38m in ignoreGhsas vs "not accepted") documented; no implementation.
+### §1 better-auth — DONE (Posture A, ADR-038)
+- Owner ruled Posture A 2026-07-30: accepted-red; GHSA-qq9h NOT in ignoreGhsas.
+- `docs/SECURITY.md` + `package.json` audit comment aligned.
 
 ### §2 CI green while tests skip — PARTIAL
 - **2a PR #39:** merged `ci/owner-url-via-neon-api` into this branch (NEON_API_KEY runtime owner URL).
 - **2b loud-skip:** seeding suites say `DATABASE_URL`; library-published-boundary dual-requirement.
 - **2c verse-keys:** `announceSkip` when gitignored corpus absent.
-- **2d DEEPINFRA:** decision sheet §3 only.
+- **2d DEEPINFRA:** GitHub secret set 2026-07-30 (`gh secret list` confirms).
 - **2e skip ceiling:** `scripts/ci-skip-ceiling.mjs` + `DB_INVARIANTS_SKIP_CEILING=2` in workflow.
 - Red-proof: `skip-ceiling-redproof.log` (ceiling=1 → exit 1).
 

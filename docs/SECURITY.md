@@ -76,6 +76,13 @@ so `npm run audit` / CI is not permanently red on an unfixable transitive set. T
 the relevant GHSAs from the ignore list the moment the dependency fix lands, so any
 regression re-reds the gate.
 
+### GHSA-qq9h-g4jm-xgf3 — accepted-red (ADR-038, owner 2026-07-30)
+**Status:** OPEN — same class as GHSA-g38m (pre-account hijacking on magic-link / email-OTP).
+**NOT** in `ignoreGhsas`. CI `deps` gate is **expected to be red** on this advisory until
+SEC-1 (ADR-003) closes. A green `deps` gate before then means someone silenced it.
+Pin: `@neondatabase/auth@0.4.2-beta` → `better-auth@1.4.18`; override to ≥1.6.22 breaks
+the build (TS2322, measured 2026-07-29). Closes with SEC-1, not separately.
+
 ### Resolved framework/tooling CVEs (2026-07-24) — FIXED, not ignored
 Six HIGH advisories (unrelated to the SEC-1 better-auth cluster) were CVE-disclosure drift
 on existing deps. All fixed by bump/override, verified `deps-audit` green + full audit green:
