@@ -34,12 +34,18 @@
 // db/schema.sql + db/migrations/ and fails if any is absent from USER_TABLE_SPEC or
 // USER_TABLE_EXCLUDED.
 
-/** Tables with a user_id/auth_user_id column that are NOT user content — must stay explicit. */
+/** Tables measured by G1 digest — derived from USER_TABLE_SPEC; never hand-maintained. */
 export const USER_TABLE_EXCLUDED = {
   api_rate_limit:
     'Operational fixed-window rate-limit counters, not user-readable content (migration 008; no RLS).',
   embeddings:
     'Mixed platform corpus (user_id IS NULL) and optional user uploads; G1 inventory tracks annotation/social/profile tables, not the vector store.',
+  sources: 'Corpus catalog — platform content, not per-user rows (migration 006).',
+  sections: 'Corpus sections — platform content, not per-user rows (migration 006).',
+  section_anchors: 'Corpus anchor rows — platform content (migration 006).',
+  section_embeddings: 'Corpus vectors — platform content (migration 006).',
+  section_history_anchors: 'Historian-register anchors — platform content (migration 016).',
+  commentary_entries: 'Legacy commentary FTS store — platform content (migration 003).',
 };
 
 export const USER_TABLE_SPEC = {

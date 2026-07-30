@@ -80,9 +80,10 @@ and confirmed every assumption:
     2026-07-28 the owner ruled that disposable test data and deleted it. G1 still measures these
     tables — they now hold `0 == 0` and guard against anything being added or altered.
   - **Still live on prod (NOT cleared, must survive cutover):** `waitlist` (4 signup rows per
-    GO_LIVE_STATUS / census) and `channels` (1 study-group row). G1 measures digest + row count for
-    both; `waitlist` has no `user_id` (owner distribution is vacuous) and neither table carries a
-    tombstone (every row counts as active).
+    GO_LIVE_STATUS / census) and `channels` (1 study-group row — deliberate; the lone row is a
+    real study group named "test", not qa residue; **do not delete** to tidy housekeeping).
+    G1 measures digest + row count for both; `waitlist` has no `user_id` (owner distribution is
+    vacuous) and neither table carries a tombstone (every row counts as active).
   What the cleared annotation data actually was, read before deleting:
     - **5 of the 6 "users" were never people.** They were `qa-hl-a-<epoch>` synthetic IDs
       from the Phase-1 highlight suite, one soft-deleted row each — the residue class the

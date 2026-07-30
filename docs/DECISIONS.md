@@ -729,7 +729,24 @@ force `better-auth >= 1.6.22` until the auth migration closes SEC-1. Document in
 
 ## ADR-039 — barnes-notes prod repair: quarantine + CrossWire re-source (2026-07-30)
 
-**Status:** accepted (owner ruling; decision sheet §4 Option A).
+> **⛔ RETIRED (owner, work-order v2 Stage 0.1 / Stage 1.10). The orchestrator and this ADR's
+> repair path are withdrawn. Delete no Barnes rows.**
+>
+> **Why retired, measured:**
+> - `scripts/repair-barnes-prod.mjs` wrote `metadata.author = "Barnes' Notes"`, which matches no leg
+>   of `LEGAL_CORPUS_FILTER` — all 7,431 inserted rows would be unserved.
+> - The source jsonl carries `"author":"Albert Barnes"` on all 7,431 lines; the script never read
+>   that field.
+> - ~6,850 already-served `Albert Barnes` CrossWire rows sit untouched; `ingest-sword-commentaries.mts`
+>   already re-sources correctly without deleting prod rows.
+> - The DELETE path was testament-blind against an NT-only replacement (dev `barnes-notes` is
+>   1,189 units = 929 OT + 260 NT; `sword-zverse.ts` returns `[]` for absent testament).
+>
+> **Ruling:** delete `scripts/repair-barnes-prod.mjs` and `scripts/b0-seed.mjs`. Restore manifest
+> guard on `barnes-crosswire-nt` (`forbidden_provenance: skip`) per Stage 1.3. Barnes prod rows
+> unchanged until a separate owner slice.
+
+**Status:** accepted (owner ruling; decision sheet §4 Option A) — **historical only below**.
 
 **Context.** Production carries 1,300 `barnes-notes` sections with biblehub provenance
 (`status=staged`, unreachable). Flat pool rows under `"Barnes' Notes"` are 100% biblehub;
