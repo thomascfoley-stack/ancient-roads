@@ -1,0 +1,7 @@
+=== 1.2 db-invariants fail-closed (workflow excerpt) ===
+      - name: require APP_DATABASE_URL_TEST (fail closed)
+        env:
+          DBURL: ${{ secrets.APP_DATABASE_URL_TEST }}
+        run: |
+  if (process.env.REQUIRE_SECRETS === '1') {
+    throw new Error(`REQUIRE_SECRETS: ${msg}`);
