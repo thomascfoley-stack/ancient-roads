@@ -10,9 +10,20 @@ push:          audit=success, db-invariants=failure
 pull_request:  audit=skipped, db-invariants=skipped  (masks red)
 ```
 
-## After
+## After (sha fba4e1a, run 30552166762 push only)
 
-Recorded post-push in round-3 report (check-run list for final head sha).
+Check runs for fba4e1a — exactly one per job name:
+```
+audit:          conclusion=success
+db-invariants:  conclusion=success
+```
 
-Tradeoff: CI on push only; PR status follows branch push. Fork PRs without push get no workflow
-(unchanged from prior `if:` fork-only PR behavior for same-repo PRs that duplicated push).
+No pull_request run for fba4e1a (trigger removed). db-invariants log:
+```
+skip ceiling OK; artifact NOT RUN: 1 (verse-keys); secret-caused: 0
+receipt: executed=193 passed=190 skipped=3
+sections-unit-ordinal.test.ts: PASS (2 tests)
+```
+
+Prior failure case (ae1d4a7): push db-invariants=failure was masked by later pull_request skipped run.
+With trigger removed, a failing push would surface as the sole db-invariants conclusion.
