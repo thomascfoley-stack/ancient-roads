@@ -1,0 +1,18 @@
+# 1.9 round 3 — one check run per job name per sha (PR #44)
+
+Clone: /Users/foley/Projects/ancient-roads-git
+Fix: removed `pull_request:` trigger from `.github/workflows/audit.yml` (ADR-040)
+
+## Before (sha ae1d4a7, run 30523549298 push + 30523644834 pull_request)
+
+```
+push:          audit=success, db-invariants=failure
+pull_request:  audit=skipped, db-invariants=skipped  (masks red)
+```
+
+## After
+
+Recorded post-push in round-3 report (check-run list for final head sha).
+
+Tradeoff: CI on push only; PR status follows branch push. Fork PRs without push get no workflow
+(unchanged from prior `if:` fork-only PR behavior for same-repo PRs that duplicated push).

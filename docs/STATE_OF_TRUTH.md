@@ -204,8 +204,10 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
    fine). Left as-is; noted here so no agent trusts the relational framing.
 3. **SEC-1** — `better-auth 1.4.18` CVEs via `@neondatabase/auth` beta; blocks *public* launch. Interim question
    to Neon pending (`docs/SECURITY.md`, `OWNER_ACTIONS.md` §2).
-4. **CI (`db-invariants` job)** — split 2026-07-15 (`3ac0d9f`): the `audit` job is green on every push; the
-   licensing/tenancy invariants run only when the `APP_DATABASE_URL_TEST` secret (Neon test branch) exists, else a
-   visible green-with-`::warning::` placeholder. Verified locally under CI conditions; **the actual GitHub run has
-   not been observed from this environment** (`gh` not installed, private repo). Owner action: create the test
-   branch + secret (`OWNER_ACTIONS.md` §1).
+4. **CI (`db-invariants` job)** — **VERIFIED in GitHub Actions** (work-order v2 Stage 1, run
+   `30523549298` on sha `ae1d4a7`, push event). With secrets configured: **38 suite files executed**
+   (37 passed + 1 artifact NOT RUN: `verse-keys.test.ts` gitignored corpus). **`sections-unit-ordinal.test.ts`
+   ran and passed (2 tests, 206ms)** — first execution verification of ADR-026 ordering property in CI.
+   Round 3 (same PR): skip ceiling exempts artifact skips via `loud-skip-manifest.json` from
+   `announceSkip`; `pull_request` trigger removed (ADR-040) so one check run per job per sha.
+   Owner action if secrets missing: `OWNER_ACTIONS.md` §1.

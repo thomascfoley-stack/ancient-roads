@@ -7,7 +7,7 @@
 | Item | Status | Evidence |
 |------|--------|----------|
 | 1.1 | RED-PROOF (guard throws only — not wired to all delete callers) | `1.1-protected-branch-refusal.log` |
-| 1.2 | RED-PROOF | `1.2-db-invariants-fail-closed.log`, `1.2-require-secrets-vs-corpus.log` |
+| 1.2 | RED-PROOF | `1.2-db-invariants-fail-closed.log`, `1.2-require-secrets-vs-corpus.log`, `1.2-skip-ceiling-round3-redproof.log` |
 | 1.3 | RED-PROOF | `1.3-manifest-forbidden-provenance.diff`, `1.3-manifest-provenance-test.log` |
 | 1.4 | RED-PROOF (fixed B-2) | `1.4-expect-red-seed-redproof.log`, `test/deps-audit-expect-red.test.ts` |
 | 1.5 | RED-PROOF | `1.5-bait-route-gate.log` |
@@ -28,7 +28,7 @@
 
 | Item | Receipt | Gap |
 |------|---------|-----|
-| 1.9 | `.github/workflows/audit.yml` concurrency + trigger dedup | No test — CI config can regress silently |
+| 1.9 | `.github/workflows/audit.yml` concurrency + trigger dedup | `1.9-check-run-dedup-round3.log` |
 | 1.10 | `1.10-grep-repair-barnes.log` | No test — script deletion can regress silently |
 
 ## STOP / blocked

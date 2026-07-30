@@ -1,5 +1,20 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-30 (SESSION 10 — work-order v2 Stage 1 PR #44 round 3)
+
+**Headline:** CI-only fixes for skip ceiling vs loud-skip artifact exemption and duplicate check runs.
+**db-invariants executed 190 real invariants** in GitHub Actions (run `30523549298`) — the biggest
+verification milestone in Stage 1. `sections-unit-ordinal.test.ts` passed (ADR-026 ordering, first CI proof).
+
+### FIXED (round 3)
+- **1.2 skip ceiling:** `announceSkip` writes `loud-skip-manifest.json`; `ci-skip-ceiling.mjs` exempts
+  artifact-only skips (cross-checked against vitest ancestorTitles); receipt enumerates NOT RUN.
+- **1.9 check dedup:** dropped `pull_request` trigger from `audit.yml` (ADR-040).
+- Red-proofs: `1.2-skip-ceiling-round3-redproof.log`, `1.9-check-run-dedup-round3.log`.
+
+### NOT DONE (unchanged)
+- Prod barnes repair apply; B-1 postcss (STOPPED-FOR-OWNER); merge (explicitly not requested).
+
 ## 2026-07-30 (SESSION 9 — Posture A + barnes repair prep)
 
 **Headline:** Owner ruled **Posture A** (ADR-038 accepted-red for GHSA-qq9h). **DEEPINFRA_API_KEY**

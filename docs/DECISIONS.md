@@ -760,3 +760,19 @@ CrossWire SWORD, re-embed, slice `barnes-crosswire-nt`. Orchestrator:
 
 **Wrong if.** Search or reader returns biblehub bodies for the CrossWire slug after publish.
 
+## ADR-040 — CI runs on push only; no duplicate check runs per sha (2026-07-30)
+
+**Status:** accepted (work-order v2 PR #44 round 3).
+
+**Context.** `audit.yml` triggered on both `push` and `pull_request`. A push to a PR branch fired
+two workflow runs for the same sha: push could fail `db-invariants` while a later `pull_request`
+run skipped both jobs. GitHub treated the skipped check as passing, masking the red.
+
+**Decision.** Drop the `pull_request` trigger and the fork-guard `if:` on both jobs. CI runs on
+`push` to every branch (owner ruling 2026-07-29). PR status follows the branch's latest push.
+
+**Tradeoff.** Fork PRs without a push to the fork branch get no workflow run — acceptable because
+same-repo PRs were the failure mode (duplicate runs), and fork PRs previously relied on the same
+`if:` guard without a guaranteed push anyway.
+
+**Wrong if.** Two check runs with the same job name and different conclusions exist for one sha.

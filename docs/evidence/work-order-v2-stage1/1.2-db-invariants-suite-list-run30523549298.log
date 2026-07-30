@@ -1,0 +1,47 @@
+# db-invariants executed suites — CI run 30523549298 (sha ae1d4a7)
+
+Event: push. db-invariants: FAILED at skip ceiling (verse-keys artifact skip counted as secret skip — fixed round 3).
+
+## 38 suite files touched (37 passed + 1 fully skipped)
+
+1. register-end-to-end.test.ts — PASS
+2. library-published-boundary.test.ts — PASS
+3. annotations-polymorphic.test.ts — PASS
+4. work-reader.test.ts — PASS
+5. licensing.test.ts — PASS (1 skipped within suite)
+6. annotation-tables.test.ts — PASS
+7. **sections-unit-ordinal.test.ts — PASS (2 tests, 206ms) — ADR-026 ordering verified**
+8. section-vector-pairing.test.ts — PASS
+9. annotation-rls-tenancy.test.ts — PASS
+10. today.test.ts — PASS
+11. voice-floor-authors.test.ts — PASS
+12. verse-keys.test.ts — NOT RUN (gitignored corpus; artifact loud-skip)
+13. register-wall-surfaces.test.ts — PASS
+14. annotation-exact-substring.test.ts — PASS
+15. migration-zero-window.test.ts — PASS
+16. highlight-range.test.ts — PASS
+17. search-sections.test.ts — PASS
+18. translation-licensing.test.ts — PASS
+19. coverage-floor.test.ts — PASS
+20. legal-hnsw-index-sync.test.ts — PASS
+21. seed-owner-url.test.ts — PASS
+22. published-authors.test.ts — PASS
+23. wallet.test.ts — PASS
+24. highlight-tenancy.test.ts — PASS
+25. gate-ugc-blindness.test.ts — PASS
+26. popover-position.test.ts — PASS
+27. fts-legal-index-sync.test.ts — PASS
+28. tenancy.test.ts — PASS
+29. bible-translation-gate.test.ts — PASS
+30. work-toc-grouping.test.ts — PASS
+31. copy-format.test.ts — PASS
+32. protected-branches-exist.test.ts — PASS
+33. snippet-sanitize.test.ts — PASS
+34. loud-skip.test.ts — PASS
+35. work-reader-paging.test.tsx — PASS
+36. work-section-lineation.test.tsx — PASS
+37. search-result-attribution.test.tsx — PASS
+38. work-toc-bounded.test.tsx — PASS
+39. work-reader-ui.test.tsx — PASS
+
+Total invariant test files in directory: 39. Executed with real assertions: 38 (excluding artifact NOT RUN).

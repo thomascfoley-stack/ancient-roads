@@ -5,9 +5,14 @@ name: audit
 # triggered ZERO workflows, with the gate silent and the silence easy to read as
 # green. Requiring a PR closes that only while the discipline holds, and discipline
 # is precisely what failed. Actions minutes are cheaper than an invisible blind spot.
+#
+# pull_request REMOVED (work-order v2 PR #44 round 3): push + pull_request on the same
+# branch produced two workflow runs per sha — push could fail db-invariants while a later
+# pull_request run skipped both jobs, and GitHub treated skipped as passing, masking red.
+# Tradeoff: CI runs on push only; PRs from the same repo are gated when the branch is
+# pushed (standard for fork-less workflows). See ADR-040 in docs/DECISIONS.md.
 on:
   push:
-  pull_request:
 
 jobs:
   # Every non-DB gate: typecheck ×3 · lint ×2 · knip · deps-audit · tests+coverage · Gate B license.
@@ -15,7 +20,6 @@ jobs:
   # requireDbInCi() only throws under REQUIRE_DB=1, which this job does not set. They get a real run
   # in the `db-invariants` job below. This job is designed to go GREEN on every push.
   audit:
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +40,6 @@ jobs:
   # a visible-green skip. A green db-invariants means the invariants ran. Run receipt: vitest JSON
   # executed-test count + ci-skip-ceiling.mjs output + NOT RUN annotations only for gitignored artifacts.
   db-invariants:
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     concurrency:
       group: db-invariants-${{ github.repository }}
@@ -139,8 +142,10 @@ jobs:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
           NEON_PROJECT: spring-heart-74819093
           DB_INVARIANTS_SKIP_CEILING: '0'
+          LOUD_SKIP_MANIFEST: ../loud-skip-manifest.json
           GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
+          rm -f ../loud-skip-manifest.json
           corepack pnpm exec vitest run test/invariants/ \
             --reporter=default --reporter=json --outputFile=../vitest-db-invariants.json
           node ../scripts/ci-skip-ceiling.mjs ../vitest-db-invariants.json
