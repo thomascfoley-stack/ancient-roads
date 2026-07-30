@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { endpointId, hostOf, isProdHost, isDevHost, declaredMatches } from '../../scripts/lib/target-guard.mjs';
+import { endpointId, hostOf, isProdHost, isDevHost, isAuditAllowedHost, declaredMatches } from '../../scripts/lib/target-guard.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -73,6 +73,31 @@ describe('target-guard: the declared target is an exact endpoint id, never a sub
   });
 });
 
+describe('target-guard: audit allow-list (localhost, dev, declared fork)', () => {
+  const CI = 'postgresql://u:p@ep-tiny-bonus-at3izo3y.c-9.us-east-1.aws.neon.tech.invalid/db';
+
+  it('allows dev and localhost without declaration', () => {
+    expect(isAuditAllowedHost(DEV_UPPER)).toBe(true);
+    expect(isAuditAllowedHost('postgresql://u:p@localhost:5432/neondb')).toBe(true);
+    expect(isAuditAllowedHost('postgresql://u:p@127.0.0.1:5432/neondb')).toBe(true);
+  });
+
+  it('refuses production even when declared', () => {
+    expect(isAuditAllowedHost(PROD_UPPER)).toBe(false);
+    expect(isAuditAllowedHost(PROD_UPPER, 'ep-odd-fog-atnykudm')).toBe(false);
+  });
+
+  it('refuses an undeclared fork', () => {
+    expect(isAuditAllowedHost(FORK)).toBe(false);
+  });
+
+  it('allows a fork only when declared by exact endpoint id', () => {
+    expect(isAuditAllowedHost(FORK, 'ep-fresh-fork-at000000')).toBe(true);
+    expect(isAuditAllowedHost(FORK, 'neon.tech')).toBe(false);
+    expect(isAuditAllowedHost(CI, 'ep-tiny-bonus-at3izo3y')).toBe(true);
+  });
+});
+
 // Wiring: the shipped scripts must actually USE the guard. A correct module that
 // nothing imports is the failure mode this repo has hit before.
 const runGuard = (script: string, env: Record<string, string>) => {
@@ -128,5 +153,33 @@ describe('the shipped scripts refuse an uppercase production URL', () => {
     });
     expect(r.refused).toBe(true);
     expect(refusedByGuard(r.out)).toBe(true);
+  });
+
+  it('assert-ingest-env-dev.mjs refuses production in the shell', () => {
+    const r = runGuard('scripts/assert-ingest-env-dev.mjs', {
+      DATABASE_URL: PROD_UPPER,
+    });
+    expect(r.refused).toBe(true);
+    expect(/not on the audit allow-list/i.test(r.out)).toBe(true);
+  });
+
+  it('assert-ingest-env-dev.mjs refuses an undeclared fork in the shell', () => {
+    const r = runGuard('scripts/assert-ingest-env-dev.mjs', {
+      DATABASE_URL: FORK,
+    });
+    expect(r.refused).toBe(true);
+    expect(/not on the audit allow-list/i.test(r.out)).toBe(true);
+  });
+
+  it('assert-ingest-env-dev.mjs passes with a clean shell (no DB vars)', () => {
+    const env = { ...process.env };
+    for (const k of ['DATABASE_URL', 'APP_DATABASE_URL', 'DATABASE_URL_UNPOOLED']) delete env[k];
+    try {
+      execFileSync('node', ['scripts/assert-ingest-env-dev.mjs'], {
+        cwd: ROOT, encoding: 'utf8', timeout: 30_000, env,
+      });
+    } catch (e) {
+      throw new Error(`expected pass, got: ${(e as Error).message}`);
+    }
   });
 });

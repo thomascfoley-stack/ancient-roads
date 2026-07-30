@@ -35,6 +35,10 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { hostOf, isDevHost, declaredMatches, endpointId } from './lib/target-guard.mjs';
+import { USER_TABLES as G1_USER_TABLES } from './lib/user-data-invariant.mjs';
+
+// Derived from USER_TABLE_SPEC — one list, not two (work-order v2 Stage 1.8).
+const USER_TABLES = G1_USER_TABLES;
 
 // NEVER let a malformed connection string reach an unhandled throw. `new URL()` rejects
 // e.g. an unencoded character in a password, and Node's ERR_INVALID_URL error object carries
@@ -56,10 +60,8 @@ function localEnv(name) {
   return readFileSync(ENV, 'utf8').match(new RegExp(`^${name}=(.*)`, 'm'))?.[1]?.trim().replace(/^"|"$/g, '');
 }
 
-// Every table a test or a cutover probe seeds user-scoped rows into. Add here when a new user
-// table appears. Tables that do not exist on a target are SKIPPED VISIBLY, never silently: the
-// cutover target is pre-016 before E1 runs, so most of these are legitimately absent there.
-const USER_TABLES = ['highlights', 'notes', 'bookmarks', 'library_items', 'reading_progress', 'tags', 'annotation_tags'];
+// Every table a test or a cutover probe seeds user-scoped rows into. Derived from
+// USER_TABLE_SPEC via user-data-invariant.mjs — do not hand-maintain a second list.
 
 // Seeded rows are prefixed so they are identifiable. Keep in sync with the suites AND with every
 // script that writes a probe row.

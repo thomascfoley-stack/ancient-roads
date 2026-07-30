@@ -59,7 +59,7 @@
       "sharp": "^0.35.0"
     },
     "auditConfig": {
-      "//": "Documented in docs/SECURITY.md + ADR-038. Pinned @neondatabase/auth@0.4.2-beta (better-auth@1.4.18). GHSA-g38m-r43w-p2q7: silenced here for pnpm audit grouping only — tracked LAUNCH BLOCKER in SECURITY.md SEC-1, not accepted. GHSA-qq9h-g4jm-xgf3: NOT in this list — accepted-red deps gate per ADR-038 until SEC-1 closes.",
+      "//": "Documented per-entry in docs/SECURITY.md. ignoreGhsas silences dev/build-tooling (vitest/vite/esbuild/postcss) and unfixable better-auth transitives until SEC-1 closes. GHSA-g38m IS in this list (CI grouping only) — still tracked LAUNCH BLOCKER in SECURITY.md SEC-1, not accepted. GHSA-qq9h is NOT here — accepted-red via scripts/audit.sh --expect-red (ADR-038).",
       "ignoreGhsas": [
         "GHSA-5xrq-8626-4rwp",
         "GHSA-fx2h-pf6j-xcff",

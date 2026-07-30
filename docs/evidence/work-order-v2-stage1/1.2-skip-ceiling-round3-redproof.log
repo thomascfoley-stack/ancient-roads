@@ -1,0 +1,50 @@
+# 1.2 round 3 — skip ceiling vs loud-skip artifact exemption (PR #44)
+
+Clone: /Users/foley/Projects/ancient-roads-git
+Branch: chore/work-order-v2-stage1 (pre-commit)
+
+## State 1 — secret-caused full skip → RED (ceiling 0)
+
+Seed: run tenancy.test.ts without APP_DATABASE_URL, without REQUIRE_SECRETS
+```
+LOUD_SKIP_MANIFEST=loud-skip-manifest.json DB_INVARIANTS_SKIP_CEILING=0 \
+  node scripts/ci-skip-ceiling.mjs vitest-secret-redproof.json
+-> REFUSING green: 1 secret-caused suite(s) fully skipped, ceiling is 0
+exit=1
+```
+
+Revert: restore secrets / REQUIRE_SECRETS=1 → throws at module load (no skip to count)
+
+## State 2 — artifact-caused full skip → GREEN, named in receipt
+
+Seed: mv web/public/commentaries /tmp (gitignored corpus absent), REQUIRE_SECRETS=1
+```
+skip ceiling OK (secret-caused: 0, artifact NOT RUN: 1 verse-keys.test.ts)
+receipt: NOT RUN §3 verse-key distribution: missing web/public/commentaries
+exit=0
+```
+
+Revert: mv corpus back → verse-keys runs 2 tests green
+
+## State 2b — second artifact skip enumerated (simulated manifest + vitest JSON)
+
+Two artifact entries in loud-skip-manifest.json with matching vitest ancestorTitles cross-check.
+Both listed under "artifact NOT RUN (exempt from ceiling)"; secret-caused count stays 0; exit=0.
+
+(Current production artifact suites: verse-keys only — one gitignored corpus path.)
+
+## State 3 — tampered exemption cannot swallow secret skip → RED
+
+Seed: hand-edit manifest with fake check "fake" for tenancy.test.ts (secret-caused skip)
+```
+secret-caused fully-skipped files: 1 (tenancy.test.ts)
+artifact NOT RUN: 0  (cross-check: manifest check must match vitest ancestorTitles)
+exit=1
+```
+
+## State 4 — REQUIRE_SECRETS blocks secret skip before manifest (db-invariants path)
+
+Seed: REQUIRE_SECRETS=1 + missing APP_DATABASE_URL on tenancy.test.ts
+```
+-> throws REQUIRE_SECRETS at module load; no manifest written; no exempt path
+```

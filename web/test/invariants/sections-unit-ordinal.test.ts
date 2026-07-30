@@ -46,7 +46,9 @@ function backfillSql(): string {
   return hit;
 }
 
-const SLUG = 'qa-unit-ordinal-seed';
+const SLUG_PREFIX = 'qa-unit-ordinal-seed-';
+const RUN_ID = process.env.GITHUB_RUN_ID ?? String(process.pid);
+const SLUG = `${SLUG_PREFIX}${RUN_ID}`;
 
 // The deliberately mis-ordered seed (storage order ≠ reading order):
 //  - Sermon A's three chunks "Sermon A — ref (1|2|3/3)" interleaved with
@@ -87,14 +89,23 @@ const url = ownerUrl();
 let client: pg.Client | undefined;
 let seeded = false;
 
-const deleteSeed = async (c: pg.Client) => {
+const deleteSeed = async (c: pg.Client, slug: string) => {
   await c.query(
     `DELETE FROM section_anchors sa USING sections s
      WHERE sa.section_id = s.id AND s.source_id IN (SELECT id FROM sources WHERE slug = $1)`,
-    [SLUG],
+    [slug],
   );
-  await c.query(`DELETE FROM sections WHERE source_id IN (SELECT id FROM sources WHERE slug = $1)`, [SLUG]);
-  await c.query(`DELETE FROM sources WHERE slug = $1`, [SLUG]);
+  await c.query(`DELETE FROM sections WHERE source_id IN (SELECT id FROM sources WHERE slug = $1)`, [slug]);
+  await c.query(`DELETE FROM sources WHERE slug = $1`, [slug]);
+};
+
+/** Delete stale qa-unit-ordinal-seed-* fixtures from interrupted runs (not the current slug). */
+const sweepStaleSeeds = async (c: pg.Client) => {
+  const { rows } = await c.query<{ slug: string }>(
+    `SELECT slug FROM sources WHERE slug LIKE $1 AND slug <> $2`,
+    [`${SLUG_PREFIX}%`, SLUG],
+  );
+  for (const r of rows) await deleteSeed(c, r.slug);
 };
 
 // A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
@@ -108,7 +119,8 @@ describe.skipIf(SKIP)('ADR-026 red-first — 024 backfill reassembles mis-ordere
   beforeAll(async () => {
     client = new pg.Client({ connectionString: url!, ssl: { rejectUnauthorized: false } });
     await client.connect();
-    await deleteSeed(client); // clear any leftover from a crashed run
+    await sweepStaleSeeds(client);
+    await deleteSeed(client, SLUG); // clear any leftover from a crashed run
     // license is 'Public Domain' (an ALLOWED_LICENSES value), changed 2026-07-19 from
     // 'public-domain'. The old literal was safe ONLY because this seed is status='staged' and
     // Gate B inspects published rows — a latent landmine that would arm itself the moment this
@@ -139,7 +151,8 @@ describe.skipIf(SKIP)('ADR-026 red-first — 024 backfill reassembles mis-ordere
 
   afterAll(async () => {
     if (!client || !seeded) return;
-    await deleteSeed(client);
+    await deleteSeed(client, SLUG);
+    await sweepStaleSeeds(client);
     await client.end();
   }, 60_000);
 

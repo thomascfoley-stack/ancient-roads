@@ -1,0 +1,10 @@
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git
+
+ ✓ test/invariants/user-data-invariant.test.ts (6 tests) 3ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  23:26:17
+   Duration  181ms (transform 17ms, setup 0ms, collect 20ms, tests 3ms, environment 0ms, prepare 26ms)
+

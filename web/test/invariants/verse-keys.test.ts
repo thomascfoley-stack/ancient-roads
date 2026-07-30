@@ -71,7 +71,11 @@ if (!CORPUS_AVAILABLE && process.env.REQUIRE_CORPUS === '1') {
 
 const SKIP = announceSkip(
   '§3 verse-key distribution',
-  [{ name: 'web/public/commentaries (gitignored static corpus)', present: CORPUS_AVAILABLE }],
+  [{
+    name: 'web/public/commentaries (gitignored static corpus)',
+    present: CORPUS_AVAILABLE,
+    kind: 'artifact',
+  }],
   'verse-key collapse (>20% chapter-keyed) and forbidden biblehub/studylight provenance on served entries',
 );
 

@@ -32,3 +32,14 @@ export function selectFindings(bulkData, ignore) {
   }
   return findings;
 }
+
+/**
+ * Observed vs declared acceptable-red GHSA sets must match EXACTLY.
+ * Returns { ok, extra, missing } — one predicate for verdict and report (ADR-034).
+ */
+export function compareExpectRed(observedGhsas, declared) {
+  const obs = new Set(observedGhsas);
+  const extra = [...obs].filter((g) => !declared.has(g));
+  const missing = [...declared].filter((g) => !obs.has(g));
+  return { ok: extra.length === 0 && missing.length === 0, extra, missing };
+}

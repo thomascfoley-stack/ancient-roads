@@ -1,0 +1,12 @@
+# 1.7 ask outcome seed red-proof
+clone: /Users/foley/Projects/ancient-roads-git
+sha: b42824bd3fd13fbe91b469c69b4ca74591d0f049
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git/web
+
+ ? test/ask-outcome-discriminator.test.ts (6 tests) 5ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  00:34:42
+   Duration  300ms (transform 61ms, setup 0ms, collect 109ms, tests 5ms, environment 0ms, prepare 28ms)

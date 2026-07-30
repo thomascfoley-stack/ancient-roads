@@ -5,9 +5,14 @@ name: audit
 # triggered ZERO workflows, with the gate silent and the silence easy to read as
 # green. Requiring a PR closes that only while the discipline holds, and discipline
 # is precisely what failed. Actions minutes are cheaper than an invisible blind spot.
+#
+# pull_request REMOVED (work-order v2 PR #44 round 3): push + pull_request on the same
+# branch produced two workflow runs per sha — push could fail db-invariants while a later
+# pull_request run skipped both jobs, and GitHub treated skipped as passing, masking red.
+# Tradeoff: CI runs on push only; PRs from the same repo are gated when the branch is
+# pushed (standard for fork-less workflows). See ADR-040 in docs/DECISIONS.md.
 on:
   push:
-  pull_request:
 
 jobs:
   # Every non-DB gate: typecheck ×3 · lint ×2 · knip · deps-audit · tests+coverage · Gate B license.
@@ -31,35 +36,31 @@ jobs:
   # SECURITY: this is a TEST branch, NEVER prod — the tenancy suite writes rows. Set its app_runtime
   # connection string as the repo secret APP_DATABASE_URL_TEST (see docs/SECURITY.md / OWNER_ACTIONS §1).
   #
-  # Until that secret exists, the guard step below short-circuits: the job is GREEN but every real step
-  # is skipped and a loud ::warning:: records that the invariants did NOT run. This is the honest,
-  # VISIBLE substitute for the old always-red push — a pending job, not an ignored failure. The moment
-  # the secret is added, the tests run for real (REQUIRE_DB=1 makes a missing URL a hard failure here).
+  # FAIL-CLOSED (work-order v2 Stage 1.2): when APP_DATABASE_URL_TEST is absent this job is RED, not
+  # a visible-green skip. A green db-invariants means the invariants ran. Run receipt: vitest JSON
+  # executed-test count + ci-skip-ceiling.mjs output + NOT RUN annotations only for gitignored artifacts.
   db-invariants:
     runs-on: ubuntu-latest
+    concurrency:
+      group: db-invariants-${{ github.repository }}
+      cancel-in-progress: false
     steps:
-      - id: guard
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: require APP_DATABASE_URL_TEST (fail closed)
         env:
           DBURL: ${{ secrets.APP_DATABASE_URL_TEST }}
         run: |
           if [ -z "$DBURL" ]; then
-            echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "::warning title=DB invariants NOT RUN::EVERY DB-backed invariant under web/test/invariants/ was skipped — repo secret APP_DATABASE_URL_TEST (Neon TEST branch) is not set. This covers the published-status boundary, the register wall on real data, RLS tenancy, the annotation schema, keyset paging, unit_ordinal, the per-register reader checks and content-vector pairing. Measured 2026-07-29: 75 of 200 web tests do not execute without it. THIS JOB BEING GREEN DOES NOT MEAN THOSE INVARIANTS PASSED — it means they never ran. See OWNER_ACTIONS §1b/§1c."
-          else
-            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "::error title=DB invariants NOT RUN::APP_DATABASE_URL_TEST is missing or empty — db-invariants must FAIL, not skip green. See OWNER_ACTIONS §1."
+            exit 1
           fi
-      - if: steps.guard.outputs.run == 'true'
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - if: steps.guard.outputs.run == 'true'
-        uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - if: steps.guard.outputs.run == 'true'
-        run: corepack enable
-      - if: steps.guard.outputs.run == 'true'
-        run: corepack pnpm install --frozen-lockfile
+      - run: corepack enable
+      - run: corepack pnpm install --frozen-lockfile
       # A GLOB, NOT A LIST (owner ruling 2026-07-29). This was an explicit 13-file
       # allowlist, which made every new invariant OPT-IN to CI — and forgetting to add
       # one was invisible. Both checks written on 2026-07-29 (register-end-to-end,
@@ -91,8 +92,7 @@ jobs:
       # This step is the ONLY writer of DATABASE_URL. Deliberately NOT a step-level `env:` on
       # the vitest step: `${{ secrets.X }}` renders as an EMPTY STRING when unset, and a
       # step-level empty DATABASE_URL would shadow the value written to GITHUB_ENV here.
-      - if: steps.guard.outputs.run == 'true'
-        name: resolve seed-owner DATABASE_URL (secret, else fetched via NEON_API_KEY)
+      - name: resolve seed-owner DATABASE_URL (secret, else fetched via NEON_API_KEY)
         env:
           OWNER_SECRET: ${{ secrets.DATABASE_URL_TEST_OWNER }}
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
@@ -106,20 +106,30 @@ jobs:
             URL=$(npx --yes neonctl connection-string "$SEED_BRANCH" --project-id "$NEON_PROJECT" \
               --role-name neondb_owner --database-name neondb --api-key "$NEON_API_KEY" 2>/dev/null | tr -d '\n')
             if [ -z "$URL" ]; then
-              echo "::warning title=seed-owner URL not fetched::neonctl returned nothing for branch $SEED_BRANCH — the four seeding suites will announce NOT RUN."
+              echo "::error title=seed-owner URL not fetched::neonctl returned nothing for branch $SEED_BRANCH — db-invariants must fail when seed owner is unavailable."
+              exit 1
             else
               echo "::add-mask::$URL"
               echo "DATABASE_URL=$URL" >> "$GITHUB_ENV"
               echo "seed owner: fetched at runtime for $SEED_BRANCH (no stored owner secret)"
             fi
           else
-            echo "::warning title=seed-owner URL absent::neither DATABASE_URL_TEST_OWNER nor NEON_API_KEY is set — the four seeding suites will announce NOT RUN."
+            echo "::error title=seed-owner URL absent::neither DATABASE_URL_TEST_OWNER nor NEON_API_KEY is set — seeding suites cannot run; db-invariants must fail."
+            exit 1
           fi
-      - if: steps.guard.outputs.run == 'true'
-        name: DB-backed invariants (real DB) — whole directory, no allowlist
+      - name: require DEEPINFRA_API_KEY (fail closed)
+        env:
+          KEY: ${{ secrets.DEEPINFRA_API_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::error title=DEEPINFRA_API_KEY missing::section-vector-pairing cannot run — db-invariants must fail, not skip green."
+            exit 1
+          fi
+      - name: DB-backed invariants (real DB) — whole directory, no allowlist
         working-directory: web
         env:
           REQUIRE_DB: '1'
+          REQUIRE_SECRETS: '1'
           # app_runtime — the read paths, RLS and tenancy suites. Least privilege on purpose:
           # owner would BYPASS RLS and make the tenancy suites pass while proving nothing.
           # (DATABASE_URL — the seed-owner url — arrives via GITHUB_ENV from the step above.)
@@ -129,8 +139,14 @@ jobs:
           # production regardless of what is declared here.
           SEED_TEST_ENDPOINT: ep-tiny-bonus-at3izo3y
           DEEPINFRA_API_KEY: ${{ secrets.DEEPINFRA_API_KEY }}
-          DB_INVARIANTS_SKIP_CEILING: '2'
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT: spring-heart-74819093
+          DB_INVARIANTS_SKIP_CEILING: '0'
+          LOUD_SKIP_MANIFEST: ../loud-skip-manifest.json
+          GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
+          rm -f ../loud-skip-manifest.json
           corepack pnpm exec vitest run test/invariants/ \
             --reporter=default --reporter=json --outputFile=../vitest-db-invariants.json
           node ../scripts/ci-skip-ceiling.mjs ../vitest-db-invariants.json
+          node ../scripts/ci-db-invariants-receipt.mjs ../vitest-db-invariants.json

@@ -12,9 +12,13 @@ export interface UserTableMeasure {
 
 export type UserDataMeasure = Record<string, UserTableMeasure>;
 
+export declare const USER_TABLE_EXCLUDED: Record<string, string>;
+
 export declare const USER_TABLES: string[];
 
 export declare const USER_TABLE_SPEC: Record<string, {
+  hasUserId?: boolean;
+  ownerColumn?: string;
   anchor: string[];
   tombstone: string | null;
   active: string;

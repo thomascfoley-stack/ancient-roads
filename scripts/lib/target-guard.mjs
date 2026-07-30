@@ -19,6 +19,8 @@
 /** Production and dev endpoint ids. Lowercase; every comparison lowercases its input. */
 export const PROD_ENDPOINT = 'ep-odd-fog';
 export const DEV_ENDPOINT = 'ep-tiny-hat';
+/** Dev endpoints the audit/seed allow-list admits without a declaration (web/test/helpers/env.ts). */
+export const DEV_ENDPOINTS = ['ep-tiny-hat', 'ep-holy-rice-athhpp5z'];
 
 /** Lowercased host of a connection string. `new URL()` will not do this for postgresql:. */
 export function hostOf(url) {
@@ -41,7 +43,28 @@ export function isProdHost(url) {
 }
 
 export function isDevHost(url) {
-  return hostOf(url).startsWith(DEV_ENDPOINT);
+  const id = endpointId(hostOf(url));
+  return id !== null && DEV_ENDPOINTS.some((d) => id.startsWith(d));
+}
+
+export function isLocalHost(url) {
+  const h = hostOf(url);
+  return h.startsWith('localhost') || h.startsWith('127.0.0.1');
+}
+
+/**
+ * Audit / seed allow-list: localhost, dev endpoints, or an endpoint declared by exact id
+ * (AUDIT_ALLOWED_ENDPOINT or SEED_TEST_ENDPOINT — same ADR-032 discipline as seedOwnerUrl).
+ * Production is never allowed here; callers that need prod must use cutover override paths.
+ */
+export function isAuditAllowedHost(url, declaredEnv = process.env.AUDIT_ALLOWED_ENDPOINT ?? process.env.SEED_TEST_ENDPOINT) {
+  if (isLocalHost(url)) return true;
+  const id = endpointId(hostOf(url));
+  if (id === null) return false;
+  if (id.startsWith(PROD_ENDPOINT)) return false;
+  if (DEV_ENDPOINTS.some((d) => id.startsWith(d))) return true;
+  const declared = endpointId(declaredEnv);
+  return declared !== null && declared === id;
 }
 
 /**

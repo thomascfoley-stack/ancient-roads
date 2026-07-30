@@ -4,9 +4,11 @@ import { checkAskRateLimit } from '@/lib/rate-limit';
 import { apiError } from '@/lib/api-error';
 import { logEvent } from '@/lib/observability';
 import { teach, type TeacherEvent } from '@/lib/teacher/teach';
+import { ASK_MAX_DURATION_SEC } from '@/lib/teacher/teach-budget';
+import { logAskOutcome } from '@/lib/ask-outcome-log';
 
 export const runtime = 'nodejs';
-export const maxDuration = 300;
+export const maxDuration = ASK_MAX_DURATION_SEC;
 
 // POST /api/ask/stream { question } → newline-delimited JSON (NDJSON) stream of
 // TeacherEvents (retrieving → retrieved → composing → verifying → done). The
@@ -45,9 +47,8 @@ export async function POST(req: NextRequest) {
       };
       const startedAt = Date.now();
       try {
-        const result = await teach(question, { onEvent: write });
-        // Surfaces the production fallback rate (composed vs fallback vs empty).
-        logEvent('ask_outcome', { kind: result.kind, ms: Date.now() - startedAt });
+        const { result, meta } = await teach(question, { onEvent: write });
+        logAskOutcome(result.kind, Date.now() - startedAt, meta);
       } catch (e) {
         console.error('teacher stream error:', (e as Error).message);
         logEvent('error', { where: 'api/ask/stream', message: (e as Error).message });

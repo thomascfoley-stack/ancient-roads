@@ -1,0 +1,29 @@
+# 1.9 round 3 — one check run per job name per sha (PR #44)
+
+Clone: /Users/foley/Projects/ancient-roads-git
+Fix: removed `pull_request:` trigger from `.github/workflows/audit.yml` (ADR-040)
+
+## Before (sha ae1d4a7, run 30523549298 push + 30523644834 pull_request)
+
+```
+push:          audit=success, db-invariants=failure
+pull_request:  audit=skipped, db-invariants=skipped  (masks red)
+```
+
+## After (sha fba4e1a, run 30552166762 push only)
+
+Check runs for fba4e1a — exactly one per job name:
+```
+audit:          conclusion=success
+db-invariants:  conclusion=success
+```
+
+No pull_request run for fba4e1a (trigger removed). db-invariants log:
+```
+skip ceiling OK; artifact NOT RUN: 1 (verse-keys); secret-caused: 0
+receipt: executed=193 passed=190 skipped=3
+sections-unit-ordinal.test.ts: PASS (2 tests)
+```
+
+Prior failure case (ae1d4a7): push db-invariants=failure was masked by later pull_request skipped run.
+With trigger removed, a failing push would surface as the sole db-invariants conclusion.

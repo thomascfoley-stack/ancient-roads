@@ -1,0 +1,12 @@
+{
+  "description": "Neon branch ids that are restore points. Any script that deletes branches MUST read this registry and refuse registered ids. Deletion requires an owner ruling in docs/DECISIONS.md.",
+  "branches": [
+    {
+      "id": "br-late-recipe-atxl68sh",
+      "name": "pre-cutover-ep-odd-fog-atnykudm-20260729164220",
+      "created": "2026-07-29",
+      "phase": "Phase 2 prod cutover",
+      "rollback_for": "pre-cutover prod snapshot — every rollback string in scripts/cutover.mjs names it"
+    }
+  ]
+}

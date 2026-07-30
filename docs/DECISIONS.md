@@ -729,7 +729,24 @@ force `better-auth >= 1.6.22` until the auth migration closes SEC-1. Document in
 
 ## ADR-039 — barnes-notes prod repair: quarantine + CrossWire re-source (2026-07-30)
 
-**Status:** accepted (owner ruling; decision sheet §4 Option A).
+> **⛔ RETIRED (owner, work-order v2 Stage 0.1 / Stage 1.10). The orchestrator and this ADR's
+> repair path are withdrawn. Delete no Barnes rows.**
+>
+> **Why retired, measured:**
+> - `scripts/repair-barnes-prod.mjs` wrote `metadata.author = "Barnes' Notes"`, which matches no leg
+>   of `LEGAL_CORPUS_FILTER` — all 7,431 inserted rows would be unserved.
+> - The source jsonl carries `"author":"Albert Barnes"` on all 7,431 lines; the script never read
+>   that field.
+> - ~6,850 already-served `Albert Barnes` CrossWire rows sit untouched; `ingest-sword-commentaries.mts`
+>   already re-sources correctly without deleting prod rows.
+> - The DELETE path was testament-blind against an NT-only replacement (dev `barnes-notes` is
+>   1,189 units = 929 OT + 260 NT; `sword-zverse.ts` returns `[]` for absent testament).
+>
+> **Ruling:** delete `scripts/repair-barnes-prod.mjs` and `scripts/b0-seed.mjs`. Restore manifest
+> guard on `barnes-crosswire-nt` (`forbidden_provenance: skip`) per Stage 1.3. Barnes prod rows
+> unchanged until a separate owner slice.
+
+**Status:** accepted (owner ruling; decision sheet §4 Option A) — **historical only below**.
 
 **Context.** Production carries 1,300 `barnes-notes` sections with biblehub provenance
 (`status=staged`, unreachable). Flat pool rows under `"Barnes' Notes"` are 100% biblehub;
@@ -743,3 +760,19 @@ CrossWire SWORD, re-embed, slice `barnes-crosswire-nt`. Orchestrator:
 
 **Wrong if.** Search or reader returns biblehub bodies for the CrossWire slug after publish.
 
+## ADR-040 — CI runs on push only; no duplicate check runs per sha (2026-07-30)
+
+**Status:** accepted (work-order v2 PR #44 round 3).
+
+**Context.** `audit.yml` triggered on both `push` and `pull_request`. A push to a PR branch fired
+two workflow runs for the same sha: push could fail `db-invariants` while a later `pull_request`
+run skipped both jobs. GitHub treated the skipped check as passing, masking the red.
+
+**Decision.** Drop the `pull_request` trigger and the fork-guard `if:` on both jobs. CI runs on
+`push` to every branch (owner ruling 2026-07-29). PR status follows the branch's latest push.
+
+**Tradeoff.** Fork PRs without a push to the fork branch get no workflow run — acceptable because
+same-repo PRs were the failure mode (duplicate runs), and fork PRs previously relied on the same
+`if:` guard without a guaranteed push anyway.
+
+**Wrong if.** Two check runs with the same job name and different conclusions exist for one sha.

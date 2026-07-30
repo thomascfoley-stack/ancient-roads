@@ -83,11 +83,12 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 > the cutover**: E3 was dropped 2026-07-27 (owner) because it would drop 580 verses below the
 > ≥2-distinct-authors floor and leave 24 with no served voice, and the cutover has no ingest step to
 > refill them. The cutover is **E0, E1, E2, E4, E5, E6**; provenance cleanup is its own later slice.
-> See the ADR-030 correction. **Live user data: CLEARED 2026-07-28 by owner decision — the figures
-> that stood here are HISTORICAL.** The 2026-07-23 census measured 34 highlights (6 users, **only 24
-> active**), 2 notes (1 user), 1 chat; 5 of the 6 "users" were `qa-hl-a-<epoch>` test residue that had
-> reached prod, and the 6th was the owner. **E1's preserve-these-rows assertions are NOT relaxed** —
-> they now hold at `0 == 0`, and that guard is what protects the FIRST REAL USER.
+> See the ADR-030 correction. **Live user data (G1 inventory):** annotations (highlights, notes,
+> chats) **CLEARED 2026-07-28 by owner decision** — historical census was 34 highlights (6 users,
+> **only 24 active**), 2 notes (1 user), 1 chat; 5 of the 6 "users" were `qa-hl-a-<epoch>` test
+> residue. **`waitlist` (4 rows) and `channels` (1 row) were NOT cleared** and must survive cutover.
+> **E1's preserve-these-rows assertions are NOT relaxed** — annotations now hold at `0 == 0`;
+> waitlist/channels must not change.
 > **UNVERIFIED:** no deletion receipt or post-delete read-only artifact is committed, and
 > `docs/evidence/cutover-2026-07-28/23-prod-readonly-AFTER.txt` still reports the pre-deletion counts.
 > Treat "prod user data is empty" as owner-asserted, not as measured here. None
@@ -109,7 +110,7 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 | Sections after E4 | **72,863** sections; **5,824** reading units (`unit_ordinal` populated) | log lines 631–657, 732 |
 | Forbidden flat provenance | **71,884** (unchanged vs E0 baseline) | log lines 90, 732–733 |
 | Gill rows (smoke) | **28,843** | log line 732 |
-| G1 user-data | **empty baseline** — 0 highlights/notes/chats; vacuous on preservation, valid on "nothing added" | log lines 63–69, 746 |
+| G1 user-data | **empty annotation baseline** — 0 highlights/notes/chats; **waitlist + channels in inventory** (live on prod, not cleared) | log lines 63–69, 746 |
 | G2 ≥2 voices floor | **22,794** verses at floor; **29,629** with any voice | log lines 70–71, 747 |
 | G2 durable floor (excl. forbidden) | **22,214** at floor; **29,605** with any voice | log lines 71, 748 |
 | G5 register wall | **VACUOUS** — 0 lane/song slug rows (register ingest never on prod) | log lines 89, 767 |
@@ -203,8 +204,10 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
    fine). Left as-is; noted here so no agent trusts the relational framing.
 3. **SEC-1** — `better-auth 1.4.18` CVEs via `@neondatabase/auth` beta; blocks *public* launch. Interim question
    to Neon pending (`docs/SECURITY.md`, `OWNER_ACTIONS.md` §2).
-4. **CI (`db-invariants` job)** — split 2026-07-15 (`3ac0d9f`): the `audit` job is green on every push; the
-   licensing/tenancy invariants run only when the `APP_DATABASE_URL_TEST` secret (Neon test branch) exists, else a
-   visible green-with-`::warning::` placeholder. Verified locally under CI conditions; **the actual GitHub run has
-   not been observed from this environment** (`gh` not installed, private repo). Owner action: create the test
-   branch + secret (`OWNER_ACTIONS.md` §1).
+4. **CI (`db-invariants` job)** — **VERIFIED in GitHub Actions** (work-order v2 Stage 1, run
+   `30523549298` on sha `ae1d4a7`, push event). With secrets configured: **38 suite files executed**
+   (37 passed + 1 artifact NOT RUN: `verse-keys.test.ts` gitignored corpus). **`sections-unit-ordinal.test.ts`
+   ran and passed (2 tests, 206ms)** — first execution verification of ADR-026 ordering property in CI.
+   Round 3 (same PR): skip ceiling exempts artifact skips via `loud-skip-manifest.json` from
+   `announceSkip`; `pull_request` trigger removed (ADR-040) so one check run per job per sha.
+   Owner action if secrets missing: `OWNER_ACTIONS.md` §1.

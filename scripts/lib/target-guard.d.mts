@@ -3,6 +3,7 @@
 // prod-safety guard must not depend on a transpiler being present.
 export declare const PROD_ENDPOINT: string;
 export declare const DEV_ENDPOINT: string;
+export declare const DEV_ENDPOINTS: string[];
 
 /** Lowercased host of a connection string. `new URL()` will not do this for postgresql:. */
 export declare function hostOf(url: string): string;
@@ -12,6 +13,9 @@ export declare function endpointId(s: string | null | undefined): string | null;
 
 export declare function isProdHost(url: string): boolean;
 export declare function isDevHost(url: string): boolean;
+
+/** True when a DATABASE_URL may be used during npm run audit / seeding suites. */
+export declare function isAuditAllowedHost(url: string, declaredEnv?: string): boolean;
 
 /** Exact endpoint-id equality between the URL's host and the operator's declared target. */
 export declare function declaredMatches(url: string, declared: string | null | undefined): boolean;

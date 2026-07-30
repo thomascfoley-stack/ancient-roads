@@ -1,0 +1,6 @@
+./docs/OWNER_DECISIONS_2026-07-29.md:63:Orchestrator: `scripts/repair-barnes-prod.mjs`. Prod apply pending local `DEEPINFRA_API_KEY`.
+./docs/DECISIONS.md:736:> - `scripts/repair-barnes-prod.mjs` wrote `metadata.author = "Barnes' Notes"`, which matches no leg
+./docs/DECISIONS.md:745:> **Ruling:** delete `scripts/repair-barnes-prod.mjs` and `scripts/b0-seed.mjs`. Restore manifest
+./docs/DECISIONS.md:757:`scripts/repair-barnes-prod.mjs`.
+./WORKLOG.md:7:`scripts/repair-barnes-prod.mjs` + manifest skip removed on `barnes-crosswire-nt`; CrossWire
+./WORKLOG.md:17:- Prod `repair-barnes-prod.mjs --apply` (needs `DEEPINFRA_API_KEY` exported locally + owner quote)
