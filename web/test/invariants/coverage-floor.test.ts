@@ -76,7 +76,7 @@ describe('coverage floor (B2) at the shipped teach() seam', () => {
 
   it('reports kind:empty (no composing) when the confidently-asked book is absent', async () => {
     const { teach } = await import('@/lib/teacher/teach');
-    const result = await teach(SOS_QUERY);
+    const { result } = await teach(SOS_QUERY);
     expect(result.kind).toBe('empty');
     if (result.kind === 'empty') expect(result.reason).toMatch(/Song of Songs/i);
     expect(compose).not.toHaveBeenCalled(); // the gate is BEFORE compose — no wasted generation
@@ -85,7 +85,7 @@ describe('coverage floor (B2) at the shipped teach() seam', () => {
   it('does NOT fire when a retrieved chunk is on the asked passage', async () => {
     poolFactory = onPassagePool;
     const { teach } = await import('@/lib/teacher/teach');
-    const result = await teach(SOS_QUERY);
+    const { result } = await teach(SOS_QUERY);
     expect(result.kind).not.toBe('empty'); // coverage present -> proceed to compose/verify
   });
 });

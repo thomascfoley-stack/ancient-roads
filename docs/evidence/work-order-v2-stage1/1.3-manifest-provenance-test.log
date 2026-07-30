@@ -1,0 +1,10 @@
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git
+
+ ✓ test/invariants/manifest-provenance.test.ts (3 tests) 2ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  23:25:48
+   Duration  161ms (transform 21ms, setup 0ms, collect 15ms, tests 2ms, environment 0ms, prepare 33ms)
+

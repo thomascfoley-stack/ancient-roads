@@ -1,0 +1,15 @@
+diff --git a/ingest/sources.config.json b/ingest/sources.config.json
+index 904e7e5..7548287 100644
+--- a/ingest/sources.config.json
++++ b/ingest/sources.config.json
+@@ -1353,7 +1353,9 @@
+       }
+     },
+     "backfill": {
+-      "match_author": "Barnes' Notes"
++      "match_author": "Barnes' Notes",
++      "forbidden_provenance": "skip",
++      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,300 flat rows under this author are biblehub's, not the CrossWire module this entry names — and the author string is shared with the QUARANTINED barnes-notes entry, so slicing here would relabel quarantined content into a non-quarantined slug. Nothing is written until the owner rules: re-ingest from the named CrossWire edition, or quarantine this entry too."
+     }
+   },
+   {

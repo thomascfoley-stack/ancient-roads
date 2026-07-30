@@ -1,0 +1,11 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git/web
+
+ ✓ test/ask-outcome-discriminator.test.ts (1 test) 2ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  23:26:13
+   Duration  171ms (transform 14ms, setup 0ms, collect 12ms, tests 2ms, environment 0ms, prepare 26ms)
+

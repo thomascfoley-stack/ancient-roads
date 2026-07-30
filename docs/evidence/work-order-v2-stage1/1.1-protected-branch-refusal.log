@@ -1,0 +1,3 @@
+RED protected id: REFUSING branch delete: Neon branch br-late-recipe-atxl68sh is PROTECTED (docs/PROTECTED_BRANCHES.json). Rollback for: pre-cutover prod snapshot — every rollback string in scripts/cutover.mjs names it. Deletion requires an owner ruling recorded in docs/DECISIONS.md.
+RED protected pattern: REFUSING branch delete: name pre-cutover-ep-odd-fog-atnykudm-20260729164220 matches the protected pre-cutover prod snapshot pattern. See docs/PROTECTED_BRANCHES.json.
+GREEN disposable id: no throw

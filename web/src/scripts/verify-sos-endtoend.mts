@@ -27,7 +27,7 @@ const QUERIES = [
 for (const q of QUERIES) {
   console.log(`\n════════ ${q}`);
   try {
-    const r = await teach(q);
+    const { result: r } = await teach(q);
     console.log(`  kind = ${r.kind}`);
     if (r.kind === 'empty') {
       console.log(`  reason = ${r.reason}`);

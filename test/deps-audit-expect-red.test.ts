@@ -20,8 +20,8 @@ const adv = (ghsa: string, severity = 'high') => ({
 
 describe('deps-audit --expect-red set comparison', () => {
   it('passes when observed matches declared exactly', () => {
-    const findings = selectFindings({ dep: [adv('GHSA-qq9h-g4jm-xgf3')] }, new Set());
-    const observed = [...new Set(findings.map((f: { ghsa: string }) => f.ghsa))];
+    const findings = selectFindings({ dep: [adv('GHSA-qq9h-g4jm-xgf3')] }, new Set()) as { ghsa: string }[];
+    const observed = [...new Set(findings.map((f) => f.ghsa))];
     expect(expectRedOk(observed, new Set(['GHSA-qq9h-g4jm-xgf3']))).toBe(true);
   });
 
@@ -29,8 +29,8 @@ describe('deps-audit --expect-red set comparison', () => {
     const findings = selectFindings(
       { dep: [adv('GHSA-qq9h-g4jm-xgf3'), adv('GHSA-extra-bbbb-cccc')] },
       new Set(),
-    );
-    const observed = [...new Set(findings.map((f: { ghsa: string }) => f.ghsa))];
+    ) as { ghsa: string }[];
+    const observed = [...new Set(findings.map((f) => f.ghsa))];
     expect(expectRedOk(observed, new Set(['GHSA-qq9h-g4jm-xgf3']))).toBe(false);
   });
 
