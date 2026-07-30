@@ -118,6 +118,47 @@ export const PUBLISHED_DIGEST_SQL = `
 
 export const POSITIVE_CONTROL_SQL = `SELECT count(*)::int AS n FROM sources WHERE status = 'published'`;
 
+// Mirrors src/ingest/license-manifest.ts FORBIDDEN_PROVENANCE_DOMAINS — one predicate, not a file list.
+export const FORBIDDEN_PROVENANCE_DOMAINS = ['biblehub.com', 'studylight.org', 'historicalchristian.faith'];
+
+const forbiddenLike = (col) =>
+  FORBIDDEN_PROVENANCE_DOMAINS.map((d) => `coalesce(${col}, '') ILIKE '%${d}%'`).join(' OR ');
+
+/** True when a source's declared provenance URL is a forbidden aggregator domain. */
+export const SOURCE_FORBIDDEN_PROVENANCE_SQL = `(${forbiddenLike("src.provenance->>'url'")})`;
+
+/** True when a section's row-level content provenance is forbidden (031 source_url). */
+export const SECTION_FORBIDDEN_PROVENANCE_SQL = `(${forbiddenLike('sec.source_url')})`;
+
+/** Published works safe to sample for ordering excerpts — no forbidden provenance at source or section level. */
+export const CLEAN_EXCERPT_WORKS_SQL = `
+  SELECT src.slug, src.source_type
+  FROM sources src
+  WHERE src.status = 'published'
+    AND NOT (${SOURCE_FORBIDDEN_PROVENANCE_SQL})
+    AND NOT EXISTS (
+      SELECT 1 FROM sections sec
+      WHERE sec.source_id = src.id AND (${SECTION_FORBIDDEN_PROVENANCE_SQL})
+    )
+  ORDER BY src.source_type, src.slug`;
+
+export const EXCERPT_SECTIONS_SQL = `
+  SELECT sec.unit_ordinal, sec.ordinal, left(coalesce(sec.heading, ''), 80) AS heading
+  FROM sections sec
+  JOIN sources src ON src.id = sec.source_id
+  WHERE src.slug = $1
+  ORDER BY sec.unit_ordinal, sec.ordinal
+  LIMIT 20`;
+
+/** Pick up to three clean-provenance works (one per register when available). */
+export function pickExcerptSlugs(rows, limit = 3) {
+  const byRegister = new Map();
+  for (const p of rows) {
+    if (!byRegister.has(p.source_type)) byRegister.set(p.source_type, p.slug);
+  }
+  return [...byRegister.values()].slice(0, limit);
+}
+
 /**
  * Run the full published-work instrument against an open pg client.
  * @returns {{ ok: boolean, errors: string[], nulls: number, publishedWorks: number, digests: object[], mismatches: object[] }}

@@ -20,6 +20,9 @@ export declare function isAuditAllowedHost(url: string, declaredEnv?: string): b
 /** Exact endpoint-id equality between the URL's host and the operator's declared target. */
 export declare function declaredMatches(url: string, declared: string | null | undefined): boolean;
 
+/** Instrument CLI: exact id match OR host prefix (ep-odd-fog → ep-odd-fog-atnykudm…). */
+export declare function instrumentTargetMatches(url: string, declared: string | null | undefined): boolean;
+
 /** Dev is always allowed; anything else needs BOTH the override and an exact declared id. */
 export declare function assertCutoverTarget(
   url: string,

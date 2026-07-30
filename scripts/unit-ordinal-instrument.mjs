@@ -1,17 +1,25 @@
 #!/usr/bin/env node
 // Work Order v2 Stage 2.1 / 2.2 — unit_ordinal instrument (read-only CLI).
 //
-//   UNIT_ORDINAL_DATABASE_URL=<owner> node scripts/unit-ordinal-instrument.mjs \
+//   NEON_API_KEY=<key> node scripts/unit-ordinal-instrument.mjs \
 //     --read-only --target=ep-odd-fog [--json] [--out=docs/evidence/...]
 //
-// Rails: prod connection requires owner go + exact --target endpoint id.
-// Uses BEGIN READ ONLY, positive control, ROLLBACK always.
+// Mints app_runtime via neonctl in-process — never type or paste a prod connection string.
+// Uses BEGIN READ ONLY + server assert, positive control, target guard, ROLLBACK always.
 import pg from 'pg';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { hostOf, endpointId, declaredMatches } from './lib/target-guard.mjs';
-import { measurePublishedUnitOrdinal, rollupDigest } from './lib/unit-ordinal-instrument.mjs';
+import { endpointId } from './lib/target-guard.mjs';
+import { resolveInstrumentConnection } from './lib/neon-connection.mjs';
+import {
+  measurePublishedUnitOrdinal,
+  rollupDigest,
+  CLEAN_EXCERPT_WORKS_SQL,
+  EXCERPT_SECTIONS_SQL,
+  pickExcerptSlugs,
+  SOURCE_FORBIDDEN_PROVENANCE_SQL,
+} from './lib/unit-ordinal-instrument.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -21,22 +29,18 @@ const targetArg = args.find((a) => a.startsWith('--target='))?.split('=')[1];
 const outArg = args.find((a) => a.startsWith('--out='))?.split('=')[1];
 
 if (!READ_ONLY) {
-  console.error('Usage: node scripts/unit-ordinal-instrument.mjs --read-only --target=<endpoint-id> [--json] [--out=path]');
+  console.error('Usage: NEON_API_KEY=<key> node scripts/unit-ordinal-instrument.mjs --read-only --target=<endpoint-id> [--json] [--out=path]');
   process.exit(2);
 }
 
-const url = process.env.UNIT_ORDINAL_DATABASE_URL ?? process.env.CUTOVER_DATABASE_URL ?? process.env.DATABASE_URL;
-if (!url) throw new Error('UNIT_ORDINAL_DATABASE_URL (or CUTOVER_DATABASE_URL / DATABASE_URL) is unset');
-if (!targetArg) throw new Error('--target=<endpoint-id> is required (exact Neon endpoint id)');
-if (!declaredMatches(url, targetArg)) {
-  throw new Error(`STOP: host ${hostOf(url)} is not the declared target '${targetArg}'`);
-}
-
-const host = hostOf(url);
+const conn = resolveInstrumentConnection({ target: targetArg, role: 'app_runtime' });
+const url = conn.url;
+const host = endpointId(new URL(url).host) ?? new URL(url).host.toLowerCase();
 const say = (s) => { if (!AS_JSON) console.log(s); };
 
-say(`unit_ordinal instrument — read-only`);
-say(`  target: ${endpointId(host) ?? host} (credentials redacted)`);
+say('unit_ordinal instrument — read-only');
+say(`  target: ${host} (credentials redacted)`);
+say(`  connection: ${conn.source}${conn.role ? ` role=${conn.role}` : ''}${conn.branch ? ` branch=${conn.branch}` : ''}`);
 
 const c = new pg.Client({
   connectionString: url,
@@ -46,7 +50,15 @@ const c = new pg.Client({
 });
 await c.connect();
 
-const report = { host: endpointId(host), target: targetArg, ts: new Date().toISOString(), ok: false };
+const report = {
+  host,
+  target: targetArg,
+  ts: new Date().toISOString(),
+  ok: false,
+  connectionSource: conn.source,
+  role: conn.role ?? 'env',
+  excerptPolicy: 'clean-provenance works only; unit_ordinal + ordinal + heading — no body text',
+};
 try {
   await c.query('BEGIN');
   await c.query('SET TRANSACTION READ ONLY');
@@ -80,33 +92,30 @@ try {
     say('\n✓ PASS — all published works satisfy unit_ordinal instrument');
   }
 
-  // Stage 2.2 excerpt dump: first 20 units per work (three works across registers when available)
-  const picks = (await c.query(`
-    SELECT slug, source_type FROM sources WHERE status = 'published'
-    ORDER BY source_type, slug
-  `)).rows;
-  const byRegister = new Map();
-  for (const p of picks) {
-    if (!byRegister.has(p.source_type)) byRegister.set(p.source_type, p.slug);
+  // Stage 2.2 excerpt: ordering only — clean-provenance works, no body text in committed log.
+  const cleanWorks = (await c.query(CLEAN_EXCERPT_WORKS_SQL)).rows;
+  const sampleSlugs = pickExcerptSlugs(cleanWorks, 3);
+  report.excerptSampleSlugs = sampleSlugs;
+  report.excerptExcludedForbidden = (await c.query(`
+    SELECT count(*)::int AS n FROM sources src
+    WHERE src.status = 'published' AND (${SOURCE_FORBIDDEN_PROVENANCE_SQL})
+  `)).rows[0].n;
+
+  if (sampleSlugs.length === 0) {
+    throw new Error('STOP: no clean-provenance published works available for excerpt sample');
   }
-  const sampleSlugs = [...byRegister.values()].slice(0, 3);
+
   report.excerpts = {};
   for (const slug of sampleSlugs) {
-    const units = (await c.query(`
-      SELECT sec.unit_ordinal, sec.ordinal, left(coalesce(sec.heading, ''), 80) AS heading,
-             left(regexp_replace(sec.body, E'[\\n\\r]+', ' ', 'g'), 120) AS snippet
-      FROM sections sec
-      JOIN sources src ON src.id = sec.source_id
-      WHERE src.slug = $1
-      ORDER BY sec.unit_ordinal, sec.ordinal
-      LIMIT 20
-    `, [slug])).rows;
+    const units = (await c.query(EXCERPT_SECTIONS_SQL, [slug])).rows;
     report.excerpts[slug] = units;
-    say(`\n--- excerpt: ${slug} (first ${units.length} sections in reading order) ---`);
+    say(`\n--- excerpt: ${slug} (first ${units.length} sections in reading order; heading only, no body) ---`);
     for (const u of units) {
-      say(`  u${String(u.unit_ordinal).padStart(4)}.${String(u.ordinal).padStart(4)}  ${(u.heading || '(no heading)').slice(0, 60)}  ${u.snippet.slice(0, 80)}`);
+      say(`  u${String(u.unit_ordinal).padStart(4)}.${String(u.ordinal).padStart(4)}  ${(u.heading || '(no heading)').slice(0, 60)}`);
     }
   }
+  say(`\nexcerpt policy: ${report.excerptPolicy}`);
+  say(`  forbidden-provenance sources excluded from sample: ${report.excerptExcludedForbidden}`);
 } finally {
   await c.query('ROLLBACK').catch((e) => console.error(`ROLLBACK failed: ${e.message}`));
   await c.end();
@@ -120,12 +129,15 @@ if (outArg) {
     `target: ${report.target}`,
     `ok: ${report.ok}`,
     `rollupDigest: ${report.rollupDigest}`,
+    `excerptPolicy: ${report.excerptPolicy}`,
+    `forbiddenProvenanceSourcesExcluded: ${report.excerptExcludedForbidden}`,
+    `sampleSlugs: ${(report.excerptSampleSlugs ?? []).join(', ')}`,
     '',
     ...((report.errors ?? []).map((e) => `ERROR: ${e}`)),
     '',
     ...(report.excerpts ? Object.entries(report.excerpts).flatMap(([slug, rows]) => [
       `## ${slug}`,
-      ...rows.map((u) => `u${u.unit_ordinal}.${u.ordinal}\t${u.heading || ''}\t${u.snippet}`),
+      ...rows.map((u) => `u${u.unit_ordinal}.${u.ordinal}\t${u.heading || ''}`),
       '',
     ]) : []),
   ].join('\n'));

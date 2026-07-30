@@ -78,6 +78,18 @@ export function declaredMatches(url, declared) {
 }
 
 /**
+ * Instrument / read-only CLI target check. Accepts exact endpoint id match OR host prefix
+ * (ep-odd-fog matches ep-odd-fog-atnykudm… — same rule as cutover STEP ZERO).
+ */
+export function instrumentTargetMatches(url, declared) {
+  if (declaredMatches(url, declared)) return true;
+  const host = hostOf(url);
+  const want = String(declared ?? '').toLowerCase().trim();
+  if (!want) return false;
+  return host.startsWith(want);
+}
+
+/**
  * The allow rule shared by the cutover's delegate scripts: dev is always fine; a
  * non-dev target requires BOTH the cutover override AND an exactly-declared endpoint.
  * Prod is not special-cased here — it is reachable only by being declared exactly,
