@@ -9,11 +9,11 @@
 import pg from 'pg';
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { endpointId } from './lib/target-guard.mjs';
-import { resolveInstrumentConnection, INSTRUMENT_ROLE } from './lib/neon-connection.mjs';
+import { resolveInstrumentConnection, assertReadOnlySession, INSTRUMENT_ROLE } from './lib/neon-connection.mjs';
 import { measurePublishedUnitOrdinal, rollupDigest } from './lib/unit-ordinal-instrument.mjs';
+import { buildExcerptReport, loadManifestById, renderExcerptLines } from './lib/excerpt-sample-policy.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -30,6 +30,13 @@ const EXCERPT_SECTIONS_SQL = `
   ORDER BY sec.unit_ordinal, sec.ordinal
   LIMIT 20`;
 
+// The provenance scan pulls section rows into this process, so it must be bounded — the
+// production `sections` table is ~73k rows today and nothing stops it growing. We ask for
+// LIMIT+1: if the extra row comes back the scan did NOT see the whole population, and
+// buildExcerptReport refuses to certify anything rather than reporting "no forbidden rows
+// found" about a partial read.
+const SECTION_SCAN_LIMIT = 200_000;
+
 if (!READ_ONLY) {
   console.error('Usage: NEON_API_KEY=<key> node scripts/unit-ordinal-instrument.mjs --read-only --target=<endpoint-id> [--json] [--out=path]');
   process.exit(2);
@@ -39,21 +46,6 @@ const conn = resolveInstrumentConnection({ target: targetArg, role: INSTRUMENT_R
 const url = conn.url;
 const host = endpointId(new URL(url).host) ?? new URL(url).host.toLowerCase();
 const say = (s) => { if (!AS_JSON) console.log(s); };
-
-function selectExcerptSample(sources, sectionRows) {
-  const payload = JSON.stringify({ sources, sectionRows });
-  const out = execFileSync('npx', ['tsx', path.join(ROOT, 'scripts/lib/excerpt-sample-policy.mts'), '--select'], {
-    cwd: ROOT,
-    encoding: 'utf8',
-    input: payload,
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
-  return JSON.parse(out);
-}
-
-function formatExcerptLine(u) {
-  return `u${u.unit_ordinal}.${u.ordinal}\t${u.heading ?? ''}`;
-}
 
 say('unit_ordinal instrument — read-only');
 say(`  target: ${host} (credentials redacted)`);
@@ -78,14 +70,8 @@ const report = {
 try {
   await c.query('BEGIN');
   await c.query('SET TRANSACTION READ ONLY');
-  const ro = (await c.query('SHOW transaction_read_only')).rows[0].transaction_read_only;
-  if (ro !== 'on') throw new Error('STOP: read-only transaction not in force');
-
-  const roleRow = (await c.query('SELECT current_user')).rows[0];
-  if (roleRow.current_user !== INSTRUMENT_ROLE) {
-    throw new Error(`STOP: connected role is '${roleRow.current_user}', expected '${INSTRUMENT_ROLE}'`);
-  }
-  say(`  server role: ${INSTRUMENT_ROLE} ✓`);
+  await assertReadOnlySession(c, { role: INSTRUMENT_ROLE });
+  say(`  server role: ${INSTRUMENT_ROLE} ✓  (read-only transaction confirmed at the server)`);
 
   const control = (await c.query(`SELECT count(*)::int AS n FROM sources WHERE status = 'published'`)).rows[0];
   say(`\nPOSITIVE CONTROL: published sources = ${control.n} ${control.n > 0 ? '✓' : '✗ ABORT'}`);
@@ -119,18 +105,24 @@ try {
     FROM sources WHERE status = 'published'
     ORDER BY source_type, slug
   `)).rows;
-  const sectionRows = (await c.query(`
+  const scanRows = (await c.query(`
     SELECT src.slug, sec.source_url
     FROM sections sec
     JOIN sources src ON src.id = sec.source_id
     WHERE src.status = 'published'
+    LIMIT ${SECTION_SCAN_LIMIT + 1}
   `)).rows;
+  const sectionScan = { rows: scanRows.slice(0, SECTION_SCAN_LIMIT), truncated: scanRows.length > SECTION_SCAN_LIMIT };
 
-  const excerpt = selectExcerptSample(publishedSources, sectionRows);
+  const excerpt = buildExcerptReport(publishedSources, sectionScan, loadManifestById());
   report.excerptHeader = excerpt.header;
   report.excerptSampleSlugs = excerpt.sampleSlugs;
   report.excerptEligibility = excerpt.eligibility;
+  report.excerptScanTruncated = excerpt.scanTruncated;
 
+  if (excerpt.scanTruncated) {
+    throw new Error(`STOP: section source_url scan hit its ${SECTION_SCAN_LIMIT}-row limit — the provenance filter did not see the whole population and may not certify any work`);
+  }
   if (excerpt.sampleSlugs.length === 0) {
     throw new Error('STOP: no manifest-eligible published works for excerpt sample');
   }
@@ -140,7 +132,7 @@ try {
     const units = (await c.query(EXCERPT_SECTIONS_SQL, [slug])).rows;
     report.excerpts[slug] = units;
     say(`\n--- excerpt: ${slug} (first ${units.length} sections; ordering fields only) ---`);
-    for (const u of units) say(`  ${formatExcerptLine(u)}`);
+    for (const line of renderExcerptLines(units)) say(`  ${line}`);
   }
   say(`\n${excerpt.header}`);
 } finally {
@@ -163,7 +155,7 @@ if (outArg) {
     '',
     ...(report.excerpts ? Object.entries(report.excerpts).flatMap(([slug, rows]) => [
       `## ${slug}`,
-      ...rows.map((u) => formatExcerptLine(u)),
+      ...renderExcerptLines(rows),
       '',
     ]) : []),
   ].join('\n'));

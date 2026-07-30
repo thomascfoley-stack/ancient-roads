@@ -10,6 +10,10 @@ export declare function mintNeonConnectionString(opts: {
   project: string;
   apiKey: string;
 }): string;
+export declare function assertReadOnlySession(
+  client: { query(sql: string): Promise<{ rows: Array<Record<string, unknown>> }> },
+  opts?: { role?: string },
+): Promise<{ readOnly: true; role: string }>;
 export declare function resolveInstrumentConnection(opts: {
   target: string;
   role?: string;

@@ -1,0 +1,174 @@
+=== Work Order v2 Tranche 0 red-proofs — 2026-07-30T18:22:17Z ===
+
+### STATE 2 — SEED A: npx tsx shell-out restored in scripts/unit-ordinal-instrument.mjs (real product code)
+     → expected [ Array(1) ] to deeply equal []
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/prod-path-no-transpiler.test.ts > production instrument path — static shape > invokes no transpiler
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   "scripts/unit-ordinal-instrument.mjs",
++ ]
+
+ ❯ test/prod-path-no-transpiler.test.ts:78:58
+     76|   it('invokes no transpiler', () => {
+     77|     const offenders = graph.filter((f) => TRANSPILER.test(codeOnly(rea…
+     78|     expect(offenders.map((f) => path.relative(ROOT, f))).toEqual([]);
+       |                                                          ^
+     79|   });
+     80| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 passed (5)
+   Start at  11:22:18
+   Duration  262ms (transform 22ms, setup 0ms, collect 15ms, tests 40ms, environment 0ms, prepare 41ms)
+
+exit=0
+
+### STATE 3 — SEED A REVERTED
+### STATE 4 — green again:
+
+ ✓ test/prod-path-no-transpiler.test.ts (5 tests) 40ms
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  11:22:30
+   Duration  223ms (transform 17ms, setup 0ms, collect 13ms, tests 40ms, environment 0ms, prepare 40ms)
+
+
+### STATE 2 — SEED B: excerpt-sample-policy.mjs imports src/ingest/license-manifest.ts (TypeScript back on the prod path)
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git
+
+ ❯ test/prod-path-no-transpiler.test.ts (5 tests | 1 failed) 74ms
+   × production instrument path — static shape > contains no TypeScript — plain node can load every file on it 3ms
+     → expected [ 'src/ingest/license-manifest.ts' ] to deeply equal []
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/prod-path-no-transpiler.test.ts > production instrument path — static shape > contains no TypeScript — plain node can load every file on it
+AssertionError: expected [ 'src/ingest/license-manifest.ts' ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   "src/ingest/license-manifest.ts",
++ ]
+
+ ❯ test/prod-path-no-transpiler.test.ts:73:51
+     71|   it('contains no TypeScript — plain node can load every file on it', …
+     72|     const ts = graph.filter((f) => /\.(ts|mts|cts|tsx)$/.test(f));
+     73|     expect(ts.map((f) => path.relative(ROOT, f))).toEqual([]);
+       |                                                   ^
+     74|   });
+     75| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 passed (5)
+   Start at  11:22:41
+   Duration  278ms (transform 15ms, setup 0ms, collect 14ms, tests 74ms, environment 0ms, prepare 34ms)
+
+
+### STATE 3 — SEED B REVERTED
+
+### STATE 2 — SEED C: excerpt-sample-policy.mjs loadManifestById() shells out to `npx --yes json5` (a registry fetch on the prod path)
+  code: 'ENOENT',
+  syscall: 'spawnSync npx',
+  path: 'npx',
+  spawnargs: [ '--yes', 'json5', '--version' ],
+  error: [Circular *1],
+  status: null,
+  signal: null,
+  output: null,
+  pid: 0,
+  stdout: undefined,
+  stderr: undefined
+}
+
+Node.js v24.5.0
+
+ ❯ loadManifestById scripts/lib/excerpt-sample-policy.mjs:21:3
+ ❯ [eval1]:8:9
+ ❯ test/prod-path-no-transpiler.test.ts:120:17
+    118|     // which is exactly the thing being ruled out.
+    119|     const emptyPath = mkdtempSync(path.join(os.tmpdir(), 'no-path-'));
+    120|     const out = execFileSync(process.execPath, ['--input-type=module',…
+       |                 ^
+    121|       cwd: ROOT,
+    122|       encoding: 'utf8',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 passed (5)
+   Start at  11:23:10
+   Duration  256ms (transform 18ms, setup 0ms, collect 14ms, tests 33ms, environment 0ms, prepare 35ms)
+
+
+### STATE 3 — SEED C REVERTED
+
+### STATE 2 — SEED D (0.2): formatExcerptLine changed in the ONE shared definition (u1.2 -> UNIT-1/2)
+4: ✓ test/excerpt-sample-policy.test.ts (11 tests) 2ms
+6:      if (line !== 'u1.2\th') throw new Error('formatter drift under plain node: ' + JSON.stringify(line));
+9:Error: formatter drift under plain node: "UNIT-1/2\th"
+18:   × production instrument path — runs under plain node with no PATH and no registry > loads and computes the excerpt decision with npx unreachable 30ms
+30:      if (line !== 'u1.2\th') throw new Error('formatter drift under plain node: ' + JSON.stringify(line));
+36:      if (line !== 'u1.2\th') throw new Error('formatter drift under plain node: ' + JSON.stringify(line));
+39:Error: formatter drift under plain node: "UNIT-1/2\th"
+49:⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+51: FAIL  test/prod-path-no-transpiler.test.ts > production instrument path — runs under plain node with no PATH and no registry > loads and computes the excerpt decision with npx unreachable
+63:      if (line !== 'u1.2\th') throw new Error('formatter drift under plain node: ' + JSON.stringify(line));
+69:      if (line !== 'u1.2\th') throw new Error('formatter drift under plain node: ' + JSON.stringify(line));
+72:Error: formatter drift under plain node: "UNIT-1/2\th"
+93:      Tests  1 failed | 15 passed (16)
+
+--- with the byte pin added, still under SEED D ---
+   × one excerpt line formatter (Tranche 0.2) > pins the bytes that reach the committed log 3ms
+     → expected 'UNIT-1/2\th' to be 'u1.2\th' // Object.is equality
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+AssertionError: expected 'UNIT-1/2\th' to be 'u1.2\th' // Object.is equality
+      Tests  1 failed | 11 passed (12)
+
+### STATE 3/4 — SEED D REVERTED, green:
+ ✓ test/excerpt-sample-policy.test.ts (12 tests) 3ms
+ ✓ test/prod-path-no-transpiler.test.ts (5 tests) 36ms
+      Tests  17 passed (17)
+
+### STATE 2 — SEED E: manifest entry barnes-crosswire-nt REMOVED ENTIRELY from ingest/sources.config.json
+   × manifest fixtures the eligibility assertions depend on > barnes-crosswire-nt is present and is the forbidden_provenance=skip case 2ms
+     → manifest entry vanished — the skip assertion would pass vacuously: expected undefined to be defined
+   × excerptEligibility > a forbidden_provenance=skip work is ineligible FOR THAT REASON 1ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+AssertionError: manifest entry vanished — the skip assertion would pass vacuously: expected undefined to be defined
+     34|     expect(entry, 'manifest entry vanished — the skip assertion would …
+AssertionError: expected 'no manifest entry — cannot certify' to match /forbidden_provenance=skip/
+      Tests  2 failed | 10 passed (12)
+
+### STATE 3/4 — SEED E REVERTED (git checkout), green:
+ ✓ test/excerpt-sample-policy.test.ts (12 tests) 3ms
+      Tests  12 passed (12)
+
+### STATE 2 — SEED F: server-side role assertion deleted from scripts/lib/neon-connection.mjs
+   × §3 — the session is checked AT THE SERVER, every run > refuses when the server resolved a different role — e.g. the owner 3ms
+     → promise resolved "{ readOnly: true, role: 'neondb_owner' }" instead of rejecting
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+AssertionError: promise resolved "{ readOnly: true, role: 'neondb_owner' }" instead of rejecting
+      Tests  1 failed | 8 passed (9)
+
+### STATE 3/4 — SEED F REVERTED, green:
+ ✓ test/unit-ordinal-instrument-preflight.test.ts (9 tests) 3ms
+      Tests  9 passed (9)
+
+=== end Tranche 0 red-proof log ===

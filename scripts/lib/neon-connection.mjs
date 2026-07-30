@@ -60,6 +60,31 @@ export function mintNeonConnectionString({ branch, role, project, apiKey }) {
 }
 
 /**
+ * Assert, AT THE SERVER, that this session cannot write and is who it claims to be.
+ *
+ * Both legs are server-side answers, not local beliefs: `SHOW transaction_read_only`
+ * is what Postgres will actually enforce, and `current_user` is the role the server
+ * resolved — a minted URL that says `app_runtime` proves nothing if the endpoint
+ * mapped it to the owner. This lives here, next to the minting, so that the CLI has
+ * exactly one call to make and a test can drive it with a fake client instead of a
+ * production connection.
+ *
+ * @param client an open pg client
+ * @param expectedRole the role the session must be running as
+ */
+export async function assertReadOnlySession(client, { role = INSTRUMENT_ROLE } = {}) {
+  const ro = (await client.query('SHOW transaction_read_only')).rows[0]?.transaction_read_only;
+  if (ro !== 'on') {
+    throw new Error(`STOP: read-only transaction not in force (transaction_read_only=${ro ?? 'unknown'})`);
+  }
+  const actualRole = (await client.query('SELECT current_user')).rows[0]?.current_user;
+  if (actualRole !== role) {
+    throw new Error(`STOP: connected role is '${actualRole ?? 'unknown'}', expected '${role}'`);
+  }
+  return { readOnly: true, role: actualRole };
+}
+
+/**
  * Resolve connection for unit_ordinal instrument.
  * Exactly ONE credential source: NEON_API_KEY. No DATABASE_URL fallback chain.
  */

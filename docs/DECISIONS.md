@@ -831,3 +831,44 @@ message on a closed branch.
 3. **Falsifiable condition.** The 2026-07-30 read measured **7 sources, all `staged`, 0 `published`**
    (72,863 sections). If that holds, the instrument's positive control could not pass and Stage 2.2
    cannot measure ordering on production until a publish flip — see `STATE_OF_TRUTH.md` §2d.
+
+## ADR-043 — G10 is UNDISCHARGED on production; presence is not discharge (2026-07-30)
+
+**Status:** accepted (work-order v2 Tranche 0.3). **G10 is dropped from the Stage 2.2 go criteria.**
+
+**Context.** `scripts/cutover-gate-redproof.mjs` carries a G10 case that seeds a NULL
+`unit_ordinal` on a published section and expects the gate to go red. It has never run against a
+target that could host the seed. Its donor query is
+
+    SELECT sec.id FROM sections sec JOIN sources src ON src.id = sec.source_id
+     WHERE src.status = 'published' AND sec.unit_ordinal IS NOT NULL LIMIT 1
+
+and production has **7 sources, all `staged`, 0 `published`** (ADR-042 ruling 3; STATE_OF_TRUTH §2d).
+So the case takes its `SKIPPED` branch. The harness is honest about this — it prints
+`SKIPPED  G10` and exits non-zero — but the branch has been read as "the proof exists."
+
+**Decision. Presence is not discharge.** A red-proof case that has only ever taken its skip branch
+is an *unexecuted* proof, not a passing one. G10's red-proof is **written, not discharged**, and
+G10 therefore does not count toward the Stage 2.2 go decision. `docs/evidence/work-order-v2-stage2/README.md`
+must not carry G10 as FIXED, DONE, or PROVEN until the condition below is met.
+
+**Why not discharge it now.** The only way to discharge it is a target that carries at least one
+published section with a non-NULL `unit_ordinal`. Production has none and must not be written to.
+Manufacturing one requires creating a Neon fork and publishing rows on it — a branch operation and
+an owner-level call, not something this work order authorises. Seeding `status='published'` on dev
+to make the proof runnable would be worse: it would discharge the proof against a population that
+was invented for the proof.
+
+**Falsifiable condition — bound to the publish flip, not to a date.**
+
+> G10 is discharged when `scripts/cutover-gate-redproof.mjs` runs on a target carrying ≥1 published
+> section with non-NULL `unit_ordinal` and prints `PROVEN  G10 unit_ordinal` — not `SKIPPED`. The
+> first target on which this is possible is whatever branch the publish flip (Tranche 3,
+> `docs/evidence/work-order-v2-stage2/PUBLISH_FLIP.md`) is rehearsed on. **Run it there, on the
+> rehearsal fork, BEFORE the flip is applied to production** — that is the whole point of rehearsing
+> on a fork that has the published rows.
+
+**Wrong if.** Any document records G10 as proven while the most recent `cutover-gate-redproof.mjs`
+run for that claim printed `SKIPPED  G10`. Equally wrong if the flip is applied to production and
+G10 is discharged only afterwards: the proof would then be establishing that the gate can catch a
+defect in rows that are already serving readers.

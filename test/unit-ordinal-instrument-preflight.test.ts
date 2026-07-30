@@ -78,6 +78,35 @@ describe('§2 — scrubbed errors, no credential leak', () => {
   });
 });
 
+describe('§3 — the session is checked AT THE SERVER, every run', () => {
+  // A minted URL that says `app_runtime` is a local belief. What matters is the role the
+  // server resolved and whether Postgres will actually refuse a write, so both answers are
+  // read back out of the connection. This is a STANDING test because the assertion used to
+  // live inline in the CLI, where the only way to exercise it was to connect to production.
+  const fakeClient = (answers: Record<string, unknown>) => ({
+    query: async (sql: string) => {
+      if (/transaction_read_only/.test(sql)) return { rows: [{ transaction_read_only: answers.ro }] };
+      if (/current_user/.test(sql)) return { rows: [{ current_user: answers.role }] };
+      throw new Error(`unexpected query: ${sql}`);
+    },
+  });
+
+  it('passes when the server says read-only and app_runtime', async () => {
+    await expect(neonConn.assertReadOnlySession(fakeClient({ ro: 'on', role: 'app_runtime' })))
+      .resolves.toMatchObject({ readOnly: true, role: 'app_runtime' });
+  });
+
+  it('refuses when the server resolved a different role — e.g. the owner', async () => {
+    await expect(neonConn.assertReadOnlySession(fakeClient({ ro: 'on', role: 'neondb_owner' })))
+      .rejects.toThrow(/connected role is 'neondb_owner', expected 'app_runtime'/);
+  });
+
+  it('refuses when the read-only transaction is not in force', async () => {
+    await expect(neonConn.assertReadOnlySession(fakeClient({ ro: 'off', role: 'app_runtime' })))
+      .rejects.toThrow(/read-only transaction not in force/);
+  });
+});
+
 describe('instrumentTargetMatches', () => {
   it('ep-odd-fog prefix matches full prod host', () => {
     expect(instrumentTargetMatches(PROD_URL, 'ep-odd-fog')).toBe(true);
