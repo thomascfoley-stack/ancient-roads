@@ -1,0 +1,281 @@
+===============================================================================
+TRANCHE 4 — corpus identity red-proofs (Work Order v2 Stage 3.1)
+date: 2026-07-31T06:39:26Z
+head: ba82a5d
+corpus on disk: 66 books / 308 works / 1,212 files / 191,749 entries
+===============================================================================
+
+Every run is  DEPLOYING=1 npx tsx scripts/predeploy-gate.ts  — the deploy path.
+Seeds are in the REAL corpus and REAL product code, reverted with git checkout.
+Four states per seed: baseline green, seeded red, reverted, green again.
+=== SEED A: delete a real commentary file ===
+
+--- A0 BASELINE GREEN ---
+
+=== Pre-deploy gate: licensing ratchet ===
+  forbidden-provenance entries : 0
+  committed baseline           : 0
+
+[32m✓ Ratchet holds.[0m Shipping 0 known forbidden-provenance entries (≤ baseline).
+  This is DEBT, not approval. It is visible, it is capped, and it may only shrink.
+  Reduce it via docs/CONTENT_RECOVERY_PIPELINE.md.
+
+
+=== Pre-deploy gate: Bible-translation licensing (per-work record) ===
+  ✓ Every translation dir present has a shipping license record (allow, or conditional+ack).
+
+=== Pre-deploy gate: corpus identity (file count + per-work presence) ===
+  works (authors) present      : 308
+  books present                : 66
+  chapter files present        : 1,212
+  entries present              : 191,749
+  corpusHash                   : 5ea27410facad96369bbbab9f36d14b741c07c0f02bbc7786f3f45e4b69f5eda
+  last manifest                : 839017d v2 (308 works, 1,212 files, 191,749 entries)
+  [32m✓ No work lost since the last committed manifest.[0m
+
+=== Pre-deploy gate: §3 verse-key distribution (no artifact exemption) ===
+  entries scanned              : 191,749
+  authors over the n floor     : 45
+  [32m✓ No author collapsed to the chapter number.[0m
+  [32m✓ No served entry carries forbidden aggregator provenance.[0m
+exit=0
+    (bytes of web/public/commentaries/jhn/1.json held in /tmp/redproof-victim.json)
+
+--- A1 SEEDED RED — rm web/public/commentaries/jhn/1.json ---
+
+=== Pre-deploy gate: licensing ratchet ===
+  forbidden-provenance entries : 0
+  committed baseline           : 0
+
+[32m✓ Ratchet holds.[0m Shipping 0 known forbidden-provenance entries (≤ baseline).
+  This is DEBT, not approval. It is visible, it is capped, and it may only shrink.
+  Reduce it via docs/CONTENT_RECOVERY_PIPELINE.md.
+
+
+=== Pre-deploy gate: Bible-translation licensing (per-work record) ===
+  ✓ Every translation dir present has a shipping license record (allow, or conditional+ack).
+
+=== Pre-deploy gate: corpus identity (file count + per-work presence) ===
+  works (authors) present      : 308
+  books present                : 66
+  chapter files present        : 1,211
+  entries present              : 191,100
+  corpusHash                   : d66315f11142defed9850e6c637ecc6c9acdb0875c3a174a86a30bbf57372f9a
+  last manifest                : 839017d v2 (308 works, 1,212 files, 191,749 entries)
+
+[31m✗ PRE-DEPLOY GATE FAILED[0m
+CORPUS RATCHET VIOLATION — content is about to ship that is SMALLER than the last
+manifest, or cannot be compared to one:
+
+  • corpus file count DECREASED: 1212 → 1211 (−1)
+  • commentary entry count DECREASED: 191749 → 191100 (−649)
+  • work 'Adam Clarke' shrank: 13318 → 13274
+  • work 'Jerome' shrank: 1523 → 1520
+  • work 'John Gill' shrank: 28300 → 28252
+  • work 'Matthew Henry' shrank: 4124 → 4117
+  • work 'Theodoret of Cyrus' shrank: 1386 → 1384
+  • work 'Tyndale Study Notes' shrank: 15161 → 15130
+  • work 'Jamieson, Fausset & Brown' shrank: 16966 → 16926
+  • work 'John Wesley' shrank: 16850 → 16813
+  • work 'C.I. Scofield' shrank: 3207 → 3198
+  • work 'Matthew Poole' shrank: 24104 → 24053
+  • work 'Gregory of Nazianzus' shrank: 257 → 254
+  • work 'Augustine of Hippo' shrank: 3058 → 3049
+  • work 'Charles Haddon Spurgeon' shrank: 3462 → 3439
+  • work 'Alexander Maclaren' shrank: 1211 → 1201
+  • work 'Origen of Alexandria' shrank: 1272 → 1252
+  • work 'Eusebius of Caesarea' shrank: 317 → 314
+  • work 'Basil of Caesarea' shrank: 585 → 582
+  • work 'John Damascene' shrank: 191 → 190
+  • work 'CS Lewis' shrank: 1102 → 1074
+  • work 'Apostolic Constitutions' shrank: 160 → 159
+  • work 'GK Chesterton' shrank: 714 → 706
+  • work 'Athanasius of Alexandria' shrank: 300 → 297
+  • work 'Gregory of Nyssa' shrank: 341 → 340
+  • work 'Theodore of Mopsuestia' shrank: 493 → 476
+  • work 'Barnes' Notes' shrank: 7431 → 7384
+  • work 'John Calvin' shrank: 11140 → 11093
+  • work 'B.W. Johnson' shrank: 6067 → 6028
+  • work 'John Owen' shrank: 182 → 179
+  • work 'Charles Hodge' shrank: 199 → 197
+  • work 'John Flavel' shrank: 117 → 113
+  • work 'Jonathan Edwards' shrank: 421 → 416
+  • work 'Cyril of Jerusalem' shrank: 297 → 294
+  • work 'Ambrose of Milan' shrank: 178 → 177
+  • work 'Ephrem the Syrian' shrank: 790 → 782
+  • work 'Pseudo-Clement' shrank: 81 → 80
+  • work 'John Chrysostom' shrank: 1764 → 1743
+  • work 'Cyril of Alexandria' shrank: 814 → 794
+  • work 'Isaac Watts' shrank: 391 → 388
+  • work 'Philip Schaff' shrank: 95 → 90
+  • work 'Maximus the Confessor' shrank: 13 → 11
+  • work 'Thomas Watson' shrank: 118 → 117
+  • work 'John Keble' shrank: 93 → 91
+  • work 'Prudentius' shrank: 59 → 57
+  • work 'Ammonius of Alexandria' shrank: 70 → 68
+  • work 'Romanos the Melodist' shrank: 31 → 30
+  • work 'Melito of Sardis' shrank: 5 → 4
+  • work 'Pseudo-Athanasius' shrank: 28 → 27
+  • work 'Theophylact of Ohrid' shrank: 11 → 10
+  • work 'Apollinaris of Laodicea' shrank: 73 → 72
+  • work 'Cosmas of Maiuma' shrank: 2 → 1
+  • work 'Sophronius of Jerusalem' shrank: 4 → 3
+  • work 'Thomas Aquinas (comp.), trans. J.H. Newman' shrank: 821 → 799
+  • book 'jhn' shrank: 21 → 20
+
+A missing work is invisible in the reader: it renders whatever it finds, so a
+half-finished regeneration ships as a quietly smaller library. Either restore the
+content, or — if the reduction is intended — run
+  node scripts/build-corpus-manifest.mjs
+and COMMIT the new manifest, which is how you say so on the record.
+
+exit=1
+
+--- A2 REVERTED — file restored ---
+
+=== Pre-deploy gate: licensing ratchet ===
+  forbidden-provenance entries : 0
+  committed baseline           : 0
+
+[32m✓ Ratchet holds.[0m Shipping 0 known forbidden-provenance entries (≤ baseline).
+  This is DEBT, not approval. It is visible, it is capped, and it may only shrink.
+  Reduce it via docs/CONTENT_RECOVERY_PIPELINE.md.
+
+
+=== Pre-deploy gate: Bible-translation licensing (per-work record) ===
+  ✓ Every translation dir present has a shipping license record (allow, or conditional+ack).
+
+=== Pre-deploy gate: corpus identity (file count + per-work presence) ===
+  works (authors) present      : 308
+  books present                : 66
+  chapter files present        : 1,212
+  entries present              : 191,749
+  corpusHash                   : 5ea27410facad96369bbbab9f36d14b741c07c0f02bbc7786f3f45e4b69f5eda
+  last manifest                : 839017d v2 (308 works, 1,212 files, 191,749 entries)
+  [32m✓ No work lost since the last committed manifest.[0m
+
+=== Pre-deploy gate: §3 verse-key distribution (no artifact exemption) ===
+  entries scanned              : 191,749
+  authors over the n floor     : 45
+  [32m✓ No author collapsed to the chapter number.[0m
+  [32m✓ No served entry carries forbidden aggregator provenance.[0m
+exit=0
+
+=== SEED B: point the corpus elsewhere, so every corpus check would SKIP ===
+Seeded in web/test/helpers/corpus-scan.ts COMMENTARIES_DIR — the ONE definition the
+licensing ratchet, the invariant suite and this gate all import. A moved or mistyped
+corpus path is exactly how the artifact-skip loophole occurs in practice.
+-export const COMMENTARIES_DIR = path.join(WEB_ROOT, 'public/commentaries');
++export const COMMENTARIES_DIR = path.join(WEB_ROOT, 'public/commentaries-MOVED');
+
+--- B1 SEEDED RED — corpus path moved ---
+
+=== Pre-deploy gate: licensing ratchet ===
+
+[31m✗ PRE-DEPLOY GATE FAILED[0m
+The static commentary corpus is missing:
+  /Users/foley/Projects/ancient-roads-git/web/public/commentaries-MOVED
+
+Refusing to deploy. Either the reader will ship with no content, or content is
+about to be uploaded that this gate never counted. Both are unacceptable.
+Regenerate it (src/ingest/merge-commentaries.ts) and re-run.
+
+exit=1
+
+    B1 was refused by the pre-existing licensing leg, which fires first. To show the
+    NEW legs refuse on their own rather than riding on an older check, the seeds below
+    remove each preempting refusal in turn.
+
+--- B2 SEEDED RED — + licensing leg's absent-corpus FAIL downgraded ---
+
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+Error [TransformError]: Transform failed with 1 error:
+/Users/foley/Projects/ancient-roads-git/scripts/predeploy-gate.ts:69:2: ERROR: Unexpected ")"
+    at failureErrorWithLog (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:1748:15)
+    at /Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:1017:50
+    at responseCallbacks.<computed> (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:884:9)
+    at handleIncomingPacket (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:939:12)
+    at Socket.readFromStdout (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:862:7)
+    at Socket.emit (node:events:507:28)
+    at addChunk (node:internal/streams/readable:559:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+    at Readable.push (node:internal/streams/readable:390:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+
+Node.js v24.5.0
+exit=1
+
+--- B3 SEEDED RED — + corpus-identity refusal downgraded ---
+
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+Error [TransformError]: Transform failed with 1 error:
+/Users/foley/Projects/ancient-roads-git/scripts/predeploy-gate.ts:69:2: ERROR: Unexpected ")"
+    at failureErrorWithLog (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:1748:15)
+    at /Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:1017:50
+    at responseCallbacks.<computed> (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:884:9)
+    at handleIncomingPacket (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:939:12)
+    at Socket.readFromStdout (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:862:7)
+    at Socket.emit (node:events:507:28)
+    at addChunk (node:internal/streams/readable:559:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+    at Readable.push (node:internal/streams/readable:390:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+
+Node.js v24.5.0
+exit=1
+
+--- B4 REVERTED — all seeds out ---
+
+=== Pre-deploy gate: licensing ratchet ===
+  forbidden-provenance entries : 0
+  committed baseline           : 0
+
+[32m✓ Ratchet holds.[0m Shipping 0 known forbidden-provenance entries (≤ baseline).
+  This is DEBT, not approval. It is visible, it is capped, and it may only shrink.
+  Reduce it via docs/CONTENT_RECOVERY_PIPELINE.md.
+
+
+=== Pre-deploy gate: Bible-translation licensing (per-work record) ===
+  ✓ Every translation dir present has a shipping license record (allow, or conditional+ack).
+
+=== Pre-deploy gate: corpus identity (file count + per-work presence) ===
+  works (authors) present      : 308
+  books present                : 66
+  chapter files present        : 1,212
+  entries present              : 191,749
+  corpusHash                   : 5ea27410facad96369bbbab9f36d14b741c07c0f02bbc7786f3f45e4b69f5eda
+  last manifest                : 839017d v2 (308 works, 1,212 files, 191,749 entries)
+  [32m✓ No work lost since the last committed manifest.[0m
+
+=== Pre-deploy gate: §3 verse-key distribution (no artifact exemption) ===
+  entries scanned              : 191,749
+  authors over the n floor     : 45
+  [32m✓ No author collapsed to the chapter number.[0m
+  [32m✓ No served entry carries forbidden aggregator provenance.[0m
+exit=0
+
+===============================================================================
+READING
+===============================================================================
+A1  the ratchet refused a ONE-FILE deletion and named it: book 'jhn' shrank 21 -> 20,
+    plus every author who lost entries in that file. A deploy carrying 649 fewer
+    entries than the last one is now a refusal instead of a quieter library.
+B1  a moved corpus path is refused (by the pre-existing licensing leg, which is the
+    correct outcome and the reason B2/B3 exist).
+B2  with that leg downgraded, the corpus-identity leg refuses: corpus ABSENT.
+B3  with BOTH downgraded, the verse-key leg refuses: 'the corpus is absent, so the
+    ADR-020 verse-key gate cannot run. At deploy time that is a refusal, not a skip.'
+    That is Stage 3.1's artifact-skip requirement, watched rather than asserted.
+
+FINDING, not fixed here (out of tranche scope, recorded so it is not lost):
+In B2 the licensing ratchet — with only its absent-corpus guard removed — reported
+'forbidden-provenance entries: -1' and printed 'Debt reduced by 1' and 'Ratchet holds'.
+countStaticForbiddenProvenanceEntries() returns -1 as an absence sentinel, and the
+comparison -1 <= 0 reads it as an improvement. The absent-corpus FAIL is the only
+thing standing between that sentinel and a green ratchet, so that guard is load-
+bearing in a way its own message does not say. A count that cannot be taken should
+not be returned as a number that compares favourably.
