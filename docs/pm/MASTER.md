@@ -37,7 +37,7 @@ Last verified: 2026-07-31 · `main` @ `1199a03` · working branch `chore/work-or
 | A3 | Census adjudicated — a published-but-not-admitted work is a STOP | Blocked on A2 |
 | A4 | ⚑ Publish flip — `UPDATE sources SET status`, exact inverse, snapshotted | Blocked on A3 |
 | A5 | Prod instrument run — G10 stops being permanently skipped | Blocked on A4 |
-| A6 | ⚑ Deploy A — the irreversible one | Blocked on A5 |
+| A6 | ⚑ Deploy A — the irreversible one | Blocked on A5. **Preflight now measured, not guessed** — [DEPLOY_PREFLIGHT.md](../DEPLOY_PREFLIGHT.md). The build was **BROKEN at `d1576fe`** (fixed `c1e359d`); `predeploy-gate` passes on the real corpus; `concordance`/`lexicon`/`original` are **ABSENT** and word-study + word-panel would throw |
 | A7 | Walk the product — Stage 5's twelve journeys · **G7 for the first time ever** | Blocked on A6 |
 | A8 | Register ingest slice → Deploy B → publish registers | Blocked on A7 |
 
@@ -73,6 +73,7 @@ The first pass should be the one where, if something breaks, you know what broke
 
 | # | Gate | Status |
 |---|---|---|
+| B0b | Is stated-text recall the right metric? | **PAPER, awaiting ruling** — [METRIC-PROPOSAL.md](../evidence/slice0-k-revalidation/METRIC-PROPOSAL.md). Recommends SUPERSEDE for the ship gate, KEEP as a regression check (it is the only ground truth not produced by substring overlap). Demotes the parser widening from blocker to nice-to-have |
 | B0a | K re-validation on a fresh held-out set | **NOT DONE — set could not be built.** The frozen marker regex requires quote-then-reference (Spurgeon's CCEL house style); Wesley/Edwards/Whitefield state the reference FIRST, so eligible n=0 against a floor of 20. Positive control fires (63 matches on Spurgeon vols 10+13). Harness deliberately NOT widened. [result](../evidence/slice0-k-revalidation/RESULT.md) |
 | B0 | Slice 0 — anchor recall | **CLEARED.** Held-out n=30, frozen harness, recall 90% (CI lower bound 74% vs a 70% bar). Precision clears at K=2 (82/68) and K=3 (75/96) |
 | B1 | ⚑ Owner: a Neon dev branch to build against | **OPEN** |
@@ -110,6 +111,12 @@ repairs the defect it measures (the perturbation suite's unscoped backfill) · *
 and a red does not distinguish "broken" from "the provider was busy" — which is how a real red gets
 waved through. Not fixed here; a bounded retry on 429, or an explicit NOT RUN on provider
 unavailability, would make the signal mean one thing again.
+
+**A fifth, found by T1 (2026-08-01): a gate nobody runs is not a gate.** `next build` is not in CI —
+neither `audit` nor `db-invariants` compiles the app — so the production build sat broken at HEAD with
+every check green. The deploy itself, at step 6 of 7, was the only thing that would have caught it.
+**Adding `next build` to CI is the highest-value open follow-up in this repo.** Watch for gates that
+exist only inside an irreversible operation.
 
 **A fourth, found by B-1: an eligibility rule that selects for the population it was built on.** The
 Slice 0 stated-text parser reads Spurgeon's CCEL typography (quote-then-reference) and matches
