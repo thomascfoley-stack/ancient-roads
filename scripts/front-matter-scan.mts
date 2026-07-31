@@ -40,11 +40,21 @@ const CORPUS = path.join(ROOT, 'web/public/commentaries');
 const args = process.argv.slice(2);
 const declared = args.find((a) => a.startsWith('--target='))?.split('=')[1];
 const url = process.env.FRONT_MATTER_DATABASE_URL;
+// The static half takes ~2.5 min over 191,749 entries and the database half ~8 min over
+// 420,974 rows. `--only` exists so a re-run after a rule change does not have to pay for both.
+const only = args.find((a) => a.startsWith('--only='))?.split('=')[1] ?? 'all';
+if (!['all', 'static', 'db'].includes(only)) {
+  console.error(`--only must be one of all|static|db (got '${only}')`);
+  process.exit(2);
+}
 
 const stops: string[] = [];
 const report = (line = ''): void => console.log(line);
 
 function ref(e: ScannedEntry): string {
+  // Embeddings rows carry a verseId rather than book/chapter/verse; printing '?:?:?' for them
+  // made the first dev report unreadable exactly where it mattered most.
+  if (e.book === undefined && e.where) return e.where;
   return `${e.book ?? '?'}:${e.chapter ?? '?'}:${e.verseStart ?? '?'}${e.verseEnd && e.verseEnd !== e.verseStart ? `-${e.verseEnd}` : ''}`;
 }
 
@@ -54,14 +64,17 @@ function printScan(label: string, scan: ReturnType<typeof scanEntries>): void {
   report(`  apparatus hits         : ${scan.hits.length.toLocaleString()}  (${
     Object.entries(scan.byKind).map(([k, n]) => `${k}=${n}`).join(', ') || 'none'
   })`);
-  report(`  of those, ADMITTED     : ${scan.admittedHits.length.toLocaleString()}`);
+  report(`  of those, ADMITTED     : ${scan.admittedHits.length.toLocaleString()} (${scan.admittedStrongHits.length} strong, ${scan.admittedWeakHits.length} to be read)`);
   report(`  short-body stubs       : ${scan.stubs.length.toLocaleString()} (reported apart — a suspicion, not a finding)`);
 
-  // Admitted hits first and in full: those are the property violations.
-  for (const h of scan.admittedHits.slice(0, 60)) {
+  // Admitted STRONG hits first and in full: those are the property violations.
+  for (const h of scan.admittedStrongHits.slice(0, 60)) {
     report(`  ✗ ADMITTED ${ref(h.entry)} ${String(h.entry.author ?? '(no author)').padEnd(28)} [${h.kind}] ${JSON.stringify(h.evidence)}`);
   }
-  if (scan.admittedHits.length > 60) report(`  … ${scan.admittedHits.length - 60} more admitted hit(s)`);
+  if (scan.admittedStrongHits.length > 60) report(`  … ${scan.admittedStrongHits.length - 60} more admitted strong hit(s)`);
+  for (const h of scan.admittedWeakHits.slice(0, 25)) {
+    report(`  ? TO READ  ${ref(h.entry)} ${String(h.entry.author ?? '(no author)').padEnd(28)} [${h.kind}] ${JSON.stringify(h.evidence)}`);
+  }
 
   const held = scan.hits.filter((h) => !h.admitted);
   for (const h of held.slice(0, 25)) {
@@ -111,8 +124,10 @@ function loadStatic(): ScannedEntry[] {
 report(`front-matter scan — PROPERTY: no served entry keyed to a verse is book/chapter apparatus`);
 report(`corpus: ${CORPUS}`);
 
-const staticEntries = loadStatic();
-if (staticEntries.length === 0) {
+const staticEntries = only === 'db' ? [] : loadStatic();
+if (only === 'db') {
+  report('\n=== static corpus ===\n  skipped (--only=db)');
+} else if (staticEntries.length === 0) {
   stops.push('static corpus: absent or empty, so the scan could not have found anything');
   report('\n=== static corpus ===\n  ABSENT — nothing scanned.');
 } else {
@@ -132,7 +147,9 @@ if (staticEntries.length === 0) {
 }
 
 // ── dev database ─────────────────────────────────────────────────────────────
-if (!url) {
+if (only === 'static') {
+  report('\n=== dev database ===\n  skipped (--only=static)');
+} else if (!url) {
   report('\n=== dev database ===');
   report('  NOT RUN — FRONT_MATTER_DATABASE_URL is unset.');
   report('  Pass a dev connection string plus --target=<endpoint-id> to scan commentary_entries');

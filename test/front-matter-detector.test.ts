@@ -19,10 +19,11 @@ const apparatus = (body: string, heading?: string) => frontMatterVerdict({ body,
 
 describe('the detector fires on book/chapter apparatus', () => {
   // The seed the work order names by name.
-  it('"Preface to the Gospel of John" keyed at John 1:1 is apparatus', () => {
+  it('"Preface to the Gospel of John" keyed at John 1:1 is apparatus, and STRONG', () => {
     const v = apparatus('Preface to the Gospel of John\n\nThe fourth Gospel differs from the others in that…');
     expect(v.apparatus).toBe(true);
     expect(v.kind).toBe('apparatus-title');
+    expect(v.strength).toBe('strong');
     expect(v.evidence).toContain('Preface to the Gospel of John');
   });
 
@@ -84,6 +85,35 @@ describe('the detector does NOT fire on exposition', () => {
     ).toBe(false);
   });
 
+  // The two false positives the FIRST real run produced, over the 191,749 shipping entries.
+  // Both were reported as admitted violations; reading the bodies showed both were real content
+  // with apt verse keys. They are kept here as fixtures so the distinction cannot quietly regress.
+  it('does not STOP on a label that names its SUBJECT rather than a volume', () => {
+    const schaff = frontMatterVerdict({
+      body:
+        'The Argument for the Immaculate Conception.\n\n§ 29. The Argument for the Immaculate Conception.\n\n' +
+        'The importance of the subject justifies and demands a brief examination of the arguments in favor of this novel dogma…',
+    });
+    // Genuine polemical scholarship (Creeds of Christendom §29), keyed at Genesis 3:15 — the
+    // passage actually adduced for the dogma. The key is APT.
+    expect(schaff.apparatus).toBe(true);
+    expect(schaff.strength, 'a subject-named argument must not stop a build').toBe('weak');
+
+    const watson = frontMatterVerdict({
+      body: "The Preface to the Lord's Prayer\n\n‘Our Father which art in Heaven’\n\nHaving gone over the chief grounds of religion…",
+    });
+    // An exposition of the prayer's own preface, keyed at Matthew 6:9 — which IS "Our Father
+    // which art in heaven".
+    expect(watson.strength).toBe('weak');
+  });
+
+  it('a bare label and a volume-scoped label both stay STRONG', () => {
+    expect(apparatus('The Preface\n\nThe disciples of our Lord Jesus Christ having made that great confession…').strength).toBe('strong');
+    expect(apparatus('Argument.\n\nHomilies of St. John Chrysostom, archbishop of Constantinople…').strength).toBe('strong');
+    expect(apparatus('The Epistle Dedicatory\n\nTo the Worshipful John Upton of Lupton, Esq…').strength).toBe('strong');
+    expect(apparatus('Preface to the Second Edition\n\nThis volume has been revised…').strength).toBe('strong');
+  });
+
   it('does not fire on a long body that merely happens to be numeral-heavy', () => {
     const long = 'i. '.repeat(80);
     expect(frontMatterVerdict({ body: long }).apparatus).toBe(false);
@@ -130,11 +160,23 @@ describe('the scan STOPS on apparatus that a reader can reach', () => {
     expect(scan.scanned).toBe(3);
     expect(scan.hits).toHaveLength(2);
     expect(scan.admittedHits).toHaveLength(1);
+    expect(scan.admittedStrongHits).toHaveLength(1);
     expect(scan.byKind['apparatus-title']).toBe(2);
 
     const verdict = frontMatterVerdictSummary(scan);
     expect(verdict.stop).toBe(true);
     expect(verdict.reason).toMatch(/1 SERVED entry is book\/chapter apparatus/);
+  });
+
+  it('a WEAK admitted hit is reported but does not stop the build', () => {
+    const scan = scanEntries(
+      [{ author: 'John Calvin', body: "The Preface to the Lord's Prayer\n\n‘Our Father which art in Heaven’\n\nHaving gone over…" }],
+      { served },
+    );
+    expect(scan.admittedHits).toHaveLength(1);
+    expect(scan.admittedStrongHits).toHaveLength(0);
+    expect(scan.admittedWeakHits).toHaveLength(1);
+    expect(frontMatterVerdictSummary(scan).stop).toBe(false);
   });
 
   it('apparatus in an UNSERVED work is recorded but does not stop the build', () => {

@@ -192,6 +192,10 @@ export function scanEntries(entries, { served = () => true } = {}) {
     hits,
     stubs,
     admittedHits: hits.filter((h) => h.admitted),
+    /** Admitted AND strong — the property violations that stop a build. */
+    admittedStrongHits: hits.filter((h) => h.admitted && h.strength === 'strong'),
+    /** Admitted but scope-named — to be read, not acted on automatically. */
+    admittedWeakHits: hits.filter((h) => h.admitted && h.strength !== 'strong'),
     byKind: hits.reduce((acc, h) => ({ ...acc, [h.kind]: (acc[h.kind] ?? 0) + 1 }), {}),
   };
 }
@@ -207,10 +211,11 @@ export function frontMatterVerdictSummary(scan) {
   if (scan.scanned === 0) {
     return { stop: true, reason: 'VACUOUS: the scan examined 0 entries, so it could not have found anything' };
   }
-  if (scan.admittedHits.length > 0) {
+  const n = scan.admittedStrongHits.length;
+  if (n > 0) {
     return {
       stop: true,
-      reason: `${scan.admittedHits.length} SERVED entr${scan.admittedHits.length === 1 ? 'y is' : 'ies are'} book/chapter apparatus keyed to a verse`,
+      reason: `${n} SERVED entr${n === 1 ? 'y is' : 'ies are'} book/chapter apparatus keyed to a verse`,
     };
   }
   return { stop: false, reason: null };

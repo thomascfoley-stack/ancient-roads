@@ -15,6 +15,8 @@ export interface ScannedEntry {
 
 export interface FrontMatterVerdict {
   apparatus: boolean;
+  /** strong = stops a build; weak = a label naming its subject, to be read (see BOOKISH_SCOPE_RE) */
+  strength: 'strong' | 'weak' | null;
   kind: 'apparatus-title' | 'apparatus-heading' | 'roman-numeral-body' | null;
   evidence: string | null;
 }
@@ -30,6 +32,8 @@ export interface FrontMatterScan {
   hits: FrontMatterHit[];
   stubs: Array<{ admitted: boolean; entry: ScannedEntry }>;
   admittedHits: FrontMatterHit[];
+  admittedStrongHits: FrontMatterHit[];
+  admittedWeakHits: FrontMatterHit[];
   byKind: Record<string, number>;
 }
 
