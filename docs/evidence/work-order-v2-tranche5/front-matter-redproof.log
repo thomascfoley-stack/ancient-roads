@@ -1,0 +1,71 @@
+===============================================================================
+TRANCHE 5 — front-matter detector red-proofs (Work Order v2 Stage 3.2)
+date: 2026-07-31T06:49:56Z
+head: 59efc6a
+seed: MAX_TITLE_CHARS 70 -> 10 in scripts/lib/front-matter-detector.mjs
+watch: vitest -t 'Preface to the Gospel of John'
+===============================================================================
+=== SEED: apparatus title no longer detected ===
+
+--- 0 BASELINE GREEN — preface at John 1:1 is apparatus ---
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git
+
+ ✓ test/front-matter-detector.test.ts (30 tests | 29 skipped) 1ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 29 skipped (30)
+   Start at  23:49:56
+   Duration  186ms (transform 20ms, setup 0ms, collect 17ms, tests 1ms, environment 0ms, prepare 32ms)
+
+result=GREEN
+
+--- 1 SEEDED RED — preface title too long for bound ---
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git
+
+ ❯ test/front-matter-detector.test.ts (30 tests | 1 failed | 29 skipped) 4ms
+   × the detector fires on book/chapter apparatus > "Preface to the Gospel of John" keyed at John 1:1 is apparatus 3ms
+     → expected false to be true // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/front-matter-detector.test.ts > the detector fires on book/chapter apparatus > "Preface to the Gospel of John" keyed at John 1:1 is apparatus
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ test/front-matter-detector.test.ts:24:25
+     22|   it('"Preface to the Gospel of John" keyed at John 1:1 is apparatus',…
+     23|     const v = apparatus('Preface to the Gospel of John\n\nThe fourth G…
+     24|     expect(v.apparatus).toBe(true);
+       |                         ^
+     25|     expect(v.kind).toBe('apparatus-title');
+     26|     expect(v.evidence).toContain('Preface to the Gospel of John');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 29 skipped (30)
+   Start at  23:49:57
+   Duration  177ms (transform 25ms, setup 0ms, collect 24ms, tests 4ms, environment 0ms, prepare 33ms)
+
+result=RED
+
+--- 2 REVERTED GREEN — rule restored ---
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git
+
+ ✓ test/front-matter-detector.test.ts (30 tests | 29 skipped) 2ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 29 skipped (30)
+   Start at  23:49:57
+   Duration  187ms (transform 25ms, setup 0ms, collect 23ms, tests 2ms, environment 0ms, prepare 34ms)
+
+result=GREEN
+
