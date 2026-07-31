@@ -32,7 +32,7 @@ Last verified: 2026-07-31 · `main` @ `1199a03` · working branch `chore/work-or
 
 | # | Gate | Status |
 |---|---|---|
-| A1 | Stage 2 blockers closed · PR #48 merged | **OPEN** — 4 blockers ([verdict](orders/2026-07-31-stop-verdict-stage2.md)) |
+| A1 | Stage 2 blockers closed · PR #48 merged | **OPEN** — 4 blockers FIXED at `03516b6`, awaiting independent audit + ⚑ owner merge ([verdict](orders/2026-07-31-stop-verdict-stage2.md)) |
 | A2 | ⚑ Prod read-only session — instrument over `staged` + serving census, one log, no writes | Not started |
 | A3 | Census adjudicated — a published-but-not-admitted work is a STOP | Blocked on A2 |
 | A4 | ⚑ Publish flip — `UPDATE sources SET status`, exact inverse, snapshotted | Blocked on A3 |
@@ -53,6 +53,13 @@ Every inventory item was VERIFIED by re-execution; these are what the inventory 
 | B-2 | `REQUIRED_GATE_PREFIXES` is typed, not derived — the **eighth** instance of the recurring class, introduced by the tranche meant to close it. Adding a `G11` leg leaves the check and its test green; the test builds its reported set from the constant it validates. | §D-1 |
 | B-3 | The perturbation suite runs the **unscoped** 024 backfill and writes to sources it does not own — proven to heal a seeded NULL, i.e. it erases the drift the published leg exists to detect. | §D-4 |
 | B-4 | The weld check lives only in `scripts/repair-unit-ordinal.mjs` — not in the instrument, not in CI, no test. Ordered into the CI instrument by [the 07-31 weld order](orders/2026-07-31-weld-finding-and-order.md) §1 (BLOCKING); did not land there. The guard is correct (auditor drove it against a seeded weld) but nothing re-proves it. | §F |
+
+**Status at `03516b6`:** all four fixed, each with a red-proof re-executed against a throwaway local
+Postgres, and both suites confirmed *executed* (not skipped) against the real CI test DB —
+`unit-ordinal-instrument.test.ts` 15 tests, `gate-leg-inventory.test.ts` 10 tests (was 3).
+**Not yet certified:** the agent that closed these is the same session that raised them, so per
+bylaw 4 A1 stays OPEN until a fresh pair of eyes signs off. `DEPLOY_PREFLIGHT.md` is still 25 lines
+(NOT DONE, carried).
 
 **Verified but not closed:** the repair's guards (weld abort, prod refusal on the *resolved* endpoint,
 dry-run default, single-column scope) all fire. Its **execution** is UNVERIFIED — the auditor had no

@@ -699,7 +699,9 @@ defect, introduced by this stage, in the component meant to catch silence - and 
 instances are the argument for not shipping the eighth. **B-3** is a live test that erases the
 evidence it exists to gather.
 
-**What I would do:** land B-1, B-2 and B-3 - realistically an hour - then merge PR #48 without a
+**What I would do** (corrected 2026-07-31 after §F was added; this line previously named only B-1,
+B-2 and B-3 and was never restated once B-4 joined them, which the search-programme order caught as
+an open A1-scope question): land **all four** - B-1, B-2, B-3 and B-4 - then merge PR #48 without a
 re-audit, since all three are narrow and independently checkable, and I have stated the executable
 check for each. I would not hold the stage for anything in NOT BLOCKING. The authorisation is the
 owner's, not mine.
