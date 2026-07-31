@@ -32,7 +32,7 @@ Last verified: 2026-07-31 · `main` @ `1199a03` · working branch `chore/work-or
 
 | # | Gate | Status |
 |---|---|---|
-| A1 | Stage 2 blockers closed · PR #48 merged | **OPEN** — 3 blockers from the STOP audit |
+| A1 | Stage 2 blockers closed · PR #48 merged | **OPEN** — 4 blockers ([verdict](orders/2026-07-31-stop-verdict-stage2.md)) |
 | A2 | ⚑ Prod read-only session — instrument over `staged` + serving census, one log, no writes | Not started |
 | A3 | Census adjudicated — a published-but-not-admitted work is a STOP | Blocked on A2 |
 | A4 | ⚑ Publish flip — `UPDATE sources SET status`, exact inverse, snapshotted | Blocked on A3 |
@@ -40,6 +40,23 @@ Last verified: 2026-07-31 · `main` @ `1199a03` · working branch `chore/work-or
 | A6 | ⚑ Deploy A — the irreversible one | Blocked on A5 |
 | A7 | Walk the product — Stage 5's twelve journeys · **G7 for the first time ever** | Blocked on A6 |
 | A8 | Register ingest slice → Deploy B → publish registers | Blocked on A7 |
+
+### A1 — the four Stage 2 blockers
+
+From the independent STOP audit at `ac19935`
+([verdict](orders/2026-07-31-stop-verdict-stage2.md) · [prompt](orders/2026-07-31-stop-audit-stage2.md)).
+Every inventory item was VERIFIED by re-execution; these are what the inventory did not cover.
+
+| # | Blocker | Verdict § |
+|---|---|---|
+| B-1 | The causal sentence is unwritten. `db-invariants` went red→green because **data on `ep-tiny-hat` and `ep-tiny-bonus` was rewritten, not because code changed** — confirmed from the runs, with the `+56`-line refactor beside the flip ruled out. Not recorded in `STATE_OF_TRUTH.md` §2e or the evidence index. | [§B](orders/2026-07-31-stop-verdict-stage2.md) |
+| B-2 | `REQUIRED_GATE_PREFIXES` is typed, not derived — the **eighth** instance of the recurring class, introduced by the tranche meant to close it. Adding a `G11` leg leaves the check and its test green; the test builds its reported set from the constant it validates. | §D-1 |
+| B-3 | The perturbation suite runs the **unscoped** 024 backfill and writes to sources it does not own — proven to heal a seeded NULL, i.e. it erases the drift the published leg exists to detect. | §D-4 |
+| B-4 | The weld check lives only in `scripts/repair-unit-ordinal.mjs` — not in the instrument, not in CI, no test. Ordered into the CI instrument by [the 07-31 weld order](orders/2026-07-31-weld-finding-and-order.md) §1 (BLOCKING); did not land there. The guard is correct (auditor drove it against a seeded weld) but nothing re-proves it. | §F |
+
+**Verified but not closed:** the repair's guards (weld abort, prod refusal on the *resolved* endpoint,
+dry-run default, single-column scope) all fire. Its **execution** is UNVERIFIED — the auditor had no
+dev credentials, so the 61,486-row claim rests on the tool's own log.
 
 **Why the first payload is small:** nothing in this pipeline has ever run successfully on production.
 E5 never ran. Whether `deploy.sh` works end-to-end is an open question in the work order itself.
@@ -84,7 +101,11 @@ acceptance that it recurs and audits catch it.
 
 ## Index
 
-- Plan: `AP_WORKORDER_V2.md` (six stages)
+- Plan: `docs/pm/WORKORDER_V2.md` (six stages) — **NOT YET FILED.** The index previously pointed at
+  `AP_WORKORDER_V2.md`, which is not in this repo either. Per bylaw 1 the plan is currently unissued;
+  the target path above is where it goes.
+- Programme brief: `docs/pm/PROGRAM_BRIEF.md` — **NOT YET FILED.**
+- Two-lane strategy: `docs/pm/orders/2026-07-31-strategy-two-lanes.md` — **NOT YET FILED.**
 - State: `docs/STATE_OF_TRUTH.md`
 - Rulings: `docs/DECISIONS.md`
 - Orders and verdicts: `docs/pm/orders/`
