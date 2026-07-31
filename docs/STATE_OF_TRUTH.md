@@ -170,6 +170,42 @@ verification on production is **downstream of publish flip**, not parallel to in
 > into the filter". Historical docs that say "9 authors" pre-date the work-leg expansion and are left
 > as point-in-time record. Re-measured after today's suppressions, which did not change this set.
 
+### 2e. Dev-only `unit_ordinal` drift (2026-07-31, Work Order v2 Stage 2 Tranche 1)
+
+> **Measured read-only on dev (`ep-tiny-hat`) via neonctl-minted `app_runtime`.** Production census:
+> **0 published sources** (§2d) — these defects do **not** exist on prod. E0–E6 register never ran on prod;
+> suppression scripts (`suppress-chrysostom-prolegomena`, `suppress-nonauthorial`, etc.) are hard-guarded
+> to `ep-tiny-hat` only.
+
+**Invariant (ADR-041 addendum):** order preservation, not dense 1..N. Instrument checks grouping +
+reading-order preservation; uniform per-work offset is reported, non-uniform offset fails.
+
+**Ten affected works** (dev published cohort; Tranche 1 query 2026-07-31):
+
+| slug | defect class | Tranche 1 |
+|------|--------------|-----------|
+| `chrysostom-homilies` | non-uniform offset after prolegomena suppression (δ 16/17); grouping+order preserved | min_stored=17, 377 units |
+| `edwards-works` | non-uniform offset (suppression) | mismatch sections |
+| `hodge-systematic` | non-uniform offset | mismatch sections |
+| `maclaren-expositions` | non-uniform offset | mismatch sections |
+| `owen-works` | non-uniform offset | mismatch sections |
+| `tennyson-in-memoriam` | **uniform offset +3** (GREEN under new instrument) | 148 sections |
+| `watson-works` | non-uniform offset | mismatch sections |
+| `traherne-poems` | ads/index suppression (dev-only) | passes instrument; suppression debt |
+| `augustine-homilies` | index suppression class | passes instrument |
+| `milton-poetical-works` | front-matter / index class | passes instrument |
+
+**Weld detector** (distinct stored vs computed unit counts per work): **0 rows** — unit *counts* match;
+section-level stored≠computed remains on 6 works above.
+
+**Defect class:** migration 024 backfill is idempotent by exclusion (`WHERE unit_ordinal IS NULL`).
+Scripts that **delete sections after backfill** (`suppress-chrysostom-prolegomena`, `suppress-nonauthorial`)
+silently invalidate stored `unit_ordinal` without re-running 024 — stored values drift from recomputation
+while grouping may still hold.
+
+**Front-matter (Stage 3.2):** at `b4596aa`, scan STOPs on **all 8 admitted hits**; strength computed but
+does not gate. See `docs/evidence/work-order-v2-stage2/TRANCHE5-STASH-EVALUATION.md`.
+
 ## 3. Bible text plane — served from files, NOT a prod DB schema
 
 - **No `translations`/`verses`/`books` tables exist in prod** (`SELECT 1 FROM translations` errors). Bible text

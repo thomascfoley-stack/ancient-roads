@@ -1,5 +1,18 @@
 # Work Order v2 Stage 2 — evidence index
 
+## Stage 2 overnight tranches (2026-07-31)
+
+| Tranche | Artifact | Status |
+|---------|----------|--------|
+| 1 | Dev read-only queries (ep-tiny-hat) | DONE — see final report |
+| 2 | Order-preservation instrument + tests | DONE |
+| 3 | `runtimeDbUrl` prod guard | DONE — `0.4-third-door-runtimeDbUrl.md` |
+| 4 | STATE_OF_TRUTH §2e | DONE |
+| 5 | `wip/front-matter-strength` branch | see TRANCHE5-STASH-EVALUATION.md |
+| 6 | RECOVERY_VERIFICATION.md | DONE |
+| 7 | Gate leg inventory | DONE — `scripts/lib/gate-leg-inventory.mjs` |
+| 8 | TRANCHE8-MEASUREMENT.md, DEPLOY_PREFLIGHT.md | DONE |
+
 ## Stage 2.1 — unit_ordinal instrument
 
 | Item | Artifact | Status |
