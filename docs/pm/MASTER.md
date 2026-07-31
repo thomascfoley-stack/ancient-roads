@@ -76,7 +76,7 @@ The first pass should be the one where, if something breaks, you know what broke
 | B0a | K re-validation on a fresh held-out set | **PRE-REGISTERED, not yet run** — `docs/evidence/slice0-k-revalidation/PRE-REGISTRATION.md`, committed data-free at `42b2dd7` |
 | B0 | Slice 0 — anchor recall | **CLEARED.** Held-out n=30, frozen harness, recall 90% (CI lower bound 74% vs a 70% bar). Precision clears at K=2 (82/68) and K=3 (75/96) |
 | B1 | ⚑ Owner: a Neon dev branch to build against | **OPEN** |
-| B2 | ⚑ Owner: confirm DeepInfra `bge-large` as the committed embedding model | **OPEN** |
+| B2 | ⚑ Owner: confirm DeepInfra `bge-large` as the committed embedding model | **OPEN — contradiction removed.** ADR-005 already pins `bge-large-en-v1.5` for the corpus and rejects mixing embedders; `SERMON_COMPANION.md` §3's "Jina v3 (already chosen)" was a wishlist row with no ADR and no code behind it (corrected in place). B2 now asks only: same model for **user-corpus** embedding in Slice 1? Parity near-forces it. |
 | B3 | ⚑ Owner: Vercel Pro (hobby cron is daily; useless for an ingestion queue) | **OPEN** |
 | B4 | Translation decision — shingle against the user's translation, or all. Moved the headline 17 points | **OPEN — options now written** ([paper](../SLICE1_TRANSLATION_DECISION.md), recommends Option A + detection). Rulable. |
 | B5 | Slice 1 — prose/sermons end-to-end + the tradition-gap join | Blocked on B1–B4 |
@@ -86,7 +86,7 @@ The first pass should be the one where, if something breaks, you know what broke
 | # | Decision | Blocks |
 |---|---|---|
 | 1 | Neon dev branch for Lane B | all of Lane B |
-| 2 | Confirm `bge-large` | all of Lane B — parity failure returns garbage silently, with no error |
+| 2 | Confirm `bge-large` **for user-corpus embedding** (the corpus is already pinned by ADR-005) | all of Lane B — parity failure returns garbage silently, with no error. Jina v3 is ALSO 1024-dim, so a mismatch inserts, joins and scores cleanly |
 | 3 | Vercel Pro | Lane B ingestion queue |
 | 4 | Front-matter gating — all admitted hits stop, or strong-only (`origin/wip/front-matter-strength`) | merge of that branch |
 | 5 | Each ⚑ gate above | that gate |

@@ -60,6 +60,46 @@ so it does not need a bigger model.
 
 ## 3. Concrete model picks
 
+> # ⚠️ CORRECTION (2026-07-31) — THE TABLE BELOW IS A PRE-DECISION WISHLIST. DO NOT BUILD AGAINST IT.
+>
+> **It was never reconciled with what shipped, and all three retrieval rows are wrong.** The table is
+> left standing rather than quietly edited, because "Embeddings — **Jina v3** (already chosen)" is the
+> sentence that made a *decision that never happened* look settled, and deleting the evidence of that
+> would hide how the contradiction arose.
+>
+> | row | this table says | what is ACTUALLY pinned and shipped | authority |
+> |---|---|---|---|
+> | Embeddings | **Jina v3** "(already chosen)" | **`BAAI/bge-large-en-v1.5`**, 1024-dim | **ADR-005**, pinned |
+> | Reranker | BGE-reranker-v2-m3 / Jina reranker v2 | **`Qwen/Qwen3-Reranker-0.6B`** — a *core, non-removable stage* | **ADR-014** |
+> | Compose | Qwen3 32B | **`Qwen/Qwen3.5-35B-A3B`** | **ADR-005** |
+>
+> **Nothing chose Jina.** Verified 2026-07-31 across the whole tree: the string `jina` appears in
+> **this file and nowhere else** — no code, no ADR, no migration, no other document. `bge-large` appears
+> in **21 files** of shipped code; `db/migrations/006` declares `embedding VECTOR(1024)` with
+> `model_slug` commented `'bge-large-en-v1.5' (ADR-005, pinned)`. This row's own note, *"keep what's
+> integrated"*, points at bge-large — the row contradicts itself.
+>
+> **Why this one mattered more than a stale doc usually does.** ADR-005 pins the embedder because
+> *"all corpus embeds must use the same model or vectors aren't comparable"*, and explicitly **rejects**
+> mixing embedding models. `SERMON_SEARCH_DESIGN.md` §6 calls parity non-negotiable because a mismatch
+> *"silently returns garbage — no error, just subtly wrong results forever."* That is not rhetoric:
+> **Jina v3 is also 1024-dim**, so a mismatched vector would insert cleanly, join cleanly, and return a
+> well-formed cosine score. **There is no error to catch.** A canon that named two different models for
+> the one constraint that cannot be got wrong is the defect, not the typo.
+>
+> **Consequence for Slice 1:** `SLICE_1_DATA_MODEL.md` requires refusing to join user vectors whose
+> `model_slug` ≠ the corpus's. With two documents naming two models, the constant that check reads was
+> ambiguous. It is not ambiguous: **`bge-large-en-v1.5`**.
+>
+> **What is still the owner's to say (gate B2).** ADR-005 is an owner ruling and is not relitigated
+> here — it settles the *corpus* embedder. What B2 genuinely asks is whether the same model is
+> committed for **user-corpus** embedding in Slice 1. Parity makes that near-forced (a different user
+> model breaks the join by construction), but "near-forced" is not "ruled", so B2 stays open and this
+> correction does not close it. It removes the contradiction, not the decision.
+>
+> Recorded **here**, where a reader meets the wrong version — not only in the winning document. See the
+> failure-mode watchlist in `docs/pm/MASTER.md`.
+
 | Job | Pick (start) | Provider | License / note |
 |---|---|---|---|
 | Extraction, stance, composition | **Qwen3 32B** | DeepInfra (Nebius failover) | Apache 2.0; version-pinned |
