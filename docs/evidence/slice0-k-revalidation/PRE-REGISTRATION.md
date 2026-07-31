@@ -63,6 +63,48 @@ for Spurgeon.
 **Selection is by rule, not by taste.** Candidates are enumerated from the source in a fixed order and
 taken until n is reached; no document is dropped after its content is read.
 
+### 3a. What the set is EXPECTED to contain — and the scope limit if it does not (added before the set was built)
+
+The eligibility rule in (5) is mechanical, which is right, but it keys on a **stated-text epigraph** —
+`"For God so loved the world…" — John 3:16` — and that is a **19th-century publishing convention**, not
+a property of sermons. The rule is therefore biased toward exactly the material Slice 0 already used.
+
+**Expected composition, stated in advance so the outcome can be compared against it:** at least three
+authors, none above 40%, drawn from Victorian/Reformation-era preached sermons (Wesley, Edwards,
+Whitefield, Moody, Ryle and similar), plus at least one non-sermon document type. **Expected weakness:**
+every candidate is likely Anglophone, pre-1950, and quoting the KJV or close to it.
+
+**The result must report author composition, era and document type alongside the number.** A bare
+recall/precision pair is not a reportable result for this run.
+
+**Scope rule, pre-committed:**
+
+- If the set is **≥3 authors and ≥2 registers** as required, the result reads: *K holds on unseen
+  documents across authors and registers.*
+- If the set collapses toward **one author** — Spurgeon or anyone else — the run is **still executed and
+  still reported**, but its conclusion is downgraded, in these words: ***K holds for this genre***, not
+  *K holds*. A fresh sample of the same author is a fresh sample, not a fresh population, and the
+  circularity the design doc worried about would then be only partly addressed.
+- If the set cannot meet ≥3 authors at all, that is itself the finding: **the frozen parser's
+  eligibility rule cannot reach a diverse population**, which is a defect in the harness's reach, not
+  in K.
+
+**The limit this run cannot escape, stated now rather than discovered later.** The product is pastors
+uploading **their own** sermons: modern prose, most likely **no epigraph line at all**, and quite
+possibly quoting the ESV or NIV from memory rather than the KJV. Every document this run can admit is,
+by construction, one the epigraph parser can read — so the set is drawn from a population the target
+users are **not** in. A K validated here transfers to Victorian preachers quoting the KJV. Whether it
+transfers to a 2026 sermon is **not measured by this run and cannot be**, because:
+
+1. the eligibility rule excludes documents with no stated text, which is most modern sermons;
+2. the harness is KJV-only here by design (Tranche B-2's question), and Slice 0 measured a **17-point**
+   swing from translation alone.
+
+**Consequence, pre-registered:** even a fully CONFIRMED result does **not** discharge "K is right for
+the product." It discharges "K was not fitted to the set that chose it." Those are different claims and
+only the second is being tested. The modern-prose, no-epigraph, non-KJV case needs its own set and its
+own run, and that work is **not** created or closed by this tranche.
+
 ## 4. Bars — carried over, NOT re-chosen
 
 Identical to Slice 0's pre-registered bars. Re-picking bars for a re-validation would defeat it.
