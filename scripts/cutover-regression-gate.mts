@@ -74,6 +74,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { hostOf, declaredMatches } from './lib/target-guard.mjs';
+import { recordGateLeg, validateGateLegInventory } from './lib/gate-leg-inventory.mjs';
 import { loadCheckpoint, saveCheckpoint, OWNERSHIP_ERROR } from './lib/checkpoint.mjs';
 import type { CheckpointFile } from './lib/checkpoint.d.mts';
 import {
@@ -147,8 +148,16 @@ interface Baseline {
 type Checkpoint = CheckpointFile & { baseline: Record<string, unknown> & { regression?: Baseline } };
 
 const failures: string[] = [];
-const fail = (gate: string, msg: string) => { failures.push(`${gate}: ${msg}`); console.error(`  ✗ ${gate} — ${msg}`); };
-const pass = (gate: string, msg: string) => console.log(`  ✓ ${gate} — ${msg}`);
+const reportedLegs = new Set<string>();
+const fail = (gate: string, msg: string) => {
+  recordGateLeg(reportedLegs, gate);
+  failures.push(`${gate}: ${msg}`);
+  console.error(`  ✗ ${gate} — ${msg}`);
+};
+const pass = (gate: string, msg: string) => {
+  recordGateLeg(reportedLegs, gate);
+  console.log(`  ✓ ${gate} — ${msg}`);
+};
 
 async function hasColumn(c: pg.Client, table: string, col: string): Promise<boolean> {
   const r = await c.query<{ ok: boolean }>(
@@ -1187,6 +1196,13 @@ try {
   }
 } finally {
   await c.end();
+}
+
+const legCheck = validateGateLegInventory(reportedLegs, { liveProbe: liveProbeRan });
+if (!legCheck.ok) {
+  console.error(`\n✗ REGRESSION GATE REFUSED — required leg(s) did not report: ${legCheck.missing.join(', ')}`);
+  console.error('  A gate that silently skips a leg is worse than a red leg — every declared surface must speak.');
+  process.exit(1);
 }
 
 if (failures.length > 0) {
