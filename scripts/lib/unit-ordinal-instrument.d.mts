@@ -26,6 +26,19 @@ export interface QueryableClient {
   query(sql: string, params?: unknown[]): Promise<{ rows: Array<Record<string, never>> } | { rows: never[] } | { rows: unknown[] }>;
 }
 
+export interface PreservationRow {
+  section_id: string;
+  stored: number | null;
+  computed: number | null;
+  ordinal: number;
+}
+
+export declare function analyzeUnitOrdinalPreservation(rows: PreservationRow[]): {
+  ok: boolean;
+  errors: string[];
+  uniformOffset: number | null;
+};
+
 export interface CohortMeasurement {
   cohort: string;
   ok: boolean;
@@ -34,6 +47,7 @@ export interface CohortMeasurement {
   cohortWorks: number;
   digests: Array<{ slug: string; digest: string; sections: number; units: number }>;
   mismatches: object[];
+  uniformOffsets: Array<{ slug: string; offset: number; sections: number }>;
 }
 
 export declare function measureUnitOrdinalForCohort(
