@@ -2,6 +2,19 @@
 
 Auto-loaded every session. These rules are enforced by `/audit` and CI. Read [`docs/ENGINEERING.md`](docs/ENGINEERING.md) for the full handbook; this file is the always-on subset you must follow.
 
+## Session start — before you touch anything
+
+@AGENTS.md
+@docs/pm/MASTER.md
+
+**Do not remove the two imports above.** Claude Code reads `CLAUDE.md`, *not* `AGENTS.md` — that
+import is the only reason the routing file loads at all. The second is the programme sheet: the
+plan and the gate board.
+
+Having loaded them, **state the lane, the gate you are on, and the one next action** before making
+any change. Numbers and system state come from `docs/STATE_OF_TRUTH.md` and are re-measured, never
+quoted from a narrative or from memory — including the narrative in this file.
+
 ## The product guarantee (never violate)
 
 Ancient Paths is a **concordance, not a commentator.** It reports what others have said — quoted and attributed — and **never interprets Scripture, never gives a verdict, never fabricates.** The guarantee is *architectural*: retrieval over a licensed corpus → a JSON output contract → a verifier that rejects violations **before render**. Every rule below protects this. See [`docs/PRINCIPLES.md`](docs/PRINCIPLES.md) (I1–I6/C1/G1).
