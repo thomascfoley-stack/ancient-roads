@@ -217,7 +217,17 @@ describe.skipIf(PERTURB_SKIP)('unit_ordinal instrument — perturbation red-proo
 
   async function runBackfill(sql: string) {
     await client.query(`UPDATE sections SET unit_ordinal = NULL WHERE source_id IN (SELECT id FROM sources WHERE slug = $1)`, [SLUG]);
-    await client.query(sql);
+    // SCOPED TO THIS SUITE'S FIXTURE. 024's own `need` CTE is
+    // `SELECT DISTINCT source_id FROM sections WHERE unit_ordinal IS NULL` — every source with a
+    // NULL, not just ours. Running it unscoped here wrote to works this suite does not own, and
+    // silently repaired them: a seeded NULL on `clean-work` went `NULL,2,3` -> `1,2,3` after one
+    // run (independent audit 2026-07-31, §D-4). That is worse than a stray write. The published
+    // leg below exists to CATCH a NULL/drifted unit_ordinal on a published work; a harness that
+    // repairs the drift first is a check that erases its own evidence — the unearned green
+    // THE_LOOP §6 is named after. `backfillRepairUpdateSql` swaps only the `need` selector for a
+    // slug list; every CTE below it stays the migration's, so the perturbations still measure
+    // what they measured.
+    await client.query(backfillRepairUpdateSql(sql), [[SLUG]]);
     const { rows } = await client.query<{ unit_ordinal: number | null; ordinal: number }>(
       `SELECT s.unit_ordinal, s.ordinal FROM sections s
        JOIN sources w ON w.id = s.source_id WHERE w.slug = $1

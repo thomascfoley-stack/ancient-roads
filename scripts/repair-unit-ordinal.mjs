@@ -19,6 +19,7 @@ import {
   backfillRepairUpdateSql,
   measureUnitOrdinalForCohort,
   assertCohort,
+  isWeld,
 } from './lib/unit-ordinal-instrument.mjs';
 import { endpointId, hostOf, isProdHost, DEV_ENDPOINT, PROD_ENDPOINT } from './lib/target-guard.mjs';
 
@@ -162,14 +163,14 @@ try {
 
   console.log('  per-work preview:');
   for (const w of weld) {
-    const flag = w.computed_units < w.stored_units ? ' WELD_RISK' : '';
+    const flag = isWeld(w) ? ' WELD_RISK' : '';
     console.log(
       `    ${w.slug}: stored_units=${w.stored_units} computed_units=${w.computed_units} ` +
       `changed_sections=${w.changed_sections}${flag}`,
     );
   }
 
-  const welds = weld.filter((w) => w.computed_units < w.stored_units);
+  const welds = weld.filter(isWeld);
   if (welds.length) {
     console.error('STOP: weld detector — computed_units < stored_units (island merge). Refusing apply.');
     for (const w of welds) {

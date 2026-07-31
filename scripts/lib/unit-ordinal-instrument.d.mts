@@ -50,6 +50,8 @@ export interface CohortMeasurement {
   digests: Array<{ slug: string; digest: string; sections: number; units: number }>;
   mismatches: object[];
   uniformOffsets: Array<{ slug: string; offset: number; sections: number }>;
+  weldRows: Array<{ slug: string; stored_units: number; computed_units: number }>;
+  welds: Array<{ slug: string; stored_units: number; computed_units: number }>;
 }
 
 export declare function measureUnitOrdinalForCohort(
@@ -81,3 +83,9 @@ export declare function renderReportText(
 export declare function rollupDigest(
   digestRows: Array<{ slug: string; digest: string; sections: number; units: number }>,
 ): string;
+
+export declare function isWeld(row: { stored_units: number | string; computed_units: number | string }): boolean;
+
+export declare function cohortWeldSql(backfillUpdateSql: string): string;
+
+export interface WeldRow { slug: string; stored_units: number; computed_units: number }

@@ -9,3 +9,16 @@ export declare function validateGateLegInventory(
   reported: Set<string>,
   opts?: { liveProbe?: boolean },
 ): { ok: boolean; missing: string[] };
+
+export declare function gateLegPrefixesFromSource(source: string): string[];
+
+export declare function gateLegSourceIsScannable(
+  source: string,
+): { ok: boolean; unscannable: number };
+
+export declare function validateGateLegDeclaration(source: string): {
+  ok: boolean;
+  inGateNotDeclared: string[];
+  declaredNotInGate: string[];
+  unscannable: number;
+};

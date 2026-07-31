@@ -201,6 +201,55 @@ export const COHORT_DIGEST_SQL = `
 export const COHORT_POSITIVE_CONTROL_SQL = `SELECT count(*)::int AS n FROM sources WHERE status = $1`;
 
 /**
+ * THE WELD CONDITION — one definition, imported by every consumer.
+ *
+ * A "weld" is the destructive half of a grouping break: recomputation yields FEWER distinct units
+ * than are stored, because two separated runs of an identical bare heading became adjacent when the
+ * rows between them were deleted, and 024's `islands` CTE then merges them into one unit. Re-running
+ * the backfill there destroys a distinction that exists in the data today.
+ *
+ * It was written TWICE in scripts/repair-unit-ordinal.mjs — once for the `WELD_RISK` report flag and
+ * once for the abort filter, eight lines apart (independent audit 2026-07-31 §D-3: "a verdict
+ * computed separately from the report of that verdict"). Edit one and the operator reads WELD_RISK
+ * on a run that applies, or a clean preview on a run that aborts. One function now; both call it.
+ *
+ * @param {{ stored_units: number|string, computed_units: number|string }} row
+ */
+export function isWeld(row) {
+  return Number(row.computed_units) < Number(row.stored_units);
+}
+
+/**
+ * Per-work stored-vs-computed unit COUNTS over a status cohort. `$1` is the cohort.
+ *
+ * HONEST SCOPE — read this before treating it as a new detector. A weld is a strict SUBSET of the
+ * grouping break `analyzeUnitOrdinalPreservation` already fails on: if two stored units collapse to
+ * one computed unit, `computedToStored` necessarily sees one computed unit mapping to two stored
+ * ones. Measured on a seeded weld before this leg existed, the instrument already went red with
+ * "grouping break: computed unit 1 maps to stored 1 and 3". **This leg therefore cannot be the sole
+ * cause of a failure, and it is not claimed to be one.**
+ *
+ * What it adds is the distinction the operator actually has to act on, which "grouping break" does
+ * not carry: renumbering and merging are different failures and only the second is destructive. It
+ * reports `stored_units` / `computed_units` per work, and when they indicate a merge it says so in
+ * those words. The counts are reported for every work, weld or not — the diagnostic is the point.
+ */
+export function cohortWeldSql(backfillUpdateSql) {
+  const selectSql = backfillSelectSql(backfillUpdateSql, { scope: 'cohort' });
+  return `
+    WITH computed AS (${selectSql})
+    SELECT src.slug,
+           count(DISTINCT sec.unit_ordinal)::int AS stored_units,
+           count(DISTINCT c.computed_unit_ordinal)::int AS computed_units
+    FROM sections sec
+    JOIN sources src ON src.id = sec.source_id
+    JOIN computed c ON c.section_id = sec.id
+    WHERE src.status = $1
+    GROUP BY src.slug
+    ORDER BY src.slug`;
+}
+
+/**
  * Pure analysis: does stored unit_ordinal preserve 024 grouping and reading order?
  *
  * @param {Array<{ section_id: string, stored: number|null, computed: number|null, ordinal: number }>} rows
@@ -246,7 +295,9 @@ export function analyzeUnitOrdinalPreservation(rows) {
     errors.push(`non-uniform offset: ${offsets.size} distinct (stored - computed) deltas (${[...offsets].slice(0, 5).join(', ')})`);
   }
 
-  return { ok: errors.length === 0, errors, uniformOffset };
+  // De-duplicate: a single merge is seen from both directions (stored->computed and
+  // computed->stored), which printed the identical grouping-break line twice on a seeded weld.
+  return { ok: errors.length === 0, errors: [...new Set(errors)], uniformOffset };
 }
 
 /**
@@ -321,6 +372,21 @@ export async function measureUnitOrdinalForCohort(client, { cohort, backfillSql 
     }
   }
 
+  // Weld diagnosis. Runs on every cohort measurement, so the CI db-invariants job carries it —
+  // the previous order required this leg to live here rather than only in the repair tool, which
+  // is invoked by hand and gated by nobody. See cohortWeldSql on why this refines the grouping
+  // break rather than detecting anything it misses.
+  const weldRows = (await client.query(cohortWeldSql(sql), [cohort])).rows;
+  const welds = weldRows.filter(isWeld);
+  for (const w of welds) {
+    errors.push(
+      `cohort '${cohort}': ${w.slug}: WELD — recomputation MERGES units ` +
+      `(stored_units=${w.stored_units} -> computed_units=${w.computed_units}). Re-running the 024 ` +
+      `backfill on this work would destroy a distinction that exists in the data today; a repair ` +
+      `here is NOT safe renumbering.`,
+    );
+  }
+
   const digests = (await client.query(COHORT_DIGEST_SQL, [cohort])).rows;
   for (const row of digests) {
     if (!row.digest) errors.push(`cohort '${cohort}': ${row.slug}: digest is NULL (no sections?)`);
@@ -336,6 +402,8 @@ export async function measureUnitOrdinalForCohort(client, { cohort, backfillSql 
     digests,
     mismatches,
     uniformOffsets,
+    weldRows,
+    welds,
   };
 }
 

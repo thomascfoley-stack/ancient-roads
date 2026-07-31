@@ -22,24 +22,16 @@ import { mkdtempSync, readFileSync, existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { codeOnly } from '../scripts/lib/source-scan.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ENTRY = path.join(ROOT, 'scripts/unit-ordinal-instrument.mjs');
 
 const TRANSPILER = /\btsx\b|\bts-node\b|--experimental-strip-types|--loader\b/;
 
-/**
- * Drop comment lines. The files on this path explain AT LENGTH why they no longer shell
- * out to a transpiler, so scanning raw source would flag the explanation and the only way
- * to get green would be to delete the reasoning. Whole-line comments only: a code line
- * carrying a URL must not be mistaken for a comment.
- */
-function codeOnly(src: string): string {
-  return src
-    .split('\n')
-    .filter((l) => !/^\s*(\/\/|\/\*|\*)/.test(l))
-    .join('\n');
-}
+// codeOnly lives in scripts/lib/source-scan.mjs. It used to be defined here; the gate leg
+// inventory needed the identical rule, and a second copy of a scanning predicate is the defect
+// class this repo has paid for eight times. Imported, not mirrored.
 
 /** Every local file reachable from `entry` by static relative import. */
 function importGraph(entry: string): string[] {

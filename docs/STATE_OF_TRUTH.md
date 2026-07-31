@@ -195,6 +195,50 @@ Production was refused (hard guard). Tool: dry-run default, `--apply` writes, ro
 **Works repaired** (section-level drift before apply): `chrysostom-homilies`, `edwards-works`,
 `hodge-systematic`, `maclaren-expositions`, `owen-works`, `tennyson-in-memoriam`, `watson-works`.
 
+#### Why CI went from red to green — the data moved, not the code
+
+**`db-invariants` failed at `6896714` (Actions run 30613713514) and passed at `ac19935` (run
+30650159435). It went green because the measured DATA was rewritten on `ep-tiny-bonus`
+(`ci-test-20260729`, the CI `APP_DATABASE_URL_TEST` branch) and on `ep-tiny-hat` (dev) — not because
+any code changed.**
+
+This sentence exists because the diff invites the opposite conclusion. `ac19935` also edits
+`scripts/lib/unit-ordinal-instrument.mjs` by 56 lines, sitting immediately beside the red→green
+transition. The independent audit ruled that rival explanation out by loading both versions
+side by side: the cohort recompute SQL is **byte-identical** (2790 chars both), and
+`analyzeUnitOrdinalPreservation` and `measureUnitOrdinalForCohort` are unchanged — the +56 is a
+refactor extracting `replaceNeedCte()`, and the test diff is purely additive. Same code, same
+assertion, same query, different data.
+
+The failure at `6896714` was exactly one test — the published-work leg, `1 failed | 220 passed |
+3 skipped` — naming **six** works with non-uniform offsets:
+
+| work | distinct `stored − computed` deltas |
+|---|---|
+| `chrysostom-homilies` | 2 — **(16, 17)** |
+| `edwards-works` | 2 — (0, 1) |
+| `hodge-systematic` | 3 — (0, 3, 6) |
+| `maclaren-expositions` | 3 — (0, 1, 2) |
+| `owen-works` | 5 — (0, 1, 2, 3, 4) |
+| `watson-works` | 2 — (0, 1) |
+
+**Six failed CI; seven were repaired.** The repair tool auto-selects on *any*
+`sec.unit_ordinal IS DISTINCT FROM c.computed_unit_ordinal`, which is strictly broader than the
+instrument's failure condition (NULL, duplicate pair, grouping break, order break, or **non-uniform**
+offset — a **uniform** offset is reported and passed by design). `tennyson-in-memoriam` is the
+difference: it carried drift of the one kind the instrument deliberately tolerates, a uniform
+per-work offset, so it was in the repair's scope and never in CI's failure list.
+
+**`chrysostom-homilies` is (16, 17), NOT a uniform +16.** The "+16 prolegomena" account is
+incomplete: two distinct deltas means **two deletion points**, the second consistent with
+`suppress-nonauthorial-matter.ts` removing 6 further sections around unit 275. A tidy story the
+measurement contradicts is worse than no story.
+
+**UNVERIFIED — do not upgrade without re-execution.** The **61,486** row count rests on the tool's
+own log. The independent auditor had no dev credentials and could not reach either endpoint; CI
+corroborates that the drift is *gone* on `ep-tiny-bonus`, not how many rows moved, and nothing in
+Actions reads `ep-tiny-hat` at all.
+
 **Defect class (standing hazard):** migration 024 backfill is idempotent by exclusion
 (`WHERE unit_ordinal IS NULL`). Scripts that **delete sections after backfill** silently invalidate
 stored `unit_ordinal` without re-running a slug-scoped repair — will recur on the next post-backfill

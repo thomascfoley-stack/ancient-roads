@@ -14,6 +14,17 @@
 | 8 | TRANCHE8-MEASUREMENT.md, DEPLOY_PREFLIGHT.md | DONE |
 | repair | UNIT_ORDINAL_REPAIR.md — 024 slug-scoped re-apply on ep-tiny-hat + ci-test | DONE 2026-07-31 |
 
+**Why `db-invariants` went red → green.** It failed at `6896714` (run 30613713514) and passed at
+`ac19935` (run 30650159435) **because the measured data was rewritten on `ep-tiny-bonus`
+(`ci-test-20260729`) and `ep-tiny-hat` — not because code changed.** The 56-line edit to
+`scripts/lib/unit-ordinal-instrument.mjs` in the same commit is a refactor: the cohort recompute SQL
+is byte-identical across the two runs and the analysis functions are unchanged. Six works failed CI;
+seven were repaired — the repair selects on any stored≠computed difference, which is broader than the
+instrument's failure condition, and `tennyson-in-memoriam` had a uniform offset (tolerated by design).
+Full detail, including the per-work delta table and the `chrysostom-homilies` (16, 17) correction:
+`docs/STATE_OF_TRUTH.md` §2e. The **61,486** row count is **UNVERIFIED** — it rests on the tool's own
+log; no auditor could reach either endpoint.
+
 ## Stage 2.1 — unit_ordinal instrument
 
 | Item | Artifact | Status |
