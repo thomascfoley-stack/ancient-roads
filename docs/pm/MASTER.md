@@ -73,11 +73,12 @@ The first pass should be the one where, if something breaks, you know what broke
 
 | # | Gate | Status |
 |---|---|---|
+| B0a | K re-validation on a fresh held-out set | **PRE-REGISTERED, not yet run** — `docs/evidence/slice0-k-revalidation/PRE-REGISTRATION.md`, committed data-free at `42b2dd7` |
 | B0 | Slice 0 — anchor recall | **CLEARED.** Held-out n=30, frozen harness, recall 90% (CI lower bound 74% vs a 70% bar). Precision clears at K=2 (82/68) and K=3 (75/96) |
 | B1 | ⚑ Owner: a Neon dev branch to build against | **OPEN** |
 | B2 | ⚑ Owner: confirm DeepInfra `bge-large` as the committed embedding model | **OPEN** |
 | B3 | ⚑ Owner: Vercel Pro (hobby cron is daily; useless for an ingestion queue) | **OPEN** |
-| B4 | Translation decision — shingle against the user's translation, or all. Moved the headline 17 points | **OPEN** |
+| B4 | Translation decision — shingle against the user's translation, or all. Moved the headline 17 points | **OPEN — options now written** ([paper](../SLICE1_TRANSLATION_DECISION.md), recommends Option A + detection). Rulable. |
 | B5 | Slice 1 — prose/sermons end-to-end + the tradition-gap join | Blocked on B1–B4 |
 
 ## Owner decisions outstanding

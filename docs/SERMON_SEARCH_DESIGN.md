@@ -272,5 +272,7 @@ set (CCEL vols 10+13, n=44). **The trade curve, not a point:**
 Recall is confirmed on held-out data (CI lower bound above 70), and — the open leg — **precision now clears its bar
 at the same threshold that keeps recall above its bar** (K=2: 82/68; K=3: 75/96, precision inspection-validated).
 The mechanism both finds the passage *and* can be made precise; the false positives were a diagnosed, fixable
-threshold artifact, not a dead end. Conditioned still on: the translation decision (§ below), the semantic channel
+threshold artifact, not a dead end. Conditioned still on: the translation decision (**now written up:
+`docs/SLICE1_TRANSLATION_DECISION.md`** — this document's "§ below" never existed, which is why gate B4
+sat open and unrulable), the semantic channel
 for the paraphrase residual, and re-validating K on one more held-out set before ship.
