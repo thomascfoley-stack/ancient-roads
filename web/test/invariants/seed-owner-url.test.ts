@@ -7,22 +7,38 @@
 // repo has now been bitten by in three costumes (missing secret, skipping suite, unnamed file).
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { endpointIdOf, seedOwnerUrl } from '../helpers/env';
+import { endpointIdOf, runtimeDbUrl, seedOwnerUrl } from '../helpers/env';
 
 const PROD = 'postgresql://neondb_owner:pw@ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech/neondb';
 const DEV = 'postgresql://neondb_owner:pw@ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech/neondb';
 const CI = 'postgresql://neondb_owner:pw@ep-tiny-bonus-at3izo3y.c-9.us-east-1.aws.neon.tech/neondb';
 
-const saved = { db: process.env.DATABASE_URL, unpooled: process.env.DATABASE_URL_UNPOOLED, seed: process.env.SEED_TEST_ENDPOINT };
+const saved = {
+  db: process.env.DATABASE_URL,
+  app: process.env.APP_DATABASE_URL,
+  unpooled: process.env.DATABASE_URL_UNPOOLED,
+  seed: process.env.SEED_TEST_ENDPOINT,
+};
 afterEach(() => {
-  for (const [k, v] of [['DATABASE_URL', saved.db], ['DATABASE_URL_UNPOOLED', saved.unpooled], ['SEED_TEST_ENDPOINT', saved.seed]] as const) {
+  for (const [k, v] of [
+    ['DATABASE_URL', saved.db],
+    ['APP_DATABASE_URL', saved.app],
+    ['DATABASE_URL_UNPOOLED', saved.unpooled],
+    ['SEED_TEST_ENDPOINT', saved.seed],
+  ] as const) {
     if (v === undefined) delete process.env[k]; else process.env[k] = v;
   }
 });
 function withEnv(url: string | undefined, declared?: string) {
   if (url === undefined) delete process.env.DATABASE_URL; else process.env.DATABASE_URL = url;
+  delete process.env.APP_DATABASE_URL;
   delete process.env.DATABASE_URL_UNPOOLED;
   if (declared === undefined) delete process.env.SEED_TEST_ENDPOINT; else process.env.SEED_TEST_ENDPOINT = declared;
+}
+function withAppEnv(url: string | undefined) {
+  delete process.env.DATABASE_URL;
+  delete process.env.DATABASE_URL_UNPOOLED;
+  if (url === undefined) delete process.env.APP_DATABASE_URL; else process.env.APP_DATABASE_URL = url;
 }
 
 describe('seedOwnerUrl — which database a seeding suite may write to', () => {
@@ -69,5 +85,25 @@ describe('seedOwnerUrl — which database a seeding suite may write to', () => {
     expect(endpointIdOf(undefined)).toBeNull();
     expect(endpointIdOf(CI)).toBe('ep-tiny-bonus-at3izo3y');
     expect(endpointIdOf('EP-TINY-BONUS-AT3IZO3Y')).toBe('ep-tiny-bonus-at3izo3y');
+  });
+});
+
+describe('runtimeDbUrl — which database behavioral invariants may read', () => {
+  it('REFUSES production via APP_DATABASE_URL (third instance of the second-door class)', () => {
+    withAppEnv(PROD);
+    expect(() => runtimeDbUrl(), 'prod APP_DATABASE_URL must throw, not connect').toThrow(/PRODUCTION/i);
+    withAppEnv(PROD.replace('ep-odd-fog-atnykudm', 'EP-ODD-FOG-ATNYKUDM'));
+    expect(() => runtimeDbUrl(), 'uppercase prod host must still be refused').toThrow(/PRODUCTION/i);
+  });
+
+  it('REFUSES production via DATABASE_URL fallback', () => {
+    withAppEnv(undefined);
+    process.env.DATABASE_URL = PROD;
+    expect(() => runtimeDbUrl()).toThrow(/PRODUCTION/i);
+  });
+
+  it('allows dev endpoint for runtime invariants', () => {
+    withAppEnv(DEV);
+    expect(runtimeDbUrl()).toBe(DEV);
   });
 });
