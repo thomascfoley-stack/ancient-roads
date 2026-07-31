@@ -70,27 +70,28 @@ run "B1 SEEDED RED — corpus path moved"
   echo "    remove each preempting refusal in turn."
 } | tee -a "$LOG"
 
-python3 - <<'PY'
-import re
+# The seed swaps the refusal for a console.warn of the SAME message — a valid, minimal,
+# entirely plausible edit ("downgrade this to a warning for now"). Wrapping the call instead
+# would risk a syntax error, and a gate that exits non-zero because it failed to parse proves
+# nothing about the gate.
+seed() { python3 - "$1" "$2" <<'PY'
+import sys
 p = 'scripts/predeploy-gate.ts'
 s = open(p).read()
-s = s.replace("""if (!existsSync(COMMENTARIES_DIR)) {
-  FAIL(""", """if (!existsSync(COMMENTARIES_DIR)) {
-  console.warn('SEEDED: absent-corpus FAIL downgraded to a warning');
-  void (""", 1)
-open(p, 'w').write(s)
+old, new = sys.argv[1], sys.argv[2]
+assert s.count(old) == 1, f'seed anchor matched {s.count(old)} times: {old!r}'
+open(p, 'w').write(s.replace(old, new, 1))
 PY
+}
+
+seed 'if (!existsSync(COMMENTARIES_DIR)) {
+  FAIL(' 'if (!existsSync(COMMENTARIES_DIR)) {
+  console.warn('
 run "B2 SEEDED RED — + licensing leg's absent-corpus FAIL downgraded"
 
-python3 - <<'PY'
-p = 'scripts/predeploy-gate.ts'
-s = open(p).read()
-s = s.replace("""if (!ratchet.ok) {
-  gateFail(""", """if (!ratchet.ok) {
-  console.warn('SEEDED: corpus-identity refusal downgraded to a warning');
-  void (""", 1)
-open(p, 'w').write(s)
-PY
+seed 'if (!ratchet.ok) {
+  gateFail(' 'if (!ratchet.ok) {
+  console.warn('
 run "B3 SEEDED RED — + corpus-identity refusal downgraded"
 
 restore

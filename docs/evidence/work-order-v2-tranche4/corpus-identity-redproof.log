@@ -1,7 +1,7 @@
 ===============================================================================
 TRANCHE 4 — corpus identity red-proofs (Work Order v2 Stage 3.1)
-date: 2026-07-31T06:39:26Z
-head: ba82a5d
+date: 2026-07-31T06:40:09Z
+head: c9b268a
 corpus on disk: 66 books / 308 works / 1,212 files / 191,749 entries
 ===============================================================================
 
@@ -188,44 +188,94 @@ exit=1
 
 --- B2 SEEDED RED — + licensing leg's absent-corpus FAIL downgraded ---
 
-node:internal/modules/run_main:107
-    triggerUncaughtException(
-    ^
-Error [TransformError]: Transform failed with 1 error:
-/Users/foley/Projects/ancient-roads-git/scripts/predeploy-gate.ts:69:2: ERROR: Unexpected ")"
-    at failureErrorWithLog (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:1748:15)
-    at /Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:1017:50
-    at responseCallbacks.<computed> (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:884:9)
-    at handleIncomingPacket (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:939:12)
-    at Socket.readFromStdout (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:862:7)
-    at Socket.emit (node:events:507:28)
-    at addChunk (node:internal/streams/readable:559:12)
-    at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
-    at Readable.push (node:internal/streams/readable:390:5)
-    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+=== Pre-deploy gate: licensing ratchet ===
+The static commentary corpus is missing:
+  /Users/foley/Projects/ancient-roads-git/web/public/commentaries-MOVED
 
-Node.js v24.5.0
+Refusing to deploy. Either the reader will ship with no content, or content is
+about to be uploaded that this gate never counted. Both are unacceptable.
+Regenerate it (src/ingest/merge-commentaries.ts) and re-run.
+  forbidden-provenance entries : -1
+  committed baseline           : 0
+
+[32m✓ Debt reduced by 1.[0m Run `pnpm qa:baseline` to commit the new lower baseline.
+
+[32m✓ Ratchet holds.[0m Shipping -1 known forbidden-provenance entries (≤ baseline).
+  This is DEBT, not approval. It is visible, it is capped, and it may only shrink.
+  Reduce it via docs/CONTENT_RECOVERY_PIPELINE.md.
+
+
+=== Pre-deploy gate: Bible-translation licensing (per-work record) ===
+  ✓ Every translation dir present has a shipping license record (allow, or conditional+ack).
+
+=== Pre-deploy gate: corpus identity (file count + per-work presence) ===
+  works (authors) present      : 0
+  books present                : 0
+  chapter files present        : 0
+  entries present              : 0
+  corpusHash                   : (no corpus)
+  last manifest                : 839017d v2 (308 works, 1,212 files, 191,749 entries)
+
+[31m✗ PRE-DEPLOY GATE FAILED[0m
+CORPUS RATCHET VIOLATION — content is about to ship that is SMALLER than the last
+manifest, or cannot be compared to one:
+
+  • the static commentary corpus is ABSENT — refusing: the reader would ship with no content, or content is about to be uploaded that was never counted
+
+A missing work is invisible in the reader: it renders whatever it finds, so a
+half-finished regeneration ships as a quietly smaller library. Either restore the
+content, or — if the reduction is intended — run
+  node scripts/build-corpus-manifest.mjs
+and COMMIT the new manifest, which is how you say so on the record.
+
 exit=1
 
 --- B3 SEEDED RED — + corpus-identity refusal downgraded ---
 
-node:internal/modules/run_main:107
-    triggerUncaughtException(
-    ^
-Error [TransformError]: Transform failed with 1 error:
-/Users/foley/Projects/ancient-roads-git/scripts/predeploy-gate.ts:69:2: ERROR: Unexpected ")"
-    at failureErrorWithLog (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:1748:15)
-    at /Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:1017:50
-    at responseCallbacks.<computed> (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:884:9)
-    at handleIncomingPacket (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:939:12)
-    at Socket.readFromStdout (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:862:7)
-    at Socket.emit (node:events:507:28)
-    at addChunk (node:internal/streams/readable:559:12)
-    at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
-    at Readable.push (node:internal/streams/readable:390:5)
-    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+=== Pre-deploy gate: licensing ratchet ===
+The static commentary corpus is missing:
+  /Users/foley/Projects/ancient-roads-git/web/public/commentaries-MOVED
 
-Node.js v24.5.0
+Refusing to deploy. Either the reader will ship with no content, or content is
+about to be uploaded that this gate never counted. Both are unacceptable.
+Regenerate it (src/ingest/merge-commentaries.ts) and re-run.
+  forbidden-provenance entries : -1
+  committed baseline           : 0
+
+[32m✓ Debt reduced by 1.[0m Run `pnpm qa:baseline` to commit the new lower baseline.
+
+[32m✓ Ratchet holds.[0m Shipping -1 known forbidden-provenance entries (≤ baseline).
+  This is DEBT, not approval. It is visible, it is capped, and it may only shrink.
+  Reduce it via docs/CONTENT_RECOVERY_PIPELINE.md.
+
+
+=== Pre-deploy gate: Bible-translation licensing (per-work record) ===
+  ✓ Every translation dir present has a shipping license record (allow, or conditional+ack).
+
+=== Pre-deploy gate: corpus identity (file count + per-work presence) ===
+  works (authors) present      : 0
+  books present                : 0
+  chapter files present        : 0
+  entries present              : 0
+  corpusHash                   : (no corpus)
+  last manifest                : 839017d v2 (308 works, 1,212 files, 191,749 entries)
+CORPUS RATCHET VIOLATION — content is about to ship that is SMALLER than the last
+manifest, or cannot be compared to one:
+
+  • the static commentary corpus is ABSENT — refusing: the reader would ship with no content, or content is about to be uploaded that was never counted
+
+A missing work is invisible in the reader: it renders whatever it finds, so a
+half-finished regeneration ships as a quietly smaller library. Either restore the
+content, or — if the reduction is intended — run
+  node scripts/build-corpus-manifest.mjs
+and COMMIT the new manifest, which is how you say so on the record.
+
+=== Pre-deploy gate: §3 verse-key distribution (no artifact exemption) ===
+
+[31m✗ PRE-DEPLOY GATE FAILED[0m
+The corpus is absent at /Users/foley/Projects/ancient-roads-git/web/public/commentaries-MOVED, so the ADR-020 verse-key gate cannot run.
+At deploy time that is a refusal, not a skip.
+
 exit=1
 
 --- B4 REVERTED — all seeds out ---
