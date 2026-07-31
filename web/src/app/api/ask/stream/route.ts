@@ -4,11 +4,15 @@ import { checkAskRateLimit } from '@/lib/rate-limit';
 import { apiError } from '@/lib/api-error';
 import { logEvent } from '@/lib/observability';
 import { teach, type TeacherEvent } from '@/lib/teacher/teach';
-import { ASK_MAX_DURATION_SEC } from '@/lib/teacher/teach-budget';
 import { logAskOutcome } from '@/lib/ask-outcome-log';
 
 export const runtime = 'nodejs';
-export const maxDuration = ASK_MAX_DURATION_SEC;
+// MUST be a literal: Next 16 statically analyses route segment config and rejects a
+// non-literal with "Invalid segment configuration export detected" -- which failed the
+// whole production build (2026-08-01). ASK_MAX_DURATION_SEC stays the source of truth;
+// test/ask-max-duration-literal.test.ts asserts this literal still equals it, so the two
+// cannot drift. Do not re-import the constant here -- it does not build.
+export const maxDuration = 300;
 
 // POST /api/ask/stream { question } → newline-delimited JSON (NDJSON) stream of
 // TeacherEvents (retrieving → retrieved → composing → verifying → done). The
