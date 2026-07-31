@@ -73,7 +73,7 @@ The first pass should be the one where, if something breaks, you know what broke
 
 | # | Gate | Status |
 |---|---|---|
-| B0a | K re-validation on a fresh held-out set | **PRE-REGISTERED, not yet run** — `docs/evidence/slice0-k-revalidation/PRE-REGISTRATION.md`, committed data-free at `42b2dd7` |
+| B0a | K re-validation on a fresh held-out set | **NOT DONE — set could not be built.** The frozen marker regex requires quote-then-reference (Spurgeon's CCEL house style); Wesley/Edwards/Whitefield state the reference FIRST, so eligible n=0 against a floor of 20. Positive control fires (63 matches on Spurgeon vols 10+13). Harness deliberately NOT widened. [result](../evidence/slice0-k-revalidation/RESULT.md) |
 | B0 | Slice 0 — anchor recall | **CLEARED.** Held-out n=30, frozen harness, recall 90% (CI lower bound 74% vs a 70% bar). Precision clears at K=2 (82/68) and K=3 (75/96) |
 | B1 | ⚑ Owner: a Neon dev branch to build against | **OPEN** |
 | B2 | ⚑ Owner: confirm DeepInfra `bge-large` as the committed embedding model | **OPEN — contradiction removed.** ADR-005 already pins `bge-large-en-v1.5` for the corpus and rejects mixing embedders; `SERMON_COMPANION.md` §3's "Jina v3 (already chosen)" was a wishlist row with no ADR and no code behind it (corrected in place). B2 now asks only: same model for **user-corpus** embedding in Slice 1? Parity near-forces it. |
@@ -104,6 +104,13 @@ Eight instances so far. The eighth was introduced by the tranche meant to fix th
 Also seen: red-proofs seeding a *copy* of the predicate · checks that are algebraic identities · mocks
 asserting they return what they were told · "audit green" while `db-invariants` is red · a test that
 repairs the defect it measures (the perturbation suite's unscoped backfill).
+
+**A fourth, found by B-1: an eligibility rule that selects for the population it was built on.** The
+Slice 0 stated-text parser reads Spurgeon's CCEL typography (quote-then-reference) and matches
+essentially nothing else — 63 hits on 78,655 Spurgeon lines, 1 on 116,162 lines of Wesley/Edwards/
+Whitefield, who all state the reference first. So every "held-out" set built by that rule is drawn from
+one author by construction. Watch for filters whose reach is narrower than the population they claim to
+sample.
 
 **A third shape, and a standing check on this directory: a correction filed where nobody meets the
 claim it corrects.** The `chrysostom-homilies` "+16 prolegomena" story lived in the ADR-029 addendum;
