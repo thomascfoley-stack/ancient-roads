@@ -790,6 +790,13 @@ test with standing in-memory perturbations of the committed 024 backfill SQL, (2
 with per-work digest + rollup ratchet, (3) read-only CLI `--target=<endpoint>` for prod measurement.
 Verification recomputes unit assignment from the migration's own UPDATE, not a re-implementation.
 
+**Invariant (Stage 2 Tranche 2, 2026-07-31):** order preservation, not dense 1..N. Consumers group by
+`unit_ordinal` equality (`work-reader.ts`) and dedupe by `(source_id, unit_ordinal)` (`search-sections.ts`);
+no URL is derived from unit number. The instrument checks: (1) grouping preservation — same stored unit
+iff same computed unit; (2) reading order — `(stored unit, ordinal)` vs `(computed unit, ordinal)` yields
+the same section sequence; (3) uniform per-work offset is reported but does not fail; (4) non-uniform
+offset or grouping/order break fails. NULL, dup pairs, within-unit ordinal order, and digests unchanged.
+
 **Why.** Counts and uniqueness pass permutations; digest catches them (ADR-033 lesson). Perturbations
 live in the harness permanently — not one-off screenshots.
 

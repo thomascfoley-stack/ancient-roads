@@ -1,9 +1,14 @@
 // Work Order v2 Stage 2.1 — unit_ordinal instrument (shared core).
 // One tool, three surfaces: db-invariants test, cutover gate leg, read-only CLI.
 //
-// PROPERTY: for every published work — zero NULL unit_ordinal; unit count matches
-// recomputed reading units; (unit_ordinal, ordinal) is a strict total order with no
-// duplicates within a unit; stored values match the 024 backfill recomputation.
+// PROPERTY: for every published work — zero NULL unit_ordinal; (unit_ordinal, ordinal)
+// is a strict total order with no duplicates within a unit; stored unit_ordinal preserves
+// the 024 recomputation's GROUPING (same stored unit iff same computed unit) and READING
+// ORDER (ORDER BY stored unit, ordinal vs computed unit, ordinal yields the same section
+// sequence). A uniform per-work offset (stored = computed + k for all sections) is
+// reported but does NOT fail — consumers group by equality, not dense 1..N (ADR-026,
+// work-reader.ts, search-sections.ts DISTINCT ON). Non-uniform offset or a grouping/order
+// break fails.
 // Digest leg: md5 over (slug, section_id, unit_ordinal, ordinal) per work catches
 // permutations that count/uniqueness checks miss (ADR-033 lesson).
 import { readFileSync } from 'node:fs';
@@ -162,6 +167,55 @@ export const COHORT_DIGEST_SQL = `
 export const COHORT_POSITIVE_CONTROL_SQL = `SELECT count(*)::int AS n FROM sources WHERE status = $1`;
 
 /**
+ * Pure analysis: does stored unit_ordinal preserve 024 grouping and reading order?
+ *
+ * @param {Array<{ section_id: string, stored: number|null, computed: number|null, ordinal: number }>} rows
+ * @returns {{ ok: boolean, errors: string[], uniformOffset: number|null }}
+ */
+export function analyzeUnitOrdinalPreservation(rows) {
+  const errors = [];
+  const populated = rows.filter((r) => r.stored !== null && r.computed !== null);
+  if (populated.length === 0) return { ok: true, errors, uniformOffset: null };
+
+  const storedToComputed = new Map();
+  for (const r of populated) {
+    const prev = storedToComputed.get(r.stored);
+    if (prev !== undefined && prev !== r.computed) {
+      errors.push(`grouping break: stored unit ${r.stored} maps to computed ${prev} and ${r.computed}`);
+    } else {
+      storedToComputed.set(r.stored, r.computed);
+    }
+  }
+  const computedToStored = new Map();
+  for (const r of populated) {
+    const prev = computedToStored.get(r.computed);
+    if (prev !== undefined && prev !== r.stored) {
+      errors.push(`grouping break: computed unit ${r.computed} maps to stored ${prev} and ${r.stored}`);
+    } else {
+      computedToStored.set(r.computed, r.stored);
+    }
+  }
+
+  const byStored = [...populated].sort((a, b) => a.stored - b.stored || a.ordinal - b.ordinal);
+  const byComputed = [...populated].sort((a, b) => a.computed - b.computed || a.ordinal - b.ordinal);
+  const storedSeq = byStored.map((r) => r.section_id).join('\0');
+  const computedSeq = byComputed.map((r) => r.section_id).join('\0');
+  if (storedSeq !== computedSeq) {
+    errors.push('reading order break: ORDER BY (stored unit, ordinal) vs (computed unit, ordinal) yields different section sequence');
+  }
+
+  const offsets = new Set(populated.map((r) => r.stored - r.computed));
+  let uniformOffset = null;
+  if (offsets.size === 1) {
+    uniformOffset = [...offsets][0];
+  } else if (offsets.size > 1) {
+    errors.push(`non-uniform offset: ${offsets.size} distinct (stored - computed) deltas (${[...offsets].slice(0, 5).join(', ')})`);
+  }
+
+  return { ok: errors.length === 0, errors, uniformOffset };
+}
+
+/**
  * Run the full instrument against an open pg client, over ONE EXPLICITLY NAMED status cohort.
  *
  * The cohort travels into every error string and into the returned object, because a report
@@ -169,13 +223,13 @@ export const COHORT_POSITIVE_CONTROL_SQL = `SELECT count(*)::int AS n FROM sourc
  * different one — and the two runs this instrument matters for (the staged cohort about to be
  * flipped, and the published cohort already serving) are otherwise identical in shape.
  *
- * @returns {{ cohort: string, ok: boolean, errors: string[], nulls: number, cohortWorks: number, digests: object[], mismatches: object[] }}
+ * @returns {{ cohort: string, ok: boolean, errors: string[], nulls: number, cohortWorks: number, digests: object[], mismatches: object[], uniformOffsets: object[] }}
  */
 export async function measureUnitOrdinalForCohort(client, { cohort, backfillSql } = {}) {
   assertCohort(cohort);
   const sql = backfillSql ?? backfillSqlFromMigration();
   const errors = [];
-  const blank = { cohort, nulls: 0, cohortWorks: 0, digests: [], mismatches: [] };
+  const blank = { cohort, nulls: 0, cohortWorks: 0, digests: [], mismatches: [], uniformOffsets: [] };
 
   // POSITIVE CONTROL over THIS cohort. Not over 'published': asking "are there published
   // sources?" before measuring the staged ones proves the probe can see a population it is
@@ -201,19 +255,36 @@ export async function measureUnitOrdinalForCohort(client, { cohort, backfillSql 
   }
 
   const recompute = backfillSelectSql(sql, { scope: 'cohort' });
-  const mismatches = (await client.query(`
+  const preservationRows = (await client.query(`
     WITH computed AS (${recompute})
-    SELECT src.slug, sec.id AS section_id, sec.unit_ordinal AS stored, c.computed_unit_ordinal AS expected
+    SELECT src.slug, sec.id AS section_id, sec.unit_ordinal AS stored,
+           c.computed_unit_ordinal AS computed, sec.ordinal
     FROM sections sec
     JOIN sources src ON src.id = sec.source_id
     JOIN computed c ON c.section_id = sec.id
     WHERE src.status = $1
-      AND sec.unit_ordinal IS DISTINCT FROM c.computed_unit_ordinal
     ORDER BY src.slug, sec.unit_ordinal, sec.ordinal
-    LIMIT 20
   `, [cohort])).rows;
-  if (mismatches.length) {
-    errors.push(`cohort '${cohort}': stored unit_ordinal differs from 024 recomputation for ${mismatches.length}+ section(s); first: ${mismatches[0].slug}#${mismatches[0].section_id} stored=${mismatches[0].stored} expected=${mismatches[0].expected}`);
+
+  const bySlug = new Map();
+  for (const row of preservationRows) {
+    if (!bySlug.has(row.slug)) bySlug.set(row.slug, []);
+    bySlug.get(row.slug).push(row);
+  }
+
+  const uniformOffsets = [];
+  const mismatches = [];
+  for (const [slug, rows] of bySlug) {
+    const analysis = analyzeUnitOrdinalPreservation(rows);
+    if (!analysis.ok) {
+      for (const e of analysis.errors) {
+        errors.push(`cohort '${cohort}': ${slug}: ${e}`);
+      }
+      const sample = rows.find((r) => r.stored !== r.computed);
+      if (sample) mismatches.push({ slug, section_id: sample.section_id, stored: sample.stored, expected: sample.computed });
+    } else if (analysis.uniformOffset !== null && analysis.uniformOffset !== 0) {
+      uniformOffsets.push({ slug, offset: analysis.uniformOffset, sections: rows.length });
+    }
   }
 
   const digests = (await client.query(COHORT_DIGEST_SQL, [cohort])).rows;
@@ -230,6 +301,7 @@ export async function measureUnitOrdinalForCohort(client, { cohort, backfillSql 
     cohortWorks: control.n,
     digests,
     mismatches,
+    uniformOffsets,
   };
 }
 

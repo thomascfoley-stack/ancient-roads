@@ -10,6 +10,7 @@
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
+  analyzeUnitOrdinalPreservation,
   backfillSqlFromMigration,
   backfillSelectSql,
   measurePublishedUnitOrdinal,
@@ -73,6 +74,58 @@ const PERTURB_SKIP = announceSkip(
   [{ name: 'DATABASE_URL (owner seed via seedOwnerUrl)', present: Boolean(ownerUrl) }],
   'standing perturbation regression against migration 024 backfill SQL',
 );
+
+describe('unit_ordinal instrument — order preservation analysis (in-memory)', () => {
+  const base = [
+    { section_id: 'a', stored: 1, computed: 1, ordinal: 1 },
+    { section_id: 'b', stored: 1, computed: 1, ordinal: 2 },
+    { section_id: 'c', stored: 2, computed: 2, ordinal: 3 },
+  ];
+
+  it('exact match: grouping and order preserved', () => {
+    const r = analyzeUnitOrdinalPreservation(base);
+    expect(r.ok).toBe(true);
+    expect(r.uniformOffset).toBe(0);
+  });
+
+  it('uniform offset: GREEN with offset reported', () => {
+    const offset = base.map((r) => ({ ...r, stored: r.stored + 16 }));
+    const r = analyzeUnitOrdinalPreservation(offset);
+    expect(r.ok).toBe(true);
+    expect(r.uniformOffset).toBe(16);
+    expect(r.errors).toEqual([]);
+  });
+
+  it('non-uniform offset: RED', () => {
+    const bad = [
+      { section_id: 'a', stored: 1, computed: 1, ordinal: 1 },
+      { section_id: 'b', stored: 2, computed: 1, ordinal: 2 },
+    ];
+    const r = analyzeUnitOrdinalPreservation(bad);
+    expect(r.ok).toBe(false);
+    expect(r.errors.some((e) => e.includes('non-uniform offset'))).toBe(true);
+  });
+
+  it('genuine mis-order: RED (reading order break)', () => {
+    const bad = [
+      { section_id: 'a', stored: 2, computed: 1, ordinal: 1 },
+      { section_id: 'b', stored: 1, computed: 2, ordinal: 2 },
+    ];
+    const r = analyzeUnitOrdinalPreservation(bad);
+    expect(r.ok).toBe(false);
+    expect(r.errors.some((e) => e.includes('reading order break') || e.includes('non-uniform offset'))).toBe(true);
+  });
+
+  it('grouping break: same stored unit, different computed units', () => {
+    const bad = [
+      { section_id: 'a', stored: 1, computed: 1, ordinal: 1 },
+      { section_id: 'b', stored: 1, computed: 2, ordinal: 2 },
+    ];
+    const r = analyzeUnitOrdinalPreservation(bad);
+    expect(r.ok).toBe(false);
+    expect(r.errors.some((e) => e.includes('grouping break'))).toBe(true);
+  });
+});
 
 describe('unit_ordinal instrument — 024 backfill perturbations (in-memory SQL)', () => {
   it('extracts backfill SQL containing the units and unit_sort CTEs', () => {
