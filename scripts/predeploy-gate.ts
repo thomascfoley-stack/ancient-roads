@@ -27,11 +27,34 @@ import {
   loadForbiddenProvenanceBaseline,
   blockedBibleTranslations,
 } from '../web/test/helpers/corpus-scan';
-import { existsSync } from 'node:fs';
+import {
+  collapseByAuthor,
+  eligibleAuthorCount,
+  forbiddenServedEntries,
+  loadCorpusEntries,
+  verseKeyOffenders,
+} from '../web/test/helpers/verse-key-scan';
+import {
+  buildCorpusInventory,
+  evaluateCorpusRatchet,
+  loadLatestManifest,
+} from './lib/corpus-manifest.mjs';
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 
 const FAIL = (msg: string): never => {
   console.error(`\n\x1b[31m✗ PRE-DEPLOY GATE FAILED\x1b[0m\n${msg}\n`);
   process.exit(1);
+};
+
+// deploy.sh sets DEPLOYING=1. This same gate also runs on every pre-commit, where the
+// corpus may legitimately be mid-regeneration — so the corpus-identity legs below WARN on
+// commit and HARD-FAIL on deploy. The distinction is the whole point of Stage 3.1: the
+// artifact is only provably present at deploy, which is exactly when a skip is inexcusable.
+const DEPLOYING = process.env.DEPLOYING === '1';
+const gateFail = (msg: string): void => {
+  if (DEPLOYING) FAIL(msg);
+  console.warn(`\n\x1b[33m⚠  ${msg}\n   (WARNING only — will HARD-FAIL the actual deploy.)\x1b[0m`);
 };
 
 console.log('\n=== Pre-deploy gate: licensing ratchet ===');
@@ -108,4 +131,81 @@ if (blockedTranslations.length > 0) {
   console.warn(`\n\x1b[33m⚠  ${msg}\n   (WARNING only — will HARD-FAIL the actual deploy.)\x1b[0m`);
 } else {
   console.log(`  ✓ Every translation dir present has a shipping license record (allow, or conditional+ack).`);
+}
+
+// ── Corpus identity + loss ratchet (Stage 3.1) ───────────────────────────────
+// Git identifies the CODE that ships. Until now nothing identified the CONTENT: the corpus
+// is gitignored, has no build step, and is uploaded straight from the working directory, so
+// two deploys from one sha could carry different content with no record of the difference.
+console.log('\n=== Pre-deploy gate: corpus identity (file count + per-work presence) ===');
+const inventory = buildCorpusInventory(COMMENTARIES_DIR);
+const EVIDENCE_DIR = path.resolve(COMMENTARIES_DIR, '../../../docs/evidence');
+const previousManifest = loadLatestManifest(EVIDENCE_DIR, (p) => JSON.parse(readFileSync(p, 'utf-8')));
+const ratchet = evaluateCorpusRatchet(inventory, previousManifest, { deploying: DEPLOYING });
+
+console.log(`  works (authors) present      : ${Object.keys(inventory.works).length.toLocaleString()}`);
+console.log(`  books present                : ${Object.keys(inventory.books).length.toLocaleString()}`);
+console.log(`  chapter files present        : ${inventory.fileCount.toLocaleString()}`);
+console.log(`  entries present              : ${inventory.entryCount.toLocaleString()}`);
+console.log(`  corpusHash                   : ${inventory.corpusHash ?? '(no corpus)'}`);
+if (previousManifest) {
+  console.log(
+    `  last manifest                : ${previousManifest.sha} v${previousManifest.version ?? 1} ` +
+      `(${previousManifest.workCount} works, ${previousManifest.fileCount.toLocaleString()} files, ${(previousManifest.entryCount ?? 0).toLocaleString()} entries)`,
+  );
+} else {
+  console.log('  last manifest                : NONE');
+}
+
+if (!ratchet.ok) {
+  gateFail(
+    `CORPUS RATCHET VIOLATION — content is about to ship that is SMALLER than the last\n` +
+      `manifest, or cannot be compared to one:\n\n${ratchet.failures.map((f) => `  • ${f}`).join('\n')}\n\n` +
+      `A missing work is invisible in the reader: it renders whatever it finds, so a\n` +
+      `half-finished regeneration ships as a quietly smaller library. Either restore the\n` +
+      `content, or — if the reduction is intended — run\n` +
+      `  node scripts/build-corpus-manifest.mjs\n` +
+      `and COMMIT the new manifest, which is how you say so on the record.`,
+  );
+} else if (ratchet.baselining) {
+  console.log('  \x1b[33m⚠ BASELINING — no previous manifest to compare against (this is a survey, not a ratchet).\x1b[0m');
+} else {
+  console.log('  \x1b[32m✓ No work lost since the last committed manifest.\x1b[0m');
+}
+
+// ── §3 verse-key distribution, enforced AT DEPLOY (Stage 3.1) ────────────────
+// This ran only in web/test/invariants/verse-keys.test.ts, guarded by `describe.skipIf`
+// on the gitignored corpus — correct in CI, and precisely backwards here. THE ARTIFACT-SKIP
+// EXEMPTION DOES NOT APPLY AT DEPLOY: if the corpus is missing at this point there is
+// nothing to ship, and if it is present the guard has no excuse not to run.
+console.log('\n=== Pre-deploy gate: §3 verse-key distribution (no artifact exemption) ===');
+if (!existsSync(COMMENTARIES_DIR)) {
+  gateFail(`The corpus is absent at ${COMMENTARIES_DIR}, so the ADR-020 verse-key gate cannot run.\nAt deploy time that is a refusal, not a skip.`);
+} else {
+  const entries = loadCorpusEntries(COMMENTARIES_DIR);
+  const byAuthor = collapseByAuthor(entries);
+  const eligible = eligibleAuthorCount(byAuthor);
+  console.log(`  entries scanned              : ${entries.length.toLocaleString()}`);
+  console.log(`  authors over the n floor     : ${eligible}`);
+
+  if (eligible === 0) {
+    // Same anti-vacuity floor the test carries: with no author above MIN_ENTRIES the
+    // check below could not have failed, so a green here would be unearned.
+    gateFail('VACUOUS GATE: no author reached the entry floor, so the verse-key check could not have failed.\nThe corpus is empty or partial — fix the corpus, do not trust this green.');
+  } else {
+    const offenders = verseKeyOffenders(byAuthor);
+    if (offenders.length > 0) {
+      gateFail(`Authors whose verse keys collapse to the chapter number (ADR-020):\n${offenders.map((o) => `  • ${o}`).join('\n')}`);
+    } else {
+      console.log('  \x1b[32m✓ No author collapsed to the chapter number.\x1b[0m');
+    }
+
+    const served = forbiddenServedEntries(entries);
+    if (served.length > 0) {
+      const authors = [...new Set(served.map((e) => e.author))];
+      gateFail(`${served.length.toLocaleString()} SERVED entry/entries carry biblehub/studylight provenance (${authors.join(', ')}).`);
+    } else {
+      console.log('  \x1b[32m✓ No served entry carries forbidden aggregator provenance.\x1b[0m');
+    }
+  }
 }
