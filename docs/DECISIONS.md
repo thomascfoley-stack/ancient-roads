@@ -361,6 +361,27 @@ rows remaining, **0 sections mentioning Schaff**, work still `published`, first 
 `#96 "Homily 1"`. Restore path: `docs/evidence/part1/chrysostom-prolegomena-suppressed.jsonl`
 (95 rows **with vectors** — no hard delete without a restore path).
 
+> **CORRECTION (2026-07-31): this is the FIRST of TWO deletion points in `chrysostom-homilies`, and
+> the "+16" it produced is not the whole story.** CI at `6896714` measured the work's stored-vs-computed
+> `unit_ordinal` deltas as **(16, 17)** — two distinct values, not a uniform +16. This suppression
+> accounts for the 16. The second delta comes from `suppress-nonauthorial-matter.ts`, which removed a
+> further **6** chrysostom sections — ordinals 6608–6613, all carrying `unit_ordinal=275`, all one unit
+> ("Comparative Table of the Works of St. Chrysostom", target `edition concordance`). Because those 6
+> sections were a *whole unit*, deleting them shifts every unit after 275 by exactly one more: sections
+> before unit 275 drift by 16, sections after it by 17. Verified by counting chrysostom rows in
+> `docs/evidence/part2/nonauthorial-matter-suppressed.jsonl` (6 rows, all `unit_ordinal=275`).
+>
+> This correction is recorded **here**, at the ADR a reader reaches when they meet the "+16
+> prolegomena" account, and not only in `STATE_OF_TRUTH.md` §2e. A correction filed where nobody
+> encounters the claim it corrects is not a correction. Full context and the six-work delta table:
+> `docs/STATE_OF_TRUTH.md` §2e.
+>
+> **The generalisable lesson**, which is the reason this suppression is worth re-reading: a
+> suppression script that deletes sections *after* migration 024's backfill silently invalidates
+> stored `unit_ordinal`, because 024 is idempotent by exclusion (`WHERE unit_ordinal IS NULL`) and
+> cannot re-touch a filled source. Each such deletion adds another delta. Any future suppression must
+> re-invoke a slug-scoped repair, or it adds a third.
+
 **Why deletion and not a filter predicate:** the served boundary (`LEGAL_CORPUS_FILTER`) is mirrored
 by the partial HNSW index predicates (migration 018) and held in lockstep by
 `test/invariants/legal-hnsw-index-sync`. Fencing 95 rows by predicate would mean a predicate change

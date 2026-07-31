@@ -101,7 +101,15 @@ Eight instances so far. The eighth was introduced by the tranche meant to fix th
   sample · a CLI growing its own `formatExcerptLine`.
 
 Also seen: red-proofs seeding a *copy* of the predicate · checks that are algebraic identities · mocks
-asserting they return what they were told · "audit green" while `db-invariants` is red.
+asserting they return what they were told · "audit green" while `db-invariants` is red · a test that
+repairs the defect it measures (the perturbation suite's unscoped backfill).
+
+**A third shape, and a standing check on this directory: a correction filed where nobody meets the
+claim it corrects.** The `chrysostom-homilies` "+16 prolegomena" story lived in the ADR-029 addendum;
+the correction to it (deltas are **(16, 17)** — two deletion points) was first written only into
+`STATE_OF_TRUTH.md` §2e, which a reader of ADR-029 has no reason to open. It now sits in both. Apply
+this to every correction: **name the document a reader reaches when they meet the wrong version, and
+put it there** — the canonical record is where the correction is *complete*, not where it is *first*.
 
 **Instance nine is not a strategy.** This needs one deliberate decision — a mechanical check, or explicit
 acceptance that it recurs and audits catch it.

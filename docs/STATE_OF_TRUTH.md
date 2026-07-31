@@ -230,9 +230,14 @@ difference: it carried drift of the one kind the instrument deliberately tolerat
 per-work offset, so it was in the repair's scope and never in CI's failure list.
 
 **`chrysostom-homilies` is (16, 17), NOT a uniform +16.** The "+16 prolegomena" account is
-incomplete: two distinct deltas means **two deletion points**, the second consistent with
-`suppress-nonauthorial-matter.ts` removing 6 further sections around unit 275. A tidy story the
-measurement contradicts is worse than no story.
+incomplete: two distinct deltas means **two deletion points**. ADR-029's suppression of 95
+prolegomena sections accounts for the 16. The second is `suppress-nonauthorial-matter.ts` removing
+**6** further sections — ordinals 6608–6613, all `unit_ordinal=275`, all ONE unit ("Comparative Table
+of the Works of St. Chrysostom"). Deleting a whole unit shifts every unit after it by exactly one
+more, so sections before unit 275 drift by 16 and sections after it by 17. Verified by counting
+chrysostom rows in `docs/evidence/part2/nonauthorial-matter-suppressed.jsonl`. The correction is also
+recorded at the ADR-029 addendum, where a reader meets the "+16" story. A tidy story the measurement
+contradicts is worse than no story.
 
 **UNVERIFIED — do not upgrade without re-execution.** The **61,486** row count rests on the tool's
 own log. The independent auditor had no dev credentials and could not reach either endpoint; CI
