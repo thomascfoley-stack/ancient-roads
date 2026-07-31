@@ -12,6 +12,7 @@
 | 6 | RECOVERY_VERIFICATION.md | DONE |
 | 7 | Gate leg inventory | DONE — `scripts/lib/gate-leg-inventory.mjs` |
 | 8 | TRANCHE8-MEASUREMENT.md, DEPLOY_PREFLIGHT.md | DONE |
+| repair | UNIT_ORDINAL_REPAIR.md — 024 slug-scoped re-apply on ep-tiny-hat + ci-test | DONE 2026-07-31 |
 
 ## Stage 2.1 — unit_ordinal instrument
 

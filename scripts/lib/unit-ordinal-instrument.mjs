@@ -84,27 +84,46 @@ export function perturbBackfillSql(sql, perturbation) {
   throw new Error(`unknown perturbation: ${perturbation}`);
 }
 
+const NEED_CTE_NULL_ONLY =
+  /WITH need AS \(\s*SELECT DISTINCT source_id FROM sections WHERE unit_ordinal IS NULL\s*\),/;
+
+/**
+ * Replace 024's NULL-only `need` CTE. The CTEs below `need` stay byte-identical to the
+ * migration — only the selector that feeds them changes (instrument / repair surfaces).
+ */
+export function replaceNeedCte(backfillUpdateSql, needCteBody) {
+  if (!NEED_CTE_NULL_ONLY.test(backfillUpdateSql)) {
+    throw new Error('024 backfill SQL: need CTE pattern not found — refusing to invent a selector');
+  }
+  return backfillUpdateSql.replace(NEED_CTE_NULL_ONLY, `WITH ${needCteBody}`);
+}
+
 /** Turn the backfill UPDATE into a SELECT of computed unit_ordinal per section. */
 export function backfillSelectSql(backfillUpdateSql, { scope = 'null-only' } = {}) {
   // `scope: 'cohort'` recomputes over whatever status cohort the caller bound to $1 —
   // the cohort is a BOUND PARAMETER, never interpolated, so an unrecognised cohort cannot
   // become SQL and an invalid one is refused by assertCohort before we get here.
-  const needCte =
-    scope === 'cohort'
-      ? `need AS (
+  // `scope: 'slugs'` binds $1::text[] of source slugs (repair dry-run / weld detector).
+  let body = backfillUpdateSql;
+  if (scope === 'cohort') {
+    body = replaceNeedCte(
+      body,
+      `need AS (
   SELECT DISTINCT sec.source_id
   FROM sections sec
   JOIN sources src ON src.id = sec.source_id
   WHERE src.status = $1
-),`
-      : null;
-
-  let body = backfillUpdateSql;
-  if (needCte) {
-    body = body.replace(
-      /WITH need AS \(\s*SELECT DISTINCT source_id FROM sections WHERE unit_ordinal IS NULL\s*\),/,
-      `WITH ${needCte}`,
+),`,
     );
+  } else if (scope === 'slugs') {
+    body = replaceNeedCte(
+      body,
+      `need AS (
+  SELECT id AS source_id FROM sources WHERE slug = ANY($1::text[])
+),`,
+    );
+  } else if (scope !== 'null-only') {
+    throw new Error(`backfillSelectSql: unknown scope '${scope}'`);
   }
 
   const selectTail = `SELECT u.id AS section_id, u.source_id, n.unit_ordinal AS computed_unit_ordinal
@@ -112,6 +131,21 @@ FROM units u
 JOIN numbered n ON n.source_id = u.source_id AND n.unit_key = u.unit_key`;
 
   return body.replace(/UPDATE sections s[\s\S]+$/, selectTail);
+}
+
+/**
+ * Repair UPDATE: same 024 CTE chain, but `need` is the named slug list ($1::text[]).
+ * Does NOT go through NULL — a single set-based UPDATE writes computed unit_ordinal.
+ * Re-running migration 024 alone cannot do this: its need selector is idempotent by
+ * exclusion (NULL-only), which is exactly why post-delete drift sticks.
+ */
+export function backfillRepairUpdateSql(backfillUpdateSql) {
+  return replaceNeedCte(
+    backfillUpdateSql,
+    `need AS (
+  SELECT id AS source_id FROM sources WHERE slug = ANY($1::text[])
+),`,
+  );
 }
 
 // Every statement below takes the cohort as $1. Nothing here hardcodes 'published' any

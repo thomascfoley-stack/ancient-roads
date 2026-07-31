@@ -9,7 +9,9 @@ export declare function assertCohort(cohort: string | undefined, migrationPath?:
 
 export declare function backfillSqlFromMigration(migrationPath?: string): string;
 export declare function perturbBackfillSql(sql: string, perturbation: string): string;
+export declare function replaceNeedCte(backfillUpdateSql: string, needCteBody: string): string;
 export declare function backfillSelectSql(backfillUpdateSql: string, opts?: { scope?: string }): string;
+export declare function backfillRepairUpdateSql(backfillUpdateSql: string): string;
 
 export declare const COHORT_NULLS_SQL: string;
 export declare const COHORT_DUP_PAIRS_SQL: string;

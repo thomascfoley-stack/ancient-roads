@@ -13,6 +13,7 @@ import {
   analyzeUnitOrdinalPreservation,
   backfillSqlFromMigration,
   backfillSelectSql,
+  backfillRepairUpdateSql,
   measurePublishedUnitOrdinal,
   perturbBackfillSql,
   rollupDigest,
@@ -149,6 +150,21 @@ describe('unit_ordinal instrument — 024 backfill perturbations (in-memory SQL)
   it('backfillSelectSql produces a SELECT over computed unit_ordinal', () => {
     const sel = backfillSelectSql(backfillSql);
     expect(sel).toMatch(/SELECT u\.id AS section_id/i);
+    expect(sel).not.toMatch(/UPDATE sections/i);
+  });
+
+  it('backfillRepairUpdateSql scopes need to slug list and keeps UPDATE', () => {
+    const repair = backfillRepairUpdateSql(backfillSql);
+    expect(repair).toMatch(/slug = ANY\(\$1::text\[\]\)/);
+    expect(repair).toMatch(/UPDATE sections s/i);
+    expect(repair).not.toMatch(/unit_ordinal IS NULL/);
+    // CTEs below need must still be the migration's (no second predicate).
+    expect(repair).toMatch(/CASE WHEN grp LIKE 'r\|%' THEN grp/);
+  });
+
+  it('backfillSelectSql scope=slugs uses the same need selector as repair', () => {
+    const sel = backfillSelectSql(backfillSql, { scope: 'slugs' });
+    expect(sel).toMatch(/slug = ANY\(\$1::text\[\]\)/);
     expect(sel).not.toMatch(/UPDATE sections/i);
   });
 });
