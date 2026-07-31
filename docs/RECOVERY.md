@@ -63,7 +63,51 @@ Treat Vercel rollback as **frontend-only emergency**, not database recovery.
 | **Destroys** | Whatever corpus was on disk before extract (overwrite). Does not touch Neon. |
 | **Host survives?** | **YES** (no DB change). |
 | **Window** | Any time before `./deploy.sh`. |
-| **Exercised** | **2026-07-28** — machine migration procedure in `DEPLOYMENT.md`; clean corpus verified 191,749 entries, 0 forbidden-provenance. |
+| **Exercised** | **PARTIALLY, 2026-07-28** — machine migration per `DEPLOYMENT.md`; commentaries verified at 191,749 entries, 0 forbidden-provenance. **The verification covered `commentaries` only.** |
+
+### 3a. Backup inventory and the partial-restore gap (verified 2026-08-01)
+
+**The corpus IS backed up.** Two GitHub releases on `thomascfoley-stack/ancient-roads` hold it:
+
+| asset (2026-07-28 release, also present at 2026-07-19) | size | asset downloads |
+|---|---|---|
+| `ancient-roads-corpus-bible-*.tar.gz` | 44 MB | 2 |
+| `ancient-roads-corpus-commentaries-*.tar.gz` | 137 MB | 2 |
+| `ancient-roads-corpus-concordance-*.tar.gz` | 1 MB | **1** |
+| `ancient-roads-corpus-lexicon-*.tar.gz` | <1 MB | **1** |
+| `ancient-roads-corpus-original-*.tar.gz` | 7 MB | **1** |
+
+So the risk is **not** "regenerable only at DeepInfra cost" — a full re-ingest is not required, and any
+claim that the corpus exists only on the owner's laptop is wrong. Restore is a download.
+
+**But the 2026-07-28 restore was PARTIAL, and the gap is live today.** Measured on the canonical tree
+2026-08-01:
+
+| directory | present | files |
+|---|---|---|
+| `web/public/bible/` | yes | 22,590 |
+| `web/public/commentaries/` | yes | 1,213 |
+| `web/public/concordance/` | **NO** | — |
+| `web/public/lexicon/` | **NO** | — |
+| `web/public/original/` | **NO** | — |
+
+The three absent directories are the three with one fewer asset download. They are still served
+(`web/src/lib/original.ts`), so a deploy today ships a site whose word-study page and word panel
+**throw** — see `DEPLOY_PREFLIGHT.md` §4. `predeploy-gate.ts` does not check them, so nothing refuses.
+
+**Recovery for the gap (not run — restores files the owner has not decided to ship):**
+
+```bash
+gh release download corpus-backup-2026-07-28 --repo thomascfoley-stack/ancient-roads \
+  --pattern 'ancient-roads-corpus-{concordance,lexicon,original}-*.tar.gz'
+# extract into web/public/, then: DEPLOYING=1 npx tsx scripts/predeploy-gate.ts
+```
+
+**Still true, and the reason this row is not simply green:** the backups are **point-in-time**
+(2026-07-19, 2026-07-28) and nothing creates a new one on a schedule or on corpus change. Any
+ingest after 2026-07-28 is unbacked until someone cuts a release by hand. The corpus carries
+forbidden-provenance material, so **where a backup may be published is an owner ruling** — the
+existing releases are on the private repo, and that is the constraint to preserve.
 
 ---
 
