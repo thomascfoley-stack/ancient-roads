@@ -103,7 +103,13 @@ Eight instances so far. The eighth was introduced by the tranche meant to fix th
 
 Also seen: red-proofs seeding a *copy* of the predicate · checks that are algebraic identities · mocks
 asserting they return what they were told · "audit green" while `db-invariants` is red · a test that
-repairs the defect it measures (the perturbation suite's unscoped backfill).
+repairs the defect it measures (the perturbation suite's unscoped backfill) · **an unearned RED**:
+`db-invariants` failed on `ca53457`, a docs-only commit, because
+`web/test/invariants/section-vector-pairing.test.ts` calls the live DeepInfra embedding API and got
+`429 engine_overloaded`. Re-run with no code change: green. The gate is therefore non-deterministic,
+and a red does not distinguish "broken" from "the provider was busy" — which is how a real red gets
+waved through. Not fixed here; a bounded retry on 429, or an explicit NOT RUN on provider
+unavailability, would make the signal mean one thing again.
 
 **A fourth, found by B-1: an eligibility rule that selects for the population it was built on.** The
 Slice 0 stated-text parser reads Spurgeon's CCEL typography (quote-then-reference) and matches
