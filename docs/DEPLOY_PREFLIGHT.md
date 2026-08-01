@@ -157,7 +157,7 @@ is §5's rollback, which has its own problems.
 
 ---
 
-## 4. RESOLVED — the three directories are present. The `loadLexicon` hazard is not.
+## 4. RESOLVED — the three directories are present. ~~The `loadLexicon` hazard is not.~~ Guarded as of this commit.
 
 **This section described three ABSENT directories. They were restored at `b9ad463` and re-measured
 byte-exact on 2026-08-01 (§3).** Deploy A no longer ships a site whose word-study page throws. What
@@ -176,7 +176,7 @@ it does not mention. `--archive=tgz` is still required; the reasoning is wrong, 
 (`app/read/[book]/[chapter]`), the word-study page (`app/library/word-study`) and
 `components/word-panel.tsx`.
 
-**Degradation is inconsistent:**
+**Degradation was inconsistent** (the table is the pre-fix state, kept as the history of the asymmetry):
 
 | function | guard | on 404 |
 |---|---|---|
@@ -187,9 +187,10 @@ it does not mention. `--archive=tgz` is still required; the reasoning is wrong, 
 `loadLexicon` is reached from `loadFullLexicon` (word-study) and `fetchLexEntry` (word-panel).
 
 **RESIDUAL, and it is the part worth keeping.** `lexicon/` is present today, so nothing throws now.
-But `loadLexicon` still has neither a `res.ok` check nor a try/catch, so **the day that directory
-goes missing again, word-study and word-panel throw rather than degrading** — while the interlinear
-beside them degrades quietly. That asymmetry is a latent hazard, not a live one, and it is exactly
+~~But `loadLexicon` still has neither a `res.ok` check nor a try/catch~~ Guarded as of this commit:
+`loadLexicon` has both, degrades to `null` like its siblings, and word-study, word-panel and the
+study panel show a visible "lexicon unavailable" state rather than throwing (pinned by
+`web/test/lexicon-404-degrade.test.ts`). That asymmetry was a latent hazard, not a live one, and it is exactly
 what made the 2026-07-28 loss expensive. `predeploy-gate.ts` now DOES refuse on an absent served
 directory (`b9ad463`, derived from the client's own fetches), so the gate would catch a full
 disappearance — but it is a **presence** check with no file-count check anywhere in
@@ -200,9 +201,10 @@ disappearance — but it is a **presence** check with no file-count check anywhe
 release. The 2026-07-28 machine migration restored `bible` and `commentaries` and **left these three
 behind** — their asset download counts are one lower. See `RECOVERY.md` §3a for the exact command.
 
-**Not fixed tonight**, because it is a decision rather than a repair: restore them, ship without them,
-or guard `loadLexicon` and ship degraded. **This remains the single most likely thing to make Deploy A
-ship a broken page** — but the fix is a download, not an ingest run.
+~~**Not fixed tonight**, because it is a decision rather than a repair: restore them, ship without them,
+or guard `loadLexicon` and ship degraded.~~ **Decided and fixed in this commit: guard and ship
+degraded.** A missing lexicon can no longer throw a page down; **the remaining lexicon risk is the
+file-count gap above**, and restoring a lost directory is still a download, not an ingest run.
 
 ---
 
@@ -266,8 +268,8 @@ Everything below is free and reversible. Stop at the first ✗.
 [ ] 4  corpusHash matches the committed manifest         (step 3 prints and checks it)
 [x] 5  ANSWERED 2026-08-01 — NO DECISION NEEDED. All six served directories are
        present and byte-exact vs corpus-backup-2026-07-28 (§3, roll-up hashes).
-       Nothing throws. Residual, not a blocker: loadLexicon still lacks a
-       res.ok guard (§4).
+       Nothing throws. Residual, not a blocker: loadLexicon still lacked a
+       res.ok guard at the time (§4; guarded since this branch).
        *** BUT SEE §9: they are present in ~/Projects/ancient-roads-git, which
        is 29 commits BEHIND and cannot build. Item 5 is answered about a tree
        that cannot pass items 2 and 3. Read §9 before running anything. ***

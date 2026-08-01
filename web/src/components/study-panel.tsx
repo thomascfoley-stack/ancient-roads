@@ -266,13 +266,16 @@ function WordTab({
 function WordRow({ word, lang, defaultOpen = false }: { word: OWord; lang: 'hebrew' | 'greek'; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   const [entry, setEntry] = useState<LexEntry | null>(null);
+  // Lexicon file itself failed to load (vs. entry === null: no entry for this key).
+  const [lexDown, setLexDown] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const rtl = lang === 'hebrew';
 
   useEffect(() => {
     if (open && !loaded) {
       fetchLexEntry(word.s).then((e) => {
-        setEntry(e);
+        setLexDown(e === 'unavailable');
+        setEntry(e === 'unavailable' ? null : e);
         setLoaded(true);
       });
     }
@@ -314,6 +317,8 @@ function WordRow({ word, lang, defaultOpen = false }: { word: OWord; lang: 'hebr
                 </p>
               )}
             </>
+          ) : lexDown ? (
+            <p className="text-stone-400">Lexicon unavailable right now; entry can&rsquo;t be shown.</p>
           ) : (
             <p className="text-stone-400">No dictionary entry linked{word.l ? ` (lemma ${word.l})` : ''}.</p>
           )}

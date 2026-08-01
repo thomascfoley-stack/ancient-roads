@@ -21,6 +21,8 @@ export function WordPanel({
   onClose: () => void;
 }) {
   const [entry, setEntry] = useState<LexEntry | null>(null);
+  // Lexicon file itself failed to load (vs. entry === null: no entry for this key).
+  const [lexDown, setLexDown] = useState(false);
   const [loading, setLoading] = useState(true);
   const [concordance, setConcordance] = useState<Concordance | null>(null);
   const [ccPage, setCcPage] = useState(0);
@@ -28,10 +30,12 @@ export function WordPanel({
   useEffect(() => {
     setLoading(true);
     setEntry(null);
+    setLexDown(false);
     setConcordance(null);
     setCcPage(0);
     fetchLexEntry(word.s).then((e) => {
-      setEntry(e);
+      setLexDown(e === 'unavailable');
+      setEntry(e === 'unavailable' ? null : e);
       setLoading(false);
     });
     if (word.s) fetchConcordance(word.s).then(setConcordance);
@@ -96,6 +100,11 @@ export function WordPanel({
         <div className="px-5 py-4 space-y-4">
           {loading ? (
             <p className="py-6 text-center text-sm text-stone-400">Looking up…</p>
+          ) : lexDown ? (
+            <p className="text-sm text-stone-500">
+              {word.g ? `Gloss: ${word.g}. ` : ''}The lexicon isn&rsquo;t available right now, so
+              this word&rsquo;s dictionary entry can&rsquo;t be shown.
+            </p>
           ) : entry ? (
             <>
               {entry.lemma && (
