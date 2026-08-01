@@ -438,8 +438,22 @@ is no longer the only signal.
 
 **Do not delete** Neon branch `br-late-recipe-atxl68sh` (`pre-cutover-ep-odd-fog-atnykudm-20260729164220`) —
 the Phase 2 prod pre-cutover snapshot. Every rollback string in `scripts/cutover.mjs` names it.
-Deletion requires an owner ruling in `docs/DECISIONS.md`. Guard: `scripts/lib/neon-branch-guard.mjs`.
-See `docs/CUTOVER_DESIGN.md` § PROTECTED BRANCHES.
+Deletion requires an owner ruling in `docs/DECISIONS.md`. See `docs/CUTOVER_DESIGN.md`
+§ PROTECTED BRANCHES.
+
+> **⚑ OPEN OWNER ACTION, raised 2026-08-02.** This section used to end "Guard:
+> `scripts/lib/neon-branch-guard.mjs`", which reads as though something enforces the rule.
+> Nothing does. Neon reports `protected: false` on the branch, and repo-wide the only files
+> referencing `refuseProtectedBranchDelete` are the guard, its `.d.mts` and its own test — no
+> script calls it. **One command closes it**, and it writes to production infrastructure, so it
+> is yours:
+>
+> ```
+> neonctl branches set-protection br-late-recipe-atxl68sh --protected \
+>   --project-id spring-heart-74819093
+> ```
+>
+> Worth doing before A4, because A4's rollback plan depends on this branch surviving.
 
 ---
 

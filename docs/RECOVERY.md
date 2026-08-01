@@ -21,7 +21,33 @@ and [`CUTOVER_DESIGN.md`](CUTOVER_DESIGN.md) § protected branches.
 | **Restores** | Database schema + row contents as of snapshot **2026-07-29** pre-cutover prod (`pre-cutover-ep-odd-fog-atnykudm-20260729164220`). User annotations were empty at cutover; waitlist preserved per G1. (`channels` measured **0 rows** on prod 2026-08-01, gate A2, against a record claiming 1 — see `docs/evidence/a2-prod-readonly-2026-08-01/standing-gaps.md` §2; what this snapshot holds for `channels` is unverified.) |
 | **Destroys** | Every prod write after the snapshot: E4 slice, staged sources, migration 024–031 state, any publish flip, user data written post-cutover. |
 | **Host survives?** | **NO.** Promoting a child branch changes the connection host. Update Vercel `DATABASE_URL`, every cutover/instrument `CUTOVER_EXPECT_HOST`, and re-run host assertions before calling recovery done. |
-| **Window** | Indefinite while `br-late-recipe-atxl68sh` exists (registered, deletion refused). |
+| **Window** | Indefinite while `br-late-recipe-atxl68sh` exists. **"Deletion refused" was not true** — see the note below. |
+
+> **MEASURED 2026-08-02, immediately before A4.** This row said the branch was "registered,
+> deletion refused". Nothing refuses it, at either layer:
+>
+> * **Neon does not protect it.** `neonctl branches get br-late-recipe-atxl68sh` returns
+>   `protected: false`. The Neon-side protection flag has never been set on it.
+> * **No code refuses it either.** `scripts/lib/neon-branch-guard.mjs` exports
+>   `refuseProtectedBranchDelete`, and repo-wide the only files that reference it are the guard
+>   itself, its `.d.mts`, and its own test. **No script calls it.** A guard nothing invokes is a
+>   registry, not a refusal.
+>
+> So the protection is a documentation claim only: `docs/PROTECTED_BRANCHES.json` records the
+> intent and `docs/OWNER_ACTIONS.md` §1f states the rule, and any deletion through the Neon
+> console, `neonctl`, or the API goes straight through. That is this repo's most-repeated defect
+> class - a hand-maintained expected set that nothing enforces - sitting on the rollback path for
+> the one irreversible write, discovered while preparing to make it.
+>
+> **The fix is one owner command**, and it is an infrastructure write on production, so it is not
+> mine to run:
+>
+> ```
+> neonctl branches set-protection br-late-recipe-atxl68sh --protected \
+>   --project-id spring-heart-74819093
+> ```
+>
+> Until that is run, treat the rollback branch as deletable by accident.
 | **Exercised** | **NOT YET.** Rehearsal requires owner approval to create a throwaway child off the protected branch. Exact ops to run on approval: (1) `neonctl branches create --parent br-late-recipe-atxl68sh --name throwaway-restore-rehearsal-<ts>`, (2) connect read-only to child, assert indexes `indisvalid=t` and migration set, (3) compare user-data digest to cutover E0 log, (4) **delete throwaway** — never touch `br-late-recipe-atxl68sh`. |
 
 ---
