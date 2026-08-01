@@ -1,0 +1,10 @@
+migration 032 — POST-STATE on ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech
+
+waitlist rows       : 4   (was 4 — untouched)
+api_rate_limit rows : 41  (was 41 — untouched)
+api_rate_limit RLS  : true
+waitlist RLS        : false  (033 NOT applied — coupled to the deploy)
+policy on limiter   : [{"polname":"api_rate_limit_own_rows","polcmd":"*"}]
+default privileges  : ["{app_runtime=rU/neondb_owner}","{app_runtime=X/neondb_owner}","{neon_superuser=a*r*w*d*D*x*t*m*/cloud_admin}","{neon_superuser=r*w*U*/cloud_admin}","{app_runtime=ar/neondb_owner}"]
+schema_migrations   : 31 rows
+  newest            : [{"filename":"032_audit_2026_08_02_data_layer.sql"},{"filename":"031_sections_source_url.sql"}]

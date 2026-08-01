@@ -1,5 +1,9 @@
 -- ============================================================
--- 032: the 2026-08-02 deep audit's data-layer findings — H14, H15, M18, M20
+-- 032: the 2026-08-02 deep audit's data-layer findings — H14(part), H15, M18, M20
+--
+-- SPLIT FROM 033 DELIBERATELY. Everything in THIS file is compatible with the CURRENTLY DEPLOYED
+-- bundle (`24677ba`, 2026-07-19) and can be applied to production at any time. The waitlist RLS
+-- moved to 033 because it REQUIRES an app change that is not deployed yet — see that file.
 -- ============================================================
 -- Idempotent. Run as neondb_owner:
 --   DATABASE_URL=<owner-url> node db/apply-migration.mjs db/migrations/032_audit_2026_08_02_data_layer.sql
@@ -7,31 +11,6 @@
 -- AUTHORED, NOT APPLIED. Applying a migration to production is an owner action; this file exists
 -- so the decision is reviewable before it runs. Nothing here drops or rewrites data.
 -- ============================================================
-
-
--- ── H14: `waitlist` holds email PII with no RLS and full DML for app_runtime ────────────────
---
--- Migration 014 argued the case and the argument is real: a post-creation REVOKE is not reliably
--- picked up by Neon's connection pooler (cached backends keep a stale relcache ACL), so the table
--- deliberately keeps its create-time default grant. But the cost was stated as "full DML on this
--- ONE public, non-sensitive signup table", and it is neither non-sensitive nor DML-shaped: it is
--- live email addresses on production, and the grant includes UPDATE and DELETE where the design
--- needs only INSERT. This repo's own derivation (scripts/lib/user-data-invariant.mjs:73-80)
--- classifies it as a user table.
---
--- RLS is the fix that does NOT depend on the pooler: policies are evaluated per query against the
--- current role, not cached in the relcache alongside table ACLs. So the grant can stay exactly as
--- migration 014 needs it, and the POLICY does the narrowing.
-ALTER TABLE waitlist ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS waitlist_insert_only ON waitlist;
-CREATE POLICY waitlist_insert_only ON waitlist
-  FOR INSERT TO app_runtime
-  WITH CHECK (true);
--- No SELECT, UPDATE or DELETE policy, deliberately. With RLS enabled and no policy for a command,
--- that command matches zero rows for app_runtime. The app never reads this table — the owner does,
--- via BYPASSRLS — so a compromised runtime credential can add a row and cannot enumerate, alter or
--- destroy the list.
 
 
 -- ── H14 (second instance): `api_rate_limit` ────────────────────────────────────────────────
