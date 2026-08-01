@@ -59,10 +59,28 @@ export function isCatalogId(v: unknown): v is CatalogId {
   return typeof v === 'string' && (CATALOG_IDS as string[]).includes(v);
 }
 
+/**
+ * Is `sub` a real sub-filter of `catalog`?
+ *
+ * `Object.hasOwn`, not `in` and not truthy indexing. `def.subFilters?.['constructor']` walks the
+ * prototype chain and returns the Object constructor — a truthy value that is not an array, so
+ * every caller that spread it threw a TypeError and, having no try/catch above it, returned a 500
+ * (2026-08-02 audit). `__proto__` did the same via Object.prototype. Own-key membership is the only
+ * test that answers the question actually being asked.
+ */
+export function isSubFilterOf(catalog: CatalogId, sub: string): boolean {
+  const subs = CATALOGS[catalog].subFilters;
+  return subs !== undefined && Object.hasOwn(subs, sub);
+}
+
 /** The types a catalog request resolves to, honouring an optional sub-filter. Never widens. */
 export function typesFor(catalog: CatalogId, subFilter?: string): readonly string[] {
   const def = CATALOGS[catalog];
-  if (subFilter && def.subFilters?.[subFilter]) return def.subFilters[subFilter]!;
+  // Fail-closed on anything that is not an own key: an unknown sub-filter falls through to the
+  // catalog's own types, which is a WIDENING relative to what the caller asked for. Callers that
+  // can refuse (the route) validate with `isSubFilterOf` first and 400; this fallback is the last
+  // line, and it never reaches outside the catalog.
+  if (subFilter && isSubFilterOf(catalog, subFilter)) return def.subFilters![subFilter]!;
   return def.types;
 }
 

@@ -16,7 +16,7 @@
 // case — the user sees chips lit up and gets unfiltered results, which reads as "the filter is
 // broken" at best and shows the wrong register at worst.
 
-import { CATALOG_IDS, isCatalogId, type CatalogId } from '@/lib/catalog';
+import { CATALOG_IDS, CATALOGS, isCatalogId, isSubFilterOf, type CatalogId } from '@/lib/catalog';
 import { searchSections } from '@/lib/search-sections';
 
 /** Upper bound on filter cardinality. A URL cannot be used to build an unbounded IN-list. */
@@ -69,23 +69,61 @@ export async function GET(req: Request): Promise<Response> {
     return Response.json({ error: `too many tradition filters (max ${MAX_FILTER_VALUES})` }, { status: 400 });
   }
 
+  // The sub-filter gets the same treatment as the catalog, and for the same reason. Unlike
+  // tradition, `sub` HAS a closed valid set — the own keys of `def.subFilters` — so "no valid set
+  // to check against" does not apply. Before this, an unknown `sub` fell through `typesFor` to the
+  // whole catalog (silent widening, the exact shape the header above calls the dangerous case) and
+  // a prototype-chain value like `constructor` reached a spread and 500'd (2026-08-02 audit).
+  const sub = url.searchParams.get('sub') ?? undefined;
+  if (sub !== undefined) {
+    if (catalogs.length !== 1) {
+      return Response.json(
+        { error: 'sub-filter requires exactly one catalog; it has no meaning across a pool' },
+        { status: 400 },
+      );
+    }
+    if (!isSubFilterOf(catalogs[0]!, sub)) {
+      return Response.json(
+        {
+          error: `unknown sub-filter "${sub}" for catalog "${catalogs[0]}"`,
+          valid: Object.keys(CATALOGS[catalogs[0]!].subFilters ?? {}),
+        },
+        { status: 400 },
+      );
+    }
+  }
+
+  // Integers, not merely finite. `Number.isFinite` admitted 2.5, which the clamp in
+  // search-sections narrows but never floors, so the float was bound into `LIMIT $5` and Postgres
+  // rejected it (22P02) as a 500 (2026-08-02 audit). The sibling
+  // /api/work/[slug]/sections route has always checked Number.isInteger; this one now agrees.
+  const badNum: string[] = [];
   const num = (name: string): number | undefined => {
     const raw = url.searchParams.get(name);
     if (raw === null) return undefined;
     const n = Number(raw);
-    return Number.isFinite(n) ? n : undefined;
+    if (!Number.isInteger(n)) {
+      badNum.push(name);
+      return undefined;
+    }
+    return n;
   };
+  const limit = num('limit');
+  const offset = num('offset');
+  if (badNum.length > 0) {
+    return Response.json({ error: `${badNum.join(' and ')} must be an integer` }, { status: 400 });
+  }
 
   const page = await searchSections({
     query,
     // A single catalog keeps the `catalog` path so its sub-filter still applies; two or more go
     // through the pooled path, where sub-filters have no meaning (see typesForMany).
     ...(catalogs.length === 1 ? { catalog: catalogs[0]! } : { catalogs }),
-    subFilter: url.searchParams.get('sub') ?? undefined,
+    subFilter: sub,
     sourceSlug: url.searchParams.get('work') ?? undefined,
     traditions,
-    limit: num('limit'),
-    offset: num('offset'),
+    limit,
+    offset,
   });
   return Response.json(page);
 }

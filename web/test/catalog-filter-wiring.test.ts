@@ -135,3 +135,67 @@ describe('the catalog taxonomy stays disjoint as it grows', () => {
     expect(everything).not.toContain('confession');
   });
 });
+
+// ── The sub-filter gets the same discipline as the catalog (2026-08-02 audit) ────────────────
+//
+// The route already refused an unknown CATALOG, for the stated reason that dropping it would widen
+// a fenced search into a cross-corpus one. `sub` was forwarded raw, and it has the same property:
+// a closed valid set, and a fall-through in `typesFor` that resolves an unrecognised value to the
+// WHOLE catalog. So `?sub=hymnz` returned every hymn and every poem while the caller believed it
+// had asked for hymns — the route's own header calls this "the dangerous case".
+//
+// Worse, the lookup was `def.subFilters?.[sub]`, which walks the prototype chain: `?sub=constructor`
+// returned the Object constructor, a truthy non-array, which threw on the spread in
+// search-sections.ts with no try/catch above it — a 500 from a crafted URL.
+describe('sub-filter is validated, not forwarded', () => {
+  it('an unknown sub-filter 400s instead of silently widening to the whole catalog', async () => {
+    const res = await call('q=hark&catalog=hymns-poetry&sub=hymnz');
+    expect(res.status).toBe(400);
+    expect(searchSections).not.toHaveBeenCalled();
+    expect((await res.json()).valid).toEqual(['hymns', 'poetry']);
+  });
+
+  it('a PROTOTYPE-CHAIN value is refused, not resolved to a function', async () => {
+    // SEED: change `isSubFilterOf` back to `def.subFilters?.[sub]` → these become 500s.
+    for (const evil of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
+      const res = await call(`q=hark&catalog=hymns-poetry&sub=${encodeURIComponent(evil)}`);
+      expect(res.status, `sub=${evil} should be refused`).toBe(400);
+    }
+    expect(searchSections).not.toHaveBeenCalled();
+  });
+
+  it('a sub-filter with no single catalog is refused — it has no meaning across a pool', async () => {
+    // Previously accepted and then silently ignored, because searchSections only applies a
+    // sub-filter on the single-catalog path.
+    expect((await call('q=hark&catalogs=hymns-poetry,sermons&sub=hymns')).status).toBe(400);
+    expect((await call('q=hark&sub=hymns')).status).toBe(400);
+    expect(searchSections).not.toHaveBeenCalled();
+  });
+
+  it('a REAL sub-filter still reaches searchSections', async () => {
+    await call('q=hark&catalog=hymns-poetry&sub=poetry');
+    expect(argsOf().subFilter).toBe('poetry');
+  });
+});
+
+describe('pagination params are integers', () => {
+  it('a non-integer limit or offset 400s rather than reaching LIMIT $n', async () => {
+    // `Number.isFinite` admitted 2.5. The clamp in search-sections narrows but never floors, so
+    // the float was bound into `LIMIT $5`, where Postgres rejects it (22P02) — a 500. The sibling
+    // /api/work/[slug]/sections route has always checked Number.isInteger.
+    for (const qs of ['limit=2.5', 'offset=1.5', 'limit=1e-3']) {
+      const res = await call(`q=grace&${qs}`);
+      expect(res.status, `${qs} should be refused`).toBe(400);
+    }
+    expect(searchSections).not.toHaveBeenCalled();
+  });
+
+  it('integers still pass, and absent still means absent', async () => {
+    await call('q=grace&limit=10&offset=20');
+    expect(argsOf().limit).toBe(10);
+    expect(argsOf().offset).toBe(20);
+    await call('q=grace');
+    expect(argsOf().limit).toBeUndefined();
+    expect(argsOf().offset).toBeUndefined();
+  });
+});
