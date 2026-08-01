@@ -250,6 +250,50 @@ console.log(`  books present                : ${Object.keys(inventory.books).len
 console.log(`  chapter files present        : ${inventory.fileCount.toLocaleString()}`);
 console.log(`  entries present              : ${inventory.entryCount.toLocaleString()}`);
 console.log(`  corpusHash                   : ${inventory.corpusHash ?? '(no corpus)'}`);
+
+// CORPUS HASH, COMPARED — not merely printed (2026-08-02 deep audit, M10).
+//
+// DEPLOY_PREFLIGHT.md checklist item 4 says "corpusHash matches the committed manifest (step 3
+// prints and checks it)" and §3 repeats it, while §9 says the opposite — and the UNCORRECTED
+// copy is the line the operator ticks. Measured: `corpusHash` appeared in no comparison anywhere
+// in scripts/. The ratchet compares fileCount, entryCount, works and books, all of which are
+// SHAPE. A corpus whose CONTENT changed with unchanged shape — entries rewritten, text swapped,
+// sourceUrl provenance edited in place — passed every leg. The one value that detects it was
+// computed and discarded.
+//
+// WHAT IT ACTUALLY DETECTS, stated precisely, because both the audit finding and the first
+// version of this comment overclaimed it. `corpusHash` hashes the INVENTORY, not the bytes —
+// corpus-manifest.mjs:68 says so: books with file counts and works with per-author entry counts,
+// in a stable order. So it catches COMPOSITION drift that the totals cannot: author A losing 100
+// entries while author B gains 100 leaves fileCount and entryCount identical and changes this
+// hash. It does NOT detect a rewritten body or an edited sourceUrl — verified by seeding one
+// trailing space into an entry's text and watching the hash stay identical. That gap is real and
+// is not closed here; a content digest would be a different value and a different slice.
+//
+// A CHANGE is not automatically a failure: the corpus legitimately grows, and the ratchet exists
+// to allow that. So this reports a mismatch loudly and fails only when DEPLOYING, and the message
+// says exactly what to do — because "hash differs" on a grown corpus means the manifest is stale,
+// which is itself worth knowing before shipping.
+if (previousManifest && inventory.corpusHash && previousManifest.corpusHash !== inventory.corpusHash) {
+  const shapeSame =
+    previousManifest.fileCount === inventory.fileCount && previousManifest.entryCount === inventory.entryCount;
+  gateFail(
+    `corpusHash MISMATCH against the committed manifest.\n` +
+      `  committed : ${previousManifest.corpusHash} (sha ${previousManifest.sha}, ${previousManifest.fileCount.toLocaleString()} files / ${previousManifest.entryCount.toLocaleString()} entries)\n` +
+      `  on disk   : ${inventory.corpusHash} (${inventory.fileCount.toLocaleString()} files / ${inventory.entryCount.toLocaleString()} entries)\n\n` +
+      (shapeSame
+        ? `  File and entry TOTALS are identical, so every counting leg above passed. The\n` +
+          `  composition changed underneath them — an author or a book traded for another. That\n` +
+          `  is the case the totals cannot see, and the reason this comparison exists.\n` +
+          `  (Note: this hash covers composition, NOT bodies. A rewritten passage or an edited\n` +
+          `  sourceUrl does not move it — see the comment at this check.)\n\n`
+        : `  The shape also changed, so this is most likely an ingest the manifest predates.\n\n`) +
+      `  If the corpus on disk is the intended one, regenerate and commit the manifest:\n` +
+      `    node scripts/build-corpus-manifest.mjs`,
+  );
+} else if (previousManifest && inventory.corpusHash) {
+  console.log(`  corpusHash vs manifest       : MATCH (${previousManifest.sha})`);
+}
 if (previousManifest) {
   console.log(
     `  last manifest                : ${previousManifest.sha} v${previousManifest.version ?? 1} ` +
