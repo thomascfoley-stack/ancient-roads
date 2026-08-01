@@ -62,6 +62,11 @@ try {
 // and exit 0 — a clean bill of health computed over nothing.
 // Endpoint id, not substring. `.includes()` would accept ep-odd-fog.attacker.example, and every
 // sibling in this toolchain uses target-guard (2026-08-02 audit).
+// A census without its rollupDigest is untraceable to the instrument run that measured it.
+// And a source list that disagrees with the count the census itself declares means rows were
+// lost between measurement and adjudication: a non-empty list can still be a smaller
+// population than production carries, and every dropped row is a work this script would
+// silently never consider.
 const host = String(census.host ?? '');
 const id = endpointId(host);
 // The DOMAIN must be pinned too, not just the first label. `endpointId` takes split('.')[0], so
@@ -79,9 +84,20 @@ if (id === null || !id.startsWith(PROD_ENDPOINT) || !(bareId || neonHost)) {
 if (census.cohort !== 'staged') {
   refuse(`census cohort is "${String(census.cohort)}", expected "staged". A published cohort means the flip already ran.`);
 }
+const rollupDigest = census.rollupDigest;
+if (typeof rollupDigest !== 'string' || rollupDigest.length === 0) {
+  refuse('census carries no rollupDigest. The verdict would not be traceable to the instrument run that measured it.');
+}
 const sources = census.sources;
 if (!Array.isArray(sources) || sources.length === 0) {
   refuse('census carries no sources. Every rule below would be vacuous and this would exit 0.');
+}
+const expectedSourceCount = census.expectedSourceCount;
+if (typeof expectedSourceCount !== 'number' || !Number.isInteger(expectedSourceCount) || expectedSourceCount <= 0) {
+  refuse('census declares no expectedSourceCount. Without the measured total, a dropped row is undetectable here.');
+}
+if (sources.length !== expectedSourceCount) {
+  refuse(`census carries ${sources.length} source(s) but declares expectedSourceCount=${expectedSourceCount}. Rows went missing between measurement and adjudication.`);
 }
 
 // ── admission, decided by the SHIPPED predicates ───────────────────────────────────────────
@@ -150,7 +166,7 @@ const payload = {
   sourceReport: censusPath,
   host,
   cohort: census.cohort,
-  rollupDigest: census.rollupDigest ?? null,
+  rollupDigest,
   admittedBy: { servedProseWorks: SERVED_PROSE_WORKS.length, servedLaneWorks: laneWorks.length },
   legalCorpusFilterSha: LEGAL_CORPUS_FILTER.length, // a cheap drift signal, not a security claim
   slugs: flip,

@@ -12,6 +12,7 @@
   "host": "ep-odd-fog-atnykudm",
   "cohort": "staged",
   "rollupDigest": "10cd5eb46c9e53cb4b7b980e38e4720f",
+  "expectedSourceCount": 7,
   "sources": [
     {
       "slug": "adam-clarke",

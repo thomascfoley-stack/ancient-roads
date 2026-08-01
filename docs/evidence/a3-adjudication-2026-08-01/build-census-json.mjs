@@ -65,6 +65,14 @@ for (const line of censusSection.split('\n')) {
 }
 if (sources.size === 0) die('parsed zero A2.1 rows — the census would be vacuous');
 
+// The completeness bound the adjudicator binds to: A2.1's own TOTALS line, PARSED, never
+// hardcoded, so a truncated census.txt cannot ship a count that agrees with its rows by
+// construction. Absent line = refusal: without the measured total, a dropped row downstream
+// would adjudicate a smaller census than was measured, silently.
+const totalsMatch = /^\s*sources total\s+(\d+)\s*$/m.exec(censusText);
+if (!totalsMatch) die('census.txt has no "sources total" TOTALS line: nothing to bind the adjudicator\'s completeness check to');
+const expectedSourceCount = Number(totalsMatch[1]);
+
 // ── A2.3: the ADMITTED column, and the host actually reached ───────────────────────────────
 const servingText = read(SERVING_LOG);
 const host = /host reached:\s+(\S+)/.exec(servingText)?.[1];
@@ -111,6 +119,7 @@ const payload = {
   host,
   cohort: 'staged',
   rollupDigest,
+  expectedSourceCount,
   sources: [...sources.values()].sort((a, b) => a.slug.localeCompare(b.slug)),
 };
 
