@@ -37,6 +37,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { ALLOWED_LICENSES, isAllowedLicense } from '../src/ingest/allowed-licenses.mjs';
 import { forbiddenProvenanceDomain } from '../src/ingest/forbidden-provenance.mjs';
+import { eligibility, flipDelta } from './lib/publish-flip-delta.mjs';
 import { assertPublishTarget } from './lib/publish-flip-guard.mjs';
 import { scrubCredentialText } from './lib/neon-connection.mjs';
 
@@ -155,7 +156,10 @@ try {
   const before = (await client.query('SELECT slug, status FROM sources ORDER BY slug')).rows;
   const beforeBy = new Map(before.map((r) => [r.slug, r.status]));
 
-  const missing = slugs.filter((s) => !beforeBy.has(s));
+  // Both row decisions come from lib/publish-flip-delta.mjs, which is pure and has tests. They
+  // were inline here, where the only way to exercise them was to run this script against a real
+  // database — so the two defects the 2026-08-02 audit found in them were found by reading.
+  const { missing, eligible, thirdStatus } = eligibility(slugs, beforeBy, from, to);
   if (missing.length > 0) {
     await client.query('ROLLBACK');
     die(`STOP: slug(s) not present in sources: ${missing.join(', ')}`, 1);
@@ -170,11 +174,9 @@ try {
   );
   console.log(`snapshot     ${snapPath} (${before.length} rows, written before COMMIT)`);
 
-  const eligible = slugs.filter((s) => beforeBy.get(s) === from);
   // A listed slug that is in NEITHER direction is a third status — 'quarantined' (migration 006)
   // or 'ingesting' (023). The old message asserted "the rest are already <to>" without checking,
   // so a quarantined work would be silently skipped by the UPDATE and reported as already done.
-  const thirdStatus = slugs.filter((s) => beforeBy.get(s) !== from && beforeBy.get(s) !== to);
   if (thirdStatus.length > 0) {
     await client.query('ROLLBACK');
     die(`STOP: listed slug(s) in an unexpected status: ${thirdStatus.map((s) => `${s}=${beforeBy.get(s)}`).join(', ')}. Refusing.`, 1);
@@ -192,22 +194,7 @@ try {
 
   // ── delta: nothing moved except what we named, in the direction we named ────────────────
   const after = (await client.query('SELECT slug, status FROM sources ORDER BY slug')).rows;
-  const named = new Set(eligible);
-  const unexpected = [];
-  // DELETIONS. The old loop iterated `after` only, so a row that vanished between snapshot and
-  // re-read was invisible to a check whose stated guarantee is "the ONLY rows that changed are
-  // the listed slugs" (2026-08-02 audit). Row counts first, then a per-slug absence check.
-  const afterSlugs = new Set(after.map((r) => r.slug));
-  for (const r of before) {
-    if (!afterSlugs.has(r.slug)) unexpected.push(`${r.slug}: ${r.status} -> DELETED`);
-  }
-  for (const row of after) {
-    const was = beforeBy.get(row.slug);
-    if (was === row.status) continue;
-    if (!named.has(row.slug) || was !== from || row.status !== to) {
-      unexpected.push(`${row.slug}: ${was} -> ${row.status}`);
-    }
-  }
+  const unexpected = flipDelta(before, after, eligible, from, to);
   if (unexpected.length > 0) {
     await client.query('ROLLBACK');
     die(`STOP: rows changed that were not the flip:\n  ${unexpected.join('\n  ')}\nRolled back.`, 1);

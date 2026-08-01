@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+//
 // THE ELEVENTH INSTANCE — "a hand-maintained expected set that nothing enforces", found 2026-08-01
 // by loading the page rather than by reading the code.
 //
@@ -12,16 +14,36 @@
 // absence of a hardcoded list, and a render test would pass just as happily against three typed
 // links as against a map.
 //
-// HONEST LIMIT, and the guard for it: this is a source scan, so it is written to REFUSE rather
-// than under-read. If it cannot find the file, or finds no catalog link expression at all, it
-// fails — a scan that quietly matches nothing would report a passing nav for a sidebar that lost
-// its links entirely.
+// WHERE THE FIRST VERSION OF THIS FILE WAS WRONG (2026-08-02 audit). The paragraph above claimed
+// the scan "REFUSES rather than under-reads" and "fails if it finds no catalog link expression at
+// all". It did not. Every one of its assertions was satisfied by TEXT, and JSX comments are text:
+// an auditor wrapped the whole `CATALOG_IDS.map(...)` block in `{/* ... */}` — a sidebar rendering
+// zero catalog links — and all five cases passed. The positive control was reading its own
+// evidence out of the comment that disabled the thing it was controlling for.
+//
+// Note that importing `codeOnly` from scripts/lib/source-scan.mjs, the sibling fix used by
+// ask-max-duration-literal.test.ts, would NOT have closed this: its comment regex does not match a
+// line beginning `{/*`. The defect is not which stripper is used. It is that a source scan cannot
+// answer "does this render a link", because the question is about the DOM, not the text.
+//
+// So the file now does both, and they answer different questions:
+//   * RENDER the sidebar and assert one anchor per catalog — "is the shelf reachable". This is the
+//     assertion that goes red when the block is commented out, deleted, or conditioned away.
+//   * SCAN the source for the derived form — "will the NEXT catalog be reachable". A render test
+//     alone would pass against four typed links and orphan the fifth, which is the original defect.
+// The render half is load-bearing; the scan half is the ratchet.
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { CATALOGS, CATALOG_IDS } from '@/lib/catalog-defs';
+
+// The two things the shell needs from outside itself. Neither is the subject here: the nav must
+// render its catalog links for a signed-out visitor on any route, so both are stubbed at their
+// least interesting value rather than exercised.
+vi.mock('next/navigation', () => ({ usePathname: () => '/' }));
+vi.mock('@/lib/auth/client', () => ({ authClient: { useSession: () => ({ data: null }) } }));
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SIDEBAR = path.join(ROOT, 'src/components/sidebar.tsx');
@@ -74,5 +96,25 @@ describe('every catalog is reachable from the shell', () => {
   it('Historians specifically is reachable — the catalog that exposed this', () => {
     expect(CATALOG_IDS).toContain('historians');
     expect(CATALOGS.historians.label).toBe('Historians');
+  });
+});
+
+// ── the half that is about the DOM ───────────────────────────────────────────────────────────
+describe('the sidebar actually RENDERS a link to every catalog', () => {
+  it('one anchor per catalog, with its label — commenting the block out goes red here', async () => {
+    // SEED: wrap the CATALOG_IDS.map block in {/* ... */} → RED here, green in every scan above.
+    // That divergence is the whole reason this block exists.
+    const { render } = await import('@testing-library/react');
+    const { SidebarNavContent } = await import('@/components/sidebar');
+    const { container } = render(<SidebarNavContent />);
+
+    const hrefs = new Map(
+      [...container.querySelectorAll('a')].map((a) => [a.getAttribute('href') ?? '', (a.textContent ?? '').trim()]),
+    );
+    for (const id of CATALOG_IDS) {
+      const href = `/library/${id}`;
+      expect(hrefs.has(href), `no sidebar link to ${href} — the ${id} shelf is unreachable from the shell`).toBe(true);
+      expect(hrefs.get(href), `the ${id} link renders no label`).toContain(CATALOGS[id].label);
+    }
   });
 });
