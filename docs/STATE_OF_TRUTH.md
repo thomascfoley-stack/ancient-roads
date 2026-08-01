@@ -274,10 +274,19 @@ does not gate. See `docs/evidence/work-order-v2-stage2/TRANCHE5-STASH-EVALUATION
 - **CVE gate (`scripts/deps-audit.mjs`, 2026-07-14):** npm's retired audit endpoint (410) is bypassed via the
   bulk advisory endpoint; fails on un-ignored high/critical; honors `pnpm.auditConfig.ignoreGhsas`.
 - **Phase A: CLOSED (2026-07-14).** Hard gates hold with no regression; deploy is permitted by the license gate.
-- **Deploy (updated 2026-07-18):** real prod = the git-DISCONNECTED Vercel project **`web`**, serving
-  **ancientpaths.app**; last deploy **`24677ba`** (2026-07-18, hero + nav labels). Deploys happen ONLY via
-  `./deploy.sh` (`vercel --prod` from a clean worktree) — pushing `main` deploys nothing (see
-  `docs/DEPLOYMENT.md`). SEC-1 gates public launch.
+- **Deploy (updated 2026-08-01 from the Vercel API; timestamps UTC):** real prod = the git-DISCONNECTED
+  Vercel project **`web`** (`prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR`, team `home-network-hardening`), serving
+  **ancientpaths.app**. Last deploy **`24677ba`** (hero + nav labels), and **there are two deployments of
+  that same sha** — which is where the 18th-vs-19th ambiguity in earlier revisions of this line came from.
+  Both dates were right about different objects:
+  - `dpl_FYQxxZ1rLN1wd4UeMwShhX12G5BM` — original deploy, **2026-07-18 22:32:21Z**.
+  - `dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt` — **redeploy of the same sha, 2026-07-19 16:57:06Z, and this is
+    the one that holds the alias.** It is the live production deployment.
+
+  Rollback target is therefore **`dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr`** (`654f028`, 2026-07-17 01:32:56Z),
+  the newest deployment whose code differs from what is live; see [`RECOVERY.md`](RECOVERY.md) §2.
+  Deploys happen ONLY via `./deploy.sh` (`vercel --prod` from a clean worktree) — pushing `main` deploys
+  nothing (see `docs/DEPLOYMENT.md`). SEC-1 gates public launch.
 
 ## 5. Sermon search — designed & measurement-proven, NOT built
 

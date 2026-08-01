@@ -161,13 +161,19 @@ ship a broken page** — but the fix is a download, not an ingest run.
 
 ## 5. What rollback restores, versus what is merely available
 
-**The rollback target id is not established.** The work order cites
-`dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt`, and `docs/RECOVERY.md` §2 records that this id **does not
-appear anywhere in this repo** — use dashboard truth, not the order. The deployments of record
-that DO appear are `dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr` (`654f028`, 2026-07-16) and the live site
-of record `24677ba` (2026-07-18). **Confirm the id in the Vercel dashboard before relying on it**
-— checklist item 7 exists for this reason. What follows is true of promoting the 2026-07-18
-deployment, whatever its id turns out to be.
+**The rollback target ids ARE established** (corrected 2026-08-01; this paragraph previously said
+they were not). Read read-only from the Vercel API, team `home-network-hardening`, project `web`;
+full table and provenance in [`RECOVERY.md`](RECOVERY.md) §2. All timestamps UTC.
+
+| deployment | sha | created (UTC) | what it is |
+|---|---|---|---|
+| `dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt` | `24677ba` | 2026-07-19 16:57:06Z | **currently promoted** - serves `ancientpaths.app` |
+| `dpl_FYQxxZ1rLN1wd4UeMwShhX12G5BM` | `24677ba` | 2026-07-18 22:32:21Z | same sha as live; promoting it changes no code |
+| `dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr` | `654f028` | 2026-07-17 01:32:56Z | **the real rollback target** |
+
+`dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt` is not a phantom and is not the target: **it is what is live**, so
+promoting it is a no-op that reports success. Checklist item 7 is answered by this table. What
+follows is true of promoting `dpl_Ejzk…` or `dpl_FYQ…`.
 
 **Promoting it restores** the **pre-025 application code** of that date, and **the static corpus as
 it was on 2026-07-18** — the deployment is an immutable bundle including the uploaded working tree.
@@ -216,8 +222,9 @@ Everything below is free and reversible. Stop at the first ✗.
        guard loadLexicon first. A decision, not a check.
 [ ] 6  Accept what rollback does NOT restore (§5): pre-025 code on a post-031
        schema, re-opening G4, and a corpus that bypasses predeploy-gate.
-[ ] 7  Record the current live deployment id, so "roll back" has a target that
-       is not a guess.
+[x] 7  ANSWERED 2026-08-01 (§5). Live now: dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt
+       (24677ba, 2026-07-19). Rollback target: dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr
+       (654f028). Do NOT "roll back" to dpl_DwoW... - that is the live one.
 [ ] 8  A1 merged? Deploy A is gated behind it on the board.
 ```
 

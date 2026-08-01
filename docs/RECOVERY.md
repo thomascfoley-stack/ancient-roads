@@ -31,49 +31,87 @@ and [`CUTOVER_DESIGN.md`](CUTOVER_DESIGN.md) § protected branches.
 | | |
 |---|---|
 | **Command** | Vercel dashboard → project **`web`** → Deployments → select deployment → **Instant Rollback**. CLI equivalent: `vercel rollback <deployment-url>` from `web/` with team scope. |
-| **Restores** | The **frontend bundle** (Next.js build + static files uploaded with that deploy). Example deployments of record: `dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr` (`654f028`, 2026-07-16); live site of record **`24677ba`** (2026-07-18, hero + nav). The work order cited `dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt` — that id does **not** appear in this repo; use dashboard truth. |
+| **Restores** | The **frontend bundle** (Next.js build + static files uploaded with that deploy). **Currently promoted: `dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt`** (`24677ba`, 2026-07-19 16:57:06Z) - this is what serves `ancientpaths.app` today. **The real rollback target is `dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr`** (`654f028`, 2026-07-17 01:32:56Z), the newest deployment whose code differs from what is live. Full table in the block below. |
 | **Destroys** | Nothing in Neon. Does **not** roll back schema migrations, sessions, or database content. |
 | **Host survives?** | **YES** — same `DATABASE_URL`, same Neon endpoint. |
 | **Window** | While Vercel retains the deployment (indefinite for recent deploys). |
 | **Exercised** | **NO** (deliberate — rollback to pre-025 code against post-031 schema is a known bad pairing; see honest note below). |
 
-> ### ⚑ The rollback target id is STILL NOT ESTABLISHED (attempted 2026-08-01, BLOCKED)
+> ### ✔ The rollback target ids ARE established (read from the Vercel API, 2026-08-01)
 >
-> `dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt` has been quoted as the rollback target in briefs, work orders
-> and ADRs for three weeks. It appears in **no** Vercel listing and in no repo artifact other than
-> documents repeating it. **It should be treated as unverified until read off the dashboard.**
+> **This supersedes two earlier claims in this file, both of which are false.** A block headed "STILL
+> NOT ESTABLISHED (attempted 2026-08-01, BLOCKED)" stood here from `6ab5779`, asserting that
+> `dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt` "appears in **no** Vercel listing" and instructing a reader to
+> delete the id from every document that repeats it. The Restores row above, from `b4596aa`, said the
+> id "does not appear in this repo". **The id is real. It is the deployment currently serving
+> `ancientpaths.app`.** Deleting it would have erased the true answer, and an incident reader was
+> being told to distrust the one id that is correct.
 >
-> **Why it could not be settled from this machine.** The Vercel CLI is authenticated as `thomas-5672`
-> and can reach exactly two scopes — `thomas-s-projects-d9abdfd0` and `composio` — whose projects are
-> all `*-x-composio-partners`. **The `web` project that serves `ancientpaths.app` is in neither.**
-> `vercel ls web` returns *"The provided argument \"web\" is not a valid project name"*, and
-> `web/` carries no `.vercel/project.json` link. This is the wrong Vercel account, not a permissions
-> problem — so no read-only CLI query can establish the id.
+> **Date convention: every timestamp in this section is UTC**, as the Vercel API returns them. Earlier
+> revisions of this file dated `dpl_Ejzk…` "2026-07-16"; that is the same instant read in local
+> UTC-7 (2026-07-16 18:32:56). Both were defensible. This file now uses UTC for every row.
 >
-> **What the owner must read from the dashboard**, precisely, so this stops being folklore:
+> **Source**, read-only: Vercel API, team `home-network-hardening` (`team_TQ3BYCSyzQ3m0yatlkKmUzM0`),
+> project `web` (`prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR`), `list_deployments` + `get_deployment`,
+> 2026-08-01. Read first-hand and independently by three sessions: the PM, the A1 closure audit
+> ([verdict](pm/orders/2026-08-01-stop-verdict-a1-closure.md) §B-6), and the corrections tranche that
+> wrote this block ([order](pm/orders/2026-08-01-post-a1-corrections.md)).
 >
-> 1. Log in to the account that owns the **`web`** project (git-disconnected, serves `ancientpaths.app`).
-> 2. Project **`web`** → **Deployments**, filter **Production**.
-> 3. Record, for the deployment **currently promoted**: its **deployment id** (`dpl_…`), its **commit
->    sha**, and its **created date**. That is the "current live" row `DEPLOY_PREFLIGHT.md` §7 item 7 asks for.
-> 4. Record the same three fields for the deployment you would **roll back to** — the 2026-07-18
->    `24677ba` one, if it is still retained.
-> 5. Put both in this table. Delete `dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt` from every document that
->    repeats it once the real ids exist.
+> The four newest production deployments, newest first. `rollback candidate` is `isRollbackCandidate`
+> as Vercel reports it.
 >
-> Until then: **a rollback plan whose target id is unverified is not a rollback plan.** `RECOVERY.md`
-> already said "use dashboard truth"; this block says what to read and what to do with it.
+> | deployment | sha | created (UTC) | candidate | what it is |
+> |---|---|---|---|---|
+> | `dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt` | `24677ba` | 2026-07-19 16:57:06Z | true | **CURRENT** - holds `ancientpaths.app`, `www.ancientpaths.app` |
+> | `dpl_FYQxxZ1rLN1wd4UeMwShhX12G5BM` | `24677ba` | 2026-07-18 22:32:21Z | true | original deploy of the same sha; `dpl_DwoW…` is its redeploy |
+> | `dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr` | `654f028` | 2026-07-17 01:32:56Z | true | first genuinely different code state - **the real rollback target** |
+> | `dpl_8V2aiHy8cBz8dKCViBCEtRThzZh7` | `ae2a8f2` | 2026-07-17 00:12:14Z | true | one further back |
+>
+> **Two things to know before using that table:**
+>
+> 1. **Rolling back to `dpl_DwoW…` is a no-op.** It is what is live. A rollback whose target is the
+>    current deployment reports success and changes nothing - the worst possible outcome during an
+>    incident, because it looks like the remedy ran.
+> 2. **`dpl_FYQ…` is the same commit as what is live.** Promoting it changes the deployment id and not
+>    a byte of the code. If you need the running code to actually change, the target is
+>    `dpl_Ejzk…` (`654f028`).
+>
+> One row from further back, worth knowing because it is the only **non**-candidate in recent history.
+> It is not adjacent to the four above; thirteen further READY production deployments sit between it
+> and `dpl_8V2a…`:
+>
+> | deployment | sha | created (UTC) | candidate | what it is |
+> |---|---|---|---|---|
+> | `dpl_CzHPuyhdvte3N4tGe7HQ1677EQo5` | `0897373` | 2026-07-12 07:39:53Z | **false** | state `ERROR` - Vercel will not accept it as a rollback target |
+>
+> **Why the superseded block got this wrong. The diagnosis was right; the conclusion was wider than
+> the evidence.** The local Vercel CLI is authenticated as `thomas-5672` and reaches exactly two
+> scopes, `thomas-s-projects-d9abdfd0` and `composio`, whose projects are all
+> `*-x-composio-partners`. **The `web` project that serves `ancientpaths.app` is in neither.**
+> `vercel ls web` returns *"The provided argument \"web\" is not a valid project name"*, and `web/`
+> carries no `.vercel/project.json` link. All of that is still true, and it is still the reason the
+> CLI on this machine cannot settle a deployment question. What it did not license was the step from
+> "my account cannot see it" to "it appears in no Vercel listing": **a limit of the instrument written
+> down as a property of the world.** The ids above were read through an app-level Vercel connection
+> authenticated to the team that actually owns the project. See the failure-mode watchlist in
+> [`pm/MASTER.md`](pm/MASTER.md).
+>
+> **`DEPLOY_PREFLIGHT.md` §7 checklist item 7 ("record the current live deployment id") is answered by
+> the table above.** No dashboard visit is required.
 
 ### Honest note: why deploy rollback is not a full recovery
 
-Rolling back to **`24677ba`** (or any pre-cutover bundle):
+Rolling back to **`654f028`** (`dpl_Ejzk…`, the real target above) or any other pre-cutover bundle:
 
 1. **Schema mismatch** — production schema is post-031 (cutover E1–E4). The old bundle's
    `upsertNote` and reader paths expect pre-025 shapes. G4 window is **OPEN** for this reason
-   (`STATE_OF_TRUTH.md` §2b).
-2. **Corpus bypass** — Instant Rollback restores the **2026-07-18 static corpus** that shipped
-   with that deploy. It does **not** run `predeploy-gate.ts`, so none of the Stage 3.1 corpus
-   identity ratchet, verse-key gate, or forbidden-provenance ceiling applies to what comes back.
+   (`STATE_OF_TRUTH.md` §2b). **Note the direction:** `24677ba` is *itself* pre-cutover and is what
+   is deployed today, so G4 is open **now**, before any rollback. A rollback does not re-open it; it
+   keeps it open one code state further back.
+2. **Corpus bypass** — Instant Rollback restores the static corpus that shipped with the deployment
+   you promote (2026-07-17 for `dpl_Ejzk…`, 2026-07-18 for `dpl_FYQ…`). It does **not** run
+   `predeploy-gate.ts`, so none of the Stage 3.1 corpus identity ratchet, verse-key gate, or
+   forbidden-provenance ceiling applies to what comes back.
 3. **Identity** — `GET /api/health` did not exist on old bundles; there is no post-rollback way
    to ask the site which corpus it serves except byte comparison.
 
