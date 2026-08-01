@@ -21,6 +21,7 @@
  * Reuses the single canonical domain check (src/ingest/license-manifest) via the
  * same scanner the QA suite uses — no second implementation.
  */
+import { assertServedAssetsScannable, missingServedAssetDirs } from './lib/served-assets.mjs';
 import {
   COMMENTARIES_DIR,
   countStaticForbiddenProvenanceEntries,
@@ -56,6 +57,33 @@ const gateFail = (msg: string): void => {
   if (DEPLOYING) FAIL(msg);
   console.warn(`\n\x1b[33m⚠  ${msg}\n   (WARNING only — will HARD-FAIL the actual deploy.)\x1b[0m`);
 };
+
+// SERVED-ASSET COMPLETENESS — derived from the client, not typed here.
+// Until 2026-08-01 this gate validated `commentaries` and `bible` and nothing else, while the app
+// also served `concordance/`, `lexicon/`, `original/` and `devotional/`. Three were ABSENT from the
+// deploying machine and the gate said nothing (ninth instance of the hand-maintained expected set).
+// servedAssetDirs() reads which directories the client fetches a .json from, so a newly served
+// directory is accounted for without touching any list here.
+{
+  const scan = assertServedAssetsScannable();
+  if (!scan.ok) {
+    FAIL(
+      `Cannot derive the served-asset set: ${scan.offenders.join(', ')} build a root-absolute path from a variable.\n` +
+      `The scan would under-read, and an under-reading completeness check is worse than none.`,
+    );
+  }
+  const served = missingServedAssetDirs();
+  console.log('\n=== Pre-deploy gate: served static asset directories (derived from web/src) ===');
+  console.log(`  serves: ${served.served.join(', ')}`);
+  if (!served.ok) {
+    FAIL(
+      `Directories the application SERVES but which are absent from web/public:\n  ${served.missing.join('\n  ')}\n\n` +
+      `vercel --prod uploads the working tree, so these would ship missing and their pages would\n` +
+      `404 or throw at runtime. Restore them (docs/RECOVERY.md §3a) or stop serving them.`,
+    );
+  }
+  console.log('  \x1b[32m✓ every served asset directory is present.\x1b[0m');
+}
 
 console.log('\n=== Pre-deploy gate: licensing ratchet ===');
 

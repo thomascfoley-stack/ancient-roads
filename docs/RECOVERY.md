@@ -95,7 +95,9 @@ The three absent directories are the three with one fewer asset download. They a
 (`web/src/lib/original.ts`), so a deploy today ships a site whose word-study page and word panel
 **throw** — see `DEPLOY_PREFLIGHT.md` §4. `predeploy-gate.ts` does not check them, so nothing refuses.
 
-**Recovery for the gap (not run — restores files the owner has not decided to ship):**
+**RESTORED 2026-08-01.** All three extracted from `corpus-backup-2026-07-28` into `web/public/`: concordance 295 files / 4.1M (SHA-256 `7fb34f30…a47b3`), lexicon 2 files / 3.0M (`68bcabd2…bea85`), original 1,189 files / 45M (`f29d43cf…565e1`). `predeploy-gate.ts` re-run after: **EXIT=0**, forbidden-provenance 0, corpusHash unchanged. Note `deploy.sh`'s comment calls the concordance "13,480 files" — it is **295**; that comment is stale.
+
+**Command used:**
 
 ```bash
 gh release download corpus-backup-2026-07-28 --repo thomascfoley-stack/ancient-roads \
