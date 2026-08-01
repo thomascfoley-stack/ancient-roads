@@ -2,6 +2,27 @@ OUTCOME: **A6 CANNOT RUN, for two independent reasons, and neither was on the bo
 
 # Deep audit — gates A1 through A6
 
+> ## REMEDIATION STATUS, 2026-08-02
+>
+> Seven fix tranches landed on `main` (`cee437a` … `651fa19`), each red-proved, `npm run audit`
+> green at the tip.
+>
+> **CLOSED:** C3 · C4 · C5 · M1 · M2 · M3 · M4 · M10 · M15 · M17 (record) · M19 · H1 · H2 · H8 ·
+> H9 · H10 · H11 · H12 · H13 · T1 · T2 · plus three destructive writers the audit did not find,
+> surfaced by enumerating the tree instead of reading files.
+>
+> **C1 — half closed.** `deploy.sh` now pins the project and org and refuses before uploading;
+> verified refusing against the current session. The `vercel login` as the owning account is
+> still yours.
+>
+> **C2 — gated, not resolved.** The deploy now hard-fails on 18,323 served entries by forbidden
+> or in-copyright authors. Nothing was deleted: content quarantine is an owner call (AGENTS.md).
+>
+> **STILL OPEN:** H3 · H4 · H5 · H6 · H7 (partly) · H14 · H15 · M5–M9 · M11–M14 · M16 · M18 ·
+> M20–M26 · T3–T10. H4 and H5 are the same owner question as C2.
+>
+> One finding in this document was **wrong and is corrected in place** — see M10.
+
 **Filed 2026-08-02**, `main` @ `4369d37`. Seven parallel lenses, non-overlapping by construction, per `.claude/skills/deep-audit`. All seven reported.
 
 Every CRITICAL below was re-verified by the synthesizing session against the tree or by direct execution, not accepted from an agent. Two agent CRITICALs were **downgraded** on verification and are recorded as such in §5.
