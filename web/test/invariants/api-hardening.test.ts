@@ -127,6 +127,10 @@ describe('the public read routes are throttled at all — H3', () => {
   ];
 
   it.each(ROUTES)('%s calls publicReadThrottle', async (rel) => {
+    // Resolved from THIS FILE, not process.cwd(). cwd differs between `vitest` run inside web/
+    // and `vitest --config web/vitest.config.ts` run from the repo root — which is exactly how
+    // `npm run audit` invokes it. The first version used cwd, passed locally and failed the gate
+    // with ENOENT. A path-resolution bug in a test is still a broken test.
     // Until 2026-08-02 all four had no requireUser, no rate limit and nothing CDN-cacheable, while
     // each request is a full-text or keyset query over 72,863 sections. They share a database with
     // the paid /api/ask pipeline whose limiter now fails CLOSED — so a flood on the free routes
@@ -134,8 +138,10 @@ describe('the public read routes are throttled at all — H3', () => {
     // SEED: delete the call from any one -> RED for that route only.
     const { readFileSync } = await import('node:fs');
     const path = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
     const { codeOnly } = await import('../../../scripts/lib/source-scan.mjs');
-    const code = codeOnly(readFileSync(path.join(process.cwd(), rel), 'utf8'));
+    const WEB = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+    const code = codeOnly(readFileSync(path.join(WEB, rel), 'utf8'));
     expect(code, `${rel} does not call publicReadThrottle`).toMatch(/publicReadThrottle\s*\(/);
   });
 });
