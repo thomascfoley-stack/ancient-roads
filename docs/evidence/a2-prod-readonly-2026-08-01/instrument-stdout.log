@@ -1,0 +1,47 @@
+unit_ordinal instrument — read-only [cohort=staged]
+  [cohort=staged] cohort under measurement: sources.status = 'staged'
+  [cohort=staged] target: ep-odd-fog-atnykudm (credentials redacted)
+  [cohort=staged] connection: neonctl role=app_runtime branch=production
+  [cohort=staged] server role: app_runtime ✓  (read-only transaction confirmed at the server)
+
+[cohort=staged] POSITIVE CONTROL: sources with status='staged' = 7 ✓
+
+=== [cohort=staged] WORKS IN COHORT 'staged' (7) ===
+  [cohort=staged] slug                     sections   units  digest
+  [cohort=staged] adam-clarke                     12693    727  f3b0fca67b92…
+  [cohort=staged] barnes-notes                     1300   1189  d1c3f8c579c7…
+  [cohort=staged] calvin-crosswire                 5090    236  19aeaa2a81d4…
+  [cohort=staged] jfb                             15473   1086  e552c631a1ee…
+  [cohort=staged] john-gill                       28843   1169  3cc9bc1db9dd…
+  [cohort=staged] matthew-henry                    4210   1158  656895d42c65…
+  [cohort=staged] wesley-crosswire                 5254    259  d45049accf7a…
+
+[cohort=staged] rollup digest: 10cd5eb46c9e53cb4b7b980e38e4720f
+
+[cohort=staged] ✓ PASS — every work in cohort 'staged' satisfies the unit_ordinal instrument
+
+--- [cohort=staged] excerpt: adam-clarke (first 20 sections; ordering fields only) ---
+  [cohort=staged] u1.1	
+  [cohort=staged] u1.2	
+  [cohort=staged] u1.3	
+  [cohort=staged] u1.4	
+  [cohort=staged] u1.5	
+  [cohort=staged] u1.6	
+  [cohort=staged] u1.7	
+  [cohort=staged] u1.8	
+  [cohort=staged] u1.9	
+  [cohort=staged] u1.10	
+  [cohort=staged] u1.11	
+  [cohort=staged] u1.12	
+  [cohort=staged] u1.13	
+  [cohort=staged] u1.14	
+  [cohort=staged] u1.15	
+  [cohort=staged] u1.16	
+  [cohort=staged] u1.17	
+  [cohort=staged] u1.18	
+  [cohort=staged] u1.19	
+  [cohort=staged] u2.20	
+
+[cohort=staged] excerpt sample [cohort=staged]: 1 manifest-eligible work(s) of 6 eligible (7 in cohort 'staged' total) — quarantine/skip/forbidden-domain/forbidden section source_url excluded; section body not inspected
+
+[cohort=staged] wrote docs/evidence/a2-prod-readonly-2026-08-01/instrument-staged.txt — the cohort is recorded INSIDE the file; do not rely on this filename to tell two runs apart

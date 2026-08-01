@@ -1,0 +1,20 @@
+{
+  "adjudicatedAt": "2026-08-01T06:16:38.063Z",
+  "sourceReport": "docs/evidence/a3-adjudication-2026-08-01/a2-census.json",
+  "host": "ep-odd-fog-atnykudm",
+  "cohort": "staged",
+  "rollupDigest": "10cd5eb46c9e53cb4b7b980e38e4720f",
+  "admittedBy": {
+    "servedProseWorks": 4,
+    "servedLaneWorks": 10
+  },
+  "legalCorpusFilterSha": 527,
+  "slugs": [
+    "adam-clarke",
+    "calvin-crosswire",
+    "jfb",
+    "john-gill",
+    "matthew-henry",
+    "wesley-crosswire"
+  ]
+}

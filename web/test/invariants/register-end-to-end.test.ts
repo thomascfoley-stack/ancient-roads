@@ -35,8 +35,14 @@ const dbUrl = runtimeDbUrl();
  *  a source_type not named by a catalog appears in none). Declared here so that a register
  *  losing its catalog door reads as a CHANGE rather than as silence. `lexicon` belongs to
  *  Word Study, its own surface; `theology`/`confession` are lane content the register wall
- *  keeps out of "Commentaries"; `historian` has no reader surface yet. */
-const REGISTERS_WITH_NO_CATALOG = ['theology', 'confession', 'historian', 'lexicon'] as const;
+ *  keeps out of "Commentaries".
+ *
+ *  `historian` was in this set until 2026-08-01, when the owner ruled it gets its own
+ *  Historians catalog — it is not lane content (neither exegesis nor devotional register), it
+ *  simply had no shelf. This guard is what turned that into an explicit decision instead of a
+ *  silent widening: adding the catalog made this assertion RED in CI, exactly as the comment
+ *  above intends. Removing a register from this list must always cost someone a red build. */
+const REGISTERS_WITH_NO_CATALOG = ['theology', 'confession', 'lexicon'] as const;
 
 function catalogFor(sourceType: string): CatalogId | null {
   for (const c of Object.values(CATALOGS)) if (c.types.includes(sourceType)) return c.id;

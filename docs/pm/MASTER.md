@@ -3,7 +3,9 @@
 **Read this first, every session.** It is the plan and the gate board. It is **not** the state —
 state lives in `docs/STATE_OF_TRUTH.md` and this file points at it rather than copying it.
 
-Last verified: 2026-07-31 · `main` @ `1199a03` · working branch `chore/work-order-v2-stage2` @ `ac19935`
+Last verified: 2026-08-01 · `main` @ `29d6f98` — the merge commit of **PR #48**, merged 2026-08-01
+02:19:30Z by merge-commit, so all 21 commits and their `Model:` trailers survive · working branch
+`fix/post-a1-corrections-2026-08-01`
 
 ## Bylaws
 
@@ -32,12 +34,12 @@ Last verified: 2026-07-31 · `main` @ `1199a03` · working branch `chore/work-or
 
 | # | Gate | Status |
 |---|---|---|
-| A1 | Stage 2 blockers closed · PR #48 merged | **OPEN** — 4 blockers FIXED at `03516b6`, awaiting independent audit + ⚑ owner merge ([verdict](orders/2026-07-31-stop-verdict-stage2.md)) |
-| A2 | ⚑ Prod read-only session — instrument over `staged` + serving census, one log, no writes | Not started |
-| A3 | Census adjudicated — a published-but-not-admitted work is a STOP | Blocked on A2 |
-| A4 | ⚑ Publish flip — `UPDATE sources SET status`, exact inverse, snapshotted | Blocked on A3 |
-| A5 | Prod instrument run — G10 stops being permanently skipped | Blocked on A4 |
-| A6 | ⚑ Deploy A — the irreversible one | Blocked on A5. **Preflight now measured, not guessed** — [DEPLOY_PREFLIGHT.md](../DEPLOY_PREFLIGHT.md). The build was **BROKEN at `d1576fe`** (fixed `c1e359d`); `predeploy-gate` passes on the real corpus; `concordance`/`lexicon`/`original` are **ABSENT** and word-study + word-panel would throw |
+| A1 | Stage 2 blockers closed · PR #48 merged | **CLOSED 2026-08-01.** All four re-executed by a fresh session that wrote none of the work — the first independent verdict this repo has carried ([verdict](orders/2026-08-01-stop-verdict-a1-closure.md)). PR #48 merged at `29d6f98`. Six findings, none blocking; three corrected by [the post-A1 tranche](orders/2026-08-01-post-a1-corrections.md), which was **itself audited on 2026-08-02** — 48 findings, 20 confirmed, 12 fixed, and the audit does not satisfy bylaw 4 ([verdict](orders/2026-08-02-stop-verdict-corrections-branch.md)) |
+| A2 | ⚑ Prod read-only session — instrument over `staged` + serving census, one log, no writes | **DONE 2026-08-01** on `a2/prod-readonly-2026-08-01` @ `4b31c0c` (unmerged): 7/7/0/72,863 — nothing changed since 07-30; instrument PASS over staged; numbers independently re-verified CLEAN | 
+| A3 | Census adjudicated — a published-but-not-admitted work is a STOP | **ADJUDICATED 2026-08-01, NO STOP** — offline, from A2's committed artifacts, after a 4-agent adversarial verification of the evidence (CLEAN) and the rule. Six works flip; `barnes-notes` (0 admitted rows) stays staged. [Record](../evidence/a3-adjudication-2026-08-01/README.md) · flip list at `evidence/work-order-v2-stage2/flip-slugs.json` |
+| A4 | ⚑ Publish flip — `UPDATE sources SET status`, exact inverse, snapshotted | **READY, waiting only on the owner.** Writer `scripts/publish-flip.mjs` and prod-capable read-only verifier `scripts/publish-flip-verify.mjs` shipped at `977bcef`; six defects in them fixed at `cf7c65d` after audit, and 27 tests now run in CI (`fd7a791`). Run as `PUBLISH_ALLOW=1 PUBLISH_EXPECT_HOST=ep-odd-fog-atnykudm` — the **full** endpoint id, not `ep-odd-fog`, which the guard refuses. Spec in [readiness](orders/2026-08-01-a3-a6-readiness.md) |
+| A5 | Prod instrument run — G10 stops being permanently skipped | Blocked on A4. **The row conflates three tasks** — the `--cohort=published` instrument run is READY (one read-only command); **G10 discharge CANNOT run tonight** (needs a Neon fork; branch creation forbidden, ADR-043 wants it BEFORE the flip). [readiness](orders/2026-08-01-a3-a6-readiness.md) |
+| A6 | ⚑ Deploy A — the irreversible one | Blocked on A5, **and on the two-clone problem** (DEPLOY_PREFLIGHT §9: the corpus is in a clone 29 commits behind that cannot build; the current code has no corpus) plus an unresolved Vercel project link. **Preflight now measured, not guessed** — [DEPLOY_PREFLIGHT.md](../DEPLOY_PREFLIGHT.md). The build was **BROKEN at `d1576fe`** (fixed `c1e359d`, and `next build` is in CI since `19798ec`); `predeploy-gate` passes on the real corpus. `concordance`/`lexicon`/`original` were ABSENT; **`b9ad463` restored all three and the [census](../evidence/post-a1-2026-08-01/concordance-census.md) confirms FIVE of the six served dirs are byte-exact against `corpus-backup-2026-07-28`.** The sixth, `devotional`, is not in that release at all and cannot be compared against it — it is tracked in git and restores from any clean clone (corrected 2026-08-02; "all six" was in this row, DEPLOY_PREFLIGHT §3 and its checklist item 5). Rollback ids established — [RECOVERY.md](../RECOVERY.md) §2 |
 | A7 | Walk the product — Stage 5's twelve journeys · **G7 for the first time ever** | Blocked on A6 |
 | A8 | Register ingest slice → Deploy B → publish registers | Blocked on A7 |
 
@@ -57,9 +59,26 @@ Every inventory item was VERIFIED by re-execution; these are what the inventory 
 **Status at `03516b6`:** all four fixed, each with a red-proof re-executed against a throwaway local
 Postgres, and both suites confirmed *executed* (not skipped) against the real CI test DB —
 `unit-ordinal-instrument.test.ts` 15 tests, `gate-leg-inventory.test.ts` 10 tests (was 3).
-**Not yet certified:** the agent that closed these is the same session that raised them, so per
-bylaw 4 A1 stays OPEN until a fresh pair of eyes signs off. `DEPLOY_PREFLIGHT.md` is still 25 lines
-(NOT DONE, carried).
+**CERTIFIED 2026-08-01, and A1 is closed.** A fresh session that wrote none of the 21 commits
+re-executed all four blockers and signed off: B-1 by loading both library versions side by side
+(cohort recompute SQL byte-identical, 2790 == 2790), B-2/B-3/B-4 by seeding real product code and
+watching each check fail. Six findings, none blocking. [Verdict](orders/2026-08-01-stop-verdict-a1-closure.md).
+
+`DEPLOY_PREFLIGHT.md` was rewritten at `bf34b21` from 25 lines to 241 (**348 today**). The
+"still 25 lines (NOT DONE, carried)" line that stood here was **true when it was written and then
+went stale**: `ccf7f3c` wrote it at 15:45 on 2026-07-31, when the file really was 25 lines, and
+`bf34b21` rewrote it 67 minutes later. `ccf7f3c` is an ancestor of `bf34b21`, checked by ancestry
+and not by timestamp.
+
+The sentence that stood here before said the opposite — "false when it was written, `bf34b21`
+precedes the commit that wrote it" — which inverts the order of the two commits. It came from the
+A1 verdict, which said "false when LAST written" and named `68b14ad`; compressing it dropped "last"
+and turned file-level staleness into a claim about the line's origin. `68b14ad`'s MASTER hunks are
+at @37/@73/@111 and never touch these lines, so no commit that wrote the line postdates `bf34b21`
+and the fallback reading fails too. The tranche that existed to stop this board contradicting its
+own commits put a false history claim in it, and the count in the same sentence was stale by 100
+lines. Corrected 2026-08-02 after the branch audit; see
+[the verdict](orders/2026-08-02-stop-verdict-corrections-branch.md).
 
 **Verified but not closed:** the repair's guards (weld abort, prod refusal on the *resolved* endpoint,
 dry-run default, single-column scope) all fire. Its **execution** is UNVERIFIED — the auditor had no
@@ -94,10 +113,22 @@ The first pass should be the one where, if something breaks, you know what broke
 
 ## Failure-mode watchlist
 
-Eight instances so far. The eighth was introduced by the tranche meant to fix the class.
+**Ten instances so far.** The eighth was introduced by the tranche meant to fix the class; the tenth
+was introduced by the tranche meant to *name* it. `b9ad463` §2.2 declares itself the ninth (the
+served-asset directory list, closed by derivation). The tenth is
+`test/ask-max-duration-literal.test.ts:26-29` — a hand-typed two-route array in the file whose own
+header names this class, already incomplete at the commit that introduced it, closed by derivation
+on 2026-08-01 ([red-proof](../evidence/post-a1-2026-08-01/maxduration-redproof.md)).
+
+**The artefact list below names ten items against a count that has never matched it** (it read
+"eight" while listing ten). The count above is of *instances found*, which is not the same list;
+no attempt is made here to renumber the artefacts to match, because inventing a mapping is how this
+kind of drift becomes permanent.
 
 - **A hand-maintained expected set that nothing enforces.** CI file allowlist · `USER_TABLES` · the gate's
-  legs · `isUserScoped` · the licence-manifest domain list · role literals · `REQUIRED_GATE_PREFIXES`.
+  legs · `isUserScoped` · the licence-manifest domain list · role literals · `REQUIRED_GATE_PREFIXES` ·
+  the served-asset directory list (ninth, derived at `b9ad463`) · the `maxDuration` route list
+  (tenth, derived 2026-08-01).
 - **A verdict computed separately from the report of that verdict.** `reportExpectRedMismatch` beside
   `compareExpectRed` · a header certifying "clean-provenance works only" while another predicate chose the
   sample · a CLI growing its own `formatExcerptLine`.
@@ -112,11 +143,29 @@ and a red does not distinguish "broken" from "the provider was busy" — which i
 waved through. Not fixed here; a bounded retry on 429, or an explicit NOT RUN on provider
 unavailability, would make the signal mean one thing again.
 
-**A fifth, found by T1 (2026-08-01): a gate nobody runs is not a gate.** `next build` is not in CI —
-neither `audit` nor `db-invariants` compiles the app — so the production build sat broken at HEAD with
+**A fifth, found by T1 (2026-08-01): a gate nobody runs is not a gate.** `next build` was not in CI —
+neither `audit` nor `db-invariants` compiled the app — so the production build sat broken at HEAD with
 every check green. The deploy itself, at step 6 of 7, was the only thing that would have caught it.
-**Adding `next build` to CI is the highest-value open follow-up in this repo.** Watch for gates that
-exist only inside an irreversible operation.
+**CLOSED at `19798ec`**: `.github/workflows/audit.yml:55-65` runs `next build` as step 7 of the
+`audit` job, with `set -o pipefail` so a failure through `tee` is not swallowed, and a second
+annotation that names the likely cause because Next reports segment-config errors without naming a
+route. Watch for gates that exist only inside an irreversible operation.
+
+**Still open, and it is not the same thing:** `main` is **unprotected** — `required_status_checks`
+is empty and rulesets are unavailable on this plan for a private repo. `audit` is not a required
+check. So the build gate is real inside the job, and nothing mechanically stops a red commit
+reaching `main`. Every "nothing merges red" sentence in this repo is a statement about discipline,
+not mechanism.
+
+**A sixth, and it produced two of this week's errors: an instrument's blind spot recorded as a
+property of the thing it could not see.** `6ab5779` established, correctly and precisely, that the
+Vercel CLI on this machine cannot reach the `web` project — it authenticates as `thomas-5672`
+against scopes that do not contain it. It then wrote down that the deployment "appears in no Vercel
+listing", and told readers to delete the id from every document. The id is real: it is the
+deployment serving `ancientpaths.app`. A scope limit became a claim about the world. **Same family
+as reporting a provider outage as a failure: a negative result that is really a NOT RUN.** The tell
+is a universal negative ("appears in no…", "exists nowhere…") whose evidence is one instrument's
+silence. Corrected in [RECOVERY.md](../RECOVERY.md) §2 on 2026-08-01.
 
 **A fourth, found by B-1: an eligibility rule that selects for the population it was built on.** The
 Slice 0 stated-text parser reads Spurgeon's CCEL typography (quote-then-reference) and matches

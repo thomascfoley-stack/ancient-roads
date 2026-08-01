@@ -87,3 +87,108 @@ export function missingServedAssetDirs(publicDir = WEB_PUBLIC, srcDir = WEB_SRC)
   });
   return { ok: missing.length === 0, served, missing };
 }
+
+// ── The COUNT ratchet: PRESENT is not INTACT ─────────────────────────────────
+// The presence check above closed the 2026-08-01 absence, and DEPLOY_PREFLIGHT §2 immediately
+// named what it left open: "it is a PRESENCE check, not a COUNT check." A directory that survived
+// an interrupted rm or a half-finished restore - 300 of 1,213 commentary files, say - passes
+// `missingServedAssetDirs`, exits 0, and fails silently in the UI: `fetchJson` returns null on a
+// non-ok response, so a partial loss renders as blank panels, never as an error. The committed
+// baseline (docs/evidence/served-assets-baseline.json, figures from the 2026-08-01 census) is what
+// makes the partial loss loud, at the only point in the pipeline where the artifact is visible.
+
+/** The committed per-directory file-count baseline the count ratchet compares against. */
+export const SERVED_ASSETS_BASELINE = path.join(ROOT, 'docs/evidence/served-assets-baseline.json');
+
+function countFilesUnder(dir) {
+  let n = 0;
+  for (const name of readdirSync(dir)) {
+    const p = path.join(dir, name);
+    if (statSync(p).isDirectory()) n += countFilesUnder(p);
+    else n += 1;
+  }
+  return n;
+}
+
+/**
+ * Recursive file count per served directory. An absent directory is REPORTED, never counted as 0:
+ * "no directory" and "zero files" must not collapse into one reading (the corpus-manifest ratchet
+ * carries the same distinction, for the same reason - only one of them is what an interrupted rm
+ * leaves behind).
+ * @param {string[]} dirs directory names under `publicDir`
+ * @returns {{ counts: Record<string, number>, absent: string[] }}
+ */
+export function servedAssetFileCounts(dirs, publicDir = WEB_PUBLIC) {
+  const counts = {};
+  const absent = [];
+  for (const dir of dirs) {
+    const p = path.join(publicDir, dir);
+    let isDir = false;
+    try {
+      isDir = statSync(p).isDirectory();
+    } catch {
+      /* absent */
+    }
+    if (!isDir) {
+      absent.push(dir);
+      continue;
+    }
+    counts[dir] = countFilesUnder(p);
+  }
+  return { counts, absent };
+}
+
+/**
+ * Live file counts under `publicDir` against the committed baseline. Any DECREASE refuses; an
+ * INCREASE passes and is reported so it can be re-recorded deliberately.
+ *
+ * A missing, unparseable or empty baseline REFUSES, never skips: a comparison against nothing is
+ * vacuously green, and a check that quietly finds nothing to compare is the exact failure mode
+ * this file exists to prevent (same clause as `assertServedAssetsScannable`).
+ *
+ * A baseline directory ABSENT from disk refuses too, reported in `absent` rather than as an
+ * undercount - absence is the presence check's finding and carries its own message. Inside the
+ * predeploy gate the presence check has already refused it first, so `absent` firing there means
+ * the baseline names a directory the client no longer serves: re-record deliberately.
+ *
+ * @returns {{ ok: boolean, failures: string[], absent: string[], increases: string[],
+ *             live: Record<string, number>, baseline: Record<string, number> }}
+ */
+export function servedAssetCountRatchet(publicDir = WEB_PUBLIC, baselinePath = SERVED_ASSETS_BASELINE) {
+  const refuse = (why) => ({ ok: false, failures: [why], absent: [], increases: [], live: {}, baseline: {} });
+  const rel = path.relative(ROOT, baselinePath);
+  let raw;
+  try {
+    raw = readFileSync(baselinePath, 'utf8');
+  } catch {
+    return refuse(`served-assets baseline missing at ${rel} - refusing, not skipping. Regenerate it (node scripts/update-served-assets-baseline.mjs --yes) and commit it.`);
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return refuse(`served-assets baseline at ${rel} is not parseable JSON - refusing rather than comparing against nothing.`);
+  }
+  const baseline = parsed?.counts;
+  const dirs = baseline && typeof baseline === 'object' && !Array.isArray(baseline) ? Object.keys(baseline).sort() : [];
+  if (dirs.length === 0) {
+    return refuse(`served-assets baseline at ${rel} names no directories - an empty baseline makes every comparison vacuously green; refusing.`);
+  }
+  const failures = [];
+  const increases = [];
+  const { counts: live, absent } = servedAssetFileCounts(dirs, publicDir);
+  for (const dir of dirs) {
+    const expected = baseline[dir];
+    if (!Number.isInteger(expected) || expected < 0) {
+      failures.push(`${dir}: baseline count ${JSON.stringify(expected)} is not a non-negative integer - the baseline is garbled; refusing.`);
+      continue;
+    }
+    if (absent.includes(dir)) continue;
+    if (live[dir] < expected) {
+      failures.push(`${dir}: ${live[dir]} files on disk < ${expected} in baseline (-${expected - live[dir]})`);
+    } else if (live[dir] > expected) {
+      increases.push(`${dir}: ${live[dir]} files on disk > ${expected} in baseline (+${live[dir] - expected})`);
+    }
+  }
+  return { ok: failures.length === 0 && absent.length === 0, failures, absent, increases, live, baseline };
+}

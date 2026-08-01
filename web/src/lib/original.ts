@@ -48,23 +48,35 @@ export async function fetchOriginal(
 
 const lexCache = new Map<string, Record<string, LexEntry>>();
 
-async function loadLexicon(lang: 'greek' | 'hebrew'): Promise<Record<string, LexEntry>> {
+// A missing lexicon file serves the host's HTML 404 page, and res.json() on that
+// body throws. Degrade to null like fetchOriginal/fetchJson instead (the asymmetry
+// documented in docs/DEPLOY_PREFLIGHT.md §4). Failures are not cached, so a later
+// call can recover.
+async function loadLexicon(lang: 'greek' | 'hebrew'): Promise<Record<string, LexEntry> | null> {
   const cached = lexCache.get(lang);
   if (cached) return cached;
-  const res = await fetch(`/lexicon/${lang}.json`);
-  const data = (await res.json()) as Record<string, LexEntry>;
-  lexCache.set(lang, data);
-  return data;
+  try {
+    const res = await fetch(`/lexicon/${lang}.json`);
+    if (!res.ok) return null;
+    const data = (await res.json()) as Record<string, LexEntry>;
+    lexCache.set(lang, data);
+    return data;
+  } catch {
+    return null;
+  }
 }
 
-export async function fetchLexEntry(strong: string): Promise<LexEntry | null> {
+// 'unavailable' = the lexicon itself failed to load, as opposed to null = no entry
+// for this key. Panels surface the difference rather than claiming "no entry".
+export async function fetchLexEntry(strong: string): Promise<LexEntry | null | 'unavailable'> {
   if (!strong) return null;
   const lang = strong[0] === 'H' ? 'hebrew' : 'greek';
   const lex = await loadLexicon(lang);
+  if (!lex) return 'unavailable';
   return lex[strong] ?? null;
 }
 
-// Full-lexicon access for the Word Study search page.
+// Full-lexicon access for the Word Study search page. Null when it cannot be loaded.
 export async function loadFullLexicon(lang: 'greek' | 'hebrew') {
   return loadLexicon(lang);
 }

@@ -8,8 +8,10 @@
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { CATALOGS, catalogTraditions, isCatalogId, listCatalogWorks } from '@/lib/catalog';
+import { CATALOGS, catalogTraditions, isCatalogId, isSubFilterOf, listCatalogWorks } from '@/lib/catalog';
 import { CatalogSearch } from '@/components/catalog-search';
+import { catalogHref, toggleTradition, type CatalogUrlState } from '@/lib/catalog-href';
+import { decodeDesk, deskHref as deskHrefWith, withPane } from '@/lib/desk';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,18 +25,43 @@ export default async function CatalogPage({
   searchParams,
 }: {
   params: Promise<{ catalog: string }>;
-  searchParams: Promise<{ sub?: string; tradition?: string }>;
+  searchParams: Promise<{ sub?: string; tradition?: string | string[]; desk?: string }>;
 }) {
   const { catalog } = await params;
   if (!isCatalogId(catalog)) notFound();
-  const { sub, tradition } = await searchParams;
+  const { sub, tradition, desk } = await searchParams;
   const def = CATALOGS[catalog];
-  const subFilter = sub && def.subFilters?.[sub] ? sub : undefined;
+  // Own-key membership. `def.subFilters?.[sub]` walked the prototype chain, so `?sub=constructor`
+  // passed this guard as a truthy value and then threw on the spread downstream — a 500 from a
+  // crafted URL (2026-08-02 audit). Unlike the API route, an unknown sub here degrades to the whole
+  // catalog rather than 400ing: a stale bookmark should still show the shelf.
+  const subFilter = sub && isSubFilterOf(catalog, sub) ? sub : undefined;
+
+  // Tradition is a MULTI-select toggle. Next gives a bare string for one `?tradition=`, an array
+  // for repeats; both normalise here so the rest of the page has one shape to reason about.
+  const selected = (Array.isArray(tradition) ? tradition : tradition ? [tradition] : [])
+    .flatMap((t) => t.split(','))
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const selectedSet = new Set(selected);
 
   const [works, traditions] = await Promise.all([
-    listCatalogWorks({ catalog, subFilter, tradition, limit: 100 }),
+    listCatalogWorks({ catalog, subFilter, traditions: selected, limit: 100 }),
     catalogTraditions(catalog, subFilter),
   ]);
+
+  // "Add to desk" carries the CURRENT desk through the URL (`?desk=` from the desk's + button), so
+  // adding a work appends to what is already open instead of replacing it. No hidden state: if
+  // `desk` is absent the link simply opens a fresh desk with this one work on it.
+  const openDesk = decodeDesk(desk ? [desk] : []);
+  const deskHrefFor = (slug: string): string => deskHrefWith(withPane(openDesk, { kind: 'work', slug }));
+
+  // THE WHOLE URL STATE, in one value. Every link below is built from this by `catalogHref`, so a
+  // facet cannot be dropped by a link that predates it — which is exactly how `?desk=` was being
+  // lost on the first chip click (2026-08-02 audit; see lib/catalog-href.ts for the full account).
+  const urlState: CatalogUrlState = { sub: subFilter, traditions: selected, desk };
+  const hrefWith = (over: Partial<CatalogUrlState>): string => catalogHref(catalog, { ...urlState, ...over });
+  const hrefToggling = (t: string): string => catalogHref(catalog, toggleTradition(urlState, t));
 
   const chip =
     'inline-flex min-h-[36px] items-center rounded-full border px-3 text-xs transition-colors';
@@ -48,13 +75,30 @@ export default async function CatalogPage({
       </nav>
       <h1 className="mb-5 font-scripture text-2xl text-stone-800 dark:text-stone-100">{def.label}</h1>
 
-      <CatalogSearch catalog={catalog} label={def.label} />
+      {/* The SAME selection drives the search and the work list below. One source of truth (the
+          URL), so a lit chip can never mean two different things on one screen. */}
+      <CatalogSearch catalog={catalog} label={def.label} traditions={selected} />
 
+      {/* aria-current, NOT aria-pressed. These chips are anchors — implicit role `link` — and
+          aria-pressed is defined only on role `button`, so the lit state was announced by nothing
+          and axe flags it as aria-allowed-attr (2026-08-02 audit). aria-current is valid on a link
+          and says the thing that is actually true: this is the filter you are looking at. */}
       {def.subFilters && (
         <div className="mb-4 flex flex-wrap gap-2">
-          <Link href={`/library/${catalog}`} className={`${chip} ${!subFilter ? on : off}`}>All</Link>
+          <Link
+            href={hrefWith({ sub: undefined })}
+            aria-current={!subFilter ? 'true' : undefined}
+            className={`${chip} ${!subFilter ? on : off}`}
+          >
+            All
+          </Link>
           {Object.keys(def.subFilters).map((k) => (
-            <Link key={k} href={`/library/${catalog}?sub=${k}`} className={`${chip} ${subFilter === k ? on : off}`}>
+            <Link
+              key={k}
+              href={hrefWith({ sub: k })}
+              aria-current={subFilter === k ? 'true' : undefined}
+              className={`${chip} ${subFilter === k ? on : off}`}
+            >
               {k[0]!.toUpperCase() + k.slice(1)}
             </Link>
           ))}
@@ -63,14 +107,19 @@ export default async function CatalogPage({
 
       {traditions.length > 1 && (
         <div className="mb-6 flex flex-wrap gap-2">
-          <Link href={`/library/${catalog}${subFilter ? `?sub=${subFilter}` : ''}`} className={`${chip} ${!tradition ? on : off}`}>
+          <Link
+            href={hrefWith({ traditions: [] })}
+            aria-current={selected.length === 0 ? 'true' : undefined}
+            className={`${chip} ${selected.length === 0 ? on : off}`}
+          >
             All traditions
           </Link>
           {traditions.map((t) => (
             <Link
               key={t.tradition}
-              href={`/library/${catalog}?${subFilter ? `sub=${subFilter}&` : ''}tradition=${encodeURIComponent(t.tradition)}`}
-              className={`${chip} ${tradition === t.tradition ? on : off}`}
+              href={hrefToggling(t.tradition)}
+              aria-current={selectedSet.has(t.tradition) ? 'true' : undefined}
+              className={`${chip} ${selectedSet.has(t.tradition) ? on : off}`}
             >
               {t.tradition} <span className="ml-1 tabular-nums text-stone-400">{t.works}</span>
             </Link>
@@ -83,10 +132,10 @@ export default async function CatalogPage({
       ) : (
         <ul className="space-y-2">
           {works.map((w) => (
-            <li key={w.slug}>
+            <li key={w.slug} className="flex items-stretch gap-2">
               <Link
                 href={`/work/${w.slug}`}
-                className="flex min-h-[44px] items-center justify-between gap-3 rounded-xl border border-stone-200/70 px-4 py-3 hover:bg-accent-50/50 dark:border-stone-800 dark:hover:bg-accent-950/20"
+                className="flex min-h-[44px] flex-1 items-center justify-between gap-3 rounded-xl border border-stone-200/70 px-4 py-3 hover:bg-accent-50/50 dark:border-stone-800 dark:hover:bg-accent-950/20"
               >
                 <span className="min-w-0">
                   <span className="block truncate font-scripture text-stone-800 dark:text-stone-100">{w.title}</span>
@@ -98,6 +147,15 @@ export default async function CatalogPage({
                   </span>
                 </span>
                 <span className="shrink-0 text-xs tabular-nums text-stone-400">{w.units}</span>
+              </Link>
+              {/* Open this work beside what is already on the desk. */}
+              <Link
+                href={deskHrefFor(w.slug)}
+                aria-label={`Add ${w.title} to your desk`}
+                title="Add to desk"
+                className="flex min-h-[44px] w-11 shrink-0 items-center justify-center rounded-xl border border-dashed border-stone-300 text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
+              >
+                +
               </Link>
             </li>
           ))}

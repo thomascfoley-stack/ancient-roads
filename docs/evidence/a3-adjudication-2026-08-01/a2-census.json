@@ -1,0 +1,75 @@
+{
+  "builtFrom": {
+    "branch": "a2/prod-readonly-2026-08-01",
+    "tip": "4b31c0c",
+    "artifacts": {
+      "census.txt": "0944adc3e9135b7bc75486f0e055a91676bf22a796d8dbb4bafc1b496d10f510",
+      "serving-census-stdout.log": "c62df013fee658cd354c5dde7dcd222a7f1b8bfe7c76f496e2177250da2cd6a5",
+      "instrument-staged.txt": "bfb89bb40585fc6da4efd0195fc98ec549170c604f4dc0afff01b0988bae5464"
+    }
+  },
+  "admissionDefinition": "admitted := ADMITTED rows > 0 (a published work with zero admitted rows is the MASTER.md:37 STOP; a partial shortfall is a note, not a refusal)",
+  "host": "ep-odd-fog-atnykudm",
+  "cohort": "staged",
+  "rollupDigest": "10cd5eb46c9e53cb4b7b980e38e4720f",
+  "expectedSourceCount": 7,
+  "sources": [
+    {
+      "slug": "adam-clarke",
+      "source_type": "commentary",
+      "status": "staged",
+      "sections": 12693,
+      "admittedRows": 12693,
+      "admitted": true
+    },
+    {
+      "slug": "barnes-notes",
+      "source_type": "commentary",
+      "status": "staged",
+      "sections": 1300,
+      "admittedRows": 0,
+      "admitted": false
+    },
+    {
+      "slug": "calvin-crosswire",
+      "source_type": "commentary",
+      "status": "staged",
+      "sections": 5090,
+      "admittedRows": 5088,
+      "admitted": true,
+      "note": "partial: 5088 of 5090 sections admitted"
+    },
+    {
+      "slug": "jfb",
+      "source_type": "commentary",
+      "status": "staged",
+      "sections": 15473,
+      "admittedRows": 15473,
+      "admitted": true
+    },
+    {
+      "slug": "john-gill",
+      "source_type": "commentary",
+      "status": "staged",
+      "sections": 28843,
+      "admittedRows": 28843,
+      "admitted": true
+    },
+    {
+      "slug": "matthew-henry",
+      "source_type": "commentary",
+      "status": "staged",
+      "sections": 4210,
+      "admittedRows": 4210,
+      "admitted": true
+    },
+    {
+      "slug": "wesley-crosswire",
+      "source_type": "commentary",
+      "status": "staged",
+      "sections": 5254,
+      "admittedRows": 5254,
+      "admitted": true
+    }
+  ]
+}

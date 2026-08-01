@@ -18,12 +18,13 @@ import { FORBIDDEN_PROVENANCE_DOMAINS, forbiddenProvenanceDomain } from './forbi
 
 export { FORBIDDEN_PROVENANCE_DOMAINS, forbiddenProvenanceDomain };
 
-export const ALLOWED_LICENSES = ['Public Domain', 'CC BY', 'CC BY-SA'] as const;
-export type AllowedLicense = (typeof ALLOWED_LICENSES)[number];
+// Re-exported from allowed-licenses.mjs for the same reason as the forbidden-provenance pair
+// above: the A4 publish flip gate runs under plain `node` on the production path and cannot
+// depend on a transpiler. ONE body of this logic, here re-exported so every importer is unchanged.
+import { ALLOWED_LICENSES, isAllowedLicense } from './allowed-licenses.mjs';
 
-export function isAllowedLicense(license: unknown): license is AllowedLicense {
-  return typeof license === 'string' && (ALLOWED_LICENSES as readonly string[]).includes(license);
-}
+export { ALLOWED_LICENSES, isAllowedLicense };
+export type AllowedLicense = 'Public Domain' | 'CC BY' | 'CC BY-SA';
 
 // Provenance is the attribution + license basis for a work. `year` and
 // `edition` guard the "edition trap": a public-domain author with a post-1929

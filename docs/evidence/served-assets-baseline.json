@@ -1,0 +1,12 @@
+{
+  "comment": "Per-directory FILE COUNTS for the served static asset directories under web/public. Source: docs/evidence/post-a1-2026-08-01/concordance-census.md (measured 2026-08-01; the five gitignored directories byte-exact against corpus-backup-2026-07-28, devotional tracked in git). The predeploy gate refuses ANY decrease against these counts; increases pass and are reported. Update deliberately, never automatically: node scripts/update-served-assets-baseline.mjs --yes",
+  "recordedAt": "2026-08-01",
+  "counts": {
+    "bible": 22590,
+    "commentaries": 1213,
+    "concordance": 295,
+    "devotional": 1,
+    "lexicon": 2,
+    "original": 1189
+  }
+}

@@ -1,0 +1,31 @@
+# unit_ordinal instrument — cohort 'staged' — 2026-08-01T05:04:41.585Z
+cohort: staged   (sources.status = 'staged')
+target: ep-odd-fog
+worksInCohort: 7
+ok: true
+rollupDigest: 10cd5eb46c9e53cb4b7b980e38e4720f
+excerptHeader: excerpt sample [cohort=staged]: 1 manifest-eligible work(s) of 6 eligible (7 in cohort 'staged' total) — quarantine/skip/forbidden-domain/forbidden section source_url excluded; section body not inspected
+sampleSlugs: adam-clarke
+
+
+## [cohort=staged] adam-clarke
+u1.1	
+u1.2	
+u1.3	
+u1.4	
+u1.5	
+u1.6	
+u1.7	
+u1.8	
+u1.9	
+u1.10	
+u1.11	
+u1.12	
+u1.13	
+u1.14	
+u1.15	
+u1.16	
+u1.17	
+u1.18	
+u1.19	
+u2.20	

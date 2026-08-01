@@ -13,13 +13,20 @@ interface Hit extends LexEntry {
 export default function WordStudyPage() {
   const [lang, setLang] = useState<Lang>('greek');
   const [lex, setLex] = useState<Record<string, LexEntry> | null>(null);
+  // Distinguishes "still loading" from "the lexicon file failed to load";
+  // without it a null result would leave the page on "Loading…" forever.
+  const [lexFailed, setLexFailed] = useState(false);
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Hit | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setLex(null);
-    loadFullLexicon(lang).then(setLex);
+    setLexFailed(false);
+    loadFullLexicon(lang).then((data) => {
+      setLex(data);
+      setLexFailed(data === null);
+    });
   }, [lang]);
 
   // Focus the search on pointer devices only — auto-popping the keyboard on
@@ -96,7 +103,11 @@ export default function WordStudyPage() {
         />
       </div>
 
-      {!lex ? (
+      {lexFailed ? (
+        <p className="py-16 text-center text-sm text-stone-400">
+          The {lang} lexicon isn&rsquo;t available right now. Check your connection and try again.
+        </p>
+      ) : !lex ? (
         <p className="py-16 text-center text-sm text-stone-400">Loading {lang} lexicon…</p>
       ) : !query.trim() ? (
         <p className="py-16 text-center text-sm text-stone-400">

@@ -18,14 +18,22 @@ with `Invalid segment configuration export detected` — both `/api/ask` routes 
 `maxDuration = ASK_MAX_DURATION_SEC`, an identifier where Next 16 requires a literal. Next named no
 route in the failure, which is why it stayed invisible.
 
-**Nothing in CI builds the app.** `audit` runs typecheck, lint, knip, deps-audit and tests;
-`db-invariants` runs DB suites. Neither runs `next build`. **The deploy itself was the only thing
-that would ever have caught this** — at step 6 of 7, after the clean-tree gate, after the corpus
-checks, after the licensing ratchet, with the owner watching.
+**Nothing in CI built the app when this was written.** `audit` ran typecheck, lint, knip, deps-audit
+and tests; `db-invariants` ran DB suites. Neither ran `next build`. **The deploy itself was the only
+thing that would ever have caught this** — at step 6 of 7, after the clean-tree gate, after the
+corpus checks, after the licensing ratchet, with the owner watching.
 
-**Standing gap, not fixed here:** CI still does not build. Until it does, "CI green" says nothing
-about whether the product compiles. That is a small workflow addition and the highest-value
-follow-up in this document.
+**CLOSED at `19798ec`** (corrected 2026-08-01; this section previously called it a standing gap and
+"the highest-value follow-up in this document"). `.github/workflows/audit.yml:55-65` runs
+`next build` as step 7 of the `audit` job, with `set -o pipefail` so a failure through `tee` is not
+swallowed, plus an annotation naming the likely cause because Next reports segment-config errors
+without naming a route. Verified executing on a real run: step 7 `build — next build (the product
+must compile)` = success.
+
+**What has NOT changed:** `main` is unprotected — `required_status_checks` is empty and rulesets are
+unavailable on this plan for a private repo — so `audit` is not a required check. The build gate is
+real inside the job; nothing mechanically stops a red commit reaching `main`. Green is advisory
+here, and the gate is you.
 
 ---
 
@@ -89,8 +97,21 @@ Its four refusals:
 3. **Forbidden-provenance entries increased** → refuses. The number may only go down.
 4. **A Bible translation with no shipping licence record** → refuses (hard only under `DEPLOYING=1`).
 
-**What it does NOT check:** that the app builds (§0), and that `concordance/`, `lexicon/` and
-`original/` exist (§4).
+**What it does NOT check** (corrected 2026-08-01 — both of the items previously listed here are now
+covered, so the honest gap is narrower and different):
+
+- ~~that the app builds~~ — now covered twice: `next build` is step 7 of `deploy.sh` and, since
+  `19798ec`, step 7 of CI's `audit` job.
+- ~~that `concordance/`, `lexicon/` and `original/` exist~~ — now covered: `b9ad463` derives the
+  served set from the client's own fetches and `predeploy-gate.ts:75` refuses on an absent one.
+- ~~The real remaining gap: it is a PRESENCE check, not a COUNT check.~~ - now covered: the count
+  ratchet (`servedAssetCountRatchet` in `scripts/lib/served-assets.mjs`) compares live per-directory
+  file counts under `web/public` against the committed `docs/evidence/served-assets-baseline.json`
+  (figures from the 2026-08-01 census) and refuses ANY decrease - and refuses equally on a missing
+  or garbled baseline instead of skipping. Increases pass and are reported; re-record deliberately
+  with `node scripts/update-served-assets-baseline.mjs --yes`.
+- **A newly served directory gets a presence check and no licensing or provenance check at all.**
+  (It does now get a *count* check: the gate refuses a served directory with no baseline entry.)
 
 ---
 
@@ -99,13 +120,31 @@ Its four refusals:
 `vercel --prod` uploads the **working tree**, not a commit. These are gitignored and reach production
 **only** this way — never through git, never through CI:
 
-| directory | on this machine | size |
-|---|---|---|
-| `web/public/bible/` | present, 22,590 files | 198M |
-| `web/public/commentaries/` | present, 1,213 files | 407M |
-| `web/public/concordance/` | **ABSENT** | — |
-| `web/public/lexicon/` | **ABSENT** | — |
-| `web/public/original/` | **ABSENT** | — |
+Re-measured 2026-08-01 ([census](evidence/post-a1-2026-08-01/concordance-census.md)). All six served
+directories are present. **FIVE of the six** are byte-exact against the `corpus-backup-2026-07-28`
+release — compared on file count, byte total, and a roll-up SHA-256 over path+content of every file.
+The sixth, `devotional/`, is **not in that release at all**, so there is nothing to compare it
+against; it is tracked in git and restores from any clean clone. "All six byte-exact" stood here,
+in checklist item 5 and in MASTER.md's A6 row, and was wrong in all three (corrected 2026-08-02 —
+[verdict](pm/orders/2026-08-02-stop-verdict-corrections-branch.md)):
+
+| directory | on this machine | bytes | vs backup |
+|---|---|---|---|
+| `web/public/bible/` | present, 22,590 files | 158,286,312 | match |
+| `web/public/commentaries/` | present, 1,213 files | 424,536,756 | match |
+| `web/public/concordance/` | present, 295 files | 3,673,944 | match (roll-up `8081b779…f39b`) |
+| `web/public/devotional/` | present, 1 file | 1,489,403 | n/a — **tracked in git** |
+| `web/public/lexicon/` | present, 2 files | 3,102,678 | match |
+| `web/public/original/` | present, 1,189 files | 44,280,085 | match |
+
+**Correction (2026-08-01, same day): `devotional/` needs no release asset.** An earlier revision of
+this table called it "no backup asset exists" and inferred it was unrestorable. Wrong.
+`web/public/devotional/morning-evening.json` is **tracked in git** — it is the only served directory
+not listed in `.gitignore:18-38` — so a clone restores it. The five gitignored directories are the
+ones that need the release tarballs.
+
+**This section's own heading is therefore slightly wrong too:** "What is uploaded that is not in
+git" describes five of the six directories, not all six.
 
 **What must be true locally for the upload to be correct:** the tree is clean (step 1);
 `predeploy-gate.ts` passes **on the bytes about to upload** — it reads the same directories `vercel`
@@ -124,18 +163,26 @@ is §5's rollback, which has its own problems.
 
 ---
 
-## 4. Three asset directories are missing, and one of them throws
+## 4. RESOLVED — the three directories are present. ~~The `loadLexicon` hazard is not.~~ Guarded as of this commit.
 
-`concordance/`, `lexicon/` and `original/` do not exist here. `deploy.sh`'s own comment names them
-(*"concordance = 13,480 files, original, commentaries, lexicon"*) as why `--archive=tgz` was added on
-2026-07-12 — so they existed then.
+**This section described three ABSENT directories. They were restored at `b9ad463` and re-measured
+byte-exact on 2026-08-01 (§3).** Deploy A no longer ships a site whose word-study page throws. What
+follows is kept because the *degradation asymmetry* below is unchanged, and it is what makes a
+future loss silent rather than loud.
 
-**They are still served.** `web/src/lib/original.ts` fetches `/original/{book}/{chapter}.json`,
+**Also settled: `deploy.sh:81`'s "concordance = 13,480 files" is not stale, it is mislabelled.**
+13,480 is the count of Strong's **entries**, not files. The directory is bucket-sharded: 295 files
+(144 buckets + 151 outlier shards) holding exactly 13,480 entries. The number reproduces to the
+digit. Separately, that comment blames the wrong directories for the upload limit — the four it
+names total 2,699 files; the one that actually exceeds Vercel's 15,000 is `bible/` at 22,590, which
+it does not mention. `--archive=tgz` is still required; the reasoning is wrong, not the conclusion.
+
+**They are served.** `web/src/lib/original.ts` fetches `/original/{book}/{chapter}.json`,
 `/lexicon/{greek,hebrew}.json`, `/concordance/{bucket}.json`, consumed by the reader's interlinear
 (`app/read/[book]/[chapter]`), the word-study page (`app/library/word-study`) and
 `components/word-panel.tsx`.
 
-**Degradation is inconsistent:**
+**Degradation was inconsistent** (the table is the pre-fix state, kept as the history of the asymmetry):
 
 | function | guard | on 404 |
 |---|---|---|
@@ -143,31 +190,45 @@ is §5's rollback, which has its own problems.
 | `fetchConcordance` / `fetchJson` | try/catch + `res.ok` | returns `null` — **graceful** |
 | **`loadLexicon`** | **neither** | `res.json()` on an HTML 404 body — **THROWS** |
 
-`loadLexicon` is reached from `loadFullLexicon` (word-study) and `fetchLexEntry` (word-panel). **So
-Deploy A as it stands ships a site whose word-study page and word panel throw**, while the
-interlinear degrades quietly. `predeploy-gate.ts` does not look at these directories, so nothing
-refuses.
+`loadLexicon` is reached from `loadFullLexicon` (word-study) and `fetchLexEntry` (word-panel).
+
+**RESIDUAL, and it is the part worth keeping.** `lexicon/` is present today, so nothing throws now.
+~~But `loadLexicon` still has neither a `res.ok` check nor a try/catch~~ Guarded as of this commit:
+`loadLexicon` has both, degrades to `null` like its siblings, and word-study, word-panel and the
+study panel show a visible "lexicon unavailable" state rather than throwing (pinned by
+`web/test/lexicon-404-degrade.test.ts`). That asymmetry was a latent hazard, not a live one, and it is exactly
+what made the 2026-07-28 loss expensive. `predeploy-gate.ts` now DOES refuse on an absent served
+directory (`b9ad463`, derived from the client's own fetches), so the gate would catch a full
+disappearance — but it is a **presence** check with no file-count check anywhere in
+`scripts/lib/served-assets.mjs`, so a *partial* loss still passes and still fails silently in the UI.
 
 **They are recoverable in minutes, not by re-ingest.** All three are in the GitHub release
 `corpus-backup-2026-07-28` (concordance 1 MB, lexicon <1 MB, original 7 MB) and in the 2026-07-19
 release. The 2026-07-28 machine migration restored `bible` and `commentaries` and **left these three
 behind** — their asset download counts are one lower. See `RECOVERY.md` §3a for the exact command.
 
-**Not fixed tonight**, because it is a decision rather than a repair: restore them, ship without them,
-or guard `loadLexicon` and ship degraded. **This remains the single most likely thing to make Deploy A
-ship a broken page** — but the fix is a download, not an ingest run.
+~~**Not fixed tonight**, because it is a decision rather than a repair: restore them, ship without them,
+or guard `loadLexicon` and ship degraded.~~ **Decided and fixed in this commit: guard and ship
+degraded.** A missing lexicon can no longer throw a page down; **the remaining lexicon risk is the
+file-count gap above**, and restoring a lost directory is still a download, not an ingest run.
 
 ---
 
 ## 5. What rollback restores, versus what is merely available
 
-**The rollback target id is not established.** The work order cites
-`dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt`, and `docs/RECOVERY.md` §2 records that this id **does not
-appear anywhere in this repo** — use dashboard truth, not the order. The deployments of record
-that DO appear are `dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr` (`654f028`, 2026-07-16) and the live site
-of record `24677ba` (2026-07-18). **Confirm the id in the Vercel dashboard before relying on it**
-— checklist item 7 exists for this reason. What follows is true of promoting the 2026-07-18
-deployment, whatever its id turns out to be.
+**The rollback target ids ARE established** (corrected 2026-08-01; this paragraph previously said
+they were not). Read read-only from the Vercel API, team `home-network-hardening`, project `web`;
+full table and provenance in [`RECOVERY.md`](RECOVERY.md) §2. All timestamps UTC.
+
+| deployment | sha | created (UTC) | what it is |
+|---|---|---|---|
+| `dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt` | `24677ba` | 2026-07-19 16:57:06Z | **currently promoted** - serves `ancientpaths.app` |
+| `dpl_FYQxxZ1rLN1wd4UeMwShhX12G5BM` | `24677ba` | 2026-07-18 22:32:21Z | same sha as live; promoting it changes no code |
+| `dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr` | `654f028` | 2026-07-17 01:32:56Z | **the real rollback target** |
+
+`dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt` is not a phantom and is not the target: **it is what is live**, so
+promoting it is a no-op that reports success. Checklist item 7 is answered by this table. What
+follows is true of promoting `dpl_Ejzk…` or `dpl_FYQ…`.
 
 **Promoting it restores** the **pre-025 application code** of that date, and **the static corpus as
 it was on 2026-07-18** — the deployment is an immutable bundle including the uploaded working tree.
@@ -211,13 +272,19 @@ Everything below is free and reversible. Stop at the first ✗.
 [ ] 2  cd web && npx next build                          -> EXIT 0   (was BROKEN before c1e359d)
 [ ] 3  DEPLOYING=1 npx tsx scripts/predeploy-gate.ts     -> EXIT 0
 [ ] 4  corpusHash matches the committed manifest         (step 3 prints and checks it)
-[ ] 5  DECIDE: concordance / lexicon / original are ABSENT (§4).
-       Ship without them (word-study + word-panel THROW), regenerate them, or
-       guard loadLexicon first. A decision, not a check.
+[x] 5  ANSWERED 2026-08-01 — NO DECISION NEEDED. All six served directories are
+       present; five are byte-exact vs corpus-backup-2026-07-28 (§3, roll-up
+       hashes). devotional/ is not in that release and is tracked in git.
+       Nothing throws. Residual, not a blocker: loadLexicon still lacked a
+       res.ok guard at the time (§4; guarded since this branch).
+       *** BUT SEE §9: they are present in ~/Projects/ancient-roads-git, which
+       is 29 commits BEHIND and cannot build. Item 5 is answered about a tree
+       that cannot pass items 2 and 3. Read §9 before running anything. ***
 [ ] 6  Accept what rollback does NOT restore (§5): pre-025 code on a post-031
        schema, re-opening G4, and a corpus that bypasses predeploy-gate.
-[ ] 7  Record the current live deployment id, so "roll back" has a target that
-       is not a guess.
+[x] 7  ANSWERED 2026-08-01 (§5). Live now: dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt
+       (24677ba, 2026-07-19). Rollback target: dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr
+       (654f028). Do NOT "roll back" to dpl_DwoW... - that is the live one.
 [ ] 8  A1 merged? Deploy A is gated behind it on the board.
 ```
 
@@ -239,3 +306,48 @@ Everything below is free and reversible. Stop at the first ✗.
 
 - Not a substitute for cutover gates G1–G10 during E0–E6.
 - Not authorization for prod DB writes or a publish flip.
+
+---
+
+## 9. STOP — the code and the corpus are in different clones (found 2026-08-01)
+
+**Neither tree on this machine can complete `deploy.sh` tonight.** This is the single hardest
+blocker on A6 and no document named it before now.
+
+| | `~/Projects/ancient-roads-git` | the working clone |
+|---|---|---|
+| corpus | **all six dirs**, byte-exact (§3) | only `devotional/` (the tracked one) |
+| HEAD | `f10df90` — **29 commits behind** | current |
+| `web/src/app/api/ask/route.ts:11` | `= ASK_MAX_DURATION_SEC` — **the build-breaker** | `= 300`, fixed |
+| `scripts/lib/served-assets.mjs` | **does not exist** | present |
+
+So:
+
+- In the **corpus** clone, step 6 (`next build`) hard-fails — it predates `c1e359d`. Step 5 cannot
+  even run: `predeploy-gate.ts` imports `served-assets.mjs`, which is not there.
+- In the **code** clone, step 5 hard-fails at `predeploy-gate.ts:78-84` — five of six served
+  directories are absent.
+
+**Fix, and it is cheap.** `f10df90` is an ancestor of the current tip, so the corpus clone
+fast-forwards without touching `web/public/` (all five corpus dirs are gitignored and survive a
+checkout):
+
+```bash
+git -C ~/Projects/ancient-roads-git fetch origin && git -C ~/Projects/ancient-roads-git merge --ff-only <the sha being shipped>
+```
+
+Then run `./deploy.sh` **from that clone**. Verify `web/public` still has all six directories after
+the fast-forward before doing anything else.
+
+### Two more things this preflight got wrong
+
+**`corpusHash` is never compared.** `predeploy-gate.ts:178` **prints** it and nothing in `scripts/`
+compares it; `evaluateCorpusRatchet` (`scripts/lib/corpus-manifest.mjs:143-168`) ratchets
+`fileCount`, `entryCount`, `works` and `books` only. Checklist item 4 asks you to confirm something
+the gate does not do. The real check is the works/books/count ratchet.
+
+**No Vercel project link exists.** There is no `.vercel/project.json` in any clone (`.gitignore:11`
+and `:49`), and the CLI on this machine authenticates into scopes that do not contain the `web`
+project. Step 7 — `npx vercel --prod --archive=tgz` — is the one step that has never run, and
+whether it can resolve the project non-interactively is **NOT ESTABLISHED**. Settle this before the
+go, not at step 7 of 7.
