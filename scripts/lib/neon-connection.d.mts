@@ -19,6 +19,8 @@ export declare function resolveInstrumentConnection(opts: {
   role?: string;
 }): {
   url: string;
+  /** Host only, safe to print and to write into a committed log. Never the URL. */
+  host: string;
   source: 'neonctl';
   role: string;
   branch: string;

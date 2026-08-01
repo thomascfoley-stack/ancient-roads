@@ -46,6 +46,29 @@ describe('§1 — NEON_API_KEY only, no URL fallback', () => {
     expect(call[1]).not.toContain(TEST_KEY);
     expect(call[2]?.env?.NEON_API_KEY).toBe(TEST_KEY);
   });
+
+  it('returns the HOST, so a caller can name its target without holding the URL', () => {
+    // THE DEFECT (2026-08-02, caught before it produced an artefact). This function returned
+    // { url, source, role, branch } and no `host`. publish-flip-verify.mjs read `r.host` off it,
+    // so every line it wrote — the log header, the connect error, the census error — said
+    // "undefined".
+    //
+    // Not cosmetic. The before/after logs are the go/no-go artefact for the publish flip, the one
+    // irreversible write this project makes, and that header is the ONLY place either log records
+    // WHICH DATABASE it measured. Two logs taken against different databases would have diffed
+    // clean, and the diff is the whole verification.
+    //
+    // SEED: drop `host` from the returned object → RED here.
+    process.env.NEON_API_KEY = TEST_KEY;
+    vi.mocked(execFileSync).mockReturnValue(PROD_URL);
+    const r = neonConn.resolveInstrumentConnection({ target: 'ep-odd-fog' });
+    expect(r.host).toBe('ep-odd-fog-atnykudm-pooler.us-east-1.aws.neon.tech');
+    // And it must be the host ALONE. A log that carried the credential would be worse than one
+    // that carried nothing.
+    expect(r.host).not.toContain('secret');
+    expect(r.host).not.toContain('@');
+    expect(r.host).not.toContain('postgresql://');
+  });
 });
 
 describe('§2 — scrubbed errors, no credential leak', () => {

@@ -104,5 +104,11 @@ export function resolveInstrumentConnection({ target, role = INSTRUMENT_ROLE }) 
   if (!instrumentTargetMatches(url, target)) {
     throw new Error(`STOP: minted host ${hostOf(url)} is not the declared target '${target}'`);
   }
-  return { url, source: 'neonctl', role, branch };
+  // `host` is returned because callers need to NAME the target without holding the URL. It was
+  // missing, and publish-flip-verify.mjs read `r.host` off this object: every line it wrote said
+  // "undefined". That is not cosmetic. The before/after logs are the go/no-go artefact for the
+  // one irreversible write this project makes, and the header is the ONLY place either log
+  // records which database it measured — so two logs taken against DIFFERENT databases would
+  // have diffed clean (2026-08-02, caught before the artefact was generated).
+  return { url, host: hostOf(url), source: 'neonctl', role, branch };
 }

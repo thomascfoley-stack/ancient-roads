@@ -68,6 +68,15 @@ if (localUrl) {
   conn = { url: r.url, host: r.host, ssl: { rejectUnauthorized: true }, expectRole: INSTRUMENT_ROLE };
 }
 
+// AN EVIDENCE LOG THAT CANNOT NAME ITS SUBJECT IS NOT EVIDENCE. `r.host` was undefined for the
+// whole life of this script, so every log it wrote said "undefined" where the target belongs —
+// and since both runs said it identically, the go/no-go diff would have been clean even across
+// two different databases. Fixed at the source; this is the belt, so the failure can never
+// return silently as a string in a committed artefact.
+if (!conn.host || conn.host === 'undefined') {
+  die('STOP: could not determine the target host. Refusing to write a log that cannot say what it measured.');
+}
+
 const client = new pg.Client({ connectionString: conn.url, ssl: conn.ssl });
 try {
   await client.connect();
