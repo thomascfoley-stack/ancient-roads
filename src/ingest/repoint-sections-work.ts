@@ -25,6 +25,7 @@
 
 import pg from 'pg';
 import { readFileSync, existsSync } from 'fs';
+import { assertDevOnlyTarget } from './dev-only-target.mjs';
 
 const MODEL_SLUG = 'bge-large-en-v1.5'; // ADR-005, matches embeddings.metadata.model
 
@@ -82,7 +83,8 @@ async function main() {
   // self-attested (register-writer.ts, A6 audit).
   const fromProcessEnv = Boolean(process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL);
   const branch = fromProcessEnv ? process.env.NEON_BRANCH : localEnv('NEON_BRANCH');
-  if (branch !== 'dev' && branch !== 'test') throw new Error(`STOP: NEON_BRANCH="${branch ?? '(unset)'}" from the same source as DATABASE_URL must be dev|test`);
+  // One shared guard for every destructive writer (2026-08-02 deep audit, C5).
+  assertDevOnlyTarget(dbUrl, branch, 'the section repoint (it DELETEs a work sections)');
   let dbHost: string;
   try {
     dbHost = new URL(dbUrl.replace(/^"|"$/g, '')).host;

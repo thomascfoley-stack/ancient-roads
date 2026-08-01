@@ -38,6 +38,7 @@
 
 import pg from 'pg';
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { assertDevOnlyTarget } from './dev-only-target.mjs';
 
 const WORK = 'chrysostom-homilies';
 const PROLEGOMENA_MAX_SECTION = 16; // sections 1..16 = Schaff; 17+ = Chrysostom
@@ -59,11 +60,10 @@ async function main() {
   if (!dbUrl) throw new Error('owner DATABASE_URL is required');
   const fromProcessEnv = Boolean(process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL);
   const branch = fromProcessEnv ? process.env.NEON_BRANCH : localEnv('NEON_BRANCH');
-  if (branch !== 'dev' && branch !== 'test') {
-    throw new Error(`STOP: NEON_BRANCH="${branch ?? '(unset)'}" from the same source as DATABASE_URL must be dev|test`);
-  }
+  // Shared guard: the host test below was a SUBSTRING match on 'ep-tiny-hat' (2026-08-02
+  // deep audit, C5). assertDevOnlyTarget anchors on the host's first label.
+  assertDevOnlyTarget(dbUrl, branch, 'the prolegomena suppression (it DELETEs sections)');
   const host = new URL(dbUrl.replace(/^"|"$/g, '')).host;
-  if (!host.includes('ep-tiny-hat')) throw new Error(`STOP: host "${host}" is not the dev branch (expected ep-tiny-hat)`);
   console.log(`db host: ${host} (credentials redacted)`);
 
   const client = new pg.Client({ connectionString: dbUrl.replace(/^"|"$/g, ''), ssl: { rejectUnauthorized: false } });

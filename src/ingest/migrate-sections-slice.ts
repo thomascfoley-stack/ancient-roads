@@ -32,6 +32,7 @@
 import pg from 'pg';
 import { readFileSync, existsSync } from 'fs';
 import { forbiddenProvenanceDomain, FORBIDDEN_PROVENANCE_DOMAINS } from './license-manifest';
+import { assertDevOnlyTarget } from './dev-only-target.mjs';
 
 const MODEL_SLUG = 'bge-large-en-v1.5'; // ADR-005, matches embeddings.metadata.model
 
@@ -102,6 +103,16 @@ async function main() {
 
   const dbUrl = localEnv('DATABASE_URL_UNPOOLED') ?? localEnv('DATABASE_URL');
   if (!dbUrl) throw new Error('owner DATABASE_URL is required (neondb_owner — writes the new tables)');
+  // This script had NO target guard of any kind, and it DELETEs sections/anchors/embeddings for a
+  // source before re-inserting (2026-08-02 deep audit, C5). Every guard lived in the OPTIONAL
+  // wrapper scripts/cutover-e4-slice-all.mjs, which injects MIGRATE_ALLOW_PROD=1 CUTOVER_ALLOW=1 —
+  // so running `pnpm migrate:sections-slice` directly with a prod URL rewrote a published work's
+  // sections with no refusal. Six works are now published; that is no longer a dev-only mistake.
+  assertDevOnlyTarget(
+    dbUrl,
+    process.env.DATABASE_URL ? process.env.NEON_BRANCH : localEnv('NEON_BRANCH'),
+    'the section re-slice (it DELETEs and re-inserts the work sections)',
+  );
   const client = new pg.Client({ connectionString: dbUrl.replace(/^"|"$/g, ''), ssl: { rejectUnauthorized: false } });
   await client.connect();
 

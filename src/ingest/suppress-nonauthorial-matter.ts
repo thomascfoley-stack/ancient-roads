@@ -41,6 +41,7 @@
 
 import pg from 'pg';
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { assertDevOnlyTarget } from './dev-only-target.mjs';
 
 const BACKUP = 'docs/evidence/part2/nonauthorial-matter-suppressed.jsonl';
 
@@ -92,9 +93,12 @@ async function main() {
   if (!dbUrl) throw new Error('owner DATABASE_URL is required');
   const fromEnv = Boolean(process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL);
   const branch = fromEnv ? process.env.NEON_BRANCH : localEnv('NEON_BRANCH');
-  if (branch !== 'dev' && branch !== 'test') throw new Error(`STOP: NEON_BRANCH="${branch ?? '(unset)'}" must be dev|test`);
+  // Both halves through the shared guard (2026-08-02 deep audit, C5). The host check below was
+  // `host.includes('ep-tiny-hat')` — a substring, so `shadow-ep-tiny-hat.neon.tech` passed. That
+  // is the class target-guard.mjs was created to eliminate; assertDevOnlyTarget anchors on the
+  // host's first label instead.
+  assertDevOnlyTarget(dbUrl, branch, 'the non-authorial suppression (it DELETEs sections)');
   const host = new URL(dbUrl.replace(/^"|"$/g, '')).host;
-  if (!host.includes('ep-tiny-hat')) throw new Error(`STOP: host "${host}" is not dev (expected ep-tiny-hat)`);
   console.log(`db host: ${host} (credentials redacted)\n`);
 
   const client = new pg.Client({ connectionString: dbUrl.replace(/^"|"$/g, ''), ssl: { rejectUnauthorized: false } });

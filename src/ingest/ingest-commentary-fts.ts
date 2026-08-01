@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import pg from 'pg';
 import { from as copyFrom } from 'pg-copy-streams';
+import { assertDevOnlyTarget } from './dev-only-target.mjs';
 
 const CORPUS_DIR = 'web/public/commentaries';
 
@@ -40,10 +41,14 @@ async function main() {
     process.exit(1);
   }
 
-  // Branch guard (deep-audit 2026-07-16, H3): this script TRUNCATEs the serving
-  // FTS table — allow-list dev/test, read from the same env source as DATABASE_URL.
-  if (process.env.NEON_BRANCH !== 'dev' && process.env.NEON_BRANCH !== 'test') {
-    console.error(`STOP: NEON_BRANCH="${process.env.NEON_BRANCH ?? '(unset)'}" — export NEON_BRANCH=dev|test alongside DATABASE_URL to run the destructive re-ingest`);
+  // Branch guard (deep-audit 2026-07-16, H3): this script TRUNCATEs the serving FTS table.
+  // The label ALONE was the whole guard until 2026-08-02 (deep audit, C5): NEON_BRANCH=dev
+  // exported alongside a production DATABASE_URL truncated the 371,406-row serving corpus, and
+  // the connection string was never looked at. Now both must agree.
+  try {
+    assertDevOnlyTarget(url, process.env.NEON_BRANCH, 'the destructive FTS re-ingest (TRUNCATE commentary_entries)');
+  } catch (e) {
+    console.error((e as Error).message);
     process.exit(1);
   }
 

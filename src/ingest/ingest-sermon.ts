@@ -22,6 +22,7 @@ import { parseRef, scanReferences } from '../bible/ref-parse.js';
 import { shingleHashSetOcr } from './resource-textmatch.js';
 import { isExplicitCitation } from './ingest-historian.js';
 import { isAllowedLicense } from './license-manifest.js';
+import { assertDevOnlyTarget } from './dev-only-target.mjs';
 
 const EMBED_MAX = 1800;
 const MODEL_SLUG = 'bge-large-en-v1.5';
@@ -188,9 +189,9 @@ async function main() {
   const key = localEnv('DEEPINFRA_API_KEY');
   if (!dbUrl || !key) throw new Error('DATABASE_URL and DEEPINFRA_API_KEY required');
   const branch = process.env.DATABASE_URL ? process.env.NEON_BRANCH : localEnv('NEON_BRANCH');
-  if (branch !== 'dev' && branch !== 'test') {
-    throw new Error(`STOP: NEON_BRANCH="${branch ?? '(unset)'}" from the same env source as DATABASE_URL must be dev or test`);
-  }
+  // Label AND endpoint, not the label alone — a prod URL with a stale NEON_BRANCH=dev used to
+  // pass straight through to a DELETE (2026-08-02 deep audit, C5).
+  assertDevOnlyTarget(localEnv('DATABASE_URL')?.replace(/^"|"$/g, ''), branch, 'the sermon re-ingest (it DELETEs the work sections)');
 
   const db = new pg.Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
   await db.connect();
