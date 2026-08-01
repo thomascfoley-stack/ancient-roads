@@ -290,7 +290,12 @@ does not gate. See `docs/evidence/work-order-v2-stage2/TRANCHE5-STASH-EVALUATION
 
 ## 5. Sermon search — designed & measurement-proven, NOT built
 
-- `docs/SERMON_SEARCH_DESIGN.md` is the approved design (two spines, three modes, per-user brute-force + HNSW
+- `docs/SERMON_SEARCH_DESIGN.md` is the **design of record — NOT approved to build** (corrected
+  2026-08-01; this line previously said "the approved design", against that file's own `:3`, "Status:
+  DESIGN — for the owner to react to, NOT approval to build". No ADR approves sermon search, and Lane B's
+  B1/B2/B3 are still open owner decisions gating the build. `AGENTS.md:24` routes agents here over any
+  doc's narrative, so this line being the less accurate of the two sent a compliant agent to the wrong
+  conclusion.) It covers two spines, three modes, per-user brute-force + HNSW
   tripwire, model parity, trust boundary). **No user-corpus code or tables exist yet.**
 - **Slice 0 (2026-07-14, frozen harness):** uncited-quote anchor **recall 90% chapter-level on a held-out n=30**
   (27/30, 95% CI [74, 96]) — clears the ≥70% bar with the CI lower bound above it. **Precision** trade curve:
