@@ -121,6 +121,35 @@ if ! npx vercel project ls --scope "$EXPECT_ORG_ID" >/dev/null 2>&1; then
   exit 1
 fi
 
+# ---------------------------------------------------------------------------
+# ENVIRONMENT ASSERTION — every variable production needs, present before we ship.
+#
+# Nothing checked this (2026-08-02 deep audit, M17). Each of these fails at RUNTIME, not build
+# time, so a deploy missing one succeeds, prints "Done!", and then 503s or throws on every
+# request: no APP_DATABASE_URL -> every DB path throws by design (db.ts:20-25); no SITE_PASSWORD
+# -> site-wide 503 from middleware, indistinguishable from an outage and notified to nobody; no
+# DEEPINFRA_API_KEY -> /api/ask throws; no NEON_AUTH_* -> login broken.
+#
+# NAMES ONLY. `vercel env ls` never prints values and neither does this.
+# ---------------------------------------------------------------------------
+echo ""
+echo "Checking production environment..."
+ENV_NAMES="$(VERCEL_PROJECT_ID="$EXPECT_PROJECT_ID" VERCEL_ORG_ID="$EXPECT_ORG_ID" \
+  npx vercel env ls production 2>/dev/null | awk '{print $1}')"
+MISSING=""
+for v in APP_DATABASE_URL DATABASE_URL DEEPINFRA_API_KEY SITE_PASSWORD \
+         NEON_AUTH_BASE_URL NEON_AUTH_COOKIE_SECRET NEON_AUTH_JWKS_URL; do
+  echo "$ENV_NAMES" | grep -qx "$v" || MISSING="$MISSING $v"
+done
+if [ -n "$MISSING" ]; then
+  echo "" >&2
+  echo "STOP: production is missing required environment variable(s):$MISSING" >&2
+  echo "      Each of these fails at RUNTIME, so the deploy would report success and then break." >&2
+  echo "      Set them: npx vercel env add <NAME> production" >&2
+  exit 1
+fi
+echo "  all required production env vars present"
+
 # Deploy
 echo ""
 echo "Deploying to Vercel..."
