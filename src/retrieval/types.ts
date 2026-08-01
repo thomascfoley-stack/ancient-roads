@@ -68,11 +68,5 @@ export interface EmbeddingStore {
 }
 
 // The public result shape returned to callers of `retrieve`.
-export interface RetrievalResult {
-  sourceId: string;
-  score: number;
-  text: string;
-  attribution: Attribution;
-  verseId: number;
-  verseEnd: number;
-}
+// `RetrievalResult` was removed 2026-08-02 with `retrieve.ts`, its only consumer. The shipped
+// retrieval path returns `RankedRow` (below), which src/teacher and web/src/lib/teacher use.
