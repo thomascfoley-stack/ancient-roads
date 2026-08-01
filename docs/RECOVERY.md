@@ -37,6 +37,33 @@ and [`CUTOVER_DESIGN.md`](CUTOVER_DESIGN.md) § protected branches.
 | **Window** | While Vercel retains the deployment (indefinite for recent deploys). |
 | **Exercised** | **NO** (deliberate — rollback to pre-025 code against post-031 schema is a known bad pairing; see honest note below). |
 
+> ### ⚑ The rollback target id is STILL NOT ESTABLISHED (attempted 2026-08-01, BLOCKED)
+>
+> `dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt` has been quoted as the rollback target in briefs, work orders
+> and ADRs for three weeks. It appears in **no** Vercel listing and in no repo artifact other than
+> documents repeating it. **It should be treated as unverified until read off the dashboard.**
+>
+> **Why it could not be settled from this machine.** The Vercel CLI is authenticated as `thomas-5672`
+> and can reach exactly two scopes — `thomas-s-projects-d9abdfd0` and `composio` — whose projects are
+> all `*-x-composio-partners`. **The `web` project that serves `ancientpaths.app` is in neither.**
+> `vercel ls web` returns *"The provided argument \"web\" is not a valid project name"*, and
+> `web/` carries no `.vercel/project.json` link. This is the wrong Vercel account, not a permissions
+> problem — so no read-only CLI query can establish the id.
+>
+> **What the owner must read from the dashboard**, precisely, so this stops being folklore:
+>
+> 1. Log in to the account that owns the **`web`** project (git-disconnected, serves `ancientpaths.app`).
+> 2. Project **`web`** → **Deployments**, filter **Production**.
+> 3. Record, for the deployment **currently promoted**: its **deployment id** (`dpl_…`), its **commit
+>    sha**, and its **created date**. That is the "current live" row `DEPLOY_PREFLIGHT.md` §7 item 7 asks for.
+> 4. Record the same three fields for the deployment you would **roll back to** — the 2026-07-18
+>    `24677ba` one, if it is still retained.
+> 5. Put both in this table. Delete `dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt` from every document that
+>    repeats it once the real ids exist.
+>
+> Until then: **a rollback plan whose target id is unverified is not a rollback plan.** `RECOVERY.md`
+> already said "use dashboard truth"; this block says what to read and what to do with it.
+
 ### Honest note: why deploy rollback is not a full recovery
 
 Rolling back to **`24677ba`** (or any pre-cutover bundle):

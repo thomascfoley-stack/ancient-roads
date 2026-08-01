@@ -18,6 +18,12 @@ command / restores / destroys / host survives / window / exercised.
 ## Deploy rollback row — honesty check
 
 **VERIFIED:** `RECOVERY.md` §2 states work order cited `dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt` does **not**
+
+> **CORRECTION (2026-08-01):** this deployment id is **unverified**. It appears in no Vercel listing
+> and in no repo artifact except documents repeating it. An attempt to settle it read-only was BLOCKED —
+> the Vercel CLI here reaches only `thomas-s-projects-d9abdfd0` and `composio`, and the `web` project is
+> in neither. See `docs/RECOVERY.md` §2 for exactly what the owner must read off the dashboard. Do not
+> quote this id as the rollback target.
 appear in repo; live site of record **`24677ba`** (2026-07-18). Honest note on schema mismatch (G4
 window OPEN) included. **No correction needed.**
 
