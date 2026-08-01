@@ -39,15 +39,31 @@ and [`CUTOVER_DESIGN.md`](CUTOVER_DESIGN.md) § protected branches.
 > class - a hand-maintained expected set that nothing enforces - sitting on the rollback path for
 > the one irreversible write, discovered while preparing to make it.
 >
-> **The fix is one owner command**, and it is an infrastructure write on production, so it is not
-> mine to run:
+> **The fix is an owner action** - an infrastructure write on production, so it is not mine to run.
+> **`neonctl` cannot do it.** Its `branches` subcommands are `add-compute, create, delete, get,
+> list, rename, reset, restore, schema-diff, set-default, set-expiration`; there is no
+> `set-protection`, and "protect" appears nowhere in its help. (An earlier revision of this note
+> prescribed `neonctl branches set-protection`, which does not exist.) Use either:
 >
-> ```
-> neonctl branches set-protection br-late-recipe-atxl68sh --protected \
->   --project-id spring-heart-74819093
-> ```
+> * **Neon console** - Branches -> `pre-cutover-ep-odd-fog-atnykudm-20260729164220` -> enable
+>   protection. This is the recommended path: it is the same place the flag is read from.
+> * **The API directly**, if you prefer a command. The `protected` field is confirmed present on
+>   the branch resource (`neonctl branches get` returns it); the PATCH below follows Neon's
+>   documented branch-update shape but is **not verified here**, because verifying it would mean
+>   performing the write:
 >
-> Until that is run, treat the rollback branch as deletable by accident.
+>   ```
+>   curl -X PATCH \
+>     -H "Authorization: Bearer $(cat ~/.neon_api_key)" \
+>     -H "Content-Type: application/json" \
+>     -d '{"branch":{"protected":true}}' \
+>     https://console.neon.tech/api/v2/projects/spring-heart-74819093/branches/br-late-recipe-atxl68sh
+>   ```
+>
+> Confirm either way with `neonctl branches get br-late-recipe-atxl68sh --project-id
+> spring-heart-74819093 -o json`, which must then report `"protected": true`.
+>
+> Until that reads true, treat the rollback branch as deletable by accident.
 | **Exercised** | **NOT YET.** Rehearsal requires owner approval to create a throwaway child off the protected branch. Exact ops to run on approval: (1) `neonctl branches create --parent br-late-recipe-atxl68sh --name throwaway-restore-rehearsal-<ts>`, (2) connect read-only to child, assert indexes `indisvalid=t` and migration set, (3) compare user-data digest to cutover E0 log, (4) **delete throwaway** — never touch `br-late-recipe-atxl68sh`. |
 
 ---

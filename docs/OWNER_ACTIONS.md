@@ -445,13 +445,13 @@ Deletion requires an owner ruling in `docs/DECISIONS.md`. See `docs/CUTOVER_DESI
 > `scripts/lib/neon-branch-guard.mjs`", which reads as though something enforces the rule.
 > Nothing does. Neon reports `protected: false` on the branch, and repo-wide the only files
 > referencing `refuseProtectedBranchDelete` are the guard, its `.d.mts` and its own test — no
-> script calls it. **One command closes it**, and it writes to production infrastructure, so it
-> is yours:
+> script calls it. Closing it writes to production infrastructure, so it is yours.
 >
-> ```
-> neonctl branches set-protection br-late-recipe-atxl68sh --protected \
->   --project-id spring-heart-74819093
-> ```
+> **Not via `neonctl`** - it has no `set-protection` subcommand and no protection flag at all
+> (an earlier revision of this note prescribed one; it does not exist). Neon console -> Branches
+> -> `pre-cutover-ep-odd-fog-atnykudm-20260729164220` -> enable protection, or the PATCH in
+> `docs/RECOVERY.md` §2. Confirm with `neonctl branches get br-late-recipe-atxl68sh --project-id
+> spring-heart-74819093 -o json` reporting `"protected": true`.
 >
 > Worth doing before A4, because A4's rollback plan depends on this branch surviving.
 
