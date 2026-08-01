@@ -22,6 +22,7 @@
  * same scanner the QA suite uses — no second implementation.
  */
 import { assertServedAssetsScannable, missingServedAssetDirs, servedAssetCountRatchet } from './lib/served-assets.mjs';
+import { scanServedCorpusAuthors } from './lib/served-corpus-authors.mjs';
 import {
   COMMENTARIES_DIR,
   countStaticForbiddenProvenanceEntries,
@@ -153,6 +154,43 @@ if (current > baseline.count) {
       `Something added content sourced from a forbidden aggregator. The number may only\n` +
       `go down. Fix the content, or if this increase is intentional and lawful, you must\n` +
       `say so explicitly by updating web/test/baselines/static-forbidden-provenance.json.`,
+  );
+}
+
+// ── SERVED AUTHORS: what the static files DELIVER, not what the UI renders ─────────────────
+//
+// The ratchet above scans `entry.sourceUrl` against three domains, and `forbiddenProvenanceDomain('')`
+// returns null — so an entry with an empty sourceUrl counts as clean. That is why it reported
+// "ratchet holds" over 16,480 entries by authors this repo's own MUST_NOT_SERVE_AUTHORS list
+// forbids, plus 1,843 by 20th-century authors including a living one (2026-08-02 deep audit, C2).
+//
+// The licence filter for these files runs in the BROWSER (web/src/lib/bible.ts:132), after Next
+// has served them. It governs rendering, not delivery. This leg governs delivery.
+//
+// It does NOT delete anything: content quarantine is an owner call (AGENTS.md). It refuses the
+// deploy while the count is non-zero, which is the correct division — the bytes stay put, and
+// they stay put on this machine rather than on the internet.
+const servedAuthors = scanServedCorpusAuthors(COMMENTARIES_DIR);
+console.log(`  served commentary entries    : ${servedAuthors.entries.toLocaleString()} in ${servedAuthors.files.toLocaleString()} files`);
+if (servedAuthors.offenders.length > 0) {
+  const rows = servedAuthors.offenders
+    .map((o) => `    ${String(o.entries).padStart(6)} entries  ${(o.chars / 1e6).toFixed(2)} MB  [${o.kind}]  ${o.author}   e.g. ${o.sample}`)
+    .join('\n');
+  const total = servedAuthors.offenders.reduce((n, o) => n + o.entries, 0);
+  // gateFail, not FAIL: this HARD-FAILS the deploy and WARNS on pre-commit, like every other
+  // corpus-identity leg. A pre-existing condition that blocks every commit stops being a gate
+  // and starts being an obstacle people route around with --no-verify — and the thing it is
+  // guarding is DELIVERY, which only happens at deploy.
+  gateFail(
+    `${total.toLocaleString()} SERVED entries carry an author that must not be delivered.\n${rows}\n\n` +
+      `These files are unauthenticated static assets. The filter in bible.ts runs in the browser,\n` +
+      `AFTER delivery — it decides what is rendered, not what is sent. Fetching the file directly\n` +
+      `returns every entry in it.\n\n` +
+      `This is an OWNER decision (content quarantine, AGENTS.md), so the gate refuses rather than\n` +
+      `editing the corpus. Options: remove these entries from the served files, move the corpus\n` +
+      `behind a filtering route handler, or — if a licence record covers one of the in-copyright\n` +
+      `names — record it in web/src/lib/licensing.ts and take the name off the suspects list in\n` +
+      `scripts/lib/served-corpus-authors.mjs.`,
   );
 }
 

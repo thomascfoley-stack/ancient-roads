@@ -13,13 +13,28 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { isPublishedAuthor } from '../../src/lib/legal-corpus';
+import { FORBIDDEN_PROVENANCE_DOMAINS } from '../../../src/ingest/forbidden-provenance.mjs';
 
 /** `verse_start = verse_end = chapter` at or above this share of an author's entries is the
  *  ADR-020 collapse signature. Clean authors sit at 0.9–6.9%; biblehub-sourced at 99.9–100%. */
 export const COLLAPSE_MAX = 0.2;
 /** Below this an author's rate is noise, not a distribution. */
 export const MIN_ENTRIES = 200;
-export const FORBIDDEN_HOST = /biblehub\.com|studylight\.org/i;
+/**
+ * DERIVED, never re-typed. This was `/biblehub\.com|studylight\.org/i` — a hand-typed copy that
+ * had drifted to TWO domains where the canonical list has three, omitting `historicalchristian.faith`,
+ * the one added most recently and the one still live in the ask pool (2026-08-02 deep audit, H8).
+ * It backs the deploy gate's served-entry check at predeploy-gate.ts, so the drift sat on the
+ * legal rail, and `forbidden-provenance.mjs:10-11` says in as many words: "Do not re-type it
+ * anywhere."
+ *
+ * Built from FORBIDDEN_PROVENANCE_DOMAINS, so a domain added there is covered here by existing.
+ * Escaped, because a domain is a string and `.` in a regex is not.
+ */
+export const FORBIDDEN_HOST = new RegExp(
+  FORBIDDEN_PROVENANCE_DOMAINS.map((d) => d.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
+  'i',
+);
 
 export interface CorpusEntry {
   verseStart: number;
