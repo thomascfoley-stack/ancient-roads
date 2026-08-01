@@ -23,7 +23,7 @@ export default async function CatalogPage({
   searchParams,
 }: {
   params: Promise<{ catalog: string }>;
-  searchParams: Promise<{ sub?: string; tradition?: string }>;
+  searchParams: Promise<{ sub?: string; tradition?: string | string[] }>;
 }) {
   const { catalog } = await params;
   if (!isCatalogId(catalog)) notFound();
@@ -31,10 +31,30 @@ export default async function CatalogPage({
   const def = CATALOGS[catalog];
   const subFilter = sub && def.subFilters?.[sub] ? sub : undefined;
 
+  // Tradition is a MULTI-select toggle. Next gives a bare string for one `?tradition=`, an array
+  // for repeats; both normalise here so the rest of the page has one shape to reason about.
+  const selected = (Array.isArray(tradition) ? tradition : tradition ? [tradition] : [])
+    .flatMap((t) => t.split(','))
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const selectedSet = new Set(selected);
+
   const [works, traditions] = await Promise.all([
-    listCatalogWorks({ catalog, subFilter, tradition, limit: 100 }),
+    listCatalogWorks({ catalog, subFilter, traditions: selected, limit: 100 }),
     catalogTraditions(catalog, subFilter),
   ]);
+
+  /** The href that toggles one chip on or off, preserving everything else in the URL. */
+  const hrefToggling = (t: string): string => {
+    const next = new Set(selectedSet);
+    if (next.has(t)) next.delete(t);
+    else next.add(t);
+    const qs = new URLSearchParams();
+    if (subFilter) qs.set('sub', subFilter);
+    for (const v of [...next].sort()) qs.append('tradition', v);
+    const s = qs.toString();
+    return `/library/${catalog}${s ? `?${s}` : ''}`;
+  };
 
   const chip =
     'inline-flex min-h-[36px] items-center rounded-full border px-3 text-xs transition-colors';
@@ -48,7 +68,9 @@ export default async function CatalogPage({
       </nav>
       <h1 className="mb-5 font-scripture text-2xl text-stone-800 dark:text-stone-100">{def.label}</h1>
 
-      <CatalogSearch catalog={catalog} label={def.label} />
+      {/* The SAME selection drives the search and the work list below. One source of truth (the
+          URL), so a lit chip can never mean two different things on one screen. */}
+      <CatalogSearch catalog={catalog} label={def.label} traditions={selected} />
 
       {def.subFilters && (
         <div className="mb-4 flex flex-wrap gap-2">
@@ -63,14 +85,19 @@ export default async function CatalogPage({
 
       {traditions.length > 1 && (
         <div className="mb-6 flex flex-wrap gap-2">
-          <Link href={`/library/${catalog}${subFilter ? `?sub=${subFilter}` : ''}`} className={`${chip} ${!tradition ? on : off}`}>
+          <Link
+            href={`/library/${catalog}${subFilter ? `?sub=${subFilter}` : ''}`}
+            aria-pressed={selected.length === 0}
+            className={`${chip} ${selected.length === 0 ? on : off}`}
+          >
             All traditions
           </Link>
           {traditions.map((t) => (
             <Link
               key={t.tradition}
-              href={`/library/${catalog}?${subFilter ? `sub=${subFilter}&` : ''}tradition=${encodeURIComponent(t.tradition)}`}
-              className={`${chip} ${tradition === t.tradition ? on : off}`}
+              href={hrefToggling(t.tradition)}
+              aria-pressed={selectedSet.has(t.tradition)}
+              className={`${chip} ${selectedSet.has(t.tradition) ? on : off}`}
             >
               {t.tradition} <span className="ml-1 tabular-nums text-stone-400">{t.works}</span>
             </Link>

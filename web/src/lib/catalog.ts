@@ -28,7 +28,7 @@
 
 import { getDb } from './db';
 
-export type CatalogId = 'commentaries' | 'sermons' | 'hymns-poetry';
+export type CatalogId = 'commentaries' | 'sermons' | 'hymns-poetry' | 'historians';
 
 export interface CatalogDef {
   id: CatalogId;
@@ -48,6 +48,12 @@ export const CATALOGS: Readonly<Record<CatalogId, CatalogDef>> = {
     types: ['hymn', 'poetry'],
     subFilters: { hymns: ['hymn'], poetry: ['poetry'] },
   },
+  // Added 2026-08-01 by owner decision. `historian` was previously in NO catalog under the
+  // fail-closed default above — not because it breaches the wall, but because nobody had decided
+  // where it goes. It is not lane content (it is neither exegesis nor devotional register), so it
+  // gets its own shelf rather than being folded into Commentaries, which a reader would read as
+  // "commentary on this passage". `theology` and `confession` remain uncatalogued, deliberately.
+  historians: { id: 'historians', label: 'Historians', types: ['historian'] },
 } as const;
 
 export const CATALOG_IDS = Object.keys(CATALOGS) as CatalogId[];
@@ -60,6 +66,27 @@ export function typesFor(catalog: CatalogId, subFilter?: string): readonly strin
   const def = CATALOGS[catalog];
   if (subFilter && def.subFilters?.[subFilter]) return def.subFilters[subFilter]!;
   return def.types;
+}
+
+/**
+ * The union of several catalogs' types — the POOLED search case (commentaries + sermons together).
+ *
+ * Deduped, because the union goes into `source_type = ANY($n::text[])` and a repeated value would
+ * be dead weight in the predicate. Sorted, so the parameter array is stable across calls with the
+ * same catalogs in a different order — that stability is what lets Postgres reuse a plan, and it
+ * makes the query cacheable at every layer above.
+ *
+ * WIDENING IS THE HAZARD HERE, so note what this does NOT do: an empty list returns an empty array
+ * and the caller must treat that as "no catalog filter was requested", never as "match everything".
+ * `searchSections` enforces that distinction — see the `types` binding there. The disjointness of
+ * CATALOGS means the union of all catalogs is still strictly narrower than the corpus, so pooling
+ * can never reach `theology`, `confession` or `lexicon`.
+ *
+ * Sub-filters are deliberately not accepted: a sub-filter is a within-catalog narrowing and has no
+ * meaning across a union. Pool at the catalog grain, narrow inside one catalog.
+ */
+export function typesForMany(catalogs: readonly CatalogId[]): string[] {
+  return [...new Set(catalogs.flatMap((c) => [...CATALOGS[c].types]))].sort();
 }
 
 export interface CatalogWork {
@@ -81,11 +108,19 @@ export async function listCatalogWorks(opts: {
   catalog: CatalogId;
   subFilter?: string;
   tradition?: string;
+  /** Multi-select tradition toggles. Unioned. Empty means unfiltered, never "match nothing". */
+  traditions?: readonly string[];
   limit?: number;
 }): Promise<CatalogWork[]> {
   const limit = Math.min(Math.max(1, opts.limit ?? DEFAULT_LIMIT), MAX_LIMIT);
   const types = [...typesFor(opts.catalog, opts.subFilter)];
-  const tradition = opts.tradition ?? null;
+  // Same empty-means-unfiltered rule as searchSections, so the work list and the search below it
+  // can never disagree about what a given chip selection means.
+  const tradition = opts.traditions?.length
+    ? [...new Set(opts.traditions)].sort()
+    : opts.tradition
+      ? [opts.tradition]
+      : null;
   const sql = getDb();
   const rows = await sql.query(
     `SELECT s.slug, s.title, s.author, s.source_type AS "sourceType", s.tradition, s.era,
@@ -94,7 +129,7 @@ export async function listCatalogWorks(opts: {
      FROM sources s
      WHERE s.status = 'published'
        AND s.source_type = ANY($1::text[])
-       AND ($2::text IS NULL OR s.tradition = $2)
+       AND ($2::text[] IS NULL OR s.tradition = ANY($2::text[]))
      ORDER BY s.title
      LIMIT $3`,
     [types, tradition, limit],

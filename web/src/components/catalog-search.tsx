@@ -6,18 +6,46 @@
 //
 // Results are reading UNITS, not chunks (searchSections dedupes), so a hit means "this sermon /
 // chapter", and the deep link goes to that unit's first section.
+//
+// THE TRADITION FILTER (2026-08-01). The API has accepted a tradition filter since it was written;
+// this component never sent one, so the filter was unreachable from the search box while the chips
+// above it filtered only the work list. The two now read the SAME selection — it lives in the URL,
+// owned by the page, and is passed down here. One source of truth, so the list and the search can
+// never disagree about what a lit chip means.
+//
+// A REJECTED REQUEST MUST NOT LOOK LIKE AN EMPTY ONE. The previous version caught every error and
+// set `{results: [], total: 0}`, which renders as "No matches." So a 400 from a bad filter — the
+// exact failure a filter change would introduce — was indistinguishable from an honest zero. That
+// is the "unearned green" shape in UI form: the screen reports a clean result for a query the
+// server refused. Errors now render as an error.
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { CatalogId } from '@/lib/catalog';
 import { sanitizeSnippet } from '@/lib/snippet';
 import type { SectionSearchResult } from '@/lib/search-sections';
 
-export function CatalogSearch({ catalog, label }: { catalog: CatalogId; label: string }) {
+type Page = { results: SectionSearchResult[]; total: number; totalCapped: boolean };
+type State = { kind: 'ok'; page: Page } | { kind: 'error'; message: string };
+
+export function CatalogSearch({
+  catalog,
+  label,
+  traditions = [],
+}: {
+  catalog: CatalogId;
+  label: string;
+  /** The active tradition selection, owned by the page URL. Empty means unfiltered. */
+  traditions?: readonly string[];
+}) {
   const [q, setQ] = useState('');
-  const [state, setState] = useState<{ results: SectionSearchResult[]; total: number; totalCapped: boolean } | null>(null);
+  const [state, setState] = useState<State | null>(null);
   const [busy, setBusy] = useState(false);
   const seq = useRef(0);
+
+  // Stable key for the selection, so the re-run effect below depends on the VALUES rather than on
+  // the array identity a server component hands us fresh on every render (which would loop).
+  const tradKey = [...traditions].sort().join(',');
 
   const run = useCallback(
     async (query: string) => {
@@ -29,24 +57,44 @@ export function CatalogSearch({ catalog, label }: { catalog: CatalogId; label: s
       const mine = ++seq.current;
       setBusy(true);
       try {
-        const res = await fetch(`/api/search/works?q=${encodeURIComponent(term)}&catalog=${catalog}&limit=25`);
-        if (!res.ok) throw new Error(String(res.status));
-        const data = (await res.json()) as { results: SectionSearchResult[]; total: number; totalCapped: boolean };
-        if (mine === seq.current) setState(data); // ignore out-of-order responses
-      } catch {
-        if (mine === seq.current) setState({ results: [], total: 0, totalCapped: false });
+        const params = new URLSearchParams({ q: term, catalog, limit: '25' });
+        // One repeated param per value. `multiParam` on the route also accepts a comma-joined
+        // form; repeating is used here because a tradition containing a comma would corrupt the
+        // joined form and silently drop a filter.
+        for (const t of tradKey ? tradKey.split(',') : []) params.append('tradition', t);
+
+        const res = await fetch(`/api/search/works?${params.toString()}`);
+        if (!res.ok) {
+          // Surface it. Do NOT fall through to an empty result set.
+          const body = (await res.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(body?.error ?? `search failed (${res.status})`);
+        }
+        const page = (await res.json()) as Page;
+        if (mine === seq.current) setState({ kind: 'ok', page });
+      } catch (err) {
+        if (mine === seq.current) {
+          setState({ kind: 'error', message: err instanceof Error ? err.message : 'search failed' });
+        }
       } finally {
         if (mine === seq.current) setBusy(false);
       }
     },
-    [catalog],
+    [catalog, tradKey],
   );
+
+  // Re-run when the filter changes, so results can never be stale against the lit chips. Guarded on
+  // a non-empty query: toggling chips with an empty box must not fire a search.
+  const submitted = useRef('');
+  useEffect(() => {
+    if (submitted.current) void run(submitted.current);
+  }, [tradKey, run]);
 
   return (
     <div className="mb-8">
       <form
         onSubmit={(e) => {
           e.preventDefault();
+          submitted.current = q.trim();
           void run(q);
         }}
         className="flex gap-2"
@@ -69,17 +117,30 @@ export function CatalogSearch({ catalog, label }: { catalog: CatalogId; label: s
         </button>
       </form>
 
+      {/* Tell the reader what the search is scoped to, so a zero-result page is legible. */}
+      {traditions.length > 0 && (
+        <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
+          Filtered to <b className="font-semibold text-stone-700 dark:text-stone-200">{[...traditions].sort().join(', ')}</b>
+        </p>
+      )}
+
       {busy && <p className="mt-3 text-sm text-stone-400">Searching…</p>}
 
-      {state && !busy && (
+      {state?.kind === 'error' && !busy && (
+        <p role="alert" className="mt-3 rounded-xl border border-red-300/60 bg-red-50/60 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
+          Search failed: {state.message}
+        </p>
+      )}
+
+      {state?.kind === 'ok' && !busy && (
         <div className="mt-4">
           <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
-            {state.total === 0
+            {state.page.total === 0
               ? 'No matches.'
-              : `${state.total}${state.totalCapped ? '+' : ''} match${state.total === 1 ? '' : 'es'}`}
+              : `${state.page.total}${state.page.totalCapped ? '+' : ''} match${state.page.total === 1 ? '' : 'es'}`}
           </p>
           <ul className="space-y-2">
-            {state.results.map((r) => (
+            {state.page.results.map((r) => (
               <li key={`${r.slug}#${r.ordinal}`}>
                 <Link
                   href={`/work/${r.slug}#s${r.ordinal}`}
@@ -99,6 +160,7 @@ export function CatalogSearch({ catalog, label }: { catalog: CatalogId; label: s
                       never to a blank and never to the slug. */}
                   <span className="mt-0.5 block truncate text-xs text-stone-500 dark:text-stone-400">
                     {r.author ?? 'Unattributed'}
+                    {r.tradition && <span className="text-stone-400 dark:text-stone-500"> · {r.tradition}</span>}
                     {r.heading && <span className="text-stone-400 dark:text-stone-500"> · {r.heading}</span>}
                   </span>
                   <span

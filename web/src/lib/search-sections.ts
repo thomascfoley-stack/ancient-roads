@@ -27,7 +27,7 @@
 //    field is non-optional.
 
 import { getDb } from './db';
-import { typesFor, type CatalogId } from './catalog';
+import { typesFor, typesForMany, type CatalogId } from './catalog';
 
 export interface SectionSearchResult {
   slug: string;
@@ -52,12 +52,32 @@ const COUNT_CAP = 1000;
 
 export async function searchSections(opts: {
   query: string;
-  /** Restrict to a catalog's types (the register fence). */
+  /** Restrict to a catalog's types (the register fence). Mutually exclusive with `catalogs`. */
   catalog?: CatalogId;
+  /**
+   * POOLED search across several catalogs (commentaries + sermons together). Built ahead of the
+   * split-screen UI that will drive it, because the shape of the fence is the part that must not be
+   * retrofitted later: widening a query is a one-character mistake and this is where it would land.
+   *
+   * An EMPTY array is not "everything". It is treated as no catalog filter, identical to omitting
+   * the field, and that is asserted in search-sections.test.ts rather than left to be inferred —
+   * `[].flatMap(...)` returning `[]` would otherwise compile into `source_type = ANY('{}')`, which
+   * matches NOTHING and would look like a broken search, while a careless `null` fallback would
+   * match EVERYTHING and would silently breach the register fence. Neither is acceptable, so the
+   * empty case is decided here, once, in the open.
+   */
+  catalogs?: readonly CatalogId[];
   subFilter?: string;
   /** Restrict to ONE work — the in-work search case. */
   sourceSlug?: string;
+  /** Single tradition. Kept for the existing catalog-page links. */
   tradition?: string;
+  /**
+   * MULTI-tradition filter — the toggle case ("reformed OR patristic"). Unioned, never intersected:
+   * a work has exactly one tradition, so an intersection of two would always be empty. NULL
+   * traditions are simply not matched by a tradition filter; with an empty filter they are included.
+   */
+  traditions?: readonly string[];
   limit?: number;
   offset?: number;
 }): Promise<{ results: SectionSearchResult[]; total: number; totalCapped: boolean }> {
@@ -66,9 +86,20 @@ export async function searchSections(opts: {
 
   const limit = Math.min(Math.max(1, opts.limit ?? DEFAULT_LIMIT), MAX_LIMIT);
   const offset = Math.max(0, opts.offset ?? 0);
-  const types = opts.catalog ? [...typesFor(opts.catalog, opts.subFilter)] : null;
+
+  // The register fence. `null` means "no catalog filter"; a non-empty array is the allowed set.
+  // An empty `catalogs` array collapses to null (see the doc comment above) — decided, not defaulted.
+  const pooled = opts.catalogs?.length ? typesForMany(opts.catalogs) : null;
+  const single = opts.catalog ? [...typesFor(opts.catalog, opts.subFilter)] : null;
+  const types = pooled ?? single;
+
   const slug = opts.sourceSlug ?? null;
-  const tradition = opts.tradition ?? null;
+  // Same rule for traditions: empty means unfiltered, never "match nothing".
+  const traditions = opts.traditions?.length
+    ? [...new Set(opts.traditions)].sort()
+    : opts.tradition
+      ? [opts.tradition]
+      : null;
   const sql = getDb();
 
   // Shared predicate. `status='published'` first: it is the licensing boundary, not a filter.
@@ -77,7 +108,7 @@ export async function searchSections(opts: {
       AND s.status = 'published'
       AND ($2::text[] IS NULL OR s.source_type = ANY($2::text[]))
       AND ($3::text IS NULL OR s.slug = $3)
-      AND ($4::text IS NULL OR s.tradition = $4)`;
+      AND ($4::text[] IS NULL OR s.tradition = ANY($4::text[]))`;
 
   const [results, countRows] = await Promise.all([
     // SNIPPET LAST, deliberately. ts_headline re-parses the whole document, and computing it
@@ -109,7 +140,7 @@ export async function searchSections(opts: {
        JOIN sections sec ON sec.id = page.id
        JOIN sources s ON s.id = sec.source_id
        ORDER BY page.rank DESC, s.slug, sec.ordinal`,
-      [q, types, slug, tradition, limit, offset],
+      [q, types, slug, traditions, limit, offset],
     ),
     // Count DISTINCT reading units, capped. Counting sections here would report "312 results" for
     // what the list shows as 14 works — the number has to mean the same thing the list shows.
@@ -121,7 +152,7 @@ export async function searchSections(opts: {
          WHERE ${WHERE}
          LIMIT ${COUNT_CAP}
        ) capped`,
-      [q, types, slug, tradition],
+      [q, types, slug, traditions],
     ),
   ]);
 
