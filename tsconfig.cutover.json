@@ -1,14 +1,27 @@
 {
-  // Typecheck for the cutover's TypeScript. The root tsconfig includes only src/ and
-  // test/, so scripts/ has NEVER been typechecked by `npm run audit` — which meant the
-  // single most safety-critical script in the repo (the regression gate that stands
-  // between a migration and production) was the one file CI never compiled.
+  // Typecheck for scripts/. The root tsconfig includes only src/ and test/, so scripts/ had
+  // NEVER been typechecked by `npm run audit` — 43 .mjs plus 7 .mts/.ts files, including
+  // publish-flip.mjs, publish-flip-verify.mjs, cutover.mjs and predeploy-gate.ts. The most
+  // safety-critical code in the repo was the code CI never compiled.
   //
-  // SCOPE, stated rather than implied: this covers the cutover gate and what it imports.
-  // It is NOT "scripts/ is now typechecked". The other scripts/*.mts and predeploy-gate.ts
-  // carry pre-existing errors (an implicit `any` in predeploy-gate.ts among them) and
-  // pulling them in here would turn the gate red on work this branch did not do. Widening
-  // this include to all of scripts/ is tracked as its own slice.
+  // WIDENED 2026-08-02 from four files to every .mts/.ts under scripts/. The narrow scope was
+  // justified above by "the other scripts/*.mts and predeploy-gate.ts carry pre-existing errors
+  // (an implicit `any` in predeploy-gate.ts among them)" — measured, that had gone stale:
+  // predeploy-gate.ts is clean, and the only file that errored was publish-flip-adjudicate.mts,
+  // at exactly the three positions where it passed `undefined` for §2/§3/§4 of the census.
+  //
+  // That is the point of this file existing. Two audit lenses graded the one-leg A3 adjudication
+  // CRITICAL, a third downgraded it, and a session went into arguing about it — while `tsc` had
+  // the answer the whole time and nothing ran it:
+  //     136:44  TS2322  Type 'undefined' is not assignable to type 'ForbiddenExposure'
+  //     136:66  TS2322  Type 'undefined' is not assignable to type 'VoiceFloor'
+  //     136:85  TS2322  Type 'undefined' is not assignable to type 'Serving'
+  //
+  // STILL NOT COVERED, deliberately, and tracked rather than implied: the 43 `scripts/*.mjs`
+  // files. Compiling those needs `allowJs`/`checkJs`, which is its own slice — and with it the
+  // second-order gap the audit named, that the 13 hand-written `scripts/lib/*.d.mts` files are
+  // validated against nothing, so a signature drift between a declaration and its `.mjs` is
+  // green in tsc and only surfaces at runtime.
   "extends": "./tsconfig.json",
   "compilerOptions": {
     // The gate imports web/src/lib/teacher/routing.ts and web/src/lib/legal-corpus.ts
@@ -16,7 +29,8 @@
     "allowImportingTsExtensions": true
   },
   "include": [
-    "scripts/cutover-regression-gate.mts",
+    "scripts/**/*.mts",
+    "scripts/**/*.ts",
     "scripts/lib/*.d.mts",
     "web/src/lib/teacher/routing.ts",
     "web/src/lib/legal-corpus.ts"

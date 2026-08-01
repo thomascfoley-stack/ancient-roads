@@ -121,16 +121,52 @@ export function servingFindings({ worksByRegister, entriesByCatalog }) {
  * STOP is contagious and is NEVER downgraded by a later green section — the point of a
  * preflight is that one refusal is enough.
  */
+export const NOT_MEASURED = 'NOT_MEASURED';
+
+/**
+ * Is this leg a real measurement, or a declaration that it was not taken?
+ *
+ * WHY THIS EXISTS (2026-08-02 deep audit, M4/T2 — raised CRITICAL by two lenses and DOWNGRADED
+ * by a third, which is exactly why it needed settling rather than arguing). The adjudicator called
+ * `censusVerdict({admission, forbidden: undefined, voices: undefined, serving: undefined})`, and
+ * the optional chaining below treated `undefined` as not-a-STOP. So §2, §3 and §4 were
+ * structurally incapable of firing, and the return value was BYTE-IDENTICAL to all four legs
+ * weighed and clean. The board then recorded "ADJUDICATED, NO STOP" unqualified.
+ *
+ * Both readings of that dispute are honoured here. The downgrade is right that §1 IS the A3 rule
+ * and §2–§4 belong to A5, so passing them nothing is legitimate. The CRITICALs are right that a
+ * verdict must never READ as four-clean when three were not taken. So "not measured" is now a
+ * value you must pass on purpose, and it comes back in `notMeasured` for the caller to print.
+ * `undefined` is no longer accepted at all — see the throw below.
+ */
+function leg(name, value) {
+  if (value === NOT_MEASURED) return null;
+  if (value === undefined || value === null) {
+    throw new Error(
+      `censusVerdict: §${name} is ${String(value)}. Pass the measurement, or NOT_MEASURED to ` +
+        'declare it was not taken. Silently absent legs made a one-leg verdict look like four.',
+    );
+  }
+  return value;
+}
+
 export function censusVerdict({ admission, forbidden, voices, serving }) {
   const stops = [];
+  const notMeasured = [];
   for (const a of admission ?? []) {
     if (a.verdict === STOP) stops.push(`§1 ${a.slug}: ${a.note}`);
   }
-  if (voices?.verdict === STOP) stops.push(`§3 ${voices.note}`);
-  if (serving?.verdict === STOP) stops.push(`§4 ${serving.note}`);
+  const f = leg('2 forbidden provenance', forbidden);
+  const v = leg('3 voice floor', voices);
+  const sv = leg('4 serving surface', serving);
+  if (f === null) notMeasured.push('§2 forbidden provenance');
+  if (v === null) notMeasured.push('§3 voice floor');
+  if (sv === null) notMeasured.push('§4 serving surface');
+  if (v?.verdict === STOP) stops.push(`§3 ${v.note}`);
+  if (sv?.verdict === STOP) stops.push(`§4 ${sv.note}`);
   // §2 is deliberately a WARN, not a STOP: forbidden-provenance exposure is governed by
   // the ratchet (predeploy-gate) and by ADR-008, and this census's job is to make it
   // VISIBLE at flip time, not to become a second, differently-calibrated legal gate.
-  const warnings = forbidden?.verdict === WARN ? [`§2 ${forbidden.note}`] : [];
-  return { stop: stops.length > 0, stops, warnings, exitCode: stops.length > 0 ? 1 : 0 };
+  const warnings = f?.verdict === WARN ? [`§2 ${f.note}`] : [];
+  return { stop: stops.length > 0, stops, warnings, notMeasured, exitCode: stops.length > 0 ? 1 : 0 };
 }

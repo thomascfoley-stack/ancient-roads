@@ -29,7 +29,7 @@
  */
 import fs from 'node:fs';
 import { LEGAL_CORPUS_FILTER, SERVED_PROSE_WORKS } from '../web/src/lib/teacher/routing';
-import { admissionFindings, censusVerdict, STOP } from './lib/publish-flip-census.mjs';
+import { admissionFindings, censusVerdict, NOT_MEASURED, STOP } from './lib/publish-flip-census.mjs';
 import { endpointId } from './lib/target-guard.mjs';
 
 const PROD_ENDPOINT = 'ep-odd-fog';
@@ -133,7 +133,15 @@ const rows = (sources as CensusSource[]).map((s) => {
 });
 
 const admission = admissionFindings(rows);
-const verdict = censusVerdict({ admission, forbidden: undefined, voices: undefined, serving: undefined });
+// §1 is the A3 rule; §2-§4 are measured at A5, over a population that does not exist until the
+// flip has happened. Declaring them NOT_MEASURED is the honest call — but it must be a DECLARATION,
+// not three `undefined`s that the verdict silently treats as clean (2026-08-02 deep audit, M4).
+const verdict = censusVerdict({
+  admission,
+  forbidden: NOT_MEASURED,
+  voices: NOT_MEASURED,
+  serving: NOT_MEASURED,
+});
 
 // ── the §1 table for PUBLISH_FLIP.md ───────────────────────────────────────────────────────
 console.log(`publish-flip adjudication — census ${censusPath}`);
@@ -142,6 +150,12 @@ console.log('| slug | register | status | admitted | verdict |');
 console.log('|---|---|---|---|---|');
 for (const a of admission) {
   console.log(`| \`${a.slug}\` | ${a.register} | ${a.status} | ${a.admitted ? 'yes' : '**NO**'} | ${a.verdict} |`);
+}
+
+// Say what was NOT weighed, before saying there was no STOP. A reader must never be able to
+// mistake a one-leg adjudication for a four-leg clean bill of health.
+if (verdict.notMeasured.length > 0) {
+  console.log(`\nNOT MEASURED HERE (A5 measures these, post-flip): ${verdict.notMeasured.join(', ')}`);
 }
 
 if (verdict.stop) {
@@ -174,7 +188,7 @@ const payload = {
 fs.mkdirSync(outPath.replace(/\/[^/]+$/, ''), { recursive: true });
 fs.writeFileSync(outPath, JSON.stringify(payload, null, 2));
 
-console.log(`\nADJUDICATED — no STOP. ${flip.length} work(s) to flip:`);
+console.log(`\nADJUDICATED — no STOP on the ${verdict.notMeasured.length > 0 ? '§1 admission rule' : 'full census'}. ${flip.length} work(s) to flip:`);
 for (const s of flip) console.log(`  ${s}`);
 console.log(`\nwrote ${outPath}`);
 console.log(`\nNext: PUBLISH_ALLOW=1 PUBLISH_EXPECT_HOST=${id} CUTOVER_DATABASE_URL=<owner url> \\`);

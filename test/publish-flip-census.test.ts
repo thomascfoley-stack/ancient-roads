@@ -12,6 +12,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  NOT_MEASURED,
   admissionFindings,
   censusVerdict,
   forbiddenExposure,
@@ -162,5 +163,60 @@ describe('the runner imports the serving predicates rather than restating them',
   it('refuses production outright', () => {
     expect(runner).toMatch(/isProdHost\(url\)/);
     expect(runner).toMatch(/REFUSING/);
+  });
+});
+
+// ── "not measured" must never read as "measured clean" (2026-08-02 deep audit, M4) ──────────
+describe('a partial census says so, and cannot be mistaken for a full one', () => {
+  const clean = admissionFindings([
+    { slug: 'john-gill', status: 'published', register: 'commentary', admitted: true },
+  ]);
+
+  it('REFUSES an absent leg rather than treating it as clean', () => {
+    // The shipped adjudicator passed `undefined` for three of four legs, and the optional
+    // chaining in censusVerdict treated that as not-a-STOP — so the return value was
+    // byte-identical to all four weighed and clean. `undefined` is now an error, not a verdict.
+    // SEED: restore `value === undefined` to the not-a-STOP path -> RED.
+    for (const bad of [undefined, null]) {
+      expect(() =>
+        censusVerdict({ admission: clean, forbidden: bad as never, voices: NOT_MEASURED, serving: NOT_MEASURED }),
+      ).toThrow(/Pass the measurement, or NOT_MEASURED/);
+    }
+  });
+
+  it('REPORTS which legs were not taken, so a one-leg verdict cannot pass as four', () => {
+    const v = censusVerdict({
+      admission: clean,
+      forbidden: NOT_MEASURED,
+      voices: NOT_MEASURED,
+      serving: NOT_MEASURED,
+    });
+    expect(v.stop).toBe(false);
+    expect(v.notMeasured).toEqual(['§2 forbidden provenance', '§3 voice floor', '§4 serving surface']);
+  });
+
+  it('a FULL census reports nothing not-measured, and still STOPs on a real finding', () => {
+    const full = censusVerdict({
+      admission: clean,
+      forbidden: NO_FORBIDDEN,
+      voices: HEALTHY_VOICES,
+      serving: HEALTHY_SERVING,
+    });
+    expect(full.notMeasured).toEqual([]);
+    expect(full.stop).toBe(false);
+
+    // And a measured leg still fires — the declaration mechanism must not have disarmed anything.
+    const zeroServing = servingFindings({
+      worksByRegister: { commentary: 0 },
+      entriesByCatalog: { sections: 0, commentary_entries: 0, embeddings_served: 0 },
+    });
+    const stopped = censusVerdict({
+      admission: clean,
+      forbidden: NO_FORBIDDEN,
+      voices: HEALTHY_VOICES,
+      serving: zeroServing,
+    });
+    expect(stopped.stop).toBe(true);
+    expect(stopped.notMeasured).toEqual([]);
   });
 });

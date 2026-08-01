@@ -66,9 +66,19 @@ export declare function servingFindings(input: {
   worksByRegister: Record<string, number>;
   entriesByCatalog: Record<string, number>;
 }): Serving;
+export declare const NOT_MEASURED: 'NOT_MEASURED';
+/** A leg is either a real measurement or an explicit declaration that it was not taken. */
+export type Leg<T> = T | typeof NOT_MEASURED;
 export declare function censusVerdict(input: {
   admission: AdmissionFinding[];
-  forbidden: ForbiddenExposure;
-  voices: VoiceFloor;
-  serving: Serving;
-}): { stop: boolean; stops: string[]; warnings: string[]; exitCode: number };
+  forbidden: Leg<ForbiddenExposure>;
+  voices: Leg<VoiceFloor>;
+  serving: Leg<Serving>;
+}): {
+  stop: boolean;
+  stops: string[];
+  warnings: string[];
+  /** Legs the caller declared NOT_MEASURED. Non-empty means this is not a full census. */
+  notMeasured: string[];
+  exitCode: number;
+};
