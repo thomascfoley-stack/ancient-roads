@@ -27,6 +27,7 @@
 import { writeFileSync } from 'node:fs';
 import pg from 'pg';
 import { LEGAL_COMMENTARY_ENTRIES_PREDICATE } from '../web/src/lib/legal-corpus';
+import { LEGAL_CORPUS_FILTER } from '../web/src/lib/teacher/routing';
 import { FORBIDDEN_PROVENANCE_DOMAINS } from '../src/ingest/forbidden-provenance.mjs';
 import { INSTRUMENT_ROLE, assertReadOnlySession, resolveInstrumentConnection } from './lib/neon-connection.mjs';
 
@@ -147,6 +148,40 @@ try {
     say(`  ${r.status.padEnd(10)} ${r.slug.padEnd(24)} ${r.author.padEnd(28)} ${(r.provenance ?? '').slice(0, 90)}`);
   }
 
+  // §5 — THE OTHER SERVING SURFACE: the /ask embeddings pool.
+  //
+  // LEGAL_CORPUS_FILTER (teacher/routing.ts) gates retrieval for /ask, over `embeddings`, and it
+  // is a DIFFERENT predicate over a DIFFERENT table. It already carries the crosswire leg for
+  // Barnes/Wesley/Calvin — the leg that was hand-copied into commentary_entries, matched zero rows
+  // there and got deleted (H5). But it admits 'John Chrysostom' and 'Augustine of Hippo' BY NAME
+  // with no provenance test at all, and routing.ts:28-30 records that those rows carry
+  // historicalchristian.faith provenance with "provenance repair to New Advent pending".
+  //
+  // Measured here rather than fixed, deliberately: excluding them changes what /ask RETRIEVES,
+  // which CLAUDE.md gates on re-running the held-out eval and recording the number in WORKLOG.md.
+  // The eval needs DEEPINFRA_API_KEY, which is not on this machine. A ratchet you can read beats
+  // an unmeasured retrieval change.
+  const pool = await c.query<{ author: string; host: string; n: number; forbidden: boolean }>(
+    `SELECT metadata->>'author' AS author,
+            COALESCE(NULLIF(substring(metadata->>'sourceUrl' from '^(?:[a-z]+://)?([^/?#]+)'), ''), '(empty)') AS host,
+            count(*)::int AS n,
+            bool_or(EXISTS (SELECT 1 FROM unnest($1::text[]) d
+                             WHERE lower(metadata->>'sourceUrl') LIKE '%' || d || '%')) AS forbidden
+       FROM embeddings
+      WHERE ${LEGAL_CORPUS_FILTER}
+      GROUP BY 1, 2
+      ORDER BY 3 DESC`,
+    [FORBIDDEN_PROVENANCE_DOMAINS],
+  );
+  say(`\n§5 THE /ask POOL — admitted by LEGAL_CORPUS_FILTER over \`embeddings\``);
+  let poolForbidden = 0;
+  for (const r of pool.rows) {
+    if (r.forbidden) poolForbidden += r.n;
+    say(`  ${String(r.n).padStart(7)}  ${(r.author ?? '(null)').padEnd(32)} ${r.host}${r.forbidden ? '   ⛔ FORBIDDEN AGGREGATOR' : ''}`);
+  }
+  const poolTotal = pool.rows.reduce((n, r) => n + r.n, 0);
+  say(`  ${String(poolTotal).padStart(7)}  TOTAL ADMITTED   (${poolForbidden.toLocaleString()} from a forbidden aggregator)`);
+
   say(`\nVERDICT`);
   say(`  entries admitted by the shipped predicate      : ${servedTotal.toLocaleString()}`);
   say(`  of those, from a forbidden aggregator (H5)     : ${forbiddenServed.toLocaleString()}`);
@@ -155,6 +190,8 @@ try {
     return r.admitted > 0 && status !== null && status !== 'published';
   });
   say(`  admitted while sources.status is not published : ${h4.reduce((n, r) => n + r.admitted, 0).toLocaleString()} across ${h4.length} work(s)`);
+  say(`  /ask pool admitted                             : ${poolTotal.toLocaleString()}`);
+  say(`  of those, from a forbidden aggregator          : ${poolForbidden.toLocaleString()}   <- OPEN, gated on the held-out eval`);
 } finally {
   await c.query('ROLLBACK').catch(() => {});
   await c.end().catch(() => {});

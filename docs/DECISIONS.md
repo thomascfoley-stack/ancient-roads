@@ -900,3 +900,55 @@ was invented for the proof.
 run for that claim printed `SKIPPED  G10`. Equally wrong if the flip is applied to production and
 G10 is discharged only afterwards: the proof would then be establishing that the gate can catch a
 defect in rows that are already serving readers.
+
+## ADR-044 — The /ask pool's forbidden-provenance rows: measured, ratcheted, NOT excluded yet (2026-08-02)
+
+**Status:** OPEN OWNER CALL. Recorded so it is issued (bylaw 1) rather than living in a session.
+
+**Context.** The 2026-08-02 deep audit's H6 named it in passing: `teacher/routing.ts:28-30` documents
+that Augustine and Chrysostom rows carry `historicalchristian.faith` provenance — a forbidden
+aggregator (ADR-008, added to the list 2026-07-10 after vetting) — and are admitted to the `/ask`
+pool BY NAME. Measured on production 2026-08-02, read-only
+(`docs/evidence/serving-provenance-census-after-2026-08-01.log` §5):
+
+```
+  83,993   admitted by LEGAL_CORPUS_FILTER over `embeddings`
+   2,515   John Chrysostom      historicalchristian.faith   forbidden
+   1,659   Augustine of Hippo   historicalchristian.faith   forbidden
+   4,174   TOTAL forbidden
+```
+
+For contrast, the same census shows the FTS surface at 0 after H4/H5 closed. `LEGAL_CORPUS_FILTER`
+already carries the crosswire leg for Barnes/Wesley/Calvin — the leg that was hand-copied into
+`commentary_entries`, matched zero rows there and got deleted. It is only the two by-name legs that
+have no provenance test.
+
+**Why it is not fixed in the licensing tranche.** Excluding those rows changes what `/ask`
+RETRIEVES. Chrysostom would drop from 2,587 admitted rows to 72 and Augustine from 2,995 to 1,336.
+CLAUDE.md is explicit: "Re-run the accuracy diagnostic on every retrieval change and record the
+number in `WORKLOG.md`." The held-out eval (`web/src/scripts/eval-heldout.mts`) needs
+`DEEPINFRA_API_KEY` to embed each query, and there is no `web/.env.local` on this machine — so the
+eval CANNOT be run here. Shipping the exclusion anyway would be an unmeasured retrieval change on
+the pipeline whose accuracy is the product's second quality axis. It would also need a migration
+rebuilding migration 012's partial HNSW index in lockstep, the same way 035 rebuilt the FTS twin.
+
+**The two options, and they are not equivalent.**
+
+1. **EXCLUDE** — add the provenance denylist to `LEGAL_CORPUS_FILTER`, rebuild the HNSW twin,
+   re-run the frozen eval, record it. Cheap, closes the exposure, and costs 97% of Chrysostom's
+   pool. Gated on the eval.
+2. **RE-SOURCE** — replace those 4,174 rows from New Advent's NPNF/ANF, which
+   `teacher/routing.ts:28-30` already names as the intended repair ("provenance repair to New Advent
+   pending") and which the text was verified against. Keeps the content, fixes the provenance, and
+   is NOT a retrieval change — so it needs no eval. It is an ingest slice.
+
+**Recommendation: (2), with (1) as the fallback if the re-source stalls.** The audit's objection is
+to reusing an aggregator's compilation, not to the text; re-sourcing answers the actual objection
+and loses nothing. (1) is a real degradation of a Father who is one of the named exegetical voices.
+
+**Interim posture.** The number is MEASURED and re-measurable by one read-only command
+(`scripts/serving-provenance-census.mts`, §5). It is debt: visible, counted, and it may only
+shrink. The site is behind the password gate, so `/ask` is not publicly reachable while this stands.
+
+**Wrong if.** The count grows, or the password gate is removed with this open.
+

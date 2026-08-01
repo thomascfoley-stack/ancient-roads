@@ -68,11 +68,45 @@ OUTCOME: **A6 CANNOT RUN, for two independent reasons, and neither was on the bo
 > specifier resolved in the checkout, in CI, in the audit and in a local `next build`, and did not
 > exist in the deployment. `test/invariants/web-upload-root.test.ts` now catches it statically.
 >
-> **STILL OPEN: M6–M9 (as recorded — findings about a write that already happened), M13 (the
-> missing `web/` lockfile: a decision, not a cleanup), and `LEGAL_CORPUS_FILTER`**, which still
-> admits Chrysostom and Augustine by name with no provenance test. That last one is deliberate: it
-> has a partial HNSW index twin and changing what `/ask` retrieves is an accuracy change, gated on
-> re-running the held-out eval.
+> ## THIRD PASS, 2026-08-02 — M6-M9 and M13 closed; the board has one open item left
+>
+> **M6 CLOSED.** `--reverse` required a snapshot and inverts the EXECUTED flip. Red-proofed on the
+> fixture the real run did not have (a work already published before the flip): the old tool
+> un-published it, the new one restores the pre-flip state exactly.
+>
+> **M7 CLOSED.** The legality gate is DIRECTIONAL. A reverse shrinks the published set and cannot
+> introduce an illegality, so it reports and proceeds; the subset property is asserted, and the
+> positive control shows the FORWARD flip still refused on the identical row. Made directional,
+> not weaker.
+>
+> **M8 CLOSED.** `flip-run-<stamp>.log`, written on every exit including a refusal.
+>
+> **M9 CLOSED.** All 17 branches — including `production` — were `protected: false`, and
+> `refuseProtectedBranchDelete` was called by nothing but its own test. Protection is ON for the
+> registered restore point and for production, and `scripts/assert-protected-branches.mjs` asks
+> the question that decides whether a rollback is possible instead of the one the guard asked.
+> Red-proofed by toggling protection off.
+>
+> **M13 CLOSED.** `web/package-lock.json`, 738 packages. The trap that bit first is pinned by a
+> test: a lockfile generated inside `web/` records the workspace's pnpm symlink layout and is worse
+> than none.
+>
+> **C2 VERIFIED AGAINST THE SHIPPED BYTES**, not the local tree — the deployment's own source
+> archive, pulled from the Vercel API and scanned: 1,212 files, 114,349 entries, zero offenders.
+> `docs/evidence/c2-shipped-bytes-verification.log`.
+>
+> **STILL OPEN, and it is one item: `LEGAL_CORPUS_FILTER`.** It admits Chrysostom and Augustine by
+> name with no provenance test, and those are 4,174 `historicalchristian.faith` rows in the `/ask`
+> pool of 83,993 — now measured, by §5 of the same census that measured the FTS surface. Filed as
+> **ADR-044** with both options costed. It is NOT fixed here because excluding them changes what
+> `/ask` retrieves, CLAUDE.md gates that on re-running the held-out eval, and the eval needs
+> `DEEPINFRA_API_KEY`, which is not on this machine. The recommendation is to re-source from New
+> Advent — which routing.ts already names as the intended repair and which is not a retrieval
+> change at all.
+>
+> **M6–M9 were NOT merely "findings about a write that already happened"**, which is how the
+> second pass characterised them. Four of them were live defects in the tool that performs the next
+> flip and the only rollback this project has.
 >
 > One finding in this document was **wrong and is corrected in place** — see M10.
 
@@ -171,13 +205,13 @@ Every CRITICAL below was re-verified by the synthesizing session against the tre
 
 - [ ] **M5. "§4 diff verified" names a different §4.** `PUBLISH_FLIP.md:167-170` defines a four-row acceptance table including forbidden-provenance and voice-floor deltas. `publish-flip-verify.mjs:99-134` emits its own §1/§2/§3 — a colliding, unrelated numbering. The logs contain no provenance and no voice-floor measurement. Those are the same two legs M4 shows could not fire at adjudication: **§2 and §3 were unmeasurable on both sides of the irreversible write.**
 
-- [ ] **M6. `--reverse` is the exact inverse of the slug list, not of the executed flip.** `publish-flip.mjs:93-94,186-189` never reads the snapshot. Any listed slug already `published` before the forward flip gets un-published by a reverse. Exact for *this* run only because `already` happened to be empty — a property of the data, not the tool.
+- [x] **M6. `--reverse` is the exact inverse of the slug list, not of the executed flip.** `publish-flip.mjs:93-94,186-189` never reads the snapshot. Any listed slug already `published` before the forward flip gets un-published by a reverse. Exact for *this* run only because `already` happened to be empty — a property of the data, not the tool.
 
-- [ ] **M7. The rollback gate refuses in exactly the states where rollback is needed.** `publish-flip.mjs:206-246` runs the full-corpus legality gate in **both** directions, so one unrelated illegal published row makes `--reverse` roll back and exit 1. There is no second rollback path: `PUBLISH_FLIP.md:193` still reads "There is no id here because nothing has been run," forks are forbidden, and the Neon rollback branch is unprotected (M9).
+- [x] **M7. The rollback gate refuses in exactly the states where rollback is needed.** `publish-flip.mjs:206-246` runs the full-corpus legality gate in **both** directions, so one unrelated illegal published row makes `--reverse` roll back and exit 1. There is no second rollback path: `PUBLISH_FLIP.md:193` still reads "There is no id here because nothing has been run," forks are forbidden, and the Neon rollback branch is unprotected (M9).
 
-- [ ] **M8. No run log for the writer.** `4369d37` adds the two verify logs, the snapshot and `MASTER.md`. The writer's stdout — including `role neondb_owner (asserted at the server)` and the target/direction header — exists only as three hand-transcribed lines in a commit message, and the transcription omits the role line. The artifacts cannot distinguish the scripted flip from a manual `psql UPDATE`, nor one flip from flip→reverse→re-flip.
+- [x] **M8. No run log for the writer.** `4369d37` adds the two verify logs, the snapshot and `MASTER.md`. The writer's stdout — including `role neondb_owner (asserted at the server)` and the target/direction header — exists only as three hand-transcribed lines in a commit message, and the transcription omits the role line. The artifacts cannot distinguish the scripted flip from a manual `psql UPDATE`, nor one flip from flip→reverse→re-flip.
 
-- [ ] **M9. The Neon rollback branch is unprotected at both layers.** `neonctl branches get br-late-recipe-atxl68sh` → `protected: false`; repo-wide, the only files referencing `refuseProtectedBranchDelete` are the guard, its `.d.mts` and its own test — **no script calls it.** Measured 36 minutes before the flip and recorded in `RECOVERY.md`; the A4 row does not mention it. Fix is a Neon console action.
+- [x] **M9. The Neon rollback branch is unprotected at both layers.** `neonctl branches get br-late-recipe-atxl68sh` → `protected: false`; repo-wide, the only files referencing `refuseProtectedBranchDelete` are the guard, its `.d.mts` and its own test — **no script calls it.** Measured 36 minutes before the flip and recorded in `RECOVERY.md`; the A4 row does not mention it. Fix is a Neon console action.
 
 - [ ] **M10. `corpusHash` is computed, printed and never compared — and two documents say it is.** Verified: `predeploy-gate.ts:214` prints it; grep across `scripts/` finds no equality test anywhere. `DEPLOY_PREFLIGHT.md:274` checklist item 4 says "step 3 prints and checks it"; `:151-152` repeats it; `§9:344-347` says the opposite. The uncorrected copy is the line the operator ticks. A corpus whose content changed with unchanged shape — text swapped, `sourceUrl` edited in place — passes every leg.
 

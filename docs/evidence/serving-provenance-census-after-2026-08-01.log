@@ -1,7 +1,7 @@
 serving provenance census — read-only
   host   : ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech
   role   : app_runtime
-  ts     : 2026-08-01T22:28:10.294Z
+  ts     : 2026-08-01T23:25:37.586Z
   read-only transaction confirmed at the server ✓
 
 commentary_entries rows: 371,406 ✓
@@ -36,7 +36,24 @@ commentary_entries rows: 371,406 ✓
   published  wesley-crosswire         John Wesley                  https://crosswire.org/sword/modules/ModInfo.jsp?modName=Wesley
   staged     barnes-notes             Albert Barnes                https://biblehub.com/commentaries/barnes/
 
+§5 THE /ask POOL — admitted by LEGAL_CORPUS_FILTER over `embeddings`
+    28843  John Gill                        (empty)
+    15473  Jamieson, Fausset & Brown        (empty)
+    12693  Adam Clarke                      (empty)
+     6850  Albert Barnes                    crosswire.org
+     5254  John Wesley                      crosswire.org
+     5088  John Calvin                      crosswire.org
+     4210  Matthew Henry                    (empty)
+     2515  John Chrysostom                  historicalchristian.faith   ⛔ FORBIDDEN AGGREGATOR
+     1659  Augustine of Hippo               historicalchristian.faith   ⛔ FORBIDDEN AGGREGATOR
+     1277  Augustine of Hippo               www.newadvent.org
+       72  John Chrysostom                  (empty)
+       59  Augustine of Hippo               (empty)
+    83993  TOTAL ADMITTED   (4,174 from a forbidden aggregator)
+
 VERDICT
   entries admitted by the shipped predicate      : 64,216
   of those, from a forbidden aggregator (H5)     : 0
   admitted while sources.status is not published : 0 across 0 work(s)
+  /ask pool admitted                             : 83,993
+  of those, from a forbidden aggregator          : 4,174   <- OPEN, gated on the held-out eval
