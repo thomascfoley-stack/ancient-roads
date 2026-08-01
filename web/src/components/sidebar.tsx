@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { authClient } from '@/lib/auth/client';
+import { CATALOGS, CATALOG_IDS, type CatalogId } from '@/lib/catalog-defs';
 
 // --- user-defined study sections (parent/child). Stored locally per user
 // while the real feature (saved work, conversation) is still coming soon;
@@ -202,30 +203,23 @@ export function SidebarNavContent({
             row={row}
             onNavigate={onNavigate}
           />
-          <SidebarLink
-            href="/library/commentaries"
-            icon={<QuoteIcon />}
-            label="Commentaries"
-            active={pathname.startsWith('/library/commentaries')}
-            row={row}
-            onNavigate={onNavigate}
-          />
-          <SidebarLink
-            href="/library/sermons"
-            icon={<QuoteIcon />}
-            label="Sermons"
-            active={pathname.startsWith('/library/sermons')}
-            row={row}
-            onNavigate={onNavigate}
-          />
-          <SidebarLink
-            href="/library/hymns-poetry"
-            icon={<span className="text-stone-400">♪</span>}
-            label="Hymns &amp; poetry"
-            active={pathname.startsWith('/library/hymns-poetry')}
-            row={row}
-            onNavigate={onNavigate}
-          />
+          {/* DERIVED from CATALOG_IDS, not typed out. These three links used to be hardcoded, so
+              adding the Historians catalog on 2026-08-01 shipped a shelf with works on it that
+              nothing in the shell linked to — the ELEVENTH instance of "a hand-maintained expected
+              set that nothing enforces", and the same orphaning the comment above records for the
+              Library hub itself. Now a new catalog appears here by existing.
+              `sidebar-catalog-nav.test.ts` fails if any catalog has no link. */}
+          {CATALOG_IDS.map((id) => (
+            <SidebarLink
+              key={id}
+              href={`/library/${id}`}
+              icon={CATALOG_ICON[id] ?? <QuoteIcon />}
+              label={CATALOGS[id].label}
+              active={pathname.startsWith(`/library/${id}`)}
+              row={row}
+              onNavigate={onNavigate}
+            />
+          ))}
           {/* The passage-by-passage browse/search. Kept linked: moving it off
               /library/commentaries would otherwise orphan a working surface —
               the same failure this block exists to fix. */}
@@ -270,6 +264,14 @@ export function SidebarNavContent({
     </>
   );
 }
+
+/**
+ * Per-catalog icon. A MAP with a fallback, not a switch: a catalog with no icon yet still gets a
+ * link (the fallback), because an orphaned shelf is a real bug and a generic glyph is not.
+ */
+const CATALOG_ICON: Partial<Record<CatalogId, React.ReactNode>> = {
+  'hymns-poetry': <span className="text-stone-400">♪</span>,
+};
 
 export function Sidebar() {
   const pathname = usePathname();

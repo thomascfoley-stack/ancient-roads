@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CATALOGS, catalogTraditions, isCatalogId, listCatalogWorks } from '@/lib/catalog';
 import { CatalogSearch } from '@/components/catalog-search';
+import { decodeDesk, deskHref as deskHrefWith, withPane } from '@/lib/desk';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,11 +24,11 @@ export default async function CatalogPage({
   searchParams,
 }: {
   params: Promise<{ catalog: string }>;
-  searchParams: Promise<{ sub?: string; tradition?: string | string[] }>;
+  searchParams: Promise<{ sub?: string; tradition?: string | string[]; desk?: string }>;
 }) {
   const { catalog } = await params;
   if (!isCatalogId(catalog)) notFound();
-  const { sub, tradition } = await searchParams;
+  const { sub, tradition, desk } = await searchParams;
   const def = CATALOGS[catalog];
   const subFilter = sub && def.subFilters?.[sub] ? sub : undefined;
 
@@ -43,6 +44,12 @@ export default async function CatalogPage({
     listCatalogWorks({ catalog, subFilter, traditions: selected, limit: 100 }),
     catalogTraditions(catalog, subFilter),
   ]);
+
+  // "Add to desk" carries the CURRENT desk through the URL (`?desk=` from the desk's + button), so
+  // adding a work appends to what is already open instead of replacing it. No hidden state: if
+  // `desk` is absent the link simply opens a fresh desk with this one work on it.
+  const openDesk = decodeDesk(desk ? [desk] : []);
+  const deskHrefFor = (slug: string): string => deskHrefWith(withPane(openDesk, { kind: 'work', slug }));
 
   /** The href that toggles one chip on or off, preserving everything else in the URL. */
   const hrefToggling = (t: string): string => {
@@ -110,10 +117,10 @@ export default async function CatalogPage({
       ) : (
         <ul className="space-y-2">
           {works.map((w) => (
-            <li key={w.slug}>
+            <li key={w.slug} className="flex items-stretch gap-2">
               <Link
                 href={`/work/${w.slug}`}
-                className="flex min-h-[44px] items-center justify-between gap-3 rounded-xl border border-stone-200/70 px-4 py-3 hover:bg-accent-50/50 dark:border-stone-800 dark:hover:bg-accent-950/20"
+                className="flex min-h-[44px] flex-1 items-center justify-between gap-3 rounded-xl border border-stone-200/70 px-4 py-3 hover:bg-accent-50/50 dark:border-stone-800 dark:hover:bg-accent-950/20"
               >
                 <span className="min-w-0">
                   <span className="block truncate font-scripture text-stone-800 dark:text-stone-100">{w.title}</span>
@@ -125,6 +132,15 @@ export default async function CatalogPage({
                   </span>
                 </span>
                 <span className="shrink-0 text-xs tabular-nums text-stone-400">{w.units}</span>
+              </Link>
+              {/* Open this work beside what is already on the desk. */}
+              <Link
+                href={deskHrefFor(w.slug)}
+                aria-label={`Add ${w.title} to your desk`}
+                title="Add to desk"
+                className="flex min-h-[44px] w-11 shrink-0 items-center justify-center rounded-xl border border-dashed border-stone-300 text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
+              >
+                +
               </Link>
             </li>
           ))}

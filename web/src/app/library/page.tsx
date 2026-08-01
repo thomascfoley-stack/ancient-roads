@@ -35,7 +35,15 @@ async function personal(): Promise<{ reading: ContinueReadingRow[]; shelf: Libra
   return { reading, shelf };
 }
 
-export default async function LibraryHubPage() {
+export default async function LibraryHubPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ desk?: string }>;
+}) {
+  // Forward an open desk through to the catalogs, so "add another pane" appends to what is
+  // already open instead of silently starting a new desk two clicks later.
+  const { desk } = await searchParams;
+  const carry = desk ? `?desk=${encodeURIComponent(desk)}` : '';
   const [mine, facets] = await Promise.all([
     personal(),
     Promise.all(CATALOG_IDS.map(async (id) => ({ id, traditions: await catalogTraditions(id) }))),
@@ -95,11 +103,11 @@ export default async function LibraryHubPage() {
 
       <section>
         <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-stone-400">The corpus</h2>
-        <ul className="grid gap-3 sm:grid-cols-3">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {CATALOG_IDS.map((id) => (
             <li key={id}>
               <Link
-                href={`/library/${id}`}
+                href={`/library/${id}${carry}`}
                 className="flex min-h-[88px] flex-col justify-between rounded-xl border border-stone-200/70 p-4 hover:bg-accent-50/50 dark:border-stone-800 dark:hover:bg-accent-950/20"
               >
                 <span className="font-scripture text-lg text-stone-800 dark:text-stone-100">{CATALOGS[id].label}</span>
