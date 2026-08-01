@@ -118,8 +118,6 @@ covered, so the honest gap is narrower and different):
 `vercel --prod` uploads the **working tree**, not a commit. These are gitignored and reach production
 **only** this way — never through git, never through CI:
 
-| directory | on this machine | size |
-|---|---|---|
 Re-measured 2026-08-01 ([census](evidence/post-a1-2026-08-01/concordance-census.md)). Every one of the
 six served directories is present and **byte-exact** against the `corpus-backup-2026-07-28` release
 — compared on file count, byte total, and a roll-up SHA-256 over path+content of every file:
@@ -129,12 +127,18 @@ six served directories is present and **byte-exact** against the `corpus-backup-
 | `web/public/bible/` | present, 22,590 files | 158,286,312 | match |
 | `web/public/commentaries/` | present, 1,213 files | 424,536,756 | match |
 | `web/public/concordance/` | present, 295 files | 3,673,944 | match (roll-up `8081b779…f39b`) |
-| `web/public/devotional/` | present, 1 file | 1,489,403 | **no backup asset exists** |
+| `web/public/devotional/` | present, 1 file | 1,489,403 | n/a — **tracked in git** |
 | `web/public/lexicon/` | present, 2 files | 3,102,678 | match |
 | `web/public/original/` | present, 1,189 files | 44,280,085 | match |
 
-**`devotional/` is the one real gap, and it is a different gap:** not partially restored, but absent
-from every release in the repo. The download that restores the other five does not restore it.
+**Correction (2026-08-01, same day): `devotional/` needs no release asset.** An earlier revision of
+this table called it "no backup asset exists" and inferred it was unrestorable. Wrong.
+`web/public/devotional/morning-evening.json` is **tracked in git** — it is the only served directory
+not listed in `.gitignore:18-38` — so a clone restores it. The five gitignored directories are the
+ones that need the release tarballs.
+
+**This section's own heading is therefore slightly wrong too:** "What is uploaded that is not in
+git" describes five of the six directories, not all six.
 
 **What must be true locally for the upload to be correct:** the tree is clean (step 1);
 `predeploy-gate.ts` passes **on the bytes about to upload** — it reads the same directories `vercel`
@@ -262,8 +266,11 @@ Everything below is free and reversible. Stop at the first ✗.
 [ ] 4  corpusHash matches the committed manifest         (step 3 prints and checks it)
 [x] 5  ANSWERED 2026-08-01 — NO DECISION NEEDED. All six served directories are
        present and byte-exact vs corpus-backup-2026-07-28 (§3, roll-up hashes).
-       Nothing throws. Residual, not a blocker: devotional/ has no backup asset
-       in any release, and loadLexicon still lacks a res.ok guard (§4).
+       Nothing throws. Residual, not a blocker: loadLexicon still lacks a
+       res.ok guard (§4).
+       *** BUT SEE §9: they are present in ~/Projects/ancient-roads-git, which
+       is 29 commits BEHIND and cannot build. Item 5 is answered about a tree
+       that cannot pass items 2 and 3. Read §9 before running anything. ***
 [ ] 6  Accept what rollback does NOT restore (§5): pre-025 code on a post-031
        schema, re-opening G4, and a corpus that bypasses predeploy-gate.
 [x] 7  ANSWERED 2026-08-01 (§5). Live now: dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt
@@ -290,3 +297,48 @@ Everything below is free and reversible. Stop at the first ✗.
 
 - Not a substitute for cutover gates G1–G10 during E0–E6.
 - Not authorization for prod DB writes or a publish flip.
+
+---
+
+## 9. STOP — the code and the corpus are in different clones (found 2026-08-01)
+
+**Neither tree on this machine can complete `deploy.sh` tonight.** This is the single hardest
+blocker on A6 and no document named it before now.
+
+| | `~/Projects/ancient-roads-git` | the working clone |
+|---|---|---|
+| corpus | **all six dirs**, byte-exact (§3) | only `devotional/` (the tracked one) |
+| HEAD | `f10df90` — **29 commits behind** | current |
+| `web/src/app/api/ask/route.ts:11` | `= ASK_MAX_DURATION_SEC` — **the build-breaker** | `= 300`, fixed |
+| `scripts/lib/served-assets.mjs` | **does not exist** | present |
+
+So:
+
+- In the **corpus** clone, step 6 (`next build`) hard-fails — it predates `c1e359d`. Step 5 cannot
+  even run: `predeploy-gate.ts` imports `served-assets.mjs`, which is not there.
+- In the **code** clone, step 5 hard-fails at `predeploy-gate.ts:78-84` — five of six served
+  directories are absent.
+
+**Fix, and it is cheap.** `f10df90` is an ancestor of the current tip, so the corpus clone
+fast-forwards without touching `web/public/` (all five corpus dirs are gitignored and survive a
+checkout):
+
+```bash
+git -C ~/Projects/ancient-roads-git fetch origin && git -C ~/Projects/ancient-roads-git merge --ff-only <the sha being shipped>
+```
+
+Then run `./deploy.sh` **from that clone**. Verify `web/public` still has all six directories after
+the fast-forward before doing anything else.
+
+### Two more things this preflight got wrong
+
+**`corpusHash` is never compared.** `predeploy-gate.ts:178` **prints** it and nothing in `scripts/`
+compares it; `evaluateCorpusRatchet` (`scripts/lib/corpus-manifest.mjs:143-168`) ratchets
+`fileCount`, `entryCount`, `works` and `books` only. Checklist item 4 asks you to confirm something
+the gate does not do. The real check is the works/books/count ratchet.
+
+**No Vercel project link exists.** There is no `.vercel/project.json` in any clone (`.gitignore:11`
+and `:49`), and the CLI on this machine authenticates into scopes that do not contain the `web`
+project. Step 7 — `npx vercel --prod --archive=tgz` — is the one step that has never run, and
+whether it can resolve the project non-interactively is **NOT ESTABLISHED**. Settle this before the
+go, not at step 7 of 7.

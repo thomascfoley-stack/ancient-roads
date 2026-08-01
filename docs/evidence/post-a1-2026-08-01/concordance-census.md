@@ -152,7 +152,19 @@ the deployment**, and I am not recording it as one.
 | `lexicon` | 2 | 3,102,678 | 2 / 3,102,678 | match |
 | `original` | 1,189 | 44,280,085 | 1,189 / 44,280,085 | match |
 
-### `devotional/` has no backup, in any release
+### `devotional/` has no RELEASE asset — and does not need one
+
+> **CORRECTION (2026-08-01, same day, by independent verification).** This section originally
+> concluded that `devotional/` was "not partially restored, but unbackupable from this repo" and
+> that "the download that restores everything else does not restore it." **That inference was
+> wrong.** `web/public/devotional/morning-evening.json` is **tracked in git** — it is the only
+> served directory absent from `.gitignore:18-38` — so any clone restores it. The measurement below
+> (zero devotional assets in every release) is correct; the conclusion drawn from it was not. The
+> five *gitignored* directories are the ones that depend on the release tarballs.
+>
+> The mistake is worth naming: I checked the releases, found nothing, and did not check the one
+> other place a file can live. A negative result from one source, reported as a property of the
+> world — the same shape as the watchlist's sixth entry.
 
 `morning-evening.json`, 1,489,403 bytes, served by the client and derived into the served set. Every
 release in the repository was checked:
