@@ -1,5 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm ci --legacy-peer-deps",
-  "//": "M13. web/ is the upload root and had no lockfile, so production resolved every ^ range fresh at build time while CI gated a pinned pnpm tree that is not in the upload; two deploys of one sha could ship different code. web/package-lock.json pins 738 packages, and `npm install` does honour it — but it also SILENTLY UPDATES the lock when package.json asks for something the lock cannot satisfy, which is the exact failure mode (a dependency bumped in package.json and never re-locked would resolve fresh again and nobody would see it). `npm ci` refuses instead: it installs the lockfile verbatim and FAILS the build if the two disagree. --legacy-peer-deps matches web/.npmrc, which exists because @neondatabase/auth@0.4.2-beta declares a peer of next>=16 that npm's strict resolver rejects."
+  "installCommand": "npm ci --legacy-peer-deps"
 }

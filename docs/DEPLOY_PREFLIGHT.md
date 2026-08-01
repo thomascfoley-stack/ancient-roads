@@ -354,7 +354,37 @@ go, not at step 7 of 7.
 
 ## 10. Three things about the deploy that were not written down (2026-08-02 deep audit)
 
-### M13 — production dependencies are resolved fresh at every deploy, from a tree CI never tested
+### M13 — CLOSED 2026-08-02: the upload root is pinned, and the pin is enforced
+
+`web/package-lock.json` pins 738 packages, and `web/vercel.json` sets
+`installCommand: "npm ci --legacy-peer-deps"`.
+
+**Why both.** The lockfile alone is HONOURED but not ENFORCED: `npm install` reads it and installs
+the pinned tree, but it also silently UPDATES the lock when `package.json` asks for something the
+lock cannot satisfy. Bump a dependency and forget to re-lock and production resolves fresh again,
+with nothing to see. `npm ci` installs the lockfile verbatim and FAILS the build if the two
+disagree. `--legacy-peer-deps` matches `web/.npmrc`, which exists because
+`@neondatabase/auth@0.4.2-beta` declares a peer of `next>=16` that npm's strict resolver rejects.
+
+**Two traps, both paid for once each.**
+
+1. `npm install --package-lock-only` run INSIDE `web/` walks up, finds the workspace's pnpm store,
+   and writes 43 entries shaped `../node_modules/.pnpm/next@16.2.12/node_modules/next` — paths that
+   do not exist in the upload. That lockfile is worse than none. Generate it from a copy of
+   `web/package.json` + `web/.npmrc` in a directory with **no ancestor `node_modules`**;
+   `test/invariants/upload-root-lockfile.test.ts` asserts the property that distinguishes the two.
+2. `vercel.json` rejects unknown top-level properties, including the `"//"` comment key that
+   `package.json` allows. The deploy died with `should NOT have additional property '//'` before
+   uploading a byte — which is why this rationale is here and not in the file.
+   `test/invariants/vercel-json.test.ts` pins the allowed key set.
+
+**Measured effect.** The pre-lockfile deploy's install read "added 83 packages, removed 1 package,
+and changed 22 packages"; the first deploy after it read "added 15, removed 13, changed 57" as the
+cached tree converged on the pinned one, with Next resolving to exactly the pinned `16.2.12`.
+
+---
+
+### M13 — the original finding (production dependencies resolved fresh at every deploy)
 
 `deploy.sh` does `cd web` before `vercel --prod`, so **`web/` is the upload root** — and `web/` has
 **no lockfile**. `web/pnpm-lock.yaml`, `web/package-lock.json` and `web/yarn.lock` are all absent;
