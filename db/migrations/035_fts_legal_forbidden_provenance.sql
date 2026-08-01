@@ -43,3 +43,17 @@ DROP INDEX CONCURRENTLY IF EXISTS idx_commentary_fts_legal;
 DROP INDEX CONCURRENTLY IF EXISTS idx_commentary_fts_legal_v5;
 --SPLIT--
 ALTER INDEX idx_commentary_fts_legal_v6 RENAME TO idx_commentary_fts_legal;
+--SPLIT--
+-- Correcting 032's own table comment. It said "Written by db/apply-migration.mjs", and that runner
+-- did not write it — nor did apply-migration-concurrent.mjs. 032 and 033 each carried their own
+-- INSERT, so the ledger worked only while every future migration author remembered to hand-write
+-- one: the "hand-maintained set that nothing enforces" class, installed inside the fix for a
+-- previous instance of it, and stated as done. Both runners now call db/lib/record-migration.mjs,
+-- so this comment is true as of this migration and not before.
+-- Guarded: dev branches that predate 032 have no ledger table, and this file must not fail there.
+DO $$ BEGIN
+  IF to_regclass('public.schema_migrations') IS NOT NULL THEN
+    COMMENT ON TABLE schema_migrations IS
+      'One row per applied migration file. Written by db/lib/record-migration.mjs, called by BOTH db/apply-migration.mjs and db/apply-migration-concurrent.mjs (wired 2026-08-01; before that nothing wrote it and 032/033 self-inserted). Rows for 001-031 were backfilled by 032 and carry a null checksum: they were applied before the ledger existed and their contents at apply time are not recoverable.';
+  END IF;
+END $$;

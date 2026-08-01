@@ -1,5 +1,6 @@
 import { readFileSync, existsSync } from 'fs';
 import pg from 'pg';
+import { recordMigration } from './lib/record-migration.mjs';
 
 // Apply a migration containing CREATE/DROP INDEX CONCURRENTLY, which cannot run
 // inside a transaction — the standard apply-migration.mjs sends the whole file
@@ -86,7 +87,10 @@ try {
       console.log(`  ✓ post-apply: ${finalNames.length} index(es) VALID and READY (${finalNames.join(', ')})`);
     }
   }
-  if (process.exitCode !== 1) console.log(`✓ applied ${file}`);
+  if (process.exitCode !== 1) {
+    await recordMigration(client, file, text);
+    console.log(`✓ applied ${file}`);
+  }
 } catch (e) {
   console.error(`✗ ${file} failed: ${e.message}`);
   process.exitCode = 1;
