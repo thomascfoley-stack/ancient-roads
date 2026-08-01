@@ -29,8 +29,50 @@ OUTCOME: **A6 CANNOT RUN, for two independent reasons, and neither was on the bo
 > **`034` — authored, NOT applied.** The waitlist RLS needs the plain-INSERT route, which needs a
 > deploy. Its precondition is at the top of the file.
 >
-> **STILL OPEN: C2 · H4 · H5 · M6–M9 (as recorded) · M21–M25.** C2, H4 and H5 are one owner
-> ruling: which of the served content may be delivered. The deploy hard-fails until it is made.
+> ## SECOND PASS, 2026-08-02 — the board is now clear, and **A6 HAS RUN**
+>
+> **C2 CLOSED.** The static artifact is filtered at source, not in the browser:
+> `src/ingest/quarantine-served-corpus.ts` applies `isPublishedCommentaryEntry` — the shipped
+> predicate itself — to `web/public/commentaries/`, moving 77,400 entries (191,749 → 114,349,
+> 407 MB → 344 MB) into `corpus-quarantine/`, outside the upload root. Nothing is deleted;
+> `--restore` reverses it. Because the reader already applied that exact function to those exact
+> entries, nothing user-visible changed — only what leaves the server. It removes far more than the
+> 18,323 measured here, because it closes the class rather than the instances. **Two entries were
+> lost and are not recoverable** — see the commit; the merge key collided on two Basil of Caesarea
+> records and the key is now a sha256 over the whole entry, pinned by a red-proofed test.
+>
+> **H4 + H5 CLOSED**, and both were bigger than recorded. Measured on production before the fix
+> (`docs/evidence/serving-provenance-census-2026-08-01.log`): of 114,834 entries the predicate
+> admitted, **50,618** came from a forbidden aggregator — Barnes' Notes 21,036, John Wesley 18,181,
+> John Calvin 6,163 from biblehub.com; John Chrysostom 2,947, Augustine of Hippo 2,291 from
+> historicalchristian.faith. The fix is a DENYLIST derived from `FORBIDDEN_PROVENANCE_DOMAINS`, not
+> the old author-keyed crosswire allowlist that drifted. After: 64,216 admitted, **0** forbidden.
+> No rows deleted (ADR-039's retirement is explicit). `035` rebuilt the partial index in lockstep.
+>
+> **M21–M25 CLOSED.** One re-ingest guard, inside the transaction, on a row locked FOR UPDATE —
+> and the derived wiring test found **five** destructive writers where this document named three.
+> The publish flip now locks every `sources` row (raising the isolation level was rejected: under
+> REPEATABLE READ the delta check becomes one that cannot fail). M24's blocker was measurably false
+> and `DEPLOY_PREFLIGHT §9` is rewritten as CLOSED, keeping the old table so the correction is
+> findable. M25's staleness is corrected and the A3 rule now has a stable `#a3-rule` anchor.
+>
+> **APPLIED TO PRODUCTION SINCE:** `034` (waitlist RLS, after its deploy precondition was met),
+> `035` (index lockstep), `036` (the three annotation FK indexes). Verified: `app_runtime` sees
+> 0 of the owner's 4 waitlist rows, INSERT still works, a duplicate still raises 23505, UPDATE and
+> DELETE are refused at the grant layer; the live list is unchanged at 4.
+>
+> **A6 RAN.** Deploy `dpl_Dcd5Gy93UGqrP1z7Hq9U7cHwUbhg`, READY, aliased to `ancientpaths.app`.
+> The FIRST attempt (`98124b2`) FAILED on Vercel with `Module not found:
+> '../../../src/ingest/forbidden-provenance.mjs'` — a gate gap worth its own name: **a gate that
+> runs in a different tree shape than production.** `vercel --prod` uploads `web/` alone, so that
+> specifier resolved in the checkout, in CI, in the audit and in a local `next build`, and did not
+> exist in the deployment. `test/invariants/web-upload-root.test.ts` now catches it statically.
+>
+> **STILL OPEN: M6–M9 (as recorded — findings about a write that already happened), M13 (the
+> missing `web/` lockfile: a decision, not a cleanup), and `LEGAL_CORPUS_FILTER`**, which still
+> admits Chrysostom and Augustine by name with no provenance test. That last one is deliberate: it
+> has a partial HNSW index twin and changing what `/ask` retrieves is an accuracy change, gated on
+> re-running the held-out eval.
 >
 > One finding in this document was **wrong and is corrected in place** — see M10.
 
@@ -46,7 +88,7 @@ Every CRITICAL below was re-verified by the synthesizing session against the tre
       `deploy.sh:84`. Measured: `vercel whoami` → `thomas-5672`; `~/Library/Application Support/com.vercel.cli/config.json` `currentTeam` → `team_r1x75frSIu8VcBB7nE8ozwUM`. Production `web` = `prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR` under `team_TQ3BYCSyzQ3m0yatlkKmUzM0`, created by uid `gs6z03rWKk1EtQTeHbPk5exq` (`thomascfoley@gmail.com`). No `--scope`, no project id, no `.vercel/project.json`; zero hits repo-wide for `--scope`, `VERCEL_PROJECT_ID` or the project id in any script. On a TTY the prompt defaults to the directory name `web`, which does not collide in that scope, so it **creates** the project.
       *Fix:* `vercel login` as the owning account, `vercel link` to the project id, then make `deploy.sh` assert the resolved project id rather than trusting CLI state.
 
-- [ ] **C2. The static corpus ships must-not-serve and in-copyright content; the licence filter is client-side.**
+- [x] **C2. The static corpus ships must-not-serve and in-copyright content; the licence filter is client-side.**
       `web/src/lib/bible.ts:132` applies `isPublishedCommentaryEntry` inside `fetchCommentary` — *after* Next has served the file. Measured across 1,212 files / 191,749 entries / 381 MB of text: Tyndale Study Notes **15,161** (4.35 MB), Origen of Alexandria **1,272**, Oecumenius **36** — all on `web/src/lib/legal-corpus.ts:10-19` `MUST_NOT_SERVE_AUTHORS`. Plus CS Lewis 1,102, GK Chesterton 714, Douglas Wilson 16 (living, scraped from his own site), JRR Tolkien 11. `web/public/commentaries/_manifest.json` is a public index that makes bulk collection a for-loop.
       *Current mitigation and its expiry:* `middleware.ts:57` gates these paths today; `middleware.ts:10` says "Remove the gate when SEC-1 closes."
       *Fix:* a server-side route handler over `/commentaries/*`, or a build step that emits a filtered artifact. A client-side filter cannot gate delivery.
@@ -81,10 +123,10 @@ Every CRITICAL below was re-verified by the synthesizing session against the tre
 - [ ] **H3. Every new public read surface is unauthenticated, unthrottled and uncacheable.**
       `api/search/works`, `api/search/commentaries`, `api/work/[slug]`, `api/work/[slug]/sections`. No `requireUser`, no rate limit, no `Cache-Control`. `searchSections` issues two queries per request across 72,863 sections; its own header records 3,781 ms for `grace` pre-optimisation.
 
-- [ ] **H4. `barnes-notes` is held back by one boundary and served by another.**
+- [x] **H4. `barnes-notes` is held back by one boundary and served by another.**
       A3 excluded it, A4 correctly left it `staged` — but that binds only the `sources` path. `legal-corpus.ts:41-42` lists `"Barnes' Notes"` in `PUBLISHED_WHOLE_BIBLE_AUTHORS`, which compiles into the only gate on `searchCommentaries`; that query hits `commentary_entries`, never joins `sources`, never reads `status`. Its manifest entry says `quarantine: "biblehub provenance (ADR-008 forbidden aggregator)"` and no serving code reads that field. Reachable today via `web/src/app/library/passages/page.tsx:304`.
 
-- [ ] **H5. The forbidden-aggregator condition was deliberately removed from the serving predicate.**
+- [x] **H5. The forbidden-aggregator condition was deliberately removed from the serving predicate.**
       `legal-corpus.ts:52-58` records it: the predicate carried `source_url ILIKE '%crosswire%'`, that matched zero rows for Barnes/Wesley/Calvin, and the fix rebuilt it "with no URL condition" so 45,390 biblehub-sourced entries would serve. Migrations `011` and `019` then rebuilt the partial index to match. `test/invariants/fts-legal-index-sync.test.ts` passes precisely *because* both were widened together — it can detect a performance regression, never a legality one.
 
 - [ ] **H6. Provenance is checked at publish time only; no serving path checks it.**
@@ -159,15 +201,15 @@ Every CRITICAL below was re-verified by the synthesizing session against the tre
 
 - [ ] **M20. The catalog page runs a per-source `count(DISTINCT …)` that went from 0 to ~71,563 tuples 40 minutes ago.** `web/src/lib/catalog.ts:48-59`, server-rendered per visitor, uncached. Before the flip the outer `WHERE status='published'` matched zero rows and the SubPlan never ran. No partial index on `sections` restricted to published sources exists, unlike `commentary_entries` which got one across three migrations.
 
-- [ ] **M21. Re-ingest of a published work will fail once any annotation exists.** Section FKs (`notes.section_id`, `highlights.section_id`, `bookmarks.section_id`) are unindexed and carry no `ON DELETE` action, while the three re-ingest paths do `DELETE FROM sections WHERE source_id=$1`. ADR-027's drift design assumes sections get replaced; the FK forbids it. No cleanup path exists.
+- [x] **M21. Re-ingest of a published work will fail once any annotation exists.** Section FKs (`notes.section_id`, `highlights.section_id`, `bookmarks.section_id`) are unindexed and carry no `ON DELETE` action, while the three re-ingest paths do `DELETE FROM sections WHERE source_id=$1`. ADR-027's drift design assumes sections get replaced; the FK forbids it. No cleanup path exists.
 
-- [ ] **M22. The two ingest "refuse to overwrite a published work" guards are TOCTOU.** `ingest-sermon.ts:198-202`, `ingest-historian.ts:142-146` — the status SELECT runs before `BEGIN`; the destructive DELETE runs in the transaction that follows. Six works became publishable 40 minutes ago, which is when this window starts mattering.
+- [x] **M22. The two ingest "refuse to overwrite a published work" guards are TOCTOU.** `ingest-sermon.ts:198-202`, `ingest-historian.ts:142-146` — the status SELECT runs before `BEGIN`; the destructive DELETE runs in the transaction that follows. Six works became publishable 40 minutes ago, which is when this window starts mattering.
 
-- [ ] **M23. The flip's legality gate runs at READ COMMITTED with no locking.** `publish-flip.mjs:151` is a bare `BEGIN`; no isolation statement exists anywhere in the repo. The gate asks "is the published corpus legal" over a non-serializable snapshot, and `barnes-notes` is unlocked for the whole transaction. Under REPEATABLE READ the delta check would instead become one that *cannot fail* — and the level actually in force on 2026-08-01 is unrecorded and now unrecoverable.
+- [x] **M23. The flip's legality gate runs at READ COMMITTED with no locking.** `publish-flip.mjs:151` is a bare `BEGIN`; no isolation statement exists anywhere in the repo. The gate asks "is the published corpus legal" over a non-serializable snapshot, and `barnes-notes` is unlocked for the whole transaction. Under REPEATABLE READ the delta check would instead become one that *cannot fail* — and the level actually in force on 2026-08-01 is unrecorded and now unrecoverable.
 
-- [ ] **M24. A6's stated blocker is measurably false.** `DEPLOY_PREFLIGHT.md §9` and the `MASTER.md` A6 row say the corpus is in a clone 29 commits behind that cannot build and lacks `served-assets.mjs`. Measured in that exact clone: on `main` at `4369d37`, `served-assets.mjs` present, all six served dirs matching the recorded census exactly. The two-clone problem is closed; the board cites it as a blocker for its own irreversible gate.
+- [x] **M24. A6's stated blocker is measurably false.** `DEPLOY_PREFLIGHT.md §9` and the `MASTER.md` A6 row say the corpus is in a clone 29 commits behind that cannot build and lacks `served-assets.mjs`. Measured in that exact clone: on `main` at `4369d37`, `served-assets.mjs` present, all six served dirs matching the recorded census exactly. The two-clone problem is closed; the board cites it as a blocker for its own irreversible gate.
 
-- [ ] **M25. Board staleness.** `MASTER.md:6-7` header 36 commits stale, still naming the working branch; `:38` marks A2 "(unmerged)" when it merged at `1f4bf8d`; `:41` A5 carries no ⚑ although it is a production connection; `:67` "348 today" is 353. `MASTER.md:37` is cited for the A3 rule by seven documents; A3 moved to `:39`.
+- [x] **M25. Board staleness.** `MASTER.md:6-7` header 36 commits stale, still naming the working branch; `:38` marks A2 "(unmerged)" when it merged at `1f4bf8d`; `:41` A5 carries no ⚑ although it is a production connection; `:67` "348 today" is 353. `MASTER.md:37` is cited for the A3 rule by seven documents; A3 moved to `:39`.
 
 - [ ] **M26. `supabase/migrations/0001_init.sql` — a 486-line alternate schema still advertised as executable** by `docs/SCHEMA.md:8`, with `supabase/config.toml` migrations enabled. Delete it or delete the pointer.
 
