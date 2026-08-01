@@ -32,6 +32,38 @@ jobs:
       - run: corepack pnpm install --frozen-lockfile
       - run: corepack pnpm run audit
 
+      # BUILD THE PRODUCT. Until 2026-08-01 nothing in CI compiled the app: this job ran
+      # typecheck, lint, knip, deps-audit and tests, and `db-invariants` ran DB suites. Neither
+      # ran `next build`. The consequence was not hypothetical — the production build sat BROKEN
+      # at HEAD with every check green, because both /api/ask routes exported
+      # `maxDuration = ASK_MAX_DURATION_SEC` and Next 16 rejects a non-literal segment config.
+      # `web/test/teach-budget.test.ts` was simultaneously asserting that binding MUST be the
+      # identifier, so a green test enforced a property that made the product unbuildable and the
+      # two signals never met. The only thing that would ever have caught it is the deploy itself,
+      # at step 6 of 7, with the owner watching.
+      #
+      # COST, measured on this repo rather than estimated: 7s cold (after `rm -rf web/.next`) and
+      # 7s warm. Turbopack compiles in ~2.8s; the rest is typegen and page-data collection. CI
+      # will be slower than a warm laptop, but this is seconds on a job that already installs a
+      # pnpm workspace and runs a coverage suite. That is the price of "a commit that does not
+      # build cannot be green".
+      #
+      # The wrapper exists because Next reports segment-config errors WITHOUT naming a route
+      # ("Invalid segment configuration export detected. ... You should see the relevant failures
+      # in the logs above." — there were none). A bare failure here is unactionable, so the step
+      # says what to look at.
+      - name: build — next build (the product must compile)
+        working-directory: web
+        run: |
+          set -o pipefail
+          if ! npx next build 2>&1 | tee /tmp/next-build.log; then
+            echo "::error title=next build failed::The production build does not compile at this commit. Deploy A would fail at deploy.sh step 6 of 7."
+            if grep -q "Invalid segment configuration" /tmp/next-build.log; then
+              echo "::error title=Invalid route segment config::Next names no route for this error. Look for a NON-LITERAL route segment export (dynamic/revalidate/runtime/maxDuration/fetchCache/preferredRegion/dynamicParams) — these must be statically analysable literals, not imported constants. Check: grep -rn '^export const \(dynamic\|revalidate\|runtime\|maxDuration\|fetchCache\|preferredRegion\|dynamicParams\)' web/src/app"
+            fi
+            exit 1
+          fi
+
   # The DB-backed behavioral invariants (licensing, tenancy) run against a real Neon TEST BRANCH.
   # SECURITY: this is a TEST branch, NEVER prod — the tenancy suite writes rows. Set its app_runtime
   # connection string as the repo secret APP_DATABASE_URL_TEST (see docs/SECURITY.md / OWNER_ACTIONS §1).
