@@ -30,7 +30,18 @@ PUBLISH_FLIP_DATABASE_URL=<rehearsal fork url> npx tsx scripts/publish-flip-cens
 
 | slug | register | why it should be published | admitted by §1? | forbidden rows becoming reachable (§2) |
 |------|----------|----------------------------|-----------------|----------------------------------------|
-| _(from §1 of the census)_ | | | | |
+| `adam-clarke` | commentary | full commentary, 12,693/12,693 sections admitted by the serving filter | yes | 0 (measured: 0 forbidden `source_url` across all works) |
+| `calvin-crosswire` | commentary | 5,088 of 5,090 sections admitted (2-row shortfall recorded as residual) | yes | 0 |
+| `jfb` | commentary | 15,473/15,473 admitted | yes | 0 |
+| `john-gill` | commentary | 28,843/28,843 admitted | yes | 0 |
+| `matthew-henry` | commentary | 4,210/4,210 admitted | yes | 0 |
+| `wesley-crosswire` | commentary | 5,254/5,254 admitted | yes | 0 |
+
+Filled by A3, 2026-08-01, from the adjudicated census — see
+[`docs/evidence/a3-adjudication-2026-08-01/README.md`](../a3-adjudication-2026-08-01/README.md)
+for the admission definition, the traceability shas, and why `barnes-notes` (1,300 sections,
+**0 admitted**) is NOT in this table: it stays staged, and the census STOP fires only if a flip
+includes it.
 
 **A work goes in this table only if the census reports it ADMITTED.** A `published` row that
 the serving predicates do not admit is the flip's worst outcome and the census stops on it:

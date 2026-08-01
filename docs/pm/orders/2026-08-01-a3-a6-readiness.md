@@ -88,9 +88,17 @@ Reads A2's report; emits the §1 table for `PUBLISH_FLIP.md:31-33` and
 `docs/evidence/work-order-v2-stage2/flip-slugs.json`.
 
 Admission is membership in `SERVED_PROSE_WORKS ∪ SERVED_LANE_WORKS`, **imported** from
-`web/src/lib/teacher/routing`. Verdicts come from the already-red-proved `admissionFindings` /
-`censusVerdict` in `scripts/lib/publish-flip-census.mjs:25,124` — **never re-typed**, because a
-census that re-types the serving predicates measures a population the product does not serve.
+`web/src/lib/teacher/routing`.
+
+> **CORRECTED at adjudication (2026-08-01):** A2 proved that definition admits **zero**
+> production works — no prod slug is in either list; admission on prod runs entirely through
+> `LEGAL_CORPUS_FILTER`'s author legs. A3 was adjudicated on the measured row-admission instead
+> (`admitted := ADMITTED rows > 0` per work), which is MASTER.md:37's work-grain intent. The
+> departure is recorded in [the A3 record](../../evidence/a3-adjudication-2026-08-01/README.md).
+
+Verdicts come from the already-red-proved `admissionFindings` / `censusVerdict` in
+`scripts/lib/publish-flip-census.mjs:25,124` — **never re-typed**, because a census that re-types
+the serving predicates measures a population the product does not serve.
 
 Refuse (exit 2) unless `cohort === 'staged'`, the host is the prod endpoint, and every line parses.
 **Exit 1 on any published-but-not-admitted work — that is the A3 STOP.**

@@ -1,0 +1,44 @@
+A2.3 serving census — read-only
+  target declared: ep-odd-fog
+  host reached:    ep-odd-fog-atnykudm (credentials redacted)
+  connection:      neonctl role=app_runtime branch=production
+  predicates from: web/src/lib/teacher/routing.ts (extracted, not retyped)
+  ts:              2026-08-01T05:10:11.119Z
+  server says:     transaction_read_only=on, current_user=app_runtime ✓
+
+=== POSITIVE CONTROL: rows admitted by LEGAL_CORPUS_FILTER = 83993 ✓ (filter fires)
+  guard cost: 0 of 190635 platform rows have a non-numeric/absent verseId and are excluded from the counts below
+
+=== A2.3 SERVING CENSUS — per source ===
+  slug                           status      sections  publishd  slug-leg  flat rows  ADMITTED
+  adam-clarke                    staged         12693  no        no            12693     12693
+  barnes-notes                   staged          1300  no        no             1300         0
+  calvin-crosswire               staged          5090  no        no             6215      5088
+  jfb                            staged         15473  no        no            15473     15473
+  john-gill                      staged         28843  no        no            28843     28843
+  matthew-henry                  staged          4210  no        no             4210      4210
+  wesley-crosswire               staged          5254  no        no             6275      5254
+
+  authors carried, per work key:
+    adam-clarke                    Adam Clarke=12693
+    barnes-notes                   Barnes' Notes=1300
+    calvin-crosswire               John Calvin=6215
+    jfb                            Jamieson, Fausset & Brown=15473
+    john-gill                      John Gill=28843
+    matthew-henry                  Matthew Henry=4210
+    wesley-crosswire               John Wesley=6275
+
+=== WHAT THE FILTER ADMITS, BY AUTHOR (whole flat store, work key or not) ===
+  John Gill                            28843   of which no work key: 0
+  Jamieson, Fausset & Brown            15473   of which no work key: 0
+  Adam Clarke                          12693   of which no work key: 0
+  Albert Barnes                         6850   of which no work key: 6850
+  John Wesley                           5254   of which no work key: 0
+  John Calvin                           5088   of which no work key: 0
+  Matthew Henry                         4210   of which no work key: 0
+  Augustine of Hippo                    2995   of which no work key: 2995
+  John Chrysostom                       2587   of which no work key: 2587
+  TOTAL admitted 83993
+  distinct authors admitted: 9
+
+✓ serving census complete. ROLLBACK follows; zero writes performed.
