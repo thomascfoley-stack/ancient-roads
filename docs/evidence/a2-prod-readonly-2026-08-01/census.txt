@@ -1,0 +1,76 @@
+# A2.1 + A2.4 — production status census, read-only. 2026-08-01
+#
+# EXACT COMMAND (NEON_API_KEY travels in env only; never argv, never printed):
+#   NEON_API_KEY="$(cat ~/.neon_api_key)" node \
+#     docs/evidence/a2-prod-readonly-2026-08-01/census.mjs \
+#     --read-only --target=ep-odd-fog \
+#     > /tmp/a2/census-stdout.log 2> /tmp/a2/census-stderr.log
+#   EXIT=0
+
+A2 production census — read-only
+  target declared: ep-odd-fog
+  host reached:    ep-odd-fog-atnykudm (credentials redacted)
+  connection:      neonctl role=app_runtime branch=production
+  ts:              2026-08-01T05:03:53.769Z
+  server says:     transaction_read_only=on, current_user=app_runtime ✓
+
+=== POSITIVE CONTROL: John Gill rows = 28843 ✓ (probe fires)
+
+=== A2.1 SOURCES CENSUS (every row in `sources`) ===
+  slug                           source_type       status       sections
+  adam-clarke                    commentary        staged          12693
+  barnes-notes                   commentary        staged           1300
+  calvin-crosswire               commentary        staged           5090
+  jfb                            commentary        staged          15473
+  john-gill                      commentary        staged          28843
+  matthew-henry                  commentary        staged           4210
+  wesley-crosswire               commentary        staged           5254
+
+=== A2.1 TOTALS ===
+  status staged            7 source(s)
+  sources total  7
+  sections total 72863
+  sections summed per-source 72863 ✓ matches
+  (2026-07-30 hand-transcribed reading for comparison: 7 sources / 7 staged / 0 published / 72,863 sections)
+
+=== A2.4a GRANTS HELD BY app_runtime (has_table_privilege, asked of the server) ===
+  table                 SELECT INSERT UPDATE DELETE 
+  embeddings            YES    YES    YES    YES    
+  commentary_entries    YES    no     no     no     
+  sources               YES    no     no     no     
+  sections              YES    no     no     no     
+  (STATE_OF_TRUTH.md:300-304 records app_runtime still holding INSERT/UPDATE/DELETE on embeddings)
+
+=== A2.4b G1 USER-DATA INVENTORY (counts only; no row bodies read) ===
+  waitlist             rows=     4  distinct_users=n/a (no user_id column)
+  channels             rows=     0  distinct_users=0
+  highlights           rows=     0  distinct_users=0
+  notes                rows=     0  distinct_users=0
+  chats                rows=     0  distinct_users=0
+  messages             rows=     0  distinct_users=0
+  bookmarks            rows=     0  distinct_users=0
+  reading_progress     rows=     0  distinct_users=0
+  user_library         rows=     0  distinct_users=0
+  library_items        rows=     0  distinct_users=0
+  chat_memories        rows=     0  distinct_users=0
+  reading_history      rows=     0  distinct_users=0
+  study_guides         rows=     0  distinct_users=0
+  user_profiles        rows=     0  distinct_users=n/a (no user_id column)
+  user_integrations    rows=     0  distinct_users=0
+  api_rate_limit       rows=    41  distinct_users=8
+  (STATE_OF_TRUTH.md:92-94 marks "prod user data is empty" as owner-ASSERTED, never measured)
+
+=== A2.4c FORBIDDEN PROVENANCE ===
+  flat embeddings (metadata->>'sourceUrl'):
+    biblehub    15707
+    studylight  0
+    hcf         56177
+    TOTAL       71884   vs 71,884 ratchet (STATE_OF_TRUTH.md:111) — ✓ unchanged
+  sections store (sec.source_url): 0 work(s)
+    (none)
+
+=== CONTEXT (not a verdict) ===
+  flat platform embeddings: 190635   without a work key: 112815 (59.2%)
+  section_embeddings: 72863
+
+✓ census complete. ROLLBACK follows; zero writes performed (transaction was READ ONLY throughout).

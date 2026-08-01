@@ -1,0 +1,22 @@
+{
+  "LEGAL_CORPUS_FILTER": "(metadata->>'author' IN ('John Gill','Jamieson, Fausset & Brown','Adam Clarke','Matthew Henry')\n   OR (metadata->>'author'='John Chrysostom'    AND (metadata->>'verseId')::int/1000000 IN (40,43,44))\n   OR (metadata->>'author'='Augustine of Hippo' AND (metadata->>'verseId')::int/1000000 IN (19,43))\n   OR (metadata->>'author' IN ('Albert Barnes','John Wesley','John Calvin') AND metadata->>'sourceUrl' ILIKE '%crosswire%')\n   OR metadata->>'work' IN ('keil-delitzsch','catena-aurea','chrysostom-homilies','augustine-homilies'))",
+  "PROSE_TYPE_SQL": "source_type IN ('commentary','sermon','father','theology','confession','lexicon')",
+  "SERVED_PROSE_WORKS": [
+    "keil-delitzsch",
+    "catena-aurea",
+    "chrysostom-homilies",
+    "augustine-homilies"
+  ],
+  "SERVED_LANE_WORKS": [
+    "spurgeon-sermons",
+    "maclaren-expositions",
+    "watson-works",
+    "flavel-works",
+    "edwards-works",
+    "wesley-sermons",
+    "owen-works",
+    "hodge-systematic",
+    "calvin-institutes",
+    "schaff-creeds"
+  ]
+}
