@@ -123,6 +123,26 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 **UNVERIFIED (owner decision sheet §1):** G1 does not assert row **identity** — only counts/digest; the historical
 "37 user rows" invariant was never identity-proved on prod post-cutover. See `docs/OWNER_DECISIONS_2026-07-29.md` §1.
 
+### 2d. Prod `sources.status` — published count (2026-07-30, ADR-042)
+
+> **Measured read-only ~10:09 local 2026-07-30** during an unplanned Cursor session (ADR-042). **Not**
+> instrument output — ad-hoc diagnostics + instrument positive control abort. **Last repo-authoritative
+> prod census before this:** cutover E0–E6 log (2026-07-29) reports 72,863 sections sliced but does not
+> state a publish flip; E4 writes `status='staged'`.
+
+| fact | value | source | verified in repo |
+|---|---|---|---|
+| `sources` total | **7** | ADR-042 session read | recorded, not re-run here |
+| `status = 'staged'` | **7** (all) | same | recorded |
+| `status = 'published'` | **0** | same — instrument positive control abort | recorded |
+| `sections` total | **72,863** | same; matches E4 log | ✅ consistent with §2b |
+| Publish flip on prod | **NOT DONE** (inferred) | staged-only + E4 design | repo does not document a flip |
+
+**Sequencing implication.** Stage 2.2 `unit_ordinal` prod measurement requires `published > 0`. Ordering
+verification on production is **downstream of publish flip**, not parallel to instrument hardening.
+
+**What the repo does not know without a fresh read:** whether status changed after 2026-07-30 10:09.
+
 ### 2c. Dev branch snapshot (historical — `ground-truth.mjs`, 2026-07-15)
 
 | fact | value | verified |
@@ -149,6 +169,88 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 > **11** for "distinct authors served"; use **9** only when explicitly meaning "author names written
 > into the filter". Historical docs that say "9 authors" pre-date the work-leg expansion and are left
 > as point-in-time record. Re-measured after today's suppressions, which did not change this set.
+
+### 2e. Dev-only `unit_ordinal` drift (2026-07-31) — **REPAIRED**
+
+> **Measured read-only on dev (`ep-tiny-hat`) via neonctl-minted `app_runtime`.** Production census:
+> **0 published sources** (§2d) — these defects do **not** exist on prod. E0–E6 register never ran on prod;
+> suppression scripts (`suppress-chrysostom-prolegomena`, `suppress-nonauthorial`, etc.) are hard-guarded
+> to `ep-tiny-hat` only.
+
+**Invariant (ADR-041 addendum):** order preservation, not dense 1..N. Instrument checks grouping +
+reading-order preservation; uniform per-work offset is reported, non-uniform offset fails.
+
+**Repair (2026-07-31, owner-authorized):** `scripts/repair-unit-ordinal.mjs` re-applied migration 024's
+CTE chain with a slug-scoped `need` selector (024 alone cannot re-touch filled sources — idempotent by
+exclusion). Weld detector was empty before apply (stored_units == computed_units). **61,486** sections
+updated on each of:
+
+| endpoint | Neon branch | instrument after |
+|----------|-------------|------------------|
+| `ep-tiny-hat` | `dev` | published cohort `ok=true` |
+| `ep-tiny-bonus` | `ci-test-20260729` (CI `APP_DATABASE_URL_TEST`) | published cohort `ok=true` |
+
+Production was refused (hard guard). Tool: dry-run default, `--apply` writes, rolls back if instrument stays RED.
+
+**Works repaired** (section-level drift before apply): `chrysostom-homilies`, `edwards-works`,
+`hodge-systematic`, `maclaren-expositions`, `owen-works`, `tennyson-in-memoriam`, `watson-works`.
+
+#### Why CI went from red to green — the data moved, not the code
+
+**`db-invariants` failed at `6896714` (Actions run 30613713514) and passed at `ac19935` (run
+30650159435). It went green because the measured DATA was rewritten on `ep-tiny-bonus`
+(`ci-test-20260729`, the CI `APP_DATABASE_URL_TEST` branch) and on `ep-tiny-hat` (dev) — not because
+any code changed.**
+
+This sentence exists because the diff invites the opposite conclusion. `ac19935` also edits
+`scripts/lib/unit-ordinal-instrument.mjs` by 56 lines, sitting immediately beside the red→green
+transition. The independent audit ruled that rival explanation out by loading both versions
+side by side: the cohort recompute SQL is **byte-identical** (2790 chars both), and
+`analyzeUnitOrdinalPreservation` and `measureUnitOrdinalForCohort` are unchanged — the +56 is a
+refactor extracting `replaceNeedCte()`, and the test diff is purely additive. Same code, same
+assertion, same query, different data.
+
+The failure at `6896714` was exactly one test — the published-work leg, `1 failed | 220 passed |
+3 skipped` — naming **six** works with non-uniform offsets:
+
+| work | distinct `stored − computed` deltas |
+|---|---|
+| `chrysostom-homilies` | 2 — **(16, 17)** |
+| `edwards-works` | 2 — (0, 1) |
+| `hodge-systematic` | 3 — (0, 3, 6) |
+| `maclaren-expositions` | 3 — (0, 1, 2) |
+| `owen-works` | 5 — (0, 1, 2, 3, 4) |
+| `watson-works` | 2 — (0, 1) |
+
+**Six failed CI; seven were repaired.** The repair tool auto-selects on *any*
+`sec.unit_ordinal IS DISTINCT FROM c.computed_unit_ordinal`, which is strictly broader than the
+instrument's failure condition (NULL, duplicate pair, grouping break, order break, or **non-uniform**
+offset — a **uniform** offset is reported and passed by design). `tennyson-in-memoriam` is the
+difference: it carried drift of the one kind the instrument deliberately tolerates, a uniform
+per-work offset, so it was in the repair's scope and never in CI's failure list.
+
+**`chrysostom-homilies` is (16, 17), NOT a uniform +16.** The "+16 prolegomena" account is
+incomplete: two distinct deltas means **two deletion points**. ADR-029's suppression of 95
+prolegomena sections accounts for the 16. The second is `suppress-nonauthorial-matter.ts` removing
+**6** further sections — ordinals 6608–6613, all `unit_ordinal=275`, all ONE unit ("Comparative Table
+of the Works of St. Chrysostom"). Deleting a whole unit shifts every unit after it by exactly one
+more, so sections before unit 275 drift by 16 and sections after it by 17. Verified by counting
+chrysostom rows in `docs/evidence/part2/nonauthorial-matter-suppressed.jsonl`. The correction is also
+recorded at the ADR-029 addendum, where a reader meets the "+16" story. A tidy story the measurement
+contradicts is worse than no story.
+
+**UNVERIFIED — do not upgrade without re-execution.** The **61,486** row count rests on the tool's
+own log. The independent auditor had no dev credentials and could not reach either endpoint; CI
+corroborates that the drift is *gone* on `ep-tiny-bonus`, not how many rows moved, and nothing in
+Actions reads `ep-tiny-hat` at all.
+
+**Defect class (standing hazard):** migration 024 backfill is idempotent by exclusion
+(`WHERE unit_ordinal IS NULL`). Scripts that **delete sections after backfill** silently invalidate
+stored `unit_ordinal` without re-running a slug-scoped repair — will recur on the next post-backfill
+delete unless the suppression script re-invokes the repair.
+
+**Front-matter (Stage 3.2):** at `b4596aa`, scan STOPs on **all 8 admitted hits**; strength computed but
+does not gate. See `docs/evidence/work-order-v2-stage2/TRANCHE5-STASH-EVALUATION.md`.
 
 ## 3. Bible text plane — served from files, NOT a prod DB schema
 

@@ -27,8 +27,10 @@ export interface SkipRequirement {
    * `secret` — CI/db-invariants must FAIL when absent under REQUIRE_SECRETS=1.
    * `artifact` — gitignored or machine-local files CI cannot have; LOUD SKIP only,
    * never a failure (enforced instead at deploy via REQUIRE_CORPUS / predeploy-gate).
+   * `provider` — a third-party service the check depends on is UNAVAILABLE (429/5xx),
+   * as distinct from present-and-wrong. LOUD SKIP, never a failure and never a pass.
    */
-  readonly kind?: 'secret' | 'artifact';
+  readonly kind?: 'secret' | 'artifact' | 'provider';
 }
 
 /** Sidecar manifest path — set by db-invariants workflow; read by ci-skip-ceiling.mjs. */
@@ -73,9 +75,10 @@ export function announceSkip(
 ): boolean {
   const missingSecrets = requirements.filter((r) => !r.present && (r.kind ?? 'secret') === 'secret');
   const missingArtifacts = requirements.filter((r) => !r.present && r.kind === 'artifact');
-  if (missingSecrets.length === 0 && missingArtifacts.length === 0) return false;
+  const unavailableProviders = requirements.filter((r) => !r.present && r.kind === 'provider');
+  if (missingSecrets.length === 0 && missingArtifacts.length === 0 && unavailableProviders.length === 0) return false;
 
-  const missingNames = [...missingSecrets, ...missingArtifacts].map((r) => r.name);
+  const missingNames = [...missingSecrets, ...missingArtifacts, ...unavailableProviders].map((r) => r.name);
   const msg =
     `${check} DID NOT RUN — missing ${missingNames.join(' and ')}. ` +
     `It covers: ${covers}. A green suite without it is not evidence that any of those hold.`;
@@ -87,6 +90,9 @@ export function announceSkip(
 
   if (missingSecrets.length === 0 && missingArtifacts.length > 0) {
     recordArtifactSkip(check, missingArtifacts.map((r) => r.name));
+  }
+  if (missingSecrets.length === 0 && unavailableProviders.length > 0) {
+    recordArtifactSkip(check, unavailableProviders.map((r) => r.name));
   }
 
   if (process.env.GITHUB_ACTIONS === 'true') {

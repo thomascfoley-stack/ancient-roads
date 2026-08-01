@@ -29,6 +29,7 @@ import { embedQuery } from '@/lib/teacher/deepinfra';
 import { runtimeDbUrl } from '../helpers/env';
 import { localEnv } from '../helpers/env';
 import { announceSkip } from '../helpers/loud-skip';
+import { isProviderUnavailable, probeProvider } from '../helpers/provider-availability';
 
 const dbUrl = runtimeDbUrl();
 const hasKey = Boolean(process.env.DEEPINFRA_API_KEY ?? localEnv('DEEPINFRA_API_KEY'));
@@ -113,11 +114,37 @@ describe.skipIf(SKIP)('§B0 class 2 — every section body matches its own store
     // vacuous, which is the failure mode this whole file exists to close.
     expect(samples.length, 'no published section is short enough to sample — this check would pass vacuously').toBeGreaterThan(0);
 
+    // PROVIDER AVAILABILITY, before asserting anything. A 429 from DeepInfra is not evidence about
+    // this invariant — it is the absence of evidence. `ca53457` (docs-only) went RED on exactly that
+    // and passed on re-run with no change. Probe once with a bounded retry; if the provider is down,
+    // announce NOT RUN through the same taxonomy as a missing secret or a missing artifact, and
+    // return without asserting. A genuine failure (400/401, or a wrong vector) re-throws and stays RED.
+    const probe = await probeProvider(() => embedQuery(samples[0]!.body));
+    if (announceSkip(
+      '§B0 class 2 — section/vector pairing',
+      [{ name: `DeepInfra embeddings (unavailable after ${probe.attempts} attempts: ${probe.error ?? ''})`, present: probe.present, kind: 'provider' }],
+      'every published section body matching its own stored vector, and discriminating against a neighbour',
+    )) return;
+
     const failures: string[] = [];
     for (let i = 0; i < samples.length; i++) {
       const s = samples[i]!;
       const stored = parseVector(s.embedding);
-      const fresh = await embedQuery(s.body);
+      let fresh: number[];
+      try {
+        fresh = await embedQuery(s.body);
+      } catch (err) {
+        // The provider went down mid-run, after the probe said it was up.
+        if (isProviderUnavailable(err)) {
+          announceSkip(
+            '§B0 class 2 — section/vector pairing (provider failed mid-run)',
+            [{ name: `DeepInfra embeddings (${err instanceof Error ? err.message : String(err)})`, present: false, kind: 'provider' }],
+            'the remaining published sections in this run',
+          );
+          return;
+        }
+        throw err;
+      }
       const self = cosine(stored, fresh);
 
       // Discrimination control, in the SAME run: the stored vector of a DIFFERENT section must

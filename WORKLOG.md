@@ -1,5 +1,36 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-07-30 (SESSION 11 — work-order v2 Stage 2 tranche 1)
+
+**Headline:** PR #44 merged to `main` @ merge commit `1199a03`. Stage 2.1 **unit_ordinal instrument**
+landed on `chore/work-order-v2-stage2` — shared core, read-only CLI, db-invariants test with standing
+perturbations, cutover gate G10.
+
+### DONE (Stage 2.1)
+- `scripts/lib/unit-ordinal-instrument.mjs` — NULL/order/recompute/digest checks; extracts 024 backfill SQL
+- `scripts/unit-ordinal-instrument.mjs` — `--read-only --target=<endpoint>` for prod measurement
+- `web/test/invariants/unit-ordinal-instrument.test.ts` — perturbations `units-merge-islands`,
+  `unit-sort-storage-ordinal`; published-work leg when `APP_DATABASE_URL` present
+- `scripts/cutover-regression-gate.mts` — **G10** rollup digest ratchet against E0
+- Evidence index: `docs/evidence/work-order-v2-stage2/README.md`
+
+### NOT DONE (Stage 2 remainder)
+- **2.2 prod read-only** on `ep-odd-fog` — **HELD** until owner go (preflight landed: app_runtime + neonctl mint + no body in excerpt log)
+- Human read of first-20-unit excerpts across three registers
+- Stage 2 STOP independent audit
+- ~~Close superseded PR #43~~ — closed with comment naming `1199a03`
+
+## 2026-07-30 (SESSION 12 — Stage 2.2 preflight)
+
+**Headline:** Stage 2.2 held — three preflight fixes before prod run. No production connection executed.
+
+### DONE (preflight §1–§3)
+- `scripts/lib/neon-connection.mjs` — mint `app_runtime` URL via `neonctl` + `NEON_API_KEY`; never echo credential
+- `scripts/unit-ordinal-instrument.mjs` — excerpt dump: clean-provenance works only; `unit_ordinal` + `ordinal` + heading — **no body text**
+- `instrumentTargetMatches()` in target-guard — ep-odd-fog prefix matches full prod host (cutover STEP ZERO rule)
+- `test/unit-ordinal-instrument-preflight.test.ts` — 13 tests
+- PR #43 closed — superseded by `1199a03`
+
 ## 2026-07-30 (SESSION 10 — work-order v2 Stage 1 PR #44 round 3)
 
 **Headline:** CI-only fixes for skip ceiling vs loud-skip artifact exemption and duplicate check runs.

@@ -50,6 +50,8 @@
 //                              a forbidden aggregator may live under a source whose
 //                              DECLARED provenance is clean — the laundering shape G6's
 //                              sources.provenance scan is structurally blind to.
+//   G10 unit_ordinal         — Work Order v2 Stage 2.1: NULL/order/recompute/digest on
+//                              every published work; rollup digest ratcheted against E0.
 //   G9 constraints reject    — the negative half of G4. The annotation CHECKs really
 //                              refuse the shapes 025/030 forbid, verified by SQLSTATE
 //                              23514 AND the constraint NAME (a bare catch counts a
@@ -72,6 +74,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { hostOf, declaredMatches } from './lib/target-guard.mjs';
+import { recordGateLeg, validateGateLegInventory } from './lib/gate-leg-inventory.mjs';
 import { loadCheckpoint, saveCheckpoint, OWNERSHIP_ERROR } from './lib/checkpoint.mjs';
 import type { CheckpointFile } from './lib/checkpoint.d.mts';
 import {
@@ -90,6 +93,7 @@ import {
   PUBLISHED_WHOLE_BIBLE_AUTHORS,
   isPublishedCommentaryEntry,
 } from '../web/src/lib/legal-corpus.ts';
+import { measurePublishedUnitOrdinal, rollupDigest } from './lib/unit-ordinal-instrument.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Overridable so the DESTRUCTIVE seeded-defect proof can use its own file. It captures a
@@ -137,14 +141,23 @@ interface Baseline {
   forbidden?: number;
   voices?: VoiceFloor;
   sections?: SectionIntegrity;
+  unitOrdinal?: UnitOrdinalIntegrity;
   laneRows?: number;   // G5's denominator, ratcheted (never phase-hardcoded)
   labeled?: number;    // rows carrying any metadata->>'work' key — the leg E2 populates
 }
 type Checkpoint = CheckpointFile & { baseline: Record<string, unknown> & { regression?: Baseline } };
 
 const failures: string[] = [];
-const fail = (gate: string, msg: string) => { failures.push(`${gate}: ${msg}`); console.error(`  ✗ ${gate} — ${msg}`); };
-const pass = (gate: string, msg: string) => console.log(`  ✓ ${gate} — ${msg}`);
+const reportedLegs = new Set<string>();
+const fail = (gate: string, msg: string) => {
+  recordGateLeg(reportedLegs, gate);
+  failures.push(`${gate}: ${msg}`);
+  console.error(`  ✗ ${gate} — ${msg}`);
+};
+const pass = (gate: string, msg: string) => {
+  recordGateLeg(reportedLegs, gate);
+  console.log(`  ✓ ${gate} — ${msg}`);
+};
 
 async function hasColumn(c: pg.Client, table: string, col: string): Promise<boolean> {
   const r = await c.query<{ ok: boolean }>(
@@ -692,6 +705,7 @@ async function g6(c: pg.Client, base?: number): Promise<number> {
 //     That is the defect this exists to catch, expressed so it cannot false-red.
 //   - and it is non-vacuous: zero sections is a broken instrument, not a pass.
 interface SectionIntegrity { sections: number; embeddings: number; unembedded: number; orphans: number }
+interface UnitOrdinalIntegrity { publishedWorks: number; nulls: number; rollupDigest: string }
 
 async function measureSectionIntegrity(c: pg.Client): Promise<SectionIntegrity | null> {
   const has = await c.query<{ ok: boolean }>(
@@ -778,6 +792,38 @@ async function g8(c: pg.Client, phase: string, base?: SectionIntegrity): Promise
       console.log('    G8 provenance census (sections.source_url host per source):');
       for (const r of census.rows) console.log(`      ${r.slug}: ${r.host} ×${r.n}`);
     }
+  }
+  return now;
+}
+
+// ── G10: unit_ordinal instrument (Work Order v2 Stage 2.1) ───────────────────
+// Published works must carry populated, correctly ordered unit_ordinal values matching
+// the 024 backfill recomputation, with a per-work digest ratchet against E0.
+async function g10(c: pg.Client, phase: string, base?: UnitOrdinalIntegrity): Promise<UnitOrdinalIntegrity | undefined> {
+  const result = await measurePublishedUnitOrdinal(c);
+  if (result.publishedWorks === 0) {
+    fail('G10 unit_ordinal', `zero published works at ${phase} — the instrument is blind`);
+    return undefined;
+  }
+  const now: UnitOrdinalIntegrity = {
+    publishedWorks: result.publishedWorks,
+    nulls: result.nulls,
+    rollupDigest: rollupDigest(result.digests),
+  };
+  if (!result.ok) {
+    fail('G10 unit_ordinal', result.errors.join('; '));
+  } else if (!base) {
+    if (CAPTURE) {
+      pass('G10 unit_ordinal', `baseline captured: ${now.publishedWorks} published work(s), ${now.nulls} NULL unit_ordinal, rollup ${now.rollupDigest.slice(0, 12)}…`);
+    } else {
+      pass('G10 unit_ordinal', `BASELINING (no stored unitOrdinal in checkpoint): ${now.publishedWorks} published work(s), ${now.nulls} NULL unit_ordinal, rollup ${now.rollupDigest.slice(0, 12)}… — survey, not ratchet`);
+    }
+  } else if (now.rollupDigest !== base.rollupDigest) {
+    fail('G10 unit_ordinal', `rollup digest changed (${base.rollupDigest.slice(0, 12)}… → ${now.rollupDigest.slice(0, 12)}…) — a published work's (slug, section_id, unit_ordinal, ordinal) tuple permuted`);
+  } else if (now.nulls > base.nulls) {
+    fail('G10 unit_ordinal', `NULL unit_ordinal increased ${base.nulls} → ${now.nulls}`);
+  } else {
+    pass('G10 unit_ordinal', `${now.publishedWorks} published work(s), digest unchanged, ${now.nulls} NULL (E0 ${base.nulls})`);
   }
   return now;
 }
@@ -1131,6 +1177,7 @@ try {
   const laneRows = await g5(c, PHASE, CAPTURE ? undefined : stored.laneRows);
   const forbidden = await g6(c, CAPTURE ? undefined : stored.forbidden);
   const sections = await g8(c, PHASE, CAPTURE ? undefined : stored.sections);
+  const unitOrdinal = await g10(c, PHASE, CAPTURE ? undefined : stored.unitOrdinal);
   await g9(c);
   if (process.env.CUTOVER_ASK_URL) { liveProbeRan = true; await liveAsk(process.env.CUTOVER_ASK_URL); }
   else console.warn(LIVE_PROBE_NOT_RUN);
@@ -1138,7 +1185,7 @@ try {
   // Never persist a baseline from a run that already failed — a baseline captured off a
   // broken reading is a check that can never fail again.
   if (CAPTURE && failures.length === 0) {
-    cp.baseline.regression = { host, userData: now, forbidden, voices, sections, laneRows, labeled: g2r.labeled };
+    cp.baseline.regression = { host, userData: now, forbidden, voices, sections, unitOrdinal, laneRows, labeled: g2r.labeled };
     try { saveCheckpoint(CHECKPOINT, cp); }
     catch (e) {
       const m = (e as Error).message;
@@ -1149,6 +1196,13 @@ try {
   }
 } finally {
   await c.end();
+}
+
+const legCheck = validateGateLegInventory(reportedLegs, { liveProbe: liveProbeRan });
+if (!legCheck.ok) {
+  console.error(`\n✗ REGRESSION GATE REFUSED — required leg(s) did not report: ${legCheck.missing.join(', ')}`);
+  console.error('  A gate that silently skips a leg is worse than a red leg — every declared surface must speak.');
+  process.exit(1);
 }
 
 if (failures.length > 0) {
@@ -1166,6 +1220,12 @@ if (failures.length > 0) {
 // SURVEY, not a regression gate — both end in a green line, and only this qualifier tells
 // them apart. It matters most in --e6-only against a fresh fork, which is exactly the
 // situation in which someone is trying to convince themselves the gate works.
-const compared = !CAPTURE && stored.userData !== undefined;
+const compared = !CAPTURE && stored.userData !== undefined && stored.unitOrdinal !== undefined;
+const g10Baselining = !CAPTURE && stored.unitOrdinal === undefined;
 const scope = liveProbeRan ? 'including the live /ask probe (end-to-end)' : 'DB-ONLY, LIVE PROBE NOT RUN';
-console.log(`✓ REGRESSION GATE PASSED at ${PHASE} — ${scope}${compared ? '' : '; NO E0 BASELINE, so the ratcheted legs REPORTED rather than asserted (survey, not regression gate)'}`);
+const qualifier = compared
+  ? ''
+  : g10Baselining
+    ? '; NO E0 unitOrdinal BASELINE — G10 REPORTED rather than ratcheted (survey, not regression gate)'
+    : '; NO E0 BASELINE, so the ratcheted legs REPORTED rather than asserted (survey, not regression gate)';
+console.log(`✓ REGRESSION GATE PASSED at ${PHASE} — ${scope}${qualifier}`);

@@ -9,43 +9,20 @@
 // truth: the per-work license map reviewed by the owner. Any entry that is not
 // unambiguously in the allowed set, or is missing provenance, fails closed.
 
+// The forbidden-aggregator predicate lives in plain JavaScript next door, because the
+// read-only production instrument imports it under `node` with no transpiler available
+// (see the header of forbidden-provenance.mjs). It is RE-EXPORTED here so that this
+// module stays the one import site every caller already knows, without a second body of
+// the logic existing anywhere.
+import { FORBIDDEN_PROVENANCE_DOMAINS, forbiddenProvenanceDomain } from './forbidden-provenance.mjs';
+
+export { FORBIDDEN_PROVENANCE_DOMAINS, forbiddenProvenanceDomain };
+
 export const ALLOWED_LICENSES = ['Public Domain', 'CC BY', 'CC BY-SA'] as const;
 export type AllowedLicense = (typeof ALLOWED_LICENSES)[number];
 
 export function isAllowedLicense(license: unknown): license is AllowedLicense {
   return typeof license === 'string' && (ALLOWED_LICENSES as readonly string[]).includes(license);
-}
-
-// Aggregators we must never depend on for provenance (ADR-008, CLAUDE.md). The
-// TEXT may be public domain, but reusing THEIR compilation is a breach-of-contract
-// exposure (the hiQ pattern), and an unlabeled aggregator edition can't clear the
-// edition trap. A source whose provenance points here fails closed: it must be
-// re-sourced from a permitted PD edition, or explicitly quarantined.
-//   - biblehub.com, studylight.org: ADR-008 (ToS-protected).
-//   - historicalchristian.faith: added 2026-07-10 after vetting (RESOURCING_PLAN
-//     §7) — "open source, crowd-sourced" with NO license grant, no edition
-//     attribution, and it lists non-PD authors (e.g. C.S. Lewis); its father
-//     translations can't be assumed PD. Re-source the fathers from Schaff.
-export const FORBIDDEN_PROVENANCE_DOMAINS = ['biblehub.com', 'studylight.org', 'historicalchristian.faith'] as const;
-
-function provenanceHost(url: string): string | null {
-  try {
-    return new URL(url.includes('://') ? url : `https://${url}`).hostname.toLowerCase();
-  } catch {
-    return null;
-  }
-}
-
-// Returns the forbidden aggregator domain a provenance URL belongs to, else null.
-// Matches the domain and any subdomain (www.biblehub.com), not naive substrings.
-export function forbiddenProvenanceDomain(url: unknown): string | null {
-  if (typeof url !== 'string' || url.trim() === '') return null;
-  const host = provenanceHost(url.trim());
-  if (host === null) return null;
-  for (const d of FORBIDDEN_PROVENANCE_DOMAINS) {
-    if (host === d || host.endsWith(`.${d}`)) return d;
-  }
-  return null;
 }
 
 // Provenance is the attribution + license basis for a work. `year` and

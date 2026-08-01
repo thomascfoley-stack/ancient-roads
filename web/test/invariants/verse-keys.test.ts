@@ -22,34 +22,24 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { isPublishedAuthor } from '@/lib/legal-corpus';
 import { announceSkip } from '../helpers/loud-skip';
+import {
+  COLLAPSE_MAX,
+  MIN_ENTRIES,
+  collapseByAuthor,
+  eligibleAuthorCount,
+  forbiddenServedEntries,
+  loadCorpusEntries,
+  verseKeyOffenders,
+} from '../helpers/verse-key-scan';
 
+// The scan itself lives in ../helpers/verse-key-scan.ts because scripts/predeploy-gate.ts
+// runs the SAME functions at deploy time, where the artifact-skip below must not apply:
+// `vercel --prod` uploads the working directory, so deploy is the one moment the corpus is
+// provably present. Two copies of the threshold would let the deploy-side check drift away
+// from what this suite believes it enforces.
 const CORPUS_DIR = fileURLToPath(new URL('../../public/commentaries', import.meta.url));
-const MIN_ENTRIES = 200;
-const COLLAPSE_MAX = 0.2;
-const FORBIDDEN_HOST = /biblehub\.com|studylight\.org/i;
-
-interface RawEntry { verseStart: number; verseEnd: number; author: string; sourceUrl?: string }
-interface Entry extends RawEntry { chapter: number }
-
-function loadEntries(): Entry[] {
-  const out: Entry[] = [];
-  if (!existsSync(CORPUS_DIR)) return out; // gitignored/absent in CI — the suite is skipped anyway
-  const walk = (dir: string): void => {
-    for (const f of readdirSync(dir)) {
-      const p = path.join(dir, f);
-      if (statSync(p).isDirectory()) { walk(p); continue; }
-      if (!f.endsWith('.json') || f === '_manifest.json') continue;
-      let j: { chapter?: number; entries?: RawEntry[] };
-      try { j = JSON.parse(readFileSync(p, 'utf8')); } catch { continue; }
-      if (!j || !Array.isArray(j.entries) || typeof j.chapter !== 'number') continue;
-      for (const e of j.entries) out.push({ ...e, chapter: j.chapter });
-    }
-  };
-  walk(CORPUS_DIR);
-  return out;
-}
+const loadEntries = () => loadCorpusEntries(CORPUS_DIR);
 
 // VACUOUS-PASS FIX (2026-07-19). This suite's title claimed it "skips" when the corpus is
 // absent, but nothing skipped: `web/public/commentaries` is gitignored and absent in CI, so
@@ -82,9 +72,8 @@ const SKIP = announceSkip(
 /** The guard can only catch anything if some author clears MIN_ENTRIES. Asserting that turns a
  *  vacuous green (empty/partial corpus) into a failure. */
 function assertGuardIsLive(byAuthor: Map<string, { n: number; collapsed: number }>): void {
-  const eligible = [...byAuthor.values()].filter((v) => v.n >= MIN_ENTRIES).length;
   expect(
-    eligible,
+    eligibleAuthorCount(byAuthor),
     `VACUOUS GUARD: no author reached MIN_ENTRIES=${MIN_ENTRIES}, so this assertion could not have failed. ` +
       'The corpus is empty or partial — fix the corpus, do not trust this green.',
   ).toBeGreaterThan(0);
@@ -92,18 +81,9 @@ function assertGuardIsLive(byAuthor: Map<string, { n: number; collapsed: number 
 
 describe.skipIf(SKIP)('§3 verse-key distribution (live gate; announces NOT RUN when the gitignored corpus is absent, e.g. CI)', () => {
   it('no author (≥200 entries) has >20% of entries keyed verse_start=verse_end=chapter', () => {
-    const entries = loadEntries();
-    const byAuthor = new Map<string, { n: number; collapsed: number }>();
-    for (const e of entries) {
-      const rec = byAuthor.get(e.author) ?? { n: 0, collapsed: 0 };
-      rec.n++;
-      if (e.verseStart === e.verseEnd && e.verseStart === e.chapter) rec.collapsed++;
-      byAuthor.set(e.author, rec);
-    }
+    const byAuthor = collapseByAuthor(loadEntries());
     assertGuardIsLive(byAuthor);
-    const offenders = [...byAuthor.entries()]
-      .filter(([, v]) => v.n >= MIN_ENTRIES && v.collapsed / v.n >= COLLAPSE_MAX)
-      .map(([a, v]) => `${a} ${(100 * v.collapsed / v.n).toFixed(1)}% (n=${v.n})`);
+    const offenders = verseKeyOffenders(byAuthor);
     expect(offenders, `authors whose verse keys collapse to the chapter number:\n${offenders.join('\n')}`).toEqual([]);
   });
 
@@ -115,7 +95,7 @@ describe.skipIf(SKIP)('§3 verse-key distribution (live gate; announces NOT RUN 
       entries.length,
       'VACUOUS GUARD: zero corpus entries loaded, so the forbidden-provenance assertion could not have failed.',
     ).toBeGreaterThan(MIN_ENTRIES);
-    const served = entries.filter((e) => isPublishedAuthor(e.author) && FORBIDDEN_HOST.test(e.sourceUrl ?? ''));
+    const served = forbiddenServedEntries(entries);
     const byAuthor = [...new Set(served.map((e) => e.author))];
     expect(served.length, `served entries with forbidden aggregator provenance (${byAuthor.join(', ')})`).toBe(0);
   });

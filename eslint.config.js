@@ -7,6 +7,29 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    // Plain-JavaScript modules under src/. These exist so that code on the read-only
+    // production instrument's path can be loaded by `node` with no transpiler (see
+    // src/ingest/forbidden-provenance.mjs). They are ES modules running on Node, and
+    // without this block `js.configs.recommended` lints them with no globals at all —
+    // `URL` and `console` come back as no-undef.
+    files: ['**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        TextEncoder: 'readonly',
+        TextDecoder: 'readonly',
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        fetch: 'readonly',
+        structuredClone: 'readonly',
+      },
+    },
+  },
+  {
     files: ['src/**/*.ts', 'test/**/*.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',

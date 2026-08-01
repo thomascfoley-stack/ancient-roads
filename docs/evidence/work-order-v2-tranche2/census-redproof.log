@@ -1,0 +1,53 @@
+=== Work Order v2 Tranche 2 red-proofs — 2026-07-30T18:47:50Z ===
+STATE 1 baseline: 15/15 green
+
+### STATE 2 — SEED 1: admissionFindings stops flagging published-but-not-admitted (real product code)
+   × §1 published-but-not-admitted STOPS the flip > a published work outside the serving predicates is a STOP 4ms
+     → expected 'OK' to be 'STOP' // Object.is equality
+   × one STOP is enough — a later green section never downgrades it > keeps the STOP even when everything else is healthy 1ms
+     → expected false to be true // Object.is equality
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  2 failed | 13 passed (15)
+
+### STATE 3 — SEED 1 REVERTED
+
+### STATE 2 — SEED 2: servingFindings stops flagging an individual register/catalog that serves zero (real product code)
+   × §4 a serving literal count of zero STOPS the flip > a single register that would serve zero works 3ms
+     → expected 'OK' to be 'STOP' // Object.is equality
+   × §4 a serving literal count of zero STOPS the flip > a catalog that would serve zero entries 0ms
+     → expected 'OK' to be 'STOP' // Object.is equality
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  2 failed | 13 passed (15)
+
+### STATE 3/4 — SEED 2 REVERTED, green:
+ ✓ test/publish-flip-census.test.ts (15 tests) 2ms
+      Tests  15 passed (15)
+
+### NOT DONE — the live dev run and the two DB-level seeds
+
+The work order asks for the census to be RUN on dev (expected 35 works, 8 registers), with a
+not-admitted work seeded into the database to watch it STOP, and a forbidden-provenance work
+made reachable to watch it appear in §2. None of that was done.
+
+This tree has no dev credentials: no .env.local (root or web/), no DATABASE_URL, no
+NEON_API_KEY. scripts/publish-flip-census.mts therefore has never been executed — not once,
+against anything. Two consequences worth stating plainly rather than leaving implied:
+
+  1. Its SQL is UNRUN. The queries in §1–§4 have not been parsed by a Postgres server, so a
+     syntax error, a wrong column name, or a type mismatch would not have been caught here.
+     The 15 green tests exercise the VERDICT logic and the runner's import discipline; they
+     do not execute a single one of its statements.
+  2. The "35 works, 8 registers" figure is unverified by me and is not repeated as fact
+     anywhere in this branch.
+
+What IS discharged: both STOP rules, driven red and back through real product code, plus the
+static guarantee that the runner imports LEGAL_CORPUS_FILTER / SERVED_PROSE_WORKS /
+SERVED_LANE_WORKS rather than restating them, and that it refuses production outright.
+
+TO DISCHARGE (needs dev credentials):
+  PUBLISH_FLIP_DATABASE_URL=<dev url> npx tsx scripts/publish-flip-census.mts \
+    --target=ep-tiny-hat --cohort=staged \
+    | tee docs/evidence/work-order-v2-tranche2/dev-census.log
+  then, inside a transaction that is ROLLED BACK:
+    UPDATE sources SET status='published' WHERE slug='poole-tcp';   -- not in SERVED_* -> expect §1 STOP
+  and confirm a work carrying biblehub/studylight section rows is listed REACHABLE in §2.

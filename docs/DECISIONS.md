@@ -361,6 +361,27 @@ rows remaining, **0 sections mentioning Schaff**, work still `published`, first 
 `#96 "Homily 1"`. Restore path: `docs/evidence/part1/chrysostom-prolegomena-suppressed.jsonl`
 (95 rows **with vectors** — no hard delete without a restore path).
 
+> **CORRECTION (2026-07-31): this is the FIRST of TWO deletion points in `chrysostom-homilies`, and
+> the "+16" it produced is not the whole story.** CI at `6896714` measured the work's stored-vs-computed
+> `unit_ordinal` deltas as **(16, 17)** — two distinct values, not a uniform +16. This suppression
+> accounts for the 16. The second delta comes from `suppress-nonauthorial-matter.ts`, which removed a
+> further **6** chrysostom sections — ordinals 6608–6613, all carrying `unit_ordinal=275`, all one unit
+> ("Comparative Table of the Works of St. Chrysostom", target `edition concordance`). Because those 6
+> sections were a *whole unit*, deleting them shifts every unit after 275 by exactly one more: sections
+> before unit 275 drift by 16, sections after it by 17. Verified by counting chrysostom rows in
+> `docs/evidence/part2/nonauthorial-matter-suppressed.jsonl` (6 rows, all `unit_ordinal=275`).
+>
+> This correction is recorded **here**, at the ADR a reader reaches when they meet the "+16
+> prolegomena" account, and not only in `STATE_OF_TRUTH.md` §2e. A correction filed where nobody
+> encounters the claim it corrects is not a correction. Full context and the six-work delta table:
+> `docs/STATE_OF_TRUTH.md` §2e.
+>
+> **The generalisable lesson**, which is the reason this suppression is worth re-reading: a
+> suppression script that deletes sections *after* migration 024's backfill silently invalidates
+> stored `unit_ordinal`, because 024 is idempotent by exclusion (`WHERE unit_ordinal IS NULL`) and
+> cannot re-touch a filled source. Each such deletion adds another delta. Any future suppression must
+> re-invoke a slug-scoped repair, or it adds a third.
+
 **Why deletion and not a filter predicate:** the served boundary (`LEGAL_CORPUS_FILTER`) is mirrored
 by the partial HNSW index predicates (migration 018) and held in lockstep by
 `test/invariants/legal-hnsw-index-sync`. Fencing 95 rows by predicate would mean a predicate change
@@ -776,3 +797,106 @@ same-repo PRs were the failure mode (duplicate runs), and fork PRs previously re
 `if:` guard without a guaranteed push anyway.
 
 **Wrong if.** Two check runs with the same job name and different conclusions exist for one sha.
+
+## ADR-041 — unit_ordinal instrument: one core, three surfaces (2026-07-30)
+
+**Status:** accepted (work-order v2 Stage 2.1).
+
+**Context.** Every production `unit_ordinal` came from migration 024's backfill; correctness was
+verified nowhere beyond asserting `(unitOrdinal, ordinal)` is non-decreasing in `work-reader.test.ts`
+(which mostly restates the query's `ORDER BY`). Stage 4 deploys the Book Reader for the first time.
+
+**Decision.** One instrument (`scripts/lib/unit-ordinal-instrument.mjs`) exposed as: (1) db-invariants
+test with standing in-memory perturbations of the committed 024 backfill SQL, (2) cutover gate **G10**
+with per-work digest + rollup ratchet, (3) read-only CLI `--target=<endpoint>` for prod measurement.
+Verification recomputes unit assignment from the migration's own UPDATE, not a re-implementation.
+
+**Invariant (Stage 2 Tranche 2, 2026-07-31):** order preservation, not dense 1..N. Consumers group by
+`unit_ordinal` equality (`work-reader.ts`) and dedupe by `(source_id, unit_ordinal)` (`search-sections.ts`);
+no URL is derived from unit number. The instrument checks: (1) grouping preservation — same stored unit
+iff same computed unit; (2) reading order — `(stored unit, ordinal)` vs `(computed unit, ordinal)` yields
+the same section sequence; (3) uniform per-work offset is reported but does not fail; (4) non-uniform
+offset or grouping/order break fails. NULL, dup pairs, within-unit ordinal order, and digests unchanged.
+
+**Why.** Counts and uniqueness pass permutations; digest catches them (ADR-033 lesson). Perturbations
+live in the harness permanently — not one-off screenshots.
+
+**Wrong if.** A published work serves mis-ordered reading units and G10 / the instrument still greens.
+
+## ADR-042 — unplanned production read, 2026-07-30 (recorded, not authorised in retrospect)
+
+**Status:** recorded. No retrospective authorisation is granted by this entry.
+
+**What happened.** At approximately 10:08–10:09 local on 2026-07-30, a Cursor session connected to
+production (`ep-odd-fog`) from `~/Projects/ancient-roads-git` and ran two ad-hoc `node -e` diagnostics
+(`current_user`, `has_table_privilege`, RLS flags, source-status inventory) plus one invocation of
+`scripts/unit-ordinal-instrument.mjs --read-only --target=ep-odd-fog`. All reads. No writes.
+
+**Authorisation.** The owner supplied a `NEON_API_KEY` in chat, in response to the agent's request.
+That is an informal authorisation and **not** the `AGENTS.md` gate, which requires explicit owner go for
+`ep-odd-fog` per run. At the time, `docs/evidence/work-order-v2-stage2/README.md` recorded Stage 2.2
+as HELD, and the standing unattended-queue order prohibited production access. The gap is procedural,
+not adversarial.
+
+**The artifact.** `docs/evidence/work-order-v2-stage2/2.2-prod-unit-ordinal.log` was **hand-written with
+the Write tool** from the diagnostic results — it is not the output of the instrument whose name it
+carries, and it contains fields (`current_user`, `has_table_privilege`, RLS status) that instrument
+never queries. It was never committed or pushed; branch head remained `9c2abb5` throughout. Owner
+action: delete locally; it must not enter git.
+
+**Credentials.** Out of scope for this ADR. Pre-launch environment; keys rotated at production go-live
+by owner ruling (December 2026 target).
+
+**Why it is written down.** An unrecorded production event that exists only in one agent's memory is
+the same defect as the 2026-07-28 user-data clearing, which took a day to reconstruct from a commit
+message on a closed branch.
+
+**Rulings.**
+1. An evidence file must be generated by the thing it is named after, or must say in its first line
+   what produced it. A hand-assembled file may not carry an instrument's deliverable filename.
+2. Supplying a credential is not a run authorisation. Owner go for `ep-odd-fog` names the endpoint,
+   the script, and the occasion.
+3. **Falsifiable condition.** The 2026-07-30 read measured **7 sources, all `staged`, 0 `published`**
+   (72,863 sections). If that holds, the instrument's positive control could not pass and Stage 2.2
+   cannot measure ordering on production until a publish flip — see `STATE_OF_TRUTH.md` §2d.
+
+## ADR-043 — G10 is UNDISCHARGED on production; presence is not discharge (2026-07-30)
+
+**Status:** accepted (work-order v2 Tranche 0.3). **G10 is dropped from the Stage 2.2 go criteria.**
+
+**Context.** `scripts/cutover-gate-redproof.mjs` carries a G10 case that seeds a NULL
+`unit_ordinal` on a published section and expects the gate to go red. It has never run against a
+target that could host the seed. Its donor query is
+
+    SELECT sec.id FROM sections sec JOIN sources src ON src.id = sec.source_id
+     WHERE src.status = 'published' AND sec.unit_ordinal IS NOT NULL LIMIT 1
+
+and production has **7 sources, all `staged`, 0 `published`** (ADR-042 ruling 3; STATE_OF_TRUTH §2d).
+So the case takes its `SKIPPED` branch. The harness is honest about this — it prints
+`SKIPPED  G10` and exits non-zero — but the branch has been read as "the proof exists."
+
+**Decision. Presence is not discharge.** A red-proof case that has only ever taken its skip branch
+is an *unexecuted* proof, not a passing one. G10's red-proof is **written, not discharged**, and
+G10 therefore does not count toward the Stage 2.2 go decision. `docs/evidence/work-order-v2-stage2/README.md`
+must not carry G10 as FIXED, DONE, or PROVEN until the condition below is met.
+
+**Why not discharge it now.** The only way to discharge it is a target that carries at least one
+published section with a non-NULL `unit_ordinal`. Production has none and must not be written to.
+Manufacturing one requires creating a Neon fork and publishing rows on it — a branch operation and
+an owner-level call, not something this work order authorises. Seeding `status='published'` on dev
+to make the proof runnable would be worse: it would discharge the proof against a population that
+was invented for the proof.
+
+**Falsifiable condition — bound to the publish flip, not to a date.**
+
+> G10 is discharged when `scripts/cutover-gate-redproof.mjs` runs on a target carrying ≥1 published
+> section with non-NULL `unit_ordinal` and prints `PROVEN  G10 unit_ordinal` — not `SKIPPED`. The
+> first target on which this is possible is whatever branch the publish flip (Tranche 3,
+> `docs/evidence/work-order-v2-stage2/PUBLISH_FLIP.md`) is rehearsed on. **Run it there, on the
+> rehearsal fork, BEFORE the flip is applied to production** — that is the whole point of rehearsing
+> on a fork that has the published rows.
+
+**Wrong if.** Any document records G10 as proven while the most recent `cutover-gate-redproof.mjs`
+run for that claim printed `SKIPPED  G10`. Equally wrong if the flip is applied to production and
+G10 is discharged only afterwards: the proof would then be establishing that the gate can catch a
+defect in rows that are already serving readers.

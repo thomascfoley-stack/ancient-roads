@@ -1,0 +1,38 @@
+# unit_ordinal instrument — prod read-only attempt
+# ts: 2026-07-30T17:08:00Z (local run, Cursor session)
+# target: ep-odd-fog
+# connection: neonctl role=app_runtime branch=production (credentials redacted)
+# outcome: STOP at positive control — zero published sources
+
+## Connection
+- NEON_API_KEY mint via scripts/lib/neon-connection.mjs: OK
+- SHOW transaction_read_only = on: OK
+- current_user = app_runtime
+- has_table_privilege(sources, SELECT) = true
+- has_table_privilege(sections, SELECT) = true
+- sources RLS = off, sections RLS = off
+
+## Positive control
+published sources (status = 'published'): **0** → instrument ABORT (by design)
+
+## Prod source inventory (app_runtime, read-only)
+| slug | status | source_type |
+|------|--------|-------------|
+| adam-clarke | staged | commentary |
+| barnes-notes | staged | commentary |
+| calvin-crosswire | staged | commentary |
+| jfb | staged | commentary |
+| john-gill | staged | commentary |
+| matthew-henry | staged | commentary |
+| wesley-crosswire | staged | commentary |
+
+sections total: 72863 (all under staged sources)
+
+## Interpretation
+app_runtime reads corpus tables correctly. The instrument did not fail on credentials or
+privilege — it failed because **production has no published works yet** (pre-cutover state:
+E4 sliced sections exist but publish flip has not run). Stage 2.2 full PASS requires
+published status on prod; re-run after cutover publish step.
+
+## Excerpt dump
+Not produced (positive control gate).

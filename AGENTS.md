@@ -19,6 +19,8 @@ rediscovering them. Do not duplicate their content here - go read them.
 
 ## Facts and records
 
+- **docs/pm/MASTER.md** - the programme sheet: bylaws, lanes, gate board, outstanding owner
+  decisions. Read it first, every session. It points at state rather than copying it.
 - **docs/STATE_OF_TRUTH.md** - current verified system state. Trust it over any doc's narrative.
 - **WORKLOG.md** (root) - every working session appends an entry, newest on top, including a
   NOT DONE / UNVERIFIED section. Follow the existing entries' format.

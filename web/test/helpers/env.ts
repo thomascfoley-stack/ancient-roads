@@ -23,7 +23,16 @@ export function ensureDbEnv(): string | undefined {
 }
 
 export function runtimeDbUrl(): string | undefined {
-  return process.env.APP_DATABASE_URL ?? process.env.DATABASE_URL ?? ensureDbEnv();
+  const url = process.env.APP_DATABASE_URL ?? process.env.DATABASE_URL ?? ensureDbEnv();
+  if (!url) return undefined;
+  const id = endpointIdOf(url);
+  if (id !== null && id.startsWith(PROD_ENDPOINT)) {
+    throw new Error(
+      `REFUSING: runtime DB suite pointed at PRODUCTION (${id}). Behavioral invariants may not `
+      + 'connect to prod via APP_DATABASE_URL or DATABASE_URL. Unset or point at dev/test branch.',
+    );
+  }
+  return url;
 }
 
 // ── the OWNER url, for suites that SEED their own fixtures ────────────────────
