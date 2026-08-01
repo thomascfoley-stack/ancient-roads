@@ -7,19 +7,30 @@ OUTCOME: **A6 CANNOT RUN, for two independent reasons, and neither was on the bo
 > Seven fix tranches landed on `main` (`cee437a` … `651fa19`), each red-proved, `npm run audit`
 > green at the tip.
 >
-> **CLOSED:** C3 · C4 · C5 · M1 · M2 · M3 · M4 · M10 · M15 · M17 (record) · M19 · H1 · H2 · H8 ·
-> H9 · H10 · H11 · H12 · H13 · T1 · T2 · plus three destructive writers the audit did not find,
+> **CLOSED:** C1 · C3 · C4 · C5 · H1 · H2 · H3 · H6 · H7 · H8 · H9 · H10 · H11 · H12 · H13 · H14 ·
+> H15 · M1–M5 · M10–M20 · M26 · T1–T10 · plus three destructive writers the audit did not find,
 > surfaced by enumerating the tree instead of reading files.
 >
-> **C1 — half closed.** `deploy.sh` now pins the project and org and refuses before uploading;
-> verified refusing against the current session. The `vercel login` as the owning account is
-> still yours.
+> **APPLIED TO PRODUCTION** (owner-authorised, `MIGRATE_ALLOW_PROD=1` through the repo's runner):
+> migration `032` — default privileges `app_runtime=arwd` → `ar`, `api_rate_limit` RLS,
+> `schema_migrations` ledger backfilled to 31 rows — and `033`, which revoked UPDATE and DELETE on
+> `waitlist`. Verified after each: 4 waitlist rows and 41 limiter rows untouched.
+> [Evidence](../../evidence/migration-032-2026-08-02/).
 >
-> **C2 — gated, not resolved.** The deploy now hard-fails on 18,323 served entries by forbidden
-> or in-copyright authors. Nothing was deleted: content quarantine is an owner call (AGENTS.md).
+> **M5–M9 recorded rather than repaired**, in `PUBLISH_FLIP.md` §6 — they are findings about a
+> write that already happened (the §4 numbering collision, `--reverse` semantics, the rollback
+> gate refusing when rollback is needed, the missing run log, the unprotected Neon branch). The
+> fix for each is a next-time instruction, and M9 is an owner console action.
+> **M13, M14, M16 recorded** in `DEPLOY_PREFLIGHT.md` §10: no lockfile in the upload root, the
+> local build not being the shipped artifact, and the clean-tree gate preceding the step that
+> dirties the tree. M13's fix changes how every future deploy resolves and is a decision, not a
+> cleanup.
 >
-> **STILL OPEN:** H3 · H4 · H5 · H6 · H7 (partly) · H14 · H15 · M5–M9 · M11–M14 · M16 · M18 ·
-> M20–M26 · T3–T10. H4 and H5 are the same owner question as C2.
+> **`034` — authored, NOT applied.** The waitlist RLS needs the plain-INSERT route, which needs a
+> deploy. Its precondition is at the top of the file.
+>
+> **STILL OPEN: C2 · H4 · H5 · M6–M9 (as recorded) · M21–M25.** C2, H4 and H5 are one owner
+> ruling: which of the served content may be delivered. The deploy hard-fails until it is made.
 >
 > One finding in this document was **wrong and is corrected in place** — see M10.
 

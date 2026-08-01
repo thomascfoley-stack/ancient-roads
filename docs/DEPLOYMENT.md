@@ -17,7 +17,7 @@ real production. Confusing them has bitten this project before, so the rule is b
 | Field | Value |
 |---|---|
 | Project | `web` |
-| Project ID | `prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR` (matches `web/.vercel/project.json`) |
+| Project ID | `prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR` (asserted by `deploy.sh`; there is NO `web/.vercel/project.json` — it is gitignored three times over and cannot be committed, so the id is pinned in the script instead) |
 | Team / org | `team_TQ3BYCSyzQ3m0yatlkKmUzM0` (`home-network-hardening`) |
 | Production domains | **ancientpaths.app** (canonical) + **www.ancientpaths.app** + `web-psi-eight-83.vercel.app` |
 | Git connection | **OFF, and it must stay off** (see below) |
@@ -65,8 +65,21 @@ tree was last uploaded by `deploy.sh`, recorded as a commit SHA in `WORKLOG.md`.
 
 ### Current live state (as of 2026-07-18)
 
-`ancientpaths.app` is served by deployment `dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr`
-(dashboard slug `web-...EjzknRQEp`), a CLI deploy from **2026-07-16 = commit `654f028`**.
+> **CORRECTED 2026-08-02 (deep audit, M12).** The sentence below was false, in the file that calls
+> itself the one source of truth and that AGENTS.md routes every deploy question to. Verified
+> against the Vercel API: `ancientpaths.app` is served by **`dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt`**
+> (`24677ba`, 2026-07-19 16:57:06Z), `readyState: READY`, `target: production`, holding
+> `ancientpaths.app` and `www.ancientpaths.app`. `dpl_Ejzk…` (`654f028`) is the ROLLBACK TARGET —
+> the newest deployment whose code differs from what is live — not the live one.
+>
+> ⚠ **AND IT INVERTS THE MOMENT DEPLOY A COMPLETES.** Once a new deployment is promoted,
+> `dpl_DwoW…` becomes the correct one-step-back target and `dpl_Ejzk…` becomes TWO states back, a
+> bundle predating the cutover, `/api/health` and the work-catalog routes. Re-read the deployment
+> list after any deploy, or read the receipt `deploy.sh` now writes to `docs/evidence/deploys/`.
+> Do not trust a deployment id written down before the deploy you are rolling back FROM.
+
+~~`ancientpaths.app` is served by deployment `dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr`
+(dashboard slug `web-...EjzknRQEp`), a CLI deploy from 2026-07-16 = commit `654f028`.~~
 
 `main` is **ahead of production**: the nav-label commits (`8237f49`, `a974085`) and the hero
 image swap (`af34b7f`) are on `main` but have **not** been deployed. They go live only on the

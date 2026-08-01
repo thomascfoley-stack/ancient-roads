@@ -351,3 +351,55 @@ and `:49`), and the CLI on this machine authenticates into scopes that do not co
 project. Step 7 — `npx vercel --prod --archive=tgz` — is the one step that has never run, and
 whether it can resolve the project non-interactively is **NOT ESTABLISHED**. Settle this before the
 go, not at step 7 of 7.
+
+
+---
+
+## 10. Three things about the deploy that were not written down (2026-08-02 deep audit)
+
+### M13 — production dependencies are resolved fresh at every deploy, from a tree CI never tested
+
+`deploy.sh` does `cd web` before `vercel --prod`, so **`web/` is the upload root** — and `web/` has
+**no lockfile**. `web/pnpm-lock.yaml`, `web/package-lock.json` and `web/yarn.lock` are all absent;
+the only lockfile is the root `pnpm-lock.yaml`, outside the upload root, because
+`pnpm-workspace.yaml` lists `web` as a member. `web/.npmrc` says the rest out loud: *"Vercel's
+remote build uses npm, whose strict peer resolution fails with ERESOLVE"*, and sets
+`legacy-peer-deps=true`.
+
+So the shipping bundle is built from floating ranges — `next: ^16.2.12`, `react: ^19.2.8`,
+`@neondatabase/serverless: ^1.1.0`, `tailwindcss: ^4.3.3`. Consequences, stated plainly:
+
+* the artifact promoted to production has never been tested at that dependency set;
+* **two deploys of the same git sha can ship different code**;
+* CI runs `corepack pnpm install --frozen-lockfile` — it gates a PINNED pnpm tree that is not what
+  ships;
+* `package.json`'s `pnpm.auditConfig.ignoreGhsas` list and `scripts/deps-audit.mjs` govern the pnpm
+  tree, not the npm tree in production.
+
+This class already burned this project once: deployment `dpl_8USYb3e6C5UKh9L2RLzpTHVBB6mm` carries
+the commit message *"local passed, remote failed"*.
+
+**Not fixed here** — the fix is either a committed `web/` lockfile or a Vercel `installCommand`
+override, and both change how every future deploy resolves. That is a deliberate choice, not a
+cleanup.
+
+### M14 — the `next build` at step 6 is not the artifact that ships
+
+`web/.vercelignore:8` excludes `.next`, and step 7 runs `vercel --prod` **without `--prebuilt`**, so
+Vercel re-installs and re-builds remotely. Step 6 is a smoke test on a different toolchain: local
+is Node v24.5.0 with a pnpm-installed `web/node_modules`; remote is Node 24.x with npm and
+`legacy-peer-deps`. CI is Node **22**, and the Vercel project is Node **24.x**.
+
+"The build passed" at step 6 is a statement about a build, not about the deployed bundle. With M13
+stacked on top, a green step 6 and a green CI build differ from the shipping build in **both**
+runtime and dependency resolution.
+
+### M16 — the clean-tree gate runs before the only step that dirties the tree
+
+`deploy.sh:18-30` checks `git status --porcelain` first. Step 6's `npx next build` then rewrites the
+**tracked** files `web/tsconfig.json` and `web/next-env.d.ts`. Step 7 uploads that tree.
+
+So the bytes promoted are not the bytes the gate approved, which falsifies the script's own stated
+invariant at `:27-28` — *"What's in prod must be reproducible from git."* Small in content,
+structural in kind, and Vercel records the class: `dpl_8dxbjZc4DSH8Ffv9CXDdGM1o9xX2` carries
+`meta.gitDirty: "1"`.

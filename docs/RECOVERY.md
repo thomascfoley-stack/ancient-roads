@@ -73,6 +73,13 @@ and [`CUTOVER_DESIGN.md`](CUTOVER_DESIGN.md) § protected branches.
 | | |
 |---|---|
 | **Command** | Vercel dashboard → project **`web`** → Deployments → select deployment → **Instant Rollback**. CLI equivalent: `vercel rollback <deployment-url>` from `web/` with team scope. |
+> **AS-OF WARNING (2026-08-02, deep audit M11).** Every deployment id below is correct **only
+> until Deploy A promotes a new one.** At that moment `dpl_DwoW…` (`24677ba`) becomes the
+> one-step-back target and `dpl_Ejzk…` (`654f028`) becomes two states back, predating the
+> cutover. A responder following this table post-deploy would actively SKIP the right target
+> because it is named here as live. Re-read the deployment list, or read the receipt
+> `deploy.sh` writes to `docs/evidence/deploys/`, before rolling anything back.
+
 | **Restores** | The **frontend bundle** (Next.js build + static files uploaded with that deploy). **Currently promoted: `dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt`** (`24677ba`, 2026-07-19 16:57:06Z) - this is what serves `ancientpaths.app` today. **The real rollback target is `dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr`** (`654f028`, 2026-07-17 01:32:56Z), the newest deployment whose code differs from what is live. Full table in the block below. |
 | **Destroys** | Nothing in Neon. Does **not** roll back schema migrations, sessions, or database content. |
 | **Host survives?** | **YES** — same `DATABASE_URL`, same Neon endpoint. |

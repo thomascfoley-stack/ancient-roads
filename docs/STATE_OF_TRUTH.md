@@ -315,6 +315,13 @@ does not gate. See `docs/evidence/work-order-v2-stage2/TRANCHE5-STASH-EVALUATION
   that same sha** — which is where the 18th-vs-19th ambiguity in earlier revisions of this line came from.
   Both dates were right about different objects:
   - `dpl_FYQxxZ1rLN1wd4UeMwShhX12G5BM` — original deploy, **2026-07-18 22:32:21Z**.
+> **AS-OF WARNING (2026-08-02, deep audit M11).** Every deployment id below is correct **only
+> until Deploy A promotes a new one.** At that moment `dpl_DwoW…` (`24677ba`) becomes the
+> one-step-back target and `dpl_Ejzk…` (`654f028`) becomes two states back, predating the
+> cutover. A responder following this table post-deploy would actively SKIP the right target
+> because it is named here as live. Re-read the deployment list, or read the receipt
+> `deploy.sh` writes to `docs/evidence/deploys/`, before rolling anything back.
+
   - `dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt` — **redeploy of the same sha, 2026-07-19 16:57:06Z, and this is
     the one that holds the alias.** It is the live production deployment.
 

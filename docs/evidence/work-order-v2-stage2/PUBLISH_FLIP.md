@@ -209,3 +209,69 @@ It does not authorise the flip, choose its timing, or name the works. It does no
 that the works are legally publishable — that is Gate B (`check-licenses.ts`) and the
 manifest, which fail closed independently and are not restated here. And it does not
 substitute for reading one of the works, in the reader, with your own eyes.
+
+
+---
+
+## 6. What the 2026-08-02 deep audit found about this document and this tool
+
+Filed here rather than only in the audit checklist, because this is the file an operator opens.
+
+### M5 — "§4 diff verified" names a DIFFERENT §4
+
+§4 above defines a four-row acceptance table: §1 slugs move and every one is still ADMITTED; §2
+forbidden-provenance rows reachable only for named works and the total not increasing; §3 voice
+floor non-increasing; §4 published-works-per-register up by exactly the flip count and no catalog
+at zero.
+
+`scripts/publish-flip-verify.mjs` emits its OWN §1 / §2 / §3 — per-source rows, published works by
+register, and four totals. **A colliding, unrelated numbering.** The before/after logs contain no
+admission check, no forbidden-provenance measurement, no voice-floor measurement and no catalog
+count. `MASTER.md`'s A4 row said "§4 diff verified", which mapped the tool's numbering onto the
+plan's table and made the claim read stronger than it is.
+
+Those are the same two legs that could not fire at adjudication either (M4): **§2 and §3 were
+unmeasurable on both sides of the irreversible write.** A5 is where they get measured.
+
+### M6 — `--reverse` is the exact inverse of the SLUG LIST, not of the executed flip
+
+`publish-flip.mjs:93-94` sets the direction from the flag alone and `:186-189` flips every listed
+slug currently in `published`. **It never reads the snapshot.** Any listed slug that was already
+`published` before the forward flip gets un-published by a reverse — a work the flip never touched.
+
+It was exact for the 2026-08-01 run only because the snapshot shows all seven rows `staged` and
+`already` was empty. That is a property of the data on the day, not of the tool, and the tool does
+not check it.
+
+### M7 — the rollback gate refuses in exactly the states where rollback is needed
+
+`publish-flip.mjs:206-246` runs the full-corpus licence and provenance gates over
+`WHERE status='published'` in **both** directions. So one unrelated illegal published row makes
+`--reverse` roll back and exit 1 — the only database rollback this project has refuses to run in
+precisely the corpus state where an emergency withdrawal is most likely.
+
+Compounding it: §5's restore point was never captured (it still says "there is no id here because
+nothing has been run"), Neon branch creation is forbidden by the standing rails, and the existing
+rollback branch was measured `protected: false`. **There is no second rollback path for the
+database.**
+
+### M8 — no run log for the writer
+
+Commit `4369d37` added the two verify logs, the pre-COMMIT snapshot and the board row. It did not
+add the writer's stdout. `role neondb_owner (asserted at the server)` — the one line proving the
+write ran as the owner rather than by hand — exists only as a hand-transcription in a commit
+message, and the transcription omits it along with the target/direction header.
+
+What the committed artifacts therefore cannot distinguish: the scripted flip from a manual `psql
+UPDATE`; one flip from flip→reverse→re-flip; a flip whose gates were commented out. Neither log
+carries a timestamp (deliberately, so the diff shows data only), a code sha, or a digest.
+
+**Fix for next time, and it is one line:** pipe the writer through `tee` into
+`docs/evidence/…/flip-run.log` and commit it, the way `deploy.sh` now records what it shipped.
+
+### M9 — the Neon rollback branch is not protected
+
+`neonctl branches get br-late-recipe-atxl68sh` returns `protected: false`, and repo-wide the only
+files referencing `refuseProtectedBranchDelete` are the guard, its `.d.mts` and its own test — **no
+script calls it.** A guard nothing invokes is a registry. See `docs/RECOVERY.md` §2, which carries
+the console steps; it is an infrastructure action on production and belongs to the owner.
