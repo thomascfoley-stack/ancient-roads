@@ -87,9 +87,12 @@ OUTCOME: **A6 CANNOT RUN, for two independent reasons, and neither was on the bo
 > the question that decides whether a rollback is possible instead of the one the guard asked.
 > Red-proofed by toggling protection off.
 >
-> **M13 CLOSED.** `web/package-lock.json`, 738 packages. The trap that bit first is pinned by a
-> test: a lockfile generated inside `web/` records the workspace's pnpm symlink layout and is worse
-> than none.
+> **M13 CLOSED, both halves.** `web/package-lock.json` pins 738 packages and
+> `web/vercel.json` sets `npm ci --legacy-peer-deps`, so a lockfile that disagrees with
+> package.json FAILS the build rather than being silently updated. Two traps, each paid for once:
+> a lockfile generated inside `web/` records the workspace's pnpm symlink layout and is worse than
+> none; and `vercel.json` rejects the `"//"` comment key `package.json` allows. Both are pinned by
+> tests, because both were caught by the remote build and by nothing local.
 >
 > **C2 VERIFIED AGAINST THE SHIPPED BYTES**, not the local tree — the deployment's own source
 > archive, pulled from the Vercel API and scanned: 1,212 files, 114,349 entries, zero offenders.
@@ -219,7 +222,7 @@ Every CRITICAL below was re-verified by the synthesizing session against the tre
 
 - [ ] **M12. `DEPLOYMENT.md:68-69` — "the one source of truth" — names the rollback target as live.** It says `ancientpaths.app` is served by `dpl_Ejzk…`; the API returns `dpl_DwoW…`. `:20` also asserts the project id "matches `web/.vercel/project.json`", a file that does not exist and cannot be committed.
 
-- [ ] **M13. Production dependencies are resolved fresh at every deploy from a tree CI never tested.** `deploy.sh:75` makes `web/` the upload root; `web/` has **no lockfile**, and `web/.npmrc` sets `legacy-peer-deps=true` for Vercel's npm build. `next`, `react`, `@neondatabase/serverless` and others are floating ranges. CI runs `pnpm install --frozen-lockfile` on a *different* tree. Two deploys of one sha can ship different code.
+- [x] **M13. Production dependencies are resolved fresh at every deploy from a tree CI never tested.** `deploy.sh:75` makes `web/` the upload root; `web/` has **no lockfile**, and `web/.npmrc` sets `legacy-peer-deps=true` for Vercel's npm build. `next`, `react`, `@neondatabase/serverless` and others are floating ranges. CI runs `pnpm install --frozen-lockfile` on a *different* tree. Two deploys of one sha can ship different code.
 
 - [ ] **M14. The local `next build` is not the artifact that ships.** `web/.vercelignore:8` excludes `.next` and `deploy.sh:84` has no `--prebuilt`, so Vercel rebuilds remotely. Step 6 green is a smoke test on a different toolchain. CI is Node 22; the Vercel project is Node 24.x.
 
