@@ -1,0 +1,43 @@
+{
+  "host": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "direction": "staged->published",
+  "slugFile": "docs/evidence/work-order-v2-stage2/flip-slugs.json",
+  "slugs": [
+    "adam-clarke",
+    "calvin-crosswire",
+    "jfb",
+    "john-gill",
+    "matthew-henry",
+    "wesley-crosswire"
+  ],
+  "sources": [
+    {
+      "slug": "adam-clarke",
+      "status": "staged"
+    },
+    {
+      "slug": "barnes-notes",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-crosswire",
+      "status": "staged"
+    },
+    {
+      "slug": "jfb",
+      "status": "staged"
+    },
+    {
+      "slug": "john-gill",
+      "status": "staged"
+    },
+    {
+      "slug": "matthew-henry",
+      "status": "staged"
+    },
+    {
+      "slug": "wesley-crosswire",
+      "status": "staged"
+    }
+  ]
+}
