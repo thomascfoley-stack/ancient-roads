@@ -1,0 +1,47 @@
+serving provenance census — read-only
+  host   : ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech
+  role   : app_runtime
+  ts     : 2026-08-01T22:22:25.548Z
+  read-only transaction confirmed at the server ✓
+
+commentary_entries rows: 371,406 ✓
+
+§1 ADMITTED BY LEGAL_COMMENTARY_ENTRIES_PREDICATE — author x provenance host
+    28300  John Gill                          (empty)
+    21036  Barnes' Notes                      biblehub.com   ⛔ FORBIDDEN AGGREGATOR
+    18181  John Wesley                        biblehub.com   ⛔ FORBIDDEN AGGREGATOR
+    16966  Jamieson, Fausset & Brown          (empty)
+    13318  Adam Clarke                        (empty)
+     6163  John Calvin                        biblehub.com   ⛔ FORBIDDEN AGGREGATOR
+     4124  Matthew Henry                      (empty)
+     2947  John Chrysostom                    historicalchristian.faith   ⛔ FORBIDDEN AGGREGATOR
+     2291  Augustine of Hippo                 historicalchristian.faith   ⛔ FORBIDDEN AGGREGATOR
+     1306  Augustine of Hippo                 www.newadvent.org
+      117  Augustine of Hippo                 (empty)
+       75  John Chrysostom                    (empty)
+        5  John Calvin                        books.google.com
+        3  John Wesley                        johnwesley.wordpress.com
+        1  John Calvin                        beggarsallreformation.blogspot.com
+        1  John Calvin                        ccel.org
+   114834  TOTAL ADMITTED   (50,618 from a forbidden aggregator)
+
+§2 THE H4 CROSS-CHECK — commentary_entries.work vs sources.status
+     rows  admitted  sources.status  work
+   371406    114834  (no sources row) (null)
+
+§3 BARNES, BY AUTHOR STRING AND HOST (A3 excluded barnes-notes; A4 left it staged)
+    21036  Barnes' Notes      biblehub.com
+
+§4 sources — the boundary that DOES bind the sections path
+  published  adam-clarke              Adam Clarke                  https://bible.helloao.org/api/c/adam-clarke
+  published  calvin-crosswire         John Calvin                  https://crosswire.org/sword/modules/ModInfo.jsp?modName=CalvinCommentaries
+  published  jfb                      Jamieson, Fausset & Brown    https://bible.helloao.org/api/c/jamieson-fausset-brown
+  published  john-gill                John Gill                    https://bible.helloao.org/api/c/john-gill
+  published  matthew-henry            Matthew Henry                https://bible.helloao.org/api/c/matthew-henry
+  published  wesley-crosswire         John Wesley                  https://crosswire.org/sword/modules/ModInfo.jsp?modName=Wesley
+  staged     barnes-notes             Albert Barnes                https://biblehub.com/commentaries/barnes/
+
+VERDICT
+  entries admitted by the shipped predicate      : 114,834
+  of those, from a forbidden aggregator (H5)     : 50,618
+  admitted while sources.status is not published : 0 across 0 work(s)
