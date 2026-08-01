@@ -17,6 +17,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
+import { codeOnly } from '../scripts/lib/source-scan.mjs';
 import {
   MANIFEST_VERSION,
   buildCorpusInventory,
@@ -256,7 +257,17 @@ describe('the ratchet is actually armed in this repo', () => {
   });
 
   it('the deploy gate runs the ratchet and the verse-key scan, with no artifact exemption', () => {
-    const gate = readFileSync(path.join(REPO, 'scripts/predeploy-gate.ts'), 'utf-8');
+    // COMMENT-STRIPPED (2026-08-02 audit, T3). These were six raw greps over the gate's source,
+    // and the auditor proved the failure: removing EVERY real call site — evaluateCorpusRatchet(,
+    // verseKeyOffenders(, forbiddenServedEntries(, the import, both message strings — and adding
+    // one three-line explanatory comment NAMING them left all six assertions passing. That is
+    // this repo's documented shape, from source-scan.mjs itself: "the files being scanned EXPLAIN
+    // AT LENGTH what they no longer do." codeOnly() exists for exactly this and two sibling tests
+    // already use it.
+    //
+    // The structural half is kept because it answers a question only the source can answer — is
+    // the gate WIRED — but it can no longer be satisfied by prose. The behavioural half is below.
+    const gate = codeOnly(readFileSync(path.join(REPO, 'scripts/predeploy-gate.ts'), 'utf-8'));
     expect(gate).toMatch(/evaluateCorpusRatchet\(/);
     expect(gate).toMatch(/from '\.\.\/web\/test\/helpers\/verse-key-scan'/);
     expect(gate).toMatch(/verseKeyOffenders\(/);
@@ -264,6 +275,22 @@ describe('the ratchet is actually armed in this repo', () => {
     // An absent corpus at deploy is a refusal, and a scan with no eligible author is not a pass.
     expect(gate).toMatch(/verse-key gate cannot run/);
     expect(gate).toMatch(/VACUOUS GATE/);
+  });
+
+  it('the ratchet it wires up ACTUALLY REFUSES a shrunk corpus', () => {
+    // The behavioural half. Grepping for `evaluateCorpusRatchet(` proves the call is written;
+    // this proves the thing being called says no. Driven directly, so it cannot be satisfied by
+    // any amount of source text.
+    const before = { version: MANIFEST_VERSION, sha: 'aaaaaaa', ts: '2026-01-01T00:00:00.000Z', corpusHash: 'a'.repeat(64), fileCount: 100, entryCount: 1000, bookCount: 66, workCount: 9, books: { gen: 50 }, works: { 'John Gill': 1000 } };
+    const shrunk = { present: true, fileCount: 90, entryCount: 900, books: { gen: 45 }, works: { 'John Gill': 900 }, corpusHash: 'b'.repeat(64) };
+    const grown = { present: true, fileCount: 110, entryCount: 1100, books: { gen: 55 }, works: { 'John Gill': 1100 }, corpusHash: 'c'.repeat(64) };
+
+    const bad = evaluateCorpusRatchet(shrunk, before, { deploying: true });
+    expect(bad.ok, 'a corpus that LOST files and entries must not pass the ratchet').toBe(false);
+
+    // Positive control: growth is fine, so the refusal above is about loss and not about
+    // refusing everything.
+    expect(evaluateCorpusRatchet(grown, before, { deploying: true }).ok).toBe(true);
   });
 
   it('the invariant suite and the gate share ONE copy of the verse-key threshold', () => {

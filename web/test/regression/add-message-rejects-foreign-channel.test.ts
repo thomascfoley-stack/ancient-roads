@@ -34,8 +34,13 @@ describe('add-message-rejects-foreign-channel (H2)', () => {
   });
 
   it('uses INSERT…SELECT…WHERE EXISTS (atomic ownership check)', () => {
+    // `[^;]*`, NOT `[\s\S]*`. The old form spanned the WHOLE FILE, so an unguarded
+    // `INSERT INTO messages` plus an unrelated `WHERE EXISTS (SELECT 1 FROM channels …)`
+    // anywhere else satisfied it — demonstrated by the 2026-08-02 audit (T9). The ownership
+    // check has to be in the SAME statement as the insert to be atomic; a regex that can
+    // hop a semicolon is not testing atomicity.
     const src = readFileSync(path.join(__dirname, '../../src/lib/chat.ts'), 'utf-8');
-    expect(src).toMatch(/INSERT INTO messages[\s\S]*WHERE EXISTS \(SELECT 1 FROM channels/);
-    expect(src).toMatch(/INSERT INTO messages[\s\S]*WHERE EXISTS \(SELECT 1 FROM chats/);
+    expect(src).toMatch(/INSERT INTO messages[^;]*WHERE EXISTS \(SELECT 1 FROM channels/);
+    expect(src).toMatch(/INSERT INTO messages[^;]*WHERE EXISTS \(SELECT 1 FROM chats/);
   });
 });

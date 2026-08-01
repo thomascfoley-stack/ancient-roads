@@ -7,6 +7,7 @@
 // been watched on a target that happened not to trip it is a rule nobody has seen work.
 // The runner (scripts/publish-flip-census.mts) measures and imports the real predicates;
 // everything below decides.
+import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -160,9 +161,36 @@ describe('the runner imports the serving predicates rather than restating them',
     expect(code).not.toContain("'Matthew Henry'");
   });
 
-  it('refuses production outright', () => {
-    expect(runner).toMatch(/isProdHost\(url\)/);
-    expect(runner).toMatch(/REFUSING/);
+  it('refuses production outright — DRIVEN, not grepped', () => {
+    // THE OLD FORM ASSERTED THAT TWO STRINGS APPEAR SOMEWHERE IN THE FILE. The 2026-08-02 audit
+    // proved what that buys: changing the guard to `if (false) { // isProdHost(url) — check
+    // removed` and rewording the message left BOTH assertions passing. A production refusal
+    // verified by grep is a refusal nobody has watched happen.
+    //
+    // So run it. A prod-shaped URL, the real script, and a non-zero exit — the same subprocess
+    // pattern publish-flip-toolchain.test.ts uses for the adjudicator. No database is contacted:
+    // the refusal happens before any connection, which is the property being tested.
+    // SEED: neuter the isProdHost branch -> RED (the old assertions stayed green).
+    let code = 0;
+    let out = '';
+    try {
+      execFileSync('npx', ['tsx', 'scripts/publish-flip-census.mts', '--target=ep-odd-fog', '--cohort=staged'], {
+        cwd: ROOT,
+        encoding: 'utf8',
+        stdio: 'pipe',
+        env: {
+          ...process.env,
+          PUBLISH_FLIP_DATABASE_URL:
+            'postgresql://neondb_owner:pw@ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require',
+        },
+      });
+    } catch (e) {
+      const x = e as { status?: number; stderr?: string; stdout?: string };
+      code = x.status ?? -1;
+      out = `${x.stderr ?? ''}${x.stdout ?? ''}`;
+    }
+    expect(code, 'the census runner must REFUSE a production target').not.toBe(0);
+    expect(out).toMatch(/REFUS/i);
   });
 });
 
