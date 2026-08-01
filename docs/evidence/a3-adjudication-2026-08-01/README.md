@@ -84,10 +84,17 @@ diffed against the expected six after the run.
 
 ## What the flip changes — set expectations before the go
 
-- **Nothing a visitor sees changes until A6.** The live deployment is `24677ba` (2026-07-19),
-  which predates the catalogs, the work reader and cross-corpus search entirely. Post-flip, the
-  only externally visible change is `/api/health`'s publishedWorks 0→6. The flip is what makes
-  A5 non-vacuous and what A6's deploy will light up.
+- **Nothing a visitor sees changes until A6 — literally nothing.** The live deployment is
+  `24677ba` (2026-07-19), which predates the catalogs, the work reader and cross-corpus search
+  entirely. The flip is what makes A5 non-vacuous and what A6's deploy will light up.
+  > **CORRECTION, 2026-08-02.** This bullet said "the only externally visible change is
+  > `/api/health`'s publishedWorks 0→6". That is impossible: `/api/health` does not exist on
+  > `24677ba`. `git ls-tree -r 24677ba web/src/app/api/` lists thirteen routes and no health
+  > route, and `publishedWorks` appears nowhere in that tree; the route was added later, at
+  > `ba82a5d` (2026-07-30), which is not an ancestor of `24677ba`. There are no rewrites and the
+  > middleware is only the password gate, so nothing else serves the path. RECOVERY.md on this
+  > same branch already said "GET /api/health did not exist on old bundles" — this record
+  > contradicted its own branch. The endpoint 404s or gates before the flip and after it.
 - **The ask pipeline is untouched.** Retrieval is allowlist-based over `embeddings` and consults
   `sources.status` nowhere; the served author pool is 9 before and after. The register wall and
   the ≥2-voices floor are unaffected. The flip affects library surfaces only.

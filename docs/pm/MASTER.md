@@ -37,9 +37,9 @@ Last verified: 2026-08-01 · `main` @ `29d6f98` — the merge commit of **PR #48
 | A1 | Stage 2 blockers closed · PR #48 merged | **CLOSED 2026-08-01.** All four re-executed by a fresh session that wrote none of the work — the first independent verdict this repo has carried ([verdict](orders/2026-08-01-stop-verdict-a1-closure.md)). PR #48 merged at `29d6f98`. Six findings, none blocking; three corrected by [the post-A1 tranche](orders/2026-08-01-post-a1-corrections.md) |
 | A2 | ⚑ Prod read-only session — instrument over `staged` + serving census, one log, no writes | **DONE 2026-08-01** on `a2/prod-readonly-2026-08-01` @ `4b31c0c` (unmerged): 7/7/0/72,863 — nothing changed since 07-30; instrument PASS over staged; numbers independently re-verified CLEAN | 
 | A3 | Census adjudicated — a published-but-not-admitted work is a STOP | **ADJUDICATED 2026-08-01, NO STOP** — offline, from A2's committed artifacts, after a 4-agent adversarial verification of the evidence (CLEAN) and the rule. Six works flip; `barnes-notes` (0 admitted rows) stays staged. [Record](../evidence/a3-adjudication-2026-08-01/README.md) · flip list at `evidence/work-order-v2-stage2/flip-slugs.json` |
-| A4 | ⚑ Publish flip — `UPDATE sources SET status`, exact inverse, snapshotted | Blocked on A3, **and on tooling that does not exist**: no safe prod writer, and PUBLISH_FLIP.md's own §4 verifier refuses prod outright. Spec in [readiness](orders/2026-08-01-a3-a6-readiness.md) |
+| A4 | ⚑ Publish flip — `UPDATE sources SET status`, exact inverse, snapshotted | **READY, waiting only on the owner.** Writer `scripts/publish-flip.mjs` and prod-capable read-only verifier `scripts/publish-flip-verify.mjs` shipped at `977bcef`; six defects in them fixed at `cf7c65d` after audit, and 27 tests now run in CI (`fd7a791`). Run as `PUBLISH_ALLOW=1 PUBLISH_EXPECT_HOST=ep-odd-fog-atnykudm` — the **full** endpoint id, not `ep-odd-fog`, which the guard refuses. Spec in [readiness](orders/2026-08-01-a3-a6-readiness.md) |
 | A5 | Prod instrument run — G10 stops being permanently skipped | Blocked on A4. **The row conflates three tasks** — the `--cohort=published` instrument run is READY (one read-only command); **G10 discharge CANNOT run tonight** (needs a Neon fork; branch creation forbidden, ADR-043 wants it BEFORE the flip). [readiness](orders/2026-08-01-a3-a6-readiness.md) |
-| A6 | ⚑ Deploy A — the irreversible one | Blocked on A5, **and on the two-clone problem** (DEPLOY_PREFLIGHT §9: the corpus is in a clone 29 commits behind that cannot build; the current code has no corpus) plus an unresolved Vercel project link. **Preflight now measured, not guessed** — [DEPLOY_PREFLIGHT.md](../DEPLOY_PREFLIGHT.md). The build was **BROKEN at `d1576fe`** (fixed `c1e359d`, and `next build` is in CI since `19798ec`); `predeploy-gate` passes on the real corpus. `concordance`/`lexicon`/`original` were ABSENT; **`b9ad463` restored all three and the [census](../evidence/post-a1-2026-08-01/concordance-census.md) confirms all six served dirs are byte-exact against `corpus-backup-2026-07-28`.** Rollback ids established — [RECOVERY.md](../RECOVERY.md) §2 |
+| A6 | ⚑ Deploy A — the irreversible one | Blocked on A5, **and on the two-clone problem** (DEPLOY_PREFLIGHT §9: the corpus is in a clone 29 commits behind that cannot build; the current code has no corpus) plus an unresolved Vercel project link. **Preflight now measured, not guessed** — [DEPLOY_PREFLIGHT.md](../DEPLOY_PREFLIGHT.md). The build was **BROKEN at `d1576fe`** (fixed `c1e359d`, and `next build` is in CI since `19798ec`); `predeploy-gate` passes on the real corpus. `concordance`/`lexicon`/`original` were ABSENT; **`b9ad463` restored all three and the [census](../evidence/post-a1-2026-08-01/concordance-census.md) confirms FIVE of the six served dirs are byte-exact against `corpus-backup-2026-07-28`.** The sixth, `devotional`, is not in that release at all and cannot be compared against it — it is tracked in git and restores from any clean clone (corrected 2026-08-02; "all six" was in this row, DEPLOY_PREFLIGHT §3 and its checklist item 5). Rollback ids established — [RECOVERY.md](../RECOVERY.md) §2 |
 | A7 | Walk the product — Stage 5's twelve journeys · **G7 for the first time ever** | Blocked on A6 |
 | A8 | Register ingest slice → Deploy B → publish registers | Blocked on A7 |
 
@@ -64,9 +64,21 @@ re-executed all four blockers and signed off: B-1 by loading both library versio
 (cohort recompute SQL byte-identical, 2790 == 2790), B-2/B-3/B-4 by seeding real product code and
 watching each check fail. Six findings, none blocking. [Verdict](orders/2026-08-01-stop-verdict-a1-closure.md).
 
-`DEPLOY_PREFLIGHT.md` was rewritten at `bf34b21` from 25 lines to 241 (**248 today**). The
-"still 25 lines (NOT DONE, carried)" line that stood here was false when it was written — `bf34b21`
-precedes the commit that wrote it.
+`DEPLOY_PREFLIGHT.md` was rewritten at `bf34b21` from 25 lines to 241 (**348 today**). The
+"still 25 lines (NOT DONE, carried)" line that stood here was **true when it was written and then
+went stale**: `ccf7f3c` wrote it at 15:45 on 2026-07-31, when the file really was 25 lines, and
+`bf34b21` rewrote it 67 minutes later. `ccf7f3c` is an ancestor of `bf34b21`, checked by ancestry
+and not by timestamp.
+
+The sentence that stood here before said the opposite — "false when it was written, `bf34b21`
+precedes the commit that wrote it" — which inverts the order of the two commits. It came from the
+A1 verdict, which said "false when LAST written" and named `68b14ad`; compressing it dropped "last"
+and turned file-level staleness into a claim about the line's origin. `68b14ad`'s MASTER hunks are
+at @37/@73/@111 and never touch these lines, so no commit that wrote the line postdates `bf34b21`
+and the fallback reading fails too. The tranche that existed to stop this board contradicting its
+own commits put a false history claim in it, and the count in the same sentence was stale by 100
+lines. Corrected 2026-08-02 after the branch audit; see
+[the verdict](orders/2026-08-02-stop-verdict-corrections-branch.md).
 
 **Verified but not closed:** the repair's guards (weld abort, prod refusal on the *resolved* endpoint,
 dry-run default, single-column scope) all fire. Its **execution** is UNVERIFIED — the auditor had no

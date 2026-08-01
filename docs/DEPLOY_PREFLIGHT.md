@@ -120,9 +120,13 @@ covered, so the honest gap is narrower and different):
 `vercel --prod` uploads the **working tree**, not a commit. These are gitignored and reach production
 **only** this way — never through git, never through CI:
 
-Re-measured 2026-08-01 ([census](evidence/post-a1-2026-08-01/concordance-census.md)). Every one of the
-six served directories is present and **byte-exact** against the `corpus-backup-2026-07-28` release
-— compared on file count, byte total, and a roll-up SHA-256 over path+content of every file:
+Re-measured 2026-08-01 ([census](evidence/post-a1-2026-08-01/concordance-census.md)). All six served
+directories are present. **FIVE of the six** are byte-exact against the `corpus-backup-2026-07-28`
+release — compared on file count, byte total, and a roll-up SHA-256 over path+content of every file.
+The sixth, `devotional/`, is **not in that release at all**, so there is nothing to compare it
+against; it is tracked in git and restores from any clean clone. "All six byte-exact" stood here,
+in checklist item 5 and in MASTER.md's A6 row, and was wrong in all three (corrected 2026-08-02 —
+[verdict](pm/orders/2026-08-02-stop-verdict-corrections-branch.md)):
 
 | directory | on this machine | bytes | vs backup |
 |---|---|---|---|
@@ -269,7 +273,8 @@ Everything below is free and reversible. Stop at the first ✗.
 [ ] 3  DEPLOYING=1 npx tsx scripts/predeploy-gate.ts     -> EXIT 0
 [ ] 4  corpusHash matches the committed manifest         (step 3 prints and checks it)
 [x] 5  ANSWERED 2026-08-01 — NO DECISION NEEDED. All six served directories are
-       present and byte-exact vs corpus-backup-2026-07-28 (§3, roll-up hashes).
+       present; five are byte-exact vs corpus-backup-2026-07-28 (§3, roll-up
+       hashes). devotional/ is not in that release and is tracked in git.
        Nothing throws. Residual, not a blocker: loadLexicon still lacked a
        res.ok guard at the time (§4; guarded since this branch).
        *** BUT SEE §9: they are present in ~/Projects/ancient-roads-git, which

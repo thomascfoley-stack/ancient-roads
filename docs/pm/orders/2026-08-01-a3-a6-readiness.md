@@ -1,3 +1,10 @@
+> **STATUS UPDATE 2026-08-02.** This order's verdict on A4 was true when written and is now spent:
+> the writer and the prod-capable verifier it specifies were built the same night (`977bcef`),
+> audited, six defects fixed (`cf7c65d`), and put under test (`fd7a791`). **A4 is READY and waits
+> only on the owner.** A6 is unchanged — still the two-clone problem and the Vercel link. Both
+> "no safe prod writer" lines below are left in place because this is a dated order, not a board;
+> the board is [MASTER.md](../MASTER.md), and it now says READY.
+
 OUTCOME: A3 and A5 can run tonight. **A4 and A6 cannot** — not for want of a decision, but because
 A4 has no safe writer and no verifier that will run on production, and neither clone on this machine
 can complete `deploy.sh`. Five claims were checked adversarially by independent sessions; four came

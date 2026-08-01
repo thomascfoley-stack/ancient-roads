@@ -85,6 +85,21 @@ Three things about that pair, each of which has bitten this repo before:
 - **The reverse is exact but NOT a full undo.** It restores `sources.status`. It does not
   restore anything downstream that ran because the works were published — see §5.
 
+> **SUPERSEDED 2026-08-02.** The paragraph below described `scripts/publish-works.mjs` as "the
+> right tool to adapt". **That adaptation shipped** at `977bcef` as `scripts/publish-flip.mjs`,
+> and this section was never updated to say so — the readiness order listed the correction under
+> "document corrections that must land with the code", the code landed and the correction did
+> not. Since this file self-describes as the written plan the owner-level go is called against,
+> a reader following it would have reached for the dev-only script.
+>
+> **The tool is `scripts/publish-flip.mjs`.** It takes the credential from the environment only,
+> requires `PUBLISH_ALLOW=1` for every target including dev, requires `PUBLISH_EXPECT_HOST` to
+> name the endpoint id **exactly** (`ep-odd-fog-atnykudm`, not `ep-odd-fog`), asserts
+> `neondb_owner` at the server, snapshots every row before COMMIT, asserts the delta, runs the
+> licence and provenance gates in-transaction over the whole published set, and has `--reverse`.
+> Twenty-seven of its guarantees run in CI (`test/publish-flip-toolchain.test.ts`).
+
+The original assessment, kept because it is the reasoning the new tool was built from:
 `scripts/publish-works.mjs` already does this shape with an inline fail-closed licence and
 provenance gate in the same transaction, and is the right tool to adapt. **It is not usable
 as-is:** it is hardcoded to dev (`ep-tiny-hat`), it reads its URL from
@@ -92,20 +107,28 @@ as-is:** it is hardcoded to dev (`ep-tiny-hat`), it reads its URL from
 carries its OWN hand-typed copy of the forbidden-domain list and the allowed-licence list
 rather than importing `forbiddenProvenanceDomain` / `ALLOWED_LICENSES`. That duplication is
 the defect ADR-034 and Tranche 0.1 are both about, and it should be fixed **before** the
-script is pointed anywhere new, not after.
+script is pointed anywhere new, not after. (`publish-flip.mjs` imports both.)
 
 ## 3. Preconditions — every one checked, none assumed
 
+> **AMENDED 2026-08-02.** The three fork-based preconditions below **cannot be met as written**.
+> Neon branch creation is forbidden by the standing rails, which the A3 record already logs as an
+> accepted departure; the census that filled §1 ran offline from A2's committed artifacts instead.
+> They are struck through rather than deleted so the substitution is visible: what replaced each
+> one is named, and G10 is the one that is genuinely deferred, not satisfied.
+
 - [ ] **Owner go, naming the endpoint, the script and the occasion** (ADR-042 ruling 2:
       supplying a credential is not a run authorisation).
-- [ ] Census run on the rehearsal fork, **exit code 0**, log committed. A STOP is a stop.
-- [ ] **G10 discharged on that fork** — `scripts/cutover-gate-redproof.mjs` prints
-      `PROVEN  G10 unit_ordinal`, not `SKIPPED`. This is the first target on which it is
-      possible, and it must happen **before** the flip reaches production (ADR-043).
-- [ ] `unit-ordinal-instrument --cohort=staged` run on the fork, **PASS**, log committed —
-      the ordering of the works about to be published is measured *as the staged cohort*,
-      which is the thing Tranche 1 made possible.
-- [ ] Same instrument re-run with `--cohort=published` afterwards, for the §4 diff.
+- [x] ~~Census run on the rehearsal fork, **exit code 0**, log committed.~~ **REPLACED:** A2
+      measured production read-only; `scripts/publish-flip-adjudicate.mts` applied the codified
+      STOP rules offline to that artifact, exit 0, [record](../a3-adjudication-2026-08-01/README.md).
+      A STOP is still a stop.
+- [ ] ~~**G10 discharged on that fork**~~ — **STILL OPEN, and now explicitly deferred.** It needs
+      a fork, forks are forbidden, and ADR-043 wants it before the flip. This is a knowing
+      departure from ADR-043 that the A4 go must accept by name, not a box that got ticked.
+- [x] ~~`unit-ordinal-instrument --cohort=staged` run on the fork~~ — **DONE on production**,
+      read-only, during A2: instrument PASS over the staged cohort.
+- [ ] Same instrument re-run with `--cohort=published` afterwards — this is **A5**.
 - [ ] `npm run audit` green at the exact sha being flipped.
 - [ ] Restore point exists and its id is written down (§5) — captured **before** the flip.
 - [ ] Nobody else is working the tree (AGENTS.md: concurrent sessions have shipped each
@@ -113,14 +136,28 @@ script is pointed anywhere new, not after.
 
 ## 4. Post-flip verification — a census DIFF, not a fresh look
 
-Re-run the census with `--cohort=published` and diff it against the pre-flip run. A fresh
-census read on its own is worth much less: it shows a state, and a plausible-looking state
-is exactly what a partial flip produces.
+Diff a before-run against an after-run. A fresh read on its own is worth much less: it shows a
+state, and a plausible-looking state is exactly what a partial flip produces.
+
+> **CORRECTED 2026-08-02.** The commands here named `publish-flip-census.mts --cohort=published`,
+> which **cannot run**: that script refuses production outright, deliberately and permanently
+> (`:52-55`). Worse, it is cohort-parameterised, so a before-run and an after-run with different
+> cohorts measure different populations and their diff shows the parameterisation rather than the
+> flip. `scripts/publish-flip-verify.mjs` exists for this: read-only, `app_runtime` via
+> `NEON_API_KEY` with no `DATABASE_URL` fallback, `SET TRANSACTION READ ONLY` asserted at the
+> server, always rolled back, and its population is **fixed** — every row of `sources`, every
+> register count, always. That fixity is the whole design: `diff before after` then means the
+> flip and nothing else. It also prints `sources.license`, which nothing committed has ever read
+> on production.
 
 ```bash
-PUBLISH_FLIP_DATABASE_URL=<url> npx tsx scripts/publish-flip-census.mts \
-  --target=<endpoint> --cohort=published | tee flip-census-after.log
-diff flip-census-before.log flip-census-after.log
+NEON_API_KEY=<key> node scripts/publish-flip-verify.mjs --target=ep-odd-fog \
+  --out=docs/evidence/work-order-v2-stage2/flip-before.log
+#  ...flip...
+NEON_API_KEY=<key> node scripts/publish-flip-verify.mjs --target=ep-odd-fog \
+  --out=docs/evidence/work-order-v2-stage2/flip-after.log
+diff docs/evidence/work-order-v2-stage2/flip-before.log \
+     docs/evidence/work-order-v2-stage2/flip-after.log
 ```
 
 The diff must show, and must show **only**:

@@ -22,8 +22,14 @@ recorded below and **neither was fixed**:
 
 1. **A live filename collision** that silently blanks the concordance panel for Hebrew `H1` (אָב,
    "father", 1,060 verses). It is in the backups too, so it is a build defect, not a restore defect.
-2. **`web/public/devotional/` has no backup at all**, in any release. It is served, it is one file,
-   and it cannot be restored from anything in this repository.
+2. **`web/public/devotional/` is in no backup RELEASE**, but it *is* tracked in git
+   (`web/public/devotional/morning-evening.json`, blob `da4dede`, 1,489,403 bytes) and restores from
+   any clean clone. It is the only served directory not in `.gitignore`.
+   > **CORRECTION, 2026-08-02.** This item originally read "it cannot be restored from anything in
+   > this repository", which is false and was already retracted in §5 of this same file and in
+   > DEPLOY_PREFLIGHT — but not here, in the section most people read. The 2026-08-02 branch audit
+   > found the falsehood still standing in the verdict block that repudiates it, which is a sharper
+   > version of the defect than the original error: a correction that does not reach the headline.
 
 ---
 
@@ -177,8 +183,10 @@ biblehub-quarantine-backup-2026-07-19 : devotional assets = 0
 
 `RECOVERY.md` §3a lists five backed-up assets and does not mention `devotional`, so the omission is
 consistent — but §3's restore command names five directories and the served set is six. If this file
-is lost, the download that restores everything else does not restore it. It is one file and small;
-the fix is to add it to the next release. **Not done here** — the corpus carries
+is lost, the download that restores everything else does not restore it; **`git checkout` does**,
+because unlike the other five it is tracked. That is a documentation gap in the restore procedure,
+not a data-loss exposure. Adding it to the next release would still be tidier — one small file, and
+it would make the restore command cover the whole served set. **Not done here** — the corpus carries
 forbidden-provenance material and where a backup may be published is an owner ruling.
 
 ---
