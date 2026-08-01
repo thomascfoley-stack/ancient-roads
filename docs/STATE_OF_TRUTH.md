@@ -138,21 +138,21 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 
 | slug | `source_type` | `status` | sections |
 |---|---|---|---|
-| `adam-clarke` | commentary | staged | 12,693 |
+| `adam-clarke` | commentary | **published** | 12,693 |
 | `barnes-notes` | commentary | staged | 1,300 |
-| `calvin-crosswire` | commentary | staged | 5,090 |
-| `jfb` | commentary | staged | 15,473 |
-| `john-gill` | commentary | staged | 28,843 |
-| `matthew-henry` | commentary | staged | 4,210 |
-| `wesley-crosswire` | commentary | staged | 5,254 |
+| `calvin-crosswire` | commentary | **published** | 5,090 |
+| `jfb` | commentary | **published** | 15,473 |
+| `john-gill` | commentary | **published** | 28,843 |
+| `matthew-henry` | commentary | **published** | 4,210 |
+| `wesley-crosswire` | commentary | **published** | 5,254 |
 
 | fact | value | verified |
 |---|---|---|
 | `sources` total | **7** | ✅ measured |
-| `status = 'staged'` | **7** (all) | ✅ measured |
-| `status = 'published'` | **0** | ✅ measured |
+| `status = 'staged'` | **1** (`barnes-notes` only) | ✅ measured 2026-08-01 post-flip |
+| `status = 'published'` | **6** | ✅ measured 2026-08-01 post-flip |
 | `sections` total | **72,863** | ✅ measured; per-source counts sum to 72,863 exactly |
-| Publish flip on prod | **NOT DONE** | ✅ no published row exists |
+| Publish flip on prod | **DONE 2026-08-01 20:32:31Z** | ✅ six works flipped, owner-executed; `evidence/work-order-v2-stage2/flip-after.log` |
 
 **Nothing changed between 2026-07-30 10:09 and 2026-08-01 05:03.** The A2 reading reproduces the
 2026-07-30 figures exactly, source for source. The open question this section carried — "whether
@@ -161,8 +161,9 @@ status changed after 2026-07-30 10:09" — is **settled: it did not.**
 **Sequencing implication (unchanged).** Stage 2.2 `unit_ordinal` prod measurement requires
 `published > 0`. Ordering verification on production is **downstream of publish flip**, not parallel to
 instrument hardening. A2 ran the instrument over `--cohort=staged` (**PASS**, 7/7 works, rollup digest
-`10cd5eb46c9e53cb4b7b980e38e4720f`, no scan truncation); the `published` cohort is **NOT RUN** and
-cannot be run until a flip exists.
+`10cd5eb46c9e53cb4b7b980e38e4720f`, no scan truncation). The flip has since happened (A4, 2026-08-01
+20:32:31Z), so the `published` cohort is now **RUNNABLE and still NOT RUN** — that is gate A5, one
+read-only command. It is no longer blocked; it is simply outstanding.
 
 **A2.3 finding, for A3 (not adjudicated here):** `barnes-notes` carries author string `Barnes' Notes`,
 which matches no leg of `LEGAL_CORPUS_FILTER` — **1,300 sections, 0 admitted rows**. It is staged, so

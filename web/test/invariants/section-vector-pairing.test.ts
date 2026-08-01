@@ -81,7 +81,15 @@ const SKIP = announceSkip(
 );
 
 describe.skipIf(SKIP)('§B0 class 2 — every section body matches its own stored vector', () => {
-  it('re-embedding the body reproduces the stored vector, and discriminates against a neighbour', async () => {
+  // `ctx` is load-bearing, not decoration. A bare `return` out of a test body is reported by
+  // vitest as PASSED — so every provider-unavailable exit below used to announce NOT RUN in the
+  // log and then hand CI a green tick. Both receipts were structurally blind to it:
+  // ci-skip-ceiling.mjs counts a file only when pending === total (this file has one test), and
+  // ci-db-invariants-receipt.mjs fails only when executed === 0. One DeepInfra 429 — which has
+  // happened, at ca53457 — turned the ONLY check standing between the corpus and content/vector
+  // mispairing into `executed=N passed=N failed=0`. `ctx.skip()` is what loud-skip.ts:31 has
+  // always said this must be: "never a failure and never a pass". (2026-08-02 deep audit, T1.)
+  it('re-embedding the body reproduces the stored vector, and discriminates against a neighbour', async (ctx) => {
     if (!process.env.DEEPINFRA_API_KEY) process.env.DEEPINFRA_API_KEY = localEnv('DEEPINFRA_API_KEY');
     const sql = getDb();
     // One section from EVERY published work. Per-REGISTER sampling was the first version and it
@@ -124,7 +132,7 @@ describe.skipIf(SKIP)('§B0 class 2 — every section body matches its own store
       '§B0 class 2 — section/vector pairing',
       [{ name: `DeepInfra embeddings (unavailable after ${probe.attempts} attempts: ${probe.error ?? ''})`, present: probe.present, kind: 'provider' }],
       'every published section body matching its own stored vector, and discriminating against a neighbour',
-    )) return;
+    )) { ctx.skip(); return; }
 
     const failures: string[] = [];
     for (let i = 0; i < samples.length; i++) {
@@ -141,6 +149,7 @@ describe.skipIf(SKIP)('§B0 class 2 — every section body matches its own store
             [{ name: `DeepInfra embeddings (${err instanceof Error ? err.message : String(err)})`, present: false, kind: 'provider' }],
             'the remaining published sections in this run',
           );
+          ctx.skip();
           return;
         }
         throw err;

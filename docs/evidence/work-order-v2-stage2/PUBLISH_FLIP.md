@@ -1,11 +1,20 @@
-# PUBLISH FLIP — the plan. NOT AN AUTHORISATION, AND NOT EXECUTED.
+# PUBLISH FLIP — the plan. **EXECUTED 2026-08-01 20:32:31Z.**
 
 **Top line, one sentence: after this flip a visitor stops seeing an empty library and starts
 seeing the works listed, opened and searched — nothing about the text changes, only whether
 the product will show it.**
 
-Status: **written, never run.** No part of this document has been executed against any
-database. The publish flip is an owner-level call (AGENTS.md: content quarantine, prod
+Status: **EXECUTED.** The flip ran against production (`ep-odd-fog-atnykudm`) on 2026-08-01 at
+20:32:31Z, owner-executed at a terminal, six works `staged -> published`. Evidence:
+`flip-before.log`, `flip-after.log`, `flip-pre-snapshot-2026-08-01T20-32-31-268Z.json`; board row
+`docs/pm/MASTER.md` A4; record `docs/pm/orders/2026-08-02-a4-publish-flip.md`.
+
+> This header read "written, never run" for eighteen hours after the flip, in the file the
+> owner-level go is called against — while §2 of this same document carried a correction block
+> about code landing and its correction not. The 2026-08-02 deep audit found it (M2). What the
+> flip did NOT discharge is listed in §3: four preconditions were unticked at execution time and
+> two of them are still open — the restore-point id (§5) was never captured, and the mandatory
+> human read of a flipped work (§4) cannot run until A6. The publish flip is an owner-level call (AGENTS.md: content quarantine, prod
 deletion and deploy timing are not agent decisions), and this file exists so that the call
 can be made against a written plan instead of against an agent's improvisation at the
 console.
