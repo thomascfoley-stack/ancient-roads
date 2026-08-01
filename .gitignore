@@ -33,6 +33,12 @@ coverage/
 spike/
 .vercel
 
+# Entries lifted OUT of web/public/commentaries by src/ingest/quarantine-served-corpus.ts so the
+# static artifact stops DELIVERING what the reader already refuses to RENDER (deep audit C2).
+# Deliberately outside web/, which is the Vercel upload root — that is the whole point. Same
+# reason as the corpus itself: too large for git, and it holds the must-not-serve content.
+corpus-quarantine/
+
 # transient re-source verification cache
 .newadvent-cache/
 web/public/concordance/
