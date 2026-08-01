@@ -38,7 +38,7 @@ import readline from 'node:readline';
 import { ALLOWED_LICENSES, isAllowedLicense } from '../src/ingest/allowed-licenses.mjs';
 import { forbiddenProvenanceDomain } from '../src/ingest/forbidden-provenance.mjs';
 import { eligibility, flipDelta } from './lib/publish-flip-delta.mjs';
-import { assertPublishTarget } from './lib/publish-flip-guard.mjs';
+import { assertPublishTarget, assertStrongTls } from './lib/publish-flip-guard.mjs';
 import { scrubCredentialText } from './lib/neon-connection.mjs';
 
 const OWNER_ROLE = 'neondb_owner';
@@ -86,6 +86,8 @@ try {
     declared: process.env.PUBLISH_EXPECT_HOST,
     localOk,
   });
+  // The URL wins over `ssl:{rejectUnauthorized:true}` below — see assertStrongTls.
+  assertStrongTls(url, { localOk });
 } catch (e) {
   die(e.message, 2);
 }

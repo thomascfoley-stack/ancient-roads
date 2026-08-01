@@ -1,0 +1,28 @@
+{
+  "host": "localhost:55444",
+  "direction": "staged->published",
+  "slugFile": "/tmp/rp-slugs.json",
+  "slugs": [
+    "calvin-institutes",
+    "olney-hymns",
+    "spurgeon-sermons"
+  ],
+  "sources": [
+    {
+      "slug": "bystander-work",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-institutes",
+      "status": "staged"
+    },
+    {
+      "slug": "olney-hymns",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "status": "staged"
+    }
+  ]
+}

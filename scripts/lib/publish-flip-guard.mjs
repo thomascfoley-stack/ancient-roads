@@ -31,6 +31,49 @@ function isTrulyLocal(url) {
   return h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === '::1';
 }
 
+/** sslmode values that weaken or disable certificate verification. */
+const WEAK_SSLMODES = new Set(['disable', 'allow', 'prefer', 'no-verify']);
+
+/**
+ * Refuse a connection string that would silently downgrade TLS.
+ *
+ * WHY THIS IS NOT REDUNDANT WITH `ssl: {rejectUnauthorized:true}`. It is the opposite of
+ * redundant: pg's connection-parameters.js does
+ *   `Object.assign({}, config, parse(config.connectionString))`
+ * so **the parsed URL wins over the explicit config object** (2026-08-02 deep audit, C4).
+ * Measured on the installed pg:
+ *   (no sslmode)        -> {rejectUnauthorized:true}   as written
+ *   ?sslmode=require    -> {}                          Node default true — safe by accident
+ *   ?sslmode=no-verify  -> {rejectUnauthorized:false}  verification OFF
+ *   ?sslmode=disable    -> false                       no TLS at all
+ * The URL is deliberately never printed or inspected, so nothing in the committed artifact set
+ * recorded what TLS was actually in force during the flip — the host-pinning guard was pinning a
+ * DNS name whose certificate may never have been verified.
+ *
+ * Forward hazard, which is why this refuses rather than silently re-forcing the config:
+ * pg-connection-string warns that v3 changes `sslmode=require` to libpq semantics, moving today's
+ * safe-by-accident row into the unsafe column with no code change here.
+ *
+ * @param {string} url
+ * @param {{localOk?: boolean}} opts  local red-proof runs against a non-TLS throwaway; exempt.
+ */
+export function assertStrongTls(url, { localOk = false } = {}) {
+  if (localOk) return;
+  let mode;
+  try {
+    mode = new URL(url).searchParams.get('sslmode');
+  } catch {
+    throw new Error('STOP: connection string is not a parseable URL.');
+  }
+  if (mode !== null && WEAK_SSLMODES.has(mode.toLowerCase())) {
+    throw new Error(
+      `STOP: connection string carries sslmode=${mode}, which pg applies OVER the explicit ` +
+        'ssl config — certificate verification would be weakened or off on a production write. ' +
+        'Use sslmode=verify-full, or omit sslmode entirely.',
+    );
+  }
+}
+
 /**
  * Decide whether a publish flip may run against `url`.
  *
@@ -55,7 +98,26 @@ export function assertPublishTarget(url, { allow, declared, localOk = false } = 
     throw new Error('STOP: connection string is not a parseable URL.');
   }
 
-  if (isTrulyLocal(url)) {
+  // localOk REQUIRES local. It does not merely permit it.
+  //
+  // This was the other way round, and it was the worst defect in the toolchain (2026-08-02 deep
+  // audit, C3). The check lived only inside the `isTrulyLocal` branch, so a PRODUCTION url never
+  // entered that branch, fell through to the ordinary checks, and passed them — verified by
+  // execution against the real production host. Downstream, `--local-redproof` skips the non-TTY
+  // refusal (publish-flip.mjs:105), returns from `ownerGate()` immediately (:115) and disables TLS
+  // verification (:126). One argv token turned the one legally irreversible write in this project
+  // into an unattended one, on a flag whose own docstring says "never set by the operator path".
+  //
+  // Stated as an invariant rather than a branch: the red-proof path and a real endpoint are
+  // mutually exclusive, and the refusal is symmetric so neither direction can drift back.
+  const local = isTrulyLocal(url);
+  if (localOk && !local) {
+    throw new Error(
+      `STOP: --local-redproof was set but ${host} is not local. The red-proof path skips the owner ` +
+        'gate, the TTY requirement and TLS verification; it may never point at a real endpoint.',
+    );
+  }
+  if (local) {
     if (!localOk) {
       throw new Error(`STOP: ${host} is local, and the local path is red-proof only. Refusing.`);
     }

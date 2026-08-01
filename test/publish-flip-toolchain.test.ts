@@ -24,7 +24,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { assertPublishTarget } from '../scripts/lib/publish-flip-guard.mjs';
+import { assertPublishTarget, assertStrongTls } from '../scripts/lib/publish-flip-guard.mjs';
 import { eligibility, flipDelta } from '../scripts/lib/publish-flip-delta.mjs';
 import { endpointId } from '../scripts/lib/target-guard.mjs';
 
@@ -108,6 +108,47 @@ describe('the target guard refuses everything it claims to refuse', () => {
     expect(() => assertPublishTarget('postgresql://u:p@localhost:5433/x', { allow: true })).toThrow(/red-proof only/);
     expect(assertPublishTarget('postgresql://u:p@localhost:5433/x', { allow: true, localOk: true })).toBe('localhost:5433');
     expect(assertPublishTarget('postgresql://u:p@127.0.0.1:5433/x', { allow: true, localOk: true })).toBe('127.0.0.1:5433');
+  });
+
+  it('refuses --local-redproof pointed at a REAL endpoint — the C3 hole', () => {
+    // THE WORST DEFECT THE 2026-08-02 AUDIT FOUND, and it was in this guard. `localOk` was
+    // consulted only inside the isTrulyLocal branch, so a production URL skipped that branch
+    // entirely and passed the ordinary checks. Verified by execution at the time:
+    //   assertPublishTarget(<prod url>, {allow:true, declared:'ep-odd-fog-atnykudm', localOk:true})
+    //     -> ACCEPTED
+    // Downstream, --local-redproof skips the TTY refusal, returns from ownerGate() immediately
+    // and disables TLS. One argv token made the irreversible write unattended.
+    // SEED: move the `localOk && !local` check back inside the isTrulyLocal branch -> RED.
+    expect(() => assertPublishTarget(url(PROD_HOST), { allow: true, declared: PROD_ID, localOk: true })).toThrow(
+      /--local-redproof was set but .* is not local/,
+    );
+    // ...and a declared DEV endpoint is no more exempt than production.
+    expect(() =>
+      assertPublishTarget(url('ep-tiny-hat-123.us-east-1.aws.neon.tech'), {
+        allow: true,
+        declared: 'ep-tiny-hat-123',
+        localOk: true,
+      }),
+    ).toThrow(/is not local/);
+    // The legitimate pairing still works, in both directions.
+    expect(assertPublishTarget('postgresql://u:p@localhost:5433/x', { allow: true, localOk: true })).toBe('localhost:5433');
+    expect(assertPublishTarget(url(PROD_HOST), { allow: true, declared: PROD_ID })).toBe(PROD_HOST);
+  });
+
+  it('refuses a connection string that would downgrade TLS — the C4 hole', () => {
+    // pg does Object.assign({}, config, parse(connectionString)), so the URL wins over the
+    // explicit ssl:{rejectUnauthorized:true}. sslmode=no-verify turned verification OFF and
+    // sslmode=disable removed TLS entirely, on the production write path, with nothing in the
+    // committed artifacts recording it.
+    // SEED: delete the WEAK_SSLMODES check -> RED.
+    for (const mode of ['disable', 'no-verify', 'allow', 'prefer', 'NO-VERIFY']) {
+      expect(() => assertStrongTls(`${url(PROD_HOST).split('?')[0]}?sslmode=${mode}`), mode).toThrow(/sslmode=/);
+    }
+    // verify-full and an absent sslmode are both fine.
+    expect(() => assertStrongTls(`${url(PROD_HOST).split('?')[0]}?sslmode=verify-full`)).not.toThrow();
+    expect(() => assertStrongTls(url(PROD_HOST).split('?')[0]!)).not.toThrow();
+    // The local red-proof path runs against a throwaway with no TLS at all; exempt by design.
+    expect(() => assertStrongTls('postgresql://u:p@localhost:5433/x?sslmode=disable', { localOk: true })).not.toThrow();
   });
 
   it('refuses a host that merely BEGINS with localhost, even in red-proof mode', () => {

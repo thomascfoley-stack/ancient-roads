@@ -24,6 +24,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import pg from 'pg';
+import { assertStrongTls } from './lib/publish-flip-guard.mjs';
 import {
   assertReadOnlySession,
   resolveInstrumentConnection,
@@ -65,6 +66,8 @@ if (localUrl) {
   conn = { url: localUrl, host, ssl: false, expectRole: null };
 } else {
   const r = resolveInstrumentConnection({ target, role: INSTRUMENT_ROLE });
+  // The minted URL is not ours to trust either: pg applies its sslmode over the ssl config.
+  assertStrongTls(r.url);
   conn = { url: r.url, host: r.host, ssl: { rejectUnauthorized: true }, expectRole: INSTRUMENT_ROLE };
 }
 
