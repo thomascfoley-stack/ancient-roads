@@ -1,22 +1,22 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import * as budget from '@/lib/teacher/teach-budget';
 
-const REPO = path.join(__dirname, '..');
-
-function routeMaxDurationBinding(rel: string): string | undefined {
-  const src = readFileSync(path.join(REPO, rel), 'utf8');
-  return src.match(/export const maxDuration = (\w+)/)?.[1];
-}
-
 describe('teach compose retry budget', () => {
-  it('ask routes bind maxDuration to ASK_MAX_DURATION_SEC (not an independent literal)', () => {
-    for (const rel of ['src/app/api/ask/route.ts', 'src/app/api/ask/stream/route.ts']) {
-      const src = readFileSync(path.join(REPO, rel), 'utf8');
-      expect(src, rel).toContain("from '@/lib/teacher/teach-budget'");
-      expect(routeMaxDurationBinding(rel), rel).toBe('ASK_MAX_DURATION_SEC');
-    }
+  // REMOVED 2026-08-01: "ask routes bind maxDuration to ASK_MAX_DURATION_SEC (not an independent
+  // literal)". That assertion was correct in intent and made the product UNBUILDABLE.
+  //
+  // Next 16 statically analyses route segment config and rejects a non-literal export:
+  // `next build` exited 1 with "Invalid segment configuration export detected", naming no route.
+  // So this test enforced the identifier binding while the framework required a literal, and the
+  // two could not both be satisfied. Nothing in CI builds the app, so the test stayed green and the
+  // build stayed broken -- neither signal ever met the other.
+  //
+  // The invariant it protected is REAL and is not dropped: maxDuration is the Vercel function
+  // ceiling, ASK_MAX_DURATION_SEC is the in-process budget, and they must be one number.
+  // `test/ask-max-duration-literal.test.ts` (repo root) now asserts the stronger property --
+  // the export IS a numeric literal AND that literal equals ASK_MAX_DURATION_SEC -- which catches
+  // drift in both directions and is compatible with the build. Deleted rather than mirrored.
+  it('the seconds/ms constants are one number', () => {
     expect(budget.ASK_MAX_DURATION_SEC * 1000).toBe(budget.ASK_MAX_DURATION_MS);
   });
 
