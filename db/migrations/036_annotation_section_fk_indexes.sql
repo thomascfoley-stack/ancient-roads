@@ -1,0 +1,35 @@
+-- 036: index the three annotation -> sections foreign keys — deep audit M21.
+--
+-- `notes.section_id`, `highlights.section_id` and `bookmarks.section_id` REFERENCE sections(id).
+-- Postgres does not index a referencing column automatically, and every existing index on these
+-- columns is PARTIAL:
+--   idx_notes_user_section      btree (user_id, section_id) WHERE deleted_at IS NULL AND target_kind = 'section'
+--   idx_highlights_user_section btree (user_id, section_id) WHERE deleted_at IS NULL AND target_kind = 'section'
+--   idx_bookmarks_user_section  btree (user_id, section_id) WHERE deleted_at IS NULL AND target_kind = 'section'
+-- A partial index cannot serve the referential-integrity scan, because that scan must see EVERY
+-- row including soft-deleted ones. So `DELETE FROM sections WHERE source_id=$1` — which the three
+-- re-ingest paths run — performs a sequential scan of all three tables PER DELETED ROW. A work is
+-- thousands of sections.
+--
+-- MEASURED ON PRODUCTION 2026-08-01: notes 0 rows, highlights 0 rows, bookmarks 0 rows. Nothing is
+-- slow today and nothing is broken today. This is the index that must exist before the first user
+-- annotates a work, not a repair of a live problem — stated plainly because "we added an index"
+-- reads like a fix for observed pain, and this is not one.
+--
+-- NO `ON DELETE` ACTION IS ADDED, and that is the decision, not an oversight. With NO ACTION the
+-- DELETE is REFUSED (23503) once an annotation points into the work, which is correct: CASCADE
+-- would silently delete a user's notes because a corpus job re-ran, and SET NULL violates the 025
+-- CHECK that `target_kind='section'` implies `section_id IS NOT NULL`. src/ingest/reingest-guard.ts
+-- now refuses first, with the count and the reason, so the operator meets a sentence instead of a
+-- constraint code. Re-anchoring annotations across a re-ingest is a design slice of its own
+-- (ADR-027 drift), and it is an owner call.
+--
+-- CONCURRENTLY ⇒ each statement runs outside a txn block. Apply with
+--   DATABASE_URL=<owner-url> node db/apply-migration-concurrent.mjs db/migrations/036_annotation_section_fk_indexes.sql
+-- Rollback: DROP INDEX CONCURRENTLY IF EXISTS idx_notes_section_fk, idx_highlights_section_fk, idx_bookmarks_section_fk;
+-- Run as neondb_owner. Idempotent.
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_notes_section_fk ON notes (section_id);
+--SPLIT--
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_highlights_section_fk ON highlights (section_id);
+--SPLIT--
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_bookmarks_section_fk ON bookmarks (section_id);

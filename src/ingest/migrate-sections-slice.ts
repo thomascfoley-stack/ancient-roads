@@ -33,6 +33,7 @@ import pg from 'pg';
 import { readFileSync, existsSync } from 'fs';
 import { forbiddenProvenanceDomain, FORBIDDEN_PROVENANCE_DOMAINS } from './license-manifest';
 import { assertDevOnlyTarget } from './dev-only-target.mjs';
+import { assertReingestable } from './reingest-guard.js';
 
 const MODEL_SLUG = 'bge-large-en-v1.5'; // ADR-005, matches embeddings.metadata.model
 
@@ -118,6 +119,13 @@ async function main() {
 
   try {
     await client.query('BEGIN');
+
+    // M22b: this file NEVER had a published-work check — and it is the script that wrote all
+    // 72,863 production sections, exposed as `pnpm migrate:sections-slice`, deleting every section
+    // of the slug it re-slices. Inside the transaction, on a row locked FOR UPDATE, so a publish
+    // flip cannot land between the check and the DELETE below. Also refuses when user annotations
+    // anchor into the work (M21) instead of letting the FK raise 23503 mid-transaction.
+    await assertReingestable(client, entry.slug, 'the section re-slice');
 
     // R1 preflight: the provenance column must exist before any row is copied. Failing
     // closed here (not skipping the copy of source_url) is the point — a slice that ran

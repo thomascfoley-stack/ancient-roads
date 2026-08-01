@@ -151,11 +151,32 @@ try {
   await ownerGate();
 
   await client.query('BEGIN');
+  // Fail fast instead of hanging at the terminal if another writer already holds these rows. The
+  // operator is standing at a prompt during an irreversible write; a silent block is the worst
+  // possible feedback. 15s is far longer than any legitimate holder of a 7-row table.
+  await client.query("SET LOCAL lock_timeout = '15s'");
 
-  // ── the snapshot: EVERY row, not just the ones being flipped ────────────────────────────
+  // ── the snapshot: EVERY row, not just the ones being flipped, and LOCKED ────────────────
   // The delta assertion below is only meaningful against a complete before-picture, and a
   // partial snapshot cannot prove that nothing else moved.
-  const before = (await client.query('SELECT slug, status FROM sources ORDER BY slug')).rows;
+  //
+  // FOR UPDATE — 2026-08-02 deep audit, M23. This transaction is a bare BEGIN, so it runs at READ
+  // COMMITTED and every statement takes a NEW snapshot. The legality gate below asks "is the
+  // PUBLISHED corpus legal" over the whole table, and it asked that of a picture that could change
+  // underneath it: `barnes-notes` in particular is deliberately not flipped, so nothing else in
+  // this transaction touched it, and a concurrent session could publish it between the gate's read
+  // and this transaction's COMMIT. The gate would pass over a corpus that is not the one committed.
+  //
+  // Raising the isolation level was the obvious alternative and it is worse: under REPEATABLE READ
+  // the whole transaction reads one snapshot, so the before/after delta check would compare a view
+  // to itself and become a check that CANNOT FAIL — trading a real gap for an unearned green.
+  // Locking gives the guarantee without blinding the delta.
+  //
+  // `sources` is 7 rows, so this costs nothing. It also composes with the re-ingest guard added the
+  // same day (src/ingest/reingest-guard.ts): that guard takes FOR UPDATE on the row it is about to
+  // delete sections for, so a re-ingest and a flip now mutually exclude — which is what makes the
+  // `badSections` leg below trustworthy without locking 72,863 section rows.
+  const before = (await client.query('SELECT slug, status FROM sources ORDER BY slug FOR UPDATE')).rows;
   const beforeBy = new Map(before.map((r) => [r.slug, r.status]));
 
   // Both row decisions come from lib/publish-flip-delta.mjs, which is pure and has tests. They

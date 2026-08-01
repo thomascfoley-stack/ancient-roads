@@ -167,7 +167,7 @@ read-only command. It is no longer blocked; it is simply outstanding.
 
 **A2.3 finding, for A3 (not adjudicated here):** `barnes-notes` carries author string `Barnes' Notes`,
 which matches no leg of `LEGAL_CORPUS_FILTER` — **1,300 sections, 0 admitted rows**. It is staged, so
-`MASTER.md:37`'s published-but-not-admitted STOP has not fired; it would fire on a flip that includes
+`MASTER.md`'s A3 row ([`#a3-rule`](pm/MASTER.md#a3-rule) — it was cited as `:37`, and is not at line 37 any more) states a published-but-not-admitted STOP; it has not fired; it would fire on a flip that includes
 this work. Full table: `docs/evidence/a2-prod-readonly-2026-08-01/serving-census.md`.
 
 > **Superseded, kept as history — the 2026-07-30 reading (ADR-042).** Measured read-only ~10:09 local

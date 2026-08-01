@@ -23,6 +23,7 @@ import { scanReferences } from '../bible/ref-parse.js';
 import { verbatimAnchors } from './history-gazetteer.js';
 import { isAllowedLicense } from './license-manifest.js';
 import { assertDevOnlyTarget } from './dev-only-target.mjs';
+import { assertReingestable } from './reingest-guard.js';
 
 const EMBED_MAX = 1800; // chars; ~450 tokens — bge-large's 512-token budget never truncates
 const MODEL_SLUG = 'bge-large-en-v1.5';
@@ -138,13 +139,12 @@ async function main() {
   const db = new pg.Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
   await db.connect();
   try {
-    // A published work's content is owner-approved; re-ingesting under the flag
-    // would swap it silently (deep-audit M4). Refuse.
-    const prior = await db.query<{ status: string }>(`SELECT status FROM sources WHERE slug=$1`, [slug]);
-    if (prior.rows[0]?.status === 'published') {
-      throw new Error(`STOP: ${slug} is PUBLISHED — re-ingest would replace owner-approved content; unpublish first`);
-    }
     await db.query('BEGIN');
+    // M22: the published-work check runs INSIDE the transaction, on a row locked FOR UPDATE.
+    // It used to run before BEGIN, leaving a window in which a publish flip could commit
+    // between the read and the DELETE. Also refuses when user annotations anchor into the
+    // work (M21) rather than letting the FK raise 23503 partway through.
+    await assertReingestable(db, slug, 'the historian re-ingest');
     const src = await db.query<{ id: string }>(
       `INSERT INTO sources (slug, title, author, author_died, year_written, source_type, tradition, era, license, provenance, status)
        VALUES ($1,$2,$3,$4,$5,'historian',$6,$7,$8,$9,'staged')

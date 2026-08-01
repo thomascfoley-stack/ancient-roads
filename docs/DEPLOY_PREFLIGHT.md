@@ -309,35 +309,32 @@ Everything below is free and reversible. Stop at the first ✗.
 
 ---
 
-## 9. STOP — the code and the corpus are in different clones (found 2026-08-01)
+## 9. CLOSED — the two-clone problem no longer exists (found 2026-08-01, re-measured 2026-08-02)
 
-**Neither tree on this machine can complete `deploy.sh` tonight.** This is the single hardest
-blocker on A6 and no document named it before now.
+> **This section stood as the single hardest blocker on A6, and the `MASTER.md` A6 row cited it as
+> such, after it had stopped being true.** Deep audit M24. The table below is kept because a reader
+> who met the old claim elsewhere needs to find the correction here, not just its absence.
 
-| | `~/Projects/ancient-roads-git` | the working clone |
-|---|---|---|
-| corpus | **all six dirs**, byte-exact (§3) | only `devotional/` (the tracked one) |
-| HEAD | `f10df90` — **29 commits behind** | current |
-| `web/src/app/api/ask/route.ts:11` | `= ASK_MAX_DURATION_SEC` — **the build-breaker** | `= 300`, fixed |
-| `scripts/lib/served-assets.mjs` | **does not exist** | present |
+**What was true on 2026-08-01.** `~/Projects/ancient-roads-git` held the corpus at `f10df90`,
+29 commits behind, with the `= ASK_MAX_DURATION_SEC` build-breaker and no
+`scripts/lib/served-assets.mjs`; the other clone had current code and only `devotional/`. Neither
+tree could complete `deploy.sh`. The fix named here was the fast-forward, and it was taken.
 
-So:
+**What is true now**, measured in `~/Projects/ancient-roads-git` on 2026-08-02:
 
-- In the **corpus** clone, step 6 (`next build`) hard-fails — it predates `c1e359d`. Step 5 cannot
-  even run: `predeploy-gate.ts` imports `served-assets.mjs`, which is not there.
-- In the **code** clone, step 5 hard-fails at `predeploy-gate.ts:78-84` — five of six served
-  directories are absent.
+| | measured |
+|---|---|
+| corpus | all six served dirs present — `bible`, `commentaries`, `lexicon`, `original`, `concordance`, `devotional` |
+| HEAD | on `main`'s line, current (the fast-forward happened) |
+| `web/src/app/api/ask/route.ts` | the literal `300`, with the comment explaining why, plus `test/ask-max-duration-literal.test.ts` |
+| `scripts/lib/served-assets.mjs` | present |
+| `predeploy-gate.ts` | runs, and at `DEPLOYING=1` exits 0 |
 
-**Fix, and it is cheap.** `f10df90` is an ancestor of the current tip, so the corpus clone
-fast-forwards without touching `web/public/` (all five corpus dirs are gitignored and survive a
-checkout):
+One clone, code and corpus together. Run `./deploy.sh` from it.
 
-```bash
-git -C ~/Projects/ancient-roads-git fetch origin && git -C ~/Projects/ancient-roads-git merge --ff-only <the sha being shipped>
-```
-
-Then run `./deploy.sh` **from that clone**. Verify `web/public` still has all six directories after
-the fast-forward before doing anything else.
+**The remaining A6 blocker is not this.** It is whatever `deploy.sh` itself has never proven — see
+the Vercel-link note immediately below, which is a separate finding and was NOT closed by the
+fast-forward.
 
 ### Two more things this preflight got wrong
 
