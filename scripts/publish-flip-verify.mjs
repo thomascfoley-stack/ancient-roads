@@ -49,8 +49,17 @@ let conn;
 if (localUrl) {
   // The red-proof path. Refuses anything that is not local, so this env var cannot become a
   // side door to a real endpoint: the guard is the same one the desk of production tools uses.
-  const host = new URL(localUrl).host.toLowerCase();
-  if (!host.startsWith('127.0.0.1') && !host.startsWith('localhost')) {
+  // Wrapped, and anchored. Unwrapped, a malformed value made Node print the whole connection
+  // string — password included — in its uncaught-exception report (2026-08-02 audit). And the
+  // prefix test was unanchored, so `localhost.attacker.example` passed.
+  let host;
+  try {
+    host = new URL(localUrl).host.toLowerCase();
+  } catch {
+    die('STOP: FLIP_VERIFY_LOCAL_URL is not a parseable URL.');
+  }
+  const bare = host.split(':')[0];
+  if (bare !== 'localhost' && bare !== '127.0.0.1' && bare !== '[::1]' && bare !== '::1') {
     die(`STOP: FLIP_VERIFY_LOCAL_URL host ${host} is not local. The env override is red-proof only.`);
   }
   conn = { url: localUrl, host, ssl: false, expectRole: null };

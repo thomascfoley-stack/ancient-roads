@@ -16,7 +16,20 @@
 //
 // The primitives are still imported, never re-implemented: hostOf, endpointId, isDevHost,
 // isLocalHost and declaredMatches all come from target-guard.mjs.
-import { declaredMatches, endpointId, hostOf, isDevHost, isLocalHost } from './target-guard.mjs';
+import { declaredMatches, endpointId, hostOf, isDevHost } from './target-guard.mjs';
+
+/**
+ * Is this host REALLY local? target-guard's isLocalHost uses an unanchored startsWith, so it
+ * accepts `localhost.attacker.example` and even `localhostage.evil.io` — found by the 2026-08-02
+ * audit. Anchored here rather than there because target-guard is on other tools' paths and this
+ * file is the one that gates a production write: `--local-redproof` skips the owner gate, the TTY
+ * requirement and the role assert, so a host that merely BEGINS with `localhost` must never reach
+ * that branch. Port is allowed; anything else after the host is not.
+ */
+function isTrulyLocal(url) {
+  const h = hostOf(url).split(':')[0];
+  return h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === '::1';
+}
 
 /**
  * Decide whether a publish flip may run against `url`.
@@ -42,7 +55,7 @@ export function assertPublishTarget(url, { allow, declared, localOk = false } = 
     throw new Error('STOP: connection string is not a parseable URL.');
   }
 
-  if (isLocalHost(url)) {
+  if (isTrulyLocal(url)) {
     if (!localOk) {
       throw new Error(`STOP: ${host} is local, and the local path is red-proof only. Refusing.`);
     }
@@ -70,8 +83,18 @@ export function assertPublishTarget(url, { allow, declared, localOk = false } = 
   // Any other declared endpoint — production included — is permitted only by having been
   // named exactly, on top of the override. Prod is not special-cased: being unremarkable here
   // is the point, because a special case is a thing someone can look for and work around.
+  // Pin the DOMAIN, not just the first label. `endpointId` takes split('.')[0], so
+  // `ep-odd-fog-atnykudm.attacker.example` yields the real endpoint id and satisfies
+  // `declaredMatches` — declaring the full production host still accepted an attacker domain
+  // (2026-08-02 audit). A production write target must be a Neon host.
   if (endpointId(host) === null) {
     throw new Error(`STOP: ${host} does not look like a Neon endpoint. Refusing to guess.`);
+  }
+  if (!/\.neon\.tech(:\d+)?$/.test(host)) {
+    throw new Error(
+      `STOP: ${host} is not a *.neon.tech host. The endpoint id matching it is not enough — ` +
+        'the domain must be Neon too.',
+    );
   }
   return host;
 }

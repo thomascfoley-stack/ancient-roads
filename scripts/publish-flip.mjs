@@ -1,6 +1,6 @@
 // A4 — THE PUBLISH FLIP. The one legally irreversible write this project makes.
 //
-//   PUBLISH_ALLOW=1 PUBLISH_EXPECT_HOST=ep-odd-fog CUTOVER_DATABASE_URL=<owner url> \
+//   PUBLISH_ALLOW=1 PUBLISH_EXPECT_HOST=ep-odd-fog-atnykudm CUTOVER_DATABASE_URL=<owner url> \
 //     node scripts/publish-flip.mjs --slugs=docs/evidence/work-order-v2-stage2/flip-slugs.json
 //
 //   ... --reverse    the exact inverse: published -> staged, same slug file, same guards.
@@ -171,6 +171,14 @@ try {
   console.log(`snapshot     ${snapPath} (${before.length} rows, written before COMMIT)`);
 
   const eligible = slugs.filter((s) => beforeBy.get(s) === from);
+  // A listed slug that is in NEITHER direction is a third status — 'quarantined' (migration 006)
+  // or 'ingesting' (023). The old message asserted "the rest are already <to>" without checking,
+  // so a quarantined work would be silently skipped by the UPDATE and reported as already done.
+  const thirdStatus = slugs.filter((s) => beforeBy.get(s) !== from && beforeBy.get(s) !== to);
+  if (thirdStatus.length > 0) {
+    await client.query('ROLLBACK');
+    die(`STOP: listed slug(s) in an unexpected status: ${thirdStatus.map((s) => `${s}=${beforeBy.get(s)}`).join(', ')}. Refusing.`, 1);
+  }
   console.log(`eligible     ${eligible.length} of ${slugs.length} are '${from}' (the rest are already '${to}')`);
 
   const upd = await client.query(
@@ -186,6 +194,13 @@ try {
   const after = (await client.query('SELECT slug, status FROM sources ORDER BY slug')).rows;
   const named = new Set(eligible);
   const unexpected = [];
+  // DELETIONS. The old loop iterated `after` only, so a row that vanished between snapshot and
+  // re-read was invisible to a check whose stated guarantee is "the ONLY rows that changed are
+  // the listed slugs" (2026-08-02 audit). Row counts first, then a per-slug absence check.
+  const afterSlugs = new Set(after.map((r) => r.slug));
+  for (const r of before) {
+    if (!afterSlugs.has(r.slug)) unexpected.push(`${r.slug}: ${r.status} -> DELETED`);
+  }
   for (const row of after) {
     const was = beforeBy.get(row.slug);
     if (was === row.status) continue;

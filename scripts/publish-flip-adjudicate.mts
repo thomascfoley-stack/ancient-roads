@@ -30,8 +30,11 @@
 import fs from 'node:fs';
 import { LEGAL_CORPUS_FILTER, SERVED_PROSE_WORKS } from '../web/src/lib/teacher/routing';
 import { admissionFindings, censusVerdict, STOP } from './lib/publish-flip-census.mjs';
+import { endpointId } from './lib/target-guard.mjs';
 
 const PROD_ENDPOINT = 'ep-odd-fog';
+/** Slugs are the library's own identifiers. Anything else never reaches a flip list. */
+const SLUG = /^[a-z0-9][a-z0-9-]*$/;
 
 const args = process.argv.slice(2);
 const val = (f: string) => args.find((a) => a.startsWith(`${f}=`))?.slice(f.length + 1);
@@ -57,9 +60,21 @@ try {
 // population that is not production's. A `published` cohort would mean the flip already
 // happened and this is not A3 at all. An empty source list would make every rule below vacuous
 // and exit 0 — a clean bill of health computed over nothing.
+// Endpoint id, not substring. `.includes()` would accept ep-odd-fog.attacker.example, and every
+// sibling in this toolchain uses target-guard (2026-08-02 audit).
 const host = String(census.host ?? '');
-if (!host.includes(PROD_ENDPOINT)) {
-  refuse(`census host "${host || '(none)'}" is not ${PROD_ENDPOINT}. A3 adjudicates PRODUCTION.`);
+const id = endpointId(host);
+// The DOMAIN must be pinned too, not just the first label. `endpointId` takes split('.')[0], so
+// `ep-odd-fog.attacker.example` yields `ep-odd-fog` and would pass a label-only test — the same
+// shape the audit found in the guard. A2 records a BARE endpoint id ("ep-odd-fog-atnykudm"), so
+// accept exactly that, or a fully-qualified Neon host, and nothing in between.
+const bareId = host.toLowerCase() === id;
+const neonHost = /\.neon\.tech$/.test(host.toLowerCase());
+if (id === null || !id.startsWith(PROD_ENDPOINT) || !(bareId || neonHost)) {
+  refuse(
+    `census host "${host || '(none)'}" is not a ${PROD_ENDPOINT}* Neon endpoint ` +
+      '(expect a bare endpoint id or a *.neon.tech host). A3 adjudicates PRODUCTION.',
+  );
 }
 if (census.cohort !== 'staged') {
   refuse(`census cohort is "${String(census.cohort)}", expected "staged". A published cohort means the flip already ran.`);
@@ -86,12 +101,17 @@ interface CensusSource {
   sections?: number;
 }
 
+const seenSlugs = new Set<string>();
 const rows = (sources as CensusSource[]).map((s) => {
   if (typeof s?.slug !== 'string' || typeof s?.status !== 'string') {
     refuse(`a census row has no slug/status: ${JSON.stringify(s)}`);
   }
+  if (!SLUG.test(s.slug)) refuse(`census row carries a value that is not a slug: ${JSON.stringify(s.slug)}`);
   // Trust the runner's `admitted` when it measured one (it had LEGAL_CORPUS_FILTER against a
   // live DB); otherwise decide it here from the same imported work list.
+  // Duplicates would emit the same slug twice into the flip list and inflate the count.
+  if (seenSlugs.has(s.slug)) refuse(`census lists ${s.slug} more than once`);
+  seenSlugs.add(s.slug);
   const admitted = typeof s.admitted === 'boolean' ? s.admitted : admittedSet.has(s.slug);
   return { ...s, admitted };
 });
@@ -141,5 +161,5 @@ fs.writeFileSync(outPath, JSON.stringify(payload, null, 2));
 console.log(`\nADJUDICATED — no STOP. ${flip.length} work(s) to flip:`);
 for (const s of flip) console.log(`  ${s}`);
 console.log(`\nwrote ${outPath}`);
-console.log(`\nNext: PUBLISH_ALLOW=1 PUBLISH_EXPECT_HOST=${PROD_ENDPOINT} CUTOVER_DATABASE_URL=<owner url> \\`);
+console.log(`\nNext: PUBLISH_ALLOW=1 PUBLISH_EXPECT_HOST=${id} CUTOVER_DATABASE_URL=<owner url> \\`);
 console.log(`        node scripts/publish-flip.mjs --slugs=${outPath}`);
