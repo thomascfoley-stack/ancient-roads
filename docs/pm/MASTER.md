@@ -3,7 +3,7 @@
 **Read this first, every session.** It is the plan and the gate board. It is **not** the state —
 state lives in `docs/STATE_OF_TRUTH.md` and this file points at it rather than copying it.
 
-Last verified: 2026-08-02 · `main` @ `629521a` · working branch `audit/c2-h4-h5-m21-m25`
+Last verified: 2026-08-02 · `main` @ `b0366a3` · working branch: none (merged)
 
 > The line above went 57 commits stale while still naming a working branch that had been merged and
 > deleted, and the board's own A2 row said "(unmerged)" of a commit that merged at `1f4bf8d`
