@@ -18,6 +18,7 @@
 
 import { CATALOG_IDS, CATALOGS, isCatalogId, isSubFilterOf, type CatalogId } from '@/lib/catalog';
 import { searchSections } from '@/lib/search-sections';
+import { publicReadThrottle } from '@/lib/public-read-limit';
 
 /** Upper bound on filter cardinality. A URL cannot be used to build an unbounded IN-list. */
 const MAX_FILTER_VALUES = 32;
@@ -40,6 +41,9 @@ function multiParam(url: URL, ...names: string[]): string[] {
 }
 
 export async function GET(req: Request): Promise<Response> {
+  // Unauthenticated and, once the gate comes off, public. Throttle before doing any work.
+  const throttled = await publicReadThrottle(req, 'search-works');
+  if (throttled) return throttled;
   const url = new URL(req.url);
   const query = (url.searchParams.get('q') ?? '').trim();
   if (!query) return Response.json({ results: [], total: 0, totalCapped: false });

@@ -1,8 +1,8 @@
 -- ============================================================
--- 033: waitlist RLS — H14. COUPLED TO AN APP CHANGE. DO NOT APPLY BEFORE IT DEPLOYS.
+-- 034: waitlist RLS — H14. COUPLED TO AN APP CHANGE. DO NOT APPLY BEFORE IT DEPLOYS.
 -- ============================================================
 -- Idempotent. Run as neondb_owner:
---   DATABASE_URL=<owner-url> node db/apply-migration.mjs db/migrations/033_waitlist_rls.sql
+--   DATABASE_URL=<owner-url> node db/apply-migration.mjs db/migrations/034_waitlist_rls.sql
 --
 -- ⚠ PRECONDITION, and it is not advisory: the deployed bundle must contain the plain-INSERT
 --   version of web/src/app/api/waitlist/route.ts. Applying this against the bundle live on
@@ -24,6 +24,10 @@
 --
 -- (For contrast, migration 032's api_rate_limit policy uses USING (true), which is why the
 -- limiter's own ON CONFLICT ... DO UPDATE ... RETURNING keeps working there.)
+-- WHAT 033 ALREADY DID, so this file is only the remaining half: 033 revoked UPDATE and DELETE
+-- from app_runtime, which works under BOTH bundles and removes the destructive powers. This file
+-- adds the property a REVOKE cannot give — that app_runtime cannot ENUMERATE the list at all —
+-- and that is the part which needs the plain-INSERT route.
 -- ============================================================
 
 -- `waitlist` holds live email addresses on production. Migration 014 documented why the
@@ -48,5 +52,5 @@ CREATE POLICY waitlist_insert_only ON waitlist
 -- enumerate, alter nor destroy the list.
 
 INSERT INTO schema_migrations (filename, applied_by)
-VALUES ('033_waitlist_rls.sql', current_user)
+VALUES ('034_waitlist_rls.sql', current_user)
 ON CONFLICT (filename) DO NOTHING;

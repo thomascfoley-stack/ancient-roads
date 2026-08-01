@@ -14,6 +14,9 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 const searchSections = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/search-sections', () => ({ searchSections }));
+// The throttle is not the subject here (it has its own tests) and it needs a database, so it is
+// mocked to a pass-through. Deliberately NOT mocked away in api-hardening.test.ts's throttle cases.
+vi.mock('@/lib/public-read-limit', () => ({ publicReadThrottle: async () => null }));
 
 import { GET } from '@/app/api/search/works/route';
 import { CATALOGS, CATALOG_IDS, typesForMany, type CatalogId } from '@/lib/catalog';

@@ -117,7 +117,14 @@ export async function checkAskRateLimit(userId: string, sql: Sql = getDb()): Pro
 // ask limiter: a limiter outage must not lock legitimate visitors out (the password is still
 // required regardless), but each throttled attempt is logged. Minute cap checked first so a
 // burst can't burn the hour bucket (H4 pattern). `ip` should already be a single client IP.
-export async function checkGateRateLimit(ip: string, sql: Sql = getDb()): Promise<RateLimitResult> {
+export async function checkGateRateLimit(
+  ip: string,
+  sql: Sql = getDb(),
+  /** Per-minute cap override. The public read routes reuse this limiter with a looser cap
+   *  (2026-08-02 deep audit, H3) — same table, same window, same deliberate fail-OPEN posture,
+   *  because a limiter outage must not black out a library of public-domain text. */
+  perMin: number = GATE_LIMIT_PER_MIN,
+): Promise<RateLimitResult> {
   const key = `gate:${ip}`;
   try {
     const now = Date.now();
@@ -125,8 +132,8 @@ export async function checkGateRateLimit(ip: string, sql: Sql = getDb()): Promis
     const hourStart = new Date(Math.floor(now / 3_600_000) * 3_600_000).toISOString();
 
     const minCount = await bump(sql, key, 'gate:min', minStart);
-    if (minCount > GATE_LIMIT_PER_MIN) {
-      logEvent('gate_rate_limit_hit', { ip, cap: 'min', count: minCount, limit: GATE_LIMIT_PER_MIN });
+    if (minCount > perMin) {
+      logEvent('gate_rate_limit_hit', { ip, cap: 'min', count: minCount, limit: perMin });
       return { ok: false, limited: 'min', retryAfterSec: 60 };
     }
     const hourCount = await bump(sql, key, 'gate:hour', hourStart);

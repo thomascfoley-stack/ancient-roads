@@ -19,6 +19,7 @@
 
 import { searchCommentaries } from '@/lib/commentary-search';
 import { apiError } from '@/lib/api-error';
+import { publicReadThrottle } from '@/lib/public-read-limit';
 
 /** Bible book ordinal — 1..66, and a smallint column downstream. */
 const MAX_BOOK = 66;
@@ -26,6 +27,9 @@ const MAX_BOOK = 66;
 // Plain `Request` and `new URL(req.url)`, matching the sibling /api/search/works — so the handler
 // is unit-testable outside Next rather than requiring a NextRequest to be constructed.
 export async function GET(req: Request): Promise<Response> {
+  // Unauthenticated and, once the gate comes off, public. Throttle before doing any work.
+  const throttled = await publicReadThrottle(req, 'search-commentaries');
+  if (throttled) return throttled;
   const sp = new URL(req.url).searchParams;
   const q = sp.get('q')?.trim();
   if (!q) return apiError('INVALID_REQUEST', { message: 'q is required' });

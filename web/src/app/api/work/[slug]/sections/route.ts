@@ -1,5 +1,6 @@
 import { apiError } from '@/lib/api-error';
 import { getWorkSectionsPage, WORK_SECTIONS_DEFAULT_LIMIT } from '@/lib/work';
+import { publicReadThrottle } from '@/lib/public-read-limit';
 
 // GET /api/work/[slug]/sections?after={ordinal}&limit={N} — one keyset page of
 // section bodies for the Book Reader (docs/LIBRARY_READER_DESIGN.md §2). NEVER an
@@ -8,6 +9,8 @@ import { getWorkSectionsPage, WORK_SECTIONS_DEFAULT_LIMIT } from '@/lib/work';
 // the end of the work. 404 unless the source is published. Framework-free
 // Request/Response idiom (see lib/api-error.ts).
 export async function GET(req: Request, ctx: { params: Promise<{ slug: string }> }): Promise<Response> {
+  const throttled = await publicReadThrottle(req, 'work-sections');
+  if (throttled) return throttled;
   const { slug } = await ctx.params;
   const sp = new URL(req.url).searchParams;
 

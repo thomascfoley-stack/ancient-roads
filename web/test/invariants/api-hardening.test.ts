@@ -16,6 +16,10 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 const searchCommentaries = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/commentary-search', () => ({ searchCommentaries }));
+// The throttle needs a database and is not what these cases are about, so it is a pass-through
+// here. That it is WIRED IN AT ALL is asserted below, from source, so mocking it cannot hide its
+// removal.
+vi.mock('@/lib/public-read-limit', () => ({ publicReadThrottle: async () => null }));
 
 import { GET as commentariesGET } from '@/app/api/search/commentaries/route';
 import { clientIp } from '@/lib/client-ip';
@@ -108,5 +112,30 @@ describe('result sets are bounded — H11', () => {
     expect(Number.isInteger(WORK_TOC_MAX)).toBe(true);
     expect(WORK_TOC_MAX).toBeGreaterThan(0);
     expect(WORK_TOC_MAX).toBeLessThanOrEqual(10_000);
+  });
+});
+
+describe('the public read routes are throttled at all — H3', () => {
+  // Mocking the throttle above makes these cases readable; it also means a deletion of the
+  // throttle would go unnoticed by them. So the wiring is checked from source, comment-stripped
+  // so a file that merely EXPLAINS its throttle cannot satisfy it.
+  const ROUTES = [
+    'src/app/api/search/works/route.ts',
+    'src/app/api/search/commentaries/route.ts',
+    'src/app/api/work/[slug]/route.ts',
+    'src/app/api/work/[slug]/sections/route.ts',
+  ];
+
+  it.each(ROUTES)('%s calls publicReadThrottle', async (rel) => {
+    // Until 2026-08-02 all four had no requireUser, no rate limit and nothing CDN-cacheable, while
+    // each request is a full-text or keyset query over 72,863 sections. They share a database with
+    // the paid /api/ask pipeline whose limiter now fails CLOSED — so a flood on the free routes
+    // took the paid one down with it.
+    // SEED: delete the call from any one -> RED for that route only.
+    const { readFileSync } = await import('node:fs');
+    const path = await import('node:path');
+    const { codeOnly } = await import('../../../scripts/lib/source-scan.mjs');
+    const code = codeOnly(readFileSync(path.join(process.cwd(), rel), 'utf8'));
+    expect(code, `${rel} does not call publicReadThrottle`).toMatch(/publicReadThrottle\s*\(/);
   });
 });

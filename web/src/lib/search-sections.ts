@@ -28,6 +28,7 @@
 
 import { getDb } from './db';
 import { typesFor, typesForMany, type CatalogId } from './catalog';
+import { FORBIDDEN_PROVENANCE_DOMAINS } from '../../../src/ingest/forbidden-provenance.mjs';
 
 export interface SectionSearchResult {
   slug: string;
@@ -109,12 +110,29 @@ export async function searchSections(opts: {
   const sql = getDb();
 
   // Shared predicate. `status='published'` first: it is the licensing boundary, not a filter.
-  const WHERE = `
+  //
+  // AND PROVENANCE, AT SERVE TIME (2026-08-02 deep audit, H6). Until now the forbidden-aggregator
+  // check ran ONLY at publish time, inside the flip's transaction — a strong gate, but a ONE-SHOT
+  // admission check. Nothing re-tested afterwards, so a row ingested before a rule existed served
+  // forever, and a row whose provenance was edited in place after publication served forever too.
+  // `teacher/routing.ts:28-30` documents exactly that case still live: Augustine and Chrysostom
+  // rows carrying historicalchristian.faith provenance, a forbidden domain.
+  //
+  // Belt and braces on purpose. `status='published'` remains the boundary; this is the second
+  // lock, evaluated on every query, so an admission mistake cannot outlive the mistake. The domain
+  // list is bound as a parameter from the CANONICAL constant — never re-typed here, which is the
+  // defect the same audit found in verse-key-scan.ts.
+  const whereWith = (forbiddenParam: string) => `
       sec.tsv @@ websearch_to_tsquery('english', $1)
       AND s.status = 'published'
+      AND (sec.source_url IS NULL OR NOT EXISTS (
+            SELECT 1 FROM unnest(${forbiddenParam}::text[]) d
+             WHERE lower(sec.source_url) LIKE '%' || d || '%'))
       AND ($2::text[] IS NULL OR s.source_type = ANY($2::text[]))
       AND ($3::text IS NULL OR s.slug = $3)
       AND ($4::text[] IS NULL OR s.tradition = ANY($4::text[]))`;
+  const WHERE = whereWith('$7');       // page query binds 7
+  const WHERE_COUNT = whereWith('$5');  // count query binds 5
 
   const [results, countRows] = await Promise.all([
     // SNIPPET LAST, deliberately. ts_headline re-parses the whole document, and computing it
@@ -146,7 +164,7 @@ export async function searchSections(opts: {
        JOIN sections sec ON sec.id = page.id
        JOIN sources s ON s.id = sec.source_id
        ORDER BY page.rank DESC, s.slug, sec.ordinal`,
-      [q, types, slug, traditions, limit, offset],
+      [q, types, slug, traditions, limit, offset, FORBIDDEN_PROVENANCE_DOMAINS],
     ),
     // Count DISTINCT reading units, capped. Counting sections here would report "312 results" for
     // what the list shows as 14 works — the number has to mean the same thing the list shows.
@@ -155,10 +173,10 @@ export async function searchSections(opts: {
          SELECT DISTINCT sec.source_id, COALESCE(sec.unit_ordinal, -sec.ordinal) AS unit
          FROM sections sec
          JOIN sources s ON s.id = sec.source_id
-         WHERE ${WHERE}
+         WHERE ${WHERE_COUNT}
          LIMIT ${COUNT_CAP}
        ) capped`,
-      [q, types, slug, traditions],
+      [q, types, slug, traditions, FORBIDDEN_PROVENANCE_DOMAINS],
     ),
   ]);
 
