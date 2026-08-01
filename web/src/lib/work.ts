@@ -43,6 +43,12 @@ export interface WorkSectionsPage {
 // sections_source_idx is an index range scan at any depth.
 export const WORK_SECTIONS_DEFAULT_LIMIT = 50;
 export const WORK_SECTIONS_MAX_LIMIT = 100;
+/** Cap on the table of contents. `getWorkWithToc` had NO LIMIT (2026-08-02 deep audit, H11) —
+ *  john-gill is 28,843 rows, returned in one response from an unauthenticated route that is the
+ *  reader's FIRST call. The rule this file states four lines above ("NEVER an unbounded response
+ *  (CLAUDE.md) ... enforced HERE in the data layer so no caller can bypass it") had exactly one
+ *  bypass, and it was in this file. Truncation is reported, never silent — see `tocTruncated`. */
+export const WORK_TOC_MAX = 5_000;
 
 // sections.id is BIGINT and the driver returns it as a string; the JSON contract is
 // a number (safe well past 2^53 for any real corpus).
@@ -69,7 +75,9 @@ async function publishedSourceId(slug: string): Promise<string | number | null> 
 
 /** Source row + TOC (ids/ordinals/headings only — NEVER bodies) in reading order,
  *  (unit_ordinal, ordinal) per ADR-026. Null when the slug is not a published work. */
-export async function getWorkWithToc(slug: string): Promise<{ source: WorkSource; toc: WorkTocRow[] } | null> {
+export async function getWorkWithToc(
+  slug: string,
+): Promise<{ source: WorkSource; toc: WorkTocRow[]; tocTruncated: boolean } | null> {
   const sql = getDb();
   const sources = (await sql.query(
     `SELECT id, slug, title, author, tradition, era, license, source_type
@@ -91,14 +99,20 @@ export async function getWorkWithToc(slug: string): Promise<{ source: WorkSource
     license: found.license,
     source_type: found.source_type,
   };
+  // LIMIT + 1: fetch one past the cap so truncation is DETECTED rather than assumed. A caller
+  // that silently receives exactly WORK_TOC_MAX rows cannot tell a complete short work from a
+  // clipped long one, and a table of contents that quietly omits chapters is worse than one that
+  // says it is partial.
   const rows = (await sql.query(
     `SELECT id, ordinal, unit_ordinal, heading
      FROM sections
      WHERE source_id = $1
-     ORDER BY unit_ordinal, ordinal`,
-    [found.id],
+     ORDER BY unit_ordinal, ordinal
+     LIMIT $2`,
+    [found.id, WORK_TOC_MAX + 1],
   )) as SectionRow[];
-  return { source, toc: rows.map(toTocRow) };
+  const tocTruncated = rows.length > WORK_TOC_MAX;
+  return { source, toc: rows.slice(0, WORK_TOC_MAX).map(toTocRow), tocTruncated };
 }
 
 /** One keyset page of section bodies, ordinal-ascending after the cursor. Null when

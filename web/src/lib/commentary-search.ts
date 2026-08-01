@@ -23,6 +23,12 @@ const DEFAULT_LIMIT = 20;
  *  is hit the UI shows "N+". */
 const COUNT_CAP = 1000;
 
+/** Upper bound on `offset`. Deep paging past this is not a use case, and an unbounded value
+ *  reaches `OFFSET $n` as a bigint literal: `?offset=1e21` serialises to "1e+21" and Postgres
+ *  rejects it (22P02) as a 500, while `?offset=99999999999999999999` overflows (22003). The
+ *  2026-08-02 route fix validated integer-NESS and never bounded MAGNITUDE (deep audit, H10). */
+const MAX_OFFSET = 100_000;
+
 export async function searchCommentaries(opts: {
   query: string;
   book?: number;
@@ -35,7 +41,7 @@ export async function searchCommentaries(opts: {
   if (!q) return { results: [], total: 0, totalCapped: false };
 
   const limit = Math.min(Math.max(1, opts.limit ?? DEFAULT_LIMIT), MAX_LIMIT);
-  const offset = Math.max(0, opts.offset ?? 0);
+  const offset = Math.min(Math.max(0, opts.offset ?? 0), MAX_OFFSET);
   const sql = getDb();
 
   const book = opts.book ?? null;

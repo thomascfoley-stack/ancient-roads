@@ -5,13 +5,31 @@ import { logEvent } from './observability';
 // guard). One atomic upsert per bucket against api_rate_limit (migration 008).
 // See docs/SITE_GATE_RATELIMIT_DESIGN.md. Limits are env-tunable without a deploy.
 //
-// FAIL-OPEN asymmetry (deliberate, and distinct from the fail-CLOSED site gate):
-// if the limiter's own DB call throws, we ALLOW the request — a limiter outage
-// must not take down the product; auth + the site gate still protect it — but we
-// log loudly so the failure is visible.
+// FAIL-CLOSED ON SPEND, fail-open on the site gate. These are deliberately different, and
+// the ask limiter used to get it wrong (2026-08-02 deep audit, H2).
+//
+// The old reasoning — "a limiter outage must not take down the product; auth + the site gate
+// still protect it" — does not survive the launch it was written for. The site gate comes off
+// at SEC-1, registration is open, and every accepted /api/ask request is five paid upstream
+// calls. So the fail-open branch meant: make the limiter's DB call throw, and the spend cap is
+// gone. It was cheap to induce, because the limiter shares one Neon endpoint with the
+// unauthenticated, unthrottled search routes — load on the free routes disabled the cap on the
+// paid one. `bump()` also did `rows[0]!.count`, so a zero-row return was a TypeError, i.e. the
+// fail-open path was reachable by RLS trouble or a pooler hiccup and not only by an outage.
+//
+// The honest trade: on a limiter fault, ask is briefly unavailable (503, retryable) rather than
+// unmetered. The site-gate throttle keeps failing OPEN, because there the password is still
+// required and locking real visitors out is the worse failure.
 
 const LIMIT_PER_MIN = Number(process.env.ASK_LIMIT_PER_MIN ?? 10);
 const LIMIT_PER_DAY = Number(process.env.ASK_LIMIT_PER_DAY ?? 100);
+// GLOBAL daily ceiling across ALL users (2026-08-02 deep audit, H1). The per-user caps bound
+// what one account can spend; they bound the BILL only if accounts are scarce, and registration
+// is open with no allowlist. This is the backstop that makes the worst case finite: it is not a
+// fairness mechanism, it is the number above which something is wrong and a human should look.
+const LIMIT_GLOBAL_PER_DAY = Number(process.env.ASK_LIMIT_GLOBAL_PER_DAY ?? 2_000);
+/** The bucket key for the global cap. Not a user id — deliberately a constant. */
+const GLOBAL_BUCKET_USER = '__global__';
 
 // Site-gate brute-force throttle, per client IP. The gate password is the ONLY barrier on
 // the pre-launch site (SEC-1 open), and the check had no throttle — a wordlist could pick it
@@ -24,7 +42,8 @@ type Sql = ReturnType<typeof getDb>;
 
 export interface RateLimitResult {
   ok: boolean;
-  limited?: 'min' | 'day' | 'hour';
+  /** 'unavailable' = the limiter itself failed and the request was denied (fail-closed). */
+  limited?: 'min' | 'day' | 'hour' | 'global' | 'unavailable';
   retryAfterSec?: number;
 }
 
@@ -38,7 +57,10 @@ async function bump(sql: Sql, userId: string, bucket: string, windowStart: strin
      RETURNING count`,
     [userId, bucket, windowStart],
   )) as Array<{ count: number }>;
-  return rows[0]!.count;
+  // NOT `rows[0]!.count`. A zero-row return — RLS on api_rate_limit, a missing grant, a pooler
+  // hiccup — threw a TypeError, and the catch above used to turn that into an ALLOW. Explicit.
+  if (!rows[0]) throw new Error(`rate-limit bump returned no row for bucket ${bucket}`);
+  return rows[0].count;
 }
 
 // M8: the sweep migration 008 promised. No cron infra, so run it opportunistically on
@@ -74,12 +96,20 @@ export async function checkAskRateLimit(userId: string, sql: Sql = getDb()): Pro
       logEvent('rate_limit_hit', { userId, cap: 'day', count: dayCount, limit: LIMIT_PER_DAY });
       return { ok: false, limited: 'day', retryAfterSec: 3600 };
     }
+    // Global ceiling last, so a single user's burst is attributed to them by the caps above
+    // before it counts against everyone.
+    const globalCount = await bump(sql, GLOBAL_BUCKET_USER, 'ask:global:day', dayStart);
+    if (globalCount > LIMIT_GLOBAL_PER_DAY) {
+      logEvent('rate_limit_hit', { userId, cap: 'global', count: globalCount, limit: LIMIT_GLOBAL_PER_DAY });
+      return { ok: false, limited: 'global', retryAfterSec: 3600 };
+    }
     await maybeSweep(sql);
     return { ok: true };
   } catch (e) {
-    // FAIL OPEN (allow) but log loudly — a limiter outage must not down the product.
-    logEvent('rate_limit_fail_open', { userId, error: (e as Error).message });
-    return { ok: true };
+    // FAIL CLOSED. See the header: an unmetered paid endpoint is the worse outcome, and this
+    // branch was reachable by a zero-row return, not only by an outage.
+    logEvent('rate_limit_fail_closed', { userId, error: (e as Error).message });
+    return { ok: false, limited: 'unavailable', retryAfterSec: 30 };
   }
 }
 

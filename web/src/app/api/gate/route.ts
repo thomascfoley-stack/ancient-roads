@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
 import { GATE_COOKIE, gateToken } from '@/lib/gate';
 import { checkGateRateLimit } from '@/lib/rate-limit';
+import { clientIp } from '@/lib/client-ip';
+import { apiError } from '@/lib/api-error';
 
 // node runtime: timingSafeEqual (node:crypto) + the neon rate-limit DB call.
 export const runtime = 'nodejs';
@@ -15,12 +17,6 @@ function passwordMatches(attempt: string, password: string): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-// First hop of x-forwarded-for is the client IP on Vercel; fall back to x-real-ip.
-function clientIp(req: NextRequest): string {
-  const xff = req.headers.get('x-forwarded-for');
-  if (xff) return xff.split(',')[0]!.trim();
-  return req.headers.get('x-real-ip') ?? 'unknown';
-}
 
 // Checks the site password and sets the gate cookie (see middleware.ts).
 export async function POST(req: NextRequest) {
@@ -29,7 +25,13 @@ export async function POST(req: NextRequest) {
 
   // Brute-force throttle BEFORE touching the password — the gate had none, so a wordlist
   // could pick the shared password with no signal (LONG_NIGHT H1). Per-IP, fail-open.
-  const limit = await checkGateRateLimit(clientIp(req));
+  // No trusted IP means no per-client throttle is possible. On the site-password gate that is
+  // a REFUSAL, not a shared 'unknown' bucket: this is the only barrier on the pre-launch site,
+  // and an unthrottled password check is exactly what the throttle exists to prevent
+  // (2026-08-02 deep audit, H13).
+  const ip = clientIp(req);
+  if (ip === null) return apiError('GATE_LOCKED', { message: 'Could not verify the request origin.' });
+  const limit = await checkGateRateLimit(ip);
   if (!limit.ok) {
     return new NextResponse('Too many attempts. Try again later.', {
       status: 429,

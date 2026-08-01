@@ -10,6 +10,10 @@
 export type ObsEvent =
   | 'rate_limit_hit'
   | 'rate_limit_fail_open'
+  // The ask limiter now fails CLOSED (2026-08-02 deep audit, H2): this event means a paid
+  // request was DENIED because the limiter could not be consulted. Distinct from fail_open,
+  // which the site-gate throttle still uses deliberately.
+  | 'rate_limit_fail_closed'
   | 'gate_rate_limit_hit'
   | 'gate_locked'
   | 'ask_outcome'

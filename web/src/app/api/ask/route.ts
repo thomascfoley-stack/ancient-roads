@@ -30,7 +30,16 @@ export async function POST(req: NextRequest) {
   // own DB error (see rate-limit.ts) so a limiter outage can't down the product.
   const rl = await checkAskRateLimit(user.id);
   if (!rl.ok) {
-    return apiError(rl.limited === 'day' ? 'RATE_LIMIT_DAY' : 'RATE_LIMIT_MINUTE', { retryAfterSec: rl.retryAfterSec });
+    // 'unavailable' is the limiter itself failing, and it now DENIES rather than allows
+    // (2026-08-02 deep audit, H2) — an unmetered paid endpoint is the worse outcome. 'global'
+    // is the all-users daily ceiling: the same 429 to the caller, a different line in the log.
+    const code =
+      rl.limited === 'unavailable'
+        ? 'UPSTREAM_UNAVAILABLE'
+        : rl.limited === 'day' || rl.limited === 'global'
+          ? 'RATE_LIMIT_DAY'
+          : 'RATE_LIMIT_MINUTE';
+    return apiError(code, { retryAfterSec: rl.retryAfterSec });
   }
 
   let body: { question?: unknown };

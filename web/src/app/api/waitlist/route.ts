@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getDb } from '@/lib/db';
 import { checkGateRateLimit } from '@/lib/rate-limit';
 import { logEvent } from '@/lib/observability';
+import { clientIp } from '@/lib/client-ip';
 
 // node runtime: the neon DB insert. This route is PUBLIC (gate.ts isPublicPath), so it must
 // validate and rate-limit its own input, because nothing upstream gates it.
@@ -9,16 +10,13 @@ export const runtime = 'nodejs';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// First hop of x-forwarded-for is the client IP on Vercel; fall back to x-real-ip.
-function clientIp(req: NextRequest): string {
-  const xff = req.headers.get('x-forwarded-for');
-  if (xff) return xff.split(',')[0]!.trim();
-  return req.headers.get('x-real-ip') ?? 'unknown';
-}
 
 export async function POST(req: NextRequest) {
   // Per-IP throttle before any work. A public write endpoint with no gate in front.
-  const limit = await checkGateRateLimit(clientIp(req));
+  // A public write with no trusted origin: throttle it on one shared bucket rather than
+  // refusing, because a legitimate visitor behind an unusual proxy should still be able to
+  // leave an email — but they share a cap rather than each getting a free one.
+  const limit = await checkGateRateLimit(clientIp(req) ?? 'no-trusted-ip');
   if (!limit.ok) {
     return NextResponse.json(
       { message: 'Too many requests. Please try again shortly.' },
