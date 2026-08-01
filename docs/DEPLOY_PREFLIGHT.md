@@ -18,14 +18,22 @@ with `Invalid segment configuration export detected` — both `/api/ask` routes 
 `maxDuration = ASK_MAX_DURATION_SEC`, an identifier where Next 16 requires a literal. Next named no
 route in the failure, which is why it stayed invisible.
 
-**Nothing in CI builds the app.** `audit` runs typecheck, lint, knip, deps-audit and tests;
-`db-invariants` runs DB suites. Neither runs `next build`. **The deploy itself was the only thing
-that would ever have caught this** — at step 6 of 7, after the clean-tree gate, after the corpus
-checks, after the licensing ratchet, with the owner watching.
+**Nothing in CI built the app when this was written.** `audit` ran typecheck, lint, knip, deps-audit
+and tests; `db-invariants` ran DB suites. Neither ran `next build`. **The deploy itself was the only
+thing that would ever have caught this** — at step 6 of 7, after the clean-tree gate, after the
+corpus checks, after the licensing ratchet, with the owner watching.
 
-**Standing gap, not fixed here:** CI still does not build. Until it does, "CI green" says nothing
-about whether the product compiles. That is a small workflow addition and the highest-value
-follow-up in this document.
+**CLOSED at `19798ec`** (corrected 2026-08-01; this section previously called it a standing gap and
+"the highest-value follow-up in this document"). `.github/workflows/audit.yml:55-65` runs
+`next build` as step 7 of the `audit` job, with `set -o pipefail` so a failure through `tee` is not
+swallowed, plus an annotation naming the likely cause because Next reports segment-config errors
+without naming a route. Verified executing on a real run: step 7 `build — next build (the product
+must compile)` = success.
+
+**What has NOT changed:** `main` is unprotected — `required_status_checks` is empty and rulesets are
+unavailable on this plan for a private repo — so `audit` is not a required check. The build gate is
+real inside the job; nothing mechanically stops a red commit reaching `main`. Green is advisory
+here, and the gate is you.
 
 ---
 
@@ -89,8 +97,19 @@ Its four refusals:
 3. **Forbidden-provenance entries increased** → refuses. The number may only go down.
 4. **A Bible translation with no shipping licence record** → refuses (hard only under `DEPLOYING=1`).
 
-**What it does NOT check:** that the app builds (§0), and that `concordance/`, `lexicon/` and
-`original/` exist (§4).
+**What it does NOT check** (corrected 2026-08-01 — both of the items previously listed here are now
+covered, so the honest gap is narrower and different):
+
+- ~~that the app builds~~ — now covered twice: `next build` is step 7 of `deploy.sh` and, since
+  `19798ec`, step 7 of CI's `audit` job.
+- ~~that `concordance/`, `lexicon/` and `original/` exist~~ — now covered: `b9ad463` derives the
+  served set from the client's own fetches and `predeploy-gate.ts:75` refuses on an absent one.
+- **The real remaining gap: it is a PRESENCE check, not a COUNT check.** There is no file-count
+  assertion anywhere in `scripts/lib/served-assets.mjs`, and the gate's one counting block
+  (`predeploy-gate.ts:164-186`) covers **commentaries only**. So a corpus directory that is present
+  but half-empty passes the gate, exits 0, and fails silently in the UI — `fetchJson` returns `null`
+  on a non-ok response, giving an empty panel with no error. A partial loss is still invisible.
+- **A newly served directory gets a presence check and no licensing or provenance check at all.**
 
 ---
 
@@ -101,11 +120,21 @@ Its four refusals:
 
 | directory | on this machine | size |
 |---|---|---|
-| `web/public/bible/` | present, 22,590 files | 198M |
-| `web/public/commentaries/` | present, 1,213 files | 407M |
-| `web/public/concordance/` | **ABSENT** | — |
-| `web/public/lexicon/` | **ABSENT** | — |
-| `web/public/original/` | **ABSENT** | — |
+Re-measured 2026-08-01 ([census](evidence/post-a1-2026-08-01/concordance-census.md)). Every one of the
+six served directories is present and **byte-exact** against the `corpus-backup-2026-07-28` release
+— compared on file count, byte total, and a roll-up SHA-256 over path+content of every file:
+
+| directory | on this machine | bytes | vs backup |
+|---|---|---|---|
+| `web/public/bible/` | present, 22,590 files | 158,286,312 | match |
+| `web/public/commentaries/` | present, 1,213 files | 424,536,756 | match |
+| `web/public/concordance/` | present, 295 files | 3,673,944 | match (roll-up `8081b779…f39b`) |
+| `web/public/devotional/` | present, 1 file | 1,489,403 | **no backup asset exists** |
+| `web/public/lexicon/` | present, 2 files | 3,102,678 | match |
+| `web/public/original/` | present, 1,189 files | 44,280,085 | match |
+
+**`devotional/` is the one real gap, and it is a different gap:** not partially restored, but absent
+from every release in the repo. The download that restores the other five does not restore it.
 
 **What must be true locally for the upload to be correct:** the tree is clean (step 1);
 `predeploy-gate.ts` passes **on the bytes about to upload** — it reads the same directories `vercel`
@@ -124,13 +153,21 @@ is §5's rollback, which has its own problems.
 
 ---
 
-## 4. Three asset directories are missing, and one of them throws
+## 4. RESOLVED — the three directories are present. The `loadLexicon` hazard is not.
 
-`concordance/`, `lexicon/` and `original/` do not exist here. `deploy.sh`'s own comment names them
-(*"concordance = 13,480 files, original, commentaries, lexicon"*) as why `--archive=tgz` was added on
-2026-07-12 — so they existed then.
+**This section described three ABSENT directories. They were restored at `b9ad463` and re-measured
+byte-exact on 2026-08-01 (§3).** Deploy A no longer ships a site whose word-study page throws. What
+follows is kept because the *degradation asymmetry* below is unchanged, and it is what makes a
+future loss silent rather than loud.
 
-**They are still served.** `web/src/lib/original.ts` fetches `/original/{book}/{chapter}.json`,
+**Also settled: `deploy.sh:81`'s "concordance = 13,480 files" is not stale, it is mislabelled.**
+13,480 is the count of Strong's **entries**, not files. The directory is bucket-sharded: 295 files
+(144 buckets + 151 outlier shards) holding exactly 13,480 entries. The number reproduces to the
+digit. Separately, that comment blames the wrong directories for the upload limit — the four it
+names total 2,699 files; the one that actually exceeds Vercel's 15,000 is `bible/` at 22,590, which
+it does not mention. `--archive=tgz` is still required; the reasoning is wrong, not the conclusion.
+
+**They are served.** `web/src/lib/original.ts` fetches `/original/{book}/{chapter}.json`,
 `/lexicon/{greek,hebrew}.json`, `/concordance/{bucket}.json`, consumed by the reader's interlinear
 (`app/read/[book]/[chapter]`), the word-study page (`app/library/word-study`) and
 `components/word-panel.tsx`.
@@ -143,10 +180,16 @@ is §5's rollback, which has its own problems.
 | `fetchConcordance` / `fetchJson` | try/catch + `res.ok` | returns `null` — **graceful** |
 | **`loadLexicon`** | **neither** | `res.json()` on an HTML 404 body — **THROWS** |
 
-`loadLexicon` is reached from `loadFullLexicon` (word-study) and `fetchLexEntry` (word-panel). **So
-Deploy A as it stands ships a site whose word-study page and word panel throw**, while the
-interlinear degrades quietly. `predeploy-gate.ts` does not look at these directories, so nothing
-refuses.
+`loadLexicon` is reached from `loadFullLexicon` (word-study) and `fetchLexEntry` (word-panel).
+
+**RESIDUAL, and it is the part worth keeping.** `lexicon/` is present today, so nothing throws now.
+But `loadLexicon` still has neither a `res.ok` check nor a try/catch, so **the day that directory
+goes missing again, word-study and word-panel throw rather than degrading** — while the interlinear
+beside them degrades quietly. That asymmetry is a latent hazard, not a live one, and it is exactly
+what made the 2026-07-28 loss expensive. `predeploy-gate.ts` now DOES refuse on an absent served
+directory (`b9ad463`, derived from the client's own fetches), so the gate would catch a full
+disappearance — but it is a **presence** check with no file-count check anywhere in
+`scripts/lib/served-assets.mjs`, so a *partial* loss still passes and still fails silently in the UI.
 
 **They are recoverable in minutes, not by re-ingest.** All three are in the GitHub release
 `corpus-backup-2026-07-28` (concordance 1 MB, lexicon <1 MB, original 7 MB) and in the 2026-07-19
@@ -217,9 +260,10 @@ Everything below is free and reversible. Stop at the first ✗.
 [ ] 2  cd web && npx next build                          -> EXIT 0   (was BROKEN before c1e359d)
 [ ] 3  DEPLOYING=1 npx tsx scripts/predeploy-gate.ts     -> EXIT 0
 [ ] 4  corpusHash matches the committed manifest         (step 3 prints and checks it)
-[ ] 5  DECIDE: concordance / lexicon / original are ABSENT (§4).
-       Ship without them (word-study + word-panel THROW), regenerate them, or
-       guard loadLexicon first. A decision, not a check.
+[x] 5  ANSWERED 2026-08-01 — NO DECISION NEEDED. All six served directories are
+       present and byte-exact vs corpus-backup-2026-07-28 (§3, roll-up hashes).
+       Nothing throws. Residual, not a blocker: devotional/ has no backup asset
+       in any release, and loadLexicon still lacks a res.ok guard (§4).
 [ ] 6  Accept what rollback does NOT restore (§5): pre-025 code on a post-031
        schema, re-opening G4, and a corpus that bypasses predeploy-gate.
 [x] 7  ANSWERED 2026-08-01 (§5). Live now: dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt
