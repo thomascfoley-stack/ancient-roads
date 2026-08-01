@@ -21,6 +21,14 @@ const PAIRS: Array<[string, string]> = [
   ['src/verifier/normalize.ts', 'web/src/verifier/normalize.ts'],
   ['src/verifier/types.ts', 'web/src/verifier/types.ts'],
   ['src/teacher/prompt.ts', 'web/src/lib/teacher/prompt.ts'],
+  // THE FORBIDDEN-AGGREGATOR LIST (ADR-008). Added 2026-08-02 after deploy `98124b2` FAILED on
+  // Vercel with "Module not found: Can't resolve '../../../src/ingest/forbidden-provenance.mjs'".
+  // `vercel --prod` uploads `web/` ALONE, so a specifier that escapes it resolves in the repo
+  // checkout, in CI, and in a local `next build`, and does not exist in the deployment. Copying it
+  // in is the only shape that survives the upload boundary; this guard is what keeps the copy from
+  // becoming the drifted second list that H8 found on the legal rail.
+  ['src/ingest/forbidden-provenance.mjs', 'web/src/lib/forbidden-provenance.mjs'],
+  ['src/ingest/forbidden-provenance.d.mts', 'web/src/lib/forbidden-provenance.d.mts'],
 ];
 
 describe('src ↔ web/src integrity-core sync guard', () => {

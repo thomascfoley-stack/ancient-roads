@@ -7,7 +7,7 @@ import { SERVED_PROSE_WORKS, SERVED_SONG_VERSE_WORKS, SERVED_LANE_WORKS } from '
 // on the legal rail is this repo's most-repeated defect (H8: web/test/helpers/verse-key-scan.ts
 // carried a two-domain regex where the canonical list has three). search-sections.ts imports the
 // same module by the same path.
-import { FORBIDDEN_PROVENANCE_DOMAINS } from '../../../src/ingest/forbidden-provenance.mjs';
+import { FORBIDDEN_PROVENANCE_DOMAINS } from './forbidden-provenance.mjs';
 
 export { LEGAL_CORPUS_FILTER } from './teacher/routing';
 

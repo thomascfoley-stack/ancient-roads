@@ -1,0 +1,6 @@
+deployed_at_utc: 2026-08-01T22:46:16Z
+sha:             98124b2ce867b4b663860c6fe1d04c4d52ece508
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+url:             '(not parsed — see /tmp/vercel-deploy.log)'

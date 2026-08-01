@@ -28,7 +28,7 @@
 
 import { getDb } from './db';
 import { typesFor, typesForMany, type CatalogId } from './catalog';
-import { FORBIDDEN_PROVENANCE_DOMAINS } from '../../../src/ingest/forbidden-provenance.mjs';
+import { FORBIDDEN_PROVENANCE_DOMAINS } from './forbidden-provenance.mjs';
 
 export interface SectionSearchResult {
   slug: string;
