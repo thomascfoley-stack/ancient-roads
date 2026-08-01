@@ -104,12 +104,14 @@ covered, so the honest gap is narrower and different):
   `19798ec`, step 7 of CI's `audit` job.
 - ~~that `concordance/`, `lexicon/` and `original/` exist~~ — now covered: `b9ad463` derives the
   served set from the client's own fetches and `predeploy-gate.ts:75` refuses on an absent one.
-- **The real remaining gap: it is a PRESENCE check, not a COUNT check.** There is no file-count
-  assertion anywhere in `scripts/lib/served-assets.mjs`, and the gate's one counting block
-  (`predeploy-gate.ts:164-186`) covers **commentaries only**. So a corpus directory that is present
-  but half-empty passes the gate, exits 0, and fails silently in the UI — `fetchJson` returns `null`
-  on a non-ok response, giving an empty panel with no error. A partial loss is still invisible.
+- ~~The real remaining gap: it is a PRESENCE check, not a COUNT check.~~ - now covered: the count
+  ratchet (`servedAssetCountRatchet` in `scripts/lib/served-assets.mjs`) compares live per-directory
+  file counts under `web/public` against the committed `docs/evidence/served-assets-baseline.json`
+  (figures from the 2026-08-01 census) and refuses ANY decrease - and refuses equally on a missing
+  or garbled baseline instead of skipping. Increases pass and are reported; re-record deliberately
+  with `node scripts/update-served-assets-baseline.mjs --yes`.
 - **A newly served directory gets a presence check and no licensing or provenance check at all.**
+  (It does now get a *count* check: the gate refuses a served directory with no baseline entry.)
 
 ---
 

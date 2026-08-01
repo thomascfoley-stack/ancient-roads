@@ -21,7 +21,7 @@
  * Reuses the single canonical domain check (src/ingest/license-manifest) via the
  * same scanner the QA suite uses — no second implementation.
  */
-import { assertServedAssetsScannable, missingServedAssetDirs } from './lib/served-assets.mjs';
+import { assertServedAssetsScannable, missingServedAssetDirs, servedAssetCountRatchet } from './lib/served-assets.mjs';
 import {
   COMMENTARIES_DIR,
   countStaticForbiddenProvenanceEntries,
@@ -83,6 +83,42 @@ const gateFail = (msg: string): void => {
     );
   }
   console.log('  \x1b[32m✓ every served asset directory is present.\x1b[0m');
+
+  // PRESENT is not INTACT (DEPLOY_PREFLIGHT §2: "the real remaining gap"). The presence check
+  // above refuses a directory that vanished; this refuses one that is present but half-empty.
+  // The reader cannot report the difference - fetchJson returns null on a non-ok response, so a
+  // partial loss ships as blank panels, not as an error. Counts are ratcheted against the
+  // committed baseline (docs/evidence/served-assets-baseline.json); the ratchet itself refuses
+  // on a missing or garbled baseline rather than skipping, and absence stays the presence
+  // check's finding - only an undercount is this leg's.
+  const counted = servedAssetCountRatchet();
+  if (!counted.ok) {
+    const findings = [
+      ...counted.failures,
+      ...counted.absent.map(
+        (d) => `${d}: in the baseline but absent from web/public - no longer served? re-record the baseline.`,
+      ),
+    ];
+    FAIL(
+      `SERVED-ASSET COUNT RATCHET - a served directory carries FEWER files than the committed\n` +
+      `baseline, or the baseline itself is unusable:\n${findings.map((f) => `  • ${f}`).join('\n')}\n\n` +
+      `A half-empty directory passes the presence check, exits 0, and fails silently in the UI.\n` +
+      `Restore the files (docs/RECOVERY.md §3a), or - if the smaller count is intended - say so\n` +
+      `on the record:\n  node scripts/update-served-assets-baseline.mjs --yes   (then commit the baseline)`,
+    );
+  }
+  const unbaselined = served.served.filter((d) => !(d in counted.baseline));
+  if (unbaselined.length > 0) {
+    FAIL(
+      `Served directories with NO count baseline: ${unbaselined.join(', ')}.\n` +
+      `A directory the ratchet has no number for is one it silently cannot defend. Record it:\n` +
+      `  node scripts/update-served-assets-baseline.mjs --yes   (then commit the baseline)`,
+    );
+  }
+  for (const inc of counted.increases) {
+    console.log(`  note: ${inc} - record it: node scripts/update-served-assets-baseline.mjs --yes`);
+  }
+  console.log('  \x1b[32m✓ every served directory meets its committed file-count baseline.\x1b[0m');
 }
 
 console.log('\n=== Pre-deploy gate: licensing ratchet ===');
