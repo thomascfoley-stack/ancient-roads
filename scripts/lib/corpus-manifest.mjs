@@ -178,12 +178,34 @@ export function evaluateCorpusRatchet(current, previous, { deploying = false } =
   };
 }
 
-/** The most recent committed manifest, or null. Newest by filename (sha+ts are in it). */
+/**
+ * The most recent committed manifest, or null.
+ *
+ * SORTED ON `ts`, NOT ON THE FILENAME. The filename is `corpus-manifest-<sha>-<ISO stamp>.json`
+ * and this sorted the raw names, so it ordered on the GIT SHA — seven characters of random hex —
+ * and the ISO stamp behind it was never reached. Its own comment said "Newest by filename (sha+ts
+ * are in it)", which is true of the contents and false of the order.
+ *
+ * Caught live on 2026-08-02: with `839017d` (2026-07-31) and `629521a` (2026-08-01) on disk, this
+ * returned the OLDER one, because '8' > '6'. That direction is harmless — the ratchet compared
+ * against a bigger corpus and fired. The other direction is not: a new manifest whose sha sorts
+ * LOW is invisible, the ratchet silently keeps comparing against an older, smaller corpus, and
+ * every entry lost since then passes. Which way it lands is decided by hash bits, so the ratchet
+ * that exists to notice missing content had a 50% chance per deploy of not noticing.
+ *
+ * `ts` is read from the file rather than parsed out of the name, so a renamed or hand-copied
+ * manifest still orders correctly. A manifest with no `ts` (v1) sorts to the bottom rather than
+ * being dropped: it is still a valid floor, just an older one.
+ */
 export function loadLatestManifest(dir, readJson) {
   if (!existsSync(dir)) return null;
-  const files = readdirSync(dir)
+  const parsed = readdirSync(dir)
     .filter((f) => /^corpus-manifest-.*\.json$/.test(f))
-    .sort();
-  const latest = files[files.length - 1];
-  return latest ? readJson(path.join(dir, latest)) : null;
+    .map((f) => {
+      const m = readJson(path.join(dir, f));
+      return { file: f, ts: typeof m?.ts === 'string' ? m.ts : '', manifest: m };
+    })
+    .sort((a, b) => a.ts.localeCompare(b.ts) || a.file.localeCompare(b.file));
+  const latest = parsed[parsed.length - 1];
+  return latest ? latest.manifest : null;
 }

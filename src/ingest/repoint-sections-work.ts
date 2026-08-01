@@ -26,6 +26,7 @@
 import pg from 'pg';
 import { readFileSync, existsSync } from 'fs';
 import { assertDevOnlyTarget } from './dev-only-target.mjs';
+import { assertReingestable } from './reingest-guard.js';
 
 const MODEL_SLUG = 'bge-large-en-v1.5'; // ADR-005, matches embeddings.metadata.model
 
@@ -140,6 +141,12 @@ async function main() {
     }
 
     await client.query('BEGIN');
+
+    // M22 (found by derivation, not by the audit — its list named three writers and the tree
+    // holds five). Inside the transaction, on a row locked FOR UPDATE, so a publish flip cannot
+    // land between the check and the DELETE below; and it refuses when user annotations anchor
+    // into the work rather than letting the FK raise 23503 partway through (M21).
+    await assertReingestable(client, slug, 'the section repoint');
 
     // 1. Idempotency: clear any prior rows for this source (children first).
     await client.query(`DELETE FROM section_embeddings se USING sections s WHERE se.section_id=s.id AND s.source_id=$1`, [sourcePk]);

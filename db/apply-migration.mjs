@@ -1,5 +1,6 @@
 import { readFileSync, existsSync } from 'fs';
 import pg from 'pg';
+import { recordMigration } from './lib/record-migration.mjs';
 
 // Apply ONE numbered migration file as neondb_owner. The existing migrate.mjs
 // only (re)applies schema.sql; numbered migrations are applied with this.
@@ -31,6 +32,7 @@ const client = new pg.Client({ connectionString: url.replace(/^"|"$/g, ''), ssl:
 await client.connect();
 try {
   await client.query(sql); // simple-protocol: runs every statement in the file
+  await recordMigration(client, file, sql);
   console.log(`✓ applied ${file}`);
 } catch (e) {
   console.error(`✗ ${file} failed: ${e.message}`);

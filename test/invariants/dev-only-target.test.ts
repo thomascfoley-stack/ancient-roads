@@ -121,8 +121,14 @@ describe('every destructive writer actually invokes the guard', () => {
       .filter(Boolean)
       // register-writer.ts carries its own equivalent guard, documented in dev-only-target.mjs.
       .filter((f) => !f.endsWith('register-writer.ts'))
-      // the guard itself names the statements it guards, in its header.
-      .filter((f) => !f.endsWith('dev-only-target.mjs'));
+      // A GUARD THAT NAMES THE STATEMENT IT GUARDS IS NOT A WRITER. `grep` reads raw bytes, so it
+      // enrolled dev-only-target.mjs on its own header, and on 2026-08-02 it enrolled the new
+      // reingest-guard.ts on a comment and an error message. The exemption used to be a filename;
+      // now the hit is re-checked with comments and string-free code stripped out, which is what
+      // the rest of this file already does. A future guard needs no new exemption.
+      .filter((f) => /(DELETE FROM|TRUNCATE)\s+(sections|section_[a-z]+|commentary_entries)/.test(
+        codeOnly(readFileSync(path.join(ROOT, f), 'utf8')),
+      ));
     const missing = hits.filter((f) => !WRITERS.includes(f));
     expect(missing, `destructive files not covered by this test: ${missing.join(', ')}`).toEqual([]);
   });

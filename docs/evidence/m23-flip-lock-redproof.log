@@ -1,0 +1,31 @@
+M23 RED-PROOF — the publish flip locks every sources row for the length of its transaction
+date: 2026-08-01T22:39:33Z   pg: PostgreSQL 14.19 (throwaway, ephemeral)
+
+THE FINDING (deep audit M23). publish-flip.mjs:151 is a bare BEGIN, so the transaction runs at
+READ COMMITTED and every statement takes a new snapshot. The legality gate asks 'is the
+PUBLISHED corpus legal' over the whole table; barnes-notes is deliberately NOT flipped, so
+nothing in the transaction touched it and a concurrent session could publish it between the
+gate's read and COMMIT. The gate would have passed over a corpus that is not the one committed.
+
+THE FIX. The pre-snapshot SELECT becomes ... FOR UPDATE, plus SET LOCAL lock_timeout='15s'.
+Raising the isolation level was rejected: under REPEATABLE READ the before/after delta check
+compares one snapshot to itself and becomes a check that CANNOT FAIL.
+
+SESSION A holds the flip's lock. SESSION B attempts exactly the concurrent publish the audit
+describes, on exactly the row it names:
+
+  A: BEGIN; SELECT slug,status FROM sources ORDER BY slug FOR UPDATE; pg_sleep(4); COMMIT;
+  B: BEGIN; SET LOCAL lock_timeout='1s'; UPDATE sources SET status='published' WHERE slug='barnes-notes'; COMMIT;
+
+  B ->  ERROR:  canceling statement due to lock timeout
+        CONTEXT:  while updating tuple (0,1) in relation "sources"
+
+  final state:  barnes-notes | staged      <- B did NOT publish
+                john-gill    | published
+
+Before the fix the same B commits immediately and the flip's gate never sees it.
+
+COMPOSES WITH THE RE-INGEST GUARD (M21/M22, same day). src/ingest/reingest-guard.ts takes
+FOR UPDATE on the sources row it is about to delete sections for, so a re-ingest and a flip
+now mutually exclude. That is what makes the flip's badSections leg trustworthy without
+locking 72,863 section rows.

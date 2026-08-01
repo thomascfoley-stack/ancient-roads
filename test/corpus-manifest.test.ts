@@ -220,20 +220,46 @@ describe('the ratchet refuses IGNORANCE — not knowing is not the same as nothi
 });
 
 describe('loadLatestManifest reads the newest committed record', () => {
-  it('picks the newest by filename and ignores files that are not manifests', () => {
+  it('orders on ts, NOT on the git sha the filename starts with', () => {
+    // THE CASE THE OLD FIXTURES COULD NOT SEE. They were named `aaa1111` and `bbb2222` — shas that
+    // happened to sort in the same order as their timestamps — so `.sort()` on the raw filename
+    // passed, and the filename begins with SEVEN CHARACTERS OF RANDOM HEX. Caught on the real
+    // evidence directory 2026-08-02: `839017d` (07-31) and `629521a` (08-01) both present, and the
+    // loader returned the OLDER one because '8' > '6'.
+    //
+    // That direction was harmless — a bigger baseline makes the ratchet fire. The other direction
+    // is the whole defect: a new manifest whose sha sorts LOW is never read, the ratchet keeps
+    // comparing against an older, smaller corpus, and everything lost since then ships green.
+    // Which way it lands is decided by hash bits.
+    //
+    // SEED: restore `.sort()` over the filenames -> RED, it returns 10.
     const dir = mkdtempSync(path.join(tmpdir(), 'corpus-evidence-'));
     scratch.push(dir);
     expect(loadLatestManifest(dir, () => ({}) as never)).toBeNull();
 
-    for (const [name, fileCount] of [
-      ['corpus-manifest-aaa1111-2026-07-01T00-00-00-000Z.json', 10],
-      ['corpus-manifest-bbb2222-2026-07-30T00-00-00-000Z.json', 20],
+    for (const [sha, ts, fileCount] of [
+      ['fff9999', '2026-07-01T00:00:00.000Z', 10], // sha sorts HIGH, oldest
+      ['aaa1111', '2026-07-30T00:00:00.000Z', 20], // sha sorts LOW, newest
     ] as const) {
-      writeFileSync(path.join(dir, name), JSON.stringify({ fileCount, works: {} }));
+      const name = `corpus-manifest-${sha}-${ts.replace(/[:.]/g, '-')}.json`;
+      writeFileSync(path.join(dir, name), JSON.stringify({ fileCount, ts, works: {} }));
     }
     writeFileSync(path.join(dir, 'zzz-not-a-manifest.json'), '{}');
 
     expect(loadLatestManifest(dir, (p) => JSON.parse(readFileSync(p, 'utf-8')))?.fileCount).toBe(20);
+  });
+
+  it('a v1 manifest with no ts is a floor, not a crash — it sorts below anything dated', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'corpus-evidence-'));
+    scratch.push(dir);
+    writeFileSync(path.join(dir, 'corpus-manifest-aaa1111-old.json'), JSON.stringify({ fileCount: 5, works: {} }));
+    expect(loadLatestManifest(dir, (p) => JSON.parse(readFileSync(p, 'utf-8')))?.fileCount).toBe(5);
+
+    writeFileSync(
+      path.join(dir, 'corpus-manifest-bbb2222-new.json'),
+      JSON.stringify({ fileCount: 7, ts: '2026-07-30T00:00:00.000Z', works: {} }),
+    );
+    expect(loadLatestManifest(dir, (p) => JSON.parse(readFileSync(p, 'utf-8')))?.fileCount).toBe(7);
   });
 
   it('an absent evidence directory reads as no baseline, not as a crash', () => {

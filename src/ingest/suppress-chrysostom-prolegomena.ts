@@ -39,6 +39,7 @@
 import pg from 'pg';
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { assertDevOnlyTarget } from './dev-only-target.mjs';
+import { assertReingestable } from './reingest-guard.js';
 
 const WORK = 'chrysostom-homilies';
 const PROLEGOMENA_MAX_SECTION = 16; // sections 1..16 = Schaff; 17+ = Chrysostom
@@ -131,6 +132,11 @@ async function main() {
     console.log(`\n✓ backed up ${backup.length} rows (with vectors) → ${backupPath}`);
 
     await client.query('BEGIN');
+
+    // M22 (found by derivation, not by the audit). This one deletes only `ordinal <= N`, but a
+    // partial delete of a PUBLISHED work is still a silent rewrite of owner-approved content,
+    // and an annotation anchored to one of those sections still raises 23503 mid-transaction.
+    await assertReingestable(client, WORK, 'the prolegomena suppression');
 
     // 3a. sections + section_embeddings (the Book Reader / catalog surface).
     //     sections.ordinal 1..95 for this source == the same Prolegomena run

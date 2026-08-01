@@ -1,0 +1,34 @@
+H4/H5 RED-PROOF — LEGAL_COMMENTARY_ENTRIES_PREDICATE run as SQL over seeded rows
+date: 2026-08-01T22:29:41Z
+pg:   PostgreSQL 14.19 (Homebrew) on aarch64-apple-darwin24.4.0 (throwaway, ephemeral)
+test: web/test/invariants/commentary-entries-provenance.test.ts
+
+The rows are production shapes from docs/evidence/serving-provenance-census-2026-08-01.log:
+  a biblehub Barnes row BESIDE its crosswire twin, biblehub Wesley and Calvin, a
+  historicalchristian.faith Chrysostom, a newadvent Augustine, NULL and empty source_url,
+  and one unpublished author to prove the author legs still bind.
+
+=== GREEN — the fix in place ===
+ ✓ test/invariants/commentary-entries-provenance.test.ts (4 tests) 13ms
+      Tests  4 passed (4)
+
+=== SEED 1 — the provenance leg neutered (the pre-2026-08 behaviour: 'no URL condition') ===
+   × shape — the provenance leg is conjunctive > every canonical forbidden domain is excluded, and the leg is ANDed with the author legs 4ms
+     → biblehub.com is not excluded: expected '((author IN (\'John Gill\',\'Jamieson…' to contain 'NOT ILIKE \'%biblehub.com%\''
+   × executed — the predicate run as SQL over seeded rows > admits exactly the rows it should 1ms
+     → Barnes' Notes <https://biblehub.com/commentaries/barnes/genesis/1.htm> — H4: 21,036 rows like this: expected true to be false // Object.is equality
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  2 failed | 2 passed (4)
+
+=== SEED 2 — the leg present but ORed instead of ANDed ===
+   × shape — the provenance leg is conjunctive > every canonical forbidden domain is excluded, and the leg is ANDed with the author legs 3ms
+     → expected '((author IN (\'John Gill\',\'Jamieson…' to match /\)\s*\n?\s*AND\s*\($/
+   × executed — the predicate run as SQL over seeded rows > admits exactly the rows it should 1ms
+     → Barnes' Notes <https://biblehub.com/commentaries/barnes/genesis/1.htm> — H4: 21,036 rows like this: expected true to be false // Object.is equality
+   × executed — the predicate run as SQL over seeded rows > is not vacuous — it admits some rows and refuses some rows 1ms
+     → expected 10 to be less than 10
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  3 failed | 1 passed (4)
+
+=== RESTORED ===
+      Tests  4 passed (4)
