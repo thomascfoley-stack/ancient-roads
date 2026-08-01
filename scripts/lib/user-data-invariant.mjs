@@ -46,6 +46,10 @@ export const USER_TABLE_EXCLUDED = {
   section_embeddings: 'Corpus vectors — platform content (migration 006).',
   section_history_anchors: 'Historian-register anchors — platform content (migration 016).',
   commentary_entries: 'Legacy commentary FTS store — platform content (migration 003).',
+  schema_migrations:
+    'Migration ledger — filenames, timestamps and the applying role (migration 032). No user data, ' +
+    'and app_runtime holds SELECT only. Added by the 2026-08-02 audit (M18); this list is enforced, ' +
+    'so the table could not be introduced without classifying it, which is the invariant working.',
 };
 
 export const USER_TABLE_SPEC = {

@@ -5,7 +5,13 @@
 Target: Postgres 16 on Supabase (auth, RLS, pgvector, storage in one system).
 All new infra, no shared accounts with any existing project.
 
-Executable version: [supabase/migrations/0001_init.sql](../supabase/migrations/0001_init.sql)
+> **`supabase/migrations/0001_init.sql` IS NOT THE SCHEMA AND MUST NOT BE RUN.** It is a 486-line
+> ALTERNATE model — `books`, `versification_map`, `translations`, its own zone/RLS scheme — that
+> has nothing to do with the live database, and `supabase/config.toml` has migrations and seed
+> ENABLED, so `supabase db push` against a configured target would apply it. `README.md:34` calls
+> `supabase/` vestigial; this file called the same file the "Executable version", which is how a
+> vestigial directory becomes an incident (2026-08-02 deep audit, M26). The live schema is
+> `db/schema.sql` plus `db/migrations/`, applied with `db/apply-migration.mjs`.
 
 Three zones with different security postures:
 
