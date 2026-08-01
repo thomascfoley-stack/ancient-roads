@@ -87,6 +87,12 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 > chats) **CLEARED 2026-07-28 by owner decision** — historical census was 34 highlights (6 users,
 > **only 24 active**), 2 notes (1 user), 1 chat; 5 of the 6 "users" were `qa-hl-a-<epoch>` test
 > residue. **`waitlist` (4 rows) and `channels` (1 row) were NOT cleared** and must survive cutover.
+> **CORRECTION (gate A2, measured read-only on prod 2026-08-01): `channels` holds ZERO rows.**
+> `waitlist` = 4 is confirmed; the `channels` 1-row claim is not. A read-only measurement cannot
+> distinguish "deleted since" from "never true of this database". E1's preserve-these-rows assertion
+> for `channels` is therefore vacuous at `0 == 0`, not preserving anything. The same run **confirms**
+> every annotation table is genuinely empty and reproduces `api_rate_limit` = 41 rows / 8 distinct
+> users. Evidence: `docs/evidence/a2-prod-readonly-2026-08-01/standing-gaps.md` §2.
 > **E1's preserve-these-rows assertions are NOT relaxed** — annotations now hold at `0 == 0`;
 > waitlist/channels must not change.
 > **UNVERIFIED:** no deletion receipt or post-delete read-only artifact is committed, and
@@ -123,25 +129,53 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 **UNVERIFIED (owner decision sheet §1):** G1 does not assert row **identity** — only counts/digest; the historical
 "37 user rows" invariant was never identity-proved on prod post-cutover. See `docs/OWNER_DECISIONS_2026-07-29.md` §1.
 
-### 2d. Prod `sources.status` — published count (2026-07-30, ADR-042)
+### 2d. Prod `sources.status` — published count (2026-08-01, gate A2)
 
-> **Measured read-only ~10:09 local 2026-07-30** during an unplanned Cursor session (ADR-042). **Not**
-> instrument output — ad-hoc diagnostics + instrument positive control abort. **Last repo-authoritative
-> prod census before this:** cutover E0–E6 log (2026-07-29) reports 72,863 sections sliced but does not
-> state a publish flip; E4 writes `status='staged'`.
+> **Measured read-only 2026-08-01T05:03:53Z on `ep-odd-fog-atnykudm` as `app_runtime`**, under the
+> owner's ⚑ go for gate A2. **This is tool output**, not a hand transcription: evidence at
+> `docs/evidence/a2-prod-readonly-2026-08-01/census.txt`, order at
+> `docs/pm/orders/2026-08-01-a2-prod-readonly.md`. Positive control fired (John Gill = 28,843).
 
-| fact | value | source | verified in repo |
+| slug | `source_type` | `status` | sections |
 |---|---|---|---|
-| `sources` total | **7** | ADR-042 session read | recorded, not re-run here |
-| `status = 'staged'` | **7** (all) | same | recorded |
-| `status = 'published'` | **0** | same — instrument positive control abort | recorded |
-| `sections` total | **72,863** | same; matches E4 log | ✅ consistent with §2b |
-| Publish flip on prod | **NOT DONE** (inferred) | staged-only + E4 design | repo does not document a flip |
+| `adam-clarke` | commentary | staged | 12,693 |
+| `barnes-notes` | commentary | staged | 1,300 |
+| `calvin-crosswire` | commentary | staged | 5,090 |
+| `jfb` | commentary | staged | 15,473 |
+| `john-gill` | commentary | staged | 28,843 |
+| `matthew-henry` | commentary | staged | 4,210 |
+| `wesley-crosswire` | commentary | staged | 5,254 |
 
-**Sequencing implication.** Stage 2.2 `unit_ordinal` prod measurement requires `published > 0`. Ordering
-verification on production is **downstream of publish flip**, not parallel to instrument hardening.
+| fact | value | verified |
+|---|---|---|
+| `sources` total | **7** | ✅ measured |
+| `status = 'staged'` | **7** (all) | ✅ measured |
+| `status = 'published'` | **0** | ✅ measured |
+| `sections` total | **72,863** | ✅ measured; per-source counts sum to 72,863 exactly |
+| Publish flip on prod | **NOT DONE** | ✅ no published row exists |
 
-**What the repo does not know without a fresh read:** whether status changed after 2026-07-30 10:09.
+**Nothing changed between 2026-07-30 10:09 and 2026-08-01 05:03.** The A2 reading reproduces the
+2026-07-30 figures exactly, source for source. The open question this section carried — "whether
+status changed after 2026-07-30 10:09" — is **settled: it did not.**
+
+**Sequencing implication (unchanged).** Stage 2.2 `unit_ordinal` prod measurement requires
+`published > 0`. Ordering verification on production is **downstream of publish flip**, not parallel to
+instrument hardening. A2 ran the instrument over `--cohort=staged` (**PASS**, 7/7 works, rollup digest
+`10cd5eb46c9e53cb4b7b980e38e4720f`, no scan truncation); the `published` cohort is **NOT RUN** and
+cannot be run until a flip exists.
+
+**A2.3 finding, for A3 (not adjudicated here):** `barnes-notes` carries author string `Barnes' Notes`,
+which matches no leg of `LEGAL_CORPUS_FILTER` — **1,300 sections, 0 admitted rows**. It is staged, so
+`MASTER.md:37`'s published-but-not-admitted STOP has not fired; it would fire on a flip that includes
+this work. Full table: `docs/evidence/a2-prod-readonly-2026-08-01/serving-census.md`.
+
+> **Superseded, kept as history — the 2026-07-30 reading (ADR-042).** Measured read-only ~10:09 local
+> during an unplanned Cursor session. **Not** instrument output — ad-hoc diagnostics + instrument
+> positive control abort; the section said so itself. Recorded 7 sources / 7 staged / 0 published /
+> 72,863 sections, all "recorded, not re-run here". **Last repo-authoritative prod census before
+> that:** cutover E0–E6 log (2026-07-29), which reports 72,863 sections sliced but does not state a
+> publish flip; E4 writes `status='staged'`. Every figure in it is confirmed by the A2 measurement
+> above.
 
 ### 2c. Dev branch snapshot (historical — `ground-truth.mjs`, 2026-07-15)
 
@@ -316,6 +350,10 @@ does not gate. See `docs/evidence/work-order-v2-stage2/TRANCHE5-STASH-EVALUATION
    there is a least-privilege gap on the most integrity-critical table. `ground-truth.mjs` finding #5. **Fix = a
    `REVOKE` (a prod GRANT change = a write), deferred** — must first confirm the ingestion path's role isn't
    `app_runtime`, or ingestion breaks. Owner action; draft, do not auto-apply.
+   **CONFIRMED ON PRODUCTION (gate A2, 2026-08-01)** via `has_table_privilege` asked of the server: every cell
+   above is accurate — `embeddings` YES/YES/YES/YES, the other three SELECT-only. A2 also establishes that the
+   *read* path needs none of the three grants: all three A2 connections ran as `app_runtime` inside
+   `SET TRANSACTION READ ONLY`. Evidence: `docs/evidence/a2-prod-readonly-2026-08-01/standing-gaps.md` §1.
 2. **Bible not in a prod DB schema** (§3) — a framing lie in `docs/SCHEMA.md`, not a functional bug (files serve
    fine). Left as-is; noted here so no agent trusts the relational framing.
 3. **SEC-1** — `better-auth 1.4.18` CVEs via `@neondatabase/auth` beta; blocks *public* launch. Interim question
