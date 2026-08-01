@@ -13,6 +13,20 @@ and [`CUTOVER_DESIGN.md`](CUTOVER_DESIGN.md) § protected branches.
 
 ---
 
+
+## Before you rely on any of the above: check the restore points still exist
+
+```bash
+NEON_API_KEY=<key> node scripts/assert-protected-branches.mjs
+```
+
+Every rollback instruction in this file and in `scripts/cutover.mjs` names
+`br-late-recipe-atxl68sh`. On 2026-08-02 that branch — and `production` itself — were measured
+`protected: false`, and `refuseProtectedBranchDelete` was called by nothing but its own test
+(deep audit M9). Both are protected now, and the command above is what keeps that a fact rather
+than a memory. It exits 1 if a registered restore point is missing or unprotected.
+
+
 ## 1. Neon protected snapshot → production endpoint
 
 | | |

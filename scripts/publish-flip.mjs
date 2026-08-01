@@ -50,15 +50,47 @@ const val = (f) => args.find((a) => a.startsWith(`${f}=`))?.slice(f.length + 1);
 
 const reverse = has('--reverse');
 const slugFile = val('--slugs');
+const snapshotFile = val('--snapshot');
 const localOk = has('--local-redproof');
 const evidenceDir = val('--evidence') ?? 'docs/evidence/work-order-v2-stage2';
+
+// ── M8: THE WRITER GETS A RUN LOG ───────────────────────────────────────────────────────────
+// 2026-08-02 deep audit. The forward flip of 2026-08-01 left two verify logs, a snapshot and a
+// board row — and NOTHING from the writer itself. Its stdout, including `role neondb_owner
+// (asserted at the server)` and the target/direction header, survived only as three lines
+// hand-transcribed into a commit message, with the role line dropped in transcription. The
+// artifacts could not distinguish the scripted flip from a manual psql UPDATE, nor one flip from
+// flip -> reverse -> re-flip.
+//
+// Written on EVERY exit including a refusal, because the runs you most want a log of are the ones
+// that stopped. Scrubbed through the same function every other output path uses, so a credential
+// cannot reach it.
+const runStamp = new Date().toISOString().replace(/[:.]/g, '-');
+const runLogPath = path.join(evidenceDir, `flip-run-${runStamp}.log`);
+const runLog = [];
+for (const [stream, sink] of [[process.stdout, 'out'], [process.stderr, 'err']]) {
+  const original = stream.write.bind(stream);
+  stream.write = (chunk, ...rest) => {
+    runLog.push(`${sink === 'err' ? '! ' : ''}${scrubCredentialText(String(chunk))}`);
+    return original(chunk, ...rest);
+  };
+}
+function flushRunLog() {
+  try {
+    fs.mkdirSync(evidenceDir, { recursive: true });
+    fs.writeFileSync(runLogPath, runLog.join(''));
+  } catch {
+    // A log we cannot write must not become the reason an irreversible write half-happened.
+  }
+}
+process.on('exit', flushRunLog);
 
 function die(msg, code = 1) {
   console.error(scrubCredentialText(String(msg)));
   process.exit(code);
 }
 
-if (!slugFile) die('usage: publish-flip.mjs --slugs=<flip-slugs.json> [--reverse]', 2);
+if (!slugFile) die('usage: publish-flip.mjs --slugs=<flip-slugs.json> [--reverse --snapshot=<flip-pre-snapshot-*.json>]', 2);
 
 // ── the slug list. Read LITERALLY. No predicate, ever. ────────────────────────────────────
 // PUBLISH_FLIP.md:71-73 is explicit: the flip names its works. A predicate ("everything
@@ -94,6 +126,56 @@ try {
 
 const from = reverse ? 'published' : 'staged';
 const to = reverse ? 'staged' : 'published';
+
+// ── M6: --reverse INVERTS THE EXECUTED FLIP, NOT THE SLUG LIST ─────────────────────────────
+// 2026-08-02 deep audit. The direction came from the flag alone and the UPDATE flipped every
+// listed slug currently in `published`. It never read the snapshot. So any listed slug that was
+// ALREADY published before the forward flip got un-published by a reverse — a work the flip never
+// touched. It was exact for the 2026-08-01 run only because all seven rows were `staged` and
+// `already` was empty: a property of the data on the day, not of the tool.
+//
+// The forward run writes a full pre-flip snapshot of every row's status. A reverse now REQUIRES
+// it and reverses exactly the rows the forward flip moved — the ones the snapshot recorded as
+// `staged`. No snapshot, no reverse: guessing which rows a past write touched is precisely the
+// thing that made this unsafe.
+let reverseSlugs = slugs;
+if (reverse) {
+  if (!snapshotFile) {
+    let available = [];
+    try {
+      available = fs.readdirSync(evidenceDir).filter((f) => f.startsWith('flip-pre-snapshot-')).sort();
+    } catch { /* the evidence dir may not exist on a red-proof target */ }
+    die(
+      'STOP: --reverse requires --snapshot=<flip-pre-snapshot-*.json>.\n' +
+        '  Reversing from the slug list alone un-publishes any listed work that was ALREADY\n' +
+        '  published before the forward flip — a work the flip never touched.\n' +
+        (available.length
+          ? `  Snapshots in ${evidenceDir}:\n${available.map((f) => `    ${f}`).join('\n')}`
+          : `  No flip-pre-snapshot-*.json in ${evidenceDir}.`),
+      2,
+    );
+  }
+  let snap;
+  try {
+    snap = JSON.parse(fs.readFileSync(snapshotFile, 'utf8'));
+  } catch (e) {
+    die(`STOP: cannot read the snapshot ${snapshotFile}: ${e.message}`, 2);
+  }
+  if (snap?.host !== host) {
+    die(`STOP: snapshot ${snapshotFile} was taken against '${snap?.host}', target is '${host}'. Refusing.`, 2);
+  }
+  const wasStaged = new Set((snap.sources ?? []).filter((r) => r.status === 'staged').map((r) => r.slug));
+  reverseSlugs = slugs.filter((sl) => wasStaged.has(sl));
+  const skipped = slugs.filter((sl) => !wasStaged.has(sl));
+  console.log(`snapshot     ${snapshotFile} (${(snap.sources ?? []).length} rows, taken ${snap.direction ?? '?'})`);
+  console.log(`reversing    ${reverseSlugs.length} of ${slugs.length} listed slug(s) — the ones the forward flip actually moved`);
+  if (skipped.length > 0) {
+    console.log(`  NOT reversed (already '${to === 'staged' ? 'published' : 'staged'}' before the flip): ${skipped.join(', ')}`);
+  }
+  if (reverseSlugs.length === 0) {
+    die('STOP: the snapshot shows the forward flip moved none of these slugs. Nothing to reverse.', 2);
+  }
+}
 
 console.log(`publish-flip — target ${host} (credentials redacted)`);
 console.log(`direction    ${from} -> ${to}`);
@@ -182,7 +264,9 @@ try {
   // Both row decisions come from lib/publish-flip-delta.mjs, which is pure and has tests. They
   // were inline here, where the only way to exercise them was to run this script against a real
   // database — so the two defects the 2026-08-02 audit found in them were found by reading.
-  const { missing, eligible, thirdStatus } = eligibility(slugs, beforeBy, from, to);
+  // `reverseSlugs` is `slugs` on a forward run and the snapshot-narrowed set on a reverse (M6).
+  const payload = reverseSlugs;
+  const { missing, eligible, thirdStatus } = eligibility(payload, beforeBy, from, to);
   if (missing.length > 0) {
     await client.query('ROLLBACK');
     die(`STOP: slug(s) not present in sources: ${missing.join(', ')}`, 1);
@@ -193,7 +277,7 @@ try {
   fs.mkdirSync(evidenceDir, { recursive: true });
   fs.writeFileSync(
     snapPath,
-    JSON.stringify({ host, direction: `${from}->${to}`, slugFile, slugs, sources: before }, null, 2),
+    JSON.stringify({ host, direction: `${from}->${to}`, slugFile, slugs, payload, sources: before }, null, 2),
   );
   console.log(`snapshot     ${snapPath} (${before.length} rows, written before COMMIT)`);
 
@@ -204,11 +288,11 @@ try {
     await client.query('ROLLBACK');
     die(`STOP: listed slug(s) in an unexpected status: ${thirdStatus.map((s) => `${s}=${beforeBy.get(s)}`).join(', ')}. Refusing.`, 1);
   }
-  console.log(`eligible     ${eligible.length} of ${slugs.length} are '${from}' (the rest are already '${to}')`);
+  console.log(`eligible     ${eligible.length} of ${payload.length} are '${from}' (the rest are already '${to}')`);
 
   const upd = await client.query(
     `UPDATE sources SET status=$2 WHERE slug = ANY($1) AND status=$3 RETURNING slug`,
-    [slugs, to, from],
+    [payload, to, from],
   );
   if (upd.rowCount !== eligible.length) {
     await client.query('ROLLBACK');
@@ -259,18 +343,50 @@ try {
     die(`STOP: could not check sections.source_url (${e.message}). Refusing to publish without it.`, 1);
   }
 
-  if (badLicense.length || badProvenance.length || badSections.length) {
-    await client.query('ROLLBACK');
-    console.error('\nGATE FAILED — rolled back, nothing published:');
+  // ── M7: THE GATE IS DIRECTIONAL. IT MUST NOT BLOCK A WITHDRAWAL ────────────────────────
+  // 2026-08-02 deep audit. These gates ran over `WHERE status='published'` in BOTH directions, so
+  // ONE unrelated illegal published row made `--reverse` roll back and exit 1 — the only database
+  // rollback this project has refused to run in precisely the corpus state where an emergency
+  // withdrawal is most likely, and there is no second rollback path (PUBLISH_FLIP.md §5 has no
+  // restore point, forks are forbidden, and the Neon rollback branch was measured unprotected).
+  //
+  // A reverse REMOVES rows from `published`. The post-reverse published set is a SUBSET of the
+  // pre-reverse one, so it cannot introduce an illegality — every offender it reports was already
+  // there and is one this run is reducing, not creating. Blocking on them keeps the illegal rows
+  // published, which is the opposite of what the gate is for.
+  //
+  // So on reverse the gate REPORTS and proceeds, and the subset property is ASSERTED rather than
+  // assumed: if a reverse somehow published something, that IS a stop.
+  const offenders = badLicense.length + badProvenance.length + badSections.length;
+  if (offenders > 0) {
+    const label = reverse ? '\nGATE FINDINGS — reported, NOT blocking a withdrawal:' : '\nGATE FAILED — rolled back, nothing published:';
+    console.error(label);
     for (const r of badLicense) console.error(`  bad licence: ${r.slug} "${r.license ?? '(none)'}" not in ${ALLOWED_LICENSES.join(' | ')}`);
     for (const r of badProvenance) console.error(`  forbidden provenance: ${r.slug} -> ${r.domain}`);
     for (const r of badSections) console.error(`  forbidden section source_url: ${r.slug} -> ${r.domain}`);
-    process.exit(1);
+    if (!reverse) {
+      await client.query('ROLLBACK');
+      process.exit(1);
+    }
+    console.error('  ^ pre-existing on the published set; this reverse SHRINKS that set. Withdrawal continues.');
+  }
+
+  if (reverse) {
+    const publishedBefore = new Set(before.filter((r) => r.status === 'published').map((r) => r.slug));
+    const gained = after.filter((r) => r.status === 'published' && !publishedBefore.has(r.slug)).map((r) => r.slug);
+    if (gained.length > 0) {
+      await client.query('ROLLBACK');
+      die(`STOP: a REVERSE published ${gained.join(', ')}. A withdrawal may only shrink the published set. Rolled back.`, 1);
+    }
   }
 
   await client.query('COMMIT');
   console.log(`\nOK — gate held. ${upd.rowCount} row(s) ${from} -> ${to}.`);
-  console.log(`Reverse with: node scripts/publish-flip.mjs --slugs=${slugFile} --reverse`);
+  // The hint names the snapshot THIS run just wrote, because --reverse now requires one (M6)
+  // and a hint that omits a required flag is a hint that fails.
+  if (!reverse) {
+    console.log(`Reverse with: node scripts/publish-flip.mjs --slugs=${slugFile} --reverse --snapshot=${snapPath}`);
+  }
 } catch (e) {
   await client.query('ROLLBACK').catch(() => {});
   die(`FAILED, rolled back: ${e.stack ?? e.message}`, 1);

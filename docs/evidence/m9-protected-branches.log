@@ -1,0 +1,39 @@
+M9 — THE ROLLBACK BRANCH IS PROTECTED, AND THE PROTECTION IS NOW CHECKED
+date: 2026-08-01T23:23:32Z
+
+MEASURED BEFORE (all 17 branches in project spring-heart-74819093):
+  br-nameless-brook-atzgh1gq  production                       protected=False  default=True
+  br-late-recipe-atxl68sh     pre-cutover-...-20260729164220   protected=False
+  ...and fifteen more, every one protected=False.
+
+  Repo-wide, the only callers of refuseProtectedBranchDelete were the guard itself, its
+  .d.mts and its own test. docs/PROTECTED_BRANCHES.json was a declaration with no
+  enforcement on either side: no script consulted it, and Neon would have allowed the delete.
+
+ACTION. Protection turned ON via the Neon API for both the registered restore point and the
+default branch (production itself, which the registry does not name):
+  PATCH /api/v2/projects/spring-heart-74819093/branches/br-nameless-brook-atzgh1gq  -> protected=True
+  PATCH /api/v2/projects/spring-heart-74819093/branches/br-late-recipe-atxl68sh     -> protected=True
+
+THE CHECK. scripts/assert-protected-branches.mjs asks the question that decides whether a
+rollback is possible — does the branch still EXIST, and is the PLATFORM refusing to delete
+it — rather than the one the guard asked, which was whether our own scripts would refuse a
+delete none of them performs. Bylaw 3: a check that cannot fire is removed or made honest.
+
+  $ node scripts/assert-protected-branches.mjs
+  protected-branch check — 2 registered of 17 branches in the project
+    br-late-recipe-atxl68sh     pre-cutover-ep-odd-fog-atnykudm-20260729164220
+    br-nameless-brook-atzgh1gq  production
+  ✓ every registered restore point exists and is protected at Neon.
+
+RED-PROOF — protection toggled OFF on the rollback branch, re-run, toggled back:
+
+  FAIL — the rollback path is not what the registry says:
+    • br-late-recipe-atxl68sh (pre-cutover-ep-odd-fog-atnykudm-20260729164220) exists but
+      protected=false — pre-cutover prod snapshot — every rollback string in
+      scripts/cutover.mjs names it
+  There is no second rollback path (PUBLISH_FLIP.md §5, and fork creation is forbidden).
+  exit=1
+
+The default branch doubles as the anti-vacuity floor: an empty registry would otherwise make
+this pass over nothing, and the default branch is always present.

@@ -1,0 +1,72 @@
+M6 / M7 / M8 RED-PROOF — the publish flip's reverse path, gate direction, and run log
+date: 2026-08-01T23:21:23Z   pg: PostgreSQL 14.19 (throwaway, ephemeral)
+
+THE FIXTURE IS THE CASE THE 2026-08-01 RUN DID NOT HAVE. Three works, and 'alpha' is ALREADY
+published before the flip — so 'already' is NOT empty. The real flip was exact only because
+all seven rows happened to be staged, which is a property of the data on the day.
+
+  before        alpha=published  beta=staged  gamma=staged
+
+M6 — --reverse INVERTS THE EXECUTED FLIP, NOT THE SLUG LIST
+
+  forward       eligible 2 of 3 are 'staged'    -> alpha=published beta=published gamma=published
+  reverse, no --snapshot
+                STOP: --reverse requires --snapshot=<flip-pre-snapshot-*.json>.
+                (and it lists the snapshots present in the evidence dir)
+  reverse, with the snapshot
+                reversing 2 of 3 listed slug(s) — the ones the forward flip actually moved
+                  NOT reversed (already 'published' before the flip): alpha
+                -> alpha=published beta=staged gamma=staged
+
+  The pre-flip state is restored EXACTLY. The old tool un-published alpha, a work the flip
+  never touched.
+
+M7 — THE GATE MUST NOT BLOCK A WITHDRAWAL
+
+  Setup: re-flip, then make the UNRELATED published row 'alpha' carry biblehub provenance —
+  the corpus state in which an emergency withdrawal is most likely.
+
+  reverse       GATE FINDINGS — reported, NOT blocking a withdrawal:
+                  forbidden provenance: alpha -> biblehub.com
+                  ^ pre-existing on the published set; this reverse SHRINKS that set.
+                OK — gate held. 2 row(s) published -> staged.
+
+  Before the fix the same run rolled back and exited 1 — the only database rollback this
+  project has, refusing in exactly the state it exists for.
+
+  POSITIVE CONTROL, on the same illegal row, forward direction:
+                GATE FAILED — rolled back, nothing published:
+                  forbidden provenance: alpha -> biblehub.com
+                -> beta and gamma still staged.
+  So the gate was made DIRECTIONAL, not weaker. A forward flip is still refused.
+
+  The subset property is also asserted, not assumed: a reverse that somehow PUBLISHED
+  anything rolls back with 'a withdrawal may only shrink the published set'.
+
+M8 — THE WRITER NOW LEAVES A RUN LOG
+
+  docs/evidence/<dir>/flip-run-<ISO stamp>.log, written on EVERY exit including a refusal,
+  through the same scrubCredentialText every other output path uses. Contents of the
+  withdrawal run above:
+
+    snapshot     /tmp/flipev/flip-pre-snapshot-2026-08-01T23-20-43-216Z.json (3 rows, taken staged->published)
+    reversing    2 of 3 listed slug(s) — the ones the forward flip actually moved
+      NOT reversed (already 'published' before the flip): alpha
+    publish-flip — target localhost:55433 (credentials redacted)
+    direction    published -> staged
+    slugs        3 from /tmp/flipev/slugs.json
+    role         neondb_owner (asserted at the server)
+    snapshot     /tmp/flipev/flip-pre-snapshot-2026-08-01T23-20-43-279Z.json (3 rows, written before COMMIT)
+    eligible     2 of 2 are 'published' (the rest are already 'staged')
+    ! 
+    GATE FINDINGS — reported, NOT blocking a withdrawal:
+    !   forbidden provenance: alpha -> biblehub.com
+    !   ^ pre-existing on the published set; this reverse SHRINKS that set. Withdrawal continues.
+    
+    OK — gate held. 2 row(s) published -> staged.
+    Reverse with: node scripts/publish-flip.mjs --slugs=/tmp/flipev/slugs.json --reverse
+
+  The 2026-08-01 flip left two verify logs, a snapshot and a board row, and NOTHING from the
+  writer — its stdout survived as three lines hand-transcribed into a commit message, with
+  the role line dropped. The artifacts could not tell the scripted flip from a manual psql
+  UPDATE, nor one flip from flip -> reverse -> re-flip.

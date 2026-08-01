@@ -1,0 +1,36 @@
+C2 VERIFIED AGAINST THE BYTES VERCEL IS SERVING — not against the local tree
+date: 2026-08-01T23:15:29Z
+deployment: dpl_Dcd5Gy93UGqrP1z7Hq9U7cHwUbhg  (READY, aliased to ancientpaths.app, main @ 0768fcd)
+
+WHY THIS AND NOT A curl. Every corpus path is behind the SITE_PASSWORD gate — GET
+/commentaries/gen/1.json returns 307 to /gate — and the gate password is a credential this
+session does not handle. Checking the LOCAL tree instead would prove only that the tree is
+clean, not that the clean tree is what shipped, and 'measured the input, claimed the output'
+is the exact shape this audit keeps finding.
+
+METHOD. The deployment's own source archive, fetched from the Vercel API as the owning
+account, decoded and extracted. This is the artifact Vercel serves from, so it answers the
+delivery question directly and needs no site password:
+
+  GET /v6/deployments/<id>/files                 -> src/.vercel/source.tgz.part1, .part2
+  GET /v7/deployments/<id>/files/<uid>  x2       -> 139,810,147 + 98,974,975 bytes
+  parts are {"data": "<base64>"} -> decode -> concatenate -> 179,088,823-byte tgz
+  extract public/commentaries, scan with scripts/lib/served-corpus-authors.mjs
+
+RESULT
+  files scanned            1,212
+  entries                  114,349
+  offenders                NONE
+
+  public/commentaries/gen/1.json, 126 entries, every author delivered:
+    Adam Clarke | Alexander Maclaren | Augustine of Hippo | C.F. Keil & Franz Delitzsch
+    Charles Haddon Spurgeon | Charles Hodge | Jamieson, Fausset & Brown | John Calvin
+    John Gill | John Owen | John Wesley | Jonathan Edwards | Matthew Henry | Thomas Watson
+
+  public/commentaries/_manifest.json — the index that made bulk collection a for-loop —
+  advertises 28 sources / 114,349 entries and none of the quarantined authors.
+
+BEFORE, for contrast (2026-08-02 deep audit C2, measured on the same tree pre-fix):
+  1,212 files / 191,749 entries, of which 15,161 Tyndale Study Notes, 1,272 Origen of
+  Alexandria, 1,102 CS Lewis, 714 GK Chesterton, 36 Oecumenius, 16 Douglas Wilson (living),
+  11 JRR Tolkien, 11 Theophylact of Ohrid were deliverable to anyone who fetched the file.
