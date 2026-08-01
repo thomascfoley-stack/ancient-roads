@@ -18,7 +18,7 @@ and [`CUTOVER_DESIGN.md`](CUTOVER_DESIGN.md) § protected branches.
 | | |
 |---|---|
 | **Command** | `neonctl branches create --parent br-late-recipe-atxl68sh --name restore-rehearsal-<ts>` then, after verification on the child, promote or repoint the production endpoint to that child (exact neonctl subcommand depends on Neon API version — **owner call**). Rollback strings in `scripts/cutover.mjs` quote `br-late-recipe-atxl68sh` by id. |
-| **Restores** | Database schema + row contents as of snapshot **2026-07-29** pre-cutover prod (`pre-cutover-ep-odd-fog-atnykudm-20260729164220`). User annotations were empty at cutover; waitlist/channels preserved per G1. |
+| **Restores** | Database schema + row contents as of snapshot **2026-07-29** pre-cutover prod (`pre-cutover-ep-odd-fog-atnykudm-20260729164220`). User annotations were empty at cutover; waitlist preserved per G1. (`channels` measured **0 rows** on prod 2026-08-01, gate A2, against a record claiming 1 — see `docs/evidence/a2-prod-readonly-2026-08-01/standing-gaps.md` §2; what this snapshot holds for `channels` is unverified.) |
 | **Destroys** | Every prod write after the snapshot: E4 slice, staged sources, migration 024–031 state, any publish flip, user data written post-cutover. |
 | **Host survives?** | **NO.** Promoting a child branch changes the connection host. Update Vercel `DATABASE_URL`, every cutover/instrument `CUTOVER_EXPECT_HOST`, and re-run host assertions before calling recovery done. |
 | **Window** | Indefinite while `br-late-recipe-atxl68sh` exists (registered, deletion refused). |

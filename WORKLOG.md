@@ -1,6 +1,6 @@
 # WORKLOG — Autonomous session 2026-07-08
 
-## 2026-08-01 (SESSION 12 — gate A2, the production read-only session)
+## 2026-08-01 (SESSION 13 — gate A2, the production read-only session)
 
 **Headline:** first production connection made under the current process, on the owner's ⚑ per-occasion
 go. **Nothing on production changed between 2026-07-30 10:09 and 2026-08-01 05:03** — 7 sources, all
@@ -28,10 +28,11 @@ now as tool output. The A2.2 instrument **PASSED** over `--cohort=staged` (7/7 w
   a `crosswire` sourceUrl. It is **staged**, so `MASTER.md:37`'s published-but-not-admitted STOP has
   **not** fired — it fires on any flip that includes this work. Not adjudicated here, by design.
 - **`channels` holds ZERO rows on production**, against `STATE_OF_TRUTH.md:89` and
-  `CUTOVER_DESIGN.md:82-84`, which both say 1 row that "must survive cutover". Correction filed at both
-  claim sites.
+  `CUTOVER_DESIGN.md`'s G1-inventory bullet, which both say 1 row that "must survive cutover".
+  Correction filed at the claim sites: `STATE_OF_TRUTH.md` §2b, `CUTOVER_DESIGN.md` (G1 bullet,
+  deletion inventory, and E1 paragraph), and `RECOVERY.md` (snapshot "Restores" row).
 - **`app_runtime` grants CONFIRMED** — `INSERT/UPDATE/DELETE` on `embeddings`, SELECT-only elsewhere.
-  Exactly as `STATE_OF_TRUTH.md:300-304` records. No `REVOKE` attempted (owner action).
+  Exactly as `STATE_OF_TRUTH.md` §7 item 1 (`:334-338` as of `61215e2`) records. No `REVOKE` attempted (owner action).
 - **Forbidden-provenance ratchet intact** — 15,707 biblehub + 56,177 hcf = **71,884**, unchanged. The
   *sections* store carries 0 forbidden `source_url` rows.
 - **Prod's served pool is 9 distinct authors, not the 11** that §2c records from **dev** — the two
@@ -41,11 +42,14 @@ now as tool output. The A2.2 instrument **PASSED** over `--cohort=staged` (7/7 w
 
 ### NOT DONE / UNVERIFIED
 - **`--cohort=published` — NOT RUN, never PASS.** 0 published sources on prod makes the leg vacuous by
-  construction (`STATE_OF_TRUTH.md:141-142`). It cannot run until a publish flip exists.
-- **`instrument-staged.json` — NOT PRODUCED.** The order's Evidence list names it alongside the
-  rendered text report, but the ordered command omits `--json` and
-  `unit-ordinal-instrument.mjs:177` writes one or the other, never both. A second run is forbidden by
-  rail 1. The two requirements are mutually exclusive as written.
+  construction (`STATE_OF_TRUTH.md` §2d sequencing note, `:161-165` as of `61215e2`). It cannot run
+  until a publish flip exists.
+- **`instrument-staged.json` — NOT PRODUCED.** The ordered A2.2 command omits `--json`, the order
+  forbids "improving" it, and rail 1 forbids the second run `--json` would be; the ordered command was
+  followed as ordered. Post-session verification corrected the reasoning this entry first carried: the
+  order's premise that text cannot be rendered from saved JSON is wrong — `renderReportText()`
+  (`scripts/lib/unit-ordinal-instrument.mjs:428-447`) is exported and pure, so one `--json --out` run
+  plus an offline render would have produced both artifacts. See the evidence README.
 - **Rail 1 deviation, owner-authorised in-session:** the order says one connection; this run used
   **three** (census, instrument, serving census). The instrument covers only A2.2, and no repo runner
   can reach prod under rail 3 — `publish-flip-census.mts` refuses production by design (`:52-55`),
@@ -58,8 +62,11 @@ now as tool output. The A2.2 instrument **PASSED** over `--cohort=staged` (7/7 w
   Chrysostom 2,587 — all with no work key). Servable from the flat store, invisible to the sections
   model. Not diagnosed.
 - **`ground-truth --env=prod` has never been runnable on this machine** — `.env.prod` does not exist
-  here (only `.env.prod.example`), while `docs/INFRA.md:134/166/254`, `docs/CUTOVER_DESIGN.md:264` and
-  `WORKLOG.md:1233` all describe that file's *contents* as though it exists. Established by the prior
+  here (only `.env.prod.example`), while `docs/INFRA.md:134/166/254`, `docs/CUTOVER_DESIGN.md:273` (was `:264` before this branch's
+  channels corrections shifted it) and
+  `WORKLOG.md:1311` (the 2026-07-27 entry's "swap `.env.prod` back to `ep-odd-fog`" action item;
+  was `:1233` before this branch's entries shifted it) all describe that file's *contents* as though
+  it exists. Established by the prior
   session; recorded here because no WORKLOG entry carried it.
 - **`npx --yes neonctl` fetches from the registry mid-run on the credential path**
   (`neon-connection.mjs:38-45`) — the hazard `excerpt-sample-policy.mjs:5-11` names as the reason

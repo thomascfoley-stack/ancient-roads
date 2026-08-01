@@ -10,7 +10,7 @@ Positive control: `John Gill` rows = **28,843** (probe fires).
 
 ## 1. `app_runtime`'s grants on `embeddings` — **CONFIRMED**
 
-`STATE_OF_TRUTH.md:300-304` says `app_runtime` still holds
+`STATE_OF_TRUTH.md` §7 item 1 (`:334-338` as of `61215e2`) says `app_runtime` still holds
 `INSERT/UPDATE/DELETE` on `embeddings`, and `SELECT`-only on
 `commentary_entries`, `sources`, `sections`. Asked of the server via
 `has_table_privilege`:
@@ -24,7 +24,7 @@ Positive control: `John Gill` rows = **28,843** (probe fires).
 
 **The record is accurate in every cell.** The gap is real and still open: the
 servable corpus is the one table the app's own role can write. No `REVOKE` was
-attempted — `STATE_OF_TRUTH.md:304` reserves it as an owner action, and a prod
+attempted — `STATE_OF_TRUTH.md` §7 item 1 (`:338`) reserves it as an owner action, and a prod
 `GRANT` change is a write.
 
 Worth noting for whoever drafts that `REVOKE`: this session proves the *read*
@@ -33,8 +33,8 @@ path needs none of the three. Every measurement in A2 ran as `app_runtime` insid
 
 ## 2. The G1 user-data inventory — **MEASURED for the first time**
 
-`STATE_OF_TRUTH.md:92-94` marks "prod user data is empty" as **owner-asserted,
-not measured**, with no deletion receipt ever committed, and notes that the
+`STATE_OF_TRUTH.md` §2b UNVERIFIED note (`:98-100` as of `61215e2`) marks "prod user data is
+empty" as **owner-asserted, not measured**, with no deletion receipt ever committed, and notes that the
 newest committed artifact (`cutover-2026-07-28/23-prod-readonly-AFTER.txt`) still
 reports pre-deletion counts. Measured now:
 
@@ -60,14 +60,16 @@ reports pre-deletion counts. Measured now:
 **Three results, in order of importance.**
 
 **(a) `channels` is EMPTY, and the record says it must not be.**
-`STATE_OF_TRUTH.md:89` and `CUTOVER_DESIGN.md:82-84` both state `channels` holds
-**1 row** — "a real study group named `test`, not qa residue; **do not delete**
-to tidy housekeeping" — and list it among the rows that must survive cutover.
+`STATE_OF_TRUTH.md:89` and `CUTOVER_DESIGN.md`'s G1-inventory bullet ("Still
+live on prod") both state `channels` holds **1 row** — "a real study group named
+`test`, not qa residue; **do not delete** to tidy housekeeping" — and list it
+among the rows that must survive cutover.
 Production has **zero**. Read-only, I cannot distinguish "it was deleted" from
 "the 1-row claim was never true of this database". Either way, E1's G1 assertions
 are written against a row that is not there, and a digest-plus-count invariant
 over an empty table can only prove nothing moved, not that anything was
-preserved — the limit `CUTOVER_DESIGN.md:153-156` already names.
+preserved — the empty-table limit `CUTOVER_DESIGN.md`'s E1 invariant note
+already names.
 
 This is **not** the order's §2d abort condition, which is scoped to the sources
 census; that agrees exactly (see `census.txt`). Recorded as a finding, not acted
@@ -81,8 +83,8 @@ unsupported by any reading.
 
 **(c) `waitlist` = 4 matches the record exactly**, and `api_rate_limit` = **41
 rows / 8 distinct users** reproduces the "41 rows, operational" figure from
-`CUTOVER_DESIGN.md:102-103` that the A1 verdict noted appears nowhere under
-`docs/evidence/`. It does now.
+`CUTOVER_DESIGN.md`'s deletion inventory ("**NOT deleted:** …") that the A1
+verdict noted appears nowhere under `docs/evidence/`. It does now.
 
 ## 3. Forbidden provenance against the 71,884 ratchet — **UNCHANGED**
 
@@ -95,7 +97,7 @@ Flat store, by `metadata->>'sourceUrl'`:
 | historicalchristian | 56,177 |
 | **TOTAL** | **71,884** |
 
-Exactly the `STATE_OF_TRUTH.md:111` figure — 15,707 + 56,177, ratchet intact, not
+Exactly the `STATE_OF_TRUTH.md` §2b ratchet row (`:117` as of `61215e2`) — 15,707 + 56,177, ratchet intact, not
 one row moved. G6 holds.
 
 **The sections store carries 0 forbidden `source_url` rows** across all 7 works.

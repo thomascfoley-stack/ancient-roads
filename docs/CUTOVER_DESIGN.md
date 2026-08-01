@@ -84,6 +84,13 @@ and confirmed every assumption:
     real study group named "test", not qa residue; **do not delete** to tidy housekeeping).
     G1 measures digest + row count for both; `waitlist` has no `user_id` (owner distribution is
     vacuous) and neither table carries a tombstone (every row counts as active).
+  - **CORRECTION (gate A2, measured read-only on prod 2026-08-01): `channels` holds ZERO rows.**
+    `waitlist` = 4 is confirmed; the `channels` 1-row claim above is not. A read-only measurement
+    cannot distinguish "deleted since" from "never true of this database". Until resolved by the
+    owner, treat every `channels` preserve-this-row assertion in this document as **vacuous at
+    `0 == 0`** — it can prove nothing moved, not that anything was preserved (the empty-table limit
+    E1's own invariant note names). Evidence:
+    `docs/evidence/a2-prod-readonly-2026-08-01/standing-gaps.md` §2.
   What the cleared annotation data actually was, read before deleting:
     - **5 of the 6 "users" were never people.** They were `qa-hl-a-<epoch>` synthetic IDs
       from the Phase-1 highlight suite, one soft-deleted row each — the residue class the
@@ -99,7 +106,8 @@ and confirmed every assumption:
       ever completed a profile, so no third party's work was in the database.
   Deleted: highlights 34, notes 2, chats 1. Also zeroed (already empty): messages,
   chat_memories, reading_history, user_library, study_guides, user_profiles,
-  user_integrations. **NOT deleted:** `waitlist` (4 rows), `channels` (1 row),
+  user_integrations. **NOT deleted:** `waitlist` (4 rows), `channels` (1 row — but see the A2
+  correction above: measured **0** on 2026-08-01),
   `api_rate_limit` (41 rows, operational). The owner's own auth/user row was NOT deleted;
   only the content rows above were.
   A JSON receipt of every deleted row was taken first.
@@ -144,9 +152,10 @@ caught it. The prod script inherits that check as a postcondition, not a hope.
 - **E1** — migrations 016–023 and 025–030 in order; assert each index `indisvalid=t` before
   proceeding. Census confirms prod is pre-016, so they apply fresh. **Annotation tables are EMPTY as of
   2026-07-28** (owner cleared highlights/notes/chats — see the census row above; the 2026-07-23
-  figures are historical). **`waitlist` and `channels` still hold live rows on prod** and are in the
+  figures are historical). **`waitlist` still holds live rows on prod; `channels` measured ZERO on
+  2026-08-01 (gate A2 — see the correction in the census section above)** and both are in the
   G1 inventory alongside the annotation tables. The preserve-these-rows assertions **stay exactly as
-  written**; annotations now hold at `0 == 0`, while waitlist/channels must not change. They are what
+  written**; annotations and `channels` now hold at `0 == 0`, while waitlist must not change. They are what
   protects the first real user, and the next run of this script may face one. The invariant asserted
   across every migration is a **per-table md5 digest over ordered rows** (id, owner where present,
   anchors, tombstone, body hash) plus the **active count** and the **owner distribution** (vacuous

@@ -122,5 +122,6 @@ model.
 **dev**. The extra two there are `C.F. Keil & Franz Delitzsch` and
 `Thomas Aquinas (comp.), trans. J.H. Newman`, admitted via the
 `SERVED_PROSE_WORKS` work leg — and neither of those works exists on production.
-The 11 is correct for dev and **wrong for prod**, which matters for any
-≥2-distinct-authors floor reasoning done against the prod pool.
+The 11 is correct for dev and does not describe prod — a fact of the
+measurement, presented here because any ≥2-distinct-authors floor reasoning done
+against the prod pool starts from the 9.
