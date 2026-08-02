@@ -71,3 +71,42 @@ works today. Mixing them would put a UI refactor inside the one operation this r
 narrow on purpose, and would mean a Deploy B that exists to carry unreviewed reader-facing work.
 Sequence: finish A8, then take item 1 (the Bible pane) as its own slice with a design doc, since
 it is the only one that changes the desk's data model.
+
+---
+
+## 4. RESULTS CANNOT BE OPENED — captured 2026-08-02, DELIBERATELY NOT DESIGNED
+
+Owner, thinking aloud and explicitly paused on the design:
+
+> "you still can't click into them, so while I can read them in that pane of glass, I can't open
+> them into a new work yet... If I click into it, there should be an ability to say 'open in
+> reader' while keeping that search open. Searches should persist with memory and history so I can
+> look through them. We should add those histories to study partners tabs, I think. I gotta really
+> think about how the UI functionality of this thing is gonna work. I'm kind of at a pause, but I
+> do know that we wanna click into things."
+
+Recorded as a REQUIREMENT and a set of open questions, not a design. The owner is mid-thought and
+said so; deciding this here would be answering a question that was not asked.
+
+**What is settled:**
+- A result in the answer pane is currently terminal. It can be read and nothing more.
+- Clicking a result must be able to **open it in the reader**.
+- Doing so must **not destroy the search**. The search stays; the work opens alongside.
+- Searches **persist** — history, revisitable, not lost on navigation.
+- That history probably belongs in the **study-partner tabs**.
+
+**What is open, and should stay open until the owner returns to it:**
+- Does "open in reader" mean the Bible passage the voice is anchored to, the voice's own work at
+  that section, or a choice between them? A quoted voice has both.
+- Is search history per-device or per-account? Per-account means a new user table, RLS, and a
+  retention decision; per-device means it does not follow the reader.
+- Does a persisted search store the query only, or the answer too? Storing answers means caching
+  generated output, which CLAUDE.md forbids from a pipeline below the accuracy bar and which
+  raises staleness once the corpus changes — as it just did.
+
+**THIS IS THE SAME PROBLEM AS UX-1, AND SHOULD BE SOLVED WITH IT.** "Open this in the reader
+without losing what I have" and "open the Bible beside a commentary" are one requirement wearing
+two hats: both need the desk to gain a pane from an arbitrary place in the app, and both need the
+pane model to hold Scripture as well as corpus works. Solving them separately would mean two
+routes into the desk with different rules, which is how the `+` affordance in item 2 became
+ambiguous in the first place. Whoever picks this up should take 1 and 4 as one slice.
