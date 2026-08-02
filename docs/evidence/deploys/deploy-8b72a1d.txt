@@ -1,0 +1,34 @@
+deployed_at_utc: 2026-08-02T02:25:05Z
+sha:             8b72a1d21f3cc6f013de124fb23d1ac249783200
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+url:             https://web-9dt3dwk5s-home-network-hardening.vercel.app
+
+── LIVE VERIFICATION, 2026-08-02, ancientpaths.app, authenticated session ──
+
+Bundle actually running: dpl_4MstGUEgDnC92deARGkQefCtFTBJ, read from the page's own script
+  src rather than from this receipt. That distinction mattered. The first console read after
+  the deploy returned three React #418 exceptions, every one carrying
+  `?dpl=dpl_CgPUJ9s7u5NFtr3FW6K4FoCkE1wp` — the PREVIOUS deployment, still live in the tab.
+  A fresh origin fetch (x-vercel-cache: MISS, age: 0) returned only the new id. Reporting
+  those three as "the fix did not work" would have been a false negative read off a stale
+  bundle. Confirm what is executing; do not infer it from a deploy receipt.
+
+STATE UNDER TEST — deliberately the one that used to throw: signed in (sidebar renders
+  "Sign out"), translation=kjv stored, reader-theme stored.
+
+HYDRATION   0 console errors, 0 exceptions on the new bundle.
+  Valid because console tracking was attached BEFORE the reload. The tool states its own
+  limitation — "Console tracking starts when this tool is first called" — which is exactly
+  why A7's X1 was an unearned green. Attach, then reload, then read. The detector is proven
+  live: it caught three real #418s on this same tab minutes earlier.
+
+THEME       stored 'light' while the OS prefers dark and next-themes had written `dark`:
+  htmlClass="dark", reader-dark absent, body background near-white — the reader's choice held
+  against the class that used to overwrite it. Stored 'dark': htmlClass="reader-dark dark",
+  body near-black. Both survive a reload.
+
+TRANSLATION KJV badge and KJV verse text, single fetch.
+
+Test values removed from localStorage afterwards; production left as found.

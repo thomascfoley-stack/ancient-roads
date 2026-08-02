@@ -166,7 +166,15 @@ VERCEL_PROJECT_ID="$EXPECT_PROJECT_ID" VERCEL_ORG_ID="$EXPECT_ORG_ID" \
 # from the question this repo has already answered wrong twice: what is actually live?
 DEPLOY_URL="$(grep -oE 'https://[a-z0-9-]+\.vercel\.app' /tmp/vercel-deploy.log | tail -1)"
 DEPLOY_SHA="$(git rev-parse HEAD)"
-mkdir -p docs/evidence/deploys
+# ANCHOR THE PATH AT THE REPO ROOT. This was a bare relative `docs/evidence/deploys`, written
+# AFTER `cd web` on line 75 — so every receipt since the first deploy landed in
+# `web/docs/evidence/deploys/`, inside the directory `vercel --prod` uploads. Two consequences,
+# both found 2026-08-02: MASTER's A6 row points readers at `evidence/deploys/` from the repo
+# root, where there was nothing; and each deploy shipped every previous deploy's receipt into
+# the deployment payload. Not served (it is outside web/public) and not sensitive, but not
+# intended either, and the upload grew with every release.
+EVIDENCE_DIR="$(git rev-parse --show-toplevel)/docs/evidence/deploys"
+mkdir -p "$EVIDENCE_DIR"
 {
   echo "deployed_at_utc: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "sha:             $DEPLOY_SHA"
@@ -174,7 +182,7 @@ mkdir -p docs/evidence/deploys
   echo "org:             $EXPECT_ORG_ID"
   echo "vercel_user:     $WHO"
   echo "url:             ${DEPLOY_URL:-'(not parsed — see /tmp/vercel-deploy.log)'}"
-} > "docs/evidence/deploys/deploy-${DEPLOY_SHA:0:7}.txt"
+} > "$EVIDENCE_DIR/deploy-${DEPLOY_SHA:0:7}.txt"
 echo ""
 echo "Recorded: docs/evidence/deploys/deploy-${DEPLOY_SHA:0:7}.txt"
 
