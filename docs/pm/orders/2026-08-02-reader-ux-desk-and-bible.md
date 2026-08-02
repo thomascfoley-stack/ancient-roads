@@ -19,11 +19,20 @@ Pressing `+` on an open commentary offers commentary / sermons / hymns. There is
 one pane a reader always wants — the text being commented ON — is the only thing the desk cannot
 show. Every other pane is a voice about a passage the reader cannot see.
 
-This is not a missing filter on a picker. The desk's pane model is built over the **corpus**
-(`sources` / `sections`), and Scripture is a different substrate: translations, verse ids, the
-reader at `/read/[book]/[chapter]`. Making the Bible a pane type means the desk has to hold two
-kinds of pane, or the Bible has to be expressible as one. That choice is the work; it should be
-made deliberately rather than by whichever is easier to bolt on.
+**CORRECTED 2026-08-02, after reading the code instead of assuming.** The paragraph here
+previously said this was a data-model problem — that the desk's panes are built over the corpus and
+Scripture is a different substrate needing a design decision. **That was wrong.** `lib/desk.ts`
+already defines TWO pane kinds: `kind: 'scripture'` (serialised `scripture:john/3`) and
+`kind: 'work'` (`work:spurgeon-sermons`), and `/desk` renders both today. The desk's own empty
+state advertises it: "a chapter of Scripture, a commentary on it, and a sermon, hymn, poem or
+history beside them."
+
+So this is a **picker gap, not a model gap**, and it is far cheaper than first filed. A Scripture
+pane can be opened right now by URL; what cannot be done is reaching one through the `+`, because
+that routes to `/library?desk=…` and the library offers catalogs of *works* only. The fix is a
+route into the Bible from the add-pane flow, not a new pane type.
+
+The open questions below still stand — they are about behaviour, not substrate.
 
 **Open questions for the design pass, not to be settled here:** does a Bible pane follow the
 reader's translation preference or carry its own? Does opening a commentary auto-open the passage
