@@ -1,0 +1,20 @@
+publish-flip — target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (credentials redacted)
+direction    staged -> published
+slugs        11 from docs/evidence/corpus-copy/devotionals.json
+! (node:24665) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+role         neondb_owner (asserted at the server)
+[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: [77Gpublish
+snapshot     docs/evidence/work-order-v2-stage2/flip-pre-snapshot-2026-08-02T22-59-22-268Z.json (54 rows, written before COMMIT)
+eligible     11 of 11 are 'staged' (the rest are already 'published')
+
+OK — gate held. 11 row(s) staged -> published.
+Reverse with: node scripts/publish-flip.mjs --slugs=docs/evidence/corpus-copy/devotionals.json --reverse --snapshot=docs/evidence/work-order-v2-stage2/flip-pre-snapshot-2026-08-02T22-59-22-268Z.json

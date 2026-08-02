@@ -65,6 +65,23 @@ async function survey(w) {
     if (r.status !== 200 && r.status !== 206) return { ...w, verdict: 'missing', detail: `HTTP ${r.status}` };
     const b = await r.text();
     const rights = (/<DC\.Rights[^>]*>([^<]{0,120})/i.exec(b)?.[1] ?? '').replace(/\s+/g, ' ').trim();
+
+    // THE EDITION YEAR, which license-manifest.ts requires on every entry (the edition-trap
+    // guard: a public-domain WORK must not be claimed while a modern EDITION is served).
+    //
+    // DC.Date is CCEL's own digitisation date — Calvin's Institutes reads 2002-08-31 — and is
+    // useless here. The real one is <printSourceInfo><published>, which ~40% of works carry.
+    //
+    // For the rest the AUTHOR'S DEATH YEAR is used, and recorded as such. That is a bound, not a
+    // print date, and calling it anything else would be the fabrication this guard exists to
+    // catch: an author cannot publish after dying, so it is a sound UPPER bound — which is
+    // precisely the direction the published-before-1930 rule needs. yearBasis carries the
+    // derivation so no reader mistakes one for the other.
+    const head = b.slice(0, (b.indexOf('</ThML.head>') + 12) || b.length);
+    const publishedEl = /<published[^>]*>([^<]{1,80})/i.exec(head)?.[1] ?? '';
+    const printYear = /\b(1[0-9]{3})\b/.exec(publishedEl)?.[1];
+    const year = printYear ? Number(printYear) : (w.authorDied ?? null);
+    const yearBasis = printYear ? 'printSourceInfo' : (w.authorDied ? 'authorDeathUpperBound' : 'none');
     const divs = (b.match(/<div[123]\b/g) ?? []).length;
     const pageImages = (b.match(/<img alt="Image of page/g) ?? []).length;
 
@@ -79,8 +96,8 @@ async function survey(w) {
     const usable = licence === 'Public Domain';
     // Structure only matters for a work we may actually use.
     const scans = pageImages > 15;
-    const verdict = !usable ? 'licence-blocked' : scans ? 'page-scans' : divs === 0 ? 'no-structure' : 'ingestable';
-    return { ...w, verdict, licence, licenceBasis, rights: rights || null, divs, pageImages };
+    const verdict = !usable ? 'licence-blocked' : year === null ? 'no-edition-year' : scans ? 'page-scans' : divs === 0 ? 'no-structure' : 'ingestable';
+    return { ...w, verdict, licence, licenceBasis, year, yearBasis, rights: rights || null, divs, pageImages };
   } catch (e) {
     return { ...w, verdict: 'error', detail: String(e.message).slice(0, 60) };
   }
