@@ -57,6 +57,10 @@ export function SidebarNavContent({
   const pathname = usePathname();
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
+  // See the sign-in/sign-out branch below: this exists solely to keep the first client render
+  // identical to the server's.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [sections, setSections] = useState<StudySection[] | null>(null);
   const [addingSection, setAddingSection] = useState(false);
 
@@ -112,7 +116,14 @@ export function SidebarNavContent({
             row={row}
             onNavigate={onNavigate}
           />
-          {session?.user ? (
+          {/* THE SERVER HAS NO SESSION, so it renders the signed-OUT branch; `useSession` resolves
+              only in the browser. Rendering the signed-IN branch on the client's first pass is a
+              server/client text mismatch ("Sign in" vs "Sign out") — a React #418 on every page
+              load carrying this sidebar, which is every page. Found by the A7b walk 2026-08-02.
+              `mounted` holds the first client render identical to the server's; the real session
+              takes over on the next one. The alternative — rendering nothing until mounted — is
+              the SAME bug, because the server still rendered a link. */}
+          {mounted && session?.user ? (
             <SidebarButton
               icon={<LogOutIcon />}
               label="Sign out"

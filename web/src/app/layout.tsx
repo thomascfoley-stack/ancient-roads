@@ -69,7 +69,19 @@ export default function RootLayout({
         />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var d=document.documentElement;if(localStorage.getItem('reader-theme')==='dark')d.classList.add('dark');var s=localStorage.getItem('reader-size');if(s)d.style.setProperty('--reading-size',s);}catch(e){}})();`,
+            // TWO FIXES, and the second is the one that mattered.
+            //
+            // (1) This was add-only: `if (stored === 'dark') add('dark')`, with no removal branch,
+            //     so it could only ever turn the theme ON. A "restore my preference" script that
+            //     cannot restore "light" is a one-way latch. Now it toggles.
+            // (2) It toggled `.dark`, a class next-themes owns (see globals.css). Measured: our
+            //     class was being stripped on every load. The marker is `.reader-dark` now, which
+            //     nothing else manages.
+            //
+            // Still inline and still in <head>: it must run BEFORE first paint or the reader sees
+            // a flash of the wrong theme. That is also why `<html suppressHydrationWarning>` is on
+            // the element below — this script mutates it before React arrives, by design.
+            __html: `(function(){try{var d=document.documentElement;var t=localStorage.getItem('reader-theme');d.classList.toggle('reader-dark',t==='dark');var s=localStorage.getItem('reader-size');if(s)d.style.setProperty('--reading-size',s);}catch(e){}})();`,
           }}
         />
       </head>

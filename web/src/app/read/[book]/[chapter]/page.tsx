@@ -35,14 +35,28 @@ interface ApiHighlight {
   translation: string | null;
 }
 
-function getStoredTranslation(): Translation {
-  if (typeof window === 'undefined') return TRANSLATIONS[0]!;
-  const stored = localStorage.getItem('translation');
-  if (stored) {
-    const found = TRANSLATIONS.find((t) => t.id === stored);
-    if (found) return found;
-  }
+/**
+ * The server's answer, and therefore the client's FIRST answer too.
+ *
+ * This used to be one `getStoredTranslation()` that read localStorage and was passed straight to
+ * `useState`. A `useState` initializer runs during the first client render, so the server rendered
+ * WEB and the browser immediately rendered the stored KJV — a server/client text mismatch at
+ * `reader-header.tsx`'s translation badge, which is a React #418 hydration error on EVERY reader
+ * page load. It threw in production from the day the feature shipped until 2026-08-02, and A7's
+ * "no console errors" check reported PASS over it, because that check read the console *after*
+ * navigating and the throw happens *during* the load. Found by the A7b walk.
+ *
+ * Hydration's rule is simple and absolute: the first client render must produce what the server
+ * produced. Anything read from localStorage is therefore forbidden until after mount.
+ */
+function defaultTranslation(): Translation {
   return TRANSLATIONS.find((t) => t.id === DEFAULT_TRANSLATION) ?? TRANSLATIONS[0]!;
+}
+
+/** The reader's saved choice. Client-only, applied after mount — never during render. */
+function storedTranslation(): Translation | undefined {
+  const stored = localStorage.getItem('translation');
+  return stored ? TRANSLATIONS.find((t) => t.id === stored) : undefined;
 }
 
 export default function ReaderPage() {
@@ -72,7 +86,16 @@ export default function ReaderPage() {
       router.replace(`/read/${canonicalSlug}/${params.chapter}`);
     }
   }, [canonicalSlug, bookSlug, params.chapter, router]);
-  const [translation, setTranslation] = useState<Translation>(getStoredTranslation);
+  const [translation, setTranslation] = useState<Translation>(defaultTranslation);
+  // `hydrated` gates the chapter fetch below. Without it the reader fetches the DEFAULT
+  // translation's chapter and then immediately re-fetches the stored one — two requests per page
+  // load for everyone who has ever changed translation, which is a real cost the naive fix adds.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    const stored = storedTranslation();
+    if (stored) setTranslation(stored);
+    setHydrated(true);
+  }, []);
   const [data, setData] = useState<ChapterData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [commentaryCache, setCommentaryCache] = useState<Map<string, CommentaryEntry[]>>(new Map());
@@ -103,13 +126,15 @@ export default function ReaderPage() {
       );
       return;
     }
+    // Wait for the stored translation to land, so this fires once with the right one.
+    if (!hydrated) return;
     setData(null);
     setError(null);
     setStudy(null);
     fetchChapter(fetchSlug, chapterNum, translation.id)
       .then(setData)
       .catch(() => setError('Failed to load chapter'));
-  }, [book, fetchSlug, chapterNum, translation]);
+  }, [book, fetchSlug, chapterNum, translation, hydrated]);
 
   // Prefetch commentary for the chapter.
   useEffect(() => {

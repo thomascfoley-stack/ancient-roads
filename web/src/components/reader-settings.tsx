@@ -11,9 +11,18 @@ export function ReaderSettings() {
   const [sizeIdx, setSizeIdx] = useState(DEFAULT_SIZE_IDX);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Sync initial state from what the no-flash script already applied.
+  // THE STORED PREFERENCE IS THE TRUTH, NOT THE CLASS.
+  //
+  // This read `classList.contains('dark')` — i.e. it asked the DOM what the page currently looks
+  // like and reported that back as "your setting". Anything else on the page that touches the
+  // `dark` class (a component library's own theme handling, an extension, the no-flash script
+  // before its removal branch existed) makes this control state something the reader never chose,
+  // and then a click "toggles" from a value that was never theirs. A7b walked it: choose Light,
+  // reload, the toggle reads Dark. `reader-theme` is what the reader actually picked; read that,
+  // and fall back to the class only when they have never picked anything.
   useEffect(() => {
-    setDark(document.documentElement.classList.contains('dark'));
+    const stored = localStorage.getItem('reader-theme');
+    setDark(stored ? stored === 'dark' : document.documentElement.classList.contains('reader-dark'));
     const cur = localStorage.getItem('reader-size');
     const idx = cur ? SIZES.indexOf(cur) : DEFAULT_SIZE_IDX;
     setSizeIdx(idx >= 0 ? idx : DEFAULT_SIZE_IDX);
@@ -30,7 +39,7 @@ export function ReaderSettings() {
 
   function applyDark(next: boolean) {
     setDark(next);
-    document.documentElement.classList.toggle('dark', next);
+    document.documentElement.classList.toggle('reader-dark', next);
     localStorage.setItem('reader-theme', next ? 'dark' : 'light');
   }
 

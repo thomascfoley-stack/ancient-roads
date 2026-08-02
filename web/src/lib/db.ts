@@ -47,13 +47,22 @@ export function getDb(): Sql {
 const BOOT_ATTEMPTS = 4;
 const BOOT_BACKOFF_MS = [200, 500, 1000];
 
-export async function assertAppRuntimeRole(sql: Sql = getDb()): Promise<void> {
+// THE DEV EARLY-RETURN BELOW WAS UNREACHABLE. This signature was `(sql: Sql = getDb())`, and a
+// default parameter is evaluated at CALL time, before the first line of the body — so `getDb()`
+// ran, threw "APP_DATABASE_URL or DATABASE_URL must be set", and took the whole boot hook (and
+// with it `next dev`) down in exactly the environment the `!isProd()` line exists to exempt. A
+// clone with no dev credentials could not start the app at all, which is how this was found
+// (2026-08-02, setting up a local server to verify the hydration fix). The parameter stays, so
+// db-boot-assert.test.ts can keep injecting a fake `sql`; it is just resolved lazily now, after
+// the guard that decides whether a database is needed at all.
+export async function assertAppRuntimeRole(sql?: Sql): Promise<void> {
   if (!isProd()) return;
+  const db = sql ?? getDb();
   let rows: { rolname: string; rolbypassrls: boolean }[] | undefined;
   let lastErr: unknown;
   for (let attempt = 0; attempt < BOOT_ATTEMPTS; attempt++) {
     try {
-      rows = (await sql`SELECT rolname, rolbypassrls FROM pg_roles WHERE rolname = current_user`) as {
+      rows = (await db`SELECT rolname, rolbypassrls FROM pg_roles WHERE rolname = current_user`) as {
         rolname: string;
         rolbypassrls: boolean;
       }[];
