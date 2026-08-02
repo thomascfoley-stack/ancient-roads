@@ -3,14 +3,14 @@
   "batch": "lexicons",
   "note": "held by owner ruling until the reference-pane UX ships",
   "excluded": [
-    "thayers-lexicon: withheld in the manifest (serve:false)"
+    "thayers-lexicon: withheld in the manifest (serve:false)",
+    "vincent-word-studies: not ingested on the source (0 sections)"
   ],
   "slugs": [
     "bdb-lexicon",
     "eastons-dictionary",
     "isbe",
     "naves-topical",
-    "smiths-dictionary",
-    "vincent-word-studies"
+    "smiths-dictionary"
   ]
 }

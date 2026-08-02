@@ -4,6 +4,7 @@
   "note": "theology + fathers + historians + lexicons in ONE gate answer; sermons excluded (037 first)",
   "excluded": [
     "thayers-lexicon: withheld in the manifest (serve:false)",
+    "vincent-word-studies: not ingested on the source (0 sections)",
     "josephus-works: withheld in the manifest (serve:false)",
     "edersheim-lifetimes: withheld in the manifest (serve:false)",
     "schaff-history: withheld in the manifest (serve:false)"
@@ -22,7 +23,6 @@
     "origen-commentary",
     "owen-works",
     "schaff-creeds",
-    "smiths-dictionary",
-    "vincent-word-studies"
+    "smiths-dictionary"
   ]
 }

@@ -60,12 +60,49 @@ const BATCHES = [
 const entries = Object.values(JSON.parse(fs.readFileSync(path.join(REPO, 'ingest/sources.config.json'), 'utf8')))
   .filter((e) => typeof e?.slug === 'string');
 
+// --verify-source: ask the SOURCE which of these works actually exists, instead of trusting that
+// a manifest entry implies ingested rows. `vincent-word-studies` is in the manifest, is perfectly
+// eligible by licence and provenance, and has ZERO sections on dev — so it rode into the
+// remaining-nonsermon batch and STOPped a 15-work copy of 109,328 sections at the gate on
+// 2026-08-02. The copier is right to refuse (a copy cannot invent rows) but the batch should
+// never have offered it, and the NOTE at the foot of this file had already said so.
+//
+// Read-only, one query, no credential printed. Without the flag the generator stays a pure
+// manifest tool that needs no database, which is why this is opt-in rather than always-on.
+const VERIFY = process.argv.includes('--verify-source');
+let onSource = null;
+if (VERIFY) {
+  const url = process.env.CORPUS_COPY_SOURCE_URL;
+  if (!url) {
+    console.error('--verify-source needs CORPUS_COPY_SOURCE_URL (the dev url)');
+    process.exit(2);
+  }
+  const { default: pg } = await import('pg');
+  const c = new pg.Client({
+    connectionString: url,
+    ssl: /localhost|127\.0\.0\.1/.test(url) ? false : { rejectUnauthorized: false },
+  });
+  await c.connect();
+  await c.query('BEGIN');
+  await c.query('SET TRANSACTION READ ONLY');
+  const rows = (
+    await c.query(`SELECT src.slug, count(s.id)::int AS n
+                     FROM sources src LEFT JOIN sections s ON s.source_id = src.id
+                    GROUP BY src.slug`)
+  ).rows;
+  await c.query('ROLLBACK');
+  await c.end();
+  onSource = new Map(rows.map((r) => [r.slug, r.n]));
+  console.log(`verified against the source: ${onSource.size} work(s) present`);
+}
+
 /** Why this work cannot be copied, or null if it can. */
 function ineligible(e) {
   if (e.serve === false) return 'withheld in the manifest (serve:false)';
   if (!isAllowedLicense(e.license)) return `licence "${e.license}" is not permitted`;
   const d = forbiddenProvenanceDomain(String(e.provenance?.url ?? ''));
   if (d) return `provenance is ${d} (ADR-008)`;
+  if (onSource && (onSource.get(e.slug) ?? 0) === 0) return 'not ingested on the source (0 sections)';
   return null;
 }
 

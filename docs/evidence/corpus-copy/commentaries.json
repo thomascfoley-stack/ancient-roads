@@ -3,22 +3,22 @@
   "batch": "commentaries",
   "note": "ALREADY on production — listed for completeness only",
   "excluded": [
-    "barnes-notes: provenance is biblehub.com (ADR-008)"
+    "barnes-notes: provenance is biblehub.com (ADR-008)",
+    "spurgeon-treasury: not ingested on the source (0 sections)",
+    "ryle-expository: not ingested on the source (0 sections)",
+    "barnes-crosswire-nt: not ingested on the source (0 sections)",
+    "wesley-crosswire: not ingested on the source (0 sections)",
+    "calvin-crosswire: not ingested on the source (0 sections)",
+    "scofield-crosswire: not ingested on the source (0 sections)",
+    "pnt-crosswire: not ingested on the source (0 sections)",
+    "geneva-notes-crosswire: not ingested on the source (0 sections)",
+    "poole-tcp: not ingested on the source (0 sections)"
   ],
   "slugs": [
     "adam-clarke",
-    "barnes-crosswire-nt",
-    "calvin-crosswire",
-    "geneva-notes-crosswire",
     "jfb",
     "john-gill",
     "keil-delitzsch",
-    "matthew-henry",
-    "pnt-crosswire",
-    "poole-tcp",
-    "ryle-expository",
-    "scofield-crosswire",
-    "spurgeon-treasury",
-    "wesley-crosswire"
+    "matthew-henry"
   ]
 }
