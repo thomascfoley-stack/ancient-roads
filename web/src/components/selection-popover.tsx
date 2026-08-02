@@ -225,11 +225,12 @@ export function SelectionPopover({
             {divider}
             {actionButtons}
           </div>
-          <div className="mt-2 flex items-center gap-1.5 px-0.5">
-            {copyChip('styled', 'Copy styled')}
-            {copyChip('lines', 'Copy lines')}
-            {copyChip('text', 'Text only')}
-          </div>
+          {/* ONE copy action. Three chips ("Copy styled" / "Copy lines" / "Text only") made the
+              reader choose a clipboard format before they had copied anything, which is a
+              preference, not a decision worth a third of the toolbar. `styled` is the one that
+              carries the attribution, and an unattributed quote is the failure this product
+              exists to prevent, so it is the only sensible default. */}
+          <div className="mt-2 flex items-center gap-1.5 px-0.5">{copyChip('styled', 'Copy')}</div>
         </div>
       </div>
 
@@ -245,9 +246,7 @@ export function SelectionPopover({
           {divider}
           {actionButtons}
           {divider}
-          {copyChip('styled', 'Styled')}
-          {copyChip('lines', 'Lines')}
-          {copyChip('text', 'Text')}
+          {copyChip('styled', 'Copy')}
         </div>
       </div>
     </>,
