@@ -98,6 +98,65 @@ than exists; the browser run above is the only proof of the user-facing behaviou
 - Two files in the working tree are NOT part of this commit and were not authored here:
   `web/next-env.d.ts` (a `next dev` artifact, also modified in both worktrees) and
   `src/ingest/register-writer.ts` (substantial ingest work that appeared mid-session).
+## 2026-08-02 (QA plan audit + two design docs: study plans, workspace artifacts)
+
+**Headline: a product-owner QA plan was audited against the tree, and three of its sections test
+features that do not exist. Separately, two design docs were filed for the plan builder and for Ask
+history.** No feature code was written. Both docs are DESIGN, not approval to build.
+
+### DONE
+
+- **`docs/STUDY_PLANS_DESIGN.md`** — plan builder, schedule generation, coverage gating, `.ics`
+  delivery. Settles that the model emits only a `PlanSpec` and code does the arithmetic
+  (`PRODUCT_ARCHITECTURE.md:38`); that the schedule needs tests rather than a verifier (the
+  `today.ts` precedent, no generation on that path); and that admission is checked at RENDER, so a
+  quarantine ruling reaches stored plans instead of being frozen at build time. Proposes
+  `verse_coverage`, a derived table that also removes the embed + four vector queries
+  `hasPassageCoverage` currently pays *before* deciding there is no coverage. Four owner decisions,
+  proposed ADR-045.
+- **`docs/WORKSPACE_ARTIFACTS_DESIGN.md`** — Ask history stores citations, never generated text.
+  Answers one of UX-4's three open questions ("does a stored search keep the answer": no) and
+  deliberately leaves the other two, since the owner paused on them on purpose. Corrects an earlier
+  draft that called this a Study and reached for `study_guides`: it is Workspace Paths, mode 2, and
+  `study_guides` is mode 3's table with an FK to a table the architecture doc is retiring. Three
+  owner decisions, proposed ADR-046.
+- A QA plan revision (every section mapped to a test type, numeric performance budgets, new corpus /
+  AI-surface / tenancy / mobile sections, a Playwright harness and a pre-deploy gate) lives in the
+  session scratchpad and is **NOT in the repo**. Per bylaw 1 it is therefore not issued. Filing it
+  is a separate decision, because it overlaps `docs/QA_HARNESS_DESIGN.md`, whose Layer 4 has been
+  specified and unbuilt since before the first deploy.
+
+### FOUND
+
+- Three sections of the QA plan test features that do not exist: a word-click lexicon popup on
+  running Scripture (the text is not tokenized; word lookup lives in the interlinear, which replaces
+  the English), a side-by-side commentary pane in the reader (auxiliaries are full-viewport bottom
+  sheets; `/desk` is a separate route with two inbound links, neither from `/read`), and Bible
+  full-text search (there is none anywhere).
+- `omnibox.tsx:48-54` drops the verse anchor, so "John 3:16" lands on John 3:1, while
+  `verse-link.ts:19-23` already implements it correctly and has one call site. `ask-client.tsx:56-59`
+  holds a second divergent copy that additionally falls back to `'jhn'` on an unresolvable book
+  number, so a bad citation links plausibly to the wrong book. Handed to a background session.
+- Every annotation write in `read/[book]/[chapter]/page.tsx` is fire-and-forget with a swallowed
+  error, so on a lossy connection a highlight paints, never persists, and is gone on reload with no
+  message. Handed to a background session.
+- `barnes-notes` is `staged` in `sources` while 21,036 rows under that author still serve from
+  `commentary_entries`, which never joins `sources`. Already recorded at `legal-corpus.ts:74-78`;
+  restated because it is the highest-severity item the QA plan had no section for at all.
+- No registered restore point postdates A8. The only protected branch is 2026-07-29; 30 works
+  published 2026-08-02.
+
+### NOT DONE / UNVERIFIED
+
+- No feature code, no migration, no ADR written into `docs/DECISIONS.md`. ADR-045 and ADR-046 are
+  proposed text inside the design docs, awaiting a ruling.
+- `npm run audit` NOT run. Docs-only tranche, per bylaw 6 (scale rigour to blast radius).
+- The audits behind these docs ran at `517f4fc`. `main` reached `76bf392` during the work, and
+  `79494d4`+`76bf392` **superseded one finding**: the work TOC no longer uses correlated subqueries,
+  it groups to one row per unit in SQL (measured 1,436 ms to 844 ms on spurgeon-sermons). The
+  correlated pattern survives on the sections paging path via `VERSE_RANGE_COLS`. Nothing else was
+  re-measured after `76bf392`.
+- Neither design doc has been read by anyone but its author. Bylaw 4: fixer is not verifier.
 ## 2026-08-02 (study toolkit: the selection popover as a gathering surface — DESIGN)
 
 **Headline: the owner's sketch is buildable, but the one thing it asks for most directly is not.**
