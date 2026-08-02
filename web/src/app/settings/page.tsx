@@ -1,13 +1,20 @@
-import { ComingSoon } from '@/components/coming-soon';
+import { SettingsForm } from './settings-form';
 
 export const metadata = { title: 'Settings' };
 
+// Was a ComingSoon stub behind a first-class nav entry, whose own copy promised the three controls
+// below "will live here" (A7b walk, 2026-08-02). They already existed in the reader; what was
+// missing was this page. See settings-form.tsx for why none of the logic is duplicated here.
 export default function SettingsPage() {
   return (
-    <ComingSoon
-      title="Settings"
-      description="Preferences for your default translation, reading theme, and account will live here. In the meantime, your translation choice is remembered as you read."
-      cta={{ label: 'Go to the reader →', href: '/read/jhn/1' }}
-    />
+    <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6">
+      <header className="mb-6">
+        <h1 className="font-scripture text-3xl font-medium text-stone-800 dark:text-stone-100">Settings</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-500 dark:text-stone-400">
+          How the text reads, and which translation a chapter opens in. Saved on this device.
+        </p>
+      </header>
+      <SettingsForm />
+    </div>
   );
 }

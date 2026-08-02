@@ -1,8 +1,17 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { AuthView } from '@neondatabase/auth/react';
+import { currentUser } from '@/lib/session';
 
 export const dynamicParams = false;
+
+// Paths that only make sense to someone who is NOT signed in. A signed-in reader who reached
+// /auth/sign-in was served a full login form with "Sign out" visible in the same viewport (A7b
+// walk, 2026-08-02) — an invitation to do the thing they had already done, next to the control
+// that undoes it. Sign-OUT and the password-reset flows are deliberately absent from this list:
+// those are reachable and useful while signed in.
+const SIGNED_OUT_ONLY = new Set(['sign-in', 'sign-up']);
 
 export default async function AuthPage({
   params,
@@ -10,6 +19,11 @@ export default async function AuthPage({
   params: Promise<{ path: string }>;
 }) {
   const { path } = await params;
+  // Redirect rather than render an alternative: a signed-in reader on a sign-in URL almost always
+  // arrived by a stale link or the back button, and the useful outcome is to be where they were
+  // going. `/home` is the signed-in landing, not `/`, which is the marketing page.
+  if (SIGNED_OUT_ONLY.has(path) && (await currentUser())) redirect('/home');
+
   return (
     <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-5 py-10 sm:px-6 sm:py-12">
       <Image
