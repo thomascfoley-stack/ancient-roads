@@ -95,12 +95,18 @@ for (const w of limit > 0 ? ingestable.slice(0, limit) : ingestable) {
   const title = w.title.replace(/&#0?39;/g, "'").replace(/&amp;/g, '&').replace(/&quot;/g, '"');
   entries.push({
     id: slug, slug, title,
-    author: w.author, author_died: w.authorDied ?? null, year_written: null,
+    author: w.author, author_died: w.authorDied ?? null, year_written: w.year ?? null,
     source_type: type, tradition: 'unassigned', era: 'unassigned',
     license: w.licence, tier: 3,
     provenance: {
       url: `https://www.ccel.org/ccel/${w.id}`,
       edition: `${title} (CCEL)`,
+      // REQUIRED by license-manifest.ts's edition-trap guard. `year_basis` travels with it so the
+      // two sources are never confused: 'printSourceInfo' is CCEL's stated print year;
+      // 'authorDeathUpperBound' is a bound, used where CCEL states none, and sound for the
+      // licensing question because nobody publishes after dying.
+      year: w.year,
+      year_basis: w.yearBasis,
       licence_basis: w.licenceBasis,
       acquire: { adapter: 'ccel', ccel_ids: [w.id], strip_markup: true },
     },
