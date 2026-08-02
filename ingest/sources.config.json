@@ -14,9 +14,9 @@
       "url": "https://biblehub.com/commentaries/barnes/",
       "edition": "Barnes' Notes on the Bible (Albert Barnes)",
       "year": 1834,
-      "retrieved_via": "biblehub aggregator — text is public domain (Barnes d. 1870); re-source from CrossWire/PD per ADR-008 before wide rollout"
+      "retrieved_via": "biblehub aggregator \u2014 text is public domain (Barnes d. 1870); re-source from CrossWire/PD per ADR-008 before wide rollout"
     },
-    "quarantine": "biblehub provenance (ADR-008 forbidden aggregator) — held until re-sourced from a permitted PD source per docs/RESOURCING_PLAN.md; text is PD so re-sourcing should be a $0 provenance-repair (existing vectors kept if the permitted text matches)",
+    "quarantine": "biblehub provenance (ADR-008 forbidden aggregator) \u2014 held until re-sourced from a permitted PD source per docs/RESOURCING_PLAN.md; text is PD so re-sourcing should be a $0 provenance-repair (existing vectors kept if the permitted text matches)",
     "backfill": {
       "match_author": "Barnes' Notes"
     }
@@ -187,7 +187,7 @@
     "tier": 1,
     "provenance": {
       "url": "https://bible.helloao.org/api/c/keil-delitzsch",
-      "edition": "K&D, T&T Clark English trans. (helloao, CC Public Domain Mark 1.0) — complete OT",
+      "edition": "K&D, T&T Clark English trans. (helloao, CC Public Domain Mark 1.0) \u2014 complete OT",
       "year": 1866,
       "license_ref": "CC Public Domain Mark 1.0",
       "acquire": {
@@ -338,7 +338,7 @@
       }
     },
     "serve": false,
-    "quarantine": "A6 run 2026-07-17: archive.org OCR headword recognizability 50.2% fuzzy / 6.2% strict, 0% Greek script (Latin-script OCR) — systemic across 3 scans, keys unrecoverable. Path forward: TEI-XML/structured Thayer keyed by Strong's, or Greek re-OCR. NOT a parser problem."
+    "quarantine": "A6 run 2026-07-17: archive.org OCR headword recognizability 50.2% fuzzy / 6.2% strict, 0% Greek script (Latin-script OCR) \u2014 systemic across 3 scans, keys unrecoverable. Path forward: TEI-XML/structured Thayer keyed by Strong's, or Greek re-OCR. NOT a parser problem."
   },
   {
     "id": "bdb-lexicon",
@@ -356,7 +356,7 @@
       "url": "https://github.com/openscriptures/HebrewLexicon",
       "edition": "BDB via openscriptures/HebrewLexicon (BrownDriverBriggs.xml)",
       "year": 1906,
-      "license_ref": "CC BY 4.0 — attribution required (openscriptures)",
+      "license_ref": "CC BY 4.0 \u2014 attribution required (openscriptures)",
       "acquire": {
         "adapter": "github",
         "repo": "openscriptures/HebrewLexicon",
@@ -464,7 +464,7 @@
     "tier": 2,
     "provenance": {
       "url": "https://www.ccel.org/ccel/schaff",
-      "edition": "NPNF-1, Schaff 1886-89 (CCEL, re-provenance) — completes the partial Chrysostom ingest",
+      "edition": "NPNF-1, Schaff 1886-89 (CCEL, re-provenance) \u2014 completes the partial Chrysostom ingest",
       "year": 1889,
       "acquire": {
         "adapter": "ccel",
@@ -494,7 +494,7 @@
     "tier": 2,
     "provenance": {
       "url": "https://www.ccel.org/ccel/schaff",
-      "edition": "NPNF-1 vols 6-8, Schaff 1888 (CCEL, re-provenance) — completes the partial Augustine ingest",
+      "edition": "NPNF-1 vols 6-8, Schaff 1888 (CCEL, re-provenance) \u2014 completes the partial Augustine ingest",
       "year": 1888,
       "acquire": {
         "adapter": "ccel",
@@ -638,7 +638,7 @@
     "tier": 2,
     "provenance": {
       "url": "https://www.ccel.org/ccel/wesley",
-      "edition": "Wesley Standard Sermons, CCEL (Sugden/Jackson — NOT Abingdon critical ed.)",
+      "edition": "Wesley Standard Sermons, CCEL (Sugden/Jackson \u2014 NOT Abingdon critical ed.)",
       "year": 1771,
       "acquire": {
         "adapter": "ccel",
@@ -761,7 +761,7 @@
     "tier": 2,
     "provenance": {
       "url": "https://www.ccel.org/ccel/schaff",
-      "edition": "Schaff, Creeds of Christendom (CCEL) — the whole confessional corpus in vol III",
+      "edition": "Schaff, Creeds of Christendom (CCEL) \u2014 the whole confessional corpus in vol III",
       "year": 1877,
       "acquire": {
         "adapter": "ccel",
@@ -787,10 +787,10 @@
     "license": "Public Domain",
     "tier": 2,
     "serve": false,
-    "note": "STAGED not served — no history read-path yet (HISTORY_RETRIEVAL_DESIGN)",
+    "note": "STAGED not served \u2014 no history read-path yet (HISTORY_RETRIEVAL_DESIGN)",
     "provenance": {
       "url": "https://www.ccel.org/ccel/josephus/complete",
-      "edition": "Josephus, Whiston 1737 (CCEL, NOT Loeb) — Antiquities 20 books + Wars 7",
+      "edition": "Josephus, Whiston 1737 (CCEL, NOT Loeb) \u2014 Antiquities 20 books + Wars 7",
       "year": 1737,
       "acquire": {
         "adapter": "ccel",
@@ -815,7 +815,7 @@
     "license": "Public Domain",
     "tier": 2,
     "serve": false,
-    "note": "STAGED not served — no history read-path yet",
+    "note": "STAGED not served \u2014 no history read-path yet",
     "provenance": {
       "url": "https://www.ccel.org/ccel/edersheim/lifetimes",
       "edition": "Edersheim, Life and Times (CCEL)",
@@ -843,10 +843,10 @@
     "license": "Public Domain",
     "tier": 2,
     "serve": false,
-    "note": "STAGED not served — chunk on Schaff's dated section headings (HISTORY_RETRIEVAL_DESIGN)",
+    "note": "STAGED not served \u2014 chunk on Schaff's dated section headings (HISTORY_RETRIEVAL_DESIGN)",
     "provenance": {
       "url": "https://www.ccel.org/ccel/schaff",
-      "edition": "Schaff, History of the Christian Church, 8 vols (CCEL) — dated section headings",
+      "edition": "Schaff, History of the Christian Church, 8 vols (CCEL) \u2014 dated section headings",
       "year": 1882,
       "acquire": {
         "adapter": "ccel",
@@ -872,7 +872,7 @@
     "note": "requires additive migration adding 'hymn' to source_type CHECK",
     "provenance": {
       "url": "https://www.ccel.org/ccel/newton/olneyhymns",
-      "edition": "Olney Hymns 1779 (CCEL) — Book I is Scripture-indexed",
+      "edition": "Olney Hymns 1779 (CCEL) \u2014 Book I is Scripture-indexed",
       "year": 1779,
       "acquire": {
         "adapter": "ccel",
@@ -896,10 +896,10 @@
     "license": "Public Domain",
     "tier": 2,
     "text_only": true,
-    "note": "metrical psalms map 1:1 to Psalm chapters — highest verse-anchor value; tag as paraphrase-voice, never Scripture text",
+    "note": "metrical psalms map 1:1 to Psalm chapters \u2014 highest verse-anchor value; tag as paraphrase-voice, never Scripture text",
     "provenance": {
       "url": "https://www.ccel.org/ccel/anonymous/scotpsalter",
-      "edition": "Scottish Metrical Psalter 1650 (CCEL, per-psalm) — complete 1-150",
+      "edition": "Scottish Metrical Psalter 1650 (CCEL, per-psalm) \u2014 complete 1-150",
       "year": 1650,
       "acquire": {
         "adapter": "ccel",
@@ -953,7 +953,7 @@
     "text_only": true,
     "provenance": {
       "url": "https://www.ccel.org/ccel/bramley/carols",
-      "edition": "Christmas Carols New and Old, 1871 (CCEL) — text only, skip tunes",
+      "edition": "Christmas Carols New and Old, 1871 (CCEL) \u2014 text only, skip tunes",
       "year": 1871,
       "acquire": {
         "adapter": "ccel",
@@ -964,7 +964,7 @@
       }
     },
     "serve": false,
-    "quarantine": "A6 run 2026-07-17: no clean-text source — CCEL serves HTML landing (no ThML); all 5 archive.org copies are engraved-music editions, 27-31% OCR-garbage lines (>5% guardrail), engraved titles unrecoverable"
+    "quarantine": "A6 run 2026-07-17: no clean-text source \u2014 CCEL serves HTML landing (no ThML); all 5 archive.org copies are engraved-music editions, 27-31% OCR-garbage lines (>5% guardrail), engraved titles unrecoverable"
   },
   {
     "id": "herbert-temple",
@@ -982,7 +982,7 @@
     "note": "requires additive migration adding 'poetry' to source_type CHECK; ~167 poems; shaped poems need layout-aware ingest",
     "provenance": {
       "url": "https://archive.org/details/temple00herb_0",
-      "edition": "Herbert, The Temple (1633) — Cassell's National Library ed., London/New York: Cassell, 1887 (archive.org temple00herb_0; PG has no edition)",
+      "edition": "Herbert, The Temple (1633) \u2014 Cassell's National Library ed., London/New York: Cassell, 1887 (archive.org temple00herb_0; PG has no edition)",
       "year": 1633,
       "acquire": {
         "adapter": "gutenberg",
@@ -1056,7 +1056,7 @@
     "license": "Public Domain",
     "tier": 2,
     "text_only": true,
-    "note": "138/150 Psalms; interpretive imitation — tag as paraphrase-voice",
+    "note": "138/150 Psalms; interpretive imitation \u2014 tag as paraphrase-voice",
     "provenance": {
       "url": "https://www.gutenberg.org/ebooks/13166",
       "edition": "Watts, Psalms of David Imitated (Gutenberg #13166, clean)",
@@ -1080,7 +1080,7 @@
     "license": "Public Domain",
     "tier": 2,
     "text_only": true,
-    "note": "each poem headed by a Scripture epigraph — natural verse anchor",
+    "note": "each poem headed by a Scripture epigraph \u2014 natural verse anchor",
     "provenance": {
       "url": "https://www.gutenberg.org/ebooks/4272",
       "edition": "Keble, The Christian Year (Gutenberg #4272, clean)",
@@ -1179,7 +1179,7 @@
     "license": "Public Domain",
     "tier": 2,
     "text_only": true,
-    "note": "Paradise Lost (Gen 1-3), Paradise Regained (Matt/Luke 4), Samson (Judges) — verse-anchor by subject",
+    "note": "Paradise Lost (Gen 1-3), Paradise Regained (Matt/Luke 4), Samson (Judges) \u2014 verse-anchor by subject",
     "provenance": {
       "url": "https://www.gutenberg.org/ebooks/1745",
       "edition": "Milton, Poetical Works, Beeching 1900 (Gutenberg #1745)",
@@ -1205,7 +1205,7 @@
     "text_only": true,
     "provenance": {
       "url": "https://www.gutenberg.org/ebooks/77809",
-      "edition": "Rossetti, Verses — New York: E. & J. B. Young & Co., 1894 (Gutenberg #77809)",
+      "edition": "Rossetti, Verses \u2014 New York: E. & J. B. Young & Co., 1894 (Gutenberg #77809)",
       "year": 1893,
       "acquire": {
         "adapter": "gutenberg",
@@ -1227,7 +1227,7 @@
     "license": "Public Domain",
     "tier": 2,
     "text_only": true,
-    "note": "ONLY the 1918 first ed. (Bridges) is PD — never Gardner/MacKenzie critical eds",
+    "note": "ONLY the 1918 first ed. (Bridges) is PD \u2014 never Gardner/MacKenzie critical eds",
     "provenance": {
       "url": "https://www.gutenberg.org/ebooks/22403",
       "edition": "Hopkins, Poems, Bridges 1918 first ed. (Gutenberg #22403)",
@@ -1274,7 +1274,7 @@
     "license": "Public Domain",
     "tier": 2,
     "text_only": true,
-    "note": "PD translation (Longfellow 1867) — NEVER Binyon (1933-43, copyright)",
+    "note": "PD translation (Longfellow 1867) \u2014 NEVER Binyon (1933-43, copyright)",
     "provenance": {
       "url": "https://www.gutenberg.org/ebooks/1004",
       "edition": "Dante, Divine Comedy, Longfellow 1867 (Gutenberg #1004)",
@@ -1322,7 +1322,7 @@
     "tier": 2,
     "provenance": {
       "url": "https://www.gutenberg.org/ebooks/68976",
-      "edition": "Whitefield, Works 1771 (Gutenberg #68976) — NOT the 1960 Banner journals",
+      "edition": "Whitefield, Works 1771 (Gutenberg #68976) \u2014 NOT the 1960 Banner journals",
       "year": 1771,
       "acquire": {
         "adapter": "gutenberg",
@@ -1330,7 +1330,7 @@
       }
     },
     "serve": false,
-    "quarantine": "A6 run 2026-07-18: PG 68976 is only Vol 1 of 6 and mixes letters/sermons/tracts with no clean sermon-boundary markers — needs a multi-volume sermon-segmentation profile. Follow-up."
+    "quarantine": "A6 run 2026-07-18: PG 68976 is only Vol 1 of 6 and mixes letters/sermons/tracts with no clean sermon-boundary markers \u2014 needs a multi-volume sermon-segmentation profile. Follow-up."
   },
   {
     "id": "barnes-crosswire-nt",
@@ -1357,7 +1357,7 @@
     "backfill": {
       "match_author": "Barnes' Notes",
       "forbidden_provenance": "skip",
-      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,300 flat rows under this author are biblehub's, not the CrossWire module this entry names — and the author string is shared with the QUARANTINED barnes-notes entry, so slicing here would relabel quarantined content into a non-quarantined slug. Nothing is written until the owner rules: re-ingest from the named CrossWire edition, or quarantine this entry too."
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN \u00a72): ALL 1,300 flat rows under this author are biblehub's, not the CrossWire module this entry names \u2014 and the author string is shared with the QUARANTINED barnes-notes entry, so slicing here would relabel quarantined content into a non-quarantined slug. Nothing is written until the owner rules: re-ingest from the named CrossWire edition, or quarantine this entry too."
     }
   },
   {
@@ -1385,7 +1385,7 @@
     "backfill": {
       "match_author": "John Wesley",
       "forbidden_provenance": "exclude",
-      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): 1,021 of 6,275 flat rows (16.3%) carry biblehub provenance; the 5,254 CrossWire rows are clean. The exclusion is strictly subtractive, counted on the sources row, and does not declare the work legitimate — the cleanup of the flat store stays the deferred b2 slice."
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN \u00a72): 1,021 of 6,275 flat rows (16.3%) carry biblehub provenance; the 5,254 CrossWire rows are clean. The exclusion is strictly subtractive, counted on the sources row, and does not declare the work legitimate \u2014 the cleanup of the flat store stays the deferred b2 slice."
     }
   },
   {
@@ -1413,7 +1413,7 @@
     "backfill": {
       "match_author": "John Calvin",
       "forbidden_provenance": "exclude",
-      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): 1,125 of 6,215 flat rows (18.1%) carry biblehub provenance; 5,088 CrossWire + 2 books.google rows are clean. The exclusion is strictly subtractive, counted on the sources row, and does not declare the work legitimate — the cleanup of the flat store stays the deferred b2 slice."
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN \u00a72): 1,125 of 6,215 flat rows (18.1%) carry biblehub provenance; 5,088 CrossWire + 2 books.google rows are clean. The exclusion is strictly subtractive, counted on the sources row, and does not declare the work legitimate \u2014 the cleanup of the flat store stays the deferred b2 slice."
     }
   },
   {
@@ -1429,7 +1429,7 @@
     "license": "Public Domain",
     "provenance": {
       "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=Scofield",
-      "edition": "Scofield Reference Notes 1917 Edition (CrossWire SWORD module Scofield, OSIS, KJV v11n) — pre-1929 US PD",
+      "edition": "Scofield Reference Notes 1917 Edition (CrossWire SWORD module Scofield, OSIS, KJV v11n) \u2014 pre-1929 US PD",
       "year": 1917,
       "license_ref": "module .conf DistributionLicense=Public Domain, verified 2026-07-16",
       "rebuild": {
@@ -1441,7 +1441,7 @@
     "backfill": {
       "match_author": "C.I. Scofield",
       "forbidden_provenance": "skip",
-      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,215 flat rows are biblehub's — the CrossWire edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named edition, or quarantine this entry."
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN \u00a72): ALL 1,215 flat rows are biblehub's \u2014 the CrossWire edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named edition, or quarantine this entry."
     }
   },
   {
@@ -1469,7 +1469,7 @@
     "backfill": {
       "match_author": "B.W. Johnson",
       "forbidden_provenance": "skip",
-      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 288 flat rows are biblehub's — the CrossWire edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named edition, or quarantine this entry."
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN \u00a72): ALL 288 flat rows are biblehub's \u2014 the CrossWire edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named edition, or quarantine this entry."
     }
   },
   {
@@ -1487,7 +1487,7 @@
       "edition": "Geneva Bible Translation Notes (CrossWire SWORD module Geneva)",
       "year": 1599
     },
-    "quarantine": "CrossWire module .conf has NO DistributionLicense and the module page lists it as null — no license grant to rely on (fail closed 2026-07-16). Text is 1599 (PD-in-fact); held until the owner rules or a licensed PD edition is found. Old biblehub-collapsed rows quarantined to data/quarantine/, never served."
+    "quarantine": "CrossWire module .conf has NO DistributionLicense and the module page lists it as null \u2014 no license grant to rely on (fail closed 2026-07-16). Text is 1599 (PD-in-fact); held until the owner rules or a licensed PD edition is found. Old biblehub-collapsed rows quarantined to data/quarantine/, never served."
   },
   {
     "id": "poole-tcp",
@@ -1502,9 +1502,9 @@
     "license": "Public Domain",
     "provenance": {
       "url": "https://github.com/textcreationpartnership/A55363",
-      "edition": "Annotations upon the Holy Bible, London 1685 (Vol I, A55363, Gen–Isa) + 1685–96 continuation (Vol II, A55368, Jer–Rev, completed posthumously by other divines) — EEBO-TCP Phase I keyboarded transcription",
+      "edition": "Annotations upon the Holy Bible, London 1685 (Vol I, A55363, Gen\u2013Isa) + 1685\u201396 continuation (Vol II, A55368, Jer\u2013Rev, completed posthumously by other divines) \u2014 EEBO-TCP Phase I keyboarded transcription",
       "year": 1685,
-      "license_ref": "CC0 1.0 Universal — grant verbatim in each TEI header (creativecommons.org/publicdomain/zero/1.0), verified 2026-07-16",
+      "license_ref": "CC0 1.0 Universal \u2014 grant verbatim in each TEI header (creativecommons.org/publicdomain/zero/1.0), verified 2026-07-16",
       "rebuild": {
         "source": "eebo-tcp",
         "ids": [
@@ -1513,12 +1513,12 @@
         ],
         "decoder": "src/ingest/poole-tcp.ts"
       },
-      "quality_note": "TCP Phase I vs damaged microfilm: ~7 illegibility gaps/1000 words preserved as ⟨…⟩ lacunae (16% of Vol I entries, 33% of Vol II entries carry at least one); Lev 11 annotations lost to a damaged chapter head; canon validation drops <0.25% miskeyed entries"
+      "quality_note": "TCP Phase I vs damaged microfilm: ~7 illegibility gaps/1000 words preserved as \u27e8\u2026\u27e9 lacunae (16% of Vol I entries, 33% of Vol II entries carry at least one); Lev 11 annotations lost to a damaged chapter head; canon validation drops <0.25% miskeyed entries"
     },
     "backfill": {
       "match_author": "Matthew Poole",
       "forbidden_provenance": "skip",
-      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,308 flat rows are biblehub's — the TCP edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named TCP transcription, or quarantine this entry."
+      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN \u00a72): ALL 1,308 flat rows are biblehub's \u2014 the TCP edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named TCP transcription, or quarantine this entry."
     }
   },
   {
@@ -1557,13 +1557,263 @@
     "license": "Public Domain",
     "provenance": {
       "url": "https://www.gutenberg.org/ebooks/42518",
-      "edition": "Talks to Farmers (Farm Sermons), C. H. Spurgeon — Project Gutenberg #42518 plain text",
+      "edition": "Talks to Farmers (Farm Sermons), C. H. Spurgeon \u2014 Project Gutenberg #42518 plain text",
       "year": 1882,
-      "license_ref": "Project Gutenberg — US public domain (author d. 1892, pre-1929 work), verified 2026-07-16",
+      "license_ref": "Project Gutenberg \u2014 US public domain (author d. 1892, pre-1929 work), verified 2026-07-16",
       "rebuild": {
         "source": "gutenberg",
         "id": 42518,
         "decoder": "src/ingest/ingest-sermon.ts"
+      }
+    }
+  },
+  {
+    "id": "spurgeon-morning-evening",
+    "slug": "spurgeon-morning-evening",
+    "title": "Morning and Evening: Daily Readings",
+    "author": "Charles Spurgeon",
+    "author_died": 1892,
+    "year_written": 1865,
+    "source_type": "devotional",
+    "tradition": "baptist",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/spurgeon/morneve",
+      "edition": "Morning and Evening: Daily Readings (CCEL)",
+      "year": 1865,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "spurgeon/morneve"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "spurgeon-faiths-checkbook",
+    "slug": "spurgeon-faiths-checkbook",
+    "title": "Faith's Checkbook",
+    "author": "Charles Spurgeon",
+    "author_died": 1892,
+    "year_written": 1888,
+    "source_type": "devotional",
+    "tradition": "baptist",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/spurgeon/checkbook",
+      "edition": "Faith's Checkbook (CCEL)",
+      "year": 1888,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "spurgeon/checkbook"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "kempis-imitation",
+    "slug": "kempis-imitation",
+    "title": "The Imitation of Christ",
+    "author": "Thomas \u00e0 Kempis",
+    "author_died": 1471,
+    "year_written": 1418,
+    "source_type": "devotional",
+    "tradition": "catholic",
+    "era": "medieval",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/kempis/imitation",
+      "edition": "The Imitation of Christ (CCEL)",
+      "year": 1418,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "kempis/imitation"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "lawrence-practice-presence",
+    "slug": "lawrence-practice-presence",
+    "title": "The Practice of the Presence of God",
+    "author": "Brother Lawrence",
+    "author_died": 1691,
+    "year_written": 1692,
+    "source_type": "devotional",
+    "tradition": "catholic",
+    "era": "reformation",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/lawrence/practice",
+      "edition": "The Practice of the Presence of God (CCEL)",
+      "year": 1692,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "lawrence/practice"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "taylor-holy-living",
+    "slug": "taylor-holy-living",
+    "title": "The Rule and Exercises of Holy Living",
+    "author": "Jeremy Taylor",
+    "author_died": 1667,
+    "year_written": 1650,
+    "source_type": "devotional",
+    "tradition": "anglican",
+    "era": "reformation",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/taylor/holy_living",
+      "edition": "The Rule and Exercises of Holy Living (CCEL)",
+      "year": 1650,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "taylor/holy_living"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "baxter-saints-rest",
+    "slug": "baxter-saints-rest",
+    "title": "The Saints' Everlasting Rest",
+    "author": "Richard Baxter",
+    "author_died": 1691,
+    "year_written": 1650,
+    "source_type": "devotional",
+    "tradition": "nonconformist",
+    "era": "reformation",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/baxter/saints_rest",
+      "edition": "The Saints' Everlasting Rest (CCEL)",
+      "year": 1650,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "baxter/saints_rest"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "scougal-life-of-god",
+    "slug": "scougal-life-of-god",
+    "title": "The Life of God in the Soul of Man",
+    "author": "Henry Scougal",
+    "author_died": 1678,
+    "year_written": 1677,
+    "source_type": "devotional",
+    "tradition": "reformed",
+    "era": "reformation",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/scougal/life",
+      "edition": "The Life of God in the Soul of Man (CCEL)",
+      "year": 1677,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "scougal/life"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "rutherford-letters",
+    "slug": "rutherford-letters",
+    "title": "Letters of Samuel Rutherford",
+    "author": "Samuel Rutherford",
+    "author_died": 1661,
+    "year_written": 1664,
+    "source_type": "devotional",
+    "tradition": "reformed",
+    "era": "reformation",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/rutherford/letters",
+      "edition": "Letters of Samuel Rutherford (CCEL)",
+      "year": 1664,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "rutherford/letters"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "guyon-prayer",
+    "slug": "guyon-prayer",
+    "title": "A Short and Easy Method of Prayer",
+    "author": "Jeanne Guyon",
+    "author_died": 1717,
+    "year_written": 1685,
+    "source_type": "devotional",
+    "tradition": "catholic",
+    "era": "reformation",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/guyon/prayer",
+      "edition": "A Short and Easy Method of Prayer (CCEL)",
+      "year": 1685,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "guyon/prayer"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "ryle-holiness",
+    "slug": "ryle-holiness",
+    "title": "Holiness",
+    "author": "J.C. Ryle",
+    "author_died": 1900,
+    "year_written": 1877,
+    "source_type": "devotional",
+    "tradition": "anglican",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/ryle/holiness",
+      "edition": "Holiness (CCEL)",
+      "year": 1877,
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "ryle/holiness"
+        ],
+        "strip_markup": true
       }
     }
   }
