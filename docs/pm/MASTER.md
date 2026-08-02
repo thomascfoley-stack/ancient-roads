@@ -107,6 +107,18 @@ The first pass should be the one where, if something breaks, you know what broke
 | B4 | Translation decision — shingle against the user's translation, or all. Moved the headline 17 points | **OPEN — options now written** ([paper](../SLICE1_TRANSLATION_DECISION.md), recommends Option A + detection). Rulable. |
 | B5 | Slice 1 — prose/sermons end-to-end + the tradition-gap join | Blocked on B1–B4 |
 
+### Queued behind A8 — filed 2026-08-02
+
+| # | Item | Note |
+|---|---|---|
+| UX-1 | **The Bible cannot be opened on the desk** | Blocking for the product's core use ("the Bible open along with commentaries side by side"). Not a picker filter: the desk's pane model is built over `sources`/`sections` and Scripture is a different substrate (translations, verse ids, `/read/[book]/[chapter]`), so it needs a design decision, not a bolt-on |
+| UX-2 | **The `+` affordance is unexplained** | Row opens the work alone, `+` adds it to the desk, nothing says so; the tooltip is hover-only and absent on touch |
+| UX-3 | **Desk layout model** | Grid not a row (top-to-bottom as well as left-to-right), no 3-pane cap, drag-resize, collapsible left chrome. **The cap is doing performance work**: an uncapped grid over `spurgeon-sermons` (118,371 sections) is a virtualisation problem before it is a layout one |
+
+[Order](orders/2026-08-02-reader-ux-desk-and-bible.md). Deliberately not merged into A8: these are
+client changes to a working surface, and A8's remaining act is a status flip that has been kept
+narrow on purpose.
+
 ## Owner decisions outstanding
 
 | # | Decision | Blocks |

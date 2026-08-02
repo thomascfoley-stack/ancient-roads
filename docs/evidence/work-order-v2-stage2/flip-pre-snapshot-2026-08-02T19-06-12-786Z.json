@@ -1,0 +1,243 @@
+{
+  "host": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "direction": "staged->published",
+  "slugFile": "docs/evidence/corpus-copy/a8-flip-list.json",
+  "slugs": [
+    "augustine-homilies",
+    "calvin-institutes",
+    "catena-aurea",
+    "chrysostom-homilies",
+    "dante-divine-comedy",
+    "edwards-works",
+    "flavel-works",
+    "herbert-temple",
+    "hodge-systematic",
+    "hopkins-poems",
+    "josephus-whiston",
+    "keble-christian-year",
+    "maclaren-expositions",
+    "milton-poetical-works",
+    "montgomery-sacred-poems",
+    "neale-eastern-hymns",
+    "olney-hymns",
+    "owen-works",
+    "rossetti-verses",
+    "schaff-creeds",
+    "scottish-psalter-1650",
+    "spurgeon-sermons",
+    "spurgeon-talks-to-farmers",
+    "tennyson-in-memoriam",
+    "traherne-poems",
+    "watson-works",
+    "watts-hymns",
+    "watts-psalms",
+    "wesley-sermons",
+    "wheatley-poems"
+  ],
+  "payload": [
+    "augustine-homilies",
+    "calvin-institutes",
+    "catena-aurea",
+    "chrysostom-homilies",
+    "dante-divine-comedy",
+    "edwards-works",
+    "flavel-works",
+    "herbert-temple",
+    "hodge-systematic",
+    "hopkins-poems",
+    "josephus-whiston",
+    "keble-christian-year",
+    "maclaren-expositions",
+    "milton-poetical-works",
+    "montgomery-sacred-poems",
+    "neale-eastern-hymns",
+    "olney-hymns",
+    "owen-works",
+    "rossetti-verses",
+    "schaff-creeds",
+    "scottish-psalter-1650",
+    "spurgeon-sermons",
+    "spurgeon-talks-to-farmers",
+    "tennyson-in-memoriam",
+    "traherne-poems",
+    "watson-works",
+    "watts-hymns",
+    "watts-psalms",
+    "wesley-sermons",
+    "wheatley-poems"
+  ],
+  "sources": [
+    {
+      "slug": "adam-clarke",
+      "status": "published"
+    },
+    {
+      "slug": "augustine-homilies",
+      "status": "staged"
+    },
+    {
+      "slug": "barnes-notes",
+      "status": "staged"
+    },
+    {
+      "slug": "bdb-lexicon",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-crosswire",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-institutes",
+      "status": "staged"
+    },
+    {
+      "slug": "catena-aurea",
+      "status": "staged"
+    },
+    {
+      "slug": "chrysostom-homilies",
+      "status": "staged"
+    },
+    {
+      "slug": "dante-divine-comedy",
+      "status": "staged"
+    },
+    {
+      "slug": "eastons-dictionary",
+      "status": "staged"
+    },
+    {
+      "slug": "edwards-works",
+      "status": "staged"
+    },
+    {
+      "slug": "flavel-works",
+      "status": "staged"
+    },
+    {
+      "slug": "herbert-temple",
+      "status": "staged"
+    },
+    {
+      "slug": "hodge-systematic",
+      "status": "staged"
+    },
+    {
+      "slug": "hopkins-poems",
+      "status": "staged"
+    },
+    {
+      "slug": "isbe",
+      "status": "staged"
+    },
+    {
+      "slug": "jfb",
+      "status": "published"
+    },
+    {
+      "slug": "john-gill",
+      "status": "published"
+    },
+    {
+      "slug": "josephus-whiston",
+      "status": "staged"
+    },
+    {
+      "slug": "keble-christian-year",
+      "status": "staged"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "status": "staged"
+    },
+    {
+      "slug": "matthew-henry",
+      "status": "published"
+    },
+    {
+      "slug": "milton-poetical-works",
+      "status": "staged"
+    },
+    {
+      "slug": "montgomery-sacred-poems",
+      "status": "staged"
+    },
+    {
+      "slug": "naves-topical",
+      "status": "staged"
+    },
+    {
+      "slug": "neale-eastern-hymns",
+      "status": "staged"
+    },
+    {
+      "slug": "olney-hymns",
+      "status": "staged"
+    },
+    {
+      "slug": "origen-commentary",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-works",
+      "status": "staged"
+    },
+    {
+      "slug": "rossetti-verses",
+      "status": "staged"
+    },
+    {
+      "slug": "schaff-creeds",
+      "status": "staged"
+    },
+    {
+      "slug": "scottish-psalter-1650",
+      "status": "staged"
+    },
+    {
+      "slug": "smiths-dictionary",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-talks-to-farmers",
+      "status": "staged"
+    },
+    {
+      "slug": "tennyson-in-memoriam",
+      "status": "staged"
+    },
+    {
+      "slug": "traherne-poems",
+      "status": "staged"
+    },
+    {
+      "slug": "watson-works",
+      "status": "staged"
+    },
+    {
+      "slug": "watts-hymns",
+      "status": "staged"
+    },
+    {
+      "slug": "watts-psalms",
+      "status": "staged"
+    },
+    {
+      "slug": "wesley-crosswire",
+      "status": "published"
+    },
+    {
+      "slug": "wesley-sermons",
+      "status": "staged"
+    },
+    {
+      "slug": "wheatley-poems",
+      "status": "staged"
+    }
+  ]
+}
