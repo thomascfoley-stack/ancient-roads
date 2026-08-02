@@ -1,0 +1,234 @@
+{
+  "source": "ep-tiny-hat-atdgpisx-pooler.c-9.us-east-1.aws.neon.tech",
+  "destination": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "declaredEndpoint": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "slugs": [
+    "dante-divine-comedy",
+    "herbert-temple",
+    "hopkins-poems",
+    "keble-christian-year",
+    "milton-poetical-works",
+    "montgomery-sacred-poems",
+    "rossetti-verses",
+    "tennyson-in-memoriam",
+    "traherne-poems",
+    "wheatley-poems"
+  ],
+  "before": {
+    "dante-divine-comedy": {
+      "sources": 1,
+      "sections": 620,
+      "anchors": 0,
+      "section_embeddings": 620,
+      "flat_embeddings": 620
+    },
+    "herbert-temple": {
+      "sources": 1,
+      "sections": 246,
+      "anchors": 0,
+      "section_embeddings": 246,
+      "flat_embeddings": 246
+    },
+    "hopkins-poems": {
+      "sources": 1,
+      "sections": 167,
+      "anchors": 0,
+      "section_embeddings": 167,
+      "flat_embeddings": 167
+    },
+    "keble-christian-year": {
+      "sources": 1,
+      "sections": 281,
+      "anchors": 0,
+      "section_embeddings": 281,
+      "flat_embeddings": 281
+    },
+    "milton-poetical-works": {
+      "sources": 1,
+      "sections": 903,
+      "anchors": 0,
+      "section_embeddings": 903,
+      "flat_embeddings": 903
+    },
+    "montgomery-sacred-poems": {
+      "sources": 1,
+      "sections": 417,
+      "anchors": 0,
+      "section_embeddings": 417,
+      "flat_embeddings": 417
+    },
+    "rossetti-verses": {
+      "sources": 1,
+      "sections": 241,
+      "anchors": 0,
+      "section_embeddings": 241,
+      "flat_embeddings": 241
+    },
+    "tennyson-in-memoriam": {
+      "sources": 1,
+      "sections": 148,
+      "anchors": 0,
+      "section_embeddings": 148,
+      "flat_embeddings": 148
+    },
+    "traherne-poems": {
+      "sources": 1,
+      "sections": 412,
+      "anchors": 0,
+      "section_embeddings": 412,
+      "flat_embeddings": 412
+    },
+    "wheatley-poems": {
+      "sources": 1,
+      "sections": 98,
+      "anchors": 0,
+      "section_embeddings": 98,
+      "flat_embeddings": 98
+    }
+  },
+  "destBefore": {
+    "dante-divine-comedy": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "herbert-temple": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "hopkins-poems": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "keble-christian-year": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "milton-poetical-works": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "montgomery-sacred-poems": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "rossetti-verses": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "tennyson-in-memoriam": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "traherne-poems": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "wheatley-poems": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "destAfter": {
+    "dante-divine-comedy": {
+      "sources": 1,
+      "sections": 620,
+      "anchors": 0,
+      "section_embeddings": 620,
+      "flat_embeddings": 620
+    },
+    "herbert-temple": {
+      "sources": 1,
+      "sections": 246,
+      "anchors": 0,
+      "section_embeddings": 246,
+      "flat_embeddings": 246
+    },
+    "hopkins-poems": {
+      "sources": 1,
+      "sections": 167,
+      "anchors": 0,
+      "section_embeddings": 167,
+      "flat_embeddings": 167
+    },
+    "keble-christian-year": {
+      "sources": 1,
+      "sections": 281,
+      "anchors": 0,
+      "section_embeddings": 281,
+      "flat_embeddings": 281
+    },
+    "milton-poetical-works": {
+      "sources": 1,
+      "sections": 903,
+      "anchors": 0,
+      "section_embeddings": 903,
+      "flat_embeddings": 903
+    },
+    "montgomery-sacred-poems": {
+      "sources": 1,
+      "sections": 417,
+      "anchors": 0,
+      "section_embeddings": 417,
+      "flat_embeddings": 417
+    },
+    "rossetti-verses": {
+      "sources": 1,
+      "sections": 241,
+      "anchors": 0,
+      "section_embeddings": 241,
+      "flat_embeddings": 241
+    },
+    "tennyson-in-memoriam": {
+      "sources": 1,
+      "sections": 148,
+      "anchors": 0,
+      "section_embeddings": 148,
+      "flat_embeddings": 148
+    },
+    "traherne-poems": {
+      "sources": 1,
+      "sections": 412,
+      "anchors": 0,
+      "section_embeddings": 412,
+      "flat_embeddings": 412
+    },
+    "wheatley-poems": {
+      "sources": 1,
+      "sections": 98,
+      "anchors": 0,
+      "section_embeddings": 98,
+      "flat_embeddings": 98
+    }
+  },
+  "mismatch": 0
+}

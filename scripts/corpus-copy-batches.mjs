@@ -39,6 +39,22 @@ const BATCHES = [
   { name: 'historians', types: ['historian'], note: 'shelf + Book Reader only; no retrieval lane exists' },
   { name: 'lexicons', types: ['lexicon'], note: 'held by owner ruling until the reference-pane UX ships' },
   { name: 'commentaries', types: ['commentary'], note: 'ALREADY on production — listed for completeness only' },
+  // One file for everything left after hymns and poetry, EXCEPT sermons. Added 2026-08-02 when
+  // the owner asked to finish the remaining registers in one pass: six gate answers for work
+  // that is one decision is friction without safety, and the gate's value is the decision, not
+  // the repetition. Sermons stay out on purpose — migration 037 must be applied first, or
+  // spurgeon-talks-to-farmers lands with rows its partial HNSW index does not cover — and they
+  // are 60% of the remaining volume, so keeping them separate means a failure there does not
+  // roll back the other 25 works.
+  //
+  // DERIVED from the same manifest and the same eligibility predicates as every batch above, so
+  // it cannot drift from them. It deliberately OVERLAPS the per-register files rather than
+  // replacing them: those stay the way to copy one register at a time.
+  {
+    name: 'remaining-nonsermon',
+    types: ['theology', 'confession', 'father', 'historian', 'lexicon'],
+    note: 'theology + fathers + historians + lexicons in ONE gate answer; sermons excluded (037 first)',
+  },
 ];
 
 const entries = Object.values(JSON.parse(fs.readFileSync(path.join(REPO, 'ingest/sources.config.json'), 'utf8')))
