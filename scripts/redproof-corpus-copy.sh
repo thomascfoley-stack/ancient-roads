@@ -233,6 +233,105 @@ else
   printf '  \033[31m✗ the comment-stripped code has no staged literal — the grep is blind\033[0m\n'; FAIL=$((FAIL+1))
 fi
 
+say "PAGING — the fixture above is 5 sections against a 2,000-row page, so none of the paging ran"
+# Everything above this line passed on the SINGLE-PAGE path: at the shipped READ_PAGE=2000 a
+# 5-section work never crosses a boundary, so 37 green checks said nothing whatever about the
+# keyset paging or the batched writes. That is the "unearned green" of THE_LOOP.md §6, and the
+# only cure is a fixture that forces boundaries.
+#
+# The shape that matters is a section with SEVERAL children. All three child tables allow it
+# (many anchors, several model_slugs, several entities per section), so a keyset of
+# `section_id > last` silently drops whatever remains of the section a page boundary lands
+# inside. Section ordinal 1 below therefore carries FOUR anchors and is read two rows at a time.
+$PSQL -d devsrc -c "
+INSERT INTO sources (slug,title,author,source_type,tradition,era,license,provenance,status) VALUES
+ ('scottish-psalter-1650','Scottish Psalter','Anon','sermon','reformed','modern','Public Domain','{\"url\":\"https://www.ccel.org/ccel/anonymous/psalter\"}','staged');
+INSERT INTO sections (source_id,ordinal,heading,body)
+ SELECT id, g, 'Psalm '||g, E'Body\t'||g||E'\nsecond line' FROM sources, generate_series(1,7) g WHERE slug='scottish-psalter-1650';
+INSERT INTO section_anchors (section_id,verse_id_start,verse_id_end)
+ SELECT s.id, 19001001+v, 19001001+v FROM sections s JOIN sources src ON src.id=s.source_id
+ CROSS JOIN generate_series(0,3) v WHERE src.slug='scottish-psalter-1650' AND s.ordinal=1;
+INSERT INTO section_anchors (section_id,verse_id_start,verse_id_end)
+ SELECT s.id, 19002001, 19002001 FROM sections s JOIN sources src ON src.id=s.source_id
+ WHERE src.slug='scottish-psalter-1650' AND s.ordinal>1;
+INSERT INTO section_embeddings (section_id,model_slug,embedding)
+ SELECT s.id,'bge-large-en-v1.5','$VEC'::vector FROM sections s JOIN sources src ON src.id=s.source_id
+ WHERE src.slug='scottish-psalter-1650';
+INSERT INTO embeddings (user_id,source_type,source_id,chunk_index,content,embedding,metadata)
+ SELECT NULL,'commentary','psalter:a',g,'flat a'||g,'$VEC'::vector,'{\"work\":\"scottish-psalter-1650\"}' FROM generate_series(0,4) g;
+INSERT INTO embeddings (user_id,source_type,source_id,chunk_index,content,embedding,metadata)
+ SELECT NULL,'commentary','psalter:b',g,'flat b'||g,'$VEC'::vector,'{\"work\":\"scottish-psalter-1650\"}' FROM generate_series(0,3) g;
+" >/dev/null
+# 7 sections · 10 anchors (4 on ordinal 1, 1 each on 2..7) · 7 vectors · 9 flat rows across TWO
+# source_ids, so the flat keyset's (source_id, chunk_index) composite is exercised as well.
+PSALTER="$TMP/psalter.json"; echo '{"slugs":["scottish-psalter-1650"]}' > "$PSALTER"
+
+expect_ok "copies at READ_PAGE=2 / WRITE_BATCH=2 (many boundaries)" \
+  env COPY_READ_PAGE=2 COPY_WRITE_BATCH=2 CORPUS_COPY_SOURCE_URL="$SRC" CORPUS_COPY_DEST_URL="$DEST" \
+      COPY_ALLOW=1 COPY_EXPECT_HOST=localhost "${RUN[@]}" --slugs="$PSALTER"
+
+pcheck() { # label, sql, expected
+  local got; got="$($PSQL -d prodest -t -A -c "$2")"
+  if [ "$got" = "$3" ]; then printf '  \033[32m✓ %s (%s)\033[0m\n' "$1" "$got"; PASS=$((PASS+1));
+  else printf '  \033[31m✗ %s — expected %s, got %s\033[0m\n' "$1" "$3" "$got"; FAIL=$((FAIL+1)); fi
+}
+PS="JOIN sources src ON src.id=s.source_id WHERE src.slug='scottish-psalter-1650'"
+pcheck "all 7 sections crossed 4 page boundaries" "SELECT count(*) FROM sections s $PS" 7
+pcheck "all 10 anchors landed, including 4 on one section" \
+  "SELECT count(*) FROM section_anchors a JOIN sections s ON s.id=a.section_id $PS" 10
+pcheck "the multi-anchor section kept ALL FOUR" \
+  "SELECT count(*) FROM section_anchors a JOIN sections s ON s.id=a.section_id $PS AND s.ordinal=1" 4
+pcheck "all 7 vectors landed" \
+  "SELECT count(*) FROM section_embeddings e JOIN sections s ON s.id=e.section_id $PS" 7
+pcheck "all 9 flat rows landed across two source_ids" \
+  "SELECT count(*) FROM embeddings WHERE metadata->>'work'='scottish-psalter-1650'" 9
+pcheck "tabs and newlines survived batching intact" \
+  "SELECT body FROM sections s $PS AND s.ordinal=3" "$(printf 'Body\t3\nsecond line')"
+expect_ok "re-run at the shipped page size (idempotent across page sizes)" \
+  env CORPUS_COPY_SOURCE_URL="$SRC" CORPUS_COPY_DEST_URL="$DEST" \
+      COPY_ALLOW=1 COPY_EXPECT_HOST=localhost "${RUN[@]}" --slugs="$PSALTER"
+pcheck "still 10 anchors after the re-run" \
+  "SELECT count(*) FROM section_anchors a JOIN sections s ON s.id=a.section_id $PS" 10
+
+say "PAGING RED-PROOF — the naive keyset must be caught by the checks above"
+# Without this, "10 anchors landed" is only a number that happened to be right. Mutate the
+# composite keyset to the section_id-only form the correct code deliberately avoids, run the
+# SAME fixture into a fresh database, and require a SHORTFALL. If this mutation still yields 10,
+# the assertions above are not testing what they claim to.
+# The mutant MUST live inside the repo: it does `import pg from 'pg'`, and Node resolves that
+# relative to the FILE, not the cwd. Written to $TMP the first version of this died on
+# ERR_MODULE_NOT_FOUND before executing a line, landed 0 anchors, and the "fewer than 10" check
+# went green on a script that never ran — a vacuous red-proof of the vacuity of another check.
+MUT="scripts/.redproof-naive.mjs"
+sed 's/(c\.section_id, c\.verse_id_start) > (\$2::bigint, \$3::int)/c.section_id > $2::bigint AND $3::int IS NOT NULL/' \
+  scripts/corpus-copy.mjs > "$MUT"
+if cmp -s "$MUT" scripts/corpus-copy.mjs; then
+  printf '  \033[31m✗ the mutation changed nothing — the keyset it targets has moved\033[0m\n'; FAIL=$((FAIL+1))
+else
+  $PSQL -c "DROP DATABASE IF EXISTS naivedest" >/dev/null 2>&1
+  $PSQL -c "CREATE DATABASE naivedest" >/dev/null 2>&1
+  $PSQL -d naivedest -c "$SCHEMA" >/dev/null 2>&1
+  env COPY_READ_PAGE=2 COPY_WRITE_BATCH=2 CORPUS_COPY_SOURCE_URL="$SRC" \
+      CORPUS_COPY_DEST_URL="postgresql://postgres@localhost:$PORT/naivedest" \
+      COPY_ALLOW=1 COPY_EXPECT_HOST=localhost \
+      node "$MUT" --local-redproof --redproof-skip-gate --evidence="$TMP/ev" --slugs="$PSALTER" >/dev/null 2>&1
+  NAIVE_SEC="$($PSQL -d naivedest -t -A -c "SELECT count(*) FROM sections" 2>/dev/null || echo ERR)"
+  NAIVE="$($PSQL -d naivedest -t -A -c "SELECT count(*) FROM section_anchors" 2>/dev/null || echo ERR)"
+  rm -f "$MUT"
+  # THE SECTIONS COUNT IS THE ANTI-VACUITY CLAUSE. A mutant that crashes also lands 0 anchors, so
+  # "fewer than 10" alone cannot tell "the keyset dropped rows" from "the script never ran" — and
+  # the first draft of this proof did exactly that, silently, for one run. The mutant must first
+  # be shown to have WORKED (all 7 sections copied) before its anchor shortfall means anything.
+  if [ "$NAIVE_SEC" != "7" ]; then
+    printf '  \033[31m✗ the mutant did not run (sections=%s, expected 7) — this proves nothing\033[0m\n' "$NAIVE_SEC"; FAIL=$((FAIL+1))
+  elif [ "$NAIVE" = "10" ]; then
+    printf '  \033[31m✗ the naive keyset ALSO landed 10 — the paging assertions prove nothing\033[0m\n'; FAIL=$((FAIL+1))
+  else
+    printf '  \033[32m✓ naive keyset ran fully (7 sections) yet dropped anchors (%s of 10)\033[0m\n' "$NAIVE"; PASS=$((PASS+1))
+  fi
+fi
+rm -f scripts/.redproof-naive.mjs
+
 say "RESULT"
 printf '  %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

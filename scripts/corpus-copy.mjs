@@ -223,6 +223,73 @@ async function ownerGate(summary) {
 
 const q = (c, sql, params) => c.query(sql, params);
 
+// ── bulk transfer ────────────────────────────────────────────────────────────────────────────
+// Until 2026-08-02 this tool inserted ONE ROW PER ROUND TRIP and read each work's children with
+// `section_id = ANY($1::bigint[])`. Both are invisible at hymn scale (5,070 statements, 1,690
+// sections) and neither survives the registers behind it: the sermon batch is 162,805 sections
+// and 162,507 flat rows, i.e. 488,117 statements (~6.8 hours, in ONE transaction held open on
+// production) and an `ANY` array of 162,805 ids, with every 1024-float vector resident in Node at
+// once. Measured on the real dev census before it was written, not guessed afterwards.
+//
+// WRITES are batched with parameterised `unnest`, deliberately NOT `COPY`: section bodies contain
+// tabs and newlines, and COPY's text escaping is a correctness hazard on exactly that content.
+// Proven on a throwaway PG17 + pgvector cluster against tabs, newlines, single quotes and
+// backslashes, with vectors round-tripped byte-identical.
+//
+// READS are keyset-paged, so peak memory is one page rather than one work. The id maps are kept
+// (two integers per section) but never the bodies or the vectors.
+// Both are overridable ONLY so the red proof can drive real page and batch boundaries. The
+// committed fixture is 5 sections against a 2,000-row page, so at the shipped defaults the whole
+// of the paging below is dead code during the proof and every check passes on the single-page
+// path — green earned by not being executed (THE_LOOP.md §6). The proof therefore re-runs the
+// copy at COPY_READ_PAGE=2 / COPY_WRITE_BATCH=2. These knobs change throughput only; correctness
+// must not depend on them, which is exactly what running at 2 and at 250 is there to demonstrate.
+const intEnv = (name, dflt) => {
+  const raw = process.env[name];
+  if (raw === undefined) return dflt;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1) die(`STOP: ${name} must be a positive integer`, 2);
+  return n;
+};
+const WRITE_BATCH = intEnv('COPY_WRITE_BATCH', 250); // rows per INSERT. 1024-dim vectors are ~10KB
+                         // of text each; 250 keeps a statement near 2.5MB rather than the ~15MB a
+                         // 1,000-row batch would be.
+const READ_PAGE = intEnv('COPY_READ_PAGE', 2000);    // rows per SELECT.
+
+/**
+ * Insert `rows` with one statement per WRITE_BATCH. `sql` must consume its columns as
+ * `unnest($1::T[], $2::T[], ...)`; `rows` is an array of column-value arrays.
+ */
+async function bulkInsert(client, sql, rows) {
+  if (rows.length === 0) return 0;
+  const nCols = rows[0].length;
+  for (let i = 0; i < rows.length; i += WRITE_BATCH) {
+    const chunk = rows.slice(i, i + WRITE_BATCH);
+    const cols = Array.from({ length: nCols }, () => []);
+    for (const r of chunk) for (let c = 0; c < nCols; c++) cols[c].push(r[c]);
+    await q(client, sql, cols);
+  }
+  return rows.length;
+}
+
+/**
+ * Read a query in keyset pages, handing each page to `onPage`. `sql` takes the previous page's
+ * cursor values as its trailing parameters and must ORDER BY the same keys, so no row is seen
+ * twice and none is skipped — which OFFSET does not guarantee under concurrent writes.
+ */
+async function pageThrough(client, sql, baseParams, initialCursor, cursorOf, onPage) {
+  let cursor = initialCursor;
+  let total = 0;
+  for (;;) {
+    const rows = (await q(client, sql, [...baseParams, ...cursor])).rows;
+    if (rows.length === 0) return total;
+    await onPage(rows);
+    total += rows.length;
+    if (rows.length < READ_PAGE) return total;
+    cursor = cursorOf(rows[rows.length - 1]);
+  }
+}
+
 async function censusOn(client, label) {
   const rows = {};
   for (const slug of slugs) {
@@ -320,51 +387,119 @@ try {
     // 2. sections. `id` is GENERATED ALWAYS, so the destination assigns its own; the child rows
     //    below are remapped through (source_id, ordinal), which is UNIQUE, rather than through
     //    insertion order — order is not a key and relying on it is how a remap silently skews.
-    const sections = (await q(src, 'SELECT id, ordinal, heading, body FROM sections WHERE source_id = $1 ORDER BY ordinal', [s.id])).rows;
-    for (const sec of sections) {
-      await q(
-        dest,
-        `INSERT INTO sections (source_id, ordinal, heading, body) VALUES ($1,$2,$3,$4)
-         ON CONFLICT (source_id, ordinal) DO NOTHING`,
-        [destSourceId, sec.ordinal, sec.heading, sec.body],
-      );
-    }
+    const srcIdToOrdinal = new Map();
+    const nSections = await pageThrough(
+      src,
+      `SELECT id, ordinal, heading, body FROM sections
+        WHERE source_id = $1 AND ordinal > $2::int ORDER BY ordinal LIMIT ${READ_PAGE}`,
+      [s.id], [-1], (last) => [last.ordinal],
+      async (page) => {
+        await bulkInsert(
+          dest,
+          `INSERT INTO sections (source_id, ordinal, heading, body)
+           SELECT * FROM unnest($1::bigint[], $2::int[], $3::text[], $4::text[])
+           ON CONFLICT (source_id, ordinal) DO NOTHING`,
+          page.map((r) => [destSourceId, r.ordinal, r.heading, r.body]),
+        );
+        for (const r of page) srcIdToOrdinal.set(String(r.id), r.ordinal);
+      },
+    );
+
+    // The remap table: SOURCE section id -> DESTINATION section id, keyed through the ordinal.
+    // Only two integers per section are retained; bodies and vectors are never held.
     const destByOrdinal = new Map(
       (await q(dest, 'SELECT id, ordinal FROM sections WHERE source_id = $1', [destSourceId])).rows.map((r) => [r.ordinal, r.id]),
     );
-    const idMap = new Map(sections.map((sec) => [String(sec.id), destByOrdinal.get(sec.ordinal)]).filter(([, v]) => v != null));
+    const idMap = new Map();
+    for (const [srcId, ord] of srcIdToOrdinal) {
+      const to = destByOrdinal.get(ord);
+      if (to != null) idMap.set(srcId, to);
+    }
+    srcIdToOrdinal.clear();
+    destByOrdinal.clear();
 
-    // 3-5. the children, remapped.
-    for (const a of (await q(src, 'SELECT section_id, verse_id_start, verse_id_end FROM section_anchors WHERE section_id = ANY($1::bigint[])', [sections.map((x) => x.id)])).rows) {
-      const to = idMap.get(String(a.section_id));
-      if (to == null) continue;
-      await q(dest, `INSERT INTO section_anchors (section_id, verse_id_start, verse_id_end) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`, [to, a.verse_id_start, a.verse_id_end]);
-    }
-    for (const e of (await q(src, 'SELECT section_id, model_slug, embedding FROM section_embeddings WHERE section_id = ANY($1::bigint[])', [sections.map((x) => x.id)])).rows) {
-      const to = idMap.get(String(e.section_id));
-      if (to == null) continue;
-      // The vector is passed through VERBATIM. Reuse is the entire point: the text is
-      // byte-identical, so the vector remains valid and no re-embedding is paid for or risked.
-      await q(dest, `INSERT INTO section_embeddings (section_id, model_slug, embedding) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`, [to, e.model_slug, e.embedding]);
-    }
-    for (const h of (await q(src, 'SELECT section_id, kind, entity_slug, entity_label FROM section_history_anchors WHERE section_id = ANY($1::bigint[])', [sections.map((x) => x.id)])).rows) {
-      const to = idMap.get(String(h.section_id));
-      if (to == null) continue;
-      await q(dest, `INSERT INTO section_history_anchors (section_id, kind, entity_slug, entity_label) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING`, [to, h.kind, h.entity_slug, h.entity_label]);
-    }
+    // 3-5. the children, remapped. Joined to `sections` rather than handed an ANY() array of every
+    //      id, which for the sermon register would be a 162,805-element parameter.
+    //
+    //      EACH PAGES ON ITS FULL PRIMARY KEY, not on section_id. All three tables allow several
+    //      rows per section (multiple anchors, several model_slugs, several entities), so a
+    //      keyset of `section_id > last` would SKIP every remaining row of whichever section a
+    //      page boundary landed inside — silent, partial, and invisible in a row-count check that
+    //      compares only what it copied against what it read.
+    const remap = (rows, take) =>
+      rows.map((r) => [idMap.get(String(r.section_id)), ...take(r)]).filter((r) => r[0] != null);
+
+    await pageThrough(
+      src,
+      `SELECT c.section_id, c.verse_id_start, c.verse_id_end FROM section_anchors c
+         JOIN sections sec ON sec.id = c.section_id
+        WHERE sec.source_id = $1 AND (c.section_id, c.verse_id_start) > ($2::bigint, $3::int)
+        ORDER BY c.section_id, c.verse_id_start LIMIT ${READ_PAGE}`,
+      [s.id], [0, -2147483648], (l) => [l.section_id, l.verse_id_start],
+      (page) => bulkInsert(
+        dest,
+        `INSERT INTO section_anchors (section_id, verse_id_start, verse_id_end)
+         SELECT * FROM unnest($1::bigint[], $2::int[], $3::int[]) ON CONFLICT DO NOTHING`,
+        remap(page, (r) => [r.verse_id_start, r.verse_id_end]),
+      ),
+    );
+
+    // The vector is passed through VERBATIM. Reuse is the entire point: the text is
+    // byte-identical, so the vector remains valid and no re-embedding is paid for or risked.
+    const nVectors = await pageThrough(
+      src,
+      `SELECT c.section_id, c.model_slug, c.embedding FROM section_embeddings c
+         JOIN sections sec ON sec.id = c.section_id
+        WHERE sec.source_id = $1 AND (c.section_id, c.model_slug) > ($2::bigint, $3::text)
+        ORDER BY c.section_id, c.model_slug LIMIT ${READ_PAGE}`,
+      [s.id], [0, ''], (l) => [l.section_id, l.model_slug],
+      (page) => bulkInsert(
+        dest,
+        `INSERT INTO section_embeddings (section_id, model_slug, embedding)
+         SELECT * FROM unnest($1::bigint[], $2::text[], $3::vector[]) ON CONFLICT DO NOTHING`,
+        remap(page, (r) => [r.model_slug, r.embedding]),
+      ),
+    );
+
+    await pageThrough(
+      src,
+      `SELECT c.section_id, c.kind, c.entity_slug, c.entity_label FROM section_history_anchors c
+         JOIN sections sec ON sec.id = c.section_id
+        WHERE sec.source_id = $1
+          AND (c.section_id, c.kind, c.entity_slug) > ($2::bigint, $3::text, $4::text)
+        ORDER BY c.section_id, c.kind, c.entity_slug LIMIT ${READ_PAGE}`,
+      [s.id], [0, '', ''], (l) => [l.section_id, l.kind, l.entity_slug],
+      (page) => bulkInsert(
+        dest,
+        `INSERT INTO section_history_anchors (section_id, kind, entity_slug, entity_label)
+         SELECT * FROM unnest($1::bigint[], $2::text[], $3::text[], $4::text[]) ON CONFLICT DO NOTHING`,
+        remap(page, (r) => [r.kind, r.entity_slug, r.entity_label]),
+      ),
+    );
 
     // 6. the flat retrieval store. `user_id IS NULL` is the corpus/user boundary and is in the
-    //    READ, so user rows are never even fetched, let alone written.
-    const flat = (await q(src, `SELECT source_type, source_id, chunk_index, content, embedding, metadata FROM embeddings WHERE user_id IS NULL AND metadata->>'work' = $1`, [slug])).rows;
-    for (const f of flat) {
-      await q(
+    //    READ, so user rows are never even fetched, let alone written. The keyset is the composite
+    //    the unique index already uses, because chunk_index alone is not unique across source_ids.
+    //    `metadata` is serialised here rather than handed over as an object: node-postgres has no
+    //    array-of-jsonb encoding for a JS object, and the silent result is a row of "[object
+    //    Object]".
+    const nFlat = await pageThrough(
+      src,
+      `SELECT source_type, source_id, chunk_index, content, embedding, metadata FROM embeddings
+        WHERE user_id IS NULL AND metadata->>'work' = $1
+          AND (source_id, chunk_index) > ($2::text, $3::int)
+        ORDER BY source_id, chunk_index LIMIT ${READ_PAGE}`,
+      [slug], ['', -1], (l) => [l.source_id, l.chunk_index],
+      (page) => bulkInsert(
         dest,
         `INSERT INTO embeddings (user_id, source_type, source_id, chunk_index, content, embedding, metadata)
-         VALUES (NULL,$1,$2,$3,$4,$5,$6) ON CONFLICT (source_type, source_id, chunk_index) DO NOTHING`,
-        [f.source_type, f.source_id, f.chunk_index, f.content, f.embedding, f.metadata],
-      );
-    }
-    console.log(`  copied ${slug}: ${sections.length} section(s), ${flat.length} flat row(s)`);
+         SELECT NULL::text, * FROM unnest($1::text[], $2::text[], $3::int[], $4::text[], $5::vector[], $6::jsonb[])
+         ON CONFLICT (source_type, source_id, chunk_index) DO NOTHING`,
+        page.map((f) => [f.source_type, f.source_id, f.chunk_index, f.content, f.embedding, JSON.stringify(f.metadata)]),
+      ),
+    );
+
+    console.log(`  copied ${slug}: ${nSections} section(s), ${nVectors} vector(s), ${nFlat} flat row(s)`);
   }
   await q(dest, 'COMMIT');
 
