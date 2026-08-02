@@ -73,7 +73,7 @@ CREATE TABLE sources (
   provenance JSONB NOT NULL, status TEXT NOT NULL DEFAULT 'staged' CHECK (status IN ('staged','published','quarantined')));
 CREATE TABLE sections (
   id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY, source_id BIGINT NOT NULL REFERENCES sources(id),
-  ordinal INT NOT NULL, heading TEXT, body TEXT NOT NULL,
+  ordinal INT NOT NULL, heading TEXT, body TEXT NOT NULL, unit_ordinal INT,
   tsv TSVECTOR GENERATED ALWAYS AS (to_tsvector('english', coalesce(heading,'') || ' ' || body)) STORED,
   UNIQUE (source_id, ordinal));
 CREATE TABLE section_anchors (section_id BIGINT NOT NULL REFERENCES sections(id), verse_id_start INT NOT NULL,
@@ -100,8 +100,8 @@ $PSQL -d devsrc -c "
 INSERT INTO sources (slug,title,author,source_type,tradition,era,license,provenance,status) VALUES
  ('olney-hymns','Olney Hymns','Newton','sermon','anglican','modern','Public Domain','{\"url\":\"https://www.ccel.org/ccel/newton/olneyhymns\"}','staged'),
  ('watts-hymns','Watts Hymns','Watts','sermon','nonconformist','modern','Public Domain','{\"url\":\"https://www.ccel.org/x\"}','staged');
-INSERT INTO sections (source_id,ordinal,heading,body)
- SELECT id, g, 'Hymn '||g, 'Amazing grace, verse '||g FROM sources, generate_series(1,5) g WHERE slug='olney-hymns';
+INSERT INTO sections (source_id,ordinal,heading,body,unit_ordinal)
+ SELECT id, g, 'Hymn '||g, 'Amazing grace, verse '||g, ((g-1)/2)+1 FROM sources, generate_series(1,5) g WHERE slug='olney-hymns';
 INSERT INTO sections (source_id,ordinal,heading,body)
  SELECT id, g, 'Other '||g, 'Untouched body '||g FROM sources, generate_series(1,3) g WHERE slug='watts-hymns';
 INSERT INTO section_anchors (section_id,verse_id_start,verse_id_end)
@@ -232,6 +232,32 @@ if grep -qE "'staged'" <<<"$CODE"; then
 else
   printf '  \033[31m✗ the comment-stripped code has no staged literal — the grep is blind\033[0m\n'; FAIL=$((FAIL+1))
 fi
+
+say "unit_ordinal — copied, and BACKFILLED onto rows already written without it"
+# THE DEFECT THIS EXISTS TO CATCH SHIPPED TO PRODUCTION. The copier's SELECT and INSERT named
+# `id, ordinal, heading, body` and nothing else, so `unit_ordinal` — the column that GROUPS
+# chunked sections into a reader-facing unit — arrived NULL on all 277,356 rows. The reader's TOC
+# orders by (unit_ordinal, ordinal), so it degraded to one row per SECTION and listed
+# "Sermon 5. The Comforter" thirty-three times. Nothing here noticed, because the fixture had no
+# such column at all: the harness could not see a column it did not model.
+check "unit_ordinal came across"        "SELECT count(*) FROM sections s JOIN sources src ON src.id=s.source_id WHERE src.slug='olney-hymns' AND s.unit_ordinal IS NOT NULL" 5
+check "and it GROUPS (5 sections, 3 units)" "SELECT count(DISTINCT unit_ordinal) FROM sections s JOIN sources src ON src.id=s.source_id WHERE src.slug='olney-hymns'" 3
+
+# The repair path. 277,356 rows already exist on production with unit_ordinal NULL, so an
+# insert-only copier can never fix them: ON CONFLICT DO NOTHING leaves every one NULL forever.
+# Re-running the tool must FILL them. Simulated exactly: null the destination column, re-run.
+$PSQL -d prodest -c "UPDATE sections SET unit_ordinal = NULL" >/dev/null
+expect_ok "re-run over rows whose unit_ordinal was wiped" \
+  env CORPUS_COPY_SOURCE_URL="$SRC" CORPUS_COPY_DEST_URL="$DEST" COPY_ALLOW=1 COPY_EXPECT_HOST=localhost "${RUN[@]}" --slugs="$SLUGS"
+check "the wiped unit_ordinal was REFILLED" "SELECT count(*) FROM sections s JOIN sources src ON src.id=s.source_id WHERE src.slug='olney-hymns' AND s.unit_ordinal IS NOT NULL" 5
+check "and refilling did not duplicate sections" "SELECT count(*) FROM sections s JOIN sources src ON src.id=s.source_id WHERE src.slug='olney-hymns'" 5
+# The fill must be NARROW: it may add a missing value and must never overwrite a present one.
+$PSQL -d prodest -c "UPDATE sections SET unit_ordinal = 99 WHERE ordinal = 1" >/dev/null
+expect_ok "re-run with a DIFFERENT unit_ordinal already present" \
+  env CORPUS_COPY_SOURCE_URL="$SRC" CORPUS_COPY_DEST_URL="$DEST" COPY_ALLOW=1 COPY_EXPECT_HOST=localhost "${RUN[@]}" --slugs="$SLUGS"
+check "a PRESENT unit_ordinal was left alone (99 survives)" \
+  "SELECT unit_ordinal FROM sections s JOIN sources src ON src.id=s.source_id WHERE src.slug='olney-hymns' AND s.ordinal=1" 99
+$PSQL -d prodest -c "UPDATE sections SET unit_ordinal = 1 WHERE ordinal = 1" >/dev/null
 
 say "PAGING — the fixture above is 5 sections against a 2,000-row page, so none of the paging ran"
 # Everything above this line passed on the SINGLE-PAGE path: at the shipped READ_PAGE=2000 a

@@ -387,20 +387,43 @@ try {
     // 2. sections. `id` is GENERATED ALWAYS, so the destination assigns its own; the child rows
     //    below are remapped through (source_id, ordinal), which is UNIQUE, rather than through
     //    insertion order — order is not a key and relying on it is how a remap silently skews.
+    // `unit_ordinal` IS COPIED, and its absence was a real reader-facing defect (2026-08-02).
+    //
+    // This SELECT read `id, ordinal, heading, body` and the INSERT wrote the same four, so
+    // `unit_ordinal` — the column that GROUPS chunked sections into the thing a reader calls a
+    // work-unit — arrived NULL on every one of the 277,356 rows this tool copied. The reader's
+    // TOC orders by `unit_ordinal, ordinal` (web/src/lib/work.ts:147), so with it NULL the TOC
+    // degrades to one row per SECTION: `spurgeon-sermons` is 118,371 sections in 3,540 units, and
+    // the contents listed "Sermon 5. The Comforter" thirty-three times in a row.
+    //
+    // It is COPIED, never recomputed. Recomputing would re-run migration 024's classification
+    // against a different corpus shape and silently move the grouping — and `unit_ordinal` feeds
+    // the G10 rollup digest, whose whole purpose is to notice exactly that kind of drift. The
+    // source's values are the baseline the digest was built from.
+    //
+    // AND THE ON CONFLICT CLAUSE FILLS, because 277,356 rows were already written without it and
+    // `DO NOTHING` would leave every one of them NULL forever. The update is provably narrow: one
+    // column, and only `WHERE sections.unit_ordinal IS NULL`, so it can add a missing value and
+    // can never overwrite a present one. That is what makes re-running this tool the repair.
     const srcIdToOrdinal = new Map();
+    let filled = 0;
     const nSections = await pageThrough(
       src,
-      `SELECT id, ordinal, heading, body FROM sections
+      `SELECT id, ordinal, heading, body, unit_ordinal FROM sections
         WHERE source_id = $1 AND ordinal > $2::int ORDER BY ordinal LIMIT ${READ_PAGE}`,
       [s.id], [-1], (last) => [last.ordinal],
       async (page) => {
+        const before = (await q(dest, 'SELECT count(*)::int n FROM sections WHERE source_id = $1 AND unit_ordinal IS NULL', [destSourceId])).rows[0].n;
         await bulkInsert(
           dest,
-          `INSERT INTO sections (source_id, ordinal, heading, body)
-           SELECT * FROM unnest($1::bigint[], $2::int[], $3::text[], $4::text[])
-           ON CONFLICT (source_id, ordinal) DO NOTHING`,
-          page.map((r) => [destSourceId, r.ordinal, r.heading, r.body]),
+          `INSERT INTO sections (source_id, ordinal, heading, body, unit_ordinal)
+           SELECT * FROM unnest($1::bigint[], $2::int[], $3::text[], $4::text[], $5::int[])
+           ON CONFLICT (source_id, ordinal) DO UPDATE SET unit_ordinal = EXCLUDED.unit_ordinal
+             WHERE sections.unit_ordinal IS NULL`,
+          page.map((r) => [destSourceId, r.ordinal, r.heading, r.body, r.unit_ordinal]),
         );
+        const after = (await q(dest, 'SELECT count(*)::int n FROM sections WHERE source_id = $1 AND unit_ordinal IS NULL', [destSourceId])).rows[0].n;
+        filled += Math.max(0, before - after);
         for (const r of page) srcIdToOrdinal.set(String(r.id), r.ordinal);
       },
     );
@@ -499,7 +522,8 @@ try {
       ),
     );
 
-    console.log(`  copied ${slug}: ${nSections} section(s), ${nVectors} vector(s), ${nFlat} flat row(s)`);
+    console.log(`  copied ${slug}: ${nSections} section(s), ${nVectors} vector(s), ${nFlat} flat row(s)` +
+      (filled > 0 ? ` · filled unit_ordinal on ${filled} existing row(s)` : ''));
   }
   await q(dest, 'COMMIT');
 
