@@ -115,3 +115,36 @@ describe('tocGroups — derived from the work, never inferred', () => {
     expect(next).toBe(units.length);
   });
 });
+
+describe('devotionals group by month, from their own headings', () => {
+  // Spurgeon's Morning and Evening is 744 units: twelve month headers plus 366 mornings and 366
+  // evenings, with headings "January" / "Morning, January 1" / "Evening, January 1". That is a
+  // real, dated structure the work states about itself, so grouping it is recognition rather than
+  // classification — which is exactly the line drawn for sermons, where no such structure exists.
+  it('reads the month out of a dated devotional heading', () => {
+    const g = tocGroups('devotional', [
+      u('January'), u('Morning, January 1'), u('Evening, January 1'),
+      u('Morning, February 1'), u('Evening, February 1'),
+    ]);
+    expect(g?.map((x) => x.label)).toEqual(['January', 'February']);
+    expect(g?.[0]?.count).toBe(3);
+  });
+
+  it('an UNDATED devotional gets no grouping rather than an invented calendar', () => {
+    // SEED: key on any leading token instead of the closed month set -> "Book I" and "Book II"
+    // become groups and the work acquires a structure the month rule never claimed.
+    //
+    // NOT the seed this comment first named. It said "default the month to January", and that was
+    // MEASURED not to fail here: defaulting every heading to January still yields ONE group, which
+    // still returns null. That seed is caught by the word-boundary test below instead. A red-proof
+    // that names a seed it does not actually catch is worth less than no comment at all, so the
+    // claim is corrected rather than left to be believed.
+    expect(tocGroups('devotional', [u('Book I, Chapter 1'), u('Book I, Chapter 2'), u('Book II, Chapter 1')])).toBeNull();
+  });
+
+  it('does not match a month inside an unrelated word', () => {
+    // SEED: drop the \b word boundaries -> "Mayhew" and "Marching" file under May and March.
+    const g = tocGroups('devotional', [u('On Mayhew'), u('Marching Orders'), u('Morning, May 3')]);
+    expect(g?.map((x) => x.label)).toEqual(['—', 'May']);
+  });
+});
