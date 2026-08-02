@@ -23,19 +23,62 @@ export const OK = 'OK';
  * to it, and every retrieval path drops it. The visitor sees a work that answers nothing.
  */
 export function admissionFindings(sources) {
-  return sources.map((s) => ({
-    slug: s.slug,
-    status: s.status,
-    register: s.register ?? s.source_type ?? '(none)',
-    admitted: s.admitted === true,
-    verdict: s.status === 'published' && s.admitted !== true ? STOP : OK,
-    note:
-      s.status === 'published' && s.admitted !== true
-        ? 'PUBLISHED BUT NOT ADMITTED — served by nothing; the reader would link to a work retrieval cannot return'
-        : s.admitted === true
-          ? 'admitted by the serving predicates'
-          : 'not admitted, and not published — consistent',
-  }));
+  return sources.map((s) => {
+    // A MUST-NOT-SERVE AUTHOR IS NEVER ADMITTED, BY ANY SURFACE.
+    //
+    // This clause exists because the two-surface fix above OPENED a hole it had to close.
+    // `origen-commentary` is on MUST_NOT_SERVE_AUTHORS (A6 ruling, 2026-07-17) and has 1,224
+    // sections. Under the old lane-only admission it was NOT-ADMITTED, so publishing it would
+    // have STOPped — the ban was being enforced by accident, as a side effect of no lane serving
+    // it. Counting the shelf as a serving surface removed that accident: origen became
+    // "admitted", and a published banned author would have sailed through the census.
+    //
+    // The shelf is exactly where this matters most. A lane can decline to return a work; the
+    // Book Reader renders whatever is published (web/src/lib/work.ts gates on status alone). So
+    // for a banned author, published IS served, with no predicate left to catch it.
+    const banned = s.banned === true;
+    const surface = banned ? 'none' : (s.surface ?? (s.admitted === true ? 'lane' : 'none'));
+    const admitted = !banned && s.admitted === true;
+    if (banned && s.status === 'published') {
+      return {
+        slug: s.slug,
+        status: s.status,
+        register: s.register ?? s.source_type ?? '(none)',
+        admitted: false,
+        surface: 'none',
+        verdict: STOP,
+        note: 'PUBLISHED BUT ON MUST_NOT_SERVE_AUTHORS — the shelf renders whatever is published, so this is served',
+      };
+    }
+    if (banned) {
+      return {
+        slug: s.slug,
+        status: s.status,
+        register: s.register ?? s.source_type ?? '(none)',
+        admitted: false,
+        surface: 'none',
+        verdict: OK,
+        note: 'on MUST_NOT_SERVE_AUTHORS and not published — consistent',
+      };
+    }
+    return {
+      slug: s.slug,
+      status: s.status,
+      register: s.register ?? s.source_type ?? '(none)',
+      admitted,
+      surface,
+      verdict: s.status === 'published' && s.admitted !== true ? STOP : OK,
+      note:
+        s.status === 'published' && s.admitted !== true
+          ? 'PUBLISHED BUT NOT ADMITTED — served by nothing; the reader would link to a work retrieval cannot return'
+          : s.admitted === true
+            ? // WHICH surface admits is the whole content of the josephus ruling's deadlock, so it
+              // is reported rather than collapsed to a boolean. `shelf` alone is a legitimate,
+              // ruled-for state (catalog + Book Reader, no lane), not a near-miss.
+              `admitted by ${surface === 'shelf' ? 'the shelf (catalog + Book Reader); no lane serves it' : surface === 'lane' ? 'a retrieval lane' : 'both a lane and the shelf'}`
+            : 'not admitted, and not published — consistent',
+    };
+  });
 }
 
 /**

@@ -12,6 +12,13 @@ export interface CensusSource {
   source_type?: string | null;
   /** Decided by the RUNNER using the imported serving predicates — never recomputed here. */
   admitted: boolean;
+  /**
+   * WHICH surface admits it. 'shelf' alone is a legitimate, ruled-for state (catalog + Book
+   * Reader, no retrieval lane) and is what the josephus ruling requires; it is not a near-miss.
+   */
+  surface?: 'lane' | 'shelf' | 'lane+shelf' | 'none';
+  /** On MUST_NOT_SERVE_AUTHORS. Never admitted by any surface; a STOP if published. */
+  banned?: boolean;
 }
 
 export interface AdmissionFinding {
@@ -19,6 +26,7 @@ export interface AdmissionFinding {
   status: string;
   register: string;
   admitted: boolean;
+  surface: 'lane' | 'shelf' | 'lane+shelf' | 'none';
   verdict: Verdict;
   note: string;
 }

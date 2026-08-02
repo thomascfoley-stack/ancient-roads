@@ -257,3 +257,85 @@ describe('a partial census says so, and cannot be mistaken for a full one', () =
     expect(stopped.notMeasured).toEqual([]);
   });
 });
+
+// ── ADMISSION HAS TWO SURFACES (2026-08-02) ────────────────────────────────────────────────────
+// The A3 rule STOPs a work that is published and "served by nothing". It was written when /ask
+// was the only consumer, and its stated harm is a reader linking to a work retrieval cannot
+// return. The app has since grown a SHELF — catalog + Book Reader — which serves published works
+// straight from sources/sections and never touches the flat retrieval store
+// (web/src/lib/work.ts:107,122 both gate on status='published').
+//
+// So there is a real category the rule had no name for: published for the shelf, absent from
+// every lane. `josephus-whiston` is exactly that (4,112 sections, 439 anchors, 0 flat rows), and
+// the owner ruling ORDERS it published to the historian register for the Book Reader. Under the
+// old one-surface rule the census STOPped the thing the ruling required, and no re-reading of
+// either resolved it. `spurgeon-talks-to-farmers` (298 sections, 0 flat) is the same shape.
+//
+// The rule still has to bite, though: publishing a work that NEITHER surface serves is still the
+// flip's worst outcome, and that is the case this file exists to keep red.
+describe('admission: shelf-only is admission, nothing-at-all is still a STOP', () => {
+  const finding = (row: Parameters<typeof admissionFindings>[0][number]) => admissionFindings([row])[0]!;
+
+  it('a published SHELF-ONLY work does not STOP — the josephus ruling becomes executable', () => {
+    const f = finding({ slug: 'josephus-whiston', status: 'published', admitted: true, surface: 'shelf' });
+    expect(f.verdict).not.toBe('STOP');
+    expect(f.surface).toBe('shelf');
+    // The note must SAY shelf, not just "admitted": which surface serves it is the entire content
+    // of the ruling's deadlock, and collapsing it to a boolean is how the deadlock survived.
+    expect(f.note).toMatch(/shelf/i);
+    expect(f.note).toMatch(/no lane/i);
+  });
+
+  it('a published work NOTHING serves still STOPs', () => {
+    // SEED: make admitted default true, or drop the status check -> this goes green and the A3
+    // rule stops meaning anything.
+    const f = finding({ slug: 'ghost', status: 'published', admitted: false, surface: 'none' });
+    expect(f.verdict).toBe('STOP');
+    expect(f.note).toMatch(/PUBLISHED BUT NOT ADMITTED/);
+  });
+
+  it('lane-admitted works are unaffected, including the author-admitted commentaries', () => {
+    // john-gill / jfb / adam-clarke / matthew-henry are admitted by LEGAL_CORPUS_FILTER's AUTHOR
+    // clause, not by any work-slug list. List-based admission called all four NOT-ADMITTED while
+    // they were published and answering live in /ask.
+    for (const slug of ['john-gill', 'jfb', 'adam-clarke', 'matthew-henry']) {
+      const f = finding({ slug, status: 'published', admitted: true, surface: 'lane+shelf' });
+      expect(f.verdict, `${slug} must not STOP`).not.toBe('STOP');
+    }
+  });
+
+  it('staged and unserved is consistent, not a STOP', () => {
+    expect(finding({ slug: 'origen-commentary', status: 'staged', admitted: false, surface: 'none' }).verdict).not.toBe('STOP');
+  });
+
+  it('an unmeasured leg is NAMED, never folded into a clean verdict', () => {
+    // SEED: return OK for NOT_MEASURED -> red. An unrun §2 reporting "0 rows" is what made the
+    // census read as four clean legs when only one had run.
+    const v = censusVerdict({ admission: [], forbidden: NOT_MEASURED, voices: NOT_MEASURED, serving: NOT_MEASURED });
+    expect(v.notMeasured).toHaveLength(3);
+    expect(v.stop).toBe(false);
+  });
+});
+
+describe('a must-not-serve author is never admitted, by any surface', () => {
+  // THIS TEST EXISTS BECAUSE THE SHELF FIX OPENED THE HOLE IT CLOSES. `origen-commentary` is on
+  // MUST_NOT_SERVE_AUTHORS (A6, 2026-07-17) and has 1,224 sections. Under lane-only admission it
+  // was NOT-ADMITTED, so publishing it would have STOPped — the ban was enforced by ACCIDENT, as
+  // a side effect of no lane serving it. Counting the shelf as a surface removed that accident.
+  // The shelf is where it matters most: a lane can decline to return a work, but the Book Reader
+  // renders whatever is published, so for a banned author published IS served.
+  it('STOPs when a banned author is published, even though it has sections', () => {
+    // SEED: drop the `banned` branch -> this goes green with surface 'shelf' and a banned author
+    // reaches the Book Reader.
+    const f = admissionFindings([{ slug: 'origen-commentary', status: 'published', admitted: true, surface: 'shelf', banned: true }])[0]!;
+    expect(f.verdict).toBe('STOP');
+    expect(f.admitted).toBe(false);
+    expect(f.note).toMatch(/MUST_NOT_SERVE/);
+  });
+
+  it('is consistent, not a STOP, while it stays staged', () => {
+    const f = admissionFindings([{ slug: 'origen-commentary', status: 'staged', admitted: true, surface: 'shelf', banned: true }])[0]!;
+    expect(f.verdict).not.toBe('STOP');
+    expect(f.admitted).toBe(false);
+  });
+});
