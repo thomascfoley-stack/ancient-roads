@@ -157,6 +157,57 @@ history.** No feature code was written. Both docs are DESIGN, not approval to bu
   correlated pattern survives on the sections paging path via `VERSE_RANGE_COLS`. Nothing else was
   re-measured after `76bf392`.
 - Neither design doc has been read by anyone but its author. Bylaw 4: fixer is not verifier.
+## 2026-08-02 (study toolkit: the selection popover as a gathering surface — DESIGN)
+
+**Headline: the owner's sketch is buildable, but the one thing it asks for most directly is not.**
+`docs/STUDY_TOOLKIT_DESIGN.md`, from a sketch and brief. Twelve owner decisions. No code.
+
+### THE BLOCKER, verified not assumed
+
+**Nothing in this repo aligns an English word to a Greek or Hebrew one.** All 18 shipped translations are
+`{verse, text}` plain strings with no Strong's tags; `web/public/original/{book}/{ch}.json` holds tokens in
+ORIGINAL word order (`{w, l, tr, s, m, g}`) with no index back to an English token. So "select *loved*, see
+its Greek" cannot be answered correctly today. Recommended resolution is verse-scoped: show the verse's
+original-language tokens and let the reader pick, which is what the brief already describes ("I should be able
+to select the Greek and Hebrew one"). Aligning properly means ingesting a Strong's-tagged translation, which
+is a licensing decision before it is an ingest slice.
+
+### FOUND
+
+- **The sketch's checkbox row is the register wall rendered as a control** (`catalog-defs.ts:6-23`). Each box
+  is one existing catalog and the columns stay separate, which is what the wall requires. Best thing in it.
+- **The floating card cannot grow.** It is `position: fixed` with collision-aware placement; a tall scrollable
+  panel anchored to a word near the bottom of a 390px screen has nowhere to go. Proposed: collapsed bar stays
+  anchored, expanded results open as a right rail on md+ and a detented sheet on mobile with the verse pinned.
+- **Dictionary is a multi-megabyte tap today.** `lexicon/greek.json` 1.1 MB and `hebrew.json` 1.8 MB are
+  monolithic while the concordance beside them is ALREADY sharded into 295 files. Sharding the lexicon is worth
+  doing whatever is decided about the rest, and it makes today's Word panel cheaper.
+- **Retiring the study sheet fixes the word highlighter for free.** Double-click-to-select is broken *because*
+  the first click opens the sheet (`verse-display.tsx:145-150`). If the toolkit supersedes the sheet, the
+  conflict disappears with no timing hack. Filed as decision 9.1.
+- **Ask should be a lane, not a navigation.** `verse-display.tsx:99-105` does `router.push('/ask?q=...')`, the
+  clearest live violation of Rule 1. In a rail it is a fourth column.
+
+### NOT AUTHORED HERE, observed in the main worktree and NOT in this branch
+
+Uncommitted work by another session: `db/migrations/038_devotional_source_type.sql` adds a `devotional`
+source_type, and `ingest/sources.config.json` gains ~10 devotional works. Two consequences worth catching
+before a flip, both recorded in the design doc §3:
+
+- The fail-closed default would have published all ten onto no shelf (`catalog-defs.ts:19`), but that same
+  tree already adds a `devotionals` catalog AND a `theology` one, the latter closing a live gap:
+  calvin-institutes, hodge-systematic, owen-works and schaff-creeds were published and lane-served but
+  unbrowsable, 33,578 sections with no route to them. The toolkit therefore filters over SIX registers.
+- **Migration 038 is now taken**, so `STUDY_PLANS_DESIGN.md` §6's proposed 038 for `verse_coverage` needs
+  renumbering. It says to re-measure, so it will not collide silently.
+
+### NOT DONE / UNVERIFIED
+
+- No code. `npm run audit` not run (docs-only, bylaw 6). Note gate 5 is red on `main` regardless, from
+  `work-toc-bounded.test.tsx` at `76bf392`.
+- The doc has been read by nobody but its author (bylaw 4).
+- The layout proposal in §4 has not been prototyped; that a rail plus detented sheet actually reads well at
+  390px is an assertion, not a measurement.
 
 ## 2026-08-02 (the accuracy diagnostic, re-run against production after A8)
 

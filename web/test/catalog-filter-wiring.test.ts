@@ -121,11 +121,23 @@ describe('the catalog taxonomy stays disjoint as it grows', () => {
   });
 
   it('lane/other content still reaches NO catalog, including the new one', () => {
-    // The fail-closed default. `historian` was moved OUT of this set by an owner decision on
-    // 2026-08-01; theology and confession were not, and must not drift in silently.
+    // The fail-closed default. Types leave this set only by an OWNER DECISION, never because a
+    // bucket swallowed them — which is what this test is for, and it has now caught two.
+    //
+    //   `historian`               moved out 2026-08-01 (own shelf).
+    //   `theology`, `confession`  moved out 2026-08-02, owner: "nothing should be invisible,
+    //                             make it visible". They were published, lane-served and on no
+    //                             shelf — 33,578 sections (calvin-institutes, hodge-systematic,
+    //                             owen-works, schaff-creeds) with no route for a reader. The
+    //                             standing argument that they must not be folded INTO Commentaries
+    //                             still holds and is why they are a SEPARATE catalog, exactly as
+    //                             Historians was.
+    //
+    // `lexicon` stays out and is the reason this test still exists: Word Study is its own surface,
+    // so a lexicon on a catalog shelf would be a second, competing route to the same content.
     const all = new Set(CATALOG_IDS.flatMap((id) => [...CATALOGS[id].types]));
-    for (const t of ['theology', 'confession', 'lexicon']) {
-      expect(all.has(t), `"${t}" is lane/other content and must appear in NO catalog`).toBe(false);
+    for (const t of ['lexicon']) {
+      expect(all.has(t), `"${t}" belongs to Word Study and must appear in NO catalog`).toBe(false);
     }
   });
 
@@ -134,8 +146,9 @@ describe('the catalog taxonomy stays disjoint as it grows', () => {
     expect(typesForMany(['sermons', 'sermons'])).toEqual(['sermon']);
     const everything = typesForMany(CATALOG_IDS);
     expect(everything).toEqual([...everything].sort());
-    expect(everything).not.toContain('theology');
-    expect(everything).not.toContain('confession');
+    // theology/confession joined the taxonomy on 2026-08-02 (see the fail-closed test above).
+    // `lexicon` is the one that must never appear, because Word Study already serves it.
+    expect(everything).not.toContain('lexicon');
   });
 });
 
