@@ -25,6 +25,7 @@ export function VerseDisplay({
   bookName,
   translation,
   selectedVerse,
+  flashVerse,
   onVerseClick,
   highlights,
   notedVerses,
@@ -36,6 +37,10 @@ export function VerseDisplay({
   bookName: string;
   translation: string;
   selectedVerse: number | null;
+  /** A verse arrived at via a `#v<n>` deep link, ringed briefly so the reader can see which
+   *  one was meant. Passed as a prop because the verse is React-controlled: a class added with
+   *  classList.add is wiped by the next render. */
+  flashVerse?: number | null;
   onVerseClick: (verse: number) => void;
   highlights?: Map<number, StoredSpan[]>;
   notedVerses?: Set<number>;
@@ -118,11 +123,17 @@ export function VerseDisplay({
           const segments = flattenToSegments(v.text.length, native);
           const hasNote = notedVerses?.has(v.verse);
           const outerBg = isSelected ? 'bg-accent-100/70 dark:bg-accent-500/20' : '';
+          const flashRing = v.verse === flashVerse ? ' ring-2 ring-accent-400/70' : '';
           return (
             <span
               key={v.verse}
+              // ADDRESSABLE. A saved note in My library could only ever link to the CHAPTER, so
+              // "jump back to it" dropped the reader at John 3:1 for a note on John 3:16 and left
+              // them to find it. `#v16` makes the verse itself a destination. `scroll-mt-20`
+              // keeps it clear of the sticky header when scrolled to.
+              id={`v${v.verse}`}
               data-verse={v.verse}
-              className={`verse inline rounded ${outerBg}`}
+              className={`verse inline scroll-mt-20 rounded ${outerBg}${flashRing}`}
               onClick={() => {
                 // Don't hijack an in-progress text selection — let the user copy / annotate.
                 const sel = window.getSelection();

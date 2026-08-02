@@ -105,6 +105,8 @@ export default function ReaderPage() {
   const [highlights, setHighlights] = useState<Map<number, StoredSpan[]>>(new Map());
   const [notes, setNotes] = useState<Map<number, string>>(new Map());
   const [signedIn, setSignedIn] = useState(false);
+  // The verse a `#v<n>` deep link landed on, briefly emphasised. State, not a DOM mutation.
+  const [flashVerse, setFlashVerse] = useState<number | null>(null);
   // The unified study panel: which verse, which tab, optional focused word.
   // focusWord carries the actual tapped OWord so a single-word tap can render the
   // focused WordPanel (not the whole-verse word list).
@@ -135,6 +137,36 @@ export default function ReaderPage() {
       .then(setData)
       .catch(() => setError('Failed to load chapter'));
   }, [book, fetchSlug, chapterNum, translation, hydrated]);
+
+  // ── deep link to a verse (`/read/jhn/3#v16`) ───────────────────────────────────────────────
+  // Read from `window.location.hash` in an effect, NOT from useSearchParams: the hash is not sent
+  // to the server, so there is nothing for a first client render to disagree with, and no Suspense
+  // boundary is needed. Given this session spent an afternoon on a hydration mismatch, the shape
+  // that cannot produce one is the right shape.
+  //
+  // The scroll waits for `data` because the verse element does not exist at navigation time — the
+  // chapter is fetched client-side, so the browser has nothing to anchor to and its own native
+  // fragment scroll is a no-op here.
+  useEffect(() => {
+    if (!data) return;
+    const m = /^#v(\d+)$/.exec(window.location.hash);
+    if (!m) return;
+    const verse = Number(m[1]);
+    const el = document.querySelector(`[data-verse="${verse}"]`);
+    if (!el) return; // a hash naming a verse this chapter does not have is ignored, not an error
+    el.scrollIntoView({ block: 'center' });
+    // A brief emphasis, because scrolling alone does not say WHICH verse was meant when the whole
+    // screen is verses.
+    //
+    // THIS IS STATE, NOT classList.add. The first version mutated the element's className
+    // directly and the ring never appeared: the verse is React-controlled, and the next render —
+    // there are several after load (commentary prefetch, original-language prefetch, annotations)
+    // — rewrites className from the JSX and drops anything added underneath it. Found by looking
+    // at the live DOM rather than trusting that the code read correctly.
+    setFlashVerse(verse);
+    const t = setTimeout(() => setFlashVerse(null), 2200);
+    return () => clearTimeout(t);
+  }, [data]);
 
   // Prefetch commentary for the chapter.
   useEffect(() => {
@@ -316,6 +348,7 @@ export default function ReaderPage() {
             bookName={book.name}
             translation={translation.id}
             selectedVerse={study?.verse ?? null}
+            flashVerse={flashVerse}
             onVerseClick={handleVerseClick}
             highlights={highlights}
             notedVerses={new Set(notes.keys())}

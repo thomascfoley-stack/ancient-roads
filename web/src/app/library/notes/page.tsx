@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { decodeVerseId, formatVerseId } from '@bible/verse-id';
-import { BOOK_BY_NUM } from '@bible/books';
+import { formatVerseId } from '@bible/verse-id';
+import { verseHref } from '@/lib/verse-link';
 import { HIGHLIGHT_COLORS } from '@/lib/highlight-colors';
 
 interface Note { id: string; verse_id: number; body: string; updated_at: string }
@@ -11,10 +11,12 @@ interface Highlight { id: string; verse_id: number; color: string }
 
 const DOT: Record<string, string> = Object.fromEntries(HIGHLIGHT_COLORS.map((c) => [c.id, c.dot]));
 
+// The href is built by the SHARED helper so the test can drive the shipped function rather than a
+// copy of it. The fragment targets the verse's own id (verse-display.tsx); the reader scrolls to
+// it once the chapter has loaded, because the element does not exist at navigation time for the
+// browser to anchor natively.
 function verseRef(verseId: number) {
-  const { book, chapter } = decodeVerseId(verseId);
-  const b = BOOK_BY_NUM.get(book);
-  return { label: formatVerseId(verseId), href: b ? `/read/${b.slug}/${chapter}` : '#' };
+  return { label: formatVerseId(verseId), href: verseHref(verseId) };
 }
 
 export default function MyLibraryPage() {
