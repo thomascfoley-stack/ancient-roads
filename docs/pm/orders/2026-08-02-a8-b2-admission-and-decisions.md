@@ -92,6 +92,35 @@ would route around the defect and prove nothing.
 **Green after restore:** root suite 516 tests / 50 files, `tsc --noEmit` clean, `eslint src test`
 0 errors, `web` eslint clean.
 
+## The lock on the door B2 widened
+
+B2 widened the admission set from 14 works to 29. Admission is the front of this chain:
+
+```
+SERVED_*_WORKS → ALL_SERVED_WORKS → admission → `admitted && staged` → flip list → published
+```
+
+So a quarantined slug typed into a served list is published content. **Nothing checked that.** Rail
+6 of the DRAFT order says "quarantine is law"; it was law by coincidence — the four quality
+quarantines simply had not been typed in. That was a smaller risk at 14 works, and the 15 added are
+song/verse, which is exactly where the quarantine rulings live (`bramley-carols`,
+`donne-divine-poems`, `herrick-noble-numbers` were all quarantined *out* of that register).
+Widening a door and leaving the lock unenforced is the wrong half of the job.
+
+`test/invariants/served-lists-respect-the-manifest.test.ts` pins both directions against
+`ingest/sources.config.json`: no `serve:false` work appears in any served list, and every served
+slug has a manifest entry. **Measured: 60 manifest entries, 8 withheld, 29 served, 0 breaches, 0
+missing** — green on arrival, which is the point. It pins something true and unprotected rather
+than reporting a bug. Red-proofed both ways: `whitefield-works` typed into `SERVED_SERMON_WORKS`
+→ RED naming the slug and the list it entered through; a slug the manifest has never heard of
+→ RED.
+
+One thing the flag cannot express, recorded rather than resolved: `serve:false` conflates
+*quarantined for quality/licensing* with *staged because no read path exists yet* (the three
+historians, `thayers-lexicon`). Both mean "not served", so the guard is correct either way — but
+if a historian is later meant to serve, the manifest entry is what changes, and it changes
+deliberately. That is the same decision as the historian question below.
+
 ## What this did NOT fix, and it is not a bug
 
 Two more works would STOP the flip today. Neither is a defect; each is a decision, and they are
