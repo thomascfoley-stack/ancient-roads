@@ -117,6 +117,29 @@ const DEST = process.env.CORPUS_COPY_DEST_URL;
 if (!SRC) die('STOP: CORPUS_COPY_SOURCE_URL is unset. Credentials come from the environment only — never argv, never a dotfile.', 2);
 if (!DEST && !DRY) die('STOP: CORPUS_COPY_DEST_URL is unset.', 2);
 
+// PARSE BEFORE ANYTHING TOUCHES THEM. `hostOf` is `new URL(...)`, so a value that is not a URL —
+// a shell placeholder left unreplaced, a pasted fragment, a variable that expanded to nothing but
+// quotes — threw an uncaught TypeError with a stack trace instead of refusing. Two reasons that
+// matters: a stack trace is not an answer an operator can act on, and an exception carrying an
+// unparsed connection string is exactly how a credential ends up in a terminal buffer or a CI log.
+//
+// The message names the VARIABLE and never the value. That is the rule for every error in this
+// tool: rail 3 says a credential is never printed, and "only when it is well-formed" is not a rule.
+function assertParses(label, url) {
+  try {
+    new URL(String(url));
+  } catch {
+    die(
+      `STOP: ${label} is not a valid connection URL. Its value is not shown here, deliberately.\n` +
+        '  Expected something of the form postgresql://USER:PASSWORD@HOST/DBNAME?sslmode=require\n' +
+        '  If you exported a placeholder from a command someone gave you, that is the usual cause.',
+      2,
+    );
+  }
+}
+assertParses('CORPUS_COPY_SOURCE_URL', SRC);
+if (!DRY) assertParses('CORPUS_COPY_DEST_URL', DEST);
+
 // `--local-redproof` MUST NOT BE A SKELETON KEY. publish-flip.mjs shipped with exactly that hole
 // (audit finding C3: the flag was honoured without checking the target was actually local, so a
 // real endpoint could be driven with every gate disabled). So the flag is validated before it

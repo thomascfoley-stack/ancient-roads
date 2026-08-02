@@ -13,9 +13,12 @@ GUARDS — each must REFUSE, and for the stated reason
   ✓ no COPY_EXPECT_HOST declaration
   ✓ declaration names the WRONG endpoint
   ✓ source and destination identical
+  ✓ a placeholder instead of a URL refuses cleanly, no stack trace
+  ✓ a malformed DESTINATION refuses cleanly too
   ✓ no source credential in the env
   ✓ piped stdin is not consent
   ✓ --redproof-skip-gate is inert without --local-redproof
+  ✓ a malformed-URL refusal does not echo the credential
 
 THE COPY ITSELF
   ✓ copies olney-hymns
@@ -44,4 +47,4 @@ PUBLISHED IS UNREACHABLE — a destination row already published is not disturbe
   ✓ (and it does see the literal staged, so the grep is not blind)
 
 RESULT
-  34 passed, 0 failed
+  37 passed, 0 failed

@@ -156,6 +156,10 @@ expect_refusal "declaration names the WRONG endpoint" "declared endpoint" \
   env CORPUS_COPY_SOURCE_URL="$SRC" CORPUS_COPY_DEST_URL="$FAKEPROD" COPY_ALLOW=1 COPY_EXPECT_HOST=ep-some-other-thing "${BARE[@]}" --slugs="$SLUGS"
 expect_refusal "source and destination identical"  "same database" \
   env CORPUS_COPY_SOURCE_URL="$SRC" CORPUS_COPY_DEST_URL="$SRC" COPY_ALLOW=1 COPY_EXPECT_HOST=localhost "${RUN[@]}" --slugs="$SLUGS"
+expect_refusal "a placeholder instead of a URL refuses cleanly, no stack trace" "not a valid connection URL" \
+  env CORPUS_COPY_SOURCE_URL="<dev owner URL, ep-tiny-hat>" CORPUS_COPY_DEST_URL="$DEST" COPY_ALLOW=1 COPY_EXPECT_HOST=localhost "${RUN[@]}" --slugs="$SLUGS"
+expect_refusal "a malformed DESTINATION refuses cleanly too" "not a valid connection URL" \
+  env CORPUS_COPY_SOURCE_URL="$SRC" CORPUS_COPY_DEST_URL="not a url" COPY_ALLOW=1 COPY_EXPECT_HOST=localhost "${RUN[@]}" --slugs="$SLUGS"
 expect_refusal "no source credential in the env"   "CORPUS_COPY_SOURCE_URL is unset" \
   env COPY_ALLOW=1 COPY_EXPECT_HOST=localhost "${RUN[@]}" --slugs="$SLUGS"
 expect_refusal "piped stdin is not consent"        "not a TTY" \
@@ -163,6 +167,15 @@ expect_refusal "piped stdin is not consent"        "not a TTY" \
 expect_refusal "--redproof-skip-gate is inert without --local-redproof" "not a TTY|not local|declared endpoint" \
   env CORPUS_COPY_SOURCE_URL="$SRC" CORPUS_COPY_DEST_URL="$DEST" COPY_ALLOW=1 COPY_EXPECT_HOST=localhost \
       node scripts/corpus-copy.mjs --redproof-skip-gate --evidence="$TMP/ev" --slugs="$SLUGS"
+
+# A refusal that prints the connection string is still a leak. Asserted separately from the
+# refusal itself, because those are two different properties and only one of them is about safety.
+LEAKOUT="$(env CORPUS_COPY_SOURCE_URL='postgres://user:SUPERSECRETPW@x' CORPUS_COPY_DEST_URL='not a url' COPY_ALLOW=1 "${RUN[@]}" --slugs="$SLUGS" 2>&1)"
+if grep -q 'SUPERSECRETPW' <<<"$LEAKOUT"; then
+  printf '  \033[31m✗ the refusal ECHOED the credential\033[0m\n'; FAIL=$((FAIL+1))
+else
+  printf '  \033[32m✓ a malformed-URL refusal does not echo the credential\033[0m\n'; PASS=$((PASS+1))
+fi
 
 say "THE COPY ITSELF"
 expect_ok "copies olney-hymns" \
