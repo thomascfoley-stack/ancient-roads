@@ -1,5 +1,43 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-02 (the audit gate goes green: `76bf392` shipped a behaviour change without its tests)
+
+**Headline: `main` was red on both CI jobs, and every branch cut from it inherited that.** Nothing
+mechanically stopped it — `main` is unprotected and `required_status_checks` is empty, so "nothing
+merges red" was discipline, not mechanism, and this is what that costs.
+
+Two jobs, one cause. `79494d4` made the reader TOC return **units** instead of sections and `76bf392`
+joined `verseStart`/`verseEnd` onto sections, both deliberate and both correct. Their tests were not
+updated with them.
+
+### DONE
+
+- **`work-toc-bounded.test.tsx`** (audit gate 5, `tsc -p tsconfig.test.json`): one `render` missing the
+  now-required `sourceType` prop, and a stale `WorkTocRow` type name whose literal was still the old
+  per-section shape. Rebuilt as a single-section `WorkTocUnit`, which is the degenerate case the test
+  is actually about.
+- **`work-reader.test.ts`** (db-invariants): four stale expectations. The TOC key set and the sections
+  key set are now asserted against the real shapes; the reading-order check compares `firstOrdinal`
+  and gains a unit-disjointness assertion the per-section version could not make.
+- **The page-count bug was the interesting one.** `expect(pages).toBe(Math.floor(toc.length / 100) + 1)`
+  compared a UNIT count against a SECTION walk, so it read 2 where the walk did 3. Both sites now
+  derive the section total from the units' own `sectionCount`.
+- That derivation is only sound while the TOC is not capped, so **both sites now assert
+  `tocTruncated === false` first**. `WORK_TOC_MAX` is 10,000 and both fixtures are far under it today;
+  the assertion is there so a future fixture that trips the cap fails loudly instead of silently
+  under-counting.
+
+### VERIFIED
+
+`npm run audit` **exit 0**, all thirteen gates, on this branch. Previously gate 5 was red.
+
+### NOT DONE / UNVERIFIED
+
+- **The db-invariants half was NOT executed locally.** `web/.env.local` carries no DB URL on this
+  machine, so `work-reader.test.ts` reports 7 skipped, and a skip is not a pass. It is typecheck-clean
+  and the assertions are re-derived from the shipped shapes, but the proof is the CI `db-invariants`
+  job against the real test branch, recorded on the PR.
+- No product code changed. Test expectations only.
 ## 2026-08-02 (QA plan audit + two design docs: study plans, workspace artifacts)
 
 **Headline: a product-owner QA plan was audited against the tree, and three of its sections test
