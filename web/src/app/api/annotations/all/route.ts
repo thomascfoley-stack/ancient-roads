@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/session';
-import { listHighlights, listNotes } from '@/lib/annotations';
+import { listBookmarks, listHighlights, listNotes } from '@/lib/annotations';
 
-// All of the signed-in user's highlights + notes, for the "My library" page.
+// All of the signed-in user's highlights, notes and bookmarks, for the "My library" page.
 export async function GET() {
   try {
     const user = await requireUser();
-    const [highlights, notes] = await Promise.all([
+    const [highlights, notes, bookmarks] = await Promise.all([
       listHighlights(user.id),
       listNotes(user.id),
+      listBookmarks(user.id),
     ]);
-    return NextResponse.json({ highlights, notes });
+    return NextResponse.json({ highlights, notes, bookmarks });
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

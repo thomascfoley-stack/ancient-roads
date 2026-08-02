@@ -42,9 +42,9 @@ export async function getChapterAnnotations(
   userId: string,
   book: number,
   chapter: number,
-): Promise<{ highlights: Highlight[]; notes: Note[] }> {
+): Promise<{ highlights: Highlight[]; notes: Note[]; bookmarks: Bookmark[] }> {
   const [lo, hi] = chapterRange(book, chapter);
-  const [highlights, notes] = await runAsUser(userId, (sql) => [
+  const [highlights, notes, bookmarks] = await runAsUser(userId, (sql) => [
     // created_at ASC so later spans win the overlap in flattenToSegments (last covering wins).
     // coalesce(background_color, color): new writes set both; legacy rows have only `color`.
     sql`SELECT id, verse_id, verse_end, coalesce(background_color, color) AS color, text_color, span_start, span_end, translation
@@ -54,8 +54,14 @@ export async function getChapterAnnotations(
     sql`SELECT id, verse_id, verse_end, body, updated_at FROM notes
         WHERE user_id = ${userId} AND verse_id >= ${lo} AND verse_id < ${hi} AND deleted_at IS NULL
         ORDER BY verse_id`,
+    // Fetched in the SAME user-scoped session as the other two, so one round trip carries the
+    // whole chapter's annotation state and the reader never renders a partial picture.
+    sql`SELECT id, verse_id, label, created_at FROM bookmarks
+        WHERE user_id = ${userId} AND target_kind = 'verse'
+          AND verse_id >= ${lo} AND verse_id < ${hi} AND deleted_at IS NULL
+        ORDER BY verse_id`,
   ]);
-  return { highlights: highlights as Highlight[], notes: notes as Note[] };
+  return { highlights: highlights as Highlight[], notes: notes as Note[], bookmarks: bookmarks as Bookmark[] };
 }
 
 export interface NewHighlight {
@@ -115,6 +121,83 @@ export async function removeNote(userId: string, verseId: number): Promise<void>
   await runAsUser(userId, (sql) => [
     sql`UPDATE notes SET deleted_at = now() WHERE user_id = ${userId} AND verse_id = ${verseId} AND deleted_at IS NULL`,
   ]);
+}
+
+// ── bookmarks ────────────────────────────────────────────────────────────────────────────────
+// The table, its RLS policy and its USER_TABLE_SPEC entry all shipped with migration 026; the
+// WRITE PATH did not. `onBookmark` in selection-popover.tsx had zero call sites, so the button it
+// gates never rendered and the feature existed everywhere except where a reader could reach it
+// (A7b walk, 2026-08-02).
+//
+// A bookmark is a PLACE, not an annotation: no body, no colour, no offsets. So it toggles rather
+// than accumulating — a verse is bookmarked or it is not, and pressing it twice leaves no trail.
+// `target_kind = 'verse'` is written explicitly to satisfy the table's XOR check, which forbids a
+// row that carries both a verse and a section.
+
+export interface Bookmark {
+  id: string;
+  verse_id: number;
+  label: string | null;
+  created_at: string;
+}
+
+/**
+ * Add a bookmark, or return the one already there.
+ *
+ * SINGLE-STATEMENT UPSERT, for the reason `upsertNote` above states: a read-then-branch does not
+ * fit one runAsUser transaction over the stateless HTTP driver, and between the SELECT and the
+ * INSERT another request can land. My first version did exactly that, and it was worse than slow
+ * — migration 026 carries `idx_bookmarks_user_verse` UNIQUE (user_id, verse_id) WHERE deleted_at
+ * IS NULL AND target_kind = 'verse', so the loser of that race got a duplicate-key error and the
+ * reader got a 500 for pressing a toggle twice quickly.
+ *
+ * `DO UPDATE SET label = coalesce(EXCLUDED.label, bookmarks.label)` rather than DO NOTHING: DO
+ * NOTHING returns no row, so the caller would have to re-read to answer at all, which reopens the
+ * two-statement problem it was meant to close. A re-bookmark with no label leaves an existing
+ * label alone.
+ */
+export async function createBookmark(userId: string, verseId: number, label?: string | null): Promise<Bookmark> {
+  const [rows] = await runAsUser(userId, (sql) => [
+    sql`INSERT INTO bookmarks (user_id, target_kind, verse_id, label)
+        VALUES (${userId}, 'verse', ${verseId}, ${label ?? null})
+        ON CONFLICT (user_id, verse_id) WHERE deleted_at IS NULL AND target_kind = 'verse'
+        DO UPDATE SET label = coalesce(EXCLUDED.label, bookmarks.label)
+        RETURNING id, verse_id, label, created_at`,
+  ]);
+  return (rows as Bookmark[])[0]!;
+}
+
+/** Soft-delete, matching highlights and notes — `deleted_at`, never a hard DELETE. */
+export async function removeBookmark(userId: string, verseId: number): Promise<void> {
+  await runAsUser(userId, (sql) => [
+    sql`UPDATE bookmarks SET deleted_at = now()
+        WHERE user_id = ${userId} AND target_kind = 'verse' AND verse_id = ${verseId} AND deleted_at IS NULL`,
+  ]);
+}
+
+export interface BookmarkCursor {
+  createdAt: string;
+  id: string;
+}
+
+/** A user's bookmarks, newest first, PAGINATED — never unbounded (CLAUDE.md). */
+export async function listBookmarks(
+  userId: string,
+  limit?: number,
+  cursor?: BookmarkCursor,
+): Promise<Bookmark[]> {
+  const lim = pageLimit(limit);
+  const [rows] = await runAsUser(userId, (sql) => [
+    cursor
+      ? sql`SELECT id, verse_id, label, created_at FROM bookmarks
+            WHERE user_id = ${userId} AND deleted_at IS NULL AND target_kind = 'verse'
+              AND (created_at, id) < (${cursor.createdAt}::timestamptz, ${cursor.id}::uuid)
+            ORDER BY created_at DESC, id DESC LIMIT ${lim}`
+      : sql`SELECT id, verse_id, label, created_at FROM bookmarks
+            WHERE user_id = ${userId} AND deleted_at IS NULL AND target_kind = 'verse'
+            ORDER BY created_at DESC, id DESC LIMIT ${lim}`,
+  ]);
+  return rows as Bookmark[];
 }
 
 export interface NoteCursor {

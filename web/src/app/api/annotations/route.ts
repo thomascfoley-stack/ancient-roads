@@ -7,6 +7,8 @@ import {
   removeHighlightById,
   upsertNote,
   removeNote,
+  createBookmark,
+  removeBookmark,
 } from '@/lib/annotations';
 
 export async function GET(req: NextRequest) {
@@ -50,6 +52,15 @@ export async function POST(req: NextRequest) {
       const n = await upsertNote(user.id, verseId, text);
       return NextResponse.json(n, { status: 201 });
     }
+    if (body.kind === 'bookmark') {
+      // A label is optional and capped: it is a user-supplied string reaching a text column, and
+      // "no length cap on free text at the edge" is the shape the API-hardening pass closed
+      // everywhere else in this route's neighbourhood.
+      const raw = body.label != null ? String(body.label).trim() : '';
+      const label = raw ? raw.slice(0, 200) : null;
+      const b = await createBookmark(user.id, verseId, label);
+      return NextResponse.json(b, { status: 201 });
+    }
     return NextResponse.json({ error: 'unknown kind' }, { status: 400 });
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -69,6 +80,7 @@ export async function DELETE(req: NextRequest) {
     if (!verseId) return NextResponse.json({ error: 'verseId required' }, { status: 400 });
     if (body.kind === 'highlight') await removeHighlight(user.id, verseId);
     else if (body.kind === 'note') await removeNote(user.id, verseId);
+    else if (body.kind === 'bookmark') await removeBookmark(user.id, verseId);
     else return NextResponse.json({ error: 'unknown kind' }, { status: 400 });
     return NextResponse.json({ ok: true });
   } catch {

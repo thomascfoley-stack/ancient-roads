@@ -29,6 +29,8 @@ export function VerseDisplay({
   onVerseClick,
   highlights,
   notedVerses,
+  bookmarkedVerses,
+  onToggleBookmark,
   signedIn,
   onAddHighlight,
   onOpen,
@@ -44,6 +46,11 @@ export function VerseDisplay({
   onVerseClick: (verse: number) => void;
   highlights?: Map<number, StoredSpan[]>;
   notedVerses?: Set<number>;
+  /** Verses the reader has bookmarked, by verse number. A Set: a bookmark is a place, not data. */
+  bookmarkedVerses?: Set<number>;
+  /** Toggles the bookmark on a verse. Absent when signed out, which is what hides the button:
+   *  SelectionPopover renders Bookmark only when a handler exists (selection-popover.tsx). */
+  onToggleBookmark?: (verse: number) => void;
   signedIn?: boolean;
   onAddHighlight?: (verse: number, range: { start: number; end: number } | null, color: string) => void;
   onOpen?: (verse: number, tab: StudyTab) => void;
@@ -122,6 +129,7 @@ export function VerseDisplay({
           }
           const segments = flattenToSegments(v.text.length, native);
           const hasNote = notedVerses?.has(v.verse);
+          const isBookmarked = bookmarkedVerses?.has(v.verse);
           const outerBg = isSelected ? 'bg-accent-100/70 dark:bg-accent-500/20' : '';
           const flashRing = v.verse === flashVerse ? ' ring-2 ring-accent-400/70' : '';
           return (
@@ -168,6 +176,11 @@ export function VerseDisplay({
                   ✎
                 </sup>
               )}
+              {isBookmarked && (
+                <sup className="mr-0.5 select-none text-accent-600 dark:text-accent-300" title="Bookmarked">
+                  ⚑
+                </sup>
+              )}
             </span>
           );
         })}
@@ -183,6 +196,21 @@ export function VerseDisplay({
           signedIn={!!signedIn}
           onHighlight={onAddHighlight ? highlightPending : undefined}
           onAddNote={onOpen ? () => openPending('notes') : undefined}
+          onBookmark={
+            // Gated on signedIn, the same as the highlight swatches (selection-popover.tsx). The
+            // button is not merely useless when signed out: the optimistic toggle would show the
+            // flag, the POST would 401, and the flag would vanish on the next load — a control
+            // that appears to work and silently does not.
+            signedIn && onToggleBookmark
+              ? () => {
+                  // The popover's key is the verse it was raised on. Dismiss FIRST: leaving it
+                  // open over a verse whose state just changed reads as if nothing happened.
+                  const verse = Number(pending!.key);
+                  dismiss();
+                  onToggleBookmark(verse);
+                }
+              : undefined
+          }
           onAsk={askPending}
           onOpenCommentaries={onOpen ? () => openPending('commentaries') : undefined}
           onDismiss={dismiss}

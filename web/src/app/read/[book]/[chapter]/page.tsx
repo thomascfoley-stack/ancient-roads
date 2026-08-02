@@ -104,6 +104,9 @@ export default function ReaderPage() {
   // verse (1-based within chapter) → its highlight spans (multiple allowed).
   const [highlights, setHighlights] = useState<Map<number, StoredSpan[]>>(new Map());
   const [notes, setNotes] = useState<Map<number, string>>(new Map());
+  // Bookmarked verses in this chapter, by verse number. A Set because a bookmark carries no
+  // payload — it is a place, not an annotation.
+  const [bookmarks, setBookmarks] = useState<Set<number>>(new Set());
   const [signedIn, setSignedIn] = useState(false);
   // The verse a `#v<n>` deep link landed on, briefly emphasised. State, not a DOM mutation.
   const [flashVerse, setFlashVerse] = useState<number | null>(null);
@@ -195,9 +198,10 @@ export default function ReaderPage() {
     if (!book) return;
     setHighlights(new Map());
     setNotes(new Map());
+    setBookmarks(new Set());
     fetch(`/api/annotations?book=${book.bookNum}&chapter=${chapterNum}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((d: { highlights: ApiHighlight[]; notes: { verse_id: number; body: string }[] }) => {
+      .then((d: { highlights: ApiHighlight[]; notes: { verse_id: number; body: string }[]; bookmarks?: { verse_id: number }[] }) => {
         setSignedIn(true);
         const byVerse = new Map<number, StoredSpan[]>();
         for (const h of d.highlights) {
@@ -208,6 +212,10 @@ export default function ReaderPage() {
         }
         setHighlights(byVerse);
         setNotes(new Map(d.notes.map((n) => [n.verse_id % 1000, n.body])));
+        // Optional in the type: a reader on a tab opened before this deploy would receive a
+        // response without the key, and `undefined.map` would blank the whole chapter's
+        // annotations rather than just its bookmarks.
+        setBookmarks(new Set((d.bookmarks ?? []).map((b) => b.verse_id % 1000)));
       })
       .catch(() => setSignedIn(false));
   }, [book, chapterNum]);
@@ -284,6 +292,27 @@ export default function ReaderPage() {
     }).catch(() => {});
   }, [verseId]);
 
+  /**
+   * Bookmark toggle. Optimistic like the highlight and note handlers beside it, but with one
+   * difference that matters: it computes `next` from the CURRENT set inside the updater and
+   * fires the matching request, so a fast double-tap cannot send two POSTs. The server is
+   * idempotent too (createBookmark returns the existing row), so the two guards are independent.
+   */
+  const toggleBookmark = useCallback((verse: number) => {
+    setBookmarks((prev) => {
+      const on = prev.has(verse);
+      const next = new Set(prev);
+      if (on) next.delete(verse);
+      else next.add(verse);
+      fetch('/api/annotations', {
+        method: on ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'bookmark', verseId: verseId(verse) }),
+      }).catch(() => {});
+      return next;
+    });
+  }, [verseId]);
+
   const openStudy = useCallback(
     (verse: number, tab: StudyTab, focusWordIdx?: number, focusWord?: OWord) => {
       setStudy({ verse, tab, focusWordIdx, focusWord });
@@ -352,6 +381,8 @@ export default function ReaderPage() {
             onVerseClick={handleVerseClick}
             highlights={highlights}
             notedVerses={new Set(notes.keys())}
+            bookmarkedVerses={bookmarks}
+            onToggleBookmark={toggleBookmark}
             signedIn={signedIn}
             onAddHighlight={addHighlight}
             onOpen={(verse, tab) => openStudy(verse, tab)}
