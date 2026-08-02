@@ -186,6 +186,7 @@ export default function WorkPage() {
 
       {tocOpen && (
         <WorkToc
+          sourceType={work.source.source_type}
           toc={work.toc}
           currentOrdinal={progress?.ordinal ?? landing.ordinal}
           onNavigate={(ordinal) => {

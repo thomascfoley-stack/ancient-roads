@@ -16,7 +16,7 @@
 // be expanded (the one you are reading), so the allowance is units + one unit's chunks + chrome —
 // never the section count.
 
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { WorkToc } from '@/components/work-toc';
 import type { WorkTocUnit } from '@/lib/work';
@@ -70,7 +70,7 @@ describe('WorkToc — bounded render (O(units), not O(sections))', () => {
     expect(toc.length).toBe(UNITS);
     expect(toc.reduce((n, u) => n + u.sectionCount, 0)).toBe(UNITS * CHUNKS_PER_UNIT);
 
-    render(<WorkToc toc={toc} currentOrdinal={1} onNavigate={() => {}} onClose={() => {}} />);
+    render(<WorkToc toc={toc} sourceType="sermon" currentOrdinal={1} onNavigate={() => {}} onClose={() => {}} />);
 
     const buttons = navButtons();
     // Generous allowance: one button per unit, plus a disclosure per unit, plus the chunks of the
@@ -105,8 +105,60 @@ describe('WorkToc — bounded render (O(units), not O(sections))', () => {
       { id: 2, ordinal: 2, unitOrdinal: 2, heading: 'Chapter I', verseStart: null, verseEnd: null },
       { id: 3, ordinal: 3, unitOrdinal: 3, heading: 'Chapter II', verseStart: null, verseEnd: null },
     ];
-    render(<WorkToc toc={toc} currentOrdinal={1} onNavigate={() => {}} onClose={() => {}} />);
+    render(<WorkToc toc={toc} sourceType="sermon" currentOrdinal={1} onNavigate={() => {}} onClose={() => {}} />);
     const text = document.body.textContent ?? '';
     for (const h of ['Preface', 'Chapter I', 'Chapter II']) expect(text).toContain(h);
+  });
+});
+
+// STEP 2 — the DOM stays bounded when the UNIT count itself is large.
+//
+// Grouping in SQL fixed the wire (3,540 rows instead of 118,371) but not the DOM: bdb-lexicon is
+// 9,770 units, and mounting 9,770 buttons on a drawer open is the same unbounded-render defect
+// this file was written for, one layer up. The reveal is incremental, and everything stays
+// reachable through it.
+describe('WorkToc — bounded when the UNIT list is large', () => {
+  function manyUnits(n: number): WorkTocUnit[] {
+    return Array.from({ length: n }, (_, i) => ({
+      unitOrdinal: i + 1,
+      firstId: i + 1,
+      firstOrdinal: i + 1,
+      lastOrdinal: i + 1,
+      sectionCount: 1,
+      heading: `Entry ${i + 1}`,
+      verseStart: null,
+      verseEnd: null,
+    }));
+  }
+
+  it('a 9,770-unit lexicon does not mount 9,770 rows', () => {
+    // SEED: render `units` instead of `visible` -> 9,771 buttons and a drawer that janks open.
+    render(<WorkToc toc={manyUnits(9_770)} sourceType="lexicon" currentOrdinal={1} onNavigate={() => {}} onClose={() => {}} />);
+    const n = navButtons().length;
+    expect(n, `mounted ${n} rows for 9,770 units`).toBeLessThanOrEqual(260);
+    // and it must not have collapsed to nothing
+    expect(n).toBeGreaterThan(100);
+  });
+
+  it('the rest stays reachable — "show more" reveals another page', () => {
+    render(<WorkToc toc={manyUnits(9_770)} sourceType="lexicon" currentOrdinal={1} onNavigate={() => {}} onClose={() => {}} />);
+    const before = navButtons().length;
+    const more = [...document.querySelectorAll('button')].find((b) => /Show .* more/.test(b.textContent ?? ''));
+    expect(more, 'a large list must offer a way to see the rest').toBeTruthy();
+    fireEvent.click(more!);
+    expect(navButtons().length).toBeGreaterThan(before);
+  });
+
+  it('search narrows what is mounted, and says how many matched', () => {
+    render(<WorkToc toc={manyUnits(9_770)} sourceType="lexicon" currentOrdinal={1} onNavigate={() => {}} onClose={() => {}} />);
+    fireEvent.change(screen.getByLabelText('Search the contents'), { target: { value: 'Entry 4242' } });
+    expect(navButtons().length).toBeLessThan(10);
+    expect(document.body.textContent).toContain('1 of 9,770');
+  });
+
+  it('a query that matches nothing says so rather than rendering an empty drawer', () => {
+    render(<WorkToc toc={manyUnits(500)} sourceType="lexicon" currentOrdinal={1} onNavigate={() => {}} onClose={() => {}} />);
+    fireEvent.change(screen.getByLabelText('Search the contents'), { target: { value: 'zzzznope' } });
+    expect(document.body.textContent).toContain('No entry matches.');
   });
 });

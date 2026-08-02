@@ -38,6 +38,87 @@ export interface TocUnit {
  * the ordinal is now a last resort that a healthy corpus never reaches.
  */
 /**
+ * FILTER A TABLE OF CONTENTS BY ITS LABELS.
+ *
+ * The cheapest useful answer to "3,540 sermons is unusable". The whole unit list is already on
+ * the client (the server groups, so it is thousands of small rows, not 118,371), which means
+ * "show me the ones with grace in the title" is a substring match and needs no network and no
+ * classification of any kind.
+ *
+ * Deliberately DUMB: case-insensitive substring over the visible label, no stemming, no ranking,
+ * no synonyms. A contents filter that returns things the reader cannot see the reason for is
+ * worse than one that misses — they are looking at the list while they type.
+ */
+export function filterTocUnits<T extends { heading: string | null; verseStart: number | null; verseEnd: number | null; firstOrdinal: number }>(
+  units: readonly T[],
+  query: string,
+): T[] {
+  const q = query.trim().toLowerCase();
+  if (q === '') return [...units];
+  return units.filter((u) => tocUnitLabel(u).toLowerCase().includes(q));
+}
+
+/** A run of consecutive TOC entries sharing a heading letter or a Bible book. */
+export interface TocGroup {
+  label: string;
+  /** Index into the (already ordered) unit list where this run starts. */
+  start: number;
+  count: number;
+}
+
+/**
+ * FACTUAL GROUPING, DERIVED FROM THE WORK ITSELF — never inferred, never a theme.
+ *
+ * The registers that need browsing help each already carry their own structure, so no
+ * classification is required and none is performed:
+ *
+ *   lexicon    → the first letter of the entry. A dictionary is alphabetical; A–Z is how one is
+ *                read. bdb-lexicon is 9,770 entries and this is the only navigation it wants.
+ *   commentary → the Bible book, decoded from the unit's own verse anchor. A commentary is
+ *                already ordered that way, so the runs are contiguous by construction.
+ *
+ * Everything else returns null, and that is a decision rather than an omission. Sermons have no
+ * factual grouping available yet: `spurgeon-sermons` carries zero verse anchors, so the text
+ * preached on would have to be parsed out of the body first. Grouping them by inferred THEME is
+ * exactly the interpretive act this product promises not to perform in its own voice, so it is
+ * not done here and must not be added here quietly — it needs an owner ruling.
+ *
+ * Josephus is also excluded on purpose: only 238 of its 2,687 units are anchored, so a book
+ * grouping would leave nine tenths of the work in an "Other" bucket, which is worse than no
+ * grouping. Its structure lives in its heading text ("… — Book 1 — Chapter 12 —"), and parsing
+ * display strings for navigation is a fragility this can do without.
+ */
+export function tocGroups(
+  sourceType: string,
+  units: readonly { heading: string | null; verseStart: number | null; verseEnd: number | null; firstOrdinal: number }[],
+): TocGroup[] | null {
+  const keyOf =
+    sourceType === 'lexicon'
+      ? (u: { heading: string | null }): string => {
+          const ch = (u.heading ?? '').trim().replace(/^[^\p{L}\p{N}]+/u, '').charAt(0).toUpperCase();
+          return /^[A-Z]$/.test(ch) ? ch : '#';
+        }
+      : sourceType === 'commentary'
+        ? (u: { verseStart: number | null }): string => {
+            if (u.verseStart == null || !isStructurallyValidVerseId(u.verseStart)) return 'Other';
+            return BOOK_BY_NUM.get(decodeVerseId(u.verseStart).book)?.name ?? 'Other';
+          }
+        : null;
+  if (!keyOf) return null;
+
+  const groups: TocGroup[] = [];
+  for (let i = 0; i < units.length; i++) {
+    const label = keyOf(units[i]!);
+    const last = groups[groups.length - 1];
+    if (last && last.label === label) last.count++;
+    else groups.push({ label, start: i, count: 1 });
+  }
+  // A single group is not a grouping — it is a header over the whole list, which costs a row and
+  // tells the reader nothing.
+  return groups.length > 1 ? groups : null;
+}
+
+/**
  * What a TOC ENTRY is called, given the unit itself rather than its member rows.
  *
  * Same rule `unitLabelFor` applied to a unit's rows: the heading if there is one, else the
