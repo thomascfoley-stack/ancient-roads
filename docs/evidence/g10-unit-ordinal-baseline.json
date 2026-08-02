@@ -1,0 +1,15 @@
+{
+  "_": "G10's ratchet baseline, COMMITTED. .cutover-checkpoint.json is gitignored (.gitignore:47) and has been clobbered by concurrent sessions twice (AGENTS.md), so a baseline that lives only there vanishes on a fresh clone and G10 silently returns to survey mode. Same pattern as docs/evidence/corpus-manifest-*.json, which is the committed baseline for the corpus ratchet. The checkpoint still wins when it has one; this is the floor.",
+  "cohort": "published",
+  "target": "ep-odd-fog",
+  "capturedAt": "2026-08-02T00:00:08.983Z",
+  "capturedBy": "A5 \u2014 scripts/unit-ordinal-instrument.mjs --read-only --cohort=published, as app_runtime in a read-only transaction",
+  "capturedAtSha": "77f85b5",
+  "notE0": "The rest of baseline.regression was captured pre-cutover at 5,510 sections; production is 72,863 now. This digest is post-flip and must not be read as an E0 reading.",
+  "evidence": "docs/evidence/work-order-v2-stage2/instrument-published.log",
+  "unitOrdinal": {
+    "publishedWorks": 6,
+    "nulls": 0,
+    "rollupDigest": "ed463702a08018a680e480fee4f9c134"
+  }
+}

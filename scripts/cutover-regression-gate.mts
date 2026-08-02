@@ -135,6 +135,12 @@ interface VoiceFloor {
   // manufacturing a pass.
   cleanAnyVoice?: number; cleanFloor?: number;
 }
+// UnitOrdinalIntegrity gains provenance because THIS baseline is not an E0 reading and must not
+// be read as one. The rest of `baseline.regression` was captured pre-cutover, when production held
+// 5,510 sections; the corpus is 72,863 now. The unit_ordinal digest below was measured at A5 on
+// 2026-08-02, AFTER the publish flip, and mixing the two eras silently would be exactly the kind
+// of thing this gate exists to catch. So the baseline says when it was taken, and G10's pass line
+// prints it.
 interface Baseline {
   host?: string;
   userData?: UserDataMeasure;
@@ -705,7 +711,7 @@ async function g6(c: pg.Client, base?: number): Promise<number> {
 //     That is the defect this exists to catch, expressed so it cannot false-red.
 //   - and it is non-vacuous: zero sections is a broken instrument, not a pass.
 interface SectionIntegrity { sections: number; embeddings: number; unembedded: number; orphans: number }
-interface UnitOrdinalIntegrity { publishedWorks: number; nulls: number; rollupDigest: string }
+interface UnitOrdinalIntegrity { publishedWorks: number; nulls: number; rollupDigest: string; capturedAt?: string; capturedNote?: string }
 
 async function measureSectionIntegrity(c: pg.Client): Promise<SectionIntegrity | null> {
   const has = await c.query<{ ok: boolean }>(
@@ -796,10 +802,40 @@ async function g8(c: pg.Client, phase: string, base?: SectionIntegrity): Promise
   return now;
 }
 
+
+/** The committed G10 floor. Returns undefined if the file is absent or unreadable — an absent
+ *  floor must read as "no baseline" (survey), never as a pass. */
+function committedUnitOrdinalBaseline(): UnitOrdinalIntegrity | undefined {
+  try {
+    const raw = JSON.parse(readFileSync('docs/evidence/g10-unit-ordinal-baseline.json', 'utf8')) as {
+      unitOrdinal?: UnitOrdinalIntegrity;
+      capturedAt?: string;
+    };
+    if (!raw.unitOrdinal?.rollupDigest) return undefined;
+    return { ...raw.unitOrdinal, capturedAt: raw.capturedAt };
+  } catch {
+    return undefined;
+  }
+}
+
 // ── G10: unit_ordinal instrument (Work Order v2 Stage 2.1) ───────────────────
 // Published works must carry populated, correctly ordered unit_ordinal values matching
 // the 024 backfill recomputation, with a per-work digest ratchet against E0.
-async function g10(c: pg.Client, phase: string, base?: UnitOrdinalIntegrity): Promise<UnitOrdinalIntegrity | undefined> {
+// WHETHER G10 ACTUALLY RATCHETED, RECORDED BY G10 ITSELF.
+//
+// A5's run (2026-08-02) exposed the bug this closes. `.cutover-checkpoint.json` carried
+// `baseline.regression.unitOrdinal: null` — the key PRESENT, the value null. `g10()` tests
+// `!base`, so null took the BASELINING branch and asserted nothing; the verdict below tested
+// `stored.unitOrdinal === undefined`, so null was NOT baselining there, and `compared` came out
+// TRUE. Net effect: G10 surveyed while the final line printed "✓ REGRESSION GATE PASSED" with no
+// qualifier at all — a gate reporting that it ratcheted when it had not.
+//
+// Two places deciding the same question in two ways is the watchlist's "a verdict computed
+// separately from the report of that verdict", inside the one gate A5 exists to un-skip. So the
+// verdict no longer decides: g10() sets this, and the verdict reads it.
+let g10Ratcheted = false;
+
+async function g10(c: pg.Client, phase: string, base?: UnitOrdinalIntegrity | null): Promise<UnitOrdinalIntegrity | undefined> {
   const result = await measurePublishedUnitOrdinal(c);
   if (result.publishedWorks === 0) {
     fail('G10 unit_ordinal', `zero published works at ${phase} — the instrument is blind`);
@@ -810,6 +846,10 @@ async function g10(c: pg.Client, phase: string, base?: UnitOrdinalIntegrity): Pr
     nulls: result.nulls,
     rollupDigest: rollupDigest(result.digests),
   };
+  // Set BEFORE the branch chain, on its own line, so it says one thing: a stored baseline existed
+  // and this run compared against it. An assignment tucked into an `else if` condition is how the
+  // original disagreement went unnoticed for as long as it did.
+  g10Ratcheted = result.ok && base != null;
   if (!result.ok) {
     fail('G10 unit_ordinal', result.errors.join('; '));
   } else if (!base) {
@@ -823,7 +863,8 @@ async function g10(c: pg.Client, phase: string, base?: UnitOrdinalIntegrity): Pr
   } else if (now.nulls > base.nulls) {
     fail('G10 unit_ordinal', `NULL unit_ordinal increased ${base.nulls} → ${now.nulls}`);
   } else {
-    pass('G10 unit_ordinal', `${now.publishedWorks} published work(s), digest unchanged, ${now.nulls} NULL (E0 ${base.nulls})`);
+    const when = base.capturedAt ? ` vs baseline captured ${base.capturedAt}` : ' vs the E0 baseline';
+    pass('G10 unit_ordinal', `${now.publishedWorks} published work(s), digest unchanged, ${now.nulls} NULL (baseline ${base.nulls})${when}`);
   }
   return now;
 }
@@ -1177,7 +1218,13 @@ try {
   const laneRows = await g5(c, PHASE, CAPTURE ? undefined : stored.laneRows);
   const forbidden = await g6(c, CAPTURE ? undefined : stored.forbidden);
   const sections = await g8(c, PHASE, CAPTURE ? undefined : stored.sections);
-  const unitOrdinal = await g10(c, PHASE, CAPTURE ? undefined : stored.unitOrdinal);
+  // THE BASELINE FALLS BACK TO A COMMITTED FILE. `.cutover-checkpoint.json` is gitignored
+  // (.gitignore:47) and AGENTS.md records it being clobbered by concurrent sessions twice, so a
+  // baseline that lives only there vanishes on a fresh clone and G10 silently drops to survey
+  // mode — which is the state A5 found it in. docs/evidence/g10-unit-ordinal-baseline.json is the
+  // committed floor, the same way docs/evidence/corpus-manifest-*.json is the committed floor for
+  // the corpus ratchet. The checkpoint still wins when it carries one.
+  const unitOrdinal = await g10(c, PHASE, CAPTURE ? undefined : (stored.unitOrdinal ?? committedUnitOrdinalBaseline()));
   await g9(c);
   if (process.env.CUTOVER_ASK_URL) { liveProbeRan = true; await liveAsk(process.env.CUTOVER_ASK_URL); }
   else console.warn(LIVE_PROBE_NOT_RUN);
@@ -1220,8 +1267,11 @@ if (failures.length > 0) {
 // SURVEY, not a regression gate — both end in a green line, and only this qualifier tells
 // them apart. It matters most in --e6-only against a fresh fork, which is exactly the
 // situation in which someone is trying to convince themselves the gate works.
-const compared = !CAPTURE && stored.userData !== undefined && stored.unitOrdinal !== undefined;
-const g10Baselining = !CAPTURE && stored.unitOrdinal === undefined;
+// `compared` and `g10Baselining` are read from what G10 DID (g10Ratcheted), not re-derived from
+// the checkpoint shape — see the comment at g10(). `!= null` catches BOTH the absent key and the
+// stored null; the two used to disagree and the disagreement printed a green with no qualifier.
+const compared = !CAPTURE && stored.userData != null && g10Ratcheted;
+const g10Baselining = !CAPTURE && !g10Ratcheted;
 const scope = liveProbeRan ? 'including the live /ask probe (end-to-end)' : 'DB-ONLY, LIVE PROBE NOT RUN';
 const qualifier = compared
   ? ''

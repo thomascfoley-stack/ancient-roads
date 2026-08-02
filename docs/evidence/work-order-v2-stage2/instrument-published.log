@@ -1,0 +1,31 @@
+# unit_ordinal instrument — cohort 'published' — 2026-08-02T00:00:08.983Z
+cohort: published   (sources.status = 'published')
+target: ep-odd-fog
+worksInCohort: 6
+ok: true
+rollupDigest: ed463702a08018a680e480fee4f9c134
+excerptHeader: excerpt sample [cohort=published]: 1 manifest-eligible work(s) of 6 eligible (6 in cohort 'published' total) — quarantine/skip/forbidden-domain/forbidden section source_url excluded; section body not inspected
+sampleSlugs: adam-clarke
+
+
+## [cohort=published] adam-clarke
+u1.1	
+u1.2	
+u1.3	
+u1.4	
+u1.5	
+u1.6	
+u1.7	
+u1.8	
+u1.9	
+u1.10	
+u1.11	
+u1.12	
+u1.13	
+u1.14	
+u1.15	
+u1.16	
+u1.17	
+u1.18	
+u1.19	
+u2.20	

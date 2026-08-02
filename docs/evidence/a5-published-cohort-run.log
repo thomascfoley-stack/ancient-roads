@@ -1,0 +1,87 @@
+A5 — THE PUBLISHED-COHORT INSTRUMENT RUN, AND WHAT IT EXPOSED
+date: 2026-08-02T00:07:03Z   target: ep-odd-fog (production), app_runtime, read-only transaction
+
+THE RUN ITSELF — PASSED ON THE FIRST ATTEMPT.
+
+  cohort under measurement: sources.status = 'published'   POSITIVE CONTROL: 6 works
+
+    slug                sections   units   digest
+    adam-clarke            12,693     727   f3b0fca67b92…
+    calvin-crosswire        5,090     236   19aeaa2a81d4…
+    jfb                    15,473   1,086   e552c631a1ee…
+    john-gill              28,843   1,169   3cc9bc1db9dd…
+    matthew-henry           4,210   1,158   656895d42c65…
+    wesley-crosswire        5,254     259   d45049accf7a…
+
+  rollup digest: ed463702a08018a680e480fee4f9c134
+  0 NULL unit_ordinal.  PASS.
+
+  Artifact: docs/evidence/work-order-v2-stage2/instrument-published.log
+
+SO G10 IS DISCHARGED? NO — AND THAT IS WHAT THE RUN WAS FOR.
+
+A5's stated purpose on the board is 'G10 stops being permanently skipped'. Running the
+instrument once does not achieve that. G10 lives in the regression gate and RATCHETS the
+rollup digest against a stored reading. Two defects stood between the run and the ratchet.
+
+DEFECT 1 — G10 was surveying while the verdict line said it had ratcheted.
+
+  .cutover-checkpoint.json carried  baseline.regression.unitOrdinal: null
+  — the key PRESENT, the value null. Two places then answered 'is there a baseline?'
+  differently:
+
+    g10()        `!base`                            null -> TRUE  -> baselining, asserts nothing
+    the verdict  `stored.unitOrdinal === undefined`  null -> FALSE -> "compared"
+
+  Executed, not inferred:
+    g10() sees no baseline (!base):         true
+    verdict thinks it is baselining:        false
+    verdict thinks it COMPARED:             true
+
+  Net effect: G10 asserted nothing and the final line printed
+  '✓ REGRESSION GATE PASSED' with NO qualifier at all. The watchlist's 'a verdict computed
+  separately from the report of that verdict', inside the one gate A5 exists to un-skip.
+
+  FIX: g10() records whether it compared; the verdict READS that instead of re-deriving it.
+  Pinned by test/invariants/g10-verdict-agreement.test.ts, red-proofed both ways.
+
+DEFECT 2 — the baseline lived only in a gitignored file.
+
+  .cutover-checkpoint.json is .gitignore:47, and AGENTS.md records it being clobbered by
+  concurrent sessions twice. A baseline that lives only there vanishes on a fresh clone and
+  G10 drops back to survey mode, still ending in green.
+
+  FIX: docs/evidence/g10-unit-ordinal-baseline.json is the COMMITTED floor — the same
+  pattern as docs/evidence/corpus-manifest-*.json for the corpus ratchet. The checkpoint
+  still wins when it carries a reading; this is what survives a clone. An unreadable floor
+  returns undefined, so it reads as 'no baseline', never as a pass.
+
+    checkpoint baseline : ed463702a08018a680e480fee4f9c134
+    committed floor     : ed463702a08018a680e480fee4f9c134
+    on a FRESH CLONE    : ed463702a08018a680e480fee4f9c134   <- the floor holds
+
+THE RATCHET, EXECUTED AND RED-PROOFED AGAINST PRODUCTION
+
+  GREEN   baseline ed463702…  (6 works, 0 NULL, captured 2026-08-02T00:00:08.983Z)
+          measured ed463702…  (6 works, 0 NULL)         digest unchanged -> PASS
+
+  RED     one work loses a section (a unit_ordinal tuple permutes)
+            -> de998c87415c332e…   FAILS, correctly
+          a work disappears from the published cohort
+            -> b314d3572731f396…   FAILS, correctly
+          the works are returned in a different order
+            -> 5a9cde8f6534c1d3…   FAILS, correctly
+
+  The third case is order-SENSITIVE by construction, which would be a flakiness risk if the
+  order were incidental. It is not: unit-ordinal-instrument.mjs:199 and :249 both end
+  ORDER BY src.slug, so the sequence is fixed by SQL. Checked, because an unearned RED is on
+  this repo's watchlist beside an unearned green.
+
+PROVENANCE, STATED IN THE BASELINE ITSELF. This digest was measured on 2026-08-02, AFTER the
+publish flip. The rest of baseline.regression was captured pre-cutover, when production held
+5,510 sections against today's 72,863. The floor file says so and G10's pass line now prints
+the capture date, so nobody reads a post-flip digest as an E0 reading.
+
+STILL OPEN: the G10 FORK DISCHARGE. Running the gate end-to-end wants a Neon fork, and branch
+creation is forbidden by the standing rails (an owner call). ADR-043 wanted the fork BEFORE
+the flip; that departure is now a fact. What A5 discharges is the instrument and the ratchet.
