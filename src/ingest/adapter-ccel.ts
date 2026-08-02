@@ -15,6 +15,10 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { parseRef } from '../bible/ref-parse.js';
+// The id-range expansion moved to source-artifact-urls.mjs so the ARCHIVER expands it identically.
+// Two copies of "which documents make up this work" is how an archive preserves 62 of 63 and
+// reports success.
+import { expandCcelIdPattern } from './source-artifact-urls.mjs';
 import { writeRegisterWork, type RegisterWork, type RegisterSection } from './register-writer.js';
 
 const CACHE = 'data/raw/ccel';
@@ -192,9 +196,9 @@ export async function acquireCcel(entry: Record<string, unknown>, opts: { write:
   let ids: string[] = [];
   if (acq.ccel_ids) ids = acq.ccel_ids;
   else if (acq.ccel_id_pattern) {
-    const m = acq.ccel_id_pattern.match(/^(.*)\{(\d+)\.\.(\d+)\}(.*)$/);
-    if (m) { const [, pre, a, b, post] = m; const pad = a!.length; for (let i = Number(a); i <= Number(b); i++) ids.push(`${pre}${String(i).padStart(pad, '0')}${post}`); }
-    else ids = [acq.ccel_id_pattern];
+    // [] means "not a brace range", which the manifest uses for a single literal id.
+    const expanded = expandCcelIdPattern(acq.ccel_id_pattern);
+    ids = expanded.length > 0 ? expanded : [acq.ccel_id_pattern];
   } else if (acq.ccel_author) {
     ids = await enumerateCcelAuthor(acq.ccel_author);
     if (ids.length === 0) return { slug: entry.slug as string, units: 0, anchored: 0, embedded: 0, skipped: true, reason: `author page enumeration empty (${acq.ccel_author})` };
