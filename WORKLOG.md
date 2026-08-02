@@ -38,6 +38,66 @@ updated with them.
   and the assertions are re-derived from the shipped shapes, but the proof is the CI `db-invariants`
   job against the real test branch, recorded on the PR.
 - No product code changed. Test expectations only.
+## 2026-08-02 (owner-reported: dead X buttons, three copy chips, lost word highlighter)
+
+**Headline: one root cause killed every close button that sits inside a drag handle, in every
+browser, since drag-to-dismiss shipped.** `useDragDismiss` called `setPointerCapture` on the
+element carrying `handleProps`. Pointer capture retargets subsequent pointer events, `pointerup`
+included, so the browser resolved the click to the HEADER rather than to the button inside it and
+the button's `onClick` never fired. Four sheets spread `handleProps` onto a header containing their
+X: `study-panel`, `work-toc`, `mobile-nav`, and the word-study sheet.
+
+### DONE
+
+- **`use-drag-dismiss.ts`** — a press that starts on a control no longer begins a drag or captures
+  the pointer. Dragging the header's empty space is unaffected.
+- **`selection-popover.tsx`** — three copy chips ("Copy styled" / "Copy lines" / "Text only") on
+  both the desktop card and the mobile bar reduced to one, `Copy`, using the `styled` formatter
+  because it is the one that carries the attribution.
+- **`web/test/invariants/drag-handle-swallows-clicks.test.tsx`** — 4 tests. The behavioural half
+  asserts the guard; the second half DERIVES the `handleProps` call sites rather than listing the
+  four known today, so a fifth sheet added later is covered without editing the test.
+
+### VERIFIED IN A BROWSER (dev, 1280x720 and 390x844)
+
+Reproduced first, then fixed, then re-checked: study-panel X did nothing before, closes now;
+mobile-nav X did nothing before, closes now; drag-to-dismiss still dismisses; one `Copy` chip;
+`document.body.scrollWidth === 390` with no non-fixed element wider than 391.
+
+Red-proof: the `closest(...)` guard was removed and the suite watched go from 4 passed to 2 failed
+(the behavioural test AND the derived static check), then restored to 4 passed. The jsdom tests
+CANNOT reproduce the bug itself — jsdom implements no pointer capture, so a jsdom click on the X
+fired both before and after the fix. The test header says so rather than implying more coverage
+than exists; the browser run above is the only proof of the user-facing behaviour.
+
+### FOUND, NOT FIXED
+
+- **The word highlighter is gone for two independent reasons, and both live in files two other
+  sessions are currently editing** (`verse-display.tsx`, `read/[book]/[chapter]/page.tsx`), so they
+  were left alone per the one-agent-per-tree rule.
+  1. A single click on a verse opens the study sheet (`verse-display.tsx:145-150`). Its only guard
+     is `!sel.isCollapsed`, which is false on the FIRST click of a double-click, so double-click to
+     select a word opens the sheet instead. Drag-select still raises the popover; double-click
+     cannot. This is an interaction-model decision, not a mechanical bug.
+  2. `signedIn` is inferred solely from `/api/annotations` returning ok
+     (`page.tsx:205`, `.catch(() => setSignedIn(false))` at `:220`), and the popover gates the
+     swatches on it. Any failure of that fetch — 401, 500, a 429 from the throttle, a dropped
+     connection — silently replaces the highlighter with "Sign in to highlight" for a signed-in
+     reader. Auth state should not be a side effect of a data fetch.
+- **`Cannot update a component (ReaderPage) while rendering a different component (StudyPanel)`**
+  fires in the console on every study-sheet open. Pre-existing, unrelated to this change.
+- **`web/test/invariants/work-toc-bounded.test.tsx` does not typecheck** (TS2741 missing
+  `sourceType`, TS2304 unknown `WorkTocRow`), introduced by `76bf392`. `npm run audit` gate 5 is
+  therefore red on `main` independently of this change.
+
+### NOT DONE / UNVERIFIED
+
+- `npm run audit` not run to completion; the web suite has 31 pre-existing failures across 10
+  `test/invariants/*` DB files. Proven pre-existing by stashing this change and re-running two of
+  them: same 12 failures without it.
+- Two files in the working tree are NOT part of this commit and were not authored here:
+  `web/next-env.d.ts` (a `next dev` artifact, also modified in both worktrees) and
+  `src/ingest/register-writer.ts` (substantial ingest work that appeared mid-session).
 
 ## 2026-08-02 (the accuracy diagnostic, re-run against production after A8)
 
