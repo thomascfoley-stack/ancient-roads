@@ -10,8 +10,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { loadWorkProgress, saveWorkProgress, sectionLabel, type WorkProgress } from '@/lib/work-reader';
-import type { WorkSource, WorkTocRow } from '@/lib/work';
+import { loadWorkProgress, saveWorkProgress, tocUnitLabel, type WorkProgress } from '@/lib/work-reader';
+import type { WorkSource, WorkTocUnit } from '@/lib/work';
 import { WorkReader, type WorkReaderSeek } from '@/components/work-reader';
 import { WorkToc } from '@/components/work-toc';
 
@@ -25,7 +25,7 @@ function hashOrdinal(): number | null {
 
 export default function WorkPage() {
   const { slug } = useParams<{ slug: string }>();
-  const [work, setWork] = useState<{ source: WorkSource; toc: WorkTocRow[] } | null>(null);
+  const [work, setWork] = useState<{ source: WorkSource; toc: WorkTocUnit[] } | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
   const [tocOpen, setTocOpen] = useState(false);
@@ -54,7 +54,7 @@ export default function WorkPage() {
     fetch(`/api/work/${encodeURIComponent(slug)}`)
       .then(async (r) => {
         if (!r.ok) throw new Error(String(r.status));
-        return (await r.json()) as { source: WorkSource; toc: WorkTocRow[] };
+        return (await r.json()) as { source: WorkSource; toc: WorkTocUnit[] };
       })
       .then((d) => {
         if (!cancelled) setWork(d);
@@ -128,12 +128,22 @@ export default function WorkPage() {
     return <p className="py-24 text-center text-sm text-stone-400">Loading…</p>;
   }
 
-  const total = work.toc.length;
+  // PROGRESS IS OVER SECTIONS, and `toc` is now a list of UNITS — so the denominator comes from
+  // the last unit's range, not from the row count. It was `work.toc.length`, which silently meant
+  // "however many rows survived the cap": on the fifteen works that exceeded it the bar measured
+  // progress against 5,000 instead of the real total, so a reader 40% through john-gill's 28,843
+  // sections saw a full bar. Ordinals are 1..N contiguous within a work, so the final unit's
+  // lastOrdinal IS the section count, exactly and for free.
+  const total = work.toc.length > 0 ? work.toc[work.toc.length - 1]!.lastOrdinal : 0;
   const pct = progress && total > 0 ? clamp01((progress.ordinal - 1 + progress.scrollPct) / total) : 0;
   const continueHeading = continueTarget
     ? (() => {
-        const row = work.toc.find((r) => r.ordinal === continueTarget.ordinal);
-        return row ? sectionLabel(row) : `Section ${continueTarget.ordinal}`;
+        // The unit that HOLDS the ordinal, by range — the reader is resuming inside a sermon, and
+        // what they want to see named is the sermon.
+        const unit = work.toc.find(
+          (u) => continueTarget.ordinal >= u.firstOrdinal && continueTarget.ordinal <= u.lastOrdinal,
+        );
+        return unit ? tocUnitLabel(unit) : `Section ${continueTarget.ordinal}`;
       })()
     : null;
 

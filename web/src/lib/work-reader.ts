@@ -37,6 +37,32 @@ export interface TocUnit {
  * heading, then the passage, then the ordinal — so a work that has real headings keeps them, and
  * the ordinal is now a last resort that a healthy corpus never reaches.
  */
+/**
+ * What a TOC ENTRY is called, given the unit itself rather than its member rows.
+ *
+ * Same rule `unitLabelFor` applied to a unit's rows: the heading if there is one, else the
+ * passage the unit is anchored to, else the ordinal. It takes a unit because the TOC no longer
+ * ships member rows — the server groups now, so there are no rows to inspect (lib/work.ts).
+ *
+ * The "(i/n)" strip lives at the call site, not here: it is a property of how ingest names
+ * chunks, and a label function that silently rewrites its input is hard to reason about.
+ */
+export function tocUnitLabel(u: {
+  heading: string | null;
+  verseStart: number | null;
+  verseEnd: number | null;
+  firstOrdinal: number;
+}): string {
+  if (u.heading && u.heading.trim() !== '') return u.heading;
+  if (u.verseStart != null && isStructurallyValidVerseId(u.verseStart)) {
+    const { book, chapter } = decodeVerseId(u.verseStart);
+    const b = BOOK_BY_NUM.get(book);
+    // One-chapter books (Jude, Obadiah…) read "Jude", not "Jude 1".
+    if (b) return b.chapterCount === 1 ? b.name : `${b.name} ${chapter}`;
+  }
+  return sectionLabel({ heading: u.heading, ordinal: u.firstOrdinal, verseStart: u.verseStart, verseEnd: u.verseEnd });
+}
+
 export function sectionLabel(row: Pick<WorkTocRow, 'heading' | 'ordinal' | 'verseStart' | 'verseEnd'>): string {
   if (row.heading && row.heading.trim() !== '') return row.heading;
   const ref = formatVerseRange(row.verseStart, row.verseEnd);

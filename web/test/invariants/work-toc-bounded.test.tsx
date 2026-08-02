@@ -19,7 +19,7 @@
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { WorkToc } from '@/components/work-toc';
-import type { WorkTocRow } from '@/lib/work';
+import type { WorkTocUnit } from '@/lib/work';
 
 afterEach(cleanup);
 
@@ -30,24 +30,29 @@ if (!Element.prototype.scrollIntoView) Element.prototype.scrollIntoView = functi
 const UNITS = 16;
 const CHUNKS_PER_UNIT = 215; // 16 * 215 = 3,440 sections — Calvin-scale
 
-/** A chunked work shaped like the real corpus: each unit's chunks repeat the unit title. */
-function bigToc(): WorkTocRow[] {
-  const rows: WorkTocRow[] = [];
+// THE FIXTURE IS NOW UNITS, because the SERVER groups (lib/work.ts, 2026-08-02). It used to be
+// 3,440 SECTION rows that the client grouped, which is exactly the shape that made the response
+// scale with chunking: spurgeon-sermons is 118,371 sections in 3,540 sermons, so a section-shaped
+// TOC spent its whole 5,000-row budget on the first ~150 sermons. The bound asserted here did not
+// change; what changed is that the wire is bounded too, not only the DOM.
+/** A chunked work shaped like the real corpus: 16 units of 215 sections each. */
+function bigToc(): WorkTocUnit[] {
+  const units: WorkTocUnit[] = [];
   let ordinal = 1;
   for (let u = 1; u <= UNITS; u++) {
-    for (let c = 1; c <= CHUNKS_PER_UNIT; c++) {
-      rows.push({
-        id: ordinal,
-        ordinal,
-        unitOrdinal: u,
-        heading: `SERMON ${u} — PROVERBS 24:30-32 (${c}/${CHUNKS_PER_UNIT})`,
-        verseStart: null,
-        verseEnd: null,
-      });
-      ordinal++;
-    }
+    units.push({
+      unitOrdinal: u,
+      firstId: ordinal,
+      firstOrdinal: ordinal,
+      lastOrdinal: ordinal + CHUNKS_PER_UNIT - 1,
+      sectionCount: CHUNKS_PER_UNIT,
+      heading: `SERMON ${u} — PROVERBS 24:30-32 (1/${CHUNKS_PER_UNIT})`,
+      verseStart: null,
+      verseEnd: null,
+    });
+    ordinal += CHUNKS_PER_UNIT;
   }
-  return rows;
+  return units;
 }
 
 function navButtons(): HTMLButtonElement[] {
@@ -58,7 +63,12 @@ function navButtons(): HTMLButtonElement[] {
 describe('WorkToc — bounded render (O(units), not O(sections))', () => {
   it('a 3,440-section work mounts on the order of its 16 units, not its sections', () => {
     const toc = bigToc();
-    expect(toc.length).toBe(UNITS * CHUNKS_PER_UNIT);
+    // The fixture is UNIT-shaped now, and still represents a 3,440-section work: the sections are
+    // counted through sectionCount rather than by having one row each. Asserting both keeps the
+    // test honest about scale — a unit list that had quietly lost its section counts would pass a
+    // bare `toc.length === UNITS`.
+    expect(toc.length).toBe(UNITS);
+    expect(toc.reduce((n, u) => n + u.sectionCount, 0)).toBe(UNITS * CHUNKS_PER_UNIT);
 
     render(<WorkToc toc={toc} currentOrdinal={1} onNavigate={() => {}} onClose={() => {}} />);
 

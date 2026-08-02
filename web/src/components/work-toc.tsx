@@ -8,8 +8,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDragDismiss } from '@/lib/use-drag-dismiss';
-import { groupTocByUnit, sectionLabel } from '@/lib/work-reader';
-import type { WorkTocRow } from '@/lib/work';
+import { tocUnitLabel } from '@/lib/work-reader';
+import type { WorkTocUnit } from '@/lib/work';
 
 // A chunked ingest repeats the work's title across its chunks and suffixes " (i/n)". The unit
 // label is the FIRST chunk's heading, so it arrives carrying "(1/23)" — meaningless on a row that
@@ -23,14 +23,18 @@ export function WorkToc({
   onNavigate,
   onClose,
 }: {
-  toc: WorkTocRow[];
+  toc: WorkTocUnit[];
   currentOrdinal: number | null;
   onNavigate: (ordinal: number) => void;
   onClose: () => void;
 }) {
   const drag = useDragDismiss(onClose);
   const listRef = useRef<HTMLDivElement | null>(null);
-  const units = useMemo(() => groupTocByUnit(toc), [toc]);
+  // The SERVER groups now (lib/work.ts): one row per unit, carrying its ordinal RANGE instead of
+  // its member rows. This used to call groupTocByUnit(toc) over one row per SECTION, which is why
+  // the response scaled with chunking and spurgeon-sermons spent its whole budget on ~150 of
+  // 3,540 sermons. Nothing is regrouped here; `toc` IS the unit list.
+  const units = toc;
 
   // BOUNDED RENDER (Phase 4 §B). This drawer used to mount a <button> for EVERY section chunk:
   // Calvin's Institutes mounted 3,448 of them on open — the client-side twin of the repo's
@@ -39,11 +43,16 @@ export function WorkToc({
   // unit mounts its chunk rows, so the cost scales with units, not sections.
   // Enforced by test/invariants/work-toc-bounded.test.tsx.
   const unitKeyOf = (u: (typeof units)[number], i: number): number => u.unitOrdinal ?? -(i + 1);
+  // "Am I in this unit?" is a RANGE TEST now, not a scan of member rows. A unit owns the
+  // contiguous ordinals firstOrdinal..lastOrdinal, so carrying the two bounds answers the same
+  // question the rows were being shipped to answer.
+  const holds = (u: (typeof units)[number], ord: number | null): boolean =>
+    ord !== null && ord >= u.firstOrdinal && ord <= u.lastOrdinal;
   // Open the unit you are actually reading, so "Reading" is visible without hunting.
   const [expanded, setExpanded] = useState<number | null>(() => {
-    const i = units.findIndex((u) => u.rows.some((r) => r.ordinal === currentOrdinal));
+    const i = units.findIndex((u) => holds(u, currentOrdinal));
     const u = i >= 0 ? units[i] : undefined;
-    return u && u.rows.length > 1 ? unitKeyOf(u, i) : null;
+    return u && u.sectionCount > 1 ? unitKeyOf(u, i) : null;
   });
 
   useEffect(() => {
@@ -103,54 +112,58 @@ export function WorkToc({
         <div ref={listRef} className="min-h-[30vh] flex-1 overflow-y-auto overscroll-contain px-3 py-2">
           {units.map((unit, ui) => {
             const key = unitKeyOf(unit, ui);
-            const chunked = unit.rows.length > 1;
+            const chunked = unit.sectionCount > 1;
             const open = chunked && expanded === key;
-            const here = unit.rows.some((r) => r.ordinal === currentOrdinal);
-            const first = unit.rows[0]!;
+            const here = holds(unit, currentOrdinal);
+            const label = unitLabel(tocUnitLabel(unit));
             return (
               <div key={key} className="py-0.5">
                 <div className="flex items-stretch gap-1">
                   {/* ONE row per unit. Clicking it seeks to the unit's start — the common case. */}
                   <button
                     data-active={here && !open}
-                    onClick={() => onNavigate(first.ordinal)}
+                    onClick={() => onNavigate(unit.firstOrdinal)}
                     className={`flex min-h-[44px] flex-1 items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-accent-50/60 active:bg-accent-50/80 dark:hover:bg-accent-950/30 ${
                       here
                         ? 'bg-accent-50 font-semibold text-accent-800 dark:bg-accent-950/40 dark:text-accent-200'
                         : 'text-stone-700 dark:text-stone-300'
                     }`}
                   >
-                    <span className="line-clamp-2">{unitLabel(unit.label)}</span>
+                    <span className="line-clamp-2">{label}</span>
                     {here && <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider">Reading</span>}
                   </button>
                   {/* Only a chunked unit gets a disclosure; only the open one mounts its rows. */}
                   {chunked && (
                     <button
                       aria-expanded={open}
-                      aria-label={`${open ? 'Collapse' : 'Expand'} ${unitLabel(unit.label)} (${unit.rows.length} parts)`}
+                      aria-label={`${open ? 'Collapse' : 'Expand'} ${label} (${unit.sectionCount} parts)`}
                       onClick={() => setExpanded(open ? null : key)}
                       className="flex min-h-[44px] w-11 shrink-0 items-center justify-center rounded-lg text-[11px] font-medium text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800"
                     >
-                      {open ? '−' : unit.rows.length}
+                      {open ? '−' : unit.sectionCount}
                     </button>
                   )}
                 </div>
 
+                {/* A unit's sections are the contiguous ordinals firstOrdinal..lastOrdinal, so the
+                    chunk rows are DERIVED rather than shipped. Their per-chunk headings were the
+                    unit's title with a "(i/n)" suffix that the label above already strips as
+                    meaningless, so "Part i" is what they actually said. */}
                 {open &&
-                  unit.rows.map((row) => {
-                    const active = row.ordinal === currentOrdinal;
+                  Array.from({ length: unit.sectionCount }, (_, k) => unit.firstOrdinal + k).map((ord, k) => {
+                    const active = ord === currentOrdinal;
                     return (
                       <button
-                        key={row.id}
+                        key={ord}
                         data-active={active}
-                        onClick={() => onNavigate(row.ordinal)}
+                        onClick={() => onNavigate(ord)}
                         className={`ml-4 flex min-h-[40px] w-[calc(100%-1rem)] items-center justify-between gap-3 rounded-lg px-3 py-1.5 text-left text-[13px] transition-colors hover:bg-accent-50/60 dark:hover:bg-accent-950/30 ${
                           active
                             ? 'bg-accent-50 font-semibold text-accent-800 dark:bg-accent-950/40 dark:text-accent-200'
                             : 'text-stone-500 dark:text-stone-400'
                         }`}
                       >
-                        <span className="line-clamp-1">{sectionLabel(row)}</span>
+                        <span className="line-clamp-1">{`Part ${k + 1} of ${unit.sectionCount}`}</span>
                         {active && <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider">Reading</span>}
                       </button>
                     );
