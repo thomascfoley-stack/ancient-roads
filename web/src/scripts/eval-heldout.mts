@@ -127,12 +127,35 @@ async function embed(text: string): Promise<string> {
 }
 async function rerankAll(q: string, rows: Row[]): Promise<Row[]> {
   if (rows.length <= K) return rows;
-  const res = await fetch(`https://api.deepinfra.com/v1/inference/${RERANK_MODEL}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ queries: [q], documents: rows.map((r) => r.content.slice(0, RERANK_DOC_CHARS)) }), signal: AbortSignal.timeout(30_000),
-  });
-  const scores = ((await res.json()) as { scores: number[] }).scores;
-  return scores.map((s, i) => ({ s, i })).sort((a, b) => b.s - a.s).map(({ i }) => rows[i]!);
+  // SAME UNCHECKED-RESPONSE DEFECT AS embed(), in the function directly below it, and it survived
+  // the fix to embed() because only one of the pair was changed. It surfaced 100 queries into a
+  // 120-query run as "Cannot read properties of undefined (reading 'map')" — a full eval's worth
+  // of API spend thrown away with no indication of what actually failed.
+  //
+  // AND IT IS RETRIED, not just reported. MASTER.md's watchlist already records an UNEARNED RED
+  // from this exact provider: `db-invariants` went red on a docs-only commit because a DeepInfra
+  // call got 429 engine_overloaded, so a red stopped distinguishing "broken" from "the provider
+  // was busy". A frozen eval that dies at query 100 on a transient 429 is the same failure with a
+  // bigger bill. Retries are bounded and only for the statuses that are actually transient; a 401
+  // still fails immediately, because no amount of waiting fixes a wrong key.
+  const TRANSIENT = new Set([429, 500, 502, 503, 504]);
+  let lastErr = '';
+  for (let attempt = 0; attempt < 4; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 2 ** attempt * 1000));
+    const res = await fetch(`https://api.deepinfra.com/v1/inference/${RERANK_MODEL}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ queries: [q], documents: rows.map((r) => r.content.slice(0, RERANK_DOC_CHARS)) }), signal: AbortSignal.timeout(30_000),
+    });
+    if (!res.ok) {
+      lastErr = `${res.status} ${res.statusText} — ${(await res.text().catch(() => '')).slice(0, 160)}`;
+      if (TRANSIENT.has(res.status)) { console.error(`  rerank ${res.status}, retrying (${attempt + 1}/4)`); continue; }
+      throw new Error(`DeepInfra rerank ${lastErr}`);
+    }
+    const scores = ((await res.json()) as { scores?: number[] }).scores;
+    if (!Array.isArray(scores)) { lastErr = '200 with no scores array'; continue; }
+    return scores.map((s, i) => ({ s, i })).sort((a, b) => b.s - a.s).map(({ i }) => rows[i]!);
+  }
+  throw new Error(`DeepInfra rerank failed after 4 attempts — ${lastErr}`);
 }
 // Legal-corpus retrieval through the SHARED shipped orchestration (inject → merge →
 // rerank → floor), returning the top-K voices' verseId + author.

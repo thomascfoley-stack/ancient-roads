@@ -1,5 +1,46 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-02 (the accuracy diagnostic, re-run against production after A8)
+
+**Headline: every pre-registered bar is met, including the one July missed.** FROZEN_V4, 120
+queries, run against PRODUCTION after the flip, because the question is what serves readers.
+verse-ref 100 · pericope 73 · epistle 96/100 · topical 75/90 · proper-noun 70 · controls clean
+10/10, hijacks 0 · no-content 0. **Proper-noun HIT@1 was the single pre-registered miss at 60
+against a bar of 70; it now sits at 70.** Record: `docs/evidence/eval-v4-post-a8-2026-08-02.md`.
+
+**And the deltas mean nothing, which is the part worth writing down.** Pericope is n=15, so
+80 -> 73 is ONE query. Proper-noun is n=10, so 60 -> 70 is ONE query. Topical HIT@1 80 -> 75 is one
+query at n=20. No causal claim about the 18,371 patristic sections is supported in either
+direction, and the design doc already warns these CIs straddle their bars at this n. What the run
+establishes is the thing it existed to establish: **adding the fathers to the composed pool broke
+nothing.** No bar fell below its line, controls stayed clean, nothing returned empty.
+
+### DONE
+- The diagnostic that A8 made mandatory is run and recorded. The board's accuracy figures describe
+  the served corpus again.
+- **Two defects in the eval harness, both unchecked HTTP responses.** `embed()` indexed `.data[0]`
+  on the provider's error body, so a 401 read as `Cannot read properties of undefined` — a wrong
+  key masquerading as a code bug. Fixed. Then **`rerankAll()` turned out to have the identical
+  defect in the function directly below**, and it survived the first fix because only one of the
+  pair was changed; it fired 100 queries into a 120-query run and threw away a full eval's spend.
+  It now checks the response and retries bounded on 429/500/502/503/504, which MASTER.md's
+  watchlist already records as a source of unearned REDs from this provider. A 401 still fails
+  immediately.
+
+### NOT DONE / UNVERIFIED
+- **Two topical queries return a wrong answer** (18 pass / 2 wrong). Failure-coded and reported,
+  never tuned against, per the design doc's verdict logic.
+- **`keil-delitzsch` is still absent from production** — 23,073 sections on dev, copyable today,
+  larger than hymns + poetry + theology + fathers combined. Missed because the `commentaries`
+  batch is labelled "ALREADY on production" and I took the label instead of dry-running it, the
+  one batch of seven I did not census.
+- **Eight works exist on neither database** and need ingest from source: `spurgeon-treasury`,
+  `ryle-expository`, `vincent-word-studies`, `barnes-crosswire-nt`, `scofield-crosswire`,
+  `pnt-crosswire`, `geneva-notes-crosswire`, `poole-tcp`. Not filed as an order yet.
+- **Still nobody has driven /ask against production and looked at an answer.**
+- **The `app_runtime` password exposed in this session is still unrotated.**
+
+
 ## 2026-08-02 (A8 CLOSED — the registers are published, and the flip tooling had never run)
 
 **Headline: production serves 36 published works across 295,652 sections in 8 registers.** 30
