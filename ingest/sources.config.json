@@ -409,7 +409,8 @@
         "adapter": "ccel",
         "ccel_id_pattern": "spurgeon/treasury{1..6}",
         "strip_markup": true
-      }
+      },
+      "acquire_blocked": "CCEL serves this as SCANNED PAGE IMAGES, not text: treasury1.xml is 30 div2 sections whose <p> elements contain only <img alt='Image of page N'>. The adapter reported '6/6 volumes parsed to 0 sections' because there is no text to extract (verified 2026-08-02). Needs archive.org OCR or Gutenberg."
     }
   },
   {
@@ -692,7 +693,8 @@
         "adapter": "ccel",
         "ccel_author": "vincent",
         "strip_markup": true
-      }
+      },
+      "acquire_blocked": "CCEL has no such work under any id (author-page enumeration is empty because there is nothing there; word_studies1-4, vincent, studies, word, wordstudies all 404, verified 2026-08-02). Needs a different source - archive.org or Gutenberg - not a retry."
     }
   },
   {
