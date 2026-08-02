@@ -1,5 +1,67 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-02 (A8 CLOSED — the registers are published, and the flip tooling had never run)
+
+**Headline: production serves 36 published works across 295,652 sections in 8 registers.** 30
+works flipped `staged -> published`, owner-executed, gate held. The 7 held works are untouched,
+each by a cited ruling: `origen-commentary` (MUST_NOT_SERVE_AUTHORS, A6), five lexicons
+(DECISIONS.md "Lexicons: pane"), `barnes-notes` (forbidden provenance).
+
+**Act 2 shipped nothing, and that is the finding, not a shortcut.** Zero changes under `web/`
+since the deployed sha `29a4a16`. The A8 plan assumed a deploy stood between ingest and publish
+because serving code would ship with the data. It did not: the routing lists were already live and
+every register returned nothing purely for want of rows.
+
+**The last act was blocked by three defects in the flip tooling, all found by running it for the
+first time.** The census had never completed on any target.
+
+1. **It could not run anywhere.** §2 queries `sections.source_url` (migration 031), which exists
+   on production and not on dev, and the tool refuses production *by design*. So it crashed on the
+   only target it accepts and §2/§3/§4 had never executed. Absence is now NOT MEASURED, and the
+   verdict names unmeasured legs. **The first version of that guard was itself a fail-open**: it
+   printed the banner then fell through to `forbiddenExposure([])`, reporting "0 rows" and
+   contributing a clean leg — the exact defect `NOT_MEASURED` exists to close, one line below a
+   comment warning about it.
+2. **Admission was modelled and the model was wrong.** Slug membership in `ALL_SERVED_WORKS`, while
+   `LEGAL_CORPUS_FILTER` also admits by AUTHOR — so `john-gill`, `jfb`, `adam-clarke` and
+   `matthew-henry` came back NOT-ADMITTED while published and answering live in /ask. **Twelfth
+   instance of the watchlist's first artefact, and the mirror of the eleventh.** Importing
+   `PUBLISHED_WHOLE_BIBLE_AUTHORS` would have been the thirteenth. Admission is now MEASURED.
+3. **The josephus deadlock, resolved.** The A3 rule was written when /ask was the only consumer.
+   The app has since grown a shelf that serves published works straight from `sources`/`sections`
+   (`work.ts:107,122` gate on status alone). `josephus-whiston` is 4,112 sections, 439 anchors, 0
+   flat rows: no lane serves it, the shelf serves it, and the ruling orders it published. The rule
+   had one category where the product has two, which is why re-reading either never resolved it.
+
+**And the second-order effect that fix caused, closed in the same change.** `origen-commentary` is
+on MUST_NOT_SERVE_AUTHORS with 1,224 sections. Lane-only admission left it NOT-ADMITTED, so the ban
+was being enforced **by accident**. Counting the shelf removed the accident. A banned author is now
+unadmittable by any surface — which matters most on the shelf, where published IS served with no
+predicate left to decline it.
+
+### DONE
+- 30 works published; 36 total; 295,652 sections; held works verified untouched.
+- Census fixed on all three counts, 25 tests, every new rule red-proofed by seeding the defect.
+- §2 answered where the column exists: **no section on production carries a forbidden-aggregator
+  `source_url`.** 10,344 rows carry any row-level signal; the rest are NULL, which migration 031's
+  own header defines as "no signal recorded", not "clean".
+- Flip list DERIVED from the copy batches, every exclusion naming its ruling. Origen caught by the
+  shipped `isMustNotServeAuthor` predicate, which normalises the manifest's "Origen of Alexandria"
+  to the banned "Origen" — a literal list would have published a banned father.
+- Labels: **0 heading problems across all 36 works**, so the "Section 109" defect reaches none of it.
+
+### NOT DONE / UNVERIFIED
+- **The accuracy diagnostic has still NOT been re-run**, and 18,371 sections of patristics are now
+  in the composed /ask pool. The v3/v4 figures describe a corpus that no longer exists. This is the
+  single highest-value outstanding item and needs no gate.
+- **Nobody has driven /ask against production since the flip.** Serving is inferred from predicates
+  and deployed lists, not observed.
+- **Reader UX order filed and not started** (Bible on the desk, the `+` affordance, the layout
+  model) — [order](docs/pm/orders/2026-08-02-reader-ux-desk-and-bible.md).
+- **`vincent-word-studies`** is a manifest entry with no ingested rows, cause unrecorded.
+- **The `app_runtime` password exposed in this session is still unrotated.**
+
+
 ## 2026-08-02 (A8 act 1 COMPLETE — 36 works on production, and the four things it is not)
 
 **Headline: the corpus is on production.** Four owner-executed runs, `mismatch: 0` on every one:
