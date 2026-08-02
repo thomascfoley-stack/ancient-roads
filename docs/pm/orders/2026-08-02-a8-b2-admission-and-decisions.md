@@ -153,6 +153,57 @@ list say something about shelf serving and put a false statement in the file tha
   (b) historians are an explicit, named exception with the reason recorded; or
   (c) the josephus ruling is withdrawn or deferred until a history read path exists.
 
+## OWNER RULINGS, 2026-08-02 — and what decision 5 actually cost
+
+All five decisions below the fold were answered. Recorded here so bylaw 1 covers them:
+
+1. **Scope: both stores.** Everything searchable AND readable in full. Not flat-store-only.
+2. **X1-HAZARD: (b).** Batch, with approval per batch as the go-live moment. The status-aware
+   lane gate gets built later, not as a precondition.
+3. **Cost: a non-issue below ~$200, a problem at $500.** Options to be presented (below).
+4. **Readability is the goal for every register**, lexicons and historians included. The
+   multi-pane reader (multiple windows, chapters, page numbers) is **its own project, not A8**.
+   A8's job is to get the content into the database.
+5. **`spurgeon-talks-to-farmers`: add it, so all sermons are live.**
+
+### Decision 5 was one line and three files, and that is the interesting part
+
+`spurgeon-talks-to-farmers` was the only clean, unquarantined sermon-type work absent from
+`SERVED_SERMON_WORKS`. Adding it turned **two** lockstep guards red, which is the system working:
+
+* `legal-hnsw-index-sync.test.ts` — "sermon lane index missing spurgeon-talks-to-farmers".
+  The lane's partial HNSW index predicate hardcodes the slug list; if the filter names a work the
+  index does not, the planner drops to the full-table index and the base pool starves silently.
+  That is how migration 009 died.
+* `fts-legal-index-sync.test.ts` — the FTS index predicate is compared **byte-exact** against
+  `LEGAL_COMMENTARY_ENTRIES_PREDICATE`, which carries the lane slugs too. The hnsw guard's own
+  FTS case only checks prose + song/verse slugs and stayed green. **Two guards over the same
+  file and only the stricter one saw it.**
+
+`db/migrations/037_sermon_index_add_talks_to_farmers.sql` rebuilds both, zero-window
+(new name → VALID → drop old → rename), in one file so a partial application cannot leave
+half-lockstep. **NOT APPLIED anywhere** — not prod, not dev. It is a committed migration awaiting
+its occasion. Production carries zero register rows today, so on prod both rebuilds are over an
+empty predicate and effectively instant.
+
+**`whitefield-works` stays out**, and this is the one place "all sermons" does not mean all.
+It is `serve:false` for a quality reason on the record (Project Gutenberg vol 1 of 6, no clean
+sermon boundaries), not an oversight. Reaching it means revisiting that ruling.
+
+### A guard fixed on the way
+
+The FTS lockstep guard extracted `CREATE INDEX[\s\S]*?WHERE …` — the **first** CREATE INDEX in
+the file, whichever index that built. Every fts-legal migration so far built exactly one index,
+so it never mattered; 037 builds two and the guard compared the HNSW predicate while reporting it
+as the FTS one. Now anchored on the index name, and it asserts there is exactly one such CREATE.
+
+The false-green this closes is narrow and worth stating exactly rather than inflating: it needs a
+migration whose first CREATE INDEX predicate *does* equal `LEGAL_COMMENTARY_ENTRIES_PREDICATE`
+while the fts-legal rebuild later in the same file has drifted. A second index over the same legal
+population (a btree for sorting) is an ordinary thing to want and has exactly that shape.
+Red-proofed by drifting only the second half of 037 and watching the anchored guard name the FTS
+predicate.
+
 ## The DRAFT's sixteen ⚑ items, reduced
 
 Only these gate the **next** step. The rest are real but are not on the critical path until the
