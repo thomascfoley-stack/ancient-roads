@@ -1,0 +1,1324 @@
+{
+  "_": "Checksums for the archived raw sources. The BYTES live in data/raw/archive (gitignored); THIS file is the durable artifact and is committed. A rebuild is provable only against these hashes.",
+  "generatedBy": "scripts/archive-sources.mts",
+  "files": [
+    {
+      "slug": "augustine-homilies",
+      "artifact": "schaff_npnf106.xml",
+      "url": "https://www.ccel.org/ccel/schaff/npnf106.xml",
+      "sha256": "3710c6985a8dfc4e4ffafc461a7a8550db609b0506535453dac252f2aa55b604",
+      "bytes": 4680096,
+      "fetchedAt": "2026-08-02T02:47:53.723Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "augustine-homilies",
+      "artifact": "schaff_npnf107.xml",
+      "url": "https://www.ccel.org/ccel/schaff/npnf107.xml",
+      "sha256": "75d52f4c31dde0959974256b3f5d84394b7b96fcd2883e78a3d32e0b66c5869a",
+      "bytes": 3694413,
+      "fetchedAt": "2026-08-02T02:47:55.138Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "augustine-homilies",
+      "artifact": "schaff_npnf108.xml",
+      "url": "https://www.ccel.org/ccel/schaff/npnf108.xml",
+      "sha256": "87b60e90917e69f03c75955517fc996a0e6d22dc9862365b45c308e70e5bf784",
+      "bytes": 6222968,
+      "fetchedAt": "2026-08-02T02:47:56.809Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "bramley-carols",
+      "artifact": "bramley_carols.xml",
+      "url": "https://www.ccel.org/ccel/bramley/carols.xml",
+      "sha256": "70701c234bd962496696981a906b36d452ee480f95500e739d7e2d5ae2769e88",
+      "bytes": 21792,
+      "fetchedAt": "2026-08-02T02:48:31.633Z",
+      "contentType": "text/html; charset=UTF-8"
+    },
+    {
+      "slug": "calvin-institutes",
+      "artifact": "calvin_institutes.xml",
+      "url": "https://www.ccel.org/ccel/calvin/institutes.xml",
+      "sha256": "d7995178c1fe1723d1124126010e430f12d0444239ad7f9a7c8c818aa9766717",
+      "bytes": 4979278,
+      "fetchedAt": "2026-08-02T02:48:05.809Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "chrysostom-homilies",
+      "artifact": "schaff_npnf109.xml",
+      "url": "https://www.ccel.org/ccel/schaff/npnf109.xml",
+      "sha256": "6d0887393b4d197d7784cbea989aeb422d7e38f55711b4c4d4af85e3de680175",
+      "bytes": 3017592,
+      "fetchedAt": "2026-08-02T02:47:44.637Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "chrysostom-homilies",
+      "artifact": "schaff_npnf110.xml",
+      "url": "https://www.ccel.org/ccel/schaff/npnf110.xml",
+      "sha256": "e110c98b1f444147bf7baf79e46e56ae6c6a1f0b2983e6fc52f2356fac7f858f",
+      "bytes": 3956654,
+      "fetchedAt": "2026-08-02T02:47:46.207Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "chrysostom-homilies",
+      "artifact": "schaff_npnf111.xml",
+      "url": "https://www.ccel.org/ccel/schaff/npnf111.xml",
+      "sha256": "46072a7fefb80b4b7ea68544b46c13fc1785bd29d99834fd2f867f8aa5e14f08",
+      "bytes": 5349065,
+      "fetchedAt": "2026-08-02T02:47:47.853Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "chrysostom-homilies",
+      "artifact": "schaff_npnf112.xml",
+      "url": "https://www.ccel.org/ccel/schaff/npnf112.xml",
+      "sha256": "b8b345e060625cdf495e888322d88e922f66e686863e818a978204c5f564a4dd",
+      "bytes": 3253154,
+      "fetchedAt": "2026-08-02T02:47:49.170Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "chrysostom-homilies",
+      "artifact": "schaff_npnf113.xml",
+      "url": "https://www.ccel.org/ccel/schaff/npnf113.xml",
+      "sha256": "d62c7c82b262c738739090ffaf5473aa5a76dbadf62ebee0dccac8c4a7db4762",
+      "bytes": 4441248,
+      "fetchedAt": "2026-08-02T02:47:50.787Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "chrysostom-homilies",
+      "artifact": "schaff_npnf114.xml",
+      "url": "https://www.ccel.org/ccel/schaff/npnf114.xml",
+      "sha256": "b130406978fbceb7bcd0774b0e8b09905f35a020a2300c1baf02f314a2d5a70a",
+      "bytes": 4728349,
+      "fetchedAt": "2026-08-02T02:47:52.164Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "dante-divine-comedy",
+      "artifact": "pg1004.txt",
+      "url": "https://www.gutenberg.org/cache/epub/1004/pg1004.txt",
+      "sha256": "c233a7ef9444890cb7f16071ff54d997307a3c60dcd6506cfd415bae2430eac2",
+      "bytes": 709055,
+      "fetchedAt": "2026-08-02T02:48:48.081Z",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "slug": "donne-divine-poems",
+      "artifact": "pg48688.txt",
+      "url": "https://www.gutenberg.org/cache/epub/48688/pg48688.txt",
+      "sha256": "7da161f1605d67a422f21ac051be6d8780ee45637ac25570adef7de7318a35b1",
+      "bytes": 1026463,
+      "fetchedAt": "2026-08-02T02:48:37.572Z",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "slug": "edersheim-lifetimes",
+      "artifact": "edersheim_lifetimes.xml",
+      "url": "https://www.ccel.org/ccel/edersheim/lifetimes.xml",
+      "sha256": "aa20f33d57f0f1d780886840c2d1ac523bb7004e9ff7f7f23a536c5c56150334",
+      "bytes": 6684281,
+      "fetchedAt": "2026-08-02T02:48:13.278Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "herbert-temple",
+      "artifact": "temple00herb_0_djvu.txt",
+      "url": "https://archive.org/download/temple00herb_0/temple00herb_0_djvu.txt",
+      "sha256": "62604cecd60163a5e1bcff0502ee6bc88ccb9904f7bc03e7746d3df031de4cb8",
+      "bytes": 280396,
+      "fetchedAt": "2026-08-02T02:48:31.982Z",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "slug": "herrick-noble-numbers",
+      "artifact": "pg22421.txt",
+      "url": "https://www.gutenberg.org/cache/epub/22421/pg22421.txt",
+      "sha256": "e0f5317193e3e0ebb39d5cd7ef16a68c36cf750981f0da38e0599f89bbbf7255",
+      "bytes": 875793,
+      "fetchedAt": "2026-08-02T02:48:38.982Z",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "slug": "hodge-systematic",
+      "artifact": "hodge_theology1.xml",
+      "url": "https://www.ccel.org/ccel/hodge/theology1.xml",
+      "sha256": "f01ffb5235657a0b21f56a1a4eb7ef95b836ba9d907f9acd1402e8a6fe450fc6",
+      "bytes": 2243559,
+      "fetchedAt": "2026-08-02T02:48:01.083Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "hodge-systematic",
+      "artifact": "hodge_theology2.xml",
+      "url": "https://www.ccel.org/ccel/hodge/theology2.xml",
+      "sha256": "52a43581dcb7b75a6903c89c8e2496b8d754bdbcd6fa751ecaa4f065e933d942",
+      "bytes": 2601781,
+      "fetchedAt": "2026-08-02T02:48:02.658Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "hodge-systematic",
+      "artifact": "hodge_theology3.xml",
+      "url": "https://www.ccel.org/ccel/hodge/theology3.xml",
+      "sha256": "aeb92566e8ce5019f6f43c56585538c67bafcea177d9d6f1df286006f24dda54",
+      "bytes": 3102428,
+      "fetchedAt": "2026-08-02T02:48:04.170Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "hopkins-poems",
+      "artifact": "pg22403.txt",
+      "url": "https://www.gutenberg.org/cache/epub/22403/pg22403.txt",
+      "sha256": "4d0bc2a9ebf06d55852844997172fa2c968f0ddc5c5b43677f548052de696d49",
+      "bytes": 192558,
+      "fetchedAt": "2026-08-02T02:48:44.908Z",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "slug": "josephus-works",
+      "artifact": "josephus_complete.xml",
+      "url": "https://www.ccel.org/ccel/josephus/complete.xml",
+      "sha256": "b7cff7c4a88f7a9b0daf293696f38a66964d81d0e87802a18be0f3a50f1548a3",
+      "bytes": 5005955,
+      "fetchedAt": "2026-08-02T02:48:11.937Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "keble-christian-year",
+      "artifact": "pg4272.txt",
+      "url": "https://www.gutenberg.org/cache/epub/4272/pg4272.txt",
+      "sha256": "dbe45031472abbffb927ded7eb43e67de61403f9184f2663da8a23a59233f758",
+      "bytes": 328144,
+      "fetchedAt": "2026-08-02T02:48:35.989Z",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "artifact": "maclaren_2kings_eccl.xml",
+      "url": "https://www.ccel.org/ccel/maclaren/2kings_eccl.xml",
+      "sha256": "7ff99a44c4bbb61cfc726ef41bdd84ebc6e4758f15549d0701eb07250375919f",
+      "bytes": 1681882,
+      "fetchedAt": "2026-08-02T02:47:26.625Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "artifact": "maclaren_acts.xml",
+      "url": "https://www.ccel.org/ccel/maclaren/acts.xml",
+      "sha256": "4be2461af97a82fed1145eb07e56b03568bf9dd9b6ef0b52840868c0a0165f20",
+      "bytes": 1593827,
+      "fetchedAt": "2026-08-02T02:47:40.121Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "artifact": "maclaren_deut.xml",
+      "url": "https://www.ccel.org/ccel/maclaren/deut.xml",
+      "sha256": "20cc3c7caf09de8a024ec4a43a455d838584c5a4d9086484cd7f2b87d6cc9d7d",
+      "bytes": 1713855,
+      "fetchedAt": "2026-08-02T02:47:25.116Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "artifact": "maclaren_ezek_matt1.xml",
+      "url": "https://www.ccel.org/ccel/maclaren/ezek_matt1.xml",
+      "sha256": "64704efdbbb5c760ff24ccbccef24d8531e4aaa0da3c00cce9350370a6c7759c",
+      "bytes": 1627400,
+      "fetchedAt": "2026-08-02T02:47:31.112Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "artifact": "maclaren_gen_num.xml",
+      "url": "https://www.ccel.org/ccel/maclaren/gen_num.xml",
+      "sha256": "437fc62ec87b184c35fbd090d2364e5a69d0f963655067defcea17e8535e30b4",
+      "bytes": 1495037,
+      "fetchedAt": "2026-08-02T02:47:23.601Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "artifact": "maclaren_iicor_tim.xml",
+      "url": "https://www.ccel.org/ccel/maclaren/iicor_tim.xml",
+      "sha256": "bf505df797d1fd84fcb4f675d24fb7626ee3767d024bbd3d9dd0722be1a990aa",
+      "bytes": 1521255,
+      "fetchedAt": "2026-08-02T02:47:43.077Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "artifact": "maclaren_isa_jer.xml",
+      "url": "https://www.ccel.org/ccel/maclaren/isa_jer.xml",
+      "sha256": "6ed0a946354415b741b4a7af3a7167a9887308a334e5257f74e0170f83db53ee",
+      "bytes": 1517765,
+      "fetchedAt": "2026-08-02T02:47:29.610Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "artifact": "maclaren_john1.xml",
+      "url": "https://www.ccel.org/ccel/maclaren/john1.xml",
+      "sha256": "ad21dfec4be006f93d0714fb28bfba89c09c21946ac6244fc36de3256f2084ea",
+      "bytes": 1475847,
+      "fetchedAt": "2026-08-02T02:47:37.061Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "artifact": "maclaren_john2.xml",
+      "url": "https://www.ccel.org/ccel/maclaren/john2.xml",
+      "sha256": "4ea7e6345f74654191d1ec001fdbf1000538ccda490b5f92dc30f0c2f865a917",
+      "bytes": 802780,
+      "fetchedAt": "2026-08-02T02:47:38.489Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "artifact": "maclaren_luke.xml",
+      "url": "https://www.ccel.org/ccel/maclaren/luke.xml",
+      "sha256": "0fed7129d7044a38e12c1982207b1a63d06eb3f1af5c1714ff23a2dcbfc39367",
+      "bytes": 1598368,
+      "fetchedAt": "2026-08-02T02:47:35.618Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "artifact": "maclaren_mark.xml",
+      "url": "https://www.ccel.org/ccel/maclaren/mark.xml",
+      "sha256": "6ce1bc038c41c36bb840cf7b4f9a66ca5c512e963d4be6ed475db6168aa6fcd5",
+      "bytes": 1276567,
+      "fetchedAt": "2026-08-02T02:47:34.062Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "artifact": "maclaren_matt2.xml",
+      "url": "https://www.ccel.org/ccel/maclaren/matt2.xml",
+      "sha256": "828015f2b61c0224fd617b9509188556e229be7265dd96294f84d298aef0e1a1",
+      "bytes": 1546331,
+      "fetchedAt": "2026-08-02T02:47:32.627Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "artifact": "maclaren_psalms.xml",
+      "url": "https://www.ccel.org/ccel/maclaren/psalms.xml",
+      "sha256": "e324977b3c3e324e7a27091553a759ac1b6f38731ab6f32d90eab30768e4635c",
+      "bytes": 1513648,
+      "fetchedAt": "2026-08-02T02:47:28.110Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "artifact": "maclaren_rom_cor.xml",
+      "url": "https://www.ccel.org/ccel/maclaren/rom_cor.xml",
+      "sha256": "4e0b0f461b5f10973d785b116396c97312bebee376acdccfcebff72f42b8c5e1",
+      "bytes": 1573189,
+      "fetchedAt": "2026-08-02T02:47:41.569Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "milton-poetical-works",
+      "artifact": "pg1745.txt",
+      "url": "https://www.gutenberg.org/cache/epub/1745/pg1745.txt",
+      "sha256": "50b4add4774723e2748a7a9ed6e64da9f1419e8fb1bc2b82943f16895278de47",
+      "bytes": 952515,
+      "fetchedAt": "2026-08-02T02:48:42.082Z",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "slug": "montgomery-sacred-poems",
+      "artifact": "montgomery_sacredpoems.xml",
+      "url": "https://www.ccel.org/ccel/montgomery/sacredpoems.xml",
+      "sha256": "f1a3eca94bbbdcfe229d7f4267e39c12131d38254a6d65a853739c70e9ecdf15",
+      "bytes": 1216915,
+      "fetchedAt": "2026-08-02T02:48:32.609Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "neale-eastern-hymns",
+      "artifact": "neale_easternhymns.xml",
+      "url": "https://www.ccel.org/ccel/neale/easternhymns.xml",
+      "sha256": "536d930e77e6ad8fcaecca4c3b65a38a9d9ee91a5386b0a15102fa917e196b95",
+      "bytes": 329644,
+      "fetchedAt": "2026-08-02T02:48:29.481Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "olney-hymns",
+      "artifact": "newton_olneyhymns.xml",
+      "url": "https://www.ccel.org/ccel/newton/olneyhymns.xml",
+      "sha256": "de616012b61f32fef80ea50d3ac2fd059f815f14e10e29ef0a2daa3ffdae493c",
+      "bytes": 1205373,
+      "fetchedAt": "2026-08-02T02:48:26.482Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "origen-commentary",
+      "artifact": "schaff_anf09.xml",
+      "url": "https://www.ccel.org/ccel/schaff/anf09.xml",
+      "sha256": "6a3932956be998903672d451fc3a0901b5da8ebecce85273bb6513ae9d7df09f",
+      "bytes": 4647627,
+      "fetchedAt": "2026-08-02T02:47:58.119Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "rossetti-verses",
+      "artifact": "pg77809.txt",
+      "url": "https://www.gutenberg.org/cache/epub/77809/pg77809.txt",
+      "sha256": "98b38851277cb08beb5f5bf2f931d2eb8e185e26cab146ee2b91113bb6ef895d",
+      "bytes": 200851,
+      "fetchedAt": "2026-08-02T02:48:43.315Z",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "slug": "schaff-creeds",
+      "artifact": "schaff_creeds1.xml",
+      "url": "https://www.ccel.org/ccel/schaff/creeds1.xml",
+      "sha256": "450960af42f600534f15429546e0a00696a9fbfc4ea32df55545ef5a02c491e7",
+      "bytes": 4590874,
+      "fetchedAt": "2026-08-02T02:48:07.194Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "schaff-creeds",
+      "artifact": "schaff_creeds2.xml",
+      "url": "https://www.ccel.org/ccel/schaff/creeds2.xml",
+      "sha256": "412c952ff096d7e09a1f2d9e838e9652f0fedcbf7e8d6f3999c27e69ab69091e",
+      "bytes": 4065931,
+      "fetchedAt": "2026-08-02T02:48:08.678Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "schaff-creeds",
+      "artifact": "schaff_creeds3.xml",
+      "url": "https://www.ccel.org/ccel/schaff/creeds3.xml",
+      "sha256": "756adf1ddd466d237221c76b99d25d55cab7e83d08914f28a289c3b90dccddf3",
+      "bytes": 6107301,
+      "fetchedAt": "2026-08-02T02:48:10.261Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "schaff-history",
+      "artifact": "schaff_hcc1.xml",
+      "url": "https://www.ccel.org/ccel/schaff/hcc1.xml",
+      "sha256": "0a2a7cc56e2d00c791eeaacd5516a292a855426c3a8ceb8d5eeef6eeb49e3d09",
+      "bytes": 3630817,
+      "fetchedAt": "2026-08-02T02:48:14.572Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "schaff-history",
+      "artifact": "schaff_hcc2.xml",
+      "url": "https://www.ccel.org/ccel/schaff/hcc2.xml",
+      "sha256": "edcfba700eb5e33cd662ec801589184dd665885cceca96114d891467c0f85942",
+      "bytes": 3181903,
+      "fetchedAt": "2026-08-02T02:48:16.119Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "schaff-history",
+      "artifact": "schaff_hcc3.xml",
+      "url": "https://www.ccel.org/ccel/schaff/hcc3.xml",
+      "sha256": "4cf28ad3e1fb28fcfddafe06230f914d85d74b08afbcee8a101cd846d5fb88dc",
+      "bytes": 3551211,
+      "fetchedAt": "2026-08-02T02:48:17.621Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "schaff-history",
+      "artifact": "schaff_hcc4.xml",
+      "url": "https://www.ccel.org/ccel/schaff/hcc4.xml",
+      "sha256": "7a4b158f20983c50fac6542e1904a24e611f52dba7f293fc4831e2d3030364d6",
+      "bytes": 2351867,
+      "fetchedAt": "2026-08-02T02:48:19.044Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "schaff-history",
+      "artifact": "schaff_hcc5.xml",
+      "url": "https://www.ccel.org/ccel/schaff/hcc5.xml",
+      "sha256": "35b199838ed7c4afa70417534d97b37e544d8f75c071426eddbd50cb593f06ab",
+      "bytes": 2307663,
+      "fetchedAt": "2026-08-02T02:48:21.616Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "schaff-history",
+      "artifact": "schaff_hcc6.xml",
+      "url": "https://www.ccel.org/ccel/schaff/hcc6.xml",
+      "sha256": "7221658476b0847e10a58ac01eea5f3b5fbf884d5941d32d758be5ef1cdca4c5",
+      "bytes": 2128205,
+      "fetchedAt": "2026-08-02T02:48:22.012Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "schaff-history",
+      "artifact": "schaff_hcc7.xml",
+      "url": "https://www.ccel.org/ccel/schaff/hcc7.xml",
+      "sha256": "f821de5c332e6febd4a16f32d18dda36a2c9083035c73e6a9975c431d683eacd",
+      "bytes": 2144692,
+      "fetchedAt": "2026-08-02T02:48:23.601Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "schaff-history",
+      "artifact": "schaff_hcc8.xml",
+      "url": "https://www.ccel.org/ccel/schaff/hcc8.xml",
+      "sha256": "95f835fe5d69bf1f1f94303cb4cc6a4487f4ae3b45e60c41f7a522db095d07ec",
+      "bytes": 2618757,
+      "fetchedAt": "2026-08-02T02:48:25.129Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "scottish-psalter-1650",
+      "artifact": "anonymous_scotpsalter.xml",
+      "url": "https://www.ccel.org/ccel/anonymous/scotpsalter.xml",
+      "sha256": "2dd077baf88e3bebc4c6b4ed149bdc1c0c0dd3726544867fb060b6c62249f68a",
+      "bytes": 1076268,
+      "fetchedAt": "2026-08-02T02:48:28.053Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons01.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons01.xml",
+      "sha256": "820636062721e5a6ced17635fdc96e11f049760a7e727f98eeb29dbb9d903366",
+      "bytes": 1926855,
+      "fetchedAt": "2026-08-02T02:45:40.153Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons02.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons02.xml",
+      "sha256": "0a67f86970692da3701f602a71e897d96da6a44453069fbc872d8d80982526db",
+      "bytes": 1881143,
+      "fetchedAt": "2026-08-02T02:45:41.326Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons03.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons03.xml",
+      "sha256": "456032a81b68b6a02200a9600a6432d9d197b4b6474381dec76b83c689674610",
+      "bytes": 2063646,
+      "fetchedAt": "2026-08-02T02:45:42.911Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons04.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons04.xml",
+      "sha256": "5d23733b89924f6abc7483a21aa759a0a76b25757cdd4a4aac58922120068d8f",
+      "bytes": 2269386,
+      "fetchedAt": "2026-08-02T02:45:44.406Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons05.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons05.xml",
+      "sha256": "4aa762d25db4c83398f48039c14d4c27f22f99a2e091bfb5e56de806da352990",
+      "bytes": 2309732,
+      "fetchedAt": "2026-08-02T02:45:45.921Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons06.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons06.xml",
+      "sha256": "888e0240f148be27317100839cd4e95c62b4bbfe35c0ef4e6e0dc17b6a33e827",
+      "bytes": 2343942,
+      "fetchedAt": "2026-08-02T02:45:47.435Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons07.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons07.xml",
+      "sha256": "99a7ea3dd5e6a050f58e69c588b2e22e736bb66cd58f2e3ac3f336c3cc747db8",
+      "bytes": 2709552,
+      "fetchedAt": "2026-08-02T02:45:48.931Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons08.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons08.xml",
+      "sha256": "623fdce9275bf8a73dc2723060ed46b999a241ea9c611f7001aea916887db894",
+      "bytes": 2330502,
+      "fetchedAt": "2026-08-02T02:45:50.436Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons09.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons09.xml",
+      "sha256": "c7d28d8fb8dd574e89426a0a911c905d35ea99d8fcd36160bab364b992d09cd1",
+      "bytes": 2429600,
+      "fetchedAt": "2026-08-02T02:45:51.934Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons10.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons10.xml",
+      "sha256": "6448d9c4aa95bbbce32b87d47b15132bba1fbdfc5a242c31b8001ff5b2e4c184",
+      "bytes": 2458900,
+      "fetchedAt": "2026-08-02T02:45:53.445Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons11.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons11.xml",
+      "sha256": "06c287767370dd03f071c6cf6cfe7c34f568e162a5841d89c8cc8c5a2cfdc7d8",
+      "bytes": 2427843,
+      "fetchedAt": "2026-08-02T02:45:54.956Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons12.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons12.xml",
+      "sha256": "4878fd48181d5bb46e78867ddc990d2f8f37e39b23fafa75e407214f18d94d71",
+      "bytes": 2417376,
+      "fetchedAt": "2026-08-02T02:45:56.432Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons13.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons13.xml",
+      "sha256": "48381d46c7363bc188fff6f1341050f495f972b4fe7d4afde721abf64eaffa49",
+      "bytes": 2403228,
+      "fetchedAt": "2026-08-02T02:45:57.950Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons14.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons14.xml",
+      "sha256": "87b414e7f39021c194b0308b84a4ac0fef9b7fe3fdc3cc35ab4be10330bc7476",
+      "bytes": 2431555,
+      "fetchedAt": "2026-08-02T02:45:59.435Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons15.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons15.xml",
+      "sha256": "e0d12bc33c5cfabe36c5b5fa9e578000b5378d38657700d22d248ce968400c27",
+      "bytes": 2304746,
+      "fetchedAt": "2026-08-02T02:46:00.936Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons16.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons16.xml",
+      "sha256": "74a2698ca79969157b68d7a64190b9a16709fcb49bf04693af8521ec05c5f0dd",
+      "bytes": 2402804,
+      "fetchedAt": "2026-08-02T02:46:02.448Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons17.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons17.xml",
+      "sha256": "58013a24763900c7fca8c3d060c6375f04c2d09ed11023360e1bdd1876516a41",
+      "bytes": 2519837,
+      "fetchedAt": "2026-08-02T02:46:03.965Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons18.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons18.xml",
+      "sha256": "7aa47271c34cd769e0849f321b5eb19eeed40bc5530a61c4b363bbf1113ebd6a",
+      "bytes": 2473682,
+      "fetchedAt": "2026-08-02T02:46:05.454Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons19.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons19.xml",
+      "sha256": "93378acdd7498f35020835bea076d6c12fa465518e8ca15cd4120fce75b87501",
+      "bytes": 2375188,
+      "fetchedAt": "2026-08-02T02:46:06.949Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons20.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons20.xml",
+      "sha256": "cbbf9155b6a248c998dd7973673e48081bff7c98411556d22679327dae274d91",
+      "bytes": 2408731,
+      "fetchedAt": "2026-08-02T02:46:08.453Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons21.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons21.xml",
+      "sha256": "870737c82b45a1fab1c5bd572e5babcdf24f53a3816659ba9422acbfd69bdb6a",
+      "bytes": 2382494,
+      "fetchedAt": "2026-08-02T02:46:09.954Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons22.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons22.xml",
+      "sha256": "71caa58675311398d9c0a9da7de9e367ce6ec168a4c1047e4abb07f8da873f99",
+      "bytes": 2458054,
+      "fetchedAt": "2026-08-02T02:46:11.457Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons23.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons23.xml",
+      "sha256": "96f7149dc826f7fd15bd4ea6372a2020bf694f340bd84e5f3d034b6859ce586c",
+      "bytes": 2420329,
+      "fetchedAt": "2026-08-02T02:46:12.967Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons24.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons24.xml",
+      "sha256": "4e557313ae10d7cd0b578a09d59eaa2fbb8048153bd8a6e1aa12e5eb721ace06",
+      "bytes": 2450817,
+      "fetchedAt": "2026-08-02T02:46:14.464Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons25.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons25.xml",
+      "sha256": "b4efd66500b9ca03550075f07914ba72dfe6991f8370830899a008ea2c1dcc39",
+      "bytes": 2439238,
+      "fetchedAt": "2026-08-02T02:46:15.955Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons26.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons26.xml",
+      "sha256": "73fb07ac47f4b8ea3f3522fe89fb9a958728555d1c388aa4f0d6a8aa26c80d49",
+      "bytes": 2423980,
+      "fetchedAt": "2026-08-02T02:46:17.462Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons27.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons27.xml",
+      "sha256": "35761eb1d0b168ed888fff9be15e6a38369d00990f4e083ca84485cd02684f7f",
+      "bytes": 2469525,
+      "fetchedAt": "2026-08-02T02:46:18.968Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons28.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons28.xml",
+      "sha256": "c79da406f452d317588e49ddb3cd61226fe429f19dd465963c58107bb647e1c2",
+      "bytes": 2427346,
+      "fetchedAt": "2026-08-02T02:46:20.469Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons29.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons29.xml",
+      "sha256": "91f7a6d3ac3aba1e47342a066de2aded3a59fde13644fc517f42b6eed13be67b",
+      "bytes": 2417319,
+      "fetchedAt": "2026-08-02T02:46:21.975Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons30.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons30.xml",
+      "sha256": "c9212fff76cc78c976928177130076d5c0a0d75d4e587fe6d40b3638307c2ab9",
+      "bytes": 2372112,
+      "fetchedAt": "2026-08-02T02:46:24.502Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons31.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons31.xml",
+      "sha256": "b036ca84b80d0e4b648e908b0812434605406d18821ff52092c6d9f7ec45c40e",
+      "bytes": 2307984,
+      "fetchedAt": "2026-08-02T02:46:24.915Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons32.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons32.xml",
+      "sha256": "183084b858ff323f48adc64a828c8411c7d6ec134054ac25da968b617bfb8423",
+      "bytes": 2380534,
+      "fetchedAt": "2026-08-02T02:46:26.470Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons33.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons33.xml",
+      "sha256": "12f8a897a7ea756f2dfe4fcb1ac50c91da3e4f36a0e84c0049c26ccee60407f5",
+      "bytes": 2406374,
+      "fetchedAt": "2026-08-02T02:46:27.967Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons34.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons34.xml",
+      "sha256": "6a668002d3bdd6387e28803ccf92a08147e8701bda0d77107010b80bc0241787",
+      "bytes": 2313569,
+      "fetchedAt": "2026-08-02T02:46:29.456Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons35.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons35.xml",
+      "sha256": "822f0ff7da835f25a556de7d39d0672696eed6aa979d43863241429900b9e560",
+      "bytes": 2309540,
+      "fetchedAt": "2026-08-02T02:46:30.979Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons36.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons36.xml",
+      "sha256": "171593be5bd55b109dc62900ac5caefc503eb5846756ecc4cedd943f9a78c64d",
+      "bytes": 2257833,
+      "fetchedAt": "2026-08-02T02:46:32.470Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons37.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons37.xml",
+      "sha256": "c7863495fabb243b10c7aa2d6416da5ecf937776b38bf8d019ad2b51b0842647",
+      "bytes": 2181849,
+      "fetchedAt": "2026-08-02T02:46:34.045Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons38.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons38.xml",
+      "sha256": "727b0c834dcea78e1b398a1e06a6572b0a02897a00f45e22b4271380f41f2604",
+      "bytes": 2013544,
+      "fetchedAt": "2026-08-02T02:46:35.632Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons39.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons39.xml",
+      "sha256": "4a7dd9ee0399987e5edc4cb3eed930e9c191d03662c888c6157fe127789c6389",
+      "bytes": 2096962,
+      "fetchedAt": "2026-08-02T02:46:37.053Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons40.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons40.xml",
+      "sha256": "b07f941fb29d2de66f14e9b180f3de247496d39cfc78fe62972b2ce2f7a110c1",
+      "bytes": 2076842,
+      "fetchedAt": "2026-08-02T02:46:38.632Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons41.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons41.xml",
+      "sha256": "e164746bb03c38e2391d0d8b21e21abf6a2649fdc860c71a9f6a150ea0406d2a",
+      "bytes": 2037943,
+      "fetchedAt": "2026-08-02T02:46:40.072Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons42.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons42.xml",
+      "sha256": "5e9126aeec468a211b1362cd74ed45d9a15a7703297b8779fe01f1fd65f03080",
+      "bytes": 2065896,
+      "fetchedAt": "2026-08-02T02:46:41.636Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons43.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons43.xml",
+      "sha256": "50a404af2b7fd8a27c4625e44ffcd0d7f121b84a89efaecbb5eea2042f6aa831",
+      "bytes": 2078067,
+      "fetchedAt": "2026-08-02T02:46:43.071Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons44.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons44.xml",
+      "sha256": "0ca295598853510833a60f4b59263670c23d4078cda93486a3268ed68c81ca9d",
+      "bytes": 2027975,
+      "fetchedAt": "2026-08-02T02:46:44.641Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons45.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons45.xml",
+      "sha256": "dd5b4837105653380047c59b3d783fdc51687b88fafafa2868a210302b0e9d7d",
+      "bytes": 2104270,
+      "fetchedAt": "2026-08-02T02:46:46.069Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons46.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons46.xml",
+      "sha256": "b59f76e98709c28460a40cc08bfd3d5b086556801322f69fe0d83a40f92a8daf",
+      "bytes": 2018104,
+      "fetchedAt": "2026-08-02T02:46:47.637Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons47.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons47.xml",
+      "sha256": "9f96851e99661d9d76fe4a7e132937429ff125c3178d735c8d14d0e4f6d2b8e1",
+      "bytes": 2025049,
+      "fetchedAt": "2026-08-02T02:46:49.066Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons48.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons48.xml",
+      "sha256": "cece492982d7a68cd7d3955f9e3b6d3cbd1f26bf4f53ac8cb92a9d1dbdb54635",
+      "bytes": 2024948,
+      "fetchedAt": "2026-08-02T02:46:50.626Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons49.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons49.xml",
+      "sha256": "225f5e0578aa3bcbaf987e18c42d630a9dc320c0933153bc4d736fdc12d628ce",
+      "bytes": 2029024,
+      "fetchedAt": "2026-08-02T02:46:52.139Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons50.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons50.xml",
+      "sha256": "f17436d1e5fab810fb063351a110238f9338ca8848396d0e2f85993d42cedfc6",
+      "bytes": 2038910,
+      "fetchedAt": "2026-08-02T02:46:53.562Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons51.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons51.xml",
+      "sha256": "2bb06cb2b28fce9ef08e67e823d99b66c3b2f3e3b01735413afb412f0eef2f8b",
+      "bytes": 2025428,
+      "fetchedAt": "2026-08-02T02:46:55.150Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons52.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons52.xml",
+      "sha256": "73178363a734866ba78b3254daf7c98e7983cbe4e8033383798279e4e15825b8",
+      "bytes": 2079439,
+      "fetchedAt": "2026-08-02T02:46:56.589Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons53.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons53.xml",
+      "sha256": "6a2ebe1a0b33adc7c4086cb149c8f761fdad3f7d11c7d04af7cf76bb517c5f4f",
+      "bytes": 2032972,
+      "fetchedAt": "2026-08-02T02:46:58.150Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons54.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons54.xml",
+      "sha256": "70e61da5013c63eee7c98b3bddcdf31685a40a89a63a4eae2021ae1763720d74",
+      "bytes": 2013096,
+      "fetchedAt": "2026-08-02T02:46:59.577Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons55.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons55.xml",
+      "sha256": "5ae5cf1c5b29234a23421f6e75e832d41ac4119cc415a0c7b25e6c953b5254b0",
+      "bytes": 2046606,
+      "fetchedAt": "2026-08-02T02:47:01.144Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons56.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons56.xml",
+      "sha256": "4b8a46f52ad6444cfde8f78758609bbed7b90ccf354d913c3ea1d3c739181740",
+      "bytes": 2006045,
+      "fetchedAt": "2026-08-02T02:47:02.647Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons57.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons57.xml",
+      "sha256": "21c52d562f53571a33138e5fd4697a8ed399f4c3c5804e129998aff43636ca68",
+      "bytes": 1918250,
+      "fetchedAt": "2026-08-02T02:47:04.142Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons58.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons58.xml",
+      "sha256": "a2f64db63532b91d9202c8aba12d709a1b3966c04faa118960cac00e860daa96",
+      "bytes": 1934469,
+      "fetchedAt": "2026-08-02T02:47:05.581Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons59.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons59.xml",
+      "sha256": "f5a4640d764208faf8ba31cb0f9a72e67855ee8df6c8b50ac4d3d83a7e1f171b",
+      "bytes": 1934483,
+      "fetchedAt": "2026-08-02T02:47:07.150Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons60.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons60.xml",
+      "sha256": "a4122475655e64c2d54704f26d4b42cde5b52b1abc6a3ef7e8679c4e89562319",
+      "bytes": 1991042,
+      "fetchedAt": "2026-08-02T02:47:08.653Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons61.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons61.xml",
+      "sha256": "52a8175caa6d1b256e4fbce633b3a189964ecc9d9bf40d6f98490cfab6ac563c",
+      "bytes": 1962786,
+      "fetchedAt": "2026-08-02T02:47:10.153Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons62.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons62.xml",
+      "sha256": "a39cd0f6db308075bbab0d44a194eb196a1ce823864a698328ffa6a0b9e005a4",
+      "bytes": 1776306,
+      "fetchedAt": "2026-08-02T02:47:11.597Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "artifact": "spurgeon_sermons63.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/sermons63.xml",
+      "sha256": "386244e42e69a55eef453ca0f40557969282ce1768d21b18957db1da5f7c4ea4",
+      "bytes": 674620,
+      "fetchedAt": "2026-08-02T02:47:13.018Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-treasury",
+      "artifact": "spurgeon_treasury1.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/treasury1.xml",
+      "sha256": "366c74623d2691ad09cb8b877255d66f3ef0f0504654ffba5b454fee69e6a951",
+      "bytes": 115258,
+      "fetchedAt": "2026-08-02T02:47:14.293Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-treasury",
+      "artifact": "spurgeon_treasury2.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/treasury2.xml",
+      "sha256": "0ee0b2321cf3a78fd757a25cd1f88bb31c9a16ed994a9ffc1f108bb106bd8b3e",
+      "bytes": 131086,
+      "fetchedAt": "2026-08-02T02:47:15.808Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-treasury",
+      "artifact": "spurgeon_treasury3.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/treasury3.xml",
+      "sha256": "fb46c6c3ae8191385d52a9da55df44852c5a912dac316b370a6cc94f6f7492ce",
+      "bytes": 130884,
+      "fetchedAt": "2026-08-02T02:47:17.295Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-treasury",
+      "artifact": "spurgeon_treasury4.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/treasury4.xml",
+      "sha256": "aca5379fdcfdd2aac4224bc73e4616c8754906177b08ab0189fd59c82368eb68",
+      "bytes": 127448,
+      "fetchedAt": "2026-08-02T02:47:18.800Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-treasury",
+      "artifact": "spurgeon_treasury5.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/treasury5.xml",
+      "sha256": "17bc85a8f859c9e30e1cb319da7df2ccb09dba8984a7efe5dfcd49ed49f720d5",
+      "bytes": 117081,
+      "fetchedAt": "2026-08-02T02:47:20.306Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "spurgeon-treasury",
+      "artifact": "spurgeon_treasury6.xml",
+      "url": "https://www.ccel.org/ccel/spurgeon/treasury6.xml",
+      "sha256": "2089912404af1412cf8caa9413e417409d585b5600c2af9a8d1cf7c9a0e7fdb2",
+      "bytes": 126683,
+      "fetchedAt": "2026-08-02T02:47:21.806Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "tennyson-in-memoriam",
+      "artifact": "pg70950.txt",
+      "url": "https://www.gutenberg.org/cache/epub/70950/pg70950.txt",
+      "sha256": "ae14fa5e71f32cbbfce5864b14da8d40d3a410e8e6c66384d98ad014e6d8b34c",
+      "bytes": 157945,
+      "fetchedAt": "2026-08-02T02:48:46.405Z",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "slug": "thayers-lexicon",
+      "artifact": "greekenglishlexi00grimuoft_djvu.txt",
+      "url": "https://archive.org/download/greekenglishlexi00grimuoft/greekenglishlexi00grimuoft_djvu.txt",
+      "sha256": "3f1c05b5fb01d2797c9e7f38fbdf0e62583c25c0095a5553a893da5bac90d3e5",
+      "bytes": 4684985,
+      "fetchedAt": "2026-08-02T02:44:43.511Z",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "slug": "traherne-poems",
+      "artifact": "pg61586.txt",
+      "url": "https://www.gutenberg.org/cache/epub/61586/pg61586.txt",
+      "sha256": "060467f7d594c861ccdc1483bc200fcfce77eb3d40ff83c98d31ab7a2dcc5731",
+      "bytes": 309346,
+      "fetchedAt": "2026-08-02T02:48:40.406Z",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "slug": "watts-hymns",
+      "artifact": "pg13341.txt",
+      "url": "https://www.gutenberg.org/cache/epub/13341/pg13341.txt",
+      "sha256": "da345a262661c9b29b83d4d7f1fa1e1025991a3156fcfdeb930b9399338a22e4",
+      "bytes": 366780,
+      "fetchedAt": "2026-08-02T02:48:33.176Z",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "slug": "watts-psalms",
+      "artifact": "pg13166.txt",
+      "url": "https://www.gutenberg.org/cache/epub/13166/pg13166.txt",
+      "sha256": "833372ea59a43d3d43cd0ad1c7fcf30cba4cc63793854a3a9565ee854ff5193c",
+      "bytes": 383205,
+      "fetchedAt": "2026-08-02T02:48:34.483Z",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "slug": "wesley-sermons",
+      "artifact": "wesley_sermons.xml",
+      "url": "https://www.ccel.org/ccel/wesley/sermons.xml",
+      "sha256": "70f4b1d44754ae01889c52aeeb6a1b6f92b9444d016cef35f4c0b40e33ea375a",
+      "bytes": 4340943,
+      "fetchedAt": "2026-08-02T02:47:59.735Z",
+      "contentType": "application/xml"
+    },
+    {
+      "slug": "wheatley-poems",
+      "artifact": "pg409.txt",
+      "url": "https://www.gutenberg.org/cache/epub/409/pg409.txt",
+      "sha256": "f2118cc2a80a75144d884a1eb29ce1ecc518d62ee533c98297e47ddc05720fb5",
+      "bytes": 111395,
+      "fetchedAt": "2026-08-02T02:48:49.325Z",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "slug": "whitefield-works",
+      "artifact": "pg68976.txt",
+      "url": "https://www.gutenberg.org/cache/epub/68976/pg68976.txt",
+      "sha256": "daab31619dbbcb06fb256941e96645f74ea48c61b56389068c1f57b2226cf4c6",
+      "bytes": 1101680,
+      "fetchedAt": "2026-08-02T02:48:51.102Z",
+      "contentType": "text/plain; charset=utf-8"
+    }
+  ],
+  "unrecoverable": [
+    {
+      "slug": "adam-clarke",
+      "kind": "(none)",
+      "reason": "no provenance.acquire block — this entry predates the adapter contract and records no machine-readable way to re-fetch it. Recovering it means re-establishing its source by hand."
+    },
+    {
+      "slug": "barnes-crosswire-nt",
+      "kind": "(none)",
+      "reason": "no provenance.acquire block — this entry predates the adapter contract and records no machine-readable way to re-fetch it. Recovering it means re-establishing its source by hand."
+    },
+    {
+      "slug": "bdb-lexicon",
+      "kind": "github",
+      "reason": "github adapter pins no commit. A branch reference moves, so an archive taken against it cannot prove which bytes it stored. Pin `commit` in the manifest first."
+    },
+    {
+      "slug": "calvin-crosswire",
+      "kind": "(none)",
+      "reason": "no provenance.acquire block — this entry predates the adapter contract and records no machine-readable way to re-fetch it. Recovering it means re-establishing its source by hand."
+    },
+    {
+      "slug": "catena-aurea",
+      "kind": "sword",
+      "reason": "SWORD module \"Catena\" is read from an already-unpacked directory (data/raw/sword/<Module>). No CrossWire download URL is recorded anywhere in this repo, so a fresh machine cannot reconstruct it. Record the module .zip URL in the manifest to fix."
+    },
+    {
+      "slug": "eastons-dictionary",
+      "kind": "sword",
+      "reason": "SWORD module \"Easton\" is read from an already-unpacked directory (data/raw/sword/<Module>). No CrossWire download URL is recorded anywhere in this repo, so a fresh machine cannot reconstruct it. Record the module .zip URL in the manifest to fix."
+    },
+    {
+      "slug": "edwards-works",
+      "kind": "ccel-author",
+      "reason": "id list is discovered by crawling https://www.ccel.org/ccel/edwards (enumerateCcelAuthor). Recoverable, but the enumeration is a live fetch, so the id set is not derivable offline and is not pinned in the manifest — two archives taken a year apart could hold different works under the same slug."
+    },
+    {
+      "slug": "flavel-works",
+      "kind": "ccel-author",
+      "reason": "id list is discovered by crawling https://www.ccel.org/ccel/flavel (enumerateCcelAuthor). Recoverable, but the enumeration is a live fetch, so the id set is not derivable offline and is not pinned in the manifest — two archives taken a year apart could hold different works under the same slug."
+    },
+    {
+      "slug": "geneva-notes-crosswire",
+      "kind": "(none)",
+      "reason": "no provenance.acquire block — this entry predates the adapter contract and records no machine-readable way to re-fetch it. Recovering it means re-establishing its source by hand."
+    },
+    {
+      "slug": "isbe",
+      "kind": "sword",
+      "reason": "SWORD module \"ISBE\" is read from an already-unpacked directory (data/raw/sword/<Module>). No CrossWire download URL is recorded anywhere in this repo, so a fresh machine cannot reconstruct it. Record the module .zip URL in the manifest to fix."
+    },
+    {
+      "slug": "jfb",
+      "kind": "(none)",
+      "reason": "no provenance.acquire block — this entry predates the adapter contract and records no machine-readable way to re-fetch it. Recovering it means re-establishing its source by hand."
+    },
+    {
+      "slug": "john-gill",
+      "kind": "(none)",
+      "reason": "no provenance.acquire block — this entry predates the adapter contract and records no machine-readable way to re-fetch it. Recovering it means re-establishing its source by hand."
+    },
+    {
+      "slug": "josephus-whiston",
+      "kind": "(none)",
+      "reason": "no provenance.acquire block — this entry predates the adapter contract and records no machine-readable way to re-fetch it. Recovering it means re-establishing its source by hand."
+    },
+    {
+      "slug": "keil-delitzsch",
+      "kind": "helloao",
+      "reason": "API-paginated per chapter; the enumeration lives in adapter-helloao.ts (data/raw/helloao). Archive by running that adapter with its cache pointed at the archive root, not by URL derivation."
+    },
+    {
+      "slug": "matthew-henry",
+      "kind": "(none)",
+      "reason": "no provenance.acquire block — this entry predates the adapter contract and records no machine-readable way to re-fetch it. Recovering it means re-establishing its source by hand."
+    },
+    {
+      "slug": "naves-topical",
+      "kind": "sword",
+      "reason": "SWORD module \"Nave\" is read from an already-unpacked directory (data/raw/sword/<Module>). No CrossWire download URL is recorded anywhere in this repo, so a fresh machine cannot reconstruct it. Record the module .zip URL in the manifest to fix."
+    },
+    {
+      "slug": "owen-works",
+      "kind": "ccel-author",
+      "reason": "id list is discovered by crawling https://www.ccel.org/ccel/owen (enumerateCcelAuthor). Recoverable, but the enumeration is a live fetch, so the id set is not derivable offline and is not pinned in the manifest — two archives taken a year apart could hold different works under the same slug."
+    },
+    {
+      "slug": "pnt-crosswire",
+      "kind": "(none)",
+      "reason": "no provenance.acquire block — this entry predates the adapter contract and records no machine-readable way to re-fetch it. Recovering it means re-establishing its source by hand."
+    },
+    {
+      "slug": "poole-tcp",
+      "kind": "(none)",
+      "reason": "no provenance.acquire block — this entry predates the adapter contract and records no machine-readable way to re-fetch it. Recovering it means re-establishing its source by hand."
+    },
+    {
+      "slug": "ryle-expository",
+      "kind": "ccel-author",
+      "reason": "id list is discovered by crawling https://www.ccel.org/ccel/ryle (enumerateCcelAuthor). Recoverable, but the enumeration is a live fetch, so the id set is not derivable offline and is not pinned in the manifest — two archives taken a year apart could hold different works under the same slug."
+    },
+    {
+      "slug": "scofield-crosswire",
+      "kind": "(none)",
+      "reason": "no provenance.acquire block — this entry predates the adapter contract and records no machine-readable way to re-fetch it. Recovering it means re-establishing its source by hand."
+    },
+    {
+      "slug": "smiths-dictionary",
+      "kind": "sword",
+      "reason": "SWORD module \"Smith\" is read from an already-unpacked directory (data/raw/sword/<Module>). No CrossWire download URL is recorded anywhere in this repo, so a fresh machine cannot reconstruct it. Record the module .zip URL in the manifest to fix."
+    },
+    {
+      "slug": "spurgeon-talks-to-farmers",
+      "kind": "(none)",
+      "reason": "no provenance.acquire block — this entry predates the adapter contract and records no machine-readable way to re-fetch it. Recovering it means re-establishing its source by hand."
+    },
+    {
+      "slug": "vincent-word-studies",
+      "kind": "ccel-author",
+      "reason": "id list is discovered by crawling https://www.ccel.org/ccel/vincent (enumerateCcelAuthor). Recoverable, but the enumeration is a live fetch, so the id set is not derivable offline and is not pinned in the manifest — two archives taken a year apart could hold different works under the same slug."
+    },
+    {
+      "slug": "watson-works",
+      "kind": "ccel-author",
+      "reason": "id list is discovered by crawling https://www.ccel.org/ccel/watson (enumerateCcelAuthor). Recoverable, but the enumeration is a live fetch, so the id set is not derivable offline and is not pinned in the manifest — two archives taken a year apart could hold different works under the same slug."
+    },
+    {
+      "slug": "wesley-crosswire",
+      "kind": "(none)",
+      "reason": "no provenance.acquire block — this entry predates the adapter contract and records no machine-readable way to re-fetch it. Recovering it means re-establishing its source by hand."
+    }
+  ],
+  "refused": [
+    {
+      "slug": "barnes-notes",
+      "kind": "forbidden-provenance",
+      "reason": "provenance is biblehub.com (ADR-008) — never re-fetched"
+    }
+  ]
+}

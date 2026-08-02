@@ -31,6 +31,7 @@ import path from 'node:path';
 import { forbiddenProvenanceDomain } from '../src/ingest/forbidden-provenance.mjs';
 import { isAllowedLicense } from '../src/ingest/allowed-licenses.mjs';
 import { artifactSourcesFor } from '../src/ingest/source-artifact-urls.mjs';
+import { mergeArchiveRows, fileKey } from './lib/archive-record-merge.mjs';
 
 const REPO = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const MANIFEST_IN = path.join(REPO, 'ingest/sources.config.json');
@@ -64,14 +65,15 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // Prior run's records, keyed slug/artifact — this is what makes the tool resumable and, more
 // importantly, what lets it verify rather than re-download: a file already on disk whose bytes
 // still hash to the recorded value is archived, and is skipped without a request.
-const prior: Record<string, FileRecord> = existsSync(RECORD_OUT)
-  ? Object.fromEntries(
-      ((JSON.parse(readFileSync(RECORD_OUT, 'utf8')) as { files?: FileRecord[] }).files ?? []).map((f) => [
-        `${f.slug}/${f.artifact}`,
-        f,
-      ]),
-    )
-  : {};
+interface RecordDoc {
+  files?: FileRecord[];
+  unrecoverable?: Skipped[];
+  refused?: Skipped[];
+}
+const priorDoc: RecordDoc = existsSync(RECORD_OUT) ? (JSON.parse(readFileSync(RECORD_OUT, 'utf8')) as RecordDoc) : {};
+const prior: Record<string, FileRecord> = Object.fromEntries(
+  (priorDoc.files ?? []).map((f) => [`${f.slug}/${f.artifact}`, f]),
+);
 
 const entries = Object.values(JSON.parse(readFileSync(MANIFEST_IN, 'utf8')) as Record<string, Record<string, unknown>>)
   .filter((e) => typeof e.slug === 'string')
@@ -192,6 +194,19 @@ say('FETCH FAILURES — re-run to retry:', failed);
 say('UNRECOVERABLE — no derivable URL; these need a human to re-establish the source:', unrecoverable);
 
 if (FETCH) {
+  // MERGE, NEVER CLOBBER. A `--slug=` run considers ONE work, so writing `files` wholesale
+  // replaced 131 provenance records with 1 and erased all 26 unrecoverable findings — measured,
+  // not theorised: it happened on the first targeted run of this tool, minutes after the full
+  // archive succeeded. `quarantine-served-corpus` already carries a test for this exact shape
+  // ("MERGES into an existing quarantine file instead of clobbering it — the case that silently
+  // eats the first run's entries"); this reintroduced it one tool over.
+  //
+  // Records for works this run did not consider are carried forward untouched; records for works
+  // it DID consider are replaced by what it just measured, so a work that becomes unrecoverable,
+  // or a file that is deliberately dropped, does not linger as a stale claim.
+  const inScope = new Set(entries.map((e) => e.slug as string));
+  const mergedFiles = mergeArchiveRows(priorDoc.files, files, inScope, fileKey);
+
   mkdirSync(path.dirname(RECORD_OUT), { recursive: true });
   writeFileSync(
     RECORD_OUT,
@@ -201,15 +216,18 @@ if (FETCH) {
         generatedBy: 'scripts/archive-sources.mts',
         // No wall-clock summary field: it would churn this file on every run and say nothing the
         // per-file fetchedAt does not already say.
-        files: files.sort((a, b) => `${a.slug}/${a.artifact}`.localeCompare(`${b.slug}/${b.artifact}`)),
-        unrecoverable: unrecoverable.sort((a, b) => a.slug.localeCompare(b.slug)),
-        refused: refused.sort((a, b) => a.slug.localeCompare(b.slug)),
+        files: mergedFiles,
+        unrecoverable: mergeArchiveRows(priorDoc.unrecoverable, unrecoverable, inScope),
+        refused: mergeArchiveRows(priorDoc.refused, refused, inScope),
       },
       null,
       2,
     )}\n`,
   );
-  console.log(`\nwrote ${path.relative(REPO, RECORD_OUT)} (${files.length} file record(s))`);
+  console.log(
+    `\nwrote ${path.relative(REPO, RECORD_OUT)} (${mergedFiles.length} file record(s); ` +
+      `${files.length} from this run, ${mergedFiles.length - files.length} carried forward)`,
+  );
 }
 
 // A fetch failure is transient and re-runnable; an UNRECOVERABLE work is a standing gap in the
