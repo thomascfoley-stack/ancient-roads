@@ -85,7 +85,7 @@ describe('WorkToc — bounded render (O(units), not O(sections))', () => {
   });
 
   it('every unit is represented exactly once at rest, labelled by its first heading', () => {
-    render(<WorkToc toc={bigToc()} currentOrdinal={1} onNavigate={() => {}} onClose={() => {}} />);
+    render(<WorkToc toc={bigToc()} sourceType="sermon" currentOrdinal={1} onNavigate={() => {}} onClose={() => {}} />);
     const text = document.body.textContent ?? '';
     for (let u = 1; u <= UNITS; u++) {
       // the unit label is the first chunk's heading (ADR-026)…
@@ -100,11 +100,20 @@ describe('WorkToc — bounded render (O(units), not O(sections))', () => {
   });
 
   it('a single-section unit still renders as one directly-clickable row', () => {
-    const toc: WorkTocRow[] = [
-      { id: 1, ordinal: 1, unitOrdinal: 1, heading: 'Preface', verseStart: null, verseEnd: null },
-      { id: 2, ordinal: 2, unitOrdinal: 2, heading: 'Chapter I', verseStart: null, verseEnd: null },
-      { id: 3, ordinal: 3, unitOrdinal: 3, heading: 'Chapter II', verseStart: null, verseEnd: null },
-    ];
+    // A single-section unit is the degenerate case: firstOrdinal === lastOrdinal, sectionCount 1,
+    // so there is nothing to disclose and the row must be directly clickable rather than a
+    // disclosure that expands to reveal one child.
+    const unit = (n: number, heading: string): WorkTocUnit => ({
+      unitOrdinal: n,
+      firstId: n,
+      firstOrdinal: n,
+      lastOrdinal: n,
+      sectionCount: 1,
+      heading,
+      verseStart: null,
+      verseEnd: null,
+    });
+    const toc: WorkTocUnit[] = [unit(1, 'Preface'), unit(2, 'Chapter I'), unit(3, 'Chapter II')];
     render(<WorkToc toc={toc} sourceType="sermon" currentOrdinal={1} onNavigate={() => {}} onClose={() => {}} />);
     const text = document.body.textContent ?? '';
     for (const h of ['Preface', 'Chapter I', 'Chapter II']) expect(text).toContain(h);
