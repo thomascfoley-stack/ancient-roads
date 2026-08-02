@@ -19,6 +19,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { BOOK_BY_BOOK_SLUG, fetchChapter, type ChapterData } from '@/lib/bible';
 import { paneRegisterLabel, type Pane } from '@/lib/desk';
+import { resolveBookSlug } from '@bible/ref-parse';
 import type { WorkSectionRow, WorkSource } from '@/lib/work';
 
 const PAGE_LIMIT = 25;
@@ -90,7 +91,14 @@ function Message({ children, tone = 'muted' }: { children: React.ReactNode; tone
 function ScripturePaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'scripture' }>; onClose: () => void }) {
   const [data, setData] = useState<ChapterData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const book = BOOK_BY_BOOK_SLUG.get(pane.book);
+  // FOUND BY A7's product walk (2026-08-02) at the reader route; the SAME bare-Map-lookup shape
+  // exists here, reachable via `?p=scripture:john/1` (desk.ts:76 parses that path segment with no
+  // book validation beyond a slug-char regex). resolveBookSlug is exact-alias-only, same as the
+  // reader route — see its comment in bible/ref-parse.ts for why prefix matching is wrong here.
+  const book = BOOK_BY_BOOK_SLUG.get(pane.book) ?? resolveBookSlug(pane.book);
+  // The canonical slug for every fetch AND for the "open full page" link — using it here avoids
+  // even the one redirect hop the reader route now takes for an alias URL.
+  const fetchSlug = book?.slug ?? pane.book;
 
   useEffect(() => {
     let cancelled = false;
@@ -100,7 +108,7 @@ function ScripturePaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'scr
       setError(`Unknown book "${pane.book}".`);
       return;
     }
-    fetchChapter(pane.book, pane.chapter)
+    fetchChapter(fetchSlug, pane.chapter)
       .then((d) => {
         if (!cancelled) setData(d);
       })
@@ -111,7 +119,7 @@ function ScripturePaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'scr
     return () => {
       cancelled = true;
     };
-  }, [pane.book, pane.chapter, book]);
+  }, [fetchSlug, pane.chapter, book]);
 
   const title = book ? `${book.name} ${pane.chapter}` : pane.book;
 
@@ -119,7 +127,7 @@ function ScripturePaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'scr
     <PaneFrame
       title={title}
       register="Scripture"
-      fullHref={`/read/${pane.book}/${pane.chapter}`}
+      fullHref={`/read/${fetchSlug}/${pane.chapter}`}
       onClose={onClose}
     >
       {error ? (

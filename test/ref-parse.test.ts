@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   parseRef,
   matchBooks,
+  resolveBookSlug,
   typeahead,
   scanReferences,
   CHAPTER_END_SENTINEL,
@@ -78,6 +79,39 @@ describe('book matching', () => {
   it('unknown input matches nothing', () => {
     expect(matchBooks('qwx')).toEqual([]);
     expect(matchBooks('')).toEqual([]);
+  });
+});
+
+// A7's product walk (2026-08-02): /read/john/1 failed with "Unknown book: john" while
+// /read/jhn/1 worked, even though the alias table right above already knows "john" means
+// John. The reader route and the multi-pane desk each did a bare BOOK_BY_BOOK_SLUG.get(slug)
+// and never called into this file at all — resolveBookSlug is the fix, an exact-alias-only
+// lookup (deliberately not matchBooks' prefix/candidate behaviour, which is right for an
+// interactive typeahead and wrong for a URL path segment that must resolve to one book or none).
+describe('resolveBookSlug — URL-path book resolution, exact-alias only', () => {
+  it('resolves a full alias name a bare Map lookup on the canonical slug would miss', () => {
+    // SEED: revert resolveBookSlug to `BOOK_BY_BOOK_SLUG.get(raw)` -> RED, this is the bug itself.
+    expect(resolveBookSlug('john')?.slug).toBe('jhn');
+    expect(resolveBookSlug('JOHN')?.slug).toBe('jhn'); // case-insensitive, like every other alias
+    expect(resolveBookSlug('1john')?.slug).toBe('1jn');
+    expect(resolveBookSlug('First John')?.slug).toBe('1jn');
+  });
+
+  it('still resolves the canonical slug itself — the common case is unaffected', () => {
+    expect(resolveBookSlug('jhn')?.slug).toBe('jhn');
+  });
+
+  it('does NOT prefix-match — "jo" must return nothing, not a guess', () => {
+    // matchBooks('jo') returns candidates (John AND Joel) because that's correct for a
+    // typeahead menu. A URL path segment has no menu: a caller gets one book or none.
+    // SEED: swap the implementation to `matchBooks(raw)[0]` -> RED, "jo" silently becomes John.
+    expect(matchBooks('jo').length).toBeGreaterThan(1); // the precondition this case depends on
+    expect(resolveBookSlug('jo')).toBeUndefined();
+  });
+
+  it('unknown input resolves to nothing, same as before the fix', () => {
+    expect(resolveBookSlug('qwx')).toBeUndefined();
+    expect(resolveBookSlug('')).toBeUndefined();
   });
 });
 

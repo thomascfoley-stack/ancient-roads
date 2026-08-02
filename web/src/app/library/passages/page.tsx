@@ -12,6 +12,7 @@ import {
   type CommentaryEntry,
   type CommentarySource,
 } from '@/lib/bible';
+import { resolveBookSlug } from '@bible/ref-parse';
 import {
   partitionByRegister,
   registerChipLabel,
@@ -258,7 +259,14 @@ export default function PassageSearchPage() {
   const [manifest, setManifest] = useState<CommentarySource[] | null>(null);
   const [authorFilter, setAuthorFilter] = useState<string>('all');
 
-  const book: Book = BOOK_BY_BOOK_SLUG.get(bookSlug) ?? BOOKS[0]!;
+  // The derived test/invariants/book-slug-alias-wiring.test.ts found this a THIRD site with the
+  // A7 shape — bare BOOK_BY_BOOK_SLUG.get with no alias fallback. `bookSlug` is currently
+  // set only from the <select> below, whose options are BOOKS' own canonical slugs, so an
+  // alias never reaches here TODAY. Fixed anyway: it is the one line every other caller has,
+  // the invariant is codebase-wide rather than hand-scoped to "reachable right now", and it is
+  // free insurance the day this page gains a `?book=` deep link (a natural next feature for a
+  // search page) and `bookSlug` starts life from a URL instead of a click.
+  const book: Book = BOOK_BY_BOOK_SLUG.get(bookSlug) ?? resolveBookSlug(bookSlug) ?? BOOKS[0]!;
   const isSearching = debouncedQuery.length > 0;
 
   useEffect(() => {

@@ -100,6 +100,24 @@ export function normalizeBookInput(raw: string): string {
   return s;
 }
 
+// A URL-path book segment ("john", "1cor") → its canonical Book, or undefined.
+//
+// FOUND BY A7's product walk (2026-08-02): `/read/john/1` failed with "Unknown book: john"
+// while `/read/jhn/1` worked, even though `aliases.ts` already declares `jhn: ['john', ...]` —
+// two callers (the reader route and the multi-pane desk) each did a bare
+// `BOOK_BY_BOOK_SLUG.get(slug)` and never consulted the alias table this file already builds.
+// Two hand-duplicated resolvers, the class this repo's watchlist names most often, closed here
+// by giving both ONE function instead of a second copy.
+//
+// EXACT ALIAS ONLY, deliberately not `matchBooks`'s prefix/candidate matching. `matchBooks`
+// exists for an interactive typeahead, where "returns candidates for ambiguous input" is the
+// right behaviour — a menu the user picks from. A URL path segment has no menu: a caller must
+// get back one book or none, never a list, and "cor" silently landing on "1 Corinthians" because
+// it happens to be the first prefix match would be a surprising redirect, not a convenience.
+export function resolveBookSlug(raw: string): Book | undefined {
+  return ALIAS_EXACT.get(normalizeBookInput(raw));
+}
+
 // All books whose alias set matches `input` exactly or by prefix.
 // Exact alias match wins outright (so "jud" is Jude, not Judges).
 // A bare numbered-book name without its ordinal ("timothy", "corinthians")

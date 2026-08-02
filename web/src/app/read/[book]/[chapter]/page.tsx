@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   BOOK_BY_BOOK_SLUG,
@@ -14,6 +14,7 @@ import {
   type CommentaryEntry,
   type Translation,
 } from '@/lib/bible';
+import { resolveBookSlug } from '@bible/ref-parse';
 import { ReaderHeader } from '@/components/reader-header';
 import { VerseDisplay, type StoredSpan } from '@/components/verse-display';
 import { ChapterNav } from '@/components/chapter-nav';
@@ -46,10 +47,31 @@ function getStoredTranslation(): Translation {
 
 export default function ReaderPage() {
   const params = useParams<{ book: string; chapter: string }>();
+  const router = useRouter();
   const bookSlug = params.book;
   const chapterNum = parseInt(params.chapter, 10);
 
-  const book: Book | undefined = BOOK_BY_BOOK_SLUG.get(bookSlug);
+  // FOUND BY A7's product walk (2026-08-02): `/read/john/1` failed with `Unknown book: "john"`
+  // while `/read/jhn/1` worked, even though aliases.ts already declares `jhn: ['john', ...]` —
+  // this was a bare Map lookup on the canonical slug, never consulting the alias table.
+  // `resolveBookSlug` is EXACT-alias-only (never a prefix/candidate guess), so `book` below is
+  // still deterministic. When the URL used a non-canonical form, redirect to the canonical one —
+  // every internal link already points at canonical slugs, and `fetchChapter` below fetches a
+  // static file keyed by the canonical slug, so it MUST run against `book.slug`, not `bookSlug`.
+  const book: Book | undefined = BOOK_BY_BOOK_SLUG.get(bookSlug) ?? resolveBookSlug(bookSlug);
+  const canonicalSlug = book?.slug;
+  // Every static-file fetch below is keyed by the CANONICAL slug (`/bible/<t>/jhn.json`,
+  // `/commentaries/jhn/1.json`, `/original/jhn/1.json`) — none of those files exist under an
+  // alias name, so every fetch site must use this, never the raw `bookSlug`. Falls back to
+  // `bookSlug` unchanged when `book` is undefined, so a genuinely unknown slug still surfaces
+  // the same "Unknown book" error as before, rather than fetching under `undefined`.
+  const fetchSlug = canonicalSlug ?? bookSlug;
+
+  useEffect(() => {
+    if (canonicalSlug && canonicalSlug !== bookSlug) {
+      router.replace(`/read/${canonicalSlug}/${params.chapter}`);
+    }
+  }, [canonicalSlug, bookSlug, params.chapter, router]);
   const [translation, setTranslation] = useState<Translation>(getStoredTranslation);
   const [data, setData] = useState<ChapterData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -84,27 +106,27 @@ export default function ReaderPage() {
     setData(null);
     setError(null);
     setStudy(null);
-    fetchChapter(bookSlug, chapterNum, translation.id)
+    fetchChapter(fetchSlug, chapterNum, translation.id)
       .then(setData)
       .catch(() => setError('Failed to load chapter'));
-  }, [book, bookSlug, chapterNum, translation]);
+  }, [book, fetchSlug, chapterNum, translation]);
 
   // Prefetch commentary for the chapter.
   useEffect(() => {
-    const key = `${bookSlug}:${chapterNum}`;
+    const key = `${fetchSlug}:${chapterNum}`;
     if (commentaryCache.has(key)) return;
-    fetchCommentary(bookSlug, chapterNum).then((result) => {
+    fetchCommentary(fetchSlug, chapterNum).then((result) => {
       if (result) setCommentaryCache((prev) => new Map(prev).set(key, result.entries));
     });
-  }, [bookSlug, chapterNum, commentaryCache]);
+  }, [fetchSlug, chapterNum, commentaryCache]);
 
   // Prefetch original-language words for the chapter (small per-chapter file);
   // powers both the interlinear view and the study panel's Word study tab.
   useEffect(() => {
     if (!book) return;
     setOriginal(null);
-    fetchOriginal(bookSlug, chapterNum).then(setOriginal);
-  }, [book, bookSlug, chapterNum]);
+    fetchOriginal(fetchSlug, chapterNum).then(setOriginal);
+  }, [book, fetchSlug, chapterNum]);
 
   // Preload the full dictionary once study/interlinear is engaged so lookups are instant.
   useEffect(() => {
@@ -220,9 +242,11 @@ export default function ReaderPage() {
 
   const studyEntries = useMemo(() => {
     if (!study) return [];
-    const all = commentaryCache.get(`${bookSlug}:${chapterNum}`) ?? [];
+    // Must match the prefetch effect's key exactly (fetchSlug, not bookSlug) or an alias URL
+    // reads an empty cache forever — the prefetch stores under fetchSlug two effects above.
+    const all = commentaryCache.get(`${fetchSlug}:${chapterNum}`) ?? [];
     return all.filter((e) => e.verseStart <= study.verse && study.verse <= e.verseEnd);
-  }, [study, commentaryCache, bookSlug, chapterNum]);
+  }, [study, commentaryCache, fetchSlug, chapterNum]);
 
   const studyVerseText = study
     ? data?.verses.find((v) => v.verse === study.verse)?.text ?? ''
