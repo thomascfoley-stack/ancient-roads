@@ -271,26 +271,46 @@ describe('the A3 adjudicator refuses a census it must not adjudicate', () => {
   const CENSUS = path.join(ROOT, 'docs/evidence/a3-adjudication-2026-08-01/a2-census.json');
   const good = JSON.parse(fs.readFileSync(CENSUS, 'utf8')) as Record<string, unknown>;
 
-  /** Run the adjudicator over a mutated census; return its exit code and stderr. */
-  function run(mutate: (c: Record<string, unknown>) => void): { code: number; err: string } {
+  /**
+   * Run the adjudicator over a mutated census; return its exit code, stderr, and — when it wrote
+   * one — the flip payload. The payload matters because the A3 rule has TWO consequences and only
+   * one of them is an exit code: a work that is not admitted also never reaches the flip list, so
+   * a defect can narrow the payload to nothing while every refusal test stays green.
+   */
+  function run(mutate: (c: Record<string, unknown>) => void): {
+    code: number;
+    err: string;
+    out?: { slugs: string[]; admittedBy: Record<string, number> };
+  } {
     const c = JSON.parse(JSON.stringify(good)) as Record<string, unknown>;
     mutate(c);
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'a3-'));
     const file = path.join(dir, 'census.json');
+    const outFile = path.join(dir, 'out.json');
     fs.writeFileSync(file, JSON.stringify(c));
+    const readOut = () =>
+      fs.existsSync(outFile)
+        ? (JSON.parse(fs.readFileSync(outFile, 'utf8')) as { slugs: string[]; admittedBy: Record<string, number> })
+        : undefined;
     try {
-      execFileSync('npx', ['tsx', 'scripts/publish-flip-adjudicate.mts', `--census=${file}`, `--out=${dir}/out.json`], {
+      execFileSync('npx', ['tsx', 'scripts/publish-flip-adjudicate.mts', `--census=${file}`, `--out=${outFile}`], {
         cwd: ROOT,
         encoding: 'utf8',
         stdio: 'pipe',
       });
-      return { code: 0, err: '' };
+      return { code: 0, err: '', out: readOut() };
     } catch (e) {
       const x = e as { status?: number; stderr?: string };
-      return { code: x.status ?? -1, err: x.stderr ?? '' };
+      return { code: x.status ?? -1, err: x.stderr ?? '', out: readOut() };
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
+  }
+
+  /** A census row the adjudicator must decide admission for ITSELF (no measured `admitted`). */
+  function addRow(c: Record<string, unknown>, row: Record<string, unknown>) {
+    (c.sources as unknown[]).push(row);
+    c.expectedSourceCount = (c.sources as unknown[]).length;
   }
 
   it('adjudicates the REAL production census — the positive control', () => {
@@ -322,6 +342,33 @@ describe('the A3 adjudicator refuses a census it must not adjudicate', () => {
 
   it('refuses a census with no rollupDigest — an untraceable verdict', () => {
     expect(run((c) => { delete c.rollupDigest; }).code).toBe(2);
+  });
+
+  // ── B2: admission covers the SONG/VERSE register, not just prose and lanes ────────────────
+  // The adjudicator composed its admission set as SERVED_PROSE_WORKS ∪ SERVED_LANE_WORKS, which
+  // omits SERVED_SONG_VERSE_WORKS. These three cases drive the two consequences and the guard
+  // against over-correcting. Each row is added WITHOUT an `admitted` field on purpose: that is
+  // what makes the adjudicator decide admission from its own set (adjudicate.mts, "otherwise
+  // decide it here"), which is the code path B2 fixes. A row carrying a measured `admitted` would
+  // route around the defect entirely and the test would prove nothing.
+  it('a PUBLISHED hymn does not STOP the flip — it is served by SONG_VERSE_CORPUS_FILTER', () => {
+    // SEED: drop `songVerse` from SERVED_WORK_LISTS -> RED, exit 1, "PUBLISHED BUT NOT ADMITTED".
+    const r = run((c) => addRow(c, { slug: 'olney-hymns', source_type: 'hymn', status: 'published', sections: 348 }));
+    expect(r.code, r.err).toBe(0);
+  });
+
+  it('a STAGED hymn reaches the flip list — the consequence no exit code reports', () => {
+    // The quieter half of the defect: with song/verse unadmitted, `admitted && staged` can never
+    // select a hymn, so A8 would have silently published sermons/theology only.
+    const r = run((c) => addRow(c, { slug: 'watts-hymns', source_type: 'hymn', status: 'staged', sections: 697 }));
+    expect(r.code, r.err).toBe(0);
+    expect(r.out?.slugs).toContain('watts-hymns');
+  });
+
+  it('a published work in NO served list still STOPS — the fix did not just admit everything', () => {
+    const r = run((c) => addRow(c, { slug: 'thayers-lexicon', source_type: 'lexicon', status: 'published', sections: 1 }));
+    expect(r.code).toBe(1);
+    expect(r.err).toMatch(/NOT ADMITTED/i);
   });
 
   it('refuses a DUPLICATE slug, which would inflate the flip list', () => {

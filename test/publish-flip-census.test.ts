@@ -147,10 +147,19 @@ describe('one STOP is enough — a later green section never downgrades it', () 
 describe('the runner imports the serving predicates rather than restating them', () => {
   const runner = readFileSync(path.join(ROOT, 'scripts/publish-flip-census.mts'), 'utf8');
 
-  it('imports LEGAL_CORPUS_FILTER, SERVED_PROSE_WORKS and SERVED_LANE_WORKS from web/src', () => {
+  it('imports the serving predicates from web/src rather than restating them', () => {
+    // THE OLD FORM NAMED TWO LISTS BY HAND — `SERVED_PROSE_WORKS` and `SERVED_LANE_WORKS` — and
+    // that is precisely the set the runner was wrongly composing admission from. routing.ts had
+    // FOUR served work lists; the fourth (SERVED_SONG_VERSE_WORKS, 15 hymn/poetry works) was in
+    // neither the runner's union nor this assertion, so the test whose job was to prove the runner
+    // consults the right predicates instead certified that it consults an incomplete set. Both
+    // stayed green for the life of the defect (found 2026-08-02, A8/B2).
+    //
+    // Coverage of the list SET is derived now, and lives where it can go red:
+    // test/invariants/publish-admission-covers-served-lists.test.ts. What is left here is the
+    // property this block is actually about — the runner imports, it does not restate.
     expect(runner).toMatch(/import\s*\{[^}]*LEGAL_CORPUS_FILTER[^}]*\}\s*from\s*'\.\.\/web\/src\/lib\/teacher\/routing'/s);
-    expect(runner).toMatch(/SERVED_PROSE_WORKS/);
-    expect(runner).toMatch(/SERVED_LANE_WORKS/);
+    expect(runner).toMatch(/import\s*\{[^}]*ALL_SERVED_WORKS[^}]*\}\s*from\s*'\.\.\/web\/src\/lib\/teacher\/routing'/s);
   });
 
   it('does not hand-copy the author allowlist that LEGAL_CORPUS_FILTER carries', () => {

@@ -28,8 +28,8 @@
  * That is the same argument publish-flip-census.mts:18-22 makes for itself.
  */
 import fs from 'node:fs';
-import { LEGAL_CORPUS_FILTER, SERVED_PROSE_WORKS } from '../web/src/lib/teacher/routing';
-import { admissionFindings, censusVerdict, NOT_MEASURED, STOP } from './lib/publish-flip-census.mjs';
+import { LEGAL_CORPUS_FILTER, ALL_SERVED_WORKS, SERVED_WORK_LISTS } from '../web/src/lib/teacher/routing';
+import { admissionFindings, censusVerdict, NOT_MEASURED } from './lib/publish-flip-census.mjs';
 import { endpointId } from './lib/target-guard.mjs';
 
 const PROD_ENDPOINT = 'ep-odd-fog';
@@ -101,12 +101,16 @@ if (sources.length !== expectedSourceCount) {
 }
 
 // ── admission, decided by the SHIPPED predicates ───────────────────────────────────────────
-// SERVED_LANE_WORKS may not exist in every revision of routing.ts; fall back rather than crash,
-// but record which sets were consulted so the verdict is auditable.
-type LaneModule = { SERVED_LANE_WORKS?: readonly string[] };
-const laneWorks: readonly string[] =
-  ((await import('../web/src/lib/teacher/routing')) as LaneModule).SERVED_LANE_WORKS ?? [];
-const admittedSet = new Set<string>([...SERVED_PROSE_WORKS, ...laneWorks]);
+// This was a DYNAMIC import typed `{ SERVED_LANE_WORKS?: readonly string[] }` falling back to
+// `[]`, "rather than crash". That fallback is the wrong trade for a rule whose entire job is to
+// STOP the flip: rename the export and admission silently narrows by 10 works, every lane work
+// false-STOPs as "served by nothing", and the only trace is a `servedLaneWorks: 0` count inside
+// the output JSON — while the census (publish-flip-census.mts) imported the same constant
+// STATICALLY and would have kept admitting them. The same question, two tools, two answers, one
+// of them silent: the second shape on this repo's failure-mode watchlist.
+//
+// A missing export is now an import error. Loud, at the top, before anything is adjudicated.
+const admittedSet = new Set<string>(ALL_SERVED_WORKS);
 
 interface CensusSource {
   slug: string;
@@ -181,7 +185,12 @@ const payload = {
   host,
   cohort: census.cohort,
   rollupDigest,
-  admittedBy: { servedProseWorks: SERVED_PROSE_WORKS.length, servedLaneWorks: laneWorks.length },
+  // Every served list and its size, derived from the record — not two hand-named numbers, which
+  // is how the song/verse omission stayed invisible in this very payload.
+  admittedBy: {
+    totalServedWorks: ALL_SERVED_WORKS.length,
+    ...Object.fromEntries(Object.entries(SERVED_WORK_LISTS).map(([k, v]) => [k, v.length])),
+  },
   legalCorpusFilterSha: LEGAL_CORPUS_FILTER.length, // a cheap drift signal, not a security claim
   slugs: flip,
 };

@@ -1,5 +1,61 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-02 (A8 opens — build item B2, and the two decisions it uncovered)
+
+**Headline:** A8 started. Of its five build items, exactly one could be built without an owner
+ruling — **B2, the publish admission set** — and it was a live blocker on A8's final step, not
+housekeeping. Both tools that answer *"will anything actually serve this work?"* hand-composed
+`SERVED_PROSE_WORKS ∪ SERVED_LANE_WORKS` and omitted `SERVED_SONG_VERSE_WORKS`, so **all 15 hymn
+and poetry works were NOT-ADMITTED against `SONG_VERSE_CORPUS_FILTER`, which serves exactly
+them.** A published hymn would have STOPPED the flip as "served by nothing"; no hymn could ever
+have reached a flip list, so A8's publish step would have narrowed to sermons and theology with
+nobody deciding it. Record and reduced decision list:
+`docs/pm/orders/2026-08-02-a8-b2-admission-and-decisions.md`.
+
+### DONE
+- **B2 — admission derived, not composed.** `SERVED_WORK_LISTS` + `ALL_SERVED_WORKS` in
+  `routing.ts`; both consumers read the union. `test/invariants/publish-admission-covers-served-lists.test.ts`
+  derives the list set from `routing.ts`'s source, so a fifth list added and not wired goes red.
+- **The adjudicator's fail-open dynamic import, closed.** It reached `SERVED_LANE_WORKS` through
+  an optional-typed dynamic import falling back to `[]` — a rename would have narrowed admission
+  by 10 works and false-STOPped every lane work, leaving only `servedLaneWorks: 0` in the output
+  JSON, while the census imported the same constant statically and kept admitting them. One
+  question, two tools, two answers, one silent. A missing export is now an import error.
+- **The guard that certified the gap, replaced.** `publish-flip-census.test.ts` asserted the
+  census mentions the same two lists it was wrongly admitting from. Coverage of the list *set* now
+  lives where it can go red. **Eleventh instance of the watchlist's first artefact — and the first
+  one that had a test standing over it, built from the same wrong list.**
+- **Red-proof: four seeds, four reds** (`docs/evidence/a8-b2-redproof-2026-08-02.log`), including
+  the behavioural pair driving the real adjudicator as a subprocess over a fixture census whose
+  rows carry no measured `admitted`, which is what forces the tool onto the code path B2 fixes.
+- **Board.** A8 row rewritten and given the ⚑ it never carried despite containing three ⚑-class
+  acts. Watchlist count corrected ten → eleven. Header sha re-measured.
+
+### FOUND, NOT FIXED — each is a decision, and they are different decisions
+- **`spurgeon-talks-to-farmers`** is served by nothing and the omission's intent is unrecorded.
+  NOT-ADMITTED is correct today; whether it should be is a ruling.
+- **The josephus ruling is mechanically unexecutable.** `DECISIONS.md` already orders josephus-whiston
+  published to the historian register for the Book Reader. Historians are in no served list because
+  there is no historian retrieval lane — but `CATALOGS.historians` and the Book Reader do serve
+  them, published-gated. So publishing it STOPs the flip with a rationale ("the visitor sees a work
+  that answers nothing") that is **false for this work**. The A3 rule predates the shelf-served /
+  lane-unserved category. A `SERVED_HISTORIAN_WORKS` was deliberately NOT invented: that would put
+  a false statement in the file that decides what `/ask` returns.
+
+### NOT DONE / UNVERIFIED
+- **No production connection, read or write.** No Neon branch, no ingest, no Deploy B, no flip.
+- **B1, B3, B4 NOT BUILT; B5 is a decision and is open.** B1 cannot be sized until the owner says
+  which stores A8 fills on prod (flat only, or the 006 sections model too — one tool or three).
+- **X1-HAZARD stands and is the sharpest open item:** the flat-store wall on prod is code-side
+  only and Deploy A already shipped the served lists, so a *staged* ingest of a served-list work
+  begins serving in the lanes the moment its rows land, before any flip. "Ingest to staged" is
+  therefore not a rehearsal for served works; it is the go-live.
+- **The DRAFT A8 order is still a draft.** Its other ⚑ items are real but are not on the critical
+  path until the five above are answered.
+- **`scripts/` is typechecked but not linted** (`audit.sh` lints `src test` and `web`). Noticed
+  because a pre-existing unused import surfaced only under a manual eslint run. Recorded, not
+  fixed — not on A8's path.
+
 ## 2026-08-01 (SESSION 13 — gate A2, the production read-only session)
 
 **Headline:** first production connection made under the current process, on the owner's ⚑ per-occasion

@@ -34,7 +34,7 @@ import {
   servingFindings,
   censusVerdict,
 } from './lib/publish-flip-census.mjs';
-import { LEGAL_CORPUS_FILTER, PROSE_TYPE_SQL, SERVED_PROSE_WORKS, SERVED_LANE_WORKS } from '../web/src/lib/teacher/routing';
+import { LEGAL_CORPUS_FILTER, PROSE_TYPE_SQL, ALL_SERVED_WORKS, SERVED_WORK_LISTS } from '../web/src/lib/teacher/routing';
 
 const args = process.argv.slice(2);
 const declared = args.find((a) => a.startsWith('--target='))?.split('=')[1];
@@ -58,8 +58,11 @@ if (endpointId(hostOf(url)) !== endpointId(declared)) {
   process.exit(2);
 }
 
-// The works the product will actually serve, from the SAME constants the router uses.
-const SERVED_SLUGS = [...SERVED_PROSE_WORKS, ...SERVED_LANE_WORKS] as readonly string[];
+// The works the product will actually serve, from the SAME constants the router uses — and from
+// ALL of them. This read `[...SERVED_PROSE_WORKS, ...SERVED_LANE_WORKS]` until 2026-08-02, which
+// omitted SERVED_SONG_VERSE_WORKS and would have called all 15 hymn/poetry works NOT-ADMITTED
+// against the filter that serves exactly them (routing.ts SERVED_WORK_LISTS explains the class).
+const SERVED_SLUGS = ALL_SERVED_WORKS;
 
 const c = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false }, application_name: 'publish-flip-census' });
 await c.connect();
@@ -80,7 +83,11 @@ try {
   const admission = admissionFindings(
     sourceRows.map((s) => ({ ...s, admitted: SERVED_SLUGS.includes(s.slug) })),
   );
-  console.log(`§1 ADMISSION (${admission.length} source(s))`);
+  // Name the lists that decided admission, and their sizes. A reader must be able to see from the
+  // log alone whether the population was the whole served corpus or a subset of it — the omission
+  // this line exists to expose left no trace at all when it was live.
+  const consulted = Object.entries(SERVED_WORK_LISTS).map(([k, v]) => `${k}=${v.length}`).join(' ');
+  console.log(`§1 ADMISSION (${admission.length} source(s)) — admitted against ${SERVED_SLUGS.length} served work(s): ${consulted}`);
   for (const a of admission) {
     console.log(`  ${a.verdict === 'STOP' ? '✗' : ' '} ${a.slug.padEnd(30)} ${a.status.padEnd(10)} ${a.admitted ? 'ADMITTED    ' : 'NOT-ADMITTED'}  ${a.note}`);
   }

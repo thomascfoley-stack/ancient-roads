@@ -1,0 +1,108 @@
+
+==================== SEED 1 - SERVED_WORK_LISTS loses songVerse (the defect exactly as it shipped) ====================
+seed applied: SERVED_WORK_LISTS is now 4 x song/verse (was 2)
+- true
++ false
+
+ ❯ test/invariants/publish-admission-covers-served-lists.test.ts:95:100
+     93|     expect(SERVED_SONG_VERSE_WORKS.length).toBe(15);
+     94|     for (const slug of SERVED_SONG_VERSE_WORKS) {
+     95|       expect(admitted.has(slug), `${slug} is served by SONG_VERSE_CORP…
+       |                                                                                                    ^
+     96|     }
+     97|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 9 passed (11)
+   Start at  17:54:06
+   Duration  223ms (transform 25ms, setup 0ms, collect 27ms, tests 6ms, environment 0ms, prepare 43ms)
+
+>>> SEED 1 / derived invariant: RED   <-- correct, the check caught the seed
+    358|   });
+    359| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/publish-flip-toolchain.test.ts > the A3 adjudicator refuses a census it must not adjudicate > a STAGED hymn reaches the flip list — the consequence no exit code reports
+AssertionError: expected [ 'adam-clarke', …(5) ] to include 'watts-hymns'
+ ❯ test/publish-flip-toolchain.test.ts:365:26
+    363|     const r = run((c) => addRow(c, { slug: 'watts-hymns', source_type:…
+    364|     expect(r.code, r.err).toBe(0);
+    365|     expect(r.out?.slugs).toContain('watts-hymns');
+       |                          ^
+    366|   });
+    367| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 30 skipped (32)
+   Start at  17:54:07
+   Duration  998ms (transform 122ms, setup 0ms, collect 33ms, tests 637ms, environment 0ms, prepare 199ms)
+
+>>> SEED 1 / behavioural adjudicator: RED   <-- correct, the check caught the seed
+
+==================== SEED 2 - a fifth served list added and NOT wired into SERVED_WORK_LISTS ====================
+seed applied
+- Array []
++ Array [
++   "josephus-whiston",
++ ]
+
+ ❯ test/invariants/publish-admission-covers-served-lists.test.ts:81:7
+     79|         `Add the list to SERVED_WORK_LISTS in ${ROUTING_REL}, or state…
+     80|         'why the works it names are deliberately unserved.',
+     81|     ).toEqual([]);
+       |       ^
+     82|   });
+     83| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 11 passed (12)
+   Start at  17:54:08
+   Duration  207ms (transform 22ms, setup 0ms, collect 24ms, tests 6ms, environment 0ms, prepare 30ms)
+
+>>> SEED 2 / derived invariant: RED   <-- correct, the check caught the seed
+
+==================== SEED 3 - the census hand-composes PROSE u LANE again ====================
+seed applied
++   "SERVED_LANE_WORKS",
++   "SERVED_PROSE_WORKS",
++   "SERVED_LANE_WORKS",
++ ]
+
+ ❯ test/invariants/publish-admission-covers-served-lists.test.ts:116:7
+    114|       `${rel} references ${handComposed.join(', ')} directly. Admissio…
+    115|         'ALL_SERVED_WORKS so a new served list cannot be forgotten her…
+    116|     ).toEqual([]);
+       |       ^
+    117|   });
+    118| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 10 passed (11)
+   Start at  17:54:08
+   Duration  220ms (transform 21ms, setup 0ms, collect 22ms, tests 6ms, environment 0ms, prepare 25ms)
+
+>>> SEED 3 / consumers-derive invariant: RED   <-- correct, the check caught the seed
+
+==================== RESTORED - confirming the tree is clean and green again ====================
+ scripts/publish-flip-census.mts | 15 +++++++++++----
+ web/src/lib/teacher/routing.ts  | 30 ++++++++++++++++++++++++++++++
+ 2 files changed, 41 insertions(+), 4 deletions(-)
+   ✓ the runner imports the serving predicates rather than restating them > refuses production outright — DRIVEN, not grepped 333ms
+ ✓ test/publish-flip-toolchain.test.ts (32 tests) 3829ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > adjudicates the REAL production census — the positive control 301ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > refuses a host that is not production, however it is dressed up 1110ms
+
+ Test Files  3 passed (3)
+      Tests  61 passed (61)
+   Start at  17:54:09
+   Duration  4.04s (transform 68ms, setup 0ms, collect 107ms, tests 4.17s, environment 0ms, prepare 103ms)
+

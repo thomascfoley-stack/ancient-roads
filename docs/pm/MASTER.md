@@ -3,7 +3,7 @@
 **Read this first, every session.** It is the plan and the gate board. It is **not** the state —
 state lives in `docs/STATE_OF_TRUTH.md` and this file points at it rather than copying it.
 
-Last verified: 2026-08-02 · `main` @ `b0366a3` · working branch: none (merged)
+Last verified: 2026-08-02 · `main` @ `b569c90` · working branch: none — re-measured, not copied
 
 > The line above went 57 commits stale while still naming a working branch that had been merged and
 > deleted, and the board's own A2 row said "(unmerged)" of a commit that merged at `1f4bf8d`
@@ -46,7 +46,7 @@ Last verified: 2026-08-02 · `main` @ `b0366a3` · working branch: none (merged)
 | A5 | ⚑ Prod instrument run — G10 stops being permanently skipped | **DONE 2026-08-02.** Instrument PASSED first run over the published cohort: 6 works, 0 NULL `unit_ordinal`, rollup `ed463702a08018a680e480fee4f9c134` ([log](../evidence/work-order-v2-stage2/instrument-published.log)). **The run was not the deliverable — the ratchet was**, and it exposed two defects that had left G10 surveying: `.cutover-checkpoint.json` held `unitOrdinal: null`, which `g10()` read as "no baseline" (asserts nothing) while the verdict read as "compared", so the gate printed `✓ REGRESSION GATE PASSED` with no qualifier; and the baseline lived only in a gitignored file that AGENTS.md records being clobbered twice, so a fresh clone silently returns to survey mode. The verdict now reports what G10 did rather than re-deriving it, and `evidence/g10-unit-ordinal-baseline.json` is the committed floor. Ratchet executed against production and red-proofed three ways ([record](../evidence/a5-published-cohort-run.log)). **G10 FORK DISCHARGE STAYS OPEN** — the end-to-end gate run wants a Neon fork, branch creation is forbidden by the standing rails, and ADR-043 wanted it BEFORE the flip; that departure is a fact and belongs in the A6 record |
 | A6 | ⚑ Deploy A — the irreversible one | **DONE 2026-08-02.** Live deployment `dpl_3pbnsm9c3CKi5rKhsTNzVbnCprtR` from `main` @ `e311957`, aliased to `ancientpaths.app`; receipts under `evidence/deploys/`. **Four attempts, and the three failures are the point** — each died on something no local check could see, because it ran in a tree shape production does not have: (1) `98124b2` — `Module not found: '../../../src/ingest/forbidden-provenance.mjs'`; `vercel --prod` uploads `web/` ALONE. (2) `4275bf2` — `Invalid vercel.json - should NOT have additional property '//'`; Vercel schema-validates that file. (3) the lockfile itself, generated inside the pnpm workspace, recorded `../node_modules/.pnpm/...` paths that do not exist in the upload. All three now have static guards (`web-upload-root`, `vercel-json`, `upload-root-lockfile`). Install is `npm ci --legacy-peer-deps`, so a lockfile disagreement fails the build. The two-clone problem and the Vercel link, which this row named as blockers, were both already closed — see M24. |
 | A7 | Walk the product — Stage 5's twelve journeys (unfiled; a list was derived and filed, see below) · **G7 for the first time ever** | **DONE 2026-08-02.** 12/12 derived journeys PASS, 2/2 cross-cutting checks PASS, against the live deployment through an authenticated session. **G7 fired for the first time**: `/ask` returned three attributed voices (Barnes/Presbyterian, Clarke/Methodist, Augustine/Patristic) with the compose-verify retry loop visible live. One defect found and fixed: `/read/john/1` did not resolve while `/read/jhn/1` did — the alias table already knew "john", two callers never consulted it, a THIRD found by deriving the caller set instead of hand-listing it. Fixed, tested, red-proofed, deployed, and re-verified against production in a fresh unauthenticated session. [Order](orders/2026-08-02-a7-product-walk.md) · [results](../evidence/a7-product-walk-2026-08-02.md) |
-| A8 | Register ingest slice → Deploy B → publish registers | **UNBLOCKED — A7 is done.** Not started |
+| A8 | ⚑ Register ingest slice → Deploy B → publish registers | **STARTED 2026-08-02 — build item B2 DONE, everything else blocked on owner decisions.** The ⚑ above was missing and is added here: A8 contains at least three ⚑-class acts (prod ingest writes, Deploy B promotion, the register flip). The plan is [the DRAFT order](orders/2026-08-02-a8-register-ingest-DRAFT.md), still a draft, still not executable as issued. **B2 was the one leg buildable without a ruling, and it was a live blocker on A8's final step**: both tools answering the A3 admission question hand-composed `SERVED_PROSE_WORKS ∪ SERVED_LANE_WORKS`, which omits `SERVED_SONG_VERSE_WORKS` — so all 15 hymn/poetry works were NOT-ADMITTED against the filter that serves exactly them, a published hymn would have STOPPED the flip as "served by nothing", and no hymn could ever have reached a flip list at all. **The test standing guard over it named the same two lists by hand and certified the gap.** Admission is now derived from `SERVED_WORK_LISTS`; a second defect (the adjudicator's fail-open dynamic import, silently narrowing admission by 10 works while the census kept admitting them) is closed; four seeds driven red, root suite 516/50 green. **Found and NOT fixed, because each is a decision:** `spurgeon-talks-to-farmers` is served by nothing and the omission's intent is unrecorded; and **the existing josephus ruling (`DECISIONS.md`) is mechanically unexecutable** — historians are shelf-served (catalog + Book Reader, published-gated) but lane-unserved, a category the A3 rule predates, so publishing josephus-whiston STOPs the flip with a rationale that is false for it. [Record and the reduced decision list](orders/2026-08-02-a8-b2-admission-and-decisions.md) · [red-proof](../evidence/a8-b2-redproof-2026-08-02.log) |
 
 ### A1 — the four Stage 2 blockers
 
@@ -118,8 +118,14 @@ The first pass should be the one where, if something breaks, you know what broke
 
 ## Failure-mode watchlist
 
-**Ten instances so far.** The eighth was introduced by the tranche meant to fix the class; the tenth
-was introduced by the tranche meant to *name* it. `b9ad463` §2.2 declares itself the ninth (the
+**Eleven instances so far.** The eighth was introduced by the tranche meant to fix the class; the
+tenth was introduced by the tranche meant to *name* it; **the eleventh had a test standing guard
+over it, built from the same wrong list** — `publish-flip-census.test.ts` asserted the census
+mentions `SERVED_PROSE_WORKS` and `SERVED_LANE_WORKS`, which is exactly the incomplete pair the
+census was wrongly admitting from, so the guard certified the gap for the life of the defect
+(A8/B2, closed by derivation 2026-08-02, [record](orders/2026-08-02-a8-b2-admission-and-decisions.md)).
+Read that as the standing lesson for this class: **a guard whose expected set is typed by the same
+hand that typed the thing it guards is not a second opinion.** `b9ad463` §2.2 declares itself the ninth (the
 served-asset directory list, closed by derivation). The tenth is
 `test/ask-max-duration-literal.test.ts:26-29` — a hand-typed two-route array in the file whose own
 header names this class, already incomplete at the commit that introduced it, closed by derivation
@@ -133,7 +139,9 @@ kind of drift becomes permanent.
 - **A hand-maintained expected set that nothing enforces.** CI file allowlist · `USER_TABLES` · the gate's
   legs · `isUserScoped` · the licence-manifest domain list · role literals · `REQUIRED_GATE_PREFIXES` ·
   the served-asset directory list (ninth, derived at `b9ad463`) · the `maxDuration` route list
-  (tenth, derived 2026-08-01).
+  (tenth, derived 2026-08-01) · the publish **admission** set (eleventh, derived 2026-08-02 —
+  `SERVED_WORK_LISTS` / `ALL_SERVED_WORKS`, enforced by
+  `test/invariants/publish-admission-covers-served-lists.test.ts`).
 - **A verdict computed separately from the report of that verdict.** `reportExpectRedMismatch` beside
   `compareExpectRed` · a header certifying "clean-provenance works only" while another predicate chose the
   sample · a CLI growing its own `formatExcerptLine`.

@@ -99,6 +99,36 @@ export const SONG_VERSE_TYPE_SQL = `source_type IN (${sqlStrList(SERVED_SONG_VER
 // register wall + FTS exclusion so a lane work can never re-enter the /ask
 // exegetical pool or the FTS commentary search.
 export const SERVED_LANE_WORKS = [...SERVED_SERMON_WORKS, ...SERVED_THEOLOGY_WORKS] as const;
+
+// EVERY work list that decides retrieval serving, named once. This exists because the publish
+// admission rule (MASTER.md #a3-rule) asks ONE question — "will anything actually serve this
+// work's rows?" — and until 2026-08-02 two separate tools each answered it by hand-composing
+// SERVED_PROSE_WORKS ∪ SERVED_LANE_WORKS. That union silently omits SERVED_SONG_VERSE_WORKS, so
+// all 15 hymn/poetry works were NOT-ADMITTED against a SONG_VERSE_CORPUS_FILTER that serves
+// exactly them: a published hymn would have STOPPED the flip with "served by nothing", which is
+// false, and no hymn could ever reach a flip list at all. Eleventh instance of this repo's most
+// frequent defect class (MASTER.md failure-mode watchlist, artefact 1) — and the test that was
+// supposed to prove the census imports the right predicates named the same two lists by hand, so
+// it certified the gap rather than catching it.
+//
+// ADD A NEW SERVED_*_WORKS LIST AND YOU MUST ADD IT HERE. That is not a convention: it is
+// enforced by test/invariants/publish-admission-covers-served-lists.test.ts, which derives the
+// list set from this file's own source rather than from a second hand-typed copy.
+//
+// NOT a serving predicate and deliberately absent: `historian`. Historians have a catalog shelf
+// and a Book Reader path (catalog-defs.ts, published-gated) but NO retrieval lane, so they are
+// served-as-shelf and unserved-as-retrieval. That distinction is an open owner decision, not
+// something to paper over by inventing a list here — see the A8 decision list.
+export const SERVED_WORK_LISTS = {
+  prose: SERVED_PROSE_WORKS,
+  sermon: SERVED_SERMON_WORKS,
+  theology: SERVED_THEOLOGY_WORKS,
+  songVerse: SERVED_SONG_VERSE_WORKS,
+} as const;
+
+/** The admission population: every work some retrieval predicate serves. Derived, never typed. */
+export const ALL_SERVED_WORKS: readonly string[] = Object.values(SERVED_WORK_LISTS).flat();
+
 export const SERMON_CORPUS_FILTER = `(metadata->>'work' IN (${sqlStrList(SERVED_SERMON_WORKS)}))`;
 export const THEOLOGY_CORPUS_FILTER = `(metadata->>'work' IN (${sqlStrList(SERVED_THEOLOGY_WORKS)}))`;
 
