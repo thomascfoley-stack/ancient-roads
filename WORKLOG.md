@@ -1,5 +1,64 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-02 (A8 act 1 — the first corpus copy to production, and what it proved about "staged")
+
+**Headline:** the hymn register is on production. 5 works, 1,690 sections, 1,690 section vectors,
+1,690 flat rows, owner-executed at the terminal, `mismatch: 0`
+(`docs/evidence/corpus-copy/corpus-copy-2026-08-02T06-53-50-084Z.json`). This is the first time
+corpus data has moved dev -> prod by tool rather than by re-ingest, and the vectors were reused
+verbatim, so nothing was re-embedded and nothing was paid for.
+
+**And it established a fact the board had only suspected: `staged` does not mean inert.**
+`SONG_VERSE_CORPUS_FILTER` (`web/src/lib/teacher/routing.ts:166`) is
+`metadata->>'work' IN (...)` over the flat `embeddings` table and **contains no `sources.status`
+predicate**. `legal-corpus.ts:74` already says so in plain words: "`sources.status` binds only the
+sections path." All five hymn slugs are in `SERVED_SONG_VERSE_WORKS`, and the deployed bundle
+already carried that list; the lane was returning nothing only because the rows did not exist.
+The rows now exist. **No publish step and no Deploy B stand between these 1,690 rows and an /ask
+answer** — which makes the copier's own gate message ("They will land as status='staged' and will
+NOT be published by this tool") true about the `sources` row and misleading about what a reader
+sees. This is X1-HAZARD, previously an open owner decision, now confirmed by reading the shipped
+predicate rather than inferred.
+
+For hymns the consequence is benign: the content is public domain, the owner asked for hymns to be
+searchable, and the app has no users but the owner. The consequence for the **remaining six
+batches is not** — poetry, sermons, theology, fathers, historians and lexicons each go live in
+their lane the instant their transaction commits, with the publish gate not in the path.
+
+### DONE
+- **Hymns copied to production.** `neale-eastern-hymns` 86 · `olney-hymns` 416 ·
+  `scottish-psalter-1650` 326 · `watts-hymns` 434 · `watts-psalms` 428. Destination census BEFORE
+  was 0 across all five, so nothing was masked by `ON CONFLICT DO NOTHING`; AFTER matches the
+  source exactly on all three counts per work.
+- **`anchors = 0` checked before copying, not explained afterwards.** Hymns carry no
+  `section_anchors` because they are not verse-commentary. Confirmed correct rather than missing by
+  a separate query: **0 sections with a NULL heading across all five works**, with real hymn titles
+  ("On man, in his own image made"). So the register renders by title and the `sectionLabel`
+  ordinal fallback — the "Section 109" defect fixed earlier today — never fires here.
+- **`scripts/check-copy-credentials.mjs`.** Reports host/role/database/endpoint id for a mode-600
+  connection-URL file and renders its verdict through `declaredMatches`/`isProdHost` from
+  `scripts/lib/target-guard.mjs` — the same predicates `corpus-copy.mjs` enforces. The first draft
+  was a `node -e` testing `hostname.includes(...)`, which is looser than the shipped rule: a pooled
+  host contains the endpoint id as a substring but resolves to `<id>-pooler`, which
+  `declaredMatches` rejects, so that check would have said GOOD where the tool refuses. Delegating
+  removes the drift. Red-proofed across seven shapes; leak check for the secret in stdout: zero.
+- **Index coverage confirmed before the copy, not after.** All five slugs appear in the predicates
+  of migrations 018, 019, 035 and 037, so the partial indexes cover the new rows on arrival with no
+  rebuild. Migration 037 remains outstanding and is a blocker for the **sermons** batch, not this one.
+
+### NOT DONE / UNVERIFIED
+- **The hazard is read from source, not observed live.** No /ask query has been run against
+  production since the copy, so "hymns now appear in answers" is a claim about the shipped
+  predicate and the deployed work list, not a thing anyone has watched happen. It should be
+  driven before it is written down anywhere as established.
+- **018/019 are assumed applied on production.** They long predate the last cutover and the
+  copy would have failed loudly on a missing index only if one were UNIQUE, which these are not.
+  Unconfirmed; needs a prod read, which needs an owner go.
+- **The other six batches are not started.** poetry 10 · sermons 7 · theology 4 · fathers 4 ·
+  historians 1 · lexicons 6.
+- **Nothing is published.** `sources.status` is `staged` for all five, so the shelf and the
+  catalog do not show them. Only the lane does.
+
 ## 2026-08-02 (A8 opens — build item B2, and the two decisions it uncovered)
 
 **Headline:** A8 started. Of its five build items, exactly one could be built without an owner

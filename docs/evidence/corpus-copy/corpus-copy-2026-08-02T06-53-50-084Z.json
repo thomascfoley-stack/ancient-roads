@@ -1,0 +1,124 @@
+{
+  "source": "ep-tiny-hat-atdgpisx-pooler.c-9.us-east-1.aws.neon.tech",
+  "destination": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "declaredEndpoint": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "slugs": [
+    "neale-eastern-hymns",
+    "olney-hymns",
+    "scottish-psalter-1650",
+    "watts-hymns",
+    "watts-psalms"
+  ],
+  "before": {
+    "neale-eastern-hymns": {
+      "sources": 1,
+      "sections": 86,
+      "anchors": 0,
+      "section_embeddings": 86,
+      "flat_embeddings": 86
+    },
+    "olney-hymns": {
+      "sources": 1,
+      "sections": 416,
+      "anchors": 0,
+      "section_embeddings": 416,
+      "flat_embeddings": 416
+    },
+    "scottish-psalter-1650": {
+      "sources": 1,
+      "sections": 326,
+      "anchors": 0,
+      "section_embeddings": 326,
+      "flat_embeddings": 326
+    },
+    "watts-hymns": {
+      "sources": 1,
+      "sections": 434,
+      "anchors": 0,
+      "section_embeddings": 434,
+      "flat_embeddings": 434
+    },
+    "watts-psalms": {
+      "sources": 1,
+      "sections": 428,
+      "anchors": 0,
+      "section_embeddings": 428,
+      "flat_embeddings": 428
+    }
+  },
+  "destBefore": {
+    "neale-eastern-hymns": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "olney-hymns": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "scottish-psalter-1650": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "watts-hymns": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "watts-psalms": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "destAfter": {
+    "neale-eastern-hymns": {
+      "sources": 1,
+      "sections": 86,
+      "anchors": 0,
+      "section_embeddings": 86,
+      "flat_embeddings": 86
+    },
+    "olney-hymns": {
+      "sources": 1,
+      "sections": 416,
+      "anchors": 0,
+      "section_embeddings": 416,
+      "flat_embeddings": 416
+    },
+    "scottish-psalter-1650": {
+      "sources": 1,
+      "sections": 326,
+      "anchors": 0,
+      "section_embeddings": 326,
+      "flat_embeddings": 326
+    },
+    "watts-hymns": {
+      "sources": 1,
+      "sections": 434,
+      "anchors": 0,
+      "section_embeddings": 434,
+      "flat_embeddings": 434
+    },
+    "watts-psalms": {
+      "sources": 1,
+      "sections": 428,
+      "anchors": 0,
+      "section_embeddings": 428,
+      "flat_embeddings": 428
+    }
+  },
+  "mismatch": 0
+}
