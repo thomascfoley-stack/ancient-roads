@@ -1,0 +1,168 @@
+{
+  "source": "ep-tiny-hat-atdgpisx-pooler.c-9.us-east-1.aws.neon.tech",
+  "destination": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "declaredEndpoint": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "slugs": [
+    "edwards-works",
+    "flavel-works",
+    "maclaren-expositions",
+    "spurgeon-sermons",
+    "spurgeon-talks-to-farmers",
+    "watson-works",
+    "wesley-sermons"
+  ],
+  "before": {
+    "edwards-works": {
+      "sources": 1,
+      "sections": 16968,
+      "anchors": 0,
+      "section_embeddings": 16968,
+      "flat_embeddings": 16968
+    },
+    "flavel-works": {
+      "sources": 1,
+      "sections": 3577,
+      "anchors": 0,
+      "section_embeddings": 3577,
+      "flat_embeddings": 3577
+    },
+    "maclaren-expositions": {
+      "sources": 1,
+      "sections": 17128,
+      "anchors": 0,
+      "section_embeddings": 17128,
+      "flat_embeddings": 17128
+    },
+    "spurgeon-sermons": {
+      "sources": 1,
+      "sections": 118371,
+      "anchors": 0,
+      "section_embeddings": 118371,
+      "flat_embeddings": 118371
+    },
+    "spurgeon-talks-to-farmers": {
+      "sources": 1,
+      "sections": 298,
+      "anchors": 19,
+      "section_embeddings": 298,
+      "flat_embeddings": 0
+    },
+    "watson-works": {
+      "sources": 1,
+      "sections": 3134,
+      "anchors": 0,
+      "section_embeddings": 3134,
+      "flat_embeddings": 3134
+    },
+    "wesley-sermons": {
+      "sources": 1,
+      "sections": 3329,
+      "anchors": 0,
+      "section_embeddings": 3329,
+      "flat_embeddings": 3329
+    }
+  },
+  "destBefore": {
+    "edwards-works": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "flavel-works": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "maclaren-expositions": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "spurgeon-sermons": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "spurgeon-talks-to-farmers": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "watson-works": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "wesley-sermons": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "destAfter": {
+    "edwards-works": {
+      "sources": 1,
+      "sections": 16968,
+      "anchors": 0,
+      "section_embeddings": 16968,
+      "flat_embeddings": 16968
+    },
+    "flavel-works": {
+      "sources": 1,
+      "sections": 3577,
+      "anchors": 0,
+      "section_embeddings": 3577,
+      "flat_embeddings": 3577
+    },
+    "maclaren-expositions": {
+      "sources": 1,
+      "sections": 17128,
+      "anchors": 0,
+      "section_embeddings": 17128,
+      "flat_embeddings": 17128
+    },
+    "spurgeon-sermons": {
+      "sources": 1,
+      "sections": 118371,
+      "anchors": 0,
+      "section_embeddings": 118371,
+      "flat_embeddings": 118371
+    },
+    "spurgeon-talks-to-farmers": {
+      "sources": 1,
+      "sections": 298,
+      "anchors": 19,
+      "section_embeddings": 298,
+      "flat_embeddings": 0
+    },
+    "watson-works": {
+      "sources": 1,
+      "sections": 3134,
+      "anchors": 0,
+      "section_embeddings": 3134,
+      "flat_embeddings": 3134
+    },
+    "wesley-sermons": {
+      "sources": 1,
+      "sections": 3329,
+      "anchors": 0,
+      "section_embeddings": 3329,
+      "flat_embeddings": 3329
+    }
+  },
+  "mismatch": 0
+}

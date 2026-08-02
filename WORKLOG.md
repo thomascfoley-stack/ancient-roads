@@ -1,5 +1,73 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-02 (A8 act 1 COMPLETE — 36 works on production, and the four things it is not)
+
+**Headline: the corpus is on production.** Four owner-executed runs, `mismatch: 0` on every one:
+hymns 5/1,690 · poetry 10/3,533 · remaining-nonsermon 14/109,328 · sermons 7/162,805.
+**36 works, 277,356 sections, 277,356 vectors, 272,946 flat rows, 458 anchors.** Sections and
+vectors are 1:1 on every work, and the 4,410-row flat shortfall is exactly `josephus-whiston`
+(4,112) plus `spurgeon-talks-to-farmers` (298), the two shelf-only works. Nothing is unexplained.
+Migration 037 applied first (6 parts, both indexes VALID and READY, ledger sha256 `fd909d85`).
+
+**This is act 1 of three. It is not "done".** Nothing is published; Deploy B has not run; the
+register flip has not run. And four things are now true that were not true this morning:
+
+1. **The accuracy numbers in `CLAUDE.md` describe a corpus that no longer exists.** `augustine-
+   homilies` + `catena-aurea` + `chrysostom-homilies` are 18,371 sections in `SERVED_PROSE_WORKS`,
+   which `LEGAL_CORPUS_FILTER` feeds into the COMPOSED `/ask` pool and the two-voices floor — not
+   a labeled lane. Combined with X1 (below) they are live. Per CLAUDE.md a retrieval change
+   requires the accuracy diagnostic re-run; until it is run, v3/v4 are stale, not wrong-but-close.
+2. **X1 confirmed and now load-bearing.** `SONG_VERSE_CORPUS_FILTER`, `SERMON_CORPUS_FILTER`,
+   `THEOLOGY_CORPUS_FILTER` and `LEGAL_CORPUS_FILTER` all filter the flat `embeddings` table with
+   **no `sources.status` predicate**. `staged` gates the sections path only. So 272,946 flat rows
+   began serving at COMMIT with no publish and no deploy in the path.
+3. **`vincent-word-studies` is a corpus gap.** In the manifest, eligible by licence and
+   provenance, ZERO sections on dev. It STOPped the 14-work copy at the gate. Whether the ingest
+   was dropped or the entry is aspirational is unrecorded. Second work in that state, after
+   `spurgeon-talks-to-farmers`.
+4. **Two works sit in serving lists with nothing to serve.** `spurgeon-talks-to-farmers` (298
+   sections, 0 flat) is in `SERVED_SERMON_WORKS`, and migration 037 rebuilt the sermon HNSW
+   predicate to include it — an index over a work with no rows in the indexed table.
+   `josephus-whiston` (4,112 sections, 439 anchors, 0 flat) is the same shape but deliberate: the
+   owner ruling puts it on the shelf for the Book Reader, not in a lane.
+
+### DONE
+- **The copier made to scale, before it was needed.** Row-per-round-trip and
+  `section_id = ANY(<every id>)` would have been ~11.5 hours across the remaining registers, with
+  sermons alone ~6.8 in one transaction. Writes now batch via parameterised `unnest` (not COPY:
+  section bodies carry tabs and newlines and COPY's escaping is a hazard on exactly that); reads
+  are keyset-paged on each child table's FULL primary key, because a `section_id` keyset drops
+  whatever remains of a section a page boundary lands inside. Red proof extended from 37 to 47.
+- **The 37 existing checks could not have caught any of it** — 5-section fixture, 2,000-row page,
+  so every one passed on the single-page path. New fixture forces boundaries at
+  `COPY_READ_PAGE=2`.
+- **The paging red-proof was itself vacuous on its first run** and is recorded because it is the
+  same defect one level up: the mutant was written to a temp dir, Node could not resolve `pg`, it
+  died before executing a line, landed 0 anchors, and "fewer than 10" went green on a script that
+  never ran. It must now be shown to have copied all 7 sections before its shortfall counts.
+- **`corpus-copy-batches.mjs --verify-source`** — batch membership is now checked against the
+  source, not just the manifest. That is what `vincent-word-studies` needed and what the file's
+  own closing NOTE had described without enforcing.
+- **`scripts/check-copy-credentials.mjs`** — delegates its verdict to `declaredMatches`/
+  `isProdHost`, the same predicates the copier enforces, so the pre-flight cannot pass where the
+  tool refuses. It caught the dev URL in the prod credential file, and a pooled host would have
+  been accepted by the `hostname.includes(...)` version it replaced.
+- **Two owner rulings checked against the data rather than assumed.** josephus: 4,112 sections,
+  ordinals 1..4112 contiguous, ZERO in the ruled-excised 4113–4124 range, so the pseudo-Josephus
+  *Discourse to the Greeks concerning Hades* is already excised (the three surviving Hades
+  mentions are genuine Antiquities I.12 / War II.8–9). Lexicons: the ruling asks that they stay
+  staged until the reference-pane UX ships, which is what a copy leaves them.
+
+### NOT DONE / UNVERIFIED
+- **The accuracy diagnostic has NOT been re-run.** Highest-value next action; needs no gate.
+- **Nothing is published.** All 36 works are `staged`, so the shelf and catalog do not list them.
+- **No serving claim has been driven against production.** That hymns, poetry, sermons, theology
+  and the fathers now appear in `/ask` is read from the shipped predicates and the deployed work
+  lists. Nobody has run a query and looked.
+- **Deploy B and the register flip (A8 acts 2 and 3) have not started.**
+- **018/019 are still assumed applied on production**, not confirmed.
+- **The `app_runtime` password exposed in this session's transcript is still unrotated.**
+
 ## 2026-08-02 (A8 act 1 — the first corpus copy to production, and what it proved about "staged")
 
 **Headline:** the hymn register is on production. 5 works, 1,690 sections, 1,690 section vectors,
