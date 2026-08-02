@@ -9,6 +9,7 @@ import pg from 'pg';
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { BOOK_SLUGS } from './source-id.js';
+import { assertReingestable } from './reingest-guard.js';
 import { isAllowedLicense } from './license-manifest.js';
 
 // Whole-chunk budget. 1200 chars keeps even token-DENSE text (hymns, Greek/
@@ -132,19 +133,14 @@ export function chunkWhole(body: string, max = REGISTER_EMBED_MAX): string[] {
 // path for quarantined works. DB rows are recoverable by re-running the adapter.
 export async function deleteWork(db: pg.Client, slug: string): Promise<{ dbRows: number; staticRemoved: number }> {
   const del = await db.query(`DELETE FROM embeddings WHERE user_id IS NULL AND metadata->>'work' = $1`, [slug]);
-  // SECTIONS TOO, and in foreign-key order. This function is the replacement-idempotency
-  // guarantee ("a changed parse fully replaces, never interleaves with, the old ingest") and it
-  // did not cover the shelf store, because nothing on this path wrote the shelf store. Now that
-  // writeRegisterWork does, omitting the delete would make every re-ingest duplicate the work's
-  // entire table of contents.
-  await db.query(
-    `DELETE FROM section_anchors WHERE section_id IN
-       (SELECT s.id FROM sections s JOIN sources src ON src.id = s.source_id WHERE src.slug = $1)`, [slug]);
-  await db.query(
-    `DELETE FROM section_embeddings WHERE section_id IN
-       (SELECT s.id FROM sections s JOIN sources src ON src.id = s.source_id WHERE src.slug = $1)`, [slug]);
-  await db.query(
-    `DELETE FROM sections WHERE source_id IN (SELECT id FROM sources WHERE slug = $1)`, [slug]);
+  // THE SHELF DELETE IS NOT HERE. It lives inline in writeRegisterWork, inside a transaction and
+  // behind `assertReingestable`, and it must stay there: the wiring test checks by FILE POSITION
+  // that the call sits after a BEGIN and before the DELETE, which a helper defined above the
+  // transaction can never satisfy. It was briefly here, which put a
+  // `DELETE FROM sections` in a helper that runs in autocommit with no lock and no published
+  // check, and `test/invariants/reingest-guard-wiring.test.ts` caught it on the same day. That
+  // test exists because ingest-sermon and ingest-historian once ran their published-check BEFORE
+  // `BEGIN`, and six works became publishable through the window it left on 2026-08-01.
   let staticRemoved = 0;
   const root = 'web/public/commentaries';
   if (existsSync(root)) {
@@ -180,12 +176,45 @@ export async function writeRegisterWork(work: RegisterWork): Promise<{ embedded:
   const db = new pg.Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
   await db.connect();
   try {
-    const prior = await db.query<{ status: string }>(`SELECT status FROM sources WHERE slug=$1`, [work.slug]);
-    if (prior.rows[0]?.status === 'published' && !work.publish) {
-      throw new Error(`STOP: ${work.slug} already published; refusing staged re-ingest`);
+    // (0a) THE SHELF DELETE, IN A TRANSACTION, BEHIND THE GUARD.
+    //
+    // This function used to run entirely in AUTOCOMMIT — no BEGIN anywhere — and its published
+    // check was a bare `SELECT status`. That is precisely the shape the M21/M22 audit found in
+    // ingest-sermon and ingest-historian, where the check ran before the transaction and left a
+    // window in which a publish flip could land between the check and the delete. Six works
+    // became publishable through it on 2026-08-01.
+    //
+    // `assertReingestable` closes the window by locking the `sources` row FOR UPDATE, which is
+    // worth nothing outside a transaction: in autocommit Postgres takes the lock and drops it on
+    // the same statement. Hence BEGIN … guard … DELETE … COMMIT, and hence the delete moved out
+    // of `deleteWork`, where it could not sit after a BEGIN that did not exist.
+    //
+    // The transaction is deliberately SHORT — it spans the check and the deletes only, not the
+    // embedding calls below. Holding a lock across an HTTP round trip per 64-row batch would keep
+    // it open for minutes on a 10MB work, and the window being closed here is between the check
+    // and the delete, not across the whole ingest.
+    //
+    // It is also STRICTER than what it replaces: the old check let a re-ingest through when
+    // `work.publish` was true. The guard refuses a published work outright, and its message names
+    // the remedy — unpublish first. A re-ingest silently replacing owner-approved published
+    // content is the thing being prevented, whatever the caller intends.
+    await db.query('BEGIN');
+    try {
+      await assertReingestable(db, work.slug, 'the register re-ingest');
+      await db.query(
+        `DELETE FROM section_anchors WHERE section_id IN
+           (SELECT s.id FROM sections s JOIN sources src ON src.id = s.source_id WHERE src.slug = $1)`, [work.slug]);
+      await db.query(
+        `DELETE FROM section_embeddings WHERE section_id IN
+           (SELECT s.id FROM sections s JOIN sources src ON src.id = s.source_id WHERE src.slug = $1)`, [work.slug]);
+      await db.query(`DELETE FROM sections WHERE source_id = (SELECT id FROM sources WHERE slug = $1)`, [work.slug]);
+      await db.query('COMMIT');
+    } catch (e) {
+      await db.query('ROLLBACK').catch(() => {});
+      throw e;
     }
-    // (0) replacement-idempotency: remove the work's previous rows/entries so a
-    // changed parse fully replaces (never interleaves with) the old ingest
+    // (0b) the rest of the replacement — flat rows and static files, neither of which the guard
+    // governs (they carry no publish state and no foreign keys).
     const wiped = await deleteWork(db, work.slug);
     if (wiped.dbRows || wiped.staticRemoved) console.log(`  ↻ ${work.slug}: replaced prior ingest (${wiped.dbRows} rows, ${wiped.staticRemoved} static entries)`);
     // (2) provenance/staging registry — status='ingesting' until the write

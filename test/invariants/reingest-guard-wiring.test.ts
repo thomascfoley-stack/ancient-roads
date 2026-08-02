@@ -34,6 +34,11 @@ const CALLERS = [
   // the argument for deriving: its list said three writers and the tree holds five.
   'src/ingest/repoint-sections-work.ts',
   'src/ingest/suppress-chrysostom-prolegomena.ts',
+  // Added 2026-08-02, by this test. register-writer gained a shelf-store delete so that an
+  // adapter-ingested work becomes visible at all, and it landed in a helper running in AUTOCOMMIT
+  // with no lock and no published check — the exact pre-2026-08 shape. The derived check below
+  // found it on the same day it was written, which is the argument for deriving the list.
+  'src/ingest/register-writer.ts',
 ];
 
 const read = (rel: string) => codeOnly(readFileSync(path.join(REPO, rel), 'utf8'));
