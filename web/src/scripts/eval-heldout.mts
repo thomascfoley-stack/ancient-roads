@@ -110,7 +110,20 @@ async function embed(text: string): Promise<string> {
     method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({ model: 'BAAI/bge-large-en-v1.5', input: [input.slice(0, 1800)], encoding_format: 'float' }),
   });
-  return `[${((await res.json()) as { data: { embedding: number[] }[] }).data[0]!.embedding.join(',')}]`;
+  // CHECK THE RESPONSE. Without this, a 401 fell through to `.data[0]` on an error object and the
+  // eval died with "Cannot read properties of undefined (reading '0')" at line 113 — which reads
+  // as a bug in the eval and is actually "your key is wrong". Measured 2026-08-02: the key file
+  // held a postgres URL, and the only symptom was a TypeError with no mention of auth. A tool that
+  // spends money per call should say which of the two things went wrong.
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    // The key is never echoed, and the provider's message is truncated: it is untrusted output.
+    throw new Error(`DeepInfra ${res.status} ${res.statusText} — ${body.slice(0, 200)}`);
+  }
+  const json = (await res.json()) as { data?: { embedding: number[] }[] };
+  const vec = json.data?.[0]?.embedding;
+  if (!vec) throw new Error('DeepInfra returned 200 with no embedding — the response shape changed');
+  return `[${vec.join(',')}]`;
 }
 async function rerankAll(q: string, rows: Row[]): Promise<Row[]> {
   if (rows.length <= K) return rows;
