@@ -18,7 +18,7 @@
 
 import { HIGHLIGHT_BG } from '@/lib/highlight-colors';
 import { flattenToSegments, type HighlightRange, type Segment } from '@/lib/highlight-range';
-import { splitBodyParagraphs } from '@/lib/work-reader';
+import { splitBodyParagraphs, sectionLabel } from '@/lib/work-reader';
 import type { WorkSectionRow } from '@/lib/work';
 
 /** The paragraph slice [start, end) of `body` rendered through the highlight tiling: every
@@ -70,6 +70,7 @@ export function WorkSection({
   sourceType?: string;
 }) {
   const paragraphs = splitBodyParagraphs(section.body);
+  const sectionHeading = sectionLabel(section);
   // CSS-only: `pre-wrap` renders the newlines ALREADY PRESENT in the text nodes and still
   // wraps long lines. It adds and drops nothing, so text nodes keep concatenating to exactly
   // section.body and every highlight offset stays valid.
@@ -84,9 +85,13 @@ export function WorkSection({
       ref={(el) => registerEl?.(section.ordinal, el)}
       className="scroll-mt-24"
     >
-      {section.heading && (
+      {/* The heading a reader sees. `heading` alone left every commentary section untitled --
+          the column is null for all of them (migrate-sections-slice.ts never wrote it), so a
+          reader scrolling Matthew Henry saw unbroken prose with no indication of which verse
+          they were on. `sectionLabel` falls through to the passage. */}
+      {sectionHeading && (
         <h2 className="mb-3 mt-10 font-scripture text-xl font-medium leading-snug text-stone-800 dark:text-stone-100">
-          {section.heading}
+          {sectionHeading}
         </h2>
       )}
       {/* The annotatable container: text nodes here concatenate to EXACTLY section.body. */}

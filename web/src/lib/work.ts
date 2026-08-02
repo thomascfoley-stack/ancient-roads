@@ -24,6 +24,22 @@ export interface WorkTocRow {
   ordinal: number;
   unitOrdinal: number | null;
   heading: string | null;
+  /**
+   * The section's verse range, when it has one. Carried so the reader can LABEL a
+   * verse-anchored section — commentaries have `heading IS NULL` by construction
+   * (`migrate-sections-slice.ts` never wrote the column) and were rendering as "Section 109".
+   *
+   * WHY DERIVED HERE AND NOT STORED. Backfilling `sections.heading` would have been the obvious
+   * fix and would have broken three things: migration 024 classifies a section as verse-anchored
+   * BY `heading IS NULL`, so filling it regroups every commentary from chapters into 31,000 loose
+   * fragments; that regrouping moves `unit_ordinal`, which moves the G10 rollup digest and trips
+   * the production ratchet; and `sections.tsv` is generated over `heading || body`, so a backfill
+   * silently rewrites the search index for 72,863 rows, which is a retrieval change needing its
+   * own accuracy run. The join below is bounded by WORK_TOC_MAX, served by the
+   * `section_anchors` primary key, and adds no write path that can drift.
+   */
+  verseStart: number | null;
+  verseEnd: number | null;
 }
 
 export interface WorkSectionRow extends WorkTocRow {
@@ -57,11 +73,32 @@ interface SectionRow {
   ordinal: number;
   unit_ordinal: number | null;
   heading: string | null;
+  verse_start: number | null;
+  verse_end: number | null;
 }
 
 function toTocRow(r: SectionRow): WorkTocRow {
-  return { id: Number(r.id), ordinal: r.ordinal, unitOrdinal: r.unit_ordinal, heading: r.heading };
+  return {
+    id: Number(r.id),
+    ordinal: r.ordinal,
+    unitOrdinal: r.unit_ordinal,
+    heading: r.heading,
+    verseStart: r.verse_start,
+    verseEnd: r.verse_end,
+  };
 }
+
+/**
+ * The verse range for a set of sections, as a correlated aggregate.
+ *
+ * Two scalar sub-selects rather than a JOIN + GROUP BY: a section can carry SEVERAL anchor rows
+ * (PK is (section_id, verse_id_start)), so a plain join would multiply the section rows and
+ * silently change the LIMIT's meaning — the cap would start counting anchors instead of sections.
+ * Both sub-selects are served by the section_anchors primary key.
+ */
+const VERSE_RANGE_COLS = `,
+       (SELECT min(a.verse_id_start) FROM section_anchors a WHERE a.section_id = sections.id) AS verse_start,
+       (SELECT max(a.verse_id_end)   FROM section_anchors a WHERE a.section_id = sections.id) AS verse_end`;
 
 // Resolve slug → surrogate id under the published filter. Both reads key off this;
 // null means "not a published work" and maps to a 404 at the route.
@@ -104,7 +141,7 @@ export async function getWorkWithToc(
   // clipped long one, and a table of contents that quietly omits chapters is worse than one that
   // says it is partial.
   const rows = (await sql.query(
-    `SELECT id, ordinal, unit_ordinal, heading
+    `SELECT id, ordinal, unit_ordinal, heading${VERSE_RANGE_COLS}
      FROM sections
      WHERE source_id = $1
      ORDER BY unit_ordinal, ordinal
@@ -129,7 +166,7 @@ export async function getWorkSectionsPage(
 
   const sql = getDb();
   const rows = (await sql.query(
-    `SELECT id, ordinal, unit_ordinal, heading, body
+    `SELECT id, ordinal, unit_ordinal, heading, body${VERSE_RANGE_COLS}
      FROM sections
      WHERE source_id = $1 AND ordinal > $2
      ORDER BY ordinal ASC

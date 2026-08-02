@@ -19,7 +19,7 @@ import { useRouter } from 'next/navigation';
 import { type HighlightRange } from '@/lib/highlight-range';
 import { useTextAnnotation, type AnnotationTarget } from '@/lib/use-text-annotation';
 import { useWorkSectionPages } from '@/lib/use-work-sections';
-import { WORK_READER_PAGE_LIMIT } from '@/lib/work-reader';
+import { WORK_READER_PAGE_LIMIT, sectionLabel } from '@/lib/work-reader';
 import type { WorkSource, WorkSectionRow } from '@/lib/work';
 import { SelectionPopover } from './selection-popover';
 import { WorkHeader } from './work-header';
@@ -315,7 +315,7 @@ export function WorkReader({
   const { pending, dismiss } = useTextAnnotation(rootRef, resolveTarget);
   const pendingSection = pending ? byId.current.get(pending.key) : undefined;
   const pendingLocus = pendingSection
-    ? (pendingSection.heading ?? `Section ${pendingSection.ordinal}`)
+    ? sectionLabel(pendingSection)
     : '';
 
   // Phase 2: paint the color wash locally (soft wash behind the words, §10.1). Persisting

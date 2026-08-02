@@ -20,7 +20,7 @@ const TOTAL = 300; // pretend the work has 300 sections
 function makeSections(after: number, limit: number): WorkSectionRow[] {
   const out: WorkSectionRow[] = [];
   for (let o = after + 1; o <= Math.min(TOTAL, after + limit); o++) {
-    out.push({ id: o, ordinal: o, unitOrdinal: Math.ceil(o / 10), heading: `Section ${o}`, body: `Body of section ${o}.` });
+    out.push({ id: o, ordinal: o, unitOrdinal: Math.ceil(o / 10), heading: `Section ${o}`, verseStart: null, verseEnd: null, body: `Body of section ${o}.` });
   }
   return out;
 }

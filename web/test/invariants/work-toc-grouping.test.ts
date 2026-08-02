@@ -8,7 +8,7 @@ import { groupTocByUnit } from '@/lib/work-reader';
 import type { WorkTocRow } from '@/lib/work';
 
 function row(ordinal: number, unitOrdinal: number | null, heading: string | null): WorkTocRow {
-  return { id: ordinal * 10, ordinal, unitOrdinal, heading };
+  return { id: ordinal * 10, ordinal, unitOrdinal, heading, verseStart: null, verseEnd: null };
 }
 
 describe('groupTocByUnit — reading-unit grouping (ADR-026)', () => {

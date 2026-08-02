@@ -43,7 +43,7 @@ const PROSE_BODY =
 // declares the camelCase `unitOrdinal`, so the object never overlapped the target type. The app
 // tsconfig let it through; `tsconfig.test.json` (audit.sh gate 3) did not.
 function row(body: string): WorkSectionRow {
-  return { id: 1, ordinal: 1, unitOrdinal: 1, heading: null, body };
+  return { id: 1, ordinal: 1, unitOrdinal: 1, heading: null, verseStart: null, verseEnd: null, body };
 }
 
 /** The computed white-space of every rendered paragraph. */

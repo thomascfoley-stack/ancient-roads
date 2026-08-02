@@ -17,7 +17,7 @@ import type { WorkSectionRow } from '@/lib/work';
 afterEach(cleanup);
 
 function sectionWith(body: string, heading: string | null = 'On Faith'): WorkSectionRow {
-  return { id: 42, ordinal: 7, unitOrdinal: 3, heading, body };
+  return { id: 42, ordinal: 7, unitOrdinal: 3, heading, verseStart: null, verseEnd: null, body };
 }
 
 function textContainer(): HTMLElement {

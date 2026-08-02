@@ -360,7 +360,9 @@
       "acquire": {
         "adapter": "github",
         "repo": "openscriptures/HebrewLexicon",
-        "path": "BrownDriverBriggs.xml"
+        "path": "BrownDriverBriggs.xml",
+        "commit": "b69f909233040133c03654945d7ed1a510d5ea37",
+        "commit_note": "Pinned 2026-08-02: a branch reference moves, so an archive taken against it cannot prove which bytes it holds. Last commit touching BrownDriverBriggs.xml (2017-10-21)."
       }
     }
   },

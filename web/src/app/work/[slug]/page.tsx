@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { loadWorkProgress, saveWorkProgress, type WorkProgress } from '@/lib/work-reader';
+import { loadWorkProgress, saveWorkProgress, sectionLabel, type WorkProgress } from '@/lib/work-reader';
 import type { WorkSource, WorkTocRow } from '@/lib/work';
 import { WorkReader, type WorkReaderSeek } from '@/components/work-reader';
 import { WorkToc } from '@/components/work-toc';
@@ -131,8 +131,10 @@ export default function WorkPage() {
   const total = work.toc.length;
   const pct = progress && total > 0 ? clamp01((progress.ordinal - 1 + progress.scrollPct) / total) : 0;
   const continueHeading = continueTarget
-    ? (work.toc.find((r) => r.ordinal === continueTarget.ordinal)?.heading ??
-      `Section ${continueTarget.ordinal}`)
+    ? (() => {
+        const row = work.toc.find((r) => r.ordinal === continueTarget.ordinal);
+        return row ? sectionLabel(row) : `Section ${continueTarget.ordinal}`;
+      })()
     : null;
 
   return (

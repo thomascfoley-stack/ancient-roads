@@ -8,7 +8,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDragDismiss } from '@/lib/use-drag-dismiss';
-import { groupTocByUnit } from '@/lib/work-reader';
+import { groupTocByUnit, sectionLabel } from '@/lib/work-reader';
 import type { WorkTocRow } from '@/lib/work';
 
 // A chunked ingest repeats the work's title across its chunks and suffixes " (i/n)". The unit
@@ -150,7 +150,7 @@ export function WorkToc({
                             : 'text-stone-500 dark:text-stone-400'
                         }`}
                       >
-                        <span className="line-clamp-1">{row.heading ?? `Section ${row.ordinal}`}</span>
+                        <span className="line-clamp-1">{sectionLabel(row)}</span>
                         {active && <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider">Reading</span>}
                       </button>
                     );

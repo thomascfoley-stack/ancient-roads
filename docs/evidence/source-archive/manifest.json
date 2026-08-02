@@ -30,6 +30,15 @@
       "contentType": "application/xml"
     },
     {
+      "slug": "bdb-lexicon",
+      "artifact": "BrownDriverBriggs.xml",
+      "url": "https://raw.githubusercontent.com/openscriptures/HebrewLexicon/b69f909233040133c03654945d7ed1a510d5ea37/BrownDriverBriggs.xml",
+      "sha256": "2b52658a4323d91674cda4090ab8b3ebddfff640f4f18143c28300e80b2c38f8",
+      "bytes": 2911253,
+      "fetchedAt": "2026-08-02T03:38:41.816Z",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
       "slug": "bramley-carols",
       "artifact": "bramley_carols.xml",
       "url": "https://www.ccel.org/ccel/bramley/carols.xml",
@@ -1192,11 +1201,6 @@
       "slug": "barnes-crosswire-nt",
       "kind": "(none)",
       "reason": "no provenance.acquire block — this entry predates the adapter contract and records no machine-readable way to re-fetch it. Recovering it means re-establishing its source by hand."
-    },
-    {
-      "slug": "bdb-lexicon",
-      "kind": "github",
-      "reason": "github adapter pins no commit. A branch reference moves, so an archive taken against it cannot prove which bytes it stored. Pin `commit` in the manifest first."
     },
     {
       "slug": "calvin-crosswire",

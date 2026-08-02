@@ -41,6 +41,8 @@ function bigToc(): WorkTocRow[] {
         ordinal,
         unitOrdinal: u,
         heading: `SERMON ${u} — PROVERBS 24:30-32 (${c}/${CHUNKS_PER_UNIT})`,
+        verseStart: null,
+        verseEnd: null,
       });
       ordinal++;
     }
@@ -89,9 +91,9 @@ describe('WorkToc — bounded render (O(units), not O(sections))', () => {
 
   it('a single-section unit still renders as one directly-clickable row', () => {
     const toc: WorkTocRow[] = [
-      { id: 1, ordinal: 1, unitOrdinal: 1, heading: 'Preface' },
-      { id: 2, ordinal: 2, unitOrdinal: 2, heading: 'Chapter I' },
-      { id: 3, ordinal: 3, unitOrdinal: 3, heading: 'Chapter II' },
+      { id: 1, ordinal: 1, unitOrdinal: 1, heading: 'Preface', verseStart: null, verseEnd: null },
+      { id: 2, ordinal: 2, unitOrdinal: 2, heading: 'Chapter I', verseStart: null, verseEnd: null },
+      { id: 3, ordinal: 3, unitOrdinal: 3, heading: 'Chapter II', verseStart: null, verseEnd: null },
     ];
     render(<WorkToc toc={toc} currentOrdinal={1} onNavigate={() => {}} onClose={() => {}} />);
     const text = document.body.textContent ?? '';

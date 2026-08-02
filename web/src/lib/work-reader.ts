@@ -4,6 +4,8 @@
 // only the unavoidable DOM glue lives in the components.
 
 import type { WorkTocRow } from './work';
+import { decodeVerseId, isStructurallyValidVerseId } from '@bible/verse-id';
+import { BOOK_BY_NUM } from '@bible/books';
 
 /** Sections per fetch. Matches the route's default page size: a few screens per page, so
  *  scrolling fetches ahead without thrashing requests on a 3,448-section work. */
@@ -22,6 +24,61 @@ export interface TocUnit {
 /** Group a (unit_ordinal, ordinal)-ordered TOC into reading units, preserving order.
  *  Rows with a null unit_ordinal stand alone (pre-024 data) rather than collapsing
  *  into one anonymous unit. */
+/**
+ * What a section is CALLED.
+ *
+ * "Section 109" was never a design decision — it is the fallback that shows when `heading` is
+ * null, and commentaries have `heading` null for all 72,863 rows because
+ * `migrate-sections-slice.ts` inserts (source_id, ordinal, body, source_url) and never writes
+ * the column. Sermons and historians build real headings at ingest and are unaffected; only the
+ * verse-anchored works were reading like a filing cabinet.
+ *
+ * The verse range is the right name for them: a commentary section IS its passage. The order is
+ * heading, then the passage, then the ordinal — so a work that has real headings keeps them, and
+ * the ordinal is now a last resort that a healthy corpus never reaches.
+ */
+export function sectionLabel(row: Pick<WorkTocRow, 'heading' | 'ordinal' | 'verseStart' | 'verseEnd'>): string {
+  if (row.heading && row.heading.trim() !== '') return row.heading;
+  const ref = formatVerseRange(row.verseStart, row.verseEnd);
+  return ref ?? `Section ${row.ordinal}`;
+}
+
+/**
+ * "John 3:16", "John 3:16-18", "John 3:16 - 4:2". Null when there is no anchor to format, so
+ * callers can fall through rather than render a half-formed reference.
+ *
+ * A structurally invalid id formats as null rather than as "Book 0 0:0": a nonsense reference in
+ * the table of contents is worse than the ordinal, because it reads like a real passage.
+ */
+export function formatVerseRange(start: number | null, end: number | null): string | null {
+  if (start == null || !isStructurallyValidVerseId(start)) return null;
+  const a = decodeVerseId(start);
+  const book = BOOK_BY_NUM.get(a.book);
+  if (!book) return null;
+  const head = `${book.name} ${a.chapter}:${a.verse}`;
+  if (end == null || end === start || !isStructurallyValidVerseId(end)) return head;
+  const b = decodeVerseId(end);
+  if (b.book !== a.book) return head; // a cross-book range is not a thing this corpus produces
+  return b.chapter === a.chapter ? `${head}-${b.verse}` : `${head} - ${b.chapter}:${b.verse}`;
+}
+
+/**
+ * The label for a whole reading UNIT. For a verse-anchored work a unit is a CHAPTER (migration
+ * 024 groups them that way), so the unit reads "John 3" and its sections read "John 3:16" — which
+ * is what the owner asked for: chapter names, like the works that already have them.
+ */
+function unitLabelFor(rows: WorkTocRow[]): string {
+  const first = rows[0]!;
+  if (first.heading && first.heading.trim() !== '') return first.heading;
+  if (first.verseStart != null && isStructurallyValidVerseId(first.verseStart)) {
+    const { book, chapter } = decodeVerseId(first.verseStart);
+    const b = BOOK_BY_NUM.get(book);
+    // One-chapter books (Jude, Obadiah…) read "Jude", not "Jude 1".
+    if (b) return b.chapterCount === 1 ? b.name : `${b.name} ${chapter}`;
+  }
+  return sectionLabel(first);
+}
+
 export function groupTocByUnit(toc: WorkTocRow[]): TocUnit[] {
   const units: TocUnit[] = [];
   for (const row of toc) {
@@ -29,9 +86,12 @@ export function groupTocByUnit(toc: WorkTocRow[]): TocUnit[] {
     if (last && row.unitOrdinal !== null && last.unitOrdinal === row.unitOrdinal) {
       last.rows.push(row);
     } else {
-      units.push({ unitOrdinal: row.unitOrdinal, label: row.heading ?? `Section ${row.ordinal}`, rows: [row] });
+      units.push({ unitOrdinal: row.unitOrdinal, label: '', rows: [row] });
     }
   }
+  // The label is computed AFTER grouping, from the unit's own rows. Computing it while building
+  // meant it was decided by the first row alone, before the unit knew what it contained.
+  for (const u of units) u.label = unitLabelFor(u.rows);
   return units;
 }
 
