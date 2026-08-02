@@ -1,0 +1,50 @@
+deployed_at_utc: 2026-08-02T05:06:41Z
+sha:             29a4a16201ba05fc2b1e66a85da8f37b9131b960
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+url:             https://web-mulunk2g4-home-network-hardening.vercel.app
+
+── LIVE VERIFICATION, 2026-08-02, ancientpaths.app, authenticated session ──
+
+Bundle actually running: dpl_EnZ1ad4EZU4omJiNmuzfng1F4GBK, read from the page's own script src.
+Receipt path: this file is at the REPO ROOT, confirming the deploy.sh fix — every prior receipt
+landed inside web/ and shipped in the upload.
+
+HEADINGS (never verified until now — /work/[slug] needs a database and the dev clone has none)
+  /work/matthew-henry: ZERO "Section NNN" labels anywhere in the document. Section headings read
+  "Genesis 1:1-2", "Genesis 1:3-5", "Genesis 1:6-8", "Genesis 1:9-13" ... and the contents drawer
+  groups them under the unit label "Genesis 1". Chapter above, passages beneath, which is the
+  structure that was asked for. Screenshot taken.
+
+THEME       Clicked Dark on /settings, navigated to /read/jhn/3: stored 'dark', `reader-dark`
+  present, body near-black — while next-themes still had `dark` on the same element and the OS
+  prefers dark. The settings page writes what the reader reads, across a route change.
+
+DEEP LINK   /read/jhn/3#v16 -> verse 16 carries id="v16", sits at 427px in view, verse 1 at -257
+  above it. Scrolled, not merely rendered.
+
+SIGN-IN     /auth/sign-in as a signed-in reader -> landed on /home. No password field, no sign-in
+  offer, "Sign out" present.
+
+BOOKMARKS — THE ROUND TRIP I HAD RECORDED AS NOT RUN. Driven through the real routes against the
+  real database with RLS in force:
+    create                      201
+    press again (a double-tap)  201, and the SAME row id — the ON CONFLICT upsert matching the
+                                partial unique index, which is the failure a DB-less test cannot
+                                reach and the reason the static index check exists
+    duplicates in My library    1, after two presses
+    reader marker               ⚑ on verse 16 only; exactly one flag in the chapter
+    delete                      200, gone from My library
+    re-add after soft delete    201 — the partial index is on deleted_at IS NULL, so a
+                                soft-deleted row must not block a new one. It does not.
+  Production left as found: 0 bookmarks remaining.
+
+CONSOLE     0 errors across every page visited, tracking attached BEFORE the loads.
+
+A NEAR-MISS WORTH RECORDING. The automation's left_click on the settings Dark button did nothing
+— no storage write, no class, aria-pressed stayed false — and the obvious reading was "the
+settings page I just shipped is dead in production". Dispatching a real MouseEvent at the same
+element worked immediately and completely. The page was interactive the whole time; the click was
+not landing. A tool's failure to interact is not the product failing to work, and the difference
+is one dispatched event.
