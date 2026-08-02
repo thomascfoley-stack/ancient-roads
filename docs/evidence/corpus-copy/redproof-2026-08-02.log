@@ -1,0 +1,47 @@
+
+Standing up a throwaway cluster on port 54329
+
+GUARDS — each must REFUSE, and for the stated reason
+  ✓ slug not in the manifest
+  ✓ quarantined slug (serve:false)
+  ✓ forbidden-aggregator provenance
+  ✓ duplicate slug in the list
+  ✓ source is PRODUCTION
+  ✓ source is PRODUCTION even with --local-redproof (no skeleton key)
+  ✓ --local-redproof pointed at a REAL endpoint
+  ✓ no COPY_ALLOW flag
+  ✓ no COPY_EXPECT_HOST declaration
+  ✓ declaration names the WRONG endpoint
+  ✓ source and destination identical
+  ✓ no source credential in the env
+  ✓ piped stdin is not consent
+  ✓ --redproof-skip-gate is inert without --local-redproof
+
+THE COPY ITSELF
+  ✓ copies olney-hymns
+  ✓ 5 sections landed (5)
+  ✓ 5 anchors landed (5)
+  ✓ 5 vectors landed (5)
+  ✓ 1 history anchor landed (1)
+  ✓ 2 flat corpus rows landed (2)
+  ✓ status is STAGED, never published (staged)
+  ✓ the USER row did NOT move (0)
+  ✓ the unlisted work did NOT move (0)
+  ✓ vectors are byte-identical to what the SOURCE stores (0)
+  ✓ and that vector is real, not empty (yes)
+  ✓ anchors point at the DESTINATION's own section ids (0)
+  ✓ heading/body survived the hop (Amazing grace, verse 3)
+
+IDEMPOTENCY — a second run must add nothing
+  ✓ second run succeeds
+  ✓ still 5 sections after re-run (5)
+  ✓ still 2 flat rows after re-run (2)
+
+PUBLISHED IS UNREACHABLE — a destination row already published is not disturbed
+  ✓ re-run over a published row
+  ✓ the copier did not un-publish it (published)
+  ✓ no code path in the copier reaches published
+  ✓ (and it does see the literal staged, so the grep is not blind)
+
+RESULT
+  34 passed, 0 failed
