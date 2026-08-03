@@ -1,5 +1,87 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-02 (ADR-047: the number is the handle — owner-ruled, the boundary lifted, shipped)
+
+**Headline: the second word-highlighter cause is closed. The owner ruled on a documented STOP
+rather than an agent guessing past it, and the ruling is recorded in the repo before the code
+that depends on it, per bylaw 1.**
+
+### THE RULING
+
+`docs/LIBRARY_READER_BUILD.md` locked "tap-verse -> commentaries is untouched" as both a settled
+decision and a hard boundary. A three-lens investigate/verify/synthesise workflow found it in
+direct conflict with a real defect (below), named the STOP explicitly per `AGENTS.md` ("do not
+make owner-level calls yourself"), and escalated with a plain recommendation instead of shipping
+past it. The owner's answer, given in conversation: **yes, make the change.** Recorded as
+**ADR-047** (`docs/DECISIONS.md`), which supersedes the two `LIBRARY_READER_BUILD.md` passages by
+name — both amended in place with strikethrough and a pointer, not silently deleted.
+
+### THE DEFECT ADR-047 CLOSES
+
+`verse-display.tsx`'s click handler sat on the WHOLE verse span. `StudyPanel`'s root is a
+`fixed inset-0` scrim that closes on `e.target === e.currentTarget`. So the FIRST click of a
+double-click-to-select-a-word opened the sheet; the SECOND click landed on the scrim and closed
+it before the browser's native word selection ever registered. Double-click-to-select has been
+dead since drag-to-dismiss shipped on that sheet. No click-count or timing guard fixes it without
+either taxing every mobile tap (a timer) or leaving the conflict in place (`e.detail` is wrong —
+the damage is done on the FIRST click, where `detail === 1`).
+
+### THE FIX
+
+The handler moves from the verse `<span>` to its verse-number `<sup>` only. `select-none` already
+makes the number the one part of a verse that can never be inside a text selection, so a click
+there cannot race the selection engine. A `before:` pseudo-element (`-inset-y-1 -left-1.5
+-right-0.5`) grows the tap target without reflowing text — `position: absolute` takes it out of
+flow by construction, and the insets are asymmetric on purpose: `-right-0.5` matches the number's
+own `mr-0.5` exactly, so the invisible area stops at the margin and never steals a long-press
+from the first word.
+
+**Rejected: a `<button>`.** Real keyboard access is new capability, not a repair — the handler
+lives on a non-interactive element today with zero keyboard path — and it costs 176 tab stops in
+Psalm 119 before the chapter nav, an `aria-label` that changes what a screen reader announces
+mid-sentence, and the only `cursor-pointer` in the codebase. Filed as its own future slice.
+
+### VERIFIED IN A BROWSER, 1280x800 and 390x844 (`/read/jhn/3`, `/read/psa/119`)
+
+- **Double-click a word: selected, floating popover live, NO sheet opens.** This is the bug,
+  gone — confirmed via `window.getSelection().toString()` returning the word and
+  `[role="toolbar"][aria-label="Annotate selection"]` present, sheet absent.
+- Click mid-verse-text: nothing happens (no sheet, no scrim).
+- Click the verse number: sheet opens on Commentaries, `John 3:16` heading.
+- **Mobile touch, 5 consecutive verse numbers (v1-v5), John 3: 5/5 hits, 0 misses.**
+- **Vertical-overlap measurement** (the thing the code comment refuses to assert, taken instead
+  of claimed): Psalms 119:20-25 at 390px. Line height 34.2px; the `before:` box is 21px tall
+  (13px `<sup>` + 4px each side). Worst case — two verse numbers on ADJACENT lines, 34px apart —
+  leaves a 13px gap between their tap-target boxes. No overlap, computed from live
+  `getBoundingClientRect()`, not eyeballed.
+- Tap blank space (the chapter heading area): no sheet, dismisses cleanly.
+- No horizontal overflow at 390px on the densest chapter in the Bible
+  (`document.body.scrollWidth === 390`).
+
+### DONE
+
+- `verse-display.tsx`: the handler move, described above.
+- `web/test/invariants/verse-open-gesture.test.tsx`, 3 cases, all three red-proofed live (guard
+  removed / handler dropped / handler moved onto a marker — each failed exactly the test it
+  should have and nothing else, verified by running the suite after each seed and restoring via
+  `git checkout` before the next).
+- `docs/DECISIONS.md`: ADR-047, in full, with the owner's ruling quoted and the rejected
+  alternative recorded.
+- `docs/LIBRARY_READER_BUILD.md`: both passages amended in place (strikethrough + pointer to
+  ADR-047), not deleted — a future reader hits the old rule and the correction in the same spot.
+
+### NOT DONE / UNVERIFIED
+
+- **Long-press-to-select on a real touch device was not driven.** This browser environment can
+  click but not hold; the docked-low selection bar and swatches are untouched code
+  (`selection-popover.tsx` was not edited by this change) and were exercised by Part A's own
+  browser pass, not re-driven here.
+- Triple-click-to-select-a-verse remains impossible, unrelated to this change (verses are
+  `display: inline` in one block; a cross-container range returns `null`). Tracked as
+  `STUDY_TOOLKIT_DESIGN.md` 9.6, its own open decision — explicitly not this ADR's scope.
+- `npm run audit` not run to completion in this entry; app + test typechecks and the full local
+  vitest suite (378 passed, 0 failed) ran clean. CI is the gate on the PR.
+
 ## 2026-08-02 (owner-reported: catalog rows ragged; desk panes cannot add the Bible or search chapters)
 
 **Headline: the catalog misalignment was one missing `min-w-0`; the desk's two navigation gaps
