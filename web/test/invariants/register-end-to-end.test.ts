@@ -34,15 +34,21 @@ const dbUrl = runtimeDbUrl();
 /** Registers that reach NO catalog, BY CONSTRUCTION (lib/catalog.ts's fail-closed default:
  *  a source_type not named by a catalog appears in none). Declared here so that a register
  *  losing its catalog door reads as a CHANGE rather than as silence. `lexicon` belongs to
- *  Word Study, its own surface; `theology`/`confession` are lane content the register wall
- *  keeps out of "Commentaries".
+ *  Word Study, its own surface.
  *
  *  `historian` was in this set until 2026-08-01, when the owner ruled it gets its own
  *  Historians catalog — it is not lane content (neither exegesis nor devotional register), it
- *  simply had no shelf. This guard is what turned that into an explicit decision instead of a
- *  silent widening: adding the catalog made this assertion RED in CI, exactly as the comment
- *  above intends. Removing a register from this list must always cost someone a red build. */
-const REGISTERS_WITH_NO_CATALOG = ['theology', 'confession', 'lexicon'] as const;
+ *  simply had no shelf. `theology`/`confession` left this set on 2026-08-02, same reasoning,
+ *  same remedy: 33,578 sections (calvin-institutes, hodge-systematic, owen-works,
+ *  schaff-creeds) were published, lane-served, and unbrowsable, because "must never be
+ *  presented AS exegesis" — the actual wall — had been standing in for "must have no shelf at
+ *  all", which is a narrower claim it does not entail. The wall itself is unchanged: `theology`
+ *  is still not in `commentaries.types` (catalog-defs.ts), so it still cannot masquerade as
+ *  commentary, and it still cannot fill an exegetical voice slot. This guard is what turns each
+ *  such change into an explicit decision instead of a silent widening: adding a catalog makes
+ *  this assertion RED in CI, exactly as the comment above intends. Removing a register from this
+ *  list must always cost someone a red build. */
+const REGISTERS_WITH_NO_CATALOG = ['lexicon'] as const;
 
 function catalogFor(sourceType: string): CatalogId | null {
   for (const c of Object.values(CATALOGS)) if (c.types.includes(sourceType)) return c.id;
