@@ -4,7 +4,9 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { typeahead, parseRef, type ParseOutcome } from '@bible/ref-parse';
 import { webVerseCounts } from '@bible/verse-counts';
-import { type Book, bookUrl } from '@/lib/bible';
+import { decodeVerseId, encodeVerseId } from '@bible/verse-id';
+import { type Book } from '@/lib/bible';
+import { verseHref } from '@/lib/verse-link';
 
 // Fired by the mobile Search tab (and anything else that wants the omnibox).
 export const OMNIBOX_OPEN_EVENT = 'ap:omnibox';
@@ -45,9 +47,13 @@ export function Omnibox() {
     ? typeahead(query, { verseCounts: webVerseCounts })
     : null;
 
+  // `verse` defaults to 1 (the top of the chapter) for callers that only know a book/chapter —
+  // routed through the SAME `verseHref` the reader honors, so a reference with a real verse
+  // (`John 3:16`) lands there instead of silently dropping to verse 1 (bookUrl's behavior, and
+  // the bug: `bookUrl` emits no `#v` anchor at all).
   const navigate = useCallback(
-    (book: Book, chapter: number) => {
-      router.push(bookUrl(book, chapter));
+    (book: Book, chapter: number, verse = 1) => {
+      router.push(verseHref(encodeVerseId({ book: book.bookNum, chapter, verse })));
       setOpen(false);
     },
     [router],
@@ -61,8 +67,8 @@ export function Omnibox() {
         const ref = result.outcome.ref;
         const firstRange = ref.ranges[0];
         if (!firstRange) return;
-        const chapter = Math.floor((firstRange.start % 1_000_000) / 1_000);
-        navigate(ref.book, chapter);
+        const { chapter, verse } = decodeVerseId(firstRange.start);
+        navigate(ref.book, chapter, verse);
       } else if (result.kind === 'completions' && result.books.length === 1) {
         const book = result.books[0]!;
         navigate(book, 1);
@@ -169,17 +175,17 @@ function RefResult({
   onNavigate,
 }: {
   outcome: ParseOutcome;
-  onNavigate: (book: Book, chapter: number) => void;
+  onNavigate: (book: Book, chapter: number, verse?: number) => void;
 }) {
   if (outcome.ok) {
     const ref = outcome.ref;
     const firstRange = ref.ranges[0];
-    const chapter = firstRange
-      ? Math.floor((firstRange.start % 1_000_000) / 1_000)
-      : 1;
+    const { chapter, verse } = firstRange
+      ? decodeVerseId(firstRange.start)
+      : { chapter: 1, verse: 1 };
     return (
       <button
-        onClick={() => onNavigate(ref.book, chapter)}
+        onClick={() => onNavigate(ref.book, chapter, verse)}
         className="flex min-h-[44px] w-full items-center rounded-lg px-3 py-3 text-left hover:bg-stone-100/70 active:bg-stone-200/60 dark:hover:bg-stone-800 dark:active:bg-stone-800"
       >
         <div>
