@@ -1,5 +1,234 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-03 — The served cutover: audit, five confirmed defects fixed, order re-filed as v2
+
+Branch `feat/served-column-derives-publish` (pushed, upstream set). Context: the 2026-08-03
+sweep published 77 works to production (evidence committed this session: `flip-run-2026-08-03T02-14-25-907Z.log`,
+snapshot `…02-14-38-171Z.json`) — production is now **124 published works, 76 of them
+published-but-unserved**, the standing A3-rule divergence the cutover exists to close.
+
+### DONE
+
+- **16-agent adversarial audit** of `4f14f17` + the v1 order (bylaw 4): four independent
+  *plan-materially-flawed* verdicts, 6/6 CRITICAL/HIGH findings CONFIRMED, 0 refuted.
+  Filed: [verdict](docs/pm/orders/2026-08-03-stop-verdict-served-plan-audit.md).
+- **F1 the circular verifier** — expectation now FROZEN (`scripts/lib/served-backfill-frozen.mjs`),
+  welded to the migration by `test/invariants/served-backfill-frozen-sync.test.ts`; red-proof
+  requires the seeded row be NAMED. Found while watching it red: **FALSE OR NULL = NULL made
+  even the repaired checks blind to wrongly-served work-less rows** (a served CS Lewis row
+  passed all 7 checks); coalesced, Lewis mutant now trips 2, Tyndale 3. `1ae0323`.
+- **Register-wall breach** — `diversityBackfillSql` six-type list → `EXEGETICAL_TYPE_SQL`;
+  served sermon/theology rows can no longer enter composed /ask answers. `1ae0323`.
+- **The serve mechanism** — `publish-flip --serve-published`: already-published slugs are a
+  STOP without it, an announced serve with it; snapshot records per-slug served state;
+  `--reverse` un-serves exactly what the forward run served from zero (serve-only and mixed
+  batches both exact now); partial states refused; forward requires the served column (names
+  044), reverse never blocked (M7). Gates added: manifest `serve:false` pre-connect,
+  MUST_NOT_SERVE authors in-transaction — both watched fire (whitefield-works, Origen).
+- **Expand/contract + renumber** — `044_embeddings_served_expand.sql` (new final index names,
+  drops nothing, session SETs) / `045_embeddings_served_contract.sql` (contra-DDL in header;
+  closes the redeploy window). Renumbered TWICE: 039→042 for the /plans trio, then 042→044
+  when the concurrent session wrote `042_plan_day_readings.sql` five minutes into the rename —
+  the one-agent-per-tree collision, live. The four applied /plans migrations are now COMMITTED
+  (`851963d`) so numbers are fenced in git. `68d9792`.
+- **Tree resolved** — full-tree backup ref `backup/tree-2026-08-03` (holds the /plans session's
+  uncommitted app code), pushed; branch pushed. /plans app code deliberately NOT committed
+  (its typecheck is red at `src/lib/plan/expand.ts` — that session's work).
+- **Order re-filed as v2 in place** — serve-the-76 is an explicit reversible step; real script
+  names; batch arithmetic (10-20 sessions, not 2); v3-iterate / v4.1-once eval protocol with
+  preconditions (DEEPINFRA key, served census, pre-044 v3 baseline); P0 adds the fiction
+  register (R5), per-author voice cap (R2), aggregate dedupe (R1), coverage census (R4),
+  deploy preflight, reconciliation instrument.
+- Proofs re-run under final names on fresh throwaway pg17: backfill + 5 indexes, verifier 7/7
+  WITH lane rows present, red-proof held, 045 applies. Suites: root 56 files / 578 pass.
+
+### NOT DONE / UNVERIFIED
+
+- 044 applied to NO real database; nothing timed at scale (the prod budget explicitly derives
+  from the timed dev apply, P1.1).
+- The 5 web live-DB test failures are environmental (dev DB mid-ingest + rate cap + the
+  concurrent session's `web/.env.local` un-skipping them) — diagnosed, not fixed here.
+- Unmoved surfaces (FTS / static reader / today.ts on frozen lists), the 36k world-readable
+  blocked static entries, and the work-less cohort's missing off-switch: OPEN, named in v2's
+  successor-work section.
+- The eval has not run (key absent per ADR-044); accuracy consequences of any admission are
+  unmeasured by construction until P1.
+
+## 2026-08-02 (night) — Topic→plan wiring closes the build (ADR-047 addendum)
+
+The last mile of path 1: a matched topic becomes a dated plan. Owner: "close 1... that would
+close this build out."
+
+### DONE
+
+- **Migration 042 `plan_day_readings`** (dev + ci): a topical day is SEVERAL labeled passages,
+  which one range per day cannot say — child table, PK (plan_id, day_index, ordinal),
+  FK cascade, RLS via EXISTS-on-plans, ownerParent classification (residue gate sweeps 20
+  tables). plan_days keeps the day's first reading as its range so existing consumers work.
+- **`expandTopicalPlan`** (pure): buckets the author's ordered entries across reading days,
+  same offsets/even-split arithmetic as chapters, no padding, no empty buckets. 5 tests.
+- **Store topic branch**: `loadTopic` re-verifies the pointer against the DB (exists +
+  topical_index + published — stale/staged/forged all refuse with a reason); coverage judged
+  per reading (any covered reading covers the day, same half-days bar); readings inserted
+  via the WHERE EXISTS belt; `getPlan` returns them; title from the DB heading, never input.
+- **UI**: "A topic" tab in the builder — search → 3 suggestions (work + passage count) →
+  pick → build; day list renders labeled readings, each linking into the reader.
+- **Executed end to end** (`plan-topic-flow.test.ts`, owner-seeded PUBLISHED fixture per the
+  seedOwnerUrl precedent): match through the real route → create → 4 labeled readings in the
+  author's order → flip fixture to staged, watch the refusal → user B blocked → delete
+  cascades readings → teardown leaves zero residue. One driver defect caught while writing:
+  BIGINT section ids arrive as strings; matchTopics casts ::int.
+- Adversarial review workflow (3 lenses + verify) run over the slice before commit; findings
+  and dispositions below/in the commit.
+
+### NOT DONE / NEXT
+
+- The LLM intake (routes phrase → book/collection/topic and emits PlanSpec) — the last
+  unbuilt piece of the intake; every scope it needs now exists and is validated.
+- Topic+canonical hybrid; repeat-asker memory (owner-deferred).
+- Publish flip still gates all topical behavior for real users; prod has migrations 039-042
+  outstanding.
+
+## 2026-08-02 (late) — Canonical groups, topic matcher, dormant delivery fields (ADR-047)
+
+Owner rulings live: reviewed-table for canonical groupings (never model enumeration; Hebrews
+excluded from pauline-epistles with reasoning recorded), delivery/calendar questions kept OUT of
+the intake but schema-ready now, topic matching started alongside.
+
+### DONE
+
+- **`canonical-groups.ts`**: 7 reviewed groupings; whole-bible DERIVED from BOOKS (never typed);
+  `validateCanonicalGroups()` exported so the test asserts the module's own verdict.
+  `PlanSpec.scope` gains `{kind:'books', group}` (unknown key refused at the edge);
+  `chaptersOfScope` flattens the group's books into the existing ChapterSpan walk — the
+  day-bucketing loop is untouched. Builder UI gains a One book / A collection toggle.
+  `refLabel` now names the end book on a day that straddles books ("Romans 16–1 Corinthians 2")
+  — measured: Pauline epistles = 87 chapters over 13 books guarantees straddling days.
+- **`topic-match.ts` + `GET /api/plans/topics?q=`** (design: PLAN_TOPIC_MATCHING_DESIGN.md):
+  FTS over the 12,941 ingested topic headings, published-gated, ≤3 pointers, no embedding call.
+  **The §6 spot check caught a real defect on its first run**: whole-tsv ranking buried exact
+  headings ("faith" → JESUS, THE CHRIST first, FAITH third; "anxiety" → junk). Re-ranked
+  heading-first; second run: 8/8 phrases surface their exact topic first, all three works
+  represented (e.g. prayer → Nave's PRAYER 711 · Torrey's PRAYER 160 · openbible prayer 9).
+- **Migration 041** (dev + ci): `plans.delivery_channel` DEFAULT 'app' + CHECK,
+  `plans.calendar_minutes` nullable — written/read by nothing yet, per ruling.
+- ADR-047; 9 new tests (groups integrity, multi-book expansion covers 87 Pauline chapters
+  exactly once, whole-bible 1,189 chapters on 182 days, straddle-day spans stay forward).
+
+### NOT DONE / NEXT
+
+- `{kind:'topic'}` scope → plan build (bucketing topical_entries into days) — next slice; the
+  matcher returns pointers for it already.
+- Topic+canonical hybrid; repeat-asker topic memory (owner-deferred).
+- The matcher returns [] until the owner publish flip (status='published' gate inherited);
+  spot checks ran with the gate relaxed to staged and are labeled as such.
+
+## 2026-08-02 (evening) — Study plans core + the topical-index corpus (ADR-045/046)
+
+**Scope, owner-approved live this session:** `STUDY_PLANS_DESIGN.md` §12 steps 1-4 plus the
+topical-index ingest; delivery deferred to a third-party push provider (Composio or similar) —
+NO `.ics` feed, no `feed_salt`. The stated product shape: a small model will emit a `PlanSpec`
+and select among prebaked, embedded topical structures; code owns every date and every verse
+range. Superseded input for the record: a never-committed `docs/BIBLE_STUDIES_TASK.md` draft
+(Desktop worktree, pre-031) proposed `study_plans`/`study_days`/`study_readings` and topical
+plans first — the in-repo STUDY_PLANS_DESIGN + ADR-017 lineage won.
+
+### DONE
+
+- **Migrations 039 + 040, applied to dev AND the ci branch** (`br-purple-frog`). 039:
+  `plans` + `plan_days` (RLS, EXISTS-on-parent for the child), `verse_coverage`,
+  `topical_entries` (ordered, labeled topic→passage rows sections/anchors cannot express).
+  040 (split out after a lock timeout — a concurrent corpus-copy session held a multi-hour
+  ACCESS SHARE on embeddings): `'topical_index'` added to BOTH source_type CHECKs, NOT VALID +
+  VALIDATE so the exclusive window is milliseconds. plans/plan_days classified in
+  USER_TABLE_SPEC, verse_coverage/topical_entries in USER_TABLE_EXCLUDED.
+- **`web/src/lib/plan/`**: `spec.ts` (bounded PlanSpec, schema-parse at the edge) and
+  `expand.ts` (pure; local-date triples over UTC epoch math; refuses a scope thinner than the
+  schedule). 10 tests incl. the leap-boundary red-proof.
+- **`verse_coverage`** rebuilt from the SHIPPED admission predicates
+  (`scripts/rebuild-verse-coverage.ts` + pure core in `scripts/lib/verse-coverage-core.ts`;
+  imports `isMustNotServeAuthor` + `forbiddenProvenanceDomain`, exegetical pool = commentary +
+  father per routing.ts owner decision (c); verse universe from RAW_VERSE_COUNTS, never
+  generate_series over id gaps). Measured on dev: **30,227/31,103 verses covered, 26,498 with
+  >=2 admitted authors** from 84,292 anchors, 0 dropped. `/ask` is UNTOUCHED — wiring
+  `hasPassageCoverage` to it is a retrieval change gated on the accuracy eval; filed as a
+  follow-up, not smuggled in.
+- **Plans store/API/UI**: `plan/store.ts` (runAsUser + explicit user_id belt everywhere;
+  plan_days writes INSERT…SELECT…WHERE EXISTS; coverage refusal BEFORE any row lands),
+  `/api/plans` + `/api/plans/[id]` (apiError envelope; POST-with-kind mutation idiom; no
+  model call and no embedding on this path), `/plans` page + form builder + day list with
+  read toggles, sidebar "Reading plans" entry (CalendarIcon in the house SVG style).
+- **The topical-index corpus (the bones the model will search):**
+  - `src/ingest/topical-refs.ts` — stateful scanner for concordance-compressed refs.
+    **151,311 refs across the four decoded works at 4 failures**, all four being
+    source-edition misprints in the Torrey module, pinned as KNOWN_BAD and skipped (never
+    hand-corrected). Three measured disambiguation rules in the header, each with a SEED
+    red-proof in `test/topical-refs.test.ts` (11 tests): "Jud"=Judges (726 chapter>1
+    citations), bare-numeral-vs-next-book decided by chapter bounds ("By Titus 2 Co 8:16"),
+    dangling cross-book ranges split to point refs.
+  - `src/ingest/ingest-topical-index.ts` (`pnpm ingest:topical`) — parses via register-writer
+    (sections + flat embeddings + sources) then writes the FULL expansion:
+    `topical_entries` + remaining section_anchors (PK is (section_id, verse_id_start); dupes
+    deduped). `--post-only` resumes an interrupted post-pass without re-embedding.
+  - **Ingested to dev, all `status='staged'`** (publish stays the owner's gate):
+    `naves-topical-bible` 4,870 topics / 78,107 entries / 5,357 flat rows;
+    `torreys-topical-textbook` 628 / 38,858 / 1,055; `daily-light` (devotional, 732 AM/PM
+    readings) and `openbible-topics` (6,711 topics, OSIS refs, ZERO verse text — the CC BY
+    covers exactly the curation; attribution in provenance) — tail works finishing as this
+    entry is written; final counts in the terminal log below this entry if they differ.
+    **TCR (Thompson Chain) deliberately NOT ingested** — PD basis is CrossWire's unverified
+    1934-non-renewal claim; archived under `data/raw/topical/` with sha256s, held.
+- **Residue gate honesty fix** (`scripts/check-test-residue.mjs`): owner column now derives
+  from USER_TABLE_SPEC (`ownerColumn` / new `ownerParent` FK-join for plan_days) instead of a
+  hardcoded `user_id` — the first hasUserId:false table that actually existed on dev turned
+  the whole inspect into "could not inspect". Green: 19 tables, waitlist visibly absent.
+- **Migration 031 applied to dev** — `sections.source_url` existed only on prod; adding dev
+  DB URLs to this machine un-skipped `search-sections` suites that need the column. Drift
+  closed rather than re-skipped.
+- ADR-045 + ADR-046 appended; STUDY_PLANS_DESIGN status flipped to PARTIALLY BUILT;
+  PRODUCT_ARCHITECTURE mode-3 status updated; `ingest:topical` + `coverage:rebuild` scripts.
+
+### VERIFIED
+
+- Root: `topical-refs` 11/11, `verse-coverage-core` 6/6, user-data-invariant 6/6.
+- Web: `plan-expand` 10/10; **two-account tenancy EXECUTED against dev** (B cannot read/list/
+  toggle/delete; A positive control passes; RLS-backstop case measured) 6/6; **routes
+  end-to-end EXECUTED against dev** (Romans 201 + 16 arithmetic days; SoS REFUSED off the
+  real coverage table; malformed spec 400; delete cascades) 6/6. Corpus-dependent cases
+  runtime-skip VISIBLY where verse_coverage is empty (unearned-green guard).
+- Browser (dev server, this tree): /plans at 390px and 1280px — renders, no overflow, no new
+  console errors (the eval()/CSP error is dev-mode React on EVERY page, pre-existing),
+  sidebar entry active. **Signed-in browser walk NOT RUN — no auth credentials on this
+  machine** (NEON_AUTH_* absent); the signed-in path is covered by the executed route tests
+  above, which mock ONLY the cookie seam.
+- `npm run audit`: **EXIT 0, ALL GATES GREEN** (final run 2026-08-02 ~19:20, after the ingest
+  tail completed and the session DB URLs were removed from `web/.env.local`, restoring this
+  machine's pre-session loud-skip posture for the dev-state suites). Final corpus counts,
+  exactly as predicted above: openbible-topics 6,711 sections / 71,210 entries, daily-light
+  732 / 7,011 — grand total 12,941 sections / 195,186 topical entries staged. One transient:
+  `unit-ordinal-instrument` red ONCE while the ingest was concurrently writing sections
+  (perturbation suite raced the ingest), 15/15 green in isolation after. The work is committed
+  at `5ced04c` on `feat/study-plans-adr045`, parented on `fix/desk-and-catalog-uniformity`'s
+  HEAD via a temp-index commit so the concurrent session's branch state was never touched.
+
+### NOT DONE / UNVERIFIED / DEBT
+
+- **The dev-state test mismatch is now visible on this machine**: with APP_DATABASE_URL
+  pointed at dev, four pre-existing suites red on DATA state (register-wall taxonomy vs
+  dev catalogs, work-reader fixtures, commentary-entries-provenance, register-end-to-end) —
+  they were previously loud-skipped here and pass in CI against the test branch. Not
+  introduced by this work; left visible rather than re-hidden. Owner call: either point this
+  machine's env at the ci branch or accept the skips.
+- **Publish flip for the four topical works** — owner gate. Until then nothing serves;
+  manifest entries for `ingest/sources.config.json` land with that flip (file was mid-edit
+  by the concurrent corpus-copy session all evening).
+- **verse_coverage on prod** — rebuild after any prod publish flip (`COVERAGE_ALLOW_PROD=1`).
+- **Model intake (PlanSpec emission), planSource on Today, topical plan scopes, delivery
+  worker** — all later slices per ADR-045/046.
+- The retrieval lane over `topical_index` (SERVED list + routing) is deliberately absent
+  until the works publish; adding it now would be a serving surface for staged content.
+
+
 ## 2026-08-02 (owner-reported: catalog rows ragged; desk panes cannot add the Bible or search chapters)
 
 **Headline: the catalog misalignment was one missing `min-w-0`; the desk's two navigation gaps

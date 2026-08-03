@@ -1,239 +1,192 @@
-# ORDER — the `served` cutover, end to end
+# ORDER v2 — the `served` cutover, end to end
 
-**Issued** 2026-08-03 · **Lane A** · supersedes nothing · filed per bylaw 1
+**Issued** 2026-08-03 · **Lane A** · filed per bylaw 1.
+**v2, superseding v1 in place** after a 16-agent audit returned four independent
+*plan-materially-flawed* verdicts with 6/6 CRITICAL/HIGH findings confirmed
+([verdict](2026-08-03-stop-verdict-served-plan-audit.md)). v1's structure survives; its
+instruments, arithmetic, and sequencing did not. Everything below reflects the tree at
+`851963d`+: the code defects are FIXED and proven; this order is what remains.
 
-**Outcome this order buys:** publishing a work makes it serve, on production, with the corpus
-caught up and the accuracy consequence measured before anyone sees it. Today publishing a work
-makes it *readable* and leaves it invisible to `/ask` — 76 of the 77 works published on
-2026-08-03 are in that state.
+**Outcome this order buys:** publishing a work makes it serve, on production; the 76
+published-but-unserved works actually serve, by an explicit reversible step; the corpus catch-up
+proceeds in measured batches; and the accuracy consequence is known before users see it.
 
-**Shape:** IDENTIFY → FIX → TEST → VERIFY (dev) → CONFIRM (gates) → DEPLOY (prod) → CATCH UP →
-RECORD. Six production touches total, batched into **two owner sessions**. Everything else is
-local or dev.
+**What this order does NOT move (named so nobody believes otherwise):** the commentary_entries
+FTS surface, the static verse-reader files, and `today.ts` still gate on the frozen slug lists
+(`legal-corpus.ts`); the ~125k work-less legacy rows have no per-work off switch (withdrawing
+those works leaves /ask serving them); and `web/public/commentaries` ships 36,205
+client-filtered blocked entries world-readable. Each is separate, filed work — see "Successor
+work" at the end.
 
 ---
 
-## The critical-path constraint, which drives the whole order
+## State on filing (re-measured, not narrated)
 
-`web/src/lib/teacher/routing.ts` at `4f14f17` queries `embeddings.served`. Production has no such
-column. So:
+- Branch `feat/served-column-derives-publish`, pushed, at: audit fixes `1ae0323`, renumber
+  `68d9792`, /plans migrations filed `851963d`. Backup ref `backup/tree-2026-08-03` holds the
+  concurrent session's uncommitted /plans code.
+- Migrations `044_embeddings_served_expand.sql` / `045_embeddings_served_contract.sql` proven on
+  throwaway pg17 (verifier 7/7 with lane rows; red-proof names its seeded row; Tyndale mutant
+  trips 3 checks, Lewis mutant 2; serve-published forward+reverse exact at 0-status/11-served;
+  both gates watched fire). Applied to NO real database.
+- Production: 124 published works; 76 published-but-unserved (the standing A3-rule divergence,
+  now filed on the MASTER board). Dev: ~400 works and rising, ingest live.
+- Frozen-record weld: `served-backfill-frozen.mjs` ↔ 044, enforced by
+  `test/invariants/served-backfill-frozen-sync.test.ts`.
+
+## The ordering constraint (unchanged from v1, and still enforced by prose + one preflight)
 
 ```
-apply 039 to prod  ─→  deploy web  ─→  apply 040 to prod
-      (expand)          (cutover)         (contract)
+apply 044 (expand)  →  deploy web  →  [confirm live]  →  apply 045 (contract)
 ```
 
-**Never deploy the web bundle before 039 lands**, or every `/ask` retrieval throws
-`column "served" does not exist`. And **never let 039 drop the old indexes while the old bundle is
-live** (the defect below), or `/ask` silently starves for the length of the deploy window.
-
-Two failure modes, opposite directions, one ordering that satisfies both.
-
----
-
-## PHASE 0 — FIX what is already known broken (local only, no database)
-
-### 0.1 · Split 039 into expand/contract  ← BLOCKING, do first
-
-**The defect, owned plainly:** `039` as committed at `4f14f17` builds the new partial indexes,
-then `DROP`s the old ones and `RENAME`s the new into their names. Between that migration and the
-web deploy, the live bundle still filters on `metadata->>'author' IN (…)`. The planner cannot
-prove that implies `served`, so it abandons the partial indexes, walks the full-table HNSW at the
-shipped `ef_search=64`, and the selective register filter post-guts the neighbour list. The base
-pool starves. No error, no log line, just worse answers — the exact mechanism that killed
-migration 009 and that 018 v3's zero-window comment exists to prevent. I reintroduced it under a
-comment block explaining why it must not happen.
-
-**Fix:**
-
-- `039` creates the four indexes under **new, final names** (`idx_embeddings_served_legal`,
-  `_song_verse`, `_sermon`, `_theology`) and **drops nothing**. Both index sets coexist.
-- New `040_drop_preserved_indexes.sql` drops `idx_embeddings_vector_{legal,song_verse,sermon,theology}`
-  — applied **only after** the new bundle is confirmed live.
-- `legal-hnsw-index-sync.test.ts` retargets to the new names; the anti-slug and lockstep halves are
-  unchanged in kind.
-- Re-run both red-proofs (slug reappears / conjunct dropped). A retargeted guard is a new guard.
-
-**Cost of not doing it:** silently degraded `/ask` for the deploy window, invisible to every check
-we have.
-
-### 0.2 · Register misfiles (#57) — must precede any pool admission
-
-Surface is now `source_type`, so a misfile is a routing decision. Confirmed:
-
-| Work | Filed | Should be | Why it slipped |
-|---|---|---|---|
-| `spurgeon-comment` | commentary | theology | It is Spurgeon's *bibliography of other people's commentaries*. **Would enter the composed pool.** |
-| `hort-james1909` | poetry | commentary | Title contains "Verse 7" |
-| `bennett-expositor10` | historian | commentary | Title contains "Chronicles" |
-| `chesterton-preexistence`, `tolstoy-confession`, `augustine-confess(ions)` | confession | theology | Word-match on creed/confession |
-| `bett-methhymns`, `reeves-hymnlit`, `nutter-hymnwriters`, `hewitt-gerhardt` | hymn | theology | Studies *about* hymns |
-| `brownlie-hyndbrow`, `winkworth-hyndwink` | hymn | (drop) | Indexes to hymn translations, not hymns |
-| `schaff-person`, `wuttke-ethics1`, `rutherford-triumph` | historian | theology / commentary | Word-match on history |
-
-Plus ~68 of the 508 `theology` defaults recoverable by second-pass rules (17 sermon, 19 historian,
-22 devotional, 6 poetry, 4 commentary).
-
-**A reclassification is a THREE-place write, and this is the trap:** `sources.source_type`,
-`embeddings.source_type` (the surface router), and the flat rows' `source_id` key, which
-`register-writer.ts:242` builds as `${sourceType}:${slug}:${n}` — so changing the register without
-rewriting that key orphans the rows against `idx_embeddings_source`. Write one script that does all
-three in one transaction, or leave the register alone.
-
-**Deliverable:** `scripts/reclassify-register.mjs`, dry-run by default, with a red-proof that a
-partial write (sources only) is detected and refused.
-
-### 0.3 · Aggregates, duplicates, empty ingests (#59)
-
-- `calvin-calcom` — 14 sections; it is the series landing page, not text. Quarantine.
-- `augustine-confessions` (13 sections) vs `augustine-confess` (276) — same work, keep the split one.
-- `schaff-history`, `edersheim-lifetimes` — ingested, 0 sections. Re-ingest or quarantine.
-- **OWNER DECISION:** 13+ George MacDonald *novels* (`lilith`, `princessgoblin`, `backofnorth`,
-  `sirgibbie`, `donal-grant`, `elginbrod`, …) are filed `theology`. Victorian fantasy, legitimately
-  PD, in a theology lane on a Bible-study product. Keep / drop / own register. **Blocks nothing —
-  they can ship unserved — but decide before they reach the pool.**
-
-### 0.4 · `npm run audit` green, commit each of 0.1–0.3 separately
+Deploy before 044: every /ask 500s on a missing column (the flip also refuses forward, naming
+044). 045 before the new bundle is confirmed live: silent pool starvation, the migration-009
+mechanism. 045's header carries the contra-DDL and states that it CLOSES the redeploy window.
+**P0.3 below adds the one mechanical guard v1 lacked.**
 
 ---
 
-## PHASE 1 — VERIFY on dev, where the risky measurement belongs
+## PHASE 0 — remaining local work (no database)
 
-Dev carries all ~900 works. **Every question about what admitting the corpus does to accuracy can
-be answered here, before production is touched at all.** This is the phase that de-risks the whole
-order, and it costs nothing but time.
+**P0.1 · Register misfiles + the `fiction` register (R5, now filed).** ~52 novels
+(MacDonald 30, Tolstoy 11, Bunyan 5, Dostoevsky 3, + stragglers) are typed `theology`, which
+post-044 is a SERVED LANE: one batch flip puts Anna Karenina in the theology voice pool. Add
+`source_type='fiction'` to BOTH CHECK constraints (`sources` AND `embeddings` — the 038
+two-table trap; note `embeddings`'s constraint also lacks `historian`, which blocks the
+historian reclassifications until extended). Registry rules per title, never per author
+(*Unspoken Sermons* stays `sermon`; *Gospel in Brief* is the owner's heterodoxy call, decision
+table below). Deliverable: `scripts/reclassify-register.mjs` — a TWO-place write
+(`sources.source_type` + `embeddings.source_type`; the `source_id` key embeds the register
+string but nothing parses it back — verified), dry-run default, red-proof: a seeded
+one-table-only write is detected and refused. Also the confirmed misfiles
+(`spurgeon-comment`→theology, `hort-james1909`→commentary, `bennett-expositor10`→commentary,
+hymn-studies→theology, indexes→drop) and the aggregates (`calvin-calcom` landing page,
+`augustine-confessions` dup, 0-section `schaff-history`/`edersheim-lifetimes` → quarantine).
 
-### 1.1 · Apply 039 to dev, when the ingest is idle
+**P0.2 · Voice-concentration fixes (R1+R2, now filed).** `selectVoices`
+(`web/src/lib/teacher/teach.ts:71`) enforces ≥2 TRADITIONS and counts CHUNKS; nothing caps one
+author. Fine for 11 author-cohorts; wrong for 45 Calvin volumes. Add a per-author cap in the
+composed set (R2), and dedupe aggregates-vs-volumes before any admission (R1, folded into
+P0.1's quarantines). `mergeById` keys on source_id and cannot dedupe cross-work duplicates —
+the aggregate quarantine is what actually removes them.
 
-`ADD COLUMN` takes a brief `ACCESS EXCLUSIVE` lock and `adapter-loop.ts` writes `embeddings`
-continuously. Wait for it to drain (≈5h from 2026-08-03 19:45, ~500 works remaining) or stop it.
+**P0.3 · The one mechanical ordering guard.** `deploy.sh`/`predeploy-gate.ts` gains a read-only
+preflight: `SELECT` on `information_schema.columns` for `embeddings.served` against the deploy
+target; absent → refuse, naming 044. Mirrors the licensing-ratchet shape. (Closes the audit's
+"enforced by nothing mechanical"; the 045-side risk is covered by 045's header + step order.)
 
-```bash
-DATABASE_URL="$(cat ~/.neon_dev_owner_url)" node db/apply-migration-concurrent.mjs db/migrations/039_embeddings_served_column.sql
-DATABASE_URL="$(cat ~/.neon_dev_url)" node scripts/verify-served-backfill.mjs
-```
+**P0.4 · Canon-coverage census (R4, now filed).** `scripts/coverage-census.mjs`: per Bible
+book/chapter, count of DISTINCT-author served exegetical voices; read-only; runnable against
+dev and prod. This is the instrument that measures what admitting a corpus is FOR — v4
+structurally cannot (no SoS sampling, per-query HIT@K). Pre-register its bar before Phase 4:
+*no book/chapter that had ≥2 distinct-author voices loses one* (floor), plus report the gained
+coverage (the point).
 
-**Gate:** 7/7 green. Then `--red-proof` and watch it fail. A verifier not watched go red on the
-real database proves nothing (THE_LOOP §4) — the throwaway run does not transfer.
+**P0.5 · Post-flip reconciliation instrument.** `scripts/served-reconcile.mjs`, read-only:
+every `status='published'` work with work-keyed rows has ALL rows served; every
+staged/quarantined work has ZERO; work-less cohort reported as its own line, never folded in.
+This replaces verify-served-backfill's equality check as the standing instrument AFTER the
+first intentional serve flip (the frozen verifier's validity window ends there, by design).
+Note: re-ingest of a published work is already refused by `assertReingestable`, so the drift
+this detects is repair-script and partial-write classes.
 
-### 1.2 · BASELINE the eval on dev, before admitting anything
+## PHASE 1 — prove and measure on dev
 
-Frozen v4, `web/src/scripts/eval-heldout.mts`. Bars pre-registered in `docs/HELDOUT_EVAL_DESIGN.md`.
-Record verse-ref / pericope / epistle / topical / proper-noun / controls / no-content.
+**P1.0 · Preconditions (the audit's "the de-risking phase cannot start" findings):**
+(a) `DEEPINFRA_API_KEY` present — ADR-044 records it absent on this machine; obtain from the
+owner, 5-query smoke BEFORE budgeting a run. (b) Served census after 1.1 (counts per frozen
+leg, all nonzero) before any eval spend. (c) **v3 baseline BEFORE applying 044** — one v3 run
+on pre-044 dev isolates the mechanism delta from the corpus delta; without it, a post-044
+number that differs from the 2026-07-18 records is unattributable.
 
-**This number is the whole point of the phase.** Without it, every number in 1.4 is uninterpretable.
+**P1.1 · Apply 044 to dev** (`db/apply-migration-concurrent.mjs`, owner URL, ingest idle).
+**TIME IT** — the prod session budget is derived from this number, not estimated. Then
+`verify-served-backfill.mjs` (7/7) and `--red-proof` ON DEV (THE_LOOP §4: the throwaway run
+does not transfer). If the command asks for `MIGRATE_ALLOW_PROD`, stop — the target is wrong.
 
-### 1.3 · Admit ONE batch on dev
+**P1.2 · v3 baseline post-044.** Same queries as P1.0(c). Delta vs pre-044 = the mechanism
+cost, expected ≈0 (the backfill is behaviour-preserving, but expected ≠ measured).
 
-Start with the commentary/father works only — the composed pool is the sensitive surface; lanes
-are retrieve-and-quote and cannot breach the wall. Flip them with `publish-flip.mjs` (which now
-writes `served`).
+**P1.3 · Serve ONE commentary/father batch on dev** via
+`publish-flip.mjs --serve-published --slugs=<committed manifest>`, TTY, dev owner URL. **The
+batch manifest is COMMITTED** — Phase 4 flips the same file on prod, so what was measured is
+what ships. Time the flip transaction; it sizes prod batches.
 
-### 1.4 · Re-run the eval. Decide.
+**P1.4 · Re-run v3 + the coverage census. Decide per the pre-registered rule:** proceed if no
+v3 category drops >2 points below its P1.2 number AND the coverage floor holds; otherwise
+STOP and failure-code the misses (quality-slice §3) — fixes are a separate slice, never
+in-loop tuning. **v3 only, every iteration. v4 is spent ONCE, at the end** (see Phase 5), on a
+v4.1 re-freeze per HELDOUT_EVAL_DESIGN's checklist (SoS/rare-book sampling), minted AFTER the
+admitted set is frozen — the 26% v3/v4 label overlap makes even disciplined v3 iteration leak
+into v4, and the audit's finding stands: re-freezing is cheap, discovering a pre-tuned gate
+post-ship is not.
 
-- **Improves or holds** → proceed, widen the batch, repeat.
-- **Regresses** → stop. The corpus is not automatically an improvement; 130 commentary works of
-  uneven quality diluting a tuned 11-cohort pool is a real and expected outcome. Failure-code the
-  misses per the `quality-slice` skill before changing anything.
+## PHASE 2 — gates (no database)
 
-**No production step depends on the answer being "improves."** Phase 3 ships the *mechanism*;
-what is admitted is a separate, reversible flip.
+`npm run audit` on the branch (requires the /plans typecheck error resolved or that slice
+evicted from the tree — owner + concurrent session coordination, decision table). Then the
+`deep-audit` skill, 4-8 lenses, **including a static-assets lens** (the 36k-entry exposure is
+outside every v1 lens). Browser check at 390px + desktop, real interaction, screenshot.
+Bylaw 4 throughout: the fixes' author does not certify them.
 
----
+## PHASE 3 — production session A (owner at TTY; budget = dev-measured × safety factor, stated in the runbook before starting)
 
-## PHASE 2 — CONFIRM (gates, no database)
+Every step names its file and env explicitly. `<owner-url>` is read from the credential file,
+never typed into history.
 
-1. `npm run audit` — typecheck strict · lint · knip · deps · tests+coverage · web typecheck+lint · `next build`.
-2. **`deep-audit` skill, 4–8 parallel lenses.** Required by CLAUDE.md before any production deploy
-   and after any long autonomous run — both are true here. **Bylaw 4: I wrote 039, the verifier and
-   the guard, so I may not be the one who certifies them.** Lenses that matter most for this change:
-   data layer (the migration, index validity, lock behaviour), domain invariants (licensing — every
-   path to a served row), AI pipeline (does the eval measure the shipped path), ops (deploy order).
-3. Browser check at **390px and desktop**, real interaction, no console errors — `/ask`, a reader
-   page, library. Screenshot, not "typechecks".
-
----
-
-## PHASE 3 — DEPLOY (⚑ owner session #1, one sitting, ~45 min)
-
-Six steps, in this order, no reordering:
-
-| # | Step | Check before moving on |
+| # | Step | Gate before moving on |
 |---|---|---|
-| 1 | Apply `039` (expand) to prod | Every new index `VALID` and `READY` — the runner asserts it |
-| 2 | `verify-served-backfill.mjs` on prod, read-only, `VERIFY_SERVED_ALLOW_PROD=1` | 7/7 green. **Served set identical to before.** |
-| 3 | `/ask` smoke on the OLD bundle | Still answers. Both index sets live, old predicate still served by old index |
-| 4 | `deploy.sh` | Deployment id recorded, alias moved |
-| 5 | `/ask` smoke on the NEW bundle | Three attributed voices; `EXPLAIN` shows `idx_embeddings_served_legal` |
-| 6 | Apply `040` (contract) | Old indexes gone; re-run step 5 |
+| 1 | `MIGRATE_ALLOW_PROD=1 DATABASE_URL=<owner-url> node db/apply-migration-concurrent.mjs db/migrations/044_embeddings_served_expand.sql` | runner's post-assert: 5 indexes VALID+READY |
+| 2 | `VERIFY_SERVED_ALLOW_PROD=1 DATABASE_URL=<owner-url> node scripts/verify-served-backfill.mjs` | 7/7. Equality EXACT (no flips have run on prod) |
+| 3 | /ask smoke on the OLD bundle | answers with voices; both index sets live |
+| 4 | `./deploy.sh` (P0.3 preflight green; deploy sha recorded in this order) | deployment id + alias |
+| 5 | /ask smoke on NEW bundle + owner-run `EXPLAIN` on the base pool | voices; plan shows `idx_embeddings_served_legal` |
+| 6 | `MIGRATE_ALLOW_PROD=1 … apply db/migrations/045_embeddings_served_contract.sql` | re-run step 5. **Redeploy window now closed** (045 header has the contra-DDL) |
 
-**Rollback at every step.** 1–3: nothing user-visible, `040` never ran, old indexes intact.
-4–5: redeploy the previous deployment id. 6: rebuild the old indexes from 018/037 (the only step
-with a real undo cost, which is why it is last and behind a confirmed-live check).
+Rollback: steps 1-3 inert (old indexes untouched, old bundle live). Steps 4-5: redeploy prior
+deployment id. Step 6: contra-DDL from 045's header FIRST, then redeploy.
 
----
+## PHASE 4 — serve the 76, then catch up (repeatable owner sessions; the honest arithmetic)
 
-## PHASE 4 — CATCH UP the corpus (⚑ owner session #2, repeatable)
+**P4.0 · Serve the 76** — the order's actual objective, now an explicit step:
+`node scripts/publish-flip.mjs --slugs=docs/evidence/corpus-copy/serve-76.json --serve-published`
+(TTY, owner go). The snapshot records per-slug served state; the SAME command `--reverse
+--snapshot=…` un-serves exactly what it served — proven. Then `served-reconcile.mjs` +
+coverage census, recorded in WORKLOG.
 
-Ingest finishes at ~900 works; production is at 124. The loop, once per batch:
+**P4.n · Catch-up batches.** Per batch: `corpus-copy-batches.mjs` (the real tool; v1 named a
+script that does not exist) → owner-gated copy → owner-gated flip (forward, staged works — the
+serve gates run inside it) → reconcile → coverage census → v3 spot-check when the batch adds
+commentary/father. Batch size: whatever the P1.3-measured flip transaction keeps under ~10
+minutes. Expect **10-20 batches over multiple sessions** for the ~500-650 admissible remainder
+(exclusions: 30 copyright-claim, 8 quality-held, 5 no-adapter, quarantines, fiction) — not
+"two sessions". Each batch: two TTY confirmations. That is the cost of the gate design, and it
+is the design.
 
-```bash
-node scripts/build-sweep.mjs                      # regenerate from dev, not from memory
-node scripts/corpus-copy.mjs --slugs=…            # ⚑ owner go
-node scripts/publish-flip.mjs --slugs=…           # ⚑ owner go — now writes `served` too
-```
+## PHASE 5 — the one v4.1 gate run, then record
 
-**`039` must be on prod before the first of these**, or the flip's `served` UPDATE errors and rolls
-back the whole transaction. It fails closed, which is correct, but it wastes a session.
+Freeze the final admitted set → mint v4.1 (new hash, bars pre-registered, SoS sampled) → run
+ONCE → ship or file the failure. Then: WORKLOG (all numbers), MASTER board row closed,
+STATE_OF_TRUTH re-measured (published = served ± the work-less cohort, stated numerically),
+DECISIONS ADR for the serving mechanism (filed at merge), watchlist entry (the
+derived-expectation verifier shape).
 
-Re-run the eval after each batch that adds commentary/father works. Record in `WORKLOG.md` —
-CLAUDE.md requires an accuracy number on every retrieval change, and admitting works to the pool
-is a retrieval change.
+## Owner decisions
 
-**Not coming through this pipeline, and not to be forgotten:** 5 CrossWire/TCP commentaries with no
-adapter · `vincent-word-studies` (absent from CCEL) · `spurgeon-treasury` (page scans) · 8 works
-held by quality rulings · 30 works with live copyright claims (`ccel-survey-all.json`).
+| # | Decision | Blocks |
+|---|---|---|
+| 1 | Fiction register: confirm `fiction` type + shelf-only (no lane) | P0.1 |
+| 2 | Heterodox works in served lanes (`tolstoy-gospel`, Renan class): serve labeled, or hold | P0.1 registry |
+| 3 | /plans slice: coordinate merge or eviction (its typecheck is red; `npm run audit` cannot pass on the shared tree until resolved) | Phase 2 |
+| 4 | `DEEPINFRA_API_KEY` for the eval | P1.0 |
+| 5 | Go for prod session A; go per Phase 4 batch (per occasion, bylaw 7) | 3, 4 |
+| 6 | If P1.4 trips the stop rule: separate fix slice, or ship mechanism + admit nothing | P1.4 |
 
----
+## Successor work (filed, not this order)
 
-## PHASE 5 — RECORD (bylaw 1: not in the repo, never happened)
-
-- `WORKLOG.md` — the session, both eval numbers, the 039 expand/contract defect and its catch.
-- `docs/pm/MASTER.md` — a new gate row; A8 is closed and this is not A8.
-- `docs/DECISIONS.md` — ADR: serving is a materialized column, publish-flip is its only writer.
-- `docs/STATE_OF_TRUTH.md` — works published, works served, the two numbers now equal.
-- **Failure-mode watchlist** — the twelfth instance, and a note that its *guard* enforced the
-  treadmill for six months while staying green. That is the transferable lesson, not the count.
-
----
-
-## Deferred deliberately
-
-**#58, under-split reader sections.** 214 works average >12k chars/section; `schaff-encyc01` is 9
-sections with one of 2.5 MB. Retrieval is unaffected (the flat store chunks at 1,200). It is a
-**reader** defect and it is real, but it is orthogonal to everything above and shipping it inside
-this order would couple a data-quality fix to a retrieval cutover. Separate slice.
-
----
-
-## Dependency graph
-
-```
-0.1 expand/contract ──┬─→ 1.1 dev apply ─→ 1.2 baseline ─→ 1.3 admit ─→ 1.4 eval
-0.2 registers ────────┤                                        │
-0.3 aggregates ───────┘                                        │
-                                                               ▼
-                          2. audit + deep-audit + browser ─→ 3. PROD ─→ 4. catch up ─→ 5. record
-```
-
-0.2 and 0.3 are independent of each other and of 0.1; all three block Phase 1. Phase 4 is the only
-phase that repeats.
-
-## Owner decisions this order needs
-
-| # | Decision | Blocks | Can proceed without? |
-|---|---|---|---|
-| 1 | MacDonald's novels — keep, drop, or own register | 0.3 | Yes, they ship unserved |
-| 2 | Go for prod session #1 (six steps above) | Phase 3 | No |
-| 3 | Go for each copy/publish batch | Phase 4 | No |
-| 4 | If 1.4 regresses: tune, or ship the mechanism and admit nothing yet | 1.4 | Decide when measured |
+FTS/static/today cutover off the frozen lists · static-assets exposure (36k entries; predeploy
+strip) · work-less legacy cohort re-keying (gives the 125k rows a work key and an off switch) ·
+frozen-list consumer migration (#62: census/adjudicator/cutover-gate) · under-split reader
+sections (#58; Phase 4 batches EXCLUDE the 214 until it lands, or accept the reader cost
+explicitly per batch).
