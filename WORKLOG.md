@@ -1,5 +1,32 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-03 — FINDING filed for A9: the flip's 044 guard checks existence, not readiness
+
+Asked whether A9 had landed; measured rather than answered from memory. **It has not** — the
+board row still reads OPEN. But production has moved into a state that matters:
+`embeddings.served` **exists**, `served=true` on **0** of 559,506 corpus rows, `044*` **absent**
+from the ledger, and 044's backfill **actively running**.
+
+**Consequence: the forward-flip guard would now PASS.** It tests that the column exists; the
+property it stands for is that the target serves by column. Those come apart for the whole
+duration of 044 (ADD COLUMN, then the UPDATEs). Flipping the four topical works in that window
+would make them the ONLY served rows on production — 4 works served, the 124-work published
+corpus at false.
+
+Inert *today* only because of deploy lag, and that was verified rather than assumed: every
+`served` occurrence in the deployed commit `0dbc567` (routing/retrieve/legal-corpus) is prose in
+a comment; the live predicate is still the slug lists. `feat/served-column-derives-publish`'s
+routing.ts does read the column.
+
+Filed at `docs/pm/orders/2026-08-03-finding-publish-flip-guard-proxy.md` with the measurement,
+the mechanism, and a suggested readiness predicate (column exists AND some row served; stronger,
+require the `044%` ledger row — which on this target is absent while the column is present, so
+that leg would have held where existence did not). **No code changed, no flip run** — the remedy
+is A9's owner's call.
+
+The four topical works stay `staged`. The topical publish is held until A9 closes on its own
+sequence, so the flip ADDS to a correct serving set rather than defining it.
+
 ## 2026-08-03 — Corpus copied to prod and verified; the publish flip is BLOCKED behind A9 (correctly)
 
 ### DONE — the copy landed, complete
