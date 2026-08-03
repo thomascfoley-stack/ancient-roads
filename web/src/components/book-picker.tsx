@@ -10,10 +10,14 @@ export function BookPicker({
   currentBook,
   currentChapter,
   onClose,
+  onPick,
 }: {
   currentBook: Book;
   currentChapter: number;
   onClose: () => void;
+  /** When provided, picking a chapter calls this instead of navigating to /read — the desk uses
+   *  it to place the selection into a pane. Omitted, cells are plain links (the reader's case). */
+  onPick?: (book: Book, chapter: number) => void;
 }) {
   const [stage, setStage] = useState<'book' | 'chapter'>('book');
   const [selectedBook, setSelectedBook] = useState<Book>(currentBook);
@@ -32,6 +36,12 @@ export function BookPicker({
       { length: selectedBook.chapterCount },
       (_, i) => i + 1,
     );
+    const chapterCell = (c: number) =>
+      `flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-colors ${
+        selectedBook.slug === currentBook.slug && c === currentChapter
+          ? 'bg-accent-700 text-stone-50 dark:bg-accent-500'
+          : 'bg-paper text-stone-700 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:shadow-none'
+      }`;
     return (
       <div className="fixed inset-0 z-50 overflow-auto overscroll-contain bg-stone-50/97 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] backdrop-blur-sm dark:bg-stone-950/97">
         <div className="mx-auto max-w-lg px-4 py-6">
@@ -53,20 +63,17 @@ export function BookPicker({
             </button>
           </div>
           <div className="grid grid-cols-6 gap-2">
-            {chapters.map((c) => (
-              <Link
-                key={c}
-                href={bookUrl(selectedBook, c)}
-                onClick={onClose}
-                className={`flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-colors ${
-                  selectedBook.slug === currentBook.slug && c === currentChapter
-                    ? 'bg-accent-700 text-stone-50 dark:bg-accent-500'
-                    : 'bg-paper text-stone-700 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:shadow-none'
-                }`}
-              >
-                {c}
-              </Link>
-            ))}
+            {chapters.map((c) =>
+              onPick ? (
+                <button key={c} onClick={() => onPick(selectedBook, c)} className={chapterCell(c)}>
+                  {c}
+                </button>
+              ) : (
+                <Link key={c} href={bookUrl(selectedBook, c)} onClick={onClose} className={chapterCell(c)}>
+                  {c}
+                </Link>
+              ),
+            )}
           </div>
         </div>
       </div>
@@ -96,6 +103,7 @@ export function BookPicker({
           label="Old Testament"
           books={otBooks}
           currentSlug={currentBook.slug}
+          onPick={onPick}
           onSelect={(b) => {
             setSelectedBook(b);
             if (b.chapterCount === 1) {
@@ -109,6 +117,7 @@ export function BookPicker({
           label="New Testament"
           books={ntBooks}
           currentSlug={currentBook.slug}
+          onPick={onPick}
           onSelect={(b) => {
             setSelectedBook(b);
             if (b.chapterCount === 1) return;
@@ -125,12 +134,20 @@ function BookSection({
   books,
   currentSlug,
   onSelect,
+  onPick,
 }: {
   label: string;
   books: Book[];
   currentSlug: string;
   onSelect: (b: Book) => void;
+  onPick?: (b: Book, chapter: number) => void;
 }) {
+  const cell = (slug: string) =>
+    `flex min-h-[48px] items-center justify-center rounded-xl px-2 py-2 text-center text-sm transition-colors ${
+      slug === currentSlug
+        ? 'bg-accent-700 text-stone-50 dark:bg-accent-500'
+        : 'bg-paper text-stone-700 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:shadow-none'
+    }`;
   return (
     <div className="mb-6">
       <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
@@ -139,30 +156,19 @@ function BookSection({
       <div className="grid grid-cols-4 gap-1.5">
         {books.map((b) => {
           if (b.chapterCount === 1) {
-            return (
-              <Link
-                key={b.slug}
-                href={bookUrl(b, 1)}
-                className={`flex min-h-[48px] items-center justify-center rounded-xl px-2 py-2 text-center text-sm transition-colors ${
-                  b.slug === currentSlug
-                    ? 'bg-accent-700 text-stone-50 dark:bg-accent-500'
-                    : 'bg-paper text-stone-700 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:shadow-none'
-                }`}
-              >
+            // A single-chapter book IS its only chapter, so in pick mode it picks directly.
+            return onPick ? (
+              <button key={b.slug} onClick={() => onPick(b, 1)} className={cell(b.slug)}>
+                {b.name}
+              </button>
+            ) : (
+              <Link key={b.slug} href={bookUrl(b, 1)} className={cell(b.slug)}>
                 {b.name}
               </Link>
             );
           }
           return (
-            <button
-              key={b.slug}
-              onClick={() => onSelect(b)}
-              className={`flex min-h-[48px] items-center justify-center rounded-xl px-2 py-2 text-center text-sm transition-colors ${
-                b.slug === currentSlug
-                  ? 'bg-accent-700 text-stone-50 dark:bg-accent-500'
-                  : 'bg-paper text-stone-700 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:shadow-none'
-              }`}
-            >
+            <button key={b.slug} onClick={() => onSelect(b)} className={cell(b.slug)}>
               {b.name}
             </button>
           );

@@ -10,17 +10,28 @@
 // itself does not scroll, which is what makes side-by-side reading work: losing your place in the
 // commentary because the Scripture column was taller is the exact frustration this replaces.
 // On mobile three columns cannot be read, so panes stack and the page scrolls normally.
+//
+// ADDING. Two kinds of pane, two affordances (UX-1 named the gap: the + routed to /library, which
+// offers works only, so Scripture could not be ADDED to a desk at all — only arrived at by URL).
+// "+" still goes to the library for a work; the book button opens the BookPicker in pick mode and
+// appends a Scripture pane in place, no navigation.
 
-import { Suspense, useCallback } from 'react';
+import { Suspense, useCallback, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { BookPicker } from '@/components/book-picker';
 import { DeskPane } from '@/components/desk-pane';
-import { MAX_PANES, decodeDesk, deskHref, encodePane, withoutPane } from '@/lib/desk';
+import { BOOK_BY_BOOK_SLUG, BOOKS } from '@/lib/bible';
+import { MAX_PANES, decodeDesk, deskHref, encodePane, replacePane, withPane, withoutPane, type Pane } from '@/lib/desk';
+
+/** The picker needs a book to highlight; John is the app's standing default entry point. */
+const DEFAULT_BOOK = BOOK_BY_BOOK_SLUG.get('jhn') ?? BOOKS[0]!;
 
 function DeskInner() {
   const router = useRouter();
   const params = useSearchParams();
   const panes = decodeDesk(params.getAll('p'));
+  const [pickingBible, setPickingBible] = useState(false);
 
   const close = useCallback(
     (index: number) => {
@@ -29,6 +40,30 @@ function DeskInner() {
       router.replace(deskHref(withoutPane(panes, index)), { scroll: false });
     },
     [router, panes],
+  );
+
+  const replace = useCallback(
+    (index: number, pane: Pane) => {
+      router.replace(deskHref(replacePane(panes, index, pane)), { scroll: false });
+    },
+    [router, panes],
+  );
+
+  const addScripture = useCallback(
+    (bookSlug: string, chapter: number) => {
+      setPickingBible(false);
+      router.replace(deskHref(withPane(panes, { kind: 'scripture', book: bookSlug, chapter })), { scroll: false });
+    },
+    [router, panes],
+  );
+
+  const bookPicker = pickingBible && (
+    <BookPicker
+      currentBook={DEFAULT_BOOK}
+      currentChapter={1}
+      onClose={() => setPickingBible(false)}
+      onPick={(b, c) => addScripture(b.slug, c)}
+    />
   );
 
   if (panes.length === 0) {
@@ -40,12 +75,13 @@ function DeskInner() {
           sermon, hymn, poem or history beside them.
         </p>
         <div className="flex flex-wrap justify-center gap-2">
-          <Link
-            href="/desk?p=scripture:jhn/1"
+          <button
+            type="button"
+            onClick={() => setPickingBible(true)}
             className="min-h-[44px] rounded-full bg-accent-700 px-5 py-2.5 text-sm font-semibold text-stone-50 hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
           >
-            Start with John 1
-          </Link>
+            Open the Bible
+          </button>
           <Link
             href="/library"
             className="min-h-[44px] rounded-full border border-stone-200/70 px-5 py-2.5 text-sm text-stone-600 hover:bg-accent-50/50 dark:border-stone-800 dark:text-stone-300 dark:hover:bg-accent-950/20"
@@ -53,6 +89,7 @@ function DeskInner() {
             Browse the library
           </Link>
         </div>
+        {bookPicker}
       </div>
     );
   }
@@ -67,22 +104,39 @@ function DeskInner() {
           key={`${pane.kind}:${pane.kind === 'work' ? pane.slug : `${pane.book}/${pane.chapter}`}`}
           className="flex min-h-[60vh] min-w-0 flex-1 lg:min-h-0"
         >
-          <DeskPane pane={pane} onClose={() => close(i)} />
+          <DeskPane pane={pane} onClose={() => close(i)} onReplace={(p) => replace(i, p)} />
         </div>
       ))}
       {panes.length < MAX_PANES && (
-        <div className="flex shrink-0 items-center justify-center lg:w-12">
+        <div className="flex shrink-0 items-center justify-center gap-2 lg:w-12 lg:flex-col">
           <Link
             /* Carry the open desk so the library's "+" APPENDS rather than replacing. */
             href={`/library?desk=${encodeURIComponent(panes.map(encodePane).join(','))}`}
-            aria-label="Add another pane from the library"
-            title="Add another pane"
+            aria-label="Add a work from the library"
+            title="Add a work from the library"
             className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-dashed border-stone-300 text-xl text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
           >
             +
           </Link>
+          <button
+            type="button"
+            onClick={() => setPickingBible(true)}
+            aria-label="Add a Bible chapter"
+            title="Add a Bible chapter"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-dashed border-stone-300 text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+              <path
+                d="M9 3.5c-1.6-1-3.9-1.3-6-1v11.3c2.1-.3 4.4 0 6 1 1.6-1 3.9-1.3 6-1V2.5c-2.1-.3-4.4 0-6 1Zm0 0v11.3"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
         </div>
       )}
+      {bookPicker}
     </div>
   );
 }

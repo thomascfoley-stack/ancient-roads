@@ -1,5 +1,54 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-02 (owner-reported: catalog rows ragged; desk panes cannot add the Bible or search chapters)
+
+**Headline: the catalog misalignment was one missing `min-w-0`; the desk's two navigation gaps
+were mostly wiring, because the TOC was already on the wire and being thrown away.**
+
+### DONE
+
+- **Catalog rows uniform** (`library/[catalog]/page.tsx`): the work link is a flex item with
+  `truncate` (nowrap) inside and no `min-w-0`, so its automatic minimum was the UNWRAPPED title
+  width — long-titled rows (Augustine 778px, Chrysostom 738px) grew past their 728px container and
+  every `+` landed at a different x. One class. Measured before (5 distinct widths) and after
+  (all rows 676px, all `+` at x=1088).
+- **The Bible can be ADDED to the desk** (UX-1's picker gap, closed): the add rail grows a book
+  button and the empty state an "Open the Bible" button, both opening `BookPicker` in a new pick
+  mode (`onPick` prop — cells become buttons that hand back `(book, chapter)` instead of linking
+  to /read; omitted, the picker behaves exactly as before for the reader).
+- **Every pane can navigate itself.** A work pane's header gains Contents, opening the SAME
+  `WorkToc` drawer the full reader uses — search included — and seeking the pane's keyset cursor
+  (`after=ord-1`). The TOC costs no new request: `/api/work/[slug]` always carried `toc` and the
+  pane was discarding it. A Scripture pane's Contents opens the BookPicker and REPLACES the pane
+  in the desk URL via new `replacePane` (out-of-range no-op; replacing with a pane already open
+  elsewhere collapses the duplicate, the same never-twice rule `withPane` and `decodeDesk` apply).
+- 5 new `desk-panes.test.ts` cases (37 total green). Red-proofed: the duplicate-collapse test was
+  watched fail against a naive positional-map implementation, then restored.
+
+### VERIFIED IN A BROWSER (1280x800 and 390x844)
+
+Empty desk -> Open the Bible -> Psalms -> 23 -> `?p=scripture:psa/23`, pane renders. Work pane
+Contents -> "Search 1,158 entries…" -> type "Psalms 23" -> 1 match -> click -> pane seeks to
+Henry on Psalm 23, drawer closes, Scripture neighbour untouched. Scripture pane Contents ->
+Isaiah 40 -> URL becomes `scripture:isa/40`, Henry pane keeps its position. 390px: no horizontal
+overflow, both add affordances visible.
+
+### FOUND, NOT FIXED (pre-existing, proven by stash-and-reload against main's own desk code)
+
+- **`/desk` mounts an invisible duplicate of its pane tree** outside `<main>` (width 0, aria-visible
+  to a tree walk: 4 sections where 2 render). Same with my changes stashed, absent on
+  /library/commentaries. The D1 hydration-discard family (A7b), desk flavour. Screen-reader and
+  test-tooling noise today; not a layout defect.
+- Pane keys in `desk/page.tsx` are content-derived, so replacing a pane remounts it (scroll
+  resets to top of the new chapter — arguably correct for a chapter change; noted as behaviour).
+
+### NOT DONE / UNVERIFIED
+
+- `npm run audit` not run to completion this entry; app + test typechecks and the desk suite ran
+  green locally. CI is the gate on the PR.
+- Not in this commit, observed mid-session in the shared tree, authored elsewhere: migration
+  `039_plans_coverage_topical.sql`, `src/ingest/topical-refs.ts`, a corpus-copy evidence JSON.
+
 ## 2026-08-02 (the audit gate goes green: `76bf392` shipped a behaviour change without its tests)
 
 **Headline: `main` was red on both CI jobs, and every branch cut from it inherited that.** Nothing
