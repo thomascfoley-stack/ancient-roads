@@ -218,11 +218,18 @@ export function SelectionPopover({
         style={pos ? { top: pos.top, left: pos.left } : { top: -9999, left: -9999, visibility: 'hidden' }}
         {...holdSelection}
       >
-        <div className="w-max max-w-[560px] rounded-xl bg-stone-900/95 px-3 py-2.5 shadow-deep ring-1 ring-white/10 dark:bg-stone-800">
+        <div className="w-max max-w-[420px] rounded-xl bg-stone-900/95 px-3 py-2.5 shadow-deep ring-1 ring-white/10 dark:bg-stone-800">
           <div className="px-1 pb-1.5 text-[11px] font-medium tracking-wide text-stone-400">{contextLabel}</div>
-          <div className="flex items-center gap-2">
-            {swatches}
-            {divider}
+          {/* SWATCHES ON THEIR OWN ROW, WRAPPING. Ten colours (highlight-colors.ts) at 28px each
+              plus gaps run ~350px — comfortably inside this card on their own, but every child
+              here is `shrink-0` and the row never wrapped, so sharing a line with Note/Bookmark/
+              Ask/the commentaries button pushed the total past `max-w` and the overflow rendered
+              OUTSIDE the opaque card, on the page background: readable-looking text that was
+              actually unstyled and, for anything wide enough, unclickable. `flex-wrap` means a
+              narrower card (a `pending.rect` near a screen edge, per `popover-position.ts`) still
+              shows every colour, wrapped to a second line, rather than clipping silently. */}
+          <div className="flex flex-wrap items-center gap-2">{swatches}</div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             {actionButtons}
           </div>
           {/* ONE copy action. Three chips ("Copy styled" / "Copy lines" / "Text only") made the
