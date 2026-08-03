@@ -1,16 +1,20 @@
 -- ============================================================
--- 013 (DRAFT — NOT APPLIED): user corpus — Slice 1 of sermon search
+-- 100: user corpus — Slice 1 of sermon search
 -- ============================================================
 -- Personal-corpus storage for docs/SERMON_SEARCH_DESIGN.md Slice 1 (upload → parse → chunk →
 -- anchor → embed → store). FOUR user-scoped tables mirroring the corpus's
 -- sources/sections/section_embeddings/section_anchors shape, so the tradition-gap JOIN (§3) is
 -- a verse-id equijoin across the two planes.
 --
--- ★ THIS IS A .sql.draft — it is NOT applied and MUST NOT be applied to prod. It targets a
---   Neon DEV BRANCH that does not exist yet (OWNER_ACTIONS §1). Apply order, once the branch
---   exists, as neondb_owner:
---     DATABASE_URL=<dev-owner-url> node db/apply-migration.mjs db/migrations/013_user_corpus.sql
---   (drop the .draft suffix only when the dev branch is the target — never prod).
+-- ★ NUMBERED IN THE 100-BLOCK, DELIBERATELY. Promoted from 013_user_corpus.sql.draft on
+--   2026-08-03 per the Slice 1 order. Lane A holds 039-045 and took 042 mid-rename during a
+--   concurrent session on 2026-08-03; Lane B never takes a number below 100. The draft was
+--   never applied anywhere, so there is no 013 to reconcile — the ledger has no such row.
+--
+-- ★ TARGETS THE lane-b-uploader DEV BRANCH, never prod. Applied as neondb_owner:
+--     DATABASE_URL="$(cat ~/.neon_lane_b_owner_url)" MIGRATE_TARGET_ENDPOINT=ep-snowy-bird-atmdsv3g \
+--       node db/apply-migration.mjs db/migrations/100_user_corpus.sql
+--   The endpoint must be declared by exact id; prod (ep-odd-fog) is refused regardless.
 --
 -- Dialect = NEON (this repo's db/migrations), NOT the Supabase dialect in docs/SCHEMA.md:
 --   - TEXT primary keys (opaque, client- or server-generatable), NOT BIGINT IDENTITY;

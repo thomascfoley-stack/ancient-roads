@@ -1,5 +1,102 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-03 (Lane B / B5 step 1: migration 100 applied, RLS proven with two accounts)
+
+**Headline: the four user-corpus tables are live on `lane-b-uploader` and their isolation is
+proven by a two-account run over `app_runtime`, watched RED before it was believed. Getting there
+required fixing the migration runner, which could not reach the branch at all and was fail-open
+toward production on the way.**
+
+### WHAT SHIPPED
+
+1. `db/migrations/013_user_corpus.sql.draft` → **`db/migrations/100_user_corpus.sql`**, applied to
+   `lane-b-uploader` (`ep-snowy-bird-atmdsv3g`) as `neondb_owner`. Four tables, RLS enabled on
+   each, per-user policy on each, DML granted to `app_runtime`. Ledger row written
+   (`sha256 f64db6e46313…`). The draft was never applied anywhere, so there is no 013 to
+   reconcile. 100-block per the order; Lane A holds 039-045.
+2. **`scripts/redproof-user-corpus-rls.mjs`** — the two-account proof, 28 legs, run entirely over
+   `app_runtime` (`rolbypassrls=false`, asserted as a precondition rather than assumed).
+3. **`db/apply-migration.mjs` + `db/apply-migration-concurrent.mjs`** now share
+   `scripts/lib/target-guard.mjs` instead of each carrying a private copy of the rule.
+
+### THE MIGRATION RUNNER COULD NOT REACH THE BRANCH, AND WAS FAIL-OPEN TOWARD PROD
+
+Both runners gated on a private `/ep-tiny-hat|localhost|127\.0\.0\.1/` regex. Two defects:
+
+- **It could not admit a new dev branch at all.** `ep-snowy-bird-atmdsv3g` is not `ep-tiny-hat`,
+  so the only way through was `MIGRATE_ALLOW_PROD=1` — a flag that disables the guard for *every*
+  endpoint including `ep-odd-fog`. Reaching a dev branch by setting the allow-prod flag would have
+  left an evidence log saying exactly that about a run that never went near production.
+- **It matched a SUBSTRING of the whole connection string**, which is defect #2 that
+  `scripts/lib/target-guard.mjs` was written to close in 2026-07-27's deep audit and which its
+  header documents by name. Watched: a URL whose *password* contains `ep-tiny-hat` and whose
+  *host* is `ep-odd-fog-atnykudm` **passed the old predicate**. That is a production migration
+  authorized by a password string.
+
+This is the watchlist's first artefact again — a hand-copied rule that drifted from the one place
+that exists to hold it. The fix does not add a target to `DEV_ENDPOINTS`: it routes both runners
+through `isAuditAllowedHost`, which refuses prod *before* consulting any declaration, and reaches
+a new branch by declaring it (`MIGRATE_TARGET_ENDPOINT=<exact endpoint id>`) — the discipline
+`AUDIT_ALLOWED_ENDPOINT` / `SEED_TEST_ENDPOINT` already use. `DEV_ENDPOINTS` therefore stays a
+two-element list and cannot drift from its second hand-typed copy at `web/test/helpers/env.ts:60`,
+which nothing holds in sync.
+
+Red-proof: 8 cases × 2 runners, every case aimed at a nonexistent `.sql` so a fail-open surfaces
+as `ENOENT` rather than as a write, prod cases on a fake prod-shaped host with a bogus password.
+`docs/evidence/lane-b-slice1/migrate-target-guard-REDPROOF.log`.
+
+### THE RLS PROOF, AND THE VACUITY TRAP IT AVOIDS
+
+"User B sees 0 rows of user A's data" is *also* what an empty table returns. A test that cannot
+tell those apart is an unearned green. So leg 2 opens a second connection as `neondb_owner` and
+confirms A's four rows are really there and really visible to someone; the 0 that B sees in leg 3
+is then RLS, not emptiness. The script ABORTS if the owner connection is missing rather than
+skipping that leg and reporting the rest green.
+
+The check binds identity the way the product does — `set_config('app.current_user_id', …, true)`,
+transaction-local, inside explicit `BEGIN`/`COMMIT`, matching `runAsUser` in `web/src/lib/db.ts`.
+A session-level `SET` would have proven something the app never does and would leak identity
+through the pooler's transaction-mode pooling.
+
+Legs: preconditions (role is `app_runtime`, `rolbypassrls=false`, RLS on all four) · A writes a
+full document through `app_runtime` · owner sees it · B sees 0 across all four tables and cannot
+fetch A's document by its exact id · B's UPDATE and DELETE of A's row affect 0 rows and A's row is
+byte-unchanged after · B inserting `user_id=A` is rejected by `WITH CHECK` · unset GUC denies
+(fails closed) · A's delete cascades to 0 orphans in all four. **28/28.**
+
+**Watched RED** (`THE_LOOP` rule 4): `user_sections_policy` widened to `USING (true)` with RLS
+left ENABLED, so the preconditions still pass and leg 3 has to be what catches it. It did —
+2 legs red, `n=1` where 0 was required. Policy restored in the same run and re-verified green.
+`docs/evidence/lane-b-slice1/rls-two-account-{PASS,REDPROOF}.log`.
+
+### RE-MEASURED, NOT COPIED
+
+The order's ground-truth section is correct as amended: 832 sources (35 published · 796 staged ·
+1 quarantined), 435,991 sections, 1,070,674 embeddings, **328,775 with `served=true`**, migration
+044 applied and the sole `schema_migrations` row before today. `100_user_corpus.sql` is now the
+second. The four user tables hold 0 rows — the probe cleaned up after itself, verified.
+
+### NOT DONE / UNVERIFIED
+
+- **`npm run audit` has NOT been run in full.** Ran the legs these changes could break: root
+  `tsc --noEmit` (0), `tsconfig.cutover.json` (0), `eslint src test` (0 errors, 34 pre-existing
+  warnings), `knip` (no new findings). The suite legs — vitest+coverage, `qa`, license gate — are
+  unrun, and the full audit belongs at the end of the slice, not at step 1 of 7.
+- **Nothing has been loaded in a browser.** No UI exists yet; `/library/uploads` is still the
+  five-line `ComingSoon` stub. The DoD browser check is unmet by construction at this step.
+- **B4 (translation decision) is still unruled** and blocks the uncited-quote anchor channel.
+  Steps 2-3 build the other two channels without it.
+- **File-disjointness departure (BUILD_MODEL §2).** `db/apply-migration*.mjs` are shared Lane A
+  files, not Lane B files. Neither is modified in Lane A's working tree, so there is no live
+  collision, but the departure is real and is recorded here rather than assumed harmless.
+- **`scripts/verify-sermon-search.mjs:31` carries a fifth hand-copy** of the same endpoint regex
+  and *skips* (exit 0, "SKIPPED visibly") rather than failing when it does not recognise the URL.
+  On `lane-b-uploader` it will skip. Not touched — it is an acceptance harness for a different
+  feature, and widening its reach is not this step's job. Named so the next session sees it.
+- **`relforcerowsecurity=false`** on all four tables. Immaterial to the boundary the product
+  relies on — the app connects as `app_runtime`, and `neondb_owner` carries `rolbypassrls=true`,
+  which `FORCE` would not stop anyway — but stated rather than left to be discovered.
+
 ## 2026-08-02 (ADR-047: the number is the handle — owner-ruled, the boundary lifted, shipped)
 
 **Headline: the second word-highlighter cause is closed. The owner ruled on a documented STOP
