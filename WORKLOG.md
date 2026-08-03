@@ -320,6 +320,56 @@ was told, and the annotation was gone on reload. Fixed.
   scope to chase in this change.
 - Client-side only: does not touch RLS, the `/api/annotations` route, or any migration. No
   accuracy-diagnostic or licensing implications — none run.
+## 2026-08-02 (two verse-link defects fixed — omnibox and Ask both had their own divergent href copy)
+
+**Headline: two navigation surfaces built their own reader link instead of using the shared
+`verseHref` (`web/src/lib/verse-link.ts`), and both diverged from it in exactly the way the
+watchlist's "hand-maintained copy" class predicts.**
+
+- **Bug 1 — `web/src/components/omnibox.tsx`.** `navigate()` called `bookUrl(book, chapter)`
+  (`lib/bible.ts`), which has no verse concept at all. Typing "John 3:16" and pressing Enter parsed
+  the verse correctly, then threw it away building the href — landing the reader at John 3:1, not
+  3:16. Fixed by having `navigate()` build a verse id (`encodeVerseId`, defaulting `verse` to 1 for
+  the book/chapter-only call sites) and route it through `verseHref`.
+- **Bug 2 — `web/src/components/ask-client.tsx`.** A second, local `readerHref` both dropped the
+  `#v` anchor AND fell back to `?? 'jhn'` when `BOOK_BY_NUM.get(book)` missed — so a citation whose
+  book number didn't resolve rendered a plausible, clickable link to the **Gospel of John** instead
+  of an inert one. Illustrative case: a citation for 3 John 1:4 — deceptive precisely because "3
+  John" already contains the word "John", so the substitution has no tell. Fixed by deleting the
+  local copy and importing `verseHref` directly (`decodeVerseId`/`BOOK_BY_NUM` imports dropped with
+  it, now unused).
+
+**Both had exactly one call site each**, so the fix is the whole diff: no other caller to chase.
+
+### DONE
+- Both files now route through `verseHref`, the same function `/library/notes` already uses.
+- Two new regression suites, each red-proofed (stashed the source fix, confirmed the seeded bug
+  reproduces the exact failure mode, then restored the fix and confirmed green):
+  `web/test/invariants/omnibox-verse-anchor.test.tsx` (drives the real `Omnibox` component: typed
+  input -> submit -> `router.push`) and `web/test/invariants/ask-passage-link.test.tsx` (drives the
+  real `AskClient` component through a stubbed `/api/ask/stream` NDJSON response, asserting the
+  rendered `<a href>` values).
+- Full web suite green (319 passed / 82 skipped — all skips are the standing DB/corpus/secret NOT
+  RUN gates this repo already logs as such, not new); `web/` `tsc --noEmit` and `eslint` both clean
+  on the changed files.
+- Browser DoD: verified live against a local dev server (`theology-dev`, since the static Bible
+  corpus is gitignored and wasn't present, `next-auth` cookie secret unset) at both 390px and
+  1280px — Cmd+K and the mobile Search tab both open the omnibox; "John 3:16" -> `/read/jhn/3#v16`;
+  "3 John 1:4" -> `/read/3jn/1#v4`; "Genesis 1" -> `/read/gen/1#v1`; no console errors beyond the
+  preexisting sandbox-only `eval()` CSP noise that appears on every page in this preview harness,
+  unrelated to this change.
+
+### NOT DONE / UNVERIFIED
+- **Ask's citation-link fix was not driven live end-to-end in a browser** — `/api/ask/stream`
+  requires sign-in plus a real DB + LLM backend, neither available in this sandbox. Verified
+  instead by rendering the real shipped `AskClient` component against a stubbed stream (same
+  render path, same `Link`/`verseHref` call), which is the strongest check available here; a
+  from-a-signed-in-session click-through against dev/prod is still open.
+- **Pre-existing, unrelated to this fix, left as found:** `web/test/invariants/work-toc-bounded.test.tsx`
+  fails `tsc --noEmit -p tsconfig.test.json` (`Cannot find name 'WorkTocRow'`) — untouched by this
+  session, present at `79494d4`, and vitest's esbuild transform doesn't catch it (the runtime suite
+  passes), so it wasn't visible without running the typecheck gate directly. Not fixed here; out of
+  scope for a two-file link-href bug.
 
 ## 2026-08-02 (the accuracy diagnostic, re-run against production after A8)
 

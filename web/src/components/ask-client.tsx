@@ -2,8 +2,8 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { decodeVerseId, formatVerseId } from '@bible/verse-id';
-import { BOOK_BY_NUM } from '@bible/books';
+import { formatVerseId } from '@bible/verse-id';
+import { verseHref } from '@/lib/verse-link';
 
 // --- shapes mirrored from the server (client only renders; server verifier is truth) ---
 interface Attribution { author: string; work: string; tradition: string; year?: number }
@@ -52,11 +52,6 @@ const EXAMPLES = [
 ];
 
 const STAGE_RANK: Record<Stage, number> = { error: -1, retrieving: 0, retrieved: 1, composing: 2, rejected: 2, verifying: 3, done: 4 };
-
-function readerHref(verseId: number): string {
-  const { book, chapter } = decodeVerseId(verseId);
-  return `/read/${BOOK_BY_NUM.get(book)?.slug ?? 'jhn'}/${chapter}`;
-}
 
 export function AskClient() {
   const [question, setQuestion] = useState('');
@@ -289,7 +284,7 @@ function Answer({ result }: { result: TeacherResult }) {
           <p className="mb-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">Passages</p>
           <div className="flex flex-wrap gap-2">
             {passages.items.map((p, i) => (
-              <Link key={i} href={readerHref(p.start)}
+              <Link key={i} href={verseHref(p.start)}
                 className="rounded-full bg-paper px-3.5 py-1.5 text-sm text-stone-700 shadow-paper transition-all duration-200 ease-gentle hover:text-accent-800 hover:shadow-float dark:bg-stone-800 dark:text-stone-200 dark:shadow-none dark:hover:text-accent-300">
                 {p.start === p.end ? formatVerseId(p.start) : `${formatVerseId(p.start)}–${formatVerseId(p.end).split(' ').pop()}`} →
               </Link>
