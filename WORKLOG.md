@@ -1,5 +1,53 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-03 — Corpus copied to prod and verified; the publish flip is BLOCKED behind A9 (correctly)
+
+### DONE — the copy landed, complete
+
+Re-ran after the idle-timeout fix. `✓ copied 4 work(s), all counts match.` Verified
+independently against dev, per work: **naves 4,870 sections / 78,107 topical / 5,357 flat ·
+torrey 628 / 38,858 / 1,055 · openbible 6,711 / 71,210 / 6,670 · daily-light 732 / 7,011 / 747**
+— every figure MATCH, 0 null vectors, 182,099 anchors, prod sections 380,971 → 393,912 (exactly
++12,941). The tool's own reconciliation agrees: `mismatch: 0`
+(`docs/evidence/topical-copy-2026-08-03/`). All four are `status='staged'`.
+
+`verse_coverage` rebuilt on prod after the copy: **unchanged at 30,277 rows / 27,163 with >=2
+authors**, which is correct — coverage counts PUBLISHED commentary+father only, and the topical
+works are staged.
+
+### THE FLIP REFUSED, AND IT IS RIGHT
+
+```
+STOP: embeddings.served does not exist on this target. Publishing now MEANS serving —
+apply db/migrations/044_embeddings_served_expand.sql first (the expand half; see the filed order).
+```
+
+**My verification of this command was WRONG and the tool caught what I did not.** I read
+`publish-flip.mjs:374` — "no served column on this target (pre-044): reversing status only" —
+as the general pre-044 behaviour and told the owner the forward flip would degrade gracefully.
+That line is the **reverse** branch. The forward branch three lines above it is a hard STOP, and
+its comment says exactly why: *"Forward: REQUIRED. Publishing now means serving; a forward flip
+on a pre-044 target would silently recreate the published-but-unserved divergence this whole
+design exists to kill."* Reading a guard is not verifying it.
+
+### THE DEPENDENCY, STATED
+
+Topical publish now waits on **A9's served cutover reaching production**. 044's expand half is
+not merely an ADD COLUMN — it materialises the serving set from the author/work lists, i.e. it
+decides which of prod's 124 published works actually serve. `embeddings.served`: **dev YES, ci
+no, prod no**. A9's filed order puts 044-on-dev at **P1.1** ("TIME IT — the prod session budget
+is derived from this number, not estimated") and prod only after P1.4's pre-registered go/no-go.
+
+Applying 044 to prod now, to unblock a topical publish, would jump that entire order — the
+"unscheduled+irreversible serve" A9's own 16-agent audit already caught once. **Not done, and
+it should not be done as a side-effect of this feature.**
+
+### STATE
+
+- **Live on ancientpaths.app:** book + canonical-collection plans, fully working.
+- **On prod, staged and inert:** the four topical works, complete and verified.
+- **One command from live:** the topic tab — the same flip, the moment A9 lands 044 on prod.
+
 ## 2026-08-03 — The corpus copy died on Neon's idle-in-transaction timeout; fixed
 
 **Owner ran the copy; it failed FATAL 25P03 and production rolled back to exactly zero rows.**
