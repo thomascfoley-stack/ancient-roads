@@ -24,7 +24,7 @@ import {
   WORK_SECTIONS_MAX_LIMIT,
   type WorkSectionsPage,
   type WorkSource,
-  type WorkTocRow,
+  type WorkTocUnit,
 } from '@/lib/work';
 import { getDb } from '@/lib/db';
 import { runtimeDbUrl } from '../helpers/env';
@@ -46,10 +46,10 @@ function callSections(slug: string, qs = ''): Promise<Response> {
   });
 }
 
-async function workJson(slug: string): Promise<{ source: WorkSource; toc: WorkTocRow[] }> {
+async function workJson(slug: string): Promise<{ source: WorkSource; toc: WorkTocUnit[]; tocTruncated: boolean }> {
   const res = await callWork(slug);
   expect(res.status, `GET /api/work/${slug} must serve a published work`).toBe(200);
-  return (await res.json()) as { source: WorkSource; toc: WorkTocRow[] };
+  return (await res.json()) as { source: WorkSource; toc: WorkTocUnit[]; tocTruncated: boolean };
 }
 
 async function sectionsJson(slug: string, qs = ''): Promise<WorkSectionsPage> {
@@ -112,7 +112,7 @@ describe.skipIf(SKIP)('Book Reader API — /api/work/[slug] + /sections (execute
   }, 30_000);
 
   it('TOC: source whitelist, no bodies, (unitOrdinal, ordinal) reading order, never a host URL', async () => {
-    const { source, toc } = await workJson(BIG_SLUG);
+    const { source, toc, tocTruncated } = await workJson(BIG_SLUG);
 
     // exactly the contracted source fields — `provenance` (host URLs) never rides along
     expect(Object.keys(source).sort()).toEqual([
@@ -126,21 +126,39 @@ describe.skipIf(SKIP)('Book Reader API — /api/work/[slug] + /sections (execute
     ]);
     expect(source).toMatchObject({ slug: BIG_SLUG, author: 'John Calvin', license: 'Public Domain' });
 
-    expect(toc.length, 'the Institutes TOC is the full section set').toBeGreaterThan(3000);
+    // The TOC returns UNITS, not sections (79494d4) — 3,448 sections group to far fewer rows, which
+    // is the whole point of the change. The section total is still assertable, derived from the
+    // units' own counts rather than from the row count.
+    expect(tocTruncated, 'a truncated TOC would make the derived section total an undercount').toBe(false);
+    const tocSections = toc.reduce((n, u) => n + u.sectionCount, 0);
+    expect(tocSections, 'the Institutes still totals its full section set').toBeGreaterThan(3000);
+    expect(toc.length, 'and it groups: strictly fewer rows than sections').toBeLessThan(tocSections);
     for (const row of toc) {
-      // ids/ordinals/units/headings only — NEVER a body
-      expect(Object.keys(row).sort()).toEqual(['heading', 'id', 'ordinal', 'unitOrdinal']);
-      expect(typeof row.id).toBe('number');
+      // unit identity + labelling only — NEVER a body
+      expect(Object.keys(row).sort()).toEqual([
+        'firstId',
+        'firstOrdinal',
+        'heading',
+        'lastOrdinal',
+        'sectionCount',
+        'unitOrdinal',
+        'verseEnd',
+        'verseStart',
+      ]);
+      expect(typeof row.firstId).toBe('number');
       expect(typeof row.unitOrdinal, '024 backfill: every section has a reading unit').toBe('number');
     }
-    // reading order is (unit_ordinal, ordinal), strictly increasing as a pair
+    // Reading order is (unit_ordinal, first ordinal), strictly increasing as a pair. Units are
+    // disjoint and ordered, so the previous unit's LAST ordinal must also precede this one's first
+    // — a check the per-section version could not make and the grouped one can.
     for (let i = 1; i < toc.length; i++) {
       const prev = toc[i - 1]!;
       const cur = toc[i]!;
       const ordered =
         cur.unitOrdinal! > prev.unitOrdinal! ||
-        (cur.unitOrdinal === prev.unitOrdinal && cur.ordinal > prev.ordinal);
-      expect(ordered, `TOC row ${i} breaks (unitOrdinal, ordinal) order`).toBe(true);
+        (cur.unitOrdinal === prev.unitOrdinal && cur.firstOrdinal > prev.firstOrdinal);
+      expect(ordered, `TOC row ${i} breaks (unitOrdinal, firstOrdinal) order`).toBe(true);
+      expect(cur.firstOrdinal, `TOC unit ${i} overlaps the previous unit`).toBeGreaterThan(prev.lastOrdinal);
     }
 
     // attribution discipline (§8.6): author + work + locus only — no host URL anywhere
@@ -154,7 +172,16 @@ describe.skipIf(SKIP)('Book Reader API — /api/work/[slug] + /sections (execute
     expect([...ords1].sort((a, b) => a - b)).toEqual(ords1); // ascending
     expect(p1.nextAfter, 'a full page hands back its last ordinal as the cursor').toBe(ords1[ords1.length - 1]);
     for (const s of p1.sections) {
-      expect(Object.keys(s).sort()).toEqual(['body', 'heading', 'id', 'ordinal', 'unitOrdinal']);
+      // verseStart/verseEnd joined in by 76bf392 so verse-anchored sections can be labelled.
+      expect(Object.keys(s).sort()).toEqual([
+        'body',
+        'heading',
+        'id',
+        'ordinal',
+        'unitOrdinal',
+        'verseEnd',
+        'verseStart',
+      ]);
       expect(s.body.length).toBeGreaterThan(0);
     }
 
@@ -180,8 +207,13 @@ describe.skipIf(SKIP)('Book Reader API — /api/work/[slug] + /sections (execute
   }, 30_000);
 
   it('sections: walking nextAfter to the end reconstructs the whole work; the cursor ends null', async () => {
-    const { toc } = await workJson(SMALL_SLUG);
-    expect(toc.length, 'sanity: the small work is multi-page at limit 100').toBeGreaterThan(100);
+    const { toc, tocTruncated } = await workJson(SMALL_SLUG);
+    // The walk pages SECTIONS; the TOC returns UNITS (79494d4). Deriving the section total from the
+    // units' own counts keeps this test honest — using toc.length here compared a unit count against
+    // a section walk and is exactly what went red.
+    expect(tocTruncated, 'a truncated TOC would make the derived section total an undercount').toBe(false);
+    const totalSections = toc.reduce((n, u) => n + u.sectionCount, 0);
+    expect(totalSections, 'sanity: the small work is multi-page at limit 100').toBeGreaterThan(100);
 
     const seen: number[] = [];
     let after: number | null = 0;
@@ -194,8 +226,8 @@ describe.skipIf(SKIP)('Book Reader API — /api/work/[slug] + /sections (execute
       expect(pages, 'cursor must terminate — a nextAfter bug would loop forever').toBeLessThanOrEqual(10);
     }
 
-    expect(pages, 'a short final page ends the walk').toBe(Math.floor(toc.length / 100) + 1);
-    expect(seen).toHaveLength(toc.length); // nothing dropped, nothing repeated
+    expect(pages, 'a short final page ends the walk').toBe(Math.floor(totalSections / 100) + 1);
+    expect(seen).toHaveLength(totalSections); // nothing dropped, nothing repeated
     const sorted = [...seen].sort((a, b) => a - b);
     expect(seen, 'the walk is strictly ascending across page boundaries').toEqual(sorted);
     for (let i = 1; i < sorted.length; i++) {

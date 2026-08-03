@@ -1,5 +1,262 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-02 (owner-reported: catalog rows ragged; desk panes cannot add the Bible or search chapters)
+
+**Headline: the catalog misalignment was one missing `min-w-0`; the desk's two navigation gaps
+were mostly wiring, because the TOC was already on the wire and being thrown away.**
+
+### DONE
+
+- **Catalog rows uniform** (`library/[catalog]/page.tsx`): the work link is a flex item with
+  `truncate` (nowrap) inside and no `min-w-0`, so its automatic minimum was the UNWRAPPED title
+  width — long-titled rows (Augustine 778px, Chrysostom 738px) grew past their 728px container and
+  every `+` landed at a different x. One class. Measured before (5 distinct widths) and after
+  (all rows 676px, all `+` at x=1088).
+- **The Bible can be ADDED to the desk** (UX-1's picker gap, closed): the add rail grows a book
+  button and the empty state an "Open the Bible" button, both opening `BookPicker` in a new pick
+  mode (`onPick` prop — cells become buttons that hand back `(book, chapter)` instead of linking
+  to /read; omitted, the picker behaves exactly as before for the reader).
+- **Every pane can navigate itself.** A work pane's header gains Contents, opening the SAME
+  `WorkToc` drawer the full reader uses — search included — and seeking the pane's keyset cursor
+  (`after=ord-1`). The TOC costs no new request: `/api/work/[slug]` always carried `toc` and the
+  pane was discarding it. A Scripture pane's Contents opens the BookPicker and REPLACES the pane
+  in the desk URL via new `replacePane` (out-of-range no-op; replacing with a pane already open
+  elsewhere collapses the duplicate, the same never-twice rule `withPane` and `decodeDesk` apply).
+- 5 new `desk-panes.test.ts` cases (37 total green). Red-proofed: the duplicate-collapse test was
+  watched fail against a naive positional-map implementation, then restored.
+
+### VERIFIED IN A BROWSER (1280x800 and 390x844)
+
+Empty desk -> Open the Bible -> Psalms -> 23 -> `?p=scripture:psa/23`, pane renders. Work pane
+Contents -> "Search 1,158 entries…" -> type "Psalms 23" -> 1 match -> click -> pane seeks to
+Henry on Psalm 23, drawer closes, Scripture neighbour untouched. Scripture pane Contents ->
+Isaiah 40 -> URL becomes `scripture:isa/40`, Henry pane keeps its position. 390px: no horizontal
+overflow, both add affordances visible.
+
+### FOUND, NOT FIXED (pre-existing, proven by stash-and-reload against main's own desk code)
+
+- **`/desk` mounts an invisible duplicate of its pane tree** outside `<main>` (width 0, aria-visible
+  to a tree walk: 4 sections where 2 render). Same with my changes stashed, absent on
+  /library/commentaries. The D1 hydration-discard family (A7b), desk flavour. Screen-reader and
+  test-tooling noise today; not a layout defect.
+- Pane keys in `desk/page.tsx` are content-derived, so replacing a pane remounts it (scroll
+  resets to top of the new chapter — arguably correct for a chapter change; noted as behaviour).
+
+### NOT DONE / UNVERIFIED
+
+- `npm run audit` not run to completion this entry; app + test typechecks and the desk suite ran
+  green locally. CI is the gate on the PR.
+- Not in this commit, observed mid-session in the shared tree, authored elsewhere: migration
+  `039_plans_coverage_topical.sql`, `src/ingest/topical-refs.ts`, a corpus-copy evidence JSON.
+
+## 2026-08-02 (the audit gate goes green: `76bf392` shipped a behaviour change without its tests)
+
+**Headline: `main` was red on both CI jobs, and every branch cut from it inherited that.** Nothing
+mechanically stopped it — `main` is unprotected and `required_status_checks` is empty, so "nothing
+merges red" was discipline, not mechanism, and this is what that costs.
+
+Two jobs, one cause. `79494d4` made the reader TOC return **units** instead of sections and `76bf392`
+joined `verseStart`/`verseEnd` onto sections, both deliberate and both correct. Their tests were not
+updated with them.
+
+### DONE
+
+- **`work-toc-bounded.test.tsx`** (audit gate 5, `tsc -p tsconfig.test.json`): one `render` missing the
+  now-required `sourceType` prop, and a stale `WorkTocRow` type name whose literal was still the old
+  per-section shape. Rebuilt as a single-section `WorkTocUnit`, which is the degenerate case the test
+  is actually about.
+- **`work-reader.test.ts`** (db-invariants): four stale expectations. The TOC key set and the sections
+  key set are now asserted against the real shapes; the reading-order check compares `firstOrdinal`
+  and gains a unit-disjointness assertion the per-section version could not make.
+- **The page-count bug was the interesting one.** `expect(pages).toBe(Math.floor(toc.length / 100) + 1)`
+  compared a UNIT count against a SECTION walk, so it read 2 where the walk did 3. Both sites now
+  derive the section total from the units' own `sectionCount`.
+- That derivation is only sound while the TOC is not capped, so **both sites now assert
+  `tocTruncated === false` first**. `WORK_TOC_MAX` is 10,000 and both fixtures are far under it today;
+  the assertion is there so a future fixture that trips the cap fails loudly instead of silently
+  under-counting.
+
+### VERIFIED
+
+`npm run audit` **exit 0**, all thirteen gates, on this branch. Previously gate 5 was red.
+
+### NOT DONE / UNVERIFIED
+
+- **The db-invariants half was NOT executed locally.** `web/.env.local` carries no DB URL on this
+  machine, so `work-reader.test.ts` reports 7 skipped, and a skip is not a pass. It is typecheck-clean
+  and the assertions are re-derived from the shipped shapes, but the proof is the CI `db-invariants`
+  job against the real test branch, recorded on the PR.
+- No product code changed. Test expectations only.
+## 2026-08-02 (owner-reported: dead X buttons, three copy chips, lost word highlighter)
+
+**Headline: one root cause killed every close button that sits inside a drag handle, in every
+browser, since drag-to-dismiss shipped.** `useDragDismiss` called `setPointerCapture` on the
+element carrying `handleProps`. Pointer capture retargets subsequent pointer events, `pointerup`
+included, so the browser resolved the click to the HEADER rather than to the button inside it and
+the button's `onClick` never fired. Four sheets spread `handleProps` onto a header containing their
+X: `study-panel`, `work-toc`, `mobile-nav`, and the word-study sheet.
+
+### DONE
+
+- **`use-drag-dismiss.ts`** — a press that starts on a control no longer begins a drag or captures
+  the pointer. Dragging the header's empty space is unaffected.
+- **`selection-popover.tsx`** — three copy chips ("Copy styled" / "Copy lines" / "Text only") on
+  both the desktop card and the mobile bar reduced to one, `Copy`, using the `styled` formatter
+  because it is the one that carries the attribution.
+- **`web/test/invariants/drag-handle-swallows-clicks.test.tsx`** — 4 tests. The behavioural half
+  asserts the guard; the second half DERIVES the `handleProps` call sites rather than listing the
+  four known today, so a fifth sheet added later is covered without editing the test.
+
+### VERIFIED IN A BROWSER (dev, 1280x720 and 390x844)
+
+Reproduced first, then fixed, then re-checked: study-panel X did nothing before, closes now;
+mobile-nav X did nothing before, closes now; drag-to-dismiss still dismisses; one `Copy` chip;
+`document.body.scrollWidth === 390` with no non-fixed element wider than 391.
+
+Red-proof: the `closest(...)` guard was removed and the suite watched go from 4 passed to 2 failed
+(the behavioural test AND the derived static check), then restored to 4 passed. The jsdom tests
+CANNOT reproduce the bug itself — jsdom implements no pointer capture, so a jsdom click on the X
+fired both before and after the fix. The test header says so rather than implying more coverage
+than exists; the browser run above is the only proof of the user-facing behaviour.
+
+### FOUND, NOT FIXED
+
+- **The word highlighter is gone for two independent reasons, and both live in files two other
+  sessions are currently editing** (`verse-display.tsx`, `read/[book]/[chapter]/page.tsx`), so they
+  were left alone per the one-agent-per-tree rule.
+  1. A single click on a verse opens the study sheet (`verse-display.tsx:145-150`). Its only guard
+     is `!sel.isCollapsed`, which is false on the FIRST click of a double-click, so double-click to
+     select a word opens the sheet instead. Drag-select still raises the popover; double-click
+     cannot. This is an interaction-model decision, not a mechanical bug.
+  2. `signedIn` is inferred solely from `/api/annotations` returning ok
+     (`page.tsx:205`, `.catch(() => setSignedIn(false))` at `:220`), and the popover gates the
+     swatches on it. Any failure of that fetch — 401, 500, a 429 from the throttle, a dropped
+     connection — silently replaces the highlighter with "Sign in to highlight" for a signed-in
+     reader. Auth state should not be a side effect of a data fetch.
+- **`Cannot update a component (ReaderPage) while rendering a different component (StudyPanel)`**
+  fires in the console on every study-sheet open. Pre-existing, unrelated to this change.
+- **`web/test/invariants/work-toc-bounded.test.tsx` does not typecheck** (TS2741 missing
+  `sourceType`, TS2304 unknown `WorkTocRow`), introduced by `76bf392`. `npm run audit` gate 5 is
+  therefore red on `main` independently of this change.
+
+### NOT DONE / UNVERIFIED
+
+- `npm run audit` not run to completion; the web suite has 31 pre-existing failures across 10
+  `test/invariants/*` DB files. Proven pre-existing by stashing this change and re-running two of
+  them: same 12 failures without it.
+- Two files in the working tree are NOT part of this commit and were not authored here:
+  `web/next-env.d.ts` (a `next dev` artifact, also modified in both worktrees) and
+  `src/ingest/register-writer.ts` (substantial ingest work that appeared mid-session).
+## 2026-08-02 (QA plan audit + two design docs: study plans, workspace artifacts)
+
+**Headline: a product-owner QA plan was audited against the tree, and three of its sections test
+features that do not exist. Separately, two design docs were filed for the plan builder and for Ask
+history.** No feature code was written. Both docs are DESIGN, not approval to build.
+
+### DONE
+
+- **`docs/STUDY_PLANS_DESIGN.md`** — plan builder, schedule generation, coverage gating, `.ics`
+  delivery. Settles that the model emits only a `PlanSpec` and code does the arithmetic
+  (`PRODUCT_ARCHITECTURE.md:38`); that the schedule needs tests rather than a verifier (the
+  `today.ts` precedent, no generation on that path); and that admission is checked at RENDER, so a
+  quarantine ruling reaches stored plans instead of being frozen at build time. Proposes
+  `verse_coverage`, a derived table that also removes the embed + four vector queries
+  `hasPassageCoverage` currently pays *before* deciding there is no coverage. Four owner decisions,
+  proposed ADR-045.
+- **`docs/WORKSPACE_ARTIFACTS_DESIGN.md`** — Ask history stores citations, never generated text.
+  Answers one of UX-4's three open questions ("does a stored search keep the answer": no) and
+  deliberately leaves the other two, since the owner paused on them on purpose. Corrects an earlier
+  draft that called this a Study and reached for `study_guides`: it is Workspace Paths, mode 2, and
+  `study_guides` is mode 3's table with an FK to a table the architecture doc is retiring. Three
+  owner decisions, proposed ADR-046.
+- A QA plan revision (every section mapped to a test type, numeric performance budgets, new corpus /
+  AI-surface / tenancy / mobile sections, a Playwright harness and a pre-deploy gate) lives in the
+  session scratchpad and is **NOT in the repo**. Per bylaw 1 it is therefore not issued. Filing it
+  is a separate decision, because it overlaps `docs/QA_HARNESS_DESIGN.md`, whose Layer 4 has been
+  specified and unbuilt since before the first deploy.
+
+### FOUND
+
+- Three sections of the QA plan test features that do not exist: a word-click lexicon popup on
+  running Scripture (the text is not tokenized; word lookup lives in the interlinear, which replaces
+  the English), a side-by-side commentary pane in the reader (auxiliaries are full-viewport bottom
+  sheets; `/desk` is a separate route with two inbound links, neither from `/read`), and Bible
+  full-text search (there is none anywhere).
+- `omnibox.tsx:48-54` drops the verse anchor, so "John 3:16" lands on John 3:1, while
+  `verse-link.ts:19-23` already implements it correctly and has one call site. `ask-client.tsx:56-59`
+  holds a second divergent copy that additionally falls back to `'jhn'` on an unresolvable book
+  number, so a bad citation links plausibly to the wrong book. Handed to a background session.
+- Every annotation write in `read/[book]/[chapter]/page.tsx` is fire-and-forget with a swallowed
+  error, so on a lossy connection a highlight paints, never persists, and is gone on reload with no
+  message. Handed to a background session.
+- `barnes-notes` is `staged` in `sources` while 21,036 rows under that author still serve from
+  `commentary_entries`, which never joins `sources`. Already recorded at `legal-corpus.ts:74-78`;
+  restated because it is the highest-severity item the QA plan had no section for at all.
+- No registered restore point postdates A8. The only protected branch is 2026-07-29; 30 works
+  published 2026-08-02.
+
+### NOT DONE / UNVERIFIED
+
+- No feature code, no migration, no ADR written into `docs/DECISIONS.md`. ADR-045 and ADR-046 are
+  proposed text inside the design docs, awaiting a ruling.
+- `npm run audit` NOT run. Docs-only tranche, per bylaw 6 (scale rigour to blast radius).
+- The audits behind these docs ran at `517f4fc`. `main` reached `76bf392` during the work, and
+  `79494d4`+`76bf392` **superseded one finding**: the work TOC no longer uses correlated subqueries,
+  it groups to one row per unit in SQL (measured 1,436 ms to 844 ms on spurgeon-sermons). The
+  correlated pattern survives on the sections paging path via `VERSE_RANGE_COLS`. Nothing else was
+  re-measured after `76bf392`.
+- Neither design doc has been read by anyone but its author. Bylaw 4: fixer is not verifier.
+## 2026-08-02 (study toolkit: the selection popover as a gathering surface — DESIGN)
+
+**Headline: the owner's sketch is buildable, but the one thing it asks for most directly is not.**
+`docs/STUDY_TOOLKIT_DESIGN.md`, from a sketch and brief. Twelve owner decisions. No code.
+
+### THE BLOCKER, verified not assumed
+
+**Nothing in this repo aligns an English word to a Greek or Hebrew one.** All 18 shipped translations are
+`{verse, text}` plain strings with no Strong's tags; `web/public/original/{book}/{ch}.json` holds tokens in
+ORIGINAL word order (`{w, l, tr, s, m, g}`) with no index back to an English token. So "select *loved*, see
+its Greek" cannot be answered correctly today. Recommended resolution is verse-scoped: show the verse's
+original-language tokens and let the reader pick, which is what the brief already describes ("I should be able
+to select the Greek and Hebrew one"). Aligning properly means ingesting a Strong's-tagged translation, which
+is a licensing decision before it is an ingest slice.
+
+### FOUND
+
+- **The sketch's checkbox row is the register wall rendered as a control** (`catalog-defs.ts:6-23`). Each box
+  is one existing catalog and the columns stay separate, which is what the wall requires. Best thing in it.
+- **The floating card cannot grow.** It is `position: fixed` with collision-aware placement; a tall scrollable
+  panel anchored to a word near the bottom of a 390px screen has nowhere to go. Proposed: collapsed bar stays
+  anchored, expanded results open as a right rail on md+ and a detented sheet on mobile with the verse pinned.
+- **Dictionary is a multi-megabyte tap today.** `lexicon/greek.json` 1.1 MB and `hebrew.json` 1.8 MB are
+  monolithic while the concordance beside them is ALREADY sharded into 295 files. Sharding the lexicon is worth
+  doing whatever is decided about the rest, and it makes today's Word panel cheaper.
+- **Retiring the study sheet fixes the word highlighter for free.** Double-click-to-select is broken *because*
+  the first click opens the sheet (`verse-display.tsx:145-150`). If the toolkit supersedes the sheet, the
+  conflict disappears with no timing hack. Filed as decision 9.1.
+- **Ask should be a lane, not a navigation.** `verse-display.tsx:99-105` does `router.push('/ask?q=...')`, the
+  clearest live violation of Rule 1. In a rail it is a fourth column.
+
+### NOT AUTHORED HERE, observed in the main worktree and NOT in this branch
+
+Uncommitted work by another session: `db/migrations/038_devotional_source_type.sql` adds a `devotional`
+source_type, and `ingest/sources.config.json` gains ~10 devotional works. Two consequences worth catching
+before a flip, both recorded in the design doc §3:
+
+- The fail-closed default would have published all ten onto no shelf (`catalog-defs.ts:19`), but that same
+  tree already adds a `devotionals` catalog AND a `theology` one, the latter closing a live gap:
+  calvin-institutes, hodge-systematic, owen-works and schaff-creeds were published and lane-served but
+  unbrowsable, 33,578 sections with no route to them. The toolkit therefore filters over SIX registers.
+- **Migration 038 is now taken**, so `STUDY_PLANS_DESIGN.md` §6's proposed 038 for `verse_coverage` needs
+  renumbering. It says to re-measure, so it will not collide silently.
+
+### NOT DONE / UNVERIFIED
+
+- No code. `npm run audit` not run (docs-only, bylaw 6). Note gate 5 is red on `main` regardless, from
+  `work-toc-bounded.test.tsx` at `76bf392`.
+- The doc has been read by nobody but its author (bylaw 4).
+- The layout proposal in §4 has not been prototyped; that a rail plus detented sheet actually reads well at
+  390px is an assertion, not a measurement.
 ## 2026-08-02 (two verse-link defects fixed — omnibox and Ask both had their own divergent href copy)
 
 **Headline: two navigation surfaces built their own reader link instead of using the shared
