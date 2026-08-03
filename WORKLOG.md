@@ -138,7 +138,7 @@ published-but-unserved**, the standing A3-rule divergence the cutover exists to 
 - The eval has not run (key absent per ADR-044); accuracy consequences of any admission are
   unmeasured by construction until P1.
 
-## 2026-08-02 (night) — Topic→plan wiring closes the build (ADR-047 addendum)
+## 2026-08-02 (night) — Topic→plan wiring closes the build (ADR-048 addendum)
 
 The last mile of path 1: a matched topic becomes a dated plan. Owner: "close 1... that would
 close this build out."
@@ -214,7 +214,7 @@ Final: 66 plan tests green, residue gate clean across 20 tables, `npm run audit`
 - Publish flip still gates all topical behavior for real users; prod has migrations 039-042
   outstanding.
 
-## 2026-08-02 (late) — Canonical groups, topic matcher, dormant delivery fields (ADR-047)
+## 2026-08-02 (late) — Canonical groups, topic matcher, dormant delivery fields (ADR-048)
 
 Owner rulings live: reviewed-table for canonical groupings (never model enumeration; Hebrews
 excluded from pauline-epistles with reasoning recorded), delivery/calendar questions kept OUT of
@@ -237,7 +237,7 @@ the intake but schema-ready now, topic matching started alongside.
   represented (e.g. prayer → Nave's PRAYER 711 · Torrey's PRAYER 160 · openbible prayer 9).
 - **Migration 041** (dev + ci): `plans.delivery_channel` DEFAULT 'app' + CHECK,
   `plans.calendar_minutes` nullable — written/read by nothing yet, per ruling.
-- ADR-047; 9 new tests (groups integrity, multi-book expansion covers 87 Pauline chapters
+- ADR-048; 9 new tests (groups integrity, multi-book expansion covers 87 Pauline chapters
   exactly once, whole-bible 1,189 chapters on 182 days, straddle-day spans stay forward).
 
 ### NOT DONE / NEXT

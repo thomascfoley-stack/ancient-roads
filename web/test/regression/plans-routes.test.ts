@@ -111,7 +111,7 @@ describe.skipIf(SKIP)('Plans routes (handler → store → dev DB, session mocke
     expect(body.reason).toMatch(/coverage/i);
   }, 30_000);
 
-  it('creates a Pauline-epistles collection plan spanning book boundaries (ADR-047)', async (ctx) => {
+  it('creates a Pauline-epistles collection plan spanning book boundaries (ADR-048)', async (ctx) => {
     if (!(await corpusPresent())) return ctx.skip();
     const res = await createPlanRoute(jsonReq({
       spec: { scope: { kind: 'books', group: 'pauline-epistles' }, weeks: 8, daysPerWeek: 3, startDate: '2026-08-03' },

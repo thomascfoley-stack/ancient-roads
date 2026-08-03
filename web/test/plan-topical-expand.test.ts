@@ -1,4 +1,4 @@
-// expandTopicalPlan invariants (web/src/lib/plan/expand.ts, ADR-047
+// expandTopicalPlan invariants (web/src/lib/plan/expand.ts, ADR-048
 // addendum). Pure — entries in, dated buckets out, no I/O.
 
 import { describe, expect, it } from 'vitest';

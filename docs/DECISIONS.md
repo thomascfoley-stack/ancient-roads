@@ -1027,7 +1027,7 @@ publish decision (`ingest/sources.config.json` was mid-edit by a concurrent sess
 exactly like Spurgeon's sermons or Calvin's commentary. The product quotes a concordance; it does
 not become one.
 
-## ADR-047 — Canonical groupings are a reviewed table; topic matching ranks the heading; delivery fields are schema-ready and dormant (2026-08-02, late)
+## ADR-048 — Canonical groupings are a reviewed table; topic matching ranks the heading; delivery fields are schema-ready and dormant (2026-08-02, late)
 
 **Context.** Owner rulings, live session (evening, after ADR-045/046 landed): the LLM's plan intake
 has two paths — canonical ("take me through the Bible in 6 months," "the Pauline epistles") and
@@ -1067,7 +1067,7 @@ early-church history"), the repeat-asker topic-memory cache (owner: "we're not h
 `{kind:'topic'}` scope wiring into `expandPlan` (the matcher and its route land first; the
 topic-scoped plan build is the next slice).
 
-### ADR-047 addendum — the topic→plan wiring (2026-08-02, same night)
+### ADR-048 addendum — the topic→plan wiring (2026-08-02, same night)
 
 The selection half of PLAN_TOPIC_MATCHING_DESIGN §4, built to close the slice: a chosen
 `TopicMatch` pointer becomes a plan whose days carry the index author's own passages, in the

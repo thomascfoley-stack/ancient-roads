@@ -1,5 +1,5 @@
 // Canonical-group invariants (web/src/lib/plan/canonical-groups.ts) and the
-// books-scope expansion they feed (ADR-047). Pure, no DB.
+// books-scope expansion they feed (ADR-048). Pure, no DB.
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -54,7 +54,7 @@ describe('CANONICAL_GROUPS — the reviewed table', () => {
 
   it('pauline-epistles is Romans through Philemon, 13 letters, and EXCLUDES Hebrews', () => {
     // SEED: add 'heb' to the group and this goes red — the exclusion is a
-    // recorded editorial-neutrality decision (ADR-047), not an oversight.
+    // recorded editorial-neutrality decision (ADR-048), not an oversight.
     const g = CANONICAL_GROUPS['pauline-epistles']!;
     expect(g.books).toHaveLength(13);
     expect(g.books[0]).toBe('rom');

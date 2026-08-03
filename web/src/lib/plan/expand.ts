@@ -151,7 +151,7 @@ export function expandPlan(spec: PlanSpec): ExpandOutcome {
   return { ok: true, days };
 }
 
-// ── topical expansion (ADR-047 addendum) ────────────────────────────────────
+// ── topical expansion (ADR-048 addendum) ────────────────────────────────────
 // A topic-scoped plan divides an ORDERED list of labeled passages (the
 // author's own topical_entries sequence) across reading days, instead of
 // walking chapters. Same offsets, same even-distribution arithmetic, same

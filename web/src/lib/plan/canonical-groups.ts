@@ -1,5 +1,5 @@
 // Reviewed table of named canonical book groupings ("Pauline Epistles," "the Gospels").
-// ADR-047: the LLM/UI selects a GROUP KEY from this table; it never enumerates a book list
+// ADR-048: the LLM/UI selects a GROUP KEY from this table; it never enumerates a book list
 // itself. Same posture as ADR-017/046 for topics — a classification the app applies is
 // reviewed and named, never an editorial call the model makes per-request.
 //

@@ -1,5 +1,5 @@
 // Topic-scoped plan, end to end through the REAL route handlers and DB
-// (ADR-047 addendum): seed a tiny PUBLISHED topical fixture as the owner,
+// (ADR-048 addendum): seed a tiny PUBLISHED topical fixture as the owner,
 // match it, create a plan from the pointer, assert the labeled readings
 // persisted in the author's order, prove tenancy on the readings table,
 // and watch delete cascade — then remove every seeded row (the residue

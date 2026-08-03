@@ -1,6 +1,6 @@
 # PLAN TOPIC MATCHING — matching a user's phrase to an ingested topic, never inventing one (design note, 2026-08-02)
 
-**Status: BUILT, both halves** (approved live 2026-08-02 evening; §§2-3 landed with ADR-047, §4 landed
+**Status: BUILT, both halves** (approved live 2026-08-02 evening; §§2-3 landed with ADR-048, §4 landed
 the same night as the topic→plan wiring — migration 042 `plan_day_readings`, `expandTopicalPlan`,
 the store's topic branch, and the builder's topic search UI; end-to-end proof in
 `web/test/regression/plan-topic-flow.test.ts`, executed against dev with an owner-seeded published
