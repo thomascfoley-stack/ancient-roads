@@ -1,5 +1,43 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-03 — DEPLOYED. /plans is live on ancientpaths.app
+
+`dpl_Dw5txbw5kgEHoJjWi9Yp3cThzmP5` from `0dbc567`, aliased to ancientpaths.app; receipt at
+`docs/evidence/deploys/deploy-0dbc567.txt`.
+
+### How it was made deployable
+
+- **Deployed from an isolated worktree** (`/Users/foley/Projects/ap-deploy`) on this branch, with
+  the gitignored static corpus hardlinked in. deploy.sh's clean-tree gate is satisfied honestly
+  and the concurrent session's in-flight files could not ship — the gate's own comment records a
+  2026-07-12 incident where exactly that happened.
+- **Two pre-deploy gates refused first, and both were right.** (1) `web/public/original` was
+  absent from the worktree — the served-directory check is derived from `web/src`, so it knew.
+  Linked. (2) The corpus-identity ratchet stopped a manifest mismatch; resolved by merging
+  `fix/final-three` (the owner-approved 149,315 manifest this branch lacked) and regenerating
+  at the owner's explicit approval of the on-disk corpus: **283 works, 1,212 files, 158,285
+  entries**.
+- **An ADR-047 collision surfaced in that merge** — mine (canonical groupings, 20:24) and theirs
+  (tap-a-verse, 23:14). Their own precedent is first-claim-keeps, which would renumber theirs;
+  but theirs is on 3 branches and mine on 1, so **mine became ADR-048**. Smaller change, and it
+  cannot re-conflict on future merges. Precedence matters less than churn.
+- Both doc conflicts (WORKLOG, DECISIONS) were append-at-head on chronological files: resolved by
+  keeping both sides, not by choosing.
+
+### VERIFIED on production
+
+`/plans` → 307 → `/gate?next=%2Fplans`, byte-identical in shape to `/ask` — the pre-launch site
+gate, not a break. `/api/plans` and `/api/plans/topics` are routed. `/`, `/ask`, `/library`,
+`/read/jhn/1` unchanged: no regression. `npm run audit` green in the deploy worktree before
+shipping; `next build` compiled with `/plans` in the route manifest.
+
+### What is live vs what waits
+
+Book and canonical-collection plans are fully live: their tables (039/041/042), the coverage
+gate (30,277 verses on prod) and the UI all shipped. **Topical plans are dark until the owner
+runs the two TTY-gated steps** — corpus copy, then publish flip. 040 is applied, so the copy is
+unblocked. The topic tab shows its honest empty state until then.
+
 ## 2026-08-03 — Plans reach PRODUCTION (migrations + coverage); the copier learns topical_entries
 
 Owner go: "do the publish flip and prod migrations." The read came first, and it changed the job.
