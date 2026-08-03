@@ -1026,3 +1026,43 @@ publish decision (`ingest/sources.config.json` was mid-edit by a concurrent sess
 **Why this is ADR-017-clean.** Nave's classification of Scripture is Nave's, named and dated,
 exactly like Spurgeon's sermons or Calvin's commentary. The product quotes a concordance; it does
 not become one.
+
+## ADR-047 — Canonical groupings are a reviewed table; topic matching ranks the heading; delivery fields are schema-ready and dormant (2026-08-02, late)
+
+**Context.** Owner rulings, live session (evening, after ADR-045/046 landed): the LLM's plan intake
+has two paths — canonical ("take me through the Bible in 6 months," "the Pauline epistles") and
+topical ("a plan on faith / family / affliction"), where the product surfaces ~3 candidates from the
+ingested topical works and the user picks. Delivery (email/calendar via a third-party push provider)
+stays out of the intake for now, but the schema should be ready.
+
+**Decision 1 — a reviewed table, never model enumeration.** `web/src/lib/plan/canonical-groups.ts`
+holds the named groupings (pentateuch, gospels, minor-prophets, wisdom-literature, pauline-epistles,
+general-epistles, whole-bible). The intake selects a KEY; the app resolves it. The model never
+emits a book list, because "which books count" is sometimes an editorial call — the recorded case:
+**Hebrews is excluded from pauline-epistles** (13 letters, Romans–Philemon, majority convention),
+with the reasoning in the table's own `note`, not silently baked in. `whole-bible` is DERIVED from
+`BOOKS` at module load, never hand-typed (the watchlist class). A multi-book scope is a LIST
+(`{kind:'books', group}`) handed to the existing day-bucketing arithmetic — deliberately NOT a
+parsed range, because `parseRef` has no cross-book grammar (measured: "Genesis-Deuteronomy" fails)
+and does not need one for this.
+
+**Decision 2 — topic matching ranks the heading, and the spot check is why.** `matchTopics`
+(`web/src/lib/plan/topic-match.ts`, design: `docs/PLAN_TOPIC_MATCHING_DESIGN.md`) is an FTS lookup
+over the 12,941 ingested topic headings, `status='published'`-gated, returning ≤3 pointers — a
+controlled-vocabulary match, not `/ask`-class open retrieval, so it carries a recorded spot check
+rather than the held-out eval. The first spot check (8 phrases) FAILED usefully: ranking on the
+whole `tsv` (heading+body) buried the literal FAITH topic beneath JESUS, THE CHRIST (3,833
+passages whose body mentions faith constantly) and returned junk for "anxiety" while OpenBible's
+own `anxiety` topic existed. Re-ranked: exact-heading first, heading-word rank second, body rank
+as tiebreak only. Second spot check: all 8 phrases surface their exact topic first, with all three
+works represented. Both rounds recorded in WORKLOG 2026-08-02 (late).
+
+**Decision 3 — delivery fields now, delivery later.** Migration 041 adds `plans.delivery_channel`
+(DEFAULT 'app', CHECK app/email/calendar) and `plans.calendar_minutes` (nullable), read and written
+by nothing. When the Composio push slice ships it reads an existing column; no backfill across
+pre-existing plans. The intake does not ask about delivery — owner ruling.
+
+**Out of scope, recorded:** the topic+canonical hybrid ("Pauline epistles correlated with
+early-church history"), the repeat-asker topic-memory cache (owner: "we're not here yet"), and the
+`{kind:'topic'}` scope wiring into `expandPlan` (the matcher and its route land first; the
+topic-scoped plan build is the next slice).

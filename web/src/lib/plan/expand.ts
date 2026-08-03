@@ -17,6 +17,7 @@
 
 import { BOOK_BY_NUM, BOOK_BY_SLUG } from '@/bible/books';
 import { parseRef, CHAPTER_END_SENTINEL } from '@/bible/ref-parse';
+import { resolveCanonicalGroup } from './canonical-groups';
 import type { PlanSpec } from './spec';
 
 export interface PlanDay {
@@ -69,6 +70,22 @@ function chaptersOfScope(spec: PlanSpec): ChapterSpan[] | { fail: string } {
     const book = BOOK_BY_SLUG.get(spec.scope.book);
     if (!book) return { fail: `unknown book slug "${spec.scope.book}"` };
     return Array.from({ length: book.chapterCount }, (_, i) => ({ bookNum: book.bookNum, chapter: i + 1 }));
+  }
+  if (spec.scope.kind === 'books') {
+    // A canonical grouping is a LIST, not a parsed range — sidesteps parseRef's cross-book
+    // limit entirely (verified: "Genesis-Deuteronomy" does not parse; a book list needs no
+    // parsing at all). Each listed book contributes its full chapter run, in canon order —
+    // exactly the ChapterSpan[] shape the day-bucketing loop below already consumes, so
+    // nothing past this point changes for a multi-book scope.
+    const group = resolveCanonicalGroup(spec.scope.group);
+    if (!group) return { fail: `unknown canonical group "${spec.scope.group}"` };
+    const out: ChapterSpan[] = [];
+    for (const slug of group.books) {
+      const book = BOOK_BY_SLUG.get(slug);
+      if (!book) return { fail: `canonical group "${spec.scope.group}" names unknown book "${slug}"` };
+      for (let c = 1; c <= book.chapterCount; c++) out.push({ bookNum: book.bookNum, chapter: c });
+    }
+    return out;
   }
   const parsed = parseRef(spec.scope.ref);
   if (!parsed.ok) return { fail: parsed.reason };

@@ -111,6 +111,23 @@ describe.skipIf(SKIP)('Plans routes (handler → store → dev DB, session mocke
     expect(body.reason).toMatch(/coverage/i);
   }, 30_000);
 
+  it('creates a Pauline-epistles collection plan spanning book boundaries (ADR-047)', async (ctx) => {
+    if (!(await corpusPresent())) return ctx.skip();
+    const res = await createPlanRoute(jsonReq({
+      spec: { scope: { kind: 'books', group: 'pauline-epistles' }, weeks: 8, daysPerWeek: 3, startDate: '2026-08-03' },
+    }));
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { plan: { id: string; title: string } };
+    expect(body.plan.title).toBe("Paul's Epistles in 8 weeks");
+    const got = await getPlanRoute(new NextRequest('http://localhost'), { params: Promise.resolve({ id: body.plan.id }) });
+    const detail = (await got.json()) as { days: Array<{ verse_start: number; verse_end: number }> };
+    expect(detail.days).toHaveLength(24);
+    expect(Math.floor(detail.days[0]!.verse_start / 1_000_000)).toBe(45);   // starts in Romans
+    expect(Math.floor(detail.days[23]!.verse_end / 1_000_000)).toBe(57);    // ends in Philemon
+    // SEED: include 'heb' in the group and the last day lands in book 58.
+    await deletePlanRoute(new NextRequest('http://localhost'), { params: Promise.resolve({ id: body.plan.id }) });
+  }, 30_000);
+
   it('rejects a malformed spec with the documented envelope', async () => {
     const res = await createPlanRoute(jsonReq({ spec: { scope: { kind: 'book', book: 'rom' }, weeks: 0, daysPerWeek: 2, startDate: '2026-08-03' } }));
     expect(res.status).toBe(400);

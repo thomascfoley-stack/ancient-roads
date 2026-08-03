@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BOOKS, BOOK_BY_NUM } from '@/bible/books';
+import { CANONICAL_GROUPS } from '@/lib/plan/canonical-groups';
 import { formatVerseId } from '@/bible/verse-id';
 
 interface PlanListRow {
@@ -129,7 +130,9 @@ function todayLocalDate(): string {
 }
 
 function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
+  const [scopeType, setScopeType] = useState<'book' | 'books'>('book');
   const [book, setBook] = useState('rom');
+  const [group, setGroup] = useState('pauline-epistles');
   const [weeks, setWeeks] = useState(8);
   const [daysPerWeek, setDaysPerWeek] = useState(5);
   const [startDate, setStartDate] = useState(todayLocalDate);
@@ -142,10 +145,11 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
     setBusy(true);
     setNotice(null);
     try {
+      const scope = scopeType === 'book' ? { kind: 'book', book } : { kind: 'books', group };
       const res = await fetch('/api/plans', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ spec: { scope: { kind: 'book', book }, weeks, daysPerWeek, startDate } }),
+        body: JSON.stringify({ spec: { scope, weeks, daysPerWeek, startDate } }),
       });
       const data = (await res.json()) as { refused?: boolean; reason?: string; error?: { message: string } };
       if (res.status === 201) { onDone(); return; }
@@ -161,15 +165,44 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
 
   return (
     <form onSubmit={submit} className="mt-4 rounded-xl bg-stone-100/80 p-4 shadow-paper dark:bg-stone-800/50">
+      <div className="mb-3 flex gap-1 rounded-full bg-stone-200/60 p-1 dark:bg-stone-900/60" role="tablist" aria-label="Plan scope type">
+        {([['book', 'One book'], ['books', 'A collection']] as const).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={scopeType === value}
+            onClick={() => setScopeType(value)}
+            className={`min-h-[36px] flex-1 rounded-full px-3 text-xs font-medium transition-colors ease-gentle ${
+              scopeType === value
+                ? 'bg-paper text-stone-800 shadow-paper dark:bg-stone-700 dark:text-stone-100'
+                : 'text-stone-500 hover:text-stone-700 dark:text-stone-400'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 text-xs font-medium text-stone-500 dark:text-stone-400">
-          Book
-          <select value={book} onChange={(e) => setBook(e.target.value)} className={field}>
-            {BOOKS.map((b) => (
-              <option key={b.slug} value={b.slug}>{b.name}</option>
-            ))}
-          </select>
-        </label>
+        {scopeType === 'book' ? (
+          <label className="flex flex-col gap-1 text-xs font-medium text-stone-500 dark:text-stone-400">
+            Book
+            <select value={book} onChange={(e) => setBook(e.target.value)} className={field}>
+              {BOOKS.map((b) => (
+                <option key={b.slug} value={b.slug}>{b.name}</option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <label className="flex flex-col gap-1 text-xs font-medium text-stone-500 dark:text-stone-400">
+            Collection
+            <select value={group} onChange={(e) => setGroup(e.target.value)} className={field}>
+              {Object.entries(CANONICAL_GROUPS).map(([key, g]) => (
+                <option key={key} value={key}>{g.label}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="flex flex-col gap-1 text-xs font-medium text-stone-500 dark:text-stone-400">
           Start date
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={field} required />
@@ -212,9 +245,19 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
 
 function refLabel(d: PlanDay): string {
   const start = formatVerseId(d.verse_start).replace(/:1$/, '');
-  const endChapter = Math.floor((d.verse_end % 1_000_000) / 1000);
+  const startBook = Math.floor(d.verse_start / 1_000_000);
+  const endBook = Math.floor(d.verse_end / 1_000_000);
   const startChapter = Math.floor((d.verse_start % 1_000_000) / 1000);
-  return startChapter === endChapter ? start : `${start}–${endChapter}`;
+  const endChapter = Math.floor((d.verse_end % 1_000_000) / 1000);
+  if (startBook === endBook) {
+    return startChapter === endChapter ? start : `${start}–${endChapter}`;
+  }
+  // A canonical-group scope (e.g. Pauline Epistles, 87 chapters over 13 books) will not divide
+  // on book boundaries at any normal pace — measured: 87/24 days = 3.6 ch/day guarantees a
+  // straddling day. Bare "Romans 16–1" (implying ch.16-1 of Romans) would misread as backwards;
+  // name the end book explicitly.
+  const endBookObj = BOOK_BY_NUM.get(endBook);
+  return `${start}–${endBookObj ? endBookObj.name : '?'} ${endChapter}`;
 }
 
 function readerHref(d: PlanDay): string {

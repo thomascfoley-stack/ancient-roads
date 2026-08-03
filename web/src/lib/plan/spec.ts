@@ -7,10 +7,14 @@
 
 import { BOOK_BY_SLUG } from '@/bible/books';
 import { parseRef } from '@/bible/ref-parse';
+import { resolveCanonicalGroup } from './canonical-groups';
 
 export type PlanScope =
-  | { kind: 'book'; book: string }   // canonical book slug, e.g. 'rom'
-  | { kind: 'range'; ref: string };  // a parseable reference, e.g. "Romans 1-8"
+  | { kind: 'book'; book: string }    // canonical book slug, e.g. 'rom'
+  | { kind: 'range'; ref: string }    // a parseable single-book reference, e.g. "Romans 1-8"
+  | { kind: 'books'; group: string }; // a reviewed canonical grouping key, e.g. 'pauline-epistles'
+// A topic scope ({kind:'topic', workSlug, sectionId}) exists in the topic-matching design
+// (docs/PLAN_TOPIC_MATCHING_DESIGN.md) but is not wired here yet — that slice adds it.
 
 export interface PlanSpec {
   scope: PlanScope;
@@ -59,5 +63,10 @@ export function parsePlanSpec(input: unknown): SpecOutcome {
     if (!parsed.ok) return { ok: false, reason: `not a reference: ${parsed.reason}` };
     return { ok: true, spec: { scope: { kind: 'range', ref }, weeks, daysPerWeek, startDate } };
   }
-  return { ok: false, reason: 'scope.kind must be "book" or "range"' };
+  if (scope.kind === 'books') {
+    const group = typeof scope.group === 'string' ? scope.group.trim().toLowerCase() : '';
+    if (!resolveCanonicalGroup(group)) return { ok: false, reason: `unknown canonical group "${group}"` };
+    return { ok: true, spec: { scope: { kind: 'books', group }, weeks, daysPerWeek, startDate } };
+  }
+  return { ok: false, reason: 'scope.kind must be "book", "range", or "books"' };
 }

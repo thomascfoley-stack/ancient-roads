@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { parsePlanSpec } from '@/lib/plan/spec';
+import { resolveCanonicalGroup } from '@/lib/plan/canonical-groups';
 import { createPlan, listPlans } from '@/lib/plan/store';
 
 export const runtime = 'nodejs';
@@ -61,7 +62,15 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function defaultTitle(spec: { scope: { kind: 'book'; book: string } | { kind: 'range'; ref: string }; weeks: number }): string {
-  const what = spec.scope.kind === 'book' ? spec.scope.book : spec.scope.ref;
+function defaultTitle(spec: PlanSpecForTitle): string {
+  const what =
+    spec.scope.kind === 'book' ? spec.scope.book
+    : spec.scope.kind === 'range' ? spec.scope.ref
+    : resolveCanonicalGroup(spec.scope.group)?.label ?? spec.scope.group;
   return `${what} in ${spec.weeks} week${spec.weeks === 1 ? '' : 's'}`;
 }
+
+type PlanSpecForTitle = {
+  scope: { kind: 'book'; book: string } | { kind: 'range'; ref: string } | { kind: 'books'; group: string };
+  weeks: number;
+};

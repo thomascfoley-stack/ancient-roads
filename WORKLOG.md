@@ -1,5 +1,39 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-02 (late) — Canonical groups, topic matcher, dormant delivery fields (ADR-047)
+
+Owner rulings live: reviewed-table for canonical groupings (never model enumeration; Hebrews
+excluded from pauline-epistles with reasoning recorded), delivery/calendar questions kept OUT of
+the intake but schema-ready now, topic matching started alongside.
+
+### DONE
+
+- **`canonical-groups.ts`**: 7 reviewed groupings; whole-bible DERIVED from BOOKS (never typed);
+  `validateCanonicalGroups()` exported so the test asserts the module's own verdict.
+  `PlanSpec.scope` gains `{kind:'books', group}` (unknown key refused at the edge);
+  `chaptersOfScope` flattens the group's books into the existing ChapterSpan walk — the
+  day-bucketing loop is untouched. Builder UI gains a One book / A collection toggle.
+  `refLabel` now names the end book on a day that straddles books ("Romans 16–1 Corinthians 2")
+  — measured: Pauline epistles = 87 chapters over 13 books guarantees straddling days.
+- **`topic-match.ts` + `GET /api/plans/topics?q=`** (design: PLAN_TOPIC_MATCHING_DESIGN.md):
+  FTS over the 12,941 ingested topic headings, published-gated, ≤3 pointers, no embedding call.
+  **The §6 spot check caught a real defect on its first run**: whole-tsv ranking buried exact
+  headings ("faith" → JESUS, THE CHRIST first, FAITH third; "anxiety" → junk). Re-ranked
+  heading-first; second run: 8/8 phrases surface their exact topic first, all three works
+  represented (e.g. prayer → Nave's PRAYER 711 · Torrey's PRAYER 160 · openbible prayer 9).
+- **Migration 041** (dev + ci): `plans.delivery_channel` DEFAULT 'app' + CHECK,
+  `plans.calendar_minutes` nullable — written/read by nothing yet, per ruling.
+- ADR-047; 9 new tests (groups integrity, multi-book expansion covers 87 Pauline chapters
+  exactly once, whole-bible 1,189 chapters on 182 days, straddle-day spans stay forward).
+
+### NOT DONE / NEXT
+
+- `{kind:'topic'}` scope → plan build (bucketing topical_entries into days) — next slice; the
+  matcher returns pointers for it already.
+- Topic+canonical hybrid; repeat-asker topic memory (owner-deferred).
+- The matcher returns [] until the owner publish flip (status='published' gate inherited);
+  spot checks ran with the gate relaxed to staged and are labeled as such.
+
 ## 2026-08-02 (evening) — Study plans core + the topical-index corpus (ADR-045/046)
 
 **Scope, owner-approved live this session:** `STUDY_PLANS_DESIGN.md` §12 steps 1-4 plus the
@@ -78,9 +112,15 @@ plans first — the in-repo STUDY_PLANS_DESIGN + ADR-017 lineage won.
   sidebar entry active. **Signed-in browser walk NOT RUN — no auth credentials on this
   machine** (NEON_AUTH_* absent); the signed-in path is covered by the executed route tests
   above, which mock ONLY the cookie seam.
-- `npm run audit`: greens on the fixed gates re-run individually (typecheck root+web, lint,
-  knip, root tests, residue); full-audit rerun pending the ingest tail (a full re-run takes
-  ~8 min and the qa gate was green minus the pre-existing dev-state suites noted below).
+- `npm run audit`: **EXIT 0, ALL GATES GREEN** (final run 2026-08-02 ~19:20, after the ingest
+  tail completed and the session DB URLs were removed from `web/.env.local`, restoring this
+  machine's pre-session loud-skip posture for the dev-state suites). Final corpus counts,
+  exactly as predicted above: openbible-topics 6,711 sections / 71,210 entries, daily-light
+  732 / 7,011 — grand total 12,941 sections / 195,186 topical entries staged. One transient:
+  `unit-ordinal-instrument` red ONCE while the ingest was concurrently writing sections
+  (perturbation suite raced the ingest), 15/15 green in isolation after. The work is committed
+  at `5ced04c` on `feat/study-plans-adr045`, parented on `fix/desk-and-catalog-uniformity`'s
+  HEAD via a temp-index commit so the concurrent session's branch state was never touched.
 
 ### NOT DONE / UNVERIFIED / DEBT
 
