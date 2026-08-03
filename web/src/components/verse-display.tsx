@@ -6,19 +6,14 @@ import type { ChapterData } from '@/lib/bible';
 import { HIGHLIGHT_BG } from '@/lib/highlight-colors';
 import { flattenToSegments, type HighlightRange } from '@/lib/highlight-range';
 import { useTextAnnotation, type AnnotationTarget } from '@/lib/use-text-annotation';
+// StoredSpan is defined in the hook that produces it (use-annotation-writes.ts), not here —
+// this component only renders the shape, it doesn't own it. Re-exported for callers that used to
+// import it from this module.
+import type { StoredSpan } from '@/lib/use-annotation-writes';
 import { SelectionPopover } from './selection-popover';
 import type { StudyTab } from './study-panel';
 
-// A stored highlight span as the reader holds it: character offsets into v.text (null/null = a
-// legacy whole-verse highlight), the background color, and the translation it was anchored in.
-export interface StoredSpan {
-  id?: string;
-  start: number | null;
-  end: number | null;
-  color: string;
-  textColor?: string | null;
-  translation?: string | null;
-}
+export type { StoredSpan };
 
 export function VerseDisplay({
   data,
