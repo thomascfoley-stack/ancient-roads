@@ -1,5 +1,70 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-03 (owner-reported, screenshot: the selection popover overflowed onto the page)
+
+**Headline: doubling the highlight palette from 5 to 10 colours broke the desktop popover's
+layout. The overflow rendered outside the opaque card, on the page background — which is why
+"Ask" and the commentaries button looked faded/cut off in the report rather than obviously
+broken.**
+
+### THE DEFECT
+
+`selection-popover.tsx`'s desktop card was `w-max max-w-[560px]`, one `flex items-center gap-2`
+row holding swatches + a divider + Note/Bookmark/Ask/commentaries, every child `shrink-0`, no
+`flex-wrap`. Five swatches fit; ten (`highlight-colors.ts`, this session, earlier) plus the action
+buttons runs past 560px. With nothing allowed to shrink or wrap, the overflow did not clip — it
+rendered outside the card's rounded, opaque box, on the plain page background, which reads as
+unstyled/faded text rather than as a broken layout at a glance.
+
+### THE FIX
+
+Swatches and the action row split into two separate `flex flex-wrap` containers (`mt-2` between
+them, matching the spacing convention the Copy row below already used). Splitting means the
+swatch count can grow again without touching the action row's fit at all; `flex-wrap` on each
+means a card placed near a screen edge (narrower than its natural width, per `popover-position.ts`)
+wraps to a second line instead of silently spilling.
+
+### VERIFIED IN A BROWSER, live production code, both viewports
+
+Desktop (1280x800): reproduced the exact reported case — Revelation 21:1, "heaven" selected via a
+real drag gesture. Injected the actual 10-swatch markup into the live card (auth was not
+reachable in this environment to see real swatches otherwise): **0 overflowing elements**, all 10
+render on one row at the card's natural 376px width. Forced the card to a narrow 220px (simulating
+a screen-edge placement): swatches correctly wrap to 2 rows, still **0 overflow**.
+
+Mobile (390x844): the docked-low bar was never broken — it already had `overflow-x-auto` and no
+`max-width` cap, so ten swatches plus the action row simply made an already-scrollable bar longer
+(746px of content in a 366px-wide bar), not clipped. Confirmed with real 10-swatch markup: every
+button, including the last (`Copy`), remains reachable by scroll. Not touched by this fix; noted
+as unchanged rather than re-verified from scratch.
+
+**Environment note, so it is not mistaken for a real finding:** `computer`-tool click-drag
+coordinates were unreliable at 390px partway through this session (drags landed roughly 2x lower
+than the coordinates given, matching `devicePixelRatio`, despite `window.innerWidth/innerHeight`
+and the screenshot tool both reporting 390x844). Worked around by driving `window.getSelection()` +
+`Range` directly, which exercises the same `selectionchange` listener a real selection does. Not
+a product defect; recorded here in case it recurs.
+
+### DONE
+
+- `selection-popover.tsx`: swatches and actions split into separate wrapping rows.
+- `web/test/invariants/selection-popover-layout.test.tsx`, 4 cases, all scoped to the desktop card
+  specifically (`role="toolbar"`) — both the desktop card and the mobile bar mount simultaneously
+  (CSS toggles visibility, not presence), so an unscoped query would have double-counted swatches
+  and could have compared a desktop element's parent against a mobile element's, which would never
+  match regardless of the bug and would have made the test meaningless. Two red-proofed live:
+  recombining the rows failed 3 of 4 cases at once (the isolation test and both wrap tests);
+  dropping `flex-wrap` from only the swatch row failed exactly the one test that names wrapping,
+  and nothing else.
+
+### NOT DONE / UNVERIFIED
+
+- `npm run audit` not run to completion in this entry; app + test typechecks clean, full local
+  vitest suite 382 passed / 0 failed. CI is the gate on the PR.
+- The mobile bar's now-746px scrollable content was confirmed reachable but not re-evaluated for
+  whether a shorter path (e.g. swatches wrapping to 2 rows on mobile too) would be better UX. Not
+  a defect the report named; flagged as a possible future polish, not done here.
+
 ## 2026-08-02 (ADR-047: the number is the handle — owner-ruled, the boundary lifted, shipped)
 
 **Headline: the second word-highlighter cause is closed. The owner ruled on a documented STOP
