@@ -1,5 +1,50 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-03 — PUBLISHED. The topical corpus is live on production; the feature is complete
+
+Owner ran the flip. **4/4 published**, verified end to end against production, read-only.
+
+### Verified on prod
+
+| check | result |
+|---|---|
+| status | naves / torrey / openbible `topical_index` + daily-light `devotional`, all **published** |
+| `matchTopics` SQL, verbatim | prayer → Nave's PRAYER (711) · Torrey's PRAYER (160) · openbible prayer (9); faith / family / affliction / forgiveness all return their exact heading first, all three works represented |
+| `loadTopic` guard | resolves PRAYER under the published + topical_index predicate |
+| entry fetch | 711 entries, under the 2,000 cap → builds (does not hit the refusal) |
+| ordered readings | "Prayer test proposed by Elijah" → 1Ki 18:24, "Daily, in the morning" → Ps 5:3 … the author's own sequence and labels |
+| coverage gate, 12-day plan | 11/12 days covered → **PASSES**, a plan builds |
+| site | `/plans` and `/api/plans/topics` behave as every other gated surface (307 → `/gate?next=…`) |
+
+`verse_coverage` rebuilt after the flip: **unchanged at 30,277 / 27,163 with >=2 authors — correct,
+not a no-op failure.** The rebuild counts `commentary` + `father` only (the exegetical voice pool,
+routing.ts owner decision (c)). A topical-index entry is a classification, not a commentary voice,
+so it must not inflate the voice floor.
+
+### The serving state, for whoever deploys next
+
+The flip's served write ran while A9's backfill was still uncommitted, so production currently
+reads: **served = 13,829 rows, ALL of them ours** (topical_index 13,082 + devotional 747), and
+`044` still absent from the ledger. A9's own backfill (pid 759, >25 min) had not committed at the
+time of writing.
+
+**Inert today** — the deployed commit does not read `embeddings.served` (verified: every `served`
+occurrence in the deployed routing/retrieve/legal-corpus is a comment; the live predicate is the
+slug lists). **It is not inert on the first deploy of `feat/served-column-derives-publish`.** If
+that ships before A9's backfill commits, retrieval serves these four works and nothing else. That
+is A9's sequencing to close, and the finding filed at
+`docs/pm/orders/2026-08-03-finding-publish-flip-guard-proxy.md` is the record of how the guard
+allowed the window.
+
+### The feature, complete
+
+- **Book + canonical-collection plans** — live.
+- **Topical plans** — live: search a phrase, pick from three real attributed topics, get a dated
+  plan whose days carry the index author's own passages, in the author's order, with the author's
+  own labels.
+- Delivery (email / calendar) remains a later third-party slice; `plans.delivery_channel` and
+  `plans.calendar_minutes` are schema-ready and unread.
+
 ## 2026-08-03 — FINDING filed for A9: the flip's 044 guard checks existence, not readiness
 
 Asked whether A9 had landed; measured rather than answered from memory. **It has not** — the
