@@ -205,11 +205,20 @@ this work. Full table: `docs/evidence/a2-prod-readonly-2026-08-01/serving-census
 > into the filter". Historical docs that say "9 authors" pre-date the work-leg expansion and are left
 > as point-in-time record. Re-measured after today's suppressions, which did not change this set.
 
-### 2f. Study plans + topical-index corpus (2026-08-02, dev + ci branches — NOT prod)
+### 2f. Study plans + topical-index corpus (2026-08-02/03)
 
-Measured on dev (`ep-tiny-hat`) after the ADR-045/046 build; migrations **039/040 applied to dev
-and `ci` (br-purple-frog) only — prod has none of this** (apply 039+040 there before any deploy
-carrying `/plans`, then `COVERAGE_ALLOW_PROD=1 pnpm coverage:rebuild` after the publish flip).
+**PRODUCTION, 2026-08-03 (owner go, evidence `docs/evidence/plans-prod-2026-08-03/`):**
+migrations **039, 041, 042 applied and ledger-recorded**; `plans`/`plan_days`/
+`plan_day_readings`/`verse_coverage`/`topical_entries` exist with RLS + policies;
+`verse_coverage` rebuilt — **30,277/31,103 verses, 27,163 with ≥2 authors** from 96,329
+admitted anchors (0 dropped). Refusal gate verified honest there: Song of Songs 5 covered /
+1 with ≥2 authors, Romans 431/431. **040 is HELD** (it alters the `source_type` CHECK on
+`sources` AND `embeddings`; A9's served cutover is doing live DDL on `embeddings`), so prod
+allows no `topical_index` source yet — consistent, because the topical corpus is not there
+either. **No topical work exists on prod**; the publish flip would flip zero rows and was
+NOT run. `/plans` is also not deployed (lives on `feat/study-plans-adr045`, not `main`).
+
+Dev/ci below; migrations **039/040 on dev + `ci` (br-purple-frog)**.
 
 | fact | value | verified |
 |---|---|---|

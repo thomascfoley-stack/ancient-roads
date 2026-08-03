@@ -1,5 +1,63 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-03 — Plans reach PRODUCTION (migrations + coverage); the copier learns topical_entries
+
+Owner go: "do the publish flip and prod migrations." The read came first, and it changed the job.
+
+### THE PUBLISH FLIP WAS A NO-OP AND WAS NOT RUN
+
+Read-only prod check BEFORE any write: **the four topical works do not exist on production**
+(zero rows). They were ingested to dev. `plans`/`plan_days`/`plan_day_readings`/
+`verse_coverage`/`topical_entries` were all ABSENT, the ledger stopped at 038, and
+`source_type` did not allow `topical_index`. A flip would have updated nothing and reported
+success. Reported to the owner instead; scope narrowed live to migrations-only.
+
+### DONE — production
+
+- **039, 041, 042 applied** (`MIGRATE_ALLOW_PROD=1`, one at a time, each ledger-recorded with
+  its sha256). Verified after: five tables present, RLS on all three user tables, three
+  policies, both 041 columns, corpus counts unchanged (124 published / 7 staged / 380,971
+  sections).
+- **040 HELD, deliberately.** It is the only migration touching shared tables (`source_type`
+  CHECK on `sources` AND `embeddings`) and A9's served cutover is doing live DDL on
+  `embeddings`. Verified the hold rather than assuming it: prod still refuses `topical_index`.
+- **`verse_coverage` rebuilt on prod** (dry-run, then executed): 96,329 anchors, 0 dropped →
+  **30,277/31,103 verses covered, 27,163 with >=2 authors**. The refusal gate is honest there:
+  Song of Songs 5 covered / 1 with >=2 authors (a plan is refused), Romans 431/431, Genesis
+  1,516/1,413. `app_runtime` has SELECT, not INSERT.
+- Evidence: `docs/evidence/plans-prod-2026-08-03/README.md`.
+
+### DONE — the copier
+
+`corpus-copy.mjs` predated `topical_entries` and would have moved a topical work as headings
+with **no plan-able structure, silently** — every other count reconciles. Added: the table to
+COPIED_TABLES, a paging read keyed on **(section_id, ordinal)**, the census column, and the
+post-copy comparison **derived from the census row** instead of the hand-typed key list that is
+why this class of gap ships at all. Four manifest entries added to
+`ingest/sources.config.json` (the copier's licence gate refused all four works until they
+existed — fail-closed working); Gate B passes, 915 entries.
+
+Dry-run dev→prod: naves 4,870 sections / 78,107 topical · torrey 628 / 38,858 · openbible
+6,711 / 71,210 · daily-light 732 / 7,011.
+
+**`redproof-corpus-copy.sh`: 59 passed, 0 failed** — and the red-proof earned its name. The
+first version of the topical assertions **stayed GREEN against a mutated section_id-only
+keyset**: the happy-path fixture is 10 rows against a 2,000-row page, so the paging never ran
+and the check could not fail. Moved into the paging block (READ_PAGE=2, 4 entries on one
+section) and re-mutated: **8 of 10, and 2 of 4 on the multi-entry section — RED**, green again
+on revert.
+
+### NOT DONE — what still gates topical plans on production
+
+1. **040** (behind A9's `embeddings` work)
+2. **The corpus copy** — built and dry-run verified, NOT executed; blocked by (1), since
+   prod cannot hold a `topical_index` source yet
+3. **The publish flip** — after (2), and it is an owner-executed terminal gate
+4. **A deploy** — `/plans` is on `feat/study-plans-adr045`, not `main`; deploys are manual
+
+Book and canonical-collection plans need none of 1-3: their tables and coverage are live on
+prod now, so they work as soon as the code deploys.
+
 ## 2026-08-03 — The served cutover: audit, five confirmed defects fixed, order re-filed as v2
 
 Branch `feat/served-column-derives-publish` (pushed, upstream set). Context: the 2026-08-03
