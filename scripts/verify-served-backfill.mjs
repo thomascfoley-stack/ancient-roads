@@ -25,7 +25,7 @@
  *
  * ── VALIDITY WINDOW ─────────────────────────────────────────────────────────────────────────
  * `served` equals the frozen record only from 044's backfill until the FIRST intentional serve
- * flip (e.g. serving the 76 published-but-unserved works). After that, the equality check is
+ * flip (e.g. serving the 88 published-but-unserved works (docs/evidence/corpus-copy/serve-88.json)). After that, the equality check is
  * EXPECTED to fail in the served-but-not-frozen direction — that is the flip working, not a
  * defect, and the failure message says so. Post-flip reconciliation (sources.status vs served
  * agreement) is a different instrument, filed in the cutover order.
@@ -68,7 +68,21 @@ const url = process.env.DATABASE_URL;
 function die(msg, code = 1) { console.error(`\x1b[31m${msg}\x1b[0m`); process.exit(code); }
 if (!url) die('set DATABASE_URL', 2);
 
-const host = (/^[a-z+]+:\/\/(?:[^@/]*@)?([^/?#]+)/i.exec(url.trim())?.[1] ?? '').toLowerCase();
+let failures = 0;
+let equalityMissing = 0;
+const ok = (m) => console.log(`  \x1b[32mPASS\x1b[0m  ${m}`);
+const bad = (m) => { console.log(`  \x1b[31mFAIL\x1b[0m  ${m}`); failures++; };
+
+// The host is read off the CONSTRUCTED Client — pg's own parse of the exact string it will
+// connect with — never a parallel regex. Bylaw-4 refuter, verified against the installed
+// pg-connection-string@2.14.0: a `?host=` query parameter overrides the URL authority at connect
+// time, so a regex on the authority read `localhost` while pg connected to the override — which
+// walked --red-proof's unconditional prod refusal. Client construction parses without
+// connecting, so the guard runs on the true target BEFORE any socket is opened. An
+// undeterminable host refuses; unknown must never read as "not prod".
+const c = new Client({ connectionString: url });
+const host = String(c.host ?? '').toLowerCase();
+if (!host) die('cannot determine the target host from DATABASE_URL — refusing to guess whether this is production', 2);
 const isProd = host.includes('ep-odd-fog');
 if (isProd && process.env.VERIFY_SERVED_ALLOW_PROD !== '1') {
   die(`REFUSING: ${host.split('.')[0]} is production. Bylaw 7 wants the owner's go per occasion.\n` +
@@ -76,12 +90,6 @@ if (isProd && process.env.VERIFY_SERVED_ALLOW_PROD !== '1') {
 }
 if (isProd && RED_PROOF) die('REFUSING: --red-proof writes a row. Never against production.', 2);
 
-let failures = 0;
-let equalityMissing = 0;
-const ok = (m) => console.log(`  \x1b[32mPASS\x1b[0m  ${m}`);
-const bad = (m) => { console.log(`  \x1b[31mFAIL\x1b[0m  ${m}`); failures++; };
-
-const c = new Client({ connectionString: url });
 await c.connect();
 await c.query("SET statement_timeout='600s'");
 console.log(`verify-served-backfill — ${host.split('.')[0]}${isProd ? '  \x1b[33m(PRODUCTION, owner-authorized)\x1b[0m' : ''}`);
@@ -116,9 +124,9 @@ try {
   if (missing === 0 && extra === 0) {
     ok(`served set is identical to the frozen pre-044 filters (${served_total} rows)`);
   } else {
-    bad(`served set differs from the frozen record: ${missing} frozen-but-unserved (broken backfill), ` +
+    bad(`served set differs from the frozen record: ${missing} frozen-but-unserved (broken backfill OR an intentional un-serve/takedown), ` +
         `${extra} served-but-not-frozen (broken backfill OR a later intentional serve flip — ` +
-        `if flips have run since 042, the 'extra' direction is expected; 'missing' never is). ` +
+        `if serve flips have run since 044, the 'extra' direction is expected; 'missing' never is). ` +
         `frozen=${frozen_total} served=${served_total}`);
     const ex = await c.query(`
       SELECT id, metadata->>'work' AS work, metadata->>'author' AS author, source_type, served
@@ -173,11 +181,18 @@ if (RED_PROOF) {
   await c.end();
   const frozenRow = seen.rows[0]?.frozen === true;
   if (equalityMissing >= 1 && frozenRow) {
+    // Bylaw-4 refuter: the seed accounts for exactly ONE failure (the equality check). Any
+    // OTHER failure in the same run is a REAL finding on this database, and exiting 0 over it
+    // would let a scripted caller record a clean run across a genuine licensing red.
+    if (failures > 1) {
+      die(`\nRED-PROOF HELD, BUT ${failures - 1} UNRELATED check(s) ALSO FAILED — see above. ` +
+          'The seeded bit was caught, and this database has real findings. Exit is nonzero so nothing records this as clean.');
+    }
     console.log(`\n\x1b[32mRED-PROOF HELD\x1b[0m — the equality check reported ${equalityMissing} frozen-but-unserved row(s) and the seeded row is provably one of them.`);
     process.exit(0);
   }
   die(`\nRED-PROOF DID NOT FIRE — equalityMissing=${equalityMissing}, seeded-row-in-frozen-set=${frozenRow}. ` +
       'A forced-unserved frozen row was not named by the equality check. This verifier proves nothing; do not gate on it.');
 }
-if (failures > 0) die(`\n${failures} check(s) FAILED — see above. 'missing' failures mean 042 is NOT behaviour-preserving here.`);
+if (failures > 0) die(`\n${failures} check(s) FAILED — see above. 'missing' means EITHER 044's backfill is broken here OR an intentional un-serve (a takedown/reverse) has run — check the flip run logs before diagnosing.`);
 console.log('\n\x1b[32mOK\x1b[0m — served set is exactly the frozen pre-044 filters; tightenings safe; no banned author served; work-less cohort unreachable.');

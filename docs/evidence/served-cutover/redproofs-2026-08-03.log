@@ -1,0 +1,83 @@
+# served-cutover red-proof rehearsal — 2026-08-03, throwaway Postgres 17 + pgvector (127.0.0.1:55439)
+# tree: eb5a89e + staged fixes. Fixture: /tmp/pg039s/fixture.sql + fixture-flip.sql
+# Every check below was WATCHED fail before being trusted (THE_LOOP rule 4).
+
+== SETUP: fresh db t044r, fixture, apply 044 ==
+NOTICE:  database "t044r" does not exist, skipping
+DROP DATABASE
+CREATE DATABASE
+SET
+SET
+ALTER TABLE
+SET
+UPDATE 88
+UPDATE 9
+UPDATE 12
+UPDATE 13
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+
+== 1. VERIFIER GREEN (lane rows present) ==
+verify-served-backfill — 127
+  expected set: the FROZEN pre-044 filters (scripts/lib/served-backfill-frozen.mjs), 4 legs
+
+  [32mPASS[0m  served set is identical to the frozen pre-044 filters (122 rows)
+  [32mPASS[0m  exegetical pool: every admitted row is commentary/father — the index conjunct is safe
+  [32mPASS[0m  song/verse lane: every admitted row is hymn/poetry — the index conjunct is safe
+  [32mPASS[0m  sermon lane: every admitted row is sermon — the index conjunct is safe
+  [32mPASS[0m  theology lane: every admitted row is theology/confession — the index conjunct is safe
+  [32mPASS[0m  no served row belongs to any of the 8 MUST_NOT_SERVE authors
+  [32mPASS[0m  104 work-less rows: 63 served, ALL inside the frozen author allowlist; the rest are unreachable (the flip addresses rows by slug)
+
+[32mOK[0m — served set is exactly the frozen pre-044 filters; tightenings safe; no banned author served; work-less cohort unreachable.
+
+== 2. RED-PROOF (seeded row must be named) ==
+  [33mRED-PROOF[0m restored row 00817c95-5c0e-48b9-b28b-ba934a387041 to served=true
+
+[32mRED-PROOF HELD[0m — the equality check reported 1 frozen-but-unserved row(s) and the seeded row is provably one of them.
+
+== 3. MUTANT tyndale:1 served (must-not-serve, work-less) — expect 3 FAILs ==
+  [31mFAIL[0m  served set differs from the frozen record: 0 frozen-but-unserved (broken backfill OR an intentional un-serve/takedown), 1 served-but-not-frozen (broken backfill OR a later intentional serve flip — if serve flips have run since 044, the 'extra' direction is expected; 'missing' never is). frozen=122 served=123
+  [31mFAIL[0m  MUST_NOT_SERVE author is SERVED: Tyndale Study Notes (1 rows)
+  [31mFAIL[0m  1 work-less row(s) served OUTSIDE the frozen allowlist — this cohort holds the copyrighted authors. LICENSING REGRESSION.
+3 check(s) FAILED — see above. 'missing' means EITHER 044's backfill is broken here OR an intentional un-serve (a takedown/reverse) has run — check the flip run logs before diagnosing.[0m
+
+== 4. MUTANT lewis:1 served (copyright suspect, NOT on the banned list — the NULL-blindness case) — expect 2 FAILs ==
+  [31mFAIL[0m  served set differs from the frozen record: 0 frozen-but-unserved (broken backfill OR an intentional un-serve/takedown), 1 served-but-not-frozen (broken backfill OR a later intentional serve flip — if serve flips have run since 044, the 'extra' direction is expected; 'missing' never is). frozen=122 served=123
+  [31mFAIL[0m  1 work-less row(s) served OUTSIDE the frozen allowlist — this cohort holds the copyrighted authors. LICENSING REGRESSION.
+2 check(s) FAILED — see above. 'missing' means EITHER 044's backfill is broken here OR an intentional un-serve (a takedown/reverse) has run — check the flip run logs before diagnosing.[0m
+
+== 5. GREEN RESTORED ==
+[32mOK[0m — served set is exactly the frozen pre-044 filters; tightenings safe; no banned author served; work-less cohort unreachable.
+
+== 6. FLIP: forward on a published slug WITHOUT --serve-published must STOP ==
+STOP: 1 listed slug(s) are already 'published': calvin-calcom08.
+  already-published works is what you mean (e.g. the 76), re-run with --serve-published.
+
+== 7. FLIP: --serve-published forward (0 status, 11 served) then exact reverse ==
+serve:false   standing ruling(s) in the manifest
+snapshot     /tmp/pg039s/evidence/flip-pre-snapshot-2026-08-03T06-00-56-820Z.json (8 rows + served state for 1 slug(s), written before COMMIT)
+serve-published  1 already-published slug(s) will be SERVED (status unchanged)
+eligible     0 of 1 are 'staged' (1 already 'published')
+served       11 embedding row(s) -> served=true across 1 slug(s)
+OK — gate held. 0 status row(s) staged -> published; 11 embedding row(s) -> served=true.
+  un-serving   1 slug(s) the forward flip served from zero
+snapshot     /tmp/pg039s/evidence/flip-pre-snapshot-2026-08-03T06-00-56-877Z.json (8 rows + served state for 1 slug(s), written before COMMIT)
+served       11 embedding row(s) -> served=false across 1 slug(s)
+OK — gate held. 0 status row(s) published -> staged; 11 embedding row(s) -> served=false.
+calcom08 served/total: 0/11
+
+== 8. GATE: banned author (origen-commentary) must STOP and roll back ==
+STOP: serving these works would serve MUST_NOT_SERVE author(s): Origen of Alexandria. Rolled back.
+origen status/served: staged/0
+
+== 9. GATE: manifest serve:false (whitefield-works) must STOP pre-connect ==
+STOP: listed slug(s) are serve:false in the manifest (a standing quality/quarantine ruling): whitefield-works.
+
+== 10. WELD mutants (see test/invariants/served-backfill-frozen-sync.test.ts): lowercase fifth leg, widened leg, split DROP, non-CONCURRENTLY index — each 1 failed | 3 passed when seeded; 4 passed restored. Run in CI on every push. ==
+== 11. CONTRACT: 045 applies after (IF EXISTS drops) ==
+9

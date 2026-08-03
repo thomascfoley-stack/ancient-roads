@@ -6,7 +6,7 @@
 --
 --   1. NUMBER COLLISION. The concurrent /plans slice already occupies 039, 040 and 041
 --      (039_plans_coverage_topical, 040_source_type_topical_index, 041_plans_delivery_fields —
---      applied to dev and ci under those filenames, which the ledger pins). Two documents saying
+--      applied to dev and ci under those filenames per their session records — NOTE the schema_migrations ledger table does NOT exist on those targets, the runner warns NOT RECORDED, so the filenames are pinned by git and the records, not by any database). Two documents saying
 --      "apply 039 to prod" meant different files. This migration is 044; the contract half is 045.
 --
 --   2. DROP-WHILE-LIVE. The 4f14f17 version built the new indexes, then DROPped the old serving
@@ -25,7 +25,7 @@
 -- the 77 works published to production on 2026-08-03 are readable on the shelf and invisible to
 -- /ask: `sources.status='published'` and "served" were two unrelated facts.
 --
--- The lists were the twelfth instance of the hand-maintained-expected-set class (MASTER.md
+-- The lists were the thirteenth instance of the hand-maintained-expected-set class (MASTER.md
 -- watchlist, artefact 1). The others were closed by DERIVATION. This one cannot be derived in the
 -- query, because a partial index predicate may not contain a subquery — so it is MATERIALIZED:
 -- one boolean, written by the publish flip in the same transaction that moves `sources.status`.
@@ -48,7 +48,7 @@
 --                    there is no third state.
 --   BACKFILL = the four pre-cutover filters VERBATIM. The served set immediately after this
 --                    migration is byte-identical to the served set immediately before it. The
---                    mechanism changes; no answer changes. Serving the 76 published-but-unserved
+--                    mechanism changes; no answer changes. Serving the 88 published-but-unserved
 --                    works is a separate, owner-gated, measured flip — never a schema side effect.
 --   NO WORK KEY, NO PATH IN. The publish flip addresses rows by slug; the work-less cohort has
 --                    none, so no future flip can reach it. Unreachable, not merely unnamed.
@@ -77,10 +77,19 @@
 -- are untouched by this file, so the old bundle keeps working throughout.
 -- ============================================================
 
+-- lock_timeout guards ONLY the ALTER: it is the statement that takes ACCESS EXCLUSIVE and can
+-- wedge a live database behind a long reader. It is then reset to 0 BEFORE the CIC builds,
+-- because CONCURRENTLY legitimately waits out long transactions in its final phases — a 5s cap
+-- there makes the build flaky-by-design on exactly the busy database it defends (bylaw-4
+-- refuter, 2026-08-03). If the ALTER aborts on the timeout: re-run this migration; the ALTER is
+-- IF NOT EXISTS and the backfill UPDATEs are idempotent (they re-run in full — accepted cost).
+-- The runner refuses pooled (-pooler) hosts, so these session SETs provably reach one backend.
 SET lock_timeout = '5s';
 SET maintenance_work_mem = '256MB';
 --SPLIT--
 ALTER TABLE embeddings ADD COLUMN IF NOT EXISTS served boolean NOT NULL DEFAULT false;
+--SPLIT--
+SET lock_timeout = 0;
 --SPLIT--
 -- ── the backfill: EXACTLY the four pre-cutover filters (frozen record; see header) ───────────
 -- Leg 1 — the exegetical pool (old LEGAL_CORPUS_FILTER ∧ old PROSE_TYPE_SQL), verbatim,
@@ -146,3 +155,12 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_embeddings_served_theology
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_embeddings_verseid_served
   ON embeddings (((metadata->>'verseId')::int))
   WHERE (user_id IS NULL AND served);
+--SPLIT--
+-- ── the work-key btree, for the flip's own writes and every reconcile/census read ────────────
+-- The flip (served UPDATE, servedBefore census, banned-author gate) and the reconciliation
+-- instrument all address rows by metadata->>'work'; without this every one is a full-table scan
+-- inside the flip's transaction, times 10-20 planned catch-up batches (bylaw-4 refuter). NOT
+-- served-predicated: un-serve targets rows in BOTH states.
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_embeddings_work
+  ON embeddings ((metadata->>'work'))
+  WHERE (user_id IS NULL);

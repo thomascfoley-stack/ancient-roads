@@ -84,6 +84,17 @@ Lewis row (copyright suspect, NOT on the MUST_NOT_SERVE list) passed all seven c
 with `coalesce(…, false)`; the Lewis mutant now trips two checks. This is why red-proofs run on
 data shaped like production, not on convenient fixtures.
 
+## Correction found while acting on this verdict
+
+The findings say "the 76 published-but-unserved works" throughout: that number was the author's
+sweep-local arithmetic (77 published minus keil) and the completeness refuter proved it wrong —
+the cohort is **88** (124 published minus 30 slug-served minus 6 author-served), re-derived
+independently from the committed pre-flip snapshot and committed as
+`docs/evidence/corpus-copy/serve-88.json`. The findings are quoted as issued; read 76 as 88.
+Also corrected on this pass: the "ledger pins filenames" claim in 851963d's message is false on
+the real targets — no schema_migrations table exists on dev or ci (the runner warns NOT
+RECORDED); git and the session records pin the filenames, nothing else does.
+
 ## Disposition
 
 | What | Where |

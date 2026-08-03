@@ -157,7 +157,7 @@ export const ALL_SERVED_WORKS: readonly string[] = Object.values(SERVED_WORK_LIS
 // WHY THE CHANGE. `sources.status='published'` and "served" were two unrelated facts. 76 of the
 // 77 works published to production on 2026-08-03 were in none of these lists, so they were
 // shelf-readable and invisible to /ask, and making one serve meant a code edit plus a rebuild
-// migration plus an HNSW graph rebuild, in lockstep, forever. The lists were the twelfth instance
+// migration plus an HNSW graph rebuild, in lockstep, forever. The lists were the thirteenth instance
 // of the hand-maintained-expected-set class (MASTER.md watchlist, artefact 1). The others were
 // closed by DERIVATION; this one cannot be, because a partial index predicate may not contain a
 // subquery — so it is MATERIALIZED, and `scripts/publish-flip.mjs` is the only writer.

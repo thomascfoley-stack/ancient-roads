@@ -29,6 +29,14 @@ if (!file) { console.error('usage: node db/apply-migration-concurrent.mjs <path-
 const url = localEnv('DATABASE_URL') ?? localEnv('DATABASE_URL_UNPOOLED');
 if (!url) { console.error('owner DATABASE_URL is required'); process.exit(1); }
 // Dev-only by default; Part C prod run sets MIGRATE_ALLOW_PROD=1 (A6 2026-07-17).
+if (/-pooler\./.test(url)) {
+  // Session SETs (lock_timeout, maintenance_work_mem) and the multi-group apply protocol assume
+  // ONE server session. Through a Neon pooler in transaction mode, every group can land on a
+  // different backend: the SETs silently apply to nothing and CIC coordination degrades. Migrate
+  // on the DIRECT endpoint only (bylaw-4 refuter, 2026-08-03).
+  console.error('✗ REFUSE: DATABASE_URL is a POOLED host (-pooler). Migrations need the direct endpoint - session SETs and CONCURRENTLY coordination do not survive transaction pooling.');
+  process.exit(1);
+}
 if (!/ep-tiny-hat|localhost|127\.0\.0\.1/.test(url) && process.env.MIGRATE_ALLOW_PROD !== '1') {
   console.error('✗ REFUSE: DATABASE_URL is not the dev endpoint (ep-tiny-hat). For the deliberate Part C prod run, set MIGRATE_ALLOW_PROD=1.');
   process.exit(1);

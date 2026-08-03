@@ -1,11 +1,68 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-03 — Plans reach PRODUCTION (migrations + coverage); the copier learns topical_entries
+
+Owner go: "do the publish flip and prod migrations." The read came first, and it changed the job.
+
+### THE PUBLISH FLIP WAS A NO-OP AND WAS NOT RUN
+
+Read-only prod check BEFORE any write: **the four topical works do not exist on production**
+(zero rows). They were ingested to dev. `plans`/`plan_days`/`plan_day_readings`/
+`verse_coverage`/`topical_entries` were all ABSENT, the ledger stopped at 038, and
+`source_type` did not allow `topical_index`. A flip would have updated nothing and reported
+success. Reported to the owner instead; scope narrowed live to migrations-only.
+
+### DONE — production
+
+- **039, 041, 042 applied** (`MIGRATE_ALLOW_PROD=1`, one at a time, each ledger-recorded with
+  its sha256). Verified after: five tables present, RLS on all three user tables, three
+  policies, both 041 columns, corpus counts unchanged (124 published / 7 staged / 380,971
+  sections).
+- **040 HELD, deliberately.** It is the only migration touching shared tables (`source_type`
+  CHECK on `sources` AND `embeddings`) and A9's served cutover is doing live DDL on
+  `embeddings`. Verified the hold rather than assuming it: prod still refuses `topical_index`.
+- **`verse_coverage` rebuilt on prod** (dry-run, then executed): 96,329 anchors, 0 dropped →
+  **30,277/31,103 verses covered, 27,163 with >=2 authors**. The refusal gate is honest there:
+  Song of Songs 5 covered / 1 with >=2 authors (a plan is refused), Romans 431/431, Genesis
+  1,516/1,413. `app_runtime` has SELECT, not INSERT.
+- Evidence: `docs/evidence/plans-prod-2026-08-03/README.md`.
+
+### DONE — the copier
+
+`corpus-copy.mjs` predated `topical_entries` and would have moved a topical work as headings
+with **no plan-able structure, silently** — every other count reconciles. Added: the table to
+COPIED_TABLES, a paging read keyed on **(section_id, ordinal)**, the census column, and the
+post-copy comparison **derived from the census row** instead of the hand-typed key list that is
+why this class of gap ships at all. Four manifest entries added to
+`ingest/sources.config.json` (the copier's licence gate refused all four works until they
+existed — fail-closed working); Gate B passes, 915 entries.
+
+Dry-run dev→prod: naves 4,870 sections / 78,107 topical · torrey 628 / 38,858 · openbible
+6,711 / 71,210 · daily-light 732 / 7,011.
+
+**`redproof-corpus-copy.sh`: 59 passed, 0 failed** — and the red-proof earned its name. The
+first version of the topical assertions **stayed GREEN against a mutated section_id-only
+keyset**: the happy-path fixture is 10 rows against a 2,000-row page, so the paging never ran
+and the check could not fail. Moved into the paging block (READ_PAGE=2, 4 entries on one
+section) and re-mutated: **8 of 10, and 2 of 4 on the multi-entry section — RED**, green again
+on revert.
+
+### NOT DONE — what still gates topical plans on production
+
+1. **040** (behind A9's `embeddings` work)
+2. **The corpus copy** — built and dry-run verified, NOT executed; blocked by (1), since
+   prod cannot hold a `topical_index` source yet
+3. **The publish flip** — after (2), and it is an owner-executed terminal gate
+4. **A deploy** — `/plans` is on `feat/study-plans-adr045`, not `main`; deploys are manual
+
+Book and canonical-collection plans need none of 1-3: their tables and coverage are live on
+prod now, so they work as soon as the code deploys.
+
 ## 2026-08-03 — The served cutover: audit, five confirmed defects fixed, order re-filed as v2
 
 Branch `feat/served-column-derives-publish` (pushed, upstream set). Context: the 2026-08-03
 sweep published 77 works to production (evidence committed this session: `flip-run-2026-08-03T02-14-25-907Z.log`,
-snapshot `…02-14-38-171Z.json`) — production is now **124 published works, 76 of them
-published-but-unserved**, the standing A3-rule divergence the cutover exists to close.
+snapshot `…02-14-38-171Z.json`) — production is now **124 published works, 88 of them published-but-unserved**, the standing A3-rule divergence the cutover exists to close.
 
 ### DONE
 
@@ -34,7 +91,7 @@ published-but-unserved**, the standing A3-rule divergence the cutover exists to 
 - **Tree resolved** — full-tree backup ref `backup/tree-2026-08-03` (holds the /plans session's
   uncommitted app code), pushed; branch pushed. /plans app code deliberately NOT committed
   (its typecheck is red at `src/lib/plan/expand.ts` — that session's work).
-- **Order re-filed as v2 in place** — serve-the-76 is an explicit reversible step; real script
+- **Order re-filed as v2 in place** — serve-the-88 is an explicit reversible step (payload measured + committed as serve-88.json; the 76 I first reported was sweep-local arithmetic, caught by the refuters); real script
   names; batch arithmetic (10-20 sessions, not 2); v3-iterate / v4.1-once eval protocol with
   preconditions (DEEPINFRA key, served census, pre-044 v3 baseline); P0 adds the fiction
   register (R5), per-author voice cap (R2), aggregate dedupe (R1), coverage census (R4),
@@ -80,6 +137,47 @@ close this build out."
   BIGINT section ids arrive as strings; matchTopics casts ::int.
 - Adversarial review workflow (3 lenses + verify) run over the slice before commit; findings
   and dispositions below/in the commit.
+
+### ADVERSARIAL REVIEW — 7 defects found and fixed BEFORE commit
+
+A 3-lens review workflow (correctness / RLS-tenancy / repo-conventions) with an adversarial
+verify pass ran over the slice before it landed. Six findings survived verification; a seventh
+was recovered by hand after four verifier agents died on a session limit. All fixed:
+
+1. **[HIGH] G1's digest SQL was unexecutable for BOTH plan tables.** `measureSql` hardcoded
+   `id` in the identity list and `ORDER BY id::text`; `plan_days` (shipped EARLIER TONIGHT) and
+   `plan_day_readings` key on composite PKs and have no `id`. **Red-proved by running it: both
+   raised 42703.** `cutover.mjs` reports that error as "a column this invariant covers has been
+   dropped or renamed ... restore from the pre-cutover snapshot" — a false schema-regression
+   verdict on a healthy database — and the regression gate's G1 would have thrown raw. Neither
+   classification had ever been executed. Fixed by declaring `idColumns` (default `['id']`, so
+   every pre-existing table's digest is byte-identical and no committed baseline moves), and
+   **the check that did not exist now does**: `g1-measure-executable.test.ts` runs the real SQL
+   for every table derived from USER_TABLE_SPEC — 20 pass, waitlist visibly NOT RUN (absent).
+2. **[MED, found independently by two lenses] createPlan was not atomic.** Three sequential
+   `runAsUser` calls = three independent commits over the stateless HTTP driver. A transient
+   failure between commits 2 and 3 left a topical plan with days but no readings, which renders
+   as its lead passages ALONE — silently understating the day, permanently, with no error. Now
+   ONE transaction (client-generated UUID so the id is known before the batch). The count
+   guards remain as defense-in-depth and their comment now states plainly that they cannot roll
+   back, because `sql.transaction` has already committed when it returns.
+3. **[MED] loadTopic silently truncated at 2,000 entries** while the picker advertised the
+   topic's true count (Nave's "JESUS, THE CHRIST" is 3,833) — a plan claiming a topic it did
+   not cover. Now refuses with a reason; the query fetches cap+1 to detect it.
+4. **[MED] Topic-search failure rendered as "no matching topics in the library yet"** — an
+   authoritative claim about the corpus produced by an instrument that did not run (exactly the
+   watchlist's "instrument's blind spot recorded as a property of the thing it could not see").
+   Error and empty are now distinct states.
+5. **[MED] Test teardown used four empty catches**, so a failed final DELETE could strand a
+   PUBLISHED qa source while the suite reported green. Now demotes to `staged` FIRST (after
+   which no partial teardown can leave it published), keeps every step independent, and logs
+   anything swallowed.
+6. **[the recovered one] `readingLabel` leaked the CHAPTER_END_SENTINEL to users**: a
+   whole-chapter topical reference rendered as "Numbers 17:1-999". Four verifier agents died
+   before ruling on this, so it was checked by hand against real cases and confirmed. Fixed to
+   name chapters, plus a cross-book case it also got wrong; `plan-reading-label.test.ts`.
+
+Final: 66 plan tests green, residue gate clean across 20 tables, `npm run audit` exit 0.
 
 ### NOT DONE / NEXT
 

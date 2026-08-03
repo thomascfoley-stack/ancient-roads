@@ -55,7 +55,7 @@ const reverse = has('--reverse');
 // `embeddings.served`, so a forward run whose payload contains already-published works SERVES
 // their rows while moving zero status rows — a materially different act from re-running a
 // status flip, and the old code did it silently ("the rest are already 'published'") with no
-// tool inverse. Serving the 76 published-but-unserved works is precisely this act, so it must
+// tool inverse. serving the 88 published-but-unserved works (docs/evidence/corpus-copy/serve-88.json) is precisely this act, so it must
 // be deliberate: without this flag a forward payload containing a published slug is a STOP.
 const servePublished = has('--serve-published');
 const slugFile = val('--slugs');
@@ -122,7 +122,7 @@ if (!slugs.every((s) => typeof s === 'string' && /^[a-z0-9][a-z0-9-]*$/.test(s))
 // ── the manifest serve:false gate (forward only; a withdrawal is never blocked, M7) ─────────
 // 2026-08-03 audit: the flip became the serving switch without inheriting any serving gate.
 // Quarantine rulings live in the manifest as `serve:false` (whitefield-works is the standing
-// example — a QUALITY ruling, not an oversight), and before 042 they were enforced by the slug
+// example — a QUALITY ruling, not an oversight), and before 044 they were enforced by the slug
 // simply never being added to a routing list. That wall is gone; this is its replacement.
 // Checked BEFORE any connection: it is pure repo state, and the answer cannot change mid-run.
 if (!reverse) {
@@ -133,6 +133,10 @@ if (!reverse) {
     die(`STOP: cannot read ingest/sources.config.json (${e.message}). The serve:false gate needs it; refusing to publish blind.`, 2);
   }
   const noServe = new Set(manifestEntries.filter((e) => e?.serve === false).map((e) => e.slug));
+  // The ruling count is PRINTED so a manifest that silently lost its serve fields is visible
+  // (bylaw-4 refuter: absence passed indistinguishably from a clean check). Zero rulings is
+  // legal but loud.
+  console.log(`serve:false   standing ruling(s) in the manifest`);
   const blocked = slugs.filter((s) => noServe.has(s));
   if (blocked.length > 0) {
     die(`STOP: listed slug(s) are serve:false in the manifest (a standing quality/quarantine ruling): ${blocked.join(', ')}.\n` +
@@ -307,7 +311,7 @@ try {
   //
   // `sources` was 7 rows when this was written and is ~124 heading to ~900 — FOR UPDATE on the
   // whole table is still cheap in absolute terms, but it now serializes against any concurrent
-  // copy/ingest session for the LIFE OF THIS TRANSACTION, which since 042 includes a served
+  // copy/ingest session for the LIFE OF THIS TRANSACTION, which since 044 includes a served
   // UPDATE over every listed work's embeddings rows. Batch size bounds that duration; the filed
   // order requires timing a dev-scale flip before sizing prod batches. It also composes with the
   // re-ingest guard (src/ingest/reingest-guard.ts): that guard takes FOR UPDATE on the row it is
@@ -323,8 +327,16 @@ try {
   const payload = reverseSlugs;
   const { missing, eligible, thirdStatus } = eligibility(payload, beforeBy, from, to);
   if (missing.length > 0) {
-    await client.query('ROLLBACK');
-    die(`STOP: slug(s) not present in sources: ${missing.join(', ')}`, 1);
+    if (reverse) {
+      // M7's direction (bylaw-4 refuter): a withdrawal may only shrink the published set, and a
+      // listed slug whose sources row no longer EXISTS cannot be un-published — blocking the
+      // whole reverse on it would keep every OTHER listed work published during an emergency.
+      // Report, drop, continue.
+      console.error(`  ⚠ listed slug(s) not present in sources — nothing to withdraw for: ${missing.join(', ')}`);
+    } else {
+      await client.query('ROLLBACK');
+      die(`STOP: slug(s) not present in sources: ${missing.join(', ')}`, 1);
+    }
   }
 
   // ── does this target carry `embeddings.served` (migration 044)? ─────────────────────────
@@ -395,16 +407,16 @@ try {
   }
 
   // ── already-published slugs on a FORWARD run need --serve-published (audit finding 2) ────
-  // The old message here — "the rest are already 'published'" — described a no-op. Since 042 it
+  // The old message here — "the rest are already 'published'" — described a no-op. Since 044 it
   // describes a SERVE: those works' rows flip served=true with zero status movement. That is
-  // the deliberate mechanism for the 76, and it must never happen as a side effect of a stale
+  // the deliberate mechanism for the 88 (serve-88.json), and it must never happen as a side effect of a stale
   // slug list, so without the flag it is a STOP, with the flag it is announced by name.
   const alreadyTo = payload.filter((sl) => beforeBy.get(sl) === to);
   if (!reverse && alreadyTo.length > 0 && !servePublished) {
     await client.query('ROLLBACK');
     die(`STOP: ${alreadyTo.length} listed slug(s) are already 'published': ${alreadyTo.slice(0, 8).join(', ')}${alreadyTo.length > 8 ? ', …' : ''}.\n` +
         '  A forward flip would SERVE their embeddings rows without moving status. If serving\n' +
-        '  already-published works is what you mean (e.g. the 76), re-run with --serve-published.', 1);
+        '  already-published works is what you mean (e.g. the 88), re-run with --serve-published.', 1);
   }
   if (!reverse && alreadyTo.length > 0) {
     console.log(`serve-published  ${alreadyTo.length} already-published slug(s) will be SERVED (status unchanged)`);
@@ -421,7 +433,7 @@ try {
   }
 
   // ── `embeddings.served` moves WITH the status, in this same transaction (migration 044) ──
-  // Before 042 these were unrelated facts: retrieval read four hand-typed slug lists in
+  // Before 044 these were unrelated facts: retrieval read four hand-typed slug lists in
   // routing.ts, so publishing a work made it shelf-readable and left it invisible to /ask. 76 of
   // the 77 works published on 2026-08-03 landed in exactly that state. `served` is now the
   // switch, and this transaction is its ONLY writer.
@@ -446,6 +458,28 @@ try {
       [servedTargets, servedTo],
     );
     servedRows = emb.rowCount;
+    // The rowcount is ASSERTED against the servedBefore record, not just printed (bylaw-4
+    // refuter: the exact-inverse claim rested on an unlocked read). After the partial-state
+    // refusal, every target slug is all-on or all-off, so the expected count is exact:
+    // forward serves each target's rows where served=0 before; reverse un-serves the same.
+    // A mismatch means the served state moved between the snapshot read and this UPDATE
+    // (a concurrent writer this transaction's sources lock does not cover) — roll back and
+    // say so rather than committing a snapshot that no longer describes the write.
+    if (servedBefore) {
+      // Forward: a target serves all its rows iff none were served (post-refusal, states are
+      // all-or-nothing; already-served slugs contribute 0 via `served <> $2`). Reverse: exactly
+      // the currently-served rows flip off, partial or not — servedBefore here is THIS run's
+      // fresh read, so s.served IS the count `served <> false` will touch.
+      const expected = servedTargets.reduce((n, sl) => {
+        const s = servedBefore[sl] ?? { rows: 0, served: 0 };
+        return n + (servedTo ? (s.served === 0 ? s.rows : 0) : s.served);
+      }, 0);
+      if (servedRows !== expected) {
+        await client.query('ROLLBACK');
+        die(`STOP: served UPDATE moved ${servedRows} row(s), snapshot expected ${expected}. ` +
+            'The served state changed under this transaction (concurrent writer?). Rolled back; re-run to re-snapshot.', 1);
+      }
+    }
   }
   if (servedCol) {
     const noRows = (reverse ? unserveSlugs : slugs).filter((sl) => servedBefore?.[sl]?.rows === 0);
@@ -470,9 +504,15 @@ try {
       [servedTargets],
     );
     const banned = authors.rows.map((r) => r.author).filter((a) => isMustNotServe(a ?? ''));
-    if (banned.length > 0) {
+    // NULL/missing author FAILS CLOSED (bylaw-4 refuter): a row this gate cannot attribute is a
+    // row the ruling cannot be checked against, and every manifest work carries an author — a
+    // NULL here is upstream data damage, not a benign gap. Serving unattributable text also
+    // breaks the product guarantee directly (quoted AND attributed).
+    const unattributed = authors.rows.some((r) => r.author === null || String(r.author).trim() === '');
+    if (banned.length > 0 || unattributed) {
       await client.query('ROLLBACK');
-      die(`STOP: serving these works would serve MUST_NOT_SERVE author(s): ${banned.join(', ')}. Rolled back.`, 1);
+      die(`STOP: serving these works would serve ${banned.length > 0 ? `MUST_NOT_SERVE author(s): ${banned.join(', ')}` : ''}` +
+          `${banned.length > 0 && unattributed ? ' AND ' : ''}${unattributed ? 'row(s) with NO author metadata (unattributable text cannot be gated or quoted)' : ''}. Rolled back.`, 1);
     }
   }
 

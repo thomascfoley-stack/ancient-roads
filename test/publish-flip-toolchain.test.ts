@@ -389,3 +389,49 @@ describe('the A3 adjudicator refuses a census it must not adjudicate', () => {
     expect(r.err).toMatch(/not a slug/);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// The serve gates that run BEFORE any connection (2026-08-03, migration 044). These are the
+// subprocess-testable slice of the --serve-published work: the manifest serve:false gate is pure
+// repo state and must STOP before publish-flip ever opens a socket. The DB-side legs (partial
+// state, banned author, serve/un-serve exactness) are covered by the recorded throwaway
+// rehearsal in docs/evidence/served-cutover/ — same division of labour as the header describes.
+describe('the pre-connect serve gates refuse without touching any database', () => {
+  const flip = (slugList: string[], extra: string[] = []) => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'flip-gate-'));
+    const slugFile = path.join(dir, 'slugs.json');
+    fs.writeFileSync(slugFile, JSON.stringify({ slugs: slugList }));
+    try {
+      execFileSync('node', ['scripts/publish-flip.mjs', `--slugs=${slugFile}`, '--local-redproof', `--evidence=${dir}`, ...extra], {
+        cwd: ROOT,
+        // Port 1 on localhost: unconnectable, and --local-redproof requires a local host — so if
+        // the gate under test did NOT fire first, the failure would be a connection error, and
+        // the assertion on the message would catch the ordering regression.
+        env: { ...process.env, CUTOVER_DATABASE_URL: 'postgresql://neondb_owner@127.0.0.1:1/nope' },
+        encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      return { code: 0, err: '' };
+    } catch (e) {
+      const err = e as { status?: number; stderr?: string };
+      return { code: err.status ?? -1, err: String(err.stderr ?? '') };
+    }
+  };
+
+  it('a manifest serve:false ruling STOPs a forward flip before any connection', () => {
+    // whitefield-works carries the standing quality ruling in ingest/sources.config.json. If
+    // that entry is ever un-ruled, this test goes red and the ruling change gets reviewed here.
+    const r = flip(['whitefield-works']);
+    expect(r.code).toBe(2);
+    expect(r.err).toMatch(/serve:false in the manifest/);
+    expect(r.err).not.toMatch(/could not connect/);
+  });
+
+  it('the ruling gate does NOT block a withdrawal (M7): --reverse proceeds past it', () => {
+    // Reverse requires a snapshot; the point here is only that the serve:false STOP is skipped
+    // on reverse — the run must die LATER, on the missing snapshot, not on the ruling.
+    const r = flip(['whitefield-works'], ['--reverse']);
+    expect(r.code).toBe(2);
+    expect(r.err).toMatch(/--reverse requires --snapshot/);
+    expect(r.err).not.toMatch(/serve:false in the manifest/);
+  });
+});

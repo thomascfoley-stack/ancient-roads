@@ -7,16 +7,17 @@
 instruments, arithmetic, and sequencing did not. Everything below reflects the tree at
 `851963d`+: the code defects are FIXED and proven; this order is what remains.
 
-**Outcome this order buys:** publishing a work makes it serve, on production; the 76
+**Outcome this order buys:** publishing a work makes it serve, on production; the 88
 published-but-unserved works actually serve, by an explicit reversible step; the corpus catch-up
 proceeds in measured batches; and the accuracy consequence is known before users see it.
 
 **What this order does NOT move (named so nobody believes otherwise):** the commentary_entries
 FTS surface, the static verse-reader files, and `today.ts` still gate on the frozen slug lists
 (`legal-corpus.ts`); the ~125k work-less legacy rows have no per-work off switch (withdrawing
-those works leaves /ask serving them); and `web/public/commentaries` ships 36,205
-client-filtered blocked entries world-readable. Each is separate, filed work — see "Successor
-work" at the end.
+those works leaves /ask serving them); and `web/public/commentaries` ships tens of thousands of
+client-filtered blocked entries world-readable (two refuters measured 36,205 and 43,188 by
+different methods hours apart — re-measure before acting on either number). Each is separate,
+filed work — see "Successor work" at the end.
 
 ---
 
@@ -29,7 +30,7 @@ work" at the end.
   throwaway pg17 (verifier 7/7 with lane rows; red-proof names its seeded row; Tyndale mutant
   trips 3 checks, Lewis mutant 2; serve-published forward+reverse exact at 0-status/11-served;
   both gates watched fire). Applied to NO real database.
-- Production: 124 published works; 76 published-but-unserved (the standing A3-rule divergence,
+- Production: 124 published works; 88 published-but-unserved (the standing A3-rule divergence; measured from the committed snapshot, payload at docs/evidence/corpus-copy/serve-88.json,
   now filed on the MASTER board). Dev: ~400 works and rising, ingest live.
 - Frozen-record weld: `served-backfill-frozen.mjs` ↔ 044, enforced by
   `test/invariants/served-backfill-frozen-sync.test.ts`.
@@ -84,7 +85,7 @@ structurally cannot (no SoS sampling, per-query HIT@K). Pre-register its bar bef
 coverage (the point).
 
 **P0.5 · Post-flip reconciliation instrument.** `scripts/served-reconcile.mjs`, read-only:
-every `status='published'` work with work-keyed rows has ALL rows served; every
+every published work with work-keyed rows has ALL rows served; every
 staged/quarantined work has ZERO; work-less cohort reported as its own line, never folded in.
 This replaces verify-served-backfill's equality check as the standing instrument AFTER the
 first intentional serve flip (the frozen verifier's validity window ends there, by design).
@@ -147,10 +148,10 @@ never typed into history.
 Rollback: steps 1-3 inert (old indexes untouched, old bundle live). Steps 4-5: redeploy prior
 deployment id. Step 6: contra-DDL from 045's header FIRST, then redeploy.
 
-## PHASE 4 — serve the 76, then catch up (repeatable owner sessions; the honest arithmetic)
+## PHASE 4 — serve the 88, then catch up (repeatable owner sessions; the honest arithmetic)
 
-**P4.0 · Serve the 76** — the order's actual objective, now an explicit step:
-`node scripts/publish-flip.mjs --slugs=docs/evidence/corpus-copy/serve-76.json --serve-published`
+**P4.0 · Serve the 88** — the order's actual objective, now an explicit step (payload committed, 88 slugs):
+`node scripts/publish-flip.mjs --slugs=docs/evidence/corpus-copy/serve-88.json --serve-published`
 (TTY, owner go). The snapshot records per-slug served state; the SAME command `--reverse
 --snapshot=…` un-serves exactly what it served — proven. Then `served-reconcile.mjs` +
 coverage census, recorded in WORKLOG.
@@ -187,6 +188,6 @@ derived-expectation verifier shape).
 
 FTS/static/today cutover off the frozen lists · static-assets exposure (36k entries; predeploy
 strip) · work-less legacy cohort re-keying (gives the 125k rows a work key and an off switch) ·
-frozen-list consumer migration (#62: census/adjudicator/cutover-gate) · under-split reader
-sections (#58; Phase 4 batches EXCLUDE the 214 until it lands, or accept the reader cost
+frozen-list consumer migration (census/adjudicator/cutover-gate still read SERVED_*_WORKS as live) · the
+under-split reader sections (214 of 391 dev works average >12k chars/section; Phase 4 batches EXCLUDE them until the split-fix lands, or accept the reader cost
 explicitly per batch).
