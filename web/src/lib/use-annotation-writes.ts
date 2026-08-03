@@ -58,7 +58,22 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
   // Bookmarked verses in this chapter, by verse number. A Set because a bookmark carries no
   // payload — it is a place, not an annotation.
   const [bookmarks, setBookmarks] = useState<Set<number>>(new Set());
-  const [signedIn, setSignedIn] = useState(false);
+  // THE CHAPTER'S ANNOTATIONS FAILED TO LOAD. Deliberately NOT `writeError`: nothing was painted,
+  // nothing was rolled back, nothing is queued to re-send. The reader's highlights and notes are
+  // on the server and this screen is not showing them.
+  //
+  // This slot used to be `signedIn`, set true in the GET's success handler and false in its catch —
+  // so ONE failed request revoked the highlighter for a signed-in reader. Who is signed in is a
+  // session fact and now comes from `lib/auth/use-signed-in.ts`; this flag says only what it can
+  // honestly say. The distinction matters because the note editor upserts
+  // (`annotations.ts`, `DO UPDATE SET body = EXCLUDED.body`): a reader who saves over a note they
+  // cannot see destroys it, and until now that was prevented only by accident, because a failed
+  // load ALSO hid the editor behind "Sign in".
+  const [loadFailed, setLoadFailed] = useState(false);
+  // A nonce rather than a bare re-fetch so a retry re-runs the SAME effect, including its reset of
+  // the three maps — a retry that re-populated them by a second path would drift from the first.
+  const [loadNonce, setLoadNonce] = useState(0);
+  const retryAnnotations = useCallback(() => setLoadNonce((n) => n + 1), []);
   const [writeError, setWriteError] = useState<WriteFailure | null>(null);
 
   const verseId = useCallback(
@@ -67,15 +82,23 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
   );
 
   // Load the user's highlights + notes + bookmarks for this chapter.
+  //
+  // NOT gated on `useSignedIn()`, on purpose. The auth cookie rides this request whether or not the
+  // client's session query has resolved, so gating would serialise the load behind it for no gain —
+  // and would mean that whenever the session query is pending, slow or itself failing, the GET is
+  // never issued, `loadFailed` can never be set, and the Retry is unreachable precisely when it
+  // would help. That is the same silent-revocation shape this change exists to remove. Signed out,
+  // this GET is a 401 exactly as it is today; the notice it sets is rendered only for a signed-in
+  // reader (see the reader page).
   useEffect(() => {
     if (!bookNum) return;
     setHighlights(new Map());
     setNotes(new Map());
     setBookmarks(new Set());
+    setLoadFailed(false);
     fetch(`/api/annotations?book=${bookNum}&chapter=${chapterNum}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((d: { highlights: ApiHighlight[]; notes: { verse_id: number; body: string }[]; bookmarks?: { verse_id: number }[] }) => {
-        setSignedIn(true);
         const byVerse = new Map<number, StoredSpan[]>();
         for (const h of d.highlights) {
           const v = h.verse_id % 1000;
@@ -90,8 +113,8 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
         // annotations rather than just its bookmarks.
         setBookmarks(new Set((d.bookmarks ?? []).map((b) => b.verse_id % 1000)));
       })
-      .catch(() => setSignedIn(false));
-  }, [bookNum, chapterNum]);
+      .catch(() => setLoadFailed(true));
+  }, [bookNum, chapterNum, loadNonce]);
 
   // ── the shared failure path ────────────────────────────────────────────────────────────────
   // One slot, not a queue: there's no service worker, so nothing here survives a reload regardless,
@@ -351,7 +374,8 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
     highlights,
     notes,
     bookmarks,
-    signedIn,
+    annotationsFailed: loadFailed,
+    retryAnnotations,
     writeError,
     retryWrite,
     dismissWrite,

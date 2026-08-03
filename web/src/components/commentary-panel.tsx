@@ -9,6 +9,11 @@ export interface AnnotationControls {
   color: string | null;
   note: string;
   signedIn: boolean;
+  /** The chapter's annotations failed to load, so `note` is empty because it is UNKNOWN, not
+   *  because it is absent. Saving would upsert over a note still on the server
+   *  (`annotations.ts`, `DO UPDATE SET body = EXCLUDED.body`). Optional so the dead AnnotationBar
+   *  below and any future caller default to the safe-because-loaded case. */
+  loadFailed?: boolean;
   onSetHighlight: (color: string) => void;
   onClearHighlight: () => void;
   onSaveNote: (body: string) => void;
