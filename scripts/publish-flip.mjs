@@ -299,6 +299,35 @@ try {
     die(`STOP: expected to flip ${eligible.length} row(s), flipped ${upd.rowCount}. Rolled back.`, 1);
   }
 
+  // ── `embeddings.served` moves WITH the status, in this same transaction (migration 039) ──
+  // Before 039 these were unrelated facts: retrieval read four hand-typed slug lists in
+  // routing.ts, so publishing a work made it shelf-readable and left it invisible to /ask. 76 of
+  // the 77 works published on 2026-08-03 landed in exactly that state. `served` is now the switch,
+  // and this is its ONLY writer — which is what makes the licensing argument hold, because a row
+  // is reachable here only by a slug that survived admission.
+  //
+  // SAME TRANSACTION, NOT A FOLLOW-UP STEP. A commit that moved `status` without `served` would
+  // leave the two facts disagreeing again, which is the whole defect. If either fails, both roll
+  // back. The count is asserted rather than trusted: `sources.status` and the flat table are
+  // joined only by `metadata->>'work'`, and a work whose rows carry no work key (the legacy
+  // author-admitted cohort) legitimately moves ZERO rows — so a mismatch is reported, not fatal,
+  // and the number is printed so a silent zero cannot pass as success.
+  const servedTo = to === 'published';
+  const emb = await client.query(
+    `UPDATE embeddings SET served=$2
+      WHERE user_id IS NULL AND metadata->>'work' = ANY($1) AND served <> $2`,
+    [payload, servedTo],
+  );
+  const workKeyed = await client.query(
+    `SELECT count(DISTINCT metadata->>'work')::int AS works, count(*)::int AS rows
+       FROM embeddings WHERE user_id IS NULL AND metadata->>'work' = ANY($1)`,
+    [payload],
+  );
+  console.log(
+    `served       ${emb.rowCount} embedding row(s) -> served=${servedTo} ` +
+    `(${workKeyed.rows[0].works}/${payload.length} listed slug(s) carry work-keyed rows, ${workKeyed.rows[0].rows} total)`,
+  );
+
   // ── delta: nothing moved except what we named, in the direction we named ────────────────
   const after = (await client.query('SELECT slug, status FROM sources ORDER BY slug')).rows;
   const unexpected = flipDelta(before, after, eligible, from, to);
