@@ -87,6 +87,20 @@ searches · **the tradition-gap join** · the `/library/uploads` UI replacing th
 **OUT:** type-aware chunking for papers/notes/books (Slice 2) · bulk-import UX (Slice 3) · the
 full `/ask` integration (Slice 4) · OCR · anything in §14.
 
+## ⚠ The tradition-gap join's corpus predicate — decide this before writing the join
+
+Re-measured 2026-08-03 on `lane-b-uploader` (independently, via the owner URL): 832 sources
+(35 published · 796 staged · 1 quarantined), 435,991 sections, **1,070,674 embeddings — of which
+328,775 are `served=true` and 741,899 are not.** The "~700 works / 924k vectors" figure earlier in
+this order was already stale; the number that matters isn't corpus size, it's this split.
+
+**The join MUST filter on `embeddings.served = true`, never query `embeddings` unfiltered.**
+A9 made `served` the switch for exactly this reason (see `web/src/lib/teacher/routing.ts`,
+`LEGAL_CORPUS_FILTER`): the 796 staged sources have not cleared publish adjudication, and surfacing
+them as "voices from the tradition you didn't cite" is a licensing surface, not a recall
+trade-off. Use the same predicate the corpus retrieval path uses — do not hand-write a second one
+(this repo's most-repeated defect class; see MASTER.md's failure-mode watchlist).
+
 ## Two owner decisions still open
 
 - **B2 — confirm `bge-large` for user-corpus embedding.** ADR-005 already pins it for the corpus
