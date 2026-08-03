@@ -1,7 +1,7 @@
 -- ============================================================
--- 043 (CONTRACT): drop the pre-`served` partial HNSW indexes
+-- 045 (CONTRACT): drop the pre-`served` partial HNSW indexes
 -- ============================================================
--- The second half of 042's expand/contract pair. 042 built the served-predicated indexes under
+-- The second half of 044's expand/contract pair. 044 built the served-predicated indexes under
 -- new names and deliberately dropped nothing, so the old author-allowlist bundle and the new
 -- served bundle could both plan onto a matching partial index across the deploy window.
 --

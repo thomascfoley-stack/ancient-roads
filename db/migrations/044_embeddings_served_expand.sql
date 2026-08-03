@@ -1,5 +1,5 @@
 -- ============================================================
--- 042 (EXPAND): `embeddings.served` — publishing a work is what makes it served
+-- 044 (EXPAND): `embeddings.served` — publishing a work is what makes it served
 -- ============================================================
 -- HISTORY. This file was first committed as 039_embeddings_served_column.sql at 4f14f17. A
 -- 16-agent audit on 2026-08-03 confirmed two defects and this rewrite closes both:
@@ -7,7 +7,7 @@
 --   1. NUMBER COLLISION. The concurrent /plans slice already occupies 039, 040 and 041
 --      (039_plans_coverage_topical, 040_source_type_topical_index, 041_plans_delivery_fields —
 --      applied to dev and ci under those filenames, which the ledger pins). Two documents saying
---      "apply 039 to prod" meant different files. This migration is 042; the contract half is 043.
+--      "apply 039 to prod" meant different files. This migration is 044; the contract half is 045.
 --
 --   2. DROP-WHILE-LIVE. The 4f14f17 version built the new indexes, then DROPped the old serving
 --      indexes and RENAMEd the new ones into their names — in the same file. Between that apply
@@ -16,7 +16,7 @@
 --      HNSW and the selective filter starves the pool. Silently. The migration-009 mechanism,
 --      reintroduced by the migration whose header explains it. THIS file therefore creates the
 --      new indexes under NEW FINAL NAMES and DROPS NOTHING: both index sets coexist across the
---      deploy window. 043_embeddings_served_contract.sql drops the old set, and may run ONLY
+--      deploy window. 045_embeddings_served_contract.sql drops the old set, and may run ONLY
 --      after the new bundle is confirmed live.
 --
 -- WHAT THIS REPLACES. Four partial HNSW index predicates and four routing.ts constants each
@@ -120,7 +120,7 @@ UPDATE embeddings SET served = true
 -- every row the author legs admitted was commentary, and the work leg named commentary + father
 -- works. Naming the two composing registers makes the register wall structural.
 -- NEW FINAL NAME — no rename, no drop. The old idx_embeddings_vector_legal keeps serving the old
--- bundle until 043.
+-- bundle until 045.
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_embeddings_served_legal
   ON embeddings USING hnsw (embedding vector_cosine_ops)
   WHERE (user_id IS NULL AND served AND source_type IN ('commentary','father'));

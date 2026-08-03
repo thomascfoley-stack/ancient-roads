@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * PROVE MIGRATION 042 CHANGED THE MECHANISM AND NOT ONE ANSWER.
+ * PROVE MIGRATION 044 CHANGED THE MECHANISM AND NOT ONE ANSWER.
  *
  *   DATABASE_URL=<url> node scripts/verify-served-backfill.mjs                 # verify
  *   DATABASE_URL=<url> node scripts/verify-served-backfill.mjs --red-proof    # prove it can fail
  *
- * Migration 042 replaces four hand-typed serving filters with a materialized `embeddings.served`
+ * Migration 044 replaces four hand-typed serving filters with a materialized `embeddings.served`
  * boolean. Its safety claim is one sentence: THE SET OF ROWS THE PRODUCT SERVES IS IDENTICAL
  * BEFORE AND AFTER. This is the check that could fail.
  *
@@ -20,11 +20,11 @@
  *
  * The expectation now comes from scripts/lib/served-backfill-frozen.mjs — the frozen record of
  * the PRE-cutover filters. A sync test (test/invariants/served-backfill-frozen-sync.test.ts)
- * asserts migration 042 contains those predicates verbatim, so the migration and this tool's
+ * asserts migration 044 contains those predicates verbatim, so the migration and this tool's
  * expectation cannot drift apart, and neither can track the live code by construction.
  *
  * ── VALIDITY WINDOW ─────────────────────────────────────────────────────────────────────────
- * `served` equals the frozen record only from 042's backfill until the FIRST intentional serve
+ * `served` equals the frozen record only from 044's backfill until the FIRST intentional serve
  * flip (e.g. serving the 76 published-but-unserved works). After that, the equality check is
  * EXPECTED to fail in the served-but-not-frozen direction — that is the flip working, not a
  * defect, and the failure message says so. Post-flip reconciliation (sources.status vs served
@@ -34,7 +34,7 @@
  *   1. SET EQUALITY   both directions, reported separately: frozen-but-unserved rows are a
  *                     broken backfill; served-but-not-frozen rows are either a broken backfill
  *                     or a later intentional flip (the message distinguishes by date context).
- *   2. TIGHTENINGS    042's sermon/theology index predicates add a source_type conjunct the old
+ *   2. TIGHTENINGS    044's sermon/theology index predicates add a source_type conjunct the old
  *                     lane filters never had. Safe only if every row each frozen leg admits
  *                     already carries that type — otherwise rows silently leave the partial
  *                     index and the pool starves (the migration-009 mechanism). Asserted.
@@ -85,20 +85,20 @@ const c = new Client({ connectionString: url });
 await c.connect();
 await c.query("SET statement_timeout='600s'");
 console.log(`verify-served-backfill — ${host.split('.')[0]}${isProd ? '  \x1b[33m(PRODUCTION, owner-authorized)\x1b[0m' : ''}`);
-console.log(`  expected set: the FROZEN pre-042 filters (scripts/lib/served-backfill-frozen.mjs), ${FROZEN_LEGS.length} legs\n`);
+console.log(`  expected set: the FROZEN pre-044 filters (scripts/lib/served-backfill-frozen.mjs), ${FROZEN_LEGS.length} legs\n`);
 
 let restore = null;
 try {
   const col = await c.query(
     "SELECT 1 FROM information_schema.columns WHERE table_name='embeddings' AND column_name='served'");
-  if (col.rowCount === 0) die('embeddings.served does not exist — apply migration 042 first', 2);
+  if (col.rowCount === 0) die('embeddings.served does not exist — apply migration 044 first', 2);
 
   if (RED_PROOF) {
     // The victim MUST be a row the frozen record says is served — flipping any other row would
     // be invisible to the equality check by construction, and the old tool proved exactly that.
     const victim = await c.query(
       `SELECT id FROM embeddings WHERE user_id IS NULL AND served AND (${FROZEN_UNION}) ORDER BY id LIMIT 1`);
-    if (victim.rowCount === 0) die('no frozen-served row to mutate — cannot red-proof (has 042 backfilled here?)', 2);
+    if (victim.rowCount === 0) die('no frozen-served row to mutate — cannot red-proof (has 044 backfilled here?)', 2);
     restore = victim.rows[0].id;
     await c.query('UPDATE embeddings SET served = false WHERE id = $1', [restore]);
     console.log(`  \x1b[33mRED-PROOF\x1b[0m seeded: row ${restore} forced served=false; the equality check MUST name a frozen-but-unserved row\n`);
@@ -114,7 +114,7 @@ try {
   const { missing, extra, frozen_total, served_total } = eq.rows[0];
   equalityMissing = missing;
   if (missing === 0 && extra === 0) {
-    ok(`served set is identical to the frozen pre-042 filters (${served_total} rows)`);
+    ok(`served set is identical to the frozen pre-044 filters (${served_total} rows)`);
   } else {
     bad(`served set differs from the frozen record: ${missing} frozen-but-unserved (broken backfill), ` +
         `${extra} served-but-not-frozen (broken backfill OR a later intentional serve flip — ` +
@@ -126,14 +126,14 @@ try {
     for (const r of ex.rows) console.log(`          ${r.id}  served=${r.served}  ${r.source_type}  work=${r.work ?? '(none)'}  author=${r.author ?? '(none)'}`);
   }
 
-  // ── 2. the tightenings 042's index predicates rely on ─────────────────────────────────────
+  // ── 2. the tightenings 044's index predicates rely on ─────────────────────────────────────
   for (const leg of FROZEN_LEGS) {
     const r = await c.query(`
       SELECT count(*)::int n, coalesce(string_agg(DISTINCT source_type, ', '), '') AS types
         FROM embeddings WHERE user_id IS NULL AND (${leg.sql}) AND source_type <> ALL($1::text[])`,
       [leg.expectTypes]);
     if (r.rows[0].n === 0) ok(`${leg.name}: every admitted row is ${leg.expectTypes.join('/')} — the index conjunct is safe`);
-    else bad(`${leg.name}: ${r.rows[0].n} row(s) carry source_type ${r.rows[0].types}, outside ${leg.expectTypes.join('/')} — 042's index predicate silently drops them from the partial index`);
+    else bad(`${leg.name}: ${r.rows[0].n} row(s) carry source_type ${r.rows[0].types}, outside ${leg.expectTypes.join('/')} — 044's index predicate silently drops them from the partial index`);
   }
 
   // ── 3. licensing: no served row by a must-not-serve author ────────────────────────────────
@@ -180,4 +180,4 @@ if (RED_PROOF) {
       'A forced-unserved frozen row was not named by the equality check. This verifier proves nothing; do not gate on it.');
 }
 if (failures > 0) die(`\n${failures} check(s) FAILED — see above. 'missing' failures mean 042 is NOT behaviour-preserving here.`);
-console.log('\n\x1b[32mOK\x1b[0m — served set is exactly the frozen pre-042 filters; tightenings safe; no banned author served; work-less cohort unreachable.');
+console.log('\n\x1b[32mOK\x1b[0m — served set is exactly the frozen pre-044 filters; tightenings safe; no banned author served; work-less cohort unreachable.');

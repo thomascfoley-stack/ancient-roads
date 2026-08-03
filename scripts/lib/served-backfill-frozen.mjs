@@ -1,4 +1,4 @@
-// THE FROZEN RECORD of the four serving filters as they stood BEFORE migration 042.
+// THE FROZEN RECORD of the four serving filters as they stood BEFORE migration 044.
 //
 // WHY THIS FILE EXISTS (2026-08-03 audit, finding 1, CONFIRMED). The first version of
 // verify-served-backfill.mjs derived its expected set from the LIVE routing.ts "so it could
@@ -12,15 +12,15 @@
 //
 //   scripts/verify-served-backfill.mjs        builds its expected row set from these legs.
 //   test/invariants/served-backfill-frozen-sync.test.ts
-//                                             asserts db/migrations/042_embeddings_served_expand.sql
+//                                             asserts db/migrations/044_embeddings_served_expand.sql
 //                                             contains each leg VERBATIM (whitespace-normalized),
 //                                             so the migration and this record cannot drift.
 //
-// These strings are HISTORY, not configuration. They change only if 042 itself is rewritten
-// before it is applied anywhere; after 042 lands on any real database they are immutable, the
+// These strings are HISTORY, not configuration. They change only if 044 itself is rewritten
+// before it is applied anywhere; after 044 lands on any real database they are immutable, the
 // way a snapshot is. Do not "improve" them: verbatim-ness is the property.
 //
-// VALIDITY WINDOW. `served` equals this record only from the moment 042's backfill runs until
+// VALIDITY WINDOW. `served` equals this record only from the moment 044's backfill runs until
 // the first intentional serve flip (e.g. serving the 76 published-but-unserved works). After
 // that, verify-served-backfill's equality check is EXPECTED to diverge in the shipped-direction
 // and the tool says so — post-flip reconciliation is a different instrument (sources.status
@@ -53,8 +53,8 @@ export const FROZEN_THEOLOGY_WORKS =
   `metadata->>'work' IN ('owen-works','hodge-systematic','calvin-institutes','schaff-creeds')`;
 
 /**
- * The four backfill legs, exactly as 042 executes them, with the source_type set each leg's
- * rows are expected to carry (the tightening 042's index predicates rely on — asserted by the
+ * The four backfill legs, exactly as 044 executes them, with the source_type set each leg's
+ * rows are expected to carry (the tightening 044's index predicates rely on — asserted by the
  * verifier, never assumed).
  */
 export const FROZEN_LEGS = [

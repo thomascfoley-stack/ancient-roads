@@ -3,7 +3,7 @@
 // the default ef_search, and the selective register filter post-guts the neighbour list until the
 // base pool starves — silently, with no error. That is how migration 009 died.
 //
-// ── THIS GUARD INVERTED AT MIGRATION 039, AND THE INVERSION IS THE POINT ─────────────────────
+// ── THIS GUARD INVERTED AT MIGRATION 044 (first committed as 039), AND THE INVERSION IS THE POINT ─────────────────────
 //
 // It used to assert "the newest index migration NAMES every served work slug". That was the
 // correct guard for a design where four hand-typed slug lists in routing.ts were the serving
@@ -15,10 +15,10 @@
 // 2026-08-03 were readable on the shelf and invisible to /ask, and every one of those works was
 // absent from both the lists and the predicates, so this file was green throughout.
 //
-// Migration 039 made `embeddings.served` the switch. There is now no list to keep in sync, so the
+// Migration 044 made `embeddings.served` the switch. There is now no list to keep in sync, so the
 // guard asks the opposite question: **does any serving predicate name a work slug again?** A slug
 // literal reappearing in either place is the regression — it means someone re-introduced the
-// hand-maintained set (MASTER.md failure-mode watchlist, artefact 1) that 039 removed.
+// hand-maintained set (MASTER.md failure-mode watchlist, artefact 1) that 044 removed.
 //
 // The two halves below are deliberately different KINDS of check. The first is an anti-pattern
 // scan (no slugs anywhere), which cannot tell you the predicates are RIGHT — only that they are
@@ -47,7 +47,7 @@ const norm = (s: string) => s.replace(/\s+/g, ' ').replace(/[()]/g, '').trim().t
 
 /**
  * The newest migration that mentions `needle` in ACTUAL SQL — comment lines are stripped before
- * searching, because prose mentions are not builds. 043's header names the new indexes while
+ * searching, because prose mentions are not builds. 045's header names the new indexes while
  * instructing the operator's EXPLAIN check, and the naive version of this helper picked it as
  * "the newest migration building idx_embeddings_served_legal" (a file that builds nothing).
  * Same lesson db/apply-migration-concurrent.mjs already carries: its comment-naive parser once
@@ -82,10 +82,10 @@ const ALL_KNOWN_SLUGS = [
   ...SERVED_PROSE_WORKS, ...SERVED_SERMON_WORKS, ...SERVED_THEOLOGY_WORKS, ...SERVED_SONG_VERSE_WORKS,
 ];
 
-// The NEW final names from 042_embeddings_served_expand.sql. The old idx_embeddings_vector_*
-// names survive until 043 (the contract half) solely so the pre-042 bundle keeps planning
+// The NEW final names from 044_embeddings_served_expand.sql. The old idx_embeddings_vector_*
+// names survive until 045 (the contract half) solely so the pre-044 bundle keeps planning
 // during the deploy window — they are deliberately NOT guarded here: their predicates are
-// frozen history, and 043 removes them.
+// frozen history, and 045 removes them.
 const SERVING_INDEXES = [
   'idx_embeddings_served_legal',
   'idx_embeddings_served_song_verse',
@@ -94,7 +94,7 @@ const SERVING_INDEXES = [
 ] as const;
 
 describe('§7 — partial HNSW index predicates stay in lockstep with the retrieval filters', () => {
-  describe('no serving predicate names a work slug (migration 039 removed the treadmill)', () => {
+  describe('no serving predicate names a work slug (migration 044 removed the treadmill)', () => {
     for (const idx of SERVING_INDEXES) {
       it(`${idx} names no work slug`, () => {
         const { name, sql } = newestContaining(idx);
@@ -103,7 +103,7 @@ describe('§7 — partial HNSW index predicates stay in lockstep with the retrie
         expect(
           named,
           `${name} hand-lists ${named.length} work slug(s) in ${idx}'s predicate (${named.slice(0, 3).join(', ')}…). ` +
-          'Migration 039 made `embeddings.served` the switch precisely so this list would not exist. ' +
+          'Migration 044 made `embeddings.served` the switch precisely so this list would not exist. ' +
           'Serve a work by publishing it (scripts/publish-flip.mjs writes `served`), not by editing a predicate.',
         ).toEqual([]);
       });

@@ -51,7 +51,7 @@ const val = (f) => args.find((a) => a.startsWith(`${f}=`))?.slice(f.length + 1);
 
 const reverse = has('--reverse');
 // ── --serve-published: the ONLY way a forward flip may list an already-published slug ──────
-// 2026-08-03 audit, finding 2 (CONFIRMED). Since migration 042 the flip also writes
+// 2026-08-03 audit, finding 2 (CONFIRMED). Since migration 044 the flip also writes
 // `embeddings.served`, so a forward run whose payload contains already-published works SERVES
 // their rows while moving zero status rows — a materially different act from re-running a
 // status flip, and the old code did it silently ("the rest are already 'published'") with no
@@ -219,7 +219,7 @@ if (reverse) {
     return sb && sb.rows > 0 && sb.served === 0;
   });
   if (snap.servedBefore === undefined) {
-    console.log('  ⚠ snapshot predates the served record (pre-042): reversing status only, served untouched.');
+    console.log('  ⚠ snapshot predates the served record (pre-044): reversing status only, served untouched.');
   } else {
     console.log(`  un-serving   ${unserveSlugs.length} slug(s) the forward flip served from zero`);
   }
@@ -327,8 +327,8 @@ try {
     die(`STOP: slug(s) not present in sources: ${missing.join(', ')}`, 1);
   }
 
-  // ── does this target carry `embeddings.served` (migration 042)? ─────────────────────────
-  // Forward: REQUIRED. Publishing now means serving; a forward flip on a pre-042 target would
+  // ── does this target carry `embeddings.served` (migration 044)? ─────────────────────────
+  // Forward: REQUIRED. Publishing now means serving; a forward flip on a pre-044 target would
   // silently recreate the published-but-unserved divergence this whole design exists to kill.
   // Reverse: proceeds WITHOUT it, loudly — an emergency withdrawal is never blocked on schema
   // (M7's direction), it just cannot touch a column that does not exist.
@@ -338,10 +338,10 @@ try {
   if (!servedCol && !reverse) {
     await client.query('ROLLBACK');
     die('STOP: embeddings.served does not exist on this target. Publishing now MEANS serving — ' +
-        'apply db/migrations/042_embeddings_served_expand.sql first (the expand half; see the filed order).', 1);
+        'apply db/migrations/044_embeddings_served_expand.sql first (the expand half; see the filed order).', 1);
   }
   if (!servedCol && reverse) {
-    console.log('  ⚠ no served column on this target (pre-042): reversing status only.');
+    console.log('  ⚠ no served column on this target (pre-044): reversing status only.');
   }
 
   // ── per-slug served state BEFORE any write — the served inverse lives or dies here ──────
@@ -420,7 +420,7 @@ try {
     die(`STOP: expected to flip ${eligible.length} row(s), flipped ${upd.rowCount}. Rolled back.`, 1);
   }
 
-  // ── `embeddings.served` moves WITH the status, in this same transaction (migration 042) ──
+  // ── `embeddings.served` moves WITH the status, in this same transaction (migration 044) ──
   // Before 042 these were unrelated facts: retrieval read four hand-typed slug lists in
   // routing.ts, so publishing a work made it shelf-readable and left it invisible to /ask. 76 of
   // the 77 works published on 2026-08-03 landed in exactly that state. `served` is now the

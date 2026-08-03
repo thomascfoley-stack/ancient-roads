@@ -137,7 +137,7 @@ export const SERVED_WORK_LISTS = {
 /** The admission population: every work some retrieval predicate serves. Derived, never typed. */
 export const ALL_SERVED_WORKS: readonly string[] = Object.values(SERVED_WORK_LISTS).flat();
 
-// ── THE SERVING SWITCH, AS OF MIGRATION 042 ──────────────────────────────────────────────────
+// ── THE SERVING SWITCH, AS OF MIGRATION 044 ──────────────────────────────────────────────────
 // `embeddings.served` is the switch for VECTOR RETRIEVAL: the four *_CORPUS_FILTER constants
 // below and the four partial HNSW indexes consult it and nothing else.
 //
@@ -150,7 +150,7 @@ export const ALL_SERVED_WORKS: readonly string[] = Object.values(SERVED_WORK_LIS
 //      admits by a work-IN leg built from these lists (that table has no `served` column).
 //   3. EXEGETICAL_FTS_EXCLUSION (below)      — the FTS wall excludes lane/hymn works BY SLUG as
 //      its second leg; pruning a list widens what FTS treats as exegesis.
-// For vector retrieval the lists are the frozen record of what 042's backfill turned on; for
+// For vector retrieval the lists are the frozen record of what 044's backfill turned on; for
 // those three surfaces they are load-bearing until their own cutover (filed, separate work).
 // Editing them therefore still changes production behaviour. Do not prune.
 //
@@ -169,12 +169,12 @@ export const ALL_SERVED_WORKS: readonly string[] = Object.values(SERVED_WORK_LIS
 //   theology, confession  -> the theology lane    (ditto)
 //   hymn, poetry          -> the song/verse lane  (ditto, never counted toward the floor)
 //   lexicon               -> served by nothing; no lane exists (open A8 decision, not an oversight)
-// Each conjunct below is byte-matched by a partial HNSW index predicate in migration 042
-// (042_embeddings_served_expand.sql; the old-name indexes survive until 043 so the pre-042
+// Each conjunct below is byte-matched by a partial HNSW index predicate in migration 044
+// (044_embeddings_served_expand.sql; the old-name indexes survive until 045 so the pre-044
 // bundle keeps planning during the deploy window). If they drift, the planner silently falls
 // back and the pool starves with no error — how migration 009 died — so
 // `legal-hnsw-index-sync.test.ts` compares them, and `verify-served-backfill.mjs` proves the
-// backfilled column against the FROZEN pre-042 filters (never against this module: deriving the
+// backfilled column against the FROZEN pre-044 filters (never against this module: deriving the
 // expectation from the file under test is the circularity the 2026-08-03 audit confirmed).
 export const EXEGETICAL_TYPE_SQL = `source_type IN ('commentary','father')`;
 export const SERMON_CORPUS_FILTER = `(served AND source_type = 'sermon')`;
@@ -195,13 +195,13 @@ export const EXEGETICAL_FTS_EXCLUSION = `(register IS NULL OR register NOT IN ('
 // J.H. Newman" (catena-aurea), which no name leg covers. Use 11 for "authors served"; 9 only means
 // "names written here". A "12" anywhere is a miscount — it reads "Keil & Delitzsch" as two people;
 // it is one metadata->>'author' string. See docs/STATE_OF_TRUTH.md §2.
-// MIGRATION 042 (first committed as 039; renumbered for the /plans collision) replaced the author allowlist that stood here with `served`. The allowlist was
+// MIGRATION 044 (first committed as 039; renumbered for the /plans collision) replaced the author allowlist that stood here with `served`. The allowlist was
 // load-bearing in the LICENSING sense, not just the routing sense — the flat table carries 124,955
 // rows with no work key, and that cohort holds Tyndale Study Notes (13,455), CS Lewis (745) and
 // Origen of Alexandria (794), all copyrighted or under a standing MUST_NOT_SERVE ruling. They were
 // excluded by not being named. They are now excluded by `served` defaulting to false and the
 // publish flip addressing rows BY SLUG, which those rows do not have: unreachable rather than
-// unnamed, which is strictly stronger. 042's backfill reproduced this filter's row set exactly, so
+// unnamed, which is strictly stronger. 044's backfill reproduced this filter's row set exactly, so
 // the pool did not change when the mechanism did — proven, not asserted, by
 // `scripts/verify-served-backfill.mjs` diffing both directions on a live database.
 export const LEGAL_CORPUS_FILTER = `(served)`;
@@ -230,7 +230,7 @@ function legalBasePoolSql(pool: number, extraFilter = ''): string {
   // EXEGETICAL_TYPE_SQL, not PROSE_TYPE_SQL: the six-type list was never the pool's real boundary
   // (every row the old author allowlist admitted was source_type='commentary', and its work leg
   // named commentary + father works, so sermon/theology/confession/lexicon were carried in the
-  // type list and excluded again by the allowlist). These two conjuncts byte-match migration 042's
+  // type list and excluded again by the allowlist). These two conjuncts byte-match migration 044's
   // `idx_embeddings_vector_legal` predicate; drift starves the pool silently.
   return `SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
      FROM embeddings
@@ -271,7 +271,7 @@ export function injectionSql(ranges: readonly VerseRange[], corpusFilter = ''): 
   const conds = ranges
     .map((r) => `(metadata->>'verseId')::int BETWEEN ${r.start} AND ${r.end}`)
     .join(' OR ');
-  // `served` here is what makes migration 042's `idx_embeddings_verseid_served` usable for the
+  // `served` here is what makes migration 044's `idx_embeddings_verseid_served` usable for the
   // range scan. Without it this falls back to the register-scoped 018 btree and re-reads rows the
   // pool cannot serve anyway. The eval splices its own corpusFilter on top; production passes ''.
   return `WITH inrange AS MATERIALIZED (
@@ -323,7 +323,7 @@ export function laneOnRangeSql(corpusFilter: string, ranges: readonly VerseRange
   // The lane corpusFilter now carries its own `served AND source_type=…`, so the standalone type
   // conjunct that used to sit here is redundant for row selection. It is NOT redundant for the
   // planner: the btree predicate must be implied, or this seq-scans the table on the /ask request
-  // path (deep-audit 2026-07-18, measured seq scan → index scan). Migration 042's
+  // path (deep-audit 2026-07-18, measured seq scan → index scan). Migration 044's
   // `idx_embeddings_verseid_served` is predicated on `served`, which the corpusFilter supplies,
   // so the implication holds without re-stating a register list the filter already names.
   return `WITH inrange AS MATERIALIZED (
