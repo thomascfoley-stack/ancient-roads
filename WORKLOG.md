@@ -1,5 +1,39 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-03 — The corpus copy died on Neon's idle-in-transaction timeout; fixed
+
+**Owner ran the copy; it failed FATAL 25P03 and production rolled back to exactly zero rows.**
+Verified after: 0 sources, 0 topical_entries, 0 flat embeddings for those four works, 0 open
+transactions, corpus still 380,971 sections. **The single-transaction design worked** — there is
+no half-copied work to clean up, which is the whole reason it is one transaction.
+
+### Cause
+
+Both sides of this copy are idle INSIDE their transaction by construction:
+
+- the **destination** holds one transaction across the whole copy and sits idle while a source
+  page is read;
+- the **source** holds a READ ONLY snapshot and sits idle while a destination batch is written —
+  and, before either, **across the owner gate's human decision**, which has no upper bound.
+
+Neon enforces `idle_in_transaction_session_timeout`, so the connection was terminated. The tool's
+own header reasons carefully about not holding a transaction across the *embedding* round-trips;
+it did not account for the read/write interleave or for the human at the gate.
+
+### Fix
+
+`SET idle_in_transaction_session_timeout = '30min'` per-session on both dedicated connections.
+**Raised, not disabled**: `0` would let a wedged copier hold a production transaction forever;
+30 minutes covers a human at the gate and any single page transfer while bounding the damage.
+Changes nothing for any other client of either database.
+`redproof-corpus-copy.sh`: **59 passed, 0 failed** after the change.
+
+### Still owed
+
+The copy has NOT run successfully yet. It is owner-gated (TTY), so it needs one more run — the
+same command, unchanged; the tool now survives the wait. Then the publish flip, then the
+`COVERAGE_ALLOW_PROD=1` coverage rebuild.
+
 ## 2026-08-03 — DEPLOYED. /plans is live on ancientpaths.app
 
 `dpl_Dw5txbw5kgEHoJjWi9Yp3cThzmP5` from `0dbc567`, aliased to ancientpaths.app; receipt at

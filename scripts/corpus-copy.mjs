@@ -329,6 +329,22 @@ const src = new pg.Client({
 });
 await src.connect();
 
+// NEON KILLS AN IDLE TRANSACTION, AND BOTH SIDES OF THIS COPY ARE IDLE BY CONSTRUCTION.
+// The destination holds one transaction across the whole copy (atomicity: a half-copied work
+// must not survive) and sits idle while a source page is read; the source holds a READ ONLY
+// snapshot and sits idle while a destination batch is written — and, before either, across
+// the owner gate's HUMAN decision, which has no upper bound at all.
+//
+// The 2026-08-03 run died there: FATAL 25P03 "terminating connection due to idle-in-transaction
+// timeout", moments after the gate was answered. Production rolled back to exactly zero rows,
+// which is the single-transaction design working, not failing.
+//
+// RAISED, NOT DISABLED. `0` would let a wedged copier hold a production transaction forever;
+// 30 minutes covers a human at the gate and any single page transfer while still bounding the
+// damage. Set per-session on these two dedicated connections only — it changes nothing for any
+// other client of either database.
+await src.query("SET idle_in_transaction_session_timeout = '30min'");
+
 let dest = null;
 try {
   await q(src, 'BEGIN');
@@ -359,6 +375,8 @@ try {
     application_name: 'corpus-copy-dest',
   });
   await dest.connect();
+  // Same reason as the source connection above (see the note there).
+  await dest.query("SET idle_in_transaction_session_timeout = '30min'");
 
   // Corpus tables are owner-only (migration 010 revoked DML from app_runtime), so a non-owner
   // connection cannot do this work. Asserted at the SERVER, not inferred from the URL.
