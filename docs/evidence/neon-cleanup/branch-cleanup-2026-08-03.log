@@ -1,0 +1,43 @@
+# Neon branch cleanup — 2026-08-03, owner-authorized (11 branches)
+# Verification before the cut: all 11 idle since July, zero live config references
+# (positive control: ep-tiny-bonus WAS found in .github/workflows/audit.yml -> ci-test kept),
+# all 11 unprotected, both protected branches on the KEEP list.
+
+== BEFORE ==
+  synthetic_storage_size: 69.89 GB
+  branches: 18
+
+== DELETING (child before parent) ==
+  DELETED  pre-cutover-ep-sweet-river-at1qf82b-20260728054331 br-hidden-smoke-atb9o0w5
+  DELETED  cutover-rerehearsal-20260727                       br-rough-recipe-atw6vsl8
+  DELETED  cutover-rehearsal-20260727                         br-little-cloud-atrw8d9z
+  DELETED  cutover-rehearsal-20260727b                        br-withered-pine-atr1el66
+  DELETED  audit-lens3-migrations                             br-crimson-silence-atwg8d6k
+  DELETED  audit-lens4-invariant                              br-square-mud-at1rxzr5
+  DELETED  census-clone                                       br-crimson-mode-atm9sqf6
+  DELETED  prod-census                                        br-crimson-lake-atn3h75o
+  DELETED  sec2-stage                                         br-snowy-glitter-at361fgm
+  DELETED  sec2-verify                                        br-long-cake-atoxtidi
+  DELETED  betterauth-spike                                   br-steep-mountain-atnvjbaf
+
+== AFTER ==
+  synthetic_storage_size: 69.89 GB
+
+== SURVIVORS ==
+         ci                                            17.49GB  ready
+         ci-test-20260729                              18.31GB  ready
+         dev                                           30.91GB  ready
+         item2-pre-ingest-backup-20260719              11.71GB  archived
+         lane-b-uploader                               0.00GB  ready
+  [prot] pre-cutover-ep-odd-fog-atnykudm-202607291642204.69GB  ready
+  [prot] production                                    19.10GB  ready
+  total: 7
+
+== RE-MEASURED after settling (~60s) ==
+  synthetic_storage_size: 70.08 GB
+  history_retention: 6.0 hours
+  data_storage_bytes_hour: 0
+
+  NOTE: synthetic_storage_size is a BILLING-PERIOD metric, not a live gauge — it does not
+  drop the instant branches are deleted. The 3.22 GB free-space figure in the branch dialog
+  is the number to re-read in the console; expect it to recover as Neon reclaims.
