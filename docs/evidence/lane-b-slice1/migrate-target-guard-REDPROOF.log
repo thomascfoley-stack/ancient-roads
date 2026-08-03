@@ -1,0 +1,29 @@
+RED-PROOF: db/apply-migration{,-concurrent}.mjs endpoint guard.
+Every case points at a NONEXISTENT .sql, so a fail-open shows as ENOENT (loud, harmless)
+rather than as a write. Prod cases use a FAKE prod-shaped host with a bogus password.
+
+THE DEFECT BEING CLOSED — the old predicate was a substring test over the WHOLE
+connection string, so a PASSWORD containing 'ep-tiny-hat' authorized a prod migration:
+  host          : ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech
+  isProdHost    : true
+  OLD predicate : PASSES -> would have applied to PRODUCTION
+  NEW predicate : REFUSES
+
+--- db/apply-migration.mjs ---
+  MUST REFUSE prod, no flag                     -> REFUSED
+  MUST REFUSE prod, declared as itself          -> REFUSED
+  MUST REFUSE prod host, password says ep-tiny-hat -> REFUSED
+  MUST REFUSE lane-b, undeclared                -> REFUSED
+  MUST REFUSE lane-b, wrong declaration         -> REFUSED
+  MUST ALLOW  canonical dev endpoint            -> ALLOWED (guard passed, no DB touched)
+  MUST ALLOW  lane-b, declared exactly          -> ALLOWED (guard passed, no DB touched)
+  MUST ALLOW  prod with MIGRATE_ALLOW_PROD=1    -> ALLOWED (guard passed, no DB touched)
+--- db/apply-migration-concurrent.mjs ---
+  MUST REFUSE prod, no flag                     -> REFUSED
+  MUST REFUSE prod, declared as itself          -> REFUSED
+  MUST REFUSE prod host, password says ep-tiny-hat -> REFUSED
+  MUST REFUSE lane-b, undeclared                -> REFUSED
+  MUST REFUSE lane-b, wrong declaration         -> REFUSED
+  MUST ALLOW  canonical dev endpoint            -> ALLOWED (guard passed, no DB touched)
+  MUST ALLOW  lane-b, declared exactly          -> ALLOWED (guard passed, no DB touched)
+  MUST ALLOW  prod with MIGRATE_ALLOW_PROD=1    -> ALLOWED (guard passed, no DB touched)
