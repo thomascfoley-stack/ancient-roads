@@ -128,9 +128,9 @@ export function RegisterSectionHeading({ title, note }: { title: string; note: s
 
 // The copy for each labeled register section, shared so every surface reads the
 // same way.
-export const SERMON_NOTE = 'Preached expositions — not verse-by-verse commentary; read them in full for the argument.';
-export const THEOLOGY_NOTE = 'Systematic and confessional reflections on this passage — topical, not verse-commentary.';
-export const SONG_VERSE_NOTE = 'Sung and poetic responses to this passage — not commentary, and (where marked) a metrical paraphrase, not the Scripture text itself.';
+export const SERMON_NOTE = 'Preached expositions, not verse-by-verse commentary; read them in full for the argument.';
+export const THEOLOGY_NOTE = 'Systematic and confessional reflections on this passage: topical, not verse-commentary.';
+export const SONG_VERSE_NOTE = 'Sung and poetic responses to this passage: not commentary, and (where marked) a metrical paraphrase, not the Scripture text itself.';
 
 export function eraLabel(year: number | null): string {
   if (!year) return '';

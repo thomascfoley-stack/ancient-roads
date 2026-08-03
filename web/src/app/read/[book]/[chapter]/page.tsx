@@ -253,7 +253,7 @@ export default function ReaderPage() {
           role="status"
           className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 pt-3 text-xs text-amber-800 sm:px-6 dark:text-amber-300"
         >
-          <span>Your highlights and notes couldn&rsquo;t be loaded. Nothing was lost &mdash; this page just isn&rsquo;t showing them.</span>
+          <span>Your highlights and notes couldn&rsquo;t be loaded. Nothing was lost. This page just isn&rsquo;t showing them.</span>
           <button
             type="button"
             onClick={retryAnnotations}
