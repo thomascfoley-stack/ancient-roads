@@ -346,6 +346,21 @@ function NotesTab({ annotation }: { annotation: AnnotationControls }) {
     );
   }
 
+  // The DELIBERATE replacement for an accidental guard. Until `signedIn` stopped being a fetch
+  // result, a failed annotations load also made this branch render the "Sign in" panel, so nobody
+  // could type over an invisible note. Now the load failing and being signed out are separate
+  // facts, and this is the one that has to block the editor: `onSaveNote` upserts.
+  if (annotation.loadFailed) {
+    return (
+      <div className="px-5 py-10 text-center">
+        <p className="mb-1 text-sm text-stone-500 dark:text-stone-400">Your notes couldn&rsquo;t be loaded.</p>
+        <p className="text-xs text-stone-400">
+          Close this and use Retry at the top of the chapter. Editing now could overwrite a note you can&rsquo;t see.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="px-5 py-4">
       <textarea

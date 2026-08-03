@@ -23,6 +23,7 @@ import { StudyPanel, type StudyTab } from '@/components/study-panel';
 import { WordPanel } from '@/components/word-panel';
 import { fetchOriginal, loadFullLexicon, type OriginalData, type OWord } from '@/lib/original';
 import { useAnnotationWrites } from '@/lib/use-annotation-writes';
+import { useSignedIn } from '@/lib/auth/use-signed-in';
 
 /**
  * The server's answer, and therefore the client's FIRST answer too.
@@ -97,7 +98,8 @@ export default function ReaderPage() {
     highlights,
     notes,
     bookmarks,
-    signedIn,
+    annotationsFailed,
+    retryAnnotations,
     writeError,
     retryWrite,
     dismissWrite,
@@ -107,6 +109,8 @@ export default function ReaderPage() {
     deleteVerseNote,
     toggleBookmark,
   } = useAnnotationWrites(book?.bookNum, chapterNum, translation.id);
+  // The session, not the annotations fetch. See lib/auth/use-signed-in.ts.
+  const signedIn = useSignedIn();
   // The verse a `#v<n>` deep link landed on, briefly emphasised. State, not a DOM mutation.
   const [flashVerse, setFlashVerse] = useState<number | null>(null);
   // The unified study panel: which verse, which tab, optional focused word.
@@ -238,6 +242,27 @@ export default function ReaderPage() {
         interlinear={interlinear}
         onToggleInterlinear={() => setInterlinear((v) => !v)}
       />
+      {/* THE CHAPTER'S ANNOTATIONS DID NOT LOAD. Signed-in readers only: signed out this GET is a
+          401 by design, and there is nothing to have failed to load. In flow rather than fixed, so
+          it cannot collide with the write-failure banner at the bottom of this file; ReaderHeader
+          is `sticky`, not `fixed`, so it cannot hide under that either. The copy names the thing a
+          reader would otherwise do wrong — re-create highlights, or type over a note that is still
+          on the server. */}
+      {signedIn && annotationsFailed && (
+        <div
+          role="status"
+          className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 pt-3 text-xs text-amber-800 sm:px-6 dark:text-amber-300"
+        >
+          <span>Your highlights and notes couldn&rsquo;t be loaded. Nothing was lost. This page just isn&rsquo;t showing them.</span>
+          <button
+            type="button"
+            onClick={retryAnnotations}
+            className="inline-flex min-h-[44px] shrink-0 items-center font-semibold underline"
+          >
+            Retry
+          </button>
+        </div>
+      )}
       {interlinear ? (
         original ? (
           <>
@@ -302,6 +327,7 @@ export default function ReaderPage() {
             color: highlights.get(study.verse)?.at(-1)?.color ?? null,
             note: notes.get(study.verse) ?? '',
             signedIn,
+            loadFailed: annotationsFailed,
             onSetHighlight: (color) => addHighlight(study.verse, null, color),
             onClearHighlight: () => clearVerse(study.verse),
             onSaveNote: (body) => { saveVerseNote(study.verse, body); setStudy(null); },
