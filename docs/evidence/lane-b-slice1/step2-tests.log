@@ -1,0 +1,43 @@
+STEP 2 — upload / parse / status. Test evidence, 2026-08-03T16:48:22Z.
+Target: lane-b-uploader (ep-snowy-bird-atmdsv3g). Every DB assertion runs over app_runtime;
+the only owner connection is the lock-holder in the SKIP LOCKED test, which must be independent.
+
+✓ test/user-corpus/sniff-and-judge.test.ts > sniffType reads content, never the extension > calls a PDF a PDF even when it is named .txt
+✓ test/user-corpus/sniff-and-judge.test.ts > sniffType reads content, never the extension > calls a zip a docx even when it is named .pdf
+✓ test/user-corpus/sniff-and-judge.test.ts > sniffType reads content, never the extension > separates md from txt by name, because the bytes cannot
+✓ test/user-corpus/sniff-and-judge.test.ts > sniffType reads content, never the extension > refuses binary junk that carries no magic we accept
+✓ test/user-corpus/sniff-and-judge.test.ts > sniffType reads content, never the extension > refuses an empty file rather than calling it text
+✓ test/user-corpus/sniff-and-judge.test.ts > size cap > accepts a file at exactly the limit and refuses one byte more
+✓ test/user-corpus/sniff-and-judge.test.ts > checksum > is stable for identical bytes and differs for a one-byte change
+✓ test/user-corpus/sniff-and-judge.test.ts > countExtractable ignores whitespace > counts a page of spaces as blank
+✓ test/user-corpus/sniff-and-judge.test.ts > judgeExtraction — the scanned-document loud failure (§8) > refuses a scanned PDF with needs_ocr, and never returns quietly
+✓ test/user-corpus/sniff-and-judge.test.ts > judgeExtraction — the scanned-document loud failure (§8) > refuses a scan that carries a little stray text, e.g. a header stamp per page
+✓ test/user-corpus/sniff-and-judge.test.ts > judgeExtraction — the scanned-document loud failure (§8) > accepts a real text-layer PDF
+✓ test/user-corpus/sniff-and-judge.test.ts > judgeExtraction — the scanned-document loud failure (§8) > puts the boundary exactly where MIN_CHARS_PER_PAGE says
+✓ test/user-corpus/sniff-and-judge.test.ts > judgeExtraction — the scanned-document loud failure (§8) > names the evidence in the message, so 'needs OCR' is checkable
+✓ test/user-corpus/sniff-and-judge.test.ts > judgeExtraction — the scanned-document loud failure (§8) > calls a blank non-PDF empty, not needs_ocr — the remedies differ
+✓ test/user-corpus/sniff-and-judge.test.ts > judgeExtraction — the scanned-document loud failure (§8) > accepts a short but real note
+✓ test/user-corpus/parse-docx.test.ts > parseDocx extracts prose from WordprocessingML > reads text out of w:t runs
+✓ test/user-corpus/parse-docx.test.ts > parseDocx extracts prose from WordprocessingML > keeps paragraphs apart
+✓ test/user-corpus/parse-docx.test.ts > parseDocx extracts prose from WordprocessingML > joins runs inside one paragraph without inserting spaces
+✓ test/user-corpus/parse-docx.test.ts > parseDocx extracts prose from WordprocessingML > turns tabs and breaks into whitespace so words do not fuse
+✓ test/user-corpus/parse-docx.test.ts > parseDocx extracts prose from WordprocessingML > decodes entities, and does not double-decode &amp;lt;
+✓ test/user-corpus/parse-docx.test.ts > parseDocx extracts prose from WordprocessingML > ignores styling and revision marks
+✓ test/user-corpus/parse-docx.test.ts > parseDocx refuses what it cannot honestly read > refuses a zip with no word/document.xml as unsupported, not corrupt
+✓ test/user-corpus/parse-docx.test.ts > parseDocx refuses what it cannot honestly read > refuses a file with no zip directory
+✓ test/user-corpus/parse-docx.test.ts > parseDocx refuses what it cannot honestly read > refuses a bomb that DECLARES its huge size
+✓ test/user-corpus/parse-docx.test.ts > parseDocx refuses what it cannot honestly read > refuses a bomb that LIES about its size — the case the declaration cannot catch
+✓ test/user-corpus/parse-docx.test.ts > parseDocx refuses what it cannot honestly read > keeps a defended bomb distinguishable from a broken file
+✓ test/user-corpus/scanned-pdf-real-path.test.ts > a PDF with a real text layer > is read, and accepted 332ms
+✓ test/user-corpus/scanned-pdf-real-path.test.ts > a scan: real pages, no text layer > is REFUSED needs_ocr rather than indexed as an empty success
+✓ test/user-corpus/queue-never-drops.test.ts > the queue never silently drops a document > a new upload is visible as queued immediately, before anything parses it
+✓ test/user-corpus/queue-never-drops.test.ts > the queue never silently drops a document > a document whose bytes were never stored FAILS with a reason, rather than being skipped 652ms
+✓ test/user-corpus/queue-never-drops.test.ts > the queue never silently drops a document > skips a row another worker holds, instead of blocking on it 1509ms
+✓ test/user-corpus/queue-never-drops.test.ts > the queue never silently drops a document > processes every document exactly once across repeated drains 1237ms
+✓ test/user-corpus/queue-never-drops.test.ts > the queue never silently drops a document > an exhausted document is RETIRED, not left invisible in parsing 543ms
+✓ test/user-corpus/queue-never-drops.test.ts > the queue never silently drops a document > a stale claim from a dead worker is reclaimed rather than stranded 701ms
+✓ test/user-corpus/queue-never-drops.test.ts > the queue never silently drops a document > a FRESH claim is left alone — the reclaim is by age, not by status 538ms
+✓ test/user-corpus/queue-never-drops.test.ts > the queue never silently drops a document > one user's drain never touches another user's queue 921ms
+✓ test/user-corpus/queue-never-drops.test.ts > the queue never silently drops a document > reapExhausted reports nothing to do when there is nothing to do 910ms
+Test Files  4 passed (4)
+Tests  37 passed (37)

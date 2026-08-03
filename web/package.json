@@ -13,8 +13,10 @@
     "@composio/client": "0.1.0-alpha.76",
     "@neondatabase/auth": "0.4.2-beta",
     "@neondatabase/serverless": "^1.1.0",
+    "@vercel/blob": "^2.0.0",
     "ajv": "^8.17.1",
     "next": "^16.2.12",
+    "pdfjs-dist": "^5.4.149",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

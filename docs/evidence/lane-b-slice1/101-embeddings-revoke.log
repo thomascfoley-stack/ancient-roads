@@ -1,0 +1,30 @@
+MIGRATION 101 — embeddings SELECT-only for app_runtime. Applied 2026-08-03T16:15:35Z.
+SLICE_1_DATA_MODEL.md 'Ships-with', shipped WITH 100 rather than as a follow-up.
+
+PRECONDITION (the caveat that kept this unapplied): no app_runtime path writes embeddings.
+  - every INSERT INTO embeddings lives under src/ingest/ or scripts/
+  - scripts/assert-ingest-env-dev.mjs:67 requires role=neondb_owner for ingest, exits non-zero otherwise
+  - src/retrieval/store.ts createPgStore takes an explicit url; consumers are
+    src/ingest/ingest-embeddings.ts (owner) and src/teacher/run.ts, which calls .search() only
+  - web/src/ has NO 'INSERT INTO embeddings' anywhere
+
+WHAT WAS ACTUALLY STANDING GUARD BEFORE (measured, not assumed):
+RLS enabled: true, forced: false
+  policy embeddings_read_policy FOR SELECT
+  policy embeddings_write_policy FOR INSERT
+  -> there is NO UPDATE and NO DELETE policy. Those verbs were denied by the ABSENCE of a
+     policy, which is a negative guarantee any future 'CREATE POLICY ... FOR ALL' erases silently.
+  -> INSERT was genuinely PERMITTED: embeddings_write_policy allows user_id = current_user_id,
+     so app_runtime could pollute the shared corpus table with its own rows. That was live.
+
+GRANTS AFTER:
+  SELECT
+
+AS app_runtime, AFTER — each verb, and which layer refuses:
+  INSERT  -> ERROR:  permission denied for table embeddings
+  UPDATE  -> ERROR:  permission denied for table embeddings
+  DELETE  -> ERROR:  permission denied for table embeddings
+  SELECT  -> still readable, 1070674 rows
+
+SELECT is deliberately untouched: serving reads this table on every /ask.
+Exact inverse: GRANT INSERT, UPDATE, DELETE ON embeddings TO app_runtime;

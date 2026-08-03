@@ -1,5 +1,128 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-03 (Lane B: B4 ruled as ADR-100; B5 step 2 — upload, parse, status)
+
+**Headline: B4 is closed, and the upload pipeline reports honestly before it reports success — a
+parsed document lands in `chunking`, never `ready`, because steps 3 and 4 have not been built. The
+most useful finding of the session is that my own concurrency test was a false-confidence test.**
+
+### B4 — RULED, as ADR-100
+
+Option A (shingle against the user's translation) with per-**document** detection, no user setting
+in Slice 1. Three things `SLICE1_TRANSLATION_DECISION.md` deliberately left open are now closed:
+
+- **The bar is not detector accuracy.** The paper proposed one; top-1 accuracy is the wrong metric
+  because the 18 shipped translations are not equidistant. The paper's own §3 records that
+  akjv/kjv/rwebster/ukjv/webster are KJV-descended and share long verbatim runs, so a kjv↔akjv
+  confusion costs ~0 and a kjv↔web confusion costs ~17 points. A detector can score 95% and bleed
+  recall, or 70% and lose nothing. The pre-registered bar is **end-to-end uncited-channel chapter
+  recall ≥70% with detection running**, reported beside the KJV-oracle ceiling.
+- **What happens when detection is wrong.** Detection resolves to a **family**; the channel unions
+  within the family when the top two are inside a margin. That is Option B bounded to the
+  correlated cluster — cheap, because those texts already share their 6-grams — and it never
+  unions across families, which is where Option B's unmeasured collision multiplication lives.
+  Below the floor, fall back to the KJV family and **record it** in `user_section_anchors.confidence`.
+- **Families are derived from measured 6-gram overlap, never typed.**
+
+Carries its own UNVERIFIED flag: the within-family-overlap premise is reasoning, not measurement,
+and is the first thing step 3 measures. **ADR numbered 100** because ADR-047 is already claimed
+twice — `53d90d1` on `main` and the /plans session's uncommitted `DECISIONS.md` — the third
+instance of this collision class in two days. Filed as a separate task.
+
+### Migration 101 — the `embeddings` REVOKE that ships WITH the user tables
+
+`SLICE_1_DATA_MODEL.md` says "do NOT skip" and "not a follow-up that gets lost". Applied.
+Precondition verified first, exactly as that document requires: no `app_runtime` path writes
+`embeddings` (every writer is under `src/ingest/` or `scripts/`, which assert `neondb_owner`;
+`web/src/` has no `INSERT INTO embeddings` at all; `src/retrieval/store.ts`'s only non-ingest
+consumer calls `.search()`).
+
+**What it actually changed, measured rather than assumed** — and it is not quite what the doc
+implies. The INSERT path was genuinely live: `embeddings_write_policy` permits
+`user_id = current_user_id`, so `app_runtime` could pollute the shared corpus table with its own
+rows. UPDATE and DELETE of corpus rows were already denied — but only by the **absence** of a
+policy for those commands, a negative guarantee that any future `CREATE POLICY … FOR ALL` erases
+silently. After 101 all three are `permission denied` at the grant layer, which does not depend on
+policy coverage staying correct. SELECT is untouched (1,070,674 rows still readable).
+
+### Step 2 — upload, parse, status
+
+Migration 102 adds only what something requires: `mime_type` (§9's "parse-failure rate BY FILE
+TYPE" is uncomputable without it, and it must be the SNIFFED type), `page_count` and
+`extractable_chars` (numerator and denominator of the scanned-document verdict, stored so the
+verdict stays auditable), `attempts` and `claimed_at` (retry, and reclaiming a dead worker's row),
+plus a partial unique index for checksum dedupe scoped to `(user_id, checksum)`.
+
+`web/src/lib/user-corpus/`: content-based MIME sniffing, size and decompressed-size caps, sha256
+dedupe, a hand-rolled docx reader, pdfjs extraction, the parse dispatcher and its verdict, private
+blob storage, the document store, and the queue.
+
+- **The docx reader is hand-rolled on purpose.** §8 requires a decompressed-size cap, and every
+  docx library hands back the extracted content — the bomb has already gone off before any check
+  of ours could run. `inflateRawSync`'s `maxOutputLength` aborts mid-stream, which is the cap the
+  design actually asks for. Red-proofed against a zip that declares 100 bytes and inflates to 81 MB.
+- **Blob storage is `access: 'private'`.** A sermon manuscript at a public URL is the most
+  sensitive thing this product will hold, and unguessable is not private.
+- **A parsed document goes to `chunking`, not `ready`.** `ready` means indexed and searchable, and
+  nothing is indexed yet.
+- **Two terminal refusals, not one.** `failed`/needs OCR for a scan (actionable: OCR it) and
+  `empty` for a genuinely blank file (a different file). Collapsing them tells someone to OCR an
+  empty `.txt`.
+
+### THE FINDING: my own concurrency test was a false-confidence test
+
+The SKIP LOCKED assertion was first written as "run two drains, check nothing is claimed twice."
+Seeding the bug (deleting `FOR UPDATE SKIP LOCKED`) sent it red twice — and then it **passed 8/8
+with the clause still deleted**. Whether two drains collide is timing. A check that only sometimes
+fails when the bug is present has not been watched fail; it has had a good day.
+
+Rewritten to assert SKIP LOCKED's actual semantics, which are deterministic: an independent
+connection holds a real row lock, and the drain must **skip** that row rather than wait on it.
+Same seed now fails **3 runs out of 3**, on the timeout, at ~9.2s. Two tests were also found by
+being written: the docx reader dropped every `<w:tab/>` (fusing the words either side, which would
+have manufactured 6-grams that exist in no translation and quietly cost step 3 recall), and a
+"corrupt stream" fixture that flipped two bytes inside a real deflate stream proved nothing,
+because deflate tolerates that and inflates anyway.
+
+37 tests green over 4 files. Evidence under `docs/evidence/lane-b-slice1/`.
+
+### NOT DONE / UNVERIFIED
+
+- **`MIN_CHARS_PER_PAGE = 100` is reasoning, not measurement.** Calibrated against the argument
+  that set prose runs 1500-3000 chars/page and a scan yields ~0, so there is almost nothing in the
+  gap. It is pre-registered in the source and must be measured against a corpus of real scans and
+  real text-layer PDFs. The generated fixtures prove the RULE fires on the real extractor; they do
+  not prove the threshold is in the right place for files in the wild.
+- **The blob round-trip is UNPROVEN.** No `BLOB_READ_WRITE_TOKEN` is provisioned, so nothing has
+  written to or read from a Blob store. The queue tests deliberately use `blob_url IS NULL`
+  documents, which exercises the status machinery but not storage. Upload end-to-end cannot be
+  claimed until a store exists.
+- **No browser check, and no UI.** `/library/uploads` is still the five-line `ComingSoon` stub; the
+  UI is step 7 and lands as **"My Works"** per the order's naming section. The DoD browser leg is
+  unmeetable at this step by construction.
+- **`npm run audit` not run in full.** Ran root `tsc` (0), cutover `tsc` (0), `eslint src test`
+  (0 errors, 34 pre-existing warnings), `knip` (nothing new), web `tsc` (0), web `eslint` (0),
+  and the web suite. Unrun: coverage thresholds, `qa`, the license gate, `next build`.
+- **Three pre-existing web-suite failures, NOT from this work, and proven so rather than asserted:**
+  `register-wall-surfaces` (2) and `register-end-to-end` (1) fail their own corpus preconditions.
+  Re-run on the clean `main` worktree at `2e906f8`, which has no `user-corpus` directory at all,
+  against the dev DB: same failures. `commentary-entries-provenance` fails in a full run and
+  passes alone, so it is order-dependent; not investigated.
+- **`maxDuration` is deliberately not exported** on the upload route. Every such export under
+  `web/src/app` is held equal to `ASK_MAX_DURATION_SEC`, because for the ask routes the ceiling and
+  the in-process budget are one number; parsing has no such relationship and adding a third
+  consumer would weaken that guard. Cost: a very large PDF can exceed the platform default and be
+  killed mid-parse. Survivable and visible — the row stays in `parsing` and the stale-claim rule
+  reclaims it by age — but it is a real limitation.
+- **pdfjs logs a benign `standardFontDataUrl` warning** during text extraction. Extraction is
+  unaffected (fonts matter for rendering, not for the text layer). Not silenced, because pointing
+  it at a filesystem path that may not exist in a serverless deployment would trade a harmless
+  warning for a real failure.
+- **Two new dependencies in the Vercel upload root**, `pdfjs-dist` and `@vercel/blob`, chosen by
+  the owner. `web/package-lock.json` regenerated by the A6 recipe (copy of `package.json` + `.npmrc`
+  in a directory with no ancestor `node_modules`): 776 entries, 0 escaping, all direct deps pinned.
+  All three A6 deploy guards green.
+
 ## 2026-08-03 (Lane B / B5 step 1: migration 100 applied, RLS proven with two accounts)
 
 **Headline: the four user-corpus tables are live on `lane-b-uploader` and their isolation is
