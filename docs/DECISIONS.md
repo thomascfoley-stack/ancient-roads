@@ -1085,3 +1085,36 @@ committed for **user-corpus** embedding is still the owner's to say. The Slice 1
 in `docs/SERMON_COMPANION.md` itself, struck in place with a pointer to the correction block that
 already stood above it — the ADR-047 pattern, so the evidence of how the contradiction arose
 survives while no reader meets the row without the correction.
+
+## ADR-101 — The Blob read-write token targets all three environments and is therefore NOT Sensitive (2026-08-03)
+
+**Context:** Slice 1 stores raw uploads in Vercel Blob (`ancient-paths-user-corpus`, region IAD1,
+**access `private`**). Connecting the store to the `web` project injects `BLOB_READ_WRITE_TOKEN`.
+Vercel enforces a hard either/or, stated in its own UI: *"Sensitive variables cannot target
+Development. Deselect Development to mark this sensitive."* A **Sensitive** variable's value cannot
+be read back from the dashboard or the API after creation; a non-Sensitive one can, by anyone with
+project access.
+
+**Decision (owner, 2026-08-03):** the connection targets **Production, Preview AND Development**,
+and the token is consequently **not Sensitive**.
+
+**Why this is a real trade-off and not a formality.** `BLOB_READ_WRITE_TOKEN` can read AND delete
+every user's uploaded manuscripts — the most sensitive content this product will hold, and the
+reason the store itself is `private` rather than `public`. Dropping Sensitive means that token's
+value is retrievable by anyone with access to the project, permanently, until it is rotated. The
+owner was shown this and chose Development coverage anyway; recorded here rather than left in a
+chat window (bylaw 1), because the next person to look at that variable should find the reasoning
+attached to it rather than infer that nobody noticed.
+
+**What this does NOT change:** the store stays `access: 'private'`, so blobs are unreachable
+without a token. This ADR is about who can read the token, not about who can read the blobs.
+
+**Rejected:** *Sensitive + Production/Preview only* — local work already reads the token from
+`web/.env.local` and the repo runs `pnpm dev` rather than `vercel dev`, so the practical gain from
+Development was small; the owner judged the convenience worth the exposure. *A second token scoped
+to Development* — would preserve both properties, but Vercel Blob issues one read-write token per
+store connection, so it would mean a second store rather than a second token.
+
+**Consequence to watch:** rotating this token is now the only way to un-expose it. If it is ever
+rotated, `web/.env.local` and any local `.env` must be updated in the same operation, or the queue
+starts failing every parse with a storage error rather than a parse error.

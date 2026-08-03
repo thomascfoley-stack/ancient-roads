@@ -1,7 +1,9 @@
 BLOB ROUND-TRIP — @vercel/blob against the LIVE store, 2026-08-03T17:16:28Z.
 
 Store: ancient-paths-user-corpus (Vercel Blob, region IAD1, ACCESS = PRIVATE), connected to
-the 'web' project. BLOB_READ_WRITE_TOKEN injected for Production + Preview, marked Sensitive.
+the 'web' project. BLOB_READ_WRITE_TOKEN injected for Production, Preview AND Development, and therefore NOT
+marked Sensitive -- Vercel forbids Sensitive vars from targeting Development, and the owner ruled
+for Development coverage over unreadability (ADR-101).
 IAD1 colocates with the Neon branch (us-east-1). Vercel's own quickstart for this store uses
 access: 'private', which is what the code already did.
 
