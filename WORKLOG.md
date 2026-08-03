@@ -47,6 +47,32 @@ and the check could not fail. Moved into the paging block (READ_PAGE=2, 4 entrie
 section) and re-mutated: **8 of 10, and 2 of 4 on the multi-entry section — RED**, green again
 on revert.
 
+### ADDENDUM — 040 applied to prod; deploy BLOCKED at the corpus ratchet (2026-08-03, late)
+
+- **040 applied to production** (ledger-recorded). Safe to unhold after measuring that A9's
+  cutover has NOT reached prod: `embeddings.served` does not exist there and only 041/042 of
+  the 04x series were recorded. Prod now accepts `topical_index`, so the owner's corpus copy
+  is unblocked.
+- **Corpus copy and publish flip are STRUCTURALLY owner-only.** Both gates refuse a non-TTY
+  stdin ("a piped answer is not consent"), and the only bypass (`--redproof-skip-gate`)
+  requires `--local-redproof`, i.e. a throwaway local cluster. Not attempted. Exact commands
+  handed to the owner.
+- **Deploy prepared and then correctly refused.** Built an isolated worktree on this branch
+  (`/Users/foley/Projects/ap-deploy`) with the gitignored static corpus hardlinked in, so
+  deploy.sh's clean-tree gate is satisfied honestly and the concurrent session's in-flight
+  files cannot ship. `npm run audit` PASSED there; `next build` compiles with `/plans` in the
+  route manifest. deploy.sh then stopped at the **corpus-identity ratchet**:
+
+      committed manifest (this branch) : 117,240 entries (d2fedc1)
+      owner-approved manifest          : 149,315 entries (65a76a7, on fix/final-three — NOT on this branch)
+      on disk                          : 158,285 entries
+
+  Two separate gaps: this branch is missing the owner-approved manifest commit, and the
+  on-disk corpus exceeds even that by ~9k entries from ingest after the approval.
+  `build-corpus-manifest.mjs` was NOT run — regenerating the manifest is how the ratchet gets
+  defeated, and certifying ~9k unreviewed entries is an owner call, not an agent's. The gate
+  worked exactly as designed and is the reason nothing shipped.
+
 ### NOT DONE — what still gates topical plans on production
 
 1. **040** (behind A9's `embeddings` work)
