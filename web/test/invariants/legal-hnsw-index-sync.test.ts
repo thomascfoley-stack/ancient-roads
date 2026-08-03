@@ -45,13 +45,21 @@ import {
 const MIGRATIONS_DIR = fileURLToPath(new URL('../../../db/migrations', import.meta.url));
 const norm = (s: string) => s.replace(/\s+/g, ' ').replace(/[()]/g, '').trim().toLowerCase();
 
-/** The newest migration that builds `needle`. Fails loudly rather than returning nothing. */
+/**
+ * The newest migration that mentions `needle` in ACTUAL SQL — comment lines are stripped before
+ * searching, because prose mentions are not builds. 043's header names the new indexes while
+ * instructing the operator's EXPLAIN check, and the naive version of this helper picked it as
+ * "the newest migration building idx_embeddings_served_legal" (a file that builds nothing).
+ * Same lesson db/apply-migration-concurrent.mjs already carries: its comment-naive parser once
+ * extracted the phantom index name "nor" from 018's prose.
+ */
 const newestContaining = (needle: string) => {
+  const sqlOnly = (text: string) => text.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
   const files = readdirSync(MIGRATIONS_DIR)
     .filter((f) => f.endsWith('.sql'))
-    .filter((f) => readFileSync(`${MIGRATIONS_DIR}/${f}`, 'utf8').includes(needle))
+    .filter((f) => sqlOnly(readFileSync(`${MIGRATIONS_DIR}/${f}`, 'utf8')).includes(needle))
     .sort();
-  expect(files.length, `expected a migration containing ${needle}`).toBeGreaterThan(0);
+  expect(files.length, `expected a migration whose SQL contains ${needle}`).toBeGreaterThan(0);
   return { name: files[files.length - 1]!, sql: readFileSync(`${MIGRATIONS_DIR}/${files[files.length - 1]!}`, 'utf8') };
 };
 
@@ -74,11 +82,15 @@ const ALL_KNOWN_SLUGS = [
   ...SERVED_PROSE_WORKS, ...SERVED_SERMON_WORKS, ...SERVED_THEOLOGY_WORKS, ...SERVED_SONG_VERSE_WORKS,
 ];
 
+// The NEW final names from 042_embeddings_served_expand.sql. The old idx_embeddings_vector_*
+// names survive until 043 (the contract half) solely so the pre-042 bundle keeps planning
+// during the deploy window — they are deliberately NOT guarded here: their predicates are
+// frozen history, and 043 removes them.
 const SERVING_INDEXES = [
-  'idx_embeddings_vector_legal',
-  'idx_embeddings_vector_song_verse',
-  'idx_embeddings_vector_sermon',
-  'idx_embeddings_vector_theology',
+  'idx_embeddings_served_legal',
+  'idx_embeddings_served_song_verse',
+  'idx_embeddings_served_sermon',
+  'idx_embeddings_served_theology',
 ] as const;
 
 describe('§7 — partial HNSW index predicates stay in lockstep with the retrieval filters', () => {
@@ -102,10 +114,10 @@ describe('§7 — partial HNSW index predicates stay in lockstep with the retrie
   // carries. `user_id IS NULL` is in every predicate and every query and is asserted separately
   // so a missing one is named rather than folded into a generic mismatch.
   const LOCKSTEP: { index: (typeof SERVING_INDEXES)[number]; conjuncts: string[] }[] = [
-    { index: 'idx_embeddings_vector_legal', conjuncts: [LEGAL_CORPUS_FILTER, EXEGETICAL_TYPE_SQL] },
-    { index: 'idx_embeddings_vector_song_verse', conjuncts: [SONG_VERSE_CORPUS_FILTER, SONG_VERSE_TYPE_SQL] },
-    { index: 'idx_embeddings_vector_sermon', conjuncts: [SERMON_CORPUS_FILTER] },
-    { index: 'idx_embeddings_vector_theology', conjuncts: [THEOLOGY_CORPUS_FILTER] },
+    { index: 'idx_embeddings_served_legal', conjuncts: [LEGAL_CORPUS_FILTER, EXEGETICAL_TYPE_SQL] },
+    { index: 'idx_embeddings_served_song_verse', conjuncts: [SONG_VERSE_CORPUS_FILTER, SONG_VERSE_TYPE_SQL] },
+    { index: 'idx_embeddings_served_sermon', conjuncts: [SERMON_CORPUS_FILTER] },
+    { index: 'idx_embeddings_served_theology', conjuncts: [THEOLOGY_CORPUS_FILTER] },
   ];
 
   for (const { index, conjuncts } of LOCKSTEP) {

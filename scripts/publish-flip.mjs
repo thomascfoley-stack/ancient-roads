@@ -40,6 +40,7 @@ import { forbiddenProvenanceDomain } from '../src/ingest/forbidden-provenance.mj
 import { eligibility, flipDelta } from './lib/publish-flip-delta.mjs';
 import { assertPublishTarget, assertStrongTls } from './lib/publish-flip-guard.mjs';
 import { scrubCredentialText } from './lib/neon-connection.mjs';
+import { isMustNotServe } from './lib/served-corpus-authors.mjs';
 
 const OWNER_ROLE = 'neondb_owner';
 const CONFIRM_WORD = 'publish';
@@ -49,6 +50,14 @@ const has = (f) => args.includes(f);
 const val = (f) => args.find((a) => a.startsWith(`${f}=`))?.slice(f.length + 1);
 
 const reverse = has('--reverse');
+// ── --serve-published: the ONLY way a forward flip may list an already-published slug ──────
+// 2026-08-03 audit, finding 2 (CONFIRMED). Since migration 042 the flip also writes
+// `embeddings.served`, so a forward run whose payload contains already-published works SERVES
+// their rows while moving zero status rows — a materially different act from re-running a
+// status flip, and the old code did it silently ("the rest are already 'published'") with no
+// tool inverse. Serving the 76 published-but-unserved works is precisely this act, so it must
+// be deliberate: without this flag a forward payload containing a published slug is a STOP.
+const servePublished = has('--serve-published');
 const slugFile = val('--slugs');
 const snapshotFile = val('--snapshot');
 const localOk = has('--local-redproof');
@@ -90,7 +99,7 @@ function die(msg, code = 1) {
   process.exit(code);
 }
 
-if (!slugFile) die('usage: publish-flip.mjs --slugs=<flip-slugs.json> [--reverse --snapshot=<flip-pre-snapshot-*.json>]', 2);
+if (!slugFile) die('usage: publish-flip.mjs --slugs=<flip-slugs.json> [--serve-published] [--reverse --snapshot=<flip-pre-snapshot-*.json>]', 2);
 
 // ── the slug list. Read LITERALLY. No predicate, ever. ────────────────────────────────────
 // PUBLISH_FLIP.md:71-73 is explicit: the flip names its works. A predicate ("everything
@@ -108,6 +117,27 @@ if (!slugs || slugs.length === 0) {
 }
 if (!slugs.every((s) => typeof s === 'string' && /^[a-z0-9][a-z0-9-]*$/.test(s))) {
   die('STOP: slug file contains a value that is not a slug. Refusing to guess.', 2);
+}
+
+// ── the manifest serve:false gate (forward only; a withdrawal is never blocked, M7) ─────────
+// 2026-08-03 audit: the flip became the serving switch without inheriting any serving gate.
+// Quarantine rulings live in the manifest as `serve:false` (whitefield-works is the standing
+// example — a QUALITY ruling, not an oversight), and before 042 they were enforced by the slug
+// simply never being added to a routing list. That wall is gone; this is its replacement.
+// Checked BEFORE any connection: it is pure repo state, and the answer cannot change mid-run.
+if (!reverse) {
+  let manifestEntries = [];
+  try {
+    manifestEntries = JSON.parse(fs.readFileSync('ingest/sources.config.json', 'utf8'));
+  } catch (e) {
+    die(`STOP: cannot read ingest/sources.config.json (${e.message}). The serve:false gate needs it; refusing to publish blind.`, 2);
+  }
+  const noServe = new Set(manifestEntries.filter((e) => e?.serve === false).map((e) => e.slug));
+  const blocked = slugs.filter((s) => noServe.has(s));
+  if (blocked.length > 0) {
+    die(`STOP: listed slug(s) are serve:false in the manifest (a standing quality/quarantine ruling): ${blocked.join(', ')}.\n` +
+        '  Publishing now MEANS serving. Revisit the ruling in ingest/sources.config.json first, or drop the slug.', 2);
+  }
 }
 
 const url = process.env.CUTOVER_DATABASE_URL;
@@ -139,6 +169,9 @@ const to = reverse ? 'staged' : 'published';
 // `staged`. No snapshot, no reverse: guessing which rows a past write touched is precisely the
 // thing that made this unsafe.
 let reverseSlugs = slugs;
+// On a reverse: the slugs whose rows the FORWARD run served from zero (read from the snapshot's
+// servedBefore record) — the exact inverse targets of the served write. Stays [] on forward runs.
+let unserveSlugs = [];
 if (reverse) {
   if (!snapshotFile) {
     let available = [];
@@ -172,8 +205,26 @@ if (reverse) {
   if (skipped.length > 0) {
     console.log(`  NOT reversed (already '${to === 'staged' ? 'published' : 'staged'}' before the flip): ${skipped.join(', ')}`);
   }
-  if (reverseSlugs.length === 0) {
-    die('STOP: the snapshot shows the forward flip moved none of these slugs. Nothing to reverse.', 2);
+
+  // ── the served inverse comes from the snapshot too (audit finding 2, CONFIRMED) ──────────
+  // The forward run records per-slug served-row counts BEFORE its write. The exact inverse of
+  // "serve every row of these works" is "un-serve the works that had ZERO served rows before"
+  // — un-serving a work that was partially or fully served pre-flip would destroy state the
+  // forward run never created. The old code un-served `reverseSlugs` (the was-staged subset),
+  // which (a) missed every already-published slug a mixed batch had served, and (b) could not
+  // reverse a serve-only flip at all ("nothing to reverse" on the run whose whole point was
+  // the served write).
+  unserveSlugs = slugs.filter((sl) => {
+    const sb = snap.servedBefore?.[sl];
+    return sb && sb.rows > 0 && sb.served === 0;
+  });
+  if (snap.servedBefore === undefined) {
+    console.log('  ⚠ snapshot predates the served record (pre-042): reversing status only, served untouched.');
+  } else {
+    console.log(`  un-serving   ${unserveSlugs.length} slug(s) the forward flip served from zero`);
+  }
+  if (reverseSlugs.length === 0 && unserveSlugs.length === 0) {
+    die('STOP: the snapshot shows the forward flip moved no status rows and served no rows for these slugs. Nothing to reverse.', 2);
   }
 }
 
@@ -254,10 +305,14 @@ try {
   // to itself and become a check that CANNOT FAIL — trading a real gap for an unearned green.
   // Locking gives the guarantee without blinding the delta.
   //
-  // `sources` is 7 rows, so this costs nothing. It also composes with the re-ingest guard added the
-  // same day (src/ingest/reingest-guard.ts): that guard takes FOR UPDATE on the row it is about to
-  // delete sections for, so a re-ingest and a flip now mutually exclude — which is what makes the
-  // `badSections` leg below trustworthy without locking 72,863 section rows.
+  // `sources` was 7 rows when this was written and is ~124 heading to ~900 — FOR UPDATE on the
+  // whole table is still cheap in absolute terms, but it now serializes against any concurrent
+  // copy/ingest session for the LIFE OF THIS TRANSACTION, which since 042 includes a served
+  // UPDATE over every listed work's embeddings rows. Batch size bounds that duration; the filed
+  // order requires timing a dev-scale flip before sizing prod batches. It also composes with the
+  // re-ingest guard (src/ingest/reingest-guard.ts): that guard takes FOR UPDATE on the row it is
+  // about to delete sections for, so a re-ingest and a flip mutually exclude — which is what
+  // makes the `badSections` leg below trustworthy without locking every section row.
   const before = (await client.query('SELECT slug, status FROM sources ORDER BY slug FOR UPDATE')).rows;
   const beforeBy = new Map(before.map((r) => [r.slug, r.status]));
 
@@ -272,14 +327,64 @@ try {
     die(`STOP: slug(s) not present in sources: ${missing.join(', ')}`, 1);
   }
 
+  // ── does this target carry `embeddings.served` (migration 042)? ─────────────────────────
+  // Forward: REQUIRED. Publishing now means serving; a forward flip on a pre-042 target would
+  // silently recreate the published-but-unserved divergence this whole design exists to kill.
+  // Reverse: proceeds WITHOUT it, loudly — an emergency withdrawal is never blocked on schema
+  // (M7's direction), it just cannot touch a column that does not exist.
+  const servedCol = (await client.query(
+    `SELECT 1 FROM information_schema.columns WHERE table_name='embeddings' AND column_name='served'`,
+  )).rowCount > 0;
+  if (!servedCol && !reverse) {
+    await client.query('ROLLBACK');
+    die('STOP: embeddings.served does not exist on this target. Publishing now MEANS serving — ' +
+        'apply db/migrations/042_embeddings_served_expand.sql first (the expand half; see the filed order).', 1);
+  }
+  if (!servedCol && reverse) {
+    console.log('  ⚠ no served column on this target (pre-042): reversing status only.');
+  }
+
+  // ── per-slug served state BEFORE any write — the served inverse lives or dies here ──────
+  // Recorded for ALL listed slugs (not just the payload): a --serve-published forward's whole
+  // point is slugs outside the eligible set. `rows:0` marks a slug with no work-keyed
+  // embeddings (the legacy author-admitted cohort) — served for those is untouchable by slug,
+  // which the summary line states rather than hides.
+  let servedBefore = null;
+  if (servedCol) {
+    const sb = await client.query(
+      `SELECT metadata->>'work' AS work, count(*)::int AS rows, count(*) FILTER (WHERE served)::int AS served
+         FROM embeddings WHERE user_id IS NULL AND metadata->>'work' = ANY($1) GROUP BY 1`,
+      [slugs],
+    );
+    servedBefore = Object.fromEntries(slugs.map((sl) => [sl, { rows: 0, served: 0 }]));
+    for (const r of sb.rows) servedBefore[r.work] = { rows: r.rows, served: r.served };
+
+    if (!reverse) {
+      // A slug in a PARTIAL served state (some rows on, some off) has no exact inverse under a
+      // per-slug record, and partial states are always a defect upstream (an interrupted write,
+      // or a re-ingest that slipped a guard). Refuse and name it; reconciliation is a decision,
+      // not a side effect of the next batch.
+      const partial = slugs.filter((sl) => {
+        const s = servedBefore[sl];
+        return s.rows > 0 && s.served > 0 && s.served < s.rows;
+      });
+      if (partial.length > 0) {
+        await client.query('ROLLBACK');
+        die(`STOP: slug(s) in a PARTIAL served state (some rows served, some not): ` +
+            `${partial.map((sl) => `${sl}=${servedBefore[sl].served}/${servedBefore[sl].rows}`).join(', ')}. ` +
+            'Reconcile first; a flip over a partial state has no exact inverse.', 1);
+      }
+    }
+  }
+
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const snapPath = path.join(evidenceDir, `flip-pre-snapshot-${stamp}.json`);
   fs.mkdirSync(evidenceDir, { recursive: true });
   fs.writeFileSync(
     snapPath,
-    JSON.stringify({ host, direction: `${from}->${to}`, slugFile, slugs, payload, sources: before }, null, 2),
+    JSON.stringify({ host, direction: `${from}->${to}`, slugFile, slugs, payload, servedBefore, sources: before }, null, 2),
   );
-  console.log(`snapshot     ${snapPath} (${before.length} rows, written before COMMIT)`);
+  console.log(`snapshot     ${snapPath} (${before.length} rows${servedBefore ? ` + served state for ${slugs.length} slug(s)` : ''}, written before COMMIT)`);
 
   // A listed slug that is in NEITHER direction is a third status — 'quarantined' (migration 006)
   // or 'ingesting' (023). The old message asserted "the rest are already <to>" without checking,
@@ -288,7 +393,23 @@ try {
     await client.query('ROLLBACK');
     die(`STOP: listed slug(s) in an unexpected status: ${thirdStatus.map((s) => `${s}=${beforeBy.get(s)}`).join(', ')}. Refusing.`, 1);
   }
-  console.log(`eligible     ${eligible.length} of ${payload.length} are '${from}' (the rest are already '${to}')`);
+
+  // ── already-published slugs on a FORWARD run need --serve-published (audit finding 2) ────
+  // The old message here — "the rest are already 'published'" — described a no-op. Since 042 it
+  // describes a SERVE: those works' rows flip served=true with zero status movement. That is
+  // the deliberate mechanism for the 76, and it must never happen as a side effect of a stale
+  // slug list, so without the flag it is a STOP, with the flag it is announced by name.
+  const alreadyTo = payload.filter((sl) => beforeBy.get(sl) === to);
+  if (!reverse && alreadyTo.length > 0 && !servePublished) {
+    await client.query('ROLLBACK');
+    die(`STOP: ${alreadyTo.length} listed slug(s) are already 'published': ${alreadyTo.slice(0, 8).join(', ')}${alreadyTo.length > 8 ? ', …' : ''}.\n` +
+        '  A forward flip would SERVE their embeddings rows without moving status. If serving\n' +
+        '  already-published works is what you mean (e.g. the 76), re-run with --serve-published.', 1);
+  }
+  if (!reverse && alreadyTo.length > 0) {
+    console.log(`serve-published  ${alreadyTo.length} already-published slug(s) will be SERVED (status unchanged)`);
+  }
+  console.log(`eligible     ${eligible.length} of ${payload.length} are '${from}'${alreadyTo.length > 0 ? ` (${alreadyTo.length} already '${to}')` : ''}`);
 
   const upd = await client.query(
     `UPDATE sources SET status=$2 WHERE slug = ANY($1) AND status=$3 RETURNING slug`,
@@ -299,34 +420,61 @@ try {
     die(`STOP: expected to flip ${eligible.length} row(s), flipped ${upd.rowCount}. Rolled back.`, 1);
   }
 
-  // ── `embeddings.served` moves WITH the status, in this same transaction (migration 039) ──
-  // Before 039 these were unrelated facts: retrieval read four hand-typed slug lists in
+  // ── `embeddings.served` moves WITH the status, in this same transaction (migration 042) ──
+  // Before 042 these were unrelated facts: retrieval read four hand-typed slug lists in
   // routing.ts, so publishing a work made it shelf-readable and left it invisible to /ask. 76 of
-  // the 77 works published on 2026-08-03 landed in exactly that state. `served` is now the switch,
-  // and this is its ONLY writer — which is what makes the licensing argument hold, because a row
-  // is reachable here only by a slug that survived admission.
+  // the 77 works published on 2026-08-03 landed in exactly that state. `served` is now the
+  // switch, and this transaction is its ONLY writer.
   //
-  // SAME TRANSACTION, NOT A FOLLOW-UP STEP. A commit that moved `status` without `served` would
-  // leave the two facts disagreeing again, which is the whole defect. If either fails, both roll
-  // back. The count is asserted rather than trusted: `sources.status` and the flat table are
-  // joined only by `metadata->>'work'`, and a work whose rows carry no work key (the legacy
-  // author-admitted cohort) legitimately moves ZERO rows — so a mismatch is reported, not fatal,
-  // and the number is printed so a silent zero cannot pass as success.
+  // SAME TRANSACTION, NOT A FOLLOW-UP STEP: if either write fails, both roll back.
+  //
+  // TARGETS (audit finding 2, CONFIRMED — the old code used `payload` in both directions):
+  //   forward   every LISTED slug (`slugs`) — including --serve-published ones the status
+  //             UPDATE never touches. That asymmetry is the point of the flag.
+  //   reverse   `unserveSlugs` — the slugs the snapshot proves the forward run served FROM
+  //             ZERO. Un-serving anything else would destroy state the forward run never made.
+  //             The legacy author-admitted cohort (no work key) is unreachable by slug in
+  //             either direction; withdrawing those works moves status while /ask keeps
+  //             serving their rows — a KNOWN, filed limit, printed below, never silent.
   const servedTo = to === 'published';
-  const emb = await client.query(
-    `UPDATE embeddings SET served=$2
-      WHERE user_id IS NULL AND metadata->>'work' = ANY($1) AND served <> $2`,
-    [payload, servedTo],
-  );
-  const workKeyed = await client.query(
-    `SELECT count(DISTINCT metadata->>'work')::int AS works, count(*)::int AS rows
-       FROM embeddings WHERE user_id IS NULL AND metadata->>'work' = ANY($1)`,
-    [payload],
-  );
-  console.log(
-    `served       ${emb.rowCount} embedding row(s) -> served=${servedTo} ` +
-    `(${workKeyed.rows[0].works}/${payload.length} listed slug(s) carry work-keyed rows, ${workKeyed.rows[0].rows} total)`,
-  );
+  const servedTargets = reverse ? unserveSlugs : slugs;
+  let servedRows = 0;
+  if (servedCol && servedTargets.length > 0) {
+    const emb = await client.query(
+      `UPDATE embeddings SET served=$2
+        WHERE user_id IS NULL AND metadata->>'work' = ANY($1) AND served <> $2`,
+      [servedTargets, servedTo],
+    );
+    servedRows = emb.rowCount;
+  }
+  if (servedCol) {
+    const noRows = (reverse ? unserveSlugs : slugs).filter((sl) => servedBefore?.[sl]?.rows === 0);
+    console.log(
+      `served       ${servedRows} embedding row(s) -> served=${servedTo} across ${servedTargets.length} slug(s)` +
+      (noRows.length > 0
+        ? `\n             ⚠ ${noRows.length} slug(s) carry NO work-keyed rows (unreachable by slug): ${noRows.slice(0, 6).join(', ')}${noRows.length > 6 ? ', …' : ''}`
+        : ''),
+    );
+  }
+
+  // ── the serving gate: no must-not-serve author may enter the served set (forward only) ───
+  // 2026-08-03 audit: the flip became the serving switch without inheriting any serving gate —
+  // the old wall was the slug simply never being typed into a routing list. The list is
+  // imported from served-corpus-authors.mjs (byte-equality-tested against the shipped
+  // legal-corpus.ts), never re-typed here. Directional per M7: a reverse only shrinks the
+  // served set and is never blocked.
+  if (!reverse && servedCol && servedTargets.length > 0) {
+    const authors = await client.query(
+      `SELECT DISTINCT metadata->>'author' AS author FROM embeddings
+        WHERE user_id IS NULL AND metadata->>'work' = ANY($1)`,
+      [servedTargets],
+    );
+    const banned = authors.rows.map((r) => r.author).filter((a) => isMustNotServe(a ?? ''));
+    if (banned.length > 0) {
+      await client.query('ROLLBACK');
+      die(`STOP: serving these works would serve MUST_NOT_SERVE author(s): ${banned.join(', ')}. Rolled back.`, 1);
+    }
+  }
 
   // ── delta: nothing moved except what we named, in the direction we named ────────────────
   const after = (await client.query('SELECT slug, status FROM sources ORDER BY slug')).rows;
@@ -410,9 +558,12 @@ try {
   }
 
   await client.query('COMMIT');
-  console.log(`\nOK — gate held. ${upd.rowCount} row(s) ${from} -> ${to}.`);
+  // BOTH numbers, always (audit finding 2's logging leg): a serve-only run moves 0 status rows
+  // and a summary that reports only status reads as a no-op while 300k rows just went live.
+  console.log(`\nOK — gate held. ${upd.rowCount} status row(s) ${from} -> ${to}; ${servedRows} embedding row(s) -> served=${servedTo}.`);
   // The hint names the snapshot THIS run just wrote, because --reverse now requires one (M6)
-  // and a hint that omits a required flag is a hint that fails.
+  // and a hint that omits a required flag is a hint that fails. The same snapshot carries the
+  // servedBefore record, so it reverses the served write too — including a --serve-published run.
   if (!reverse) {
     console.log(`Reverse with: node scripts/publish-flip.mjs --slugs=${slugFile} --reverse --snapshot=${snapPath}`);
   }
