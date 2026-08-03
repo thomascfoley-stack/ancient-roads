@@ -1,5 +1,14 @@
 #!/bin/bash
 set -e
+set -o pipefail
+# pipefail matters at exactly one line below: `vercel --prod | tee ...`. Without it, bash's $? for
+# that pipeline is tee's exit code, not vercel's — so a failed deploy (vercel prints an error JSON
+# to stdout and exits, or exits 0 with an error body; observed both) sails through `set -e`, the
+# script reaches "Done!", and a receipt gets written that looks identical to a real one. Caught
+# 2026-08-03: a corpus-copy path collision failed the deploy, EXIT=0 was echoed by the wrapper that
+# ran this script, and the CI-facing task notification for that wrapper also reported success — an
+# unearned green two layers deep. CI's own audit.yml already sets pipefail on its one piped step
+# for the identical reason; this was the one place in this file that needed the same guard.
 
 echo "=== What Others Have Said — Deploy ==="
 echo ""
