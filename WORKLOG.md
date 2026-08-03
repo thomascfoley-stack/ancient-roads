@@ -117,10 +117,24 @@ queue, and Postgres under RLS as `app_runtime`. DOCX 6/6 to `chunking`, 82,534 c
 extracted. PDF 6/6 to `chunking`, 73 pages. Real scans refused with needs-OCR and their evidence
 recorded. Dedupe refused by the database, not merely by the route.
 
-**What remains unproven is one network hop.** Only `getUserDocument` is substituted, to read bytes
-from disk instead of over the wire, so `@vercel/blob`'s `put`/`get`/`del` against a live store are
-still untested. That needs `BLOB_READ_WRITE_TOKEN` and a provisioned Blob store; no local testing
-substitutes for it. The surface is now one function, not the pipeline.
+**The network hop is now proven too.** A Vercel Blob store — `ancient-paths-user-corpus`, region
+IAD1 (colocated with the Neon branch), **access PRIVATE** — was created and connected to the `web`
+project, injecting `BLOB_READ_WRITE_TOKEN` into Production and Preview as a Sensitive var. Vercel's
+own quickstart for the store uses `access: 'private'`, which is what the code already did. Four
+tests run against the live store with nothing substituted: a byte-exact binary round trip compared
+by checksum (a truncated or re-encoded blob keeps its length in plenty of failure modes), the whole
+pipeline upload → blob → drain → parse → `chunking`, and the blob leg of §8's delete cascade — the
+one leg Postgres cannot perform. Red-proofed by deleting `deleteUserDocument` from `deleteDocument`
+and watching the orphan survive.
+
+**A finding in the harness itself, which is the useful part.** The first version of that suite's
+cleanup deleted ROWS ONLY. Five runs left **9 orphaned blobs** in the store: the harness committing
+the exact bug its own third test asserts against — rows gone, files still on Vercel's storage,
+named by nothing. It was found by listing the store rather than by trusting the cleanup. Orphans
+purged, cleanup now sweeps by prefix so a test that dies between put and insert is still covered,
+and a fourth test asserts the suite leaves nothing behind. Store residue after a full run: 0.
+
+Nothing in the Slice 1 pipeline is unproven now except what is named in NOT DONE below.
 
 Both harnesses are committed and re-runnable, and both **skip visibly** without their corpora, so
 neither can be mistaken for a check that ran. Both report distributions and outcome counts only —
