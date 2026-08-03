@@ -952,3 +952,77 @@ shrink. The site is behind the password gate, so `/ask` is not publicly reachabl
 
 **Wrong if.** The count grows, or the password gate is removed with this open.
 
+
+## ADR-045 — Study plans are code-generated schedules over a coverage-gated scope; delivery is a third-party push service, later (2026-08-02)
+
+**Decision** (owner-approved scope, 2026-08-02 session: `docs/STUDY_PLANS_DESIGN.md` §12 steps
+1–4 + the topical-index corpus): the plan builder ships with the model emitting **only a
+`PlanSpec`** (`web/src/lib/plan/spec.ts`, schema-parsed at the edge; today a plain form posts the
+same object). The schedule is **arithmetic** — `expandPlan` (`web/src/lib/plan/expand.ts`) is a
+pure function over the canon and the calendar, dates handled as local `YYYY-MM-DD` triples over
+UTC epoch math, never ordinals (the `today.ts` leap lesson, red-proofed in
+`web/test/plan-expand.test.ts`). No date, verse range, or day list ever originates in a model.
+
+**Coverage gate.** `verse_coverage` (migration 039) is a derived rollup — per real verse, the
+distinct **admitted exegetical authors** (commentary + fathers, owner decision (c) at
+`teacher/routing.ts:57-62`) and section count, rebuilt from the shipped admission predicates by
+`scripts/rebuild-verse-coverage.ts` (imports `isMustNotServeAuthor` + `forbiddenProvenanceDomain`;
+never a typed author list). `createPlan` refuses a scope when fewer than half its reading days
+reach ≥2 authors — measured on dev: Song of Solomon, the known zero-coverage book, is refused
+with a stated reason (`web/test/regression/plans-routes.test.ts`). A confident dated schedule
+over passages the corpus cannot support is worse than a bad answer, because the user commits
+weeks to it.
+
+**Delivery.** Push channels (email / text / calendar invites) are the goal and will be handled by
+a **third-party provider (Composio or similar) in a later slice** — owner ruling this session.
+The earlier `.ics` bearer-URL design (STUDY_PLANS_DESIGN §8) is NOT built and its `feed_salt`
+column is NOT in the schema; nothing composed leaves the app today, so ADR-011's export-verifier
+requirement is satisfied vacuously and its "pick ONE integration" budget is unspent.
+`plan_days(plan_id, day_date)` is indexed so a delivery worker's "what is due today" is one read.
+
+**Data.** `plans` + `plan_days` (039) carry the standard RLS block; `plan_days` has no `user_id`
+— its policy is an EXISTS against the parent and every store write goes through `runAsUser` with
+the explicit belt + `INSERT … SELECT … WHERE EXISTS` (chat.ts H2 shape). Proven with two real
+accounts, executed against dev (`web/test/invariants/plan-tenancy.test.ts`) — the first feature
+walked with a second account, closing the gap both product walks left. `study_guides` stays
+dormant untouched (§11.4 remains an owner call).
+
+## ADR-046 — The topic router is an ingested, attributed concordance corpus — never an in-house taxonomy (2026-08-02)
+
+**Problem.** ADR-017 forbids an editorially-curated topic→passage index in the product's own
+voice. But topical retrieval is the weakest measured category, and a topical study plan needs
+"prayer" to become passages somehow.
+
+**Decision.** Ingest topical concordances **as attributed corpus voices** — a new
+`source_type='topical_index'` (migration 040, BOTH check constraints per 038's lesson):
+
+- **Nave's Topical Bible** (Orville J. Nave, 1897, PD) — CrossWire SWORD `Nave` 3.0, zLD/TEI:
+  4,870 topics, 78,107 refs.
+- **Torrey's New Topical Textbook** (R. A. Torrey, 1897, PD) — SWORD `Torrey` 1.3, RawLD/ThML:
+  628 topics, 38,858 refs. Four source-edition misprints pinned as KNOWN_BAD, skipped, never
+  hand-corrected (a guessed correction is an interpretive act).
+- **OpenBible.info topic curation** (CC BY, attribution recorded in provenance + carried to the
+  UI license chip): the published `topic-scores.txt` dump — 6,711 topics, 71,210 OSIS refs,
+  **zero verse text in the artifact**, so the ESV never enters the corpus.
+- **Daily Light on the Daily Path** (Bagster, 1875, PD) — SWORD `Daily`: 732 morning/evening
+  readings, ingested as `devotional`; a genuine prebaked day-sequence corpus for later seeds.
+- **Thompson Chain (TCR) is deliberately NOT ingested**: its PD basis is CrossWire's own
+  unverified 1934-non-renewal claim and Kirkbride actively publishes the work. Decoded and
+  archived under `data/raw/topical/` (sha256 in CHECKSUMS.sha256) pending independent
+  verification. Fail closed on licensing.
+
+Topic→passage structure lands three ways per work, all mechanical: `sections` (heading = the
+author's own topic name, verbatim), `section_anchors` (every classified passage), and
+`topical_entries` (039) — the ORDERED expansion with the author's own subtopic labels, which
+`section_anchors` cannot carry and a plan builder needs ("AARON → Lineage → Ex 6:16-20" as a
+sequence). References resolve through `src/ingest/topical-refs.ts`, a stateful scanner for
+concordance-compressed refs (`"Ex 4:14-16, 27-31; 7:1, 2"`), 151,311 refs at 4 pinned failures,
+with three measured disambiguation rules documented in its header (incl. "Jud" = Judges, decided
+by 726 chapter>1 citations, not by guess). All four works ingest as **`status='staged'`** —
+publish remains the owner's hard gate, and the works reach no serving surface until that flip.
+Work metadata is inline in the ingest (ingest-sermon precedent); manifest entries land with the
+publish decision (`ingest/sources.config.json` was mid-edit by a concurrent session).
+
+**Why this is ADR-017-clean.** Nave's classification of Scripture is Nave's, named and dated,
+exactly like Spurgeon's sermons or Calvin's commentary. The product quotes a concordance; it does
+not become one.

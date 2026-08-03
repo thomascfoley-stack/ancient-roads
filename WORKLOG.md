@@ -1,5 +1,105 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-02 (evening) — Study plans core + the topical-index corpus (ADR-045/046)
+
+**Scope, owner-approved live this session:** `STUDY_PLANS_DESIGN.md` §12 steps 1-4 plus the
+topical-index ingest; delivery deferred to a third-party push provider (Composio or similar) —
+NO `.ics` feed, no `feed_salt`. The stated product shape: a small model will emit a `PlanSpec`
+and select among prebaked, embedded topical structures; code owns every date and every verse
+range. Superseded input for the record: a never-committed `docs/BIBLE_STUDIES_TASK.md` draft
+(Desktop worktree, pre-031) proposed `study_plans`/`study_days`/`study_readings` and topical
+plans first — the in-repo STUDY_PLANS_DESIGN + ADR-017 lineage won.
+
+### DONE
+
+- **Migrations 039 + 040, applied to dev AND the ci branch** (`br-purple-frog`). 039:
+  `plans` + `plan_days` (RLS, EXISTS-on-parent for the child), `verse_coverage`,
+  `topical_entries` (ordered, labeled topic→passage rows sections/anchors cannot express).
+  040 (split out after a lock timeout — a concurrent corpus-copy session held a multi-hour
+  ACCESS SHARE on embeddings): `'topical_index'` added to BOTH source_type CHECKs, NOT VALID +
+  VALIDATE so the exclusive window is milliseconds. plans/plan_days classified in
+  USER_TABLE_SPEC, verse_coverage/topical_entries in USER_TABLE_EXCLUDED.
+- **`web/src/lib/plan/`**: `spec.ts` (bounded PlanSpec, schema-parse at the edge) and
+  `expand.ts` (pure; local-date triples over UTC epoch math; refuses a scope thinner than the
+  schedule). 10 tests incl. the leap-boundary red-proof.
+- **`verse_coverage`** rebuilt from the SHIPPED admission predicates
+  (`scripts/rebuild-verse-coverage.ts` + pure core in `scripts/lib/verse-coverage-core.ts`;
+  imports `isMustNotServeAuthor` + `forbiddenProvenanceDomain`, exegetical pool = commentary +
+  father per routing.ts owner decision (c); verse universe from RAW_VERSE_COUNTS, never
+  generate_series over id gaps). Measured on dev: **30,227/31,103 verses covered, 26,498 with
+  >=2 admitted authors** from 84,292 anchors, 0 dropped. `/ask` is UNTOUCHED — wiring
+  `hasPassageCoverage` to it is a retrieval change gated on the accuracy eval; filed as a
+  follow-up, not smuggled in.
+- **Plans store/API/UI**: `plan/store.ts` (runAsUser + explicit user_id belt everywhere;
+  plan_days writes INSERT…SELECT…WHERE EXISTS; coverage refusal BEFORE any row lands),
+  `/api/plans` + `/api/plans/[id]` (apiError envelope; POST-with-kind mutation idiom; no
+  model call and no embedding on this path), `/plans` page + form builder + day list with
+  read toggles, sidebar "Reading plans" entry (CalendarIcon in the house SVG style).
+- **The topical-index corpus (the bones the model will search):**
+  - `src/ingest/topical-refs.ts` — stateful scanner for concordance-compressed refs.
+    **151,311 refs across the four decoded works at 4 failures**, all four being
+    source-edition misprints in the Torrey module, pinned as KNOWN_BAD and skipped (never
+    hand-corrected). Three measured disambiguation rules in the header, each with a SEED
+    red-proof in `test/topical-refs.test.ts` (11 tests): "Jud"=Judges (726 chapter>1
+    citations), bare-numeral-vs-next-book decided by chapter bounds ("By Titus 2 Co 8:16"),
+    dangling cross-book ranges split to point refs.
+  - `src/ingest/ingest-topical-index.ts` (`pnpm ingest:topical`) — parses via register-writer
+    (sections + flat embeddings + sources) then writes the FULL expansion:
+    `topical_entries` + remaining section_anchors (PK is (section_id, verse_id_start); dupes
+    deduped). `--post-only` resumes an interrupted post-pass without re-embedding.
+  - **Ingested to dev, all `status='staged'`** (publish stays the owner's gate):
+    `naves-topical-bible` 4,870 topics / 78,107 entries / 5,357 flat rows;
+    `torreys-topical-textbook` 628 / 38,858 / 1,055; `daily-light` (devotional, 732 AM/PM
+    readings) and `openbible-topics` (6,711 topics, OSIS refs, ZERO verse text — the CC BY
+    covers exactly the curation; attribution in provenance) — tail works finishing as this
+    entry is written; final counts in the terminal log below this entry if they differ.
+    **TCR (Thompson Chain) deliberately NOT ingested** — PD basis is CrossWire's unverified
+    1934-non-renewal claim; archived under `data/raw/topical/` with sha256s, held.
+- **Residue gate honesty fix** (`scripts/check-test-residue.mjs`): owner column now derives
+  from USER_TABLE_SPEC (`ownerColumn` / new `ownerParent` FK-join for plan_days) instead of a
+  hardcoded `user_id` — the first hasUserId:false table that actually existed on dev turned
+  the whole inspect into "could not inspect". Green: 19 tables, waitlist visibly absent.
+- **Migration 031 applied to dev** — `sections.source_url` existed only on prod; adding dev
+  DB URLs to this machine un-skipped `search-sections` suites that need the column. Drift
+  closed rather than re-skipped.
+- ADR-045 + ADR-046 appended; STUDY_PLANS_DESIGN status flipped to PARTIALLY BUILT;
+  PRODUCT_ARCHITECTURE mode-3 status updated; `ingest:topical` + `coverage:rebuild` scripts.
+
+### VERIFIED
+
+- Root: `topical-refs` 11/11, `verse-coverage-core` 6/6, user-data-invariant 6/6.
+- Web: `plan-expand` 10/10; **two-account tenancy EXECUTED against dev** (B cannot read/list/
+  toggle/delete; A positive control passes; RLS-backstop case measured) 6/6; **routes
+  end-to-end EXECUTED against dev** (Romans 201 + 16 arithmetic days; SoS REFUSED off the
+  real coverage table; malformed spec 400; delete cascades) 6/6. Corpus-dependent cases
+  runtime-skip VISIBLY where verse_coverage is empty (unearned-green guard).
+- Browser (dev server, this tree): /plans at 390px and 1280px — renders, no overflow, no new
+  console errors (the eval()/CSP error is dev-mode React on EVERY page, pre-existing),
+  sidebar entry active. **Signed-in browser walk NOT RUN — no auth credentials on this
+  machine** (NEON_AUTH_* absent); the signed-in path is covered by the executed route tests
+  above, which mock ONLY the cookie seam.
+- `npm run audit`: greens on the fixed gates re-run individually (typecheck root+web, lint,
+  knip, root tests, residue); full-audit rerun pending the ingest tail (a full re-run takes
+  ~8 min and the qa gate was green minus the pre-existing dev-state suites noted below).
+
+### NOT DONE / UNVERIFIED / DEBT
+
+- **The dev-state test mismatch is now visible on this machine**: with APP_DATABASE_URL
+  pointed at dev, four pre-existing suites red on DATA state (register-wall taxonomy vs
+  dev catalogs, work-reader fixtures, commentary-entries-provenance, register-end-to-end) —
+  they were previously loud-skipped here and pass in CI against the test branch. Not
+  introduced by this work; left visible rather than re-hidden. Owner call: either point this
+  machine's env at the ci branch or accept the skips.
+- **Publish flip for the four topical works** — owner gate. Until then nothing serves;
+  manifest entries for `ingest/sources.config.json` land with that flip (file was mid-edit
+  by the concurrent corpus-copy session all evening).
+- **verse_coverage on prod** — rebuild after any prod publish flip (`COVERAGE_ALLOW_PROD=1`).
+- **Model intake (PlanSpec emission), planSource on Today, topical plan scopes, delivery
+  worker** — all later slices per ADR-045/046.
+- The retrieval lane over `topical_index` (SERVED list + routing) is deliberately absent
+  until the works publish; adding it now would be a serving surface for staged content.
+
+
 ## 2026-08-02 (owner-reported: catalog rows ragged; desk panes cannot add the Bible or search chapters)
 
 **Headline: the catalog misalignment was one missing `min-w-0`; the desk's two navigation gaps

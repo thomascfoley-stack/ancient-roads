@@ -1,8 +1,13 @@
 # STUDY PLANS — the plan builder, the schedule, and calendar delivery (design doc, 2026-08-02)
 
-**Status: DESIGN — for the owner to react to, NOT approval to build.** No feature code exists. Per the
-design-before-code rail (`CLAUDE.md` §Engineering values 2): smallest slice, interfaces named, scaling risks
-named, out-of-scope explicit. Four owner decisions gate the build (§11).
+**Status: PARTIALLY BUILT — owner approved §12 steps 1–4 + the topical-index corpus in the
+2026-08-02 session; recorded as ADR-045/ADR-046.** Built on dev: `expandPlan` + `PlanSpec`,
+`verse_coverage` + rebuild, `plans`/`plan_days` + RLS (two-account red-proof executed), the form
+builder at `/plans`, and the topical-index ingest. **§8's `.ics` feed is NOT built and its
+`feed_salt` column is NOT in the schema** — the owner ruled delivery goes through a third-party
+push provider (Composio or similar) in a later slice. The model intake (§12 step 5), `planSource`
+on Today (§12 step 6), and §11's remaining owner calls stay open. WORKLOG 2026-08-02 has the
+build record.
 
 **Sequencing note, stated up front so it is not discovered later.** `PRODUCT_ARCHITECTURE.md:62-66` puts
 "build one mode" third, after retrieval reaches 10/10, and names Workspace Paths as the likely first mode.

@@ -50,6 +50,12 @@ export const USER_TABLE_EXCLUDED = {
     'Migration ledger — filenames, timestamps and the applying role (migration 032). No user data, ' +
     'and app_runtime holds SELECT only. Added by the 2026-08-02 audit (M18); this list is enforced, ' +
     'so the table could not be introduced without classifying it, which is the invariant working.',
+  verse_coverage:
+    'Derived corpus rollup (migration 039) — per-verse admitted-author/section counts, rebuilt by ' +
+    'scripts/rebuild-verse-coverage.ts on every publish flip. Platform content, SELECT-only for app_runtime.',
+  topical_entries:
+    'Corpus topical-index expansion (migration 039) — ordered topic→passage rows under sections, ' +
+    'written by src/ingest/ingest-topical-index.ts. Platform content, SELECT-only for app_runtime.',
 };
 
 export const USER_TABLE_SPEC = {
@@ -159,6 +165,23 @@ export const USER_TABLE_SPEC = {
     tombstone: null,
     active: 'true',
     body: ['title', 'topic', 'description', 'sections', 'progress', 'is_template', 'updated_at'],
+  },
+  plans: {
+    anchor: ['created_at'],
+    tombstone: null,
+    active: 'true',
+    body: ['title', 'spec', 'updated_at'],
+  },
+  // plan_days carries no user_id; ownership flows through plans (RLS policy is
+  // an EXISTS against the parent). ownerParent lets owner-keyed sweeps (the
+  // residue gate) reach it through the join instead of skipping it.
+  plan_days: {
+    hasUserId: false,
+    ownerParent: { table: 'plans', fk: 'plan_id' },
+    anchor: ['plan_id', 'day_index', 'day_date', 'verse_start', 'verse_end'],
+    tombstone: null,
+    active: 'true',
+    body: ['completed_at'],
   },
 };
 
