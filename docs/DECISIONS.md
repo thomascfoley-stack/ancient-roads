@@ -1014,3 +1014,74 @@ verses at 390px, or measurably overlapping the line above in a dense chapter —
 a larger numeral, not a larger invisible hit area, since growing the hit area starts stealing
 long-press from the first word, which is the same class of bug this ADR removes.
 
+
+## ADR-100 — B4: the uncited-quote channel shingles against ONE detected translation family per document; the bar is channel recall, not detector accuracy (2026-08-03)
+
+**Numbered in the 100-block, deliberately.** Lane B takes 100+ for ADRs on the same rule the Slice 1
+order sets for migrations, and for the same reason, one document over: `ADR-047` is **already claimed
+twice** — `53d90d1` on `main` ("Tap-a-verse opens the number") and the concurrent /plans session's
+uncommitted `docs/DECISIONS.md` ("Canonical groupings are a reviewed table"). Those two branches
+diverged at `79ff0f1` and neither can see the other's number. That is the third instance of this
+collision class in two days. A block boundary costs one line.
+
+**Context:** `docs/SLICE1_TRANSLATION_DECISION.md` states and costs the options; it decides nothing,
+by design. Slice 0 measured a **17-point swing** in uncited-channel chapter recall from the shingled
+index alone (KJV 82% / WEB 65%), which is larger than the margin K=3 clears its 70% bar by. 18
+translations ship in `web/public/bible/`. The channel does not degrade gracefully when the index is
+wrong — it goes quiet, and a quiet channel is indistinguishable from a document that quotes nothing.
+
+**Decision — Option A, with per-document detection, and three things the paper left open:**
+
+1. **Detection, not a setting, and per DOCUMENT not per user.** The translation is a property of the
+   document; a pastor's 20-year archive crosses translations mid-career. A setting also fails
+   silently for every user who never opens it, which is most of them. No user-facing translation
+   setting ships in Slice 1.
+
+2. **The pre-registered bar is on END-TO-END uncited-channel chapter recall with detection in the
+   loop, NOT on detector top-1 accuracy.** This is the substantive departure from the paper, which
+   proposed "a detector accuracy bar." Top-1 accuracy is the wrong metric because **the 18
+   translations are not equidistant**: the paper's own §3 notes that akjv/kjv/rwebster/ukjv/webster
+   are KJV-descended and share long runs verbatim. A kjv↔akjv confusion costs approximately nothing;
+   a kjv↔web confusion costs ~17 points. Top-1 accuracy weights those identically, so a detector can
+   score 95% and bleed recall, or score 70% and lose nothing. Bar: **uncited-channel chapter recall
+   ≥70%** (the floor B0 cleared) measured end to end on a held-out set with detection running, with
+   the KJV-oracle number reported beside it as the ceiling so the detector's cost is visible as a
+   subtraction rather than hidden in a pass.
+
+3. **What happens when detection is wrong** — the question the paper explicitly could not close.
+   Detection resolves to a **family**, not a single translation, and when the top two families score
+   within a pre-registered margin the channel shingles against the **union of the detected family**.
+   This is Option B bounded to the correlated cluster: unioning translations that already share long
+   verbatim runs adds few genuinely new 6-grams, so it buys away the cliff cheaply, while never
+   unioning across families — which is where Option B's unmeasured collision multiplication actually
+   lives. Below the confidence floor, fall back to the KJV family and **record it**: the anchor row
+   carries `channel='uncited'` with reduced `confidence` (the column exists in `100_user_corpus.sql`).
+   A fallback that is not recorded is the silent failure this whole ADR exists to prevent.
+
+**The families are DERIVED, never typed.** A hand-written family table would be this repo's
+most-repeated defect (`MASTER.md` failure-mode watchlist, artefact 1) installed inside the fix for a
+different one. Families come from measured pairwise 6-gram overlap across the 18 shipped texts, with
+the clustering threshold pre-registered before the run.
+
+**Why:** Option B's central cost lands on the metric that decides the feature and is unmeasured;
+Option A's central cost is measurable in advance. A known-measurable risk beats an unmeasured one.
+
+**UNVERIFIED, and it must be measured before it is relied on:** the premise under decision 3 — that
+within-family 6-gram overlap is high enough to make the union nearly free — is **reasoning, not
+measurement**, exactly as the paper flags its own §3 collision claim. It is the first measurement of
+step 3 and it is pre-registered here: if within-family union materially moves precision at K=3, the
+union rule is wrong and single-translation-plus-fallback is the answer instead.
+
+**Rejected:** *Option B (all 18 indexes)* — multiplies collisions in a correlated, clustered way
+against the exact metric K exists to suppress, and the K curve was measured single-index so it does
+not transfer; it becomes clearly better if someone measures precision at K=3 holding above 60% with
+recall above 70%, and that measurement remains the honest path to overturning this ADR. *A user
+setting* — wrong granularity, and silently wrong for anyone who never opens it. *Shipping on Slice
+0's KJV numbers* — those were measured under Option A conditions against a corpus that quotes KJV.
+
+**Does not close B2.** ADR-005 pins `bge-large-en-v1.5` for the corpus; whether the same model is
+committed for **user-corpus** embedding is still the owner's to say. The Slice 1 order rules
+"proceed on bge-large." The B4 paper's §6 (the stale "Jina v3 (already chosen)" row) is discharged
+in `docs/SERMON_COMPANION.md` itself, struck in place with a pointer to the correction block that
+already stood above it — the ADR-047 pattern, so the evidence of how the contradiction arose
+survives while no reader meets the row without the correction.
