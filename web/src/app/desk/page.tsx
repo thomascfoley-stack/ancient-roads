@@ -22,10 +22,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { BookPicker } from '@/components/book-picker';
 import { DeskPane } from '@/components/desk-pane';
 import { BOOK_BY_BOOK_SLUG, BOOKS } from '@/lib/bible';
+import { resolveBookSlug } from '@bible/ref-parse';
 import { MAX_PANES, decodeDesk, deskHref, encodePane, replacePane, withPane, withoutPane, type Pane } from '@/lib/desk';
 
-/** The picker needs a book to highlight; John is the app's standing default entry point. */
-const DEFAULT_BOOK = BOOK_BY_BOOK_SLUG.get('jhn') ?? BOOKS[0]!;
+/** The picker needs a book to highlight; John is the app's standing default entry point. The
+ *  alias fallback is the wiring invariant (book-slug-alias-wiring): EVERY BOOK_BY_BOOK_SLUG.get
+ *  consults resolveBookSlug on a miss, even where the argument is a literal canonical slug. */
+const DEFAULT_BOOK = BOOK_BY_BOOK_SLUG.get('jhn') ?? resolveBookSlug('jhn') ?? BOOKS[0]!;
 
 function DeskInner() {
   const router = useRouter();
