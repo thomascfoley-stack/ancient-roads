@@ -86,17 +86,48 @@ because deflate tolerates that and inflates anyway.
 
 37 tests green over 4 files. Evidence under `docs/evidence/lane-b-slice1/`.
 
-### NOT DONE / UNVERIFIED
+### THE TWO UNPROVEN ITEMS, CLOSED (or narrowed to one line)
 
-- **`MIN_CHARS_PER_PAGE = 100` is reasoning, not measurement.** Calibrated against the argument
-  that set prose runs 1500-3000 chars/page and a scan yields ~0, so there is almost nothing in the
-  gap. It is pre-registered in the source and must be measured against a corpus of real scans and
-  real text-layer PDFs. The generated fixtures prove the RULE fires on the real extractor; they do
-  not prove the threshold is in the right place for files in the wild.
-- **The blob round-trip is UNPROVEN.** No `BLOB_READ_WRITE_TOKEN` is provisioned, so nothing has
-  written to or read from a Blob store. The queue tests deliberately use `blob_url IS NULL`
-  documents, which exercises the status machinery but not storage. Upload end-to-end cannot be
-  claimed until a store exists.
+**`MIN_CHARS_PER_PAGE = 100` is now MEASURED, and it survived.** Two populations through the real
+extractor: 120 real PDFs off this machine's ordinary document folders, and 12 of those same
+documents rasterised at 72dpi and reassembled as image-only PDFs (JPEG XObjects, DCTDecode) — real
+pages, no text layer, page count and layout controlled for.
+
+```
+TEXT  n=120  chars/page  min=0.0  p05=316.3  median=1350.7  p95=4475.0  max=5249.0
+SCAN  n=12   chars/page  min=0.0  median=0.0  max=0.0
+THRESHOLD 100 -> scans wrongly accepted 0/12 · text below threshold 3/120
+```
+
+All three below-threshold text documents are scans rather than prose, checked individually: two at
+exactly 0 chars over 13 and 2 pages, and one at 74 chars/page (222 characters across 3 pages —
+about one line per page, a stamp). **Zero confirmed false positives**, and the threshold sits in an
+empty band between 74 and 316.
+
+*The limitation that survives, and it is the interesting one:* rasterised scans yield EXACTLY zero,
+so this corpus does not sample the case the threshold exists for — a scan carrying stray text from
+a header stamp. That case has exactly ONE observation here (the 74 chars/page document), which does
+fall below 100. So this is evidence FOR the current value and against a much lower one (30 would
+have accepted it), but it is a single observation. Real scanner output, not rasterisation, is what
+closes it properly.
+
+**The pipeline is now proven end to end over real files** — real `.docx` and `.pdf` off this
+machine, through the real sniffer, the real docx reader, real pdfjs, the real verdict, the real
+queue, and Postgres under RLS as `app_runtime`. DOCX 6/6 to `chunking`, 82,534 characters
+extracted. PDF 6/6 to `chunking`, 73 pages. Real scans refused with needs-OCR and their evidence
+recorded. Dedupe refused by the database, not merely by the route.
+
+**What remains unproven is one network hop.** Only `getUserDocument` is substituted, to read bytes
+from disk instead of over the wire, so `@vercel/blob`'s `put`/`get`/`del` against a live store are
+still untested. That needs `BLOB_READ_WRITE_TOKEN` and a provisioned Blob store; no local testing
+substitutes for it. The surface is now one function, not the pipeline.
+
+Both harnesses are committed and re-runnable, and both **skip visibly** without their corpora, so
+neither can be mistaken for a check that ran. Both report distributions and outcome counts only —
+the fixtures are the operator's own business documents, and no filename, excerpt, or per-document
+line appears in the harness output, the evidence, or the stored document titles.
+
+### NOT DONE / UNVERIFIED
 - **No browser check, and no UI.** `/library/uploads` is still the five-line `ComingSoon` stub; the
   UI is step 7 and lands as **"My Works"** per the order's naming section. The DoD browser leg is
   unmeetable at this step by construction.

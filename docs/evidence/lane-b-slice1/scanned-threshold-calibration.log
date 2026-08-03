@@ -1,0 +1,26 @@
+MIN_CHARS_PER_PAGE CALIBRATION — measured, 2026-08-03T17:01:36Z.
+
+The threshold shipped as REASONING (set prose runs 1500-3000 chars/page, a scan yields ~0,
+so 100 sits clear of both). This is the measurement that reasoning owed.
+
+CORPORA
+  TEXT — 120 real PDFs taken from this machine's ordinary document folders, unselected
+         except by being PDFs. Business documents, reports, policies, one-pagers.
+  SCAN — 12 of those same documents rasterised at 72dpi with pdftoppm and reassembled as
+         image-only PDFs (JPEG XObjects, DCTDecode, no text layer). Built from the SAME
+         sources so page count and layout are controlled for; only the text layer differs.
+  Both populations run through the REAL extractor (parsePdf), never a stub.
+
+PRIVACY: distributions only. No filename, excerpt, or per-document line appears here or in
+the harness output, because the corpus is the operator's own business documents.
+
+TEXT  n=120  chars/page  min=0.0  p05=316.3  median=1350.7  p95=4475.0  max=5249.0
+SCAN  n=12  chars/page  min=0.0  median=0.0  max=0.0
+THRESHOLD 100
+  scans at or above threshold (would be WRONGLY ACCEPTED): 0/12
+  text below threshold (refused as needing OCR):           3/120
+    of those, at exactly 0 chars/page (genuine scans in the wild): 2
+    of those, in the 0-to-100 band (would be the worrying ones): 1
+  observed GAP: highest scan 0.0 -> lowest non-zero text 74.0 chars/page
+ Test Files  1 passed (1)
+      Tests  1 passed (1)

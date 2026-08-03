@@ -1,0 +1,22 @@
+REAL-FILE END-TO-END — 2026-08-03T17:04:37Z, against lane-b-uploader.
+
+Real .docx and .pdf taken from this machine, driven through the WHOLE pipeline: the real
+sniffer, the real docx reader, real pdfjs, the real verdict, the real queue, and Postgres
+under RLS as app_runtime. Only getUserDocument is substituted, to hand back bytes from disk
+instead of over the network.
+
+STILL NOT PROVEN by this, stated rather than implied: that @vercel/blob's put/get/del work
+against a live store. That needs BLOB_READ_WRITE_TOKEN and a provisioned Blob store. This
+narrows the unproven surface to that one network hop; it does not close it.
+
+PRIVACY: the fixtures are the operator's own business documents. Outcome counts only --
+no filenames, no excerpts. The suite stores 'real file' as the title for the same reason.
+
+DOCX n=6 outcomes={"chunking":6} extracted=82534 chars
+✓ test/user-corpus/real-files-end-to-end.test.ts > real files, end to end, against the real database > ingests real .docx files and advances them to chunking, never ready 4046ms
+PDF n=6 outcomes={"chunking":6} pages=73
+✓ test/user-corpus/real-files-end-to-end.test.ts > real files, end to end, against the real database > ingests real text-layer PDFs and advances them to chunking 4459ms
+✓ test/user-corpus/real-files-end-to-end.test.ts > real files, end to end, against the real database > REFUSES real scans with needs OCR, and records the evidence for that verdict 3456ms
+✓ test/user-corpus/real-files-end-to-end.test.ts > real files, end to end, against the real database > dedupes a re-upload of the identical file by checksum 325ms
+Test Files  1 passed (1)
+Tests  4 passed (4)
