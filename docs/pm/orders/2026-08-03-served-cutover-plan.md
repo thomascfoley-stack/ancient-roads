@@ -161,7 +161,7 @@ script that does not exist) → owner-gated copy → owner-gated flip (forward, 
 serve gates run inside it) → reconcile → coverage census → v3 spot-check when the batch adds
 commentary/father. Batch size: whatever the P1.3-measured flip transaction keeps under ~10
 minutes. Expect **10-20 batches over multiple sessions** for the ~500-650 admissible remainder
-(exclusions: 30 copyright-claim, 8 quality-held, 5 no-adapter, quarantines, fiction) — not
+(exclusions, each re-checkable: 30 copyright-claim + licence tallies in docs/evidence/ccel-survey-all.json; 8 quality-held per the A8 decision list in orders/2026-08-02-a8-b2-admission-and-decisions.md; 5 no-adapter CrossWire/TCP commentaries per the manifest's acquire fields; quarantines per ingest/sources.config.json serve:false + status; fiction per P0.1) — not
 "two sessions". Each batch: two TTY confirmations. That is the cost of the gate design, and it
 is the design.
 

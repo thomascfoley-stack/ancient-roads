@@ -121,21 +121,25 @@ describe('§7 — partial HNSW index predicates stay in lockstep with the retrie
   ];
 
   for (const { index, conjuncts } of LOCKSTEP) {
-    it(`${index}'s predicate implies every conjunct its query uses`, () => {
+    it(`${index}'s predicate EQUALS its query's conjunct set — neither missing nor extra`, () => {
+      // SET-EQUALITY in both directions (bylaw-4 refuter): the old check only asserted the
+      // predicate CONTAINS each query conjunct. An EXTRA conjunct in the predicate kept it
+      // green — and an index whose predicate is STRICTER than the query is exactly as unusable
+      // as one that is looser: the planner cannot prove query ⇒ predicate, falls back to the
+      // full-table index, and the pool starves silently. Both directions are the same failure.
       const { name, sql } = newestContaining(index);
-      const predicate = norm(indexPredicate(sql, index));
-      expect(predicate.includes('user_id is null'), `${name}: ${index} predicate omits \`user_id IS NULL\``).toBe(true);
-      for (const c of conjuncts) {
-        // Each routing constant is a conjunction itself (`served AND source_type = 'sermon'`);
-        // compare its parts, so parenthesisation and ordering differences do not read as drift.
-        for (const part of norm(c).split(' and ')) {
-          expect(
-            predicate.includes(part),
-            `${name}: ${index}'s predicate is missing \`${part}\`, which its query carries. ` +
-            'The planner cannot prove the implication, so it will fall back to the full-table index and the pool starves silently.',
-          ).toBe(true);
-        }
-      }
+      const actual = norm(indexPredicate(sql, index)).split(' and ').map((s) => s.trim()).sort();
+      const expected = ['user_id is null', ...conjuncts.flatMap((c) => norm(c).split(' and '))]
+        .map((s) => s.trim())
+        .sort();
+      const missing = expected.filter((p) => !actual.includes(p));
+      const extra = actual.filter((p) => !expected.includes(p));
+      expect(
+        { missing, extra },
+        `${name}: ${index}'s predicate conjuncts differ from the query's. ` +
+        `missing=[${missing.join('; ')}] extra=[${extra.join('; ')}]. Either direction breaks the ` +
+        'planner implication and the pool starves silently (the migration-009 mechanism).',
+      ).toEqual({ missing: [], extra: [] });
     });
   }
 

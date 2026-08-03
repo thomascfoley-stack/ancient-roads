@@ -41,7 +41,7 @@ stranding the rest.
 **F3 · The deploy tree was undefined (CRITICAL).** `deploy.sh` uploads the working tree and
 hard-blocks on dirt; the tree held the concurrent /plans slice (uncommitted app code + migrations
 applied to dev+ci) and 11 modified files. Step 4 either force-committed /plans onto a prod
-lacking its tables (STATE_OF_TRUTH 2f forbids exactly that) or was unexecutable. The branch had
+lacking its tables (the /plans session's OWN working-tree STATE_OF_TRUTH edit, §2f — uncommitted at audit time, so the citation resolves only in that tree — forbids exactly that) or was unexecutable. The branch had
 no upstream — the irreversible-write tooling existed in one clone.
 
 **F4 · Migration numbers were ambiguous on the critical path (HIGH).** Two files numbered 039;

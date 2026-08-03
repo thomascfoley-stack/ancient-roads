@@ -63,7 +63,11 @@ describe('served-backfill frozen record stays welded to migration 044', () => {
       expect(m, `backfill UPDATE has no WHERE clause: ${u.slice(0, 60)}…`).not.toBeNull();
       return norm(m![1]!);
     });
-    const expectedWheres = FROZEN_LEGS.map((l) => norm(`user_id IS NULL AND ${l.sql}`));
+    // `AND NOT served` is the WRITE-SUPPRESSION guard (a re-run after a lock_timeout abort
+    // rewrites zero rows instead of re-bloating the vector table); it narrows which rows are
+    // TOUCHED, never which rows END UP served, so the frozen record — the SET of served rows —
+    // is unchanged by it and the verifier needs no knowledge of it.
+    const expectedWheres = FROZEN_LEGS.map((l) => norm(`user_id IS NULL AND NOT served AND ${l.sql}`));
     // Set-equality, not containment: a widened leg, an extra leg, or a missing leg all fail.
     expect([...actualWheres].sort(), 'the four WHERE clauses must BE the four frozen legs').toEqual(
       [...expectedWheres].sort(),

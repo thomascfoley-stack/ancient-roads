@@ -95,7 +95,7 @@ SET lock_timeout = 0;
 -- Leg 1 — the exegetical pool (old LEGAL_CORPUS_FILTER ∧ old PROSE_TYPE_SQL), verbatim,
 -- including the book-scoped Chrysostom/Augustine legs and the crosswire-URL leg.
 UPDATE embeddings SET served = true
- WHERE user_id IS NULL
+ WHERE user_id IS NULL AND NOT served
    AND source_type IN ('commentary','sermon','father','theology','confession','lexicon')
    AND (
         metadata->>'author' IN ('John Gill','Jamieson, Fausset & Brown','Adam Clarke','Matthew Henry')
@@ -107,7 +107,7 @@ UPDATE embeddings SET served = true
 --SPLIT--
 -- Leg 2 — the song/verse lane (old SONG_VERSE_CORPUS_FILTER ∧ SONG_VERSE_TYPE_SQL).
 UPDATE embeddings SET served = true
- WHERE user_id IS NULL
+ WHERE user_id IS NULL AND NOT served
    AND source_type IN ('hymn','poetry')
    AND metadata->>'work' IN ('olney-hymns','scottish-psalter-1650','neale-eastern-hymns','watts-hymns','watts-psalms','keble-christian-year','herbert-temple','montgomery-sacred-poems','rossetti-verses','traherne-poems','milton-poetical-works','hopkins-poems','tennyson-in-memoriam','dante-divine-comedy','wheatley-poems');
 --SPLIT--
@@ -116,12 +116,12 @@ UPDATE embeddings SET served = true
 -- one. The index below adds `source_type='sermon'`; that tightening is safe only because every
 -- row this leg sets is already sermon-typed — asserted by verify-served-backfill.mjs, not assumed.
 UPDATE embeddings SET served = true
- WHERE user_id IS NULL
+ WHERE user_id IS NULL AND NOT served
    AND metadata->>'work' IN ('spurgeon-sermons','maclaren-expositions','watson-works','flavel-works','edwards-works','wesley-sermons','spurgeon-talks-to-farmers');
 --SPLIT--
 -- Leg 4 — the theology lane (old THEOLOGY_CORPUS_FILTER). Same note as leg 3.
 UPDATE embeddings SET served = true
- WHERE user_id IS NULL
+ WHERE user_id IS NULL AND NOT served
    AND metadata->>'work' IN ('owen-works','hodge-systematic','calvin-institutes','schaff-creeds');
 --SPLIT--
 -- ── idx_embeddings_served_legal — the composed /ask exegetical pool ──────────────────────────

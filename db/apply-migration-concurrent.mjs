@@ -52,7 +52,14 @@ const cleanName = (s) => s.replace(/[;,\s]+$/, '');
 // Parse SQL only — `--` comment lines can contain the keywords in prose (018's
 // header says "…CREATE INDEX CONCURRENTLY nor DROP…", which yielded a phantom
 // created name "nor" before comments were stripped).
-const sqlOnly = text.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
+const sqlOnly = text
+  .split('\n')
+  .filter((l) => !l.trim().startsWith('--'))
+  // Trailing comments too, but ONLY on quote-free lines: a literal like 'https://x--y' must
+  // never be truncated. Full-line stripping alone let an inline `-- comment` smuggle keywords
+  // past this parser (bylaw-4 refuter, LOW).
+  .map((l) => (l.includes("'") ? l : l.replace(/--.*$/, '')))
+  .join('\n');
 const createdNames = [...sqlOnly.matchAll(/CREATE INDEX CONCURRENTLY(?: IF NOT EXISTS)?\s+(\S+)/gi)].map((m) => cleanName(m[1]));
 const renameSources = [...sqlOnly.matchAll(/ALTER INDEX\s+(\S+)\s+RENAME TO\s+\S+/gi)].map((m) => cleanName(m[1]));
 const renamedTo = [...sqlOnly.matchAll(/ALTER INDEX\s+\S+\s+RENAME TO\s+(\S+)/gi)].map((m) => cleanName(m[1]));

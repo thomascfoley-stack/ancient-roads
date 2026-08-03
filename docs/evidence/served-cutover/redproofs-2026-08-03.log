@@ -81,3 +81,28 @@ STOP: listed slug(s) are serve:false in the manifest (a standing quality/quarant
 == 10. WELD mutants (see test/invariants/served-backfill-frozen-sync.test.ts): lowercase fifth leg, widened leg, split DROP, non-CONCURRENTLY index — each 1 failed | 3 passed when seeded; 4 passed restored. Run in CI on every push. ==
 == 11. CONTRACT: 045 applies after (IF EXISTS drops) ==
 9
+
+== 12. FINAL 044 (AND NOT served legs, scoped lock_timeout, idx_embeddings_work): fresh apply + IDEMPOTENT re-run ==
+CREATE DATABASE
+--- first apply ---
+SET
+SET
+ALTER TABLE
+SET
+UPDATE 88
+UPDATE 9
+UPDATE 12
+UPDATE 13
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+--- verifier ---
+[32mOK[0m — served set is exactly the frozen pre-044 filters; tightenings safe; no banned author served; work-less cohort unreachable.
+--- SECOND apply (must be UPDATE 0 x4: write-suppressed re-run) ---
+UPDATE 0
+UPDATE 0
+UPDATE 0
+UPDATE 0

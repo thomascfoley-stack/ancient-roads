@@ -35,6 +35,7 @@ import pg from 'pg';
 import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
+import { execFileSync } from 'node:child_process';
 import { ALLOWED_LICENSES, isAllowedLicense } from '../src/ingest/allowed-licenses.mjs';
 import { forbiddenProvenanceDomain } from '../src/ingest/forbidden-provenance.mjs';
 import { eligibility, flipDelta } from './lib/publish-flip-delta.mjs';
@@ -126,17 +127,34 @@ if (!slugs.every((s) => typeof s === 'string' && /^[a-z0-9][a-z0-9-]*$/.test(s))
 // simply never being added to a routing list. That wall is gone; this is its replacement.
 // Checked BEFORE any connection: it is pure repo state, and the answer cannot change mid-run.
 if (!reverse) {
-  let manifestEntries = [];
+  // RULINGS COME FROM THE UNION OF HEAD AND THE WORKING TREE (bylaw-4 refuter, in two rounds:
+  // the first cut read the working tree alone, so a concurrent session's uncommitted edit
+  // silently decided what this gate blocks; a cleanliness STOP was tried next and blocked every
+  // flip the moment the live concurrent session appended unrelated manifest entries — observed
+  // within the hour). The union is fail-closed in BOTH directions: a ruling that exists only as
+  // an uncommitted edit already blocks, and REMOVING a ruling takes effect only once the
+  // removal is committed. Divergence between the two sources is printed, never silent.
+  const parseRulings = (label, text) => {
+    try {
+      return new Set(JSON.parse(text).filter((e) => e?.serve === false).map((e) => e.slug));
+    } catch (e) {
+      die(`STOP: cannot parse ${label} ingest/sources.config.json (${e.message}). The serve:false gate refuses to publish blind.`, 2);
+      return new Set(); // unreachable; keeps the shape obvious
+    }
+  };
+  let headText;
   try {
-    manifestEntries = JSON.parse(fs.readFileSync('ingest/sources.config.json', 'utf8'));
-  } catch (e) {
-    die(`STOP: cannot read ingest/sources.config.json (${e.message}). The serve:false gate needs it; refusing to publish blind.`, 2);
+    headText = execFileSync('git', ['show', 'HEAD:ingest/sources.config.json'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  } catch {
+    die("STOP: cannot read HEAD:ingest/sources.config.json from git. Committed rulings are the gate's floor; refusing to publish without them.", 2);
   }
-  const noServe = new Set(manifestEntries.filter((e) => e?.serve === false).map((e) => e.slug));
-  // The ruling count is PRINTED so a manifest that silently lost its serve fields is visible
-  // (bylaw-4 refuter: absence passed indistinguishably from a clean check). Zero rulings is
-  // legal but loud.
-  console.log(`serve:false   standing ruling(s) in the manifest`);
+  const headRules = parseRulings('committed (HEAD)', headText);
+  const treeRules = parseRulings('working-tree', fs.readFileSync('ingest/sources.config.json', 'utf8'));
+  const noServe = new Set([...headRules, ...treeRules]);
+  // Counts are PRINTED so a manifest that silently lost its serve fields is visible (absence
+  // once passed indistinguishably from a clean check). Zero rulings is legal but loud.
+  const drift = [...headRules].filter((s) => !treeRules.has(s)).concat([...treeRules].filter((s) => !headRules.has(s)));
+  console.log(`serve:false  ${noServe.size} standing ruling(s) (HEAD ${headRules.size}, tree ${treeRules.size}${drift.length ? `; DIVERGENT: ${drift.join(', ')} — the union blocks` : ''})`);
   const blocked = slugs.filter((s) => noServe.has(s));
   if (blocked.length > 0) {
     die(`STOP: listed slug(s) are serve:false in the manifest (a standing quality/quarantine ruling): ${blocked.join(', ')}.\n` +
