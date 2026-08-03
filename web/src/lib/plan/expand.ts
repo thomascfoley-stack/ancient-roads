@@ -124,9 +124,13 @@ export function expandPlan(spec: PlanSpec): ExpandOutcome {
   const offsets = readingDayOffsets(spec.weeks, spec.daysPerWeek);
   const dayCount = offsets.length;
   if (chapters.length < dayCount) {
+    // User-facing copy: it reaches the builder's live preview and the API's
+    // refusal body verbatim. "chapter(s)" is engineering shorthand; say the
+    // number properly and name the action the reader can take.
+    const n = chapters.length;
     return {
       ok: false,
-      reason: `${chapters.length} chapter(s) cannot fill ${dayCount} reading days — shorten the plan or widen the scope`,
+      reason: `This has ${n === 1 ? 'only 1 chapter' : `only ${n} chapters`} — not enough for ${dayCount} reading days. Try fewer weeks, or fewer days each week.`,
     };
   }
 

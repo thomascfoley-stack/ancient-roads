@@ -1,14 +1,21 @@
 'use client';
-// Reading Plans — list, plain-form builder, and day-by-day view.
-// STUDY_PLANS_DESIGN §12 step 4: the builder is a FORM. The model intake
-// (step 5) arrives later and will emit the same PlanSpec this form posts —
-// nothing below it changes. Every schedule figure on this screen came from
-// expandPlan's arithmetic via the API; nothing here computes a date.
+// Reading Plans — list, builder, and the day-by-day view.
+//
+// UX PRINCIPLE, after the first pass read as unintuitive: a user should never
+// have to submit a form to find out what it does. The builder previews the real
+// plan LIVE using `expandPlan` — the SAME pure function the server runs — so the
+// preview cannot drift from the result, and a scope that cannot fill the
+// schedule says so BEFORE the button is pressed rather than as an error after.
+//
+// Copy is written for a reader, not for this repo. The old subtitle said "the
+// schedule is arithmetic", which is true of the implementation and tells a
+// person nothing about what they are about to get.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { BOOKS, BOOK_BY_NUM } from '@/bible/books';
 import { CANONICAL_GROUPS } from '@/lib/plan/canonical-groups';
+import { expandPlan } from '@/lib/plan/expand';
 import { formatVerseId } from '@/bible/verse-id';
 import { CHAPTER_END_SENTINEL } from '@/bible/ref-parse';
 
@@ -55,6 +62,9 @@ type ListState =
   | { status: 'error' }
   | { status: 'ready'; plans: PlanListRow[] };
 
+const FIELD =
+  'min-h-[44px] rounded-md border border-stone-300 bg-paper px-3 text-sm text-stone-800 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100';
+
 export function PlansClient() {
   const [list, setList] = useState<ListState>({ status: 'loading' });
   const [open, setOpen] = useState<OpenPlan | null>(null);
@@ -81,12 +91,15 @@ export function PlansClient() {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
-      <header className="mb-6">
-        <h1 className="font-display text-3xl text-stone-800 dark:text-stone-100">Reading plans</h1>
-        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-          A dated walk through a book or passage — the schedule is arithmetic, the readings are Scripture.
-        </p>
-      </header>
+      {!open && (
+        <header className="mb-6">
+          <h1 className="font-display text-3xl text-stone-800 dark:text-stone-100">Reading plans</h1>
+          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+            Choose what to read and how long you want to take. We lay the readings out day by day
+            and keep your place as you go.
+          </p>
+        </header>
+      )}
 
       {list.status === 'loading' && <p className="text-sm text-stone-400">Loading…</p>}
       {list.status === 'signed-out' && (
@@ -97,63 +110,119 @@ export function PlansClient() {
       )}
       {list.status === 'error' && <p className="text-sm text-stone-500">Plans could not be loaded. Please try again.</p>}
 
-      {list.status === 'ready' && (
+      {list.status === 'ready' && (open ? (
+        <PlanDetail
+          open={open}
+          onBack={() => { setOpen(null); void refresh(); }}
+          onChanged={() => void openPlan(open.plan.id)}
+        />
+      ) : (
         <>
-          {open ? (
-            <PlanDetail open={open} onBack={() => { setOpen(null); void refresh(); }} onChanged={() => void openPlan(open.plan.id)} />
-          ) : (
-            <>
-              <div className="space-y-2">
-                {list.plans.length === 0 && !building && (
-                  <p className="text-sm text-stone-500 dark:text-stone-400">No plans yet — build your first below.</p>
-                )}
-                {list.plans.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => void openPlan(p.id)}
-                    className="flex min-h-[44px] w-full items-center justify-between rounded-xl bg-stone-100/80 px-4 py-3 text-left transition-colors ease-gentle hover:bg-stone-200/60 dark:bg-stone-800/50 dark:hover:bg-stone-800"
-                  >
-                    <span className="truncate font-medium text-stone-800 dark:text-stone-100">{p.title}</span>
-                    <span className="ml-3 shrink-0 text-xs text-stone-400">
-                      {p.read_days} of {p.total_days} days read
-                    </span>
-                  </button>
-                ))}
-              </div>
+          {list.plans.length > 0 && (
+            <div className="space-y-2">
+              {list.plans.map((p) => <PlanRow key={p.id} plan={p} onOpen={() => void openPlan(p.id)} />)}
+            </div>
+          )}
 
-              {building ? (
-                <BuilderForm
-                  onDone={() => { setBuilding(false); void refresh(); }}
-                  onCancel={() => setBuilding(false)}
-                />
-              ) : (
-                <button
-                  onClick={() => setBuilding(true)}
-                  className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-accent-700 px-5 text-sm font-medium text-white shadow-paper transition-colors ease-gentle hover:bg-accent-800"
-                >
-                  New plan
-                </button>
-              )}
-            </>
+          {list.plans.length === 0 && !building && <EmptyState />}
+
+          {building ? (
+            <BuilderForm onDone={() => { setBuilding(false); void refresh(); }} onCancel={() => setBuilding(false)} />
+          ) : (
+            <button
+              onClick={() => setBuilding(true)}
+              className="mt-5 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-accent-700 px-5 text-sm font-medium text-white shadow-paper transition-colors ease-gentle hover:bg-accent-800"
+            >
+              {list.plans.length === 0 ? 'Build my first plan' : 'New plan'}
+            </button>
           )}
         </>
-      )}
+      ))}
     </div>
   );
 }
+
+// The empty state TEACHES the feature rather than only reporting emptiness.
+function EmptyState() {
+  const examples = [
+    ['A book', 'Romans, a chapter a day for a month'],
+    ['A collection', 'Paul’s letters, the Gospels, or the whole Bible in a year'],
+    ['A topic', 'Prayer or forgiveness, gathered by Nave’s and Torrey’s'],
+  ] as const;
+  return (
+    <div className="rounded-xl bg-stone-100/70 p-5 dark:bg-stone-800/40">
+      <p className="text-sm font-medium text-stone-700 dark:text-stone-200">No plans yet. You can build:</p>
+      <ul className="mt-3 space-y-2">
+        {examples.map(([what, eg]) => (
+          <li key={what} className="text-sm">
+            <span className="font-medium text-stone-800 dark:text-stone-100">{what}</span>
+            <span className="text-stone-500 dark:text-stone-400"> — {eg}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ProgressBar({ pct }: { pct: number }) {
+  return (
+    <div className="h-1.5 overflow-hidden rounded-full bg-stone-300/50 dark:bg-stone-700">
+      <div
+        className="h-full rounded-full bg-accent-600 transition-[width] duration-500 ease-gentle"
+        style={{ width: `${pct}%` }}
+      />
+    </div>
+  );
+}
+
+function PlanRow({ plan, onOpen }: { plan: PlanListRow; onOpen: () => void }) {
+  const pct = plan.total_days > 0 ? Math.round((plan.read_days / plan.total_days) * 100) : 0;
+  const done = plan.total_days > 0 && plan.read_days === plan.total_days;
+  return (
+    <button
+      onClick={onOpen}
+      className="block w-full rounded-xl bg-stone-100/80 px-4 py-3 text-left transition-colors ease-gentle hover:bg-stone-200/60 dark:bg-stone-800/50 dark:hover:bg-stone-800"
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="truncate font-medium text-stone-800 dark:text-stone-100">{plan.title}</span>
+        <span className="shrink-0 text-xs text-stone-400">
+          {done ? 'Finished' : `${plan.read_days} of ${plan.total_days} days`}
+        </span>
+      </div>
+      <div className="mt-2"><ProgressBar pct={pct} /></div>
+    </button>
+  );
+}
+
+// ── builder ──────────────────────────────────────────────────────────────────
 
 function todayLocalDate(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function prettyDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number) as [number, number, number];
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(undefined, {
+    weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC',
+  });
+}
+
+const MODES = [
+  { key: 'book', label: 'One book', hint: 'Work through a single book of the Bible.' },
+  { key: 'books', label: 'A collection', hint: 'A group of books — the Gospels, Paul’s letters, the whole Bible.' },
+  { key: 'topic', label: 'A topic', hint: 'A theme, gathered by a classic topical index and read passage by passage.' },
+] as const;
+type Mode = (typeof MODES)[number]['key'];
+
 function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
-  const [scopeType, setScopeType] = useState<'book' | 'books' | 'topic'>('book');
+  const [mode, setMode] = useState<Mode>('book');
   const [book, setBook] = useState('rom');
   const [group, setGroup] = useState('pauline-epistles');
   const [topicQuery, setTopicQuery] = useState('');
   const [topicMatches, setTopicMatches] = useState<TopicMatch[] | null>(null);
   const [topicError, setTopicError] = useState<string | null>(null);
+  const [searching, setSearching] = useState(false);
   const [pickedTopic, setPickedTopic] = useState<TopicMatch | null>(null);
   const [weeks, setWeeks] = useState(8);
   const [daysPerWeek, setDaysPerWeek] = useState(5);
@@ -161,14 +230,61 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
+  // THE PREVIEW. Runs the server's own expandPlan, so what is shown is what will
+  // be built — including its refusal when a scope cannot fill the schedule.
+  const preview = useMemo(() => {
+    const dayCount = weeks * daysPerWeek;
+    if (mode === 'topic') {
+      if (!pickedTopic) return null;
+      if (pickedTopic.entryCount < dayCount) {
+        return {
+          ok: false as const,
+          reason: `“${pickedTopic.heading}” has ${pickedTopic.entryCount} passages — not enough for ${dayCount} reading days. Try fewer weeks or fewer days each week.`,
+        };
+      }
+      const per = pickedTopic.entryCount / dayCount;
+      return {
+        ok: true as const,
+        days: dayCount,
+        scope: `${pickedTopic.heading} · ${pickedTopic.entryCount} passages · ${pickedTopic.workTitle}`,
+        pace: per < 1.5 ? 'about 1 passage a day' : `about ${Math.round(per)} passages a day`,
+        from: null as string | null, to: null as string | null,
+      };
+    }
+    const scope = mode === 'book' ? { kind: 'book' as const, book } : { kind: 'books' as const, group };
+    const r = expandPlan({ scope, weeks, daysPerWeek, startDate });
+    if (!r.ok) return { ok: false as const, reason: r.reason };
+    const first = r.days[0]!;
+    const last = r.days[r.days.length - 1]!;
+    // Count from the CANON, not by summing each day's span. `chapterEnd -
+    // chapterStart + 1` goes NEGATIVE on a day that straddles a book boundary
+    // (Romans 16 → 1 Corinthians 2 gives -13), which a collection guarantees at
+    // any normal pace. Caught by plans-builder-preview.test.tsx.
+    const g = mode === 'books' ? CANONICAL_GROUPS[group] : undefined;
+    const chapters = g
+      ? g.books.reduce((n, slug) => n + (BOOKS.find((b) => b.slug === slug)?.chapterCount ?? 0), 0)
+      : BOOKS.find((b) => b.slug === book)?.chapterCount ?? 0;
+    const per = chapters / r.days.length;
+    // Name the SCOPE, not the first and last day's readings. "Genesis 1–3 →
+    // Genesis 48–50" describes the schedule twice and never says "Genesis".
+    const scopeText = g
+      ? `${g.label} · ${chapters} chapters across ${g.books.length} books`
+      : `${BOOKS.find((b) => b.slug === book)?.name ?? book} · ${chapters} chapters`;
+    return {
+      ok: true as const,
+      days: r.days.length,
+      scope: scopeText,
+      pace: per < 1.5 ? 'about 1 chapter a day' : `about ${Math.round(per)} chapters a day`,
+      from: first.date, to: last.date,
+    };
+  }, [mode, book, group, pickedTopic, weeks, daysPerWeek, startDate]);
+
   const searchTopics = async () => {
-    if (!topicQuery.trim() || busy) return;
-    setNotice(null);
-    setPickedTopic(null);
-    // A failed search and an empty library are DIFFERENT facts. Collapsing
-    // both to [] rendered "no matching topics in the library yet" — an
-    // authoritative claim about the corpus derived from an instrument that
-    // did not run (the failure class MASTER.md's watchlist names).
+    if (!topicQuery.trim() || searching) return;
+    setSearching(true); setNotice(null); setPickedTopic(null);
+    // A failed search and an empty library are DIFFERENT facts. Collapsing both
+    // to [] rendered "no matching topics" — an authoritative claim about the
+    // corpus from an instrument that did not run.
     setTopicError(null);
     try {
       const res = await fetch(`/api/plans/topics?q=${encodeURIComponent(topicQuery.trim())}`);
@@ -182,22 +298,23 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
     } catch {
       setTopicMatches(null);
       setTopicError('Topic search could not be reached — please try again.');
+    } finally {
+      setSearching(false);
     }
   };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
-    if (scopeType === 'topic' && !pickedTopic) {
-      setNotice('Search for a topic and pick one of the suggestions first.');
+    if (mode === 'topic' && !pickedTopic) {
+      setNotice('Search for a topic and choose one of the suggestions first.');
       return;
     }
-    setBusy(true);
-    setNotice(null);
+    setBusy(true); setNotice(null);
     try {
       const scope =
-        scopeType === 'book' ? { kind: 'book', book }
-        : scopeType === 'books' ? { kind: 'books', group }
+        mode === 'book' ? { kind: 'book', book }
+        : mode === 'books' ? { kind: 'books', group }
         : { kind: 'topic', workSlug: pickedTopic!.workSlug, sectionId: pickedTopic!.sectionId };
       const res = await fetch('/api/plans', {
         method: 'POST',
@@ -214,132 +331,111 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
     }
   };
 
-  const field = 'min-h-[44px] rounded-md border border-stone-300 bg-paper px-3 text-sm text-stone-800 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100';
+  const stepLabel = 'mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400';
 
   return (
-    <form onSubmit={submit} className="mt-4 rounded-xl bg-stone-100/80 p-4 shadow-paper dark:bg-stone-800/50">
-      <div className="mb-3 flex gap-1 rounded-full bg-stone-200/60 p-1 dark:bg-stone-900/60" role="tablist" aria-label="Plan scope type">
-        {([['book', 'One book'], ['books', 'A collection'], ['topic', 'A topic']] as const).map(([value, label]) => (
+    <form onSubmit={submit} className="mt-5 rounded-xl bg-stone-100/80 p-4 shadow-paper dark:bg-stone-800/50">
+      <p className={stepLabel}>1 · What to read</p>
+      <div className="flex gap-1 rounded-full bg-stone-200/60 p-1 dark:bg-stone-900/60" role="tablist" aria-label="What kind of plan">
+        {MODES.map((m) => (
           <button
-            key={value}
-            type="button"
-            role="tab"
-            aria-selected={scopeType === value}
-            onClick={() => setScopeType(value)}
+            key={m.key} type="button" role="tab" aria-selected={mode === m.key}
+            onClick={() => setMode(m.key)}
             className={`min-h-[36px] flex-1 rounded-full px-3 text-xs font-medium transition-colors ease-gentle ${
-              scopeType === value
+              mode === m.key
                 ? 'bg-paper text-stone-800 shadow-paper dark:bg-stone-700 dark:text-stone-100'
                 : 'text-stone-500 hover:text-stone-700 dark:text-stone-400'
             }`}
           >
-            {label}
+            {m.label}
           </button>
         ))}
       </div>
-      {scopeType === 'topic' && (
-        <div className="mb-3">
-          <div className="flex gap-2">
-            <input
-              value={topicQuery}
-              onChange={(e) => setTopicQuery(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void searchTopics(); } }}
-              placeholder="prayer, faith, affliction…"
-              className={`${field} flex-1`}
-              aria-label="Topic search"
-            />
-            <button
-              type="button"
-              onClick={() => void searchTopics()}
-              className="inline-flex min-h-[44px] items-center rounded-md bg-stone-200/80 px-4 text-sm font-medium text-stone-700 transition-colors ease-gentle hover:bg-stone-300/70 dark:bg-stone-700 dark:text-stone-200"
-            >
-              Search
-            </button>
-          </div>
-          {topicError && (
-            <p className="mt-2 rounded-md bg-accent-50 px-3 py-2 text-xs text-accent-800 dark:bg-accent-950/40 dark:text-accent-200">
-              {topicError}
-            </p>
-          )}
-          {topicMatches !== null && (
-            <div className="mt-2 space-y-1.5">
-              {topicMatches.length === 0 && (
-                <p className="text-xs text-stone-400">No matching topics in the library yet — try another word.</p>
-              )}
-              {topicMatches.map((m) => (
-                <button
-                  key={`${m.workSlug}-${m.sectionId}`}
-                  type="button"
-                  onClick={() => setPickedTopic(m)}
-                  className={`flex min-h-[44px] w-full items-center justify-between rounded-lg border px-3 text-left transition-colors ease-gentle ${
-                    pickedTopic?.sectionId === m.sectionId && pickedTopic?.workSlug === m.workSlug
-                      ? 'border-accent-700 bg-accent-50 dark:bg-accent-950/40'
-                      : 'border-stone-200 hover:border-accent-300 dark:border-stone-700'
-                  }`}
-                >
-                  <span className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{m.heading}</span>
-                  <span className="ml-3 shrink-0 text-[11px] text-stone-400">
-                    {m.workTitle} · {m.entryCount} passages
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {scopeType === 'book' && (
+      <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">{MODES.find((m) => m.key === mode)!.hint}</p>
+
+      <div className="mt-3">
+        {mode === 'book' && (
           <label className="flex flex-col gap-1 text-xs font-medium text-stone-500 dark:text-stone-400">
             Book
-            <select value={book} onChange={(e) => setBook(e.target.value)} className={field}>
-              {BOOKS.map((b) => (
-                <option key={b.slug} value={b.slug}>{b.name}</option>
-              ))}
+            <select value={book} onChange={(e) => setBook(e.target.value)} className={FIELD}>
+              {BOOKS.map((b) => <option key={b.slug} value={b.slug}>{b.name}</option>)}
             </select>
           </label>
         )}
-        {scopeType === 'books' && (
+        {mode === 'books' && (
           <label className="flex flex-col gap-1 text-xs font-medium text-stone-500 dark:text-stone-400">
             Collection
-            <select value={group} onChange={(e) => setGroup(e.target.value)} className={field}>
-              {Object.entries(CANONICAL_GROUPS).map(([key, g]) => (
-                <option key={key} value={key}>{g.label}</option>
-              ))}
+            <select value={group} onChange={(e) => setGroup(e.target.value)} className={FIELD}>
+              {Object.entries(CANONICAL_GROUPS).map(([k, g]) => <option key={k} value={k}>{g.label}</option>)}
             </select>
           </label>
         )}
-        <label className="flex flex-col gap-1 text-xs font-medium text-stone-500 dark:text-stone-400">
-          Start date
-          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={field} required />
-        </label>
+        {mode === 'topic' && (
+          <TopicPicker
+            query={topicQuery} setQuery={setTopicQuery} onSearch={searchTopics} searching={searching}
+            matches={topicMatches} error={topicError} picked={pickedTopic} setPicked={setPickedTopic}
+          />
+        )}
+      </div>
+
+      <p className={`${stepLabel} mt-5`}>2 · How long</p>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <label className="flex flex-col gap-1 text-xs font-medium text-stone-500 dark:text-stone-400">
           Weeks
           <input type="number" min={1} max={104} value={weeks}
-            onChange={(e) => setWeeks(Number(e.target.value))} className={field} required />
+            onChange={(e) => setWeeks(Number(e.target.value))} className={FIELD} required />
         </label>
         <label className="flex flex-col gap-1 text-xs font-medium text-stone-500 dark:text-stone-400">
-          Days per week
+          Days each week
           <input type="number" min={1} max={7} value={daysPerWeek}
-            onChange={(e) => setDaysPerWeek(Number(e.target.value))} className={field} required />
+            onChange={(e) => setDaysPerWeek(Number(e.target.value))} className={FIELD} required />
+        </label>
+        <label className="flex flex-col gap-1 text-xs font-medium text-stone-500 dark:text-stone-400">
+          Starting
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={FIELD} required />
         </label>
       </div>
+
+      {preview && (
+        <div
+          aria-live="polite"
+          className={`mt-4 rounded-lg px-4 py-3 text-sm ${
+            preview.ok
+              ? 'bg-paper text-stone-700 shadow-paper dark:bg-stone-900/70 dark:text-stone-200'
+              : 'bg-accent-50 text-accent-800 dark:bg-accent-950/40 dark:text-accent-200'
+          }`}
+        >
+          {preview.ok ? (
+            <>
+              <p className="font-medium">{preview.days} readings · {preview.pace}</p>
+              <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">{preview.scope}</p>
+              {preview.from && preview.to && (
+                <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">
+                  {prettyDate(preview.from)} → {prettyDate(preview.to)}
+                </p>
+              )}
+            </>
+          ) : (
+            <p>{preview.reason}</p>
+          )}
+        </div>
+      )}
+
       {notice && (
         <p className="mt-3 rounded-md bg-accent-50 px-3 py-2 text-sm text-accent-800 dark:bg-accent-950/40 dark:text-accent-200">
           {notice}
         </p>
       )}
+
       <div className="mt-4 flex items-center gap-3">
         <button
-          type="submit"
-          disabled={busy}
+          type="submit" disabled={busy || preview?.ok === false}
           className="inline-flex min-h-[44px] items-center rounded-full bg-accent-700 px-5 text-sm font-medium text-white shadow-paper transition-colors ease-gentle hover:bg-accent-800 disabled:opacity-50"
         >
-          {busy ? 'Building…' : 'Build plan'}
+          {busy ? 'Building…' : 'Create plan'}
         </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="inline-flex min-h-[44px] items-center rounded-full px-4 text-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
-        >
+        <button type="button" onClick={onCancel}
+          className="inline-flex min-h-[44px] items-center rounded-full px-4 text-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200">
           Cancel
         </button>
       </div>
@@ -347,31 +443,123 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
   );
 }
 
-function refLabel(d: PlanDay): string {
-  const start = formatVerseId(d.verse_start).replace(/:1$/, '');
-  const startBook = Math.floor(d.verse_start / 1_000_000);
-  const endBook = Math.floor(d.verse_end / 1_000_000);
-  const startChapter = Math.floor((d.verse_start % 1_000_000) / 1000);
-  const endChapter = Math.floor((d.verse_end % 1_000_000) / 1000);
-  if (startBook === endBook) {
-    return startChapter === endChapter ? start : `${start}–${endChapter}`;
-  }
-  // A canonical-group scope (e.g. Pauline Epistles, 87 chapters over 13 books) will not divide
-  // on book boundaries at any normal pace — measured: 87/24 days = 3.6 ch/day guarantees a
-  // straddling day. Bare "Romans 16–1" (implying ch.16-1 of Romans) would misread as backwards;
-  // name the end book explicitly.
-  const endBookObj = BOOK_BY_NUM.get(endBook);
-  return `${start}–${endBookObj ? endBookObj.name : '?'} ${endChapter}`;
+function TopicPicker({
+  query, setQuery, onSearch, searching, matches, error, picked, setPicked,
+}: {
+  query: string; setQuery: (s: string) => void; onSearch: () => void; searching: boolean;
+  matches: TopicMatch[] | null; error: string | null;
+  picked: TopicMatch | null; setPicked: (t: TopicMatch) => void;
+}) {
+  return (
+    <div>
+      <div className="flex gap-2">
+        <input
+          value={query} onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onSearch(); } }}
+          placeholder="Try: prayer, faith, forgiveness…"
+          className={`${FIELD} flex-1`} aria-label="Search topics"
+        />
+        <button type="button" onClick={onSearch} disabled={searching}
+          className="inline-flex min-h-[44px] shrink-0 items-center rounded-md bg-stone-200/80 px-4 text-sm font-medium text-stone-700 transition-colors ease-gentle hover:bg-stone-300/70 disabled:opacity-50 dark:bg-stone-700 dark:text-stone-200">
+          {searching ? 'Searching…' : 'Search'}
+        </button>
+      </div>
+
+      {error && (
+        <p className="mt-2 rounded-md bg-accent-50 px-3 py-2 text-xs text-accent-800 dark:bg-accent-950/40 dark:text-accent-200">{error}</p>
+      )}
+
+      {matches !== null && !error && (
+        <div className="mt-2">
+          {matches.length === 0 ? (
+            <p className="text-xs text-stone-400">No topic by that name in the library — try another word.</p>
+          ) : (
+            <>
+              <p className="mb-1.5 text-xs text-stone-500 dark:text-stone-400">Choose one:</p>
+              <div className="space-y-1.5">
+                {matches.map((m) => {
+                  const on = picked?.sectionId === m.sectionId && picked?.workSlug === m.workSlug;
+                  return (
+                    <button
+                      key={`${m.workSlug}-${m.sectionId}`} type="button" onClick={() => setPicked(m)} aria-pressed={on}
+                      className={`flex min-h-[44px] w-full items-center justify-between gap-3 rounded-lg border px-3 py-1.5 text-left transition-colors ease-gentle ${
+                        on ? 'border-accent-700 bg-accent-50 dark:bg-accent-950/40'
+                           : 'border-stone-200 hover:border-accent-300 dark:border-stone-700'
+                      }`}
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium text-stone-800 dark:text-stone-100">{m.heading}</span>
+                        <span className="block truncate text-[11px] text-stone-400">{m.workTitle}</span>
+                      </span>
+                      <span className="shrink-0 text-[11px] text-stone-400">{m.entryCount} passages</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
-function readerHref(d: PlanDay): string {
-  const book = BOOK_BY_NUM.get(Math.floor(d.verse_start / 1_000_000));
-  const chapter = Math.floor((d.verse_start % 1_000_000) / 1000);
+// ── labels ───────────────────────────────────────────────────────────────────
+
+function refOf(verseStart: number, verseEnd: number): string {
+  const startBook = Math.floor(verseStart / 1_000_000);
+  const endBook = Math.floor(verseEnd / 1_000_000);
+  const startCh = Math.floor((verseStart % 1_000_000) / 1000);
+  const endCh = Math.floor((verseEnd % 1_000_000) / 1000);
+  const name = BOOK_BY_NUM.get(startBook)?.name ?? '?';
+  if (startBook !== endBook) return `${name} ${startCh}–${BOOK_BY_NUM.get(endBook)?.name ?? '?'} ${endCh}`;
+  return startCh === endCh ? `${name} ${startCh}` : `${name} ${startCh}–${endCh}`;
+}
+
+const dayRef = (d: PlanDay) => refOf(d.verse_start, d.verse_end);
+
+export function readingLabel(r: PlanReading): string {
+  const startBook = Math.floor(r.verse_start / 1_000_000);
+  const endBook = Math.floor(r.verse_end / 1_000_000);
+  const startCh = Math.floor((r.verse_start % 1_000_000) / 1000);
+  const endCh = Math.floor((r.verse_end % 1_000_000) / 1000);
+  // A whole-chapter reference parses to verse 1 .. CHAPTER_END_SENTINEL. Rendering
+  // that literally produced "Genesis 1:1-999" — an internal sentinel shown to the
+  // reader as if it were a verse number. Name the chapter instead.
+  if (r.verse_start % 1000 === 1 && r.verse_end % 1000 === CHAPTER_END_SENTINEL) {
+    const bookName = BOOK_BY_NUM.get(startBook)?.name ?? '?';
+    if (startBook === endBook) return startCh === endCh ? `${bookName} ${startCh}` : `${bookName} ${startCh}–${endCh}`;
+    return `${bookName} ${startCh}–${BOOK_BY_NUM.get(endBook)?.name ?? '?'} ${endCh}`;
+  }
+  const start = formatVerseId(r.verse_start);
+  if (r.verse_end === r.verse_start) return start;
+  return startBook === endBook && startCh === endCh
+    ? `${start}-${r.verse_end % 1000}`
+    : `${start}–${formatVerseId(r.verse_end)}`;
+}
+
+function readerHref(verseStart: number): string {
+  const book = BOOK_BY_NUM.get(Math.floor(verseStart / 1_000_000));
+  const chapter = Math.floor((verseStart % 1_000_000) / 1000);
   return book ? `/read/${book.slug}/${chapter}` : '/read/jhn/1';
 }
 
+// ── the plan itself ──────────────────────────────────────────────────────────
+
 function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () => void; onChanged: () => void }) {
   const [busyDay, setBusyDay] = useState<number | null>(null);
+
+  const readingsByDay = new Map<number, PlanReading[]>();
+  for (const r of open.readings ?? []) {
+    (readingsByDay.get(r.day_index) ?? readingsByDay.set(r.day_index, []).get(r.day_index)!).push(r);
+  }
+
+  const today = todayLocalDate();
+  const doneCount = open.days.filter((d) => d.completed_at).length;
+  const pct = open.days.length ? Math.round((doneCount / open.days.length) * 100) : 0;
+  // "Up next" answers the one question someone opening a plan actually has, which
+  // the flat list made them scan for.
+  const upNext = open.days.find((d) => !d.completed_at);
 
   const toggle = async (d: PlanDay) => {
     setBusyDay(d.day_index);
@@ -388,17 +576,10 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
   };
 
   const remove = async () => {
-    if (!window.confirm('Delete this plan? Its reading history goes with it.')) return;
+    if (!window.confirm('Delete this plan? Your progress on it goes too.')) return;
     await fetch(`/api/plans/${open.plan.id}`, { method: 'DELETE' });
     onBack();
   };
-
-  // Topical plans carry labeled readings per day (plan_day_readings, 042);
-  // book/collection plans have none and render the single day range.
-  const readingsByDay = new Map<number, PlanReading[]>();
-  for (const r of open.readings ?? []) {
-    (readingsByDay.get(r.day_index) ?? readingsByDay.set(r.day_index, []).get(r.day_index)!).push(r);
-  }
 
   return (
     <div>
@@ -410,16 +591,51 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
           Delete plan
         </button>
       </div>
+
       <h2 className="font-display text-2xl text-stone-800 dark:text-stone-100">{open.plan.title}</h2>
-      <ol className="mt-4 space-y-1.5">
+      <div className="mt-2 flex items-center gap-3">
+        <div className="flex-1"><ProgressBar pct={pct} /></div>
+        <span className="shrink-0 text-xs text-stone-400">{doneCount} of {open.days.length} days</span>
+      </div>
+
+      {upNext ? (
+        <div className="mt-4 rounded-xl bg-paper px-4 py-3 shadow-paper dark:bg-stone-900/70">
+          <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">
+            Up next{upNext.day_date <= today ? ' · due now' : ` · ${prettyDate(upNext.day_date)}`}
+          </p>
+          <p className="mt-1 font-serif text-lg text-stone-800 dark:text-stone-100">
+            {readingsByDay.has(upNext.day_index)
+              ? `${readingsByDay.get(upNext.day_index)!.length} passages`
+              : dayRef(upNext)}
+          </p>
+          <div className="mt-2 flex items-center gap-4">
+            <Link href={readerHref(upNext.verse_start)}
+              className="inline-flex min-h-[36px] items-center rounded-full bg-accent-700 px-4 text-xs font-medium text-white transition-colors ease-gentle hover:bg-accent-800">
+              Read it
+            </Link>
+            <button onClick={() => void toggle(upNext)} disabled={busyDay === upNext.day_index}
+              className="text-xs text-stone-500 hover:text-accent-700 disabled:opacity-50 dark:text-stone-400">
+              Mark as read
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="mt-4 rounded-xl bg-paper px-4 py-3 text-sm text-stone-600 shadow-paper dark:bg-stone-900/70 dark:text-stone-300">
+          Every day is read. Well done.
+        </p>
+      )}
+
+      <p className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wider text-stone-400">All readings</p>
+      <ol className="space-y-1.5">
         {open.days.map((d) => {
           const readings = readingsByDay.get(d.day_index);
+          const isNext = upNext?.day_index === d.day_index;
           return (
-            <li key={d.day_index} className="rounded-lg bg-stone-100/60 px-3 py-2 dark:bg-stone-800/40">
+            <li key={d.day_index}
+              className={`rounded-lg px-3 py-2 ${isNext ? 'bg-accent-50 dark:bg-accent-950/30' : 'bg-stone-100/60 dark:bg-stone-800/40'}`}>
               <div className="flex min-h-[44px] items-center gap-3">
                 <button
-                  onClick={() => void toggle(d)}
-                  disabled={busyDay === d.day_index}
+                  onClick={() => void toggle(d)} disabled={busyDay === d.day_index}
                   aria-label={d.completed_at ? `Mark day ${d.day_index} unread` : `Mark day ${d.day_index} read`}
                   className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle ${
                     d.completed_at
@@ -431,19 +647,17 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                   </svg>
                 </button>
-                <span className="w-24 shrink-0 text-xs text-stone-400">{d.day_date}</span>
+                <span className="w-20 shrink-0 text-xs text-stone-400">{prettyDate(d.day_date)}</span>
                 {readings ? (
                   <span className={`flex-1 truncate text-sm font-medium ${d.completed_at ? 'text-stone-400 line-through' : 'text-stone-700 dark:text-stone-200'}`}>
                     {readings.length} passage{readings.length === 1 ? '' : 's'}
                   </span>
                 ) : (
-                  <Link
-                    href={readerHref(d)}
+                  <Link href={readerHref(d.verse_start)}
                     className={`flex-1 truncate text-sm font-medium ${
                       d.completed_at ? 'text-stone-400 line-through' : 'text-stone-700 hover:text-accent-700 dark:text-stone-200'
-                    }`}
-                  >
-                    {refLabel(d)}
+                    }`}>
+                    {dayRef(d)}
                   </Link>
                 )}
               </div>
@@ -451,10 +665,8 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
                 <ul className="mt-1 space-y-0.5 pl-9">
                   {readings.map((r) => (
                     <li key={r.ordinal} className="flex items-baseline gap-2 text-sm">
-                      <Link
-                        href={readingHref(r)}
-                        className={`shrink-0 font-medium ${d.completed_at ? 'text-stone-400' : 'text-stone-700 hover:text-accent-700 dark:text-stone-200'}`}
-                      >
+                      <Link href={readerHref(r.verse_start)}
+                        className={`shrink-0 font-medium ${d.completed_at ? 'text-stone-400' : 'text-stone-700 hover:text-accent-700 dark:text-stone-200'}`}>
                         {readingLabel(r)}
                       </Link>
                       {r.label && <span className="truncate text-xs text-stone-400">{r.label}</span>}
@@ -468,32 +680,4 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
       </ol>
     </div>
   );
-}
-
-export function readingLabel(r: PlanReading): string {
-  const startBook = Math.floor(r.verse_start / 1_000_000);
-  const endBook = Math.floor(r.verse_end / 1_000_000);
-  const startCh = Math.floor((r.verse_start % 1_000_000) / 1000);
-  const endCh = Math.floor((r.verse_end % 1_000_000) / 1000);
-  // A whole-chapter reference (the index prints "History of Ge 1; 2") parses
-  // to verse 1 .. CHAPTER_END_SENTINEL. Rendering that literally produced
-  // "Genesis 1:1-999" — an internal sentinel shown to the reader as if it
-  // were a verse number. Name the chapter instead.
-  if (r.verse_start % 1000 === 1 && r.verse_end % 1000 === CHAPTER_END_SENTINEL) {
-    const bookName = BOOK_BY_NUM.get(startBook)?.name ?? '?';
-    if (startBook === endBook) return startCh === endCh ? `${bookName} ${startCh}` : `${bookName} ${startCh}–${endCh}`;
-    return `${bookName} ${startCh}–${BOOK_BY_NUM.get(endBook)?.name ?? '?'} ${endCh}`;
-  }
-  const start = formatVerseId(r.verse_start);
-  if (r.verse_end === r.verse_start) return start;
-  // Same book and chapter → "John 3:16-18"; otherwise both ends in full.
-  return startBook === endBook && startCh === endCh
-    ? `${start}-${r.verse_end % 1000}`
-    : `${start}–${formatVerseId(r.verse_end)}`;
-}
-
-function readingHref(r: PlanReading): string {
-  const book = BOOK_BY_NUM.get(Math.floor(r.verse_start / 1_000_000));
-  const chapter = Math.floor((r.verse_start % 1_000_000) / 1000);
-  return book ? `/read/${book.slug}/${chapter}` : '/read/jhn/1';
 }

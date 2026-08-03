@@ -87,7 +87,7 @@ describe('expandPlan — schedule arithmetic', () => {
     // SEED: pad short scopes by repeating chapters and this goes red.
     const r = expandPlan(spec({ scope: { kind: 'range', ref: 'Philemon' }, weeks: 4, daysPerWeek: 5 }));
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toMatch(/cannot fill/);
+    if (!r.ok) expect(r.reason).toMatch(/not enough for \d+ reading days/);
   });
 });
 

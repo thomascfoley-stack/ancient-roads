@@ -123,6 +123,6 @@ describe('expandPlan — books scope (multi-book, list-driven, no parseRef)', ()
   it('still refuses a schedule thinner than the scope (pentateuch cannot fill 2 years daily)', () => {
     const r = expandPlan(spec({ scope: { kind: 'books', group: 'pentateuch' }, weeks: 104, daysPerWeek: 7 }));
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toMatch(/cannot fill/);
+    if (!r.ok) expect(r.reason).toMatch(/not enough for \d+ reading days/);
   });
 });

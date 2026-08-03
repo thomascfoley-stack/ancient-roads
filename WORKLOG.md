@@ -1,5 +1,60 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-03 — UX pass on Reading plans: the builder now shows you the plan before you make it
+
+Owner: the feature was not intuitive. The specific defect, once looked at honestly, is that the
+screen made you **submit a form to find out what it does** — "8 weeks x 5 days" over Romans means
+nothing until you press Create and read an error. The old subtitle ("the schedule is arithmetic")
+was written for this repo, not for a reader.
+
+### The central change: a live preview that CANNOT drift
+
+The builder runs **`expandPlan` — the same pure function the server runs** — in the component, on
+every keystroke. So the preview is not a second implementation that can disagree with the result;
+it is the result. It shows readings, pace, scope and span:
+
+> **16 readings · about 1 chapter a day** · Romans · 16 chapters · Mon, Aug 3 → Tue, Sep 22
+
+and when the scope cannot fill the schedule it says so **before** the button, with Create
+**disabled**, so the dead end is unreachable rather than merely reported.
+
+### Also
+
+- **Copy rewritten for a reader.** Header, the empty state (which now teaches the three modes with
+  examples instead of only saying "no plans"), and the refusal — `expandPlan`'s reason said
+  "16 chapter(s) cannot fill 40 reading days", engineering shorthand in user-facing text; it now
+  reads "This has only 16 chapters — not enough for 40 reading days. Try fewer weeks, or fewer
+  days each week."
+- **The three modes explain themselves** — each tab carries a one-line hint; steps are labelled
+  "1 · What to read" / "2 · How long".
+- **Topic flow made sequential**: search → "Choose one:" → three attributed suggestions with work
+  and passage count → the pick is highlighted and feeds the preview.
+- **Progress is visible**: a bar on every plan row and at the top of a plan.
+- **"Up next"** callout answers the question someone opening a plan actually has — due-now or the
+  date, with Read it / Mark as read, and that day highlighted in the list. The flat list made you
+  scan for it.
+
+### Two real bugs the new tests caught
+
+1. **Chapter counting went NEGATIVE across book boundaries.** The preview summed
+   `chapterEnd - chapterStart + 1` per day; a day straddling Romans 16 → 1 Corinthians 2 gives
+   **-13**, which a collection guarantees at any normal pace. Now counted from the canon.
+2. **The first test file could not fail** — every `render()` stacked because this vitest config
+   does not enable globals, so testing-library never registers its auto-cleanup; the first run
+   reported "found multiple elements" for everything. Explicit `afterEach(cleanup)`.
+
+### VERIFIED
+
+`plans-builder-preview.test.tsx` (5 cases, each with a SEED line) drives the real component:
+refusal visible before submit, Create disabled then enabled, preview recomputes on scope change
+as well as schedule, collections preview across book boundaries, modes explain themselves.
+24 plan tests green. **Browser, both widths** (dev server on the deploy worktree, API stubbed in
+the live page since this machine has no auth secret): desktop 1280 and mobile 390 — list, builder,
+refusal state, success preview, topic search and pick all rendered and driven; **no horizontal
+overflow at 390 (`scrollWidth 390 === innerWidth`)**; only console error is the pre-existing
+dev-mode React/CSP `eval()` notice, present on every page and absent in production.
+`npm run audit` green.
+
 ## 2026-08-03 — PUBLISHED. The topical corpus is live on production; the feature is complete
 
 Owner ran the flip. **4/4 published**, verified end to end against production, read-only.
