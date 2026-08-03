@@ -353,6 +353,87 @@ plans first — the in-repo STUDY_PLANS_DESIGN + ADR-017 lineage won.
 - The retrieval lane over `topical_index` (SERVED list + routing) is deliberately absent
   until the works publish; adding it now would be a serving surface for staged content.
 
+## 2026-08-02 (ADR-047: the number is the handle — owner-ruled, the boundary lifted, shipped)
+
+**Headline: the second word-highlighter cause is closed. The owner ruled on a documented STOP
+rather than an agent guessing past it, and the ruling is recorded in the repo before the code
+that depends on it, per bylaw 1.**
+
+### THE RULING
+
+`docs/LIBRARY_READER_BUILD.md` locked "tap-verse -> commentaries is untouched" as both a settled
+decision and a hard boundary. A three-lens investigate/verify/synthesise workflow found it in
+direct conflict with a real defect (below), named the STOP explicitly per `AGENTS.md` ("do not
+make owner-level calls yourself"), and escalated with a plain recommendation instead of shipping
+past it. The owner's answer, given in conversation: **yes, make the change.** Recorded as
+**ADR-047** (`docs/DECISIONS.md`), which supersedes the two `LIBRARY_READER_BUILD.md` passages by
+name — both amended in place with strikethrough and a pointer, not silently deleted.
+
+### THE DEFECT ADR-047 CLOSES
+
+`verse-display.tsx`'s click handler sat on the WHOLE verse span. `StudyPanel`'s root is a
+`fixed inset-0` scrim that closes on `e.target === e.currentTarget`. So the FIRST click of a
+double-click-to-select-a-word opened the sheet; the SECOND click landed on the scrim and closed
+it before the browser's native word selection ever registered. Double-click-to-select has been
+dead since drag-to-dismiss shipped on that sheet. No click-count or timing guard fixes it without
+either taxing every mobile tap (a timer) or leaving the conflict in place (`e.detail` is wrong —
+the damage is done on the FIRST click, where `detail === 1`).
+
+### THE FIX
+
+The handler moves from the verse `<span>` to its verse-number `<sup>` only. `select-none` already
+makes the number the one part of a verse that can never be inside a text selection, so a click
+there cannot race the selection engine. A `before:` pseudo-element (`-inset-y-1 -left-1.5
+-right-0.5`) grows the tap target without reflowing text — `position: absolute` takes it out of
+flow by construction, and the insets are asymmetric on purpose: `-right-0.5` matches the number's
+own `mr-0.5` exactly, so the invisible area stops at the margin and never steals a long-press
+from the first word.
+
+**Rejected: a `<button>`.** Real keyboard access is new capability, not a repair — the handler
+lives on a non-interactive element today with zero keyboard path — and it costs 176 tab stops in
+Psalm 119 before the chapter nav, an `aria-label` that changes what a screen reader announces
+mid-sentence, and the only `cursor-pointer` in the codebase. Filed as its own future slice.
+
+### VERIFIED IN A BROWSER, 1280x800 and 390x844 (`/read/jhn/3`, `/read/psa/119`)
+
+- **Double-click a word: selected, floating popover live, NO sheet opens.** This is the bug,
+  gone — confirmed via `window.getSelection().toString()` returning the word and
+  `[role="toolbar"][aria-label="Annotate selection"]` present, sheet absent.
+- Click mid-verse-text: nothing happens (no sheet, no scrim).
+- Click the verse number: sheet opens on Commentaries, `John 3:16` heading.
+- **Mobile touch, 5 consecutive verse numbers (v1-v5), John 3: 5/5 hits, 0 misses.**
+- **Vertical-overlap measurement** (the thing the code comment refuses to assert, taken instead
+  of claimed): Psalms 119:20-25 at 390px. Line height 34.2px; the `before:` box is 21px tall
+  (13px `<sup>` + 4px each side). Worst case — two verse numbers on ADJACENT lines, 34px apart —
+  leaves a 13px gap between their tap-target boxes. No overlap, computed from live
+  `getBoundingClientRect()`, not eyeballed.
+- Tap blank space (the chapter heading area): no sheet, dismisses cleanly.
+- No horizontal overflow at 390px on the densest chapter in the Bible
+  (`document.body.scrollWidth === 390`).
+
+### DONE
+
+- `verse-display.tsx`: the handler move, described above.
+- `web/test/invariants/verse-open-gesture.test.tsx`, 3 cases, all three red-proofed live (guard
+  removed / handler dropped / handler moved onto a marker — each failed exactly the test it
+  should have and nothing else, verified by running the suite after each seed and restoring via
+  `git checkout` before the next).
+- `docs/DECISIONS.md`: ADR-047, in full, with the owner's ruling quoted and the rejected
+  alternative recorded.
+- `docs/LIBRARY_READER_BUILD.md`: both passages amended in place (strikethrough + pointer to
+  ADR-047), not deleted — a future reader hits the old rule and the correction in the same spot.
+
+### NOT DONE / UNVERIFIED
+
+- **Long-press-to-select on a real touch device was not driven.** This browser environment can
+  click but not hold; the docked-low selection bar and swatches are untouched code
+  (`selection-popover.tsx` was not edited by this change) and were exercised by Part A's own
+  browser pass, not re-driven here.
+- Triple-click-to-select-a-verse remains impossible, unrelated to this change (verses are
+  `display: inline` in one block; a cross-container range returns `null`). Tracked as
+  `STUDY_TOOLKIT_DESIGN.md` 9.6, its own open decision — explicitly not this ADR's scope.
+- `npm run audit` not run to completion in this entry; app + test typechecks and the full local
+  vitest suite (378 passed, 0 failed) ran clean. CI is the gate on the PR.
 
 ## 2026-08-02 (owner-reported: catalog rows ragged; desk panes cannot add the Bible or search chapters)
 
@@ -611,6 +692,119 @@ before a flip, both recorded in the design doc §3:
 - The doc has been read by nobody but its author (bylaw 4).
 - The layout proposal in §4 has not been prototyped; that a rail plus detented sheet actually reads well at
   390px is an assertion, not a measurement.
+## 2026-08-02 (reader annotation writes: fire-and-forget replaced with retry + rollback + visible failure)
+
+**Headline: every reader write (highlight/note/bookmark) in `read/[book]/[chapter]/page.tsx` used
+to end `.catch(() => {})`.** On a lossy connection — this app's core use context is phones on low
+signal — the optimistic UI painted the change, the POST/DELETE could fail, nothing retried, nobody
+was told, and the annotation was gone on reload. Fixed.
+
+### DONE
+- Extracted the whole annotation write path out of `page.tsx` into
+  [`web/src/lib/use-annotation-writes.ts`](web/src/lib/use-annotation-writes.ts) (a hook,
+  unit-testable with `renderHook` against a mocked `fetch` — the same pattern as
+  `useWorkSectionPages`/`work-reader-paging.test.tsx`) and
+  [`web/src/lib/persist-write.ts`](web/src/lib/persist-write.ts) (the pure retry policy: retries a
+  thrown network error or a 5xx/429 twice with backoff ~400ms/1200ms; does NOT retry a 4xx, which
+  won't fix itself).
+- On exhausted retries: the optimistic state rolls back to what it was and ONE error banner
+  appears (`role="alert"`) with Retry / Dismiss. Retry replays the WHOLE action — re-paint, not
+  just the bare request — so a retry that finally succeeds leaves the UI showing what actually
+  saved. It reuses the SAME internal `id` across every retry of one logical write, so a later
+  success correctly clears the banner it belongs to; a first version minted a fresh id per attempt
+  and a successful retry could never match (and clear) the banner — caught by a test, not review.
+- A phone regaining signal (the `online` event) retries the visible failure once, automatically.
+- **`toggleBookmark`'s double-tap safety (two rapid taps → POST then DELETE, never two POSTs)
+  survived the refactor only after a red-proofing test caught a real regression in my own first
+  pass**: reading the toggle direction from a variable a `setState` updater was supposed to have
+  set, immediately after the updater call, is unsafe — updater execution is not guaranteed
+  synchronous with the call site (proven by a failing test: `['POST','POST']` instead of
+  `['POST','DELETE']`). Fixed by building the request/rollback/retry entirely INSIDE the updater,
+  matching the shape the original pre-existing code already used for exactly this reason.
+- 15 new tests, every one red-proofed (seeded the bug it guards, watched it fail, restored):
+  `test/invariants/persist-write-retry.test.ts` (7 — the retry/backoff policy in isolation) and
+  `test/invariants/annotation-write-failure.test.tsx` (8 — against the real hook: paint-then-fail-
+  then-rollback per handler, message text per kind, manual + automatic retry re-painting, and the
+  double-tap regression above).
+- Full web suite green: 51/51 files, 329/329 runnable tests (82 skipped for missing
+  `APP_DATABASE_URL`/static corpus, as already documented elsewhere in this repo).
+  `tsc --noEmit` clean. Lint clean (one pre-existing, unrelated warning at `page.tsx` confirmed
+  present before this change via `git stash`).
+- **Verified live in a real browser.** No DB/auth/static-corpus is available in this environment,
+  so `signedIn` and chapter text were reached by patching `window.fetch` in-page and dropping a
+  temporary, gitignored `web/public/bible/web/jhn.json` fixture — both removed after. Selected
+  text, added a highlight, watched 3 real POST attempts land at the documented ~400ms/1200ms
+  spacing, watched the rollback and the banner, watched Retry replay and succeed. **This found and
+  fixed a real layout bug**: the banner's `fixed bottom-4` sat directly under `MobileNav`'s own
+  fixed bottom bar at 390px, unreadable behind Home/Bible/Search — fixed with the same
+  `calc(3.75rem+env(safe-area-inset-bottom))` clearance `selection-popover.tsx` already uses for
+  its own docked mobile bar. Re-verified at 390px (no horizontal overflow) and desktop.
+- `StoredSpan` (the highlight-span shape) moved from `verse-display.tsx` to
+  `use-annotation-writes.ts` — the hook that now produces it owns the type; `verse-display.tsx`
+  re-exports it for compatibility.
+
+### NOT DONE / UNVERIFIED
+- No true offline queue: there is no service worker, so a write that fails while the tab is fully
+  closed is still lost. Explicitly out of scope ("consider a queue", not "must") — a manual +
+  automatic-on-reconnect Retry was judged sufficient for the failure mode described. The banner is
+  single-slot (most-recent failure only); this reader's writes are one-at-a-time from a single
+  gesture, so a concurrent-failure queue was judged unnecessary, not tested as a gap.
+- The banner's `dark:` Tailwind classes are written but not visually verified — this environment's
+  dev server does not actually flip under OS `prefers-color-scheme` here (an already-tracked,
+  pre-existing defect: A7b's "two theme systems own the `dark` class", MASTER.md A7b row); out of
+  scope to chase in this change.
+- Client-side only: does not touch RLS, the `/api/annotations` route, or any migration. No
+  accuracy-diagnostic or licensing implications — none run.
+## 2026-08-02 (two verse-link defects fixed — omnibox and Ask both had their own divergent href copy)
+
+**Headline: two navigation surfaces built their own reader link instead of using the shared
+`verseHref` (`web/src/lib/verse-link.ts`), and both diverged from it in exactly the way the
+watchlist's "hand-maintained copy" class predicts.**
+
+- **Bug 1 — `web/src/components/omnibox.tsx`.** `navigate()` called `bookUrl(book, chapter)`
+  (`lib/bible.ts`), which has no verse concept at all. Typing "John 3:16" and pressing Enter parsed
+  the verse correctly, then threw it away building the href — landing the reader at John 3:1, not
+  3:16. Fixed by having `navigate()` build a verse id (`encodeVerseId`, defaulting `verse` to 1 for
+  the book/chapter-only call sites) and route it through `verseHref`.
+- **Bug 2 — `web/src/components/ask-client.tsx`.** A second, local `readerHref` both dropped the
+  `#v` anchor AND fell back to `?? 'jhn'` when `BOOK_BY_NUM.get(book)` missed — so a citation whose
+  book number didn't resolve rendered a plausible, clickable link to the **Gospel of John** instead
+  of an inert one. Illustrative case: a citation for 3 John 1:4 — deceptive precisely because "3
+  John" already contains the word "John", so the substitution has no tell. Fixed by deleting the
+  local copy and importing `verseHref` directly (`decodeVerseId`/`BOOK_BY_NUM` imports dropped with
+  it, now unused).
+
+**Both had exactly one call site each**, so the fix is the whole diff: no other caller to chase.
+
+### DONE
+- Both files now route through `verseHref`, the same function `/library/notes` already uses.
+- Two new regression suites, each red-proofed (stashed the source fix, confirmed the seeded bug
+  reproduces the exact failure mode, then restored the fix and confirmed green):
+  `web/test/invariants/omnibox-verse-anchor.test.tsx` (drives the real `Omnibox` component: typed
+  input -> submit -> `router.push`) and `web/test/invariants/ask-passage-link.test.tsx` (drives the
+  real `AskClient` component through a stubbed `/api/ask/stream` NDJSON response, asserting the
+  rendered `<a href>` values).
+- Full web suite green (319 passed / 82 skipped — all skips are the standing DB/corpus/secret NOT
+  RUN gates this repo already logs as such, not new); `web/` `tsc --noEmit` and `eslint` both clean
+  on the changed files.
+- Browser DoD: verified live against a local dev server (`theology-dev`, since the static Bible
+  corpus is gitignored and wasn't present, `next-auth` cookie secret unset) at both 390px and
+  1280px — Cmd+K and the mobile Search tab both open the omnibox; "John 3:16" -> `/read/jhn/3#v16`;
+  "3 John 1:4" -> `/read/3jn/1#v4`; "Genesis 1" -> `/read/gen/1#v1`; no console errors beyond the
+  preexisting sandbox-only `eval()` CSP noise that appears on every page in this preview harness,
+  unrelated to this change.
+
+### NOT DONE / UNVERIFIED
+- **Ask's citation-link fix was not driven live end-to-end in a browser** — `/api/ask/stream`
+  requires sign-in plus a real DB + LLM backend, neither available in this sandbox. Verified
+  instead by rendering the real shipped `AskClient` component against a stubbed stream (same
+  render path, same `Link`/`verseHref` call), which is the strongest check available here; a
+  from-a-signed-in-session click-through against dev/prod is still open.
+- **Pre-existing, unrelated to this fix, left as found:** `web/test/invariants/work-toc-bounded.test.tsx`
+  fails `tsc --noEmit -p tsconfig.test.json` (`Cannot find name 'WorkTocRow'`) — untouched by this
+  session, present at `79494d4`, and vitest's esbuild transform doesn't catch it (the runtime suite
+  passes), so it wasn't visible without running the typecheck gate directly. Not fixed here; out of
+  scope for a two-file link-href bug.
 
 ## 2026-08-02 (the accuracy diagnostic, re-run against production after A8)
 

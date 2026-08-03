@@ -16,24 +16,14 @@ import {
 } from '@/lib/bible';
 import { resolveBookSlug } from '@bible/ref-parse';
 import { ReaderHeader } from '@/components/reader-header';
-import { VerseDisplay, type StoredSpan } from '@/components/verse-display';
+import { VerseDisplay } from '@/components/verse-display';
 import { ChapterNav } from '@/components/chapter-nav';
 import { Interlinear } from '@/components/interlinear';
 import { StudyPanel, type StudyTab } from '@/components/study-panel';
 import { WordPanel } from '@/components/word-panel';
 import { fetchOriginal, loadFullLexicon, type OriginalData, type OWord } from '@/lib/original';
-import { encodeVerseId } from '@bible/verse-id';
-
-// The highlight shape returned by GET /api/annotations (sub-verse columns from migration 015).
-interface ApiHighlight {
-  id: string;
-  verse_id: number;
-  span_start: number | null;
-  span_end: number | null;
-  color: string;
-  text_color: string | null;
-  translation: string | null;
-}
+import { useAnnotationWrites } from '@/lib/use-annotation-writes';
+import { useSignedIn } from '@/lib/auth/use-signed-in';
 
 /**
  * The server's answer, and therefore the client's FIRST answer too.
@@ -101,13 +91,26 @@ export default function ReaderPage() {
   const [commentaryCache, setCommentaryCache] = useState<Map<string, CommentaryEntry[]>>(new Map());
   const [interlinear, setInterlinear] = useState(false);
   const [original, setOriginal] = useState<OriginalData | null>(null);
-  // verse (1-based within chapter) → its highlight spans (multiple allowed).
-  const [highlights, setHighlights] = useState<Map<number, StoredSpan[]>>(new Map());
-  const [notes, setNotes] = useState<Map<number, string>>(new Map());
-  // Bookmarked verses in this chapter, by verse number. A Set because a bookmark carries no
-  // payload — it is a place, not an annotation.
-  const [bookmarks, setBookmarks] = useState<Set<number>>(new Set());
-  const [signedIn, setSignedIn] = useState(false);
+  // Highlights, notes, bookmarks, and their write path (retry + rollback + a visible failure —
+  // see use-annotation-writes.ts for why this isn't the fire-and-forget `.catch(() => {})` it
+  // used to be).
+  const {
+    highlights,
+    notes,
+    bookmarks,
+    annotationsFailed,
+    retryAnnotations,
+    writeError,
+    retryWrite,
+    dismissWrite,
+    addHighlight,
+    clearVerse,
+    saveVerseNote,
+    deleteVerseNote,
+    toggleBookmark,
+  } = useAnnotationWrites(book?.bookNum, chapterNum, translation.id);
+  // The session, not the annotations fetch. See lib/auth/use-signed-in.ts.
+  const signedIn = useSignedIn();
   // The verse a `#v<n>` deep link landed on, briefly emphasised. State, not a DOM mutation.
   const [flashVerse, setFlashVerse] = useState<number | null>(null);
   // The unified study panel: which verse, which tab, optional focused word.
@@ -193,126 +196,6 @@ export default function ReaderPage() {
     if ((study || interlinear) && original) loadFullLexicon(original.lang);
   }, [study, interlinear, original]);
 
-  // Load the user's highlights + notes for this chapter.
-  useEffect(() => {
-    if (!book) return;
-    setHighlights(new Map());
-    setNotes(new Map());
-    setBookmarks(new Set());
-    fetch(`/api/annotations?book=${book.bookNum}&chapter=${chapterNum}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((d: { highlights: ApiHighlight[]; notes: { verse_id: number; body: string }[]; bookmarks?: { verse_id: number }[] }) => {
-        setSignedIn(true);
-        const byVerse = new Map<number, StoredSpan[]>();
-        for (const h of d.highlights) {
-          const v = h.verse_id % 1000;
-          const arr = byVerse.get(v) ?? [];
-          arr.push({ id: h.id, start: h.span_start, end: h.span_end, color: h.color, textColor: h.text_color, translation: h.translation });
-          byVerse.set(v, arr);
-        }
-        setHighlights(byVerse);
-        setNotes(new Map(d.notes.map((n) => [n.verse_id % 1000, n.body])));
-        // Optional in the type: a reader on a tab opened before this deploy would receive a
-        // response without the key, and `undefined.map` would blank the whole chapter's
-        // annotations rather than just its bookmarks.
-        setBookmarks(new Set((d.bookmarks ?? []).map((b) => b.verse_id % 1000)));
-      })
-      .catch(() => setSignedIn(false));
-  }, [book, chapterNum]);
-
-  const verseId = useCallback(
-    (verse: number) => encodeVerseId({ book: book!.bookNum, chapter: chapterNum, verse }),
-    [book, chapterNum],
-  );
-
-  // Add a highlight span. range === null → whole verse (the tap-a-verse path). Optimistic:
-  // paint locally first, then persist (the save carries the pinned translation).
-  const addHighlight = useCallback(
-    (verse: number, range: { start: number; end: number } | null, color: string) => {
-      const optimistic: StoredSpan = {
-        start: range?.start ?? null,
-        end: range?.end ?? null,
-        color,
-        translation: translation.id,
-      };
-      setHighlights((prev) => {
-        const next = new Map(prev);
-        next.set(verse, [...(next.get(verse) ?? []), optimistic]);
-        return next;
-      });
-      fetch('/api/annotations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          kind: 'highlight',
-          verseId: verseId(verse),
-          color,
-          spanStart: range?.start ?? null,
-          spanEnd: range?.end ?? null,
-          translation: translation.id,
-        }),
-      }).catch(() => {});
-    },
-    [verseId, translation],
-  );
-
-  // Clear every span on a verse (the whole-verse "clear" affordance in the study panel).
-  const clearVerse = useCallback((verse: number) => {
-    setHighlights((prev) => {
-      const next = new Map(prev);
-      next.delete(verse);
-      return next;
-    });
-    fetch('/api/annotations', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kind: 'highlight', verseId: verseId(verse) }),
-    }).catch(() => {});
-  }, [verseId]);
-
-  const saveVerseNote = useCallback((verse: number, body: string) => {
-    setNotes((prev) => new Map(prev).set(verse, body));
-    fetch('/api/annotations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kind: 'note', verseId: verseId(verse), body }),
-    }).catch(() => {});
-  }, [verseId]);
-
-  const deleteVerseNote = useCallback((verse: number) => {
-    setNotes((prev) => {
-      const next = new Map(prev);
-      next.delete(verse);
-      return next;
-    });
-    fetch('/api/annotations', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kind: 'note', verseId: verseId(verse) }),
-    }).catch(() => {});
-  }, [verseId]);
-
-  /**
-   * Bookmark toggle. Optimistic like the highlight and note handlers beside it, but with one
-   * difference that matters: it computes `next` from the CURRENT set inside the updater and
-   * fires the matching request, so a fast double-tap cannot send two POSTs. The server is
-   * idempotent too (createBookmark returns the existing row), so the two guards are independent.
-   */
-  const toggleBookmark = useCallback((verse: number) => {
-    setBookmarks((prev) => {
-      const on = prev.has(verse);
-      const next = new Set(prev);
-      if (on) next.delete(verse);
-      else next.add(verse);
-      fetch('/api/annotations', {
-        method: on ? 'DELETE' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'bookmark', verseId: verseId(verse) }),
-      }).catch(() => {});
-      return next;
-    });
-  }, [verseId]);
-
   const openStudy = useCallback(
     (verse: number, tab: StudyTab, focusWordIdx?: number, focusWord?: OWord) => {
       setStudy({ verse, tab, focusWordIdx, focusWord });
@@ -359,6 +242,27 @@ export default function ReaderPage() {
         interlinear={interlinear}
         onToggleInterlinear={() => setInterlinear((v) => !v)}
       />
+      {/* THE CHAPTER'S ANNOTATIONS DID NOT LOAD. Signed-in readers only: signed out this GET is a
+          401 by design, and there is nothing to have failed to load. In flow rather than fixed, so
+          it cannot collide with the write-failure banner at the bottom of this file; ReaderHeader
+          is `sticky`, not `fixed`, so it cannot hide under that either. The copy names the thing a
+          reader would otherwise do wrong — re-create highlights, or type over a note that is still
+          on the server. */}
+      {signedIn && annotationsFailed && (
+        <div
+          role="status"
+          className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 pt-3 text-xs text-amber-800 sm:px-6 dark:text-amber-300"
+        >
+          <span>Your highlights and notes couldn&rsquo;t be loaded. Nothing was lost. This page just isn&rsquo;t showing them.</span>
+          <button
+            type="button"
+            onClick={retryAnnotations}
+            className="inline-flex min-h-[44px] shrink-0 items-center font-semibold underline"
+          >
+            Retry
+          </button>
+        </div>
+      )}
       {interlinear ? (
         original ? (
           <>
@@ -423,6 +327,7 @@ export default function ReaderPage() {
             color: highlights.get(study.verse)?.at(-1)?.color ?? null,
             note: notes.get(study.verse) ?? '',
             signedIn,
+            loadFailed: annotationsFailed,
             onSetHighlight: (color) => addHighlight(study.verse, null, color),
             onClearHighlight: () => clearVerse(study.verse),
             onSaveNote: (body) => { saveVerseNote(study.verse, body); setStudy(null); },
@@ -432,6 +337,41 @@ export default function ReaderPage() {
           onClose={() => setStudy(null)}
         />
       ) : null}
+
+      {/* A highlight/note/bookmark write that failed after retrying (use-annotation-writes.ts).
+          The optimistic paint has already been rolled back by the time this appears — this is
+          telling the reader that happened, not asking them to wait. Fixed, not floating: a
+          reader annotating near the top of a long chapter shouldn't need to scroll to see it.
+          bottom-[…] on mobile clears MobileNav's own fixed bar (mobile-nav.tsx: 3.75rem tall +
+          safe-area-inset-bottom) — the same clearance selection-popover.tsx uses for its docked
+          bar — or the banner sits UNDER Home/Bible/Search/etc. and is unreadable. md+ has no
+          bottom nav, so bottom-4 is correct there. */}
+      {writeError && (
+        <div
+          role="alert"
+          className="fixed inset-x-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom)+1rem)] z-50 mx-auto flex w-fit max-w-[92vw] items-center gap-3 rounded-full border border-red-300/60 bg-red-50/95 px-4 py-2 text-sm text-red-800 shadow-lg backdrop-blur-sm md:bottom-4 dark:border-red-900/60 dark:bg-red-950/90 dark:text-red-200"
+        >
+          <span>{writeError.message}.</span>
+          <button
+            type="button"
+            onClick={() => {
+              retryWrite();
+              dismissWrite();
+            }}
+            className="min-h-[28px] shrink-0 rounded-full bg-red-700 px-3 py-1 text-xs font-semibold text-white hover:bg-red-800 dark:bg-red-500 dark:hover:bg-red-400"
+          >
+            Retry
+          </button>
+          <button
+            type="button"
+            onClick={dismissWrite}
+            aria-label="Dismiss"
+            className="shrink-0 text-red-500 hover:text-red-700 dark:text-red-300 dark:hover:text-red-100"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 }

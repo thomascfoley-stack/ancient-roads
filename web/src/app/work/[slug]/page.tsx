@@ -14,6 +14,7 @@ import { loadWorkProgress, saveWorkProgress, tocUnitLabel, type WorkProgress } f
 import type { WorkSource, WorkTocUnit } from '@/lib/work';
 import { WorkReader, type WorkReaderSeek } from '@/components/work-reader';
 import { WorkToc } from '@/components/work-toc';
+import { useSignedIn } from '@/lib/auth/use-signed-in';
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
@@ -27,7 +28,10 @@ export default function WorkPage() {
   const { slug } = useParams<{ slug: string }>();
   const [work, setWork] = useState<{ source: WorkSource; toc: WorkTocUnit[] } | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const [signedIn, setSignedIn] = useState(false);
+  // The session, not a probe of the annotations route. SelectionPopover is ONE component shared by
+  // both readers; inferring this from a fetch here while /read reads the session would show
+  // swatches on one and "Sign in to highlight" on the other inside a single session.
+  const signedIn = useSignedIn();
   const [tocOpen, setTocOpen] = useState(false);
   const [progress, setProgress] = useState<{ ordinal: number; scrollPct: number } | null>(null);
   const [seek, setSeek] = useState<WorkReaderSeek | null>(null);
@@ -67,13 +71,6 @@ export default function WorkPage() {
       cancelled = true;
     };
   }, [slug]);
-
-  // The same session probe the Bible reader uses: the annotations route is 401 signed out.
-  useEffect(() => {
-    fetch('/api/annotations?book=1&chapter=1')
-      .then((r) => setSignedIn(r.ok))
-      .catch(() => setSignedIn(false));
-  }, []);
 
   // Resume persistence: throttled (500ms, leading + trailing) so scroll never thrashes
   // localStorage; the URL hash tracks the position as a shareable deep link (replaceState —

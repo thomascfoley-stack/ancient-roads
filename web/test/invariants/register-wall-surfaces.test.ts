@@ -13,8 +13,12 @@
 // What is asserted:
 //   1. Each catalog admits ONLY its own declared source_types (fenced, disjoint).
 //   2. The catalog taxonomy is disjoint — no type reachable through two catalogs.
-//   3. Lane/other types (theology, confession, lexicon) appear in NO catalog. This is the
-//      fail-closed default: an unlisted type must not be swallowed by an "everything else" bucket.
+//   3. `lexicon` (Word Study is its own surface) reaches NO catalog. This is the fail-closed
+//      default: an unlisted type must not be swallowed by an "everything else" bucket.
+//      `theology`/`confession` left this set on 2026-08-02 — see catalog-defs.ts's `theology:`
+//      entry for why: NOT into a catalog that reads as exegesis, which is the actual wall and is
+//      still enforced (checks 1-2 above), but a labelled shelf of their own is not that, any more
+//      than the `historians` catalog is.
 //   4. Catalog-scoped SEARCH honours the same fence.
 //   5. EVERY search result carries a non-empty sourceType — cross-corpus search may surface lane
 //      content, but the caller cannot honour the wall if the row does not say what register it is.
@@ -28,8 +32,10 @@ import { announceSkip } from '../helpers/loud-skip';
 
 const dbUrl = ensureDbEnv();
 
-/** Types that must never appear in ANY catalog: lane content + the Word Study surface. */
-const NON_CATALOG_TYPES = ['theology', 'confession', 'lexicon'];
+/** Types that must never appear in ANY catalog: the Word Study surface. `theology`/`confession`
+ *  are NOT here — they have their own `theology` catalog (catalog-defs.ts) since 2026-08-02,
+ *  and disjointness (checked separately, above) is what keeps them out of `commentaries`. */
+const NON_CATALOG_TYPES = ['lexicon'];
 
 // A DB-less run must READ as NOT RUN, not as coverage — see helpers/loud-skip.ts.
 const SKIP = announceSkip(

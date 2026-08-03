@@ -6,19 +6,14 @@ import type { ChapterData } from '@/lib/bible';
 import { HIGHLIGHT_BG } from '@/lib/highlight-colors';
 import { flattenToSegments, type HighlightRange } from '@/lib/highlight-range';
 import { useTextAnnotation, type AnnotationTarget } from '@/lib/use-text-annotation';
+// StoredSpan is defined in the hook that produces it (use-annotation-writes.ts), not here —
+// this component only renders the shape, it doesn't own it. Re-exported for callers that used to
+// import it from this module.
+import type { StoredSpan } from '@/lib/use-annotation-writes';
 import { SelectionPopover } from './selection-popover';
 import type { StudyTab } from './study-panel';
 
-// A stored highlight span as the reader holds it: character offsets into v.text (null/null = a
-// legacy whole-verse highlight), the background color, and the translation it was anchored in.
-export interface StoredSpan {
-  id?: string;
-  start: number | null;
-  end: number | null;
-  color: string;
-  textColor?: string | null;
-  translation?: string | null;
-}
+export type { StoredSpan };
 
 export function VerseDisplay({
   data,
@@ -142,14 +137,36 @@ export function VerseDisplay({
               id={`v${v.verse}`}
               data-verse={v.verse}
               className={`verse inline scroll-mt-20 rounded ${outerBg}${flashRing}`}
-              onClick={() => {
-                // Don't hijack an in-progress text selection — let the user copy / annotate.
-                const sel = window.getSelection();
-                if (sel && !sel.isCollapsed) return;
-                onVerseClick(v.verse);
-              }}
             >
-              <sup className="mr-0.5 font-sans text-[11px] font-semibold text-accent-600/80 select-none dark:text-accent-300/80">
+              {/* THE NUMBER IS THE HANDLE; THE VERSE TEXT IS NOT.
+                  This onClick used to sit on the whole verse span, so the FIRST click of a
+                  double-click opened StudyPanel, whose root is a `fixed inset-0` scrim
+                  (study-panel.tsx). The second click then landed on the scrim, which closes
+                  on `e.target === e.currentTarget`, so the browser's word selection never reached
+                  the text: the sheet flashed open and shut and no word was selected. The old guard
+                  could not catch it — on click one the selection IS collapsed. Nor could
+                  `e.detail > 1`: the damage is done by the click where detail === 1, and it would
+                  still open a sheet on every double-click attempt. A cancel-on-dblclick timer can,
+                  at ~250ms on EVERY tap — and mobile taps are single clicks, so the whole primary
+                  path would pay for a gesture touch does not have (long-press selects; with no
+                  maximumScale in layout.tsx a double-tap zooms).
+                  `select-none` already makes this the one part of a verse that can never be inside
+                  a selection, so a click here cannot race the selection engine at all.
+                  STUDY_TOOLKIT_DESIGN.md decision 9.1: when the toolkit supersedes the sheet, this
+                  handle becomes its anchor or is deleted, and the text is already free.
+                  The `before:` pseudo-element grows the tap target without reflowing the line:
+                  padding on an inline box would shift every verse's first word sideways. Insets
+                  are deliberately asymmetric — `-right-0.5` matches `mr-0.5` exactly so the
+                  invisible area stops at the margin and never steals a long-press from the first
+                  word. Whether the top edge crosses into the line above is a MEASUREMENT, taken
+                  at 390px and desktop in the DoD pass — not a claim made here.
+                  OWNER RULING, 2026-08-02: ADR-047 (docs/DECISIONS.md), amending
+                  docs/LIBRARY_READER_BUILD.md's "do not change tap-a-verse -> commentaries"
+                  boundary. Recorded before this code changed, not after. */}
+              <sup
+                onClick={() => onVerseClick(v.verse)}
+                className="relative mr-0.5 font-sans text-[11px] font-semibold text-accent-600/80 select-none before:absolute before:-inset-y-1 before:-left-1.5 before:-right-0.5 before:content-[''] dark:text-accent-300/80"
+              >
                 {v.verse}
               </sup>
               {foreignColor && (

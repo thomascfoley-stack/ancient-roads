@@ -1095,3 +1095,65 @@ readings reaches ≥2 admitted exegetical authors; same half-the-days bar as boo
 readings in order → staged-pointer refusal → tenancy (user B blocked) → cascade delete →
 zero residue. One driver defect caught and fixed in the writing: `sections.id` (BIGINT)
 returns as a string through the HTTP driver; `matchTopics` now casts `::int`.
+
+## ADR-047 — Tap-a-verse opens the number, not the whole verse; the boundary is amended (2026-08-02)
+
+**Status:** DECIDED. Owner ruling, recorded here per bylaw 1.
+
+**Context.** `docs/LIBRARY_READER_BUILD.md` locked "Tap-verse → commentaries is untouched" as a
+settled decision (§0.4) and repeated it as a hard boundary (§0, "Do not change tap-a-verse →
+commentaries. The existing Bible reading path stays byte-behavior-identical."). That boundary
+existed to protect a working reading path during the Book Reader build — not to forbid this
+specific change forever, but nothing in the repo may treat a boundary as lifted without a ruling
+that says so, which is what this ADR is.
+
+The boundary was in direct conflict with a real defect. `verse-display.tsx`'s click handler sat on
+the WHOLE verse span, so the first click of a double-click-to-select-a-word opened `StudyPanel`
+(root: `fixed inset-0` scrim, closes on `e.target === e.currentTarget`), and the second click of
+the double-click landed on the scrim instead of the text — closing the sheet before the browser's
+native word selection ever registered. Double-click-to-select has been dead for as long as
+drag-to-dismiss has existed on that sheet, and no click-count or timing guard fixes it without
+either taxing every mobile tap (a timer) or leaving the conflict in place (any check keyed on
+`e.detail`, since the damage happens on the FIRST click).
+
+`STUDY_TOOLKIT_DESIGN.md` (owner sketch + brief, 2026-08-02) already recommended this exact change
+as decision 9.1, and its own `LIBRARY_READER_BUILD.md`-blocking analysis is what surfaced the
+conflict rather than shipping past it. An agent may not lift a boundary or make this call
+(`AGENTS.md`: "do not make owner-level calls yourself") — a three-lens investigate/verify/synthesise
+pass (signedIn derivation, the click conflict, regression risk) laid out the STOP explicitly and
+escalated rather than guessing.
+
+**The owner's ruling**, given in conversation 2026-08-02 after the recommendation below was stated
+plainly and the tradeoff was named: **yes, make the change.**
+
+**The decision.** Tapping a verse's NUMBER opens the study sheet on Commentaries, exactly as tapping
+anywhere in the verse used to. Tapping the verse TEXT does nothing by itself — which is what frees
+it for the browser's native double-click and drag-to-select. `select-none` already makes the number
+the one part of a verse that can never be inside a text selection, so a click there cannot race the
+selection engine.
+
+**What a reader notices.** Before: tap anywhere in a verse, the sheet opens. After: tap the small
+number beside the verse, the sheet opens; tap the words, nothing happens (they select instead).
+Some readers who learned the old behaviour will tap the middle of a verse and get nothing the first
+time — the tradeoff named to the owner before the ruling.
+
+**Rejected: wrapping the number in a `<button>`.** That would add keyboard access, which is new
+capability rather than a repair (the handler lives on a non-interactive element today with no
+keyboard path at all), at the cost of 176 tab stops in Psalm 119 before the chapter nav, an
+`aria-label` that changes what a screen reader announces mid-sentence, and the only `cursor-pointer`
+in the codebase. Keyboard access to the study sheet is real and wanted, but it is its own slice —
+probably one skip-link-reachable control, not one per verse — not a rider on this fix.
+
+**Supersedes.** `docs/LIBRARY_READER_BUILD.md` §0 item 4 and the "Do not change tap-a-verse →
+commentaries" hard boundary, amended in place to point here.
+
+**Out of scope, named so it is not silently assumed:** triple-click-to-select-a-verse. It cannot
+work today regardless of this change — verses are `display: inline` inside one block container, so
+a triple-click selects the whole chapter, and the range-to-offset mapper returns `null` on a
+cross-container selection. Unrelated to this ADR; tracked as `STUDY_TOOLKIT_DESIGN.md` §9.6, its own
+open decision.
+
+**Wrong if.** The browser verification (WORKLOG, this date) finds the enlarged tap target missing
+verses at 390px, or measurably overlapping the line above in a dense chapter — the fallback there is
+a larger numeral, not a larger invisible hit area, since growing the hit area starts stealing
+long-press from the first word, which is the same class of bug this ADR removes.
