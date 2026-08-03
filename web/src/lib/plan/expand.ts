@@ -87,6 +87,11 @@ function chaptersOfScope(spec: PlanSpec): ChapterSpan[] | { fail: string } {
     }
     return out;
   }
+  if (spec.scope.kind === 'topic') {
+    // Topic scopes never walk chapters — the store routes them to
+    // expandTopicalPlan with fetched entries. Reaching here is a caller bug.
+    return { fail: 'a topic scope does not expand over chapters' };
+  }
   const parsed = parseRef(spec.scope.ref);
   if (!parsed.ok) return { fail: parsed.reason };
   const ranges = parsed.ref.ranges;
@@ -141,6 +146,57 @@ export function expandPlan(spec: PlanSpec): ExpandOutcome {
       bookSlug,
       chapterStart: first.chapter,
       chapterEnd: last.chapter,
+    });
+  }
+  return { ok: true, days };
+}
+
+// ── topical expansion (ADR-047 addendum) ────────────────────────────────────
+// A topic-scoped plan divides an ORDERED list of labeled passages (the
+// author's own topical_entries sequence) across reading days, instead of
+// walking chapters. Same offsets, same even-distribution arithmetic, same
+// purity: entries arrive as data (the store fetches them; this function
+// never touches I/O), dates leave as arithmetic.
+
+export interface TopicalEntryInput {
+  label: string | null;
+  verseStart: number;
+  verseEnd: number;
+}
+
+export interface TopicalPlanDay {
+  dayIndex: number;
+  date: string;
+  readings: TopicalEntryInput[]; // >= 1, in the author's printed order
+}
+
+export type TopicalExpandOutcome =
+  | { ok: true; days: TopicalPlanDay[] }
+  | { ok: false; reason: string };
+
+export function expandTopicalPlan(
+  entries: TopicalEntryInput[],
+  weeks: number,
+  daysPerWeek: number,
+  startDate: string,
+): TopicalExpandOutcome {
+  if (entries.length === 0) return { ok: false, reason: 'this topic has no passages' };
+  const offsets = readingDayOffsets(weeks, daysPerWeek);
+  const dayCount = offsets.length;
+  if (entries.length < dayCount) {
+    return {
+      ok: false,
+      reason: `${entries.length} passage(s) cannot fill ${dayCount} reading days — shorten the plan`,
+    };
+  }
+  const days: TopicalPlanDay[] = [];
+  for (let i = 0; i < dayCount; i++) {
+    const from = Math.floor((i * entries.length) / dayCount);
+    const to = Math.floor(((i + 1) * entries.length) / dayCount) - 1;
+    days.push({
+      dayIndex: i + 1,
+      date: addDays(startDate, offsets[i]!),
+      readings: entries.slice(from, to + 1),
     });
   }
   return { ok: true, days };

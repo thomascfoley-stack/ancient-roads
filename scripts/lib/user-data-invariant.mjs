@@ -178,10 +178,21 @@ export const USER_TABLE_SPEC = {
   plan_days: {
     hasUserId: false,
     ownerParent: { table: 'plans', fk: 'plan_id' },
+    idColumns: ['plan_id', 'day_index'], // composite PK; no `id` column (039)
     anchor: ['plan_id', 'day_index', 'day_date', 'verse_start', 'verse_end'],
     tombstone: null,
     active: 'true',
     body: ['completed_at'],
+  },
+  // Topical days' labeled passages (migration 042) — same ownership shape.
+  plan_day_readings: {
+    hasUserId: false,
+    ownerParent: { table: 'plans', fk: 'plan_id' },
+    idColumns: ['plan_id', 'day_index', 'ordinal'], // composite PK; no `id` (042)
+    anchor: ['plan_id', 'day_index', 'ordinal', 'verse_start', 'verse_end'],
+    tombstone: null,
+    active: 'true',
+    body: ['label'],
   },
 };
 
@@ -194,15 +205,30 @@ const nn = (c) => `coalesce(${c}::text, '<NULL>')`;
 const FS = `E'\\x1f'`; // field separator, a control char that cannot occur in a uuid
 const RS = `E'\\x1e'`; // record separator
 
+// ROW IDENTITY IS DECLARED, like the columns above and for the same reason.
+// It defaulted to a hardcoded 'id' in both the identity list and the ORDER BY,
+// which is true of every table classified before 2026-08-02 and FALSE of the
+// two added that day: plans' children key on composite PKs and have no `id`.
+// measureSql('plan_days') therefore raised 42703, which cutover.mjs reports as
+// "a column this invariant covers has been dropped or renamed ... restore from
+// the pre-cutover snapshot" — a false schema-regression verdict on a healthy
+// database, and G1 in the regression gate would have thrown raw. Neither had
+// ever been executed. Declaring idColumns keeps the default byte-identical for
+// every pre-existing table (so no committed digest baseline moves) and makes a
+// composite-PK table measurable instead of fatal.
+const idColumnsOf = (s) => s.idColumns ?? ['id'];
+
 /** Per-table counts + active count + the ordered-row md5 digest, in one round trip. */
 export function measureSql(table) {
   const s = USER_TABLE_SPEC[table];
   if (!s) throw new Error(`no user-data spec for table ${table}`);
   const ownerCol = s.ownerColumn ?? 'user_id';
+  const ids = idColumnsOf(s);
+  const seen = new Set();
   const identity = (s.hasUserId === false
-    ? ['id', ...s.anchor, ...(s.tombstone ? [s.tombstone] : [])]
-    : ['id', ownerCol, ...s.anchor, ...(s.tombstone ? [s.tombstone] : [])]
-  ).map(nn);
+    ? [...ids, ...s.anchor, ...(s.tombstone ? [s.tombstone] : [])]
+    : [...ids, ownerCol, ...s.anchor, ...(s.tombstone ? [s.tombstone] : [])]
+  ).filter((c) => !seen.has(c) && seen.add(c)).map(nn);
   const body = s.body.length > 0 ? [`md5(${s.body.map(nn).join(` || ${FS} || `)})`] : [];
   const rowExpr = [...identity, ...body].join(` || ${RS} || `);
   const usersCol = s.hasUserId === false
@@ -211,7 +237,7 @@ export function measureSql(table) {
   return `SELECT count(*)::int AS rows,
                  ${usersCol},
                  count(*) FILTER (WHERE ${s.active})::int AS active,
-                 coalesce(md5(string_agg(md5(${rowExpr}), '' ORDER BY id::text)), 'EMPTY') AS digest
+                 coalesce(md5(string_agg(md5(${rowExpr}), '' ORDER BY ${ids.map((c) => `${c}::text`).join(', ')})), 'EMPTY') AS digest
             FROM ${table}`;
 }
 

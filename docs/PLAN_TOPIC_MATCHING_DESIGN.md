@@ -1,8 +1,10 @@
 # PLAN TOPIC MATCHING — matching a user's phrase to an ingested topic, never inventing one (design note, 2026-08-02)
 
-**Status: DESIGN, approved live in the 2026-08-02 evening session** (owner: "reviewed table approach makes
-sense... go ahead and start now"). Per `CLAUDE.md` §Engineering values 2 (design before code for anything
-touching retrieval): smallest slice, interfaces named, scaling risks named, out-of-scope explicit.
+**Status: BUILT, both halves** (approved live 2026-08-02 evening; §§2-3 landed with ADR-047, §4 landed
+the same night as the topic→plan wiring — migration 042 `plan_day_readings`, `expandTopicalPlan`,
+the store's topic branch, and the builder's topic search UI; end-to-end proof in
+`web/test/regression/plan-topic-flow.test.ts`, executed against dev with an owner-seeded published
+fixture). §5's out-of-scope items (hybrid, query-memory) remain out.
 
 ## 1. What this is, and what it is deliberately not
 

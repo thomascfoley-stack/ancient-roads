@@ -1,5 +1,135 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-03 — The served cutover: audit, five confirmed defects fixed, order re-filed as v2
+
+Branch `feat/served-column-derives-publish` (pushed, upstream set). Context: the 2026-08-03
+sweep published 77 works to production (evidence committed this session: `flip-run-2026-08-03T02-14-25-907Z.log`,
+snapshot `…02-14-38-171Z.json`) — production is now **124 published works, 76 of them
+published-but-unserved**, the standing A3-rule divergence the cutover exists to close.
+
+### DONE
+
+- **16-agent adversarial audit** of `4f14f17` + the v1 order (bylaw 4): four independent
+  *plan-materially-flawed* verdicts, 6/6 CRITICAL/HIGH findings CONFIRMED, 0 refuted.
+  Filed: [verdict](docs/pm/orders/2026-08-03-stop-verdict-served-plan-audit.md).
+- **F1 the circular verifier** — expectation now FROZEN (`scripts/lib/served-backfill-frozen.mjs`),
+  welded to the migration by `test/invariants/served-backfill-frozen-sync.test.ts`; red-proof
+  requires the seeded row be NAMED. Found while watching it red: **FALSE OR NULL = NULL made
+  even the repaired checks blind to wrongly-served work-less rows** (a served CS Lewis row
+  passed all 7 checks); coalesced, Lewis mutant now trips 2, Tyndale 3. `1ae0323`.
+- **Register-wall breach** — `diversityBackfillSql` six-type list → `EXEGETICAL_TYPE_SQL`;
+  served sermon/theology rows can no longer enter composed /ask answers. `1ae0323`.
+- **The serve mechanism** — `publish-flip --serve-published`: already-published slugs are a
+  STOP without it, an announced serve with it; snapshot records per-slug served state;
+  `--reverse` un-serves exactly what the forward run served from zero (serve-only and mixed
+  batches both exact now); partial states refused; forward requires the served column (names
+  044), reverse never blocked (M7). Gates added: manifest `serve:false` pre-connect,
+  MUST_NOT_SERVE authors in-transaction — both watched fire (whitefield-works, Origen).
+- **Expand/contract + renumber** — `044_embeddings_served_expand.sql` (new final index names,
+  drops nothing, session SETs) / `045_embeddings_served_contract.sql` (contra-DDL in header;
+  closes the redeploy window). Renumbered TWICE: 039→042 for the /plans trio, then 042→044
+  when the concurrent session wrote `042_plan_day_readings.sql` five minutes into the rename —
+  the one-agent-per-tree collision, live. The four applied /plans migrations are now COMMITTED
+  (`851963d`) so numbers are fenced in git. `68d9792`.
+- **Tree resolved** — full-tree backup ref `backup/tree-2026-08-03` (holds the /plans session's
+  uncommitted app code), pushed; branch pushed. /plans app code deliberately NOT committed
+  (its typecheck is red at `src/lib/plan/expand.ts` — that session's work).
+- **Order re-filed as v2 in place** — serve-the-76 is an explicit reversible step; real script
+  names; batch arithmetic (10-20 sessions, not 2); v3-iterate / v4.1-once eval protocol with
+  preconditions (DEEPINFRA key, served census, pre-044 v3 baseline); P0 adds the fiction
+  register (R5), per-author voice cap (R2), aggregate dedupe (R1), coverage census (R4),
+  deploy preflight, reconciliation instrument.
+- Proofs re-run under final names on fresh throwaway pg17: backfill + 5 indexes, verifier 7/7
+  WITH lane rows present, red-proof held, 045 applies. Suites: root 56 files / 578 pass.
+
+### NOT DONE / UNVERIFIED
+
+- 044 applied to NO real database; nothing timed at scale (the prod budget explicitly derives
+  from the timed dev apply, P1.1).
+- The 5 web live-DB test failures are environmental (dev DB mid-ingest + rate cap + the
+  concurrent session's `web/.env.local` un-skipping them) — diagnosed, not fixed here.
+- Unmoved surfaces (FTS / static reader / today.ts on frozen lists), the 36k world-readable
+  blocked static entries, and the work-less cohort's missing off-switch: OPEN, named in v2's
+  successor-work section.
+- The eval has not run (key absent per ADR-044); accuracy consequences of any admission are
+  unmeasured by construction until P1.
+
+## 2026-08-02 (night) — Topic→plan wiring closes the build (ADR-047 addendum)
+
+The last mile of path 1: a matched topic becomes a dated plan. Owner: "close 1... that would
+close this build out."
+
+### DONE
+
+- **Migration 042 `plan_day_readings`** (dev + ci): a topical day is SEVERAL labeled passages,
+  which one range per day cannot say — child table, PK (plan_id, day_index, ordinal),
+  FK cascade, RLS via EXISTS-on-plans, ownerParent classification (residue gate sweeps 20
+  tables). plan_days keeps the day's first reading as its range so existing consumers work.
+- **`expandTopicalPlan`** (pure): buckets the author's ordered entries across reading days,
+  same offsets/even-split arithmetic as chapters, no padding, no empty buckets. 5 tests.
+- **Store topic branch**: `loadTopic` re-verifies the pointer against the DB (exists +
+  topical_index + published — stale/staged/forged all refuse with a reason); coverage judged
+  per reading (any covered reading covers the day, same half-days bar); readings inserted
+  via the WHERE EXISTS belt; `getPlan` returns them; title from the DB heading, never input.
+- **UI**: "A topic" tab in the builder — search → 3 suggestions (work + passage count) →
+  pick → build; day list renders labeled readings, each linking into the reader.
+- **Executed end to end** (`plan-topic-flow.test.ts`, owner-seeded PUBLISHED fixture per the
+  seedOwnerUrl precedent): match through the real route → create → 4 labeled readings in the
+  author's order → flip fixture to staged, watch the refusal → user B blocked → delete
+  cascades readings → teardown leaves zero residue. One driver defect caught while writing:
+  BIGINT section ids arrive as strings; matchTopics casts ::int.
+- Adversarial review workflow (3 lenses + verify) run over the slice before commit; findings
+  and dispositions below/in the commit.
+
+### ADVERSARIAL REVIEW — 7 defects found and fixed BEFORE commit
+
+A 3-lens review workflow (correctness / RLS-tenancy / repo-conventions) with an adversarial
+verify pass ran over the slice before it landed. Six findings survived verification; a seventh
+was recovered by hand after four verifier agents died on a session limit. All fixed:
+
+1. **[HIGH] G1's digest SQL was unexecutable for BOTH plan tables.** `measureSql` hardcoded
+   `id` in the identity list and `ORDER BY id::text`; `plan_days` (shipped EARLIER TONIGHT) and
+   `plan_day_readings` key on composite PKs and have no `id`. **Red-proved by running it: both
+   raised 42703.** `cutover.mjs` reports that error as "a column this invariant covers has been
+   dropped or renamed ... restore from the pre-cutover snapshot" — a false schema-regression
+   verdict on a healthy database — and the regression gate's G1 would have thrown raw. Neither
+   classification had ever been executed. Fixed by declaring `idColumns` (default `['id']`, so
+   every pre-existing table's digest is byte-identical and no committed baseline moves), and
+   **the check that did not exist now does**: `g1-measure-executable.test.ts` runs the real SQL
+   for every table derived from USER_TABLE_SPEC — 20 pass, waitlist visibly NOT RUN (absent).
+2. **[MED, found independently by two lenses] createPlan was not atomic.** Three sequential
+   `runAsUser` calls = three independent commits over the stateless HTTP driver. A transient
+   failure between commits 2 and 3 left a topical plan with days but no readings, which renders
+   as its lead passages ALONE — silently understating the day, permanently, with no error. Now
+   ONE transaction (client-generated UUID so the id is known before the batch). The count
+   guards remain as defense-in-depth and their comment now states plainly that they cannot roll
+   back, because `sql.transaction` has already committed when it returns.
+3. **[MED] loadTopic silently truncated at 2,000 entries** while the picker advertised the
+   topic's true count (Nave's "JESUS, THE CHRIST" is 3,833) — a plan claiming a topic it did
+   not cover. Now refuses with a reason; the query fetches cap+1 to detect it.
+4. **[MED] Topic-search failure rendered as "no matching topics in the library yet"** — an
+   authoritative claim about the corpus produced by an instrument that did not run (exactly the
+   watchlist's "instrument's blind spot recorded as a property of the thing it could not see").
+   Error and empty are now distinct states.
+5. **[MED] Test teardown used four empty catches**, so a failed final DELETE could strand a
+   PUBLISHED qa source while the suite reported green. Now demotes to `staged` FIRST (after
+   which no partial teardown can leave it published), keeps every step independent, and logs
+   anything swallowed.
+6. **[the recovered one] `readingLabel` leaked the CHAPTER_END_SENTINEL to users**: a
+   whole-chapter topical reference rendered as "Numbers 17:1-999". Four verifier agents died
+   before ruling on this, so it was checked by hand against real cases and confirmed. Fixed to
+   name chapters, plus a cross-book case it also got wrong; `plan-reading-label.test.ts`.
+
+Final: 66 plan tests green, residue gate clean across 20 tables, `npm run audit` exit 0.
+
+### NOT DONE / NEXT
+
+- The LLM intake (routes phrase → book/collection/topic and emits PlanSpec) — the last
+  unbuilt piece of the intake; every scope it needs now exists and is validated.
+- Topic+canonical hybrid; repeat-asker memory (owner-deferred).
+- Publish flip still gates all topical behavior for real users; prod has migrations 039-042
+  outstanding.
+
 ## 2026-08-02 (late) — Canonical groups, topic matcher, dormant delivery fields (ADR-047)
 
 Owner rulings live: reviewed-table for canonical groupings (never model enumeration; Hebrews

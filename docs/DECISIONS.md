@@ -1066,3 +1066,32 @@ pre-existing plans. The intake does not ask about delivery — owner ruling.
 early-church history"), the repeat-asker topic-memory cache (owner: "we're not here yet"), and the
 `{kind:'topic'}` scope wiring into `expandPlan` (the matcher and its route land first; the
 topic-scoped plan build is the next slice).
+
+### ADR-047 addendum — the topic→plan wiring (2026-08-02, same night)
+
+The selection half of PLAN_TOPIC_MATCHING_DESIGN §4, built to close the slice: a chosen
+`TopicMatch` pointer becomes a plan whose days carry the index author's own passages, in the
+author's printed order, with the author's own subtopic labels.
+
+**A topical day is several passages, so it gets a child table.** `plan_day_readings`
+(migration 042, dev + ci): one row per labeled reading within a day,
+PK (plan_id, day_index, ordinal), FK→plan_days ON DELETE CASCADE, RLS via EXISTS-on-plans, and
+classified with `ownerParent {plans, plan_id}` so the residue gate sweeps it (20 tables now).
+`plan_days` keeps the day's FIRST reading as its range, so every range-shaped consumer
+(the reader link, the day label, a future delivery worker) works unchanged; book/collection
+plans simply have no readings rows. An envelope range was rejected because a topical day's
+passages are non-contiguous — it would span unrelated Scripture and lie.
+
+**The pointer is verified server-side, twice.** `parsePlanSpec` checks shape only;
+`loadTopic` re-verifies against the DB — the section must exist, belong to the claimed work,
+be `topical_index`, and be `published` — so a stale id after re-ingest, a staged work, or a
+forged pointer all refuse with a reason (red-proofed: the flow test flips the fixture to
+staged and watches the refusal). The plan title comes from the DB heading, never echoed input.
+
+**Coverage is judged per reading, not per envelope**: a day counts covered when ANY of its
+readings reaches ≥2 admitted exegetical authors; same half-the-days bar as book plans.
+
+**Executed end to end** (dev, owner-seeded published fixture): match → create → 4 labeled
+readings in order → staged-pointer refusal → tenancy (user B blocked) → cascade delete →
+zero residue. One driver defect caught and fixed in the writing: `sections.id` (BIGINT)
+returns as a string through the HTTP driver; `matchTopics` now casts `::int`.

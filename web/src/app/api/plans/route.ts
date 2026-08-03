@@ -3,7 +3,7 @@ import { requireUser } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { parsePlanSpec } from '@/lib/plan/spec';
 import { resolveCanonicalGroup } from '@/lib/plan/canonical-groups';
-import { createPlan, listPlans } from '@/lib/plan/store';
+import { createPlan, listPlans, topicTitle } from '@/lib/plan/store';
 
 export const runtime = 'nodejs';
 
@@ -46,7 +46,18 @@ export async function POST(req: NextRequest) {
   if (!parsed.ok) return apiError('INVALID_REQUEST', { message: parsed.reason });
 
   const rawTitle = typeof body.title === 'string' ? body.title.trim() : '';
-  const title = (rawTitle || defaultTitle(parsed.spec)).slice(0, 200);
+  let title = rawTitle;
+  if (!title) {
+    if (parsed.spec.scope.kind === 'topic') {
+      // The verified heading, from the DB — never echoed client input. A bad
+      // pointer yields null here and createPlan refuses it with the reason.
+      const t = await topicTitle(parsed.spec.scope).catch(() => null);
+      title = t ? `${t} in ${parsed.spec.weeks} week${parsed.spec.weeks === 1 ? '' : 's'}` : 'Topical plan';
+    } else {
+      title = defaultTitle(parsed.spec);
+    }
+  }
+  title = title.slice(0, 200);
 
   try {
     const result = await createPlan(user.id, title, parsed.spec);
@@ -66,11 +77,16 @@ function defaultTitle(spec: PlanSpecForTitle): string {
   const what =
     spec.scope.kind === 'book' ? spec.scope.book
     : spec.scope.kind === 'range' ? spec.scope.ref
-    : resolveCanonicalGroup(spec.scope.group)?.label ?? spec.scope.group;
+    : spec.scope.kind === 'books' ? resolveCanonicalGroup(spec.scope.group)?.label ?? spec.scope.group
+    : 'Topical plan'; // topic scope resolves its verified title above; this arm is unreachable there
   return `${what} in ${spec.weeks} week${spec.weeks === 1 ? '' : 's'}`;
 }
 
 type PlanSpecForTitle = {
-  scope: { kind: 'book'; book: string } | { kind: 'range'; ref: string } | { kind: 'books'; group: string };
+  scope:
+    | { kind: 'book'; book: string }
+    | { kind: 'range'; ref: string }
+    | { kind: 'books'; group: string }
+    | { kind: 'topic'; workSlug: string; sectionId: number };
   weeks: number;
 };

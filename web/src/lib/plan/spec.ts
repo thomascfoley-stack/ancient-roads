@@ -12,9 +12,13 @@ import { resolveCanonicalGroup } from './canonical-groups';
 export type PlanScope =
   | { kind: 'book'; book: string }    // canonical book slug, e.g. 'rom'
   | { kind: 'range'; ref: string }    // a parseable single-book reference, e.g. "Romans 1-8"
-  | { kind: 'books'; group: string }; // a reviewed canonical grouping key, e.g. 'pauline-epistles'
-// A topic scope ({kind:'topic', workSlug, sectionId}) exists in the topic-matching design
-// (docs/PLAN_TOPIC_MATCHING_DESIGN.md) but is not wired here yet — that slice adds it.
+  | { kind: 'books'; group: string }  // a reviewed canonical grouping key, e.g. 'pauline-epistles'
+  | { kind: 'topic'; workSlug: string; sectionId: number };
+// The topic scope carries an ALREADY-SELECTED pointer from matchTopics
+// (docs/PLAN_TOPIC_MATCHING_DESIGN.md §1) — never the user's free-text query.
+// The edge validates SHAPE only; the store verifies the pointer against the
+// DB (exists, topical_index, published) because a stale sectionId after a
+// re-ingest must refuse with a reason, not 500.
 
 export interface PlanSpec {
   scope: PlanScope;
@@ -68,5 +72,14 @@ export function parsePlanSpec(input: unknown): SpecOutcome {
     if (!resolveCanonicalGroup(group)) return { ok: false, reason: `unknown canonical group "${group}"` };
     return { ok: true, spec: { scope: { kind: 'books', group }, weeks, daysPerWeek, startDate } };
   }
-  return { ok: false, reason: 'scope.kind must be "book", "range", or "books"' };
+  if (scope.kind === 'topic') {
+    const workSlug = typeof scope.workSlug === 'string' ? scope.workSlug.trim().toLowerCase() : '';
+    const sectionId = Number(scope.sectionId);
+    if (!/^[a-z0-9-]{1,64}$/.test(workSlug)) return { ok: false, reason: 'topic workSlug must be a slug' };
+    if (!Number.isInteger(sectionId) || sectionId < 1 || sectionId > Number.MAX_SAFE_INTEGER) {
+      return { ok: false, reason: 'topic sectionId must be a positive integer' };
+    }
+    return { ok: true, spec: { scope: { kind: 'topic', workSlug, sectionId }, weeks, daysPerWeek, startDate } };
+  }
+  return { ok: false, reason: 'scope.kind must be "book", "range", "books", or "topic"' };
 }

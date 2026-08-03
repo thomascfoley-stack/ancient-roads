@@ -32,7 +32,7 @@ export async function matchTopics(query: string, limit = 3): Promise<TopicMatch[
   // as the INDEXED prefilter; ordering is exact-heading first, then
   // heading-word rank, with body rank only as the tiebreak.
   const rows = (await sql.query(
-    `SELECT s.id AS section_id, s.heading, src.slug AS work_slug, src.title AS work_title,
+    `SELECT s.id::int AS section_id, s.heading, src.slug AS work_slug, src.title AS work_title,
             (SELECT count(*)::int FROM topical_entries te WHERE te.section_id = s.id) AS entry_count
      FROM sections s
      JOIN sources src ON src.id = s.source_id
