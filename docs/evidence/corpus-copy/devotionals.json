@@ -1,0 +1,18 @@
+{
+  "_": "Copy batch: the devotional register + ryle-expository, ingested 2026-08-02.",
+  "note": "PREREQUISITE: migration 038 must be applied to production first \u2014 its sources.source_type CHECK does not permit 'devotional'.",
+  "batch": "devotionals-2026-08-02",
+  "slugs": [
+    "baxter-saints-rest",
+    "guyon-prayer",
+    "kempis-imitation",
+    "lawrence-practice-presence",
+    "rutherford-letters",
+    "ryle-expository",
+    "ryle-holiness",
+    "scougal-life-of-god",
+    "spurgeon-faiths-checkbook",
+    "spurgeon-morning-evening",
+    "taylor-holy-living"
+  ]
+}

@@ -135,7 +135,10 @@ export default async function CatalogPage({
             <li key={w.slug} className="flex items-stretch gap-2">
               <Link
                 href={`/work/${w.slug}`}
-                className="flex min-h-[44px] flex-1 items-center justify-between gap-3 rounded-xl border border-stone-200/70 px-4 py-3 hover:bg-accent-50/50 dark:border-stone-800 dark:hover:bg-accent-950/20"
+                // min-w-0: without it this flex item's automatic minimum is the UNWRAPPED title
+                // width (truncate sets nowrap), so long-titled rows grew past the container and
+                // every + landed at a different x. One class is the whole uniformity fix.
+                className="flex min-h-[44px] min-w-0 flex-1 items-center justify-between gap-3 rounded-xl border border-stone-200/70 px-4 py-3 hover:bg-accent-50/50 dark:border-stone-800 dark:hover:bg-accent-950/20"
               >
                 <span className="min-w-0">
                   <span className="block truncate font-scripture text-stone-800 dark:text-stone-100">{w.title}</span>

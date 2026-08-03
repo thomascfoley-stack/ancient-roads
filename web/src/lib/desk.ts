@@ -139,6 +139,19 @@ export function withoutPane(panes: readonly Pane[], index: number): Pane[] {
 }
 
 /**
+ * Replace the pane at `index` in place, keeping its position. Out-of-range is a no-op. Replacing
+ * with a pane already open elsewhere on the desk collapses the duplicate: the desk never shows the
+ * same thing twice (the same rule `withPane` applies on add).
+ */
+export function replacePane(panes: readonly Pane[], index: number, pane: Pane): Pane[] {
+  if (index < 0 || index >= panes.length) return [...panes];
+  const key = encodePane(pane);
+  const dupAt = panes.findIndex((p, i) => i !== index && encodePane(p) === key);
+  const next = panes.map((p, i) => (i === index ? pane : p));
+  return dupAt === -1 ? next : next.filter((_, i) => i !== dupAt);
+}
+
+/**
  * The register label for a pane, from the source_type the library already carries.
  *
  * ONE definition, and it is exhaustive by construction: an unknown source_type falls back to the

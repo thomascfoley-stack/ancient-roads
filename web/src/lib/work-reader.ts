@@ -58,6 +58,13 @@ export function filterTocUnits<T extends { heading: string | null; verseStart: n
   return units.filter((u) => tocUnitLabel(u).toLowerCase().includes(q));
 }
 
+/** The twelve, in calendar order. A CLOSED set is what makes the devotional grouping a
+ *  recognition rather than a parse: a heading either contains one of these or it does not. */
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+] as const;
+
 /** A run of consecutive TOC entries sharing a heading letter or a Bible book. */
 export interface TocGroup {
   label: string;
@@ -93,7 +100,22 @@ export function tocGroups(
   units: readonly { heading: string | null; verseStart: number | null; verseEnd: number | null; firstOrdinal: number }[],
 ): TocGroup[] | null {
   const keyOf =
-    sourceType === 'lexicon'
+    sourceType === 'devotional'
+      ? (u: { heading: string | null }): string => {
+          // A DATED devotional groups by month, read off its OWN heading. Spurgeon's Morning and
+          // Evening is 744 units — twelve month headers plus 366 mornings and 366 evenings — and
+          // its headings read "January", "Morning, January 1", "Evening, January 1". Matching a
+          // CLOSED SET of twelve names is what keeps this factual: it is recognition, not parsing,
+          // so a heading that says nothing about a month cannot be coerced into one.
+          //
+          // Undated devotionals fall through to '—' and, being a single group, get no grouping at
+          // all (see the return below). The Imitation of Christ has books and chapters, not dates,
+          // and inventing a calendar for it would be a claim about the work.
+          const h = u.heading ?? '';
+          const m = MONTHS.find((name) => new RegExp(`\\b${name}\\b`, 'i').test(h));
+          return m ?? '—';
+        }
+      : sourceType === 'lexicon'
       ? (u: { heading: string | null }): string => {
           const ch = (u.heading ?? '').trim().replace(/^[^\p{L}\p{N}]+/u, '').charAt(0).toUpperCase();
           return /^[A-Z]$/.test(ch) ? ch : '#';

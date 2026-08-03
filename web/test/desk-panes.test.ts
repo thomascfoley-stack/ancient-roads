@@ -11,6 +11,7 @@ import {
   deskHref,
   encodePane,
   paneRegisterLabel,
+  replacePane,
   withPane,
   withoutPane,
   type Pane,
@@ -148,5 +149,35 @@ describe('every pane is register-labelled (the wall)', () => {
     for (const t of ['commentary', 'hymn', 'zzz', '', null, undefined]) {
       expect(paneRegisterLabel(t).length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('replacePane — a pane navigates itself without touching its neighbours', () => {
+  const desk = [scripture('psa', 23), work('matthew-henry'), work('spurgeon-sermons')];
+
+  it('replaces in place, keeping position', () => {
+    const next = replacePane(desk, 0, scripture('isa', 40));
+    expect(next.map(encodePane)).toEqual(['scripture:isa/40', 'work:matthew-henry', 'work:spurgeon-sermons']);
+  });
+
+  it('out-of-range is a no-op', () => {
+    expect(replacePane(desk, -1, scripture('isa', 40)).map(encodePane)).toEqual(desk.map(encodePane));
+    expect(replacePane(desk, 3, scripture('isa', 40)).map(encodePane)).toEqual(desk.map(encodePane));
+  });
+
+  it('replacing with a pane already open elsewhere collapses the duplicate', () => {
+    // Same rule decodeDesk and withPane apply: the desk never shows the same thing twice.
+    const next = replacePane(desk, 0, work('spurgeon-sermons'));
+    expect(next.map(encodePane)).toEqual(['work:spurgeon-sermons', 'work:matthew-henry']);
+  });
+
+  it('replacing a pane with itself is stable', () => {
+    expect(replacePane(desk, 1, work('matthew-henry')).map(encodePane)).toEqual(desk.map(encodePane));
+  });
+
+  it('never mutates the input', () => {
+    const before = desk.map(encodePane);
+    replacePane(desk, 0, scripture('gen', 1));
+    expect(desk.map(encodePane)).toEqual(before);
   });
 });

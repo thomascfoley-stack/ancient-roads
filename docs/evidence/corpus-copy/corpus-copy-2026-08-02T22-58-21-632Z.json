@@ -1,0 +1,256 @@
+{
+  "source": "ep-tiny-hat-atdgpisx-pooler.c-9.us-east-1.aws.neon.tech",
+  "destination": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "declaredEndpoint": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "slugs": [
+    "baxter-saints-rest",
+    "guyon-prayer",
+    "kempis-imitation",
+    "lawrence-practice-presence",
+    "rutherford-letters",
+    "ryle-expository",
+    "ryle-holiness",
+    "scougal-life-of-god",
+    "spurgeon-faiths-checkbook",
+    "spurgeon-morning-evening",
+    "taylor-holy-living"
+  ],
+  "before": {
+    "baxter-saints-rest": {
+      "sources": 1,
+      "sections": 16,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 548
+    },
+    "guyon-prayer": {
+      "sources": 1,
+      "sections": 24,
+      "anchors": 21,
+      "section_embeddings": 0,
+      "flat_embeddings": 106
+    },
+    "kempis-imitation": {
+      "sources": 1,
+      "sections": 114,
+      "anchors": 28,
+      "section_embeddings": 0,
+      "flat_embeddings": 333
+    },
+    "lawrence-practice-presence": {
+      "sources": 1,
+      "sections": 19,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 62
+    },
+    "rutherford-letters": {
+      "sources": 1,
+      "sections": 73,
+      "anchors": 24,
+      "section_embeddings": 0,
+      "flat_embeddings": 234
+    },
+    "ryle-expository": {
+      "sources": 1,
+      "sections": 137,
+      "anchors": 136,
+      "section_embeddings": 0,
+      "flat_embeddings": 2040
+    },
+    "ryle-holiness": {
+      "sources": 1,
+      "sections": 21,
+      "anchors": 21,
+      "section_embeddings": 0,
+      "flat_embeddings": 761
+    },
+    "scougal-life-of-god": {
+      "sources": 1,
+      "sections": 3,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 123
+    },
+    "spurgeon-faiths-checkbook": {
+      "sources": 1,
+      "sections": 12,
+      "anchors": 12,
+      "section_embeddings": 0,
+      "flat_embeddings": 414
+    },
+    "spurgeon-morning-evening": {
+      "sources": 1,
+      "sections": 744,
+      "anchors": 732,
+      "section_embeddings": 0,
+      "flat_embeddings": 1485
+    },
+    "taylor-holy-living": {
+      "sources": 1,
+      "sections": 159,
+      "anchors": 49,
+      "section_embeddings": 0,
+      "flat_embeddings": 783
+    }
+  },
+  "destBefore": {
+    "baxter-saints-rest": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "guyon-prayer": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "kempis-imitation": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "lawrence-practice-presence": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "rutherford-letters": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "ryle-expository": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "ryle-holiness": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "scougal-life-of-god": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "spurgeon-faiths-checkbook": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "spurgeon-morning-evening": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "taylor-holy-living": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "destAfter": {
+    "baxter-saints-rest": {
+      "sources": 1,
+      "sections": 16,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 548
+    },
+    "guyon-prayer": {
+      "sources": 1,
+      "sections": 24,
+      "anchors": 21,
+      "section_embeddings": 0,
+      "flat_embeddings": 106
+    },
+    "kempis-imitation": {
+      "sources": 1,
+      "sections": 114,
+      "anchors": 28,
+      "section_embeddings": 0,
+      "flat_embeddings": 333
+    },
+    "lawrence-practice-presence": {
+      "sources": 1,
+      "sections": 19,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 62
+    },
+    "rutherford-letters": {
+      "sources": 1,
+      "sections": 73,
+      "anchors": 24,
+      "section_embeddings": 0,
+      "flat_embeddings": 234
+    },
+    "ryle-expository": {
+      "sources": 1,
+      "sections": 137,
+      "anchors": 136,
+      "section_embeddings": 0,
+      "flat_embeddings": 2040
+    },
+    "ryle-holiness": {
+      "sources": 1,
+      "sections": 21,
+      "anchors": 21,
+      "section_embeddings": 0,
+      "flat_embeddings": 761
+    },
+    "scougal-life-of-god": {
+      "sources": 1,
+      "sections": 3,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 123
+    },
+    "spurgeon-faiths-checkbook": {
+      "sources": 1,
+      "sections": 12,
+      "anchors": 12,
+      "section_embeddings": 0,
+      "flat_embeddings": 414
+    },
+    "spurgeon-morning-evening": {
+      "sources": 1,
+      "sections": 744,
+      "anchors": 732,
+      "section_embeddings": 0,
+      "flat_embeddings": 1485
+    },
+    "taylor-holy-living": {
+      "sources": 1,
+      "sections": 159,
+      "anchors": 49,
+      "section_embeddings": 0,
+      "flat_embeddings": 783
+    }
+  },
+  "mismatch": 0
+}
