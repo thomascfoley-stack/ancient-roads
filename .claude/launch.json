@@ -4,7 +4,11 @@
     {
       "name": "theology-dev",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["next", "dev", "--turbopack"],
+      "runtimeArgs": [
+        "next",
+        "dev",
+        "--turbopack"
+      ],
       "port": 3002,
       "autoPort": true,
       "cwd": "web"

@@ -205,6 +205,21 @@ this work. Full table: `docs/evidence/a2-prod-readonly-2026-08-01/serving-census
 > into the filter". Historical docs that say "9 authors" pre-date the work-leg expansion and are left
 > as point-in-time record. Re-measured after today's suppressions, which did not change this set.
 
+### 2f. Study plans + topical-index corpus (2026-08-02, dev + ci branches — NOT prod)
+
+Measured on dev (`ep-tiny-hat`) after the ADR-045/046 build; migrations **039/040 applied to dev
+and `ci` (br-purple-frog) only — prod has none of this** (apply 039+040 there before any deploy
+carrying `/plans`, then `COVERAGE_ALLOW_PROD=1 pnpm coverage:rebuild` after the publish flip).
+
+| fact | value | verified |
+|---|---|---|
+| `plans` / `plan_days` | exist, RLS enabled, policies bind via `app.current_user_id` | ✅ two-account test EXECUTED (`plan-tenancy.test.ts`) |
+| `verse_coverage` | **30,227/31,103** real verses covered; **26,498** with ≥2 admitted exegetical authors (84,292 anchors, 0 dropped) | ✅ rebuild log 2026-08-02 |
+| `topical_entries` | naves 78,107 · torrey 38,858 · daily-light + openbible tail counts in WORKLOG | ✅ ingest log |
+| topical works | `naves-topical-bible`, `torreys-topical-textbook`, `openbible-topics` (`topical_index`), `daily-light` (`devotional`) — **all `staged`**, serving NOTHING until the owner's publish flip | ✅ sources census |
+| TCR (Thompson Chain) | **NOT ingested** — PD basis unverified (CrossWire's 1934-non-renewal claim); raw archived `data/raw/topical/` with sha256s | ✅ CHECKSUMS.sha256 |
+| `sections.source_url` (031) | now ALSO on dev (was prod-only; drift closed 2026-08-02) | ✅ |
+
 ### 2e. Dev-only `unit_ordinal` drift (2026-07-31) — **REPAIRED**
 
 > **Measured read-only on dev (`ep-tiny-hat`) via neonctl-minted `app_runtime`.** Production census:

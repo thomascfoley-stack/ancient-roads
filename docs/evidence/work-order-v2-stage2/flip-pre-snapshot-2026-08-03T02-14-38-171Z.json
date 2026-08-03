@@ -1,0 +1,689 @@
+{
+  "host": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "direction": "staged->published",
+  "slugFile": "docs/evidence/corpus-copy/sweep-all.json",
+  "slugs": [
+    "aaberg-hymnsdenmark",
+    "augustine-confess",
+    "augustine-confessions",
+    "bett-methhymns",
+    "bevan-tersteegen",
+    "bevan-tersteegen2",
+    "borthwick-hll",
+    "brownlie-aposthymns",
+    "brownlie-earlyhymns",
+    "brownlie-easternhymns",
+    "brownlie-greekhymns",
+    "brownlie-hymnseast",
+    "brownlie-hymnsmorning",
+    "brownlie-hyndbrow",
+    "brownlie-officehymns",
+    "brownlie-russianhymns",
+    "calvin-calcom",
+    "calvin-calcom03",
+    "calvin-calcom07",
+    "calvin-calcom08",
+    "calvin-calcom09",
+    "calvin-calcom10",
+    "calvin-calcom14",
+    "calvin-calcom15",
+    "calvin-calcom16",
+    "calvin-calcom17",
+    "calvin-calcom18",
+    "calvin-calcom19",
+    "calvin-calcom20",
+    "calvin-calcom21",
+    "calvin-calcom23",
+    "calvin-calcom24",
+    "calvin-calcom25",
+    "calvin-calcom26",
+    "calvin-prayer",
+    "chatfield-greeksongs",
+    "chesterton-preexistence",
+    "crosby-indianhymnal",
+    "easton-ebd2",
+    "habermann-dailyprayers",
+    "hewitt-gerhardt",
+    "hitchcock-bible-names",
+    "hort-james1909",
+    "jowett-mattermost",
+    "keil-delitzsch",
+    "longfellow-s-bookhymns",
+    "luther-largecatechism",
+    "luther-smallcat",
+    "manning-wesleyhymns",
+    "melanchthon-apology",
+    "meyer-homily2",
+    "morris-welshhymns",
+    "nutter-hymnwriters",
+    "owen-catechisms",
+    "pilcher-passionhymns",
+    "prudentius-cathimerinon",
+    "reeves-hymnlit",
+    "schaff-dictionarybible",
+    "schaff-encyc01",
+    "schaff-encyc02",
+    "schaff-encyc09",
+    "schaff-encyc13",
+    "schaff-encyc13a",
+    "schaff-npnf101",
+    "schaff-npnf104",
+    "schaff-npnf210",
+    "schaff-npnf213",
+    "smith-w-bibledict",
+    "spurgeon-comment",
+    "stowe-religiouspoems",
+    "therese-poems",
+    "tolstoy-confession",
+    "ursinus-catechism",
+    "wace-biodict",
+    "waring-hymns",
+    "watts-psalmshymns",
+    "winkworth-hyndwink"
+  ],
+  "payload": [
+    "aaberg-hymnsdenmark",
+    "augustine-confess",
+    "augustine-confessions",
+    "bett-methhymns",
+    "bevan-tersteegen",
+    "bevan-tersteegen2",
+    "borthwick-hll",
+    "brownlie-aposthymns",
+    "brownlie-earlyhymns",
+    "brownlie-easternhymns",
+    "brownlie-greekhymns",
+    "brownlie-hymnseast",
+    "brownlie-hymnsmorning",
+    "brownlie-hyndbrow",
+    "brownlie-officehymns",
+    "brownlie-russianhymns",
+    "calvin-calcom",
+    "calvin-calcom03",
+    "calvin-calcom07",
+    "calvin-calcom08",
+    "calvin-calcom09",
+    "calvin-calcom10",
+    "calvin-calcom14",
+    "calvin-calcom15",
+    "calvin-calcom16",
+    "calvin-calcom17",
+    "calvin-calcom18",
+    "calvin-calcom19",
+    "calvin-calcom20",
+    "calvin-calcom21",
+    "calvin-calcom23",
+    "calvin-calcom24",
+    "calvin-calcom25",
+    "calvin-calcom26",
+    "calvin-prayer",
+    "chatfield-greeksongs",
+    "chesterton-preexistence",
+    "crosby-indianhymnal",
+    "easton-ebd2",
+    "habermann-dailyprayers",
+    "hewitt-gerhardt",
+    "hitchcock-bible-names",
+    "hort-james1909",
+    "jowett-mattermost",
+    "keil-delitzsch",
+    "longfellow-s-bookhymns",
+    "luther-largecatechism",
+    "luther-smallcat",
+    "manning-wesleyhymns",
+    "melanchthon-apology",
+    "meyer-homily2",
+    "morris-welshhymns",
+    "nutter-hymnwriters",
+    "owen-catechisms",
+    "pilcher-passionhymns",
+    "prudentius-cathimerinon",
+    "reeves-hymnlit",
+    "schaff-dictionarybible",
+    "schaff-encyc01",
+    "schaff-encyc02",
+    "schaff-encyc09",
+    "schaff-encyc13",
+    "schaff-encyc13a",
+    "schaff-npnf101",
+    "schaff-npnf104",
+    "schaff-npnf210",
+    "schaff-npnf213",
+    "smith-w-bibledict",
+    "spurgeon-comment",
+    "stowe-religiouspoems",
+    "therese-poems",
+    "tolstoy-confession",
+    "ursinus-catechism",
+    "wace-biodict",
+    "waring-hymns",
+    "watts-psalmshymns",
+    "winkworth-hyndwink"
+  ],
+  "sources": [
+    {
+      "slug": "aaberg-hymnsdenmark",
+      "status": "staged"
+    },
+    {
+      "slug": "adam-clarke",
+      "status": "published"
+    },
+    {
+      "slug": "augustine-confess",
+      "status": "staged"
+    },
+    {
+      "slug": "augustine-confessions",
+      "status": "staged"
+    },
+    {
+      "slug": "augustine-homilies",
+      "status": "published"
+    },
+    {
+      "slug": "barnes-notes",
+      "status": "staged"
+    },
+    {
+      "slug": "baxter-saints-rest",
+      "status": "published"
+    },
+    {
+      "slug": "bdb-lexicon",
+      "status": "staged"
+    },
+    {
+      "slug": "bett-methhymns",
+      "status": "staged"
+    },
+    {
+      "slug": "bevan-tersteegen",
+      "status": "staged"
+    },
+    {
+      "slug": "bevan-tersteegen2",
+      "status": "staged"
+    },
+    {
+      "slug": "borthwick-hll",
+      "status": "staged"
+    },
+    {
+      "slug": "brownlie-aposthymns",
+      "status": "staged"
+    },
+    {
+      "slug": "brownlie-earlyhymns",
+      "status": "staged"
+    },
+    {
+      "slug": "brownlie-easternhymns",
+      "status": "staged"
+    },
+    {
+      "slug": "brownlie-greekhymns",
+      "status": "staged"
+    },
+    {
+      "slug": "brownlie-hymnseast",
+      "status": "staged"
+    },
+    {
+      "slug": "brownlie-hymnsmorning",
+      "status": "staged"
+    },
+    {
+      "slug": "brownlie-hyndbrow",
+      "status": "staged"
+    },
+    {
+      "slug": "brownlie-officehymns",
+      "status": "staged"
+    },
+    {
+      "slug": "brownlie-russianhymns",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom03",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom07",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom08",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom09",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom10",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom14",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom15",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom16",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom17",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom18",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom19",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom20",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom21",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom23",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom24",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom25",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom26",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-crosswire",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-institutes",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-prayer",
+      "status": "staged"
+    },
+    {
+      "slug": "catena-aurea",
+      "status": "published"
+    },
+    {
+      "slug": "chatfield-greeksongs",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-preexistence",
+      "status": "staged"
+    },
+    {
+      "slug": "chrysostom-homilies",
+      "status": "published"
+    },
+    {
+      "slug": "crosby-indianhymnal",
+      "status": "staged"
+    },
+    {
+      "slug": "dante-divine-comedy",
+      "status": "published"
+    },
+    {
+      "slug": "easton-ebd2",
+      "status": "staged"
+    },
+    {
+      "slug": "eastons-dictionary",
+      "status": "staged"
+    },
+    {
+      "slug": "edwards-works",
+      "status": "published"
+    },
+    {
+      "slug": "flavel-works",
+      "status": "published"
+    },
+    {
+      "slug": "guyon-prayer",
+      "status": "published"
+    },
+    {
+      "slug": "habermann-dailyprayers",
+      "status": "staged"
+    },
+    {
+      "slug": "herbert-temple",
+      "status": "published"
+    },
+    {
+      "slug": "hewitt-gerhardt",
+      "status": "staged"
+    },
+    {
+      "slug": "hitchcock-bible-names",
+      "status": "staged"
+    },
+    {
+      "slug": "hodge-systematic",
+      "status": "published"
+    },
+    {
+      "slug": "hopkins-poems",
+      "status": "published"
+    },
+    {
+      "slug": "hort-james1909",
+      "status": "staged"
+    },
+    {
+      "slug": "isbe",
+      "status": "staged"
+    },
+    {
+      "slug": "jfb",
+      "status": "published"
+    },
+    {
+      "slug": "john-gill",
+      "status": "published"
+    },
+    {
+      "slug": "josephus-whiston",
+      "status": "published"
+    },
+    {
+      "slug": "jowett-mattermost",
+      "status": "staged"
+    },
+    {
+      "slug": "keble-christian-year",
+      "status": "published"
+    },
+    {
+      "slug": "keil-delitzsch",
+      "status": "staged"
+    },
+    {
+      "slug": "kempis-imitation",
+      "status": "published"
+    },
+    {
+      "slug": "lawrence-practice-presence",
+      "status": "published"
+    },
+    {
+      "slug": "longfellow-s-bookhymns",
+      "status": "staged"
+    },
+    {
+      "slug": "luther-largecatechism",
+      "status": "staged"
+    },
+    {
+      "slug": "luther-smallcat",
+      "status": "staged"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "status": "published"
+    },
+    {
+      "slug": "manning-wesleyhymns",
+      "status": "staged"
+    },
+    {
+      "slug": "matthew-henry",
+      "status": "published"
+    },
+    {
+      "slug": "melanchthon-apology",
+      "status": "staged"
+    },
+    {
+      "slug": "meyer-homily2",
+      "status": "staged"
+    },
+    {
+      "slug": "milton-poetical-works",
+      "status": "published"
+    },
+    {
+      "slug": "montgomery-sacred-poems",
+      "status": "published"
+    },
+    {
+      "slug": "morris-welshhymns",
+      "status": "staged"
+    },
+    {
+      "slug": "naves-topical",
+      "status": "staged"
+    },
+    {
+      "slug": "neale-eastern-hymns",
+      "status": "published"
+    },
+    {
+      "slug": "nutter-hymnwriters",
+      "status": "staged"
+    },
+    {
+      "slug": "olney-hymns",
+      "status": "published"
+    },
+    {
+      "slug": "origen-commentary",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-catechisms",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-works",
+      "status": "published"
+    },
+    {
+      "slug": "pilcher-passionhymns",
+      "status": "staged"
+    },
+    {
+      "slug": "prudentius-cathimerinon",
+      "status": "staged"
+    },
+    {
+      "slug": "reeves-hymnlit",
+      "status": "staged"
+    },
+    {
+      "slug": "rossetti-verses",
+      "status": "published"
+    },
+    {
+      "slug": "rutherford-letters",
+      "status": "published"
+    },
+    {
+      "slug": "ryle-expository",
+      "status": "published"
+    },
+    {
+      "slug": "ryle-holiness",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-creeds",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-dictionarybible",
+      "status": "staged"
+    },
+    {
+      "slug": "schaff-encyc01",
+      "status": "staged"
+    },
+    {
+      "slug": "schaff-encyc02",
+      "status": "staged"
+    },
+    {
+      "slug": "schaff-encyc09",
+      "status": "staged"
+    },
+    {
+      "slug": "schaff-encyc13",
+      "status": "staged"
+    },
+    {
+      "slug": "schaff-encyc13a",
+      "status": "staged"
+    },
+    {
+      "slug": "schaff-npnf101",
+      "status": "staged"
+    },
+    {
+      "slug": "schaff-npnf104",
+      "status": "staged"
+    },
+    {
+      "slug": "schaff-npnf210",
+      "status": "staged"
+    },
+    {
+      "slug": "schaff-npnf213",
+      "status": "staged"
+    },
+    {
+      "slug": "scottish-psalter-1650",
+      "status": "published"
+    },
+    {
+      "slug": "scougal-life-of-god",
+      "status": "published"
+    },
+    {
+      "slug": "smith-w-bibledict",
+      "status": "staged"
+    },
+    {
+      "slug": "smiths-dictionary",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-comment",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-faiths-checkbook",
+      "status": "published"
+    },
+    {
+      "slug": "spurgeon-morning-evening",
+      "status": "published"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "status": "published"
+    },
+    {
+      "slug": "spurgeon-talks-to-farmers",
+      "status": "published"
+    },
+    {
+      "slug": "stowe-religiouspoems",
+      "status": "staged"
+    },
+    {
+      "slug": "taylor-holy-living",
+      "status": "published"
+    },
+    {
+      "slug": "tennyson-in-memoriam",
+      "status": "published"
+    },
+    {
+      "slug": "therese-poems",
+      "status": "staged"
+    },
+    {
+      "slug": "tolstoy-confession",
+      "status": "staged"
+    },
+    {
+      "slug": "traherne-poems",
+      "status": "published"
+    },
+    {
+      "slug": "ursinus-catechism",
+      "status": "staged"
+    },
+    {
+      "slug": "wace-biodict",
+      "status": "staged"
+    },
+    {
+      "slug": "waring-hymns",
+      "status": "staged"
+    },
+    {
+      "slug": "watson-works",
+      "status": "published"
+    },
+    {
+      "slug": "watts-hymns",
+      "status": "published"
+    },
+    {
+      "slug": "watts-psalms",
+      "status": "published"
+    },
+    {
+      "slug": "watts-psalmshymns",
+      "status": "staged"
+    },
+    {
+      "slug": "wesley-crosswire",
+      "status": "published"
+    },
+    {
+      "slug": "wesley-sermons",
+      "status": "published"
+    },
+    {
+      "slug": "wheatley-poems",
+      "status": "published"
+    },
+    {
+      "slug": "winkworth-hyndwink",
+      "status": "staged"
+    }
+  ]
+}
