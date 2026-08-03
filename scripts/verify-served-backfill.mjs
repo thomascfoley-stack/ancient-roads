@@ -108,8 +108,18 @@ try {
       `SELECT id FROM embeddings WHERE user_id IS NULL AND served AND (${FROZEN_UNION}) ORDER BY id LIMIT 1`);
     if (victim.rowCount === 0) die('no frozen-served row to mutate — cannot red-proof (has 044 backfilled here?)', 2);
     restore = victim.rows[0].id;
-    await c.query('UPDATE embeddings SET served = false WHERE id = $1', [restore]);
-    console.log(`  \x1b[33mRED-PROOF\x1b[0m seeded: row ${restore} forced served=false; the equality check MUST name a frozen-but-unserved row\n`);
+    const seed = await c.query('UPDATE embeddings SET served = false WHERE id = $1', [restore]);
+    // THE SEED IS ITSELF A WRITE INSIDE A PROOF, so it is asserted, not trusted (dev run
+    // 2026-08-03: through the app URL — whose role has corpus DML revoked, migrations 010/021 —
+    // this UPDATE silently affected ZERO rows, the tool printed "seeded" anyway, and the
+    // red-proof verdict became "DID NOT FIRE" against a perfectly healthy verifier. A proof
+    // that does not verify its own mutation can indict the wrong component.)
+    if (seed.rowCount !== 1) {
+      restore = null; // nothing changed; nothing to restore
+      die(`cannot red-proof: the seed UPDATE affected ${seed.rowCount} row(s), not 1 — this role ` +
+          'cannot write embeddings (corpus DML is revoked for app_runtime; use the owner URL).', 2);
+    }
+    console.log(`  \x1b[33mRED-PROOF\x1b[0m seeded: row ${restore} forced served=false (rowCount asserted); the equality check MUST name a frozen-but-unserved row\n`);
   }
 
   // ── 1. set equality, both directions ──────────────────────────────────────────────────────
@@ -166,8 +176,14 @@ try {
   }
 } finally {
   if (restore) {
-    await c.query('UPDATE embeddings SET served = true WHERE id = $1', [restore]);
-    console.log(`\n  \x1b[33mRED-PROOF\x1b[0m restored row ${restore} to served=true`);
+    const back = await c.query('UPDATE embeddings SET served = true WHERE id = $1', [restore]);
+    if (back.rowCount !== 1) {
+      console.error(`\n  \x1b[31mRESTORE DID NOT LAND\x1b[0m (rowCount=${back.rowCount}) — put it back by hand:\n` +
+        `    UPDATE embeddings SET served = true WHERE id = '${restore}';`);
+      process.exitCode = 1;
+    } else {
+      console.log(`\n  \x1b[33mRED-PROOF\x1b[0m restored row ${restore} to served=true (rowCount asserted)`);
+    }
   }
   if (!RED_PROOF) await c.end();
 }

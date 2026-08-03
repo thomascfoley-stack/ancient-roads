@@ -58,6 +58,49 @@ const gateFail = (msg: string): void => {
   if (DEPLOYING) FAIL(msg);
   console.warn(`\n\x1b[33m⚠  ${msg}\n   (WARNING only — will HARD-FAIL the actual deploy.)\x1b[0m`);
 };
+// ── the served-column ordering preflight (order 2026-08-03, P0.3) ─────────────────────────────
+// The one MECHANICAL guard on the expand -> deploy -> contract sequence: the bundle being
+// uploaded queries `embeddings.served` (routing.ts, since migration 044), and a deploy against a
+// database without that column 500s every /ask. Deploy-order discipline was otherwise prose —
+// and this repo's A6 record is three deploys that died on exactly the class of thing no local
+// check saw. DEPLOY-ONLY, like the corpus legs above: pre-commit has no business dialing a
+// database. The credential comes from PREDEPLOY_DB_URL (any read-capable role; the pooled URL is
+// fine — this is one SELECT against information_schema). Fail-closed: at deploy time, "cannot
+// check" is a refusal, not a skip — the same rule the corpus-absence leg above already enforces.
+if (DEPLOYING) {
+  console.log('\n=== Pre-deploy gate: embeddings.served exists on the deploy target (P0.3) ===');
+  const dbUrl = process.env.PREDEPLOY_DB_URL;
+  if (!dbUrl) {
+    FAIL(
+      'PREDEPLOY_DB_URL is not set, so the served-column preflight cannot run.\n' +
+        'The bundle queries embeddings.served (migration 044); deploying without proving the\n' +
+        'column exists on the TARGET database 500s every /ask. Export PREDEPLOY_DB_URL with a\n' +
+        'read-capable URL for the deploy target (the pooled app URL is fine) and re-run.',
+    );
+  }
+  const { Client } = await import('pg');
+  const client = new Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: true } });
+  try {
+    await client.connect();
+    const host = String(client.host ?? '(unknown)');
+    const col = await client.query(
+      `SELECT 1 FROM information_schema.columns WHERE table_name='embeddings' AND column_name='served'`,
+    );
+    if (col.rowCount === 0) {
+      FAIL(
+        `embeddings.served does NOT exist on the deploy target (${host}).\n` +
+          'Apply db/migrations/044_embeddings_served_expand.sql there FIRST (the expand half),\n' +
+          'then deploy, then 045 (the contract half). This ordering is the whole safety argument.',
+      );
+    }
+    console.log(`  \x1b[32m✓ embeddings.served present on ${host} — the bundle's predicates will bind.\x1b[0m`);
+  } catch (e) {
+    FAIL(`could not verify the served column on the deploy target: ${(e as Error).message}\nAt deploy time that is a refusal, not a skip.`);
+  } finally {
+    await client.end().catch(() => {});
+  }
+}
+
 
 // SERVED-ASSET COMPLETENESS — derived from the client, not typed here.
 // Until 2026-08-01 this gate validated `commentaries` and `bible` and nothing else, while the app

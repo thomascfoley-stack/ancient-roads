@@ -96,6 +96,7 @@ snapshot `…02-14-38-171Z.json`) — production is now **124 published works, 8
   preconditions (DEEPINFRA key, served census, pre-044 v3 baseline); P0 adds the fiction
   register (R5), per-author voice cap (R2), aggregate dedupe (R1), coverage census (R4),
   deploy preflight, reconciliation instrument.
+- **044 APPLIED TO DEV** (2026-08-03, ingest live — logged deviation from the idle precondition): wall clock **1h54m39s** (backfill legs ~25-30min each, seq-scan-bound on Neon PS_ReadIO; four HNSW builds faster than feared; ALTER itself 104ms once past the 5s lock race, one timed-out attempt first). All 6 indexes VALID+READY; ledger table lazy-created on first use, 044 = its first row, sha256-pinned. Verifier 7/7 ON DEV (328,775 served rows; 124,955 work-less rows, 86,023 served, all in-allowlist). Red-proof take 1 exposed ANOTHER unverified-write hole: through the app URL the seed UPDATE silently hit 0 rows (corpus DML revoked) and the tool blamed itself — seed and restore rowCounts now asserted, take 2 HELD as owner, and the app-role path refuses with the reason. Evidence: docs/evidence/served-cutover/dev-apply-2026-08-03.log. P0.3 deploy preflight built, red-proofed both refusal paths, positive control green against dev.
 - Proofs re-run under final names on fresh throwaway pg17: backfill + 5 indexes, verifier 7/7
   WITH lane rows present, red-proof held, 045 applies. Suites: root 56 files / 578 pass.
 

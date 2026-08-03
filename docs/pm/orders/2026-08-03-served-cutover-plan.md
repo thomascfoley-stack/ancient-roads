@@ -102,7 +102,7 @@ on pre-044 dev isolates the mechanism delta from the corpus delta; without it, a
 number that differs from the 2026-07-18 records is unattributable.
 
 **P1.1 · Apply 044 to dev** (`db/apply-migration-concurrent.mjs`, owner URL, ingest idle).
-**TIME IT** — the prod session budget is derived from this number, not estimated. Then
+**MEASURED 2026-08-03: 1h54m39s** against 924k rows WITH the ingest live (legs are seq-scan-bound at Neon read speed, ~25-30min each; ALTER 104ms once it wins the lock race — first attempt died on the 5s timeout, retry free). Prod: ~468k rows, no ingest — budget the session at 90min with the ALTER retried in a quiet moment. Then
 `verify-served-backfill.mjs` (7/7) and `--red-proof` ON DEV (THE_LOOP §4: the throwaway run
 does not transfer). If the command asks for `MIGRATE_ALLOW_PROD`, stop — the target is wrong.
 
