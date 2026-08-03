@@ -14,6 +14,16 @@ export function useDragDismiss(onDismiss: () => void) {
   const velocity = useRef(0);
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
+    // A press that STARTS on a control belongs to that control, not to the sheet. Without this
+    // guard the `setPointerCapture` below retargets every subsequent pointer event (pointerup
+    // included) to the element carrying handleProps, so the browser computes the click target as
+    // the header rather than the button inside it and the button's onClick NEVER FIRES. Every
+    // close button that sits inside a drag handle was therefore dead: study-panel, work-toc,
+    // mobile-nav, and the word-study sheet all spread handleProps onto a header that contains
+    // their X. Dragging the header's empty space still works, because that target is not a control.
+    if ((e.target as HTMLElement).closest('button, a, input, select, textarea, [role="button"]')) {
+      return;
+    }
     dragging.current = true;
     startY.current = e.clientY;
     lastY.current = e.clientY;

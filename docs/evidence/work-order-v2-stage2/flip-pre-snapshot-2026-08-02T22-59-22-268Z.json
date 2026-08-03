@@ -1,0 +1,249 @@
+{
+  "host": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "direction": "staged->published",
+  "slugFile": "docs/evidence/corpus-copy/devotionals.json",
+  "slugs": [
+    "baxter-saints-rest",
+    "guyon-prayer",
+    "kempis-imitation",
+    "lawrence-practice-presence",
+    "rutherford-letters",
+    "ryle-expository",
+    "ryle-holiness",
+    "scougal-life-of-god",
+    "spurgeon-faiths-checkbook",
+    "spurgeon-morning-evening",
+    "taylor-holy-living"
+  ],
+  "payload": [
+    "baxter-saints-rest",
+    "guyon-prayer",
+    "kempis-imitation",
+    "lawrence-practice-presence",
+    "rutherford-letters",
+    "ryle-expository",
+    "ryle-holiness",
+    "scougal-life-of-god",
+    "spurgeon-faiths-checkbook",
+    "spurgeon-morning-evening",
+    "taylor-holy-living"
+  ],
+  "sources": [
+    {
+      "slug": "adam-clarke",
+      "status": "published"
+    },
+    {
+      "slug": "augustine-homilies",
+      "status": "published"
+    },
+    {
+      "slug": "barnes-notes",
+      "status": "staged"
+    },
+    {
+      "slug": "baxter-saints-rest",
+      "status": "staged"
+    },
+    {
+      "slug": "bdb-lexicon",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-crosswire",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-institutes",
+      "status": "published"
+    },
+    {
+      "slug": "catena-aurea",
+      "status": "published"
+    },
+    {
+      "slug": "chrysostom-homilies",
+      "status": "published"
+    },
+    {
+      "slug": "dante-divine-comedy",
+      "status": "published"
+    },
+    {
+      "slug": "eastons-dictionary",
+      "status": "staged"
+    },
+    {
+      "slug": "edwards-works",
+      "status": "published"
+    },
+    {
+      "slug": "flavel-works",
+      "status": "published"
+    },
+    {
+      "slug": "guyon-prayer",
+      "status": "staged"
+    },
+    {
+      "slug": "herbert-temple",
+      "status": "published"
+    },
+    {
+      "slug": "hodge-systematic",
+      "status": "published"
+    },
+    {
+      "slug": "hopkins-poems",
+      "status": "published"
+    },
+    {
+      "slug": "isbe",
+      "status": "staged"
+    },
+    {
+      "slug": "jfb",
+      "status": "published"
+    },
+    {
+      "slug": "john-gill",
+      "status": "published"
+    },
+    {
+      "slug": "josephus-whiston",
+      "status": "published"
+    },
+    {
+      "slug": "keble-christian-year",
+      "status": "published"
+    },
+    {
+      "slug": "kempis-imitation",
+      "status": "staged"
+    },
+    {
+      "slug": "lawrence-practice-presence",
+      "status": "staged"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "status": "published"
+    },
+    {
+      "slug": "matthew-henry",
+      "status": "published"
+    },
+    {
+      "slug": "milton-poetical-works",
+      "status": "published"
+    },
+    {
+      "slug": "montgomery-sacred-poems",
+      "status": "published"
+    },
+    {
+      "slug": "naves-topical",
+      "status": "staged"
+    },
+    {
+      "slug": "neale-eastern-hymns",
+      "status": "published"
+    },
+    {
+      "slug": "olney-hymns",
+      "status": "published"
+    },
+    {
+      "slug": "origen-commentary",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-works",
+      "status": "published"
+    },
+    {
+      "slug": "rossetti-verses",
+      "status": "published"
+    },
+    {
+      "slug": "rutherford-letters",
+      "status": "staged"
+    },
+    {
+      "slug": "ryle-expository",
+      "status": "staged"
+    },
+    {
+      "slug": "ryle-holiness",
+      "status": "staged"
+    },
+    {
+      "slug": "schaff-creeds",
+      "status": "published"
+    },
+    {
+      "slug": "scottish-psalter-1650",
+      "status": "published"
+    },
+    {
+      "slug": "scougal-life-of-god",
+      "status": "staged"
+    },
+    {
+      "slug": "smiths-dictionary",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-faiths-checkbook",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-morning-evening",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "status": "published"
+    },
+    {
+      "slug": "spurgeon-talks-to-farmers",
+      "status": "published"
+    },
+    {
+      "slug": "taylor-holy-living",
+      "status": "staged"
+    },
+    {
+      "slug": "tennyson-in-memoriam",
+      "status": "published"
+    },
+    {
+      "slug": "traherne-poems",
+      "status": "published"
+    },
+    {
+      "slug": "watson-works",
+      "status": "published"
+    },
+    {
+      "slug": "watts-hymns",
+      "status": "published"
+    },
+    {
+      "slug": "watts-psalms",
+      "status": "published"
+    },
+    {
+      "slug": "wesley-crosswire",
+      "status": "published"
+    },
+    {
+      "slug": "wesley-sermons",
+      "status": "published"
+    },
+    {
+      "slug": "wheatley-poems",
+      "status": "published"
+    }
+  ]
+}

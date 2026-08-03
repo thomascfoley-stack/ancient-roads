@@ -26,7 +26,7 @@
 // Every query here is published-only and LIMIT-capped — see lib/library.ts for why the
 // `status='published'` predicate is load-bearing rather than decorative.
 
-export type CatalogId = 'commentaries' | 'sermons' | 'hymns-poetry' | 'historians';
+export type CatalogId = 'commentaries' | 'sermons' | 'hymns-poetry' | 'historians' | 'devotionals' | 'theology';
 
 export interface CatalogDef {
   id: CatalogId;
@@ -52,6 +52,17 @@ export const CATALOGS: Readonly<Record<CatalogId, CatalogDef>> = {
   // gets its own shelf rather than being folded into Commentaries, which a reader would read as
   // "commentary on this passage". `theology` and `confession` remain uncatalogued, deliberately.
   historians: { id: 'historians', label: 'Historians', types: ['historian'] },
+  // Added 2026-08-02. `devotional` is migration 038's new source_type and would otherwise land in
+  // the fail-closed default below — ingested, published, and on no shelf.
+  devotionals: { id: 'devotionals', label: 'Devotionals', types: ['devotional'] },
+  // Added 2026-08-02, and it CORRECTS the note above rather than contradicting it. That note
+  // argues theology and confession must not be folded INTO Commentaries, which remains true and
+  // is why they are not in that catalog's types. But "not in Commentaries" was silently doing
+  // duty as "on no shelf at all", and the consequence was that calvin-institutes, hodge-systematic,
+  // owen-works and schaff-creeds were published, lane-served, and unbrowsable — 33,578 sections a
+  // reader had no route to. The Historians row directly above already established the remedy: a
+  // register that is not exegesis gets its OWN shelf. Same reasoning, same fix.
+  theology: { id: 'theology', label: 'Theology & Creeds', types: ['theology', 'confession'] },
 } as const;
 
 export const CATALOG_IDS = Object.keys(CATALOGS) as CatalogId[];

@@ -8,7 +8,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDragDismiss } from '@/lib/use-drag-dismiss';
-import { tocUnitLabel } from '@/lib/work-reader';
+import { filterTocUnits, tocGroups, tocUnitLabel } from '@/lib/work-reader';
 import type { WorkTocUnit } from '@/lib/work';
 
 // A chunked ingest repeats the work's title across its chunks and suffixes " (i/n)". The unit
@@ -17,13 +17,19 @@ import type { WorkTocUnit } from '@/lib/work';
 // key strips), so the TOC reads "TALKS TO FARMERS — PROVERBS 24:30-32" instead of "… (1/23)".
 const unitLabel = (label: string): string => label.replace(/\s*\(\d+\/\d+\)\s*$/, '');
 
+/** How many entries are mounted before the reader asks for more. */
+const PAGE = 200;
+
 export function WorkToc({
   toc,
+  sourceType,
   currentOrdinal,
   onNavigate,
   onClose,
 }: {
   toc: WorkTocUnit[];
+  /** Decides the factual grouping (A–Z for a lexicon, Bible book for a commentary). */
+  sourceType: string;
   currentOrdinal: number | null;
   onNavigate: (ordinal: number) => void;
   onClose: () => void;
@@ -34,7 +40,26 @@ export function WorkToc({
   // its member rows. This used to call groupTocByUnit(toc) over one row per SECTION, which is why
   // the response scaled with chunking and spurgeon-sermons spent its whole budget on ~150 of
   // 3,540 sermons. Nothing is regrouped here; `toc` IS the unit list.
-  const units = toc;
+  const [query, setQuery] = useState('');
+  const [shown, setShown] = useState(PAGE);
+  const units = useMemo(() => filterTocUnits(toc, query), [toc, query]);
+  // Groups are computed over the FILTERED list so their start indices address the same array the
+  // rows are read from. Computing them over `toc` and rendering over `units` would put the
+  // headers at the wrong rows the moment anything is typed.
+  const groups = useMemo(() => tocGroups(sourceType, units), [sourceType, units]);
+  const groupStartAt = useMemo(() => {
+    const m = new Map<number, string>();
+    for (const g of groups ?? []) m.set(g.start, g.label);
+    return m;
+  }, [groups]);
+  // A new query is a new list; keeping the old reveal count would show 200 of 3 results, or hide
+  // matches behind a "show more" the reader has no reason to expect.
+  useEffect(() => setShown(PAGE), [query]);
+  // INCREMENTAL REVEAL, not virtualisation. bdb-lexicon is 9,770 entries and mounting them all is
+  // the same unbounded-DOM defect this drawer already fixed once. A window keyed to scroll offset
+  // would be tighter, but it needs a fixed row height, and these rows wrap to two lines — a
+  // virtualiser fed a wrong height scrolls to the wrong place, which is worse than a button.
+  const visible = units.slice(0, shown);
 
   // BOUNDED RENDER (Phase 4 §B). This drawer used to mount a <button> for EVERY section chunk:
   // Calvin's Institutes mounted 3,448 of them on open — the client-side twin of the repo's
@@ -109,15 +134,43 @@ export function WorkToc({
           </button>
         </div>
 
+        {/* FILTER. The whole unit list is already on the client, so this needs no network and no
+            classification — it is a substring match over the labels on screen. */}
+        <div className="border-b border-stone-200/60 px-4 py-2.5 dark:border-stone-800">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`Search ${toc.length.toLocaleString()} entries…`}
+            aria-label="Search the contents"
+            className="w-full rounded-lg bg-stone-100 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:bg-stone-800 dark:text-stone-100"
+          />
+          {query.trim() !== '' && (
+            <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
+              {units.length === 0
+                ? 'No entry matches.'
+                : `${units.length.toLocaleString()} of ${toc.length.toLocaleString()}`}
+            </p>
+          )}
+        </div>
+
         <div ref={listRef} className="min-h-[30vh] flex-1 overflow-y-auto overscroll-contain px-3 py-2">
-          {units.map((unit, ui) => {
+          {visible.map((unit, ui) => {
             const key = unitKeyOf(unit, ui);
+            const groupLabel = groupStartAt.get(ui);
             const chunked = unit.sectionCount > 1;
             const open = chunked && expanded === key;
             const here = holds(unit, currentOrdinal);
             const label = unitLabel(tocUnitLabel(unit));
             return (
               <div key={key} className="py-0.5">
+                {/* A FACTUAL header: the entry's own first letter, or the Bible book its own
+                    anchor decodes to. Never an inferred theme. */}
+                {groupLabel && (
+                  <p className="sticky top-0 z-10 -mx-3 bg-paper/95 px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-stone-400 backdrop-blur dark:bg-stone-900/95">
+                    {groupLabel}
+                  </p>
+                )}
                 <div className="flex items-stretch gap-1">
                   {/* ONE row per unit. Clicking it seeks to the unit's start — the common case. */}
                   <button
@@ -171,6 +224,18 @@ export function WorkToc({
               </div>
             );
           })}
+
+          {units.length > visible.length && (
+            <button
+              onClick={() => setShown((n) => n + PAGE)}
+              className="mt-2 flex min-h-[44px] w-full items-center justify-center rounded-lg border border-dashed border-stone-300 text-sm font-medium text-stone-500 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
+            >
+              Show {Math.min(PAGE, units.length - visible.length).toLocaleString()} more
+              <span className="ml-1.5 text-xs text-stone-400">
+                ({visible.length.toLocaleString()} of {units.length.toLocaleString()})
+              </span>
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ import pg from 'pg';
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { BOOK_SLUGS } from './source-id.js';
+import { assertReingestable } from './reingest-guard.js';
 import { isAllowedLicense } from './license-manifest.js';
 
 // Whole-chunk budget. 1200 chars keeps even token-DENSE text (hymns, Greek/
@@ -132,6 +133,14 @@ export function chunkWhole(body: string, max = REGISTER_EMBED_MAX): string[] {
 // path for quarantined works. DB rows are recoverable by re-running the adapter.
 export async function deleteWork(db: pg.Client, slug: string): Promise<{ dbRows: number; staticRemoved: number }> {
   const del = await db.query(`DELETE FROM embeddings WHERE user_id IS NULL AND metadata->>'work' = $1`, [slug]);
+  // THE SHELF DELETE IS NOT HERE. It lives inline in writeRegisterWork, inside a transaction and
+  // behind `assertReingestable`, and it must stay there: the wiring test checks by FILE POSITION
+  // that the call sits after a BEGIN and before the DELETE, which a helper defined above the
+  // transaction can never satisfy. It was briefly here, which put a
+  // `DELETE FROM sections` in a helper that runs in autocommit with no lock and no published
+  // check, and `test/invariants/reingest-guard-wiring.test.ts` caught it on the same day. That
+  // test exists because ingest-sermon and ingest-historian once ran their published-check BEFORE
+  // `BEGIN`, and six works became publishable through the window it left on 2026-08-01.
   let staticRemoved = 0;
   const root = 'web/public/commentaries';
   if (existsSync(root)) {
@@ -167,12 +176,45 @@ export async function writeRegisterWork(work: RegisterWork): Promise<{ embedded:
   const db = new pg.Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
   await db.connect();
   try {
-    const prior = await db.query<{ status: string }>(`SELECT status FROM sources WHERE slug=$1`, [work.slug]);
-    if (prior.rows[0]?.status === 'published' && !work.publish) {
-      throw new Error(`STOP: ${work.slug} already published; refusing staged re-ingest`);
+    // (0a) THE SHELF DELETE, IN A TRANSACTION, BEHIND THE GUARD.
+    //
+    // This function used to run entirely in AUTOCOMMIT — no BEGIN anywhere — and its published
+    // check was a bare `SELECT status`. That is precisely the shape the M21/M22 audit found in
+    // ingest-sermon and ingest-historian, where the check ran before the transaction and left a
+    // window in which a publish flip could land between the check and the delete. Six works
+    // became publishable through it on 2026-08-01.
+    //
+    // `assertReingestable` closes the window by locking the `sources` row FOR UPDATE, which is
+    // worth nothing outside a transaction: in autocommit Postgres takes the lock and drops it on
+    // the same statement. Hence BEGIN … guard … DELETE … COMMIT, and hence the delete moved out
+    // of `deleteWork`, where it could not sit after a BEGIN that did not exist.
+    //
+    // The transaction is deliberately SHORT — it spans the check and the deletes only, not the
+    // embedding calls below. Holding a lock across an HTTP round trip per 64-row batch would keep
+    // it open for minutes on a 10MB work, and the window being closed here is between the check
+    // and the delete, not across the whole ingest.
+    //
+    // It is also STRICTER than what it replaces: the old check let a re-ingest through when
+    // `work.publish` was true. The guard refuses a published work outright, and its message names
+    // the remedy — unpublish first. A re-ingest silently replacing owner-approved published
+    // content is the thing being prevented, whatever the caller intends.
+    await db.query('BEGIN');
+    try {
+      await assertReingestable(db, work.slug, 'the register re-ingest');
+      await db.query(
+        `DELETE FROM section_anchors WHERE section_id IN
+           (SELECT s.id FROM sections s JOIN sources src ON src.id = s.source_id WHERE src.slug = $1)`, [work.slug]);
+      await db.query(
+        `DELETE FROM section_embeddings WHERE section_id IN
+           (SELECT s.id FROM sections s JOIN sources src ON src.id = s.source_id WHERE src.slug = $1)`, [work.slug]);
+      await db.query(`DELETE FROM sections WHERE source_id = (SELECT id FROM sources WHERE slug = $1)`, [work.slug]);
+      await db.query('COMMIT');
+    } catch (e) {
+      await db.query('ROLLBACK').catch(() => {});
+      throw e;
     }
-    // (0) replacement-idempotency: remove the work's previous rows/entries so a
-    // changed parse fully replaces (never interleaves with) the old ingest
+    // (0b) the rest of the replacement — flat rows and static files, neither of which the guard
+    // governs (they carry no publish state and no foreign keys).
     const wiped = await deleteWork(db, work.slug);
     if (wiped.dbRows || wiped.staticRemoved) console.log(`  ↻ ${work.slug}: replaced prior ingest (${wiped.dbRows} rows, ${wiped.staticRemoved} static entries)`);
     // (2) provenance/staging registry — status='ingesting' until the write
@@ -227,6 +269,64 @@ export async function writeRegisterWork(work: RegisterWork): Promise<{ embedded:
       embedded += res.rowCount ?? 0;
     }
 
+    // (2b) THE SHELF STORE — `sections`, which is what the Book Reader and the catalog read.
+    //
+    // THIS WAS MISSING, AND ITS ABSENCE WAS THE DEFECT, not a bug in any one run. This function
+    // wrote three stores — the `sources` row, the flat retrieval `embeddings`, and the static
+    // per-chapter JSON — and never the one the shelf is built on. `sections` was only ever
+    // written by four bespoke scripts (migrate-sections-slice, ingest-sermon, ingest-historian,
+    // repoint-sections-work), none of them on the adapter path. So EVERY work ingested through
+    // the adapter loop got a `sources` row stamped 'staged' and was permanently invisible: no
+    // table of contents, nothing to open, and nothing for corpus-copy.mjs to move to production,
+    // because that reads by slug from `sections`. Measured on ryle-expository 2026-08-02: 2,040
+    // flat rows, 1 sources row marked staged, 0 sections.
+    //
+    // ONE RegisterSection = ONE section = ONE unit. The adapter has already decided what a unit
+    // of this work is (a sermon, a dictionary entry, a passage of commentary); the chunking above
+    // is a retrieval concern and belongs only to the flat store. So `unit_ordinal` equals
+    // `ordinal` here, which is the honest statement that this ingest did not split units — unlike
+    // the older section writers, whose 33-chunks-per-sermon shape is why unit_ordinal exists.
+    //
+    // `source_url` is deliberately NOT written: it is migration 031 and exists on production but
+    // not on dev, so naming it here would make this function fail on the only branch it is
+    // allowed to run against.
+    const srcId = (await db.query<{ id: string }>(`SELECT id FROM sources WHERE slug = $1`, [work.slug])).rows[0]!.id;
+    let sectionsWritten = 0;
+    for (let i = 0; i < work.sections.length; i += 500) {
+      const batch = work.sections.slice(i, i + 500);
+      const params: unknown[] = [];
+      const tuples = batch.map((s, j) => {
+        const ord = i + j + 1;
+        const p = j * 4;
+        params.push(srcId, ord, s.heading ?? null, s.body);
+        return `($${p + 1}::bigint, $${p + 2}::int, $${p + 3}::text, $${p + 4}::text, $${p + 2}::int)`;
+      });
+      const r = await db.query(
+        `INSERT INTO sections (source_id, ordinal, heading, body, unit_ordinal)
+         VALUES ${tuples.join(',')} ON CONFLICT (source_id, ordinal) DO NOTHING`, params);
+      sectionsWritten += r.rowCount ?? 0;
+    }
+    // the verse join, from the same anchors the flat store and the static entries use
+    let anchorsWritten = 0;
+    for (let i = 0; i < work.sections.length; i += 500) {
+      const batch = work.sections.slice(i, i + 500);
+      const params: unknown[] = [];
+      const tuples: string[] = [];
+      batch.forEach((s, j) => {
+        const a = s.anchors?.[0];
+        if (!a) return;
+        const p = params.length;
+        params.push(srcId, i + j + 1, a.verseIdStart, a.verseIdEnd);
+        tuples.push(`((SELECT id FROM sections WHERE source_id = $${p + 1}::bigint AND ordinal = $${p + 2}::int), $${p + 3}::int, $${p + 4}::int)`);
+      });
+      if (tuples.length === 0) continue;
+      const r = await db.query(
+        `INSERT INTO section_anchors (section_id, verse_id_start, verse_id_end)
+         VALUES ${tuples.join(',')} ON CONFLICT DO NOTHING`, params);
+      anchorsWritten += r.rowCount ?? 0;
+    }
+    console.log(`  → ${work.slug}: ${sectionsWritten} section(s), ${anchorsWritten} anchor(s) on the shelf`);
+
     // (3) static reader corpus — verse-anchored sections only (the reader is verse-keyed)
     let staticEntries = 0;
     const byChapter = new Map<string, Array<Record<string, unknown>>>();
@@ -264,7 +364,25 @@ export async function writeRegisterWork(work: RegisterWork): Promise<{ embedded:
       writeFileSync(p, JSON.stringify({ book: j.book, chapter: j.chapter, entries: kept }));
       staticEntries += entries.length;
     }
-    // (4) success — NOW stamp the real status (crash above leaves 'ingesting')
+    // (4) FAIL CLOSED ON AN UNREADABLE WORK, then stamp the real status.
+    //
+    // This is the guard whose absence made the missing shelf-write silent for as long as it
+    // existed. `status` is the app's word for "this work is real": 'staged' means complete and
+    // awaiting a publish decision, and the publish flip will happily promote it. A row that says
+    // 'staged' with zero sections is a work the catalog lists, the reader cannot open, and the
+    // copier cannot move — and nothing anywhere said so. It reported success.
+    //
+    // Checked by RE-READING the database rather than trusting `sectionsWritten`, because the
+    // number that matters is what is actually there: an ON CONFLICT DO NOTHING that skipped every
+    // row would leave the counter looking plausible while the table stayed empty.
+    const { rows: [shelf] } = await db.query<{ n: string }>(
+      `SELECT count(*)::text n FROM sections WHERE source_id = $1`, [srcId]);
+    if (Number(shelf!.n) === 0) {
+      throw new Error(
+        `STOP: ${work.slug} has 0 sections after ingest — it would be listed and unopenable. ` +
+        `Left as status='ingesting' rather than stamped '${work.publish ? 'published' : 'staged'}'.`,
+      );
+    }
     await db.query(`UPDATE sources SET status=$2 WHERE slug=$1`, [work.slug, work.publish ? 'published' : 'staged']);
     return { embedded, staticEntries };
   } finally {
