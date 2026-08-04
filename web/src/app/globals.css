@@ -67,6 +67,33 @@
 
   /* Gentle, decelerating motion. */
   --ease-gentle: cubic-bezier(0.32, 0, 0.24, 1);
+
+  /* THE RADIUS LADDER, OWNED HERE. See the rule below for what each step means.
+   *
+   * These are declared because we were not the ones defining them.
+   * `@neondatabase/auth/ui/tailwind` (imported above) ships a shadcn-style scale
+   * derived from a single variable:
+   *
+   *   --radius-sm: calc(var(--neon-radius) - 4px)   -> 12px
+   *   --radius-md: calc(var(--neon-radius) - 2px)   -> 14px
+   *   --radius-lg: var(--neon-radius)               -> 16px
+   *   --radius-xl: calc(var(--neon-radius) + 4px)   -> 20px
+   *
+   * with `--neon-radius: 1rem` set in the :root block further down. It never
+   * defines --radius-2xl, so that stayed Tailwind's 1rem and collided exactly with
+   * --radius-lg: two named steps, one corner. The whole ladder was also compressed
+   * into 12-14-16-20, which is a 2px step between `rounded-md` and `rounded-lg`.
+   *
+   * A four-value span of 8px cannot express hierarchy. This restores a real one.
+   * `--neon-radius` is deliberately left alone: it is the auth UI's own knob, and
+   * this app should not be steering another library's internals to get its buttons
+   * the right shape. */
+  --radius-sm: 0.25rem;  /*  4px  highlight chips, inline marks */
+  --radius-md: 0.375rem; /*  6px  dense rows, sidebar nav items */
+  --radius-lg: 0.5rem;   /*  8px  CONTROLS: buttons, inputs, selects */
+  --radius-xl: 0.75rem;  /* 12px  SURFACES: cards, list rows, popovers */
+  --radius-2xl: 1rem;    /* 16px  large surfaces, the ask composer */
+  --radius-3xl: 1.5rem;  /* 24px  SHEETS: bottom sheets and modals */
 }
 
 /* RADIUS CARRIES HIERARCHY. It used to carry none: `rounded-full` was 49% of every
