@@ -143,7 +143,7 @@ export default async function CatalogPage({
                 <span className="min-w-0">
                   <span className="block truncate font-scripture text-stone-800 dark:text-stone-100">{w.title}</span>
                   <span className="block truncate text-xs text-stone-500 dark:text-stone-400">
-                    {w.author ?? '—'}
+                    {w.author ?? 'Unattributed'}
                     {w.tradition ? ` · ${w.tradition}` : ''}
                     {/* the register label: a reader must always be able to tell what kind of work this is */}
                     {` · ${w.sourceType}`}

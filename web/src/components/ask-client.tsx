@@ -128,7 +128,7 @@ export function AskClient() {
       <header className="mb-6 sm:mb-8">
         <h1 className="font-display text-[2rem] font-medium tracking-tight text-stone-900 dark:text-stone-100">Explore the paths</h1>
         <p className="mt-2 font-serif text-[15px] leading-relaxed text-stone-600 dark:text-stone-400">
-          Hear what commentators across the traditions have said — quoted, attributed, never interpreted.
+          Hear what commentators across the traditions have said, quoted and attributed, never interpreted.
           <span className="mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500">Currently answering from the Gospels.</span>
         </p>
       </header>
@@ -239,7 +239,7 @@ function Progress({ turn }: { turn: Turn }) {
           <div className="flex animate-pulse flex-col gap-2">
             {turn.sources.slice(0, 3).map((s) => (
               <p key={s.sourceId} className="font-serif text-[13px] leading-relaxed text-stone-500 dark:text-stone-400">
-                <b className="text-stone-700 dark:text-stone-300">{s.author}</b> — {s.content.slice(0, 130).replace(/\n/g, ' ')}…
+                <b className="text-stone-700 dark:text-stone-300">{s.author}</b>. {s.content.slice(0, 130).replace(/\n/g, ' ')}…
               </p>
             ))}
           </div>
@@ -317,7 +317,7 @@ function LaneSection({ title, note, chunks }: { title: string; note: string; chu
             <figcaption className="mt-2 text-sm text-stone-500 dark:text-stone-400">
               <span className="font-semibold text-stone-800 dark:text-stone-300">{c.metadata.author}</span>
               {c.metadata.sourceTitle ? `, ${c.metadata.sourceTitle}` : ''}
-              {c.metadata.paraphrase ? <span title="A metrical paraphrase — not the Scripture text itself." className="ml-2 rounded-full bg-accent-700/10 px-2 py-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300">paraphrase · not Scripture</span> : null}
+              {c.metadata.paraphrase ? <span title="A metrical paraphrase, not the Scripture text itself." className="ml-2 rounded-full bg-accent-700/10 px-2 py-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300">paraphrase · not Scripture</span> : null}
             </figcaption>
           </figure>
         ))}
@@ -329,9 +329,9 @@ function LaneSection({ title, note, chunks }: { title: string; note: string; chu
 function Lanes({ result }: { result: Extract<TeacherResult, { kind: 'composed' | 'fallback' }> }) {
   return (
     <>
-      <LaneSection title="Sermons on this theme" note="Preached expositions — not commentary; read them in full for the argument." chunks={result.sermons} />
+      <LaneSection title="Sermons on this theme" note="Preached expositions, not commentary. Read them in full for the argument." chunks={result.sermons} />
       <LaneSection title="Theology & confessions" note="Systematic and confessional reflections on this theme." chunks={result.theology} />
-      <LaneSection title="Hymns & sacred poetry" note="Sung and poetic responses — and (where marked) a metrical paraphrase, not the Scripture text itself." chunks={result.song_verse} />
+      <LaneSection title="Hymns & sacred poetry" note="Sung and poetic responses, and (where marked) a metrical paraphrase, not the Scripture text itself." chunks={result.song_verse} />
     </>
   );
 }
@@ -340,7 +340,7 @@ function Fallback({ retrieval }: { retrieval: Retrieved[] }) {
   return (
     <div>
       <p className="mb-5 rounded-xl bg-accent-50 px-4 py-3 font-serif text-[15px] text-accent-900 shadow-paper dark:bg-accent-950/30 dark:text-accent-200 dark:shadow-none">
-        A grounded answer couldn’t be composed for this one. Here are the sources retrieval found — read them directly.
+        A grounded answer couldn’t be composed for this one. Here are the sources we found. Read them directly.
       </p>
       <div className="space-y-5">
         {retrieval.map((r) => (

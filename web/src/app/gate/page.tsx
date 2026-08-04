@@ -16,7 +16,7 @@ export default async function GatePage({
           Ancient Paths
         </h1>
         <p className="mt-2 font-serif text-sm italic text-stone-600 dark:text-stone-400">
-          A private preview — enter the password to walk in.
+          A private preview. Enter the password to walk in.
         </p>
         <form method="POST" action="/api/gate" className="mt-6">
           <input type="hidden" name="next" value={dest} />
@@ -29,7 +29,7 @@ export default async function GatePage({
           />
           {error && (
             <p className="mt-2 text-xs text-accent-700 dark:text-accent-300">
-              That wasn&rsquo;t it — try again.
+              That wasn&rsquo;t it. Try again.
             </p>
           )}
           <button

@@ -134,7 +134,7 @@ function SearchResultCard({
       )}
       {view === 'unavailable' && (
         <p className="mt-1 text-xs text-stone-400">
-          Full text isn&rsquo;t available here — open it in the reader.
+          Full text isn&rsquo;t available here. Open it in the reader.
         </p>
       )}
       <div className="mt-1 flex flex-wrap items-center gap-x-5">

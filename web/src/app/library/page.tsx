@@ -67,7 +67,7 @@ export default async function LibraryHubPage({
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-scripture text-stone-800 dark:text-stone-100">{r.title}</span>
-                    <span className="block truncate text-xs text-stone-500 dark:text-stone-400">{r.author ?? '—'}</span>
+                    <span className="block truncate text-xs text-stone-500 dark:text-stone-400">{r.author ?? 'Unattributed'}</span>
                   </span>
                   <span className="shrink-0 text-xs tabular-nums text-stone-400">
                     {r.percent === null ? '' : `${Math.round(r.percent * 100)}%`}

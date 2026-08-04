@@ -130,7 +130,7 @@ export function expandPlan(spec: PlanSpec): ExpandOutcome {
     const n = chapters.length;
     return {
       ok: false,
-      reason: `This has ${n === 1 ? 'only 1 chapter' : `only ${n} chapters`} — not enough for ${dayCount} reading days. Try fewer weeks, or fewer days each week.`,
+      reason: `This has ${n === 1 ? 'only 1 chapter' : `only ${n} chapters`}, not enough for ${dayCount} reading days. Try fewer weeks, or fewer days each week.`,
     };
   }
 
@@ -190,7 +190,7 @@ export function expandTopicalPlan(
   if (entries.length < dayCount) {
     return {
       ok: false,
-      reason: `${entries.length} passage(s) cannot fill ${dayCount} reading days — shorten the plan`,
+      reason: `${entries.length} passage(s) cannot fill ${dayCount} reading days. Shorten the plan`,
     };
   }
   const days: TopicalPlanDay[] = [];

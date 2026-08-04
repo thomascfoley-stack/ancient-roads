@@ -161,7 +161,7 @@ function EmptyState() {
         {examples.map(([what, eg]) => (
           <li key={what} className="text-sm">
             <span className="font-medium text-stone-800 dark:text-stone-100">{what}</span>
-            <span className="text-stone-500 dark:text-stone-400"> — {eg}</span>
+            <span className="text-stone-500 dark:text-stone-400">. {eg}</span>
           </li>
         ))}
       </ul>
@@ -215,7 +215,7 @@ function prettyDate(iso: string): string {
 
 const MODES = [
   { key: 'book', label: 'One book', hint: 'Work through a single book of the Bible.' },
-  { key: 'books', label: 'A collection', hint: 'A group of books — the Gospels, Paul’s letters, the whole Bible.' },
+  { key: 'books', label: 'A collection', hint: 'A group of books: the Gospels, Paul’s letters, the whole Bible.' },
   { key: 'topic', label: 'A topic', hint: 'A theme, gathered by a classic topical index and read passage by passage.' },
 ] as const;
 type Mode = (typeof MODES)[number]['key'];
@@ -244,7 +244,7 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
       if (pickedTopic.entryCount < dayCount) {
         return {
           ok: false as const,
-          reason: `“${pickedTopic.heading}” has ${pickedTopic.entryCount} passages — not enough for ${dayCount} reading days. Try fewer weeks or fewer days each week.`,
+          reason: `“${pickedTopic.heading}” has ${pickedTopic.entryCount} passages, not enough for ${dayCount} reading days. Try fewer weeks or fewer days each week.`,
         };
       }
       const per = pickedTopic.entryCount / dayCount;
@@ -295,14 +295,14 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
       const res = await fetch(`/api/plans/topics?q=${encodeURIComponent(topicQuery.trim())}`);
       if (!res.ok) {
         setTopicMatches(null);
-        setTopicError('Topic search is unavailable just now — please try again.');
+        setTopicError('Topic search is unavailable right now. Please try again.');
         return;
       }
       const data = (await res.json()) as { matches: TopicMatch[] };
       setTopicMatches(data.matches);
     } catch {
       setTopicMatches(null);
-      setTopicError('Topic search could not be reached — please try again.');
+      setTopicError('Topic search could not be reached. Please try again.');
     } finally {
       setSearching(false);
     }
@@ -477,7 +477,7 @@ function TopicPicker({
       {matches !== null && !error && (
         <div className="mt-2">
           {matches.length === 0 ? (
-            <p className="text-xs text-stone-400">No topic by that name in the library — try another word.</p>
+            <p className="text-xs text-stone-400">No topic by that name in the library. Try another word.</p>
           ) : (
             <>
               <p className="mb-1.5 text-xs text-stone-500 dark:text-stone-400">Choose one:</p>

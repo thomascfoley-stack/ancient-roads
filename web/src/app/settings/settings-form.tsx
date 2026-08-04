@@ -76,7 +76,7 @@ export function SettingsForm() {
             A−
           </button>
           <div className="flex-1 text-center text-sm text-stone-600 dark:text-stone-300">
-            {ready ? (SIZE_LABELS[sizeIdx] ?? `${sizeIdx + 1}`) : '—'}
+            {ready ? (SIZE_LABELS[sizeIdx] ?? `${sizeIdx + 1}`) : '·'}
           </div>
           <button
             onClick={() => setSizeIdx(sizeIdx + 1)}
