@@ -95,6 +95,35 @@ was designed against. The change is still a real improvement (a 44px control wen
 been corrected to state the measured values and now quotes no px figures in the rule
 itself, because an unenforced number in a comment is what drifted.
 
+### Pass 2, same day: five of the six parked items
+
+Owner redirected to "finish the design work" and parked nothing further. Five slices landed
+on `design/pass-2`, each verified in the browser:
+
+1. **Radius owned.** Root cause found in the package, not guessed: `@neondatabase/auth/ui`
+   derives the whole ladder from `--neon-radius` and never defines `--radius-2xl`, so
+   `rounded-lg` and `rounded-2xl` were the same 16px corner and the whole scale was
+   compressed into 12-14-16-20. Declared explicitly in `@theme`: 4/6/8/12/16/24.
+2. **Buttons and inputs agree.** Nine buttons moved onto one mapping (`text-stone-50`,
+   `dark:bg-accent-500`, `disabled:opacity-40`); five had been pure `text-white` on a warm
+   palette and ten had no dark variant at all. Eight inputs moved to the control radius.
+   **Six fields shipped a base font under 16px, which zooms the viewport on iOS Safari
+   whenever one is focused**; all six now `text-base sm:<original>`.
+3. **Icons.** `CATALOG_ICON` defined one entry, so five of six shelves wore the same speech
+   bubble and the sixth was a `♪` text character. Each shelf has its own mark now, and Word
+   study is no longer the literal characters `אα` inside the link text. Both navs render the
+   same icons at one stroke weight (was 1.5 vs 1.7 on byte-identical paths).
+4. **One error colour.** Five treatments were in use, two of them wrong: `/ask` rendered
+   failures in the BRAND accent, and three surfaces used `text-stone-500`, the same token as
+   muted body copy. All on one red now, all carrying `role="alert"`.
+5. **Measure and headings.** The desk pane had no max-width and is `flex-1`, so one open pane
+   ran ~200 characters a line against the reader's ~74. Capped at `max-w-2xl`. `/work/[slug]`,
+   the deepest content surface, had no heading element at all; its title was a 14px `<p>`.
+
+**Still not done, and honestly:** the app-wide type scale (item 2 below) and dialog focus
+management (item 4) are untouched. Both are large. The type sweep also wants
+`sidebar.tsx` / `app/plans/` / `lib/plan/` to be quiet.
+
 ### Next pass, in priority order
 
 1. **Own the radius scale.** Declare explicit `--radius-*` tokens in `@theme` so the app
