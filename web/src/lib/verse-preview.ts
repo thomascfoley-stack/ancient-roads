@@ -1,20 +1,25 @@
 // Verse previews — the passage behind a reference, read without leaving the page it was cited on.
 //
-// WHY THIS DOES NOT REUSE fetchChapter. `lib/bible.ts` loads the WHOLE BOOK file and caches it,
-// which is exactly right for the reader: you open a chapter and then page through its neighbours,
-// so every chapter after the first is free. A preview is the opposite access shape. One day of a
-// topical plan cites up to ~18 passages across ~10 books (measured: Nave's PRAYER, day 1), and
-// hovering down that list with whole-book files pulls well over a megabyte — `1ki.json` is 137K,
-// `psa.json` 264K — to read a handful of verses. The per-chapter files shipping beside them
-// (`/bible/<t>/1ki/18.json`, 7.6K) are the right granularity here: the same list costs ~80KB.
-// So this module reads those and keeps its own cache, and the reader's cache is left alone.
+// IT REUSES THE READER'S fetchChapter, AND THE FIRST CUT OF THIS FILE DID NOT. That version read
+// the per-chapter files (`/bible/<t>/1ki/18.json`, 7.6K) rather than the whole-book ones
+// (`1ki.json` is 137K, `psa.json` 264K), because one day of a topical plan cites ~18 passages
+// across ~10 books and pulling a whole book per hover is heavy. The per-chapter files are sitting
+// right there in `web/public`, so it worked locally, and it was broken the moment it deployed:
+// `web/.vercelignore` excludes `public/bible/*/*/` DELIBERATELY — 21,402 files would blow Vercel's
+// 15,000-file CLI limit — so those paths exist on no deployment. Every preview would have 404'd
+// into "This passage could not be loaded".
 //
-// These are static assets already in `web/public`, so a preview costs one browser-cached GET and
-// no database work at all. That is what lets hover feel instant instead of feeling like a request.
+// The lesson generalises past Bible files: A FILE PRESENT IN THE WORKING TREE IS NOT A FILE THAT
+// SHIPS, and `ls` cannot tell you the difference. Check what the deploy actually uploads.
+//
+// So previews now read the same whole-book files the reader reads, through the same `bookCache`.
+// Two consequences worth knowing: a multi-chapter span inside one book costs ONE fetch instead of
+// one per chapter, and a reader already in a book gets its previews for free (and the reverse).
+// Still no database and nothing on the request path, which is what keeps hover instant.
 
 import { BOOK_BY_NUM } from '@/bible/books';
 import { CHAPTER_END_SENTINEL } from '@/bible/ref-parse';
-import { DEFAULT_TRANSLATION, TRANSLATIONS } from '@/lib/bible';
+import { DEFAULT_TRANSLATION, TRANSLATIONS, fetchChapter } from '@/lib/bible';
 
 /** One chapter's contribution to a reference's span, with the verse window to show from it. */
 export interface ChapterSlice {
@@ -137,39 +142,22 @@ export interface PreviewVerse {
   text: string;
 }
 
-interface ChapterFile {
-  book: number;
-  chapter: number;
-  verses: Array<{ verse: number; text: string }>;
-}
-
-const chapterCache = new Map<string, Promise<ChapterFile>>();
-
-function loadChapter(translation: string, bookSlug: string, chapter: number): Promise<ChapterFile> {
-  const key = `${translation}/${bookSlug}/${chapter}`;
-  let pending = chapterCache.get(key);
-  if (!pending) {
-    // Cache the PROMISE, not the resolved value. Moving a pointer down a readings list fires
-    // overlapping requests for the same chapter, and caching only on resolution would let several
-    // of them reach the network before the first one lands.
-    pending = fetch(`/bible/${translation}/${bookSlug}/${chapter}.json`).then(async (res) => {
-      if (!res.ok) throw new Error(`No ${bookSlug} ${chapter} in ${translation}`);
-      return (await res.json()) as ChapterFile;
-    });
-    // A failure must not poison the cache — a later retry has to be able to succeed. Attach the
-    // handler to a COPY so the rejection the caller awaits is still delivered to them.
-    void pending.catch(() => {
-      chapterCache.delete(key);
-    });
-    chapterCache.set(key, pending);
-  }
-  return pending;
-}
-
-/** Fetch the verses a span covers, in canonical order. Rejects if a chapter file is missing. */
+/** Fetch the verses a span covers, in canonical order. Rejects if a chapter cannot be loaded. */
 export async function fetchSpanVerses(span: Span, translation: string): Promise<PreviewVerse[]> {
+  // fetchChapter caches the RESOLVED book file, not the in-flight promise, so several chapters of
+  // one book requested at once would each miss and refetch it — measured on a Romans 16 to
+  // 1 Corinthians 2 span, which pulled `1co.json` twice. Warm one chapter per DISTINCT book first
+  // (those go in parallel), after which every remaining slice is a cache hit. Matters most exactly
+  // where the file is biggest: a multi-chapter Psalms span would otherwise refetch 264K per
+  // chapter.
+  const firstPerBook = new Map<string, ChapterSlice>();
+  for (const s of span.slices) if (!firstPerBook.has(s.bookSlug)) firstPerBook.set(s.bookSlug, s);
+  await Promise.all(
+    [...firstPerBook.values()].map((s) => fetchChapter(s.bookSlug, s.chapter, translation)),
+  );
+
   const files = await Promise.all(
-    span.slices.map((s) => loadChapter(translation, s.bookSlug, s.chapter)),
+    span.slices.map((s) => fetchChapter(s.bookSlug, s.chapter, translation)),
   );
   const out: PreviewVerse[] = [];
   span.slices.forEach((slice, i) => {

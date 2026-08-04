@@ -17,12 +17,20 @@ import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/re
 import { PassagePane } from '@/components/passage-pane';
 import { VerseRef } from '@/components/verse-ref';
 
-// 1 Kings 18, all 46 verses, each individually identifiable so a window can be proven.
-const CH18 = {
+// The WHOLE-BOOK file shape, which is what actually ships (`web/.vercelignore` excludes
+// `public/bible/*/*/`). 1 Kings 18, all 46 verses, each individually identifiable so a verse
+// window can be proven.
+const BOOK_1KI = {
+  translation: 'web',
   book: 11,
-  chapter: 18,
-  verses: Array.from({ length: 46 }, (_, i) => ({ verse: i + 1, text: `Carmel verse ${i + 1}.` })),
+  slug: '1ki',
+  chapters: {
+    '18': Array.from({ length: 46 }, (_, i) => ({ verse: i + 1, text: `Carmel verse ${i + 1}.` })),
+  },
 };
+
+/** Every URL the component asked for, so the test can assert WHICH file it reached for. */
+let requested: string[] = [];
 
 const CITED = { verseStart: 11_018_024, verseEnd: 11_018_039, label: '1 Kings 18:24-39' };
 
@@ -40,11 +48,15 @@ function stubHover(matches: boolean) {
 }
 
 beforeEach(() => {
+  requested = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string) => {
-      if (String(url).includes('/bible/web/1ki/18.json')) {
-        return { ok: true, status: 200, json: async () => CH18 } as unknown as Response;
+      requested.push(String(url));
+      // ONLY the whole-book path resolves. A per-chapter request 404s here exactly as it would in
+      // production, so a regression to those paths fails rather than passing on a local file.
+      if (String(url) === '/bible/web/1ki.json') {
+        return { ok: true, status: 200, json: async () => BOOK_1KI } as unknown as Response;
       }
       return { ok: false, status: 404, json: async () => ({}) } as unknown as Response;
     }),
@@ -75,6 +87,14 @@ describe('VerseRef — reading a citation without leaving the plan', () => {
     expect(sheet.textContent).not.toContain('Carmel verse 40.');
     // The tap PREVIEWS; opening the reader is a second, deliberate press.
     expect(onOpen).not.toHaveBeenCalled();
+
+    // WHICH FILE IT REACHED FOR — the assertion that would have caught the production break.
+    // The first cut fetched `/bible/web/1ki/18.json`: present in the repo, excluded from every
+    // deployment by `web/.vercelignore`, therefore working on every developer's machine and 404ing
+    // for every user. Asserted here as well as in the .vercelignore invariant, because this one
+    // fails on the real component's real fetch rather than on a source scan.
+    expect(requested).toContain('/bible/web/1ki.json');
+    expect(requested.filter((u) => /\/bible\/[^/]+\/[^/]+\/\d+\.json$/.test(u))).toEqual([]);
   });
 
   it('the sheet hands off to the reader pane with the reference it was showing', async () => {

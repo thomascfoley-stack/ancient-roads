@@ -40,6 +40,41 @@ loop still runs once and would emit an inverted window. Rewritten to that, then 
 watched red. Four guards are now individually red-proofed; so are the verse-window filter and the
 expand control.
 
+### IT SHIPPED BROKEN. The files were in the repo and on no deployment.
+
+Deployed at `3b9f6f2`, and every preview on it 404s. The feature fetched
+`/bible/<t>/<book>/<chapter>.json` — 7.6K a chapter instead of a 137K-264K whole book, which is the
+right call on the merits and the reason I chose it. Those files are in `web/public`. They are also
+excluded from every deployment **on purpose**: `web/.vercelignore` carries `public/bible/*/*/`
+because 21,402 per-chapter files would blow Vercel's 15,000-file CLI limit.
+
+So it worked locally, passed its tests, built clean, deployed green, and was broken for every user
+the moment it went live. **I verified the files existed with `ls` and never asked whether they
+ship.** Nothing in the repo could have caught it, and the browser pass could not either: the local
+dev server serves `web/public` whole.
+
+Two things came out of it beyond the fix:
+
+- Previews now read the same whole-book files the reader reads, through the same `bookCache`. A
+  multi-chapter span inside one book is now ONE fetch, and a reader already in a book gets its
+  previews free.
+- `fetchChapter` caches the resolved file, not the in-flight promise, so several chapters of one
+  book requested together each missed and refetched it. Measured in the network log: a
+  Romans 16 to 1 Corinthians 2 span pulled `1co.json` twice. Deduped by book before fetching;
+  re-measured as one request per book. Worst case avoided was a multi-chapter Psalms span
+  refetching 264K per chapter.
+
+**The guard is derived, not typed.** `test/invariants/fetched-assets-actually-ship.test.ts` reads
+`.vercelignore` and checks it against the asset URLs the client actually fetches, so it cannot go
+stale the way a hand-listed set of forbidden paths would (MASTER.md watchlist, artefact 1). It
+includes two guard-the-guard cases, because a regex matching nothing and an empty pattern set both
+pass silently. Red-proofed by reintroducing the real defect verbatim and watching it name the call
+site. The component test also now 404s every per-chapter URL exactly as production does, so a
+regression fails on the real fetch rather than passing against a local file.
+
+**Generalises past Bible files: a file present in the working tree is not a file that ships, and
+`ls` cannot tell the difference. Check what the deploy uploads.**
+
 ### NOT DONE / UNVERIFIED
 
 - **The plans page itself was never driven in a browser.** `/plans` needs an authenticated user and
