@@ -1,0 +1,28 @@
+§3b — THE PROSE PACKER. 2026-08-04T01:59:38Z
+
+BUDGET = 1200 chars, the corrected value. src/ingest/ingest-historian.ts:28 still uses 1800
+with a comment claiming bge-large's 512-token budget 'never truncates'. register-writer.ts:16
+records that being false: 1800 overflowed on Watts ('513 input tokens'), and the register
+budget was dropped to 1200 for token-dense text. Uploads are the densest case there is.
+
+== PASS ==
+  Tests  16 passed (16)
+
+== RED-PROOFS ==
+SEED 1 — budget reverted to the stale 1800:
+  Tests  1 failed | 15 passed (16)
+SEED 2 — hard split drops one char per split (silent text loss):
+  Tests  1 failed | 15 passed (16)
+SEED 3 — no sentence split, slice mid-sentence:
+  Tests  1 failed | 15 passed (16)
+SEED 4 — loosen heading detection (drop the terminal-punctuation rule):
+  Tests  1 failed | 15 passed (16)
+
+SEED 4 ESCAPED ON THE FIRST ATTEMPT — 15/15 green with the rule deleted. The negative
+fixture was MIXED CASE, so the all-caps rule rejected it anyway and the punctuation rule
+never decided anything. A rule no fixture exercises is a rule with no test. Added an
+ALL-CAPS SENTENCE ending in a period — not hypothetical: sermons carry all-caps emphasis,
+and Slice 0's own epigraph format is exactly that. Result above is the re-seeded run.
+
+== RESTORED ==
+  Tests  16 passed (16)
