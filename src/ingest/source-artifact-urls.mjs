@@ -177,10 +177,27 @@ export function artifactSourcesFor(entry) {
           'so a fresh machine cannot reconstruct it. Record the module .zip URL in the manifest to fix.',
       };
     }
+    case 'topical-index': {
+      // DERIVABLE, unlike the `sword` adapter above, and for exactly the reason that one is
+      // refused: these entries record where the bytes came from. A CrossWire module resolves
+      // to its published rawzip URL; OpenBible records its dump URL literally. Both are
+      // already archived under data/raw/topical with sha256s in CHECKSUMS.sha256, so a fresh
+      // machine can re-fetch and prove it got the same bytes.
+      if (acq.dump) return { ok: true, kind: 'topical-index', artifacts: [artifact(acq.dump.split('/').pop(), acq.dump)] };
+      if (acq.module) {
+        const url = `https://crosswire.org/ftpmirror/pub/sword/packages/rawzip/${acq.module}.zip`;
+        return { ok: true, kind: 'topical-index', artifacts: [artifact(`${acq.module}.zip`, url)] };
+      }
+      return {
+        ok: false,
+        kind: 'topical-index',
+        reason: 'topical-index adapter needs either `module` (a CrossWire module name) or `dump` (a literal artifact URL).',
+      };
+    }
     default:
       return { ok: false, kind: String(acq.adapter), reason: `unknown acquire adapter "${acq.adapter}"` };
   }
 }
 
 /** Every adapter kind `artifactSourcesFor` can derive URLs for. Used by the coverage test. */
-export const DERIVABLE_ADAPTERS = ['ccel', 'gutenberg', 'archive', 'github'];
+export const DERIVABLE_ADAPTERS = ['ccel', 'gutenberg', 'archive', 'github', 'topical-index'];

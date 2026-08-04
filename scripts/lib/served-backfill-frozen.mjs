@@ -21,7 +21,7 @@
 // way a snapshot is. Do not "improve" them: verbatim-ness is the property.
 //
 // VALIDITY WINDOW. `served` equals this record only from the moment 044's backfill runs until
-// the first intentional serve flip (e.g. serving the 76 published-but-unserved works). After
+// the first intentional serve flip (e.g. serving the 88 published-but-unserved works (docs/evidence/corpus-copy/serve-88.json)). After
 // that, verify-served-backfill's equality check is EXPECTED to diverge in the shipped-direction
 // and the tool says so — post-flip reconciliation is a different instrument (sources.status
 // vs served agreement), filed in the cutover order.

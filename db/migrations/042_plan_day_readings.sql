@@ -1,7 +1,7 @@
 -- ============================================================
 -- 042: plan_day_readings — a topical day's several labeled passages
 -- ============================================================
--- ADR-047 addendum (topic→plan wiring, owner-approved 2026-08-02 late). A
+-- ADR-048 addendum (topic→plan wiring, owner-approved 2026-08-02 late). A
 -- book/range/collection day IS one contiguous span, which plan_days'
 -- verse_start/verse_end holds exactly. A TOPICAL day is different in kind:
 -- it carries several non-contiguous passages, each with the index author's

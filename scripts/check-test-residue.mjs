@@ -35,10 +35,28 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { hostOf, isDevHost, declaredMatches, endpointId } from './lib/target-guard.mjs';
-import { USER_TABLES as G1_USER_TABLES } from './lib/user-data-invariant.mjs';
+import { USER_TABLES as G1_USER_TABLES, USER_TABLE_SPEC } from './lib/user-data-invariant.mjs';
 
 // Derived from USER_TABLE_SPEC — one list, not two (work-order v2 Stage 1.8).
 const USER_TABLES = G1_USER_TABLES;
+
+// Owner-column resolution, ALSO from the spec (this file hardcoded 'user_id'
+// and the first hasUserId:false table that actually existed on dev —
+// plan_days, 2026-08-02 — turned the whole inspect into "could not inspect").
+//   ownerColumn      → sweep that column (user_profiles.auth_user_id)
+//   ownerParent      → sweep through the FK join (plan_days → plans.user_id)
+//   hasUserId:false with neither → no owner concept; visibly skipped (waitlist)
+function residueQuery(table) {
+  const spec = USER_TABLE_SPEC[table] ?? {};
+  if (spec.hasUserId === false) {
+    const p = spec.ownerParent;
+    if (!p) return null;
+    return `SELECT count(*)::int AS n FROM ${table} c JOIN ${p.table} o ON o.id = c.${p.fk}
+            WHERE ${orLike('o.user_id')}`;
+  }
+  const col = spec.ownerColumn ?? 'user_id';
+  return `SELECT count(*)::int AS n FROM ${table} WHERE ${orLike(col)}`;
+}
 
 // NEVER let a malformed connection string reach an unhandled throw. `new URL()` rejects
 // e.g. an unencoded character in a password, and Node's ERR_INVALID_URL error object carries
@@ -97,14 +115,15 @@ async function inspect(url, label) {
   const checked = [];
   const skipped = [];
   try {
-    // 1. user-scoped residue
+    // 1. user-scoped residue — owner column resolved from USER_TABLE_SPEC
     for (const table of USER_TABLES) {
       if (!(await tableExists(client, table))) { skipped.push(table); continue; }
+      const sql = residueQuery(table);
+      if (!sql) { skipped.push(`${table} (no owner column by design)`); continue; }
       checked.push(table);
-      const { rows } = await client.query(
-        `SELECT count(*)::int AS n FROM ${table} WHERE ${orLike('user_id')}`, PATTERNS);
+      const { rows } = await client.query(sql, PATTERNS);
       const n = rows[0].n;
-      if (n > 0) problems.push(`${label} ${table}: ${n} seeded row(s) survived (user_id matching ${TEST_PREFIXES.join(' / ')})`);
+      if (n > 0) problems.push(`${label} ${table}: ${n} seeded row(s) survived (owner matching ${TEST_PREFIXES.join(' / ')})`);
     }
 
     // 2. test-seeded sources — a PUBLISHED one additionally fails Gate B repo-wide, so it is called

@@ -1,5 +1,49 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-03 — ADR-047 was claimed twice; the uncommitted claim renumbered to 048
+
+Third instance of the number-collision class in two days (migrations 042 and 042-mid-rename were
+the first two). `main` @ `53d90d1` carries `ADR-047 — Tap-a-verse opens the number`; the
+uncommitted diff on `feat/served-column-derives-publish` carried `ADR-047 — Canonical groupings`.
+Merge-base is `79ff0f1`; this branch never picked up `53d90d1`, so neither side could see the
+other's number.
+
+### 048 was DERIVED, not taken from the note
+
+The number was not "the next free one". `feat/study-plans-adr045` @ `2f6db58` **has already made
+this exact rename** — it merged `53d90d1` and carries the Canonical-groupings ADR as **048**, body
+byte-identical to ours apart from the number (verified by diffing the 1027–1100 window with the
+number masked). Picking 049 would have minted a *third* identity for one decision. Union of ADR
+numbers across every ref + the working copy: `040-048, 100` (100 = the Lane B block, ADR-100 on
+`feat/lane-b-slice1-uploader`).
+
+### DONE
+
+- `docs/DECISIONS.md` heading + addendum heading → 048; 12 citations updated across `WORKLOG.md`,
+  `db/migrations/042_plan_day_readings.sql`, `docs/PLAN_TOPIC_MATCHING_DESIGN.md`,
+  `web/src/lib/plan/{canonical-groups,expand}.ts`, and four plan tests.
+- **Red-proofed.** Simulated the real 3-way merge (`git merge-file` with `79ff0f1` as ancestor):
+  pre-fix yields **two** `## ADR-047` headings; post-fix yields every ADR number unique. The one
+  remaining conflict is the ordinary both-sides-appended-at-EOF case (keep both blocks), not a
+  numbering collision.
+- `plan-canonical-groups` + `plan-topical-expand`: 14 tests pass.
+
+### FOUND, NOT FIXED — there is a THIRD claim on 047
+
+`docs/STUDY_TOOLKIT_DESIGN.md:228` reads `Proposed **ADR-047**: "The study toolkit gathers by
+lane…"` — a different decision again. It is committed on `main`, unmodified by this branch, and is
+a *proposal* for an unwritten ADR, so it is not a citation that follows this rename. Left alone
+deliberately: pre-assigning a number to an ADR nobody has written yet is the mechanism that
+produced this whole class. Recommend de-numbering it ("Proposed ADR, number assigned at write
+time") rather than moving it to 049 — an owner call, not an agent one.
+
+### NOT DONE / UNVERIFIED
+
+- Nothing committed — the renumber sits in the working tree with the rest of the uncommitted diff.
+- `npm run audit` NOT run (comment/heading-only change; two pure test files exercised instead).
+- `docs/DECISIONS.md` has no ledger equivalent to `schema_migrations`, so nothing mechanically
+  prevents instance four. See the recommendation above.
+
 ## 2026-08-03 — Plans reach PRODUCTION (migrations + coverage); the copier learns topical_entries
 
 Owner go: "do the publish flip and prod migrations." The read came first, and it changed the job.
@@ -112,7 +156,7 @@ snapshot `…02-14-38-171Z.json`) — production is now **124 published works, 8
 - The eval has not run (key absent per ADR-044); accuracy consequences of any admission are
   unmeasured by construction until P1.
 
-## 2026-08-02 (night) — Topic→plan wiring closes the build (ADR-047 addendum)
+## 2026-08-02 (night) — Topic→plan wiring closes the build (ADR-048 addendum)
 
 The last mile of path 1: a matched topic becomes a dated plan. Owner: "close 1... that would
 close this build out."
@@ -188,7 +232,7 @@ Final: 66 plan tests green, residue gate clean across 20 tables, `npm run audit`
 - Publish flip still gates all topical behavior for real users; prod has migrations 039-042
   outstanding.
 
-## 2026-08-02 (late) — Canonical groups, topic matcher, dormant delivery fields (ADR-047)
+## 2026-08-02 (late) — Canonical groups, topic matcher, dormant delivery fields (ADR-048)
 
 Owner rulings live: reviewed-table for canonical groupings (never model enumeration; Hebrews
 excluded from pauline-epistles with reasoning recorded), delivery/calendar questions kept OUT of
@@ -211,7 +255,7 @@ the intake but schema-ready now, topic matching started alongside.
   represented (e.g. prayer → Nave's PRAYER 711 · Torrey's PRAYER 160 · openbible prayer 9).
 - **Migration 041** (dev + ci): `plans.delivery_channel` DEFAULT 'app' + CHECK,
   `plans.calendar_minutes` nullable — written/read by nothing yet, per ruling.
-- ADR-047; 9 new tests (groups integrity, multi-book expansion covers 87 Pauline chapters
+- ADR-048; 9 new tests (groups integrity, multi-book expansion covers 87 Pauline chapters
   exactly once, whole-bible 1,189 chapters on 182 days, straddle-day spans stay forward).
 
 ### NOT DONE / NEXT

@@ -15,6 +15,27 @@ git history — not from memory or the earlier hit list.
 > priority narrative below predates the 2026-07-14 Phase A close + license gate + Slice 0; trust
 > STATE_OF_TRUTH for facts, and treat the section priorities here as owner-set direction, not current status.
 
+## Update 2026-08-02 (Study plans core + topical-index corpus — BUILT on dev, ADR-045/046)
+
+Owner-approved scope (live session): `STUDY_PLANS_DESIGN.md` §12 steps 1-4 + the topical corpus;
+delivery = third-party push provider later (no `.ics`). Landed on `feat/bible-studies`:
+
+- **Plan engine**: `PlanSpec` (schema-parsed edge) + pure `expandPlan` (leap-boundary red-proofed);
+  `plans`/`plan_days` with RLS **proven by an executed two-account test**; `/api/plans` CRUD +
+  form builder + day list at `/plans`; coverage gate refuses scopes the corpus cannot support
+  (Song of Solomon refusal EXECUTED against the real `verse_coverage`, 30,227 rows on dev).
+- **Topical-index corpus (staged, owner publish gate pending)**: Nave's (4,870 topics/78,107
+  refs) + Torrey's (628/38,858) + OpenBible curation (6,711 topics, no verse text, CC BY) +
+  Daily Light (732 readings, `devotional`); `topical_entries` carries the ordered, labeled
+  expansion. Scanner: 151,311 refs, 4 pinned source misprints, 0 unpinned failures. TCR held on
+  licensing (unverified PD claim).
+- Migrations 039/040 on dev + ci branches (NOT prod). `/ask` retrieval untouched — no eval owed.
+
+**Next**: owner publish flip for the four works → manifest entries + `SERVED` topical lane +
+re-run accuracy eval when retrieval changes; model intake emitting `PlanSpec`; `planSource` on
+Today; prod migrations + `coverage:rebuild` at deploy time. WORKLOG 2026-08-02 (evening) has the
+full record; open debt listed there.
+
 ## Update 2026-07-28 (E6 regression battery hardened — G8/G9/durable-floor/work-leg; NOT rehearsed on a fork)
 
 Six fresh auditors on non-overlapping lenses found **two cutover-BLOCKERS in the newly added checks**:
