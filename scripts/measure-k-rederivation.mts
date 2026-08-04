@@ -1,6 +1,7 @@
 #!/usr/bin/env -S npx tsx
-// Re-derive K under ADR-103's metric, per k-rederivation-PRE-REGISTRATION.md (committed 541b98e
-// BEFORE any document was selected or scored). This script only executes the rules fixed there.
+// Re-derive K under ADR-103's metric, per k-rederivation-PRE-REGISTRATION-v2.md (committed 29d2d77
+// BEFORE this run). v1 was UNDERPOWERED by its own floor because the fill was author-by-author and
+// the cap was exhausted by two authors; v2 changes the FILL ORDER to round-robin and nothing else.
 //
 //   BIBLE_DIR=web/public/bible CCEL_DIR=/abs/path/to/data/raw/ccel npx tsx scripts/measure-k-rederivation.mts
 
@@ -17,9 +18,9 @@ const MIN_DOC_CHARS = 4000;
 const GOLD_FLOOR = 5;
 const K_SWEEP = [1, 2, 3, 4, 5, 6, 7, 8];
 const PRECISION_BAR = 0.6;
-const MAX_WORKS_PER_AUTHOR = 4;
-const MAX_DOCS_PER_SET = 60;
-const MIN_AUTHORS = 3;
+const MAX_WORKS_PER_AUTHOR = 6;
+const MAX_DOCS_PER_SET = 90;
+const MIN_AUTHORS = 5;
 const MIN_DOCS = 25;
 const EXCLUDED_AUTHOR = 'spurgeon';
 
@@ -88,11 +89,16 @@ eligibleAuthors.forEach((a, i) => setAuthors[i % 2 === 0 ? 0 : 1]!.push(a));
 interface Doc { author: string; work: string; heading: string; body: string; gold: Set<number>; hits: Map<number, number> }
 
 function buildSet(authors: string[], label: string): { docs: Doc[]; zeroGold: number; belowFloor: number; scanned: number } {
-  const docs: Doc[] = [];
   let zeroGold = 0;
   let belowFloor = 0;
   let scanned = 0;
-  outer: for (const a of authors) {
+
+  // v2: collect each author's eligible documents FIRST, then take round-robin. v1 took them
+  // author-by-author, so the first two authors exhausted the cap and the set never reached a
+  // third — the B-1 monoculture failure reproduced by a fill order.
+  const perAuthor = new Map<string, Doc[]>();
+  for (const a of authors) {
+    const mine: Doc[] = [];
     for (const w of (byAuthor.get(a) ?? []).slice(0, MAX_WORKS_PER_AUTHOR)) {
       let secs;
       try { secs = buildCcelSections(readFileSync(path.join(CCEL_DIR, w), 'utf8')); } catch { continue; }
@@ -103,9 +109,24 @@ function buildSet(authors: string[], label: string): { docs: Doc[]; zeroGold: nu
         const gold = goldOf(body);
         if (gold.size === 0) { zeroGold++; continue; }
         if (gold.size < GOLD_FLOOR) { belowFloor++; continue; }
-        docs.push({ author: a, work: w, heading: String((s as { heading?: string }).heading ?? ''), body, gold, hits: hitsOf(body) });
-        if (docs.length >= MAX_DOCS_PER_SET) break outer;
+        mine.push({ author: a, work: w, heading: String((s as { heading?: string }).heading ?? ''), body, gold, hits: hitsOf(body) });
       }
+    }
+    if (mine.length > 0) perAuthor.set(a, mine);
+  }
+  const docs: Doc[] = [];
+  const cursors = new Map([...perAuthor.keys()].map((a) => [a, 0]));
+  let progressed = true;
+  while (docs.length < MAX_DOCS_PER_SET && progressed) {
+    progressed = false;
+    for (const a of perAuthor.keys()) {
+      const i = cursors.get(a)!;
+      const list = perAuthor.get(a)!;
+      if (i >= list.length) continue;
+      docs.push(list[i]!);
+      cursors.set(a, i + 1);
+      progressed = true;
+      if (docs.length >= MAX_DOCS_PER_SET) break;
     }
   }
   console.error(`${label}: ${docs.length} eligible docs from ${new Set(docs.map((d) => d.author)).size} authors (scanned ${scanned}, zero-gold ${zeroGold}, below-floor ${belowFloor})`);
@@ -135,7 +156,7 @@ const say = (s = '') => { out.push(s); console.log(s); };
 
 say('# RESULT — K re-derived under ADR-103\'s metric');
 say();
-say('Pre-registration: `k-rederivation-PRE-REGISTRATION.md`, committed at 541b98e before this ran.');
+say('Pre-registration: `k-rederivation-PRE-REGISTRATION-v2.md`, committed at 29d2d77 before this ran.');
 say(`Index: **${TRANSLATION}**. Gold = ≥1 shared ${GOLD_NGRAM}-gram. Returns = ≥K shared ${NGRAM}-grams, minVerseShingles=${MIN_VERSE_SHINGLES}.`);
 say();
 say('## The sets');
