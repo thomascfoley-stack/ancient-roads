@@ -157,6 +157,20 @@ html {
   background: color-mix(in oklab, var(--color-accent-300) 45%, transparent);
 }
 
+/* Skip link. Written here rather than as `focus:top-4` because the focus variant lost to
+ * the resting `-top-20` in the utilities layer and the link stayed off-screen when focused,
+ * which is the same as not having one. Unlayered, so it wins. */
+.skip-link {
+  position: absolute;
+  top: -5rem;
+  left: 1rem;
+  z-index: 50;
+  transition: top 0.2s var(--ease-gentle);
+}
+.skip-link:focus {
+  top: 1rem;
+}
+
 /* Reader font-size control (set --reading-size on the reading container) */
 .reading-scale { font-size: var(--reading-size, 1.125rem); }
 

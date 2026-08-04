@@ -68,7 +68,12 @@ export function MobileNav() {
           className="fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around bg-paper/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-1px_2px_rgba(35,28,18,0.06),0_-8px_24px_-12px_rgba(35,28,18,0.18)] md:hidden dark:bg-stone-900/95"
         >
           {tabs.map((t) => (
-            <Link key={t.href} href={t.href} className={tabClass(t.active)}>
+            <Link
+              key={t.href}
+              href={t.href}
+              aria-current={t.active ? 'page' : undefined}
+              className={tabClass(t.active)}
+            >
               {t.icon}
               {t.label}
             </Link>

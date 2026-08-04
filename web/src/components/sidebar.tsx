@@ -495,6 +495,7 @@ function SidebarLink({
     <Link
       href={href}
       onClick={onNavigate}
+      aria-current={active ? 'page' : undefined}
       className={`flex items-center gap-2.5 rounded-md px-2 text-sm transition-colors ${row} ${
         active
           ? 'bg-stone-200/80 font-medium text-stone-900 dark:bg-stone-700/70 dark:text-stone-100'

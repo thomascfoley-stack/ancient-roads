@@ -87,7 +87,12 @@ export function Omnibox() {
       />
       <div className="relative w-full max-w-lg rounded-2xl bg-paper shadow-deep animate-fade-in dark:bg-stone-900">
         <form onSubmit={onSubmit}>
-          <div className="flex items-center border-b border-stone-200/70 px-4 dark:border-stone-800">
+          {/* The input carries `focus-quiet`, which suppresses the global :focus-visible
+              outline, and nothing replaced it: focus on the omnibox was completely
+              invisible. Tabbing back from the result list showed no indicator at all.
+              The rule for .focus-quiet is that the container shows focus instead, so the
+              container now actually does. */}
+          <div className="flex items-center border-b border-stone-200/70 px-4 transition-colors focus-within:border-accent-500 dark:border-stone-800 dark:focus-within:border-accent-400">
             <svg
               className="h-4 w-4 shrink-0 text-stone-400"
               fill="none"

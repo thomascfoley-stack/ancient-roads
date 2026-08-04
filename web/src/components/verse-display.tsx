@@ -163,17 +163,30 @@ export function VerseDisplay({
                   OWNER RULING, 2026-08-02: ADR-047 (docs/DECISIONS.md), amending
                   docs/LIBRARY_READER_BUILD.md's "do not change tap-a-verse -> commentaries"
                   boundary. Recorded before this code changed, not after. */}
-              <sup
-                onClick={() => onVerseClick(v.verse)}
-                className="relative mr-0.5 font-sans text-[11px] font-semibold text-accent-600/80 select-none before:absolute before:-inset-y-1 before:-left-1.5 before:-right-0.5 before:content-[''] dark:text-accent-300/80"
-              >
-                {v.verse}
+              {/* A real <button>, not a <sup onClick>. The handle above is the reader's
+                  primary interaction and it was reachable by pointer only: no tabIndex, no
+                  role, no key handler, so a keyboard user could not open the commentary for
+                  any verse in the app. The <sup> stays as the baseline wrapper so nothing
+                  reflows, and the button keeps this element's exact box, `select-none` and
+                  `before:` tap target, so the pointer behaviour ADR-047 rules on is
+                  unchanged. `appearance-none` and the explicit font keep the browser's
+                  button defaults out of the verse line. */}
+              <sup className="mr-0.5">
+                <button
+                  type="button"
+                  onClick={() => onVerseClick(v.verse)}
+                  aria-label={`Verse ${v.verse}, read commentary`}
+                  className="relative appearance-none bg-transparent p-0 font-sans text-[11px] font-semibold leading-none text-accent-600/80 select-none before:absolute before:-inset-y-1 before:-left-1.5 before:-right-0.5 before:content-[''] hover:text-accent-700 dark:text-accent-300/80 dark:hover:text-accent-200"
+                >
+                  {v.verse}
+                </button>
               </sup>
               {foreignColor && (
                 <sup
                   className={`mr-0.5 inline-block h-1.5 w-1.5 rounded-full align-super ${HIGHLIGHT_BG[foreignColor] ?? ''} select-none`}
-                  title="Highlighted in another translation"
-                />
+                >
+                  <span className="sr-only">Highlighted in another translation</span>
+                </sup>
               )}
               {/* The verse-text container: its text nodes concatenate to exactly v.text, so the
                   anchoring mapper (rangeToOffsetsInContainer) walks it to derive offsets into v.text. */}
@@ -188,15 +201,24 @@ export function VerseDisplay({
                   ),
                 )}
               </span>{' '}
+              {/* The glyph is decorative and the `title` that used to carry its meaning was
+                  hover-only: absent on touch, unreliable to assistive tech. The glyph is
+                  now aria-hidden and the meaning is real text beside it. */}
               {hasNote && (
-                <sup className="mr-0.5 select-none text-accent-600 dark:text-accent-300" title="You have a note here">
-                  ✎
-                </sup>
+                <>
+                  <sup className="mr-0.5 select-none text-accent-600 dark:text-accent-300" aria-hidden>
+                    ✎
+                  </sup>
+                  <span className="sr-only">You have a note here.</span>
+                </>
               )}
               {isBookmarked && (
-                <sup className="mr-0.5 select-none text-accent-600 dark:text-accent-300" title="Bookmarked">
-                  ⚑
-                </sup>
+                <>
+                  <sup className="mr-0.5 select-none text-accent-600 dark:text-accent-300" aria-hidden>
+                    ⚑
+                  </sup>
+                  <span className="sr-only">Bookmarked.</span>
+                </>
               )}
             </span>
           );
