@@ -160,6 +160,47 @@ export const USER_TABLE_SPEC = {
     active: 'true',
     body: ['title', 'topic', 'description', 'sections', 'progress', 'is_template', 'updated_at'],
   },
+
+  // ── Slice 1's personal corpus (migrations 100/102/103) ────────────────────────────────────────
+  // These are USER DATA in the fullest sense — a pastor's unpublished sermon manuscripts — so they
+  // belong in the spec, not the exclusion list. Registering them means corpus-copy.mjs asserts it
+  // never copies them, and the cutover regression gate digests them so they provably survive.
+  //
+  // All four hard-delete via the FK cascade (document -> sections -> {embeddings, anchors}), so
+  // there is no tombstone and every row is live.
+  user_documents: {
+    anchor: ['checksum', 'created_at'],
+    tombstone: null,
+    active: 'true',
+    // `attempts` and `claimed_at` are deliberately OUT of the body: they are queue mechanics that
+    // change on every drain tick, and including them would make the digest churn against a
+    // pre-cutover baseline for reasons that have nothing to do with user data surviving.
+    body: ['title', 'doc_type', 'source_filename', 'blob_url', 'byte_size', 'status', 'parse_error',
+      'mime_type', 'page_count', 'extractable_chars'],
+  },
+  user_sections: {
+    anchor: ['document_id', 'ordinal', 'created_at'],
+    tombstone: null,
+    active: 'true',
+    body: ['heading', 'body', 'kind'],
+  },
+  user_section_embeddings: {
+    idColumns: ['section_id', 'model_slug'], // composite PK; no `id` column (migration 100)
+    anchor: ['section_id', 'model_slug'],
+    tombstone: null,
+    active: 'true',
+    // The vector itself is not in the body: 1024 floats per row would dominate the digest cost
+    // for no gain, and (section_id, model_slug) already identifies it. A vector that changed
+    // under a fixed section+model would be a model-parity breach, which ADR-102's check owns.
+    body: [],
+  },
+  user_section_anchors: {
+    idColumns: ['section_id', 'verse_id_start', 'channel'], // composite PK (migration 103)
+    anchor: ['section_id', 'verse_id_start', 'verse_id_end', 'channel'],
+    tombstone: null,
+    active: 'true',
+    body: ['match_count', 'confidence'],
+  },
 };
 
 /** Derived from USER_TABLE_SPEC — do not hand-edit. */
@@ -171,15 +212,37 @@ const nn = (c) => `coalesce(${c}::text, '<NULL>')`;
 const FS = `E'\\x1f'`; // field separator, a control char that cannot occur in a uuid
 const RS = `E'\\x1e'`; // record separator
 
+// ROW IDENTITY IS DECLARED, like the columns above and for the same reason.
+// It defaulted to a hardcoded 'id' in both the identity list and the ORDER BY,
+// which is true of every table classified before 2026-08-03 and FALSE of the
+// two junction tables migration 100 added: user_section_embeddings keys on
+// (section_id, model_slug) and user_section_anchors on (section_id,
+// verse_id_start, channel), and neither has an `id`. measureSql would raise
+// 42703, which cutover.mjs reports as "a column this invariant covers has been
+// dropped or renamed ... restore from the pre-cutover snapshot" — a false
+// schema-regression verdict on a healthy database. Declaring idColumns keeps
+// the default byte-identical for every pre-existing table (so no committed
+// digest baseline moves) and makes a composite-PK table measurable rather than
+// fatal.
+//
+// CONCURRENCY NOTE: Lane A's uncommitted /plans work introduces this same
+// helper, with the same name, default and dedupe, for plan_days and
+// plan_day_readings. It is replicated here rather than invented differently so
+// the merge is "both added the same thing" instead of two divergent designs.
+// Expect a textual conflict at merge that resolves by taking either side.
+const idColumnsOf = (s) => s.idColumns ?? ['id'];
+
 /** Per-table counts + active count + the ordered-row md5 digest, in one round trip. */
 export function measureSql(table) {
   const s = USER_TABLE_SPEC[table];
   if (!s) throw new Error(`no user-data spec for table ${table}`);
   const ownerCol = s.ownerColumn ?? 'user_id';
+  const ids = idColumnsOf(s);
+  const seen = new Set();
   const identity = (s.hasUserId === false
-    ? ['id', ...s.anchor, ...(s.tombstone ? [s.tombstone] : [])]
-    : ['id', ownerCol, ...s.anchor, ...(s.tombstone ? [s.tombstone] : [])]
-  ).map(nn);
+    ? [...ids, ...s.anchor, ...(s.tombstone ? [s.tombstone] : [])]
+    : [...ids, ownerCol, ...s.anchor, ...(s.tombstone ? [s.tombstone] : [])]
+  ).filter((c) => !seen.has(c) && seen.add(c)).map(nn);
   const body = s.body.length > 0 ? [`md5(${s.body.map(nn).join(` || ${FS} || `)})`] : [];
   const rowExpr = [...identity, ...body].join(` || ${RS} || `);
   const usersCol = s.hasUserId === false
@@ -188,7 +251,7 @@ export function measureSql(table) {
   return `SELECT count(*)::int AS rows,
                  ${usersCol},
                  count(*) FILTER (WHERE ${s.active})::int AS active,
-                 coalesce(md5(string_agg(md5(${rowExpr}), '' ORDER BY id::text)), 'EMPTY') AS digest
+                 coalesce(md5(string_agg(md5(${rowExpr}), '' ORDER BY ${ids.map((c) => `${c}::text`).join(', ')})), 'EMPTY') AS digest
             FROM ${table}`;
 }
 

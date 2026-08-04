@@ -37,19 +37,20 @@ function localEnv(name: string): string | undefined {
 }
 const arg = (flag: string) => process.argv.find((a) => a.startsWith(`${flag}=`))?.slice(flag.length + 1);
 
-// A scanned reference counts as an EXPLICIT citation only if the book is named
-// in the text next to a digit ("Isa. 53:7", "1 Samuel 12"). scanReferences over
-// free prose false-positives on bare aliases — the deep-audit found "which is
-// 3,000,000" parsed as Isaiah 3 via the `is` alias. Conservative: a genuine
-// citation always names its book; anything else is dropped, never anchored.
-export function isExplicitCitation(display: string, body: string): boolean {
-  const bookPart = display.replace(/[\s ]+[0-9].*$/, ''); // "1 Samuel 12:1–5" → "1 Samuel"
-  const lastWord = bookPart.split(/\s+/).pop() ?? bookPart;
-  const stem = lastWord.slice(0, Math.min(3, lastWord.length));
-  if (!stem) return false;
-  const re = new RegExp(`\\b${stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[a-z]*\\.?\\s+[0-9ivxlc]`, 'i');
-  return re.test(body);
-}
+// MOVED to `src/bible/explicit-citation.ts` on 2026-08-03, and re-exported here so this file's two
+// existing callers (this module and `ingest-sermon.ts:23`) keep their import unchanged.
+//
+// Why it moved: Slice 1's user-corpus anchorer needs the same gate, and `web/` cannot import
+// `src/ingest/` — that is the A6 defect which killed a production deploy. `src/bible/` is mirrored
+// into `web/src/bible/` byte-for-byte, so relocating it leaves ONE implementation instead of the
+// second copy the FROZEN Slice 0 primitives forced in `uncited-shingle.ts`. The function is
+// unchanged, and it acquired its first tests in the same commit.
+//
+// Imported AND re-exported, not just re-exported: `export { x } from '...'` forwards the binding
+// without introducing it into this module's scope, and line ~201 below calls it directly. tsc
+// caught that immediately (TS2304), which is the sync guard doing its job.
+import { isExplicitCitation } from '../bible/explicit-citation.js';
+export { isExplicitCitation };
 
 // period_* from VERBATIM date expressions only (§5 of the contract).
 export function verbatimPeriod(text: string): { start: number; end: number } | null {
