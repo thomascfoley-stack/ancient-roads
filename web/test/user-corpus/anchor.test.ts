@@ -7,7 +7,7 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { anchorChunk } from '@/lib/user-corpus/anchor';
+import { MIN_VERSE_SHINGLES, SHIPPED_K, anchorChunk } from '@/lib/user-corpus/anchor';
 import { buildVerseShingleIndex, type IndexedVerse } from '@bible/uncited-shingle';
 
 const KJV_DIR = path.resolve(__dirname, '../../public/bible/kjv');
@@ -176,5 +176,33 @@ describe.skipIf(!HAVE_BIBLE)('shape', () => {
   it('never emits a prose channel — Slice 1 ships two, and says so', () => {
     const body = 'Romans 8:28. For God so loved the world, that he gave his only begotten Son.';
     for (const x of anchorChunk(body, base())) expect(['explicit', 'uncited']).toContain(x.channel);
+  });
+});
+
+describe('the shipped K', () => {
+  it('is 3 — the largest K that provably cannot exclude a gold verse (ADR-105)', () => {
+    // SEED: set it to 2 (what the pre-registered rule selected) -> RED. K=2 ships ~8 extra
+    // returns per document for ZERO recall gain, which is the wall-of-noise the knob exists to
+    // prevent. The reason for 3 is arithmetic: gold is an >=8-word run, an 8-word run contains
+    // exactly three 6-word runs, so every gold verse contributes >=3 matching shingles by
+    // construction and K<=3 cannot drop one. Measured: precision 0.935/0.951 vs 0.729/0.716 at
+    // K=2, at identical recall.
+    expect(SHIPPED_K).toBe(3);
+  });
+
+  it('is consistent with the arithmetic it rests on', () => {
+    // If GOLD_NGRAM or NGRAM ever move, SHIPPED_K's justification moves with them and this test
+    // is where that gets noticed. 8 - 6 + 1 = 3.
+    const GOLD_NGRAM = 8;
+    const NGRAM = 6;
+    expect(GOLD_NGRAM - NGRAM + 1).toBe(SHIPPED_K);
+  });
+
+  it('is not the same knob as the distinctiveness floor, though both are 3', () => {
+    // They coincide numerically today, which is exactly how the frozen harness's
+    // `K_MIN_VERSE_SHINGLES` came to be mistaken for the trade-curve K. Asserting they are
+    // separately named stops a future edit collapsing them.
+    expect(MIN_VERSE_SHINGLES).toBe(3);
+    expect(SHIPPED_K).toBe(3);
   });
 });

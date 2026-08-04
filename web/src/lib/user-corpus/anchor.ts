@@ -29,6 +29,30 @@ import { uncitedMatches, type VerseShingleIndex } from '@bible/uncited-shingle';
  */
 export type AnchorChannel = 'explicit' | 'uncited';
 
+/**
+ * **K — the shipped return threshold. ADR-105.**
+ *
+ * A verse is returned iff at least this many of its 6-gram shingles appear in the chunk. Re-derived
+ * under ADR-103's metric on 90 documents across 33 authors and validated on a disjoint 90 across 34
+ * (`docs/evidence/lane-b-slice1/k-rederivation-RESULT.md`), then ruled to 3 on a structural
+ * argument: gold is an ≥8-word verbatim run, an 8-word run contains exactly three 6-word runs, so
+ * every gold verse contributes ≥3 matching shingles BY CONSTRUCTION and K ≤ 3 cannot exclude one.
+ * K = 3 is therefore the largest K that provably cannot drop a gold verse — measured precision
+ * 0.935 / 0.951 against 0.729 / 0.716 at K = 2, at identical recall.
+ *
+ * ONE definition, imported everywhere. The repo's most-punished defect is a constant hand-typed in
+ * several places, and this one decides whether "have I written on Romans 8?" returns the passage or
+ * buries it.
+ */
+export const SHIPPED_K = 3;
+
+/**
+ * The distinctiveness floor Slice 0 froze: a verse must have at least this many distinct shingles
+ * to be eligible at all. NOT the K above — the frozen harness calls it `K_MIN_VERSE_SHINGLES`,
+ * which is how the two came to be confused.
+ */
+export const MIN_VERSE_SHINGLES = 3;
+
 export interface Anchor {
   verseStart: number;
   verseEnd: number;

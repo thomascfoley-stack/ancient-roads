@@ -1242,3 +1242,54 @@ dispute that framing — it accepts it as the price of not forking the predicate
 **Watch for:** this is a **database/code split across lanes**, not a normal dependency. Lane A
 applied a migration to the shared `dev` parent, so every branch cut from it inherited a column its
 code cannot see. Any future lane cutting from `dev` will inherit the same asymmetry.
+
+## ADR-105 — K = 3 ships: the largest K that provably cannot exclude a gold verse (2026-08-03)
+
+**Context:** ADR-103 required K to be re-derived under the new metric rather than carried over from
+Slice 0. It was, on 90 documents across 33 authors, validated on a disjoint 90 across 34
+(`evidence/lane-b-slice1/k-rederivation-{PRE-REGISTRATION-v2,RESULT}.md`). The pre-registered rule —
+"the smallest K whose mean precision ≥ 0.60" — selected **K = 2**, which cleared on SET 1 (0.729)
+and transferred to SET 2 (0.716). That derivation is valid and stands.
+
+**Then the table showed the rule had picked a dominated value.**
+
+| | K=2 | K=3 |
+|---|---|---|
+| SET 1 precision / recall | 0.729 / 0.871 | **0.935** / 0.871 |
+| SET 2 precision / recall | 0.716 / 0.891 | **0.951** / 0.891 |
+| returns per document | ~28 | ~20 |
+
+**Decision (owner, 2026-08-03): K = 3 ships.**
+
+**The reason is arithmetic, not the numbers.** Gold is defined as "the body contains an **≥8-word**
+verbatim run". An 8-word run contains exactly **three** 6-word runs (8 − 6 + 1 = 3), so every gold
+verse contributes at least three matching 6-gram shingles *by construction*, and `returns ⊇ gold`
+for any K ≤ 3. Raising K to 3 cannot drop a gold verse — it can only drop non-gold ones, which is
+exactly what the precision column shows and why recall is flat across K=1..3 on both sets and falls
+off a cliff at K=4 (0.871 → 0.728, 0.891 → 0.707). **K = 3 is the largest K that provably cannot
+exclude a gold verse**, and that is a property of the metric's own definitions, not of these
+documents.
+
+**THIS RULING WAS MADE AFTER SEEING THE TABLE, and that is recorded rather than smoothed over.**
+The honest objection is that "the number looked better once I saw it" is the move pre-registration
+exists to stop. Three things make it acceptable here, and a reader should weigh them rather than
+take the conclusion:
+
+1. **The argument does not depend on the measured values.** It follows from `8 − 6 + 1 = 3`. Had
+   both sets come back with different precisions, K=3 would still be the largest K that cannot
+   exclude a gold verse.
+2. **It is not a bar being moved.** The pre-registered precision bar (0.60) and the validation
+   requirement are untouched; K=3 clears both by a wider margin than K=2 did.
+3. **It agrees with Slice 0's independent recommendation of K=3**, reached on one author under the
+   *old* metric. Two routes, two populations, two metrics, same number. Their recalls are not
+   comparable and are not compared; the precisions are, and 0.935/0.951 sits beside Slice 0's 0.96.
+
+**Rejected:** *K = 2* — what the rule selected, and it ships ~8 extra returns per document for zero
+recall gain, which is the wall-of-noise failure the K knob exists to prevent. *A v3
+pre-registration validated on a third set* — the rigorous path, and the right one if the argument
+were empirical; it is not, so the run would confirm arithmetic at the cost of another measurement.
+
+**The rule that should have been written**, recorded so the next pre-registration copies it rather
+than the one that misfired: *the largest K that cannot exclude a gold verse, subject to precision
+≥ bar.* "Smallest K clearing the bar" silently assumes recall falls monotonically with K, which is
+false wherever gold is defined by a longer n-gram than returns are.
