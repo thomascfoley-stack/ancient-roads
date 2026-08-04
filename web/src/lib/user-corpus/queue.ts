@@ -13,9 +13,14 @@
 // sitting in 'parsing' where no one would look for it.
 
 import { runAsUser } from '@/lib/db';
+import { MIN_VERSE_SHINGLES, SHIPPED_K, anchorChunk } from './anchor';
+import { getAnchorIndex } from './bible-index';
 import { getUserDocument } from './blob';
+import { chunkProse } from './chunk';
 import { setDocStatus, setParseResult } from './documents';
+import { embedChunks } from './embed';
 import { extractText, judgeExtraction } from './parse';
+import { storeSections } from './sections';
 import { UploadRefused, type DocStatus, type UserDocument } from './types';
 
 /** After this many attempts a document is retired rather than retried forever. */
@@ -83,12 +88,13 @@ export async function reapExhausted(userId: string): Promise<number> {
 }
 
 /**
- * Parse one claimed document and write its outcome.
+ * Take one claimed document all the way: parse -> chunk -> anchor -> embed -> store -> 'ready'.
  *
- * On success the document lands in 'chunking', NOT 'ready'. Step 2 builds no chunker, so 'ready'
- * would be a false claim of searchability -- the order's "prove the pipeline reports honestly
- * before it reports success". 'chunking' is true today: the document is parsed and waiting for
- * step 3.
+ * `ready` means INDEXED AND SEARCHABLE, and it is set in exactly one place: after the sections,
+ * their vectors and their anchors are committed. Until this wiring landed the drain stopped at
+ * 'chunking' on purpose, because claiming `ready` with no chunker would have been a false claim of
+ * searchability. The status walk is visible throughout -- 'parsing' -> 'chunking' -> 'embedding' ->
+ * 'ready' -- so a document stuck anywhere says WHERE it is stuck rather than merely that it is.
  */
 async function processOne(userId: string, row: Row): Promise<DocStatus> {
   if (!row.blob_url) {
@@ -109,8 +115,46 @@ async function processOne(userId: string, row: Row): Promise<DocStatus> {
 
     judgeExtraction(parsed, type);
 
+    // ── chunk ────────────────────────────────────────────────────────────────────────────────────
     await setDocStatus(userId, row.id, 'chunking', null);
-    return 'chunking';
+    const chunks = chunkProse(parsed.text);
+    if (chunks.length === 0) {
+      // judgeExtraction already passed, so there IS text; producing no chunks from it would be a
+      // chunker bug, and indexing nothing while reporting ready is the silent drop this refuses.
+      await setDocStatus(userId, row.id, 'empty', 'The document produced no indexable text.');
+      return 'empty';
+    }
+
+    // ── anchor ───────────────────────────────────────────────────────────────────────────────────
+    // Throws BibleIndexUnavailable if the index is missing, rather than anchoring nothing. An empty
+    // index would lose the channel carrying 90% of the recall and still report success.
+    const index = getAnchorIndex();
+    const anchored = chunks.map((chunk) => ({
+      chunk,
+      anchors: anchorChunk(chunk.text, {
+        index,
+        minHits: SHIPPED_K,
+        minVerseShingles: MIN_VERSE_SHINGLES,
+        // Detection is not built; Slice 1 shingles against the KJV family's canonical member and
+        // says so at full confidence. ADR-100's confidence field is what will qualify this when
+        // detection lands.
+        translationConfidence: 1.0,
+      }),
+    }));
+
+    // ── embed ────────────────────────────────────────────────────────────────────────────────────
+    await setDocStatus(userId, row.id, 'embedding', null);
+    const vectors = await embedChunks(anchored.map((a) => a.chunk.text));
+    if (vectors.length !== anchored.length) {
+      throw new Error(`embedder returned ${vectors.length} vectors for ${anchored.length} chunks`);
+    }
+
+    // ── store ────────────────────────────────────────────────────────────────────────────────────
+    // One transaction: either the document is fully indexed or none of it is.
+    await storeSections(userId, row.id, anchored.map((a, i) => ({ ...a, embedding: vectors[i]! })));
+
+    await setDocStatus(userId, row.id, 'ready', null);
+    return 'ready';
   } catch (e) {
     if (e instanceof UploadRefused) {
       // A refusal is a VERDICT, not a transient error: OCR-less scans and empty files do not
