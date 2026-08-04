@@ -1,5 +1,85 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-04 — A9 cutover closed on production: 044 deployed, verified, 045 contracted
+
+The remaining Phase 3 steps from the served-cutover order, executed end to end against
+production, owner-directed throughout ("deploy the web app" named explicitly, then "do it
+keep going"). 044 itself landed on prod earlier (separate WORKLOG entry); this covers the
+deploy and 045.
+
+### DONE
+
+- **Audit gate genuinely failed, genuinely fixed.** `npm run audit` found two new
+  high-severity CVEs not on the reviewed `--expect-red` allowlist: `fast-uri`
+  (GHSA-7p8r-x3mc-p8w7) and `undici` (GHSA-4cwx-7wf7-3272). Did not allowlist them — the
+  gate's own message requires owner approval for that, and both had clean patches
+  available. `fast-uri` was pinned via `pnpm.overrides` at exactly the vulnerable version
+  (`^3.1.4`, stale since the override's first commit — not deliberately vulnerable);
+  bumped to `^3.1.5`. `undici` is devDependency-only (jsdom's HTTP client, never in the
+  deployed bundle); added an override forcing 7.29.0. Reinstalled, deps-audit now matches
+  `--expect-red` exactly (only the one documented, owner-accepted better-auth CVE from
+  ADR-038). Root + web typecheck clean, tests 576/576, full audit green.
+- **Bundled the `/plans` feature into this deploy — owner decision.** `deploy.sh` ships the
+  whole tree; `/plans` had 38 uncommitted files. Presented as an explicit choice rather than
+  assumed: typecheck was clean (the earlier `src/lib/plan/expand.ts` blocker had been fixed
+  by that session since), both test suites fully green, and prod's `schema_migrations`
+  ledger already showed migrations 039-042 applied — the original audit's "prod has neither
+  plans/verse_coverage/topical tables" concern no longer held. Owner chose bundle-both.
+  Committed 47 files (one of them mine — a stray uncommitted 76→88 comment fix in
+  `served-backfill-frozen.mjs`, found while checking whether a concurrent session had
+  touched a load-bearing file; it hadn't).
+- **`corpusHash` mismatch, investigated rather than routed around.** The predeploy gate
+  hard-stopped: static corpus grew 117,241 → 162,360 entries (39%) since the last committed
+  manifest, from tonight's all-night ingest sweep. Growth alone isn't a green light — flagged
+  earlier this same session that `web/public/commentaries/` has shipped content filtered
+  only client-side before (the pre-C2 defect). Before regenerating the manifest, measured:
+  the forbidden-provenance ratchet held (0), the translation-licensing gate passed, and a
+  fresh `scanServedCorpusAuthors()` run against the CURRENT on-disk corpus (1,212 files /
+  162,360 entries) against `MUST_NOT_SERVE_AUTHORS` returned zero offenders. Regenerated and
+  committed the manifest only after that.
+- **Deploy landed, survived an operator mistake.** Piped the deploy through `tee | head -150`
+  to preview output — `head` closing its end of the pipe after 150 lines SIGPIPE'd the local
+  `deploy.sh`/`vercel` CLI process mid-build, right after the 351MB upload completed and
+  Vercel's remote build had already started. Checked rather than assumed: `vercel inspect`
+  and the Vercel MCP `get_deployment` both confirmed the remote build was unaffected and
+  reached `Ready` independently — killing the local CLI does not kill a build already
+  running on Vercel's infrastructure. `ancientpaths.app` and `www.ancientpaths.app` were
+  already in the deployment's alias list (Vercel's own `--prod` promotion, no manual alias
+  step needed or taken). Wrote the deploy receipt by hand (same format `deploy.sh` uses,
+  `docs/evidence/deploys/deploy-cb58446.txt`) since the local process died before writing
+  one, with an honest note about what happened.
+- **New-bundle verification done the rigorous way, not the available way.** Could not
+  complete a live `/ask` smoke test — `SITE_PASSWORD` (the separate pre-launch site gate,
+  distinct from user accounts) isn't in local config and is Vercel-only; did not ask the
+  owner to paste it, and did not go looking for a way around the gate. Instead ran the
+  actual thing the smoke test exists to prove: `EXPLAIN` on the exact query shape the
+  deployed `routing.ts` emits, direct against production. **`Index Scan using
+  idx_embeddings_served_legal`** — confirmed, not assumed, that the shipped code's base
+  pool plans onto the new served-predicated index.
+- **045 (contract) applied.** All 5 parts, ledger recorded. Confirmed after: the four old
+  `idx_embeddings_vector_{legal,song_verse,sermon,theology}` indexes are gone; only the new
+  `idx_embeddings_served_*` set plus the two btrees remain. The redeploy window is now
+  closed (045's own header documents the contra-DDL if it's ever needed).
+
+### Where this leaves A9
+
+Migration 044 + 045 both on production, verified three separate ways (catalog state,
+`verify-served-backfill.mjs`, live `EXPLAIN`). The deploy carrying the new `routing.ts` is
+live and aliased. The cutover mechanism is fully shipped. **Not yet done, deliberately**:
+serving the 88 published-but-unserved works (P4.0, `docs/evidence/corpus-copy/serve-88.json`
+— an explicit, separate, owner-gated flip) and the successor work the order names (FTS/static/
+today.ts still on frozen lists, the work-less legacy cohort's missing off-switch, the
+36k-43k world-readable blocked static entries).
+
+### NOT DONE / UNVERIFIED
+
+- No live `/ask` smoke test through the actual UI — the EXPLAIN check proves the query plan,
+  not the full compose→verify pipeline end to end. Worth a real check next time someone has
+  `SITE_PASSWORD` in hand.
+- The two prior WORKLOG entries this session should have referenced (044's dev+prod apply
+  timing) aren't cross-linked here; a reader landing on just this entry won't see the timing
+  data without searching.
+
 ## 2026-08-03 — ADR-047 was claimed twice; the uncommitted claim renumbered to 048
 
 Third instance of the number-collision class in two days (migrations 042 and 042-mid-rename were
