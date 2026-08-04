@@ -1,0 +1,34 @@
+§5 — MODEL PARITY. 2026-08-04T05:25:36Z
+
+THE TRAP, MEASURED AGAINST THE LIVE DATABASE. The corpus stores TWO strings for one model:
+    section_embeddings.model_slug   'bge-large-en-v1.5'         362,948 rows
+    embeddings.metadata->>'model'   'BAAI/bge-large-en-v1.5'  1,070,674 rows
+and the tradition-gap join reads `embeddings`, because that is where `served` lives --
+while migration 100 documented the user table as carrying the SHORT form. So 'compare the
+slugs' has no single right answer and both natural implementations are wrong:
+  * userRow.model_slug === EMBED_MODEL is TAUTOLOGICALLY GREEN -- writer and check read the
+    same constant, so every user row passes while silently mismatching the corpus.
+  * comparing to the short literal passes against section_embeddings and FAILS against every
+    row of embeddings, which is the plane the join actually uses.
+Resolved by making parity about the MODEL rather than the spelling, and by requiring the
+caller to supply the corpus's OWN recorded value -- isJoinable has no default, so the
+tautology is unrepresentable rather than merely discouraged.
+
+NO API CALL IN THIS SUITE. Neither CI job supplies DEEPINFRA_API_KEY, so a parity check that
+needed the network would never run where it matters. Every assertion is on stored values.
+
+== PASS ==
+  Tests  10 passed (10)
+
+== RED-PROOFS ==
+SEED 1 - normaliseModel returns a constant (parity always true):
+  Tests  5 failed | 5 passed (10)
+SEED 2 - hand-type the db slug instead of deriving it, and let it drift:
+  Tests  2 failed | 8 passed (10)
+SEED 3 - paste the literal into a sibling file (single-source guard):
+  Tests  1 failed | 9 passed (10)
+SEED 4 - isJoinable ignores its corpus argument, i.e. THE TAUTOLOGY MADE REAL:
+  Tests  1 failed | 9 passed (10)
+
+== RESTORED ==
+  Tests  10 passed (10)
