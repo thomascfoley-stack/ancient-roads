@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { loadFullLexicon, type LexEntry } from '@/lib/original';
 import { useDragDismiss } from '@/lib/use-drag-dismiss';
+import { useDialog } from '@/lib/use-dialog';
 
 type Lang = 'greek' | 'hebrew';
 
@@ -146,6 +147,7 @@ export default function WordStudyPage() {
 
 function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: () => void }) {
   const drag = useDragDismiss(onClose);
+  const dialog = useDialog(onClose, 'Lexicon entry');
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -162,6 +164,8 @@ function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: ()
       }}
     >
       <div
+        ref={dialog.ref}
+        {...dialog.dialogProps}
         className="flex max-h-[85dvh] w-full max-w-lg flex-col rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] shadow-deep animate-slide-up dark:bg-stone-900"
         style={drag.style}
       >

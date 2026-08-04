@@ -6,6 +6,7 @@ import { type CommentaryEntry } from '@/lib/bible';
 import { HIGHLIGHT_COLORS } from '@/lib/highlight-colors';
 import { fetchLexEntry, decodeMorph, type OWord, type LexEntry } from '@/lib/original';
 import { useDragDismiss } from '@/lib/use-drag-dismiss';
+import { useDialog } from '@/lib/use-dialog';
 import {
   eraLabel,
   pickDiverse,
@@ -51,6 +52,7 @@ export function StudyPanel({
 }) {
   const [tab, setTab] = useState<StudyTab>(defaultTab);
   const drag = useDragDismiss(onClose);
+  const dialog = useDialog(onClose, 'Study this verse');
 
   useEffect(() => setTab(defaultTab), [defaultTab, verseNum]);
 
@@ -82,6 +84,8 @@ export function StudyPanel({
       }}
     >
       <div
+        ref={dialog.ref}
+        {...dialog.dialogProps}
         className="flex max-h-[88dvh] w-full max-w-2xl flex-col rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] shadow-deep animate-slide-up dark:bg-stone-900"
         style={drag.style}
       >

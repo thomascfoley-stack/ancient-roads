@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { SidebarNavContent } from './sidebar';
 import { OMNIBOX_OPEN_EVENT } from './omnibox';
 import { useDragDismiss } from '@/lib/use-drag-dismiss';
+import { useDialog } from '@/lib/use-dialog';
 
 // Phone navigation: a bottom tab bar for the primary destinations (thumb
 // zone) plus a Menu sheet carrying the full sidebar content (Home, study
@@ -102,6 +103,7 @@ export function MobileNav() {
 
 function MenuSheet({ onClose }: { onClose: () => void }) {
   const drag = useDragDismiss(onClose);
+  const dialog = useDialog(onClose, 'Menu');
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-stone-950/40 animate-fade-in md:hidden"
@@ -110,6 +112,8 @@ function MenuSheet({ onClose }: { onClose: () => void }) {
       }}
     >
       <div
+        ref={dialog.ref}
+        {...dialog.dialogProps}
         className="flex max-h-[85dvh] w-full flex-col rounded-t-3xl bg-stone-50 pb-[env(safe-area-inset-bottom)] shadow-deep animate-slide-up dark:bg-stone-900"
         style={drag.style}
       >

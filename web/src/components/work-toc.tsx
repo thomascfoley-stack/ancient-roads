@@ -8,6 +8,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDragDismiss } from '@/lib/use-drag-dismiss';
+import { useDialog } from '@/lib/use-dialog';
 import { filterTocUnits, tocGroups, tocUnitLabel } from '@/lib/work-reader';
 import type { WorkTocUnit } from '@/lib/work';
 
@@ -35,6 +36,7 @@ export function WorkToc({
   onClose: () => void;
 }) {
   const drag = useDragDismiss(onClose);
+  const dialog = useDialog(onClose, 'Contents');
   const listRef = useRef<HTMLDivElement | null>(null);
   // The SERVER groups now (lib/work.ts): one row per unit, carrying its ordinal RANGE instead of
   // its member rows. This used to call groupTocByUnit(toc) over one row per SECTION, which is why
@@ -110,6 +112,8 @@ export function WorkToc({
       }}
     >
       <div
+        ref={dialog.ref}
+        {...dialog.dialogProps}
         className="flex max-h-[88dvh] w-full max-w-2xl flex-col rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] shadow-deep animate-slide-up dark:bg-stone-900"
         style={drag.style}
       >

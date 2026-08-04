@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useDialog } from '@/lib/use-dialog';
 import { BOOKS, type Book, bookUrl } from '@/lib/bible';
 import Link from 'next/link';
 
@@ -22,6 +23,10 @@ export function BookPicker({
   const [stage, setStage] = useState<'book' | 'chapter'>('book');
   const [selectedBook, setSelectedBook] = useState<Book>(currentBook);
   const [sort, setSort] = useState<SortMode>('canonical');
+  // Full-screen and, until now, inescapable by keyboard: no Escape handler, no backdrop
+  // dismiss, close was the one button. useDialog supplies Escape, the focus trap and
+  // focus restore; the two returns below are exclusive stages of the same overlay.
+  const dialog = useDialog(onClose, 'Choose a book or chapter');
 
   const sorted =
     sort === 'canonical'
@@ -43,7 +48,11 @@ export function BookPicker({
           : 'bg-paper text-stone-700 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:shadow-none'
       }`;
     return (
-      <div className="fixed inset-0 z-50 overflow-auto overscroll-contain bg-stone-50/97 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] backdrop-blur-sm dark:bg-stone-950/97">
+      <div
+        ref={dialog.ref}
+        {...dialog.dialogProps}
+        className="fixed inset-0 z-50 overflow-auto overscroll-contain bg-stone-50/97 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] backdrop-blur-sm dark:bg-stone-950/97"
+      >
         <div className="mx-auto max-w-lg px-4 py-6">
           <div className="flex items-center justify-between mb-6">
             <button
@@ -81,7 +90,11 @@ export function BookPicker({
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-auto overscroll-contain bg-stone-50/97 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] backdrop-blur-sm dark:bg-stone-950/97">
+    <div
+      ref={dialog.ref}
+      {...dialog.dialogProps}
+      className="fixed inset-0 z-50 overflow-auto overscroll-contain bg-stone-50/97 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] backdrop-blur-sm dark:bg-stone-950/97"
+    >
       <div className="mx-auto max-w-lg px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <button
