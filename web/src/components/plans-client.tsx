@@ -116,7 +116,7 @@ export function PlansClient() {
           {' '}to build a reading plan.
         </p>
       )}
-      {list.status === 'error' && <p className="text-sm text-stone-500">Plans could not be loaded. Please try again.</p>}
+      {list.status === 'error' && <p role="alert" className="text-sm text-red-800 dark:text-red-200">Plans could not be loaded. Please try again.</p>}
 
       {list.status === 'ready' && (open ? (
         <PlanDetail

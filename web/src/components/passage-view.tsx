@@ -57,7 +57,7 @@ export function PassageView({
 
   if (status === 'error') {
     return (
-      <p className="py-1 text-sm text-stone-500 dark:text-stone-400">
+      <p role="alert" className="py-1 text-sm text-red-800 dark:text-red-200">
         This passage could not be loaded.
       </p>
     );

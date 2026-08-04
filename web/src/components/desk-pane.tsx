@@ -93,8 +93,16 @@ function PaneFrame({
           </button>
         </div>
       </header>
-      {/* Each pane scrolls independently — that is the whole point of a desk. */}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">{children}</div>
+      {/* Each pane scrolls independently, that is the whole point of a desk.
+          MEASURE. This pane had no max-width at all, and it is `flex-1` inside a
+          `lg:flex-row`, so a single open pane filled the viewport: roughly 200 characters
+          a line at 1920px, against about 74 in the main reader. The same corpus paragraph
+          was the most comfortable text in the app in one place and the least in another.
+          `max-w-2xl` matches what verse-display and work-reader already use, and
+          `mx-auto` keeps it centred when the pane is wider than the column. */}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">
+        <div className="mx-auto w-full max-w-2xl">{children}</div>
+      </div>
     </section>
   );
 }
@@ -313,7 +321,7 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
                 )}
                 {/* Corpus prose, rendered as TEXT. Never dangerouslySetInnerHTML here: bodies are
                     stored source text, and this pane has no sanitiser in its path. */}
-                <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-stone-700 dark:text-stone-300">
+                <p className="whitespace-pre-wrap break-words text-base leading-relaxed text-stone-700 dark:text-stone-300">
                   {s.body}
                 </p>
               </article>

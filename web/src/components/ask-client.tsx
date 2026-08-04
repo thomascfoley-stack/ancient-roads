@@ -192,7 +192,7 @@ function TurnView({ turn }: { turn: Turn }) {
         </div>
       </div>
       {turn.stage === 'error' ? (
-        <div className="rounded-xl bg-accent-50 px-4 py-3 text-sm text-accent-900 shadow-paper dark:bg-accent-950/40 dark:text-accent-200 dark:shadow-none">
+        <div role="alert" className="rounded-xl border border-red-300/60 bg-red-50/60 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
           {turn.error}
         </div>
       ) : turn.stage === 'done' && turn.result ? (

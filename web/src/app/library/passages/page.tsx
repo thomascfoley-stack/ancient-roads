@@ -467,7 +467,7 @@ export default function PassageSearchPage() {
           {searchLoading && searchResults.length === 0 ? (
             <p className="py-16 text-center text-sm text-stone-400">Searching…</p>
           ) : searchError ? (
-            <p className="py-16 text-center text-sm text-accent-700 dark:text-accent-300">{searchError}</p>
+            <p role="alert" className="py-16 text-center text-sm text-red-800 dark:text-red-200">{searchError}</p>
           ) : searchResults.length === 0 ? (
             <p className="py-16 text-center text-sm text-stone-400">
               No results for &ldquo;{debouncedQuery}&rdquo;
