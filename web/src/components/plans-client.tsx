@@ -18,6 +18,10 @@ import { CANONICAL_GROUPS } from '@/lib/plan/canonical-groups';
 import { expandPlan } from '@/lib/plan/expand';
 import { formatVerseId } from '@/bible/verse-id';
 import { CHAPTER_END_SENTINEL } from '@/bible/ref-parse';
+import { PassagePane } from '@/components/passage-pane';
+import { VerseRef } from '@/components/verse-ref';
+import { DEFAULT_TRANSLATION } from '@/lib/bible';
+import { storedTranslation, type PassageTarget } from '@/lib/verse-preview';
 
 interface PlanListRow {
   id: string;
@@ -538,16 +542,16 @@ export function readingLabel(r: PlanReading): string {
     : `${start}–${formatVerseId(r.verse_end)}`;
 }
 
-function readerHref(verseStart: number): string {
-  const book = BOOK_BY_NUM.get(Math.floor(verseStart / 1_000_000));
-  const chapter = Math.floor((verseStart % 1_000_000) / 1000);
-  return book ? `/read/${book.slug}/${chapter}` : '/read/jhn/1';
-}
-
 // ── the plan itself ──────────────────────────────────────────────────────────
 
 function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () => void; onChanged: () => void }) {
   const [busyDay, setBusyDay] = useState<number | null>(null);
+  const [pane, setPane] = useState<PassageTarget | null>(null);
+  // The server render and the first client render both use the default, and the reader's stored
+  // choice is adopted only after mount. Reading localStorage during render is exactly what
+  // produced this app's React #418 on every reader page load (see storedTranslation's note).
+  const [translation, setTranslation] = useState(DEFAULT_TRANSLATION);
+  useEffect(() => setTranslation(storedTranslation()), []);
 
   const readingsByDay = new Map<number, PlanReading[]>();
   for (const r of open.readings ?? []) {
@@ -581,8 +585,21 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
     onBack();
   };
 
+  // "Read it" on a topical day opens the day's FIRST cited passage — the day itself is a bag of
+  // passages, so there is no single range for it that would not be invented here.
+  const upNextTarget = ((): PassageTarget | null => {
+    if (!upNext) return null;
+    const first = readingsByDay.get(upNext.day_index)?.[0];
+    return first
+      ? { verseStart: first.verse_start, verseEnd: first.verse_end, label: readingLabel(first) }
+      : { verseStart: upNext.verse_start, verseEnd: upNext.verse_end, label: dayRef(upNext) };
+  })();
+
   return (
-    <div>
+    <div className="lg:flex lg:items-start lg:gap-6">
+      {/* On a phone the pane REPLACES the plan — same tab, no navigation — and its back control
+          returns here. From lg the two sit side by side and the plan never loses its place. */}
+      <div className={`min-w-0 lg:flex-1 ${pane ? 'hidden lg:block' : ''}`}>
       <div className="mb-4 flex items-center justify-between gap-3">
         <button onClick={onBack} className="inline-flex min-h-[44px] items-center text-sm text-accent-700 hover:text-accent-800 dark:text-accent-300">
           ← All plans
@@ -609,10 +626,12 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
               : dayRef(upNext)}
           </p>
           <div className="mt-2 flex items-center gap-4">
-            <Link href={readerHref(upNext.verse_start)}
+            <button
+              type="button"
+              onClick={() => upNextTarget && setPane(upNextTarget)}
               className="inline-flex min-h-[36px] items-center rounded-full bg-accent-700 px-4 text-xs font-medium text-white transition-colors ease-gentle hover:bg-accent-800">
               Read it
-            </Link>
+            </button>
             <button onClick={() => void toggle(upNext)} disabled={busyDay === upNext.day_index}
               className="text-xs text-stone-500 hover:text-accent-700 disabled:opacity-50 dark:text-stone-400">
               Mark as read
@@ -653,22 +672,34 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
                     {readings.length} passage{readings.length === 1 ? '' : 's'}
                   </span>
                 ) : (
-                  <Link href={readerHref(d.verse_start)}
-                    className={`flex-1 truncate text-sm font-medium ${
-                      d.completed_at ? 'text-stone-400 line-through' : 'text-stone-700 hover:text-accent-700 dark:text-stone-200'
-                    }`}>
-                    {dayRef(d)}
-                  </Link>
+                  <span className="min-w-0 flex-1">
+                    <VerseRef
+                      verseStart={d.verse_start}
+                      verseEnd={d.verse_end}
+                      label={dayRef(d)}
+                      translation={translation}
+                      onOpen={setPane}
+                      active={pane?.verseStart === d.verse_start && pane?.verseEnd === d.verse_end}
+                      className={`text-sm font-medium ${
+                        d.completed_at ? 'text-stone-400 line-through' : 'text-stone-700 dark:text-stone-200'
+                      }`}
+                    />
+                  </span>
                 )}
               </div>
               {readings && (
                 <ul className="mt-1 space-y-0.5 pl-9">
                   {readings.map((r) => (
                     <li key={r.ordinal} className="flex items-baseline gap-2 text-sm">
-                      <Link href={readerHref(r.verse_start)}
-                        className={`shrink-0 font-medium ${d.completed_at ? 'text-stone-400' : 'text-stone-700 hover:text-accent-700 dark:text-stone-200'}`}>
-                        {readingLabel(r)}
-                      </Link>
+                      <VerseRef
+                        verseStart={r.verse_start}
+                        verseEnd={r.verse_end}
+                        label={readingLabel(r)}
+                        translation={translation}
+                        onOpen={setPane}
+                        active={pane?.verseStart === r.verse_start && pane?.verseEnd === r.verse_end}
+                        className={`shrink-0 font-medium ${d.completed_at ? 'text-stone-400' : 'text-stone-700 dark:text-stone-200'}`}
+                      />
                       {r.label && <span className="truncate text-xs text-stone-400">{r.label}</span>}
                     </li>
                   ))}
@@ -678,6 +709,13 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
           );
         })}
       </ol>
+      </div>
+
+      {pane && (
+        <aside className="lg:sticky lg:top-4 lg:w-[380px] lg:shrink-0 xl:w-[440px]">
+          <PassagePane target={pane} translation={translation} onClose={() => setPane(null)} />
+        </aside>
+      )}
     </div>
   );
 }

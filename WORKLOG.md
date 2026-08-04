@@ -1,5 +1,60 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-03 — Verse previews: a reading plan you can actually read
+
+Owner request, with a sketch: hovering a reference in a plan should show that passage in a popup
+you can scroll, and clicking it should open a reader pane to the right.
+
+### What shipped
+
+`VerseRef` (hover card on pointer devices, tap sheet on touch), `PassagePane` (the reader column),
+`PassageView` (the verses, shared by all three surfaces) and `lib/verse-preview.ts` (the span
+resolver and fetch). Wired into `plans-client.tsx`: every reference in a plan day, every
+day row on a book/collection plan, and the "Read it" button on Up next.
+
+Four owner decisions, taken before building: tap previews and a second press opens the reader **in
+the same view, never a new tab**; the pane is an **inline split on the plans page** rather than a
+trip to `/desk`; the preview shows the **cited range only**, with a button to load the whole
+chapter **in that same pane**; built reusable, wired to plan readings first.
+
+### Two things worth recording
+
+**It does not reuse `fetchChapter`.** That loads the whole-book file (`psa.json` is 264K), which is
+right for the reader and wrong here: one day of Nave's PRAYER cites ~18 passages across ~10 books,
+so hovering the list would pull well over a megabyte. The per-chapter files already shipping beside
+them (`1ki/18.json`, 7.6K) cost ~80KB for the same list. No API, no database, no request path.
+
+**The presentation split is by INPUT, not width** (`(hover: hover) and (pointer: fine)`). A
+touchscreen laptop at 1400px has no hover to preview with; a narrow window on a desktop still does.
+The capability defaults to false and is raised in an effect, so server and first client render
+agree — this app has already shipped one React #418 from reading `localStorage` during render, and
+`storedTranslation()` carries that warning at its call site.
+
+### A test of mine that could not fail
+
+`chaptersInSpan` refuses a backwards span. The first version of that test asserted it with
+`Romans 3:1 -> Romans 1:1`, which passes **whether or not the guard exists**: the chapter loop runs
+zero times either way. Found by seeding the defect and watching the test stay green. The case that
+actually reaches the guard is backwards *inside one chapter* (`1 Kings 18:39 -> 18:24`), where the
+loop still runs once and would emit an inverted window. Rewritten to that, then re-seeded and
+watched red. Four guards are now individually red-proofed; so are the verse-window filter and the
+expand control.
+
+### NOT DONE / UNVERIFIED
+
+- **The plans page itself was never driven in a browser.** `/plans` needs an authenticated user and
+  a runtime DB, and neither tree on this machine carries `APP_DATABASE_URL`. The components were
+  verified over a temporary local route (since deleted) at 1280px and 390px: hover card, click to
+  pane, whole-chapter expansion, mobile takeover, no horizontal overflow. The plan data path is
+  covered by `test/regression/plans-routes.test.ts`, which does need that DB. **Nobody has yet seen
+  these components inside the real plan page.**
+- `npm run audit` fails one leg, `deps` — `fast-uri` GHSA-7p8r, `better-auth` GHSA-qq9h, `undici`
+  GHSA-4cwx. Pre-existing and repo-wide; this change touches no manifest or lockfile. Still an open
+  `docs/SECURITY.md` decision, unchanged by this work.
+- Console shows dev-mode `eval()` CSP errors on every page. Pre-existing, dev-only.
+- Not adopted anywhere else yet: search results, commentary anchors and `/ask` answers all render
+  references and could take `VerseRef` with a one-line change. Deliberately not done in this pass.
+
 ## 2026-08-03 — "I can't find it in the app": the feature was never on the live site
 
 Owner could not find Reading plans. It was not a UI problem.
