@@ -126,8 +126,8 @@ export function AskClient() {
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-3.75rem-env(safe-area-inset-bottom)-1px)] max-w-2xl flex-col px-4 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-10 md:min-h-[calc(100dvh-1px)]">
       <header className="mb-6 sm:mb-8">
-        <h1 className="font-display text-[2rem] font-medium tracking-tight text-stone-900 dark:text-stone-100">Explore the paths</h1>
-        <p className="mt-2 font-serif text-[15px] leading-relaxed text-stone-600 dark:text-stone-400">
+        <h1 className="font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100">Explore the paths</h1>
+        <p className="mt-2 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400">
           Hear what commentators across the traditions have said, quoted and attributed, never interpreted.
           <span className="mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500">Currently answering from the Gospels.</span>
         </p>
@@ -140,7 +140,7 @@ export function AskClient() {
             <div className="flex flex-col gap-2.5">
               {EXAMPLES.map((ex) => (
                 <button key={ex} onClick={() => ask(ex)}
-                  className="min-h-[48px] rounded-xl bg-paper px-4 py-2.5 text-left font-serif text-[15px] text-stone-700 shadow-paper transition-all duration-200 ease-gentle hover:text-stone-900 hover:shadow-float active:shadow-paper active:brightness-[0.98] dark:bg-stone-800/70 dark:text-stone-300 dark:shadow-none dark:hover:bg-stone-800 dark:hover:text-stone-100 dark:active:bg-stone-800">
+                  className="min-h-[48px] rounded-xl bg-paper px-4 py-2.5 text-left font-serif text-base text-stone-700 shadow-paper transition-all duration-200 ease-gentle hover:text-stone-900 hover:shadow-float active:shadow-paper active:brightness-[0.98] dark:bg-stone-800/70 dark:text-stone-300 dark:shadow-none dark:hover:bg-stone-800 dark:hover:text-stone-100 dark:active:bg-stone-800">
                   {ex}
                 </button>
               ))}
@@ -187,7 +187,7 @@ function TurnView({ turn }: { turn: Turn }) {
   return (
     <div>
       <div className="mb-4 flex justify-end">
-        <div className="max-w-[85%] rounded-2xl rounded-br-md bg-stone-200/80 px-4 py-2.5 font-serif text-[15px] text-stone-900 dark:bg-stone-800 dark:text-stone-100">
+        <div className="max-w-[85%] rounded-2xl rounded-br-md bg-stone-200/80 px-4 py-2.5 font-serif text-base text-stone-900 dark:bg-stone-800 dark:text-stone-100">
           {turn.question}
         </div>
       </div>
@@ -238,7 +238,7 @@ function Progress({ turn }: { turn: Turn }) {
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">Reading these while I compose</p>
           <div className="flex animate-pulse flex-col gap-2">
             {turn.sources.slice(0, 3).map((s) => (
-              <p key={s.sourceId} className="font-serif text-[13px] leading-relaxed text-stone-500 dark:text-stone-400">
+              <p key={s.sourceId} className="font-serif text-sm leading-relaxed text-stone-500 dark:text-stone-400">
                 <b className="text-stone-700 dark:text-stone-300">{s.author}</b>. {s.content.slice(0, 130).replace(/\n/g, ' ')}…
               </p>
             ))}
@@ -252,7 +252,7 @@ function Progress({ turn }: { turn: Turn }) {
 function Answer({ result }: { result: TeacherResult }) {
   if (result.kind === 'empty') {
     return (
-      <p className="rounded-xl bg-paper px-4 py-3 font-serif text-[15px] text-stone-600 shadow-paper dark:bg-stone-800/60 dark:text-stone-300 dark:shadow-none">
+      <p className="rounded-xl bg-paper px-4 py-3 font-serif text-base text-stone-600 shadow-paper dark:bg-stone-800/60 dark:text-stone-300 dark:shadow-none">
         {result.reason}
       </p>
     );
@@ -270,12 +270,12 @@ function Answer({ result }: { result: TeacherResult }) {
       <div className="space-y-6">
         {voices.map((v, i) => (
           <figure key={i} className="border-l-[3px] border-accent-300/80 pl-5 dark:border-accent-800">
-            <blockquote className="break-words font-serif text-[17px] leading-[1.7] text-stone-900 dark:text-stone-100">“{v.quote}”</blockquote>
+            <blockquote className="break-words font-serif text-lg leading-[1.7] text-stone-900 dark:text-stone-100">“{v.quote}”</blockquote>
             <figcaption className="mt-2.5 text-sm text-stone-500 dark:text-stone-400">
               <span className="font-semibold text-stone-800 dark:text-stone-200">{v.attribution.author}</span>, {v.attribution.work}
               <span className="ml-2 rounded-full bg-stone-200/70 px-2.5 py-0.5 text-xs text-stone-600 dark:bg-stone-800 dark:text-stone-400">{v.attribution.tradition}</span>
             </figcaption>
-            {v.summary && <p className="mt-1.5 text-[13px] text-stone-500 dark:text-stone-500">{v.summary}</p>}
+            {v.summary && <p className="mt-1.5 text-sm text-stone-500 dark:text-stone-500">{v.summary}</p>}
           </figure>
         ))}
       </div>
@@ -307,17 +307,17 @@ function LaneSection({ title, note, chunks }: { title: string; note: string; chu
   return (
     <div className="pt-2">
       <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">{title}</p>
-      <p className="mb-3 text-[13px] italic text-stone-400 dark:text-stone-500">{note}</p>
+      <p className="mb-3 text-sm italic text-stone-400 dark:text-stone-500">{note}</p>
       <div className="space-y-4">
         {chunks.map((c) => (
           <figure key={c.sourceId} className="border-l-[3px] border-stone-300/70 pl-5 dark:border-stone-700">
-            <blockquote className="whitespace-pre-line break-words font-serif text-[15px] leading-relaxed text-stone-700 dark:text-stone-300">
+            <blockquote className="whitespace-pre-line break-words font-serif text-base leading-relaxed text-stone-700 dark:text-stone-300">
               {c.content.length > 400 ? `${c.content.slice(0, 400)}…` : c.content}
             </blockquote>
             <figcaption className="mt-2 text-sm text-stone-500 dark:text-stone-400">
               <span className="font-semibold text-stone-800 dark:text-stone-300">{c.metadata.author}</span>
               {c.metadata.sourceTitle ? `, ${c.metadata.sourceTitle}` : ''}
-              {c.metadata.paraphrase ? <span title="A metrical paraphrase, not the Scripture text itself." className="ml-2 rounded-full bg-accent-700/10 px-2 py-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300">paraphrase · not Scripture</span> : null}
+              {c.metadata.paraphrase ? <span title="A metrical paraphrase, not the Scripture text itself." className="ml-2 rounded-full bg-accent-700/10 px-2 py-0.5 text-micro font-medium text-accent-700 dark:text-accent-300">paraphrase · not Scripture</span> : null}
             </figcaption>
           </figure>
         ))}
@@ -339,13 +339,13 @@ function Lanes({ result }: { result: Extract<TeacherResult, { kind: 'composed' |
 function Fallback({ retrieval }: { retrieval: Retrieved[] }) {
   return (
     <div>
-      <p className="mb-5 rounded-xl bg-accent-50 px-4 py-3 font-serif text-[15px] text-accent-900 shadow-paper dark:bg-accent-950/30 dark:text-accent-200 dark:shadow-none">
+      <p className="mb-5 rounded-xl bg-accent-50 px-4 py-3 font-serif text-base text-accent-900 shadow-paper dark:bg-accent-950/30 dark:text-accent-200 dark:shadow-none">
         A grounded answer couldn’t be composed for this one. Here are the sources we found. Read them directly.
       </p>
       <div className="space-y-5">
         {retrieval.map((r) => (
           <figure key={r.sourceId} className="border-l-[3px] border-stone-300/80 pl-5 dark:border-stone-700">
-            <blockquote className="font-serif text-[15px] leading-relaxed text-stone-700 dark:text-stone-300">
+            <blockquote className="font-serif text-base leading-relaxed text-stone-700 dark:text-stone-300">
               {r.content.length > 320 ? `${r.content.slice(0, 320)}…` : r.content}
             </blockquote>
             <figcaption className="mt-2 text-sm text-stone-500 dark:text-stone-400">

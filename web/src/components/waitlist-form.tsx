@@ -38,7 +38,7 @@ export function WaitlistForm() {
     return (
       <p
         role="status"
-        className="mx-auto max-w-md rounded-2xl bg-paper px-5 py-4 font-serif text-[15px] text-stone-700 shadow-paper dark:bg-stone-800 dark:text-stone-200"
+        className="mx-auto max-w-md rounded-2xl bg-paper px-5 py-4 font-serif text-base text-stone-700 shadow-paper dark:bg-stone-800 dark:text-stone-200"
       >
         {message}
       </p>
@@ -58,12 +58,12 @@ export function WaitlistForm() {
         onChange={(e) => setEmail(e.target.value)}
         placeholder="you@example.com"
         autoComplete="email"
-        className="min-h-[48px] w-full flex-1 rounded-lg border border-stone-300 bg-stone-50 px-5 text-[15px] text-stone-900 shadow-inner outline-none transition-colors placeholder:text-stone-400 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
+        className="min-h-[48px] w-full flex-1 rounded-lg border border-stone-300 bg-stone-50 px-5 text-base text-stone-900 shadow-inner outline-none transition-colors placeholder:text-stone-400 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
       />
       <button
         type="submit"
         disabled={state === 'submitting'}
-        className="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg bg-accent-700 px-6 text-[15px] font-semibold text-stone-50 shadow-float transition-all duration-200 ease-gentle hover:bg-accent-800 active:scale-[0.99] disabled:opacity-40 sm:w-auto dark:bg-accent-500 dark:hover:bg-accent-400"
+        className="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg bg-accent-700 px-6 text-base font-semibold text-stone-50 shadow-float transition-all duration-200 ease-gentle hover:bg-accent-800 active:scale-[0.99] disabled:opacity-40 sm:w-auto dark:bg-accent-500 dark:hover:bg-accent-400"
       >
         {state === 'submitting' ? 'Joining…' : 'Request access'}
       </button>

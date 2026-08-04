@@ -54,7 +54,7 @@ export function MobileNav() {
     { href: '/library', label: 'Library', active: pathname.startsWith('/library'), icon: <LibraryIcon /> },
   ];
   const tabClass = (active: boolean) =>
-    `flex min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 pt-1.5 pb-1 text-[10px] font-semibold tracking-wide transition-colors active:bg-stone-200/50 dark:active:bg-stone-800/70 ${
+    `flex min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 pt-1.5 pb-1 text-micro font-semibold tracking-wide transition-colors active:bg-stone-200/50 dark:active:bg-stone-800/70 ${
       active ? 'text-accent-700 dark:text-accent-300' : 'text-stone-500 dark:text-stone-400'
     }`;
 

@@ -122,7 +122,7 @@ export function WorkToc({
           className="flex items-center justify-between border-b border-stone-200/60 px-5 py-3 dark:border-stone-800"
           {...drag.handleProps}
         >
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">Contents</p>
+          <p className="text-micro font-semibold uppercase tracking-wider text-stone-400">Contents</p>
           <button
             onClick={onClose}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600 active:bg-stone-100 dark:hover:bg-stone-800"
@@ -167,7 +167,7 @@ export function WorkToc({
                 {/* A FACTUAL header: the entry's own first letter, or the Bible book its own
                     anchor decodes to. Never an inferred theme. */}
                 {groupLabel && (
-                  <p className="sticky top-0 z-10 -mx-3 bg-paper/95 px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-stone-400 backdrop-blur dark:bg-stone-900/95">
+                  <p className="sticky top-0 z-10 -mx-3 bg-paper/95 px-4 pb-1 pt-2 text-micro font-semibold uppercase tracking-wider text-stone-400 backdrop-blur dark:bg-stone-900/95">
                     {groupLabel}
                   </p>
                 )}
@@ -183,7 +183,7 @@ export function WorkToc({
                     }`}
                   >
                     <span className="line-clamp-2">{label}</span>
-                    {here && <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider">Reading</span>}
+                    {here && <span className="shrink-0 text-micro font-semibold uppercase tracking-wider">Reading</span>}
                   </button>
                   {/* Only a chunked unit gets a disclosure; only the open one mounts its rows. */}
                   {chunked && (
@@ -191,7 +191,7 @@ export function WorkToc({
                       aria-expanded={open}
                       aria-label={`${open ? 'Collapse' : 'Expand'} ${label} (${unit.sectionCount} parts)`}
                       onClick={() => setExpanded(open ? null : key)}
-                      className="flex min-h-[44px] w-11 shrink-0 items-center justify-center rounded-lg text-[11px] font-medium text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800"
+                      className="flex min-h-[44px] w-11 shrink-0 items-center justify-center rounded-lg text-micro font-medium text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800"
                     >
                       {open ? '−' : unit.sectionCount}
                     </button>
@@ -210,14 +210,14 @@ export function WorkToc({
                         key={ord}
                         data-active={active}
                         onClick={() => onNavigate(ord)}
-                        className={`ml-4 flex min-h-[40px] w-[calc(100%-1rem)] items-center justify-between gap-3 rounded-lg px-3 py-1.5 text-left text-[13px] transition-colors hover:bg-accent-50/60 dark:hover:bg-accent-950/30 ${
+                        className={`ml-4 flex min-h-[40px] w-[calc(100%-1rem)] items-center justify-between gap-3 rounded-lg px-3 py-1.5 text-left text-sm transition-colors hover:bg-accent-50/60 dark:hover:bg-accent-950/30 ${
                           active
                             ? 'bg-accent-50 font-semibold text-accent-800 dark:bg-accent-950/40 dark:text-accent-200'
                             : 'text-stone-500 dark:text-stone-400'
                         }`}
                       >
                         <span className="line-clamp-1">{`Part ${k + 1} of ${unit.sectionCount}`}</span>
-                        {active && <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider">Reading</span>}
+                        {active && <span className="shrink-0 text-micro font-semibold uppercase tracking-wider">Reading</span>}
                       </button>
                     );
                   })}

@@ -497,9 +497,9 @@ function TopicPicker({
                     >
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-medium text-stone-800 dark:text-stone-100">{m.heading}</span>
-                        <span className="block truncate text-[11px] text-stone-400">{m.workTitle}</span>
+                        <span className="block truncate text-micro text-stone-400">{m.workTitle}</span>
                       </span>
-                      <span className="shrink-0 text-[11px] text-stone-400">{count(m.entryCount, 'passage')}</span>
+                      <span className="shrink-0 text-micro text-stone-400">{count(m.entryCount, 'passage')}</span>
                     </button>
                   );
                 })}

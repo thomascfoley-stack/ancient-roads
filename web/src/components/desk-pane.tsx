@@ -60,7 +60,7 @@ function PaneFrame({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             {/* The register label. Never omitted, never inferred from position. */}
-            <span className="shrink-0 rounded-full bg-stone-200/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-stone-600 dark:bg-stone-800 dark:text-stone-300">
+            <span className="shrink-0 rounded-full bg-stone-200/70 px-2 py-0.5 text-micro font-semibold uppercase tracking-wider text-stone-600 dark:bg-stone-800 dark:text-stone-300">
               {register}
             </span>
             <Link href={fullHref} className="truncate font-scripture text-sm text-stone-800 hover:underline dark:text-stone-100">
@@ -179,10 +179,10 @@ function ScripturePaneView({
       ) : !data ? (
         <Message>Loading…</Message>
       ) : (
-        <div className="space-y-1.5 font-scripture text-[15px] leading-relaxed text-stone-800 dark:text-stone-100">
+        <div className="space-y-1.5 font-scripture text-base leading-relaxed text-stone-800 dark:text-stone-100">
           {data.verses.map((v) => (
             <p key={v.verse}>
-              <span className="mr-1.5 align-super text-[10px] tabular-nums text-stone-400">{v.verse}</span>
+              <span className="mr-1.5 align-super text-micro tabular-nums text-stone-400">{v.verse}</span>
               {v.text}
             </p>
           ))}

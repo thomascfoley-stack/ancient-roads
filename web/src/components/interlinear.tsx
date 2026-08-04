@@ -30,7 +30,7 @@ export function Interlinear({
       <div className="space-y-5">
         {verseNums.map((v) => (
           <div key={v} className="flex gap-2">
-            <span className="mt-1.5 shrink-0 select-none font-sans text-[11px] font-semibold text-accent-600/80 dark:text-accent-300/80">
+            <span className="mt-1.5 shrink-0 select-none font-sans text-micro font-semibold text-accent-600/80 dark:text-accent-300/80">
               {v}
             </span>
             <div
@@ -47,11 +47,11 @@ export function Interlinear({
                   <span className="font-scripture text-xl leading-tight text-stone-900 group-hover:text-accent-800 dark:text-stone-100 dark:group-hover:text-accent-300">
                     {word.w}
                   </span>
-                  <span className="mt-0.5 text-[10px] leading-tight text-stone-400 dark:text-stone-500" dir="ltr">
+                  <span className="mt-0.5 text-micro leading-tight text-stone-400 dark:text-stone-500" dir="ltr">
                     {word.tr}
                   </span>
                   {word.g && (
-                    <span className="text-[11px] leading-tight text-stone-500 dark:text-stone-400" dir="ltr">
+                    <span className="text-micro leading-tight text-stone-500 dark:text-stone-400" dir="ltr">
                       {word.g}
                     </span>
                   )}

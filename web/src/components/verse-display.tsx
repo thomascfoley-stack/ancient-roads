@@ -184,7 +184,7 @@ export function VerseDisplay({
                     onVerseClick(v.verse);
                   }
                 }}
-                className="relative mr-0.5 cursor-pointer font-sans text-[11px] font-semibold text-accent-600/80 select-none before:absolute before:-inset-y-1 before:-left-1.5 before:-right-0.5 before:content-[''] hover:text-accent-700 dark:text-accent-300/80 dark:hover:text-accent-200"
+                className="relative mr-0.5 cursor-pointer font-sans text-micro font-semibold text-accent-600/80 select-none before:absolute before:-inset-y-1 before:-left-1.5 before:-right-0.5 before:content-[''] hover:text-accent-700 dark:text-accent-300/80 dark:hover:text-accent-200"
               >
                 {v.verse}
               </sup>

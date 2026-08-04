@@ -201,7 +201,7 @@ export function SelectionPopover({
   const copyChip = (mode: CopyMode, label: string) => (
     <button
       onClick={() => copy(mode)}
-      className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 text-[11px] font-medium text-stone-300 hover:border-white/30 hover:text-white"
+      className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 text-micro font-medium text-stone-300 hover:border-white/30 hover:text-white"
     >
       {copied === mode ? 'Copied ✓' : label}
     </button>
@@ -219,7 +219,7 @@ export function SelectionPopover({
         {...holdSelection}
       >
         <div className="w-max max-w-[420px] rounded-xl bg-stone-900/95 px-3 py-2.5 shadow-deep ring-1 ring-white/10 dark:bg-stone-800">
-          <div className="px-1 pb-1.5 text-[11px] font-medium tracking-wide text-stone-400">{contextLabel}</div>
+          <div className="px-1 pb-1.5 text-micro font-medium tracking-wide text-stone-400">{contextLabel}</div>
           {/* SWATCHES ON THEIR OWN ROW, WRAPPING. Ten colours (highlight-colors.ts) at 28px each
               plus gaps run ~350px — comfortably inside this card on their own, but every child
               here is `shrink-0` and the row never wrapped, so sharing a line with Note/Bookmark/

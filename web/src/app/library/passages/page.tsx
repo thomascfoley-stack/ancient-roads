@@ -114,7 +114,7 @@ function SearchResultCard({
         <span className="text-sm font-medium text-stone-800 dark:text-stone-100">{r.author}</span>
         {r.year != null && <span className="text-xs text-stone-400">{yearLabel(r.year)}</span>}
         {r.tradition && (
-          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-stone-500 dark:bg-stone-700 dark:text-stone-400">
+          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-micro font-medium uppercase tracking-wide text-stone-500 dark:bg-stone-700 dark:text-stone-400">
             {r.tradition}
           </span>
         )}
@@ -123,7 +123,7 @@ function SearchResultCard({
         {passageLabel} · {r.source_title}
       </p>
       {view === 'full' && full ? (
-        <p className="whitespace-pre-line font-scripture text-[15px] leading-relaxed text-stone-700 dark:text-stone-300">
+        <p className="whitespace-pre-line font-scripture text-base leading-relaxed text-stone-700 dark:text-stone-300">
           {full}
         </p>
       ) : (
@@ -216,16 +216,16 @@ function RegisterBrowseSection({ title, note, groups }: { title: string; note: s
               <h3 className="font-scripture text-xl font-medium text-stone-800 dark:text-stone-100">{g.author}</h3>
               {g.year != null && <span className="text-xs text-stone-400">{yearLabel(g.year)}</span>}
               {registerChipLabel(g.register) && (
-                <span className="rounded-full bg-accent-700/10 px-2 py-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300">
+                <span className="rounded-full bg-accent-700/10 px-2 py-0.5 text-micro font-medium text-accent-700 dark:text-accent-300">
                   {registerChipLabel(g.register)}
                 </span>
               )}
               {g.paraphrase && <ParaphraseChip />}
-              <span className="ml-auto text-[11px] text-stone-400">{g.sourceTitle}</span>
+              <span className="ml-auto text-micro text-stone-400">{g.sourceTitle}</span>
             </div>
             <div className="space-y-3">
               {g.notes.map((n, i) => (
-                <p key={i} className="font-scripture text-[15px] leading-relaxed text-stone-700 dark:text-stone-300">
+                <p key={i} className="font-scripture text-base leading-relaxed text-stone-700 dark:text-stone-300">
                   <span className="mr-2 select-none font-sans text-xs font-semibold text-accent-600/80 dark:text-accent-300/80">
                     {n.verseStart === n.verseEnd ? `v${n.verseStart}` : `v${n.verseStart}–${n.verseEnd}`}
                   </span>
@@ -440,7 +440,7 @@ export default function PassageSearchPage() {
             <div className="mb-4 flex flex-wrap gap-1.5">
               <button
                 onClick={() => { setTraditionFilter(null); setSearchPage(0); }}
-                className={`min-h-[44px] rounded-lg px-4 text-[13px] font-medium transition-colors sm:min-h-0 sm:px-3 sm:py-1 sm:text-xs ${
+                className={`min-h-[44px] rounded-lg px-4 text-sm font-medium transition-colors sm:min-h-0 sm:px-3 sm:py-1 sm:text-xs ${
                   !traditionFilter
                     ? 'bg-accent-700 text-stone-50 dark:bg-accent-400 dark:text-stone-950'
                     : 'bg-stone-100 text-stone-600 hover:bg-stone-200 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'
@@ -452,7 +452,7 @@ export default function PassageSearchPage() {
                 <button
                   key={t}
                   onClick={() => { setTraditionFilter(traditionFilter === t ? null : t); setSearchPage(0); }}
-                  className={`min-h-[44px] rounded-lg px-4 text-[13px] font-medium transition-colors sm:min-h-0 sm:px-3 sm:py-1 sm:text-xs ${
+                  className={`min-h-[44px] rounded-lg px-4 text-sm font-medium transition-colors sm:min-h-0 sm:px-3 sm:py-1 sm:text-xs ${
                     traditionFilter === t
                       ? 'bg-accent-700 text-stone-50 dark:bg-accent-400 dark:text-stone-950'
                       : 'bg-stone-100 text-stone-600 hover:bg-stone-200 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'
@@ -573,14 +573,14 @@ export default function PassageSearchPage() {
                       <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b border-stone-200/60 pb-3 dark:border-stone-700/60">
                         <h2 className="font-scripture text-xl font-medium text-stone-800 dark:text-stone-100">{g.author}</h2>
                         {g.year != null && <span className="text-xs text-stone-400">{yearLabel(g.year)}</span>}
-                        <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-stone-500 dark:bg-stone-700 dark:text-stone-400">
+                        <span className="rounded-full bg-stone-100 px-2 py-0.5 text-micro font-medium uppercase tracking-wide text-stone-500 dark:bg-stone-700 dark:text-stone-400">
                           {g.tradition ?? eraLabel(g.year)}
                         </span>
-                        <span className="ml-auto text-[11px] text-stone-400">{g.sourceTitle}</span>
+                        <span className="ml-auto text-micro text-stone-400">{g.sourceTitle}</span>
                       </div>
                       <div className="space-y-3">
                         {g.notes.map((n, i) => (
-                          <p key={i} className="font-scripture text-[15px] leading-relaxed text-stone-700 dark:text-stone-300">
+                          <p key={i} className="font-scripture text-base leading-relaxed text-stone-700 dark:text-stone-300">
                             <span className="mr-2 select-none font-sans text-xs font-semibold text-accent-600/80 dark:text-accent-300/80">
                               {n.verseStart === n.verseEnd ? `v${n.verseStart}` : `v${n.verseStart}–${n.verseEnd}`}
                             </span>

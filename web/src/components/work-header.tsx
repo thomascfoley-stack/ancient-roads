@@ -42,7 +42,7 @@ export function WorkHeader({
             {source.title}
           </h1>
           {meta && (
-            <p className="truncate text-[11px] font-medium uppercase tracking-wider text-stone-400 dark:text-stone-500">
+            <p className="truncate text-micro font-medium uppercase tracking-wider text-stone-400 dark:text-stone-500">
               {meta}
             </p>
           )}

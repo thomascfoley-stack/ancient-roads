@@ -203,7 +203,7 @@ export function SidebarNavContent({
         {/* Library */}
         <div className="mt-4">
           <div className="mb-1 px-4">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+            <span className="text-micro font-semibold uppercase tracking-wider text-stone-400">
               Library
             </span>
           </div>
@@ -384,7 +384,7 @@ function StudySectionView({
           />
         ) : (
           <>
-            <span className="truncate text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+            <span className="truncate text-micro font-semibold uppercase tracking-wider text-stone-400">
               {section.name}
             </span>
             <span className="flex items-center gap-0.5 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100">

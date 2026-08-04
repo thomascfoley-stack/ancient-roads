@@ -114,7 +114,7 @@ export function Omnibox() {
               placeholder="Go to passage, e.g. John 3:16"
               className="focus-quiet min-w-0 flex-1 bg-transparent px-3 py-4 text-base text-stone-800 outline-none placeholder:text-stone-400 sm:text-sm dark:text-stone-100 dark:placeholder:text-stone-500"
             />
-            <kbd className="hidden rounded border border-stone-200 px-1.5 py-0.5 text-[10px] text-stone-400 [@media(hover:hover)]:sm:inline-block dark:border-stone-700">
+            <kbd className="hidden rounded border border-stone-200 px-1.5 py-0.5 text-micro text-stone-400 [@media(hover:hover)]:sm:inline-block dark:border-stone-700">
               esc
             </kbd>
             <button
