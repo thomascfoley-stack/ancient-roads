@@ -75,6 +75,48 @@ consistency, accessibility/edge states, routes/copy), plus a driven walk of the 
   needs a decision about which surfaces earn skeletons.
 - **Not deployed.** Nothing was pushed and `deploy.sh` was not run.
 
+### Postscript, same day: merged, deployed, and one measured flaw in the above
+
+PR #61 merged at `e367235` and shipped to production as `dpl_5fd221LJjDbrwMaLQcfxBndBG2cn`,
+deployed from `.claude/worktrees/final` because the design worktree's `web/public/{bible,
+commentaries,concordance,lexicon,original}` are symlinks into the sibling clone and
+`deploy.sh` uploads the working tree, so deploying from there would have shipped a reader
+with no Bible text and no commentaries. Verified live at 1280 and 390: sentence-case
+tagline, hairline-separated beats in EB Garamond 24 over Literata 16, curly quotes, zero
+em dashes, controls no longer pills.
+
+**The radius ladder is not Tailwind's, and the rule as written overstated it.** Measured on
+the live deployment: `rounded-md` 14px, `rounded-lg` 16px, `rounded-xl` 20px, `rounded-2xl`
+16px. `@neondatabase/auth/ui/tailwind` redefines the scale shadcn-style off `--radius` and
+wins, the same import that already owns `.dark`. So `rounded-lg` and `rounded-2xl` are the
+same corner, and the control-to-surface step is 16 -> 20 rather than the 8 -> 12 the rule
+was designed against. The change is still a real improvement (a 44px control went from a
+22px pill to 16px) but flatter than the comment claimed. The comment in `globals.css` has
+been corrected to state the measured values and now quotes no px figures in the rule
+itself, because an unenforced number in a comment is what drifted.
+
+### Next pass, in priority order
+
+1. **Own the radius scale.** Declare explicit `--radius-*` tokens in `@theme` so the app
+   stops inheriting the auth UI's ladder. One file, no component changes, and it makes the
+   hierarchy the rule already describes actually true.
+2. **The type scale.** 104 arbitrary `text-[Npx]` values across 28 files, an effective
+   17-step ladder of which 8 are one-offs; five different sizes all doing "small label"
+   work with no rule separating them. Only the landing page was collapsed. Excludes
+   `web/src/bible/` (byte-mirrored under a sync test) and wants `sidebar.tsx` /
+   `app/plans/` / `lib/plan/` to be quiet first.
+3. **The icon set.** Two parallel systems: 32 hand-authored SVGs across 3 viewBoxes, 7
+   stroke widths and 4 sizing conventions, plus a text-glyph system (music note for Hymns,
+   an aleph/alpha pair for Word study, arrows, check marks) sitting in the same slots at a
+   different optical weight. Five library catalogs also share one identical speech-bubble
+   icon, which makes the icons decorative rather than navigational.
+4. **Dialogs.** None of the 13 sheets, popovers and drawers traps focus, restores focus on
+   close, or carries `role="dialog"` with a label; four have no Escape handler. Largest
+   remaining accessibility gap.
+5. **Terminology.** Six words for the same population of authors, four names for `/ask`,
+   "My library" pointing at two different routes one of which is a stub. Owner call.
+6. **`loading.tsx`.** One Suspense boundary and 25 hand-written "Loading..." strings.
+
 
 ## 2026-08-03 — Verse previews: a reading plan you can actually read
 
