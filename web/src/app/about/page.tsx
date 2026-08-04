@@ -51,13 +51,13 @@ export default function About() {
       <div className="mt-14 flex flex-wrap gap-3">
         <Link
           href="/"
-          className="inline-flex min-h-[48px] items-center rounded-full bg-accent-700 px-6 text-[15px] font-semibold text-stone-50 shadow-float transition-colors hover:bg-accent-800 dark:bg-accent-600 dark:hover:bg-accent-500"
+          className="inline-flex min-h-[48px] items-center rounded-lg bg-accent-700 px-6 text-[15px] font-semibold text-stone-50 shadow-float transition-colors hover:bg-accent-800 dark:bg-accent-600 dark:hover:bg-accent-500"
         >
           Request early access
         </Link>
         <Link
           href="/home"
-          className="inline-flex min-h-[48px] items-center rounded-full bg-paper px-6 text-[15px] font-semibold text-stone-700 shadow-paper transition-colors hover:text-accent-800 dark:bg-stone-800 dark:text-stone-200"
+          className="inline-flex min-h-[48px] items-center rounded-lg bg-paper px-6 text-[15px] font-semibold text-stone-700 shadow-paper transition-colors hover:text-accent-800 dark:bg-stone-800 dark:text-stone-200"
         >
           Log in
         </Link>

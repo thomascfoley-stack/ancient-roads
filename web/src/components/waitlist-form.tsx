@@ -58,12 +58,12 @@ export function WaitlistForm() {
         onChange={(e) => setEmail(e.target.value)}
         placeholder="you@example.com"
         autoComplete="email"
-        className="min-h-[48px] w-full flex-1 rounded-full border border-stone-300 bg-stone-50 px-5 text-[15px] text-stone-900 shadow-inner outline-none transition-colors placeholder:text-stone-400 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
+        className="min-h-[48px] w-full flex-1 rounded-lg border border-stone-300 bg-stone-50 px-5 text-[15px] text-stone-900 shadow-inner outline-none transition-colors placeholder:text-stone-400 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
       />
       <button
         type="submit"
         disabled={state === 'submitting'}
-        className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-accent-700 px-6 text-[15px] font-semibold text-stone-50 shadow-float transition-all duration-200 ease-gentle hover:bg-accent-800 active:scale-[0.99] disabled:opacity-60 sm:w-auto dark:bg-accent-600 dark:hover:bg-accent-500"
+        className="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg bg-accent-700 px-6 text-[15px] font-semibold text-stone-50 shadow-float transition-all duration-200 ease-gentle hover:bg-accent-800 active:scale-[0.99] disabled:opacity-60 sm:w-auto dark:bg-accent-600 dark:hover:bg-accent-500"
       >
         {state === 'submitting' ? 'Joining…' : 'Request access'}
       </button>

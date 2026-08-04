@@ -10,6 +10,7 @@
 // (flagged in the Phase 3 audit). Not repeating that here.
 
 import Link from 'next/link';
+import { count } from '@/lib/plural';
 import { CATALOGS, CATALOG_IDS, catalogTraditions } from '@/lib/catalog';
 import { listContinueReading, listLibraryItems, type ContinueReadingRow, type LibraryItem } from '@/lib/library';
 import { requireUser } from '@/lib/session';
@@ -66,7 +67,7 @@ export default async function LibraryHubPage({
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-scripture text-stone-800 dark:text-stone-100">{r.title}</span>
-                    <span className="block truncate text-xs text-stone-500 dark:text-stone-400">{r.author ?? '—'}</span>
+                    <span className="block truncate text-xs text-stone-500 dark:text-stone-400">{r.author ?? 'Unattributed'}</span>
                   </span>
                   <span className="shrink-0 text-xs tabular-nums text-stone-400">
                     {r.percent === null ? '' : `${Math.round(r.percent * 100)}%`}
@@ -85,7 +86,7 @@ export default async function LibraryHubPage({
             <Link
               key={y.href}
               href={y.href}
-              className="inline-flex min-h-[44px] items-center rounded-full border border-stone-200/70 px-4 text-sm text-stone-700 hover:bg-accent-50/60 dark:border-stone-800 dark:text-stone-300 dark:hover:bg-accent-950/25"
+              className="inline-flex min-h-[44px] items-center rounded-lg border border-stone-200/70 px-4 text-sm text-stone-700 hover:bg-accent-50/60 dark:border-stone-800 dark:text-stone-300 dark:hover:bg-accent-950/25"
             >
               {y.label}
             </Link>
@@ -111,7 +112,7 @@ export default async function LibraryHubPage({
                 className="flex min-h-[88px] flex-col justify-between rounded-xl border border-stone-200/70 p-4 hover:bg-accent-50/50 dark:border-stone-800 dark:hover:bg-accent-950/20"
               >
                 <span className="font-scripture text-lg text-stone-800 dark:text-stone-100">{CATALOGS[id].label}</span>
-                <span className="text-xs text-stone-500 dark:text-stone-400">{worksIn(id)} works</span>
+                <span className="text-xs text-stone-500 dark:text-stone-400">{count(worksIn(id), 'work')}</span>
               </Link>
             </li>
           ))}

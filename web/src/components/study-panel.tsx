@@ -338,7 +338,7 @@ function NotesTab({ annotation }: { annotation: AnnotationControls }) {
         <p className="mb-3 text-sm text-stone-500 dark:text-stone-400">Save notes to your account.</p>
         <Link
           href="/auth/sign-in"
-          className="inline-flex min-h-[44px] items-center rounded-full bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 dark:bg-accent-500 dark:hover:bg-accent-400"
+          className="inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 dark:bg-accent-500 dark:hover:bg-accent-400"
         >
           Sign in
         </Link>
@@ -374,7 +374,7 @@ function NotesTab({ annotation }: { annotation: AnnotationControls }) {
         <button
           onClick={() => annotation.onSaveNote(text)}
           disabled={!text.trim()}
-          className="min-h-[44px] rounded-full bg-accent-700 px-4 text-xs font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 disabled:opacity-40 dark:bg-accent-500 dark:hover:bg-accent-400"
+          className="min-h-[44px] rounded-lg bg-accent-700 px-4 text-xs font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 disabled:opacity-40 dark:bg-accent-500 dark:hover:bg-accent-400"
         >
           Save note
         </button>

@@ -226,7 +226,7 @@ export function VerseRef({
               // flashes at 0,0 before placement lands.
               visibility: placement ? 'visible' : 'hidden',
             }}
-            className="z-50 w-80 max-w-[calc(100vw-1rem)] rounded-xl border border-stone-200 bg-paper p-3 shadow-lg dark:border-stone-700 dark:bg-stone-900"
+            className="z-50 w-80 max-w-[calc(100vw-1rem)] rounded-xl border border-stone-200 bg-paper p-3 shadow-float dark:border-stone-700 dark:bg-stone-900"
           >
             <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-stone-400">{label}</p>
             <div className="max-h-64 overflow-y-auto overscroll-contain">{body}</div>
@@ -247,7 +247,7 @@ export function VerseRef({
               onClick={hide}
               className="absolute inset-0 bg-stone-900/40"
             />
-            <div className="relative max-h-[70vh] w-full overflow-y-auto overscroll-contain rounded-t-2xl bg-paper p-4 shadow-lg dark:bg-stone-900">
+            <div className="relative max-h-[70vh] w-full overflow-y-auto overscroll-contain rounded-t-2xl bg-paper p-4 shadow-float dark:bg-stone-900">
               <div className="mb-2 flex items-baseline justify-between gap-3">
                 <p className="font-semibold text-stone-800 dark:text-stone-100">{label}</p>
                 <button type="button" onClick={hide} className="text-sm text-stone-500 dark:text-stone-400">
@@ -258,7 +258,7 @@ export function VerseRef({
               <button
                 type="button"
                 onClick={openPane}
-                className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-full bg-accent-700 px-5 text-sm font-medium text-white transition-colors ease-gentle hover:bg-accent-800"
+                className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-700 px-5 text-sm font-medium text-white transition-colors ease-gentle hover:bg-accent-800"
               >
                 Open in reader
               </button>

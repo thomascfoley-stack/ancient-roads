@@ -81,13 +81,13 @@ function DeskInner() {
           <button
             type="button"
             onClick={() => setPickingBible(true)}
-            className="min-h-[44px] rounded-full bg-accent-700 px-5 py-2.5 text-sm font-semibold text-stone-50 hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
+            className="min-h-[44px] rounded-lg bg-accent-700 px-5 py-2.5 text-sm font-semibold text-stone-50 hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
           >
             Open the Bible
           </button>
           <Link
             href="/library"
-            className="min-h-[44px] rounded-full border border-stone-200/70 px-5 py-2.5 text-sm text-stone-600 hover:bg-accent-50/50 dark:border-stone-800 dark:text-stone-300 dark:hover:bg-accent-950/20"
+            className="min-h-[44px] rounded-lg border border-stone-200/70 px-5 py-2.5 text-sm text-stone-600 hover:bg-accent-50/50 dark:border-stone-800 dark:text-stone-300 dark:hover:bg-accent-950/20"
           >
             Browse the library
           </Link>

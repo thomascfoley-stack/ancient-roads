@@ -69,6 +69,23 @@
   --ease-gentle: cubic-bezier(0.32, 0, 0.24, 1);
 }
 
+/* RADIUS CARRIES HIERARCHY. It used to carry none: `rounded-full` was 49% of every
+ * radius in the app, worn equally by a 48px call-to-action, a 10px metadata badge, a
+ * 6px progress bar and a text input. When everything is a capsule, radius stops being
+ * information and the whole surface reads soft and cheap.
+ *
+ * The rule, smallest to largest:
+ *   rounded-lg   (8px)  controls        buttons, inputs, selects, segmented thumbs
+ *   rounded-xl   (12px) surfaces        cards, list rows, popovers
+ *   rounded-t-3xl       sheets          bottom sheets and modals
+ *   rounded-full        TRUE PILLS ONLY status dots, progress bars, drag handles,
+ *                                       circular icon buttons, and short badges whose
+ *                                       shape IS the meaning
+ *
+ * The test for a pill: it has no tap target of its own. Anything carrying
+ * `min-h-[NNpx]` is a control and takes `rounded-lg`.
+ */
+
 html { color-scheme: light; }
 html.dark { color-scheme: dark; }
 
@@ -138,6 +155,20 @@ html {
 
 ::selection {
   background: color-mix(in oklab, var(--color-accent-300) 45%, transparent);
+}
+
+/* Skip link. Written here rather than as `focus:top-4` because the focus variant lost to
+ * the resting `-top-20` in the utilities layer and the link stayed off-screen when focused,
+ * which is the same as not having one. Unlayered, so it wins. */
+.skip-link {
+  position: absolute;
+  top: -5rem;
+  left: 1rem;
+  z-index: 50;
+  transition: top 0.2s var(--ease-gentle);
+}
+.skip-link:focus {
+  top: 1rem;
 }
 
 /* Reader font-size control (set --reading-size on the reading container) */

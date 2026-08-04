@@ -59,7 +59,7 @@ export async function checkScopeCoverage(days: Array<{ verseStart: number; verse
       reason:
         covered === 0
           ? 'The corpus has no commentary coverage on this passage yet.'
-          : `Only ${covered} of ${days.length} reading days have commentary coverage — narrow the scope or wait for the library to grow.`,
+          : `Only ${covered} of ${days.length} reading days have commentary coverage. Narrow the scope, or wait for the library to grow.`,
     };
   }
   return null;
@@ -87,7 +87,7 @@ async function loadTopic(scope: { workSlug: string; sectionId: number }): Promis
   )) as Array<{ heading: string | null; title: string }>;
   const topic = head[0];
   if (!topic || !topic.heading) {
-    return { refused: true, reason: 'That topic is not available — pick another from the suggestions.' };
+    return { refused: true, reason: 'That topic is not available. Pick another from the suggestions.' };
   }
   // Bounded, and the bound REFUSES rather than truncating. The picker shows
   // the topic's true passage count (matchTopics counts them all), so silently
@@ -102,7 +102,7 @@ async function loadTopic(scope: { workSlug: string; sectionId: number }): Promis
   if (rows.length > TOPIC_ENTRY_CAP) {
     return {
       refused: true,
-      reason: `That topic carries more than ${TOPIC_ENTRY_CAP.toLocaleString()} passages — too many for one plan. Pick a narrower topic.`,
+      reason: `That topic carries more than ${TOPIC_ENTRY_CAP.toLocaleString()} passages, too many for one plan. Pick a narrower topic.`,
     };
   }
   return {
@@ -235,7 +235,7 @@ async function checkTopicalCoverage(days: TopicalPlanDay[]): Promise<CoverageRef
       reason:
         covered === 0
           ? 'The corpus has no commentary coverage on this topic’s passages yet.'
-          : `Only ${covered} of ${days.length} reading days have commentary coverage — try a shorter plan or another topic.`,
+          : `Only ${covered} of ${days.length} reading days have commentary coverage. Try a shorter plan, or another topic.`,
     };
   }
   return null;

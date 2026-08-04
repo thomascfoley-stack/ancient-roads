@@ -106,7 +106,7 @@ export function ParaphraseChip() {
   return (
     <span
       className="rounded-full bg-accent-700/10 px-2 py-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300"
-      title="A metrical paraphrase — not the Scripture text itself."
+      title="A metrical paraphrase, not the Scripture text itself."
     >
       paraphrase · not Scripture
     </span>
@@ -494,7 +494,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
                 setEditingNote(false);
               }}
               disabled={!noteText.trim()}
-              className="min-h-[44px] rounded-full bg-accent-700 px-4 text-xs font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 disabled:opacity-40 dark:bg-accent-500 dark:hover:bg-accent-400"
+              className="min-h-[44px] rounded-lg bg-accent-700 px-4 text-xs font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 disabled:opacity-40 dark:bg-accent-500 dark:hover:bg-accent-400"
             >
               Save note
             </button>

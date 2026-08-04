@@ -349,7 +349,7 @@ export default function ReaderPage() {
       {writeError && (
         <div
           role="alert"
-          className="fixed inset-x-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom)+1rem)] z-50 mx-auto flex w-fit max-w-[92vw] items-center gap-3 rounded-full border border-red-300/60 bg-red-50/95 px-4 py-2 text-sm text-red-800 shadow-lg backdrop-blur-sm md:bottom-4 dark:border-red-900/60 dark:bg-red-950/90 dark:text-red-200"
+          className="fixed inset-x-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom)+1rem)] z-50 mx-auto flex w-fit max-w-[92vw] items-center gap-3 rounded-full border border-red-300/60 bg-red-50/95 px-4 py-2 text-sm text-red-800 shadow-float backdrop-blur-sm md:bottom-4 dark:border-red-900/60 dark:bg-red-950/90 dark:text-red-200"
         >
           <span>{writeError.message}.</span>
           <button
@@ -358,7 +358,7 @@ export default function ReaderPage() {
               retryWrite();
               dismissWrite();
             }}
-            className="min-h-[28px] shrink-0 rounded-full bg-red-700 px-3 py-1 text-xs font-semibold text-white hover:bg-red-800 dark:bg-red-500 dark:hover:bg-red-400"
+            className="min-h-[28px] shrink-0 rounded-lg bg-red-700 px-3 py-1 text-xs font-semibold text-white hover:bg-red-800 dark:bg-red-500 dark:hover:bg-red-400"
           >
             Retry
           </button>

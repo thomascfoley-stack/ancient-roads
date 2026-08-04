@@ -134,7 +134,7 @@ function SearchResultCard({
       )}
       {view === 'unavailable' && (
         <p className="mt-1 text-xs text-stone-400">
-          Full text isn&rsquo;t available here — open it in the reader.
+          Full text isn&rsquo;t available here. Open it in the reader.
         </p>
       )}
       <div className="mt-1 flex flex-wrap items-center gap-x-5">
@@ -440,7 +440,7 @@ export default function PassageSearchPage() {
             <div className="mb-4 flex flex-wrap gap-1.5">
               <button
                 onClick={() => { setTraditionFilter(null); setSearchPage(0); }}
-                className={`min-h-[44px] rounded-full px-4 text-[13px] font-medium transition-colors sm:min-h-0 sm:px-3 sm:py-1 sm:text-xs ${
+                className={`min-h-[44px] rounded-lg px-4 text-[13px] font-medium transition-colors sm:min-h-0 sm:px-3 sm:py-1 sm:text-xs ${
                   !traditionFilter
                     ? 'bg-accent-700 text-stone-50 dark:bg-accent-400 dark:text-stone-950'
                     : 'bg-stone-100 text-stone-600 hover:bg-stone-200 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'
@@ -452,7 +452,7 @@ export default function PassageSearchPage() {
                 <button
                   key={t}
                   onClick={() => { setTraditionFilter(traditionFilter === t ? null : t); setSearchPage(0); }}
-                  className={`min-h-[44px] rounded-full px-4 text-[13px] font-medium transition-colors sm:min-h-0 sm:px-3 sm:py-1 sm:text-xs ${
+                  className={`min-h-[44px] rounded-lg px-4 text-[13px] font-medium transition-colors sm:min-h-0 sm:px-3 sm:py-1 sm:text-xs ${
                     traditionFilter === t
                       ? 'bg-accent-700 text-stone-50 dark:bg-accent-400 dark:text-stone-950'
                       : 'bg-stone-100 text-stone-600 hover:bg-stone-200 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'
@@ -491,7 +491,7 @@ export default function PassageSearchPage() {
                   <button
                     onClick={() => setSearchPage((p) => p + 1)}
                     disabled={searchLoading}
-                    className="min-h-[44px] rounded-full bg-paper px-6 text-sm font-medium text-stone-600 shadow-paper transition-all duration-200 ease-gentle hover:text-accent-800 hover:shadow-float active:bg-stone-100 disabled:opacity-40 dark:bg-stone-800 dark:text-stone-300 dark:shadow-none"
+                    className="min-h-[44px] rounded-lg bg-paper px-6 text-sm font-medium text-stone-600 shadow-paper transition-all duration-200 ease-gentle hover:text-accent-800 hover:shadow-float active:bg-stone-100 disabled:opacity-40 dark:bg-stone-800 dark:text-stone-300 dark:shadow-none"
                   >
                     {searchLoading ? 'Loading…' : `Load more (${searchResults.length} of ${searchTotal}${searchTotalCapped ? '+' : ''})`}
                   </button>
@@ -552,7 +552,7 @@ export default function PassageSearchPage() {
 
             <Link
               href={`/read/${bookSlug}/${chapter}`}
-              className="ml-auto inline-flex min-h-[44px] items-center rounded-full bg-paper px-4 text-xs font-medium text-stone-600 shadow-paper hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700 dark:shadow-none"
+              className="ml-auto inline-flex min-h-[44px] items-center rounded-lg bg-paper px-4 text-xs font-medium text-stone-600 shadow-paper hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700 dark:shadow-none"
             >
               Open in reader &rarr;
             </Link>

@@ -58,7 +58,7 @@ export function TodayView() {
           </p>
           <Link
             href="/read/jhn/1"
-            className="mt-6 inline-flex min-h-[44px] items-center rounded-full bg-paper px-5 text-sm font-semibold text-stone-800 shadow-paper transition-colors hover:text-accent-800 dark:bg-stone-800 dark:text-stone-200"
+            className="mt-6 inline-flex min-h-[44px] items-center rounded-lg bg-paper px-5 text-sm font-semibold text-stone-800 shadow-paper transition-colors hover:text-accent-800 dark:bg-stone-800 dark:text-stone-200"
           >
             Open the Word
           </Link>
@@ -125,7 +125,7 @@ function ReadyCard({ card }: { card: TodayCard }) {
       <div className="mt-14 flex flex-wrap gap-3">
         <Link
           href={`/read/${card.bookSlug}/${card.chapter}`}
-          className="inline-flex min-h-[48px] items-center rounded-full bg-accent-700 px-6 text-[15px] font-semibold text-stone-50 shadow-float transition-colors hover:bg-accent-800 dark:bg-accent-600 dark:hover:bg-accent-500"
+          className="inline-flex min-h-[48px] items-center rounded-lg bg-accent-700 px-6 text-[15px] font-semibold text-stone-50 shadow-float transition-colors hover:bg-accent-800 dark:bg-accent-600 dark:hover:bg-accent-500"
         >
           Read {card.lead.refDisplay} in full
         </Link>

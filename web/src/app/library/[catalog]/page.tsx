@@ -64,7 +64,7 @@ export default async function CatalogPage({
   const hrefToggling = (t: string): string => catalogHref(catalog, toggleTradition(urlState, t));
 
   const chip =
-    'inline-flex min-h-[36px] items-center rounded-full border px-3 text-xs transition-colors';
+    'inline-flex min-h-[36px] items-center rounded-lg border px-3 text-xs transition-colors';
   const on = 'border-accent-400 bg-accent-50 text-accent-800 dark:bg-accent-950/40 dark:text-accent-200';
   const off = 'border-stone-200/70 text-stone-600 hover:bg-accent-50/50 dark:border-stone-800 dark:text-stone-400';
 
@@ -143,7 +143,7 @@ export default async function CatalogPage({
                 <span className="min-w-0">
                   <span className="block truncate font-scripture text-stone-800 dark:text-stone-100">{w.title}</span>
                   <span className="block truncate text-xs text-stone-500 dark:text-stone-400">
-                    {w.author ?? '—'}
+                    {w.author ?? 'Unattributed'}
                     {w.tradition ? ` · ${w.tradition}` : ''}
                     {/* the register label: a reader must always be able to tell what kind of work this is */}
                     {` · ${w.sourceType}`}

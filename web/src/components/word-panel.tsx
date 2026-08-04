@@ -59,7 +59,7 @@ export function WordPanel({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-t-2xl bg-white shadow-2xl animate-slide-up dark:bg-stone-900 dark:text-stone-300">
+      <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-t-2xl bg-paper shadow-deep animate-slide-up dark:bg-stone-900 dark:text-stone-300">
         {/* Header: the word itself */}
         <div className="sticky top-0 z-10 border-b border-stone-100 bg-white/95 px-5 py-4 backdrop-blur-sm dark:border-stone-800 dark:bg-stone-900/95">
           <div className="flex items-start justify-between">

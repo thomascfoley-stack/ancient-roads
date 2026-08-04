@@ -86,7 +86,7 @@ export default function WordStudyPage() {
               onClick={() => setLang(l)}
               className={`min-h-[36px] rounded-lg px-4 text-sm font-medium capitalize transition-colors ${
                 lang === l
-                  ? 'bg-paper text-stone-800 shadow-sm dark:bg-stone-700 dark:text-stone-100'
+                  ? 'bg-paper text-stone-800 shadow-paper dark:bg-stone-700 dark:text-stone-100'
                   : 'text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200'
               }`}
             >

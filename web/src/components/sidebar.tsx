@@ -96,7 +96,7 @@ export function SidebarNavContent({
             href="/home"
             icon={<HomeIcon />}
             label="Home"
-            active={pathname === '/'}
+            active={pathname === '/home'}
             row={row}
             onNavigate={onNavigate}
           />
@@ -469,7 +469,7 @@ function InlineNameForm({
           if (e.key === 'Escape') onCancel();
         }}
         placeholder={placeholder}
-        className="w-full rounded border border-stone-300 bg-white px-2 py-1.5 text-base text-stone-800 placeholder:text-stone-400 outline-none focus:border-stone-500 sm:py-1 sm:text-sm dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100"
+        className="w-full rounded border border-stone-300 bg-paper px-2 py-1.5 text-base text-stone-800 placeholder:text-stone-400 outline-none focus:border-stone-500 sm:py-1 sm:text-sm dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100"
         autoFocus
       />
     </form>
@@ -495,6 +495,7 @@ function SidebarLink({
     <Link
       href={href}
       onClick={onNavigate}
+      aria-current={active ? 'page' : undefined}
       className={`flex items-center gap-2.5 rounded-md px-2 text-sm transition-colors ${row} ${
         active
           ? 'bg-stone-200/80 font-medium text-stone-900 dark:bg-stone-700/70 dark:text-stone-100'

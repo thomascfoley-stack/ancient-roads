@@ -163,17 +163,37 @@ export function VerseDisplay({
                   OWNER RULING, 2026-08-02: ADR-047 (docs/DECISIONS.md), amending
                   docs/LIBRARY_READER_BUILD.md's "do not change tap-a-verse -> commentaries"
                   boundary. Recorded before this code changed, not after. */}
+              {/* KEYBOARD. This handle is the reader's primary interaction and it was
+                  reachable by pointer only: no tabIndex, no role, no key handler, so a
+                  keyboard user could not open commentary on any verse in the app.
+                  It stays a <sup> carrying its own onClick, deliberately. A first pass made
+                  it a real <button> nested inside the <sup>, which is better semantics but
+                  moves the handler off the element ADR-047 names, and
+                  verse-open-gesture.test.tsx went red because the handle it asserts on no
+                  longer answers a click. That test guards an owner ruling; the fix belongs
+                  in the component, not in the test. So: same element, same handler, same
+                  box, plus the ARIA button contract. */}
               <sup
+                role="button"
+                tabIndex={0}
+                aria-label={`Verse ${v.verse}, read commentary`}
                 onClick={() => onVerseClick(v.verse)}
-                className="relative mr-0.5 font-sans text-[11px] font-semibold text-accent-600/80 select-none before:absolute before:-inset-y-1 before:-left-1.5 before:-right-0.5 before:content-[''] dark:text-accent-300/80"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onVerseClick(v.verse);
+                  }
+                }}
+                className="relative mr-0.5 cursor-pointer font-sans text-[11px] font-semibold text-accent-600/80 select-none before:absolute before:-inset-y-1 before:-left-1.5 before:-right-0.5 before:content-[''] hover:text-accent-700 dark:text-accent-300/80 dark:hover:text-accent-200"
               >
                 {v.verse}
               </sup>
               {foreignColor && (
                 <sup
                   className={`mr-0.5 inline-block h-1.5 w-1.5 rounded-full align-super ${HIGHLIGHT_BG[foreignColor] ?? ''} select-none`}
-                  title="Highlighted in another translation"
-                />
+                >
+                  <span className="sr-only">Highlighted in another translation</span>
+                </sup>
               )}
               {/* The verse-text container: its text nodes concatenate to exactly v.text, so the
                   anchoring mapper (rangeToOffsetsInContainer) walks it to derive offsets into v.text. */}
@@ -188,15 +208,24 @@ export function VerseDisplay({
                   ),
                 )}
               </span>{' '}
+              {/* The glyph is decorative and the `title` that used to carry its meaning was
+                  hover-only: absent on touch, unreliable to assistive tech. The glyph is
+                  now aria-hidden and the meaning is real text beside it. */}
               {hasNote && (
-                <sup className="mr-0.5 select-none text-accent-600 dark:text-accent-300" title="You have a note here">
-                  ✎
-                </sup>
+                <>
+                  <sup className="mr-0.5 select-none text-accent-600 dark:text-accent-300" aria-hidden>
+                    ✎
+                  </sup>
+                  <span className="sr-only">You have a note here.</span>
+                </>
               )}
               {isBookmarked && (
-                <sup className="mr-0.5 select-none text-accent-600 dark:text-accent-300" title="Bookmarked">
-                  ⚑
-                </sup>
+                <>
+                  <sup className="mr-0.5 select-none text-accent-600 dark:text-accent-300" aria-hidden>
+                    ⚑
+                  </sup>
+                  <span className="sr-only">Bookmarked.</span>
+                </>
               )}
             </span>
           );

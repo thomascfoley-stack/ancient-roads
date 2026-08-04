@@ -22,6 +22,7 @@ import { PassagePane } from '@/components/passage-pane';
 import { VerseRef } from '@/components/verse-ref';
 import { DEFAULT_TRANSLATION } from '@/lib/bible';
 import { storedTranslation, type PassageTarget } from '@/lib/verse-preview';
+import { count } from '@/lib/plural';
 
 interface PlanListRow {
   id: string;
@@ -135,7 +136,7 @@ export function PlansClient() {
           ) : (
             <button
               onClick={() => setBuilding(true)}
-              className="mt-5 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-accent-700 px-5 text-sm font-medium text-white shadow-paper transition-colors ease-gentle hover:bg-accent-800"
+              className="mt-5 inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-accent-700 px-5 text-sm font-medium text-white shadow-paper transition-colors ease-gentle hover:bg-accent-800"
             >
               {list.plans.length === 0 ? 'Build my first plan' : 'New plan'}
             </button>
@@ -160,7 +161,7 @@ function EmptyState() {
         {examples.map(([what, eg]) => (
           <li key={what} className="text-sm">
             <span className="font-medium text-stone-800 dark:text-stone-100">{what}</span>
-            <span className="text-stone-500 dark:text-stone-400"> — {eg}</span>
+            <span className="text-stone-500 dark:text-stone-400">. {eg}</span>
           </li>
         ))}
       </ul>
@@ -214,7 +215,7 @@ function prettyDate(iso: string): string {
 
 const MODES = [
   { key: 'book', label: 'One book', hint: 'Work through a single book of the Bible.' },
-  { key: 'books', label: 'A collection', hint: 'A group of books — the Gospels, Paul’s letters, the whole Bible.' },
+  { key: 'books', label: 'A collection', hint: 'A group of books: the Gospels, Paul’s letters, the whole Bible.' },
   { key: 'topic', label: 'A topic', hint: 'A theme, gathered by a classic topical index and read passage by passage.' },
 ] as const;
 type Mode = (typeof MODES)[number]['key'];
@@ -243,14 +244,14 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
       if (pickedTopic.entryCount < dayCount) {
         return {
           ok: false as const,
-          reason: `“${pickedTopic.heading}” has ${pickedTopic.entryCount} passages — not enough for ${dayCount} reading days. Try fewer weeks or fewer days each week.`,
+          reason: `“${pickedTopic.heading}” has ${pickedTopic.entryCount} passages, not enough for ${dayCount} reading days. Try fewer weeks or fewer days each week.`,
         };
       }
       const per = pickedTopic.entryCount / dayCount;
       return {
         ok: true as const,
         days: dayCount,
-        scope: `${pickedTopic.heading} · ${pickedTopic.entryCount} passages · ${pickedTopic.workTitle}`,
+        scope: `${pickedTopic.heading} · ${count(pickedTopic.entryCount, 'passage')} · ${pickedTopic.workTitle}`,
         pace: per < 1.5 ? 'about 1 passage a day' : `about ${Math.round(per)} passages a day`,
         from: null as string | null, to: null as string | null,
       };
@@ -272,8 +273,8 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
     // Name the SCOPE, not the first and last day's readings. "Genesis 1–3 →
     // Genesis 48–50" describes the schedule twice and never says "Genesis".
     const scopeText = g
-      ? `${g.label} · ${chapters} chapters across ${g.books.length} books`
-      : `${BOOKS.find((b) => b.slug === book)?.name ?? book} · ${chapters} chapters`;
+      ? `${g.label} · ${count(chapters, 'chapter')} across ${count(g.books.length, 'book')}`
+      : `${BOOKS.find((b) => b.slug === book)?.name ?? book} · ${count(chapters, 'chapter')}`;
     return {
       ok: true as const,
       days: r.days.length,
@@ -294,14 +295,14 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
       const res = await fetch(`/api/plans/topics?q=${encodeURIComponent(topicQuery.trim())}`);
       if (!res.ok) {
         setTopicMatches(null);
-        setTopicError('Topic search is unavailable just now — please try again.');
+        setTopicError('Topic search is unavailable right now. Please try again.');
         return;
       }
       const data = (await res.json()) as { matches: TopicMatch[] };
       setTopicMatches(data.matches);
     } catch {
       setTopicMatches(null);
-      setTopicError('Topic search could not be reached — please try again.');
+      setTopicError('Topic search could not be reached. Please try again.');
     } finally {
       setSearching(false);
     }
@@ -345,7 +346,7 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
           <button
             key={m.key} type="button" role="tab" aria-selected={mode === m.key}
             onClick={() => setMode(m.key)}
-            className={`min-h-[36px] flex-1 rounded-full px-3 text-xs font-medium transition-colors ease-gentle ${
+            className={`min-h-[36px] flex-1 rounded-lg px-3 text-xs font-medium transition-colors ease-gentle ${
               mode === m.key
                 ? 'bg-paper text-stone-800 shadow-paper dark:bg-stone-700 dark:text-stone-100'
                 : 'text-stone-500 hover:text-stone-700 dark:text-stone-400'
@@ -434,12 +435,12 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
       <div className="mt-4 flex items-center gap-3">
         <button
           type="submit" disabled={busy || preview?.ok === false}
-          className="inline-flex min-h-[44px] items-center rounded-full bg-accent-700 px-5 text-sm font-medium text-white shadow-paper transition-colors ease-gentle hover:bg-accent-800 disabled:opacity-50"
+          className="inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-medium text-white shadow-paper transition-colors ease-gentle hover:bg-accent-800 disabled:opacity-50"
         >
           {busy ? 'Building…' : 'Create plan'}
         </button>
         <button type="button" onClick={onCancel}
-          className="inline-flex min-h-[44px] items-center rounded-full px-4 text-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200">
+          className="inline-flex min-h-[44px] items-center rounded-lg px-4 text-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200">
           Cancel
         </button>
       </div>
@@ -476,7 +477,7 @@ function TopicPicker({
       {matches !== null && !error && (
         <div className="mt-2">
           {matches.length === 0 ? (
-            <p className="text-xs text-stone-400">No topic by that name in the library — try another word.</p>
+            <p className="text-xs text-stone-400">No topic by that name in the library. Try another word.</p>
           ) : (
             <>
               <p className="mb-1.5 text-xs text-stone-500 dark:text-stone-400">Choose one:</p>
@@ -495,7 +496,7 @@ function TopicPicker({
                         <span className="block truncate text-sm font-medium text-stone-800 dark:text-stone-100">{m.heading}</span>
                         <span className="block truncate text-[11px] text-stone-400">{m.workTitle}</span>
                       </span>
-                      <span className="shrink-0 text-[11px] text-stone-400">{m.entryCount} passages</span>
+                      <span className="shrink-0 text-[11px] text-stone-400">{count(m.entryCount, 'passage')}</span>
                     </button>
                   );
                 })}
@@ -622,14 +623,14 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
           </p>
           <p className="mt-1 font-serif text-lg text-stone-800 dark:text-stone-100">
             {readingsByDay.has(upNext.day_index)
-              ? `${readingsByDay.get(upNext.day_index)!.length} passages`
+              ? count(readingsByDay.get(upNext.day_index)!.length, 'passage')
               : dayRef(upNext)}
           </p>
           <div className="mt-2 flex items-center gap-4">
             <button
               type="button"
               onClick={() => upNextTarget && setPane(upNextTarget)}
-              className="inline-flex min-h-[36px] items-center rounded-full bg-accent-700 px-4 text-xs font-medium text-white transition-colors ease-gentle hover:bg-accent-800">
+              className="inline-flex min-h-[36px] items-center rounded-lg bg-accent-700 px-4 text-xs font-medium text-white transition-colors ease-gentle hover:bg-accent-800">
               Read it
             </button>
             <button onClick={() => void toggle(upNext)} disabled={busyDay === upNext.day_index}
