@@ -1,0 +1,54 @@
+SLICE 0 HARNESS — runnable from the lane-b worktree, and one broken-instrument finding.
+2026-08-04T01:32:11Z
+
+== WHY THIS WAS NEEDED ==
+web/public/bible/ (198 MB, 18 translations) and data/ are gitignored and exist only in the
+main clone, so both frozen scripts died at readdirSync from this worktree. The freeze rule
+forbids editing them to fix it. Resolved WITHOUT touching them: web/public/bible is a symlink
+to the main clone (gitignored, invisible to git); the input volume is passed as an absolute
+path, because both scripts already take it as process.argv[2] -- so data/ needs no symlink,
+which matters because data/ is NOT gitignored and a symlink there would be committable.
+
+== THE FREEZE, CHECKED RATHER THAN CLAIMED ==
+-- hashes before any run --
+   c954383cbeba463d50c5469868c15f4fd895dbfc070b4e03bba79e0298a650b6  scripts/slice0-anchor-recall.mts
+   c15b1bbbc08e1cafcfd8ec321eedebabe6e63d05df8332e26e0f89533629d4f8  scripts/slice0-precision.mts
+-- hashes after all runs --
+   c954383cbeba463d50c5469868c15f4fd895dbfc070b4e03bba79e0298a650b6  scripts/slice0-anchor-recall.mts
+   c15b1bbbc08e1cafcfd8ec321eedebabe6e63d05df8332e26e0f89533629d4f8  scripts/slice0-precision.mts
+-- git history (single commit each = never modified) --
+   scripts/slice0-anchor-recall.mts         1 commit(s)
+   scripts/slice0-precision.mts             1 commit(s)
+
+== FINDING: THE HARNESS REPORTS A TRANSLATION IT IS NOT USING ==
+slice0-anchor-recall.mts:45  console.error(`indexed ${verses.length} WEB verses, ...`)
+slice0-anchor-recall.mts:140 console.log(`... (n=${N}, WEB shingle n=3, ...)`)
+
+'WEB' is a hardcoded LITERAL in both lines. So is 'shingle n=3', while NGRAM = 6 (line 32).
+The index itself honours BIBLE_TR correctly -- proven by running three translations over the
+same input and watching the index change while the label did not:
+
+   BIBLE_TR=kjv  -> indexed 31102 WEB verses, 588029 distinct 6-shingles
+   BIBLE_TR=web  -> indexed 31103 WEB verses, 559459 distinct 6-shingles
+   BIBLE_TR=asv  -> indexed 31086 WEB verses, 577970 distinct 6-shingles
+
+Three different indexes; one label, always 'WEB'; and a shingle size reported as 3 when it is 6.
+
+WHY IT MATTERS: the KJV/WEB difference is the single largest variable in Slice 0 -- 17 points,
+the finding that created gate B4 and ADR-100. An operator re-running this and reading
+'indexed ... WEB verses' would conclude they had run WEB when they had run KJV. The published
+Slice 0 numbers are not in doubt: they were labelled by hand in prose, not taken from this
+output. What is broken is the instrument's REPORT, not its behaviour (THE_LOOP rule 3).
+
+DELIBERATELY NOT FIXED. A label is not a parameter, regex, shingle length, window or bar, so
+correcting it would not tune a number -- but it would change the file hash, and PRE-REGISTRATION
+§2 rests the freeze on 'git-verified unchanged'. These scripts are also being DEMOTED to a
+regression check by ADR-103. So: left byte-identical, recorded here, and every invocation in
+this slice states BIBLE_TR explicitly. The vN harness built for ADR-103 reports its translation
+FROM the env var, and a test asserts the reported label matches the directory actually read.
+
+== SECOND CONFIRMATION, INCIDENTAL ==
+Run over Whitefield (data/raw/archive/whitefield-works/pg68976.txt): '0 stated-text markers
+-> 0 usable sermons'. That independently reproduces the B0a blocker recorded in RESULT.md --
+non-Spurgeon authors state the reference FIRST, so the epigraph regex matches nothing. It is
+the concrete reason ADR-103's no-epigraph metric was needed.

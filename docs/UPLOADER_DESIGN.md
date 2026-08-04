@@ -161,9 +161,16 @@ prose packer only; `doc_type` is recorded at upload so other types can be re-chu
 without re-parsing.
 
 **Verse-anchor:** the uncited-quote 6-gram shingle channel plus the explicit-reference channel
-(Slice 0). Anchors are written at shingle count K>=2 with K recorded in `confidence`; the surface
-default filters at K>=3 (§3). The index matched against is the §6 translation fork (Q1).
-Deterministic string work, no LLM, runs in the worker.
+(Slice 0). Anchors are written at shingle count K>=2 with K recorded in **`match_count`**; the
+surface default filters at K>=3 (§3). The index matched against is the translation **family** chosen
+per document by **ADR-100** (which supersedes Q1 below). Deterministic string work, no LLM, runs in
+the worker.
+
+> **Amended 2026-08-03 (migration 103).** This paragraph said K was "recorded in `confidence`".
+> `confidence` now means confidence 0-1 in the detected translation family (ADR-100), and the
+> shingle count lives in its own `match_count INT`. Left as an amendment rather than a silent edit,
+> because "the surface default filters at K>=3" would have silently compared a count against a
+> detection score — the two quantities were never the same number.
 
 **Embed:** `BAAI/bge-large-en-v1.5` via DeepInfra, identical to the corpus, `model_slug` stored
 per row. The parity rule (`SERMON_SEARCH_DESIGN.md` §6) applies: any comparison or future join
@@ -288,12 +295,20 @@ the owner's own account may run before the cutover only while:
 
 ## 7. Open questions for the owner (each with a recommendation)
 
-- **Q1. Translation indexing for the uncited-quote channel** (`docs/OWNER_ACTIONS.md` §6 fork
-  applied here). Recommendation: option 1, index the union of PD translations we hold (KJV
-  first, proven 90-93% recall on held-out Spurgeon vs WEB's 65%; add WEB/ASV/YLT/Darby/Geneva
-  under the same K discipline), hold precision with K=3, and say plainly in UI copy that verse
-  detection is strongest for KJV/PD quoters; modern-translation preachers ride the semantic
-  spine. Covering ESV/NIV/NASB is structurally impossible (cannot store them); do not try.
+- **~~Q1. Translation indexing for the uncited-quote channel~~ — RULED 2026-08-03, see ADR-100.**
+  This question is CLOSED and its recommendation below was **not** what was adopted. It proposed
+  indexing the *union of all PD translations we hold*. B4 ruled **Option A instead: detect the
+  translation per DOCUMENT and shingle against that family**, unioning only within the correlated
+  family. The difference is not cosmetic — unioning across families multiplies exactly the
+  incidental-collision class K exists to suppress, and `SLICE1_TRANSLATION_DECISION.md` §3 records
+  that its cost was never measured. The parts of the recommendation that DO survive: KJV's measured
+  advantage, holding precision with K, the UI honesty about KJV/PD quoters, and that ESV/NIV/NASB
+  are structurally impossible. Original text, left standing as the record:
+  > Recommendation: option 1, index the union of PD translations we hold (KJV
+  > first, proven 90-93% recall on held-out Spurgeon vs WEB's 65%; add WEB/ASV/YLT/Darby/Geneva
+  > under the same K discipline), hold precision with K=3, and say plainly in UI copy that verse
+  > detection is strongest for KJV/PD quoters; modern-translation preachers ride the semantic
+  > spine. Covering ESV/NIV/NASB is structurally impossible (cannot store them); do not try.
 - **Q2. Owner-only beta before the auth cutover** (§4 carve-out). Recommendation: yes, under the
   four named conditions; it derisks parsing and search UX on real sermons while SEC-1
   remediation lands.

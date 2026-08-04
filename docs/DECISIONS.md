@@ -1051,6 +1051,9 @@ wrong — it goes quiet, and a quiet channel is indistinguishable from a documen
 3. **What happens when detection is wrong** — the question the paper explicitly could not close.
    Detection resolves to a **family**, not a single translation, and when the top two families score
    within a pre-registered margin the channel shingles against the **union of the detected family**.
+   *(Schema note, migration 103: the `confidence` this ADR describes is now unambiguous — the shingle
+   count K moved to its own `match_count INT`, because two other documents were using `confidence`
+   for that instead and one `REAL` cannot hold both.)*
    This is Option B bounded to the correlated cluster: unioning translations that already share long
    verbatim runs adds few genuinely new 6-grams, so it buys away the cliff cheaply, while never
    unioning across families — which is where Option B's unmeasured collision multiplication actually
@@ -1118,3 +1121,94 @@ store connection, so it would mean a second store rather than a second token.
 **Consequence to watch:** rotating this token is now the only way to un-expose it. If it is ever
 rotated, `web/.env.local` and any local `.env` must be updated in the same operation, or the queue
 starts failing every parse with a storage error rather than a parse error.
+
+## ADR-102 — B2 CLOSED: `bge-large-en-v1.5` is the committed embedder for user content too, and the DB slug is the short form (2026-08-03)
+
+**Context:** gate B2 asked one question the corpus's ADR-005 did not settle — whether *user-corpus*
+embedding uses the same model. It sat open through steps 1-2 while the order said "proceed on
+bge-large", so code was being built on an unratified assumption. Step 4 is where that stops being
+deferrable: the tradition-gap join compares user vectors against corpus vectors, and a mismatch is
+silent. Jina v3 is **also 1024-dim**, so wrong vectors insert, join and score cleanly forever.
+
+**Decision (owner, 2026-08-03):** **confirmed — `BAAI/bge-large-en-v1.5` via DeepInfra**, the same
+model, provider and dimensionality as the corpus. B2 is CLOSED.
+
+**The part that is not a formality — WHICH STRING.** There are two, and the parity check compares
+the wrong one by default:
+- the **DeepInfra API id** is `BAAI/bge-large-en-v1.5` — what `src/retrieval/embedder.ts:15` and
+  `web/src/lib/teacher/deepinfra.ts:7` expose as the model;
+- the **database slug** in `section_embeddings.model_slug` is the short `bge-large-en-v1.5`.
+
+Writing `model_slug: embedder.model` therefore stores a value that does **not** equal the corpus's,
+and a parity check written as `userRow.model_slug === EMBED_MODEL` is **tautologically green while
+every user row silently mismatches the corpus** — the exact bug the check exists to catch, wearing
+the check's own uniform. The parity check compares against the CORPUS value, never the client
+constant.
+
+**Consequence for the build:** the literal is hand-typed in **12 places with zero shared exports**,
+which is this repo's most-punished defect class. Slice 1 introduces one module holding both strings
+with the slug **derived** from the API id, plus a guard test asserting no other file contains either
+literal — the `test/ask-max-duration-literal.test.ts` pattern.
+
+**Rejected:** any other embedder — it cannot be joined against the corpus until 1,070,674 vectors are
+re-embedded, which would need an ADR superseding ADR-005 and a migration plan, not a slice.
+
+## ADR-103 — B0b RULED: the verbatim-engagement metric supersedes stated-text recall as the ship gate (2026-08-03)
+
+**Context:** Slice 0's own caveat says K "was read off *this* held-out set — the K choice itself
+should be validated on a further held-out set before it ships". B0a tried and **could not build the
+set**: the frozen harness requires an epigraph (quote-then-reference, Spurgeon's CCEL house style),
+so Wesley/Edwards/Whitefield yielded eligible n=0 against a floor of 20.
+
+**Decision (owner, 2026-08-03):** adopt `evidence/slice0-k-revalidation/METRIC-PROPOSAL.md`'s
+metric — **supersede for the ship decision, keep stated-text recall as a narrow regression check.**
+
+- Gold: the body contains an **≥8-word verbatim run** of the verse. Returns: **≥K** matching 6-gram
+  shingles. **Eligibility: any document with |gold| ≥ floor — no epigraph required**, which is
+  precisely what unblocks B0a.
+- **K must be RE-DERIVED, not carried over.** The paper is explicit that carrying K=3 across is
+  B-1's circularity in a new costume. Derive on one set, validate on a disjoint second.
+- Report the **exclusion rate** (|gold| = 0). On a modern non-KJV corpus it may be the headline.
+- **The two recalls never appear in one table** — different denominators (chapter-level against one
+  announced passage, vs. all engaged passages). They are not comparable.
+
+**Why keep the old metric at all:** it is the only ground truth in the system **not produced by
+substring overlap** — a human wrote the epigraph. With every other check being overlap-on-overlap,
+disagreement between the two is information about the *gold*, not just the system.
+
+**Bounded, and stated:** the new metric measures recall only within the *verbatim-quote* population.
+It says nothing about paraphrase — which Slice 0 already named as the residual (all three misses at
+n=30) and which is the semantic spine's job — nor about expository preaching that argues about a
+passage while quoting little of it. It cannot be the sole evidence the feature works.
+
+**Consequence:** the parser widening is **demoted, not deleted** — no longer a blocker, still worth
+doing later to keep the regression check alive on more than one author.
+
+## ADR-104 — The tradition-gap join is GATED on Lane A merging `served`; Slice 1 ships the rest first (2026-08-03)
+
+**Context:** the Slice 1 order requires the join to filter the corpus on `embeddings.served = true`
+using the canonical predicate, "never a second hand-written one". Discovered while planning steps
+3-7: **the column is on the database but the predicate is not on this branch.**
+`lane-b-uploader`'s `schema_migrations` lists 044, and 328,775 of 1,070,674 rows carry
+`served = true`; yet `web/src/lib/teacher/routing.ts` on `feat/lane-b-slice1-uploader` is
+**byte-identical to `main`**, where `LEGAL_CORPUS_FILTER` is still the author allowlist. The
+`(served)` rewrite exists only on Lane A's `feat/served-column-derives-publish`, which is not an
+ancestor of Lane B. Importing the canonical symbol today returns the **wrong** predicate.
+
+**Decision (owner, 2026-08-03):** build steps 3, 4 and 5 now; **the tradition-gap join waits for
+Lane A to merge `served` to `main`.** The three searches are entirely user-plane and need nothing
+from `routing.ts`.
+
+**Why not the alternatives:** cherry-picking 044 + `routing.ts` into Lane B forks the
+most-guarded file in the repo and leaves two lanes carrying divergent copies until merge — the exact
+collision file-disjointness exists to prevent, which already bit us on ADR-047 within 48 hours.
+Hand-writing `served = true` in the join is the watchlist's first artefact, in the file family where
+it has recurred most; instance 14 was `routing.ts` itself.
+
+**The cost, stated plainly rather than buried:** the order says "build only upload+search and you
+have built a filing cabinet". Until Lane A merges, that is what Slice 1 is. This ADR does not
+dispute that framing — it accepts it as the price of not forking the predicate.
+
+**Watch for:** this is a **database/code split across lanes**, not a normal dependency. Lane A
+applied a migration to the shared `dev` parent, so every branch cut from it inherited a column its
+code cannot see. Any future lane cutting from `dev` will inherit the same asymmetry.

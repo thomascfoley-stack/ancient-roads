@@ -28,6 +28,7 @@ only upload+search, you have built a filing cabinet.**
 | `CLAUDE.md` + `AGENTS.md` | The standing rails. Definition of Done is strict and includes a browser check. |
 | `docs/THE_LOOP.md` | Every check ships with its red-proof. A check never watched fail proves nothing. |
 | `db/migrations/013_user_corpus.sql.draft` | **150 lines of schema already written** — four tables, RLS, Neon dialect. Start here, do not redesign. |
+| `docs/UPLOADER_DESIGN.md` | **ADDED 2026-08-03 — this table omitted it, and step 2 was built without it.** 21KB specific to this feature. §4 is a **hard ship gate** (multi-user upload cannot ship while GHSA-g38m is in `ignoreGhsas`; owner-only beta needs four named conditions). §8 is ten falsifiable acceptance checks A1-A10, which are a better spine for "done" than the seven steps below. §5 is the licensing stance for user uploads. |
 
 ## Ground truth on the ground (measured 2026-08-03, not narrated)
 
