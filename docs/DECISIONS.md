@@ -1050,7 +1050,9 @@ wrong — it goes quiet, and a quiet channel is indistinguishable from a documen
 
 3. **What happens when detection is wrong** — the question the paper explicitly could not close.
    Detection resolves to a **family**, not a single translation, and when the top two families score
-   within a pre-registered margin the channel shingles against the **union of the detected family**.
+   within a pre-registered margin the channel shingles against the ~~union of the detected family~~
+   **— WITHDRAWN 2026-08-03, see the measurement below. The channel shingles against ONE detected
+   translation; the family is used only to decide which one, and the fallback is recorded.**
    *(Schema note, migration 103: the `confidence` this ADR describes is now unambiguous — the shingle
    count K moved to its own `match_count INT`, because two other documents were using `confidence`
    for that instead and one `REAL` cannot hold both.)*
@@ -1069,11 +1071,39 @@ the clustering threshold pre-registered before the run.
 **Why:** Option B's central cost lands on the metric that decides the feature and is unmeasured;
 Option A's central cost is measurable in advance. A known-measurable risk beats an unmeasured one.
 
-**UNVERIFIED, and it must be measured before it is relied on:** the premise under decision 3 — that
-within-family 6-gram overlap is high enough to make the union nearly free — is **reasoning, not
-measurement**, exactly as the paper flags its own §3 collision claim. It is the first measurement of
-step 3 and it is pre-registered here: if within-family union materially moves precision at K=3, the
-union rule is wrong and single-translation-plus-fallback is the answer instead.
+**~~UNVERIFIED, and it must be measured before it is relied on~~ — MEASURED 2026-08-03, AND
+DECISION 3 IS WITHDRAWN.** The premise was that within-family 6-gram overlap is high enough to make
+the union nearly free. Pre-registered (`evidence/lane-b-slice1/translation-family-PRE-REGISTRATION.md`,
+committed at `edefd92` before the run), measured, and it failed its own bar:
+
+| | |
+|---|---|
+| KJV family found at T=0.50 | **akjv, kjv, rwebster, ukjv, webster** — exactly the five predicted |
+| Union of the family's shingles | 974,681 |
+| Largest single member | 594,371 |
+| **Union cost ratio** | **1.640** |
+| Pre-registered withdrawal bar | **> 1.50** |
+
+**Claim 1 held; claim 2 failed.** The families are real — the five KJV-descended translations
+cluster exactly as predicted, at every threshold tested (0.40/0.50/0.60), against a median pairwise
+similarity of 0.053 across all 153 pairs. But unioning them is **not** nearly free: it adds 64% more
+distinct 6-grams than the largest member alone. "Translations that already share long verbatim runs
+add few genuinely new 6-grams" was wrong by a wide margin.
+
+**So decision 3 is withdrawn, per the bar set before the number existed.** The uncited channel
+shingles against **one detected translation**, with the fallback recorded in
+`user_section_anchors.confidence` — which is what `anchorChunk` already does, since it takes a
+single `VerseShingleIndex`. No code changes; the union index simply never gets built.
+
+**The rest of ADR-100 stands, and this run strengthened it.** Option B — union across all
+translations — measures a cost ratio of **7.821** (4,894,083 shingles). Rejecting it was right, and
+is now measured rather than argued. What the run refuted was my own softening of that rejection, not
+the rejection.
+
+**Left as the standing lesson:** the same "they overlap so the union is cheap" intuition produced
+both the (correct) rejection of Option B and the (wrong) family-union carve-out. Overlap high enough
+to cluster texts is not overlap high enough to make their union free — 0.83 Jaccard between
+`rwebster` and `webster` still leaves a 1.64× union across the family.
 
 **Rejected:** *Option B (all 18 indexes)* — multiplies collisions in a correlated, clustered way
 against the exact metric K exists to suppress, and the K curve was measured single-index so it does
