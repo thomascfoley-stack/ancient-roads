@@ -19,7 +19,11 @@ const PRINCIPLES = [
   },
   {
     h: 'AI is not the Holy Spirit',
-    p: "People are starting to ask AI about the Bible, its meaning and how to apply it to their lives. We won't answer those questions on purpose. The Holy Spirit speaks to our hearts as we labor over the Word and wrestle our lives and wills into submission to it. Ancient Paths is designed to give you the best of today's technology to assist you as you labor and never replace the Helper. The teaching belongs to Him, as does the glory.",
+    // Curly apostrophes, matching the &rsquo; entities elsewhere on this page and the
+    // identical paragraph on the landing page. This copy is duplicated verbatim in
+    // app/page.tsx BEATS; the design pass fixed it there and missed it here, so the two
+    // public pages rendered the same sentence with different punctuation.
+    p: 'People are starting to ask AI about the Bible, its meaning and how to apply it to their lives. We won’t answer those questions on purpose. The Holy Spirit speaks to our hearts as we labor over the Word and wrestle our lives and wills into submission to it. Ancient Paths is designed to give you the best of today’s technology to assist you as you labor and never replace the Helper. The teaching belongs to Him, as does the glory.',
   },
 ];
 
