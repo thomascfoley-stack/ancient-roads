@@ -86,7 +86,7 @@ export function BookPicker({
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => setSort(sort === 'canonical' ? 'alpha' : 'canonical')}
-            className="inline-flex min-h-[44px] items-center rounded-full bg-paper px-4 text-xs font-medium text-stone-600 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:shadow-none"
+            className="inline-flex min-h-[44px] items-center rounded-lg bg-paper px-4 text-xs font-medium text-stone-600 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:shadow-none"
           >
             {sort === 'canonical' ? 'A–Z' : '1–66'}
           </button>

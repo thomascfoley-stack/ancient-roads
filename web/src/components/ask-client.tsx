@@ -174,7 +174,7 @@ export function AskClient() {
             {busy ? 'Thinking…' : <span className="[@media(hover:none)]:hidden">↵ to send · ⇧↵ newline</span>}
           </span>
           <button type="submit" disabled={busy || !question.trim()}
-            className="min-h-[44px] rounded-full bg-accent-700 px-6 text-sm font-semibold text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-800 active:bg-accent-900 disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0 sm:px-5 sm:py-1.5 dark:bg-accent-500 dark:hover:bg-accent-400">
+            className="min-h-[44px] rounded-lg bg-accent-700 px-6 text-sm font-semibold text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-800 active:bg-accent-900 disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0 sm:px-5 sm:py-1.5 dark:bg-accent-500 dark:hover:bg-accent-400">
             Ask
           </button>
         </div>

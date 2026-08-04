@@ -494,7 +494,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
                 setEditingNote(false);
               }}
               disabled={!noteText.trim()}
-              className="min-h-[44px] rounded-full bg-accent-700 px-4 text-xs font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 disabled:opacity-40 dark:bg-accent-500 dark:hover:bg-accent-400"
+              className="min-h-[44px] rounded-lg bg-accent-700 px-4 text-xs font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 disabled:opacity-40 dark:bg-accent-500 dark:hover:bg-accent-400"
             >
               Save note
             </button>

@@ -69,6 +69,23 @@
   --ease-gentle: cubic-bezier(0.32, 0, 0.24, 1);
 }
 
+/* RADIUS CARRIES HIERARCHY. It used to carry none: `rounded-full` was 49% of every
+ * radius in the app, worn equally by a 48px call-to-action, a 10px metadata badge, a
+ * 6px progress bar and a text input. When everything is a capsule, radius stops being
+ * information and the whole surface reads soft and cheap.
+ *
+ * The rule, smallest to largest:
+ *   rounded-lg   (8px)  controls        buttons, inputs, selects, segmented thumbs
+ *   rounded-xl   (12px) surfaces        cards, list rows, popovers
+ *   rounded-t-3xl       sheets          bottom sheets and modals
+ *   rounded-full        TRUE PILLS ONLY status dots, progress bars, drag handles,
+ *                                       circular icon buttons, and short badges whose
+ *                                       shape IS the meaning
+ *
+ * The test for a pill: it has no tap target of its own. Anything carrying
+ * `min-h-[NNpx]` is a control and takes `rounded-lg`.
+ */
+
 html { color-scheme: light; }
 html.dark { color-scheme: dark; }
 

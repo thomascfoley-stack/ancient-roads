@@ -28,7 +28,7 @@ export function WorkHeader({
         <button
           onClick={onOpenToc}
           title="Table of contents"
-          className="min-h-[44px] shrink-0 rounded-full bg-white px-4 text-sm font-semibold text-stone-800 shadow-sm transition-colors hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700"
+          className="min-h-[44px] shrink-0 rounded-lg bg-paper px-4 text-sm font-semibold text-stone-800 shadow-paper transition-colors hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700"
         >
           Contents
         </button>

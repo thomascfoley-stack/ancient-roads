@@ -136,7 +136,7 @@ export function PlansClient() {
           ) : (
             <button
               onClick={() => setBuilding(true)}
-              className="mt-5 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-accent-700 px-5 text-sm font-medium text-white shadow-paper transition-colors ease-gentle hover:bg-accent-800"
+              className="mt-5 inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-accent-700 px-5 text-sm font-medium text-white shadow-paper transition-colors ease-gentle hover:bg-accent-800"
             >
               {list.plans.length === 0 ? 'Build my first plan' : 'New plan'}
             </button>
@@ -346,7 +346,7 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
           <button
             key={m.key} type="button" role="tab" aria-selected={mode === m.key}
             onClick={() => setMode(m.key)}
-            className={`min-h-[36px] flex-1 rounded-full px-3 text-xs font-medium transition-colors ease-gentle ${
+            className={`min-h-[36px] flex-1 rounded-lg px-3 text-xs font-medium transition-colors ease-gentle ${
               mode === m.key
                 ? 'bg-paper text-stone-800 shadow-paper dark:bg-stone-700 dark:text-stone-100'
                 : 'text-stone-500 hover:text-stone-700 dark:text-stone-400'
@@ -435,12 +435,12 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
       <div className="mt-4 flex items-center gap-3">
         <button
           type="submit" disabled={busy || preview?.ok === false}
-          className="inline-flex min-h-[44px] items-center rounded-full bg-accent-700 px-5 text-sm font-medium text-white shadow-paper transition-colors ease-gentle hover:bg-accent-800 disabled:opacity-50"
+          className="inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-medium text-white shadow-paper transition-colors ease-gentle hover:bg-accent-800 disabled:opacity-50"
         >
           {busy ? 'Building…' : 'Create plan'}
         </button>
         <button type="button" onClick={onCancel}
-          className="inline-flex min-h-[44px] items-center rounded-full px-4 text-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200">
+          className="inline-flex min-h-[44px] items-center rounded-lg px-4 text-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200">
           Cancel
         </button>
       </div>
@@ -630,7 +630,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
             <button
               type="button"
               onClick={() => upNextTarget && setPane(upNextTarget)}
-              className="inline-flex min-h-[36px] items-center rounded-full bg-accent-700 px-4 text-xs font-medium text-white transition-colors ease-gentle hover:bg-accent-800">
+              className="inline-flex min-h-[36px] items-center rounded-lg bg-accent-700 px-4 text-xs font-medium text-white transition-colors ease-gentle hover:bg-accent-800">
               Read it
             </button>
             <button onClick={() => void toggle(upNext)} disabled={busyDay === upNext.day_index}

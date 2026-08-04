@@ -86,7 +86,7 @@ export default async function LibraryHubPage({
             <Link
               key={y.href}
               href={y.href}
-              className="inline-flex min-h-[44px] items-center rounded-full border border-stone-200/70 px-4 text-sm text-stone-700 hover:bg-accent-50/60 dark:border-stone-800 dark:text-stone-300 dark:hover:bg-accent-950/25"
+              className="inline-flex min-h-[44px] items-center rounded-lg border border-stone-200/70 px-4 text-sm text-stone-700 hover:bg-accent-50/60 dark:border-stone-800 dark:text-stone-300 dark:hover:bg-accent-950/25"
             >
               {y.label}
             </Link>

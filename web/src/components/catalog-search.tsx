@@ -107,11 +107,11 @@ export function CatalogSearch({
           placeholder={`Search ${label.toLowerCase()}…`}
           aria-label={`Search ${label}`}
           /* text-base (16px) so iOS does not zoom the viewport on focus */
-          className="min-h-[44px] flex-1 rounded-full border border-stone-200/70 bg-transparent px-4 text-base text-stone-800 placeholder:text-stone-400 focus:border-accent-400 focus:outline-none dark:border-stone-800 dark:text-stone-100"
+          className="min-h-[44px] flex-1 rounded-lg border border-stone-200/70 bg-transparent px-4 text-base text-stone-800 placeholder:text-stone-400 focus:border-accent-400 focus:outline-none dark:border-stone-800 dark:text-stone-100"
         />
         <button
           type="submit"
-          className="min-h-[44px] shrink-0 rounded-full bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
+          className="min-h-[44px] shrink-0 rounded-lg bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
         >
           Search
         </button>

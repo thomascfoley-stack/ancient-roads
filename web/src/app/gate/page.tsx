@@ -34,7 +34,7 @@ export default async function GatePage({
           )}
           <button
             type="submit"
-            className="mt-4 min-h-[44px] w-full rounded-full bg-accent-700 px-4 text-sm font-semibold text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-800 active:bg-accent-900 dark:bg-accent-500 dark:hover:bg-accent-400"
+            className="mt-4 min-h-[44px] w-full rounded-lg bg-accent-700 px-4 text-sm font-semibold text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-800 active:bg-accent-900 dark:bg-accent-500 dark:hover:bg-accent-400"
           >
             Enter
           </button>
