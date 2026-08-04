@@ -368,7 +368,7 @@ function NotesTab({ annotation }: { annotation: AnnotationControls }) {
         onChange={(e) => setText(e.target.value)}
         placeholder="Write a note on this verse…"
         rows={6}
-        className="w-full resize-y rounded-xl bg-stone-100/80 px-3 py-2.5 text-base text-stone-800 outline-none placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
+        className="w-full resize-y rounded-lg bg-stone-100/80 px-3 py-2.5 text-base text-stone-800 outline-none placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
       />
       <div className="mt-2 flex items-center gap-2">
         <button

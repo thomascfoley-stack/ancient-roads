@@ -55,7 +55,7 @@ export default function About() {
       <div className="mt-14 flex flex-wrap gap-3">
         <Link
           href="/"
-          className="inline-flex min-h-[48px] items-center rounded-lg bg-accent-700 px-6 text-[15px] font-semibold text-stone-50 shadow-float transition-colors hover:bg-accent-800 dark:bg-accent-600 dark:hover:bg-accent-500"
+          className="inline-flex min-h-[48px] items-center rounded-lg bg-accent-700 px-6 text-[15px] font-semibold text-stone-50 shadow-float transition-colors hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
         >
           Request early access
         </Link>

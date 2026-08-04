@@ -485,7 +485,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
             onFocus={() => setEditingNote(true)}
             placeholder="Write a note on this verse…"
             rows={3}
-            className="w-full resize-y rounded-xl bg-stone-100/80 px-3 py-2.5 text-base text-stone-800 outline-none placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
+            className="w-full resize-y rounded-lg bg-stone-100/80 px-3 py-2.5 text-base text-stone-800 outline-none placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
           />
           <div className="mt-1.5 flex items-center gap-2">
             <button

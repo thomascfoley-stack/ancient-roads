@@ -99,7 +99,7 @@ export default function WordStudyPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={lang === 'greek' ? 'agape, G26, love…' : 'shalom, H430, peace…'}
-          className="min-h-[44px] min-w-0 flex-1 rounded-xl bg-paper px-3 text-base text-stone-800 shadow-paper outline-none transition-shadow duration-200 ease-gentle placeholder:text-stone-400 focus:shadow-float sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500 dark:shadow-none"
+          className="min-h-[44px] min-w-0 flex-1 rounded-lg bg-paper px-3 text-base text-stone-800 shadow-paper outline-none transition-shadow duration-200 ease-gentle placeholder:text-stone-400 focus:shadow-float sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500 dark:shadow-none"
         />
       </div>
 

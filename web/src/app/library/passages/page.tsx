@@ -417,7 +417,7 @@ export default function PassageSearchPage() {
           value={searchQuery}
           onChange={(e) => handleSearchInput(e.target.value)}
           placeholder="Search commentaries…"
-          className="w-full rounded-xl bg-paper py-3 pl-10 pr-12 text-base text-stone-800 shadow-paper outline-none transition-shadow duration-200 ease-gentle placeholder:text-stone-400 focus:shadow-float sm:py-2.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
+          className="w-full rounded-lg bg-paper py-3 pl-10 pr-12 text-base text-stone-800 shadow-paper outline-none transition-shadow duration-200 ease-gentle placeholder:text-stone-400 focus:shadow-float sm:py-2.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
         />
         {searchQuery && (
           <button
@@ -511,7 +511,7 @@ export default function PassageSearchPage() {
                 setBookSlug(e.target.value);
                 setChapter(1);
               }}
-              className="min-h-[44px] max-w-full rounded-xl bg-paper px-3 text-base text-stone-800 shadow-paper outline-none sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:shadow-none"
+              className="min-h-[44px] max-w-full rounded-lg bg-paper px-3 text-base text-stone-800 shadow-paper outline-none sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:shadow-none"
             >
               <optgroup label="Old Testament">
                 {BOOKS.filter((b) => b.testament === 'OT').map((b) => (
@@ -528,7 +528,7 @@ export default function PassageSearchPage() {
             <select
               value={chapter}
               onChange={(e) => setChapter(Number(e.target.value))}
-              className="min-h-[44px] max-w-full rounded-xl bg-paper px-3 text-base text-stone-800 shadow-paper outline-none sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:shadow-none"
+              className="min-h-[44px] max-w-full rounded-lg bg-paper px-3 text-base text-stone-800 shadow-paper outline-none sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:shadow-none"
             >
               {Array.from({ length: book.chapterCount }, (_, i) => i + 1).map((c) => (
                 <option key={c} value={c}>
@@ -541,7 +541,7 @@ export default function PassageSearchPage() {
               <select
                 value={authorFilter}
                 onChange={(e) => setAuthorFilter(e.target.value)}
-                className="min-h-[44px] max-w-full rounded-xl bg-paper px-3 text-base text-stone-800 shadow-paper outline-none sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:shadow-none"
+                className="min-h-[44px] max-w-full rounded-lg bg-paper px-3 text-base text-stone-800 shadow-paper outline-none sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:shadow-none"
               >
                 <option value="all">All sources ({grouped.length})</option>
                 {grouped.map((g) => (

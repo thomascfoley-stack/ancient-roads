@@ -23,7 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           when focused. */}
       <a
         href="#main"
-        className="skip-link rounded-lg bg-accent-700 px-4 py-2 text-sm font-semibold text-stone-50 shadow-float"
+        className="skip-link rounded-lg bg-accent-700 px-4 py-2 text-sm font-semibold text-stone-50 shadow-float dark:bg-accent-500"
       >
         Skip to content
       </a>

@@ -469,7 +469,7 @@ function InlineNameForm({
           if (e.key === 'Escape') onCancel();
         }}
         placeholder={placeholder}
-        className="w-full rounded border border-stone-300 bg-paper px-2 py-1.5 text-base text-stone-800 placeholder:text-stone-400 outline-none focus:border-stone-500 sm:py-1 sm:text-sm dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100"
+        className="w-full rounded-lg border border-stone-300 bg-paper px-2 py-1.5 text-base text-stone-800 placeholder:text-stone-400 outline-none focus:border-stone-500 sm:py-1 sm:text-sm dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100"
         autoFocus
       />
     </form>

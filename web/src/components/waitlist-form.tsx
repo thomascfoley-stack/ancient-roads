@@ -63,7 +63,7 @@ export function WaitlistForm() {
       <button
         type="submit"
         disabled={state === 'submitting'}
-        className="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg bg-accent-700 px-6 text-[15px] font-semibold text-stone-50 shadow-float transition-all duration-200 ease-gentle hover:bg-accent-800 active:scale-[0.99] disabled:opacity-60 sm:w-auto dark:bg-accent-600 dark:hover:bg-accent-500"
+        className="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg bg-accent-700 px-6 text-[15px] font-semibold text-stone-50 shadow-float transition-all duration-200 ease-gentle hover:bg-accent-800 active:scale-[0.99] disabled:opacity-40 sm:w-auto dark:bg-accent-500 dark:hover:bg-accent-400"
       >
         {state === 'submitting' ? 'Joining…' : 'Request access'}
       </button>

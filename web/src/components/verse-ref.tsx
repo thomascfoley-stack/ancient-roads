@@ -258,7 +258,7 @@ export function VerseRef({
               <button
                 type="button"
                 onClick={openPane}
-                className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-700 px-5 text-sm font-medium text-white transition-colors ease-gentle hover:bg-accent-800"
+                className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-700 px-5 text-sm font-medium text-stone-50 transition-colors ease-gentle hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
               >
                 Open in reader
               </button>

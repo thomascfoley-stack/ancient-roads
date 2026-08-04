@@ -67,8 +67,11 @@ type ListState =
   | { status: 'error' }
   | { status: 'ready'; plans: PlanListRow[] };
 
+// `rounded-lg` is the control radius (see the ladder in globals.css). `text-base sm:text-sm`
+// rather than a flat `text-sm`: iOS Safari zooms the viewport when a focused field is under
+// 16px, which on the builder threw the whole page off-centre mid-form.
 const FIELD =
-  'min-h-[44px] rounded-md border border-stone-300 bg-paper px-3 text-sm text-stone-800 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100';
+  'min-h-[44px] rounded-lg border border-stone-300 bg-paper px-3 text-base text-stone-800 sm:text-sm dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100';
 
 export function PlansClient() {
   const [list, setList] = useState<ListState>({ status: 'loading' });
@@ -136,7 +139,7 @@ export function PlansClient() {
           ) : (
             <button
               onClick={() => setBuilding(true)}
-              className="mt-5 inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-accent-700 px-5 text-sm font-medium text-white shadow-paper transition-colors ease-gentle hover:bg-accent-800"
+              className="mt-5 inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-accent-700 px-5 text-sm font-medium text-stone-50 shadow-paper transition-colors ease-gentle hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
             >
               {list.plans.length === 0 ? 'Build my first plan' : 'New plan'}
             </button>
@@ -368,7 +371,7 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
           </label>
         )}
         {mode === 'books' && (
-          <label className="flex flex-col gap-1 text-xs font-medium text-stone-500 dark:text-stone-400">
+          <label className="flex flex-col gap-1 text-base sm:text-xs font-medium text-stone-500 dark:text-stone-400">
             Collection
             <select value={group} onChange={(e) => setGroup(e.target.value)} className={FIELD}>
               {Object.entries(CANONICAL_GROUPS).map(([k, g]) => <option key={k} value={k}>{g.label}</option>)}
@@ -390,12 +393,12 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
           <input type="number" min={1} max={104} value={weeks}
             onChange={(e) => setWeeks(Number(e.target.value))} className={FIELD} required />
         </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-stone-500 dark:text-stone-400">
+        <label className="flex flex-col gap-1 text-base sm:text-xs font-medium text-stone-500 dark:text-stone-400">
           Days each week
           <input type="number" min={1} max={7} value={daysPerWeek}
             onChange={(e) => setDaysPerWeek(Number(e.target.value))} className={FIELD} required />
         </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-stone-500 dark:text-stone-400">
+        <label className="flex flex-col gap-1 text-base sm:text-xs font-medium text-stone-500 dark:text-stone-400">
           Starting
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={FIELD} required />
         </label>
@@ -404,7 +407,7 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
       {preview && (
         <div
           aria-live="polite"
-          className={`mt-4 rounded-lg px-4 py-3 text-sm ${
+          className={`mt-4 rounded-lg px-4 py-3 text-base sm:text-sm ${
             preview.ok
               ? 'bg-paper text-stone-700 shadow-paper dark:bg-stone-900/70 dark:text-stone-200'
               : 'bg-accent-50 text-accent-800 dark:bg-accent-950/40 dark:text-accent-200'
@@ -435,7 +438,7 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
       <div className="mt-4 flex items-center gap-3">
         <button
           type="submit" disabled={busy || preview?.ok === false}
-          className="inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-medium text-white shadow-paper transition-colors ease-gentle hover:bg-accent-800 disabled:opacity-50"
+          className="inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-medium text-stone-50 shadow-paper transition-colors ease-gentle hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400 disabled:opacity-40"
         >
           {busy ? 'Building…' : 'Create plan'}
         </button>
@@ -630,7 +633,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
             <button
               type="button"
               onClick={() => upNextTarget && setPane(upNextTarget)}
-              className="inline-flex min-h-[36px] items-center rounded-lg bg-accent-700 px-4 text-xs font-medium text-white transition-colors ease-gentle hover:bg-accent-800">
+              className="inline-flex min-h-[36px] items-center rounded-lg bg-accent-700 px-4 text-xs font-medium text-stone-50 transition-colors ease-gentle hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400">
               Read it
             </button>
             <button onClick={() => void toggle(upNext)} disabled={busyDay === upNext.day_index}
@@ -659,7 +662,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
                   aria-label={d.completed_at ? `Mark day ${d.day_index} unread` : `Mark day ${d.day_index} read`}
                   className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ease-gentle ${
                     d.completed_at
-                      ? 'border-accent-700 bg-accent-700 text-white'
+                      ? 'border-accent-700 bg-accent-700 text-stone-50 dark:border-accent-500 dark:bg-accent-500 dark:text-stone-950'
                       : 'border-stone-300 text-transparent hover:border-accent-400 dark:border-stone-600'
                   }`}
                 >

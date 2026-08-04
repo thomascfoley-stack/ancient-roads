@@ -143,7 +143,7 @@ export function WorkToc({
             onChange={(e) => setQuery(e.target.value)}
             placeholder={`Search ${toc.length.toLocaleString()} entries…`}
             aria-label="Search the contents"
-            className="w-full rounded-lg bg-stone-100 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:bg-stone-800 dark:text-stone-100"
+            className="w-full rounded-lg bg-stone-100 px-3 py-2 text-base sm:text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:bg-stone-800 dark:text-stone-100"
           />
           {query.trim() !== '' && (
             <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
