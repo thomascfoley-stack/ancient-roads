@@ -75,8 +75,8 @@
  * information and the whole surface reads soft and cheap.
  *
  * The rule, smallest to largest:
- *   rounded-lg   (8px)  controls        buttons, inputs, selects, segmented thumbs
- *   rounded-xl   (12px) surfaces        cards, list rows, popovers
+ *   rounded-lg          controls        buttons, inputs, selects, segmented thumbs
+ *   rounded-xl          surfaces        cards, list rows, popovers
  *   rounded-t-3xl       sheets          bottom sheets and modals
  *   rounded-full        TRUE PILLS ONLY status dots, progress bars, drag handles,
  *                                       circular icon buttons, and short badges whose
@@ -84,6 +84,29 @@
  *
  * The test for a pill: it has no tap target of its own. Anything carrying
  * `min-h-[NNpx]` is a control and takes `rounded-lg`.
+ *
+ * THE LADDER IS NOT TAILWIND'S, AND IT IS PARTLY COLLAPSED. This block first named
+ * px values off Tailwind's defaults (lg=8, xl=12). Those are wrong here. MEASURED on
+ * production (dpl_5fd221LJ, 2026-08-04), the app resolves:
+ *
+ *   rounded-md 14px · rounded-lg 16px · rounded-xl 20px · rounded-2xl 16px
+ *
+ * `@import '@neondatabase/auth/ui/tailwind'` above redefines the radius scale
+ * shadcn-style off a `--radius` variable and wins, the same way it owns `.dark` (see
+ * the note at the top of this file). Two consequences, both real:
+ *   1. `rounded-lg` and `rounded-2xl` resolve to the SAME 16px. Two named steps, one
+ *      corner, so a control and a large card are indistinguishable by radius.
+ *   2. The control-to-surface step is 16 -> 20, much weaker than the 8 -> 12 the rule
+ *      above was designed for.
+ *
+ * The direction still holds (a 44px control went from a 22px pill to 16px) but the
+ * hierarchy is flatter than it reads here. The fix is to declare explicit `--radius-*`
+ * tokens in the `@theme` block above so this app owns its own ladder instead of
+ * inheriting the auth UI's. Deliberately NOT done in the design pass; parked with the
+ * type-scale and icon work. See WORKLOG 2026-08-04.
+ *
+ * No px values are quoted in the rule above on purpose: a number in a comment that
+ * nothing enforces is how this drifted in the first place.
  */
 
 html { color-scheme: light; }
