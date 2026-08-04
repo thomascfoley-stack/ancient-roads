@@ -1,5 +1,61 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-03 — "I can't find it in the app": the feature was never on the live site
+
+Owner could not find Reading plans. It was not a UI problem.
+
+### Root cause
+
+**The live site was built from `main`, and `main` has never contained the plans feature.** All of
+it lives on `feat/study-plans-adr045`, which was never merged. The `final` worktree (on `main`)
+has no `web/src/app/plans` and no `web/src/app/api/plans` at all.
+
+Sequence: my deploy `2f6db58` aliased at **08:45**; a concurrent session deployed `main` as
+`f9d0b89` at **08:54** and the alias moved to it, nine minutes later. Last deploy wins on a
+shared Vercel project, and their branch simply does not carry this work.
+
+### The check I reported as verification DID NOT VERIFY ANYTHING
+
+I twice reported `/plans → 307 → /gate?next=%2Fplans` as proof the feature was live. Measured
+now:
+
+```
+/plans                        → 307
+/this-route-does-not-exist-xyz → 307
+```
+
+**The site gate 307s everything, including routes that do not exist.** That check could not have
+failed, which is this repo's own definition of an unearned green (`THE_LOOP.md` §6) — the same
+class I filed a finding about earlier the same day, committed while my own headline claim rested
+on it.
+
+### Fixed
+
+Merged `main` into the branch (one WORKLOG conflict, both sides appended at the head, both kept),
+audited, deployed `ac303ff`. **Verified by evidence that can distinguish the cases:**
+
+- `vercel inspect ancientpaths.app` → `dpl_78bFFJYSrRkbkFMSEFjpeizzhhSP`
+- the live page's own asset query string reports that same `dpl_` id, so the domain really is
+  answered by this build
+- the deployed sha `ac303ff` contains `web/src/app/plans/page.tsx`, `api/plans/route.ts`, and the
+  sidebar's `label="Reading plans"` — checked with `git cat-file`, not inferred
+
+### STILL OPEN — this will recur
+
+**`main` still does not contain this branch.** The next deploy from `main` removes Reading plans
+from production again, exactly as it did today. The durable fix is merging
+`feat/study-plans-adr045` into `main`; I could not do it here because `main` is checked out in
+another session's worktree and a force-update is refused (correctly).
+
+### Also flagged, not mine
+
+`npm run audit` now fails on `deps — advisory bulk-endpoint`: **fast-uri GHSA-7p8r**, **undici
+GHSA-4cwx**, **better-auth GHSA-qq9h**. The merge changed no dependency file and the
+`ignoreGhsas` list is byte-identical to `main`'s, so these entered the advisory database within
+the hour and `main` is equally red. Accepting a GHSA is an owner/security decision
+(`docs/SECURITY.md`), not an agent's. `deploy.sh` does not run deps-audit, so the deploy is
+unaffected.
+
 ## 2026-08-03 — UX pass on Reading plans: the builder now shows you the plan before you make it
 
 Owner: the feature was not intuitive. The specific defect, once looked at honestly, is that the
