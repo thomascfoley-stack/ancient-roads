@@ -21,7 +21,9 @@ const YOURS = [
   { href: '/library/notes', label: 'Notes' },
   { href: '/library/books', label: 'My library' },
   { href: '/library/word-study', label: 'Word study' },
-  { href: '/library/uploads', label: 'Uploads' },
+  // "My Works", never "Uploads" or "Sermons" — the Slice 1 order governs the NAV LABEL as well
+  // as the page title, and "Sermons" is two entries above this one as a corpus register.
+  { href: '/library/uploads', label: 'My Works' },
 ];
 
 async function personal(): Promise<{ reading: ContinueReadingRow[]; shelf: LibraryItem[] } | null> {

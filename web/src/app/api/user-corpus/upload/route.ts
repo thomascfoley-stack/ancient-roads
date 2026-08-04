@@ -70,16 +70,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Fire-and-forget (§8, and the order: "use the fire-and-forget drain kicked on upload; do not
     // wait for cron"). `after` runs once the response is sent, so the upload returns immediately
     // with a 'queued' document and the client polls for status.
-    after(async () => {
-      try {
-        await drain(user.id);
-      } catch (e) {
-        // The drain writes a status for every document it claims, so a throw here means the drain
-        // itself failed rather than a document. Log it; the stale-claim rule reclaims anything
-        // left mid-flight.
-        console.error('[user-corpus] drain failed after upload:', String((e as Error)?.message ?? e));
-      }
-    });
+    //
+    // THE KICK IS BEST-EFFORT AND MUST NOT BE ABLE TO FAIL THE UPLOAD. By this line the row exists
+    // and the bytes are stored — the upload has SUCCEEDED. Found by exercising the route for the
+    // first time: `after()` throws outside a request scope, that throw reached the catch below, and
+    // the caller got a 500 reading "The upload could not be completed" about a document that was
+    // sitting in the queue, correctly. An error message that contradicts the database is worse than
+    // a slow queue, and the queue already tolerates a missed kick: the document stays 'queued' and
+    // the next upload's drain, or a retry, collects it.
+    try {
+      after(async () => {
+        try {
+          await drain(user.id);
+        } catch (e) {
+          // The drain writes a status for every document it claims, so a throw here means the drain
+          // itself failed rather than a document. Log it; the stale-claim rule reclaims anything
+          // left mid-flight.
+          console.error('[user-corpus] drain failed after upload:', String((e as Error)?.message ?? e));
+        }
+      });
+    } catch (e) {
+      console.error('[user-corpus] could not schedule the drain; document stays queued:', String((e as Error)?.message ?? e));
+    }
 
     return NextResponse.json({ document: doc }, { status: 201 });
   } catch (e) {

@@ -1,0 +1,290 @@
+'use client';
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+// "My Works" — the personal-corpus surface. Never "Sermons": that word is the corpus register.
+
+interface Doc {
+  id: string;
+  title: string;
+  status: 'queued' | 'parsing' | 'chunking' | 'embedding' | 'ready' | 'failed' | 'empty';
+  parseError: string | null;
+  mimeType: string | null;
+  pageCount: number | null;
+  extractableChars: number | null;
+  byteSize: number | null;
+  createdAt: string;
+}
+interface Hit { documentId: string; sectionId: string; title: string; heading: string | null; text: string; score: number }
+interface Presence { documentId: string; title: string; sectionId: string; verseStart: number; verseEnd: number; channel: string; matchCount: number | null }
+
+/** Statuses that are still moving — the poll runs only while one of these is present. */
+const IN_FLIGHT = new Set(['queued', 'parsing', 'chunking', 'embedding']);
+
+/** A wall of status, not a wall of red (§8). Every state says what it means in the user's terms. */
+const STATUS: Record<Doc['status'], { label: string; tone: string }> = {
+  queued: { label: 'Waiting', tone: 'text-stone-500 dark:text-stone-400' },
+  parsing: { label: 'Reading', tone: 'text-stone-500 dark:text-stone-400' },
+  chunking: { label: 'Dividing', tone: 'text-stone-500 dark:text-stone-400' },
+  embedding: { label: 'Indexing', tone: 'text-stone-500 dark:text-stone-400' },
+  ready: { label: 'Ready', tone: 'text-emerald-700 dark:text-emerald-400' },
+  failed: { label: 'Needs attention', tone: 'text-amber-700 dark:text-amber-400' },
+  empty: { label: 'No text found', tone: 'text-amber-700 dark:text-amber-400' },
+};
+
+const fmtBytes = (n: number | null) => (n == null ? '' : n < 1024 * 1024 ? `${Math.round(n / 1024)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
+
+export function MyWorksClient() {
+  const [state, setState] = useState<'loading' | 'signedout' | 'ready'>('loading');
+  const [docs, setDocs] = useState<Doc[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [query, setQuery] = useState('');
+  const [hits, setHits] = useState<Hit[] | null>(null);
+  const [presence, setPresence] = useState<Presence[] | null>(null);
+  const [searchNote, setSearchNote] = useState<string | null>(null);
+  const [searching, setSearching] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const load = useCallback(async () => {
+    const r = await fetch('/api/user-corpus/documents');
+    if (r.status === 401) { setState('signedout'); return; }
+    if (!r.ok) return;
+    const d = (await r.json()) as { documents: Doc[] };
+    setDocs(d.documents);
+    setState('ready');
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  // Poll only while something is moving. A permanent interval on a settled list is a request every
+  // few seconds forever, on every open tab.
+  useEffect(() => {
+    if (!docs.some((d) => IN_FLIGHT.has(d.status))) return;
+    const t = setInterval(() => { void load(); }, 2500);
+    return () => clearInterval(t);
+  }, [docs, load]);
+
+  async function upload(files: FileList | null) {
+    if (!files?.length) return;
+    setUploadError(null);
+    setBusy(true);
+    try {
+      for (const file of Array.from(files)) {
+        const body = new FormData();
+        body.append('file', file);
+        const r = await fetch('/api/user-corpus/upload', { method: 'POST', body });
+        const d = (await r.json()) as { error?: string; message?: string };
+        // A refusal is shown as itself. The route already writes messages a person can act on
+        // ("That PDF has no readable text layer… it needs OCR"), so they are surfaced verbatim
+        // rather than replaced with a generic failure.
+        if (!r.ok) setUploadError(d.error ?? 'That file could not be uploaded.');
+        else if (d.message) setUploadError(d.message); // e.g. already uploaded
+      }
+      await load();
+    } finally {
+      setBusy(false);
+      if (fileInput.current) fileInput.current.value = '';
+    }
+  }
+
+  async function retry(id: string) {
+    await fetch(`/api/user-corpus/documents/${id}`, { method: 'POST' });
+    await load();
+  }
+  async function remove(id: string) {
+    await fetch(`/api/user-corpus/documents/${id}`, { method: 'DELETE' });
+    await load();
+  }
+
+  async function search(e: React.FormEvent) {
+    e.preventDefault();
+    const q = query.trim();
+    if (!q) return;
+    setSearching(true);
+    setHits(null);
+    setPresence(null);
+    setSearchNote(null);
+    try {
+      // A passage reference goes to the presence scan; anything else to the fused search. Both are
+      // the same box because "have I written on Romans 8" and "what did I say about grace" are the
+      // same question to the person asking.
+      const looksLikeRef = /^[1-3]?\s?[A-Za-z][A-Za-z.]*\s+\d/.test(q);
+      const url = looksLikeRef
+        ? `/api/user-corpus/search?ref=${encodeURIComponent(q)}`
+        : `/api/user-corpus/search?q=${encodeURIComponent(q)}`;
+      const r = await fetch(url);
+      const d = (await r.json()) as { mode?: string; hits?: Hit[]; anchors?: Presence[]; error?: string; degraded?: string };
+      if (!r.ok) { setSearchNote(d.error ?? 'That search could not be run.'); return; }
+      if (d.degraded) setSearchNote(d.degraded);
+      if (d.mode === 'verse') setPresence(d.anchors ?? []);
+      else setHits(d.hits ?? []);
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  if (state === 'loading') {
+    return <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6"><p className="font-serif text-[15px] text-stone-500 dark:text-stone-400">Loading…</p></div>;
+  }
+  if (state === 'signedout') {
+    return (
+      <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6">
+        <h1 className="font-display text-3xl font-medium text-stone-800 dark:text-stone-100">My Works</h1>
+        <p className="mt-3 font-serif text-[15px] leading-relaxed text-stone-500 dark:text-stone-400">Sign in to bring your own writing into the library.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6">
+      <header className="mb-6">
+        <h1 className="font-display text-3xl font-medium text-stone-800 dark:text-stone-100">My Works</h1>
+        <p className="mt-2 max-w-xl font-serif text-[15px] leading-relaxed text-stone-500 dark:text-stone-400">
+          Your own sermons, papers and notes, searchable alongside the library. Private to you.
+        </p>
+      </header>
+
+      {/* ── upload ─────────────────────────────────────────────────────────────────────────── */}
+      <section className="mb-8">
+        <label
+          htmlFor="my-works-file"
+          className="flex min-h-[44px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-stone-300 bg-paper px-5 py-8 text-center transition-colors hover:border-accent-400 dark:border-stone-700 dark:bg-stone-800"
+        >
+          <span className="font-serif text-[15px] text-stone-600 dark:text-stone-300">
+            {busy ? 'Uploading…' : 'Add a document'}
+          </span>
+          <span className="mt-1 text-[13px] text-stone-400 dark:text-stone-500">PDF, Word, text or Markdown</span>
+          <input
+            ref={fileInput}
+            id="my-works-file"
+            type="file"
+            multiple
+            accept=".pdf,.docx,.txt,.md"
+            className="sr-only"
+            disabled={busy}
+            onChange={(e) => void upload(e.target.files)}
+          />
+        </label>
+        {uploadError && (
+          <p role="status" className="mt-3 rounded-xl bg-amber-50 px-4 py-3 font-serif text-[14px] leading-relaxed text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            {uploadError}
+          </p>
+        )}
+      </section>
+
+      {/* ── search ─────────────────────────────────────────────────────────────────────────── */}
+      <section className="mb-8">
+        <form onSubmit={(e) => void search(e)} className="flex gap-2">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search your works, or type a passage like Romans 8"
+            aria-label="Search your works"
+            className="min-h-[44px] w-full rounded-full border border-stone-200 bg-paper px-4 font-serif text-[15px] text-stone-700 placeholder:text-stone-400 focus:border-accent-400 focus:outline-none dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200"
+          />
+          <button
+            type="submit"
+            disabled={searching}
+            className="min-h-[44px] shrink-0 rounded-full bg-paper px-5 text-sm font-semibold text-stone-700 shadow-paper transition-all hover:text-accent-800 hover:shadow-float disabled:opacity-50 dark:bg-stone-800 dark:text-stone-200 dark:shadow-none"
+          >
+            {searching ? 'Searching…' : 'Search'}
+          </button>
+        </form>
+
+        {searchNote && <p className="mt-3 font-serif text-[14px] text-amber-700 dark:text-amber-400">{searchNote}</p>}
+
+        {presence && (
+          <div className="mt-5">
+            <h2 className="font-display text-lg text-stone-700 dark:text-stone-200">
+              {presence.length === 0 ? 'You have not written on that passage yet' : 'Where you have written on it'}
+            </h2>
+            <ul className="mt-3 space-y-2">
+              {presence.map((p) => (
+                <li key={`${p.sectionId}-${p.channel}-${p.verseStart}`} className="rounded-xl bg-paper px-4 py-3 shadow-paper dark:bg-stone-800 dark:shadow-none">
+                  <span className="font-serif text-[15px] text-stone-700 dark:text-stone-200">{p.title}</span>
+                  <span className="ml-2 text-[13px] text-stone-400 dark:text-stone-500">
+                    {/* channel and strength, so "quoted at length" is separable from "mentioned once" */}
+                    {p.channel === 'explicit' ? 'cited' : `quoted (${p.matchCount ?? 0} matches)`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {hits && (
+          <div className="mt-5">
+            <h2 className="font-display text-lg text-stone-700 dark:text-stone-200">
+              {hits.length === 0 ? 'Nothing found in your works' : `${hits.length} passage${hits.length === 1 ? '' : 's'} from your works`}
+            </h2>
+            <ul className="mt-3 space-y-3">
+              {hits.map((h) => (
+                <li key={h.sectionId} className="rounded-xl bg-paper px-4 py-3 shadow-paper dark:bg-stone-800 dark:shadow-none">
+                  <p className="font-display text-[15px] text-stone-700 dark:text-stone-200">{h.title}</p>
+                  {h.heading && <p className="text-[13px] text-stone-400 dark:text-stone-500">{h.heading}</p>}
+                  <p className="mt-1 font-serif text-[15px] leading-relaxed text-stone-600 dark:text-stone-300">
+                    {h.text.length > 320 ? `${h.text.slice(0, 320)}…` : h.text}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+
+      {/* ── the status wall ────────────────────────────────────────────────────────────────── */}
+      <section>
+        <h2 className="mb-3 font-display text-lg text-stone-700 dark:text-stone-200">Your documents</h2>
+        {docs.length === 0 ? (
+          <p className="font-serif text-[15px] text-stone-500 dark:text-stone-400">Nothing here yet. Add a sermon or a paper and it will be searchable alongside the library.</p>
+        ) : (
+          <ul className="space-y-2">
+            {docs.map((d) => {
+              const s = STATUS[d.status];
+              return (
+                <li key={d.id} className="rounded-xl bg-paper px-4 py-3 shadow-paper dark:bg-stone-800 dark:shadow-none">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                    <span className="font-serif text-[15px] text-stone-700 dark:text-stone-200">{d.title}</span>
+                    <span className={`text-[13px] font-semibold ${s.tone}`}>{s.label}</span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 text-[13px] text-stone-400 dark:text-stone-500">
+                    {d.mimeType && <span className="uppercase">{d.mimeType}</span>}
+                    {d.byteSize != null && <span>{fmtBytes(d.byteSize)}</span>}
+                    {d.pageCount != null && <span>{d.pageCount} pages</span>}
+                  </div>
+                  {d.parseError && (
+                    <p className="mt-2 font-serif text-[14px] leading-relaxed text-amber-800 dark:text-amber-300">{d.parseError}</p>
+                  )}
+                  <div className="mt-2 flex gap-2">
+                    {/* Retry is offered only where it can change the answer. A scan with no text
+                        layer and an empty file are verdicts about the file, not transient errors —
+                        re-running the same parse over the same bytes cannot reach a different one,
+                        and a button that promises otherwise is a button that lies. */}
+                    {d.status === 'failed' && (
+                      <button
+                        type="button"
+                        onClick={() => void retry(d.id)}
+                        className="min-h-[44px] rounded-full px-3 text-[13px] font-semibold text-stone-600 hover:text-accent-800 dark:text-stone-300"
+                      >
+                        Try again
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => void remove(d.id)}
+                      className="min-h-[44px] rounded-full px-3 text-[13px] font-semibold text-stone-500 hover:text-red-700 dark:text-stone-400"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}

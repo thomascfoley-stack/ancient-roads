@@ -64,13 +64,19 @@ export async function POST(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
 
   await setDocStatus(user.id, id, 'queued', null);
   await resetAttempts(user.id, id);
-  after(async () => {
-    try {
-      await drain(user.id);
-    } catch (e) {
-      console.error('[user-corpus] drain failed after retry:', String((e as Error)?.message ?? e));
-    }
-  });
+  // Best-effort, for the same reason as the upload route: the retry has already reset the row, so
+  // a scheduling failure must not report the retry as failed.
+  try {
+    after(async () => {
+      try {
+        await drain(user.id);
+      } catch (e) {
+        console.error('[user-corpus] drain failed after retry:', String((e as Error)?.message ?? e));
+      }
+    });
+  } catch (e) {
+    console.error('[user-corpus] could not schedule the drain after retry:', String((e as Error)?.message ?? e));
+  }
 
   const updated = await getDocument(user.id, id);
   return NextResponse.json({ document: updated });
