@@ -1,5 +1,81 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-04 — Design pass: a system for radius, surface and elevation; the reader gets a keyboard
+
+Owner brief: audit the whole site and bring it to a premium standard. Restraint over decoration,
+no AI-landing-page tells, accessibility non-negotiable, root causes over per-page tweaks.
+
+Worked in a fresh worktree `~/Projects/ancient-roads-design` on `design/premium-pass` off
+`origin/main`, against the dev Neon branch, so no existing tree was disturbed. The 1.1GB of
+gitignored static corpus under `web/public` is symlinked from the sibling clone rather than
+regenerated; that is the one way this worktree differs from a real checkout, and it is why the
+static-corpus scan reports "No chapter files under web/public/commentaries".
+
+### The audit
+
+Four parallel read-only agents across non-overlapping lenses (typography/spacing, component
+consistency, accessibility/edge states, routes/copy), plus a driven walk of the app at 1280 and
+390. The findings that mattered were consistency findings, not taste ones:
+
+- **`rounded-full` was 98 of 200 radius utilities.** A 48px call-to-action, a 10px badge, a 6px
+  progress bar and two text inputs all wore the same maxed-out corner, so radius carried no
+  information at all.
+- **Two parallel token systems.** The reader chrome used `bg-white` + raw `shadow-sm/lg/2xl`;
+  everything else used `bg-paper` + the shadow tokens. `--color-paper` is documented as "never
+  pure white", so the split defeated its own intent on the primary screen.
+- **104 arbitrary `text-[Npx]` values** across 28 files, an effective 17-step type ladder of which
+  8 steps are one-offs. `font-scripture` and `font-serif` resolve to the same font and are used
+  interchangeably for the same roles.
+- **22 routes, zero error.tsx / not-found.tsx / loading.tsx.** `/library/[catalog]` calls
+  `notFound()` into nothing.
+- **The reader's primary interaction was pointer-only.** Tapping a verse number opens commentary;
+  it had no tabIndex, no role and no key handler.
+
+### What shipped (7 commits)
+
+1. Two nav defects (Home could never light up on either nav; the mobile Home tab pointed at the
+   chrome-free marketing page and stranded the reader) and `lib/plural.ts` for the counts that
+   rendered "1 works" and "Jude, 1 chapters".
+2. Surfaces, elevation and radius on one system, with the radius rule written into `globals.css`
+   so it holds: controls `rounded-lg`, surfaces `rounded-xl`, sheets `rounded-t-3xl`,
+   `rounded-full` only where the shape is the meaning. 43 controls converted, 30 token bypasses
+   removed.
+3. Landing page: the four identical cards became a hairline-separated typographic list with a real
+   step between title and body, measure tightened from ~88 to ~68 characters, tagline moved off
+   Title Case, straight quotes made curly.
+4. Accessibility: verse handle keyboard-reachable, `aria-current` on both navs, a skip link, note
+   and bookmark meaning moved out of `title` into real text, omnibox focus made visible.
+5. Em dashes out of 23 user-facing strings.
+6. The 404 and error boundaries the app never had.
+7. Two regressions of my own, caught by the gate and fixed at the root.
+
+### NOT DONE / UNVERIFIED
+
+- **The gate is RED, and two of the three reasons are not this branch.** `deps` fails on a prod
+  high+ CVE. The `qa` DB suites (`register-wall-surfaces`, `work-reader`,
+  `commentary-entries-provenance`, `register-end-to-end`, `unit-ordinal-instrument`,
+  `library-published-boundary`) fail here because this worktree has dev DB URLs, so they execute
+  instead of skipping. **Measured, not assumed:** the same suites were run on an untouched
+  `origin/main` worktree with the same `.env.local` and failed identically.
+- **The audit is non-deterministic under repeated runs.** By the fourth run in an hour the suites
+  were failing `expected 429 to be 200` against the app's own 60/hour rate limiter
+  (`gate_rate_limit_hit ... count:93, limit:60`). A red therefore does not distinguish "broken"
+  from "we already ran it three times", which is the same shape as the `429 engine_overloaded`
+  entry already on the failure-mode watchlist. Not fixed here; worth a NOT RUN signal.
+- **The type scale is diagnosed, not fixed.** The 104 arbitrary sizes were collapsed on the
+  landing page only. The app-wide sweep is the obvious next slice, and it deliberately excludes
+  `sidebar.tsx`, `app/plans/` and `lib/plan/` (owner flagged them as hot) and `web/src/bible/`
+  (byte-mirrored under a sync test).
+- **Dialogs.** Not one of the app's 13 sheets, popovers and drawers traps focus, restores focus on
+  close, or carries `role="dialog"` + a label. Four have no Escape handler. Untouched.
+- **Terminology.** Six words for the same population of authors, four names for `/ask`, "My
+  library" pointing at two different routes. Named, not resolved: renaming features is an owner
+  call, not a design pass.
+- **`loading.tsx`.** Still absent. One Suspense boundary and 25 hand-written "Loading..." strings;
+  needs a decision about which surfaces earn skeletons.
+- **Not deployed.** Nothing was pushed and `deploy.sh` was not run.
+
+
 ## 2026-08-03 — Verse previews: a reading plan you can actually read
 
 Owner request, with a sketch: hovering a reference in a plan should show that passage in a popup
