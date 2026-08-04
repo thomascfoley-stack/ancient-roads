@@ -10,6 +10,7 @@
 // (flagged in the Phase 3 audit). Not repeating that here.
 
 import Link from 'next/link';
+import { count } from '@/lib/plural';
 import { CATALOGS, CATALOG_IDS, catalogTraditions } from '@/lib/catalog';
 import { listContinueReading, listLibraryItems, type ContinueReadingRow, type LibraryItem } from '@/lib/library';
 import { requireUser } from '@/lib/session';
@@ -111,7 +112,7 @@ export default async function LibraryHubPage({
                 className="flex min-h-[88px] flex-col justify-between rounded-xl border border-stone-200/70 p-4 hover:bg-accent-50/50 dark:border-stone-800 dark:hover:bg-accent-950/20"
               >
                 <span className="font-scripture text-lg text-stone-800 dark:text-stone-100">{CATALOGS[id].label}</span>
-                <span className="text-xs text-stone-500 dark:text-stone-400">{worksIn(id)} works</span>
+                <span className="text-xs text-stone-500 dark:text-stone-400">{count(worksIn(id), 'work')}</span>
               </Link>
             </li>
           ))}

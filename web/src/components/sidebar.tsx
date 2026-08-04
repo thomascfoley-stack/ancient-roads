@@ -96,7 +96,7 @@ export function SidebarNavContent({
             href="/home"
             icon={<HomeIcon />}
             label="Home"
-            active={pathname === '/'}
+            active={pathname === '/home'}
             row={row}
             onNavigate={onNavigate}
           />

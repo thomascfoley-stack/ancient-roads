@@ -41,7 +41,11 @@ export function MobileNav() {
   if (pathname === '/gate') return null;
 
   const tabs = [
-    { href: '/', label: 'Home', active: pathname === '/', icon: <HomeIcon /> },
+    // → /home (the app's Today screen), NOT '/'. The marketing landing is CHROME_FREE
+    // (app-shell.tsx), so the Home tab used to drop a reader out of the app onto a page
+    // with no nav back. The active test matched '/' too, where this nav never renders,
+    // so the tab could also never light up.
+    { href: '/home', label: 'Home', active: pathname === '/home', icon: <HomeIcon /> },
     { href: '/read/jhn/1', label: 'Bible', active: pathname.startsWith('/read'), icon: <BookIcon /> },
     { href: '/ask', label: 'AP', active: pathname.startsWith('/ask'), icon: <AskIcon /> },
     // → the hub, not /library/commentaries: that slug is shadowed by the old

@@ -22,6 +22,7 @@ import { PassagePane } from '@/components/passage-pane';
 import { VerseRef } from '@/components/verse-ref';
 import { DEFAULT_TRANSLATION } from '@/lib/bible';
 import { storedTranslation, type PassageTarget } from '@/lib/verse-preview';
+import { count } from '@/lib/plural';
 
 interface PlanListRow {
   id: string;
@@ -250,7 +251,7 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
       return {
         ok: true as const,
         days: dayCount,
-        scope: `${pickedTopic.heading} · ${pickedTopic.entryCount} passages · ${pickedTopic.workTitle}`,
+        scope: `${pickedTopic.heading} · ${count(pickedTopic.entryCount, 'passage')} · ${pickedTopic.workTitle}`,
         pace: per < 1.5 ? 'about 1 passage a day' : `about ${Math.round(per)} passages a day`,
         from: null as string | null, to: null as string | null,
       };
@@ -272,8 +273,8 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
     // Name the SCOPE, not the first and last day's readings. "Genesis 1–3 →
     // Genesis 48–50" describes the schedule twice and never says "Genesis".
     const scopeText = g
-      ? `${g.label} · ${chapters} chapters across ${g.books.length} books`
-      : `${BOOKS.find((b) => b.slug === book)?.name ?? book} · ${chapters} chapters`;
+      ? `${g.label} · ${count(chapters, 'chapter')} across ${count(g.books.length, 'book')}`
+      : `${BOOKS.find((b) => b.slug === book)?.name ?? book} · ${count(chapters, 'chapter')}`;
     return {
       ok: true as const,
       days: r.days.length,
@@ -495,7 +496,7 @@ function TopicPicker({
                         <span className="block truncate text-sm font-medium text-stone-800 dark:text-stone-100">{m.heading}</span>
                         <span className="block truncate text-[11px] text-stone-400">{m.workTitle}</span>
                       </span>
-                      <span className="shrink-0 text-[11px] text-stone-400">{m.entryCount} passages</span>
+                      <span className="shrink-0 text-[11px] text-stone-400">{count(m.entryCount, 'passage')}</span>
                     </button>
                   );
                 })}
@@ -622,7 +623,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
           </p>
           <p className="mt-1 font-serif text-lg text-stone-800 dark:text-stone-100">
             {readingsByDay.has(upNext.day_index)
-              ? `${readingsByDay.get(upNext.day_index)!.length} passages`
+              ? count(readingsByDay.get(upNext.day_index)!.length, 'passage')
               : dayRef(upNext)}
           </p>
           <div className="mt-2 flex items-center gap-4">

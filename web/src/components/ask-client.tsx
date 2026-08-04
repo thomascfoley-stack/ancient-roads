@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { formatVerseId } from '@bible/verse-id';
 import { verseHref } from '@/lib/verse-link';
+import { count } from '@/lib/plural';
 
 // --- shapes mirrored from the server (client only renders; server verifier is truth) ---
 interface Attribution { author: string; work: string; tradition: string; year?: number }
@@ -223,7 +224,7 @@ function Progress({ turn }: { turn: Turn }) {
           <div className="flex items-center gap-2.5">
             <span className="font-bold text-accent-700 dark:text-accent-300">✓</span>
             <span className="text-stone-500 dark:text-stone-400">
-              Found <b className="text-stone-700 dark:text-stone-200">{turn.sources.length} voices</b> across{' '}
+              Found <b className="text-stone-700 dark:text-stone-200">{count(turn.sources.length, 'voice')}</b> across{' '}
               <b className="text-stone-700 dark:text-stone-200">{turn.traditions} tradition{turn.traditions === 1 ? '' : 's'}</b>
             </span>
           </div>
