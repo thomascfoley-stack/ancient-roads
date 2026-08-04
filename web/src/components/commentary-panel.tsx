@@ -105,7 +105,7 @@ export function registerChipLabel(register?: string): string | null {
 export function ParaphraseChip() {
   return (
     <span
-      className="rounded-full bg-accent-700/10 px-2 py-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300"
+      className="rounded-full bg-accent-700/10 px-2 py-0.5 text-micro font-medium text-accent-700 dark:text-accent-300"
       title="A metrical paraphrase, not the Scripture text itself."
     >
       paraphrase · not Scripture
@@ -118,10 +118,10 @@ export function ParaphraseChip() {
 export function RegisterSectionHeading({ title, note }: { title: string; note: string }) {
   return (
     <>
-      <p className="pt-4 pb-1 text-[10px] font-bold uppercase tracking-widest text-stone-300 dark:text-stone-600">
+      <p className="pt-4 pb-1 text-micro font-bold uppercase tracking-widest text-stone-300 dark:text-stone-600">
         {title}
       </p>
-      <p className="mb-2 text-[11px] italic text-stone-400">{note}</p>
+      <p className="mb-2 text-micro italic text-stone-400">{note}</p>
     </>
   );
 }
@@ -226,12 +226,12 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
           </span>
         )}
         {entry.tradition && (
-          <span className="rounded-full bg-stone-200/50 px-2 py-0.5 text-[10px] font-medium text-stone-500">
+          <span className="rounded-full bg-stone-200/50 px-2 py-0.5 text-micro font-medium text-stone-500">
             {entry.tradition}
           </span>
         )}
         {registerChipLabel(entry.register) && (
-          <span className="rounded-full bg-accent-700/10 px-2 py-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300">
+          <span className="rounded-full bg-accent-700/10 px-2 py-0.5 text-micro font-medium text-accent-700 dark:text-accent-300">
             {registerChipLabel(entry.register)}
           </span>
         )}
@@ -242,7 +242,7 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
           stays flowing (deep-audit 2026-07-18: collapsing stanzas destroys the
           content of the register). */}
       <p
-        className={`font-scripture text-[15px] leading-relaxed text-stone-600 dark:text-stone-300${
+        className={`font-scripture text-base leading-relaxed text-stone-600 dark:text-stone-300${
           registerLane(entry) === 'exegetical' ? '' : ' whitespace-pre-line'
         }`}
       >
@@ -262,7 +262,7 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
         // ccel.org/gutenberg/crosswire surfaces a host as if it were the source
         // (GO_LIVE A5: "attribute to the author, never a host"). provenance
         // keeps the URL for the record; the UI shows the work title, plain.
-        <p className="mt-2 text-[11px] text-stone-400">
+        <p className="mt-2 text-micro text-stone-400">
           {entry.sourceTitle}
           {/* CC BY / CC BY-SA require attribution notice; PD needs none */}
           {entry.license && /^cc/i.test(entry.license) ? ` · ${entry.license}` : ''}
@@ -371,7 +371,7 @@ export function CommentaryPanel({
         </div>
 
         <div className="border-b border-stone-100 bg-stone-50/50 px-5 py-4 dark:border-stone-800 dark:bg-stone-800/40">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 mb-1.5">
+          <p className="text-micro font-semibold uppercase tracking-wider text-stone-400 mb-1.5">
             Verse {verseNum}
           </p>
           <p className="font-scripture text-base leading-relaxed text-stone-700 italic dark:text-stone-300">
@@ -395,7 +395,7 @@ export function CommentaryPanel({
               return (
                 <div key={i}>
                   {showEra && (
-                    <p className="pt-4 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300">
+                    <p className="pt-4 pb-1.5 text-micro font-bold uppercase tracking-widest text-stone-300">
                       {era}
                     </p>
                   )}
@@ -451,7 +451,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
     <div className="space-y-3 border-b border-stone-100 bg-white px-5 py-3 dark:border-stone-800 dark:bg-stone-900">
       {/* Highlight colors */}
       <div className="flex items-center gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+        <span className="text-micro font-semibold uppercase tracking-wider text-stone-400">
           Highlight
         </span>
         <div className="flex items-center gap-1.5">
@@ -485,7 +485,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
             onFocus={() => setEditingNote(true)}
             placeholder="Write a note on this verse…"
             rows={3}
-            className="w-full resize-y rounded-xl bg-stone-100/80 px-3 py-2.5 text-base text-stone-800 outline-none placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
+            className="w-full resize-y rounded-lg bg-stone-100/80 px-3 py-2.5 text-base text-stone-800 outline-none placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
           />
           <div className="mt-1.5 flex items-center gap-2">
             <button

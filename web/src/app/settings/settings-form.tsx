@@ -37,7 +37,7 @@ export function SettingsForm() {
   }
 
   const row = 'rounded-xl bg-paper px-4 py-4 shadow-paper dark:bg-stone-800/60 dark:shadow-none';
-  const label = 'mb-2 text-[11px] font-semibold uppercase tracking-wider text-stone-400';
+  const label = 'mb-2 text-micro font-semibold uppercase tracking-wider text-stone-400';
 
   return (
     <div className="space-y-4">

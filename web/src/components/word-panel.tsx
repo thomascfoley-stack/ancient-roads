@@ -132,7 +132,7 @@ export function WordPanel({
 
         {concordance && concordance.count > 1 && (
           <div className="border-t border-stone-100 px-5 py-4 dark:border-stone-800">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+            <p className="mb-2 text-micro font-semibold uppercase tracking-wider text-stone-400">
               Also appears in {concordance.count} verse{concordance.count === 1 ? '' : 's'}
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -193,8 +193,8 @@ export function WordPanel({
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-stone-400">{label}</p>
-      <p className="text-[15px] leading-relaxed">{children}</p>
+      <p className="mb-1 text-micro font-semibold uppercase tracking-wider text-stone-400">{label}</p>
+      <p className="text-base leading-relaxed">{children}</p>
     </div>
   );
 }

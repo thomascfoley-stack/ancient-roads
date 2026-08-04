@@ -57,7 +57,7 @@ export function PassageView({
 
   if (status === 'error') {
     return (
-      <p className="py-1 text-sm text-stone-500 dark:text-stone-400">
+      <p role="alert" className="py-1 text-sm text-red-800 dark:text-red-200">
         This passage could not be loaded.
       </p>
     );
@@ -81,10 +81,10 @@ export function PassageView({
               {g.bookName} {g.chapter}
             </p>
           )}
-          <p className="font-serif text-[15px] leading-relaxed text-stone-800 dark:text-stone-200">
+          <p className="font-serif text-base leading-relaxed text-stone-800 dark:text-stone-200">
             {g.verses.map((v) => (
               <span key={v.verse}>
-                <sup className="relative mr-0.5 select-none font-sans text-[11px] font-semibold text-accent-600/80 dark:text-accent-300/80">
+                <sup className="relative mr-0.5 select-none font-sans text-micro font-semibold text-accent-600/80 dark:text-accent-300/80">
                   {v.verse}
                 </sup>
                 {v.text}{' '}

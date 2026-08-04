@@ -37,7 +37,7 @@ export default function About() {
       <h1 className="mt-8 font-display text-4xl font-medium tracking-tight text-stone-900 sm:text-5xl dark:text-stone-100">
         About Ancient Paths
       </h1>
-      <p className="mt-6 font-serif text-[17px] leading-relaxed text-stone-700 dark:text-stone-300">
+      <p className="mt-6 font-serif text-lg leading-relaxed text-stone-700 dark:text-stone-300">
         Ancient Paths helps you search the Scriptures and learn with the fathers of the faith. When you are
         wrestling with a verse, it does not hand you an answer. It shows you how the church has read that
         passage for two thousand years, so you can wrestle and pray it through yourself.
@@ -47,7 +47,7 @@ export default function About() {
         {PRINCIPLES.map((x) => (
           <section key={x.h}>
             <h2 className="font-scripture text-lg font-semibold text-stone-800 dark:text-stone-100">{x.h}</h2>
-            <p className="mt-1.5 font-serif text-[15px] leading-relaxed text-stone-600 dark:text-stone-300">{x.p}</p>
+            <p className="mt-1.5 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-300">{x.p}</p>
           </section>
         ))}
       </div>
@@ -55,13 +55,13 @@ export default function About() {
       <div className="mt-14 flex flex-wrap gap-3">
         <Link
           href="/"
-          className="inline-flex min-h-[48px] items-center rounded-lg bg-accent-700 px-6 text-[15px] font-semibold text-stone-50 shadow-float transition-colors hover:bg-accent-800 dark:bg-accent-600 dark:hover:bg-accent-500"
+          className="inline-flex min-h-[48px] items-center rounded-lg bg-accent-700 px-6 text-base font-semibold text-stone-50 shadow-float transition-colors hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
         >
           Request early access
         </Link>
         <Link
           href="/home"
-          className="inline-flex min-h-[48px] items-center rounded-lg bg-paper px-6 text-[15px] font-semibold text-stone-700 shadow-paper transition-colors hover:text-accent-800 dark:bg-stone-800 dark:text-stone-200"
+          className="inline-flex min-h-[48px] items-center rounded-lg bg-paper px-6 text-base font-semibold text-stone-700 shadow-paper transition-colors hover:text-accent-800 dark:bg-stone-800 dark:text-stone-200"
         >
           Log in
         </Link>

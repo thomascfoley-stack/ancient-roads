@@ -32,12 +32,17 @@ export function WorkHeader({
         >
           Contents
         </button>
+        {/* An h1, not a <p>. /work/[slug] is the deepest content surface in the app and
+            had NO heading element at all: the work you are reading was 14px body text,
+            visually outranked by the "Contents" button beside it, and a screen reader's
+            heading list for the page was empty. Size is unchanged, this is a header bar
+            and the body below is the reading surface; the change is what it IS. */}
         <div className="min-w-0 flex-1">
-          <p className="truncate font-scripture text-sm font-medium text-stone-800 dark:text-stone-100">
+          <h1 className="truncate font-serif text-sm font-medium text-stone-800 dark:text-stone-100">
             {source.title}
-          </p>
+          </h1>
           {meta && (
-            <p className="truncate text-[11px] font-medium uppercase tracking-wider text-stone-400 dark:text-stone-500">
+            <p className="truncate text-micro font-medium uppercase tracking-wider text-stone-400 dark:text-stone-500">
               {meta}
             </p>
           )}

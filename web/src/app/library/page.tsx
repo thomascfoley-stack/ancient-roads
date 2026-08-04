@@ -57,7 +57,7 @@ export default async function LibraryHubPage({
 
       {mine && mine.reading.length > 0 && (
         <section className="mb-9">
-          <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-stone-400">Continue reading</h2>
+          <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-400">Continue reading</h2>
           <ul className="space-y-2">
             {mine.reading.map((r) => (
               <li key={r.sourceId}>
@@ -80,7 +80,7 @@ export default async function LibraryHubPage({
       )}
 
       <section className="mb-9">
-        <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-stone-400">Yours</h2>
+        <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-400">Yours</h2>
         <div className="flex flex-wrap gap-2">
           {YOURS.map((y) => (
             <Link
@@ -103,7 +103,7 @@ export default async function LibraryHubPage({
       </section>
 
       <section>
-        <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-stone-400">The corpus</h2>
+        <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-400">The corpus</h2>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {CATALOG_IDS.map((id) => (
             <li key={id}>

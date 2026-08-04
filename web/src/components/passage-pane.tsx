@@ -144,7 +144,7 @@ export function PassagePane({
             Open in full reader
           </Link>
         )}
-        {attribution && <span className="w-full text-[11px] text-stone-400">{attribution}</span>}
+        {attribution && <span className="w-full text-micro text-stone-400">{attribution}</span>}
       </div>
     </section>
   );

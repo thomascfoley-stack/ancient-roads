@@ -149,7 +149,7 @@ export function CatalogSearch({
                   <span className="flex items-baseline justify-between gap-3">
                     <span className="truncate font-scripture text-stone-800 dark:text-stone-100">{r.title}</span>
                     {/* the register label — the wall requires the reader can always tell what this is */}
-                    <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-stone-400">{r.sourceType}</span>
+                    <span className="shrink-0 text-micro font-semibold uppercase tracking-wider text-stone-400">{r.sourceType}</span>
                   </span>
                   {/* WHO SAID IT. The snippet below is a QUOTATION from the corpus, and this
                       product's promise is that quotations are attributed (CLAUDE.md / PRINCIPLES

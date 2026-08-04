@@ -36,7 +36,7 @@ export function ReaderSettings() {
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 w-56 rounded-xl bg-paper p-3 shadow-float ring-1 ring-stone-200 dark:bg-stone-800 dark:ring-stone-700">
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-stone-400">Theme</p>
+          <p className="mb-1.5 text-micro font-semibold uppercase tracking-wider text-stone-400">Theme</p>
           <div className="mb-3 flex rounded-lg bg-stone-100 p-0.5 dark:bg-stone-700">
             <button
               onClick={() => applyDark(false)}
@@ -51,7 +51,7 @@ export function ReaderSettings() {
               Dark
             </button>
           </div>
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-stone-400">Text size</p>
+          <p className="mb-1.5 text-micro font-semibold uppercase tracking-wider text-stone-400">Text size</p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => applySize(sizeIdx - 1)}

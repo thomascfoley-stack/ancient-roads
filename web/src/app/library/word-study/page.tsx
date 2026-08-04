@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { loadFullLexicon, type LexEntry } from '@/lib/original';
 import { useDragDismiss } from '@/lib/use-drag-dismiss';
+import { useDialog } from '@/lib/use-dialog';
 
 type Lang = 'greek' | 'hebrew';
 
@@ -71,7 +72,7 @@ export default function WordStudyPage() {
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
       <header className="mb-6">
         <h1 className="font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100">Word study</h1>
-        <p className="mt-2 max-w-2xl font-serif text-[15px] leading-relaxed text-stone-500 dark:text-stone-400">
+        <p className="mt-2 max-w-2xl font-serif text-base leading-relaxed text-stone-500 dark:text-stone-400">
           Look up the Greek and Hebrew behind the text. Search by Strong&rsquo;s number, by
           transliteration, by the original word, or by an English meaning. In the reader, turn on
           the אα interlinear and tap any word to open its entry here.
@@ -99,7 +100,7 @@ export default function WordStudyPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={lang === 'greek' ? 'agape, G26, love…' : 'shalom, H430, peace…'}
-          className="min-h-[44px] min-w-0 flex-1 rounded-xl bg-paper px-3 text-base text-stone-800 shadow-paper outline-none transition-shadow duration-200 ease-gentle placeholder:text-stone-400 focus:shadow-float sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500 dark:shadow-none"
+          className="min-h-[44px] min-w-0 flex-1 rounded-lg bg-paper px-3 text-base text-stone-800 shadow-paper outline-none transition-shadow duration-200 ease-gentle placeholder:text-stone-400 focus:shadow-float sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500 dark:shadow-none"
         />
       </div>
 
@@ -127,7 +128,7 @@ export default function WordStudyPage() {
                 {hit.lemma}
               </span>
               <span className="text-sm text-stone-500 dark:text-stone-400">{hit.translit}</span>
-              <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-500 dark:bg-stone-700 dark:text-stone-400">
+              <span className="rounded-full bg-stone-100 px-2 py-0.5 text-micro font-semibold text-stone-500 dark:bg-stone-700 dark:text-stone-400">
                 {hit.strong}
               </span>
               <span className="w-full truncate text-sm text-stone-600 sm:w-auto sm:flex-1 dark:text-stone-300">{hit.def}</span>
@@ -146,6 +147,7 @@ export default function WordStudyPage() {
 
 function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: () => void }) {
   const drag = useDragDismiss(onClose);
+  const dialog = useDialog(onClose, 'Lexicon entry');
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -162,6 +164,8 @@ function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: ()
       }}
     >
       <div
+        ref={dialog.ref}
+        {...dialog.dialogProps}
         className="flex max-h-[85dvh] w-full max-w-lg flex-col rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] shadow-deep animate-slide-up dark:bg-stone-900"
         style={drag.style}
       >
@@ -193,7 +197,7 @@ function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: ()
             </button>
           </div>
         </div>
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-4 text-[15px] leading-relaxed">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-4 text-base leading-relaxed">
           {hit.def && <Field label="Definition">{hit.def}</Field>}
           {hit.derivation && <Field label="Derivation">{hit.derivation}</Field>}
           {hit.kjv && <Field label="KJV usage"><span className="italic">{hit.kjv}</span></Field>}
@@ -206,7 +210,7 @@ function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: ()
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-stone-400">{label}</p>
+      <p className="mb-1 text-micro font-semibold uppercase tracking-wider text-stone-400">{label}</p>
       <p className="font-serif text-stone-700 dark:text-stone-300">{children}</p>
     </div>
   );

@@ -6,6 +6,7 @@ import { type CommentaryEntry } from '@/lib/bible';
 import { HIGHLIGHT_COLORS } from '@/lib/highlight-colors';
 import { fetchLexEntry, decodeMorph, type OWord, type LexEntry } from '@/lib/original';
 import { useDragDismiss } from '@/lib/use-drag-dismiss';
+import { useDialog } from '@/lib/use-dialog';
 import {
   eraLabel,
   pickDiverse,
@@ -51,6 +52,7 @@ export function StudyPanel({
 }) {
   const [tab, setTab] = useState<StudyTab>(defaultTab);
   const drag = useDragDismiss(onClose);
+  const dialog = useDialog(onClose, 'Study this verse');
 
   useEffect(() => setTab(defaultTab), [defaultTab, verseNum]);
 
@@ -82,6 +84,8 @@ export function StudyPanel({
       }}
     >
       <div
+        ref={dialog.ref}
+        {...dialog.dialogProps}
         className="flex max-h-[88dvh] w-full max-w-2xl flex-col rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] shadow-deep animate-slide-up dark:bg-stone-900"
         style={drag.style}
       >
@@ -92,7 +96,7 @@ export function StudyPanel({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-stone-200/60 px-5 py-3 dark:border-stone-800" {...drag.handleProps}>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">{reference}</p>
+            <p className="text-micro font-semibold uppercase tracking-wider text-stone-400">{reference}</p>
             <p className="mt-0.5 line-clamp-2 max-w-md font-scripture text-sm italic leading-snug text-stone-600 dark:text-stone-400">
               &ldquo;{verseText}&rdquo;
             </p>
@@ -125,7 +129,7 @@ export function StudyPanel({
             >
               {t.label}
               {t.id === 'commentaries' && entries.length > 0 && (
-                <span className="ml-1 text-[10px] text-stone-400">{entries.length}</span>
+                <span className="ml-1 text-micro text-stone-400">{entries.length}</span>
               )}
               {tab === t.id && (
                 <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-accent-600 dark:bg-accent-400" />
@@ -163,7 +167,7 @@ function HighlightRow({ annotation }: { annotation: AnnotationControls }) {
   }
   return (
     <div className="flex items-center gap-2 border-b border-stone-200/60 px-5 py-1 dark:border-stone-800">
-      <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">Highlight</span>
+      <span className="text-micro font-semibold uppercase tracking-wider text-stone-400">Highlight</span>
       <div className="flex items-center gap-0.5">
         {HIGHLIGHT_COLORS.map((c) => (
           <button
@@ -213,7 +217,7 @@ function CommentariesTab({ entries }: { entries: CommentaryEntry[] }) {
         return (
           <div key={i}>
             {showEra && (
-              <p className="pt-4 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300 dark:text-stone-600">
+              <p className="pt-4 pb-1.5 text-micro font-bold uppercase tracking-widest text-stone-300 dark:text-stone-600">
                 {era}
               </p>
             )}
@@ -295,7 +299,7 @@ function WordRow({ word, lang, defaultOpen = false }: { word: OWord; lang: 'hebr
         <span className="text-xs text-stone-500 dark:text-stone-400">{word.tr}</span>
         {word.g && <span className="flex-1 truncate text-sm text-stone-600 dark:text-stone-300">{word.g}</span>}
         {word.s && (
-          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-500 dark:bg-stone-800 dark:text-stone-400">
+          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-micro font-semibold text-stone-500 dark:bg-stone-800 dark:text-stone-400">
             {word.s}
           </span>
         )}
@@ -303,7 +307,7 @@ function WordRow({ word, lang, defaultOpen = false }: { word: OWord; lang: 'hebr
       {open && (
         <div className="space-y-2 px-2 pb-3 text-sm">
           {morph && (
-            <p className="text-[11px] font-medium uppercase tracking-wide text-stone-400">{morph}</p>
+            <p className="text-micro font-medium uppercase tracking-wide text-stone-400">{morph}</p>
           )}
           {!loaded ? (
             <p className="text-stone-400">Looking up…</p>
@@ -368,7 +372,7 @@ function NotesTab({ annotation }: { annotation: AnnotationControls }) {
         onChange={(e) => setText(e.target.value)}
         placeholder="Write a note on this verse…"
         rows={6}
-        className="w-full resize-y rounded-xl bg-stone-100/80 px-3 py-2.5 text-base text-stone-800 outline-none placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
+        className="w-full resize-y rounded-lg bg-stone-100/80 px-3 py-2.5 text-base text-stone-800 outline-none placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
       />
       <div className="mt-2 flex items-center gap-2">
         <button

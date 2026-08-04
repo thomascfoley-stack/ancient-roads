@@ -83,7 +83,7 @@ export default function MarketingHome() {
           <p className="max-w-xl font-display text-base italic leading-relaxed text-stone-100/95 [text-shadow:0_1px_12px_rgba(0,0,0,0.6)] sm:text-lg">
             &ldquo;Ask for the ancient paths, where the good way is, and walk in it.&rdquo;
           </p>
-          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-stone-200/90 [text-shadow:0_1px_10px_rgba(0,0,0,0.7)]">
+          <p className="mt-2 text-micro font-semibold uppercase tracking-[0.3em] text-stone-200/90 [text-shadow:0_1px_10px_rgba(0,0,0,0.7)]">
             Jeremiah 6:16
           </p>
 

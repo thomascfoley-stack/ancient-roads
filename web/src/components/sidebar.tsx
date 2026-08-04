@@ -203,7 +203,7 @@ export function SidebarNavContent({
         {/* Library */}
         <div className="mt-4">
           <div className="mb-1 px-4">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+            <span className="text-micro font-semibold uppercase tracking-wider text-stone-400">
               Library
             </span>
           </div>
@@ -260,7 +260,7 @@ export function SidebarNavContent({
           />
           <SidebarLink
             href="/library/word-study"
-            icon={<span className="text-stone-400">אα</span>}
+            icon={<LanguagesIcon />}
             label="Word study"
             active={pathname.startsWith('/library/word-study')}
             row={row}
@@ -288,8 +288,22 @@ export function SidebarNavContent({
  * Per-catalog icon. A MAP with a fallback, not a switch: a catalog with no icon yet still gets a
  * link (the fallback), because an orphaned shelf is a real bug and a generic glyph is not.
  */
+// ONE ICON PER SHELF. This map used to define a single entry (a `♪` text glyph for
+// Hymns) and let everything else fall through to <QuoteIcon />, so Commentaries,
+// Sermons, Historians, Devotionals and Theology & Creeds all wore the SAME speech
+// bubble. Five identical icons in a six-item list is worse than no icons: the eye
+// learns they carry nothing and stops reading them, and the one entry that differed
+// did so by being a text character at a different optical weight to its neighbours.
+//
+// Each shelf now has its own mark, drawn to this file's convention (24 viewBox,
+// strokeWidth 1.5, h-4 w-4) so they sit on the same optical line as the nav icons above.
 const CATALOG_ICON: Partial<Record<CatalogId, React.ReactNode>> = {
-  'hymns-poetry': <span className="text-stone-400">♪</span>,
+  commentaries: <QuoteIcon />,
+  sermons: <LecternIcon />,
+  'hymns-poetry': <NoteIcon />,
+  historians: <ScrollIcon />,
+  devotionals: <SunriseIcon />,
+  theology: <TabletIcon />,
 };
 
 export function Sidebar() {
@@ -370,7 +384,7 @@ function StudySectionView({
           />
         ) : (
           <>
-            <span className="truncate text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+            <span className="truncate text-micro font-semibold uppercase tracking-wider text-stone-400">
               {section.name}
             </span>
             <span className="flex items-center gap-0.5 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100">
@@ -469,7 +483,7 @@ function InlineNameForm({
           if (e.key === 'Escape') onCancel();
         }}
         placeholder={placeholder}
-        className="w-full rounded border border-stone-300 bg-paper px-2 py-1.5 text-base text-stone-800 placeholder:text-stone-400 outline-none focus:border-stone-500 sm:py-1 sm:text-sm dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100"
+        className="w-full rounded-lg border border-stone-300 bg-paper px-2 py-1.5 text-base text-stone-800 placeholder:text-stone-400 outline-none focus:border-stone-500 sm:py-1 sm:text-sm dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100"
         autoFocus
       />
     </form>
@@ -534,6 +548,64 @@ function PlusIcon() {
   return (
     <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+    </svg>
+  );
+}
+
+// --- shelf marks. All 24-viewBox, strokeWidth 1.5, h-4 w-4, matching the nav icons. ---
+
+/** A lectern: preached expositions. */
+function LecternIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 4h14l-2 5H7L5 4zm7 5v11m-4 0h8" />
+    </svg>
+  );
+}
+
+/** A beamed note: hymns and sacred poetry. Replaces a `♪` text character. */
+function NoteIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 18V6l11-2v12M9 18a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zm11-2a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+    </svg>
+  );
+}
+
+/** A scroll: the historians. */
+function ScrollIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 4h11a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2zm2 5h7M8 13h7M8 17h4" />
+    </svg>
+  );
+}
+
+/** A sun over the horizon: morning and evening devotions. */
+function SunriseIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 18h18M8 18a4 4 0 018 0M12 4v3m-6 3L4.5 8.5M18 10l1.5-1.5" />
+    </svg>
+  );
+}
+
+/** Two tablets: theology and the creeds. */
+function TabletIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8a3 3 0 013-3h1a3 3 0 013 3v12H4V8zm9 0a3 3 0 013-3h1a3 3 0 013 3v12h-7V8z" />
+    </svg>
+  );
+}
+
+/** An aleph-and-alpha pairing rendered as a mark rather than as the literal
+ *  characters `אα`, which sat in the icon slot at text weight and were read aloud
+ *  by screen readers as part of the link name. */
+function LanguagesIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 6h8M7 6v10m-3 0h6M14 18l3.5-9 3.5 9m-6-3h5" />
     </svg>
   );
 }
