@@ -144,7 +144,11 @@ describe('devotionals group by month, from their own headings', () => {
 
   it('does not match a month inside an unrelated word', () => {
     // SEED: drop the \b word boundaries -> "Mayhew" and "Marching" file under May and March.
+    // The ungrouped label is the word "Undated", not an em dash: the owner's standing rule is
+    // no em dashes in user-facing copy, and this label renders in the Book Reader's contents.
+    // The assertion is unchanged in what it proves (the word-boundary seed still turns it red);
+    // only the expected label follows the copy.
     const g = tocGroups('devotional', [u('On Mayhew'), u('Marching Orders'), u('Morning, May 3')]);
-    expect(g?.map((x) => x.label)).toEqual(['—', 'May']);
+    expect(g?.map((x) => x.label)).toEqual(['Undated', 'May']);
   });
 });

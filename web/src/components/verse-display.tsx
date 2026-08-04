@@ -163,23 +163,30 @@ export function VerseDisplay({
                   OWNER RULING, 2026-08-02: ADR-047 (docs/DECISIONS.md), amending
                   docs/LIBRARY_READER_BUILD.md's "do not change tap-a-verse -> commentaries"
                   boundary. Recorded before this code changed, not after. */}
-              {/* A real <button>, not a <sup onClick>. The handle above is the reader's
-                  primary interaction and it was reachable by pointer only: no tabIndex, no
-                  role, no key handler, so a keyboard user could not open the commentary for
-                  any verse in the app. The <sup> stays as the baseline wrapper so nothing
-                  reflows, and the button keeps this element's exact box, `select-none` and
-                  `before:` tap target, so the pointer behaviour ADR-047 rules on is
-                  unchanged. `appearance-none` and the explicit font keep the browser's
-                  button defaults out of the verse line. */}
-              <sup className="mr-0.5">
-                <button
-                  type="button"
-                  onClick={() => onVerseClick(v.verse)}
-                  aria-label={`Verse ${v.verse}, read commentary`}
-                  className="relative appearance-none bg-transparent p-0 font-sans text-[11px] font-semibold leading-none text-accent-600/80 select-none before:absolute before:-inset-y-1 before:-left-1.5 before:-right-0.5 before:content-[''] hover:text-accent-700 dark:text-accent-300/80 dark:hover:text-accent-200"
-                >
-                  {v.verse}
-                </button>
+              {/* KEYBOARD. This handle is the reader's primary interaction and it was
+                  reachable by pointer only: no tabIndex, no role, no key handler, so a
+                  keyboard user could not open commentary on any verse in the app.
+                  It stays a <sup> carrying its own onClick, deliberately. A first pass made
+                  it a real <button> nested inside the <sup>, which is better semantics but
+                  moves the handler off the element ADR-047 names, and
+                  verse-open-gesture.test.tsx went red because the handle it asserts on no
+                  longer answers a click. That test guards an owner ruling; the fix belongs
+                  in the component, not in the test. So: same element, same handler, same
+                  box, plus the ARIA button contract. */}
+              <sup
+                role="button"
+                tabIndex={0}
+                aria-label={`Verse ${v.verse}, read commentary`}
+                onClick={() => onVerseClick(v.verse)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onVerseClick(v.verse);
+                  }
+                }}
+                className="relative mr-0.5 cursor-pointer font-sans text-[11px] font-semibold text-accent-600/80 select-none before:absolute before:-inset-y-1 before:-left-1.5 before:-right-0.5 before:content-[''] hover:text-accent-700 dark:text-accent-300/80 dark:hover:text-accent-200"
+              >
+                {v.verse}
               </sup>
               {foreignColor && (
                 <sup
