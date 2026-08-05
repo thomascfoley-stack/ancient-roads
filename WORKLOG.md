@@ -208,6 +208,33 @@ embeddings. ADR-104 gated the join on exactly that, and the gate is discharged: 
 an injected `CorpusPredicate` and the production call site can now supply the canonical filter.
 What remains is a route and a UI surface, not a decision.
 
+### Mail is wired, and its ceiling is a DNS record (2026-08-05)
+
+`RESEND_API_KEY` and `MAIL_FROM` are set in production and `dpl_3gdjPe6oz23coPK1Hm4yW4iomHvT` is
+live. Delivery PROVEN, not assumed: a message sent through the same call shape `mail.ts` uses was
+accepted (`b85c8707-5199-4df2-8b10-a7a418908879`).
+
+**But `MAIL_FROM` is `onboarding@resend.dev`, which Resend restricts to the account owner's own
+address.** So password reset works for `thomascfoley@gmail.com` and, for anyone else, still fails
+silently. That is a real ceiling and it is one DNS change away, not a code change.
+
+Established by probe rather than by reading docs:
+- from `noreply@ancientpaths.app` -> 403 "domain is not verified"
+- from `onboarding@resend.dev`     -> 403 "can only send testing emails to your own email address"
+
+The domain is now REGISTERED on Resend (id `cd9ce73a-1648-405f-aeab-80182cdd140d`, status
+`not_started`) and its three DNS records are committed to
+[`docs/evidence/resend-dns-records.txt`](evidence/resend-dns-records.txt).
+
+**I could not add them.** `ancientpaths.app` is registered with Vercel and on Vercel nameservers, so
+the records belong there, but the deploy token is refused: `permission_denied ... under
+home-network-hardening`. It can deploy and write env vars; it cannot write DNS. Adding those three
+records and then flipping `MAIL_FROM` to `noreply@ancientpaths.app` is all that stands between the
+current state and reset working for every account.
+
+Note the first key supplied was send-only ("This API key is restricted to only send emails"), which
+is why the domain could not be created until the second, full-access key arrived.
+
 ### Still needed from the owner
 
 - **A Resend account.** `RESEND_API_KEY` and `MAIL_FROM` are unset in production, so **password
