@@ -63,9 +63,46 @@ Also measured: **nothing** in `db/`, `web/src/lib/` or `scripts/` references `ne
 `users_sync`, so clean-start orphans rows but breaks no constraint. The uploader's tables are empty
 today, which makes now the cheapest moment this cutover will ever have.
 
+### Cutover step 1 built: Better Auth runs directly (commit `6a3eaa9`)
+
+Owner ruled §2: **email/password + a mailer, no social providers.** g38m needs both credentials and
+social login present, so with no OAuth callback the class is closed structurally, not by a flag.
+
+Built: `web/src/lib/auth/better-auth.ts` (lazy, memoised, connects as `app_runtime` through db.ts's
+`runtimeUrl()`), `web/src/lib/mail.ts` (Resend over fetch, no SDK), and
+`db/migrations/104_better_auth_schema.sql`, applied to the **lane-b branch only**.
+
+Two schema notes worth carrying: `user` is a **reserved word** in Postgres and an unquoted
+`SELECT ... FROM user` silently returns the role name rather than erroring, hence the `auth_`
+prefix; and RLS is deliberately OFF on all four tables, because authentication runs before there is
+an `app.current_user_id` to key a policy on. The honest cost is that the bcrypt hashes are readable
+by anything running as `app_runtime`, so confinement is asserted instead: no module outside
+`web/src/lib/auth/` may name those tables.
+
+Both checks red-proofed. The live one matters most: `better-auth-schema.test.ts` compares two
+descriptions of a schema and would stay green against a database where 104 had never been applied,
+so `better-auth-live.test.ts` drives the real API and asserts signup stores a credential account
+with a hash, sign-in issues a session, and a wrong password is refused.
+
+Two findings from doing it:
+- Adding 104 turned `user-data-invariant` red on four unclassified tables, which is that
+  enumeration working exactly as designed. Classified as auth infrastructure, not user content:
+  session rows churn on every sign-in, so a G1 digest over them would go red on normal use and be
+  muted within a week, taking the tables that matter with it.
+- **My own skip guard was inverted** (`const SKIP = !announceSkip(...)`), so a fully configured
+  machine skipped the suite and reported green having run nothing. Caught only because the run said
+  "3 skipped" where it should have hit the database. Same family as the A7-X1 retraction.
+
 ### NOT DONE / UNVERIFIED
 
-- The cutover itself. Design filed; no code written; needs the §2 decision.
+- The rest of the cutover: `session.ts`, `client.ts`, the handler route, the two Neon prefab pages
+  (`AuthView` / `AccountView`) replaced with our own forms, removing `@neondatabase/auth`, and the
+  `web/package-lock.json` regeneration that any deploy requires. **The app still authenticates
+  through Neon Auth**; Better Auth is built and proven beside it, not yet wired in.
+- The theming hazard in AUTH_CUTOVER_DESIGN §3 is untested: removing
+  `@import '@neondatabase/auth/ui/tailwind'` either fixes the known two-owners-of-`dark` defect or
+  breaks theming, and only a browser at 390px and desktop can say which.
+- Production is untouched. Migration 104 exists on `lane-b-uploader` only.
 - A6 quotas, the full `npm run audit`, the independent `deep-audit`, and the rebase onto `main`
   (27 ahead, 103 behind) all still outstanding from the Slice 1 plan.
 - `MULTI_USER_UPLOADS` is `false` and must stay false until the cutover lands. Uploads are
