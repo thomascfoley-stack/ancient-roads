@@ -41,6 +41,66 @@ fi
 echo "✓ Working tree clean — deploying commit $(git rev-parse --short HEAD)"
 echo ""
 
+# ---------------------------------------------------------------------------
+# ANCESTRY GATE — you may not deploy a tree that drops what is already shipped.
+#
+# THE DEFECT, three times in one day (2026-08-04). Two lanes share this Vercel
+# project, and `vercel --prod` moves the ancientpaths.app alias on every run:
+# LAST DEPLOY WINS, whole tree, no merge. So each lane's deploy silently
+# reverted the other lane's shipped code and printed a green "Done!". It cost
+# the reading-plans feature once, the verse previews once, and the A9 serving
+# cutover once. Every one of those deploys passed every check in this file,
+# because nothing here had an opinion about what was ALREADY LIVE.
+#
+# THE RULE: the commit you are deploying must CONTAIN origin/main. If it does
+# not, origin/main holds work your tree lacks, and since the alias moves on
+# every deploy, shipping this tree un-ships that work.
+#
+# WHY origin/main AND NOT A LOCAL RECEIPT. deploy.sh writes a receipt naming
+# the deployed sha, but receipts land in the deploying WORKING TREE — and the
+# other lane's tree is not this one. That is precisely why nobody noticed:
+# each lane's receipts said its own deploy was the latest, and both were right
+# about themselves. The shared remote is the only thing both lanes can see.
+#
+# This is a merge-first rule, not a merge-into-main rule: deploying a branch is
+# still fine, as long as that branch has merged origin/main into it.
+#
+# NOT a substitute for separate Vercel projects, which would remove the shared
+# alias entirely. It is the cheap mechanical floor until that call is made.
+# ---------------------------------------------------------------------------
+echo "=== Pre-deploy gate: this tree contains everything already shipped ==="
+if git remote get-url origin >/dev/null 2>&1 && git fetch origin --quiet 2>/dev/null; then
+  if git merge-base --is-ancestor origin/main HEAD 2>/dev/null; then
+    echo "  ✓ contains origin/main ($(git rev-parse --short origin/main))"
+  else
+    BEHIND="$(git rev-list --count HEAD..origin/main 2>/dev/null)"
+    echo ""
+    echo "✗ DEPLOY BLOCKED — origin/main has $BEHIND commit(s) this tree does not have."
+    echo ""
+    # `-n 10`, NOT `| head -10`: head closes the pipe, git takes SIGPIPE, and this file's
+    # `set -o pipefail` + `set -e` turn that into an exit 141 PART WAY THROUGH this message —
+    # so the gate aborted before printing the fix instructions or its own exit code. Caught by
+    # red-proofing the gate rather than by reading it.
+    git log --oneline -n 10 HEAD..origin/main 2>/dev/null | sed 's/^/    /' || true
+    echo ""
+    echo "  Deploying moves the ancientpaths.app alias to THIS tree, so whatever those"
+    echo "  commits put live would stop being live. That has already cost this project"
+    echo "  three shipped features in one day."
+    echo ""
+    echo "  Merge first, then deploy:"
+    echo "      git merge origin/main"
+    echo ""
+    echo "  Override ONLY if you intend to revert that work: DEPLOY_ALLOW_BEHIND=1"
+    [ "${DEPLOY_ALLOW_BEHIND:-}" = "1" ] || exit 1
+    echo "  ⚠ DEPLOY_ALLOW_BEHIND=1 set — proceeding, and reverting the commits above."
+  fi
+else
+  # A missing remote must not silently disable the gate; say so out loud.
+  echo "  ⚠ NOT CHECKED: no reachable 'origin', so this deploy is unguarded against"
+  echo "    reverting another lane's live work."
+fi
+echo ""
+
 # Check prerequisites
 if ! command -v npx &> /dev/null; then
   echo "Error: npx not found. Install Node.js first."
