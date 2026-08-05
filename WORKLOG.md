@@ -155,7 +155,48 @@ channel doing the thing it exists for rather than merely running.
 
 Production was left clean: 0 users, 0 sessions, 0 documents.
 
-### The moat is still not connected
+### THE MOAT IS CONNECTED AND LIVE (2026-08-05)
+
+`dpl_2DqF5fSA8bzULBYqHhsG4mhoFEyo`. `GET /api/user-corpus/documents/[id]/voices` plus the My Works
+surface. This is the ADR-104 call site and it is one line: the join takes the corpus filter as a
+parameter precisely because, when it was built, `LEGAL_CORPUS_FILTER` was still the author allowlist
+on this branch while `served` already existed on the database. Lane A has merged, so the constant is
+now `(served)`, the gate is discharged, and the call site imports THE canonical predicate. Still
+exactly one definition of what the corpus serves.
+
+**Driven on production.** Registered, uploaded a sermon quoting John 10:11 and Romans 8:28, waited
+for `ready`, called the endpoint:
+
+    14 voices from the library on 3 passages this document anchors
+    Adam Clarke [Methodist] · Albert Barnes [Presbyterian] · Augustine of Hippo [Patristic]
+    Jane Borthwick [hymn] · Spurgeon, sermons [Baptist] · Spurgeon, morning-evening [Baptist]
+    Jamieson Fausset & Brown [Presbyterian] · John Calvin [Reformed] ...
+
+Every row `origin: 'corpus'`, so no user content crossed into the join. Rendered and checked at
+desktop and 390px; the list wraps, nothing overflows. Production left clean: 0 users, 0 documents,
+0 sections, 0 vectors, 0 anchors.
+
+**New guard, three red-proofs.** `tradition-gap-wiring.test.ts` protects the failure that is
+actually likely: someone reading `AND ${predicate}` and typing `served = true` at the call site
+because it is shorter than an import. That stays green in every other test, looks right today, and
+goes silently stale the day "served" is redefined. Seeds: filter hand-written rather than imported
+(3 failed) · the pending guard removed (1) · `routing.ts` drifting to a different definition (1).
+The literal check strips comments first, because both files discuss `served = true` in prose and a
+guard that fires on its own rationale gets switched off within a week.
+
+**The copy is deliberately narrow.** "N voices from the library on M passages this document
+anchors", never "what you missed". Slice 1 returns the voices ON the passages, not the complement;
+answering the "not" half needs a commentator-detection channel that does not exist, and
+`tradition-gap.ts` says so in its own header. Claiming the gap would be the product asserting
+something it has not measured.
+
+A queued document returns `pending: true` rather than an empty list, so "still indexing" cannot
+render as "the tradition is silent on this".
+
+The derived route-coverage check picked the new route up by itself (9 -> 10 tests) and asserted it
+goes through `guardUser`. That is what deriving the route set instead of hand-listing it was for.
+
+### Superseded: the moat was not connected
 
 `traditionGap` has **no call site anywhere outside its own module and tests**. Slice 1 therefore
 ships what the order itself calls the filing cabinet: personal upload and personal search, without
