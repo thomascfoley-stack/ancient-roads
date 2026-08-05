@@ -79,13 +79,13 @@ export default function WordStudyPage() {
         </p>
       </header>
 
-      <div className="sticky top-0 z-20 -mx-4 mb-6 flex flex-wrap items-center gap-2 border-b border-stone-200/70 bg-stone-50/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6 dark:border-stone-800 dark:bg-stone-950/95">
+ <div className="sticky top-0 z-20 -mx-4 mb-6 flex flex-wrap items-center gap-2 border-b edge bg-stone-50/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6 dark:bg-stone-950/95">
         <div className="flex rounded-xl bg-stone-200/60 p-1 dark:bg-stone-800">
           {(['greek', 'hebrew'] as Lang[]).map((l) => (
             <button
               key={l}
               onClick={() => setLang(l)}
-              className={`min-h-[36px] rounded-lg px-4 text-sm font-medium capitalize transition-colors ${
+              className={`min-h-[36px] rounded-lg px-4 text-sm font-medium capitalize transition-colors ease-gentle ${
                 lang === l
                   ? 'bg-paper text-stone-800 shadow-paper dark:bg-stone-700 dark:text-stone-100'
                   : 'text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200'
@@ -106,24 +106,24 @@ export default function WordStudyPage() {
       </div>
 
       {lexFailed ? (
-        <p className="py-16 text-center text-sm text-stone-400">
+        <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">
           The {lang} lexicon isn&rsquo;t available right now. Check your connection and try again.
         </p>
       ) : !lex ? (
-        <p className="py-16 text-center text-sm text-stone-400">Loading {lang} lexicon…</p>
+        <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">Loading {lang} lexicon…</p>
       ) : !query.trim() ? (
-        <p className="py-16 text-center text-sm text-stone-400">
+        <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">
           Start typing to search {Object.keys(lex).length.toLocaleString()} {lang} entries.
         </p>
       ) : results.length === 0 ? (
-        <p className="py-16 text-center text-sm text-stone-400">No matches for &ldquo;{query}&rdquo;.</p>
+        <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">No matches for &ldquo;{query}&rdquo;.</p>
       ) : (
         <div className="space-y-2.5">
           {results.map((hit) => (
             <button
               key={hit.strong}
               onClick={() => setSelected(hit)}
-              className="flex w-full flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl bg-paper px-4 py-3 text-left shadow-paper transition-colors hover:bg-accent-50/50 active:bg-accent-50/70 dark:bg-stone-800/60 dark:shadow-none dark:hover:bg-stone-800"
+              className="flex w-full flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl bg-paper px-4 py-3 text-left shadow-paper transition-colors ease-gentle hover:bg-accent-50/50 active:bg-accent-50/70 dark:bg-stone-800/60 dark:shadow-none dark:hover:bg-stone-800"
             >
               <span dir={rtl ? 'rtl' : 'ltr'} lang={rtl ? 'he' : 'el'} className="font-scripture text-xl text-stone-900 dark:text-stone-100">
                 {hit.lemma}
@@ -136,7 +136,7 @@ export default function WordStudyPage() {
             </button>
           ))}
           {results.length >= 200 && (
-            <p className="pt-2 text-center text-xs text-stone-400">Showing first 200 matches. Refine your search.</p>
+            <p className="pt-2 text-center text-xs text-stone-500 dark:text-stone-400">Showing first 200 matches. Refine your search.</p>
           )}
         </div>
       )}
@@ -173,14 +173,14 @@ function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: ()
         <div aria-hidden className="flex justify-center pt-2.5" {...drag.handleProps}>
           <span className="h-1.5 w-10 rounded-full bg-stone-300/80 dark:bg-stone-700" />
         </div>
-        <div className="flex items-start justify-between border-b border-stone-200/60 px-5 pb-3 pt-1 dark:border-stone-800" {...drag.handleProps}>
+ <div className="flex items-start justify-between border-b edge px-5 pb-3 pt-1" {...drag.handleProps}>
           <div>
             <p dir={rtl ? 'rtl' : 'ltr'} lang={rtl ? 'he' : 'el'} className="font-scripture text-3xl text-stone-900 dark:text-stone-100">
               {hit.lemma}
             </p>
             <p className="mt-0.5 text-sm text-stone-500 dark:text-stone-400">
               {hit.translit}
-              {hit.pron && <span className="text-stone-400"> · {hit.pron}</span>}
+              {hit.pron && <span className="text-stone-500 dark:text-stone-400"> · {hit.pron}</span>}
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -189,7 +189,7 @@ function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: ()
             </span>
             <button
               onClick={onClose}
-              className="flex h-11 w-11 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600 active:bg-stone-100 dark:hover:bg-stone-800"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-600 active:bg-stone-100 dark:hover:bg-stone-800"
               aria-label="Close"
             >
               <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -211,7 +211,7 @@ function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: ()
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-1 text-micro font-semibold uppercase tracking-wider text-stone-400">{label}</p>
+      <p className="mb-1 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">{label}</p>
       <p className="font-serif text-stone-700 dark:text-stone-300">{children}</p>
     </div>
   );

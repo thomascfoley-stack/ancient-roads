@@ -112,7 +112,7 @@ function SearchResultCard({
     <article className="rounded-2xl bg-paper p-4 shadow-paper dark:bg-stone-800/60 dark:shadow-none">
       <div className="mb-1 flex flex-wrap items-baseline gap-2">
         <span className="text-sm font-medium text-stone-800 dark:text-stone-100">{r.author}</span>
-        {r.year != null && <span className="text-xs text-stone-400">{yearLabel(r.year)}</span>}
+        {r.year != null && <span className="text-xs text-stone-500 dark:text-stone-400">{yearLabel(r.year)}</span>}
         {r.tradition && (
           <span className="rounded-full bg-stone-100 px-2 py-0.5 text-micro font-medium uppercase tracking-wide text-stone-500 dark:bg-stone-700 dark:text-stone-400">
             {r.tradition}
@@ -133,7 +133,7 @@ function SearchResultCard({
         />
       )}
       {view === 'unavailable' && (
-        <p className="mt-1 text-xs text-stone-400">
+        <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
           Full text isn&rsquo;t available here. Open it in the reader.
         </p>
       )}
@@ -212,16 +212,16 @@ function RegisterBrowseSection({ title, note, groups }: { title: string; note: s
       <div className="space-y-8">
         {groups.map((g) => (
           <article key={g.key} className="rounded-2xl bg-paper p-5 shadow-paper dark:bg-stone-800/60 dark:shadow-none">
-            <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b border-stone-200/60 pb-3 dark:border-stone-700/60">
+ <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b edge pb-3">
               <h3 className="font-scripture text-xl font-medium text-stone-800 dark:text-stone-100">{g.author}</h3>
-              {g.year != null && <span className="text-xs text-stone-400">{yearLabel(g.year)}</span>}
+              {g.year != null && <span className="text-xs text-stone-500 dark:text-stone-400">{yearLabel(g.year)}</span>}
               {registerChipLabel(g.register) && (
                 <span className="rounded-full bg-accent-700/10 px-2 py-0.5 text-micro font-medium text-accent-700 dark:text-accent-300">
                   {registerChipLabel(g.register)}
                 </span>
               )}
               {g.paraphrase && <ParaphraseChip />}
-              <span className="ml-auto text-micro text-stone-400">{g.sourceTitle}</span>
+              <span className="ml-auto text-micro text-stone-500 dark:text-stone-400">{g.sourceTitle}</span>
             </div>
             <div className="space-y-3">
               {g.notes.map((n, i) => (
@@ -409,7 +409,7 @@ export default function PassageSearchPage() {
 
       {/* Search input */}
       <div className="relative mb-4">
-        <svg aria-hidden className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
         <input
@@ -423,7 +423,7 @@ export default function PassageSearchPage() {
         {searchQuery && (
           <button
             onClick={() => handleSearchInput('')}
-            className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-stone-400 hover:text-stone-600 active:bg-stone-200/60 dark:hover:text-stone-300 dark:active:bg-stone-700/60"
+            className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:text-stone-600 active:bg-stone-200/60 dark:hover:text-stone-300 dark:active:bg-stone-700/60"
             aria-label="Clear search"
           >
             <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -441,7 +441,7 @@ export default function PassageSearchPage() {
             <div className="mb-4 flex flex-wrap gap-1.5">
               <button
                 onClick={() => { setTraditionFilter(null); setSearchPage(0); }}
-                className={`min-h-[44px] rounded-lg px-4 text-sm font-medium transition-colors sm:min-h-0 sm:px-3 sm:py-1 sm:text-xs ${
+                className={`min-h-[44px] rounded-lg px-4 text-sm font-medium transition-colors ease-gentle sm:min-h-0 sm:px-3 sm:py-1 sm:text-xs ${
                   !traditionFilter
                     ? 'bg-accent-700 text-stone-50 dark:bg-accent-400 dark:text-stone-950'
                     : 'bg-stone-100 text-stone-600 hover:bg-stone-200 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'
@@ -453,7 +453,7 @@ export default function PassageSearchPage() {
                 <button
                   key={t}
                   onClick={() => { setTraditionFilter(traditionFilter === t ? null : t); setSearchPage(0); }}
-                  className={`min-h-[44px] rounded-lg px-4 text-sm font-medium transition-colors sm:min-h-0 sm:px-3 sm:py-1 sm:text-xs ${
+                  className={`min-h-[44px] rounded-lg px-4 text-sm font-medium transition-colors ease-gentle sm:min-h-0 sm:px-3 sm:py-1 sm:text-xs ${
                     traditionFilter === t
                       ? 'bg-accent-700 text-stone-50 dark:bg-accent-400 dark:text-stone-950'
                       : 'bg-stone-100 text-stone-600 hover:bg-stone-200 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'
@@ -466,11 +466,11 @@ export default function PassageSearchPage() {
           )}
 
           {searchLoading && searchResults.length === 0 ? (
-            <p className="py-16 text-center text-sm text-stone-400">Searching…</p>
+            <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">Searching…</p>
           ) : searchError ? (
             <p role="alert" className="py-16 text-center text-sm text-red-800 dark:text-red-200">{searchError}</p>
           ) : searchResults.length === 0 ? (
-            <p className="py-16 text-center text-sm text-stone-400">
+            <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">
               No results for &ldquo;{debouncedQuery}&rdquo;
             </p>
           ) : (
@@ -492,7 +492,7 @@ export default function PassageSearchPage() {
                   <button
                     onClick={() => setSearchPage((p) => p + 1)}
                     disabled={searchLoading}
-                    className="min-h-[44px] rounded-lg bg-paper px-6 text-sm font-medium text-stone-600 shadow-paper transition-all duration-200 ease-gentle hover:text-accent-800 hover:shadow-float active:bg-stone-100 disabled:opacity-40 dark:bg-stone-800 dark:text-stone-300 dark:shadow-none"
+                    className="min-h-[44px] rounded-lg bg-paper px-6 text-sm font-medium text-stone-600 shadow-paper transition-[opacity,transform,box-shadow,background-color,border-color] duration-200 ease-gentle hover:text-accent-800 hover:shadow-float active:bg-stone-100 disabled:opacity-40 dark:bg-stone-800 dark:text-stone-300 dark:shadow-none"
                   >
                     {searchLoading ? 'Loading…' : `Load more (${searchResults.length} of ${searchTotal}${searchTotalCapped ? '+' : ''})`}
                   </button>
@@ -505,7 +505,7 @@ export default function PassageSearchPage() {
         /* ============ BROWSE MODE ============ */
         <>
           {/* Passage selector */}
-          <div className="sticky top-0 z-20 -mx-5 mb-6 flex flex-wrap items-center gap-2 border-b border-stone-200 bg-stone-50/95 px-5 py-3 backdrop-blur-sm dark:border-stone-700 dark:bg-stone-900/95 sm:-mx-6 sm:px-6">
+ <div className="sticky top-0 z-20 -mx-5 mb-6 flex flex-wrap items-center gap-2 border-b edge bg-stone-50/95 px-5 py-3 backdrop-blur-sm dark:bg-stone-900/95 sm:-mx-6 sm:px-6">
             <select
               value={bookSlug}
               onChange={(e) => {
@@ -560,9 +560,9 @@ export default function PassageSearchPage() {
           </div>
 
           {loading ? (
-            <p className="py-16 text-center text-sm text-stone-400">Loading…</p>
+            <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">Loading…</p>
           ) : entries.length === 0 ? (
-            <p className="py-16 text-center text-sm text-stone-400">
+            <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">
               No commentary available for {book.name} {book.chapterCount === 1 ? '' : chapter} yet.
             </p>
           ) : (
@@ -571,13 +571,13 @@ export default function PassageSearchPage() {
                 <div className="space-y-8">
                   {visible.map((g) => (
                     <article key={g.author} className="rounded-2xl bg-paper p-5 shadow-paper dark:bg-stone-800/60 dark:shadow-none">
-                      <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b border-stone-200/60 pb-3 dark:border-stone-700/60">
+ <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b edge pb-3">
                         <h2 className="font-scripture text-xl font-medium text-stone-800 dark:text-stone-100">{g.author}</h2>
-                        {g.year != null && <span className="text-xs text-stone-400">{yearLabel(g.year)}</span>}
+                        {g.year != null && <span className="text-xs text-stone-500 dark:text-stone-400">{yearLabel(g.year)}</span>}
                         <span className="rounded-full bg-stone-100 px-2 py-0.5 text-micro font-medium uppercase tracking-wide text-stone-500 dark:bg-stone-700 dark:text-stone-400">
                           {g.tradition ?? eraLabel(g.year)}
                         </span>
-                        <span className="ml-auto text-micro text-stone-400">{g.sourceTitle}</span>
+                        <span className="ml-auto text-micro text-stone-500 dark:text-stone-400">{g.sourceTitle}</span>
                       </div>
                       <div className="space-y-3">
                         {g.notes.map((n, i) => (
@@ -593,7 +593,7 @@ export default function PassageSearchPage() {
                   ))}
                 </div>
               ) : (
-                <p className="py-10 text-center text-sm text-stone-400">
+                <p className="py-10 text-center text-sm text-stone-500 dark:text-stone-400">
                   No verse-by-verse commentary{authorFilter !== 'all' ? ' from this source' : ''} here.
                 </p>
               )}
@@ -613,7 +613,7 @@ export default function PassageSearchPage() {
         </>
       )}
 
-      <p className="mt-12 border-t border-stone-200/60 pt-6 text-center font-scripture text-sm italic text-stone-400 dark:border-stone-800">
+ <p className="mt-12 border-t edge pt-6 text-center font-scripture text-sm italic text-stone-500 dark:text-stone-400">
         Nevertheless, not as I will, but as you will. . . . Your will be done!
       </p>
     </div>

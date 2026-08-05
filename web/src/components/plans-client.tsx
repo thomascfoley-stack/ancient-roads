@@ -122,7 +122,7 @@ export function PlansClient() {
         </header>
       )}
 
-      {list.status === 'loading' && <p className="mx-auto max-w-3xl text-sm text-stone-400">Loading…</p>}
+      {list.status === 'loading' && <p className="mx-auto max-w-3xl text-sm text-stone-500 dark:text-stone-400">Loading…</p>}
       {list.status === 'signed-out' && (
         <p className="mx-auto max-w-3xl text-sm text-stone-500">
           <Link href="/auth/sign-in" className="text-accent-700 hover:text-accent-800 dark:text-accent-300">Sign in</Link>
@@ -206,7 +206,7 @@ function PlanRow({ plan, onOpen }: { plan: PlanListRow; onOpen: () => void }) {
     >
       <div className="flex items-baseline justify-between gap-3">
         <span className="truncate font-medium text-stone-800 dark:text-stone-100">{plan.title}</span>
-        <span className="shrink-0 text-xs text-stone-400">
+        <span className="shrink-0 text-xs text-stone-500 dark:text-stone-400">
           {done ? 'Finished' : `${plan.read_days} of ${plan.total_days} days`}
         </span>
       </div>
@@ -352,7 +352,7 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
     }
   };
 
-  const stepLabel = 'mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400';
+  const stepLabel = 'mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400';
 
   return (
     <form onSubmit={submit} className="mt-5 rounded-xl bg-stone-100/80 p-4 shadow-paper dark:bg-stone-800/50">
@@ -493,7 +493,7 @@ function TopicPicker({
       {matches !== null && !error && (
         <div className="mt-2">
           {matches.length === 0 ? (
-            <p className="text-xs text-stone-400">No topic by that name in the library. Try another word.</p>
+            <p className="text-xs text-stone-500 dark:text-stone-400">No topic by that name in the library. Try another word.</p>
           ) : (
             <>
               <p className="mb-1.5 text-xs text-stone-500 dark:text-stone-400">Choose one:</p>
@@ -505,14 +505,14 @@ function TopicPicker({
                       key={`${m.workSlug}-${m.sectionId}`} type="button" onClick={() => setPicked(m)} aria-pressed={on}
                       className={`flex min-h-[44px] w-full items-center justify-between gap-3 rounded-lg border px-3 py-1.5 text-left transition-colors ease-gentle ${
                         on ? 'border-accent-700 bg-accent-50 dark:bg-accent-950/40'
-                           : 'border-stone-200 hover:border-accent-300 dark:border-stone-700'
+ : 'edge hover:border-accent-300 '
                       }`}
                     >
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-medium text-stone-800 dark:text-stone-100">{m.heading}</span>
-                        <span className="block truncate text-micro text-stone-400">{m.workTitle}</span>
+                        <span className="block truncate text-micro text-stone-500 dark:text-stone-400">{m.workTitle}</span>
                       </span>
-                      <span className="shrink-0 text-micro text-stone-400">{count(m.entryCount, 'passage')}</span>
+                      <span className="shrink-0 text-micro text-stone-500 dark:text-stone-400">{count(m.entryCount, 'passage')}</span>
                     </button>
                   );
                 })}
@@ -563,6 +563,7 @@ export function readingLabel(r: PlanReading): string {
 
 function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () => void; onChanged: () => void }) {
   const [busyDay, setBusyDay] = useState<number | null>(null);
+  const [writeError, setWriteError] = useState<string | null>(null);
   const [pane, setPane] = useState<PassageTarget | null>(null);
   // The server render and the first client render both use the default, and the reader's stored
   // choice is adopted only after mount. Reading localStorage during render is exactly what
@@ -585,12 +586,19 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
   const toggle = async (d: PlanDay) => {
     setBusyDay(d.day_index);
     try {
-      await fetch(`/api/plans/${open.plan.id}`, {
+      // Was: await fetch(...) with no res.ok check and no catch, then onChanged()
+      // unconditionally. On a 401/500 the tick flipped, the re-read returned the unchanged
+      // row, and the checkbox silently reverted with no explanation.
+      const res = await fetch(`/api/plans/${open.plan.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ kind: 'day', dayIndex: d.day_index, completed: !d.completed_at }),
       });
+      if (!res.ok) { setWriteError('That change could not be saved. Please try again.'); return; }
+      setWriteError(null);
       onChanged();
+    } catch {
+      setWriteError('That change could not be saved. Please try again.');
     } finally {
       setBusyDay(null);
     }
@@ -598,8 +606,15 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
 
   const remove = async () => {
     if (!window.confirm('Delete this plan? Your progress on it goes too.')) return;
-    await fetch(`/api/plans/${open.plan.id}`, { method: 'DELETE' });
-    onBack();
+    // Was: await fetch(DELETE) then onBack() unconditionally, so a failed delete returned the
+    // reader to a list with the plan still sitting in it and no message.
+    try {
+      const res = await fetch(`/api/plans/${open.plan.id}`, { method: 'DELETE' });
+      if (!res.ok) { setWriteError('The plan could not be deleted. Please try again.'); return; }
+      onBack();
+    } catch {
+      setWriteError('The plan could not be deleted. Please try again.');
+    }
   };
 
   // "Read it" on a topical day opens the day's FIRST cited passage — the day itself is a bag of
@@ -624,7 +639,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
         <button onClick={onBack} className="inline-flex min-h-[44px] items-center text-sm text-accent-700 hover:text-accent-800 dark:text-accent-300">
           ← All plans
         </button>
-        <button onClick={remove} className="inline-flex min-h-[44px] items-center text-xs text-stone-400 hover:text-accent-700">
+        <button onClick={remove} className="inline-flex min-h-[44px] items-center text-xs text-stone-500 dark:text-stone-400 hover:text-accent-700">
           Delete plan
         </button>
       </div>
@@ -634,14 +649,17 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
           IS the subject of the screen once one is open, so it takes the h1 rather than
           adding a second heading above it. */}
       <h1 className="font-display text-2xl text-stone-800 dark:text-stone-100">{open.plan.title}</h1>
+      {writeError && (
+        <p role="alert" className="mt-2 text-sm text-red-800 dark:text-red-200">{writeError}</p>
+      )}
       <div className="mt-2 flex items-center gap-3">
         <div className="flex-1"><ProgressBar pct={pct} /></div>
-        <span className="shrink-0 text-xs text-stone-400">{doneCount} of {open.days.length} days</span>
+        <span className="shrink-0 text-xs text-stone-500 dark:text-stone-400">{doneCount} of {open.days.length} days</span>
       </div>
 
       {upNext ? (
         <div className="mt-4 rounded-xl bg-paper px-4 py-3 shadow-paper dark:bg-stone-900/70">
-          <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">
+          <p className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
             Up next{upNext.day_date <= today ? ' · due now' : ` · ${prettyDate(upNext.day_date)}`}
           </p>
           <p className="mt-1 font-serif text-lg text-stone-800 dark:text-stone-100">
@@ -668,7 +686,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
         </p>
       )}
 
-      <p className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wider text-stone-400">All readings</p>
+      <p className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">All readings</p>
       <ol className="space-y-1.5">
         {open.days.map((d) => {
           const readings = readingsByDay.get(d.day_index);
@@ -690,7 +708,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                   </svg>
                 </button>
-                <span className="w-20 shrink-0 text-xs text-stone-400">{prettyDate(d.day_date)}</span>
+                <span className="w-20 shrink-0 text-xs text-stone-500 dark:text-stone-400">{prettyDate(d.day_date)}</span>
                 {readings ? (
                   <span className={`flex-1 truncate text-sm font-medium ${d.completed_at ? 'text-stone-400 line-through' : 'text-stone-700 dark:text-stone-200'}`}>
                     {readings.length} passage{readings.length === 1 ? '' : 's'}
@@ -724,7 +742,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
                         active={pane?.verseStart === r.verse_start && pane?.verseEnd === r.verse_end}
                         className={`shrink-0 font-medium ${d.completed_at ? 'text-stone-400' : 'text-stone-700 dark:text-stone-200'}`}
                       />
-                      {r.label && <span className="truncate text-xs text-stone-400">{r.label}</span>}
+                      {r.label && <span className="truncate text-xs text-stone-500 dark:text-stone-400">{r.label}</span>}
                     </li>
                   ))}
                 </ul>

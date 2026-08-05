@@ -91,12 +91,12 @@ export function PassagePane({
       aria-label={`Passage: ${target.label}`}
       className="flex max-h-[calc(100vh-2rem)] flex-col rounded-xl bg-paper shadow-paper dark:bg-stone-900/70"
     >
-      <div className="flex items-start justify-between gap-3 border-b border-stone-200 px-4 py-3 dark:border-stone-700">
+ <div className="flex items-start justify-between gap-3 border-b edge px-4 py-3">
         <div className="min-w-0">
           <h3 className="truncate font-serif text-lg text-stone-800 dark:text-stone-100">
             {expanded && first ? `${first.bookName} ${first.chapter}` : target.label}
           </h3>
-          <p className="mt-0.5 text-xs text-stone-400">
+          <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">
             {abbr}
             {expanded && <span> · whole chapter</span>}
           </p>
@@ -117,7 +117,7 @@ export function PassagePane({
         <PassageView status={status} verses={verses} note={note} />
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-stone-200 px-4 py-2.5 dark:border-stone-700">
+ <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t edge px-4 py-2.5">
         {canExpand && (
           <button
             type="button"
@@ -144,7 +144,7 @@ export function PassagePane({
             Open in full reader
           </Link>
         )}
-        {attribution && <span className="w-full text-micro text-stone-400">{attribution}</span>}
+        {attribution && <span className="w-full text-micro text-stone-500 dark:text-stone-400">{attribution}</span>}
       </div>
     </section>
   );

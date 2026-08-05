@@ -41,12 +41,12 @@ export default async function AuthPage({
 
       <div className="relative z-10 w-full max-w-sm overflow-hidden rounded-2xl shadow-deep">
         <div className="bg-paper px-6 pb-2 pt-8 text-center dark:bg-stone-900">
-          <Link
+          {/* An h1, not just a branded link. This route had NO heading element at all, so its
+          heading list was empty and the form had nothing naming it. */}
+        <h1><Link
             href="/home"
             className="font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100"
-          >
-            Ancient Paths
-          </Link>
+          >Ancient Paths</Link></h1>
           <p className="mt-1.5 font-serif text-sm italic text-stone-600 dark:text-stone-400">
             Ask for the ancient paths
           </p>

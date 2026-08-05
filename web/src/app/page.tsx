@@ -84,7 +84,7 @@ export default function MarketingHome() {
           </div>
           <Link
             href="/home"
-            className="inline-flex min-h-[40px] items-center rounded-lg border border-stone-50/30 px-4 text-sm font-semibold text-stone-50/95 backdrop-blur-sm transition-colors hover:border-stone-50/60 hover:text-white"
+            className="inline-flex min-h-[40px] items-center rounded-lg border border-stone-50/30 px-4 text-sm font-semibold text-stone-50/95 backdrop-blur-sm transition-colors ease-gentle hover:border-stone-50/60 hover:text-white"
           >
             Log in
           </Link>

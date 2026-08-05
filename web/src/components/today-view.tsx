@@ -44,7 +44,7 @@ export function TodayView() {
   // NB: a plain <div>, not <main> — the app-shell already provides the <main> landmark and the
   // scroll container (with bottom-nav padding); nesting a second <main> is invalid HTML.
   return (
-    <div className="mx-auto my-6 flex w-full max-w-2xl flex-col rounded-xl border border-stone-200/60 bg-paper px-6 py-12 shadow-paper sm:my-10 sm:px-14 sm:py-16 dark:border-stone-800/80 dark:bg-stone-950 dark:shadow-none">
+ <div className="mx-auto my-6 flex w-full max-w-2xl flex-col rounded-xl border edge bg-paper px-6 py-12 shadow-paper sm:my-10 sm:px-14 sm:py-16 dark:bg-stone-950 dark:shadow-none">
       {state.status === 'loading' && (
         <p className="mt-24 text-center font-serif text-base italic text-stone-400 dark:text-stone-500">
           Opening today&rsquo;s page&hellip;
@@ -58,7 +58,7 @@ export function TodayView() {
           </p>
           <Link
             href="/read/jhn/1"
-            className="mt-6 inline-flex min-h-[44px] items-center rounded-lg bg-paper px-5 text-sm font-semibold text-stone-800 shadow-paper transition-colors hover:text-accent-800 dark:bg-stone-800 dark:text-stone-200"
+            className="mt-6 inline-flex min-h-[44px] items-center rounded-lg bg-paper px-5 text-sm font-semibold text-stone-800 shadow-paper transition-colors ease-gentle hover:text-accent-800 dark:bg-stone-800 dark:text-stone-200"
           >
             Open the Word
           </Link>
@@ -125,7 +125,7 @@ function ReadyCard({ card }: { card: TodayCard }) {
       <div className="mt-14 flex flex-wrap gap-3">
         <Link
           href={`/read/${card.bookSlug}/${card.chapter}`}
-          className="inline-flex min-h-[48px] items-center rounded-lg bg-accent-700 px-6 text-base font-semibold text-stone-50 shadow-float transition-colors hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
+          className="inline-flex min-h-[48px] items-center rounded-lg bg-accent-700 px-6 text-base font-semibold text-stone-50 shadow-float transition-colors ease-gentle hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
         >
           Read {card.lead.refDisplay} in full
         </Link>

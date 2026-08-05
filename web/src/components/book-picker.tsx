@@ -42,7 +42,7 @@ export function BookPicker({
       (_, i) => i + 1,
     );
     const chapterCell = (c: number) =>
-      `flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-colors ${
+      `flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-colors ease-gentle ${
         selectedBook.slug === currentBook.slug && c === currentChapter
           ? 'bg-accent-700 text-stone-50 dark:bg-accent-500'
           : 'bg-paper text-stone-700 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:shadow-none'
@@ -156,14 +156,14 @@ function BookSection({
   onPick?: (b: Book, chapter: number) => void;
 }) {
   const cell = (slug: string) =>
-    `flex min-h-[48px] items-center justify-center rounded-xl px-2 py-2 text-center text-sm transition-colors ${
+    `flex min-h-[48px] items-center justify-center rounded-xl px-2 py-2 text-center text-sm transition-colors ease-gentle ${
       slug === currentSlug
         ? 'bg-accent-700 text-stone-50 dark:bg-accent-500'
         : 'bg-paper text-stone-700 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:shadow-none'
     }`;
   return (
     <div className="mb-6">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
         {label}
       </h3>
       <div className="grid grid-cols-4 gap-1.5">

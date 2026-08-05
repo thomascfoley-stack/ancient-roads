@@ -122,7 +122,7 @@ export default function WorkPage() {
   }
 
   if (!work) {
-    return <p className="py-24 text-center text-sm text-stone-400">Loading…</p>;
+    return <p className="py-24 text-center text-sm text-stone-500 dark:text-stone-400">Loading…</p>;
   }
 
   // PROGRESS IS OVER SECTIONS, and `toc` is now a list of UNITS — so the denominator comes from

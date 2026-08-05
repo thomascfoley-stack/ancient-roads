@@ -72,7 +72,7 @@ export function WordPanel({
               </p>
               <p className="mt-0.5 text-sm text-stone-500">
                 {word.tr}
-                {entry?.pron && <span className="text-stone-400"> · {entry.pron}</span>}
+                {entry?.pron && <span className="text-stone-500 dark:text-stone-400"> · {entry.pron}</span>}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -83,7 +83,7 @@ export function WordPanel({
               )}
               <button
                 onClick={onClose}
-                className="rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+                className="rounded-full p-1.5 text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-600"
                 aria-label="Close"
               >
                 <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -93,13 +93,13 @@ export function WordPanel({
             </div>
           </div>
           {morph && (
-            <p className="mt-2 text-xs font-medium uppercase tracking-wide text-stone-400">{morph}</p>
+            <p className="mt-2 text-xs font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400">{morph}</p>
           )}
         </div>
 
         <div className="px-5 py-4 space-y-4">
           {loading ? (
-            <p className="py-6 text-center text-sm text-stone-400">Looking up…</p>
+            <p className="py-6 text-center text-sm text-stone-500 dark:text-stone-400">Looking up…</p>
           ) : lexDown ? (
             <p className="text-sm text-stone-500">
               {word.g ? `Gloss: ${word.g}. ` : ''}The lexicon isn&rsquo;t available right now, so
@@ -132,7 +132,7 @@ export function WordPanel({
 
         {concordance && concordance.count > 1 && (
           <div className="border-t border-stone-100 px-5 py-4 dark:border-stone-800">
-            <p className="mb-2 text-micro font-semibold uppercase tracking-wider text-stone-400">
+            <p className="mb-2 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
               Also appears in {concordance.count} verse{concordance.count === 1 ? '' : 's'}
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -145,7 +145,7 @@ export function WordPanel({
                     <a
                       key={vid}
                       href={slug ? `/read/${slug}/${chapter}` : undefined}
-                      className="rounded-full bg-stone-100 px-2.5 py-1 text-xs text-stone-600 transition-colors hover:bg-amber-100 hover:text-amber-800 dark:bg-stone-800 dark:text-stone-300"
+                      className="rounded-full bg-stone-100 px-2.5 py-1 text-xs text-stone-600 transition-colors ease-gentle hover:bg-amber-100 hover:text-amber-800 dark:bg-stone-800 dark:text-stone-300"
                     >
                       {formatVerseId(vid)}
                     </a>
@@ -153,7 +153,7 @@ export function WordPanel({
                 })}
             </div>
             {concordance.count > CONCORDANCE_PAGE && (
-              <div className="mt-3 flex items-center justify-between text-xs text-stone-400">
+              <div className="mt-3 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
                 <button
                   onClick={() => setCcPage((p) => Math.max(0, p - 1))}
                   disabled={ccPage === 0}
@@ -180,7 +180,7 @@ export function WordPanel({
         <div className="border-t border-stone-100 px-5 py-4">
           <button
             onClick={onShowCommentary}
-            className="w-full rounded-xl bg-stone-800 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-700"
+            className="w-full rounded-xl bg-stone-800 px-4 py-2.5 text-sm font-medium text-white transition-colors ease-gentle hover:bg-stone-700"
           >
             Read commentaries on {reference}
           </button>
@@ -193,7 +193,7 @@ export function WordPanel({
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-1 text-micro font-semibold uppercase tracking-wider text-stone-400">{label}</p>
+      <p className="mb-1 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">{label}</p>
       <p className="text-base leading-relaxed">{children}</p>
     </div>
   );
