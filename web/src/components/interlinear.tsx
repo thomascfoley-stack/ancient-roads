@@ -34,7 +34,7 @@ export function Interlinear({
               {v}
             </span>
             <div
-              dir={rtl ? 'rtl' : 'ltr'} lang={rtl ? 'he' : 'el'}
+              dir={rtl ? 'rtl' : 'ltr'}
               className="flex flex-1 flex-wrap gap-x-1 gap-y-3"
             >
               {data.verses[String(v)]!.map((word, i) => (
@@ -44,14 +44,18 @@ export function Interlinear({
                   className="group flex min-h-[44px] flex-col items-center justify-center rounded-md px-1.5 py-1 text-center transition-colors hover:bg-accent-50/70 active:bg-accent-50 dark:hover:bg-accent-950/30"
                   title={word.s}
                 >
-                  <span className="font-scripture text-xl leading-tight text-stone-900 group-hover:text-accent-800 dark:text-stone-100 dark:group-hover:text-accent-300">
+                  {/* lang goes on the ORIGINAL-LANGUAGE word only. It was briefly on the
+                      wrapping div, which made the transliteration and gloss below inherit
+                      Greek/Hebrew phonetics: worse than having no lang at all, on the exact
+                      surface where a reader depends on those two lines being readable. */}
+                  <span lang={rtl ? 'he' : 'el'} className="font-scripture text-xl leading-tight text-stone-900 group-hover:text-accent-800 dark:text-stone-100 dark:group-hover:text-accent-300">
                     {word.w}
                   </span>
-                  <span className="mt-0.5 text-micro leading-tight text-stone-400 dark:text-stone-500" dir="ltr">
+                  <span className="mt-0.5 text-micro leading-tight text-stone-500 dark:text-stone-400" dir="ltr" lang="en">
                     {word.tr}
                   </span>
                   {word.g && (
-                    <span className="text-micro leading-tight text-stone-500 dark:text-stone-400" dir="ltr">
+                    <span className="text-micro leading-tight text-stone-600 dark:text-stone-400" dir="ltr" lang="en">
                       {word.g}
                     </span>
                   )}

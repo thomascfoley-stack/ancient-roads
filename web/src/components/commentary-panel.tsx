@@ -118,7 +118,7 @@ export function ParaphraseChip() {
 export function RegisterSectionHeading({ title, note }: { title: string; note: string }) {
   return (
     <>
-      <p className="pt-4 pb-1 text-micro font-bold uppercase tracking-widest text-stone-300 dark:text-stone-600">
+      <p className="pt-4 pb-1 text-micro font-bold uppercase tracking-widest text-stone-300 dark:text-stone-400">
         {title}
       </p>
       <p className="mb-2 text-micro italic text-stone-400">{note}</p>
@@ -242,7 +242,7 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
           stays flowing (deep-audit 2026-07-18: collapsing stanzas destroys the
           content of the register). */}
       <p
-        className={`font-scripture text-base leading-relaxed text-stone-600 dark:text-stone-300${
+        className={`font-scripture text-base leading-relaxed text-stone-600 dark:text-stone-500${
           registerLane(entry) === 'exegetical' ? ' break-words' : ' whitespace-pre-line break-words'
         }`}
       >
@@ -374,7 +374,7 @@ export function CommentaryPanel({
           <p className="text-micro font-semibold uppercase tracking-wider text-stone-400 mb-1.5">
             Verse {verseNum}
           </p>
-          <p className="font-scripture text-base leading-relaxed text-stone-700 italic dark:text-stone-300">
+          <p className="font-scripture text-base leading-relaxed text-stone-700 italic dark:text-stone-500">
             &ldquo;{verseText}&rdquo;
           </p>
         </div>
@@ -395,7 +395,7 @@ export function CommentaryPanel({
               return (
                 <div key={i}>
                   {showEra && (
-                    <p className="pt-4 pb-1.5 text-micro font-bold uppercase tracking-widest text-stone-300">
+                    <p className="pt-4 pb-1.5 text-micro font-bold uppercase tracking-widest text-stone-500">
                       {era}
                     </p>
                   )}
