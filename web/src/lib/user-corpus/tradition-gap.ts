@@ -131,7 +131,15 @@ export async function traditionGap(
          AND ${predicate}
        ORDER BY e.metadata->>'author', e.metadata->>'work', (e.metadata->>'verseId')::int
     )
-    SELECT * FROM hits ORDER BY author, work LIMIT $4`;
+    -- metadata->>'work' is a SLUG, and the panel was printing it at the reader:
+    -- "Alexander Maclaren, maclaren-expositions". sources.slug is the join key the corpus census
+    -- already uses, so resolve it to the title the rest of the library shows. LEFT, and COALESCE
+    -- back to the slug, because a row whose work has no sources entry must still list its author
+    -- rather than vanish.
+    SELECT h.author, COALESCE(s.title, h.work) AS work, h.tradition, h.verse_id, h.source_id
+      FROM hits h
+      LEFT JOIN sources s ON s.slug = h.work
+     ORDER BY h.author, 2 LIMIT $4`;
 
   const countText = `
     SELECT count(*)::int AS n FROM (
