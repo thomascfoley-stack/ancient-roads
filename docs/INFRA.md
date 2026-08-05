@@ -137,7 +137,26 @@ never printed).
 | `item2-pre-ingest-backup-20260719` | `ep-misty-firefly-atz9pgg1` | dev | 11,167 MB | ready | deliberate restore point |
 | `sec2-stage`, `sec2-verify`, `betterauth-spike` | — | production | 32 MB each | archived | spent spikes |
 
-**Housekeeping finding:** `census-clone` (5,972 MB) + `prod-census` (4,477 MB) = **~10.4 GB of
+> **2026-08-03 — branch cleanup executed (owner-authorized).** The housekeeping finding below is
+> DISCHARGED: `census-clone` and `prod-census` are deleted, along with nine other branches
+> (3 cutover rehearsals, the sweet-river pre-cutover backup, both audit-lens forks, and the
+> archived `sec2-stage` / `sec2-verify` / `betterauth-spike` spikes). 18 branches -> 7.
+> Verified before the cut: all 11 idle since July, zero references in `.github/`, `.claude/`,
+> env files, `package.json`, `vercel.json`, `scripts/`, `src/`, `web/src/`, `db/` — with a
+> positive control (`ep-tiny-bonus` WAS found in `.github/workflows/audit.yml`, which is why
+> `ci-test-20260729` was KEPT). Deletion ran child-before-parent
+> (`pre-cutover-ep-sweet-river` was a child of `cutover-rerehearsal-20260727`).
+> KEPT and why: `production` + `pre-cutover-ep-odd-fog-…` (both protected; the second is the
+> rollback for the A9 cutover, still in flight), `dev` (has migration 044), `ci` and
+> `ci-test-20260729` (live CI), `item2-pre-ingest-backup-20260719` (deliberate restore point,
+> and the curated corpus is single-copy), `lane-b-uploader` (new, Lane B / gate B1).
+> **Storage did NOT visibly drop:** `synthetic_storage_size` read 69.89 GB before and 70.08 GB
+> a minute after — it is a billing-period accumulator, not a live gauge, and with history
+> retention at 6 hours these branches held little unique delta. Freed space shows up in the
+> console's free-space figure, not here. Log:
+> `docs/evidence/neon-cleanup/branch-cleanup-2026-08-03.log`.
+
+**Housekeeping finding (DISCHARGED 2026-08-03, see above):** `census-clone` (5,972 MB) + `prod-census` (4,477 MB) = **~10.4 GB of
 undeleted forks of production data**, both still live and both authenticating. Neither is a
 restore point. They are storage cost and a copy of prod user data sitting outside the prod
 blast radius. **Recommend deliberate deletion** (owner call — deleting a branch is destructive

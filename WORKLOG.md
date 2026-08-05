@@ -539,6 +539,129 @@ Book and canonical-collection plans are fully live: their tables (039/041/042), 
 gate (30,277 verses on prod) and the UI all shipped. **Topical plans are dark until the owner
 runs the two TTY-gated steps** — corpus copy, then publish flip. 040 is applied, so the copy is
 unblocked. The topic tab shows its honest empty state until then.
+## 2026-08-04 — A9 cutover closed on production: 044 deployed, verified, 045 contracted
+
+The remaining Phase 3 steps from the served-cutover order, executed end to end against
+production, owner-directed throughout ("deploy the web app" named explicitly, then "do it
+keep going"). 044 itself landed on prod earlier (separate WORKLOG entry); this covers the
+deploy and 045.
+
+### DONE
+
+- **Audit gate genuinely failed, genuinely fixed.** `npm run audit` found two new
+  high-severity CVEs not on the reviewed `--expect-red` allowlist: `fast-uri`
+  (GHSA-7p8r-x3mc-p8w7) and `undici` (GHSA-4cwx-7wf7-3272). Did not allowlist them — the
+  gate's own message requires owner approval for that, and both had clean patches
+  available. `fast-uri` was pinned via `pnpm.overrides` at exactly the vulnerable version
+  (`^3.1.4`, stale since the override's first commit — not deliberately vulnerable);
+  bumped to `^3.1.5`. `undici` is devDependency-only (jsdom's HTTP client, never in the
+  deployed bundle); added an override forcing 7.29.0. Reinstalled, deps-audit now matches
+  `--expect-red` exactly (only the one documented, owner-accepted better-auth CVE from
+  ADR-038). Root + web typecheck clean, tests 576/576, full audit green.
+- **Bundled the `/plans` feature into this deploy — owner decision.** `deploy.sh` ships the
+  whole tree; `/plans` had 38 uncommitted files. Presented as an explicit choice rather than
+  assumed: typecheck was clean (the earlier `src/lib/plan/expand.ts` blocker had been fixed
+  by that session since), both test suites fully green, and prod's `schema_migrations`
+  ledger already showed migrations 039-042 applied — the original audit's "prod has neither
+  plans/verse_coverage/topical tables" concern no longer held. Owner chose bundle-both.
+  Committed 47 files (one of them mine — a stray uncommitted 76→88 comment fix in
+  `served-backfill-frozen.mjs`, found while checking whether a concurrent session had
+  touched a load-bearing file; it hadn't).
+- **`corpusHash` mismatch, investigated rather than routed around.** The predeploy gate
+  hard-stopped: static corpus grew 117,241 → 162,360 entries (39%) since the last committed
+  manifest, from tonight's all-night ingest sweep. Growth alone isn't a green light — flagged
+  earlier this same session that `web/public/commentaries/` has shipped content filtered
+  only client-side before (the pre-C2 defect). Before regenerating the manifest, measured:
+  the forbidden-provenance ratchet held (0), the translation-licensing gate passed, and a
+  fresh `scanServedCorpusAuthors()` run against the CURRENT on-disk corpus (1,212 files /
+  162,360 entries) against `MUST_NOT_SERVE_AUTHORS` returned zero offenders. Regenerated and
+  committed the manifest only after that.
+- **Deploy landed, survived an operator mistake.** Piped the deploy through `tee | head -150`
+  to preview output — `head` closing its end of the pipe after 150 lines SIGPIPE'd the local
+  `deploy.sh`/`vercel` CLI process mid-build, right after the 351MB upload completed and
+  Vercel's remote build had already started. Checked rather than assumed: `vercel inspect`
+  and the Vercel MCP `get_deployment` both confirmed the remote build was unaffected and
+  reached `Ready` independently — killing the local CLI does not kill a build already
+  running on Vercel's infrastructure. `ancientpaths.app` and `www.ancientpaths.app` were
+  already in the deployment's alias list (Vercel's own `--prod` promotion, no manual alias
+  step needed or taken). Wrote the deploy receipt by hand (same format `deploy.sh` uses,
+  `docs/evidence/deploys/deploy-cb58446.txt`) since the local process died before writing
+  one, with an honest note about what happened.
+- **New-bundle verification done the rigorous way, not the available way.** Could not
+  complete a live `/ask` smoke test — `SITE_PASSWORD` (the separate pre-launch site gate,
+  distinct from user accounts) isn't in local config and is Vercel-only; did not ask the
+  owner to paste it, and did not go looking for a way around the gate. Instead ran the
+  actual thing the smoke test exists to prove: `EXPLAIN` on the exact query shape the
+  deployed `routing.ts` emits, direct against production. **`Index Scan using
+  idx_embeddings_served_legal`** — confirmed, not assumed, that the shipped code's base
+  pool plans onto the new served-predicated index.
+- **045 (contract) applied.** All 5 parts, ledger recorded. Confirmed after: the four old
+  `idx_embeddings_vector_{legal,song_verse,sermon,theology}` indexes are gone; only the new
+  `idx_embeddings_served_*` set plus the two btrees remain. The redeploy window is now
+  closed (045's own header documents the contra-DDL if it's ever needed).
+
+### Where this leaves A9
+
+Migration 044 + 045 both on production, verified three separate ways (catalog state,
+`verify-served-backfill.mjs`, live `EXPLAIN`). The deploy carrying the new `routing.ts` is
+live and aliased. The cutover mechanism is fully shipped. **Not yet done, deliberately**:
+serving the 88 published-but-unserved works (P4.0, `docs/evidence/corpus-copy/serve-88.json`
+— an explicit, separate, owner-gated flip) and the successor work the order names (FTS/static/
+today.ts still on frozen lists, the work-less legacy cohort's missing off-switch, the
+36k-43k world-readable blocked static entries).
+
+### NOT DONE / UNVERIFIED
+
+- No live `/ask` smoke test through the actual UI — the EXPLAIN check proves the query plan,
+  not the full compose→verify pipeline end to end. Worth a real check next time someone has
+  `SITE_PASSWORD` in hand.
+- The two prior WORKLOG entries this session should have referenced (044's dev+prod apply
+  timing) aren't cross-linked here; a reader landing on just this entry won't see the timing
+  data without searching.
+
+## 2026-08-03 — ADR-047 was claimed twice; the uncommitted claim renumbered to 048
+
+Third instance of the number-collision class in two days (migrations 042 and 042-mid-rename were
+the first two). `main` @ `53d90d1` carries `ADR-047 — Tap-a-verse opens the number`; the
+uncommitted diff on `feat/served-column-derives-publish` carried `ADR-047 — Canonical groupings`.
+Merge-base is `79ff0f1`; this branch never picked up `53d90d1`, so neither side could see the
+other's number.
+
+### 048 was DERIVED, not taken from the note
+
+The number was not "the next free one". `feat/study-plans-adr045` @ `2f6db58` **has already made
+this exact rename** — it merged `53d90d1` and carries the Canonical-groupings ADR as **048**, body
+byte-identical to ours apart from the number (verified by diffing the 1027–1100 window with the
+number masked). Picking 049 would have minted a *third* identity for one decision. Union of ADR
+numbers across every ref + the working copy: `040-048, 100` (100 = the Lane B block, ADR-100 on
+`feat/lane-b-slice1-uploader`).
+
+### DONE
+
+- `docs/DECISIONS.md` heading + addendum heading → 048; 12 citations updated across `WORKLOG.md`,
+  `db/migrations/042_plan_day_readings.sql`, `docs/PLAN_TOPIC_MATCHING_DESIGN.md`,
+  `web/src/lib/plan/{canonical-groups,expand}.ts`, and four plan tests.
+- **Red-proofed.** Simulated the real 3-way merge (`git merge-file` with `79ff0f1` as ancestor):
+  pre-fix yields **two** `## ADR-047` headings; post-fix yields every ADR number unique. The one
+  remaining conflict is the ordinary both-sides-appended-at-EOF case (keep both blocks), not a
+  numbering collision.
+- `plan-canonical-groups` + `plan-topical-expand`: 14 tests pass.
+
+### FOUND, NOT FIXED — there is a THIRD claim on 047
+
+`docs/STUDY_TOOLKIT_DESIGN.md:228` reads `Proposed **ADR-047**: "The study toolkit gathers by
+lane…"` — a different decision again. It is committed on `main`, unmodified by this branch, and is
+a *proposal* for an unwritten ADR, so it is not a citation that follows this rename. Left alone
+deliberately: pre-assigning a number to an ADR nobody has written yet is the mechanism that
+produced this whole class. Recommend de-numbering it ("Proposed ADR, number assigned at write
+time") rather than moving it to 049 — an owner call, not an agent one.
+
+### NOT DONE / UNVERIFIED
+
+- Nothing committed — the renumber sits in the working tree with the rest of the uncommitted diff.
+- `npm run audit` NOT run (comment/heading-only change; two pure test files exercised instead).
+- `docs/DECISIONS.md` has no ledger equivalent to `schema_migrations`, so nothing mechanically
+  prevents instance four. See the recommendation above.
 
 ## 2026-08-03 — Plans reach PRODUCTION (migrations + coverage); the copier learns topical_entries
 
@@ -630,6 +753,7 @@ Branch `feat/served-column-derives-publish` (pushed, upstream set). Context: the
 sweep published 77 works to production (evidence committed this session: `flip-run-2026-08-03T02-14-25-907Z.log`,
 snapshot `…02-14-38-171Z.json`) — production is now **124 published works, 76 of them
 published-but-unserved**, the standing A3-rule divergence the cutover exists to close.
+snapshot `…02-14-38-171Z.json`) — production is now **124 published works, 88 of them published-but-unserved**, the standing A3-rule divergence the cutover exists to close.
 
 ### DONE
 
@@ -659,10 +783,12 @@ published-but-unserved**, the standing A3-rule divergence the cutover exists to 
   uncommitted app code), pushed; branch pushed. /plans app code deliberately NOT committed
   (its typecheck is red at `src/lib/plan/expand.ts` — that session's work).
 - **Order re-filed as v2 in place** — serve-the-76 is an explicit reversible step; real script
+- **Order re-filed as v2 in place** — serve-the-88 is an explicit reversible step (payload measured + committed as serve-88.json; the 76 I first reported was sweep-local arithmetic, caught by the refuters); real script
   names; batch arithmetic (10-20 sessions, not 2); v3-iterate / v4.1-once eval protocol with
   preconditions (DEEPINFRA key, served census, pre-044 v3 baseline); P0 adds the fiction
   register (R5), per-author voice cap (R2), aggregate dedupe (R1), coverage census (R4),
   deploy preflight, reconciliation instrument.
+- **044 APPLIED TO DEV** (2026-08-03, ingest live — logged deviation from the idle precondition): wall clock **1h54m39s** (backfill legs ~25-30min each, seq-scan-bound on Neon PS_ReadIO; four HNSW builds faster than feared; ALTER itself 104ms once past the 5s lock race, one timed-out attempt first). All 6 indexes VALID+READY; ledger table lazy-created on first use, 044 = its first row, sha256-pinned. Verifier 7/7 ON DEV (328,775 served rows; 124,955 work-less rows, 86,023 served, all in-allowlist). Red-proof take 1 exposed ANOTHER unverified-write hole: through the app URL the seed UPDATE silently hit 0 rows (corpus DML revoked) and the tool blamed itself — seed and restore rowCounts now asserted, take 2 HELD as owner, and the app-role path refuses with the reason. Evidence: docs/evidence/served-cutover/dev-apply-2026-08-03.log. P0.3 deploy preflight built, red-proofed both refusal paths, positive control green against dev.
 - Proofs re-run under final names on fresh throwaway pg17: backfill + 5 indexes, verifier 7/7
   WITH lane rows present, red-proof held, 045 applies. Suites: root 56 files / 578 pass.
 

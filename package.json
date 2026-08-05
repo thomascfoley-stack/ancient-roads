@@ -57,8 +57,9 @@
   "pnpm": {
     "overrides": {
       "postcss": "^8.5.22",
-      "fast-uri": "^3.1.4",
-      "sharp": "^0.35.0"
+      "fast-uri": "^3.1.5",
+      "sharp": "^0.35.0",
+      "undici": "^7.29.0"
     },
     "auditConfig": {
       "//": "Documented per-entry in docs/SECURITY.md. ignoreGhsas silences dev/build-tooling (vitest/vite/esbuild/postcss) and unfixable better-auth transitives until SEC-1 closes. GHSA-g38m IS in this list (CI grouping only) — still tracked LAUNCH BLOCKER in SECURITY.md SEC-1, not accepted. GHSA-qq9h is NOT here — accepted-red via scripts/audit.sh --expect-red (ADR-038).",

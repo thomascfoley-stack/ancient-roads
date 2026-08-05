@@ -27,11 +27,23 @@ export async function recordMigration(client, file, text) {
   const filename = path.basename(file);
   const { rows } = await client.query(`SELECT to_regclass('public.schema_migrations') IS NOT NULL AS present`);
   if (!rows[0]?.present) {
+    // CREATE it rather than warn past it (bylaw-4 refuter, 2026-08-03: dev and ci carried NO
+    // ledger at all, so every "the ledger pins the filenames" claim was false — the warning
+    // branch had run every time and nobody read it). The DDL mirrors migration 032's
+    // CREATE TABLE IF NOT EXISTS byte-for-byte in the columns, so whichever runs first wins and
+    // the other is a no-op. What this deliberately does NOT do is 032's historical backfill:
+    // a ledger that starts at this migration honestly records "rows before this predate the
+    // ledger on this target", which is true — inventing backfill rows here would not be.
     console.warn(
-      `  ⚠ NOT RECORDED: this target has no schema_migrations table (migration 032 creates it).\n` +
-        `    ${filename} WAS applied; the ledger on this database does not know it.`,
+      `  ⚠ no schema_migrations table on this target — creating it now (032's DDL, no historical backfill). ` +
+        `Rows before ${filename} predate the ledger here.`,
     );
-    return false;
+    await client.query(`CREATE TABLE IF NOT EXISTS schema_migrations (
+      filename    TEXT PRIMARY KEY,
+      applied_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+      applied_by  TEXT NOT NULL DEFAULT current_user,
+      checksum    TEXT
+    )`);
   }
   const checksum = createHash('sha256').update(text).digest('hex');
   await client.query(

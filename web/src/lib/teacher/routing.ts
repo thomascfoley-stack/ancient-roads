@@ -137,8 +137,48 @@ export const SERVED_WORK_LISTS = {
 /** The admission population: every work some retrieval predicate serves. Derived, never typed. */
 export const ALL_SERVED_WORKS: readonly string[] = Object.values(SERVED_WORK_LISTS).flat();
 
-export const SERMON_CORPUS_FILTER = `(metadata->>'work' IN (${sqlStrList(SERVED_SERMON_WORKS)}))`;
-export const THEOLOGY_CORPUS_FILTER = `(metadata->>'work' IN (${sqlStrList(SERVED_THEOLOGY_WORKS)}))`;
+// ── THE SERVING SWITCH, AS OF MIGRATION 044 ──────────────────────────────────────────────────
+// `embeddings.served` is the switch for VECTOR RETRIEVAL: the four *_CORPUS_FILTER constants
+// below and the four partial HNSW indexes consult it and nothing else.
+//
+// ⚠ THE SERVED_*_WORKS LISTS ABOVE ARE STILL LIVE GATES ON THREE OTHER SURFACES. The first
+// version of this comment said "adding a slug to one of them serves nothing" — FALSE, caught by
+// the 2026-08-03 audit, and false in the fail-open direction for one of the three:
+//   1. legal-corpus.ts PUBLISHED_WORKS       — the static-reader filter (what the verse reader
+//      renders from web/public/commentaries) unions SERVED_PROSE_WORKS in.
+//   2. legal-corpus.ts LEGAL_COMMENTARY_ENTRIES_PREDICATE — the commentary_entries FTS surface
+//      admits by a work-IN leg built from these lists (that table has no `served` column).
+//   3. EXEGETICAL_FTS_EXCLUSION (below)      — the FTS wall excludes lane/hymn works BY SLUG as
+//      its second leg; pruning a list widens what FTS treats as exegesis.
+// For vector retrieval the lists are the frozen record of what 044's backfill turned on; for
+// those three surfaces they are load-bearing until their own cutover (filed, separate work).
+// Editing them therefore still changes production behaviour. Do not prune.
+//
+// WHY THE CHANGE. `sources.status='published'` and "served" were two unrelated facts. 76 of the
+// 77 works published to production on 2026-08-03 were in none of these lists, so they were
+// shelf-readable and invisible to /ask, and making one serve meant a code edit plus a rebuild
+// migration plus an HNSW graph rebuild, in lockstep, forever. The lists were the thirteenth instance
+// of the hand-maintained-expected-set class (MASTER.md watchlist, artefact 1). The others were
+// closed by DERIVATION; this one cannot be, because a partial index predicate may not contain a
+// subquery — so it is MATERIALIZED, and `scripts/publish-flip.mjs` is the only writer.
+//
+// THE SURFACE A ROW REACHES IS ITS REGISTER, not its slug. That is the register wall, expressed
+// once, in the column the ingest already writes:
+//   commentary, father    -> the composed exegetical pool (counts toward the ≥2-voices floor)
+//   sermon                -> the sermon lane      (retrieve-and-quote, labeled, never composed)
+//   theology, confession  -> the theology lane    (ditto)
+//   hymn, poetry          -> the song/verse lane  (ditto, never counted toward the floor)
+//   lexicon               -> served by nothing; no lane exists (open A8 decision, not an oversight)
+// Each conjunct below is byte-matched by a partial HNSW index predicate in migration 044
+// (044_embeddings_served_expand.sql; the old-name indexes survive until 045 so the pre-044
+// bundle keeps planning during the deploy window). If they drift, the planner silently falls
+// back and the pool starves with no error — how migration 009 died — so
+// `legal-hnsw-index-sync.test.ts` compares them, and `verify-served-backfill.mjs` proves the
+// backfilled column against the FROZEN pre-044 filters (never against this module: deriving the
+// expectation from the file under test is the circularity the 2026-08-03 audit confirmed).
+export const EXEGETICAL_TYPE_SQL = `source_type IN ('commentary','father')`;
+export const SERMON_CORPUS_FILTER = `(served AND source_type = 'sermon')`;
+export const THEOLOGY_CORPUS_FILTER = `(served AND source_type IN ('theology','confession'))`;
 
 // Exegetical-surface exclusion for commentary_entries (the FTS search). Excludes
 // song/verse AND lane (sermon/theology/confession) rows TWO ways so neither a
@@ -155,15 +195,20 @@ export const EXEGETICAL_FTS_EXCLUSION = `(register IS NULL OR register NOT IN ('
 // J.H. Newman" (catena-aurea), which no name leg covers. Use 11 for "authors served"; 9 only means
 // "names written here". A "12" anywhere is a miscount — it reads "Keil & Delitzsch" as two people;
 // it is one metadata->>'author' string. See docs/STATE_OF_TRUTH.md §2.
-export const LEGAL_CORPUS_FILTER = `(metadata->>'author' IN ('John Gill','Jamieson, Fausset & Brown','Adam Clarke','Matthew Henry')
-   OR (metadata->>'author'='John Chrysostom'    AND (metadata->>'verseId')::int/1000000 IN (40,43,44))
-   OR (metadata->>'author'='Augustine of Hippo' AND (metadata->>'verseId')::int/1000000 IN (19,43))
-   OR (metadata->>'author' IN ('Albert Barnes','John Wesley','John Calvin') AND metadata->>'sourceUrl' ILIKE '%crosswire%')
-   OR metadata->>'work' IN (${sqlStrList(SERVED_PROSE_WORKS)}))`;
+// MIGRATION 044 (first committed as 039; renumbered for the /plans collision) replaced the author allowlist that stood here with `served`. The allowlist was
+// load-bearing in the LICENSING sense, not just the routing sense — the flat table carries 124,955
+// rows with no work key, and that cohort holds Tyndale Study Notes (13,455), CS Lewis (745) and
+// Origen of Alexandria (794), all copyrighted or under a standing MUST_NOT_SERVE ruling. They were
+// excluded by not being named. They are now excluded by `served` defaulting to false and the
+// publish flip addressing rows BY SLUG, which those rows do not have: unreachable rather than
+// unnamed, which is strictly stronger. 044's backfill reproduced this filter's row set exactly, so
+// the pool did not change when the mechanism did — proven, not asserted, by
+// `scripts/verify-served-backfill.mjs` diffing both directions on a live database.
+export const LEGAL_CORPUS_FILTER = `(served)`;
 
 // The song/verse register's own served filter (its partial index twin lives in
 // migration 018; legal-hnsw-index-sync-style lockstep applies).
-export const SONG_VERSE_CORPUS_FILTER = `(metadata->>'work' IN (${sqlStrList(SERVED_SONG_VERSE_WORKS)}))`;
+export const SONG_VERSE_CORPUS_FILTER = `(served)`;
 
 // hnsw.ef_search for the base-pool KNN walk. With the partial legal HNSW index (migration
 // 012) every neighbour is already legal, so a modest ef fills the pool — no iterative_scan,
@@ -182,9 +227,14 @@ function legalBasePoolSql(pool: number, extraFilter = ''): string {
   // SQL). The sermon-lane slice (2026-07-18) uses it to measure the pool with
   // certain source_types/works excluded, through THIS shipped path — never a
   // lookalike. Production callers never pass it.
+  // EXEGETICAL_TYPE_SQL, not PROSE_TYPE_SQL: the six-type list was never the pool's real boundary
+  // (every row the old author allowlist admitted was source_type='commentary', and its work leg
+  // named commentary + father works, so sermon/theology/confession/lexicon were carried in the
+  // type list and excluded again by the allowlist). These two conjuncts byte-match migration 044's
+  // `idx_embeddings_vector_legal` predicate; drift starves the pool silently.
   return `SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
      FROM embeddings
-     WHERE user_id IS NULL AND ${PROSE_TYPE_SQL} AND ${LEGAL_CORPUS_FILTER}${extraFilter ? ` AND ${extraFilter}` : ''}
+     WHERE user_id IS NULL AND ${EXEGETICAL_TYPE_SQL} AND ${LEGAL_CORPUS_FILTER}${extraFilter ? ` AND ${extraFilter}` : ''}
      ORDER BY embedding <=> $1::vector LIMIT ${pool}`;
 }
 
@@ -221,9 +271,12 @@ export function injectionSql(ranges: readonly VerseRange[], corpusFilter = ''): 
   const conds = ranges
     .map((r) => `(metadata->>'verseId')::int BETWEEN ${r.start} AND ${r.end}`)
     .join(' OR ');
+  // `served` here is what makes migration 044's `idx_embeddings_verseid_served` usable for the
+  // range scan. Without it this falls back to the register-scoped 018 btree and re-reads rows the
+  // pool cannot serve anyway. The eval splices its own corpusFilter on top; production passes ''.
   return `WITH inrange AS MATERIALIZED (
      SELECT source_id, content, metadata, embedding FROM embeddings
-     WHERE user_id IS NULL AND ${PROSE_TYPE_SQL}${corpusFilter ? ` AND ${corpusFilter}` : ''} AND (${conds})
+     WHERE user_id IS NULL AND served AND ${EXEGETICAL_TYPE_SQL}${corpusFilter ? ` AND ${corpusFilter}` : ''} AND (${conds})
    )
    SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
    FROM inrange ORDER BY embedding <=> $1::vector LIMIT ${INJECT_CAP}`;
@@ -267,13 +320,15 @@ export const LANE_LIMIT = 3;
 
 export function laneOnRangeSql(corpusFilter: string, ranges: readonly VerseRange[], limit = LANE_LIMIT): string {
   const conds = ranges.map((r) => `(metadata->>'verseId')::int BETWEEN ${r.start} AND ${r.end}`).join(' OR ');
-  // PROSE_TYPE_SQL is redundant with the work filter for row selection, but the
-  // 018 verseId btree's predicate requires it — without the conjunct the planner
-  // cannot use idx_embeddings_verseid_registers and seq-scans the table on the
-  // /ask request path (deep-audit 2026-07-18, measured seq scan → index scan).
+  // The lane corpusFilter now carries its own `served AND source_type=…`, so the standalone type
+  // conjunct that used to sit here is redundant for row selection. It is NOT redundant for the
+  // planner: the btree predicate must be implied, or this seq-scans the table on the /ask request
+  // path (deep-audit 2026-07-18, measured seq scan → index scan). Migration 044's
+  // `idx_embeddings_verseid_served` is predicated on `served`, which the corpusFilter supplies,
+  // so the implication holds without re-stating a register list the filter already names.
   return `WITH inrange AS MATERIALIZED (
      SELECT source_id, content, metadata, embedding FROM embeddings
-     WHERE user_id IS NULL AND ${PROSE_TYPE_SQL} AND ${corpusFilter} AND (${conds})
+     WHERE user_id IS NULL AND ${corpusFilter} AND (${conds})
    )
    SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
    FROM inrange ORDER BY embedding <=> $1::vector LIMIT ${limit}`;
@@ -365,12 +420,18 @@ export function diversityBackfillSql(chapterKeys: readonly number[], corpusFilte
   const conds = chapterKeys
     .map((ck) => `(metadata->>'verseId')::int BETWEEN ${ck * 1000 + 1} AND ${ck * 1000 + 999}`)
     .join(' OR ');
+  // EXEGETICAL_TYPE_SQL, NOT the six-type PROSE_TYPE_SQL — audit 2026-08-03, CONFIRMED register-
+  // wall breach: this function fetches candidate 2nd+ VOICES for the COMPOSED /ask answer, and
+  // with the six-type list plus the post-042 `(served)` filter it would splice served Spurgeon/
+  // Owen/Hodge rows into composition. Pre-042 the author allowlist excluded lane rows only
+  // incidentally; the wall must be structural here exactly as it is in legalBasePoolSql. The
+  // three call sites (retrieve.ts, eval-heldout.mts) splice the legal filter via corpusFilter.
   // DISTINCT ON already bounds output to ≤ chapters×authors; the LIMIT is a hard
   // ceiling (defence against an unbounded set if the chapter cap ever grows).
   return `SELECT DISTINCT ON ((metadata->>'verseId')::int/1000, metadata->>'author')
      source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata
    FROM embeddings
-   WHERE user_id IS NULL AND ${PROSE_TYPE_SQL}${corpusFilter ? ` AND ${corpusFilter}` : ''} AND (${conds})
+   WHERE user_id IS NULL AND ${EXEGETICAL_TYPE_SQL}${corpusFilter ? ` AND ${corpusFilter}` : ''} AND (${conds})
    ORDER BY (metadata->>'verseId')::int/1000, metadata->>'author', embedding <=> $1::vector
    LIMIT ${chapterKeys.length * 12 + 6}`;
 }
