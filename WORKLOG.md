@@ -1,6 +1,6 @@
 # WORKLOG — Autonomous session 2026-07-08
 
-## 2026-08-05 (Lane B: A7 — the SEC-1 gate made mechanical; the cutover scoped)
+## 2026-08-05 (Lane B: A7 - the SEC-1 gate made mechanical; the cutover scoped)
 
 **Headline: the shortcut to closing SEC-1 does not work, and finding out why is the session's main
 result. The pnpm-override branch upgrades a copy of better-auth that is not the one running the
@@ -15,11 +15,11 @@ there, at a version we cannot set. Our `node_modules` copy is the client SDK.
 
 So the branch would take `pnpm audit` green while the account-takeover path is untouched, and would
 delete the ignore-list entry that is the repo's only mechanical record that SEC-1 is open. Its own
-commit message says it was "verified lockfile-only" — never built, never signed in. Recorded in
+commit message says it was "verified lockfile-only" - never built, never signed in. Recorded in
 `SECURITY.md` under SEC-1, where a reader meets the claim, rather than only here. **Recommend
 closing it unmerged.**
 
-### A7 built — and it had to build the switch it guards
+### A7 built - and it had to build the switch it guards
 
 `UPLOADER_DESIGN` §4 requires the gate be "enforced in CI, not prose". Neither half existed: there
 was no flag, and §4 condition 2 (the endpoints hard-allowlist the owner's id) was prose while all
@@ -28,7 +28,7 @@ six user-corpus handlers called `requireUser()` and then served **any** authenti
 Two design points worth carrying forward:
 
 - **The ceiling is a committed constant, not an env var.** CI cannot read Vercel's environment, so a
-  gate consulting only `process.env` would be a check with no access to what it checks — green
+  gate consulting only `process.env` would be a check with no access to what it checks - green
   forever. The env switch can only narrow the constant, so the CI assertion is about production, not
   intent.
 - **The advisory set is derived from `SECURITY.md`'s adjudication table**, never typed. And the parse
@@ -38,7 +38,7 @@ Two design points worth carrying forward:
   seventh route cannot quietly skip the guard.
 
 Six red-proofs, each watched fail and reverted. R2 is the interesting one: renaming the table header
-makes the suite **refuse to collect** (exit 1, "Tests no tests") rather than pass vacuously — which
+makes the suite **refuse to collect** (exit 1, "Tests no tests") rather than pass vacuously - which
 my first proof run nearly recorded as a silent pass, because the grep I used looked for a test-count
 line that a failed collection never prints.
 
@@ -56,7 +56,7 @@ the spike did not cost:
    local email is `emailVerified`", which is unimplementable without one. Password reset needs email
    under every option.
 2. **g38m requires both email/password AND social login.** Shipping email/password only closes it
-   *structurally* rather than by configuration — a stronger property, and a much smaller cutover.
+   *structurally* rather than by configuration - a stronger property, and a much smaller cutover.
    That is the recommendation, and it is a product call because it costs "Continue with Google".
 
 Also measured: **nothing** in `db/`, `web/src/lib/` or `scripts/` references `neon_auth` or

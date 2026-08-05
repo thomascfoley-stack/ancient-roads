@@ -352,12 +352,12 @@ counts as a gate.
 - **A6, quota exceeded:** fill to each quota; the next upload gets a typed rejection; the drain
   never exceeds the embedding budget (asserted on the call counter). Red proof: loosen one quota
   check, watch the overrun.
-- **A7, SEC-1 gate — DONE 2026-08-05.** `web/test/invariants/sec1-upload-gate.test.ts` asserts NOT
+- **A7, SEC-1 gate - DONE 2026-08-05.** `web/test/invariants/sec1-upload-gate.test.ts` asserts NOT
   (multi-user uploads enabled AND an advisory `SECURITY.md` adjudicates as in-path is still in
   `pnpm.auditConfig.ignoreGhsas`). The advisory set is **derived** from that file's "In our path?"
   table, not typed here. The ceiling is a committed constant (`MULTI_USER_UPLOADS` in
   `web/src/lib/user-corpus/access.ts`), because CI cannot read Vercel's environment and a gate that
-  consulted only `process.env` could never have failed. §4 condition 2 — the owner allowlist — is
+  consulted only `process.env` could never have failed. §4 condition 2 - the owner allowlist - is
   enforced for the first time by `route-guard.ts`, through which all six handlers now pass; before
   this they called `requireUser()` and served any authenticated caller. Six red-proofs, each watched
   fail: flag flipped with the ids present · the table header renamed (suite refuses to collect) ·

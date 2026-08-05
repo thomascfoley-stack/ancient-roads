@@ -1,4 +1,4 @@
-# Auth cutover design — Neon Auth → Better Auth (direct), clean-start
+# Auth cutover design - Neon Auth → Better Auth (direct), clean-start
 
 **Status: DRAFT, awaiting owner decision on §2. No code written.**
 Closes SEC-1. Prerequisite: [`AUTH_MIGRATION_SPIKE.md`](./AUTH_MIGRATION_SPIKE.md) (all four proofs
@@ -15,7 +15,7 @@ owner's go before implementation, per CLAUDE.md value 2 and AGENTS.md.
 via `pnpm.overrides` and clears `ignoreGhsas` to empty. **It cannot close GHSA-g38m**, and merging it
 would be actively worse than leaving SEC-1 open.
 
-`createNeonAuth` returns a **proxy client** — `Pick<VanillaBetterAuthClient, ServerAuthMethods>` — to
+`createNeonAuth` returns a **proxy client** - `Pick<VanillaBetterAuthClient, ServerAuthMethods>` - to
 a better-auth server **hosted by Neon** at `NEON_AUTH_BASE_URL` (`SECURITY.md:44-49`). The
 OAuth-callback auto-link logic that g38m describes runs on Neon's infrastructure at a version we
 cannot see or set. The `better-auth` in our `node_modules` is the client SDK; upgrading it upgrades
@@ -23,7 +23,7 @@ the wrong copy.
 
 So the override would take the advisory gate from red to green while the account-takeover risk is
 untouched, and would delete the ignore-list entry that is currently the repo's only mechanical
-record that SEC-1 is open. Its own commit message concedes it was "verified lockfile-only" — never
+record that SEC-1 is open. Its own commit message concedes it was "verified lockfile-only" - never
 built, never signed in. **Recommendation: close that branch unmerged**, and record why in
 SECURITY.md so the next reader does not rediscover the idea and think it is new.
 
@@ -41,7 +41,7 @@ identity auto-links to the attacker's account. Remove either leg and there is no
 
 That gives two genuinely different cutovers, and the difference is large.
 
-### Option A — email/password only at launch *(recommended)*
+### Option A - email/password only at launch *(recommended)*
 
 Self-host Better Auth with `emailAndPassword` and no social providers.
 
@@ -50,18 +50,18 @@ Self-host Better Auth with `emailAndPassword` and no social providers.
   regress when someone later enables a provider without reading this document.
 - No Google Cloud / GitHub OAuth app registration (both are owner actions outside the code).
 - No `account.accountLinking` config to get right, and no dependence on `emailVerified` being
-  correct — which matters, because **nothing in this repo can send email** (see §4).
+  correct - which matters, because **nothing in this repo can send email** (see §4).
 - Cost, and it is real: no "Continue with Google" at signup. For a pre-launch invite list behind the
   `SITE_PASSWORD` wall, that cost is close to zero today and grows as the list does.
 - Adding Google later is a additive change, gated on doing §3's `accountLinking` work properly then.
 
-### Option B — full parity (email/password + Google + GitHub)
+### Option B - full parity (email/password + Google + GitHub)
 
 Everything in Option A, plus OAuth apps, provider config, `accountLinking.allowDifferentEmails =
 false`, link-only-when-`emailVerified`, **and a working mailer**, because verified-email linking is
 the entire fix and it is meaningless without the ability to verify an email.
 
-Larger, and it reintroduces the exact class we are migrating to escape — closed by configuration
+Larger, and it reintroduces the exact class we are migrating to escape - closed by configuration
 rather than by absence.
 
 **My recommendation is Option A**, on the reasoning that the cheapest way to be immune to a
@@ -82,9 +82,9 @@ is the actual objective.
 | `web/src/app/auth/[path]/page.tsx` | `<AuthView>` prefab | **our own** sign-in / sign-up forms |
 | `web/src/app/account/[path]/page.tsx` | `<AccountView>` prefab | **our own** account page (see §5) |
 | `web/src/app/layout.tsx` | `<NeonAuthUIProvider>` | removed |
-| `web/src/app/globals.css` | `@import '@neondatabase/auth/ui/tailwind'` | removed — **see the theming hazard below** |
+| `web/src/app/globals.css` | `@import '@neondatabase/auth/ui/tailwind'` | removed - **see the theming hazard below** |
 | `package.json` | `@neondatabase/auth@0.4.2-beta` | `better-auth@^1.6.23`; `ignoreGhsas` loses the better-auth ids |
-| `web/src/lib/user-corpus/access.ts` | `MULTI_USER_UPLOADS = false` | `true` — A7 permits it once the ids are gone |
+| `web/src/lib/user-corpus/access.ts` | `MULTI_USER_UPLOADS = false` | `true` - A7 permits it once the ids are gone |
 | DB | `neon_auth.users_sync` (managed) | `user` / `account` / `session` / `verification` in our schema |
 
 **Nothing in `db/`, `web/src/lib/` or `scripts/` references `neon_auth` or `users_sync`** (measured
@@ -96,7 +96,7 @@ class ownership is entangled with the Neon UI import: "IT USED TO BE `.dark`, AN
 CLASS". The A7b walk (2026-08-02) separately found the reading-theme control mis-stating itself and
 "Light" not surviving a reload, because two theme systems own that class. Removing the Neon import
 either fixes that defect or breaks theming outright. **Either way it must be exercised in a browser
-at 390px and desktop, not typechecked** — CLAUDE.md's DoD, and this is exactly the surface it was
+at 390px and desktop, not typechecked** - CLAUDE.md's DoD, and this is exactly the surface it was
 written for.
 
 ---
@@ -136,11 +136,11 @@ user-scoped tables and deserves its own slice.
    branch**, not prod. Re-run the spike's four proofs against the real app rather than the harness.
 2. Replace the two prefab pages with our own forms. Browser DoD at 390px and desktop, including the
    theming hazard in §3.
-3. **STOP — owner gate.** Run Better Auth's schema migration on production (⚑ bylaw 7).
+3. **STOP - owner gate.** Run Better Auth's schema migration on production (⚑ bylaw 7).
 4. Cut prod env over; deploy; verify a real sign-up and sign-in against production.
 5. Remove `@neondatabase/auth`; drop the better-auth ids from `ignoreGhsas`; run the full
    `npm run audit` with the gate re-armed.
-6. Flip `MULTI_USER_UPLOADS = true`. A7 goes green **by measurement** — that constant cannot be
+6. Flip `MULTI_USER_UPLOADS = true`. A7 goes green **by measurement** - that constant cannot be
    flipped while an in-path id remains ignored, which is now enforced in CI.
 7. Independent `deep-audit` pass by agents that wrote none of it (bylaw 4).
 
@@ -152,10 +152,10 @@ Steps 1-2 need no owner go and no production access. Step 3 onward each do.
 
 - It does not migrate existing accounts. Clean-start, per the spike's 2026-07-08 commitment: every
   account re-registers, and annotations keyed to old Neon ids are abandoned. **This is cheapest
-  right now and gets more expensive every day** — the uploader's tables are empty today, so doing
+  right now and gets more expensive every day** - the uploader's tables are empty today, so doing
   the cutover before the uploader ships costs nothing and doing it after orphans real uploaded work.
 - It does not address the other three better-auth advisories marked "assess" in SECURITY.md
   (86j7 / 9h47 / 392p). Running our own 1.6.23 moots them by version, but that should be confirmed
   against the re-armed audit in step 5 rather than assumed here.
 - It does not remove the `SITE_PASSWORD` wall. That is a separate call, and `middleware.ts` says the
-  wall comes down "when SEC-1 closes" — which will be true at step 5, and is still the owner's.
+  wall comes down "when SEC-1 closes" - which will be true at step 5, and is still the owner's.

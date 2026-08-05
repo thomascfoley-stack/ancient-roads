@@ -1,4 +1,4 @@
-// A7 — the SEC-1 gate (UPLOADER_DESIGN §8): assert NOT (multi-user uploads enabled AND an in-path
+// A7 - the SEC-1 gate (UPLOADER_DESIGN §8): assert NOT (multi-user uploads enabled AND an in-path
 // account-takeover advisory is still present in `pnpm.auditConfig.ignoreGhsas`).
 //
 // ── THE ADVISORY SET IS DERIVED, NOT TYPED ──────────────────────────────────────────────────────
@@ -6,7 +6,7 @@
 // expected set that nothing enforces" (MASTER.md, twelve instances). The eleventh had a test
 // standing guard over it, built from the same wrong list, and so certified the gap for the life of
 // the defect. So the set is READ from the table in docs/SECURITY.md that adjudicates which
-// advisories are in our path — the document where that judgement is actually made. Adding a row
+// advisories are in our path - the document where that judgement is actually made. Adding a row
 // marked in-path there arms this gate automatically.
 //
 // ── THE PARSE MUST ANCHOR ON THE HEADER, AND HERE IS WHY ────────────────────────────────────────
@@ -15,7 +15,7 @@
 // The second is the ignore-list ledger, whose third column is a different question entirely:
 //     | GHSA | Root | In ignoreGhsas? | Status | Closes when |
 // A parse that just read "column 3 contains yes" over every table row would sweep up nine rows
-// from the ledger — including ones adjudicated "not in path" — and derive a set that is wrong in
+// from the ledger - including ones adjudicated "not in path" - and derive a set that is wrong in
 // both directions. The parse therefore finds the header naming "In our path?" and reads only the
 // rows beneath it, and asserts it found that header at all.
 
@@ -54,12 +54,12 @@ function inPathAdvisories(): string[] {
   return ids;
 }
 
-describe('A7 — the SEC-1 upload gate', () => {
+describe('A7 - the SEC-1 upload gate', () => {
   const inPath = inPathAdvisories();
 
   it('derives a non-empty in-path advisory set from docs/SECURITY.md', () => {
     // Non-vacuity. If the table's shape drifts, the derivation returns [] and every assertion
-    // below passes for the wrong reason — the gate would report green having checked nothing.
+    // below passes for the wrong reason - the gate would report green having checked nothing.
     expect(inPath.length).toBeGreaterThan(0);
     expect(inPath.every((id) => /^GHSA-/.test(id))).toBe(true);
   });

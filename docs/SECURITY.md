@@ -178,7 +178,7 @@ Better Auth **1.6.23**):
 The Better Auth-direct clean-start migration IS the remediation; remove the g38m GHSAs from
 `pnpm.auditConfig` when the production cutover lands.
 
-### The pnpm-override branch does NOT close g38m — do not merge it (assessed 2026-08-05)
+### The pnpm-override branch does NOT close g38m - do not merge it (assessed 2026-08-05)
 
 `fix/sec1-better-auth-1-6-25` forces the whole better-auth subtree to 1.6.25 via `pnpm.overrides`
 and clears `ignoreGhsas` to `[]`. **The override upgrades the wrong copy of better-auth.**
@@ -186,7 +186,7 @@ and clears `ignoreGhsas` to `[]`. **The override upgrades the wrong copy of bett
 Per §"App-level mitigation" above, `createNeonAuth` returns a proxy client to a better-auth server
 **hosted by Neon**; the vulnerable OAuth-callback auto-link logic runs there, at a version we cannot
 see or set. The `better-auth` in our `node_modules` is the client SDK. Overriding it moves `pnpm
-audit` from red to green while the account-takeover path is untouched — and it deletes the ignore
+audit` from red to green while the account-takeover path is untouched - and it deletes the ignore
 list entry that is currently the only mechanical record that SEC-1 is open. The branch's own commit
 message concedes it was "verified lockfile-only": never built, never signed in.
 
@@ -205,7 +205,7 @@ table whose third column asks a different question. Six red-proofs, each watched
 
 Consequence for whoever lands the cutover: `MULTI_USER_UPLOADS` in
 `web/src/lib/user-corpus/access.ts` cannot be flipped to `true` until the in-path ids leave
-`ignoreGhsas`. That is the intended coupling — SEC-1 closing is what unlocks multi-user upload.
+`ignoreGhsas`. That is the intended coupling - SEC-1 closing is what unlocks multi-user upload.
 
 ---
 

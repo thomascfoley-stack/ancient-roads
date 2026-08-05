@@ -1,4 +1,4 @@
-// The SEC-1 gate for user uploads — UPLOADER_DESIGN §4, acceptance check A7.
+// The SEC-1 gate for user uploads - UPLOADER_DESIGN §4, acceptance check A7.
 //
 // §4: "Multi-user upload CANNOT ship while the auth layer carries the GHSA-g38m account-takeover
 // class... An attacker who takes an account takes the sermons." Uploaded works are unpublished
@@ -7,12 +7,12 @@
 //
 // ── WHY THE CEILING IS A COMMITTED CONSTANT AND NOT AN ENV VAR ───────────────────────────────────
 // CI cannot see Vercel's environment. A gate that read only `process.env` would be a check with no
-// access to the thing it claims to check — green forever, whatever production does. That is the
+// access to the thing it claims to check - green forever, whatever production does. That is the
 // repo's "unearned green" (THE_LOOP §6): a check that could not have failed.
 //
 // So the ceiling lives in the repo where a test can read it, and the environment can only narrow
 // it, never raise it. Multi-user upload requires BOTH `MULTI_USER_UPLOADS` here AND the env switch.
-// Setting USER_CORPUS_MULTI_USER=true in Vercel while this constant is false does nothing — which
+// Setting USER_CORPUS_MULTI_USER=true in Vercel while this constant is false does nothing - which
 // is the property that makes the CI assertion protect production rather than merely intent.
 //
 // ── FLIPPING IT ─────────────────────────────────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ export function ownerIds(env: Env = process.env): string[] {
  *
  * ── FAILS CLOSED IN PRODUCTION ──────────────────────────────────────────────────────────────────
  * An unset or empty allowlist in production denies everyone. One missing env var must never open
- * the feature to every account — the same posture, and for the same reason, as the SITE_PASSWORD
+ * the feature to every account - the same posture, and for the same reason, as the SITE_PASSWORD
  * wall in `web/src/middleware.ts` after the 2026-07-09 public-prod incident.
  *
  * Outside production the gate stands down, also following that middleware: local development runs
