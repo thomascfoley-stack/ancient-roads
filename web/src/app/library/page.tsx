@@ -104,15 +104,25 @@ export default async function LibraryHubPage({
 
       <section>
         <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">The corpus</h2>
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {/* A CATALOGUE, NOT A CONTROL PANEL. Six equal bordered rectangles in a grid
+            presented 2,000 years of voices like a settings page: every shelf the same size and
+            weight, the name at 18px, the count buried at 12px in the corner. A library is a
+            list you scan. Full-width rows, the shelf name in the display face at a size that
+            earns the word "library", the count aligned right where the eye can compare them,
+            hairlines instead of six boxes. */}
+        <ul className="divide-y divide-stone-200/70 border-y border-stone-200/70 dark:divide-stone-800 dark:border-stone-800">
           {CATALOG_IDS.map((id) => (
             <li key={id}>
               <Link
                 href={`/library/${id}${carry}`}
- className="flex min-h-[88px] flex-col justify-between rounded-xl border edge p-4 hover:bg-accent-50/50 dark:hover:bg-accent-950/20"
+                className="group flex min-h-[64px] items-baseline gap-4 px-1 py-4 transition-colors ease-gentle hover:bg-accent-50/40 dark:hover:bg-accent-950/20"
               >
-                <span className="font-scripture text-lg text-stone-800 dark:text-stone-100">{CATALOGS[id].label}</span>
-                <span className="text-xs text-stone-500 dark:text-stone-400">{count(worksIn(id), 'work')}</span>
+                <span className="font-display text-xl tracking-tight text-stone-900 group-hover:text-accent-800 dark:text-stone-100 dark:group-hover:text-accent-300">
+                  {CATALOGS[id].label}
+                </span>
+                <span className="ml-auto shrink-0 tabular-nums text-sm text-stone-500 dark:text-stone-400">
+                  {count(worksIn(id), 'work')}
+                </span>
               </Link>
             </li>
           ))}
