@@ -93,8 +93,16 @@ export function PlansClient() {
   useEffect(() => { void refresh(); }, [refresh]);
 
   const openPlan = useCallback(async (id: string) => {
-    const res = await fetch(`/api/plans/${id}`);
-    if (res.ok) setOpen((await res.json()) as OpenPlan);
+    // Was `if (res.ok) setOpen(...)` with no else and no catch: on a failure the row simply
+    // did not respond, and a network rejection surfaced as an unhandled promise. Silence is
+    // the one thing a click must never do.
+    try {
+      const res = await fetch(`/api/plans/${id}`);
+      if (!res.ok) { setList({ status: 'error' }); return; }
+      setOpen((await res.json()) as OpenPlan);
+    } catch {
+      setList({ status: 'error' });
+    }
   }, []);
 
   return (

@@ -41,7 +41,9 @@ export async function fetchOriginal(
     originalCache.set(key, data);
     return data;
   } catch {
-    originalCache.set(key, null);
+    // Deliberately NOT cached. `null` is also this module's "not loaded yet" value, so
+    // caching a failure pinned the reader on "Loading Greek / Hebrew…" permanently and
+    // made a retry impossible for the life of the tab. A miss re-fetches.
     return null;
   }
 }
