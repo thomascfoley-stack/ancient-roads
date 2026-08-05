@@ -48,7 +48,13 @@ export function MobileNav() {
     // so the tab could also never light up.
     { href: '/home', label: 'Home', active: pathname === '/home', icon: <HomeIcon /> },
     { href: '/read/jhn/1', label: 'Bible', active: pathname.startsWith('/read'), icon: <BookIcon /> },
-    { href: '/ask', label: 'AP', active: pathname.startsWith('/ask'), icon: <AskIcon /> },
+    // Was 'AP'. An unexplained two-letter abbreviation of the PRODUCT's name, used as the label
+    // for one feature inside it. /ask had four names across the app — "Ancient Paths" in the
+    // rail, "AP" here, "Explore the paths" as the page heading and tab title — and the rail's
+    // label collided with the wordmark sitting directly above it, so the app's own name led to
+    // a feature rather than home. "Ask" is what the route, the submit button and the composer
+    // placeholder already all say.
+    { href: '/ask', label: 'Ask', active: pathname.startsWith('/ask'), icon: <AskIcon /> },
     // → the hub, not /library/commentaries: that slug is shadowed by the old
     // passage-browse page, so the tab labelled "Library" landed on the one catalog
     // that does not render (ship-committee LENS 1, BROKEN #1/#2).

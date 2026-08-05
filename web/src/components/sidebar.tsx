@@ -111,7 +111,11 @@ export function SidebarNavContent({
           <SidebarLink
             href="/ask"
             icon={<AskIcon />}
-            label="Ancient Paths"
+            // Was "Ancient Paths" — the product's own name, sitting eleven rows under the
+            // wordmark that carries the same words and goes somewhere else (/home). Two
+            // identical labels, two destinations, and neither one is what /ask calls itself.
+            // See mobile-nav.tsx for the full inventory of this feature's four names.
+            label="Ask"
             active={pathname.startsWith('/ask')}
             row={row}
             onNavigate={onNavigate}
