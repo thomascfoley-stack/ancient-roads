@@ -78,6 +78,18 @@ export const authOptions = {
     // A reset means "I lost control of this password". Any session opened with the old one must
     // not survive it.
     revokeSessionsOnPasswordReset: true,
+
+    // ── BOTH SENDS BELOW ARE FIRE-AND-FORGET, AND THAT IS BETTER AUTH'S CHOICE, NOT OURS ────────
+    // 1.6.26 wraps `sendVerificationEmail` AND `sendResetPassword` in `runInBackgroundOrAwait`,
+    // so a throw from either never reaches the caller. Measured, not assumed: removing a
+    // defensive try/catch from the verification send changed nothing, because the rejection was
+    // already isolated. The catch was deleted rather than kept as decoration.
+    //
+    // The consequence is worth stating plainly, because an earlier version of this comment got it
+    // backwards: **a failed reset email is invisible to the reader.** They are told to check their
+    // inbox either way. Nothing in the app can surface that, so RESEND_API_KEY is effectively
+    // REQUIRED in production for password reset to exist at all -- `sendMail` throwing there is
+    // what makes the failure visible in the server log rather than nowhere.
     sendResetPassword: async ({ user, url }) => {
       await sendMail({
         to: user.email,
