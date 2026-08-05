@@ -133,22 +133,45 @@ export function AskClient() {
         </p>
       </header>
 
-      <div className="flex-1 space-y-8">
+      {/* EMPTY STATE IS COMPOSED, NOT TOP-ALIGNED. This was `flex-1` with the examples pinned
+          to the top, so a first visit was a small heading, three floating cards, and roughly
+          400px of nothing above a composer stuck to the bottom edge. It read as a stock
+          chatbot. Centring the invitation in the space it actually has makes the screen one
+          thing instead of two things separated by a void.
+
+          The examples were three `rounded-xl bg-paper shadow-paper` cards, the same "three
+          boxes in a stack" the landing page and the library have already been moved off.
+          They are a hairline-separated list now, in the reading face, so they read as
+          questions a person might ask rather than as buttons. */}
+      <div className={turns.length === 0 ? 'flex flex-1 flex-col justify-center' : 'flex-1 space-y-8'}>
         {turns.length === 0 && (
-          <div>
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">Try</p>
-            <div className="flex flex-col gap-2.5">
+          <div className="pb-8">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">
+              Ask about a verse, a phrase, or a question
+            </p>
+            <ul className="divide-y divide-stone-200/70 border-y border-stone-200/70 dark:divide-stone-800 dark:border-stone-800">
               {EXAMPLES.map((ex) => (
-                <button key={ex} onClick={() => ask(ex)}
-                  className="min-h-[48px] rounded-xl bg-paper px-4 py-2.5 text-left font-serif text-base text-stone-700 shadow-paper transition-[opacity,transform,box-shadow,background-color,border-color] duration-200 ease-gentle hover:text-stone-900 hover:shadow-float active:shadow-paper active:brightness-[0.98] dark:bg-stone-800/70 dark:text-stone-300 dark:shadow-none dark:hover:bg-stone-800 dark:hover:text-stone-100 dark:active:bg-stone-800">
-                  {ex}
-                </button>
+                <li key={ex}>
+                  <button
+                    onClick={() => ask(ex)}
+                    className="group flex min-h-[56px] w-full items-center gap-3 py-3 text-left font-serif text-lg leading-snug text-stone-700 transition-colors ease-gentle hover:text-accent-800 dark:text-stone-300 dark:hover:text-accent-300"
+                  >
+                    <span className="flex-1">{ex}</span>
+                    <span aria-hidden className="shrink-0 text-stone-500 transition-colors ease-gentle group-hover:text-accent-700 dark:text-stone-500 dark:group-hover:text-accent-300">&rarr;</span>
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         )}
 
-        {turns.map((t) => <TurnView key={t.id} turn={t} />)}
+        {/* THE ANSWER WAS SILENT. /ask streams retrieval, composition, verification and the
+            finished answer, and NONE of it was announced: a screen-reader user pressed Ask and
+            heard nothing until they went looking. Failure was the only announced state.
+            `polite` rather than `assertive` so it waits for a pause instead of interrupting. */}
+        <div aria-live="polite" aria-busy={busy} className={turns.length === 0 ? 'sr-only' : 'space-y-8'}>
+          {turns.map((t) => <TurnView key={t.id} turn={t} />)}
+        </div>
         <div ref={bottomRef} className="scroll-mb-48 md:scroll-mb-36" />
       </div>
 
