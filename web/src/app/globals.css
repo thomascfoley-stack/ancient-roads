@@ -1,19 +1,25 @@
 @import 'tailwindcss';
-@import '@neondatabase/auth/ui/tailwind';
 
 /* Class-based dark mode: `dark:` applies when <html> (or an ancestor) has .reader-dark.
  *
- * IT USED TO BE `.dark`, AND WE DO NOT OWN THAT CLASS. `@import '@neondatabase/auth/ui/tailwind'`
- * above brings the auth UI, which brings next-themes (0.4.6, transitive), and next-themes manages
- * <html> by REMOVING every theme value it knows and adding the resolved one. Measured locally
- * 2026-08-02: with `reader-theme=dark` stored and our pre-hydration script adding `.dark`,
- * `document.documentElement.className` settled at exactly `"light"` and the page rendered light.
- * The reader's saved theme was being deleted, on every load, by a library the reader has no
- * relationship with — and whichever way the OS happened to be set decided the app's appearance.
+ * IT USED TO BE `.dark`, AND WE DID NOT OWN THAT CLASS. `@import '@neondatabase/auth/ui/tailwind'`
+ * stood above this block and brought the auth UI, which brought next-themes (0.4.6, transitive),
+ * and next-themes manages <html> by REMOVING every theme value it knows and adding the resolved
+ * one. Measured locally 2026-08-02: with `reader-theme=dark` stored and our pre-hydration script
+ * adding `.dark`, `document.documentElement.className` settled at exactly `"light"` and the page
+ * rendered light. The reader's saved theme was being deleted, on every load, by a library the
+ * reader has no relationship with, and whichever way the OS happened to be set decided the app's
+ * appearance.
  *
  * A shared class was the bug. `.reader-dark` is not a value next-themes recognises, so its
- * add/remove cycle leaves it alone, and the auth UI keeps theming itself however it likes. Every
- * existing `dark:` utility in the app keeps working unchanged; only the selector behind them moves.
+ * add/remove cycle left it alone. Every `dark:` utility keeps working; only the selector moved.
+ *
+ * THAT IMPORT IS NOW GONE (2026-08-05, the SEC-1 cutover off @neondatabase/auth), and with it
+ * next-themes. So this app once again owns `.dark` and the rename is no longer load-bearing.
+ * `.reader-dark` is KEPT anyway: it is referenced across the components and the pre-hydration
+ * script, renaming it back buys nothing a reader can see, and a class rename is exactly the kind
+ * of wide, untestable change that does not belong inside an auth migration. Recorded here so the
+ * next reader does not conclude the constraint still exists and design around a ghost.
  */
 @custom-variant dark (&:where(.reader-dark, .reader-dark *));
 

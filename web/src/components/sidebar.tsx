@@ -129,7 +129,11 @@ export function SidebarNavContent({
               label="Sign out"
               row={row}
               onClick={async () => {
-                await fetch('/api/auth/sign-out', { method: 'POST' });
+                // Better Auth's own client, not a hand-rolled POST. The route that used to
+                // serve this cleared `__Secure-neon-auth*` cookies -- the wrong cookie family
+                // now -- and it sat at /api/auth/sign-out, SHADOWING the catch-all handler that
+                // Better Auth mounts there. It is deleted; this is the supported path.
+                await authClient.signOut();
                 window.location.href = '/';
               }}
             />
