@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 // "My Works" — the personal-corpus surface. Never "Sermons": that word is the corpus register.
@@ -36,6 +37,23 @@ const STATUS: Record<Doc['status'], { label: string; tone: string }> = {
 };
 
 const fmtBytes = (n: number | null) => (n == null ? '' : n < 1024 * 1024 ? `${Math.round(n / 1024)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
+
+/**
+ * Markdown syntax out of the search excerpt.
+ *
+ * A .md upload is stored exactly as the user wrote it, so the excerpt was showing a preacher his
+ * own sermon as "# The Good Shepherd and the Hireling *Preached on a Lord's Day morning* **Text:
+ * John 10:11**". DISPLAY-ONLY on purpose: the stored section stays byte-faithful to the file they
+ * gave us, because it is their document and the anchor channels shingle against it.
+ */
+function plainExcerpt(s: string): string {
+  return s
+    .replace(/(^|\s)#{1,6}\s+/g, '$1') // headings, wherever a chunk boundary left them
+    .replace(/\*\*(.+?)\*\*/g, '$1') // bold
+    .replace(/\*(.+?)\*/g, '$1') // emphasis
+    .replace(/`([^`]+)`/g, '$1') // code spans
+    .trim();
+}
 
 export function MyWorksClient() {
   const [state, setState] = useState<'loading' | 'signedout' | 'unavailable' | 'ready'>('loading');
@@ -157,12 +175,12 @@ export function MyWorksClient() {
             : 'Uploads are not available on this account yet.'}
         </p>
         {state === 'signedout' && (
-          <a
+          <Link
             href="/auth/sign-in"
             className="mt-5 inline-block min-h-[44px] rounded-full bg-stone-900 px-5 py-2.5 text-[15px] font-medium text-paper hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900"
           >
             Sign in
-          </a>
+          </Link>
         )}
       </div>
     );
@@ -257,7 +275,7 @@ export function MyWorksClient() {
                   <p className="font-display text-[15px] text-stone-700 dark:text-stone-200">{h.title}</p>
                   {h.heading && <p className="text-[13px] text-stone-400 dark:text-stone-500">{h.heading}</p>}
                   <p className="mt-1 font-serif text-[15px] leading-relaxed text-stone-600 dark:text-stone-300">
-                    {h.text.length > 320 ? `${h.text.slice(0, 320)}…` : h.text}
+                    {(() => { const t = plainExcerpt(h.text); return t.length > 320 ? `${t.slice(0, 320)}…` : t; })()}
                   </p>
                 </li>
               ))}
