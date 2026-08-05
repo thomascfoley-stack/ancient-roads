@@ -1,5 +1,91 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-05 — Design pass, second round: driving the UI instead of reading it
+
+The owner's challenge was direct: "Did you do that deep of a dive in the UX and UI and user
+flow, or did you just look at code?" The honest answer was that the first round was
+code-driven — subagents reading source, about ten static screenshots, almost all desktop and
+light, never signed in, never a sheet opened by clicking, never a question submitted. This
+round drove the app by DOM refs (`read_page` -> `computer{ref}`), which is immune to the
+coordinate-scaling problem that made the earlier screenshot work unreliable.
+
+Everything below was found by using the product, and every number here was measured in a
+browser, not inferred.
+
+WHAT DRIVING FOUND THAT READING DID NOT
+
+* The verse handle — tap-a-verse-for-commentary, the interaction the whole product is built
+  on — had a 14x21px effective hit box (6x13 glyph plus a small `::before`). Grown to 22x29,
+  measured to still fit inside the 34.2px line box so it cannot overlap the line above or
+  steal the first word. NOT 44px: an inline affordance in flowing text cannot reach 44 without
+  colliding with its own text, and claiming otherwise would be false.
+* `study-panel.tsx` pinned a hardcoded UNATTRIBUTED quotation (Matthew 26:39 spliced to 6:10)
+  to the footer of every verse study. The product guarantee is that every displayed passage is
+  quoted AND attributed; this one named no source and repeated on every open. Removed. Only
+  visible by opening the panel.
+* /ask was a dead end signed out. It gave a reader the whole invitation — heading, three
+  clickable example questions, a live composer — said nothing about needing an account, then
+  answered a submitted question with a red "Please sign in" box carrying no sign-in control,
+  having already cleared the typed question. Now: stated up front via `useSignedIn`, the 401
+  turn is `role="status"` with a real Sign in button, and the question is handed back.
+* /ask has four names: "Ancient Paths" (rail), "AP" (mobile nav), "Explore the paths" (page
+  and tab), "Ask" (route, button, placeholder). The rail label collides with the wordmark
+  directly above it, so the app's own name appeared twice in one column pointing at two
+  different places. Both nav labels are now "Ask". The h1 is left alone and flagged as an
+  owner call.
+* Catalog rows carried a detached 44px box with a DASHED border and a "+" per work. A dashed
+  outline reads as "empty / drop target" everywhere, so a column of them read as unloaded
+  content, and it was the loudest thing on a page whose subject is the titles. Rebuilt as the
+  hairline list /library already uses one click earlier. Counts had no noun ("727"); a new
+  per-catalog `unit` gives "727 entries".
+* Reader controls announced themselves as their own glyphs — "Aa", "אα" (read aloud as aleph
+  then alpha), "WEB" — and two of them open menus while saying nothing about it. Real labels,
+  `aria-haspopup`/`expanded`, `aria-pressed`, `role=menuitemradio`, Escape-to-close with focus
+  return on both anchored popovers.
+* /read and /desk both rendered `document.title` as the bare app name, so every reader tab was
+  indistinguishable. Layouts with `generateMetadata` now title them.
+* Desk commentary rendered in Source Sans at 86 characters per line while `globals.css:22`
+  assigns Literata to "long-form reading (scripture, commentary, answers)". Worth recording
+  because I got this wrong first: swapping to the serif alone moved it by ONE character
+  (86 -> 87). Literata is no narrower. Size was the lever; 18px lands at 78, matching the
+  reader. The pane header also sat at full width while its body was centred, so a title began
+  ~220px left of its own first word.
+
+WHAT I DID NOT "FIX"
+
+The active tradition chip looked washed out in dark mode. Measured properly (compositing the
+40%-alpha background over the page) it is 12.68:1. It was a screenshot-downscaling artifact.
+The study sheet also reported `top: 812` on an 812px viewport, which looked like an
+off-screen sheet on mobile; the screenshot showed it correctly placed — the measurement caught
+it mid-transform. Both left alone.
+
+GATE STATUS — RED, AND RED BEFORE THIS WORK
+
+`npm run audit` fails on six DB-backed invariants. I A/B'd `work-reader.test.ts` at this HEAD
+and at `d612691` (the commit preceding my first change) back to back in the same minute:
+7 failed both times, identically. `register-wall-surfaces` was proven pre-existing the same
+way. Causes are environmental: a 429 from the public read throttle, whose test requests all
+share one `no-trusted-ip` bucket; the dev branch having 0 devotionals; and the symlinked
+`web/public` corpus this worktree has always had (documented in the 2026-08-04 entry below).
+Web unit suite 576/576, typecheck clean, `catalog-url-facets` 5/5.
+
+One test was genuinely broken by this work and fixed at the root: `catalog-url-facets.test.tsx`
+stubbed a `sections` field that `CatalogWork` has never had. It passed only because the count
+was interpolated raw; formatting it exposed the mismatch. The stub was corrected to the real
+contract, not the page to the stub.
+
+NOT DONE / UNVERIFIED
+
+* Never signed in. Every flow above was walked SIGNED OUT, so the authenticated halves —
+  highlights, notes, bookmarks, a real /ask answer streaming — are still unexercised by me.
+  This is the single biggest remaining gap.
+* The desk's two floating edge buttons (+ and book) sit outside the pane in the page gutter,
+  unlabelled-looking and detached. Noted, not addressed.
+* The interlinear toggle and the sidebar's Word study now share one icon for different things.
+* Corpus section bodies are truncated mid-sentence with "and…" in the DATA, not in CSS. An
+  ingestion question, not a design one.
+* /library largely duplicates the sidebar rail; "Devotionals — 0 works" is a live dead end.
+
 ## 2026-08-04 — Design pass: a system for radius, surface and elevation; the reader gets a keyboard
 
 Owner brief: audit the whole site and bring it to a premium standard. Restraint over decoration,
