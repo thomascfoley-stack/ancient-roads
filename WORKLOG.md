@@ -1,5 +1,97 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-05 (Lane B: My Works driven in a browser — the feature was dark on production)
+
+**Headline: the env var that switches uploads on was never set in Vercel. Every signed-in user
+on production got "Uploads are not available on this account yet." and no upload control at all.
+The API evidence in the entry below could not see it, because the API was called as nobody.**
+
+### What a new user actually had to do, and where it broke
+
+Driven signed-out in a browser, no URLs typed until the nav had been exhausted:
+
+1. `ancientpaths.app` is a waitlist page — "Request access" and "Log in", no sign-up.
+2. "Log in" goes to `/home`, the app itself, signed out. The sidebar there says **Sign in**.
+3. LIBRARY → scroll the sidebar → **My Works** is the last shelf entry. It IS reachable
+   (`e7ad76d` holds), and at 390px it is under Menu → My Works. **The nav is not the bug.**
+4. Signed out, `/library/uploads` correctly offers "Sign in to bring your own sermons and papers
+   into the library" with a working button (`cb18357` holds — both of the previous session's
+   unverified fixes are confirmed good).
+5. Registered a real account through `/auth/sign-up`. **And there the path ended:** My Works
+   rendered "Uploads are not available on this account yet." with no dropzone, no search box.
+
+`GET /api/user-corpus/documents` → **403**, not 401. `uploadDenial` had taken its fail-closed
+branch: `multiUserUploadsEnabled()` is `MULTI_USER_UPLOADS && env.USER_CORPUS_MULTI_USER === 'true'`,
+and **`vercel env ls production` had no `USER_CORPUS_MULTI_USER` row at all** (nor
+`USER_CORPUS_OWNER_IDS`), so an empty allowlist denied everyone. The gate working exactly as
+designed, over a variable nobody had set.
+
+The handoff doc asserted "`USER_CORPUS_MULTI_USER=true` in Vercel"; it was not. Corrected in place.
+The likely mechanism is the known one: `vercel env add` silently ignores piped stdin, so a session
+that pipes the value records a success that never happened. `--value` is the form that works.
+
+**Fix: config, no code.** `vercel env add USER_CORPUS_MULTI_USER production --value true`, then
+deploy. The SEC-1 ceiling was checked first rather than assumed — `sec1-upload-gate.test.ts` 7/7
+green, `@neondatabase/auth` gone from the deps, only two non-g38m advisories left in
+`ignoreGhsas` — so flipping the env half of an already-committed `MULTI_USER_UPLOADS = true` is
+the intended state, not a new decision. `dpl_42dKT1ypjEikqCXBzeb6wSqHpeLd`.
+
+### Then the whole loop, driven as that user
+
+Upload was the real `<input type="file">` with a real 2 KB `.md` sermon (the OS picker dialog is
+Chrome chrome and was not driven; the file input, its change handler and everything downstream
+were). Watched, not asserted:
+
+- the card appeared as **Indexing** and polled itself to **Ready** with no reload
+- text search "what did I say about the hireling" → **1 passage from your works**
+- passage search "John 10" → **Where you have written on it — quoted (12 matches)**
+- "The tradition on this" → **18 voices from the library on 7 passages this document anchors**
+
+At 390px and at 1280: no horizontal overflow (`scrollWidth == innerWidth`), no console errors.
+
+### Two defects found by reading the screen, each fixed and re-driven
+
+**1. The tradition panel printed database slugs at the reader** (`7b0a0db`). "Alexander Maclaren,
+maclaren-expositions", "Charles Haddon Spurgeon, spurgeon-sermons", "Borthwick, Jane,
+borthwick-hll". `metadata->>'work'` is a slug; `sources.title` is the name the rest of the library
+shows. LEFT JOIN on `sources.slug` — the key `blocker2-boundary-census.mts` already uses — and
+COALESCE back to the slug so a work with no `sources` row still lists its author. After:
+"Alexander Maclaren, Expositions of Holy Scripture", "Charles Haddon Spurgeon, Spurgeon: New Park
+Street & Metropolitan Tabernacle Pulpit (63 vols)". It also **explains the two Spurgeon rows**,
+which without titles read as a duplicate bug. `tradition-gap.test.ts` 11/11 and
+`tradition-gap-wiring.test.ts` 6/6 still green; the predicate is untouched, this only renames rows
+already admitted.
+
+**2. Search excerpts rendered raw markdown** (`972292d`). A preacher searching his own sermon got
+"# The Good Shepherd and the Hireling *Preached on a Lord's Day morning* **Text: John 10:11**".
+Stripped for DISPLAY only — the stored section stays byte-faithful to the uploaded file, because
+it is the user's document and the anchor channels shingle against it, so rewriting it at ingest
+would move a measured number. Also took the signed-out Sign in link from `<a>` to `next/link`:
+the one lint error in that file, which the **pre-commit lint never sees because it ignores
+`web/src`** (it reports "File ignored because of a matching ignore pattern" and then prints
+"lint clean").
+
+### NOT DONE / UNVERIFIED
+
+- **Production is NOT clean.** One test account (`browsercheck-0805@ancientpaths.app`) and one
+  document remain, deliberately, so the owner can open the working feature. Deleting them is a
+  prod write and wants the owner's go (bylaw 7).
+- **`npm run audit` was not run in full.** Typecheck (web, strict) clean and the two tradition-gap
+  suites green. The full `web/test` run has **5 files failing on `ECONNREFUSED 127.0.0.1:5432`** —
+  no local Postgres, so those are NOT RUN rather than red: `commentary-entries-provenance`,
+  `register-end-to-end`, `register-wall-surfaces`, `blob-round-trip`, `queue-never-drops`.
+- **`plainExcerpt` has no test** and no red-proof. The prompt forbade new test files; the check
+  that stands behind it is the screenshot before and after.
+- **Seen once, not chased:** clicking "The tradition on this" in the first second after a fresh
+  page load fires the request (200) but the panel never renders; a second click works. Same shape
+  for typing into the search box too fast after landing — the characters are wiped. Both smell
+  like pre-hydration input against a controlled component, not like this feature.
+- The **`MIN_CHARS_PER_PAGE = 100`** scanned-PDF threshold is still reasoning rather than
+  measurement, unchanged from the entry below. Nothing here exercised a PDF at all — the upload
+  driven was markdown.
+- Branch `feat/lane-b-slice1-uploader` is now **48 ahead of `main` and unmerged**; production runs
+  it via `deploy.sh`, which uploads the working tree, so `main` still does not reflect what is live.
+
 ## 2026-08-05 (Lane B: A7 - the SEC-1 gate made mechanical; the cutover scoped)
 
 **Headline: the shortcut to closing SEC-1 does not work, and finding out why is the session's main

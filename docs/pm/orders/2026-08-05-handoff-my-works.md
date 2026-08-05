@@ -20,7 +20,14 @@ There is **no "sermon builder"** anywhere in the repo. The only "builder" is the
 - Live deployment `dpl_8WkTHr23pyHAFWzTgjQFM2g3Fhww`, aliased to `ancientpaths.app`.
 - Migrations **100-104 applied to production** (`ep-odd-fog`) and recorded in `schema_migrations`.
 - SEC-1 closed: `@neondatabase/auth` removed, Better Auth 1.6.26 self-hosted, email/password only.
-- Uploads switched ON: `MULTI_USER_UPLOADS = true` + `USER_CORPUS_MULTI_USER=true` in Vercel.
+- ~~Uploads switched ON: `MULTI_USER_UPLOADS = true` + `USER_CORPUS_MULTI_USER=true` in Vercel.~~
+  **HALF FALSE, corrected 2026-08-05.** `MULTI_USER_UPLOADS = true` was committed, but
+  `USER_CORPUS_MULTI_USER` **did not exist in Vercel production** — `vercel env ls production`
+  listed no such row. So `uploadDenial` fail-closed on an empty allowlist and every signed-in user
+  got a 403 and "Uploads are not available on this account yet." **This line is why the feature
+  read as shipped while being dark**, and it is the shape to distrust: an env var recorded as set
+  because the command exited 0. `vercel env add` ignores piped stdin; only `--value` writes.
+  Now genuinely set, and driven in a browser.
 - `RESEND_API_KEY` / `MAIL_FROM` set, but `MAIL_FROM=onboarding@resend.dev` only reaches the
   account owner. Password reset is therefore broken for everyone else. DNS records to fix it are in
   `docs/evidence/resend-dns-records.txt`; the deploy token is refused (`permission_denied`) so a
