@@ -57,19 +57,19 @@ export default async function LibraryHubPage({
 
       {mine && mine.reading.length > 0 && (
         <section className="mb-9">
-          <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-400">Continue reading</h2>
+          <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Continue reading</h2>
           <ul className="space-y-2">
             {mine.reading.map((r) => (
               <li key={r.sourceId}>
                 <Link
                   href={`/work/${r.slug}#s${r.lastOrdinal}`}
-                  className="flex min-h-[44px] items-center justify-between gap-3 rounded-xl border border-stone-200/70 px-4 py-3 hover:bg-accent-50/50 dark:border-stone-800 dark:hover:bg-accent-950/20"
+ className="flex min-h-[44px] items-center justify-between gap-3 rounded-xl border edge px-4 py-3 hover:bg-accent-50/50 dark:hover:bg-accent-950/20"
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-scripture text-stone-800 dark:text-stone-100">{r.title}</span>
                     <span className="block truncate text-xs text-stone-500 dark:text-stone-400">{r.author ?? 'Unattributed'}</span>
                   </span>
-                  <span className="shrink-0 text-xs tabular-nums text-stone-400">
+                  <span className="shrink-0 text-xs tabular-nums text-stone-500 dark:text-stone-400">
                     {r.percent === null ? '' : `${Math.round(r.percent * 100)}%`}
                   </span>
                 </Link>
@@ -80,13 +80,13 @@ export default async function LibraryHubPage({
       )}
 
       <section className="mb-9">
-        <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-400">Yours</h2>
+        <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Yours</h2>
         <div className="flex flex-wrap gap-2">
           {YOURS.map((y) => (
             <Link
               key={y.href}
               href={y.href}
-              className="inline-flex min-h-[44px] items-center rounded-lg border border-stone-200/70 px-4 text-sm text-stone-700 hover:bg-accent-50/60 dark:border-stone-800 dark:text-stone-300 dark:hover:bg-accent-950/25"
+ className="inline-flex min-h-[44px] items-center rounded-lg border edge px-4 text-sm text-stone-700 hover:bg-accent-50/60 dark:text-stone-300 dark:hover:bg-accent-950/25"
             >
               {y.label}
             </Link>
@@ -103,13 +103,13 @@ export default async function LibraryHubPage({
       </section>
 
       <section>
-        <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-400">The corpus</h2>
+        <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">The corpus</h2>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {CATALOG_IDS.map((id) => (
             <li key={id}>
               <Link
                 href={`/library/${id}${carry}`}
-                className="flex min-h-[88px] flex-col justify-between rounded-xl border border-stone-200/70 p-4 hover:bg-accent-50/50 dark:border-stone-800 dark:hover:bg-accent-950/20"
+ className="flex min-h-[88px] flex-col justify-between rounded-xl border edge p-4 hover:bg-accent-50/50 dark:hover:bg-accent-950/20"
               >
                 <span className="font-scripture text-lg text-stone-800 dark:text-stone-100">{CATALOGS[id].label}</span>
                 <span className="text-xs text-stone-500 dark:text-stone-400">{count(worksIn(id), 'work')}</span>

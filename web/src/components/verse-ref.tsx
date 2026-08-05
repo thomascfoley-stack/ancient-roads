@@ -226,11 +226,11 @@ export function VerseRef({
               // flashes at 0,0 before placement lands.
               visibility: placement ? 'visible' : 'hidden',
             }}
-            className="z-50 w-80 max-w-[calc(100vw-1rem)] rounded-xl border border-stone-200 bg-paper p-3 shadow-float dark:border-stone-700 dark:bg-stone-900"
+ className="z-50 w-80 max-w-[calc(100vw-1rem)] rounded-xl border edge bg-paper p-3 shadow-float dark:bg-stone-900"
           >
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-stone-400">{label}</p>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">{label}</p>
             <div className="max-h-64 overflow-y-auto overscroll-contain">{body}</div>
-            <p className="mt-2 border-t border-stone-200 pt-2 text-xs text-stone-400 dark:border-stone-700">
+ <p className="mt-2 border-t edge pt-2 text-xs text-stone-500 dark:text-stone-400">
               Click to open it beside the plan
             </p>
           </div>,

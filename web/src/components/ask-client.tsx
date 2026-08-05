@@ -140,7 +140,7 @@ export function AskClient() {
             <div className="flex flex-col gap-2.5">
               {EXAMPLES.map((ex) => (
                 <button key={ex} onClick={() => ask(ex)}
-                  className="min-h-[48px] rounded-xl bg-paper px-4 py-2.5 text-left font-serif text-base text-stone-700 shadow-paper transition-all duration-200 ease-gentle hover:text-stone-900 hover:shadow-float active:shadow-paper active:brightness-[0.98] dark:bg-stone-800/70 dark:text-stone-300 dark:shadow-none dark:hover:bg-stone-800 dark:hover:text-stone-100 dark:active:bg-stone-800">
+                  className="min-h-[48px] rounded-xl bg-paper px-4 py-2.5 text-left font-serif text-base text-stone-700 shadow-paper transition-[opacity,transform,box-shadow,background-color,border-color] duration-200 ease-gentle hover:text-stone-900 hover:shadow-float active:shadow-paper active:brightness-[0.98] dark:bg-stone-800/70 dark:text-stone-300 dark:shadow-none dark:hover:bg-stone-800 dark:hover:text-stone-100 dark:active:bg-stone-800">
                   {ex}
                 </button>
               ))}
@@ -287,7 +287,7 @@ function Answer({ result }: { result: TeacherResult }) {
           <div className="flex flex-wrap gap-2">
             {passages.items.map((p, i) => (
               <Link key={i} href={verseHref(p.start)}
-                className="rounded-full bg-paper px-3.5 py-1.5 text-sm text-stone-700 shadow-paper transition-all duration-200 ease-gentle hover:text-accent-800 hover:shadow-float dark:bg-stone-800 dark:text-stone-200 dark:shadow-none dark:hover:text-accent-300">
+                className="rounded-full bg-paper px-3.5 py-1.5 text-sm text-stone-700 shadow-paper transition-[opacity,transform,box-shadow,background-color,border-color] duration-200 ease-gentle hover:text-accent-800 hover:shadow-float dark:bg-stone-800 dark:text-stone-200 dark:shadow-none dark:hover:text-accent-300">
                 {p.start === p.end ? formatVerseId(p.start) : `${formatVerseId(p.start)}–${formatVerseId(p.end).split(' ').pop()}`} →
               </Link>
             ))}

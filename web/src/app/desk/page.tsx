@@ -88,7 +88,7 @@ function DeskInner() {
           </button>
           <Link
             href="/library"
-            className="min-h-[44px] rounded-lg border border-stone-200/70 px-5 py-2.5 text-sm text-stone-600 hover:bg-accent-50/50 dark:border-stone-800 dark:text-stone-300 dark:hover:bg-accent-950/20"
+ className="min-h-[44px] rounded-lg border edge px-5 py-2.5 text-sm text-stone-600 hover:bg-accent-50/50 dark:text-stone-300 dark:hover:bg-accent-950/20"
           >
             Browse the library
           </Link>
@@ -123,7 +123,7 @@ function DeskInner() {
             href={`/library?desk=${encodeURIComponent(panes.map(encodePane).join(','))}`}
             aria-label="Add a work from the library"
             title="Add a work from the library"
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-dashed border-stone-300 text-xl text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-dashed border-stone-300 text-xl text-stone-500 dark:text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
           >
             +
           </Link>
@@ -132,7 +132,7 @@ function DeskInner() {
             onClick={() => setPickingBible(true)}
             aria-label="Add a Bible chapter"
             title="Add a Bible chapter"
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-dashed border-stone-300 text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-dashed border-stone-300 text-stone-500 dark:text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
               <path
@@ -153,7 +153,7 @@ function DeskInner() {
 export default function DeskPage() {
   // useSearchParams needs a Suspense boundary in the app router.
   return (
-    <Suspense fallback={<div className="px-5 py-16 text-center text-sm text-stone-400">Loading your desk…</div>}>
+    <Suspense fallback={<div className="px-5 py-16 text-center text-sm text-stone-500 dark:text-stone-400">Loading your desk…</div>}>
       <DeskInner />
     </Suspense>
   );

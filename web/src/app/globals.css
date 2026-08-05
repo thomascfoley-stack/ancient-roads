@@ -215,6 +215,29 @@ html {
   outline: none;
 }
 
+/* THE EDGE. One class for every hairline in the app.
+ *
+ * Why a hand-written rule instead of `border-stone-200/70 dark:border-stone-800`: that pair
+ * did not work. MEASURED on /library in dark mode: the element carries the class, matches
+ * `.dark\:border-stone-800:where(.reader-dark, .reader-dark *)` (verified with
+ * `element.matches()`), the rule exists in the CSSOM, and the border still painted
+ * rgb(233,227,216). Both rules sit in `@layer utilities` at equal specificity, so source
+ * order decides and the light one is emitted later. Raising the variant to `:is()` did not
+ * move it either. 66 usages across 25 files were all losing, which is why every bordered
+ * surface was outlined in near-white on a dark background.
+ *
+ * These rules are UNLAYERED, so they beat everything in `@layer utilities` by the cascade
+ * itself rather than by out-specifying it. Same technique the auth-UI block below uses, and
+ * the reason it is written there too. `var()` is resolved at runtime, which the inline-style
+ * probe confirmed works for border-color, so the value genuinely flips with the theme. */
+.edge {
+  border-color: var(--color-stone-200);
+}
+.reader-dark .edge,
+.reader-dark.edge {
+  border-color: var(--color-stone-800);
+}
+
 ::selection {
   background: color-mix(in oklab, var(--color-accent-300) 45%, transparent);
 }

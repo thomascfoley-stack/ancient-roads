@@ -199,7 +199,7 @@ export function SidebarNavContent({
             ) : (
               <button
                 onClick={() => setAddingSection(true)}
-                className={`flex w-full items-center gap-2.5 rounded-md px-2 text-sm text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 active:bg-stone-200/70 dark:hover:bg-stone-800 dark:hover:text-stone-300 ${row}`}
+                className={`flex w-full items-center gap-2.5 rounded-md px-2 text-sm text-stone-500 dark:text-stone-400 transition-colors ease-gentle hover:bg-stone-100 hover:text-stone-600 active:bg-stone-200/70 dark:hover:bg-stone-800 dark:hover:text-stone-300 ${row}`}
               >
                 <span className="flex w-4 items-center justify-center"><PlusIcon /></span>
                 <span className="flex-1 truncate text-left">New section</span>
@@ -211,7 +211,7 @@ export function SidebarNavContent({
         {/* Library */}
         <div className="mt-4">
           <div className="mb-1 px-4">
-            <span className="text-micro font-semibold uppercase tracking-wider text-stone-400">
+            <span className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
               Library
             </span>
           </div>
@@ -278,7 +278,7 @@ export function SidebarNavContent({
       </nav>
 
       {/* Bottom: settings */}
-      <div className="border-t border-stone-200 px-2 py-2 dark:border-stone-800">
+ <div className="border-t edge px-2 py-2">
         <SidebarLink
           href="/settings"
           icon={<SettingsIcon />}
@@ -323,7 +323,7 @@ export function Sidebar() {
 
   if (collapsed) {
     return (
-      <aside className="hidden w-12 flex-col items-center border-r border-stone-200/80 bg-stone-100 py-3 md:flex dark:border-stone-800 dark:bg-stone-950">
+ <aside className="hidden w-12 flex-col items-center border-r edge bg-stone-100 py-3 md:flex dark:bg-stone-950">
         <button
           onClick={() => setCollapsed(false)}
           className="rounded p-1 text-stone-500 hover:bg-stone-200 hover:text-stone-700"
@@ -338,15 +338,15 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="hidden w-64 flex-col border-r border-stone-200/80 bg-stone-100 md:flex dark:border-stone-800 dark:bg-stone-950">
+ <aside className="hidden w-64 flex-col border-r edge bg-stone-100 md:flex dark:bg-stone-950">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3 dark:border-stone-800">
+ <div className="flex items-center justify-between border-b edge px-4 py-3">
         <Link href="/home" className="font-scripture text-base font-medium text-stone-800 dark:text-stone-100">
           Ancient Paths
         </Link>
         <button
           onClick={() => setCollapsed(true)}
-          className="rounded p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+          className="rounded p-1 text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-600"
           aria-label="Collapse sidebar"
         >
           <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -392,20 +392,20 @@ function StudySectionView({
           />
         ) : (
           <>
-            <span className="truncate text-micro font-semibold uppercase tracking-wider text-stone-400">
+            <span className="truncate text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
               {section.name}
             </span>
-            <span className="flex items-center gap-0.5 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100">
+            <span className="flex items-center gap-0.5 opacity-100 transition-opacity ease-gentle [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100">
               <button
                 onClick={() => setRenaming(true)}
-                className="rounded p-1.5 text-stone-400 hover:bg-stone-200 hover:text-stone-600 active:bg-stone-200 dark:hover:bg-stone-800"
+                className="rounded p-1.5 text-stone-500 dark:text-stone-400 hover:bg-stone-200 hover:text-stone-600 active:bg-stone-200 dark:hover:bg-stone-800"
                 aria-label={`Rename ${section.name}`}
               >
                 <PencilIcon />
               </button>
               <button
                 onClick={() => setAddingItem(true)}
-                className="rounded p-1.5 text-stone-400 hover:bg-stone-200 hover:text-stone-600 active:bg-stone-200 dark:hover:bg-stone-800"
+                className="rounded p-1.5 text-stone-500 dark:text-stone-400 hover:bg-stone-200 hover:text-stone-600 active:bg-stone-200 dark:hover:bg-stone-800"
                 aria-label={`Add to ${section.name}`}
               >
                 <PlusIcon />
@@ -427,7 +427,7 @@ function StudySectionView({
         </div>
       )}
       {section.items.length === 0 && !addingItem && (
-        <p className="px-4 py-2 text-xs text-stone-400">Nothing here yet</p>
+        <p className="px-4 py-2 text-xs text-stone-500 dark:text-stone-400">Nothing here yet</p>
       )}
       {section.items.map((item) => {
         const href =
@@ -438,7 +438,7 @@ function StudySectionView({
             href={href}
             icon={
               section.kind === 'channels' ? (
-                <span className="text-stone-400">#</span>
+                <span className="text-stone-500 dark:text-stone-400">#</span>
               ) : (
                 <span
                   className="inline-block h-2 w-2 rounded-full"
@@ -491,7 +491,7 @@ function InlineNameForm({
           if (e.key === 'Escape') onCancel();
         }}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-stone-300 bg-paper px-2 py-1.5 text-base text-stone-800 placeholder:text-stone-400 outline-none focus:border-stone-500 sm:py-1 sm:text-sm dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100"
+        className="w-full rounded-lg border border-stone-300 bg-paper px-2 py-1.5 text-base text-stone-800 placeholder:text-stone-500 dark:placeholder:text-stone-400 outline-none focus:border-stone-500 sm:py-1 sm:text-sm dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100"
         autoFocus
       />
     </form>
@@ -518,7 +518,7 @@ function SidebarLink({
       href={href}
       onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
-      className={`flex items-center gap-2.5 rounded-md px-2 text-sm transition-colors ${row} ${
+      className={`flex items-center gap-2.5 rounded-md px-2 text-sm transition-colors ease-gentle ${row} ${
         active
           ? 'bg-accent-700/10 font-medium text-accent-900 dark:bg-accent-400/15 dark:text-accent-100'
           : 'text-stone-600 hover:bg-stone-100 hover:text-stone-800 active:bg-stone-200/70 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200'
@@ -544,7 +544,7 @@ function SidebarButton({
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-2.5 rounded-md px-2 text-sm text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-800 active:bg-stone-200/70 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200 ${row}`}
+      className={`flex w-full items-center gap-2.5 rounded-md px-2 text-sm text-stone-600 transition-colors ease-gentle hover:bg-stone-100 hover:text-stone-800 active:bg-stone-200/70 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200 ${row}`}
     >
       <span className="flex w-4 items-center justify-center text-sm">{icon}</span>
       <span className="flex-1 truncate text-left">{label}</span>

@@ -77,7 +77,7 @@ export function PassageView({
       {groups.map((g, gi) => (
         <div key={`${g.bookSlug}-${g.chapter}`} className={gi > 0 ? 'mt-3' : undefined}>
           {groups.length > 1 && (
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-stone-400">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
               {g.bookName} {g.chapter}
             </p>
           )}
@@ -93,7 +93,7 @@ export function PassageView({
           </p>
         </div>
       ))}
-      {note && <p className="mt-2 text-xs text-stone-400">{note}</p>}
+      {note && <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">{note}</p>}
     </div>
   );
 }

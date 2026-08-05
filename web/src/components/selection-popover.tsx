@@ -146,7 +146,7 @@ export function SelectionPopover({
         key={c.id}
         onClick={() => onHighlight(c.id)}
         aria-label={`Highlight ${c.id}`}
-        className={`h-7 w-7 shrink-0 rounded-full ${c.dot} ring-1 ring-white/20 transition-transform active:scale-90`}
+        className={`h-7 w-7 shrink-0 rounded-full ${c.dot} ring-1 ring-white/20 transition-transform ease-gentle active:scale-90`}
       />
     ))
   ) : (
@@ -219,7 +219,7 @@ export function SelectionPopover({
         {...holdSelection}
       >
         <div className="w-max max-w-[420px] rounded-xl bg-stone-900/95 px-3 py-2.5 shadow-deep ring-1 ring-white/10 dark:bg-stone-800">
-          <div className="px-1 pb-1.5 text-micro font-medium tracking-wide text-stone-400">{contextLabel}</div>
+          <div className="px-1 pb-1.5 text-micro font-medium tracking-wide text-stone-500 dark:text-stone-400">{contextLabel}</div>
           {/* SWATCHES ON THEIR OWN ROW, WRAPPING. Ten colours (highlight-colors.ts) at 28px each
               plus gaps run ~350px — comfortably inside this card on their own, but every child
               here is `shrink-0` and the row never wrapped, so sharing a line with Note/Bookmark/

@@ -54,7 +54,7 @@ export default function MyLibraryPage() {
       </header>
 
       {state === 'loading' ? (
-        <p className="py-16 text-center text-sm text-stone-400">Loading…</p>
+        <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">Loading…</p>
       ) : state === 'signedout' ? (
         <div className="py-16 text-center">
           <p className="mb-4 text-sm text-stone-500 dark:text-stone-400">
@@ -93,7 +93,7 @@ export default function MyLibraryPage() {
         <div className="space-y-8">
           {bookmarks.length > 0 && (
             <section>
-              <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-400">
+              <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
                 Bookmarks ({bookmarks.length})
               </h2>
               <div className="flex flex-wrap gap-2">
@@ -117,7 +117,7 @@ export default function MyLibraryPage() {
 
           {notes.length > 0 && (
             <section>
-              <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-400">
+              <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
                 Notes ({notes.length})
               </h2>
               <div className="space-y-2">
@@ -141,7 +141,7 @@ export default function MyLibraryPage() {
 
           {highlights.length > 0 && (
             <section>
-              <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-400">
+              <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
                 Highlights ({highlights.length})
               </h2>
               <div className="flex flex-wrap gap-2">

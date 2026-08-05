@@ -22,13 +22,13 @@ export function WorkHeader({
   return (
     <header
       ref={ref}
-      className="sticky top-0 z-40 border-b border-stone-200 bg-stone-50/95 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] backdrop-blur-sm dark:border-stone-800 dark:bg-stone-950/95"
+ className="sticky top-0 z-40 border-b edge bg-stone-50/95 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] backdrop-blur-sm dark:bg-stone-950/95"
     >
       <div className="mx-auto flex max-w-2xl items-center gap-2 px-3 sm:px-4">
         <button
           onClick={onOpenToc}
           title="Table of contents"
-          className="min-h-[44px] shrink-0 rounded-lg bg-paper px-4 text-sm font-semibold text-stone-800 shadow-paper transition-colors hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700"
+          className="min-h-[44px] shrink-0 rounded-lg bg-paper px-4 text-sm font-semibold text-stone-800 shadow-paper transition-colors ease-gentle hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700"
         >
           Contents
         </button>
