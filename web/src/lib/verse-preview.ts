@@ -123,6 +123,19 @@ export function isWholeChapter(span: Span): boolean {
 }
 
 /**
+ * Offered when the reader's own translation has no such verse. KJV because the topical indexes
+ * this feature reads (Nave's, Torrey's) are KJV-era and cite its versification, so it is the one
+ * most likely to carry a reference they made. Measured example: Matthew 23:14 is present in WEB,
+ * KJV, YLT and Geneva, and absent from BSB and ASV.
+ */
+export const FALLBACK_TRANSLATION = 'kjv';
+
+/** Full display name for a translation id, for copy that has to name it. */
+export function translationName(id: string): string {
+  return TRANSLATIONS.find((t) => t.id === id)?.name ?? id.toUpperCase();
+}
+
+/**
  * A passage raised into the reader pane. Carries the caller's own label rather than re-deriving
  * one, so the pane header reads exactly as the reference the user clicked — the plan's labels are
  * already careful about the whole-chapter sentinel and cross-book spans, and a second formatter

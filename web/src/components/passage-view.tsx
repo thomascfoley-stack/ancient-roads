@@ -9,7 +9,10 @@
 
 import type { PreviewVerse } from '@/lib/verse-preview';
 
-export type PassageStatus = 'loading' | 'ready' | 'empty' | 'error';
+// 'empty'      -> the chapter loaded, this TRANSLATION has no such verse (a real difference)
+// 'unresolved' -> the reference itself did not resolve to any chapter (a bad reference)
+// Collapsing these told a reader with a malformed ref that their translation was at fault.
+export type PassageStatus = 'loading' | 'ready' | 'empty' | 'unresolved' | 'error';
 
 interface ChapterGroup {
   bookName: string;
@@ -33,11 +36,17 @@ export function PassageView({
   status,
   verses,
   note,
+  translationName,
+  fallback,
 }: {
   status: PassageStatus;
   verses: PreviewVerse[];
   /** Shown under the text — e.g. that a long span was capped. Never implies completeness. */
   note?: string;
+  /** Full name of the translation being read, so an absent verse can name it. */
+  translationName?: string;
+  /** Offer to re-read the same reference in a translation that may carry it. */
+  fallback?: { name: string; onSelect: () => void };
 }) {
   if (status === 'loading') {
     return (
@@ -63,11 +72,43 @@ export function PassageView({
     );
   }
 
-  if (status === 'empty' || verses.length === 0) {
+  if (status === 'unresolved') {
     return (
       <p className="py-1 text-sm text-stone-500 dark:text-stone-400">
         No verses found for this reference.
       </p>
+    );
+  }
+
+  if (status === 'empty' || verses.length === 0) {
+    // NOT AN ERROR, AND NOT A MISSING FILE. The chapter loaded; this translation simply has no
+    // such verse. Translations genuinely disagree here — measured across the shipping set,
+    // Matthew 23:14 is present in WEB, KJV, YLT and Geneva (39 verses) and absent from BSB and
+    // ASV (38), and the topical indexes are KJV-era so they cite it. The old copy, "No verses
+    // found for this reference", reported that as a lookup failure and read like a bug.
+    //
+    // What this must NOT do is explain WHY the verse is absent. Whether a verse is a later
+    // addition is a text-critical judgement, and the product is a concordance, not a
+    // commentator (CLAUDE.md, the product guarantee). State the fact, name the translation,
+    // and offer one that may carry it — the reader draws their own conclusion.
+    return (
+      <div className="py-1 text-sm text-stone-500 dark:text-stone-400">
+        <p>
+          {translationName
+            ? `This passage is not in the ${translationName}.`
+            : 'This passage is not in the current translation.'}
+        </p>
+        <p className="mt-1 text-xs">Translations differ on a small number of verses.</p>
+        {fallback && (
+          <button
+            type="button"
+            onClick={fallback.onSelect}
+            className="mt-2 text-xs font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300"
+          >
+            Read it in the {fallback.name}
+          </button>
+        )}
+      </div>
     );
   }
 

@@ -17,8 +17,10 @@ import { TRANSLATIONS, translationAttribution } from '@/lib/bible';
 import {
   chaptersInSpan,
   fetchSpanVerses,
+  FALLBACK_TRANSLATION,
   isWholeChapter,
   MAX_PREVIEW_CHAPTERS,
+  translationName,
   wholeChapterSpan,
   type PassageTarget,
   type PreviewVerse,
@@ -34,13 +36,17 @@ export function PassagePane({
   onClose: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  // The translation THIS pane reads. Switchable to the fallback when the reader's own carries no
+  // such verse, without touching their stored setting.
+  const [activeTx, setActiveTx] = useState(translation);
   const [status, setStatus] = useState<PassageStatus>('loading');
   const [verses, setVerses] = useState<PreviewVerse[]>([]);
 
   // A new reference always starts at what was cited, never inheriting the last one's expansion.
   useEffect(() => {
     setExpanded(false);
-  }, [target.verseStart, target.verseEnd]);
+    setActiveTx(translation);
+  }, [target.verseStart, target.verseEnd, translation]);
 
   const cited = useMemo(
     () => chaptersInSpan(target.verseStart, target.verseEnd),
@@ -52,12 +58,12 @@ export function PassagePane({
   useEffect(() => {
     let live = true;
     if (span.slices.length === 0) {
-      setStatus('empty');
+      setStatus('unresolved');
       setVerses([]);
       return;
     }
     setStatus('loading');
-    fetchSpanVerses(span, translation)
+    fetchSpanVerses(span, activeTx)
       .then((got) => {
         // The pane is reused across references; a slow fetch for the PREVIOUS one must not
         // overwrite the current one when it finally lands.
@@ -71,11 +77,11 @@ export function PassagePane({
     return () => {
       live = false;
     };
-  }, [span, translation]);
+  }, [span, activeTx]);
 
   const first = span.slices[0];
-  const abbr = TRANSLATIONS.find((t) => t.id === translation)?.abbr ?? translation.toUpperCase();
-  const attribution = translationAttribution(translation);
+  const abbr = TRANSLATIONS.find((t) => t.id === activeTx)?.abbr ?? activeTx.toUpperCase();
+  const attribution = translationAttribution(activeTx);
   // Offering "whole chapter" for a reference that already IS one would be a control that does
   // nothing; offering it across a multi-chapter span would silently narrow what you are reading.
   const canExpand = !expanded && cited.slices.length === 1 && !isWholeChapter(cited);
@@ -114,7 +120,17 @@ export function PassagePane({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">
-        <PassageView status={status} verses={verses} note={note} />
+        <PassageView
+          status={status}
+          verses={verses}
+          note={note}
+          translationName={translationName(activeTx)}
+          fallback={
+            activeTx === FALLBACK_TRANSLATION
+              ? undefined
+              : { name: translationName(FALLBACK_TRANSLATION), onSelect: () => setActiveTx(FALLBACK_TRANSLATION) }
+          }
+        />
       </div>
 
  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t edge px-4 py-2.5">

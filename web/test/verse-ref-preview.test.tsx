@@ -32,6 +32,17 @@ const BOOK_1KI = {
 /** Every URL the component asked for, so the test can assert WHICH file it reached for. */
 let requested: string[] = [];
 
+// Matthew 23 as the shipping data actually has it: BSB carries 38 verses and NO verse 14, KJV
+// carries 39 and does. Measured against web/public/bible on 2026-08-05 — not invented for the
+// test. The topical indexes are KJV-era, so they cite 23:14 and a BSB reader finds nothing.
+const matChapter = (withVerse14: boolean) =>
+  Array.from({ length: 39 }, (_, i) => i + 1)
+    .filter((n) => withVerse14 || n !== 14)
+    .map((n) => ({ verse: n, text: `Matthew 23 verse ${n}.` }));
+
+const BOOK_MAT_BSB = { translation: 'bsb', book: 40, slug: 'mat', chapters: { '23': matChapter(false) } };
+const BOOK_MAT_KJV = { translation: 'kjv', book: 40, slug: 'mat', chapters: { '23': matChapter(true) } };
+
 const CITED = { verseStart: 11_018_024, verseEnd: 11_018_039, label: '1 Kings 18:24-39' };
 
 function stubHover(matches: boolean) {
@@ -57,6 +68,12 @@ beforeEach(() => {
       // production, so a regression to those paths fails rather than passing on a local file.
       if (String(url) === '/bible/web/1ki.json') {
         return { ok: true, status: 200, json: async () => BOOK_1KI } as unknown as Response;
+      }
+      if (String(url) === '/bible/bsb/mat.json') {
+        return { ok: true, status: 200, json: async () => BOOK_MAT_BSB } as unknown as Response;
+      }
+      if (String(url) === '/bible/kjv/mat.json') {
+        return { ok: true, status: 200, json: async () => BOOK_MAT_KJV } as unknown as Response;
       }
       return { ok: false, status: 404, json: async () => ({}) } as unknown as Response;
     }),
@@ -126,6 +143,57 @@ describe('VerseRef — reading a citation without leaving the plan', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Nowhere 1:1-5' }));
     const sheet = await screen.findByRole('dialog');
     await waitFor(() => expect(sheet.textContent).toContain('No verses found'));
+  });
+});
+
+describe('a verse the reader’s translation does not carry', () => {
+  const MATT = { verseStart: 40_023_014, verseEnd: 40_023_014, label: 'Matthew 23:14' };
+
+  it('names the translation rather than reporting a lookup failure', async () => {
+    // SEED: restore the old copy and this goes red. "No verses found for this reference" reported
+    // a translation difference as a failed lookup — owner-reported as "should never happen",
+    // because it reads exactly like a bug.
+    stubHover(false);
+    render(<VerseRef {...MATT} translation="bsb" onOpen={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Matthew 23:14' }));
+    const sheet = await screen.findByRole('dialog');
+    await waitFor(() => expect(sheet.textContent).toContain('not in the Berean Standard Bible'));
+    expect(sheet.textContent).not.toContain('No verses found');
+  });
+
+  it('says nothing about WHY the verse is absent — that is a text-critical judgement', async () => {
+    // The product is a concordance, not a commentator (CLAUDE.md). It may state that this
+    // translation lacks the verse; it may not rule on whether the verse belongs.
+    stubHover(false);
+    render(<VerseRef {...MATT} translation="bsb" onOpen={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Matthew 23:14' }));
+    const sheet = await screen.findByRole('dialog');
+    await waitFor(() => expect(sheet.textContent).toContain('not in the Berean Standard Bible'));
+    expect(sheet.textContent).not.toMatch(/later addition|interpolation|spurious|not original|forged/i);
+  });
+
+  it('offers a translation that has it, and reads it in the SAME preview', async () => {
+    stubHover(false);
+    render(<VerseRef {...MATT} translation="bsb" onOpen={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Matthew 23:14' }));
+    const sheet = await screen.findByRole('dialog');
+    await waitFor(() => expect(sheet.textContent).toContain('not in the Berean Standard Bible'));
+
+    fireEvent.click(screen.getByRole('button', { name: /read it in the King James Version/i }));
+    // SEED: leave the fetch imperative (fired once from show()) and this hangs on the old empty
+    // state — the switch would not be seen until the next hover.
+    await waitFor(() => expect(sheet.textContent).toContain('Matthew 23 verse 14.'));
+    expect(requested).toContain('/bible/kjv/mat.json');
+  });
+
+  it('offers no fallback when the fallback translation is already the one being read', async () => {
+    stubHover(false);
+    render(<VerseRef verseStart={40_023_099} verseEnd={40_023_099} label="Matthew 23:99" translation="kjv" onOpen={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Matthew 23:99' }));
+    const sheet = await screen.findByRole('dialog');
+    await waitFor(() => expect(sheet.textContent).toContain('not in the King James Version'));
+    // A button that re-reads the translation you are already in is a dead control.
+    expect(screen.queryByRole('button', { name: /read it in the/i })).toBeNull();
   });
 });
 

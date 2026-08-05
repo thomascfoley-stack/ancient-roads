@@ -23,7 +23,9 @@ import { PassageView, type PassageStatus } from '@/components/passage-view';
 import { placePopover, type Placement } from '@/lib/popover-position';
 import {
   chaptersInSpan,
+  FALLBACK_TRANSLATION,
   fetchSpanVerses,
+  translationName,
   MAX_PREVIEW_CHAPTERS,
   type PassageTarget,
   type PreviewVerse,
@@ -63,6 +65,9 @@ export function VerseRef({
   const [status, setStatus] = useState<PassageStatus>('loading');
   const [verses, setVerses] = useState<PreviewVerse[]>([]);
   const [placement, setPlacement] = useState<Placement | null>(null);
+  // The translation THIS preview is reading. Starts as the reader's own and can be switched to
+  // the fallback when their translation has no such verse, without changing their setting.
+  const [activeTx, setActiveTx] = useState(translation);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -101,32 +106,45 @@ export function VerseRef({
   useEffect(() => {
     setVerses([]);
     setStatus('loading');
+    setActiveTx(translation);
   }, [verseStart, verseEnd, translation]);
 
-  const load = useCallback(async () => {
+  // The fetch is REACTIVE, keyed on what is being shown rather than kicked off by the handler
+  // that opened it. An imperative load() fired once from show() could not see a later change of
+  // translation, so switching to the fallback left the old empty state on screen until the next
+  // hover. Same shape PassagePane already uses.
+  useEffect(() => {
+    if (mode === 'idle') return;
     if (span.slices.length === 0) {
-      setStatus('empty');
+      setStatus('unresolved');
       return;
     }
+    let live = true;
     setStatus('loading');
-    try {
-      const got = await fetchSpanVerses(span, translation);
-      setVerses(got);
-      setStatus(got.length > 0 ? 'ready' : 'empty');
-    } catch {
-      // No silent failure: the view says the passage could not be loaded rather than showing
-      // an empty box that reads as "this reference has no text".
-      setStatus('error');
-    }
-  }, [span, translation]);
+    fetchSpanVerses(span, activeTx)
+      .then((got) => {
+        // A slow fetch for a reference the pointer has already left must not overwrite the
+        // current one when it finally lands.
+        if (!live) return;
+        setVerses(got);
+        setStatus(got.length > 0 ? 'ready' : 'empty');
+      })
+      .catch(() => {
+        // No silent failure: the view says the passage could not be loaded rather than showing
+        // an empty box that reads as "this reference has no text".
+        if (live) setStatus('error');
+      });
+    return () => {
+      live = false;
+    };
+  }, [mode, span, activeTx]);
 
   const show = useCallback(
     (next: Mode) => {
       clearTimers();
       setMode(next);
-      void load();
     },
-    [clearTimers, load],
+    [clearTimers],
   );
 
   const hide = useCallback(() => {
@@ -181,7 +199,19 @@ export function VerseRef({
     ? `Showing the first ${MAX_PREVIEW_CHAPTERS} of ${span.totalChapters} chapters. Open it to read the rest.`
     : undefined;
 
-  const body = <PassageView status={status} verses={verses} note={note} />;
+  const body = (
+    <PassageView
+      status={status}
+      verses={verses}
+      note={note}
+      translationName={translationName(activeTx)}
+      fallback={
+        activeTx === FALLBACK_TRANSLATION
+          ? undefined
+          : { name: translationName(FALLBACK_TRANSLATION), onSelect: () => setActiveTx(FALLBACK_TRANSLATION) }
+      }
+    />
+  );
 
   return (
     <>
