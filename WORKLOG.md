@@ -93,6 +93,44 @@ Two findings from doing it:
   machine skipped the suite and reported green having run nothing. Caught only because the run said
   "3 skipped" where it should have hit the database. Same family as the A7-X1 retraction.
 
+### DEPLOYED. SEC-1 is closed on production (2026-08-05)
+
+`dpl_HSUsCqGCwWVPrQuG4bL1MBq3hJFg` from `e0cfd24`, aliased to `ancientpaths.app`. Migrations 100-104
+applied to `ep-odd-fog` and recorded. Verified by **creating a real account through the deployed
+app**: production took a `credential` row with a bcrypt hash and issued a live session, then the
+test account was deleted, leaving 0 users for the clean start.
+
+**The first deploy attempt FAILED, and the reason is the A6 defect class again.** The Vercel build
+died on `Export customFetch doesn't exist in target module` from
+`@better-auth/core/dist/oauth2/validate-authorization-code.mjs`. Three packages declare a jose
+range: `@better-auth/core` ^6.1.0, `better-auth` ^6.1.3, `@vercel/oidc` ^5.9.6. npm hoisted 5.10.0
+to satisfy `@vercel/oidc` and nested 6.2.8 under `better-auth` only, so `@better-auth/core` (also
+hoisted) resolved 5.10.0, which has no `customFetch`. `--legacy-peer-deps`, required by
+`web/.npmrc`, meant the peer range was never enforced. Invisible locally: pnpm's isolated layout
+gives every package its own correct copy, and no local command runs `npm ci` against
+`web/package-lock.json`. Fixed by declaring `jose ^6.1.3` directly, and verified by reproducing
+Vercel's install (`npm ci --legacy-peer-deps` in a clean directory) rather than by reasoning.
+
+**A gap this exposes:** the three upload-root guards check the deploy lockfile is SELF-CONTAINED.
+None checks that it RESOLVES compatibly. That is a different property and it is currently unguarded.
+
+**A second tree-shape trap, caught before it shipped.** This worktree had `web/public/bible` as a
+symlink and was missing `commentaries`, `concordance`, `lexicon`, `original` and
+`corpus-manifest.json` entirely. `vercel --prod` uploads the working tree, so deploying from here
+would have shipped a reader with **zero of the 1213 commentaries**. The real directories were copied
+in first. The main clone was not used because it sits on Lane A's branch with 6 dirty files, which
+is the concurrent-tree hazard AGENTS.md records twice.
+
+### Still needed from the owner
+
+- **A Resend account.** `RESEND_API_KEY` and `MAIL_FROM` are unset in production, so **password
+  reset silently does nothing** and verification mail is never sent. Sign-up and sign-in are
+  unaffected. Better Auth backgrounds both sends, so the app cannot surface the failure; the server
+  log is the only signal.
+- `MULTI_USER_UPLOADS` is still `false`, so uploads are closed on production. Flipping it is a
+  one-line change plus a redeploy, deliberately held back so auth gets a first production run
+  before multi-user upload is switched on.
+
 ### NOT DONE / UNVERIFIED
 
 - The rest of the cutover: `session.ts`, `client.ts`, the handler route, the two Neon prefab pages

@@ -1,7 +1,18 @@
 # Known security issues (tracked)
 
 ## SEC-1 — better-auth 1.4.18 vulnerabilities via `@neondatabase/auth` beta
-**Status: CODE-COMPLETE 2026-08-05, CLOSES WHEN THE CUTOVER REACHES PRODUCTION.**
+**Status: CLOSED 2026-08-05. The cutover is live on production.**
+Deployment `dpl_HSUsCqGCwWVPrQuG4bL1MBq3hJFg` from `e0cfd24`, aliased to `ancientpaths.app`.
+Migrations 100-104 applied to `ep-odd-fog` and recorded in `schema_migrations`. **Verified by
+creating a real account through the deployed app**, not by reading config: production
+`auth_users` / `auth_accounts` / `auth_sessions` took a row with `providerId = 'credential'`, a
+bcrypt hash, and a live session; the test account was then deleted, leaving production at 0 users
+for the clean start.
+
+Everyone re-registers (ADR-002 clean-start). The old `NEON_AUTH_*` variables are deliberately LEFT
+in the Vercel project: nothing reads them, but a rollback to the previous deployment would need
+them, and that is precisely the situation in which they would be missing. Remove them once this
+cutover has been stable for a while.
 `@neondatabase/auth` is removed and Better Auth 1.6.26 runs in-app
 ([AUTH_CUTOVER_DESIGN.md](./AUTH_CUTOVER_DESIGN.md)). Every advisory in the table below was rooted
 in the `better-auth@1.4.18` that package pinned; none of them fires any more, and `deps-audit`
