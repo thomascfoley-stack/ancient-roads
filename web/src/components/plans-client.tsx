@@ -106,9 +106,14 @@ export function PlansClient() {
   }, []);
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
+    <div className="w-full px-4 py-8 sm:px-6">
+      {/* NO max-width here. It used to be `mx-auto max-w-3xl` on this wrapper, which also
+          capped the DETAIL view, and the passage pane renders inside that. Opening a pane
+          therefore split 768px between the plan and a 440px pane, squeezing the plan to
+          roughly 300px (narrower than a phone) while the whole block stayed centred and
+          left a large dead gap beside the rail. Each view now owns its own measure. */}
       {!open && (
-        <header className="mb-6">
+        <header className="mx-auto mb-6 max-w-3xl">
           <h1 className="font-display text-3xl text-stone-800 dark:text-stone-100">Reading plans</h1>
           <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
             Choose what to read and how long you want to take. We lay the readings out day by day
@@ -117,14 +122,14 @@ export function PlansClient() {
         </header>
       )}
 
-      {list.status === 'loading' && <p className="text-sm text-stone-400">Loading…</p>}
+      {list.status === 'loading' && <p className="mx-auto max-w-3xl text-sm text-stone-400">Loading…</p>}
       {list.status === 'signed-out' && (
-        <p className="text-sm text-stone-500">
+        <p className="mx-auto max-w-3xl text-sm text-stone-500">
           <Link href="/auth/sign-in" className="text-accent-700 hover:text-accent-800 dark:text-accent-300">Sign in</Link>
           {' '}to build a reading plan.
         </p>
       )}
-      {list.status === 'error' && <p role="alert" className="text-sm text-red-800 dark:text-red-200">Plans could not be loaded. Please try again.</p>}
+      {list.status === 'error' && <p role="alert" className="mx-auto max-w-3xl text-sm text-red-800 dark:text-red-200">Plans could not be loaded. Please try again.</p>}
 
       {list.status === 'ready' && (open ? (
         <PlanDetail
@@ -133,7 +138,7 @@ export function PlansClient() {
           onChanged={() => void openPlan(open.plan.id)}
         />
       ) : (
-        <>
+        <div className="mx-auto max-w-3xl">
           {list.plans.length > 0 && (
             <div className="space-y-2">
               {list.plans.map((p) => <PlanRow key={p.id} plan={p} onOpen={() => void openPlan(p.id)} />)}
@@ -152,7 +157,7 @@ export function PlansClient() {
               {list.plans.length === 0 ? 'Build my first plan' : 'New plan'}
             </button>
           )}
-        </>
+        </div>
       ))}
     </div>
   );
@@ -608,8 +613,11 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
   })();
 
   return (
-    <div className="lg:flex lg:items-start lg:gap-6">
-      {/* On a phone the pane REPLACES the plan — same tab, no navigation — and its back control
+    // The detail view owns its own width, and it CHANGES with the pane. Alone, it holds the
+    // same max-w-3xl reading measure as the list. With a pane open it widens to max-w-6xl so
+    // the plan column keeps a real measure instead of being squeezed into the leftover.
+    <div className={`mx-auto lg:flex lg:items-start lg:gap-8 ${pane ? 'max-w-6xl' : 'max-w-3xl'}`}>
+      {/* On a phone the pane REPLACES the plan, same tab, no navigation, and its back control
           returns here. From lg the two sit side by side and the plan never loses its place. */}
       <div className={`min-w-0 lg:flex-1 ${pane ? 'hidden lg:block' : ''}`}>
       <div className="mb-4 flex items-center justify-between gap-3">
