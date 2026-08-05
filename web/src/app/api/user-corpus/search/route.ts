@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { guardUser } from '@/lib/user-corpus/route-guard';
 import { embedChunks } from '@/lib/user-corpus/embed';
 import { keywordSearch, searchMyWorks, verseAnchorScan } from '@/lib/user-corpus/search';
 import { parseRef } from '@bible/ref-parse';
@@ -24,12 +24,9 @@ export const runtime = 'nodejs';
  * interactive search — would be worse for the same reason.
  */
 export async function GET(req: NextRequest): Promise<NextResponse> {
-  let user;
-  try {
-    user = await requireUser();
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const guard = await guardUser();
+  if (guard.denied) return guard.denied;
+  const user = guard.user;
 
   const params = req.nextUrl.searchParams;
   const documentId = params.get('documentId') ?? undefined;

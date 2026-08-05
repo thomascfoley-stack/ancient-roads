@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { after } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { guardUser } from '@/lib/user-corpus/route-guard';
 import { putUserDocument } from '@/lib/user-corpus/blob';
 import { createDocument, findByChecksum, setBlobPathname } from '@/lib/user-corpus/documents';
 import { drain } from '@/lib/user-corpus/queue';
@@ -20,12 +20,9 @@ export const runtime = 'nodejs';
 // it by age. Recorded in WORKLOG as a step-2 limitation.
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  let user;
-  try {
-    user = await requireUser();
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const guard = await guardUser();
+  if (guard.denied) return guard.denied;
+  const user = guard.user;
 
   const form = await req.formData().catch(() => null);
   const file = form?.get('file');

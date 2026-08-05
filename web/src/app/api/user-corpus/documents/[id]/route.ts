@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { after } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { guardUser } from '@/lib/user-corpus/route-guard';
 import { deleteDocument, getDocument, setDocStatus } from '@/lib/user-corpus/documents';
 import { drain } from '@/lib/user-corpus/queue';
 
@@ -12,12 +12,9 @@ interface Ctx {
 
 /** One document's status, for polling after an upload. */
 export async function GET(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
-  let user;
-  try {
-    user = await requireUser();
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const guard = await guardUser();
+  if (guard.denied) return guard.denied;
+  const user = guard.user;
   const { id } = await ctx.params;
   const doc = await getDocument(user.id, id);
   // 404 rather than 403 for another user's id. RLS already makes it invisible, and distinguishing
@@ -39,12 +36,9 @@ export async function GET(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
  * different answer. Offering retry there would be an invitation to click forever.
  */
 export async function POST(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
-  let user;
-  try {
-    user = await requireUser();
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const guard = await guardUser();
+  if (guard.denied) return guard.denied;
+  const user = guard.user;
   const { id } = await ctx.params;
   const doc = await getDocument(user.id, id);
   if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -83,12 +77,9 @@ export async function POST(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
 }
 
 export async function DELETE(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
-  let user;
-  try {
-    user = await requireUser();
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const guard = await guardUser();
+  if (guard.denied) return guard.denied;
+  const user = guard.user;
   const { id } = await ctx.params;
   const deleted = await deleteDocument(user.id, id);
   if (!deleted) return NextResponse.json({ error: 'Not found' }, { status: 404 });

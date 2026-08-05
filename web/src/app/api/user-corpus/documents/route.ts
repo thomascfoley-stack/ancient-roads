@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireUser } from '@/lib/session';
+import { guardUser } from '@/lib/user-corpus/route-guard';
 import { listDocuments } from '@/lib/user-corpus/documents';
 import { queueStats } from '@/lib/user-corpus/queue';
 
@@ -13,12 +13,9 @@ export const runtime = 'nodejs';
  * list and the queue at different instants and show a document as queued next to a depth of zero.
  */
 export async function GET(): Promise<NextResponse> {
-  let user;
-  try {
-    user = await requireUser();
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const guard = await guardUser();
+  if (guard.denied) return guard.denied;
+  const user = guard.user;
 
   const [documents, queue] = await Promise.all([listDocuments(user.id), queueStats(user.id)]);
   return NextResponse.json({ documents, queue });
