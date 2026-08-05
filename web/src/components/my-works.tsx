@@ -38,7 +38,7 @@ const STATUS: Record<Doc['status'], { label: string; tone: string }> = {
 const fmtBytes = (n: number | null) => (n == null ? '' : n < 1024 * 1024 ? `${Math.round(n / 1024)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
 
 export function MyWorksClient() {
-  const [state, setState] = useState<'loading' | 'signedout' | 'ready'>('loading');
+  const [state, setState] = useState<'loading' | 'signedout' | 'unavailable' | 'ready'>('loading');
   const [docs, setDocs] = useState<Doc[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -53,7 +53,9 @@ export function MyWorksClient() {
   const load = useCallback(async () => {
     const r = await fetch('/api/user-corpus/documents');
     if (r.status === 401) { setState('signedout'); return; }
-    if (!r.ok) return;
+    // Any other failure (403 when uploads are switched off, 500) used to `return` and leave state
+    // on 'loading' forever: the page sat at "Loading…" with no upload control and no reason given.
+    if (!r.ok) { setState('unavailable'); return; }
     const d = (await r.json()) as { documents: Doc[] };
     setDocs(d.documents);
     setState('ready');
@@ -145,11 +147,23 @@ export function MyWorksClient() {
   if (state === 'loading') {
     return <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6"><p className="font-serif text-[15px] text-stone-500 dark:text-stone-400">Loading…</p></div>;
   }
-  if (state === 'signedout') {
-  return (
+  if (state === 'signedout' || state === 'unavailable') {
+    return (
       <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6">
         <h1 className="font-display text-3xl font-medium text-stone-800 dark:text-stone-100">My Works</h1>
-        <p className="mt-3 font-serif text-[15px] leading-relaxed text-stone-500 dark:text-stone-400">Sign in to bring your own writing into the library.</p>
+        <p className="mt-3 font-serif text-[15px] leading-relaxed text-stone-500 dark:text-stone-400">
+          {state === 'signedout'
+            ? 'Sign in to bring your own sermons and papers into the library.'
+            : 'Uploads are not available on this account yet.'}
+        </p>
+        {state === 'signedout' && (
+          <a
+            href="/auth/sign-in"
+            className="mt-5 inline-block min-h-[44px] rounded-full bg-stone-900 px-5 py-2.5 text-[15px] font-medium text-paper hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900"
+          >
+            Sign in
+          </a>
+        )}
       </div>
     );
   }
