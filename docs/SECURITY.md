@@ -1,7 +1,32 @@
 # Known security issues (tracked)
 
 ## SEC-1 — better-auth 1.4.18 vulnerabilities via `@neondatabase/auth` beta
-**Status: OPEN — LAUNCH BLOCKER (must be resolved before the app is public with real accounts).**
+**Status: CODE-COMPLETE 2026-08-05, CLOSES WHEN THE CUTOVER REACHES PRODUCTION.**
+`@neondatabase/auth` is removed and Better Auth 1.6.26 runs in-app
+([AUTH_CUTOVER_DESIGN.md](./AUTH_CUTOVER_DESIGN.md)). Every advisory in the table below was rooted
+in the `better-auth@1.4.18` that package pinned; none of them fires any more, and `deps-audit`
+reports no un-ignored high/critical across 307 prod packages with only the two dev-tooling ids
+ignored. The seven better-auth GHSAs are out of `pnpm.auditConfig.ignoreGhsas`.
+
+**GHSA-g38m is closed STRUCTURALLY, not by configuration.** It requires an app to offer BOTH
+email/password AND social login: the attacker pre-registers the victim's address unverified, and
+the victim's later Google sign-in auto-links onto it. The cutover ships email/password only, so
+there is no OAuth callback and nothing to auto-link. That property cannot regress when someone sets
+a flag wrong; it can only regress if a social provider is added, which `web/src/lib/auth/better-auth.ts`
+says at the point where someone would add one.
+
+**`--expect-red` is now EMPTY.** GHSA-qq9h-g4jm-xgf3 (ADR-038) was the one declared acceptable red
+and is also gone by version. `deps-audit` correctly FAILED on "declared id no longer observed"
+before `scripts/audit.sh` was updated: a disappearance from the declared set is as much a gate
+failure as an addition, which is the point of enumerating it rather than thresholding it.
+
+**What is still open:** the production cutover itself. Migrations 100-104 are on the `lane-b-uploader`
+Neon branch only, production still runs the Neon Auth wiring, and the clean-start re-register has not
+happened. `MULTI_USER_UPLOADS` stays `false` until it has (UPLOADER_DESIGN §4, enforced by
+`web/test/invariants/sec1-upload-gate.test.ts`).
+
+*(Prior status, for the record: OPEN, LAUNCH BLOCKER, must be resolved before the app is public with
+real accounts.)*
 **ESCALATED 2026-07-08:** app-level mitigation of the in-path account-takeover (GHSA-g38m)
 was investigated and is **not possible** on this beta SDK (see "App-level mitigation" below).
 Moving off `@neondatabase/auth` is therefore an **urgent** blocker, not a later cleanup.

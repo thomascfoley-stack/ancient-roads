@@ -38,7 +38,13 @@ gate "typecheck — web/test tsc --noEmit"  bash -c "cd web && npx tsc --noEmit 
 gate "lint — eslint src/ test/"           $PNPM exec eslint src test
 gate "lint — web/ eslint"                    bash -c "cd web && npx eslint --quiet ."
 gate "unused — knip (files/exports/deps)" $PNPM exec knip
-gate "deps — advisory bulk-endpoint (prod, high+ CVEs)" node scripts/deps-audit.mjs --expect-red GHSA-qq9h-g4jm-xgf3
+# --expect-red is EMPTY as of 2026-08-05. GHSA-qq9h-g4jm-xgf3 (ADR-038, magic-link/email-OTP
+# pre-account hijacking) was the one declared acceptable red; it was rooted in the better-auth
+# 1.4.18 pinned by @neondatabase/auth. The SEC-1 cutover removed that package and runs
+# better-auth 1.6.26 directly, so the advisory no longer fires and deps-audit correctly failed
+# on "declared id no longer observed". A disappearance is as much a gate failure as an addition,
+# which is the point of declaring the set rather than thresholding it.
+gate "deps — advisory bulk-endpoint (prod, high+ CVEs)" node scripts/deps-audit.mjs
 gate "tests + coverage — vitest"          $PNPM exec vitest run --coverage
 gate "qa — Layer 1 invariants + regressions" $PNPM run qa
 gate "hygiene — no test residue in dev (post-suite)" node scripts/check-test-residue.mjs

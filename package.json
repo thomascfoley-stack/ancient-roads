@@ -62,17 +62,10 @@
       "undici": "^7.29.0"
     },
     "auditConfig": {
-      "//": "Documented per-entry in docs/SECURITY.md. ignoreGhsas silences dev/build-tooling (vitest/vite/esbuild/postcss) and unfixable better-auth transitives until SEC-1 closes. GHSA-g38m IS in this list (CI grouping only) — still tracked LAUNCH BLOCKER in SECURITY.md SEC-1, not accepted. GHSA-qq9h is NOT here — accepted-red via scripts/audit.sh --expect-red (ADR-038).",
+      "//": "SEC-1 CLOSED 2026-08-05 by the Better Auth direct cutover (docs/AUTH_CUTOVER_DESIGN.md): @neondatabase/auth is removed and better-auth 1.6.26 runs in-app, so every advisory rooted in the pinned 1.4.18 is gone by version rather than ignored. GHSA-g38m is additionally closed STRUCTURALLY - the app ships email/password only, and that exploit requires social login to auto-link onto. Remaining entries are dev/build tooling (vitest/vite/esbuild/postcss), never executed in the prod runtime.",
       "ignoreGhsas": [
         "GHSA-5xrq-8626-4rwp",
-        "GHSA-fx2h-pf6j-xcff",
-        "GHSA-pw9m-5jxm-xr6h",
-        "GHSA-7w99-5wm4-3g79",
-        "GHSA-fmh4-wcc4-5jm3",
-        "GHSA-g38m-r43w-p2q7",
-        "GHSA-86j7-9j95-vpqj",
-        "GHSA-9h47-pqcx-hjr4",
-        "GHSA-392p-2q2v-4372"
+        "GHSA-fx2h-pf6j-xcff"
       ]
     }
   }
