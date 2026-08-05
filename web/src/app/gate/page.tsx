@@ -25,6 +25,7 @@ export default async function GatePage({
             name="password"
             autoFocus
             placeholder="Password"
+            aria-label="Site password"
             className="min-h-[44px] w-full rounded-lg bg-stone-100 px-3 text-base text-stone-900 outline-none placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
           />
           {error && (

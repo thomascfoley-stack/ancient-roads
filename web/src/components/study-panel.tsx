@@ -106,7 +106,7 @@ export function StudyPanel({
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600 active:bg-stone-100 dark:hover:bg-stone-800"
             aria-label="Close"
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </button>
@@ -293,7 +293,7 @@ function WordRow({ word, lang, defaultOpen = false }: { word: OWord; lang: 'hebr
         onClick={() => setOpen((v) => !v)}
         className="flex min-h-[48px] w-full items-center gap-3 px-2 py-2.5 text-left transition-colors hover:bg-accent-50/60 active:bg-accent-50/80 dark:hover:bg-accent-950/30"
       >
-        <span dir={rtl ? 'rtl' : 'ltr'} className="font-scripture text-xl text-stone-900 dark:text-stone-100">
+        <span dir={rtl ? 'rtl' : 'ltr'} lang={rtl ? 'he' : 'el'} className="font-scripture text-xl text-stone-900 dark:text-stone-100">
           {word.w}
         </span>
         <span className="text-xs text-stone-500 dark:text-stone-400">{word.tr}</span>
@@ -371,6 +371,7 @@ function NotesTab({ annotation }: { annotation: AnnotationControls }) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="Write a note on this verse…"
+        aria-label="Note on this verse"
         rows={6}
         className="w-full resize-y rounded-lg bg-stone-100/80 px-3 py-2.5 text-base text-stone-800 outline-none placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
       />

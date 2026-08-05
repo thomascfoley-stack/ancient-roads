@@ -132,7 +132,7 @@ export function WorkToc({
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600 active:bg-stone-100 dark:hover:bg-stone-800"
             aria-label="Close"
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </button>

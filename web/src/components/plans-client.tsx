@@ -613,7 +613,11 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
         </button>
       </div>
 
-      <h2 className="font-display text-2xl text-stone-800 dark:text-stone-100">{open.plan.title}</h2>
+      {/* An h1, not an h2. The page's only h1 is gated on `{!open}` above, so with a plan
+          open this route had no h1 at all and the document started at h2. The plan title
+          IS the subject of the screen once one is open, so it takes the h1 rather than
+          adding a second heading above it. */}
+      <h1 className="font-display text-2xl text-stone-800 dark:text-stone-100">{open.plan.title}</h1>
       <div className="mt-2 flex items-center gap-3">
         <div className="flex-1"><ProgressBar pct={pct} /></div>
         <span className="shrink-0 text-xs text-stone-400">{doneCount} of {open.days.length} days</span>
@@ -666,7 +670,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
                       : 'border-stone-300 text-transparent hover:border-accent-400 dark:border-stone-600'
                   }`}
                 >
-                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg aria-hidden className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                   </svg>
                 </button>

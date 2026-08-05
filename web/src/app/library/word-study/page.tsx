@@ -100,6 +100,7 @@ export default function WordStudyPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={lang === 'greek' ? 'agape, G26, love…' : 'shalom, H430, peace…'}
+          aria-label={lang === 'greek' ? 'Search the Greek lexicon' : 'Search the Hebrew lexicon'}
           className="min-h-[44px] min-w-0 flex-1 rounded-lg bg-paper px-3 text-base text-stone-800 shadow-paper outline-none transition-shadow duration-200 ease-gentle placeholder:text-stone-400 focus:shadow-float sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500 dark:shadow-none"
         />
       </div>
@@ -124,7 +125,7 @@ export default function WordStudyPage() {
               onClick={() => setSelected(hit)}
               className="flex w-full flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl bg-paper px-4 py-3 text-left shadow-paper transition-colors hover:bg-accent-50/50 active:bg-accent-50/70 dark:bg-stone-800/60 dark:shadow-none dark:hover:bg-stone-800"
             >
-              <span dir={rtl ? 'rtl' : 'ltr'} className="font-scripture text-xl text-stone-900 dark:text-stone-100">
+              <span dir={rtl ? 'rtl' : 'ltr'} lang={rtl ? 'he' : 'el'} className="font-scripture text-xl text-stone-900 dark:text-stone-100">
                 {hit.lemma}
               </span>
               <span className="text-sm text-stone-500 dark:text-stone-400">{hit.translit}</span>
@@ -174,7 +175,7 @@ function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: ()
         </div>
         <div className="flex items-start justify-between border-b border-stone-200/60 px-5 pb-3 pt-1 dark:border-stone-800" {...drag.handleProps}>
           <div>
-            <p dir={rtl ? 'rtl' : 'ltr'} className="font-scripture text-3xl text-stone-900 dark:text-stone-100">
+            <p dir={rtl ? 'rtl' : 'ltr'} lang={rtl ? 'he' : 'el'} className="font-scripture text-3xl text-stone-900 dark:text-stone-100">
               {hit.lemma}
             </p>
             <p className="mt-0.5 text-sm text-stone-500 dark:text-stone-400">
@@ -191,7 +192,7 @@ function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: ()
               className="flex h-11 w-11 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600 active:bg-stone-100 dark:hover:bg-stone-800"
               aria-label="Close"
             >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </button>

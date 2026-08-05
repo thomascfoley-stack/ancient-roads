@@ -125,7 +125,7 @@ function MenuSheet({ onClose }: { onClose: () => void }) {
             aria-label="Close menu"
             className="flex h-9 w-9 items-center justify-center rounded-full text-stone-400 hover:bg-stone-200/70 hover:text-stone-600 active:bg-stone-200 dark:hover:bg-stone-800"
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </button>

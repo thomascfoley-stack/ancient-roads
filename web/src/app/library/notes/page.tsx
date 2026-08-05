@@ -115,7 +115,7 @@ export default function MyLibraryPage() {
                       <Link href={ref.href} className="inline-flex min-h-[32px] items-center font-scripture text-sm font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300">
                         {ref.label}
                       </Link>
-                      <p className="mt-1 whitespace-pre-line text-sm text-stone-700 dark:text-stone-300">{n.body}</p>
+                      <p className="mt-1 whitespace-pre-line text-sm text-stone-700 dark:text-stone-300 break-words">{n.body}</p>
                     </div>
                   );
                 })}

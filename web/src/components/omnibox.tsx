@@ -112,6 +112,7 @@ export function Omnibox() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Go to passage, e.g. John 3:16"
+              aria-label="Go to a passage"
               className="focus-quiet min-w-0 flex-1 bg-transparent px-3 py-4 text-base text-stone-800 outline-none placeholder:text-stone-400 sm:text-sm dark:text-stone-100 dark:placeholder:text-stone-500"
             />
             <kbd className="hidden rounded border border-stone-200 px-1.5 py-0.5 text-micro text-stone-400 [@media(hover:hover)]:sm:inline-block dark:border-stone-700">
@@ -123,7 +124,7 @@ export function Omnibox() {
               aria-label="Close search"
               className="-mr-2 flex h-11 w-11 items-center justify-center rounded-full text-stone-400 hover:text-stone-600 active:bg-stone-200/60 [@media(hover:hover)]:hidden dark:active:bg-stone-800"
             >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </button>

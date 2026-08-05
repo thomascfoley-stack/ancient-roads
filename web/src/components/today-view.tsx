@@ -95,7 +95,7 @@ function ReadyCard({ card }: { card: TodayCard }) {
       {/* Spurgeon's devotional, verbatim + attributed. */}
       <div className="mt-8 space-y-4 font-serif text-lg leading-relaxed text-stone-700 dark:text-stone-300">
         {paragraphs.map((p, i) => (
-          <p key={i} className="whitespace-pre-line">
+          <p key={i} className="whitespace-pre-line break-words">
             {p}
           </p>
         ))}
