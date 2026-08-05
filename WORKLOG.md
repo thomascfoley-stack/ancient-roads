@@ -121,6 +121,52 @@ would have shipped a reader with **zero of the 1213 commentaries**. The real dir
 in first. The main clone was not used because it sits on Lane A's branch with 6 dirty files, which
 is the concurrent-tree hazard AGENTS.md records twice.
 
+### My Works is LIVE on production, verified end to end (2026-08-05)
+
+`dpl_GYLXvRPN3fvd2hhwQ6QwyfHVorcs`. `MULTI_USER_UPLOADS` is true and
+`USER_CORPUS_MULTI_USER=true` is set, because SEC-1 closing satisfies UPLOADER_DESIGN §4's
+condition 1. Red-proofed in the state that matters (flag TRUE, g38m returned to the ignore list):
+A7 fails with its own message.
+
+**Driven against production, not asserted.** Registered an account, uploaded a markdown sermon
+through `/api/user-corpus/upload` as that signed-in user, and watched the whole pipeline:
+
+- upload -> 201, `queued`
+- the `after()` drain fired on Vercel and the document reached **`ready` inside 10 seconds**:
+  2 sections, 2 embeddings, 5 anchors
+- text search -> `mode: fused` (semantic + FTS through RRF), returned the section
+- passage search -> `mode: verse`, resolved "John 10" to 43010001-43010999 and returned the
+  explicit anchor at 43010011
+- an unparseable ref -> 400, not a text search
+- delete -> 200, and the A4 cascade took sections, embeddings and anchors with it
+
+**The anchoring result is the interesting part.** Both channels fired and AGREED, which
+migration 103 records as the strongest available signal that an anchor is real:
+
+    explicit  John 10:11 · Romans 8:28          (the two citations)
+    uncited   John 10:11 (9) · Romans 8:28 (20) · John 10:13 (6)
+
+John 10:13 was never cited in the document. "The hireling flees because he is an hireling, and
+careth not for the sheep" is that verse verbatim, and the uncited channel found it. That is the
+channel doing the thing it exists for rather than merely running.
+
+`model_slug` is `bge-large-en-v1.5`, the SHORT corpus form, so ADR-102's tautology trap
+(writing the qualified `BAAI/...` and comparing it against itself) is avoided in live data.
+
+Production was left clean: 0 users, 0 sessions, 0 documents.
+
+### The moat is still not connected
+
+`traditionGap` has **no call site anywhere outside its own module and tests**. Slice 1 therefore
+ships what the order itself calls the filing cabinet: personal upload and personal search, without
+the corpus join that nothing else could build.
+
+What changed today is that it is no longer BLOCKED. The merge brought Lane A's work, so
+`LEGAL_CORPUS_FILTER` in `routing.ts` is now `(served)` and production carries 399,597 served
+embeddings. ADR-104 gated the join on exactly that, and the gate is discharged: the function takes
+an injected `CorpusPredicate` and the production call site can now supply the canonical filter.
+What remains is a route and a UI surface, not a decision.
+
 ### Still needed from the owner
 
 - **A Resend account.** `RESEND_API_KEY` and `MAIL_FROM` are unset in production, so **password
