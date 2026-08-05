@@ -41,7 +41,7 @@ export function Interlinear({
                 <button
                   key={i}
                   onClick={() => onWordClick(word, v, i)}
-                  className="group flex min-h-[44px] flex-col items-center justify-center rounded-md px-1.5 py-1 text-center transition-colors hover:bg-accent-50/70 active:bg-accent-50 dark:hover:bg-accent-950/30"
+                  className="group flex min-h-[44px] flex-col items-center justify-center rounded-md px-1.5 py-1 text-center transition-colors ease-gentle hover:bg-accent-50/70 active:bg-accent-50 dark:hover:bg-accent-950/30"
                   title={word.s}
                 >
                   {/* lang goes on the ORIGINAL-LANGUAGE word only. It was briefly on the
@@ -66,7 +66,7 @@ export function Interlinear({
         ))}
       </div>
 
-      <div className="mt-10 border-t border-stone-100 pt-6 text-center text-xs text-stone-400">
+      <div className="mt-10 border-t border-stone-100 pt-6 text-center text-xs text-stone-500 dark:text-stone-400">
         <p>Tap any word for its {rtl ? 'Hebrew' : 'Greek'} definition, morphology, and commentaries.</p>
         {/* Attribution required by the licences of the source data (§7 licensing fix). Full
             per-work records in DATA_SOURCES.md. Strong's is PD; the text + morphology are not. */}

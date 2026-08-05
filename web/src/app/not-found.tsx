@@ -9,7 +9,7 @@ export const metadata = { title: 'Not found' };
 export default function NotFound() {
   return (
     <div className="mx-auto flex min-h-[70dvh] w-full max-w-xl flex-col items-center justify-center px-5 text-center">
-      <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">404</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">404</p>
       <h1 className="mt-3 font-display text-3xl tracking-tight text-stone-900 dark:text-stone-100">
         That page isn&rsquo;t here
       </h1>

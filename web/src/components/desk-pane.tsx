@@ -54,9 +54,9 @@ function PaneFrame({
   return (
     <section
       aria-label={`${title} (${register})`}
-      className="flex min-h-0 min-w-0 flex-1 flex-col rounded-2xl border border-stone-200/70 bg-white/40 dark:border-stone-800 dark:bg-stone-950/30"
+ className="flex min-h-0 min-w-0 flex-1 flex-col rounded-2xl border edge bg-white/40 dark:bg-stone-950/30"
     >
-      <header className="flex items-start justify-between gap-2 border-b border-stone-200/70 px-4 py-3 dark:border-stone-800">
+ <header className="flex items-start justify-between gap-2 border-b edge px-4 py-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             {/* The register label. Never omitted, never inferred from position. */}
@@ -76,7 +76,7 @@ function PaneFrame({
               onClick={onContents}
               aria-label={`Contents of ${title}`}
               title="Contents"
-              className="flex min-h-[32px] min-w-[32px] items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-stone-800 dark:hover:text-stone-200"
+              className="flex min-h-[32px] min-w-[32px] items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-stone-800 dark:hover:text-stone-200"
             >
               <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden>
                 <path d="M2 3.5h11M2 7.5h11M2 11.5h7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -87,7 +87,7 @@ function PaneFrame({
             type="button"
             onClick={onClose}
             aria-label={`Close ${title}`}
-            className="flex min-h-[32px] min-w-[32px] items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-stone-800 dark:hover:text-stone-200"
+            className="flex min-h-[32px] min-w-[32px] items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-stone-800 dark:hover:text-stone-200"
           >
             ✕
           </button>
@@ -182,7 +182,7 @@ function ScripturePaneView({
         <div className="space-y-1.5 font-scripture text-base leading-relaxed text-stone-800 dark:text-stone-100">
           {data.verses.map((v) => (
             <p key={v.verse}>
-              <span className="mr-1.5 align-super text-micro tabular-nums text-stone-400">{v.verse}</span>
+              <span className="mr-1.5 align-super text-micro tabular-nums text-stone-500 dark:text-stone-400">{v.verse}</span>
               {v.text}
             </p>
           ))}
@@ -333,7 +333,7 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
               type="button"
               onClick={() => void loadMore()}
               disabled={busy}
-              className="mt-4 min-h-[40px] w-full rounded-full border border-stone-200/70 text-sm text-stone-600 hover:bg-accent-50/50 disabled:opacity-50 dark:border-stone-800 dark:text-stone-300 dark:hover:bg-accent-950/20"
+ className="mt-4 min-h-[40px] w-full rounded-full border edge text-sm text-stone-600 hover:bg-accent-50/50 disabled:opacity-50 dark:text-stone-300 dark:hover:bg-accent-950/20"
             >
               {busy ? 'Loading…' : 'Read more'}
             </button>

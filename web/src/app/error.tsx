@@ -48,7 +48,7 @@ export default function AppError({
         </Link>
       </div>
       {error.digest && (
-        <p className="mt-6 font-mono text-xs text-stone-400">Reference {error.digest}</p>
+        <p className="mt-6 font-mono text-xs text-stone-500 dark:text-stone-400">Reference {error.digest}</p>
       )}
     </div>
   );

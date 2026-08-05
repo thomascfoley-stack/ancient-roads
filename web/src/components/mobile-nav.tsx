@@ -55,7 +55,7 @@ export function MobileNav() {
     { href: '/library', label: 'Library', active: pathname.startsWith('/library'), icon: <LibraryIcon /> },
   ];
   const tabClass = (active: boolean) =>
-    `flex min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 pt-1.5 pb-1 text-micro font-semibold tracking-wide transition-colors active:bg-stone-200/50 dark:active:bg-stone-800/70 ${
+    `flex min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 pt-1.5 pb-1 text-micro font-semibold tracking-wide transition-colors ease-gentle active:bg-stone-200/50 dark:active:bg-stone-800/70 ${
       active ? 'text-accent-700 dark:text-accent-300' : 'text-stone-500 dark:text-stone-400'
     }`;
 
@@ -123,7 +123,7 @@ function MenuSheet({ onClose }: { onClose: () => void }) {
           <button
             onClick={onClose}
             aria-label="Close menu"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-stone-400 hover:bg-stone-200/70 hover:text-stone-600 active:bg-stone-200 dark:hover:bg-stone-800"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-200/70 hover:text-stone-600 active:bg-stone-200 dark:hover:bg-stone-800"
           >
             <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />

@@ -92,9 +92,9 @@ export function Omnibox() {
               invisible. Tabbing back from the result list showed no indicator at all.
               The rule for .focus-quiet is that the container shows focus instead, so the
               container now actually does. */}
-          <div className="flex items-center border-b border-stone-200/70 px-4 transition-colors focus-within:border-accent-500 dark:border-stone-800 dark:focus-within:border-accent-400">
+ <div className="flex items-center border-b edge px-4 transition-colors ease-gentle focus-within:border-accent-500 dark:focus-within:border-accent-400">
             <svg
-              className="h-4 w-4 shrink-0 text-stone-400"
+              className="h-4 w-4 shrink-0 text-stone-500 dark:text-stone-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -115,14 +115,14 @@ export function Omnibox() {
               aria-label="Go to a passage"
               className="focus-quiet min-w-0 flex-1 bg-transparent px-3 py-4 text-base text-stone-800 outline-none placeholder:text-stone-400 sm:text-sm dark:text-stone-100 dark:placeholder:text-stone-500"
             />
-            <kbd className="hidden rounded border border-stone-200 px-1.5 py-0.5 text-micro text-stone-400 [@media(hover:hover)]:sm:inline-block dark:border-stone-700">
+ <kbd className="hidden rounded border edge px-1.5 py-0.5 text-micro text-stone-500 dark:text-stone-400 [@media(hover:hover)]:sm:inline-block">
               esc
             </kbd>
             <button
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close search"
-              className="-mr-2 flex h-11 w-11 items-center justify-center rounded-full text-stone-400 hover:text-stone-600 active:bg-stone-200/60 [@media(hover:hover)]:hidden dark:active:bg-stone-800"
+              className="-mr-2 flex h-11 w-11 items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:text-stone-600 active:bg-stone-200/60 [@media(hover:hover)]:hidden dark:active:bg-stone-800"
             >
               <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -133,7 +133,7 @@ export function Omnibox() {
 
         <div className="max-h-[min(20rem,50dvh)] overflow-auto overscroll-contain p-2">
           {!result && (
-            <p className="px-3 py-4 text-center text-sm text-stone-400">
+            <p className="px-3 py-4 text-center text-sm text-stone-500 dark:text-stone-400">
               Type a book, chapter, or verse reference
             </p>
           )}
@@ -149,7 +149,7 @@ export function Omnibox() {
                     <span className="font-medium text-stone-800 dark:text-stone-100">
                       {b.name}
                     </span>
-                    <span className="ml-auto text-xs text-stone-400">
+                    <span className="ml-auto text-xs text-stone-500 dark:text-stone-400">
                       {b.chapterCount} ch
                     </span>
                   </button>
@@ -159,7 +159,7 @@ export function Omnibox() {
           )}
 
           {result?.kind === 'completions' && result.books.length === 0 && (
-            <p className="px-3 py-4 text-center text-sm text-stone-400">
+            <p className="px-3 py-4 text-center text-sm text-stone-500 dark:text-stone-400">
               No books match
             </p>
           )}
@@ -196,9 +196,9 @@ function RefResult({
       >
         <div>
           <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">{ref.display}</p>
-          <p className="text-xs text-stone-400">{ref.book.testament} &middot; {ref.kind.replace('_', ' ')}</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400">{ref.book.testament} &middot; {ref.kind.replace('_', ' ')}</p>
         </div>
-        <span className="ml-auto text-xs text-stone-400">Enter &rarr;</span>
+        <span className="ml-auto text-xs text-stone-500 dark:text-stone-400">Enter &rarr;</span>
       </button>
     );
   }
@@ -207,7 +207,7 @@ function RefResult({
   if (outcome.candidates && outcome.candidates.length > 0) {
     return (
       <div>
-        <p className="px-3 py-2 text-xs text-stone-400">{outcome.reason}</p>
+        <p className="px-3 py-2 text-xs text-stone-500 dark:text-stone-400">{outcome.reason}</p>
         <ul>
           {outcome.candidates.map((b) => (
             <li key={b.slug}>
@@ -225,7 +225,7 @@ function RefResult({
   }
 
   return (
-    <p className="px-3 py-4 text-center text-sm text-stone-400">
+    <p className="px-3 py-4 text-center text-sm text-stone-500 dark:text-stone-400">
       {outcome.reason}
     </p>
   );

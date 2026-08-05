@@ -271,7 +271,7 @@ export default function ReaderPage() {
           </>
         ) : (
           <div className="flex min-h-[60vh] items-center justify-center">
-            <p className="text-sm text-stone-400">Loading Greek / Hebrew…</p>
+            <p className="text-sm text-stone-500 dark:text-stone-400">Loading Greek / Hebrew…</p>
           </div>
         )
       ) : data ? (
@@ -295,11 +295,11 @@ export default function ReaderPage() {
         </>
       ) : (
         <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-sm text-stone-400">Loading…</p>
+          <p className="text-sm text-stone-500 dark:text-stone-400">Loading…</p>
         </div>
       )}
       {translationAttribution(translation.id) ? (
-        <p className="mx-auto max-w-2xl px-6 pb-8 text-center text-xs text-stone-400">
+        <p className="mx-auto max-w-2xl px-6 pb-8 text-center text-xs text-stone-500 dark:text-stone-400">
           {translationAttribution(translation.id)}
         </p>
       ) : null}
