@@ -43,6 +43,20 @@ const CSP = [
 ].join('; ');
 
 const nextConfig: NextConfig = {
+  // IMAGE QUALITY. The hero was served at 198 KB from a 966 KB source. Next's default quality
+  // is 75, and in Next 16 the optimizer only serves qualities DECLARED here, so 75 was the only
+  // one reachable: requesting q=90 returned zero bytes. On the single full-bleed photograph
+  // that carries the landing page, discarding 80% of the file is the wrong trade, and it
+  // compounded a source that is already being upscaled.
+  //
+  // 75 stays and remains the default for every other image; 90 is opted into by the hero alone.
+  //
+  // THIS DOES NOT FIX RESOLUTION. hero-road.jpg is 1376x768. A full-bleed hero wants ~2560px
+  // wide on a retina laptop and ~5120px on a 4K display, so it is upscaled roughly 2x and no
+  // quality setting recovers detail the file does not contain. A 3840px-wide source is the fix.
+  images: {
+    qualities: [75, 90],
+  },
   async headers() {
     return [
       {
