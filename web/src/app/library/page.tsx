@@ -18,9 +18,14 @@ import { requireUser } from '@/lib/session';
 export const metadata = { title: 'Library' };
 export const dynamic = 'force-dynamic';
 
+// "My library" used to label BOTH /library/books here and /library/notes in the sidebar rail,
+// so the same words led two places, and neither destination called itself that: /library/books
+// titles itself "My books" and /library/notes titles itself "My library". Each route now has
+// ONE name, used at every entry point and on the page itself. "Saved verses" rather than
+// "Notes", because that page holds highlights and bookmarks too.
 const YOURS = [
-  { href: '/library/notes', label: 'Notes' },
-  { href: '/library/books', label: 'My library' },
+  { href: '/library/notes', label: 'Saved verses' },
+  { href: '/library/books', label: 'My books' },
   { href: '/library/word-study', label: 'Word study' },
   { href: '/library/uploads', label: 'Uploads' },
 ];

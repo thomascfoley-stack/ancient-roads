@@ -56,7 +56,13 @@ function PaneFrame({
       aria-label={`${title} (${register})`}
  className="flex min-h-0 min-w-0 flex-1 flex-col rounded-2xl border edge bg-white/40 dark:bg-stone-950/30"
     >
- <header className="flex items-start justify-between gap-2 border-b edge px-4 py-3">
+      {/* ALIGNMENT. The header used to sit at the pane's full width while the body below it was
+          centred in a max-w-2xl column, so on a wide single-pane desk the work's title started
+          about 220px to the left of the first word of the work. The rule under the header ran
+          edge to edge, correctly, but its CONTENTS now share the body's column so the title
+          lines up with the text it labels. */}
+      <header className="border-b edge px-4 py-3">
+        <div className="mx-auto flex w-full max-w-2xl items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             {/* The register label. Never omitted, never inferred from position. */}
@@ -89,8 +95,13 @@ function PaneFrame({
             aria-label={`Close ${title}`}
             className="flex min-h-[32px] min-w-[32px] items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-stone-800 dark:hover:text-stone-200"
           >
-            ✕
+            {/* Was the ✕ character. It sat next to a real stroked SVG in the same button group,
+                at a different weight and optical size, so the two controls did not read as a set. */}
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden>
+              <path d="M3.5 3.5l8 8M11.5 3.5l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
           </button>
+        </div>
         </div>
       </header>
       {/* Each pane scrolls independently, that is the whole point of a desk.
@@ -321,7 +332,16 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
                 )}
                 {/* Corpus prose, rendered as TEXT. Never dangerouslySetInnerHTML here: bodies are
                     stored source text, and this pane has no sanitiser in its path. */}
-                <p className="whitespace-pre-wrap break-words text-base leading-relaxed text-stone-700 dark:text-stone-300">
+                {/* font-scripture (Literata) at text-lg, matching the Bible reader exactly.
+                    Two separate defects were here. The body was falling through to Source Sans 3
+                    while globals.css:22 assigns Literata to "long-form reading (scripture,
+                    commentary, answers)" — this IS that surface. And it ran 86 characters a line
+                    at 16px, against the reader's ~77 in a column of identical width.
+                    MEASURED, not assumed: swapping to Literata alone changed the count by one
+                    character (86 -> 87), because Literata is no narrower than Source Sans 3 at
+                    the same size. Size is the lever that actually moves measure here, so this
+                    takes the reader's 18px and lands on the reader's line length. */}
+                <p className="whitespace-pre-wrap break-words font-scripture text-lg leading-relaxed text-stone-700 dark:text-stone-300">
                   {s.body}
                 </p>
               </article>

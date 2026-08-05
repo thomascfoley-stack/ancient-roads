@@ -144,12 +144,6 @@ export function StudyPanel({
           {tab === 'word' && <WordTab words={originalWords} lang={lang} focusIdx={focusWordIdx} />}
           {tab === 'notes' && <NotesTab annotation={annotation} />}
         </div>
-
- <div className="border-t edge px-5 py-3 text-center">
-          <p className="font-scripture text-xs italic text-stone-500 dark:text-stone-400">
-            Nevertheless, not as I will, but as you will. . . . Your will be done!
-          </p>
-        </div>
       </div>
     </div>
   );

@@ -33,17 +33,27 @@ export interface CatalogDef {
   label: string;
   /** The ONLY source_types this catalog may ever show. Disjoint across catalogs by construction. */
   types: readonly string[];
+  /**
+   * Plural noun for a work's reading-unit count, so the catalog can render "727 entries"
+   * rather than a bare `727`. The count was shipping as an unlabelled integer next to every
+   * work, which a reader cannot resolve — 727 pages? years? sections? It lives here beside
+   * `label` because it is taxonomy vocabulary, and one wrong noun should be correctable in one
+   * place. Deliberately conservative: "entries" wherever the catalog's own name does not
+   * already supply the right word (ADR-026 reading units, not raw chunks).
+   */
+  unit: string;
   /** Optional within-catalog split (design §10.2: "Hymns/Poetry sub-filter"). */
   subFilters?: Readonly<Record<string, readonly string[]>>;
 }
 
 export const CATALOGS: Readonly<Record<CatalogId, CatalogDef>> = {
-  commentaries: { id: 'commentaries', label: 'Commentaries', types: ['commentary', 'father'] },
-  sermons: { id: 'sermons', label: 'Sermons', types: ['sermon'] },
+  commentaries: { id: 'commentaries', label: 'Commentaries', types: ['commentary', 'father'], unit: 'entries' },
+  sermons: { id: 'sermons', label: 'Sermons', types: ['sermon'], unit: 'sermons' },
   'hymns-poetry': {
     id: 'hymns-poetry',
     label: 'Hymns & Poetry',
     types: ['hymn', 'poetry'],
+    unit: 'pieces',
     subFilters: { hymns: ['hymn'], poetry: ['poetry'] },
   },
   // Added 2026-08-01 by owner decision. `historian` was previously in NO catalog under the
@@ -51,10 +61,10 @@ export const CATALOGS: Readonly<Record<CatalogId, CatalogDef>> = {
   // where it goes. It is not lane content (it is neither exegesis nor devotional register), so it
   // gets its own shelf rather than being folded into Commentaries, which a reader would read as
   // "commentary on this passage". `theology` and `confession` remain uncatalogued, deliberately.
-  historians: { id: 'historians', label: 'Historians', types: ['historian'] },
+  historians: { id: 'historians', label: 'Historians', types: ['historian'], unit: 'entries' },
   // Added 2026-08-02. `devotional` is migration 038's new source_type and would otherwise land in
   // the fail-closed default below — ingested, published, and on no shelf.
-  devotionals: { id: 'devotionals', label: 'Devotionals', types: ['devotional'] },
+  devotionals: { id: 'devotionals', label: 'Devotionals', types: ['devotional'], unit: 'readings' },
   // Added 2026-08-02, and it CORRECTS the note above rather than contradicting it. That note
   // argues theology and confession must not be folded INTO Commentaries, which remains true and
   // is why they are not in that catalog's types. But "not in Commentaries" was silently doing
@@ -62,7 +72,7 @@ export const CATALOGS: Readonly<Record<CatalogId, CatalogDef>> = {
   // owen-works and schaff-creeds were published, lane-served, and unbrowsable — 33,578 sections a
   // reader had no route to. The Historians row directly above already established the remedy: a
   // register that is not exegesis gets its OWN shelf. Same reasoning, same fix.
-  theology: { id: 'theology', label: 'Theology & Creeds', types: ['theology', 'confession'] },
+  theology: { id: 'theology', label: 'Theology & Creeds', types: ['theology', 'confession'], unit: 'entries' },
 } as const;
 
 export const CATALOG_IDS = Object.keys(CATALOGS) as CatalogId[];

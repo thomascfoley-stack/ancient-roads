@@ -263,7 +263,7 @@ export function SidebarNavContent({
           <SidebarLink
             href="/library/notes"
             icon={<BookStackIcon />}
-            label="My library"
+            label="Saved verses"
             tier="shelf"
             active={pathname.startsWith('/library/notes')}
             row={row}

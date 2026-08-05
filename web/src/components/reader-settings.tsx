@@ -18,8 +18,20 @@ export function ReaderSettings() {
     function onClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
+    // Anchored popover, so Escape and focus return but no focus trap. Outside-click was the
+    // only way to dismiss this, which is a pointer-only exit from a keyboard-reachable control.
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        ref.current?.querySelector('button')?.focus();
+      }
+    }
     document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [open]);
 
   const applyDark = setDark;
@@ -30,7 +42,10 @@ export function ReaderSettings() {
       <button
         onClick={() => setOpen((v) => !v)}
         title="Reading settings"
-        className="min-h-[44px] rounded-lg bg-paper px-3 text-xs font-semibold text-stone-500 shadow-paper transition-colors ease-gentle hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label="Reading settings: theme and text size"
+        className="flex min-h-[44px] items-center rounded-lg bg-paper px-3 text-xs font-semibold text-stone-500 shadow-paper transition-colors ease-gentle hover:bg-stone-100 active:bg-stone-200 sm:min-h-8 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
       >
         Aa
       </button>

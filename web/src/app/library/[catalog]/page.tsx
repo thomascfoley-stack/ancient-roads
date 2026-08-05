@@ -130,35 +130,62 @@ export default async function CatalogPage({
       {works.length === 0 ? (
         <p className="text-sm text-stone-500 dark:text-stone-400">No works here yet.</p>
       ) : (
-        <ul className="space-y-2">
+        /* Was: one bordered rounded-xl card per work, plus a detached 44px box carrying a "+"
+           and a DASHED border, gap-separated into its own column. Two problems, both visible
+           the moment the page is looked at rather than read. A dashed outline means
+           "empty / drop target / placeholder" in every interface vocabulary there is, so a
+           column of them running down the page read as unloaded content, and it was the loudest
+           thing on a page whose actual subject is the work titles. And /library one click
+           earlier is a hairline divide-y list, so the two halves of the same section used
+           opposite idioms. This is that same list: hairline rules, no card, the add-to-desk
+           action quiet inside the row instead of outside it. */
+        <ul className="border-y edge">
           {works.map((w) => (
-            <li key={w.slug} className="flex items-stretch gap-2">
+            <li key={w.slug} className="group flex items-stretch gap-1 border-b edge last:border-b-0">
               <Link
                 href={`/work/${w.slug}`}
                 // min-w-0: without it this flex item's automatic minimum is the UNWRAPPED title
-                // width (truncate sets nowrap), so long-titled rows grew past the container and
-                // every + landed at a different x. One class is the whole uniformity fix.
- className="flex min-h-[44px] min-w-0 flex-1 items-center justify-between gap-3 rounded-xl border edge px-4 py-3 hover:bg-accent-50/50 dark:hover:bg-accent-950/20"
+                // width, so long-titled rows grew past the container and every trailing control
+                // landed at a different x. One class is the whole uniformity fix.
+                className="flex min-h-[64px] min-w-0 flex-1 items-center justify-between gap-4 py-3 pl-1 pr-2 transition-colors ease-gentle hover:bg-accent-50/60 dark:hover:bg-accent-950/20"
               >
                 <span className="min-w-0">
-                  <span className="block truncate font-scripture text-stone-800 dark:text-stone-100">{w.title}</span>
-                  <span className="block truncate text-xs text-stone-500 dark:text-stone-400">
+                  {/* line-clamp-2, not truncate: these titles are long by nature ("Augustine:
+                      Tractates on John, Homilies on 1 John, Expositions on the Psalms, Sermons")
+                      and a single-line cut landed mid-word on most of them. */}
+                  <span className="block font-scripture text-stone-800 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden dark:text-stone-100">
+                    {w.title}
+                  </span>
+                  <span className="mt-0.5 block truncate text-xs text-stone-500 dark:text-stone-400">
                     {w.author ?? 'Unattributed'}
                     {w.tradition ? ` · ${w.tradition}` : ''}
                     {/* the register label: a reader must always be able to tell what kind of work this is */}
                     {` · ${w.sourceType}`}
                   </span>
                 </span>
-                <span className="shrink-0 text-xs tabular-nums text-stone-500 dark:text-stone-400">{w.units}</span>
+                {/* The count shipped as a bare integer — "727" with no noun, which a reader
+                    cannot resolve (727 pages? years? sections?). Rendered only when it really
+                    is a number: a missing count shows nothing rather than "0 entries", which
+                    would be a false statement about the corpus, and rather than throwing on
+                    `.toLocaleString()` and taking the whole shelf down with it. */}
+                {Number.isFinite(w.units) && (
+                  <span className="shrink-0 text-xs tabular-nums text-stone-500 dark:text-stone-400">
+                    {w.units.toLocaleString()} <span className="hidden sm:inline">{def.unit}</span>
+                  </span>
+                )}
               </Link>
-              {/* Open this work beside what is already on the desk. */}
+              {/* Open this work beside what is already on the desk. Always rendered (a
+                  hover-only control is unreachable on touch), just quiet until the row is
+                  hovered or this link itself takes focus. */}
               <Link
                 href={deskHrefFor(w.slug)}
                 aria-label={`Add ${w.title} to your desk`}
                 title="Add to desk"
-                className="flex min-h-[44px] w-11 shrink-0 items-center justify-center rounded-xl border border-dashed border-stone-300 text-stone-500 dark:text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
+                className="flex w-11 shrink-0 items-center justify-center rounded-lg text-stone-500 transition-colors ease-gentle hover:bg-stone-200/70 hover:text-accent-700 group-hover:text-stone-600 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-accent-300"
               >
-                +
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 5v14M5 12h14" />
+                </svg>
               </Link>
             </li>
           ))}

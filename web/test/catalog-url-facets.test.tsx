@@ -42,7 +42,12 @@ beforeEach(() => {
   listCatalogWorks.mockReset();
   catalogTraditions.mockReset();
   listCatalogWorks.mockResolvedValue([
-    { slug: 'olney-hymns', title: 'Olney Hymns', author: 'John Newton', tradition: 'anglican', sourceType: 'hymn', sections: 3 },
+    // `units`, not `sections`. CatalogWork has never had a `sections` field, so this stub was
+    // returning a shape the real query cannot produce and the page silently rendered nothing
+    // where the count goes. It stayed invisible only because the count was interpolated raw;
+    // the moment the page formatted it, the stub's missing field threw. A mock that does not
+    // match its contract is not a test of the contract.
+    { slug: 'olney-hymns', title: 'Olney Hymns', author: 'John Newton', tradition: 'anglican', sourceType: 'hymn', units: 3 },
   ]);
   // Two traditions, because the chip row only renders when there is more than one.
   catalogTraditions.mockResolvedValue([
