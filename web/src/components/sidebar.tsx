@@ -244,6 +244,7 @@ export function SidebarNavContent({
               label={CATALOGS[id].label}
               active={pathname.startsWith(`/library/${id}`)}
               row={row}
+              tier="shelf"
               onNavigate={onNavigate}
             />
           ))}
@@ -254,6 +255,7 @@ export function SidebarNavContent({
             href="/library/passages"
             icon={<QuoteIcon />}
             label="Passage search"
+            tier="shelf"
             active={pathname.startsWith('/library/passages')}
             row={row}
             onNavigate={onNavigate}
@@ -262,6 +264,7 @@ export function SidebarNavContent({
             href="/library/notes"
             icon={<BookStackIcon />}
             label="My library"
+            tier="shelf"
             active={pathname.startsWith('/library/notes')}
             row={row}
             onNavigate={onNavigate}
@@ -270,6 +273,7 @@ export function SidebarNavContent({
             href="/library/word-study"
             icon={<LanguagesIcon />}
             label="Word study"
+            tier="shelf"
             active={pathname.startsWith('/library/word-study')}
             row={row}
             onNavigate={onNavigate}
@@ -505,6 +509,7 @@ function SidebarLink({
   active,
   row = 'py-1.5',
   onNavigate,
+  tier = 'primary',
 }: {
   href: string;
   icon: React.ReactNode;
@@ -512,16 +517,25 @@ function SidebarLink({
   active: boolean;
   row?: string;
   onNavigate?: () => void;
+  /** `primary` = a destination (Bible, Ancient Paths, Reading plans). `shelf` = one of the
+   *  nine library catalogues, which are a list you scan rather than places you go. The rail
+   *  used to render all fifteen at one weight, one size and one colour, which is what made it
+   *  read as an admin panel bolted to a reader. */
+  tier?: 'primary' | 'shelf';
 }) {
   return (
     <Link
       href={href}
       onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
-      className={`flex items-center gap-2.5 rounded-md px-2 text-sm transition-colors ease-gentle ${row} ${
+      className={`flex items-center gap-2.5 rounded-md px-2 transition-colors ease-gentle ${row} ${
+        tier === 'primary' ? 'text-sm font-medium' : 'text-sm'
+      } ${
         active
           ? 'bg-accent-700/10 font-medium text-accent-900 dark:bg-accent-400/15 dark:text-accent-100'
-          : 'text-stone-600 hover:bg-stone-100 hover:text-stone-800 active:bg-stone-200/70 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200'
+          : tier === 'primary'
+            ? 'text-stone-800 hover:bg-stone-200/60 active:bg-stone-200/80 dark:text-stone-200 dark:hover:bg-stone-800'
+            : 'text-stone-600 hover:bg-stone-200/50 hover:text-stone-800 active:bg-stone-200/70 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200'
       }`}
     >
       <span className="flex w-4 items-center justify-center text-sm">{icon}</span>
