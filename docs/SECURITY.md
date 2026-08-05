@@ -178,6 +178,35 @@ Better Auth **1.6.23**):
 The Better Auth-direct clean-start migration IS the remediation; remove the g38m GHSAs from
 `pnpm.auditConfig` when the production cutover lands.
 
+### The pnpm-override branch does NOT close g38m — do not merge it (assessed 2026-08-05)
+
+`fix/sec1-better-auth-1-6-25` forces the whole better-auth subtree to 1.6.25 via `pnpm.overrides`
+and clears `ignoreGhsas` to `[]`. **The override upgrades the wrong copy of better-auth.**
+
+Per §"App-level mitigation" above, `createNeonAuth` returns a proxy client to a better-auth server
+**hosted by Neon**; the vulnerable OAuth-callback auto-link logic runs there, at a version we cannot
+see or set. The `better-auth` in our `node_modules` is the client SDK. Overriding it moves `pnpm
+audit` from red to green while the account-takeover path is untouched — and it deletes the ignore
+list entry that is currently the only mechanical record that SEC-1 is open. The branch's own commit
+message concedes it was "verified lockfile-only": never built, never signed in.
+
+Recorded here rather than only on the branch because a reader who meets the branch will find its
+reasoning persuasive and self-contained. **Close it unmerged.** The remediation is
+[AUTH_CUTOVER_DESIGN.md](./AUTH_CUTOVER_DESIGN.md).
+
+### The gate is now mechanical, not prose (A7, 2026-08-05)
+
+`web/test/invariants/sec1-upload-gate.test.ts` asserts NOT (multi-user uploads enabled AND an
+advisory this file adjudicates as in-path is still in `pnpm.auditConfig.ignoreGhsas`). The advisory
+set is **derived from the "In our path?" table above**, so marking a new advisory in-path there arms
+the gate automatically; the parse anchors on that header because this file carries a second GHSA
+table whose third column asks a different question. Six red-proofs, each watched fail
+(`WORKLOG.md`, 2026-08-05).
+
+Consequence for whoever lands the cutover: `MULTI_USER_UPLOADS` in
+`web/src/lib/user-corpus/access.ts` cannot be flipped to `true` until the in-path ids leave
+`ignoreGhsas`. That is the intended coupling — SEC-1 closing is what unlocks multi-user upload.
+
 ---
 
 ## SEC-2 — RLS is not actually enforced (discovered by the auth spike, 2026-07-08)

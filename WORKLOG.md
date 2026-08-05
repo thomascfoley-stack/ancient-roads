@@ -1,5 +1,76 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-05 (Lane B: A7 — the SEC-1 gate made mechanical; the cutover scoped)
+
+**Headline: the shortcut to closing SEC-1 does not work, and finding out why is the session's main
+result. The pnpm-override branch upgrades a copy of better-auth that is not the one running the
+vulnerable code.**
+
+### The override branch cannot close g38m
+
+`fix/sec1-better-auth-1-6-25` (2026-07-29, unmerged) forces the better-auth subtree to 1.6.25 and
+clears `ignoreGhsas` to `[]`. Measured against the code: `createNeonAuth` returns a **proxy client**
+to a better-auth server **hosted by Neon** at `NEON_AUTH_BASE_URL`; the OAuth auto-link logic runs
+there, at a version we cannot set. Our `node_modules` copy is the client SDK.
+
+So the branch would take `pnpm audit` green while the account-takeover path is untouched, and would
+delete the ignore-list entry that is the repo's only mechanical record that SEC-1 is open. Its own
+commit message says it was "verified lockfile-only" — never built, never signed in. Recorded in
+`SECURITY.md` under SEC-1, where a reader meets the claim, rather than only here. **Recommend
+closing it unmerged.**
+
+### A7 built — and it had to build the switch it guards
+
+`UPLOADER_DESIGN` §4 requires the gate be "enforced in CI, not prose". Neither half existed: there
+was no flag, and §4 condition 2 (the endpoints hard-allowlist the owner's id) was prose while all
+six user-corpus handlers called `requireUser()` and then served **any** authenticated caller.
+
+Two design points worth carrying forward:
+
+- **The ceiling is a committed constant, not an env var.** CI cannot read Vercel's environment, so a
+  gate consulting only `process.env` would be a check with no access to what it checks — green
+  forever. The env switch can only narrow the constant, so the CI assertion is about production, not
+  intent.
+- **The advisory set is derived from `SECURITY.md`'s adjudication table**, never typed. And the parse
+  must anchor on the "In our path?" header: that file carries a *second* GHSA table whose third
+  column asks "In ignoreGhsas?", so an unanchored parse sweeps up nine ledger rows including ones
+  adjudicated not-in-path. Route coverage is likewise derived by walking the route tree, so a
+  seventh route cannot quietly skip the guard.
+
+Six red-proofs, each watched fail and reverted. R2 is the interesting one: renaming the table header
+makes the suite **refuse to collect** (exit 1, "Tests no tests") rather than pass vacuously — which
+my first proof run nearly recorded as a silent pass, because the grep I used looked for a test-count
+line that a failed collection never prints.
+
+16/16 green after restore. `routes.test.ts` 14/14 unchanged. Typecheck and lint clean (0 errors;
+eslint coverage of the new files confirmed by seeding an `any` and watching it error, because a grep
+returning nothing is not proof of coverage). Commit `efba545`.
+
+### Scoped, not built: the cutover
+
+[`docs/AUTH_CUTOVER_DESIGN.md`](docs/AUTH_CUTOVER_DESIGN.md), awaiting an owner decision. Two facts
+the spike did not cost:
+
+1. **There is no mailer.** No `resend`/`sendgrid`/`nodemailer`/`postmark`/`mailgun`/`ses` dependency
+   and no `sendMail` call site anywhere in `web/src`. The spike's own g38m fix is "link only when the
+   local email is `emailVerified`", which is unimplementable without one. Password reset needs email
+   under every option.
+2. **g38m requires both email/password AND social login.** Shipping email/password only closes it
+   *structurally* rather than by configuration — a stronger property, and a much smaller cutover.
+   That is the recommendation, and it is a product call because it costs "Continue with Google".
+
+Also measured: **nothing** in `db/`, `web/src/lib/` or `scripts/` references `neon_auth` or
+`users_sync`, so clean-start orphans rows but breaks no constraint. The uploader's tables are empty
+today, which makes now the cheapest moment this cutover will ever have.
+
+### NOT DONE / UNVERIFIED
+
+- The cutover itself. Design filed; no code written; needs the §2 decision.
+- A6 quotas, the full `npm run audit`, the independent `deep-audit`, and the rebase onto `main`
+  (27 ahead, 103 behind) all still outstanding from the Slice 1 plan.
+- `MULTI_USER_UPLOADS` is `false` and must stay false until the cutover lands. Uploads are
+  single-account by construction; in production an unset allowlist denies everyone.
+
 ## 2026-08-03 (Lane B: B4 ruled as ADR-100; B5 step 2 — upload, parse, status)
 
 **Headline: B4 is closed, and the upload pipeline reports honestly before it reports success — a

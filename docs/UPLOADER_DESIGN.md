@@ -352,8 +352,17 @@ counts as a gate.
 - **A6, quota exceeded:** fill to each quota; the next upload gets a typed rejection; the drain
   never exceeds the embedding budget (asserted on the call counter). Red proof: loosen one quota
   check, watch the overrun.
-- **A7, SEC-1 gate:** a test asserts NOT (multi-user uploads enabled AND g38m GHSAs present in
-  `pnpm.auditConfig.ignoreGhsas`). Red proof: flip the flag with the GHSAs present, watch red.
+- **A7, SEC-1 gate — DONE 2026-08-05.** `web/test/invariants/sec1-upload-gate.test.ts` asserts NOT
+  (multi-user uploads enabled AND an advisory `SECURITY.md` adjudicates as in-path is still in
+  `pnpm.auditConfig.ignoreGhsas`). The advisory set is **derived** from that file's "In our path?"
+  table, not typed here. The ceiling is a committed constant (`MULTI_USER_UPLOADS` in
+  `web/src/lib/user-corpus/access.ts`), because CI cannot read Vercel's environment and a gate that
+  consulted only `process.env` could never have failed. §4 condition 2 — the owner allowlist — is
+  enforced for the first time by `route-guard.ts`, through which all six handlers now pass; before
+  this they called `requireUser()` and served any authenticated caller. Six red-proofs, each watched
+  fail: flag flipped with the ids present · the table header renamed (suite refuses to collect) ·
+  the parse stripped of its header anchor (sweeps the wrong table) · the allowlist not consulted ·
+  the env allowed to exceed the ceiling · one route reverted to bare `requireUser`.
 - **A8, model parity:** seed a user embedding with a wrong `model_slug`; search excludes it and
   records the mismatch. Red proof: remove the parity filter, watch it rank.
 - **A9, anchor quality through the shipped path:** the frozen Spurgeon held-out set ingested via
