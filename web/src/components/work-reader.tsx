@@ -367,7 +367,7 @@ export function WorkReader({
     <div ref={rootRef}>
       <WorkHeader ref={headerRef} source={source} onOpenToc={onOpenToc} />
 
-      <div className="mx-auto max-w-2xl px-5 pb-24 pt-6 sm:px-6">
+      <div className="mx-auto my-6 max-w-2xl rounded-xl border border-stone-200/60 bg-paper px-6 pb-24 pt-12 shadow-paper sm:my-10 sm:px-14 sm:pt-16 dark:border-stone-800/80 dark:bg-stone-950 dark:shadow-none">
         {sections.length === 0 && busy === 'initial' && (
           <p className="py-16 text-center text-sm text-stone-400">Loading…</p>
         )}

@@ -44,7 +44,7 @@ export function TodayView() {
   // NB: a plain <div>, not <main> — the app-shell already provides the <main> landmark and the
   // scroll container (with bottom-nav padding); nesting a second <main> is invalid HTML.
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-5 py-12 sm:px-8 sm:py-16">
+    <div className="mx-auto my-6 flex w-full max-w-2xl flex-col rounded-xl border border-stone-200/60 bg-paper px-6 py-12 shadow-paper sm:my-10 sm:px-14 sm:py-16 dark:border-stone-800/80 dark:bg-stone-950 dark:shadow-none">
       {state.status === 'loading' && (
         <p className="mt-24 text-center font-serif text-base italic text-stone-400 dark:text-stone-500">
           Opening today&rsquo;s page&hellip;

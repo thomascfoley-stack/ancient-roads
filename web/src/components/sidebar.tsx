@@ -323,7 +323,7 @@ export function Sidebar() {
 
   if (collapsed) {
     return (
-      <aside className="hidden w-12 flex-col items-center border-r border-stone-200 bg-stone-100 py-3 md:flex">
+      <aside className="hidden w-12 flex-col items-center border-r border-stone-200/80 bg-stone-100 py-3 md:flex dark:border-stone-800 dark:bg-stone-950">
         <button
           onClick={() => setCollapsed(false)}
           className="rounded p-1 text-stone-500 hover:bg-stone-200 hover:text-stone-700"
@@ -338,7 +338,7 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="hidden w-64 flex-col border-r border-stone-200 bg-stone-50 md:flex dark:border-stone-800 dark:bg-stone-900">
+    <aside className="hidden w-64 flex-col border-r border-stone-200/80 bg-stone-100 md:flex dark:border-stone-800 dark:bg-stone-950">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3 dark:border-stone-800">
         <Link href="/home" className="font-scripture text-base font-medium text-stone-800 dark:text-stone-100">
@@ -520,7 +520,7 @@ function SidebarLink({
       aria-current={active ? 'page' : undefined}
       className={`flex items-center gap-2.5 rounded-md px-2 text-sm transition-colors ${row} ${
         active
-          ? 'bg-stone-200/80 font-medium text-stone-900 dark:bg-stone-700/70 dark:text-stone-100'
+          ? 'bg-accent-700/10 font-medium text-accent-900 dark:bg-accent-400/15 dark:text-accent-100'
           : 'text-stone-600 hover:bg-stone-100 hover:text-stone-800 active:bg-stone-200/70 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200'
       }`}
     >
