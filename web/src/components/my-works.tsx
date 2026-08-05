@@ -16,6 +16,9 @@ interface Doc {
   createdAt: string;
 }
 interface Hit { documentId: string; sectionId: string; title: string; heading: string | null; text: string; score: number }
+interface Voice { author: string; work: string; tradition: string; origin: 'corpus'; verseId: number; sourceId: string }
+interface VoicesState { loading: boolean; error?: string; data?: { voices: Voice[]; authorCount: number; rangesConsidered: number; pending: boolean } }
+
 interface Presence { documentId: string; title: string; sectionId: string; verseStart: number; verseEnd: number; channel: string; matchCount: number | null }
 
 /** Statuses that are still moving — the poll runs only while one of these is present. */
@@ -44,6 +47,7 @@ export function MyWorksClient() {
   const [presence, setPresence] = useState<Presence[] | null>(null);
   const [searchNote, setSearchNote] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
+  const [voices, setVoices] = useState<Record<string, VoicesState>>({});
   const fileInput = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -124,11 +128,25 @@ export function MyWorksClient() {
     }
   }
 
+  async function loadVoices(id: string) {
+    setVoices((v) => ({ ...v, [id]: { loading: true } }));
+    try {
+      const res = await fetch(`/api/user-corpus/documents/${id}/voices`);
+      if (!res.ok) throw new Error(String(res.status));
+      // Read the body BEFORE the updater: the callback passed to setVoices is not async, so an
+      // `await` inside it is a syntax error rather than a wait.
+      const data = (await res.json()) as VoicesState['data'];
+      setVoices((v) => ({ ...v, [id]: { loading: false, data } }));
+    } catch {
+      setVoices((v) => ({ ...v, [id]: { loading: false, error: 'Could not load the tradition on this document.' } }));
+    }
+  }
+
   if (state === 'loading') {
     return <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6"><p className="font-serif text-[15px] text-stone-500 dark:text-stone-400">Loading…</p></div>;
   }
   if (state === 'signedout') {
-    return (
+  return (
       <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6">
         <h1 className="font-display text-3xl font-medium text-stone-800 dark:text-stone-100">My Works</h1>
         <p className="mt-3 font-serif text-[15px] leading-relaxed text-stone-500 dark:text-stone-400">Sign in to bring your own writing into the library.</p>
@@ -271,6 +289,17 @@ export function MyWorksClient() {
                         Try again
                       </button>
                     )}
+                    {/* The corpus join (ADR-104). Only offered once the document is `ready`,
+                        because anchors are what the join reads and they do not exist before then. */}
+                    {d.status === 'ready' && !voices[d.id] && (
+                      <button
+                        type="button"
+                        onClick={() => void loadVoices(d.id)}
+                        className="min-h-[44px] rounded-full px-3 text-[13px] font-semibold text-stone-600 hover:text-accent-800 dark:text-stone-300"
+                      >
+                        The tradition on this
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => void remove(d.id)}
@@ -279,6 +308,54 @@ export function MyWorksClient() {
                       Remove
                     </button>
                   </div>
+
+                  {voices[d.id] && (
+                    <div className="mt-3 border-t border-stone-200 pt-3 dark:border-stone-700">
+                      {voices[d.id].loading && (
+                        <p className="font-serif text-[14px] text-stone-500 dark:text-stone-400">Reading the tradition…</p>
+                      )}
+                      {voices[d.id].error && (
+                        <p role="alert" className="font-serif text-[14px] text-amber-800 dark:text-amber-300">{voices[d.id].error}</p>
+                      )}
+                      {voices[d.id].data && (
+                        (() => {
+                          const v = voices[d.id].data!;
+                          if (v.pending) {
+                            return <p className="font-serif text-[14px] text-stone-500 dark:text-stone-400">This document is still being indexed.</p>;
+                          }
+                          if (v.voices.length === 0) {
+                            return (
+                              <p className="font-serif text-[14px] text-stone-500 dark:text-stone-400">
+                                No one in the library writes on the passages this document anchors.
+                              </p>
+                            );
+                          }
+                          return (
+                            <>
+                              {/* WORDED NARROWLY ON PURPOSE. Slice 1 returns the voices ON these
+                                  passages, not the ones you did NOT engage: answering the "not"
+                                  half needs a commentator-detection channel that does not exist
+                                  yet (tradition-gap.ts). Calling this "what you missed" would be
+                                  the product claiming something it has not measured. */}
+                              <p className="font-display text-[15px] text-stone-700 dark:text-stone-200">
+                                {v.authorCount} {v.authorCount === 1 ? 'voice' : 'voices'} from the library
+                                {' '}on {v.rangesConsidered} {v.rangesConsidered === 1 ? 'passage' : 'passages'} this document anchors
+                              </p>
+                              <ul className="mt-2 space-y-1.5">
+                                {v.voices.map((x) => (
+                                  <li key={x.sourceId} className="font-serif text-[14px] text-stone-600 dark:text-stone-300">
+                                    <span className="text-stone-800 dark:text-stone-100">{x.author}</span>
+                                    {x.work && <span className="text-stone-500 dark:text-stone-400">, {x.work}</span>}
+                                    {x.tradition && <span className="ml-2 text-[12px] uppercase tracking-wide text-stone-400 dark:text-stone-500">{x.tradition}</span>}
+                                  </li>
+                                ))}
+                              </ul>
+                            </>
+                          );
+                        })()
+                      )}
+                    </div>
+                  )}
                 </li>
               );
             })}
