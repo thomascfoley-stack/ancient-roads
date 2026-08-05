@@ -113,7 +113,7 @@ export default function WorkPage() {
         </p>
         <Link
           href="/library"
-          className="inline-flex min-h-[44px] items-center rounded-full bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
+          className="inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
         >
           Browse the library
         </Link>
@@ -122,7 +122,7 @@ export default function WorkPage() {
   }
 
   if (!work) {
-    return <p className="py-24 text-center text-sm text-stone-400">Loading…</p>;
+    return <p className="py-24 text-center text-sm text-stone-500 dark:text-stone-400">Loading…</p>;
   }
 
   // PROGRESS IS OVER SECTIONS, and `toc` is now a list of UNITS — so the denominator comes from

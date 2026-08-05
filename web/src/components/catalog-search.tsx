@@ -107,11 +107,11 @@ export function CatalogSearch({
           placeholder={`Search ${label.toLowerCase()}…`}
           aria-label={`Search ${label}`}
           /* text-base (16px) so iOS does not zoom the viewport on focus */
-          className="min-h-[44px] flex-1 rounded-full border border-stone-200/70 bg-transparent px-4 text-base text-stone-800 placeholder:text-stone-400 focus:border-accent-400 focus:outline-none dark:border-stone-800 dark:text-stone-100"
+ className="min-h-[44px] flex-1 rounded-lg border edge bg-transparent px-4 text-base text-stone-800 placeholder:text-stone-500 dark:placeholder:text-stone-400 focus:border-accent-400 focus:outline-none dark:text-stone-100"
         />
         <button
           type="submit"
-          className="min-h-[44px] shrink-0 rounded-full bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
+          className="min-h-[44px] shrink-0 rounded-lg bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
         >
           Search
         </button>
@@ -124,7 +124,7 @@ export function CatalogSearch({
         </p>
       )}
 
-      {busy && <p className="mt-3 text-sm text-stone-400">Searching…</p>}
+      {busy && <p className="mt-3 text-sm text-stone-500 dark:text-stone-400">Searching…</p>}
 
       {state?.kind === 'error' && !busy && (
         <p role="alert" className="mt-3 rounded-xl border border-red-300/60 bg-red-50/60 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
@@ -144,12 +144,12 @@ export function CatalogSearch({
               <li key={`${r.slug}#${r.ordinal}`}>
                 <Link
                   href={`/work/${r.slug}#s${r.ordinal}`}
-                  className="block rounded-xl border border-stone-200/70 px-4 py-3 hover:bg-accent-50/50 dark:border-stone-800 dark:hover:bg-accent-950/20"
+ className="block rounded-xl border edge px-4 py-3 hover:bg-accent-50/50 dark:hover:bg-accent-950/20"
                 >
                   <span className="flex items-baseline justify-between gap-3">
                     <span className="truncate font-scripture text-stone-800 dark:text-stone-100">{r.title}</span>
                     {/* the register label — the wall requires the reader can always tell what this is */}
-                    <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-stone-400">{r.sourceType}</span>
+                    <span className="shrink-0 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">{r.sourceType}</span>
                   </span>
                   {/* WHO SAID IT. The snippet below is a QUOTATION from the corpus, and this
                       product's promise is that quotations are attributed (CLAUDE.md / PRINCIPLES

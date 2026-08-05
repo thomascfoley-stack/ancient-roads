@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { formatVerseId } from '@bible/verse-id';
 import { verseHref } from '@/lib/verse-link';
+import { count } from '@/lib/plural';
 
 // --- shapes mirrored from the server (client only renders; server verifier is truth) ---
 interface Attribution { author: string; work: string; tradition: string; year?: number }
@@ -125,29 +126,52 @@ export function AskClient() {
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-3.75rem-env(safe-area-inset-bottom)-1px)] max-w-2xl flex-col px-4 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-10 md:min-h-[calc(100dvh-1px)]">
       <header className="mb-6 sm:mb-8">
-        <h1 className="font-display text-[2rem] font-medium tracking-tight text-stone-900 dark:text-stone-100">Explore the paths</h1>
-        <p className="mt-2 font-serif text-[15px] leading-relaxed text-stone-600 dark:text-stone-400">
-          Hear what commentators across the traditions have said — quoted, attributed, never interpreted.
+        <h1 className="font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100">Explore the paths</h1>
+        <p className="mt-2 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400">
+          Hear what commentators across the traditions have said, quoted and attributed, never interpreted.
           <span className="mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500">Currently answering from the Gospels.</span>
         </p>
       </header>
 
-      <div className="flex-1 space-y-8">
+      {/* EMPTY STATE IS COMPOSED, NOT TOP-ALIGNED. This was `flex-1` with the examples pinned
+          to the top, so a first visit was a small heading, three floating cards, and roughly
+          400px of nothing above a composer stuck to the bottom edge. It read as a stock
+          chatbot. Centring the invitation in the space it actually has makes the screen one
+          thing instead of two things separated by a void.
+
+          The examples were three `rounded-xl bg-paper shadow-paper` cards, the same "three
+          boxes in a stack" the landing page and the library have already been moved off.
+          They are a hairline-separated list now, in the reading face, so they read as
+          questions a person might ask rather than as buttons. */}
+      <div className={turns.length === 0 ? 'flex flex-1 flex-col justify-center' : 'flex-1 space-y-8'}>
         {turns.length === 0 && (
-          <div>
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">Try</p>
-            <div className="flex flex-col gap-2.5">
+          <div className="pb-8">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">
+              Ask about a verse, a phrase, or a question
+            </p>
+            <ul className="divide-y divide-stone-200/70 border-y border-stone-200/70 dark:divide-stone-800 dark:border-stone-800">
               {EXAMPLES.map((ex) => (
-                <button key={ex} onClick={() => ask(ex)}
-                  className="min-h-[48px] rounded-xl bg-paper px-4 py-2.5 text-left font-serif text-[15px] text-stone-700 shadow-paper transition-all duration-200 ease-gentle hover:text-stone-900 hover:shadow-float active:shadow-paper active:brightness-[0.98] dark:bg-stone-800/70 dark:text-stone-300 dark:shadow-none dark:hover:bg-stone-800 dark:hover:text-stone-100 dark:active:bg-stone-800">
-                  {ex}
-                </button>
+                <li key={ex}>
+                  <button
+                    onClick={() => ask(ex)}
+                    className="group flex min-h-[56px] w-full items-center gap-3 py-3 text-left font-serif text-lg leading-snug text-stone-700 transition-colors ease-gentle hover:text-accent-800 dark:text-stone-300 dark:hover:text-accent-300"
+                  >
+                    <span className="flex-1">{ex}</span>
+                    <span aria-hidden className="shrink-0 text-stone-500 transition-colors ease-gentle group-hover:text-accent-700 dark:text-stone-500 dark:group-hover:text-accent-300">&rarr;</span>
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         )}
 
-        {turns.map((t) => <TurnView key={t.id} turn={t} />)}
+        {/* THE ANSWER WAS SILENT. /ask streams retrieval, composition, verification and the
+            finished answer, and NONE of it was announced: a screen-reader user pressed Ask and
+            heard nothing until they went looking. Failure was the only announced state.
+            `polite` rather than `assertive` so it waits for a pause instead of interrupting. */}
+        <div aria-live="polite" aria-busy={busy} className={turns.length === 0 ? 'sr-only' : 'space-y-8'}>
+          {turns.map((t) => <TurnView key={t.id} turn={t} />)}
+        </div>
         <div ref={bottomRef} className="scroll-mb-48 md:scroll-mb-36" />
       </div>
 
@@ -164,6 +188,7 @@ export function AskClient() {
             setTimeout(() => el.scrollIntoView({ block: 'end', behavior: 'smooth' }), 300);
           }}
           placeholder="Ask a question…"
+          aria-label="Ask a question"
           rows={2}
           maxLength={500}
           className="focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-base leading-relaxed text-stone-900 outline-none placeholder:text-stone-400 dark:text-stone-100 dark:placeholder:text-stone-500"
@@ -173,7 +198,7 @@ export function AskClient() {
             {busy ? 'Thinking…' : <span className="[@media(hover:none)]:hidden">↵ to send · ⇧↵ newline</span>}
           </span>
           <button type="submit" disabled={busy || !question.trim()}
-            className="min-h-[44px] rounded-full bg-accent-700 px-6 text-sm font-semibold text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-800 active:bg-accent-900 disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0 sm:px-5 sm:py-1.5 dark:bg-accent-500 dark:hover:bg-accent-400">
+            className="min-h-[44px] rounded-lg bg-accent-700 px-6 text-sm font-semibold text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-800 active:bg-accent-900 disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0 sm:px-5 sm:py-1.5 dark:bg-accent-500 dark:hover:bg-accent-400">
             Ask
           </button>
         </div>
@@ -186,12 +211,12 @@ function TurnView({ turn }: { turn: Turn }) {
   return (
     <div>
       <div className="mb-4 flex justify-end">
-        <div className="max-w-[85%] rounded-2xl rounded-br-md bg-stone-200/80 px-4 py-2.5 font-serif text-[15px] text-stone-900 dark:bg-stone-800 dark:text-stone-100">
+        <div className="max-w-[85%] rounded-2xl rounded-br-md bg-stone-200/80 px-4 py-2.5 font-serif text-base text-stone-900 dark:bg-stone-800 dark:text-stone-100">
           {turn.question}
         </div>
       </div>
       {turn.stage === 'error' ? (
-        <div className="rounded-xl bg-accent-50 px-4 py-3 text-sm text-accent-900 shadow-paper dark:bg-accent-950/40 dark:text-accent-200 dark:shadow-none">
+        <div role="alert" className="rounded-xl border border-red-300/60 bg-red-50/60 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
           {turn.error}
         </div>
       ) : turn.stage === 'done' && turn.result ? (
@@ -223,7 +248,7 @@ function Progress({ turn }: { turn: Turn }) {
           <div className="flex items-center gap-2.5">
             <span className="font-bold text-accent-700 dark:text-accent-300">✓</span>
             <span className="text-stone-500 dark:text-stone-400">
-              Found <b className="text-stone-700 dark:text-stone-200">{turn.sources.length} voices</b> across{' '}
+              Found <b className="text-stone-700 dark:text-stone-200">{count(turn.sources.length, 'voice')}</b> across{' '}
               <b className="text-stone-700 dark:text-stone-200">{turn.traditions} tradition{turn.traditions === 1 ? '' : 's'}</b>
             </span>
           </div>
@@ -237,8 +262,8 @@ function Progress({ turn }: { turn: Turn }) {
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">Reading these while I compose</p>
           <div className="flex animate-pulse flex-col gap-2">
             {turn.sources.slice(0, 3).map((s) => (
-              <p key={s.sourceId} className="font-serif text-[13px] leading-relaxed text-stone-500 dark:text-stone-400">
-                <b className="text-stone-700 dark:text-stone-300">{s.author}</b> — {s.content.slice(0, 130).replace(/\n/g, ' ')}…
+              <p key={s.sourceId} className="font-serif text-sm leading-relaxed text-stone-500 dark:text-stone-400">
+                <b className="text-stone-700 dark:text-stone-300">{s.author}</b>. {s.content.slice(0, 130).replace(/\n/g, ' ')}…
               </p>
             ))}
           </div>
@@ -251,7 +276,7 @@ function Progress({ turn }: { turn: Turn }) {
 function Answer({ result }: { result: TeacherResult }) {
   if (result.kind === 'empty') {
     return (
-      <p className="rounded-xl bg-paper px-4 py-3 font-serif text-[15px] text-stone-600 shadow-paper dark:bg-stone-800/60 dark:text-stone-300 dark:shadow-none">
+      <p className="rounded-xl bg-paper px-4 py-3 font-serif text-base text-stone-600 shadow-paper dark:bg-stone-800/60 dark:text-stone-300 dark:shadow-none">
         {result.reason}
       </p>
     );
@@ -269,12 +294,12 @@ function Answer({ result }: { result: TeacherResult }) {
       <div className="space-y-6">
         {voices.map((v, i) => (
           <figure key={i} className="border-l-[3px] border-accent-300/80 pl-5 dark:border-accent-800">
-            <blockquote className="break-words font-serif text-[17px] leading-[1.7] text-stone-900 dark:text-stone-100">“{v.quote}”</blockquote>
+            <blockquote className="break-words font-serif text-lg leading-[1.7] text-stone-900 dark:text-stone-100">“{v.quote}”</blockquote>
             <figcaption className="mt-2.5 text-sm text-stone-500 dark:text-stone-400">
               <span className="font-semibold text-stone-800 dark:text-stone-200">{v.attribution.author}</span>, {v.attribution.work}
               <span className="ml-2 rounded-full bg-stone-200/70 px-2.5 py-0.5 text-xs text-stone-600 dark:bg-stone-800 dark:text-stone-400">{v.attribution.tradition}</span>
             </figcaption>
-            {v.summary && <p className="mt-1.5 text-[13px] text-stone-500 dark:text-stone-500">{v.summary}</p>}
+            {v.summary && <p className="mt-1.5 text-sm text-stone-500 dark:text-stone-500">{v.summary}</p>}
           </figure>
         ))}
       </div>
@@ -285,7 +310,7 @@ function Answer({ result }: { result: TeacherResult }) {
           <div className="flex flex-wrap gap-2">
             {passages.items.map((p, i) => (
               <Link key={i} href={verseHref(p.start)}
-                className="rounded-full bg-paper px-3.5 py-1.5 text-sm text-stone-700 shadow-paper transition-all duration-200 ease-gentle hover:text-accent-800 hover:shadow-float dark:bg-stone-800 dark:text-stone-200 dark:shadow-none dark:hover:text-accent-300">
+                className="rounded-full bg-paper px-3.5 py-1.5 text-sm text-stone-700 shadow-paper transition-[opacity,transform,box-shadow,background-color,border-color] duration-200 ease-gentle hover:text-accent-800 hover:shadow-float dark:bg-stone-800 dark:text-stone-200 dark:shadow-none dark:hover:text-accent-300">
                 {p.start === p.end ? formatVerseId(p.start) : `${formatVerseId(p.start)}–${formatVerseId(p.end).split(' ').pop()}`} →
               </Link>
             ))}
@@ -306,17 +331,17 @@ function LaneSection({ title, note, chunks }: { title: string; note: string; chu
   return (
     <div className="pt-2">
       <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">{title}</p>
-      <p className="mb-3 text-[13px] italic text-stone-400 dark:text-stone-500">{note}</p>
+      <p className="mb-3 text-sm italic text-stone-400 dark:text-stone-500">{note}</p>
       <div className="space-y-4">
         {chunks.map((c) => (
           <figure key={c.sourceId} className="border-l-[3px] border-stone-300/70 pl-5 dark:border-stone-700">
-            <blockquote className="whitespace-pre-line break-words font-serif text-[15px] leading-relaxed text-stone-700 dark:text-stone-300">
+            <blockquote className="whitespace-pre-line break-words font-serif text-base leading-relaxed text-stone-700 dark:text-stone-300">
               {c.content.length > 400 ? `${c.content.slice(0, 400)}…` : c.content}
             </blockquote>
             <figcaption className="mt-2 text-sm text-stone-500 dark:text-stone-400">
               <span className="font-semibold text-stone-800 dark:text-stone-300">{c.metadata.author}</span>
               {c.metadata.sourceTitle ? `, ${c.metadata.sourceTitle}` : ''}
-              {c.metadata.paraphrase ? <span title="A metrical paraphrase — not the Scripture text itself." className="ml-2 rounded-full bg-accent-700/10 px-2 py-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300">paraphrase · not Scripture</span> : null}
+              {c.metadata.paraphrase ? <span title="A metrical paraphrase, not the Scripture text itself." className="ml-2 rounded-full bg-accent-700/10 px-2 py-0.5 text-micro font-medium text-accent-700 dark:text-accent-300">paraphrase · not Scripture</span> : null}
             </figcaption>
           </figure>
         ))}
@@ -328,9 +353,9 @@ function LaneSection({ title, note, chunks }: { title: string; note: string; chu
 function Lanes({ result }: { result: Extract<TeacherResult, { kind: 'composed' | 'fallback' }> }) {
   return (
     <>
-      <LaneSection title="Sermons on this theme" note="Preached expositions — not commentary; read them in full for the argument." chunks={result.sermons} />
+      <LaneSection title="Sermons on this theme" note="Preached expositions, not commentary. Read them in full for the argument." chunks={result.sermons} />
       <LaneSection title="Theology & confessions" note="Systematic and confessional reflections on this theme." chunks={result.theology} />
-      <LaneSection title="Hymns & sacred poetry" note="Sung and poetic responses — and (where marked) a metrical paraphrase, not the Scripture text itself." chunks={result.song_verse} />
+      <LaneSection title="Hymns & sacred poetry" note="Sung and poetic responses, and (where marked) a metrical paraphrase, not the Scripture text itself." chunks={result.song_verse} />
     </>
   );
 }
@@ -338,13 +363,13 @@ function Lanes({ result }: { result: Extract<TeacherResult, { kind: 'composed' |
 function Fallback({ retrieval }: { retrieval: Retrieved[] }) {
   return (
     <div>
-      <p className="mb-5 rounded-xl bg-accent-50 px-4 py-3 font-serif text-[15px] text-accent-900 shadow-paper dark:bg-accent-950/30 dark:text-accent-200 dark:shadow-none">
-        A grounded answer couldn’t be composed for this one. Here are the sources retrieval found — read them directly.
+      <p className="mb-5 rounded-xl bg-accent-50 px-4 py-3 font-serif text-base text-accent-900 shadow-paper dark:bg-accent-950/30 dark:text-accent-200 dark:shadow-none">
+        A grounded answer couldn’t be composed for this one. Here are the sources we found. Read them directly.
       </p>
       <div className="space-y-5">
         {retrieval.map((r) => (
           <figure key={r.sourceId} className="border-l-[3px] border-stone-300/80 pl-5 dark:border-stone-700">
-            <blockquote className="font-serif text-[15px] leading-relaxed text-stone-700 dark:text-stone-300">
+            <blockquote className="font-serif text-base leading-relaxed text-stone-700 dark:text-stone-300">
               {r.content.length > 320 ? `${r.content.slice(0, 320)}…` : r.content}
             </blockquote>
             <figcaption className="mt-2 text-sm text-stone-500 dark:text-stone-400">

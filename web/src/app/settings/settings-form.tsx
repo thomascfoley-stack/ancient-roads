@@ -37,7 +37,7 @@ export function SettingsForm() {
   }
 
   const row = 'rounded-xl bg-paper px-4 py-4 shadow-paper dark:bg-stone-800/60 dark:shadow-none';
-  const label = 'mb-2 text-[11px] font-semibold uppercase tracking-wider text-stone-400';
+  const label = 'mb-2 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400';
 
   return (
     <div className="space-y-4">
@@ -49,9 +49,9 @@ export function SettingsForm() {
               key={String(v)}
               onClick={() => setDark(v)}
               aria-pressed={dark === v}
-              className={`min-h-[44px] flex-1 rounded-md text-sm font-medium transition-colors ${
+              className={`min-h-[44px] flex-1 rounded-md text-sm font-medium transition-colors ease-gentle ${
                 dark === v
-                  ? 'bg-white text-stone-800 shadow-sm dark:bg-stone-900 dark:text-stone-100'
+                  ? 'bg-paper text-stone-800 shadow-paper dark:bg-stone-900 dark:text-stone-100'
                   : 'text-stone-500 dark:text-stone-300'
               }`}
             >
@@ -76,7 +76,7 @@ export function SettingsForm() {
             A−
           </button>
           <div className="flex-1 text-center text-sm text-stone-600 dark:text-stone-300">
-            {ready ? (SIZE_LABELS[sizeIdx] ?? `${sizeIdx + 1}`) : '—'}
+            {ready ? (SIZE_LABELS[sizeIdx] ?? `${sizeIdx + 1}`) : '·'}
           </div>
           <button
             onClick={() => setSizeIdx(sizeIdx + 1)}
@@ -98,7 +98,7 @@ export function SettingsForm() {
               onClick={() => chooseTranslation(t.id)}
               aria-pressed={translation === t.id}
               title={t.name}
-              className={`min-h-[40px] rounded-full px-4 text-sm font-medium transition-colors ${
+              className={`min-h-[40px] rounded-lg px-4 text-sm font-medium transition-colors ease-gentle ${
                 translation === t.id
                   ? 'bg-accent-700 text-stone-50 dark:bg-accent-500'
                   : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300'

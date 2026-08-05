@@ -100,7 +100,7 @@ export function WorkSection({
           const start = offset;
           offset += slice.length;
           return (
-            <p key={pi} className={`mb-5 last:mb-0${bodyWhitespace}`}>
+            <p key={pi} className={`mb-5 break-words last:mb-0${bodyWhitespace}`}>
               {segments ? renderClippedSegments(segments, section.body, start, start + slice.length) : slice}
             </p>
           );

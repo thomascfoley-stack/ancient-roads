@@ -108,12 +108,12 @@ export function tocGroups(
           // CLOSED SET of twelve names is what keeps this factual: it is recognition, not parsing,
           // so a heading that says nothing about a month cannot be coerced into one.
           //
-          // Undated devotionals fall through to '—' and, being a single group, get no grouping at
+          // Undated devotionals fall through to 'Undated' and, being a single group, get no grouping at
           // all (see the return below). The Imitation of Christ has books and chapters, not dates,
           // and inventing a calendar for it would be a claim about the work.
           const h = u.heading ?? '';
           const m = MONTHS.find((name) => new RegExp(`\\b${name}\\b`, 'i').test(h));
-          return m ?? '—';
+          return m ?? 'Undated';
         }
       : sourceType === 'lexicon'
       ? (u: { heading: string | null }): string => {

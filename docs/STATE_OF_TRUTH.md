@@ -205,6 +205,30 @@ this work. Full table: `docs/evidence/a2-prod-readonly-2026-08-01/serving-census
 > into the filter". Historical docs that say "9 authors" pre-date the work-leg expansion and are left
 > as point-in-time record. Re-measured after today's suppressions, which did not change this set.
 
+### 2f. Study plans + topical-index corpus (2026-08-02/03)
+
+**PRODUCTION, 2026-08-03 (owner go, evidence `docs/evidence/plans-prod-2026-08-03/`):**
+migrations **039, 041, 042 applied and ledger-recorded**; `plans`/`plan_days`/
+`plan_day_readings`/`verse_coverage`/`topical_entries` exist with RLS + policies;
+`verse_coverage` rebuilt — **30,277/31,103 verses, 27,163 with ≥2 authors** from 96,329
+admitted anchors (0 dropped). Refusal gate verified honest there: Song of Songs 5 covered /
+1 with ≥2 authors, Romans 431/431. **040 is HELD** (it alters the `source_type` CHECK on
+`sources` AND `embeddings`; A9's served cutover is doing live DDL on `embeddings`), so prod
+allows no `topical_index` source yet — consistent, because the topical corpus is not there
+either. **No topical work exists on prod**; the publish flip would flip zero rows and was
+NOT run. `/plans` is also not deployed (lives on `feat/study-plans-adr045`, not `main`).
+
+Dev/ci below; migrations **039/040 on dev + `ci` (br-purple-frog)**.
+
+| fact | value | verified |
+|---|---|---|
+| `plans` / `plan_days` | exist, RLS enabled, policies bind via `app.current_user_id` | ✅ two-account test EXECUTED (`plan-tenancy.test.ts`) |
+| `verse_coverage` | **30,227/31,103** real verses covered; **26,498** with ≥2 admitted exegetical authors (84,292 anchors, 0 dropped) | ✅ rebuild log 2026-08-02 |
+| `topical_entries` | naves 78,107 · torrey 38,858 · daily-light + openbible tail counts in WORKLOG | ✅ ingest log |
+| topical works | `naves-topical-bible`, `torreys-topical-textbook`, `openbible-topics` (`topical_index`), `daily-light` (`devotional`) — **all `staged`**, serving NOTHING until the owner's publish flip | ✅ sources census |
+| TCR (Thompson Chain) | **NOT ingested** — PD basis unverified (CrossWire's 1934-non-renewal claim); raw archived `data/raw/topical/` with sha256s | ✅ CHECKSUMS.sha256 |
+| `sections.source_url` (031) | now ALSO on dev (was prod-only; drift closed 2026-08-02) | ✅ |
+
 ### 2e. Dev-only `unit_ordinal` drift (2026-07-31) — **REPAIRED**
 
 > **Measured read-only on dev (`ep-tiny-hat`) via neonctl-minted `app_runtime`.** Production census:

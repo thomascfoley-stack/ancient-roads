@@ -39,7 +39,11 @@ The home for structured Bible study plans and, later, sermon management.
 - **Sermon management** (later): write, search, and upload your own sermons.
 - **Composio integrations** (someday, ADR-011): push work out to the user's tools — calendar, Google Docs/Slides. Each is a new OAuth/permission surface, treated with auth-grade security.
 
-**Status: DESIGN. Depends on the plan builder + integration work.**
+**Status: PLAN BUILDER CORE BUILT on dev (2026-08-02, ADR-045/046):** `expandPlan` arithmetic +
+`PlanSpec`, the `verse_coverage` refusal gate, `plans`/`plan_days` + RLS (two-account proven),
+a form intake at `/plans`, and the topical-index corpus (Nave/Torrey/OpenBible staged; TCR held
+on licensing). Still open: the conversational intake, per-day voice attachment via `planSource`,
+sermon management, and delivery (owner ruling: third-party push provider, later — no `.ics`).
 
 ### Underneath all three: Reader + Library
 Scripture, commentary, sermons, historians, word study, and search — the content every mode draws on. **BUILT.**

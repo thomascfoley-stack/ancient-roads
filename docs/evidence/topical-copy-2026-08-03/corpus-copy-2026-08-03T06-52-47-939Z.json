@@ -1,0 +1,114 @@
+{
+  "source": "ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech",
+  "destination": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "declaredEndpoint": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "slugs": [
+    "naves-topical-bible",
+    "torreys-topical-textbook",
+    "openbible-topics",
+    "daily-light"
+  ],
+  "before": {
+    "naves-topical-bible": {
+      "sources": 1,
+      "sections": 4870,
+      "anchors": 71251,
+      "section_embeddings": 0,
+      "topical_entries": 78107,
+      "flat_embeddings": 5357
+    },
+    "torreys-topical-textbook": {
+      "sources": 1,
+      "sections": 628,
+      "anchors": 34931,
+      "section_embeddings": 0,
+      "topical_entries": 38858,
+      "flat_embeddings": 1055
+    },
+    "openbible-topics": {
+      "sources": 1,
+      "sections": 6711,
+      "anchors": 68923,
+      "section_embeddings": 0,
+      "topical_entries": 71210,
+      "flat_embeddings": 6670
+    },
+    "daily-light": {
+      "sources": 1,
+      "sections": 732,
+      "anchors": 6994,
+      "section_embeddings": 0,
+      "topical_entries": 7011,
+      "flat_embeddings": 747
+    }
+  },
+  "destBefore": {
+    "naves-topical-bible": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    },
+    "torreys-topical-textbook": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    },
+    "openbible-topics": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    },
+    "daily-light": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "destAfter": {
+    "naves-topical-bible": {
+      "sources": 1,
+      "sections": 4870,
+      "anchors": 71251,
+      "section_embeddings": 0,
+      "topical_entries": 78107,
+      "flat_embeddings": 5357
+    },
+    "torreys-topical-textbook": {
+      "sources": 1,
+      "sections": 628,
+      "anchors": 34931,
+      "section_embeddings": 0,
+      "topical_entries": 38858,
+      "flat_embeddings": 1055
+    },
+    "openbible-topics": {
+      "sources": 1,
+      "sections": 6711,
+      "anchors": 68923,
+      "section_embeddings": 0,
+      "topical_entries": 71210,
+      "flat_embeddings": 6670
+    },
+    "daily-light": {
+      "sources": 1,
+      "sections": 732,
+      "anchors": 6994,
+      "section_embeddings": 0,
+      "topical_entries": 7011,
+      "flat_embeddings": 747
+    }
+  },
+  "mismatch": 0
+}

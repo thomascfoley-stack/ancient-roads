@@ -105,8 +105,8 @@ export function registerChipLabel(register?: string): string | null {
 export function ParaphraseChip() {
   return (
     <span
-      className="rounded-full bg-accent-700/10 px-2 py-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300"
-      title="A metrical paraphrase — not the Scripture text itself."
+      className="rounded-full bg-accent-700/10 px-2 py-0.5 text-micro font-medium text-accent-700 dark:text-accent-300"
+      title="A metrical paraphrase, not the Scripture text itself."
     >
       paraphrase · not Scripture
     </span>
@@ -118,10 +118,10 @@ export function ParaphraseChip() {
 export function RegisterSectionHeading({ title, note }: { title: string; note: string }) {
   return (
     <>
-      <p className="pt-4 pb-1 text-[10px] font-bold uppercase tracking-widest text-stone-300 dark:text-stone-600">
+      <p className="pt-4 pb-1 text-micro font-bold uppercase tracking-widest text-stone-300 dark:text-stone-400">
         {title}
       </p>
-      <p className="mb-2 text-[11px] italic text-stone-400">{note}</p>
+      <p className="mb-2 text-micro italic text-stone-500 dark:text-stone-400">{note}</p>
     </>
   );
 }
@@ -221,17 +221,17 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
           {entry.author}
         </span>
         {entry.year && (
-          <span className="text-xs text-stone-400">
+          <span className="text-xs text-stone-500 dark:text-stone-400">
             {entry.year < 0 ? `${Math.abs(entry.year)} BC` : entry.year}
           </span>
         )}
         {entry.tradition && (
-          <span className="rounded-full bg-stone-200/50 px-2 py-0.5 text-[10px] font-medium text-stone-500">
+          <span className="rounded-full bg-stone-200/50 px-2 py-0.5 text-micro font-medium text-stone-500">
             {entry.tradition}
           </span>
         )}
         {registerChipLabel(entry.register) && (
-          <span className="rounded-full bg-accent-700/10 px-2 py-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300">
+          <span className="rounded-full bg-accent-700/10 px-2 py-0.5 text-micro font-medium text-accent-700 dark:text-accent-300">
             {registerChipLabel(entry.register)}
           </span>
         )}
@@ -242,8 +242,8 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
           stays flowing (deep-audit 2026-07-18: collapsing stanzas destroys the
           content of the register). */}
       <p
-        className={`font-scripture text-[15px] leading-relaxed text-stone-600 dark:text-stone-300${
-          registerLane(entry) === 'exegetical' ? '' : ' whitespace-pre-line'
+        className={`font-scripture text-base leading-relaxed text-stone-600 dark:text-stone-500${
+          registerLane(entry) === 'exegetical' ? ' break-words' : ' whitespace-pre-line break-words'
         }`}
       >
         {displayText}
@@ -262,7 +262,7 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
         // ccel.org/gutenberg/crosswire surfaces a host as if it were the source
         // (GO_LIVE A5: "attribute to the author, never a host"). provenance
         // keeps the URL for the record; the UI shows the work title, plain.
-        <p className="mt-2 text-[11px] text-stone-400">
+        <p className="mt-2 text-micro text-stone-500 dark:text-stone-400">
           {entry.sourceTitle}
           {/* CC BY / CC BY-SA require attribution notice; PD needs none */}
           {entry.license && /^cc/i.test(entry.license) ? ` · ${entry.license}` : ''}
@@ -355,26 +355,26 @@ export function CommentaryPanel({
         ref={panelRef}
         className="w-full max-w-2xl max-h-[85dvh] overflow-y-auto overscroll-contain rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] shadow-deep animate-slide-up dark:bg-stone-900"
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-stone-200/60 bg-paper/95 px-5 py-4 backdrop-blur-sm dark:border-stone-800 dark:bg-stone-900/95">
+ <div className="sticky top-0 z-10 flex items-center justify-between border-b edge bg-paper/95 px-5 py-4 backdrop-blur-sm dark:bg-stone-900/95">
           <h2 className="text-sm font-semibold text-stone-800 dark:text-stone-100">
             Ancient Paths
           </h2>
           <button
             onClick={onClose}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600 active:bg-stone-100 transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-600 active:bg-stone-100 transition-colors ease-gentle"
             aria-label="Close"
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </button>
         </div>
 
         <div className="border-b border-stone-100 bg-stone-50/50 px-5 py-4 dark:border-stone-800 dark:bg-stone-800/40">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 mb-1.5">
+          <p className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-1.5">
             Verse {verseNum}
           </p>
-          <p className="font-scripture text-base leading-relaxed text-stone-700 italic dark:text-stone-300">
+          <p className="font-scripture text-base leading-relaxed text-stone-700 italic dark:text-stone-500">
             &ldquo;{verseText}&rdquo;
           </p>
         </div>
@@ -383,7 +383,7 @@ export function CommentaryPanel({
 
         <div className="px-5 py-4 space-y-1">
           {diverse.length === 0 ? (
-            <p className="py-10 text-center text-sm text-stone-400">
+            <p className="py-10 text-center text-sm text-stone-500 dark:text-stone-400">
               No commentary available for this verse yet.
             </p>
           ) : (
@@ -395,7 +395,7 @@ export function CommentaryPanel({
               return (
                 <div key={i}>
                   {showEra && (
-                    <p className="pt-4 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300">
+                    <p className="pt-4 pb-1.5 text-micro font-bold uppercase tracking-widest text-stone-500">
                       {era}
                     </p>
                   )}
@@ -414,7 +414,7 @@ export function CommentaryPanel({
 
         {diverse.length < exegetical.length && (
           <div className="px-5 pb-3">
-            <p className="text-xs text-stone-400 text-center">
+            <p className="text-xs text-stone-500 dark:text-stone-400 text-center">
               Showing {diverse.length} of {exegetical.length} commentaries
             </p>
           </div>
@@ -451,7 +451,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
     <div className="space-y-3 border-b border-stone-100 bg-white px-5 py-3 dark:border-stone-800 dark:bg-stone-900">
       {/* Highlight colors */}
       <div className="flex items-center gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+        <span className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
           Highlight
         </span>
         <div className="flex items-center gap-1.5">
@@ -460,7 +460,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
               key={c.id}
               onClick={() => annotation.onSetHighlight(c.id)}
               aria-label={`Highlight ${c.id}`}
-              className={`h-6 w-6 rounded-full ${c.dot} ring-2 transition-transform hover:scale-110 ${
+              className={`h-6 w-6 rounded-full ${c.dot} ring-2 transition-transform ease-gentle hover:scale-110 ${
                 annotation.color === c.id ? 'ring-stone-700' : 'ring-transparent'
               }`}
             />
@@ -468,7 +468,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
           {annotation.color && (
             <button
               onClick={annotation.onClearHighlight}
-              className="ml-1 text-xs text-stone-400 hover:text-stone-600"
+              className="ml-1 text-xs text-stone-500 dark:text-stone-400 hover:text-stone-600"
             >
               clear
             </button>
@@ -484,8 +484,9 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
             onChange={(e) => setNoteText(e.target.value)}
             onFocus={() => setEditingNote(true)}
             placeholder="Write a note on this verse…"
+            aria-label="Note on this verse"
             rows={3}
-            className="w-full resize-y rounded-xl bg-stone-100/80 px-3 py-2.5 text-base text-stone-800 outline-none placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
+            className="w-full resize-y rounded-lg bg-stone-100/80 px-3 py-2.5 text-base text-stone-800 outline-none placeholder:text-stone-500 dark:placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
           />
           <div className="mt-1.5 flex items-center gap-2">
             <button
@@ -494,7 +495,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
                 setEditingNote(false);
               }}
               disabled={!noteText.trim()}
-              className="min-h-[44px] rounded-full bg-accent-700 px-4 text-xs font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 disabled:opacity-40 dark:bg-accent-500 dark:hover:bg-accent-400"
+              className="min-h-[44px] rounded-lg bg-accent-700 px-4 text-xs font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 disabled:opacity-40 dark:bg-accent-500 dark:hover:bg-accent-400"
             >
               Save note
             </button>
@@ -505,7 +506,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
                   setNoteText('');
                   setEditingNote(false);
                 }}
-                className="min-h-[44px] px-2 text-xs text-stone-400 hover:text-accent-700 dark:hover:text-accent-300"
+                className="min-h-[44px] px-2 text-xs text-stone-500 dark:text-stone-400 hover:text-accent-700 dark:hover:text-accent-300"
               >
                 Delete
               </button>

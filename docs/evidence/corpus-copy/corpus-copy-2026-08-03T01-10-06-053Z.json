@@ -1,0 +1,1708 @@
+{
+  "source": "ep-tiny-hat-atdgpisx-pooler.c-9.us-east-1.aws.neon.tech",
+  "destination": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "declaredEndpoint": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "slugs": [
+    "aaberg-hymnsdenmark",
+    "augustine-confess",
+    "augustine-confessions",
+    "bett-methhymns",
+    "bevan-tersteegen",
+    "bevan-tersteegen2",
+    "borthwick-hll",
+    "brownlie-aposthymns",
+    "brownlie-earlyhymns",
+    "brownlie-easternhymns",
+    "brownlie-greekhymns",
+    "brownlie-hymnseast",
+    "brownlie-hymnsmorning",
+    "brownlie-hyndbrow",
+    "brownlie-officehymns",
+    "brownlie-russianhymns",
+    "calvin-calcom",
+    "calvin-calcom03",
+    "calvin-calcom07",
+    "calvin-calcom08",
+    "calvin-calcom09",
+    "calvin-calcom10",
+    "calvin-calcom14",
+    "calvin-calcom15",
+    "calvin-calcom16",
+    "calvin-calcom17",
+    "calvin-calcom18",
+    "calvin-calcom19",
+    "calvin-calcom20",
+    "calvin-calcom21",
+    "calvin-calcom23",
+    "calvin-calcom24",
+    "calvin-calcom25",
+    "calvin-calcom26",
+    "calvin-prayer",
+    "chatfield-greeksongs",
+    "chesterton-preexistence",
+    "crosby-indianhymnal",
+    "easton-ebd2",
+    "habermann-dailyprayers",
+    "hewitt-gerhardt",
+    "hitchcock-bible-names",
+    "hort-james1909",
+    "jowett-mattermost",
+    "keil-delitzsch",
+    "longfellow-s-bookhymns",
+    "luther-largecatechism",
+    "luther-smallcat",
+    "manning-wesleyhymns",
+    "melanchthon-apology",
+    "meyer-homily2",
+    "morris-welshhymns",
+    "nutter-hymnwriters",
+    "owen-catechisms",
+    "pilcher-passionhymns",
+    "prudentius-cathimerinon",
+    "reeves-hymnlit",
+    "schaff-dictionarybible",
+    "schaff-encyc01",
+    "schaff-encyc02",
+    "schaff-encyc09",
+    "schaff-encyc13",
+    "schaff-encyc13a",
+    "schaff-npnf101",
+    "schaff-npnf104",
+    "schaff-npnf210",
+    "schaff-npnf213",
+    "smith-w-bibledict",
+    "spurgeon-comment",
+    "stowe-religiouspoems",
+    "therese-poems",
+    "tolstoy-confession",
+    "ursinus-catechism",
+    "wace-biodict",
+    "waring-hymns",
+    "watts-psalmshymns",
+    "winkworth-hyndwink"
+  ],
+  "before": {
+    "aaberg-hymnsdenmark": {
+      "sources": 1,
+      "sections": 29,
+      "anchors": 2,
+      "section_embeddings": 0,
+      "flat_embeddings": 297
+    },
+    "augustine-confess": {
+      "sources": 1,
+      "sections": 276,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 675
+    },
+    "augustine-confessions": {
+      "sources": 1,
+      "sections": 13,
+      "anchors": 13,
+      "section_embeddings": 0,
+      "flat_embeddings": 624
+    },
+    "bett-methhymns": {
+      "sources": 1,
+      "sections": 3,
+      "anchors": 3,
+      "section_embeddings": 0,
+      "flat_embeddings": 96
+    },
+    "bevan-tersteegen": {
+      "sources": 1,
+      "sections": 91,
+      "anchors": 91,
+      "section_embeddings": 0,
+      "flat_embeddings": 132
+    },
+    "bevan-tersteegen2": {
+      "sources": 1,
+      "sections": 75,
+      "anchors": 2,
+      "section_embeddings": 0,
+      "flat_embeddings": 121
+    },
+    "borthwick-hll": {
+      "sources": 1,
+      "sections": 78,
+      "anchors": 70,
+      "section_embeddings": 0,
+      "flat_embeddings": 137
+    },
+    "brownlie-aposthymns": {
+      "sources": 1,
+      "sections": 88,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 102
+    },
+    "brownlie-earlyhymns": {
+      "sources": 1,
+      "sections": 99,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 104
+    },
+    "brownlie-easternhymns": {
+      "sources": 1,
+      "sections": 45,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 46
+    },
+    "brownlie-greekhymns": {
+      "sources": 1,
+      "sections": 47,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 48
+    },
+    "brownlie-hymnseast": {
+      "sources": 1,
+      "sections": 53,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 55
+    },
+    "brownlie-hymnsmorning": {
+      "sources": 1,
+      "sections": 80,
+      "anchors": 3,
+      "section_embeddings": 0,
+      "flat_embeddings": 85
+    },
+    "brownlie-hyndbrow": {
+      "sources": 1,
+      "sections": 24,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 47
+    },
+    "brownlie-officehymns": {
+      "sources": 1,
+      "sections": 51,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 56
+    },
+    "brownlie-russianhymns": {
+      "sources": 1,
+      "sections": 128,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 129
+    },
+    "calvin-calcom": {
+      "sources": 1,
+      "sections": 14,
+      "anchors": 10,
+      "section_embeddings": 0,
+      "flat_embeddings": 860
+    },
+    "calvin-calcom03": {
+      "sources": 1,
+      "sections": 21,
+      "anchors": 21,
+      "section_embeddings": 0,
+      "flat_embeddings": 664
+    },
+    "calvin-calcom07": {
+      "sources": 1,
+      "sections": 24,
+      "anchors": 24,
+      "section_embeddings": 0,
+      "flat_embeddings": 518
+    },
+    "calvin-calcom08": {
+      "sources": 1,
+      "sections": 220,
+      "anchors": 217,
+      "section_embeddings": 0,
+      "flat_embeddings": 1299
+    },
+    "calvin-calcom09": {
+      "sources": 1,
+      "sections": 155,
+      "anchors": 153,
+      "section_embeddings": 0,
+      "flat_embeddings": 931
+    },
+    "calvin-calcom10": {
+      "sources": 1,
+      "sections": 144,
+      "anchors": 142,
+      "section_embeddings": 0,
+      "flat_embeddings": 921
+    },
+    "calvin-calcom14": {
+      "sources": 1,
+      "sections": 16,
+      "anchors": 16,
+      "section_embeddings": 0,
+      "flat_embeddings": 795
+    },
+    "calvin-calcom15": {
+      "sources": 1,
+      "sections": 16,
+      "anchors": 16,
+      "section_embeddings": 0,
+      "flat_embeddings": 991
+    },
+    "calvin-calcom16": {
+      "sources": 1,
+      "sections": 18,
+      "anchors": 18,
+      "section_embeddings": 0,
+      "flat_embeddings": 870
+    },
+    "calvin-calcom17": {
+      "sources": 1,
+      "sections": 9,
+      "anchors": 9,
+      "section_embeddings": 0,
+      "flat_embeddings": 880
+    },
+    "calvin-calcom18": {
+      "sources": 1,
+      "sections": 10,
+      "anchors": 10,
+      "section_embeddings": 0,
+      "flat_embeddings": 843
+    },
+    "calvin-calcom19": {
+      "sources": 1,
+      "sections": 10,
+      "anchors": 10,
+      "section_embeddings": 0,
+      "flat_embeddings": 846
+    },
+    "calvin-calcom20": {
+      "sources": 1,
+      "sections": 18,
+      "anchors": 18,
+      "section_embeddings": 0,
+      "flat_embeddings": 1251
+    },
+    "calvin-calcom21": {
+      "sources": 1,
+      "sections": 10,
+      "anchors": 10,
+      "section_embeddings": 0,
+      "flat_embeddings": 980
+    },
+    "calvin-calcom23": {
+      "sources": 1,
+      "sections": 16,
+      "anchors": 15,
+      "section_embeddings": 0,
+      "flat_embeddings": 114
+    },
+    "calvin-calcom24": {
+      "sources": 1,
+      "sections": 24,
+      "anchors": 23,
+      "section_embeddings": 0,
+      "flat_embeddings": 141
+    },
+    "calvin-calcom25": {
+      "sources": 1,
+      "sections": 20,
+      "anchors": 19,
+      "section_embeddings": 0,
+      "flat_embeddings": 124
+    },
+    "calvin-calcom26": {
+      "sources": 1,
+      "sections": 14,
+      "anchors": 14,
+      "section_embeddings": 0,
+      "flat_embeddings": 978
+    },
+    "calvin-prayer": {
+      "sources": 1,
+      "sections": 52,
+      "anchors": 45,
+      "section_embeddings": 0,
+      "flat_embeddings": 179
+    },
+    "chatfield-greeksongs": {
+      "sources": 1,
+      "sections": 31,
+      "anchors": 4,
+      "section_embeddings": 0,
+      "flat_embeddings": 96
+    },
+    "chesterton-preexistence": {
+      "sources": 1,
+      "sections": 6,
+      "anchors": 5,
+      "section_embeddings": 0,
+      "flat_embeddings": 25
+    },
+    "crosby-indianhymnal": {
+      "sources": 1,
+      "sections": 49,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 53
+    },
+    "easton-ebd2": {
+      "sources": 1,
+      "sections": 26,
+      "anchors": 25,
+      "section_embeddings": 0,
+      "flat_embeddings": 2100
+    },
+    "habermann-dailyprayers": {
+      "sources": 1,
+      "sections": 30,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 43
+    },
+    "hewitt-gerhardt": {
+      "sources": 1,
+      "sections": 221,
+      "anchors": 39,
+      "section_embeddings": 0,
+      "flat_embeddings": 411
+    },
+    "hitchcock-bible-names": {
+      "sources": 1,
+      "sections": 23,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 82
+    },
+    "hort-james1909": {
+      "sources": 1,
+      "sections": 5,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 344
+    },
+    "jowett-mattermost": {
+      "sources": 1,
+      "sections": 35,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 289
+    },
+    "keil-delitzsch": {
+      "sources": 1,
+      "sections": 23073,
+      "anchors": 23073,
+      "section_embeddings": 23073,
+      "flat_embeddings": 23073
+    },
+    "longfellow-s-bookhymns": {
+      "sources": 1,
+      "sections": 599,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 599
+    },
+    "luther-largecatechism": {
+      "sources": 1,
+      "sections": 26,
+      "anchors": 7,
+      "section_embeddings": 0,
+      "flat_embeddings": 244
+    },
+    "luther-smallcat": {
+      "sources": 1,
+      "sections": 6,
+      "anchors": 3,
+      "section_embeddings": 0,
+      "flat_embeddings": 16
+    },
+    "manning-wesleyhymns": {
+      "sources": 1,
+      "sections": 6,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 201
+    },
+    "melanchthon-apology": {
+      "sources": 1,
+      "sections": 37,
+      "anchors": 25,
+      "section_embeddings": 0,
+      "flat_embeddings": 591
+    },
+    "meyer-homily2": {
+      "sources": 1,
+      "sections": 241,
+      "anchors": 241,
+      "section_embeddings": 0,
+      "flat_embeddings": 482
+    },
+    "morris-welshhymns": {
+      "sources": 1,
+      "sections": 63,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 71
+    },
+    "nutter-hymnwriters": {
+      "sources": 1,
+      "sections": 311,
+      "anchors": 2,
+      "section_embeddings": 0,
+      "flat_embeddings": 407
+    },
+    "owen-catechisms": {
+      "sources": 1,
+      "sections": 31,
+      "anchors": 27,
+      "section_embeddings": 0,
+      "flat_embeddings": 54
+    },
+    "pilcher-passionhymns": {
+      "sources": 1,
+      "sections": 32,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 38
+    },
+    "prudentius-cathimerinon": {
+      "sources": 1,
+      "sections": 30,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 172
+    },
+    "reeves-hymnlit": {
+      "sources": 1,
+      "sections": 11,
+      "anchors": 8,
+      "section_embeddings": 0,
+      "flat_embeddings": 383
+    },
+    "schaff-dictionarybible": {
+      "sources": 1,
+      "sections": 29,
+      "anchors": 23,
+      "section_embeddings": 0,
+      "flat_embeddings": 2789
+    },
+    "schaff-encyc01": {
+      "sources": 1,
+      "sections": 9,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 2971
+    },
+    "schaff-encyc02": {
+      "sources": 1,
+      "sections": 9,
+      "anchors": 2,
+      "section_embeddings": 0,
+      "flat_embeddings": 2945
+    },
+    "schaff-encyc09": {
+      "sources": 1,
+      "sections": 9,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 2977
+    },
+    "schaff-encyc13": {
+      "sources": 1,
+      "sections": 27,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 720
+    },
+    "schaff-encyc13a": {
+      "sources": 1,
+      "sections": 27,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 780
+    },
+    "schaff-npnf101": {
+      "sources": 1,
+      "sections": 281,
+      "anchors": 192,
+      "section_embeddings": 0,
+      "flat_embeddings": 829
+    },
+    "schaff-npnf104": {
+      "sources": 1,
+      "sections": 585,
+      "anchors": 303,
+      "section_embeddings": 0,
+      "flat_embeddings": 1928
+    },
+    "schaff-npnf210": {
+      "sources": 1,
+      "sections": 349,
+      "anchors": 293,
+      "section_embeddings": 0,
+      "flat_embeddings": 2096
+    },
+    "schaff-npnf213": {
+      "sources": 1,
+      "sections": 88,
+      "anchors": 22,
+      "section_embeddings": 0,
+      "flat_embeddings": 418
+    },
+    "smith-w-bibledict": {
+      "sources": 1,
+      "sections": 25,
+      "anchors": 25,
+      "section_embeddings": 0,
+      "flat_embeddings": 2323
+    },
+    "spurgeon-comment": {
+      "sources": 1,
+      "sections": 3,
+      "anchors": 2,
+      "section_embeddings": 0,
+      "flat_embeddings": 71
+    },
+    "stowe-religiouspoems": {
+      "sources": 1,
+      "sections": 31,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 58
+    },
+    "therese-poems": {
+      "sources": 1,
+      "sections": 45,
+      "anchors": 4,
+      "section_embeddings": 0,
+      "flat_embeddings": 150
+    },
+    "tolstoy-confession": {
+      "sources": 1,
+      "sections": 17,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 136
+    },
+    "ursinus-catechism": {
+      "sources": 1,
+      "sections": 5,
+      "anchors": 3,
+      "section_embeddings": 0,
+      "flat_embeddings": 22
+    },
+    "wace-biodict": {
+      "sources": 1,
+      "sections": 27,
+      "anchors": 13,
+      "section_embeddings": 0,
+      "flat_embeddings": 5970
+    },
+    "waring-hymns": {
+      "sources": 1,
+      "sections": 32,
+      "anchors": 29,
+      "section_embeddings": 0,
+      "flat_embeddings": 57
+    },
+    "watts-psalmshymns": {
+      "sources": 1,
+      "sections": 731,
+      "anchors": 510,
+      "section_embeddings": 0,
+      "flat_embeddings": 913
+    },
+    "winkworth-hyndwink": {
+      "sources": 1,
+      "sections": 218,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 341
+    }
+  },
+  "destBefore": {
+    "aaberg-hymnsdenmark": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "augustine-confess": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "augustine-confessions": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "bett-methhymns": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "bevan-tersteegen": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "bevan-tersteegen2": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "borthwick-hll": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "brownlie-aposthymns": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "brownlie-earlyhymns": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "brownlie-easternhymns": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "brownlie-greekhymns": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "brownlie-hymnseast": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "brownlie-hymnsmorning": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "brownlie-hyndbrow": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "brownlie-officehymns": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "brownlie-russianhymns": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom03": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom07": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom08": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom09": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom10": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom14": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom15": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom16": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom17": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom18": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom19": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom20": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom21": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom23": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom24": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom25": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-calcom26": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "calvin-prayer": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "chatfield-greeksongs": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "chesterton-preexistence": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "crosby-indianhymnal": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "easton-ebd2": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "habermann-dailyprayers": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "hewitt-gerhardt": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "hitchcock-bible-names": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "hort-james1909": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "jowett-mattermost": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "keil-delitzsch": {
+      "sources": 1,
+      "sections": 23073,
+      "anchors": 23073,
+      "section_embeddings": 23073,
+      "flat_embeddings": 23073
+    },
+    "longfellow-s-bookhymns": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "luther-largecatechism": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "luther-smallcat": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "manning-wesleyhymns": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "melanchthon-apology": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "meyer-homily2": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "morris-welshhymns": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "nutter-hymnwriters": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "owen-catechisms": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "pilcher-passionhymns": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "prudentius-cathimerinon": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "reeves-hymnlit": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-dictionarybible": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-encyc01": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-encyc02": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-encyc09": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-encyc13": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-encyc13a": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-npnf101": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-npnf104": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-npnf210": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-npnf213": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "smith-w-bibledict": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "spurgeon-comment": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "stowe-religiouspoems": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "therese-poems": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "tolstoy-confession": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "ursinus-catechism": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "wace-biodict": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "waring-hymns": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "watts-psalmshymns": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    },
+    "winkworth-hyndwink": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "destAfter": {
+    "aaberg-hymnsdenmark": {
+      "sources": 1,
+      "sections": 29,
+      "anchors": 2,
+      "section_embeddings": 0,
+      "flat_embeddings": 297
+    },
+    "augustine-confess": {
+      "sources": 1,
+      "sections": 276,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 675
+    },
+    "augustine-confessions": {
+      "sources": 1,
+      "sections": 13,
+      "anchors": 13,
+      "section_embeddings": 0,
+      "flat_embeddings": 624
+    },
+    "bett-methhymns": {
+      "sources": 1,
+      "sections": 3,
+      "anchors": 3,
+      "section_embeddings": 0,
+      "flat_embeddings": 96
+    },
+    "bevan-tersteegen": {
+      "sources": 1,
+      "sections": 91,
+      "anchors": 91,
+      "section_embeddings": 0,
+      "flat_embeddings": 132
+    },
+    "bevan-tersteegen2": {
+      "sources": 1,
+      "sections": 75,
+      "anchors": 2,
+      "section_embeddings": 0,
+      "flat_embeddings": 121
+    },
+    "borthwick-hll": {
+      "sources": 1,
+      "sections": 78,
+      "anchors": 70,
+      "section_embeddings": 0,
+      "flat_embeddings": 137
+    },
+    "brownlie-aposthymns": {
+      "sources": 1,
+      "sections": 88,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 102
+    },
+    "brownlie-earlyhymns": {
+      "sources": 1,
+      "sections": 99,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 104
+    },
+    "brownlie-easternhymns": {
+      "sources": 1,
+      "sections": 45,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 46
+    },
+    "brownlie-greekhymns": {
+      "sources": 1,
+      "sections": 47,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 48
+    },
+    "brownlie-hymnseast": {
+      "sources": 1,
+      "sections": 53,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 55
+    },
+    "brownlie-hymnsmorning": {
+      "sources": 1,
+      "sections": 80,
+      "anchors": 3,
+      "section_embeddings": 0,
+      "flat_embeddings": 85
+    },
+    "brownlie-hyndbrow": {
+      "sources": 1,
+      "sections": 24,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 47
+    },
+    "brownlie-officehymns": {
+      "sources": 1,
+      "sections": 51,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 56
+    },
+    "brownlie-russianhymns": {
+      "sources": 1,
+      "sections": 128,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 129
+    },
+    "calvin-calcom": {
+      "sources": 1,
+      "sections": 14,
+      "anchors": 10,
+      "section_embeddings": 0,
+      "flat_embeddings": 860
+    },
+    "calvin-calcom03": {
+      "sources": 1,
+      "sections": 21,
+      "anchors": 21,
+      "section_embeddings": 0,
+      "flat_embeddings": 664
+    },
+    "calvin-calcom07": {
+      "sources": 1,
+      "sections": 24,
+      "anchors": 24,
+      "section_embeddings": 0,
+      "flat_embeddings": 518
+    },
+    "calvin-calcom08": {
+      "sources": 1,
+      "sections": 220,
+      "anchors": 217,
+      "section_embeddings": 0,
+      "flat_embeddings": 1299
+    },
+    "calvin-calcom09": {
+      "sources": 1,
+      "sections": 155,
+      "anchors": 153,
+      "section_embeddings": 0,
+      "flat_embeddings": 931
+    },
+    "calvin-calcom10": {
+      "sources": 1,
+      "sections": 144,
+      "anchors": 142,
+      "section_embeddings": 0,
+      "flat_embeddings": 921
+    },
+    "calvin-calcom14": {
+      "sources": 1,
+      "sections": 16,
+      "anchors": 16,
+      "section_embeddings": 0,
+      "flat_embeddings": 795
+    },
+    "calvin-calcom15": {
+      "sources": 1,
+      "sections": 16,
+      "anchors": 16,
+      "section_embeddings": 0,
+      "flat_embeddings": 991
+    },
+    "calvin-calcom16": {
+      "sources": 1,
+      "sections": 18,
+      "anchors": 18,
+      "section_embeddings": 0,
+      "flat_embeddings": 870
+    },
+    "calvin-calcom17": {
+      "sources": 1,
+      "sections": 9,
+      "anchors": 9,
+      "section_embeddings": 0,
+      "flat_embeddings": 880
+    },
+    "calvin-calcom18": {
+      "sources": 1,
+      "sections": 10,
+      "anchors": 10,
+      "section_embeddings": 0,
+      "flat_embeddings": 843
+    },
+    "calvin-calcom19": {
+      "sources": 1,
+      "sections": 10,
+      "anchors": 10,
+      "section_embeddings": 0,
+      "flat_embeddings": 846
+    },
+    "calvin-calcom20": {
+      "sources": 1,
+      "sections": 18,
+      "anchors": 18,
+      "section_embeddings": 0,
+      "flat_embeddings": 1251
+    },
+    "calvin-calcom21": {
+      "sources": 1,
+      "sections": 10,
+      "anchors": 10,
+      "section_embeddings": 0,
+      "flat_embeddings": 980
+    },
+    "calvin-calcom23": {
+      "sources": 1,
+      "sections": 16,
+      "anchors": 15,
+      "section_embeddings": 0,
+      "flat_embeddings": 114
+    },
+    "calvin-calcom24": {
+      "sources": 1,
+      "sections": 24,
+      "anchors": 23,
+      "section_embeddings": 0,
+      "flat_embeddings": 141
+    },
+    "calvin-calcom25": {
+      "sources": 1,
+      "sections": 20,
+      "anchors": 19,
+      "section_embeddings": 0,
+      "flat_embeddings": 124
+    },
+    "calvin-calcom26": {
+      "sources": 1,
+      "sections": 14,
+      "anchors": 14,
+      "section_embeddings": 0,
+      "flat_embeddings": 978
+    },
+    "calvin-prayer": {
+      "sources": 1,
+      "sections": 52,
+      "anchors": 45,
+      "section_embeddings": 0,
+      "flat_embeddings": 179
+    },
+    "chatfield-greeksongs": {
+      "sources": 1,
+      "sections": 31,
+      "anchors": 4,
+      "section_embeddings": 0,
+      "flat_embeddings": 96
+    },
+    "chesterton-preexistence": {
+      "sources": 1,
+      "sections": 6,
+      "anchors": 5,
+      "section_embeddings": 0,
+      "flat_embeddings": 25
+    },
+    "crosby-indianhymnal": {
+      "sources": 1,
+      "sections": 49,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 53
+    },
+    "easton-ebd2": {
+      "sources": 1,
+      "sections": 26,
+      "anchors": 25,
+      "section_embeddings": 0,
+      "flat_embeddings": 2100
+    },
+    "habermann-dailyprayers": {
+      "sources": 1,
+      "sections": 30,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 43
+    },
+    "hewitt-gerhardt": {
+      "sources": 1,
+      "sections": 221,
+      "anchors": 39,
+      "section_embeddings": 0,
+      "flat_embeddings": 411
+    },
+    "hitchcock-bible-names": {
+      "sources": 1,
+      "sections": 23,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 82
+    },
+    "hort-james1909": {
+      "sources": 1,
+      "sections": 5,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 344
+    },
+    "jowett-mattermost": {
+      "sources": 1,
+      "sections": 35,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 289
+    },
+    "keil-delitzsch": {
+      "sources": 1,
+      "sections": 23073,
+      "anchors": 23073,
+      "section_embeddings": 23073,
+      "flat_embeddings": 23073
+    },
+    "longfellow-s-bookhymns": {
+      "sources": 1,
+      "sections": 599,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 599
+    },
+    "luther-largecatechism": {
+      "sources": 1,
+      "sections": 26,
+      "anchors": 7,
+      "section_embeddings": 0,
+      "flat_embeddings": 244
+    },
+    "luther-smallcat": {
+      "sources": 1,
+      "sections": 6,
+      "anchors": 3,
+      "section_embeddings": 0,
+      "flat_embeddings": 16
+    },
+    "manning-wesleyhymns": {
+      "sources": 1,
+      "sections": 6,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 201
+    },
+    "melanchthon-apology": {
+      "sources": 1,
+      "sections": 37,
+      "anchors": 25,
+      "section_embeddings": 0,
+      "flat_embeddings": 591
+    },
+    "meyer-homily2": {
+      "sources": 1,
+      "sections": 241,
+      "anchors": 241,
+      "section_embeddings": 0,
+      "flat_embeddings": 482
+    },
+    "morris-welshhymns": {
+      "sources": 1,
+      "sections": 63,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 71
+    },
+    "nutter-hymnwriters": {
+      "sources": 1,
+      "sections": 311,
+      "anchors": 2,
+      "section_embeddings": 0,
+      "flat_embeddings": 407
+    },
+    "owen-catechisms": {
+      "sources": 1,
+      "sections": 31,
+      "anchors": 27,
+      "section_embeddings": 0,
+      "flat_embeddings": 54
+    },
+    "pilcher-passionhymns": {
+      "sources": 1,
+      "sections": 32,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 38
+    },
+    "prudentius-cathimerinon": {
+      "sources": 1,
+      "sections": 30,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 172
+    },
+    "reeves-hymnlit": {
+      "sources": 1,
+      "sections": 11,
+      "anchors": 8,
+      "section_embeddings": 0,
+      "flat_embeddings": 383
+    },
+    "schaff-dictionarybible": {
+      "sources": 1,
+      "sections": 29,
+      "anchors": 23,
+      "section_embeddings": 0,
+      "flat_embeddings": 2789
+    },
+    "schaff-encyc01": {
+      "sources": 1,
+      "sections": 9,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 2971
+    },
+    "schaff-encyc02": {
+      "sources": 1,
+      "sections": 9,
+      "anchors": 2,
+      "section_embeddings": 0,
+      "flat_embeddings": 2945
+    },
+    "schaff-encyc09": {
+      "sources": 1,
+      "sections": 9,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 2977
+    },
+    "schaff-encyc13": {
+      "sources": 1,
+      "sections": 27,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 720
+    },
+    "schaff-encyc13a": {
+      "sources": 1,
+      "sections": 27,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 780
+    },
+    "schaff-npnf101": {
+      "sources": 1,
+      "sections": 281,
+      "anchors": 192,
+      "section_embeddings": 0,
+      "flat_embeddings": 829
+    },
+    "schaff-npnf104": {
+      "sources": 1,
+      "sections": 585,
+      "anchors": 303,
+      "section_embeddings": 0,
+      "flat_embeddings": 1928
+    },
+    "schaff-npnf210": {
+      "sources": 1,
+      "sections": 349,
+      "anchors": 293,
+      "section_embeddings": 0,
+      "flat_embeddings": 2096
+    },
+    "schaff-npnf213": {
+      "sources": 1,
+      "sections": 88,
+      "anchors": 22,
+      "section_embeddings": 0,
+      "flat_embeddings": 418
+    },
+    "smith-w-bibledict": {
+      "sources": 1,
+      "sections": 25,
+      "anchors": 25,
+      "section_embeddings": 0,
+      "flat_embeddings": 2323
+    },
+    "spurgeon-comment": {
+      "sources": 1,
+      "sections": 3,
+      "anchors": 2,
+      "section_embeddings": 0,
+      "flat_embeddings": 71
+    },
+    "stowe-religiouspoems": {
+      "sources": 1,
+      "sections": 31,
+      "anchors": 1,
+      "section_embeddings": 0,
+      "flat_embeddings": 58
+    },
+    "therese-poems": {
+      "sources": 1,
+      "sections": 45,
+      "anchors": 4,
+      "section_embeddings": 0,
+      "flat_embeddings": 150
+    },
+    "tolstoy-confession": {
+      "sources": 1,
+      "sections": 17,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 136
+    },
+    "ursinus-catechism": {
+      "sources": 1,
+      "sections": 5,
+      "anchors": 3,
+      "section_embeddings": 0,
+      "flat_embeddings": 22
+    },
+    "wace-biodict": {
+      "sources": 1,
+      "sections": 27,
+      "anchors": 13,
+      "section_embeddings": 0,
+      "flat_embeddings": 5970
+    },
+    "waring-hymns": {
+      "sources": 1,
+      "sections": 32,
+      "anchors": 29,
+      "section_embeddings": 0,
+      "flat_embeddings": 57
+    },
+    "watts-psalmshymns": {
+      "sources": 1,
+      "sections": 731,
+      "anchors": 510,
+      "section_embeddings": 0,
+      "flat_embeddings": 913
+    },
+    "winkworth-hyndwink": {
+      "sources": 1,
+      "sections": 218,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 341
+    }
+  },
+  "mismatch": 0
+}

@@ -1,0 +1,36 @@
+{
+  "source": "ep-tiny-hat-atdgpisx-pooler.c-9.us-east-1.aws.neon.tech",
+  "destination": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "declaredEndpoint": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "slugs": [
+    "keil-delitzsch"
+  ],
+  "before": {
+    "keil-delitzsch": {
+      "sources": 1,
+      "sections": 23073,
+      "anchors": 23073,
+      "section_embeddings": 23073,
+      "flat_embeddings": 23073
+    }
+  },
+  "destBefore": {
+    "keil-delitzsch": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "destAfter": {
+    "keil-delitzsch": {
+      "sources": 1,
+      "sections": 23073,
+      "anchors": 23073,
+      "section_embeddings": 23073,
+      "flat_embeddings": 23073
+    }
+  },
+  "mismatch": 0
+}

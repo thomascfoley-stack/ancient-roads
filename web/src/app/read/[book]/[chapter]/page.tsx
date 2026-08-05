@@ -271,7 +271,7 @@ export default function ReaderPage() {
           </>
         ) : (
           <div className="flex min-h-[60vh] items-center justify-center">
-            <p className="text-sm text-stone-400">Loading Greek / Hebrew…</p>
+            <p className="text-sm text-stone-500 dark:text-stone-400">Loading Greek / Hebrew…</p>
           </div>
         )
       ) : data ? (
@@ -295,11 +295,11 @@ export default function ReaderPage() {
         </>
       ) : (
         <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-sm text-stone-400">Loading…</p>
+          <p className="text-sm text-stone-500 dark:text-stone-400">Loading…</p>
         </div>
       )}
       {translationAttribution(translation.id) ? (
-        <p className="mx-auto max-w-2xl px-6 pb-8 text-center text-xs text-stone-400">
+        <p className="mx-auto max-w-2xl px-6 pb-8 text-center text-xs text-stone-500 dark:text-stone-400">
           {translationAttribution(translation.id)}
         </p>
       ) : null}
@@ -349,7 +349,7 @@ export default function ReaderPage() {
       {writeError && (
         <div
           role="alert"
-          className="fixed inset-x-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom)+1rem)] z-50 mx-auto flex w-fit max-w-[92vw] items-center gap-3 rounded-full border border-red-300/60 bg-red-50/95 px-4 py-2 text-sm text-red-800 shadow-lg backdrop-blur-sm md:bottom-4 dark:border-red-900/60 dark:bg-red-950/90 dark:text-red-200"
+          className="fixed inset-x-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom)+1rem)] z-50 mx-auto flex w-fit max-w-[92vw] items-center gap-3 rounded-full border border-red-300/60 bg-red-50/95 px-4 py-2 text-sm text-red-800 shadow-float backdrop-blur-sm md:bottom-4 dark:border-red-900/60 dark:bg-red-950/90 dark:text-red-200"
         >
           <span>{writeError.message}.</span>
           <button
@@ -358,7 +358,7 @@ export default function ReaderPage() {
               retryWrite();
               dismissWrite();
             }}
-            className="min-h-[28px] shrink-0 rounded-full bg-red-700 px-3 py-1 text-xs font-semibold text-white hover:bg-red-800 dark:bg-red-500 dark:hover:bg-red-400"
+            className="min-h-[28px] shrink-0 rounded-lg bg-red-700 px-3 py-1 text-xs font-semibold text-white hover:bg-red-800 dark:bg-red-500 dark:hover:bg-red-400"
           >
             Retry
           </button>

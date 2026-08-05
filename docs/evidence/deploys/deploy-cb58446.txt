@@ -1,0 +1,15 @@
+deployed_at_utc: 2026-08-04T21:48:52Z
+sha:             cb584466ddde32cbc8834f2add000d93e93def17
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+url:             https://web-hdwcfqjl7-home-network-hardening.vercel.app
+deployment_id:   dpl_Cnq58YxGmcEEXdHsDerkhET4ybfc
+aliases:         ancientpaths.app, www.ancientpaths.app
+note:            local deploy.sh's CLI process was killed by a SIGPIPE from an
+                 unrelated 'head -150' on the tee'd log, AFTER the upload completed
+                 and the remote build had started. The remote build was unaffected
+                 and reached Ready independently. This receipt was written by hand
+                 (same format deploy.sh writes) after confirming via vercel inspect
+                 + get_deployment (Vercel API) that the deployment is Ready and
+                 aliased to production.

@@ -30,7 +30,7 @@ export function Interlinear({
       <div className="space-y-5">
         {verseNums.map((v) => (
           <div key={v} className="flex gap-2">
-            <span className="mt-1.5 shrink-0 select-none font-sans text-[11px] font-semibold text-accent-600/80 dark:text-accent-300/80">
+            <span className="mt-1.5 shrink-0 select-none font-sans text-micro font-semibold text-accent-600/80 dark:text-accent-300/80">
               {v}
             </span>
             <div
@@ -41,17 +41,21 @@ export function Interlinear({
                 <button
                   key={i}
                   onClick={() => onWordClick(word, v, i)}
-                  className="group flex min-h-[44px] flex-col items-center justify-center rounded-md px-1.5 py-1 text-center transition-colors hover:bg-accent-50/70 active:bg-accent-50 dark:hover:bg-accent-950/30"
+                  className="group flex min-h-[44px] flex-col items-center justify-center rounded-md px-1.5 py-1 text-center transition-colors ease-gentle hover:bg-accent-50/70 active:bg-accent-50 dark:hover:bg-accent-950/30"
                   title={word.s}
                 >
-                  <span className="font-scripture text-xl leading-tight text-stone-900 group-hover:text-accent-800 dark:text-stone-100 dark:group-hover:text-accent-300">
+                  {/* lang goes on the ORIGINAL-LANGUAGE word only. It was briefly on the
+                      wrapping div, which made the transliteration and gloss below inherit
+                      Greek/Hebrew phonetics: worse than having no lang at all, on the exact
+                      surface where a reader depends on those two lines being readable. */}
+                  <span lang={rtl ? 'he' : 'el'} className="font-scripture text-xl leading-tight text-stone-900 group-hover:text-accent-800 dark:text-stone-100 dark:group-hover:text-accent-300">
                     {word.w}
                   </span>
-                  <span className="mt-0.5 text-[10px] leading-tight text-stone-400 dark:text-stone-500" dir="ltr">
+                  <span className="mt-0.5 text-micro leading-tight text-stone-500 dark:text-stone-400" dir="ltr" lang="en">
                     {word.tr}
                   </span>
                   {word.g && (
-                    <span className="text-[11px] leading-tight text-stone-500 dark:text-stone-400" dir="ltr">
+                    <span className="text-micro leading-tight text-stone-600 dark:text-stone-400" dir="ltr" lang="en">
                       {word.g}
                     </span>
                   )}
@@ -62,7 +66,7 @@ export function Interlinear({
         ))}
       </div>
 
-      <div className="mt-10 border-t border-stone-100 pt-6 text-center text-xs text-stone-400">
+      <div className="mt-10 border-t border-stone-100 pt-6 text-center text-xs text-stone-500 dark:text-stone-400">
         <p>Tap any word for its {rtl ? 'Hebrew' : 'Greek'} definition, morphology, and commentaries.</p>
         {/* Attribution required by the licences of the source data (§7 licensing fix). Full
             per-work records in DATA_SOURCES.md. Strong's is PD; the text + morphology are not. */}

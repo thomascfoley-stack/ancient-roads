@@ -96,7 +96,7 @@ export function SidebarNavContent({
             href="/home"
             icon={<HomeIcon />}
             label="Home"
-            active={pathname === '/'}
+            active={pathname === '/home'}
             row={row}
             onNavigate={onNavigate}
           />
@@ -116,6 +116,14 @@ export function SidebarNavContent({
             row={row}
             onNavigate={onNavigate}
           />
+          <SidebarLink
+            href="/plans"
+            icon={<CalendarIcon />}
+            label="Reading plans"
+            active={pathname.startsWith('/plans')}
+            row={row}
+            onNavigate={onNavigate}
+          />
           {/* THE SERVER HAS NO SESSION, so it renders the signed-OUT branch; `useSession` resolves
               only in the browser. Rendering the signed-IN branch on the client's first pass is a
               server/client text mismatch ("Sign in" vs "Sign out") — a React #418 on every page
@@ -128,13 +136,25 @@ export function SidebarNavContent({
               icon={<LogOutIcon />}
               label="Sign out"
               row={row}
+              // A failed sign-out used to navigate to '/' anyway, leaving the reader on the
+              // marketing page still authenticated while believing they had signed out. On a
+              // shared device that is a false security signal, which is worse than an error.
               onClick={async () => {
-                // Better Auth's own client, not a hand-rolled POST. The route that used to
-                // serve this cleared `__Secure-neon-auth*` cookies -- the wrong cookie family
-                // now -- and it sat at /api/auth/sign-out, SHADOWING the catch-all handler that
-                // Better Auth mounts there. It is deleted; this is the supported path.
-                await authClient.signOut();
-                window.location.href = '/';
+                // Better Auth's own client, not a hand-rolled POST. The route that used to serve
+                // this cleared `__Secure-neon-auth*` cookies -- the wrong cookie family now -- and
+                // it sat at /api/auth/sign-out, SHADOWING the catch-all handler Better Auth mounts
+                // there. It is deleted; this is the supported path.
+                //
+                // The failure branch is main's and is kept: signOut() can reject, and a sign-out
+                // that quietly does nothing while the reader believes they are signed out is the
+                // worst outcome on a shared machine.
+                try {
+                  const { error } = await authClient.signOut();
+                  if (error) throw new Error(error.message ?? 'sign-out failed');
+                  window.location.href = '/';
+                } catch {
+                  alert('Sign out failed. You are still signed in. Please try again.');
+                }
               }}
             />
           ) : (
@@ -187,7 +207,7 @@ export function SidebarNavContent({
             ) : (
               <button
                 onClick={() => setAddingSection(true)}
-                className={`flex w-full items-center gap-2.5 rounded-md px-2 text-sm text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 active:bg-stone-200/70 dark:hover:bg-stone-800 dark:hover:text-stone-300 ${row}`}
+                className={`flex w-full items-center gap-2.5 rounded-md px-2 text-sm text-stone-500 dark:text-stone-400 transition-colors ease-gentle hover:bg-stone-100 hover:text-stone-600 active:bg-stone-200/70 dark:hover:bg-stone-800 dark:hover:text-stone-300 ${row}`}
               >
                 <span className="flex w-4 items-center justify-center"><PlusIcon /></span>
                 <span className="flex-1 truncate text-left">New section</span>
@@ -199,7 +219,7 @@ export function SidebarNavContent({
         {/* Library */}
         <div className="mt-4">
           <div className="mb-1 px-4">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+            <span className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
               Library
             </span>
           </div>
@@ -232,6 +252,7 @@ export function SidebarNavContent({
               label={CATALOGS[id].label}
               active={pathname.startsWith(`/library/${id}`)}
               row={row}
+              tier="shelf"
               onNavigate={onNavigate}
             />
           ))}
@@ -242,6 +263,7 @@ export function SidebarNavContent({
             href="/library/passages"
             icon={<QuoteIcon />}
             label="Passage search"
+            tier="shelf"
             active={pathname.startsWith('/library/passages')}
             row={row}
             onNavigate={onNavigate}
@@ -250,14 +272,16 @@ export function SidebarNavContent({
             href="/library/notes"
             icon={<BookStackIcon />}
             label="My library"
+            tier="shelf"
             active={pathname.startsWith('/library/notes')}
             row={row}
             onNavigate={onNavigate}
           />
           <SidebarLink
             href="/library/word-study"
-            icon={<span className="text-stone-400">אα</span>}
+            icon={<LanguagesIcon />}
             label="Word study"
+            tier="shelf"
             active={pathname.startsWith('/library/word-study')}
             row={row}
             onNavigate={onNavigate}
@@ -266,7 +290,7 @@ export function SidebarNavContent({
       </nav>
 
       {/* Bottom: settings */}
-      <div className="border-t border-stone-200 px-2 py-2 dark:border-stone-800">
+ <div className="border-t edge px-2 py-2">
         <SidebarLink
           href="/settings"
           icon={<SettingsIcon />}
@@ -284,8 +308,22 @@ export function SidebarNavContent({
  * Per-catalog icon. A MAP with a fallback, not a switch: a catalog with no icon yet still gets a
  * link (the fallback), because an orphaned shelf is a real bug and a generic glyph is not.
  */
+// ONE ICON PER SHELF. This map used to define a single entry (a `♪` text glyph for
+// Hymns) and let everything else fall through to <QuoteIcon />, so Commentaries,
+// Sermons, Historians, Devotionals and Theology & Creeds all wore the SAME speech
+// bubble. Five identical icons in a six-item list is worse than no icons: the eye
+// learns they carry nothing and stops reading them, and the one entry that differed
+// did so by being a text character at a different optical weight to its neighbours.
+//
+// Each shelf now has its own mark, drawn to this file's convention (24 viewBox,
+// strokeWidth 1.5, h-4 w-4) so they sit on the same optical line as the nav icons above.
 const CATALOG_ICON: Partial<Record<CatalogId, React.ReactNode>> = {
-  'hymns-poetry': <span className="text-stone-400">♪</span>,
+  commentaries: <QuoteIcon />,
+  sermons: <LecternIcon />,
+  'hymns-poetry': <NoteIcon />,
+  historians: <ScrollIcon />,
+  devotionals: <SunriseIcon />,
+  theology: <TabletIcon />,
 };
 
 export function Sidebar() {
@@ -297,13 +335,13 @@ export function Sidebar() {
 
   if (collapsed) {
     return (
-      <aside className="hidden w-12 flex-col items-center border-r border-stone-200 bg-stone-100 py-3 md:flex">
+ <aside className="hidden w-12 flex-col items-center border-r edge bg-stone-100 py-3 md:flex dark:bg-stone-950">
         <button
           onClick={() => setCollapsed(false)}
           className="rounded p-1 text-stone-500 hover:bg-stone-200 hover:text-stone-700"
           aria-label="Expand sidebar"
         >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
           </svg>
         </button>
@@ -312,18 +350,18 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="hidden w-64 flex-col border-r border-stone-200 bg-stone-50 md:flex dark:border-stone-800 dark:bg-stone-900">
+ <aside className="hidden w-64 flex-col border-r edge bg-stone-100 md:flex dark:bg-stone-950">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3 dark:border-stone-800">
+ <div className="flex items-center justify-between border-b edge px-4 py-3">
         <Link href="/home" className="font-scripture text-base font-medium text-stone-800 dark:text-stone-100">
           Ancient Paths
         </Link>
         <button
           onClick={() => setCollapsed(true)}
-          className="rounded p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+          className="rounded p-1 text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-600"
           aria-label="Collapse sidebar"
         >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
@@ -366,20 +404,20 @@ function StudySectionView({
           />
         ) : (
           <>
-            <span className="truncate text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+            <span className="truncate text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
               {section.name}
             </span>
-            <span className="flex items-center gap-0.5 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100">
+            <span className="flex items-center gap-0.5 opacity-100 transition-opacity ease-gentle [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100">
               <button
                 onClick={() => setRenaming(true)}
-                className="rounded p-1.5 text-stone-400 hover:bg-stone-200 hover:text-stone-600 active:bg-stone-200 dark:hover:bg-stone-800"
+                className="rounded p-1.5 text-stone-500 dark:text-stone-400 hover:bg-stone-200 hover:text-stone-600 active:bg-stone-200 dark:hover:bg-stone-800"
                 aria-label={`Rename ${section.name}`}
               >
                 <PencilIcon />
               </button>
               <button
                 onClick={() => setAddingItem(true)}
-                className="rounded p-1.5 text-stone-400 hover:bg-stone-200 hover:text-stone-600 active:bg-stone-200 dark:hover:bg-stone-800"
+                className="rounded p-1.5 text-stone-500 dark:text-stone-400 hover:bg-stone-200 hover:text-stone-600 active:bg-stone-200 dark:hover:bg-stone-800"
                 aria-label={`Add to ${section.name}`}
               >
                 <PlusIcon />
@@ -401,7 +439,7 @@ function StudySectionView({
         </div>
       )}
       {section.items.length === 0 && !addingItem && (
-        <p className="px-4 py-2 text-xs text-stone-400">Nothing here yet</p>
+        <p className="px-4 py-2 text-xs text-stone-500 dark:text-stone-400">Nothing here yet</p>
       )}
       {section.items.map((item) => {
         const href =
@@ -412,7 +450,7 @@ function StudySectionView({
             href={href}
             icon={
               section.kind === 'channels' ? (
-                <span className="text-stone-400">#</span>
+                <span className="text-stone-500 dark:text-stone-400">#</span>
               ) : (
                 <span
                   className="inline-block h-2 w-2 rounded-full"
@@ -465,7 +503,7 @@ function InlineNameForm({
           if (e.key === 'Escape') onCancel();
         }}
         placeholder={placeholder}
-        className="w-full rounded border border-stone-300 bg-white px-2 py-1.5 text-base text-stone-800 placeholder:text-stone-400 outline-none focus:border-stone-500 sm:py-1 sm:text-sm dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100"
+        className="w-full rounded-lg border border-stone-300 bg-paper px-2 py-1.5 text-base text-stone-800 placeholder:text-stone-500 dark:placeholder:text-stone-400 outline-none focus:border-stone-500 sm:py-1 sm:text-sm dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100"
         autoFocus
       />
     </form>
@@ -479,6 +517,7 @@ function SidebarLink({
   active,
   row = 'py-1.5',
   onNavigate,
+  tier = 'primary',
 }: {
   href: string;
   icon: React.ReactNode;
@@ -486,15 +525,25 @@ function SidebarLink({
   active: boolean;
   row?: string;
   onNavigate?: () => void;
+  /** `primary` = a destination (Bible, Ancient Paths, Reading plans). `shelf` = one of the
+   *  nine library catalogues, which are a list you scan rather than places you go. The rail
+   *  used to render all fifteen at one weight, one size and one colour, which is what made it
+   *  read as an admin panel bolted to a reader. */
+  tier?: 'primary' | 'shelf';
 }) {
   return (
     <Link
       href={href}
       onClick={onNavigate}
-      className={`flex items-center gap-2.5 rounded-md px-2 text-sm transition-colors ${row} ${
+      aria-current={active ? 'page' : undefined}
+      className={`flex items-center gap-2.5 rounded-md px-2 transition-colors ease-gentle ${row} ${
+        tier === 'primary' ? 'text-sm font-medium' : 'text-sm'
+      } ${
         active
-          ? 'bg-stone-200/80 font-medium text-stone-900 dark:bg-stone-700/70 dark:text-stone-100'
-          : 'text-stone-600 hover:bg-stone-100 hover:text-stone-800 active:bg-stone-200/70 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200'
+          ? 'bg-accent-700/10 font-medium text-accent-900 dark:bg-accent-400/15 dark:text-accent-100'
+          : tier === 'primary'
+            ? 'text-stone-800 hover:bg-stone-200/60 active:bg-stone-200/80 dark:text-stone-200 dark:hover:bg-stone-800'
+            : 'text-stone-600 hover:bg-stone-200/50 hover:text-stone-800 active:bg-stone-200/70 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200'
       }`}
     >
       <span className="flex w-4 items-center justify-center text-sm">{icon}</span>
@@ -517,7 +566,7 @@ function SidebarButton({
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-2.5 rounded-md px-2 text-sm text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-800 active:bg-stone-200/70 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200 ${row}`}
+      className={`flex w-full items-center gap-2.5 rounded-md px-2 text-sm text-stone-600 transition-colors ease-gentle hover:bg-stone-100 hover:text-stone-800 active:bg-stone-200/70 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200 ${row}`}
     >
       <span className="flex w-4 items-center justify-center text-sm">{icon}</span>
       <span className="flex-1 truncate text-left">{label}</span>
@@ -527,15 +576,73 @@ function SidebarButton({
 
 function PlusIcon() {
   return (
-    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg aria-hidden className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+    </svg>
+  );
+}
+
+// --- shelf marks. All 24-viewBox, strokeWidth 1.5, h-4 w-4, matching the nav icons. ---
+
+/** A lectern: preached expositions. */
+function LecternIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 4h14l-2 5H7L5 4zm7 5v11m-4 0h8" />
+    </svg>
+  );
+}
+
+/** A beamed note: hymns and sacred poetry. Replaces a `♪` text character. */
+function NoteIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 18V6l11-2v12M9 18a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zm11-2a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+    </svg>
+  );
+}
+
+/** A scroll: the historians. */
+function ScrollIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 4h11a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2zm2 5h7M8 13h7M8 17h4" />
+    </svg>
+  );
+}
+
+/** A sun over the horizon: morning and evening devotions. */
+function SunriseIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 18h18M8 18a4 4 0 018 0M12 4v3m-6 3L4.5 8.5M18 10l1.5-1.5" />
+    </svg>
+  );
+}
+
+/** Two tablets: theology and the creeds. */
+function TabletIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8a3 3 0 013-3h1a3 3 0 013 3v12H4V8zm9 0a3 3 0 013-3h1a3 3 0 013 3v12h-7V8z" />
+    </svg>
+  );
+}
+
+/** An aleph-and-alpha pairing rendered as a mark rather than as the literal
+ *  characters `אα`, which sat in the icon slot at text weight and were read aloud
+ *  by screen readers as part of the link name. */
+function LanguagesIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 6h8M7 6v10m-3 0h6M14 18l3.5-9 3.5 9m-6-3h5" />
     </svg>
   );
 }
 
 function PencilIcon() {
   return (
-    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg aria-hidden className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
     </svg>
   );
@@ -543,7 +650,7 @@ function PencilIcon() {
 
 function HomeIcon() {
   return (
-    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
     </svg>
   );
@@ -551,15 +658,23 @@ function HomeIcon() {
 
 function BookIcon() {
   return (
-    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
     </svg>
   );
 }
 
 function AskIcon() {
   return (
-    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M21 12a8 8 0 01-11.6 7.13L3 21l1.87-6.4A8 8 0 1121 12z" />
     </svg>
   );
@@ -567,7 +682,7 @@ function AskIcon() {
 
 function UserIcon() {
   return (
-    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
     </svg>
   );
@@ -575,7 +690,7 @@ function UserIcon() {
 
 function BookStackIcon() {
   return (
-    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
     </svg>
   );
@@ -583,7 +698,7 @@ function BookStackIcon() {
 
 function QuoteIcon() {
   return (
-    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
     </svg>
   );
@@ -591,7 +706,7 @@ function QuoteIcon() {
 
 function LogOutIcon() {
   return (
-    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
     </svg>
   );
@@ -599,7 +714,7 @@ function LogOutIcon() {
 
 function SettingsIcon() {
   return (
-    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
     </svg>

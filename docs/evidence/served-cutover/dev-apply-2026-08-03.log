@@ -1,0 +1,81 @@
+# 044 dev apply — started 2026-08-03T06:21:35Z, ingest LIVE (7h53m, deviation from the idle precondition: idempotent ALTER + 5s lock_timeout makes the cost a retry, dev has no users)
+(node:26150) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓ part 1/13
+✗ db/migrations/044_embeddings_served_expand.sql failed: canceling statement due to lock timeout
+real 6.16
+user 0.08
+sys 0.01
+APPLY EXIT: 1
+
+
+ALTER: 104.685ms
+== full runner re-run 2026-08-03T06:22:44Z ==
+(node:26512) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓ part 1/13
+  ✓ part 2/13
+  ✓ part 3/13
+  ✓ part 4/13
+  ✓ part 5/13
+  ✓ part 6/13
+  ✓ part 7/13
+  ✓ part 8/13
+  ✓ part 9/13
+  ✓ part 10/13
+  ✓ part 11/13
+  ✓ part 12/13
+  ✓ part 13/13
+  ✓ post-apply: 6 index(es) VALID and READY (idx_embeddings_served_legal, idx_embeddings_served_song_verse, idx_embeddings_served_sermon, idx_embeddings_served_theology, idx_embeddings_verseid_served, idx_embeddings_work)
+  ⚠ no schema_migrations table on this target — creating it now (032's DDL, no historical backfill). Rows before 044_embeddings_served_expand.sql predate the ledger here.
+  ✓ ledger: 044_embeddings_served_expand.sql (neondb_owner, sha256 0f55750487c0…)
+✓ applied db/migrations/044_embeddings_served_expand.sql
+real 6877.08
+user 0.16
+sys 0.10
+APPLY EXIT: 0
+
+== DEV VERIFY 2026-08-03T08:18:06Z — the run THE_LOOP requires: the throwaway does not transfer ==
+
+
+verify-served-backfill — ep-tiny-hat-atdgpisx-pooler
+  expected set: the FROZEN pre-044 filters (scripts/lib/served-backfill-frozen.mjs), 4 legs
+
+  [32mPASS[0m  served set is identical to the frozen pre-044 filters (328775 rows)
+  [32mPASS[0m  exegetical pool: every admitted row is commentary/father — the index conjunct is safe
+  [32mPASS[0m  song/verse lane: every admitted row is hymn/poetry — the index conjunct is safe
+  [32mPASS[0m  sermon lane: every admitted row is sermon — the index conjunct is safe
+  [32mPASS[0m  theology lane: every admitted row is theology/confession — the index conjunct is safe
+  [32mPASS[0m  no served row belongs to any of the 8 MUST_NOT_SERVE authors
+  [32mPASS[0m  124955 work-less rows: 86023 served, ALL inside the frozen author allowlist; the rest are unreachable (the flip addresses rows by slug)
+
+[32mOK[0m — served set is exactly the frozen pre-044 filters; tightenings safe; no banned author served; work-less cohort unreachable.
+
+== DEV RED-PROOF ==
+
+  [33mRED-PROOF[0m restored row 00004fa6-5a46-46ad-9c03-8bc88c1559bc to served=true
+[31m
+RED-PROOF DID NOT FIRE — equalityMissing=0, seeded-row-in-frozen-set=true. A forced-unserved frozen row was not named by the equality check. This verifier proves nothing; do not gate on it.[0m
+
+== DEV RED-PROOF, take 2 2026-08-03T08:20:06Z — owner URL (the app role's revoked DML made take 1 a silent no-op seed; the tool now asserts its own writes) ==
+  [33mRED-PROOF[0m seeded: row 00004fa6-5a46-46ad-9c03-8bc88c1559bc forced served=false (rowCount asserted); the equality check MUST name a frozen-but-unserved row
+  [31mFAIL[0m  served set differs from the frozen record: 1 frozen-but-unserved (broken backfill OR an intentional un-serve/takedown), 0 served-but-not-frozen (broken backfill OR a later intentional serve flip — if serve flips have run since 044, the 'extra' direction is expected; 'missing' never is). frozen=328775 served=328774
+  [33mRED-PROOF[0m restored row 00004fa6-5a46-46ad-9c03-8bc88c1559bc to served=true (rowCount asserted)
+[32mRED-PROOF HELD[0m — the equality check reported 1 frozen-but-unserved row(s) and the seeded row is provably one of them.
+
+== app-URL red-proof now REFUSES instead of lying (the take-1 hole, watched shut) ==
+[31mcannot red-proof: the seed UPDATE affected 0 row(s), not 1 — this role cannot write embeddings (corpus DML is revoked for app_runtime; use the owner URL).[0m

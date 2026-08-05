@@ -24,6 +24,7 @@ import { DeskPane } from '@/components/desk-pane';
 import { BOOK_BY_BOOK_SLUG, BOOKS } from '@/lib/bible';
 import { resolveBookSlug } from '@bible/ref-parse';
 import { MAX_PANES, decodeDesk, deskHref, encodePane, replacePane, withPane, withoutPane, type Pane } from '@/lib/desk';
+import { count } from '@/lib/plural';
 
 /** The picker needs a book to highlight; John is the app's standing default entry point. The
  *  alias fallback is the wiring invariant (book-slug-alias-wiring): EVERY BOOK_BY_BOOK_SLUG.get
@@ -81,13 +82,13 @@ function DeskInner() {
           <button
             type="button"
             onClick={() => setPickingBible(true)}
-            className="min-h-[44px] rounded-full bg-accent-700 px-5 py-2.5 text-sm font-semibold text-stone-50 hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
+            className="min-h-[44px] rounded-lg bg-accent-700 px-5 py-2.5 text-sm font-semibold text-stone-50 hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
           >
             Open the Bible
           </button>
           <Link
             href="/library"
-            className="min-h-[44px] rounded-full border border-stone-200/70 px-5 py-2.5 text-sm text-stone-600 hover:bg-accent-50/50 dark:border-stone-800 dark:text-stone-300 dark:hover:bg-accent-950/20"
+ className="min-h-[44px] rounded-lg border edge px-5 py-2.5 text-sm text-stone-600 hover:bg-accent-50/50 dark:text-stone-300 dark:hover:bg-accent-950/20"
           >
             Browse the library
           </Link>
@@ -102,6 +103,11 @@ function DeskInner() {
     // without the page scrolling. On mobile the flex direction flips to column and `lg:h-dvh` is
     // dropped, so the page scrolls normally through stacked panes.
     <div className="flex w-full flex-col gap-3 px-3 py-3 lg:h-dvh lg:flex-row lg:overflow-hidden">
+      {/* The POPULATED desk had no h1 at all: the only heading on this route lived in the
+          empty state above, so the working screen started at the panes' own h3 and a
+          screen reader's heading list was empty. Visually hidden because the panes carry
+          their own titles and a banner heading would just take reading space from them. */}
+      <h1 className="sr-only">Your desk, {count(panes.length, 'pane')} open</h1>
       {panes.map((pane, i) => (
         <div
           key={`${pane.kind}:${pane.kind === 'work' ? pane.slug : `${pane.book}/${pane.chapter}`}`}
@@ -117,7 +123,7 @@ function DeskInner() {
             href={`/library?desk=${encodeURIComponent(panes.map(encodePane).join(','))}`}
             aria-label="Add a work from the library"
             title="Add a work from the library"
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-dashed border-stone-300 text-xl text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-dashed border-stone-300 text-xl text-stone-500 dark:text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
           >
             +
           </Link>
@@ -126,7 +132,7 @@ function DeskInner() {
             onClick={() => setPickingBible(true)}
             aria-label="Add a Bible chapter"
             title="Add a Bible chapter"
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-dashed border-stone-300 text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-dashed border-stone-300 text-stone-500 dark:text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
               <path
@@ -147,7 +153,7 @@ function DeskInner() {
 export default function DeskPage() {
   // useSearchParams needs a Suspense boundary in the app router.
   return (
-    <Suspense fallback={<div className="px-5 py-16 text-center text-sm text-stone-400">Loading your desk…</div>}>
+    <Suspense fallback={<div className="px-5 py-16 text-center text-sm text-stone-500 dark:text-stone-400">Loading your desk…</div>}>
       <DeskInner />
     </Suspense>
   );

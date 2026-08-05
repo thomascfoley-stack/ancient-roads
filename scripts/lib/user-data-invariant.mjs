@@ -50,6 +50,12 @@ export const USER_TABLE_EXCLUDED = {
     'Migration ledger — filenames, timestamps and the applying role (migration 032). No user data, ' +
     'and app_runtime holds SELECT only. Added by the 2026-08-02 audit (M18); this list is enforced, ' +
     'so the table could not be introduced without classifying it, which is the invariant working.',
+  verse_coverage:
+    'Derived corpus rollup (migration 039) — per-verse admitted-author/section counts, rebuilt by ' +
+    'scripts/rebuild-verse-coverage.ts on every publish flip. Platform content, SELECT-only for app_runtime.',
+  topical_entries:
+    'Corpus topical-index expansion (migration 039) — ordered topic→passage rows under sections, ' +
+    'written by src/ingest/ingest-topical-index.ts. Platform content, SELECT-only for app_runtime.',
 
   // ── The four Better Auth tables (migration 104, the SEC-1 cutover) ────────────────────────────
   // EXCLUDED from the G1 digest, and the distinction is worth stating precisely: these hold data
@@ -229,6 +235,34 @@ export const USER_TABLE_SPEC = {
     active: 'true',
     body: ['match_count', 'confidence'],
   },
+  plans: {
+    anchor: ['created_at'],
+    tombstone: null,
+    active: 'true',
+    body: ['title', 'spec', 'updated_at'],
+  },
+  // plan_days carries no user_id; ownership flows through plans (RLS policy is
+  // an EXISTS against the parent). ownerParent lets owner-keyed sweeps (the
+  // residue gate) reach it through the join instead of skipping it.
+  plan_days: {
+    hasUserId: false,
+    ownerParent: { table: 'plans', fk: 'plan_id' },
+    idColumns: ['plan_id', 'day_index'], // composite PK; no `id` column (039)
+    anchor: ['plan_id', 'day_index', 'day_date', 'verse_start', 'verse_end'],
+    tombstone: null,
+    active: 'true',
+    body: ['completed_at'],
+  },
+  // Topical days' labeled passages (migration 042) — same ownership shape.
+  plan_day_readings: {
+    hasUserId: false,
+    ownerParent: { table: 'plans', fk: 'plan_id' },
+    idColumns: ['plan_id', 'day_index', 'ordinal'], // composite PK; no `id` (042)
+    anchor: ['plan_id', 'day_index', 'ordinal', 'verse_start', 'verse_end'],
+    tombstone: null,
+    active: 'true',
+    body: ['label'],
+  },
 };
 
 /** Derived from USER_TABLE_SPEC — do not hand-edit. */
@@ -242,22 +276,24 @@ const RS = `E'\\x1e'`; // record separator
 
 // ROW IDENTITY IS DECLARED, like the columns above and for the same reason.
 // It defaulted to a hardcoded 'id' in both the identity list and the ORDER BY,
-// which is true of every table classified before 2026-08-03 and FALSE of the
-// two junction tables migration 100 added: user_section_embeddings keys on
-// (section_id, model_slug) and user_section_anchors on (section_id,
-// verse_id_start, channel), and neither has an `id`. measureSql would raise
-// 42703, which cutover.mjs reports as "a column this invariant covers has been
-// dropped or renamed ... restore from the pre-cutover snapshot" — a false
-// schema-regression verdict on a healthy database. Declaring idColumns keeps
-// the default byte-identical for every pre-existing table (so no committed
-// digest baseline moves) and makes a composite-PK table measurable rather than
-// fatal.
+// which is true of every table classified before 2026-08-02 and FALSE of the
+// FIVE composite-PK tables added since, from BOTH lanes independently:
+//   Lane A (039/042) - plan_days (plan_id, day_index) and plan_day_readings
+//                      (plan_id, day_index, ordinal)
+//   Lane B (100/103) - user_section_embeddings (section_id, model_slug) and
+//                      user_section_anchors (section_id, verse_id_start, channel)
+// None has an `id`. measureSql therefore raised 42703, which cutover.mjs reports
+// as "a column this invariant covers has been dropped or renamed ... restore from
+// the pre-cutover snapshot" - a false schema-regression verdict on a healthy
+// database, and G1 in the regression gate would have thrown raw. Neither had ever
+// been executed. Declaring idColumns keeps the default byte-identical for every
+// pre-existing table (so no committed digest baseline moves) and makes a
+// composite-PK table measurable instead of fatal.
 //
-// CONCURRENCY NOTE: Lane A's uncommitted /plans work introduces this same
-// helper, with the same name, default and dedupe, for plan_days and
-// plan_day_readings. It is replicated here rather than invented differently so
-// the merge is "both added the same thing" instead of two divergent designs.
-// Expect a textual conflict at merge that resolves by taking either side.
+// The two lanes wrote this helper separately, with the same name, default and
+// dedupe. Lane B's note predicted the textual conflict and said to take either
+// side; the comment is merged instead, because both lanes' tables are now real
+// and a reader who meets only one half would think the other case was unhandled.
 const idColumnsOf = (s) => s.idColumns ?? ['id'];
 
 /** Per-table counts + active count + the ordered-row md5 digest, in one round trip. */

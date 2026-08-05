@@ -83,6 +83,9 @@ CREATE TABLE section_embeddings (section_id BIGINT NOT NULL REFERENCES sections(
 CREATE TABLE section_history_anchors (section_id BIGINT NOT NULL REFERENCES sections(id), kind TEXT NOT NULL
   CHECK (kind IN ('person','place','event','institution')), entity_slug TEXT NOT NULL, entity_label TEXT NOT NULL,
   PRIMARY KEY (section_id, kind, entity_slug));
+CREATE TABLE topical_entries (id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  section_id BIGINT NOT NULL REFERENCES sections(id) ON DELETE CASCADE, ordinal INT NOT NULL, label TEXT,
+  verse_id_start INT NOT NULL, verse_id_end INT NOT NULL, UNIQUE (section_id, ordinal));
 CREATE TABLE embeddings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(), user_id TEXT,
   source_type TEXT NOT NULL CHECK (source_type IN ('bible_verse','commentary','user_upload','sermon_transcript','study_note','book_chapter')),
@@ -110,6 +113,11 @@ INSERT INTO section_embeddings (section_id,model_slug,embedding)
  SELECT s.id,'bge-large-en-v1.5','$VEC'::vector FROM sections s JOIN sources src ON src.id=s.source_id WHERE src.slug='olney-hymns';
 INSERT INTO section_history_anchors (section_id,kind,entity_slug,entity_label)
  SELECT s.id,'person','newton','John Newton' FROM sections s JOIN sources src ON src.id=s.source_id WHERE src.slug='olney-hymns' AND s.ordinal=1;
+-- TWO topical entries per section, so a keyset paging on section_id alone would drop the
+-- second of each — the exact silent-skip the copier's comment warns about.
+INSERT INTO topical_entries (section_id,ordinal,label,verse_id_start,verse_id_end)
+ SELECT s.id, o, 'sub '||o, 43003016+o, 43003016+o FROM sections s JOIN sources src ON src.id=s.source_id,
+   generate_series(1,2) o WHERE src.slug='olney-hymns';
 INSERT INTO embeddings (user_id,source_type,source_id,chunk_index,content,embedding,metadata) VALUES
  (NULL,'commentary','olney:1',0,'corpus row','$VEC'::vector,'{\"work\":\"olney-hymns\"}'),
  (NULL,'commentary','olney:2',1,'corpus row 2','$VEC'::vector,'{\"work\":\"olney-hymns\"}'),
@@ -190,6 +198,12 @@ check "5 sections landed"        "SELECT count(*) FROM sections s JOIN sources s
 check "5 anchors landed"         "SELECT count(*) FROM section_anchors" 5
 check "5 vectors landed"         "SELECT count(*) FROM section_embeddings" 5
 check "1 history anchor landed"  "SELECT count(*) FROM section_history_anchors" 1
+# 5 sections x 2 entries. The count is the point: the copier's topical paging keys on
+# (section_id, ordinal), and a section_id-only keyset would land 5 instead of 10.
+check "10 topical entries landed" "SELECT count(*) FROM topical_entries" 10
+check "topical labels survived"   "SELECT count(*) FROM topical_entries WHERE label LIKE 'sub %'" 10
+check "topical entries point at the DESTINATION's own section ids" \
+  "SELECT count(*) FROM topical_entries t WHERE NOT EXISTS (SELECT 1 FROM sections s WHERE s.id=t.section_id)" 0
 check "2 flat corpus rows landed" "SELECT count(*) FROM embeddings" 2
 check "status is STAGED, never published" "SELECT status FROM sources WHERE slug='olney-hymns'" staged
 check "the USER row did NOT move" "SELECT count(*) FROM embeddings WHERE user_id IS NOT NULL" 0
@@ -283,6 +297,12 @@ INSERT INTO section_anchors (section_id,verse_id_start,verse_id_end)
 INSERT INTO section_embeddings (section_id,model_slug,embedding)
  SELECT s.id,'bge-large-en-v1.5','$VEC'::vector FROM sections s JOIN sources src ON src.id=s.source_id
  WHERE src.slug='scottish-psalter-1650';
+INSERT INTO topical_entries (section_id,ordinal,label,verse_id_start,verse_id_end)
+ SELECT s.id, o, 'sub '||o, 19001001+o, 19001001+o FROM sections s JOIN sources src ON src.id=s.source_id
+ CROSS JOIN generate_series(1,4) o WHERE src.slug='scottish-psalter-1650' AND s.ordinal=1;
+INSERT INTO topical_entries (section_id,ordinal,label,verse_id_start,verse_id_end)
+ SELECT s.id, 1, 'sub 1', 19002001, 19002001 FROM sections s JOIN sources src ON src.id=s.source_id
+ WHERE src.slug='scottish-psalter-1650' AND s.ordinal>1;
 INSERT INTO embeddings (user_id,source_type,source_id,chunk_index,content,embedding,metadata)
  SELECT NULL,'commentary','psalter:a',g,'flat a'||g,'$VEC'::vector,'{\"work\":\"scottish-psalter-1650\"}' FROM generate_series(0,4) g;
 INSERT INTO embeddings (user_id,source_type,source_id,chunk_index,content,embedding,metadata)
@@ -307,6 +327,13 @@ pcheck "all 10 anchors landed, including 4 on one section" \
   "SELECT count(*) FROM section_anchors a JOIN sections s ON s.id=a.section_id $PS" 10
 pcheck "the multi-anchor section kept ALL FOUR" \
   "SELECT count(*) FROM section_anchors a JOIN sections s ON s.id=a.section_id $PS AND s.ordinal=1" 4
+# THE TOPICAL PAGING PROOF. It must live HERE, not in the happy path: that fixture is 10 rows
+# against a 2,000-row page, so the paging never runs and a section_id-only keyset passes it.
+# Watched red by mutating the keyset to `(c.section_id) > ($2)` — 7 landed instead of 10.
+pcheck "all 10 topical entries landed, including 4 on one section" \
+  "SELECT count(*) FROM topical_entries t JOIN sections s ON s.id=t.section_id $PS" 10
+pcheck "the multi-entry section kept ALL FOUR" \
+  "SELECT count(*) FROM topical_entries t JOIN sections s ON s.id=t.section_id $PS AND s.ordinal=1" 4
 pcheck "all 7 vectors landed" \
   "SELECT count(*) FROM section_embeddings e JOIN sections s ON s.id=e.section_id $PS" 7
 pcheck "all 9 flat rows landed across two source_ids" \

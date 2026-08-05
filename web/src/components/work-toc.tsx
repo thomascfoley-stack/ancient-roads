@@ -8,6 +8,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDragDismiss } from '@/lib/use-drag-dismiss';
+import { useDialog } from '@/lib/use-dialog';
 import { filterTocUnits, tocGroups, tocUnitLabel } from '@/lib/work-reader';
 import type { WorkTocUnit } from '@/lib/work';
 
@@ -35,6 +36,7 @@ export function WorkToc({
   onClose: () => void;
 }) {
   const drag = useDragDismiss(onClose);
+  const dialog = useDialog(onClose, 'Contents');
   const listRef = useRef<HTMLDivElement | null>(null);
   // The SERVER groups now (lib/work.ts): one row per unit, carrying its ordinal RANGE instead of
   // its member rows. This used to call groupTocByUnit(toc) over one row per SECTION, which is why
@@ -110,6 +112,8 @@ export function WorkToc({
       }}
     >
       <div
+        ref={dialog.ref}
+        {...dialog.dialogProps}
         className="flex max-h-[88dvh] w-full max-w-2xl flex-col rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] shadow-deep animate-slide-up dark:bg-stone-900"
         style={drag.style}
       >
@@ -119,16 +123,16 @@ export function WorkToc({
         </div>
         {/* Header */}
         <div
-          className="flex items-center justify-between border-b border-stone-200/60 px-5 py-3 dark:border-stone-800"
+ className="flex items-center justify-between border-b edge px-5 py-3"
           {...drag.handleProps}
         >
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">Contents</p>
+          <p className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Contents</p>
           <button
             onClick={onClose}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600 active:bg-stone-100 dark:hover:bg-stone-800"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-600 active:bg-stone-100 dark:hover:bg-stone-800"
             aria-label="Close"
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </button>
@@ -136,14 +140,14 @@ export function WorkToc({
 
         {/* FILTER. The whole unit list is already on the client, so this needs no network and no
             classification — it is a substring match over the labels on screen. */}
-        <div className="border-b border-stone-200/60 px-4 py-2.5 dark:border-stone-800">
+ <div className="border-b edge px-4 py-2.5">
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={`Search ${toc.length.toLocaleString()} entries…`}
             aria-label="Search the contents"
-            className="w-full rounded-lg bg-stone-100 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:bg-stone-800 dark:text-stone-100"
+            className="w-full rounded-lg bg-stone-100 px-3 py-2 text-base sm:text-sm text-stone-800 placeholder:text-stone-500 dark:placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:bg-stone-800 dark:text-stone-100"
           />
           {query.trim() !== '' && (
             <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
@@ -167,7 +171,7 @@ export function WorkToc({
                 {/* A FACTUAL header: the entry's own first letter, or the Bible book its own
                     anchor decodes to. Never an inferred theme. */}
                 {groupLabel && (
-                  <p className="sticky top-0 z-10 -mx-3 bg-paper/95 px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-stone-400 backdrop-blur dark:bg-stone-900/95">
+                  <p className="sticky top-0 z-10 -mx-3 bg-paper/95 px-4 pb-1 pt-2 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400 backdrop-blur dark:bg-stone-900/95">
                     {groupLabel}
                   </p>
                 )}
@@ -176,14 +180,14 @@ export function WorkToc({
                   <button
                     data-active={here && !open}
                     onClick={() => onNavigate(unit.firstOrdinal)}
-                    className={`flex min-h-[44px] flex-1 items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-accent-50/60 active:bg-accent-50/80 dark:hover:bg-accent-950/30 ${
+                    className={`flex min-h-[44px] flex-1 items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ease-gentle hover:bg-accent-50/60 active:bg-accent-50/80 dark:hover:bg-accent-950/30 ${
                       here
                         ? 'bg-accent-50 font-semibold text-accent-800 dark:bg-accent-950/40 dark:text-accent-200'
                         : 'text-stone-700 dark:text-stone-300'
                     }`}
                   >
                     <span className="line-clamp-2">{label}</span>
-                    {here && <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider">Reading</span>}
+                    {here && <span className="shrink-0 text-micro font-semibold uppercase tracking-wider">Reading</span>}
                   </button>
                   {/* Only a chunked unit gets a disclosure; only the open one mounts its rows. */}
                   {chunked && (
@@ -191,7 +195,7 @@ export function WorkToc({
                       aria-expanded={open}
                       aria-label={`${open ? 'Collapse' : 'Expand'} ${label} (${unit.sectionCount} parts)`}
                       onClick={() => setExpanded(open ? null : key)}
-                      className="flex min-h-[44px] w-11 shrink-0 items-center justify-center rounded-lg text-[11px] font-medium text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800"
+                      className="flex min-h-[44px] w-11 shrink-0 items-center justify-center rounded-lg text-micro font-medium text-stone-500 dark:text-stone-400 transition-colors ease-gentle hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800"
                     >
                       {open ? '−' : unit.sectionCount}
                     </button>
@@ -210,14 +214,14 @@ export function WorkToc({
                         key={ord}
                         data-active={active}
                         onClick={() => onNavigate(ord)}
-                        className={`ml-4 flex min-h-[40px] w-[calc(100%-1rem)] items-center justify-between gap-3 rounded-lg px-3 py-1.5 text-left text-[13px] transition-colors hover:bg-accent-50/60 dark:hover:bg-accent-950/30 ${
+                        className={`ml-4 flex min-h-[40px] w-[calc(100%-1rem)] items-center justify-between gap-3 rounded-lg px-3 py-1.5 text-left text-sm transition-colors ease-gentle hover:bg-accent-50/60 dark:hover:bg-accent-950/30 ${
                           active
                             ? 'bg-accent-50 font-semibold text-accent-800 dark:bg-accent-950/40 dark:text-accent-200'
                             : 'text-stone-500 dark:text-stone-400'
                         }`}
                       >
                         <span className="line-clamp-1">{`Part ${k + 1} of ${unit.sectionCount}`}</span>
-                        {active && <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider">Reading</span>}
+                        {active && <span className="shrink-0 text-micro font-semibold uppercase tracking-wider">Reading</span>}
                       </button>
                     );
                   })}
@@ -231,7 +235,7 @@ export function WorkToc({
               className="mt-2 flex min-h-[44px] w-full items-center justify-center rounded-lg border border-dashed border-stone-300 text-sm font-medium text-stone-500 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
             >
               Show {Math.min(PAGE, units.length - visible.length).toLocaleString()} more
-              <span className="ml-1.5 text-xs text-stone-400">
+              <span className="ml-1.5 text-xs text-stone-500 dark:text-stone-400">
                 ({visible.length.toLocaleString()} of {units.length.toLocaleString()})
               </span>
             </button>

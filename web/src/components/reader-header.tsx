@@ -40,10 +40,10 @@ export function ReaderHeader({
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-stone-200 bg-stone-50/95 px-3 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] backdrop-blur-sm sm:px-4 dark:border-stone-800 dark:bg-stone-950/95">
+ <header className="sticky top-0 z-40 flex items-center justify-between border-b edge bg-stone-50/95 px-3 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] backdrop-blur-sm sm:px-4 dark:bg-stone-950/95">
         <button
           onClick={() => setPickerOpen(true)}
-          className="min-h-[44px] rounded-full bg-white px-4 text-sm font-semibold text-stone-800 shadow-sm hover:bg-stone-100 active:bg-stone-200 transition-colors sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700"
+          className="min-h-[44px] rounded-lg bg-paper px-4 text-sm font-semibold text-stone-800 shadow-paper hover:bg-stone-100 active:bg-stone-200 transition-colors ease-gentle sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700"
         >
           {chapterLabel}
         </button>
@@ -52,10 +52,10 @@ export function ReaderHeader({
         <button
           onClick={onToggleInterlinear}
           title="Greek / Hebrew interlinear"
-          className={`min-h-[44px] min-w-[44px] rounded-full px-3 text-xs font-semibold shadow-sm transition-colors sm:min-h-0 sm:min-w-0 sm:py-1.5 ${
+          className={`min-h-[44px] min-w-[44px] rounded-full px-3 text-xs font-semibold shadow-paper transition-colors ease-gentle sm:min-h-0 sm:min-w-0 sm:py-1.5 ${
             interlinear
               ? 'bg-amber-600 text-white hover:bg-amber-700'
-              : 'bg-white text-stone-500 hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700'
+              : 'bg-paper text-stone-500 hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700'
           }`}
         >
           אα
@@ -63,12 +63,12 @@ export function ReaderHeader({
         <div className="relative" ref={versionRef}>
           <button
             onClick={() => setVersionOpen((v) => !v)}
-            className="min-h-[44px] rounded-full bg-white px-3 text-xs font-medium text-stone-500 shadow-sm hover:bg-stone-100 active:bg-stone-200 transition-colors sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+            className="min-h-[44px] rounded-lg bg-paper px-3 text-xs font-medium text-stone-500 shadow-paper hover:bg-stone-100 active:bg-stone-200 transition-colors ease-gentle sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
           >
             {translation.abbr}
           </button>
           {versionOpen && (
-            <div className="absolute right-0 top-full mt-1 max-h-[70dvh] w-56 overflow-y-auto overscroll-contain rounded-xl bg-white py-1 shadow-lg ring-1 ring-stone-200 dark:bg-stone-800 dark:ring-stone-700">
+            <div className="absolute right-0 top-full mt-1 max-h-[70dvh] w-56 overflow-y-auto overscroll-contain rounded-xl bg-paper py-1 shadow-float ring-1 ring-stone-200 dark:bg-stone-800 dark:ring-stone-700">
               {TRANSLATIONS.map((t) => (
                 <button
                   key={t.id}
@@ -83,7 +83,7 @@ export function ReaderHeader({
                   }`}
                 >
                   <span>{t.name}</span>
-                  <span className="text-xs text-stone-400">{t.abbr}</span>
+                  <span className="text-xs text-stone-500 dark:text-stone-400">{t.abbr}</span>
                 </button>
               ))}
             </div>

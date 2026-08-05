@@ -73,7 +73,86 @@
 
   /* Gentle, decelerating motion. */
   --ease-gentle: cubic-bezier(0.32, 0, 0.24, 1);
+
+  /* THE RADIUS LADDER, OWNED HERE. See the rule below for what each step means.
+   *
+   * These are declared because we were not the ones defining them.
+   * `@neondatabase/auth/ui/tailwind` (imported above) ships a shadcn-style scale
+   * derived from a single variable:
+   *
+   *   --radius-sm: calc(var(--neon-radius) - 4px)   -> 12px
+   *   --radius-md: calc(var(--neon-radius) - 2px)   -> 14px
+   *   --radius-lg: var(--neon-radius)               -> 16px
+   *   --radius-xl: calc(var(--neon-radius) + 4px)   -> 20px
+   *
+   * with `--neon-radius: 1rem` set in the :root block further down. It never
+   * defines --radius-2xl, so that stayed Tailwind's 1rem and collided exactly with
+   * --radius-lg: two named steps, one corner. The whole ladder was also compressed
+   * into 12-14-16-20, which is a 2px step between `rounded-md` and `rounded-lg`.
+   *
+   * A four-value span of 8px cannot express hierarchy. This restores a real one.
+   * `--neon-radius` is deliberately left alone: it is the auth UI's own knob, and
+   * this app should not be steering another library's internals to get its buttons
+   * the right shape. */
+  /* THE TYPE SCALE. The app shipped 8 arbitrary `text-[Npx]` values across 28 files on
+   * top of Tailwind's scale, giving a 17-step ladder in which 10, 11, 12, 13, 14 and 15
+   * were all doing "small label" work with no rule telling them apart. Those are now
+   * mapped onto the scale, and the one genuinely missing step is named here rather than
+   * written as a literal 38 times.
+   *
+   * `micro` is for dense chrome that must not compete with body text: register badges,
+   * section eyebrows, the mobile tab labels. It is the floor. Nothing should be smaller,
+   * which is why the old 10px sites came UP to it rather than getting a token of their own.
+   * Ladder: 11 · 12 · 14 · 16 · 18 · 20 · 24 · 30 · 36 · 48 · 72 */
+  --text-micro: 0.6875rem; /* 11px */
+
+  --radius-sm: 0.25rem;  /*  4px  highlight chips, inline marks */
+  --radius-md: 0.375rem; /*  6px  dense rows, sidebar nav items */
+  --radius-lg: 0.5rem;   /*  8px  CONTROLS: buttons, inputs, selects */
+  --radius-xl: 0.75rem;  /* 12px  SURFACES: cards, list rows, popovers */
+  --radius-2xl: 1rem;    /* 16px  large surfaces, the ask composer */
+  --radius-3xl: 1.5rem;  /* 24px  SHEETS: bottom sheets and modals */
 }
+
+/* RADIUS CARRIES HIERARCHY. It used to carry none: `rounded-full` was 49% of every
+ * radius in the app, worn equally by a 48px call-to-action, a 10px metadata badge, a
+ * 6px progress bar and a text input. When everything is a capsule, radius stops being
+ * information and the whole surface reads soft and cheap.
+ *
+ * The rule, smallest to largest:
+ *   rounded-lg          controls        buttons, inputs, selects, segmented thumbs
+ *   rounded-xl          surfaces        cards, list rows, popovers
+ *   rounded-t-3xl       sheets          bottom sheets and modals
+ *   rounded-full        TRUE PILLS ONLY status dots, progress bars, drag handles,
+ *                                       circular icon buttons, and short badges whose
+ *                                       shape IS the meaning
+ *
+ * The test for a pill: it has no tap target of its own. Anything carrying
+ * `min-h-[NNpx]` is a control and takes `rounded-lg`.
+ *
+ * THE LADDER IS NOT TAILWIND'S, AND IT IS PARTLY COLLAPSED. This block first named
+ * px values off Tailwind's defaults (lg=8, xl=12). Those are wrong here. MEASURED on
+ * production (dpl_5fd221LJ, 2026-08-04), the app resolves:
+ *
+ *   rounded-md 14px · rounded-lg 16px · rounded-xl 20px · rounded-2xl 16px
+ *
+ * `@import '@neondatabase/auth/ui/tailwind'` above redefines the radius scale
+ * shadcn-style off a `--radius` variable and wins, the same way it owns `.dark` (see
+ * the note at the top of this file). Two consequences, both real:
+ *   1. `rounded-lg` and `rounded-2xl` resolve to the SAME 16px. Two named steps, one
+ *      corner, so a control and a large card are indistinguishable by radius.
+ *   2. The control-to-surface step is 16 -> 20, much weaker than the 8 -> 12 the rule
+ *      above was designed for.
+ *
+ * The direction still holds (a 44px control went from a 22px pill to 16px) but the
+ * hierarchy is flatter than it reads here. The fix is to declare explicit `--radius-*`
+ * tokens in the `@theme` block above so this app owns its own ladder instead of
+ * inheriting the auth UI's. Deliberately NOT done in the design pass; parked with the
+ * type-scale and icon work. See WORKLOG 2026-08-04.
+ *
+ * No px values are quoted in the rule above on purpose: a number in a comment that
+ * nothing enforces is how this drifted in the first place.
+ */
 
 html { color-scheme: light; }
 html.dark { color-scheme: dark; }
@@ -142,8 +221,45 @@ html {
   outline: none;
 }
 
+/* THE EDGE. One class for every hairline in the app.
+ *
+ * Why a hand-written rule instead of `border-stone-200/70 dark:border-stone-800`: that pair
+ * did not work. MEASURED on /library in dark mode: the element carries the class, matches
+ * `.dark\:border-stone-800:where(.reader-dark, .reader-dark *)` (verified with
+ * `element.matches()`), the rule exists in the CSSOM, and the border still painted
+ * rgb(233,227,216). Both rules sit in `@layer utilities` at equal specificity, so source
+ * order decides and the light one is emitted later. Raising the variant to `:is()` did not
+ * move it either. 66 usages across 25 files were all losing, which is why every bordered
+ * surface was outlined in near-white on a dark background.
+ *
+ * These rules are UNLAYERED, so they beat everything in `@layer utilities` by the cascade
+ * itself rather than by out-specifying it. Same technique the auth-UI block below uses, and
+ * the reason it is written there too. `var()` is resolved at runtime, which the inline-style
+ * probe confirmed works for border-color, so the value genuinely flips with the theme. */
+.edge {
+  border-color: var(--color-stone-200);
+}
+.reader-dark .edge,
+.reader-dark.edge {
+  border-color: var(--color-stone-800);
+}
+
 ::selection {
   background: color-mix(in oklab, var(--color-accent-300) 45%, transparent);
+}
+
+/* Skip link. Written here rather than as `focus:top-4` because the focus variant lost to
+ * the resting `-top-20` in the utilities layer and the link stayed off-screen when focused,
+ * which is the same as not having one. Unlayered, so it wins. */
+.skip-link {
+  position: absolute;
+  top: -5rem;
+  left: 1rem;
+  z-index: 50;
+  transition: top 0.2s var(--ease-gentle);
+}
+.skip-link:focus {
+  top: 1rem;
 }
 
 /* Reader font-size control (set --reading-size on the reading container) */
@@ -169,4 +285,24 @@ html {
 
 .font-scripture {
   font-family: var(--font-serif);
+}
+
+/* REDUCED MOTION. There was no such block anywhere in the app, while `animate-pulse` runs on
+ * the /ask source previews for the whole compose-and-verify loop, which routinely exceeds five
+ * seconds and can repeat across retry attempts. That is auto-updating motion past the WCAG
+ * 2.2.2 threshold with no way to stop it.
+ *
+ * Motion is cut to a single frame rather than removed: the transitions still fire, so anything
+ * that relied on a transitionend still resolves, and state changes stay instant instead of
+ * jumping. `scroll-behavior: auto` is included because a reduced-motion reader should not be
+ * smooth-scrolled either. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

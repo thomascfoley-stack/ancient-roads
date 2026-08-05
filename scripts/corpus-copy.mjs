@@ -54,7 +54,7 @@ function die(msg, code = 2) {
 // `sections.tsv` is a GENERATED column and is deliberately absent: it is recomputed by the
 // destination from the values we insert, which is what keeps it consistent with migration 016's
 // heading-aware definition instead of carrying a stale vector across.
-const COPIED_TABLES = ['sources', 'sections', 'section_anchors', 'section_embeddings', 'section_history_anchors', 'embeddings'];
+const COPIED_TABLES = ['sources', 'sections', 'section_anchors', 'section_embeddings', 'section_history_anchors', 'topical_entries', 'embeddings'];
 
 // A copier that names a user table is not a bug to be caught in review; it is a data breach. The
 // list is DERIVED from the module that owns it, so adding a user table anywhere makes this fire
@@ -303,6 +303,8 @@ async function censusOn(client, label) {
               JOIN sources src ON src.id = s.source_id WHERE src.slug = $1)                                          AS anchors,
            (SELECT count(*)::int FROM section_embeddings se JOIN sections s ON s.id = se.section_id
               JOIN sources src ON src.id = s.source_id WHERE src.slug = $1)                                          AS section_embeddings,
+           (SELECT count(*)::int FROM topical_entries te JOIN sections s ON s.id = te.section_id
+              JOIN sources src ON src.id = s.source_id WHERE src.slug = $1)                                          AS topical_entries,
            (SELECT count(*)::int FROM embeddings WHERE user_id IS NULL AND metadata->>'work' = $1)                    AS flat_embeddings`,
         [slug],
       )
@@ -313,7 +315,8 @@ async function censusOn(client, label) {
   for (const [slug, r] of Object.entries(rows)) {
     console.log(
       `  ${slug.padEnd(28)} sources=${r.sources} sections=${String(r.sections).padStart(7)} ` +
-        `anchors=${String(r.anchors).padStart(7)} vectors=${String(r.section_embeddings).padStart(7)} flat=${String(r.flat_embeddings).padStart(7)}`,
+        `anchors=${String(r.anchors).padStart(7)} vectors=${String(r.section_embeddings).padStart(7)} ` +
+        `topical=${String(r.topical_entries).padStart(7)} flat=${String(r.flat_embeddings).padStart(7)}`,
     );
   }
   return rows;
@@ -325,6 +328,22 @@ const src = new pg.Client({
   application_name: 'corpus-copy-src',
 });
 await src.connect();
+
+// NEON KILLS AN IDLE TRANSACTION, AND BOTH SIDES OF THIS COPY ARE IDLE BY CONSTRUCTION.
+// The destination holds one transaction across the whole copy (atomicity: a half-copied work
+// must not survive) and sits idle while a source page is read; the source holds a READ ONLY
+// snapshot and sits idle while a destination batch is written — and, before either, across
+// the owner gate's HUMAN decision, which has no upper bound at all.
+//
+// The 2026-08-03 run died there: FATAL 25P03 "terminating connection due to idle-in-transaction
+// timeout", moments after the gate was answered. Production rolled back to exactly zero rows,
+// which is the single-transaction design working, not failing.
+//
+// RAISED, NOT DISABLED. `0` would let a wedged copier hold a production transaction forever;
+// 30 minutes covers a human at the gate and any single page transfer while still bounding the
+// damage. Set per-session on these two dedicated connections only — it changes nothing for any
+// other client of either database.
+await src.query("SET idle_in_transaction_session_timeout = '30min'");
 
 let dest = null;
 try {
@@ -356,6 +375,8 @@ try {
     application_name: 'corpus-copy-dest',
   });
   await dest.connect();
+  // Same reason as the source connection above (see the note there).
+  await dest.query("SET idle_in_transaction_session_timeout = '30min'");
 
   // Corpus tables are owner-only (migration 010 revoked DML from app_runtime), so a non-owner
   // connection cannot do this work. Asserted at the SERVER, not inferred from the URL.
@@ -467,6 +488,30 @@ try {
       ),
     );
 
+    // topical_entries (migration 042 for the table's consumer, 039 for the table): the
+    // ORDERED, labeled topic→passage expansion a topical-index work carries. Added when
+    // the /plans topic slice made it corpus rather than a private detail — without it a
+    // copied Nave's would arrive as headings with no plan-able structure, and the failure
+    // would be silent because every OTHER count would reconcile.
+    //
+    // Keyed on (section_id, ordinal) — its UNIQUE constraint, not its surrogate `id`, for
+    // the reason the block above states: several rows per section mean a section_id-only
+    // keyset skips the tail of whichever section a page boundary lands inside.
+    await pageThrough(
+      src,
+      `SELECT c.section_id, c.ordinal, c.label, c.verse_id_start, c.verse_id_end FROM topical_entries c
+         JOIN sections sec ON sec.id = c.section_id
+        WHERE sec.source_id = $1 AND (c.section_id, c.ordinal) > ($2::bigint, $3::int)
+        ORDER BY c.section_id, c.ordinal LIMIT ${READ_PAGE}`,
+      [s.id], [0, -2147483648], (l) => [l.section_id, l.ordinal],
+      (page) => bulkInsert(
+        dest,
+        `INSERT INTO topical_entries (section_id, ordinal, label, verse_id_start, verse_id_end)
+         SELECT * FROM unnest($1::bigint[], $2::int[], $3::text[], $4::int[], $5::int[]) ON CONFLICT DO NOTHING`,
+        remap(page, (r) => [r.ordinal, r.label, r.verse_id_start, r.verse_id_end]),
+      ),
+    );
+
     // The vector is passed through VERBATIM. Reuse is the entire point: the text is
     // byte-identical, so the vector remains valid and no re-embedding is paid for or risked.
     const nVectors = await pageThrough(
@@ -531,9 +576,14 @@ try {
 
   // The delta must equal what the source holds, per work. Anything else means rows were dropped
   // or duplicated, and the operator must see it as a failure, not read it out of two tables.
+  // DERIVED from the census row, not hand-listed: a census column added without a matching
+  // entry here would copy unverified — which is exactly what `topical_entries` would have
+  // done on 2026-08-03, since every other count reconciles while the new table arrives
+  // empty. `sources` is excluded because it is 1 by construction on both sides.
   let mismatch = 0;
+  const COMPARED = Object.keys(before[slugs[0]] ?? {}).filter((k) => k !== 'sources');
   for (const slug of slugs) {
-    for (const k of ['sections', 'anchors', 'section_embeddings', 'flat_embeddings']) {
+    for (const k of COMPARED) {
       const expected = before[slug][k];
       const got = destAfter[slug][k];
       if (got < expected) {

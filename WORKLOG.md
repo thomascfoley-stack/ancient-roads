@@ -372,6 +372,1089 @@ second. The four user tables hold 0 rows — the probe cleaned up after itself, 
 - **`relforcerowsecurity=false`** on all four tables. Immaterial to the boundary the product
   relies on — the app connects as `app_runtime`, and `neondb_owner` carries `rolbypassrls=true`,
   which `FORCE` would not stop anyway — but stated rather than left to be discovered.
+## 2026-08-04 — Design pass: a system for radius, surface and elevation; the reader gets a keyboard
+
+Owner brief: audit the whole site and bring it to a premium standard. Restraint over decoration,
+no AI-landing-page tells, accessibility non-negotiable, root causes over per-page tweaks.
+
+Worked in a fresh worktree `~/Projects/ancient-roads-design` on `design/premium-pass` off
+`origin/main`, against the dev Neon branch, so no existing tree was disturbed. The 1.1GB of
+gitignored static corpus under `web/public` is symlinked from the sibling clone rather than
+regenerated; that is the one way this worktree differs from a real checkout, and it is why the
+static-corpus scan reports "No chapter files under web/public/commentaries".
+
+### The audit
+
+Four parallel read-only agents across non-overlapping lenses (typography/spacing, component
+consistency, accessibility/edge states, routes/copy), plus a driven walk of the app at 1280 and
+390. The findings that mattered were consistency findings, not taste ones:
+
+- **`rounded-full` was 98 of 200 radius utilities.** A 48px call-to-action, a 10px badge, a 6px
+  progress bar and two text inputs all wore the same maxed-out corner, so radius carried no
+  information at all.
+- **Two parallel token systems.** The reader chrome used `bg-white` + raw `shadow-sm/lg/2xl`;
+  everything else used `bg-paper` + the shadow tokens. `--color-paper` is documented as "never
+  pure white", so the split defeated its own intent on the primary screen.
+- **104 arbitrary `text-[Npx]` values** across 28 files, an effective 17-step type ladder of which
+  8 steps are one-offs. `font-scripture` and `font-serif` resolve to the same font and are used
+  interchangeably for the same roles.
+- **22 routes, zero error.tsx / not-found.tsx / loading.tsx.** `/library/[catalog]` calls
+  `notFound()` into nothing.
+- **The reader's primary interaction was pointer-only.** Tapping a verse number opens commentary;
+  it had no tabIndex, no role and no key handler.
+
+### What shipped (7 commits)
+
+1. Two nav defects (Home could never light up on either nav; the mobile Home tab pointed at the
+   chrome-free marketing page and stranded the reader) and `lib/plural.ts` for the counts that
+   rendered "1 works" and "Jude, 1 chapters".
+2. Surfaces, elevation and radius on one system, with the radius rule written into `globals.css`
+   so it holds: controls `rounded-lg`, surfaces `rounded-xl`, sheets `rounded-t-3xl`,
+   `rounded-full` only where the shape is the meaning. 43 controls converted, 30 token bypasses
+   removed.
+3. Landing page: the four identical cards became a hairline-separated typographic list with a real
+   step between title and body, measure tightened from ~88 to ~68 characters, tagline moved off
+   Title Case, straight quotes made curly.
+4. Accessibility: verse handle keyboard-reachable, `aria-current` on both navs, a skip link, note
+   and bookmark meaning moved out of `title` into real text, omnibox focus made visible.
+5. Em dashes out of 23 user-facing strings.
+6. The 404 and error boundaries the app never had.
+7. Two regressions of my own, caught by the gate and fixed at the root.
+
+### NOT DONE / UNVERIFIED
+
+- **The gate is RED, and two of the three reasons are not this branch.** `deps` fails on a prod
+  high+ CVE. The `qa` DB suites (`register-wall-surfaces`, `work-reader`,
+  `commentary-entries-provenance`, `register-end-to-end`, `unit-ordinal-instrument`,
+  `library-published-boundary`) fail here because this worktree has dev DB URLs, so they execute
+  instead of skipping. **Measured, not assumed:** the same suites were run on an untouched
+  `origin/main` worktree with the same `.env.local` and failed identically.
+- **The audit is non-deterministic under repeated runs.** By the fourth run in an hour the suites
+  were failing `expected 429 to be 200` against the app's own 60/hour rate limiter
+  (`gate_rate_limit_hit ... count:93, limit:60`). A red therefore does not distinguish "broken"
+  from "we already ran it three times", which is the same shape as the `429 engine_overloaded`
+  entry already on the failure-mode watchlist. Not fixed here; worth a NOT RUN signal.
+- **The type scale is diagnosed, not fixed.** The 104 arbitrary sizes were collapsed on the
+  landing page only. The app-wide sweep is the obvious next slice, and it deliberately excludes
+  `sidebar.tsx`, `app/plans/` and `lib/plan/` (owner flagged them as hot) and `web/src/bible/`
+  (byte-mirrored under a sync test).
+- **Dialogs.** Not one of the app's 13 sheets, popovers and drawers traps focus, restores focus on
+  close, or carries `role="dialog"` + a label. Four have no Escape handler. Untouched.
+- **Terminology.** Six words for the same population of authors, four names for `/ask`, "My
+  library" pointing at two different routes. Named, not resolved: renaming features is an owner
+  call, not a design pass.
+- **`loading.tsx`.** Still absent. One Suspense boundary and 25 hand-written "Loading..." strings;
+  needs a decision about which surfaces earn skeletons.
+- **Not deployed.** Nothing was pushed and `deploy.sh` was not run.
+
+### Postscript, same day: merged, deployed, and one measured flaw in the above
+
+PR #61 merged at `e367235` and shipped to production as `dpl_5fd221LJjDbrwMaLQcfxBndBG2cn`,
+deployed from `.claude/worktrees/final` because the design worktree's `web/public/{bible,
+commentaries,concordance,lexicon,original}` are symlinks into the sibling clone and
+`deploy.sh` uploads the working tree, so deploying from there would have shipped a reader
+with no Bible text and no commentaries. Verified live at 1280 and 390: sentence-case
+tagline, hairline-separated beats in EB Garamond 24 over Literata 16, curly quotes, zero
+em dashes, controls no longer pills.
+
+**The radius ladder is not Tailwind's, and the rule as written overstated it.** Measured on
+the live deployment: `rounded-md` 14px, `rounded-lg` 16px, `rounded-xl` 20px, `rounded-2xl`
+16px. `@neondatabase/auth/ui/tailwind` redefines the scale shadcn-style off `--radius` and
+wins, the same import that already owns `.dark`. So `rounded-lg` and `rounded-2xl` are the
+same corner, and the control-to-surface step is 16 -> 20 rather than the 8 -> 12 the rule
+was designed against. The change is still a real improvement (a 44px control went from a
+22px pill to 16px) but flatter than the comment claimed. The comment in `globals.css` has
+been corrected to state the measured values and now quotes no px figures in the rule
+itself, because an unenforced number in a comment is what drifted.
+
+### Pass 2, same day: five of the six parked items
+
+Owner redirected to "finish the design work" and parked nothing further. Five slices landed
+on `design/pass-2`, each verified in the browser:
+
+1. **Radius owned.** Root cause found in the package, not guessed: `@neondatabase/auth/ui`
+   derives the whole ladder from `--neon-radius` and never defines `--radius-2xl`, so
+   `rounded-lg` and `rounded-2xl` were the same 16px corner and the whole scale was
+   compressed into 12-14-16-20. Declared explicitly in `@theme`: 4/6/8/12/16/24.
+2. **Buttons and inputs agree.** Nine buttons moved onto one mapping (`text-stone-50`,
+   `dark:bg-accent-500`, `disabled:opacity-40`); five had been pure `text-white` on a warm
+   palette and ten had no dark variant at all. Eight inputs moved to the control radius.
+   **Six fields shipped a base font under 16px, which zooms the viewport on iOS Safari
+   whenever one is focused**; all six now `text-base sm:<original>`.
+3. **Icons.** `CATALOG_ICON` defined one entry, so five of six shelves wore the same speech
+   bubble and the sixth was a `♪` text character. Each shelf has its own mark now, and Word
+   study is no longer the literal characters `אα` inside the link text. Both navs render the
+   same icons at one stroke weight (was 1.5 vs 1.7 on byte-identical paths).
+4. **One error colour.** Five treatments were in use, two of them wrong: `/ask` rendered
+   failures in the BRAND accent, and three surfaces used `text-stone-500`, the same token as
+   muted body copy. All on one red now, all carrying `role="alert"`.
+5. **Measure and headings.** The desk pane had no max-width and is `flex-1`, so one open pane
+   ran ~200 characters a line against the reader's ~74. Capped at `max-w-2xl`. `/work/[slug]`,
+   the deepest content surface, had no heading element at all; its title was a 14px `<p>`.
+
+**Still not done, and honestly:** the app-wide type scale (item 2 below) and dialog focus
+management (item 4) are untouched. Both are large. The type sweep also wants
+`sidebar.tsx` / `app/plans/` / `lib/plan/` to be quiet.
+
+### Next pass, in priority order
+
+1. **Own the radius scale.** Declare explicit `--radius-*` tokens in `@theme` so the app
+   stops inheriting the auth UI's ladder. One file, no component changes, and it makes the
+   hierarchy the rule already describes actually true.
+2. **The type scale.** 104 arbitrary `text-[Npx]` values across 28 files, an effective
+   17-step ladder of which 8 are one-offs; five different sizes all doing "small label"
+   work with no rule separating them. Only the landing page was collapsed. Excludes
+   `web/src/bible/` (byte-mirrored under a sync test) and wants `sidebar.tsx` /
+   `app/plans/` / `lib/plan/` to be quiet first.
+3. **The icon set.** Two parallel systems: 32 hand-authored SVGs across 3 viewBoxes, 7
+   stroke widths and 4 sizing conventions, plus a text-glyph system (music note for Hymns,
+   an aleph/alpha pair for Word study, arrows, check marks) sitting in the same slots at a
+   different optical weight. Five library catalogs also share one identical speech-bubble
+   icon, which makes the icons decorative rather than navigational.
+4. **Dialogs.** None of the 13 sheets, popovers and drawers traps focus, restores focus on
+   close, or carries `role="dialog"` with a label; four have no Escape handler. Largest
+   remaining accessibility gap.
+5. **Terminology.** Six words for the same population of authors, four names for `/ask`,
+   "My library" pointing at two different routes one of which is a stub. Owner call.
+6. **`loading.tsx`.** One Suspense boundary and 25 hand-written "Loading..." strings.
+
+
+## 2026-08-03 — Verse previews: a reading plan you can actually read
+
+Owner request, with a sketch: hovering a reference in a plan should show that passage in a popup
+you can scroll, and clicking it should open a reader pane to the right.
+
+### What shipped
+
+`VerseRef` (hover card on pointer devices, tap sheet on touch), `PassagePane` (the reader column),
+`PassageView` (the verses, shared by all three surfaces) and `lib/verse-preview.ts` (the span
+resolver and fetch). Wired into `plans-client.tsx`: every reference in a plan day, every
+day row on a book/collection plan, and the "Read it" button on Up next.
+
+Four owner decisions, taken before building: tap previews and a second press opens the reader **in
+the same view, never a new tab**; the pane is an **inline split on the plans page** rather than a
+trip to `/desk`; the preview shows the **cited range only**, with a button to load the whole
+chapter **in that same pane**; built reusable, wired to plan readings first.
+
+### Two things worth recording
+
+**It does not reuse `fetchChapter`.** That loads the whole-book file (`psa.json` is 264K), which is
+right for the reader and wrong here: one day of Nave's PRAYER cites ~18 passages across ~10 books,
+so hovering the list would pull well over a megabyte. The per-chapter files already shipping beside
+them (`1ki/18.json`, 7.6K) cost ~80KB for the same list. No API, no database, no request path.
+
+**The presentation split is by INPUT, not width** (`(hover: hover) and (pointer: fine)`). A
+touchscreen laptop at 1400px has no hover to preview with; a narrow window on a desktop still does.
+The capability defaults to false and is raised in an effect, so server and first client render
+agree — this app has already shipped one React #418 from reading `localStorage` during render, and
+`storedTranslation()` carries that warning at its call site.
+
+### A test of mine that could not fail
+
+`chaptersInSpan` refuses a backwards span. The first version of that test asserted it with
+`Romans 3:1 -> Romans 1:1`, which passes **whether or not the guard exists**: the chapter loop runs
+zero times either way. Found by seeding the defect and watching the test stay green. The case that
+actually reaches the guard is backwards *inside one chapter* (`1 Kings 18:39 -> 18:24`), where the
+loop still runs once and would emit an inverted window. Rewritten to that, then re-seeded and
+watched red. Four guards are now individually red-proofed; so are the verse-window filter and the
+expand control.
+
+### IT SHIPPED BROKEN. The files were in the repo and on no deployment.
+
+Deployed at `3b9f6f2`, and every preview on it 404s. The feature fetched
+`/bible/<t>/<book>/<chapter>.json` — 7.6K a chapter instead of a 137K-264K whole book, which is the
+right call on the merits and the reason I chose it. Those files are in `web/public`. They are also
+excluded from every deployment **on purpose**: `web/.vercelignore` carries `public/bible/*/*/`
+because 21,402 per-chapter files would blow Vercel's 15,000-file CLI limit.
+
+So it worked locally, passed its tests, built clean, deployed green, and was broken for every user
+the moment it went live. **I verified the files existed with `ls` and never asked whether they
+ship.** Nothing in the repo could have caught it, and the browser pass could not either: the local
+dev server serves `web/public` whole.
+
+Two things came out of it beyond the fix:
+
+- Previews now read the same whole-book files the reader reads, through the same `bookCache`. A
+  multi-chapter span inside one book is now ONE fetch, and a reader already in a book gets its
+  previews free.
+- `fetchChapter` caches the resolved file, not the in-flight promise, so several chapters of one
+  book requested together each missed and refetched it. Measured in the network log: a
+  Romans 16 to 1 Corinthians 2 span pulled `1co.json` twice. Deduped by book before fetching;
+  re-measured as one request per book. Worst case avoided was a multi-chapter Psalms span
+  refetching 264K per chapter.
+
+**The guard is derived, not typed.** `test/invariants/fetched-assets-actually-ship.test.ts` reads
+`.vercelignore` and checks it against the asset URLs the client actually fetches, so it cannot go
+stale the way a hand-listed set of forbidden paths would (MASTER.md watchlist, artefact 1). It
+includes two guard-the-guard cases, because a regex matching nothing and an empty pattern set both
+pass silently. Red-proofed by reintroducing the real defect verbatim and watching it name the call
+site. The component test also now 404s every per-chapter URL exactly as production does, so a
+regression fails on the real fetch rather than passing against a local file.
+
+**Generalises past Bible files: a file present in the working tree is not a file that ships, and
+`ls` cannot tell the difference. Check what the deploy uploads.**
+
+### NOT DONE / UNVERIFIED
+
+- **The plans page itself was never driven in a browser.** `/plans` needs an authenticated user and
+  a runtime DB, and neither tree on this machine carries `APP_DATABASE_URL`. The components were
+  verified over a temporary local route (since deleted) at 1280px and 390px: hover card, click to
+  pane, whole-chapter expansion, mobile takeover, no horizontal overflow. The plan data path is
+  covered by `test/regression/plans-routes.test.ts`, which does need that DB. **Nobody has yet seen
+  these components inside the real plan page.**
+- `npm run audit` fails one leg, `deps` — `fast-uri` GHSA-7p8r, `better-auth` GHSA-qq9h, `undici`
+  GHSA-4cwx. Pre-existing and repo-wide; this change touches no manifest or lockfile. Still an open
+  `docs/SECURITY.md` decision, unchanged by this work.
+- Console shows dev-mode `eval()` CSP errors on every page. Pre-existing, dev-only.
+- Not adopted anywhere else yet: search results, commentary anchors and `/ask` answers all render
+  references and could take `VerseRef` with a one-line change. Deliberately not done in this pass.
+
+## 2026-08-03 — "I can't find it in the app": the feature was never on the live site
+
+Owner could not find Reading plans. It was not a UI problem.
+
+### Root cause
+
+**The live site was built from `main`, and `main` has never contained the plans feature.** All of
+it lives on `feat/study-plans-adr045`, which was never merged. The `final` worktree (on `main`)
+has no `web/src/app/plans` and no `web/src/app/api/plans` at all.
+
+Sequence: my deploy `2f6db58` aliased at **08:45**; a concurrent session deployed `main` as
+`f9d0b89` at **08:54** and the alias moved to it, nine minutes later. Last deploy wins on a
+shared Vercel project, and their branch simply does not carry this work.
+
+### The check I reported as verification DID NOT VERIFY ANYTHING
+
+I twice reported `/plans → 307 → /gate?next=%2Fplans` as proof the feature was live. Measured
+now:
+
+```
+/plans                        → 307
+/this-route-does-not-exist-xyz → 307
+```
+
+**The site gate 307s everything, including routes that do not exist.** That check could not have
+failed, which is this repo's own definition of an unearned green (`THE_LOOP.md` §6) — the same
+class I filed a finding about earlier the same day, committed while my own headline claim rested
+on it.
+
+### Fixed
+
+Merged `main` into the branch (one WORKLOG conflict, both sides appended at the head, both kept),
+audited, deployed `ac303ff`. **Verified by evidence that can distinguish the cases:**
+
+- `vercel inspect ancientpaths.app` → `dpl_78bFFJYSrRkbkFMSEFjpeizzhhSP`
+- the live page's own asset query string reports that same `dpl_` id, so the domain really is
+  answered by this build
+- the deployed sha `ac303ff` contains `web/src/app/plans/page.tsx`, `api/plans/route.ts`, and the
+  sidebar's `label="Reading plans"` — checked with `git cat-file`, not inferred
+
+### STILL OPEN — this will recur
+
+**`main` still does not contain this branch.** The next deploy from `main` removes Reading plans
+from production again, exactly as it did today. The durable fix is merging
+`feat/study-plans-adr045` into `main`; I could not do it here because `main` is checked out in
+another session's worktree and a force-update is refused (correctly).
+
+### Also flagged, not mine
+
+`npm run audit` now fails on `deps — advisory bulk-endpoint`: **fast-uri GHSA-7p8r**, **undici
+GHSA-4cwx**, **better-auth GHSA-qq9h**. The merge changed no dependency file and the
+`ignoreGhsas` list is byte-identical to `main`'s, so these entered the advisory database within
+the hour and `main` is equally red. Accepting a GHSA is an owner/security decision
+(`docs/SECURITY.md`), not an agent's. `deploy.sh` does not run deps-audit, so the deploy is
+unaffected.
+
+## 2026-08-03 — UX pass on Reading plans: the builder now shows you the plan before you make it
+
+Owner: the feature was not intuitive. The specific defect, once looked at honestly, is that the
+screen made you **submit a form to find out what it does** — "8 weeks x 5 days" over Romans means
+nothing until you press Create and read an error. The old subtitle ("the schedule is arithmetic")
+was written for this repo, not for a reader.
+
+### The central change: a live preview that CANNOT drift
+
+The builder runs **`expandPlan` — the same pure function the server runs** — in the component, on
+every keystroke. So the preview is not a second implementation that can disagree with the result;
+it is the result. It shows readings, pace, scope and span:
+
+> **16 readings · about 1 chapter a day** · Romans · 16 chapters · Mon, Aug 3 → Tue, Sep 22
+
+and when the scope cannot fill the schedule it says so **before** the button, with Create
+**disabled**, so the dead end is unreachable rather than merely reported.
+
+### Also
+
+- **Copy rewritten for a reader.** Header, the empty state (which now teaches the three modes with
+  examples instead of only saying "no plans"), and the refusal — `expandPlan`'s reason said
+  "16 chapter(s) cannot fill 40 reading days", engineering shorthand in user-facing text; it now
+  reads "This has only 16 chapters — not enough for 40 reading days. Try fewer weeks, or fewer
+  days each week."
+- **The three modes explain themselves** — each tab carries a one-line hint; steps are labelled
+  "1 · What to read" / "2 · How long".
+- **Topic flow made sequential**: search → "Choose one:" → three attributed suggestions with work
+  and passage count → the pick is highlighted and feeds the preview.
+- **Progress is visible**: a bar on every plan row and at the top of a plan.
+- **"Up next"** callout answers the question someone opening a plan actually has — due-now or the
+  date, with Read it / Mark as read, and that day highlighted in the list. The flat list made you
+  scan for it.
+
+### Two real bugs the new tests caught
+
+1. **Chapter counting went NEGATIVE across book boundaries.** The preview summed
+   `chapterEnd - chapterStart + 1` per day; a day straddling Romans 16 → 1 Corinthians 2 gives
+   **-13**, which a collection guarantees at any normal pace. Now counted from the canon.
+2. **The first test file could not fail** — every `render()` stacked because this vitest config
+   does not enable globals, so testing-library never registers its auto-cleanup; the first run
+   reported "found multiple elements" for everything. Explicit `afterEach(cleanup)`.
+
+### VERIFIED
+
+`plans-builder-preview.test.tsx` (5 cases, each with a SEED line) drives the real component:
+refusal visible before submit, Create disabled then enabled, preview recomputes on scope change
+as well as schedule, collections preview across book boundaries, modes explain themselves.
+24 plan tests green. **Browser, both widths** (dev server on the deploy worktree, API stubbed in
+the live page since this machine has no auth secret): desktop 1280 and mobile 390 — list, builder,
+refusal state, success preview, topic search and pick all rendered and driven; **no horizontal
+overflow at 390 (`scrollWidth 390 === innerWidth`)**; only console error is the pre-existing
+dev-mode React/CSP `eval()` notice, present on every page and absent in production.
+`npm run audit` green.
+
+## 2026-08-03 — PUBLISHED. The topical corpus is live on production; the feature is complete
+
+Owner ran the flip. **4/4 published**, verified end to end against production, read-only.
+
+### Verified on prod
+
+| check | result |
+|---|---|
+| status | naves / torrey / openbible `topical_index` + daily-light `devotional`, all **published** |
+| `matchTopics` SQL, verbatim | prayer → Nave's PRAYER (711) · Torrey's PRAYER (160) · openbible prayer (9); faith / family / affliction / forgiveness all return their exact heading first, all three works represented |
+| `loadTopic` guard | resolves PRAYER under the published + topical_index predicate |
+| entry fetch | 711 entries, under the 2,000 cap → builds (does not hit the refusal) |
+| ordered readings | "Prayer test proposed by Elijah" → 1Ki 18:24, "Daily, in the morning" → Ps 5:3 … the author's own sequence and labels |
+| coverage gate, 12-day plan | 11/12 days covered → **PASSES**, a plan builds |
+| site | `/plans` and `/api/plans/topics` behave as every other gated surface (307 → `/gate?next=…`) |
+
+`verse_coverage` rebuilt after the flip: **unchanged at 30,277 / 27,163 with >=2 authors — correct,
+not a no-op failure.** The rebuild counts `commentary` + `father` only (the exegetical voice pool,
+routing.ts owner decision (c)). A topical-index entry is a classification, not a commentary voice,
+so it must not inflate the voice floor.
+
+### The serving state, for whoever deploys next
+
+The flip's served write ran while A9's backfill was still uncommitted, so production currently
+reads: **served = 13,829 rows, ALL of them ours** (topical_index 13,082 + devotional 747), and
+`044` still absent from the ledger. A9's own backfill (pid 759, >25 min) had not committed at the
+time of writing.
+
+**Inert today** — the deployed commit does not read `embeddings.served` (verified: every `served`
+occurrence in the deployed routing/retrieve/legal-corpus is a comment; the live predicate is the
+slug lists). **It is not inert on the first deploy of `feat/served-column-derives-publish`.** If
+that ships before A9's backfill commits, retrieval serves these four works and nothing else. That
+is A9's sequencing to close, and the finding filed at
+`docs/pm/orders/2026-08-03-finding-publish-flip-guard-proxy.md` is the record of how the guard
+allowed the window.
+
+### The feature, complete
+
+- **Book + canonical-collection plans** — live.
+- **Topical plans** — live: search a phrase, pick from three real attributed topics, get a dated
+  plan whose days carry the index author's own passages, in the author's order, with the author's
+  own labels.
+- Delivery (email / calendar) remains a later third-party slice; `plans.delivery_channel` and
+  `plans.calendar_minutes` are schema-ready and unread.
+
+## 2026-08-03 — FINDING filed for A9: the flip's 044 guard checks existence, not readiness
+
+Asked whether A9 had landed; measured rather than answered from memory. **It has not** — the
+board row still reads OPEN. But production has moved into a state that matters:
+`embeddings.served` **exists**, `served=true` on **0** of 559,506 corpus rows, `044*` **absent**
+from the ledger, and 044's backfill **actively running**.
+
+**Consequence: the forward-flip guard would now PASS.** It tests that the column exists; the
+property it stands for is that the target serves by column. Those come apart for the whole
+duration of 044 (ADD COLUMN, then the UPDATEs). Flipping the four topical works in that window
+would make them the ONLY served rows on production — 4 works served, the 124-work published
+corpus at false.
+
+Inert *today* only because of deploy lag, and that was verified rather than assumed: every
+`served` occurrence in the deployed commit `0dbc567` (routing/retrieve/legal-corpus) is prose in
+a comment; the live predicate is still the slug lists. `feat/served-column-derives-publish`'s
+routing.ts does read the column.
+
+Filed at `docs/pm/orders/2026-08-03-finding-publish-flip-guard-proxy.md` with the measurement,
+the mechanism, and a suggested readiness predicate (column exists AND some row served; stronger,
+require the `044%` ledger row — which on this target is absent while the column is present, so
+that leg would have held where existence did not). **No code changed, no flip run** — the remedy
+is A9's owner's call.
+
+The four topical works stay `staged`. The topical publish is held until A9 closes on its own
+sequence, so the flip ADDS to a correct serving set rather than defining it.
+
+## 2026-08-03 — Corpus copied to prod and verified; the publish flip is BLOCKED behind A9 (correctly)
+
+### DONE — the copy landed, complete
+
+Re-ran after the idle-timeout fix. `✓ copied 4 work(s), all counts match.` Verified
+independently against dev, per work: **naves 4,870 sections / 78,107 topical / 5,357 flat ·
+torrey 628 / 38,858 / 1,055 · openbible 6,711 / 71,210 / 6,670 · daily-light 732 / 7,011 / 747**
+— every figure MATCH, 0 null vectors, 182,099 anchors, prod sections 380,971 → 393,912 (exactly
++12,941). The tool's own reconciliation agrees: `mismatch: 0`
+(`docs/evidence/topical-copy-2026-08-03/`). All four are `status='staged'`.
+
+`verse_coverage` rebuilt on prod after the copy: **unchanged at 30,277 rows / 27,163 with >=2
+authors**, which is correct — coverage counts PUBLISHED commentary+father only, and the topical
+works are staged.
+
+### THE FLIP REFUSED, AND IT IS RIGHT
+
+```
+STOP: embeddings.served does not exist on this target. Publishing now MEANS serving —
+apply db/migrations/044_embeddings_served_expand.sql first (the expand half; see the filed order).
+```
+
+**My verification of this command was WRONG and the tool caught what I did not.** I read
+`publish-flip.mjs:374` — "no served column on this target (pre-044): reversing status only" —
+as the general pre-044 behaviour and told the owner the forward flip would degrade gracefully.
+That line is the **reverse** branch. The forward branch three lines above it is a hard STOP, and
+its comment says exactly why: *"Forward: REQUIRED. Publishing now means serving; a forward flip
+on a pre-044 target would silently recreate the published-but-unserved divergence this whole
+design exists to kill."* Reading a guard is not verifying it.
+
+### THE DEPENDENCY, STATED
+
+Topical publish now waits on **A9's served cutover reaching production**. 044's expand half is
+not merely an ADD COLUMN — it materialises the serving set from the author/work lists, i.e. it
+decides which of prod's 124 published works actually serve. `embeddings.served`: **dev YES, ci
+no, prod no**. A9's filed order puts 044-on-dev at **P1.1** ("TIME IT — the prod session budget
+is derived from this number, not estimated") and prod only after P1.4's pre-registered go/no-go.
+
+Applying 044 to prod now, to unblock a topical publish, would jump that entire order — the
+"unscheduled+irreversible serve" A9's own 16-agent audit already caught once. **Not done, and
+it should not be done as a side-effect of this feature.**
+
+### STATE
+
+- **Live on ancientpaths.app:** book + canonical-collection plans, fully working.
+- **On prod, staged and inert:** the four topical works, complete and verified.
+- **One command from live:** the topic tab — the same flip, the moment A9 lands 044 on prod.
+
+## 2026-08-03 — The corpus copy died on Neon's idle-in-transaction timeout; fixed
+
+**Owner ran the copy; it failed FATAL 25P03 and production rolled back to exactly zero rows.**
+Verified after: 0 sources, 0 topical_entries, 0 flat embeddings for those four works, 0 open
+transactions, corpus still 380,971 sections. **The single-transaction design worked** — there is
+no half-copied work to clean up, which is the whole reason it is one transaction.
+
+### Cause
+
+Both sides of this copy are idle INSIDE their transaction by construction:
+
+- the **destination** holds one transaction across the whole copy and sits idle while a source
+  page is read;
+- the **source** holds a READ ONLY snapshot and sits idle while a destination batch is written —
+  and, before either, **across the owner gate's human decision**, which has no upper bound.
+
+Neon enforces `idle_in_transaction_session_timeout`, so the connection was terminated. The tool's
+own header reasons carefully about not holding a transaction across the *embedding* round-trips;
+it did not account for the read/write interleave or for the human at the gate.
+
+### Fix
+
+`SET idle_in_transaction_session_timeout = '30min'` per-session on both dedicated connections.
+**Raised, not disabled**: `0` would let a wedged copier hold a production transaction forever;
+30 minutes covers a human at the gate and any single page transfer while bounding the damage.
+Changes nothing for any other client of either database.
+`redproof-corpus-copy.sh`: **59 passed, 0 failed** after the change.
+
+### Still owed
+
+The copy has NOT run successfully yet. It is owner-gated (TTY), so it needs one more run — the
+same command, unchanged; the tool now survives the wait. Then the publish flip, then the
+`COVERAGE_ALLOW_PROD=1` coverage rebuild.
+
+## 2026-08-03 — DEPLOYED. /plans is live on ancientpaths.app
+
+`dpl_Dw5txbw5kgEHoJjWi9Yp3cThzmP5` from `0dbc567`, aliased to ancientpaths.app; receipt at
+`docs/evidence/deploys/deploy-0dbc567.txt`.
+
+### How it was made deployable
+
+- **Deployed from an isolated worktree** (`/Users/foley/Projects/ap-deploy`) on this branch, with
+  the gitignored static corpus hardlinked in. deploy.sh's clean-tree gate is satisfied honestly
+  and the concurrent session's in-flight files could not ship — the gate's own comment records a
+  2026-07-12 incident where exactly that happened.
+- **Two pre-deploy gates refused first, and both were right.** (1) `web/public/original` was
+  absent from the worktree — the served-directory check is derived from `web/src`, so it knew.
+  Linked. (2) The corpus-identity ratchet stopped a manifest mismatch; resolved by merging
+  `fix/final-three` (the owner-approved 149,315 manifest this branch lacked) and regenerating
+  at the owner's explicit approval of the on-disk corpus: **283 works, 1,212 files, 158,285
+  entries**.
+- **An ADR-047 collision surfaced in that merge** — mine (canonical groupings, 20:24) and theirs
+  (tap-a-verse, 23:14). Their own precedent is first-claim-keeps, which would renumber theirs;
+  but theirs is on 3 branches and mine on 1, so **mine became ADR-048**. Smaller change, and it
+  cannot re-conflict on future merges. Precedence matters less than churn.
+- Both doc conflicts (WORKLOG, DECISIONS) were append-at-head on chronological files: resolved by
+  keeping both sides, not by choosing.
+
+### VERIFIED on production
+
+`/plans` → 307 → `/gate?next=%2Fplans`, byte-identical in shape to `/ask` — the pre-launch site
+gate, not a break. `/api/plans` and `/api/plans/topics` are routed. `/`, `/ask`, `/library`,
+`/read/jhn/1` unchanged: no regression. `npm run audit` green in the deploy worktree before
+shipping; `next build` compiled with `/plans` in the route manifest.
+
+### What is live vs what waits
+
+Book and canonical-collection plans are fully live: their tables (039/041/042), the coverage
+gate (30,277 verses on prod) and the UI all shipped. **Topical plans are dark until the owner
+runs the two TTY-gated steps** — corpus copy, then publish flip. 040 is applied, so the copy is
+unblocked. The topic tab shows its honest empty state until then.
+## 2026-08-04 — A9 cutover closed on production: 044 deployed, verified, 045 contracted
+
+The remaining Phase 3 steps from the served-cutover order, executed end to end against
+production, owner-directed throughout ("deploy the web app" named explicitly, then "do it
+keep going"). 044 itself landed on prod earlier (separate WORKLOG entry); this covers the
+deploy and 045.
+
+### DONE
+
+- **Audit gate genuinely failed, genuinely fixed.** `npm run audit` found two new
+  high-severity CVEs not on the reviewed `--expect-red` allowlist: `fast-uri`
+  (GHSA-7p8r-x3mc-p8w7) and `undici` (GHSA-4cwx-7wf7-3272). Did not allowlist them — the
+  gate's own message requires owner approval for that, and both had clean patches
+  available. `fast-uri` was pinned via `pnpm.overrides` at exactly the vulnerable version
+  (`^3.1.4`, stale since the override's first commit — not deliberately vulnerable);
+  bumped to `^3.1.5`. `undici` is devDependency-only (jsdom's HTTP client, never in the
+  deployed bundle); added an override forcing 7.29.0. Reinstalled, deps-audit now matches
+  `--expect-red` exactly (only the one documented, owner-accepted better-auth CVE from
+  ADR-038). Root + web typecheck clean, tests 576/576, full audit green.
+- **Bundled the `/plans` feature into this deploy — owner decision.** `deploy.sh` ships the
+  whole tree; `/plans` had 38 uncommitted files. Presented as an explicit choice rather than
+  assumed: typecheck was clean (the earlier `src/lib/plan/expand.ts` blocker had been fixed
+  by that session since), both test suites fully green, and prod's `schema_migrations`
+  ledger already showed migrations 039-042 applied — the original audit's "prod has neither
+  plans/verse_coverage/topical tables" concern no longer held. Owner chose bundle-both.
+  Committed 47 files (one of them mine — a stray uncommitted 76→88 comment fix in
+  `served-backfill-frozen.mjs`, found while checking whether a concurrent session had
+  touched a load-bearing file; it hadn't).
+- **`corpusHash` mismatch, investigated rather than routed around.** The predeploy gate
+  hard-stopped: static corpus grew 117,241 → 162,360 entries (39%) since the last committed
+  manifest, from tonight's all-night ingest sweep. Growth alone isn't a green light — flagged
+  earlier this same session that `web/public/commentaries/` has shipped content filtered
+  only client-side before (the pre-C2 defect). Before regenerating the manifest, measured:
+  the forbidden-provenance ratchet held (0), the translation-licensing gate passed, and a
+  fresh `scanServedCorpusAuthors()` run against the CURRENT on-disk corpus (1,212 files /
+  162,360 entries) against `MUST_NOT_SERVE_AUTHORS` returned zero offenders. Regenerated and
+  committed the manifest only after that.
+- **Deploy landed, survived an operator mistake.** Piped the deploy through `tee | head -150`
+  to preview output — `head` closing its end of the pipe after 150 lines SIGPIPE'd the local
+  `deploy.sh`/`vercel` CLI process mid-build, right after the 351MB upload completed and
+  Vercel's remote build had already started. Checked rather than assumed: `vercel inspect`
+  and the Vercel MCP `get_deployment` both confirmed the remote build was unaffected and
+  reached `Ready` independently — killing the local CLI does not kill a build already
+  running on Vercel's infrastructure. `ancientpaths.app` and `www.ancientpaths.app` were
+  already in the deployment's alias list (Vercel's own `--prod` promotion, no manual alias
+  step needed or taken). Wrote the deploy receipt by hand (same format `deploy.sh` uses,
+  `docs/evidence/deploys/deploy-cb58446.txt`) since the local process died before writing
+  one, with an honest note about what happened.
+- **New-bundle verification done the rigorous way, not the available way.** Could not
+  complete a live `/ask` smoke test — `SITE_PASSWORD` (the separate pre-launch site gate,
+  distinct from user accounts) isn't in local config and is Vercel-only; did not ask the
+  owner to paste it, and did not go looking for a way around the gate. Instead ran the
+  actual thing the smoke test exists to prove: `EXPLAIN` on the exact query shape the
+  deployed `routing.ts` emits, direct against production. **`Index Scan using
+  idx_embeddings_served_legal`** — confirmed, not assumed, that the shipped code's base
+  pool plans onto the new served-predicated index.
+- **045 (contract) applied.** All 5 parts, ledger recorded. Confirmed after: the four old
+  `idx_embeddings_vector_{legal,song_verse,sermon,theology}` indexes are gone; only the new
+  `idx_embeddings_served_*` set plus the two btrees remain. The redeploy window is now
+  closed (045's own header documents the contra-DDL if it's ever needed).
+
+### Where this leaves A9
+
+Migration 044 + 045 both on production, verified three separate ways (catalog state,
+`verify-served-backfill.mjs`, live `EXPLAIN`). The deploy carrying the new `routing.ts` is
+live and aliased. The cutover mechanism is fully shipped. **Not yet done, deliberately**:
+serving the 88 published-but-unserved works (P4.0, `docs/evidence/corpus-copy/serve-88.json`
+— an explicit, separate, owner-gated flip) and the successor work the order names (FTS/static/
+today.ts still on frozen lists, the work-less legacy cohort's missing off-switch, the
+36k-43k world-readable blocked static entries).
+
+### NOT DONE / UNVERIFIED
+
+- No live `/ask` smoke test through the actual UI — the EXPLAIN check proves the query plan,
+  not the full compose→verify pipeline end to end. Worth a real check next time someone has
+  `SITE_PASSWORD` in hand.
+- The two prior WORKLOG entries this session should have referenced (044's dev+prod apply
+  timing) aren't cross-linked here; a reader landing on just this entry won't see the timing
+  data without searching.
+
+## 2026-08-03 — ADR-047 was claimed twice; the uncommitted claim renumbered to 048
+
+Third instance of the number-collision class in two days (migrations 042 and 042-mid-rename were
+the first two). `main` @ `53d90d1` carries `ADR-047 — Tap-a-verse opens the number`; the
+uncommitted diff on `feat/served-column-derives-publish` carried `ADR-047 — Canonical groupings`.
+Merge-base is `79ff0f1`; this branch never picked up `53d90d1`, so neither side could see the
+other's number.
+
+### 048 was DERIVED, not taken from the note
+
+The number was not "the next free one". `feat/study-plans-adr045` @ `2f6db58` **has already made
+this exact rename** — it merged `53d90d1` and carries the Canonical-groupings ADR as **048**, body
+byte-identical to ours apart from the number (verified by diffing the 1027–1100 window with the
+number masked). Picking 049 would have minted a *third* identity for one decision. Union of ADR
+numbers across every ref + the working copy: `040-048, 100` (100 = the Lane B block, ADR-100 on
+`feat/lane-b-slice1-uploader`).
+
+### DONE
+
+- `docs/DECISIONS.md` heading + addendum heading → 048; 12 citations updated across `WORKLOG.md`,
+  `db/migrations/042_plan_day_readings.sql`, `docs/PLAN_TOPIC_MATCHING_DESIGN.md`,
+  `web/src/lib/plan/{canonical-groups,expand}.ts`, and four plan tests.
+- **Red-proofed.** Simulated the real 3-way merge (`git merge-file` with `79ff0f1` as ancestor):
+  pre-fix yields **two** `## ADR-047` headings; post-fix yields every ADR number unique. The one
+  remaining conflict is the ordinary both-sides-appended-at-EOF case (keep both blocks), not a
+  numbering collision.
+- `plan-canonical-groups` + `plan-topical-expand`: 14 tests pass.
+
+### FOUND, NOT FIXED — there is a THIRD claim on 047
+
+`docs/STUDY_TOOLKIT_DESIGN.md:228` reads `Proposed **ADR-047**: "The study toolkit gathers by
+lane…"` — a different decision again. It is committed on `main`, unmodified by this branch, and is
+a *proposal* for an unwritten ADR, so it is not a citation that follows this rename. Left alone
+deliberately: pre-assigning a number to an ADR nobody has written yet is the mechanism that
+produced this whole class. Recommend de-numbering it ("Proposed ADR, number assigned at write
+time") rather than moving it to 049 — an owner call, not an agent one.
+
+### NOT DONE / UNVERIFIED
+
+- Nothing committed — the renumber sits in the working tree with the rest of the uncommitted diff.
+- `npm run audit` NOT run (comment/heading-only change; two pure test files exercised instead).
+- `docs/DECISIONS.md` has no ledger equivalent to `schema_migrations`, so nothing mechanically
+  prevents instance four. See the recommendation above.
+
+## 2026-08-03 — Plans reach PRODUCTION (migrations + coverage); the copier learns topical_entries
+
+Owner go: "do the publish flip and prod migrations." The read came first, and it changed the job.
+
+### THE PUBLISH FLIP WAS A NO-OP AND WAS NOT RUN
+
+Read-only prod check BEFORE any write: **the four topical works do not exist on production**
+(zero rows). They were ingested to dev. `plans`/`plan_days`/`plan_day_readings`/
+`verse_coverage`/`topical_entries` were all ABSENT, the ledger stopped at 038, and
+`source_type` did not allow `topical_index`. A flip would have updated nothing and reported
+success. Reported to the owner instead; scope narrowed live to migrations-only.
+
+### DONE — production
+
+- **039, 041, 042 applied** (`MIGRATE_ALLOW_PROD=1`, one at a time, each ledger-recorded with
+  its sha256). Verified after: five tables present, RLS on all three user tables, three
+  policies, both 041 columns, corpus counts unchanged (124 published / 7 staged / 380,971
+  sections).
+- **040 HELD, deliberately.** It is the only migration touching shared tables (`source_type`
+  CHECK on `sources` AND `embeddings`) and A9's served cutover is doing live DDL on
+  `embeddings`. Verified the hold rather than assuming it: prod still refuses `topical_index`.
+- **`verse_coverage` rebuilt on prod** (dry-run, then executed): 96,329 anchors, 0 dropped →
+  **30,277/31,103 verses covered, 27,163 with >=2 authors**. The refusal gate is honest there:
+  Song of Songs 5 covered / 1 with >=2 authors (a plan is refused), Romans 431/431, Genesis
+  1,516/1,413. `app_runtime` has SELECT, not INSERT.
+- Evidence: `docs/evidence/plans-prod-2026-08-03/README.md`.
+
+### DONE — the copier
+
+`corpus-copy.mjs` predated `topical_entries` and would have moved a topical work as headings
+with **no plan-able structure, silently** — every other count reconciles. Added: the table to
+COPIED_TABLES, a paging read keyed on **(section_id, ordinal)**, the census column, and the
+post-copy comparison **derived from the census row** instead of the hand-typed key list that is
+why this class of gap ships at all. Four manifest entries added to
+`ingest/sources.config.json` (the copier's licence gate refused all four works until they
+existed — fail-closed working); Gate B passes, 915 entries.
+
+Dry-run dev→prod: naves 4,870 sections / 78,107 topical · torrey 628 / 38,858 · openbible
+6,711 / 71,210 · daily-light 732 / 7,011.
+
+**`redproof-corpus-copy.sh`: 59 passed, 0 failed** — and the red-proof earned its name. The
+first version of the topical assertions **stayed GREEN against a mutated section_id-only
+keyset**: the happy-path fixture is 10 rows against a 2,000-row page, so the paging never ran
+and the check could not fail. Moved into the paging block (READ_PAGE=2, 4 entries on one
+section) and re-mutated: **8 of 10, and 2 of 4 on the multi-entry section — RED**, green again
+on revert.
+
+### ADDENDUM — 040 applied to prod; deploy BLOCKED at the corpus ratchet (2026-08-03, late)
+
+- **040 applied to production** (ledger-recorded). Safe to unhold after measuring that A9's
+  cutover has NOT reached prod: `embeddings.served` does not exist there and only 041/042 of
+  the 04x series were recorded. Prod now accepts `topical_index`, so the owner's corpus copy
+  is unblocked.
+- **Corpus copy and publish flip are STRUCTURALLY owner-only.** Both gates refuse a non-TTY
+  stdin ("a piped answer is not consent"), and the only bypass (`--redproof-skip-gate`)
+  requires `--local-redproof`, i.e. a throwaway local cluster. Not attempted. Exact commands
+  handed to the owner.
+- **Deploy prepared and then correctly refused.** Built an isolated worktree on this branch
+  (`/Users/foley/Projects/ap-deploy`) with the gitignored static corpus hardlinked in, so
+  deploy.sh's clean-tree gate is satisfied honestly and the concurrent session's in-flight
+  files cannot ship. `npm run audit` PASSED there; `next build` compiles with `/plans` in the
+  route manifest. deploy.sh then stopped at the **corpus-identity ratchet**:
+
+      committed manifest (this branch) : 117,240 entries (d2fedc1)
+      owner-approved manifest          : 149,315 entries (65a76a7, on fix/final-three — NOT on this branch)
+      on disk                          : 158,285 entries
+
+  Two separate gaps: this branch is missing the owner-approved manifest commit, and the
+  on-disk corpus exceeds even that by ~9k entries from ingest after the approval.
+  `build-corpus-manifest.mjs` was NOT run — regenerating the manifest is how the ratchet gets
+  defeated, and certifying ~9k unreviewed entries is an owner call, not an agent's. The gate
+  worked exactly as designed and is the reason nothing shipped.
+
+### NOT DONE — what still gates topical plans on production
+
+1. **040** (behind A9's `embeddings` work)
+2. **The corpus copy** — built and dry-run verified, NOT executed; blocked by (1), since
+   prod cannot hold a `topical_index` source yet
+3. **The publish flip** — after (2), and it is an owner-executed terminal gate
+4. **A deploy** — `/plans` is on `feat/study-plans-adr045`, not `main`; deploys are manual
+
+Book and canonical-collection plans need none of 1-3: their tables and coverage are live on
+prod now, so they work as soon as the code deploys.
+
+## 2026-08-03 — The served cutover: audit, five confirmed defects fixed, order re-filed as v2
+
+Branch `feat/served-column-derives-publish` (pushed, upstream set). Context: the 2026-08-03
+sweep published 77 works to production (evidence committed this session: `flip-run-2026-08-03T02-14-25-907Z.log`,
+snapshot `…02-14-38-171Z.json`) — production is now **124 published works, 76 of them
+published-but-unserved**, the standing A3-rule divergence the cutover exists to close.
+snapshot `…02-14-38-171Z.json`) — production is now **124 published works, 88 of them published-but-unserved**, the standing A3-rule divergence the cutover exists to close.
+
+### DONE
+
+- **16-agent adversarial audit** of `4f14f17` + the v1 order (bylaw 4): four independent
+  *plan-materially-flawed* verdicts, 6/6 CRITICAL/HIGH findings CONFIRMED, 0 refuted.
+  Filed: [verdict](docs/pm/orders/2026-08-03-stop-verdict-served-plan-audit.md).
+- **F1 the circular verifier** — expectation now FROZEN (`scripts/lib/served-backfill-frozen.mjs`),
+  welded to the migration by `test/invariants/served-backfill-frozen-sync.test.ts`; red-proof
+  requires the seeded row be NAMED. Found while watching it red: **FALSE OR NULL = NULL made
+  even the repaired checks blind to wrongly-served work-less rows** (a served CS Lewis row
+  passed all 7 checks); coalesced, Lewis mutant now trips 2, Tyndale 3. `1ae0323`.
+- **Register-wall breach** — `diversityBackfillSql` six-type list → `EXEGETICAL_TYPE_SQL`;
+  served sermon/theology rows can no longer enter composed /ask answers. `1ae0323`.
+- **The serve mechanism** — `publish-flip --serve-published`: already-published slugs are a
+  STOP without it, an announced serve with it; snapshot records per-slug served state;
+  `--reverse` un-serves exactly what the forward run served from zero (serve-only and mixed
+  batches both exact now); partial states refused; forward requires the served column (names
+  044), reverse never blocked (M7). Gates added: manifest `serve:false` pre-connect,
+  MUST_NOT_SERVE authors in-transaction — both watched fire (whitefield-works, Origen).
+- **Expand/contract + renumber** — `044_embeddings_served_expand.sql` (new final index names,
+  drops nothing, session SETs) / `045_embeddings_served_contract.sql` (contra-DDL in header;
+  closes the redeploy window). Renumbered TWICE: 039→042 for the /plans trio, then 042→044
+  when the concurrent session wrote `042_plan_day_readings.sql` five minutes into the rename —
+  the one-agent-per-tree collision, live. The four applied /plans migrations are now COMMITTED
+  (`851963d`) so numbers are fenced in git. `68d9792`.
+- **Tree resolved** — full-tree backup ref `backup/tree-2026-08-03` (holds the /plans session's
+  uncommitted app code), pushed; branch pushed. /plans app code deliberately NOT committed
+  (its typecheck is red at `src/lib/plan/expand.ts` — that session's work).
+- **Order re-filed as v2 in place** — serve-the-76 is an explicit reversible step; real script
+- **Order re-filed as v2 in place** — serve-the-88 is an explicit reversible step (payload measured + committed as serve-88.json; the 76 I first reported was sweep-local arithmetic, caught by the refuters); real script
+  names; batch arithmetic (10-20 sessions, not 2); v3-iterate / v4.1-once eval protocol with
+  preconditions (DEEPINFRA key, served census, pre-044 v3 baseline); P0 adds the fiction
+  register (R5), per-author voice cap (R2), aggregate dedupe (R1), coverage census (R4),
+  deploy preflight, reconciliation instrument.
+- **044 APPLIED TO DEV** (2026-08-03, ingest live — logged deviation from the idle precondition): wall clock **1h54m39s** (backfill legs ~25-30min each, seq-scan-bound on Neon PS_ReadIO; four HNSW builds faster than feared; ALTER itself 104ms once past the 5s lock race, one timed-out attempt first). All 6 indexes VALID+READY; ledger table lazy-created on first use, 044 = its first row, sha256-pinned. Verifier 7/7 ON DEV (328,775 served rows; 124,955 work-less rows, 86,023 served, all in-allowlist). Red-proof take 1 exposed ANOTHER unverified-write hole: through the app URL the seed UPDATE silently hit 0 rows (corpus DML revoked) and the tool blamed itself — seed and restore rowCounts now asserted, take 2 HELD as owner, and the app-role path refuses with the reason. Evidence: docs/evidence/served-cutover/dev-apply-2026-08-03.log. P0.3 deploy preflight built, red-proofed both refusal paths, positive control green against dev.
+- Proofs re-run under final names on fresh throwaway pg17: backfill + 5 indexes, verifier 7/7
+  WITH lane rows present, red-proof held, 045 applies. Suites: root 56 files / 578 pass.
+
+### NOT DONE / UNVERIFIED
+
+- 044 applied to NO real database; nothing timed at scale (the prod budget explicitly derives
+  from the timed dev apply, P1.1).
+- The 5 web live-DB test failures are environmental (dev DB mid-ingest + rate cap + the
+  concurrent session's `web/.env.local` un-skipping them) — diagnosed, not fixed here.
+- Unmoved surfaces (FTS / static reader / today.ts on frozen lists), the 36k world-readable
+  blocked static entries, and the work-less cohort's missing off-switch: OPEN, named in v2's
+  successor-work section.
+- The eval has not run (key absent per ADR-044); accuracy consequences of any admission are
+  unmeasured by construction until P1.
+
+## 2026-08-02 (night) — Topic→plan wiring closes the build (ADR-048 addendum)
+
+The last mile of path 1: a matched topic becomes a dated plan. Owner: "close 1... that would
+close this build out."
+
+### DONE
+
+- **Migration 042 `plan_day_readings`** (dev + ci): a topical day is SEVERAL labeled passages,
+  which one range per day cannot say — child table, PK (plan_id, day_index, ordinal),
+  FK cascade, RLS via EXISTS-on-plans, ownerParent classification (residue gate sweeps 20
+  tables). plan_days keeps the day's first reading as its range so existing consumers work.
+- **`expandTopicalPlan`** (pure): buckets the author's ordered entries across reading days,
+  same offsets/even-split arithmetic as chapters, no padding, no empty buckets. 5 tests.
+- **Store topic branch**: `loadTopic` re-verifies the pointer against the DB (exists +
+  topical_index + published — stale/staged/forged all refuse with a reason); coverage judged
+  per reading (any covered reading covers the day, same half-days bar); readings inserted
+  via the WHERE EXISTS belt; `getPlan` returns them; title from the DB heading, never input.
+- **UI**: "A topic" tab in the builder — search → 3 suggestions (work + passage count) →
+  pick → build; day list renders labeled readings, each linking into the reader.
+- **Executed end to end** (`plan-topic-flow.test.ts`, owner-seeded PUBLISHED fixture per the
+  seedOwnerUrl precedent): match through the real route → create → 4 labeled readings in the
+  author's order → flip fixture to staged, watch the refusal → user B blocked → delete
+  cascades readings → teardown leaves zero residue. One driver defect caught while writing:
+  BIGINT section ids arrive as strings; matchTopics casts ::int.
+- Adversarial review workflow (3 lenses + verify) run over the slice before commit; findings
+  and dispositions below/in the commit.
+
+### ADVERSARIAL REVIEW — 7 defects found and fixed BEFORE commit
+
+A 3-lens review workflow (correctness / RLS-tenancy / repo-conventions) with an adversarial
+verify pass ran over the slice before it landed. Six findings survived verification; a seventh
+was recovered by hand after four verifier agents died on a session limit. All fixed:
+
+1. **[HIGH] G1's digest SQL was unexecutable for BOTH plan tables.** `measureSql` hardcoded
+   `id` in the identity list and `ORDER BY id::text`; `plan_days` (shipped EARLIER TONIGHT) and
+   `plan_day_readings` key on composite PKs and have no `id`. **Red-proved by running it: both
+   raised 42703.** `cutover.mjs` reports that error as "a column this invariant covers has been
+   dropped or renamed ... restore from the pre-cutover snapshot" — a false schema-regression
+   verdict on a healthy database — and the regression gate's G1 would have thrown raw. Neither
+   classification had ever been executed. Fixed by declaring `idColumns` (default `['id']`, so
+   every pre-existing table's digest is byte-identical and no committed baseline moves), and
+   **the check that did not exist now does**: `g1-measure-executable.test.ts` runs the real SQL
+   for every table derived from USER_TABLE_SPEC — 20 pass, waitlist visibly NOT RUN (absent).
+2. **[MED, found independently by two lenses] createPlan was not atomic.** Three sequential
+   `runAsUser` calls = three independent commits over the stateless HTTP driver. A transient
+   failure between commits 2 and 3 left a topical plan with days but no readings, which renders
+   as its lead passages ALONE — silently understating the day, permanently, with no error. Now
+   ONE transaction (client-generated UUID so the id is known before the batch). The count
+   guards remain as defense-in-depth and their comment now states plainly that they cannot roll
+   back, because `sql.transaction` has already committed when it returns.
+3. **[MED] loadTopic silently truncated at 2,000 entries** while the picker advertised the
+   topic's true count (Nave's "JESUS, THE CHRIST" is 3,833) — a plan claiming a topic it did
+   not cover. Now refuses with a reason; the query fetches cap+1 to detect it.
+4. **[MED] Topic-search failure rendered as "no matching topics in the library yet"** — an
+   authoritative claim about the corpus produced by an instrument that did not run (exactly the
+   watchlist's "instrument's blind spot recorded as a property of the thing it could not see").
+   Error and empty are now distinct states.
+5. **[MED] Test teardown used four empty catches**, so a failed final DELETE could strand a
+   PUBLISHED qa source while the suite reported green. Now demotes to `staged` FIRST (after
+   which no partial teardown can leave it published), keeps every step independent, and logs
+   anything swallowed.
+6. **[the recovered one] `readingLabel` leaked the CHAPTER_END_SENTINEL to users**: a
+   whole-chapter topical reference rendered as "Numbers 17:1-999". Four verifier agents died
+   before ruling on this, so it was checked by hand against real cases and confirmed. Fixed to
+   name chapters, plus a cross-book case it also got wrong; `plan-reading-label.test.ts`.
+
+Final: 66 plan tests green, residue gate clean across 20 tables, `npm run audit` exit 0.
+
+### NOT DONE / NEXT
+
+- The LLM intake (routes phrase → book/collection/topic and emits PlanSpec) — the last
+  unbuilt piece of the intake; every scope it needs now exists and is validated.
+- Topic+canonical hybrid; repeat-asker memory (owner-deferred).
+- Publish flip still gates all topical behavior for real users; prod has migrations 039-042
+  outstanding.
+
+## 2026-08-02 (late) — Canonical groups, topic matcher, dormant delivery fields (ADR-048)
+
+Owner rulings live: reviewed-table for canonical groupings (never model enumeration; Hebrews
+excluded from pauline-epistles with reasoning recorded), delivery/calendar questions kept OUT of
+the intake but schema-ready now, topic matching started alongside.
+
+### DONE
+
+- **`canonical-groups.ts`**: 7 reviewed groupings; whole-bible DERIVED from BOOKS (never typed);
+  `validateCanonicalGroups()` exported so the test asserts the module's own verdict.
+  `PlanSpec.scope` gains `{kind:'books', group}` (unknown key refused at the edge);
+  `chaptersOfScope` flattens the group's books into the existing ChapterSpan walk — the
+  day-bucketing loop is untouched. Builder UI gains a One book / A collection toggle.
+  `refLabel` now names the end book on a day that straddles books ("Romans 16–1 Corinthians 2")
+  — measured: Pauline epistles = 87 chapters over 13 books guarantees straddling days.
+- **`topic-match.ts` + `GET /api/plans/topics?q=`** (design: PLAN_TOPIC_MATCHING_DESIGN.md):
+  FTS over the 12,941 ingested topic headings, published-gated, ≤3 pointers, no embedding call.
+  **The §6 spot check caught a real defect on its first run**: whole-tsv ranking buried exact
+  headings ("faith" → JESUS, THE CHRIST first, FAITH third; "anxiety" → junk). Re-ranked
+  heading-first; second run: 8/8 phrases surface their exact topic first, all three works
+  represented (e.g. prayer → Nave's PRAYER 711 · Torrey's PRAYER 160 · openbible prayer 9).
+- **Migration 041** (dev + ci): `plans.delivery_channel` DEFAULT 'app' + CHECK,
+  `plans.calendar_minutes` nullable — written/read by nothing yet, per ruling.
+- ADR-048; 9 new tests (groups integrity, multi-book expansion covers 87 Pauline chapters
+  exactly once, whole-bible 1,189 chapters on 182 days, straddle-day spans stay forward).
+
+### NOT DONE / NEXT
+
+- `{kind:'topic'}` scope → plan build (bucketing topical_entries into days) — next slice; the
+  matcher returns pointers for it already.
+- Topic+canonical hybrid; repeat-asker topic memory (owner-deferred).
+- The matcher returns [] until the owner publish flip (status='published' gate inherited);
+  spot checks ran with the gate relaxed to staged and are labeled as such.
+
+## 2026-08-02 (evening) — Study plans core + the topical-index corpus (ADR-045/046)
+
+**Scope, owner-approved live this session:** `STUDY_PLANS_DESIGN.md` §12 steps 1-4 plus the
+topical-index ingest; delivery deferred to a third-party push provider (Composio or similar) —
+NO `.ics` feed, no `feed_salt`. The stated product shape: a small model will emit a `PlanSpec`
+and select among prebaked, embedded topical structures; code owns every date and every verse
+range. Superseded input for the record: a never-committed `docs/BIBLE_STUDIES_TASK.md` draft
+(Desktop worktree, pre-031) proposed `study_plans`/`study_days`/`study_readings` and topical
+plans first — the in-repo STUDY_PLANS_DESIGN + ADR-017 lineage won.
+
+### DONE
+
+- **Migrations 039 + 040, applied to dev AND the ci branch** (`br-purple-frog`). 039:
+  `plans` + `plan_days` (RLS, EXISTS-on-parent for the child), `verse_coverage`,
+  `topical_entries` (ordered, labeled topic→passage rows sections/anchors cannot express).
+  040 (split out after a lock timeout — a concurrent corpus-copy session held a multi-hour
+  ACCESS SHARE on embeddings): `'topical_index'` added to BOTH source_type CHECKs, NOT VALID +
+  VALIDATE so the exclusive window is milliseconds. plans/plan_days classified in
+  USER_TABLE_SPEC, verse_coverage/topical_entries in USER_TABLE_EXCLUDED.
+- **`web/src/lib/plan/`**: `spec.ts` (bounded PlanSpec, schema-parse at the edge) and
+  `expand.ts` (pure; local-date triples over UTC epoch math; refuses a scope thinner than the
+  schedule). 10 tests incl. the leap-boundary red-proof.
+- **`verse_coverage`** rebuilt from the SHIPPED admission predicates
+  (`scripts/rebuild-verse-coverage.ts` + pure core in `scripts/lib/verse-coverage-core.ts`;
+  imports `isMustNotServeAuthor` + `forbiddenProvenanceDomain`, exegetical pool = commentary +
+  father per routing.ts owner decision (c); verse universe from RAW_VERSE_COUNTS, never
+  generate_series over id gaps). Measured on dev: **30,227/31,103 verses covered, 26,498 with
+  >=2 admitted authors** from 84,292 anchors, 0 dropped. `/ask` is UNTOUCHED — wiring
+  `hasPassageCoverage` to it is a retrieval change gated on the accuracy eval; filed as a
+  follow-up, not smuggled in.
+- **Plans store/API/UI**: `plan/store.ts` (runAsUser + explicit user_id belt everywhere;
+  plan_days writes INSERT…SELECT…WHERE EXISTS; coverage refusal BEFORE any row lands),
+  `/api/plans` + `/api/plans/[id]` (apiError envelope; POST-with-kind mutation idiom; no
+  model call and no embedding on this path), `/plans` page + form builder + day list with
+  read toggles, sidebar "Reading plans" entry (CalendarIcon in the house SVG style).
+- **The topical-index corpus (the bones the model will search):**
+  - `src/ingest/topical-refs.ts` — stateful scanner for concordance-compressed refs.
+    **151,311 refs across the four decoded works at 4 failures**, all four being
+    source-edition misprints in the Torrey module, pinned as KNOWN_BAD and skipped (never
+    hand-corrected). Three measured disambiguation rules in the header, each with a SEED
+    red-proof in `test/topical-refs.test.ts` (11 tests): "Jud"=Judges (726 chapter>1
+    citations), bare-numeral-vs-next-book decided by chapter bounds ("By Titus 2 Co 8:16"),
+    dangling cross-book ranges split to point refs.
+  - `src/ingest/ingest-topical-index.ts` (`pnpm ingest:topical`) — parses via register-writer
+    (sections + flat embeddings + sources) then writes the FULL expansion:
+    `topical_entries` + remaining section_anchors (PK is (section_id, verse_id_start); dupes
+    deduped). `--post-only` resumes an interrupted post-pass without re-embedding.
+  - **Ingested to dev, all `status='staged'`** (publish stays the owner's gate):
+    `naves-topical-bible` 4,870 topics / 78,107 entries / 5,357 flat rows;
+    `torreys-topical-textbook` 628 / 38,858 / 1,055; `daily-light` (devotional, 732 AM/PM
+    readings) and `openbible-topics` (6,711 topics, OSIS refs, ZERO verse text — the CC BY
+    covers exactly the curation; attribution in provenance) — tail works finishing as this
+    entry is written; final counts in the terminal log below this entry if they differ.
+    **TCR (Thompson Chain) deliberately NOT ingested** — PD basis is CrossWire's unverified
+    1934-non-renewal claim; archived under `data/raw/topical/` with sha256s, held.
+- **Residue gate honesty fix** (`scripts/check-test-residue.mjs`): owner column now derives
+  from USER_TABLE_SPEC (`ownerColumn` / new `ownerParent` FK-join for plan_days) instead of a
+  hardcoded `user_id` — the first hasUserId:false table that actually existed on dev turned
+  the whole inspect into "could not inspect". Green: 19 tables, waitlist visibly absent.
+- **Migration 031 applied to dev** — `sections.source_url` existed only on prod; adding dev
+  DB URLs to this machine un-skipped `search-sections` suites that need the column. Drift
+  closed rather than re-skipped.
+- ADR-045 + ADR-046 appended; STUDY_PLANS_DESIGN status flipped to PARTIALLY BUILT;
+  PRODUCT_ARCHITECTURE mode-3 status updated; `ingest:topical` + `coverage:rebuild` scripts.
+
+### VERIFIED
+
+- Root: `topical-refs` 11/11, `verse-coverage-core` 6/6, user-data-invariant 6/6.
+- Web: `plan-expand` 10/10; **two-account tenancy EXECUTED against dev** (B cannot read/list/
+  toggle/delete; A positive control passes; RLS-backstop case measured) 6/6; **routes
+  end-to-end EXECUTED against dev** (Romans 201 + 16 arithmetic days; SoS REFUSED off the
+  real coverage table; malformed spec 400; delete cascades) 6/6. Corpus-dependent cases
+  runtime-skip VISIBLY where verse_coverage is empty (unearned-green guard).
+- Browser (dev server, this tree): /plans at 390px and 1280px — renders, no overflow, no new
+  console errors (the eval()/CSP error is dev-mode React on EVERY page, pre-existing),
+  sidebar entry active. **Signed-in browser walk NOT RUN — no auth credentials on this
+  machine** (NEON_AUTH_* absent); the signed-in path is covered by the executed route tests
+  above, which mock ONLY the cookie seam.
+- `npm run audit`: **EXIT 0, ALL GATES GREEN** (final run 2026-08-02 ~19:20, after the ingest
+  tail completed and the session DB URLs were removed from `web/.env.local`, restoring this
+  machine's pre-session loud-skip posture for the dev-state suites). Final corpus counts,
+  exactly as predicted above: openbible-topics 6,711 sections / 71,210 entries, daily-light
+  732 / 7,011 — grand total 12,941 sections / 195,186 topical entries staged. One transient:
+  `unit-ordinal-instrument` red ONCE while the ingest was concurrently writing sections
+  (perturbation suite raced the ingest), 15/15 green in isolation after. The work is committed
+  at `5ced04c` on `feat/study-plans-adr045`, parented on `fix/desk-and-catalog-uniformity`'s
+  HEAD via a temp-index commit so the concurrent session's branch state was never touched.
+
+### NOT DONE / UNVERIFIED / DEBT
+
+- **The dev-state test mismatch is now visible on this machine**: with APP_DATABASE_URL
+  pointed at dev, four pre-existing suites red on DATA state (register-wall taxonomy vs
+  dev catalogs, work-reader fixtures, commentary-entries-provenance, register-end-to-end) —
+  they were previously loud-skipped here and pass in CI against the test branch. Not
+  introduced by this work; left visible rather than re-hidden. Owner call: either point this
+  machine's env at the ci branch or accept the skips.
+- **Publish flip for the four topical works** — owner gate. Until then nothing serves;
+  manifest entries for `ingest/sources.config.json` land with that flip (file was mid-edit
+  by the concurrent corpus-copy session all evening).
+- **verse_coverage on prod** — rebuild after any prod publish flip (`COVERAGE_ALLOW_PROD=1`).
+- **Model intake (PlanSpec emission), planSource on Today, topical plan scopes, delivery
+  worker** — all later slices per ADR-045/046.
+- The retrieval lane over `topical_index` (SERVED list + routing) is deliberately absent
+  until the works publish; adding it now would be a serving surface for staged content.
+
+## 2026-08-03 (owner-reported, screenshot: the selection popover overflowed onto the page)
+
+**Headline: doubling the highlight palette from 5 to 10 colours broke the desktop popover's
+layout. The overflow rendered outside the opaque card, on the page background — which is why
+"Ask" and the commentaries button looked faded/cut off in the report rather than obviously
+broken.**
+
+### THE DEFECT
+
+`selection-popover.tsx`'s desktop card was `w-max max-w-[560px]`, one `flex items-center gap-2`
+row holding swatches + a divider + Note/Bookmark/Ask/commentaries, every child `shrink-0`, no
+`flex-wrap`. Five swatches fit; ten (`highlight-colors.ts`, this session, earlier) plus the action
+buttons runs past 560px. With nothing allowed to shrink or wrap, the overflow did not clip — it
+rendered outside the card's rounded, opaque box, on the plain page background, which reads as
+unstyled/faded text rather than as a broken layout at a glance.
+
+### THE FIX
+
+Swatches and the action row split into two separate `flex flex-wrap` containers (`mt-2` between
+them, matching the spacing convention the Copy row below already used). Splitting means the
+swatch count can grow again without touching the action row's fit at all; `flex-wrap` on each
+means a card placed near a screen edge (narrower than its natural width, per `popover-position.ts`)
+wraps to a second line instead of silently spilling.
+
+### VERIFIED IN A BROWSER, live production code, both viewports
+
+Desktop (1280x800): reproduced the exact reported case — Revelation 21:1, "heaven" selected via a
+real drag gesture. Injected the actual 10-swatch markup into the live card (auth was not
+reachable in this environment to see real swatches otherwise): **0 overflowing elements**, all 10
+render on one row at the card's natural 376px width. Forced the card to a narrow 220px (simulating
+a screen-edge placement): swatches correctly wrap to 2 rows, still **0 overflow**.
+
+Mobile (390x844): the docked-low bar was never broken — it already had `overflow-x-auto` and no
+`max-width` cap, so ten swatches plus the action row simply made an already-scrollable bar longer
+(746px of content in a 366px-wide bar), not clipped. Confirmed with real 10-swatch markup: every
+button, including the last (`Copy`), remains reachable by scroll. Not touched by this fix; noted
+as unchanged rather than re-verified from scratch.
+
+**Environment note, so it is not mistaken for a real finding:** `computer`-tool click-drag
+coordinates were unreliable at 390px partway through this session (drags landed roughly 2x lower
+than the coordinates given, matching `devicePixelRatio`, despite `window.innerWidth/innerHeight`
+and the screenshot tool both reporting 390x844). Worked around by driving `window.getSelection()` +
+`Range` directly, which exercises the same `selectionchange` listener a real selection does. Not
+a product defect; recorded here in case it recurs.
+
+### DONE
+
+- `selection-popover.tsx`: swatches and actions split into separate wrapping rows.
+- `web/test/invariants/selection-popover-layout.test.tsx`, 4 cases, all scoped to the desktop card
+  specifically (`role="toolbar"`) — both the desktop card and the mobile bar mount simultaneously
+  (CSS toggles visibility, not presence), so an unscoped query would have double-counted swatches
+  and could have compared a desktop element's parent against a mobile element's, which would never
+  match regardless of the bug and would have made the test meaningless. Two red-proofed live:
+  recombining the rows failed 3 of 4 cases at once (the isolation test and both wrap tests);
+  dropping `flex-wrap` from only the swatch row failed exactly the one test that names wrapping,
+  and nothing else.
+
+### NOT DONE / UNVERIFIED
+
+- `npm run audit` not run to completion in this entry; app + test typechecks clean, full local
+  vitest suite 382 passed / 0 failed. CI is the gate on the PR.
+- The mobile bar's now-746px scrollable content was confirmed reachable but not re-evaluated for
+  whether a shorter path (e.g. swatches wrapping to 2 rows on mobile too) would be better UX. Not
+  a defect the report named; flagged as a possible future polish, not done here.
 
 ## 2026-08-02 (ADR-047: the number is the handle — owner-ruled, the boundary lifted, shipped)
 

@@ -30,11 +30,24 @@ if (!file) { console.error('usage: node db/apply-migration-concurrent.mjs <path-
 const rawUrl = localEnv('DATABASE_URL') ?? localEnv('DATABASE_URL_UNPOOLED');
 if (!rawUrl) { console.error('owner DATABASE_URL is required'); process.exit(1); }
 const url = rawUrl.replace(/^"|"$/g, '');
-// Dev-only by default; Part C prod run sets MIGRATE_ALLOW_PROD=1 (A6 2026-07-17). A dev branch
-// that is not a DEV_ENDPOINT is reached by declaring MIGRATE_TARGET_ENDPOINT=<exact endpoint id>.
-// Shares the one guard in scripts/lib/target-guard.mjs — see apply-migration.mjs for why the
-// private regex this replaces was fail-open (it substring-matched the whole connection string,
-// password included).
+
+// POOLER REFUSAL (main, bylaw-4 refuter 2026-08-03). Session SETs (lock_timeout,
+// maintenance_work_mem) and the multi-group apply protocol assume ONE server session. Through a
+// Neon pooler in transaction mode every group can land on a different backend: the SETs silently
+// apply to nothing and CIC coordination degrades.
+if (/-pooler\./.test(url)) {
+  console.error('✗ REFUSE: DATABASE_URL is a POOLED host (-pooler). Migrations need the direct endpoint - session SETs and CONCURRENTLY coordination do not survive transaction pooling.');
+  process.exit(1);
+}
+
+// TARGET GUARD (lane-b). Dev-only by default; the Part C prod run sets MIGRATE_ALLOW_PROD=1 (A6
+// 2026-07-17). A dev branch that is not a DEV_ENDPOINT is reached by declaring
+// MIGRATE_TARGET_ENDPOINT=<exact endpoint id>. Shares the one guard in scripts/lib/target-guard.mjs.
+//
+// BOTH sides of this merge are kept deliberately. main hardcoded /ep-tiny-hat|localhost/, which
+// cannot express any other dev branch and is the substring-match shape apply-migration.mjs already
+// records as fail-open (it matched the whole connection string, password included). The shared
+// guard replaces that. main's pooler check above is orthogonal and is not in the shared guard.
 if (process.env.MIGRATE_ALLOW_PROD !== '1') {
   let allowed = false;
   try {
@@ -62,7 +75,14 @@ const cleanName = (s) => s.replace(/[;,\s]+$/, '');
 // Parse SQL only — `--` comment lines can contain the keywords in prose (018's
 // header says "…CREATE INDEX CONCURRENTLY nor DROP…", which yielded a phantom
 // created name "nor" before comments were stripped).
-const sqlOnly = text.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
+const sqlOnly = text
+  .split('\n')
+  .filter((l) => !l.trim().startsWith('--'))
+  // Trailing comments too, but ONLY on quote-free lines: a literal like 'https://x--y' must
+  // never be truncated. Full-line stripping alone let an inline `-- comment` smuggle keywords
+  // past this parser (bylaw-4 refuter, LOW).
+  .map((l) => (l.includes("'") ? l : l.replace(/--.*$/, '')))
+  .join('\n');
 const createdNames = [...sqlOnly.matchAll(/CREATE INDEX CONCURRENTLY(?: IF NOT EXISTS)?\s+(\S+)/gi)].map((m) => cleanName(m[1]));
 const renameSources = [...sqlOnly.matchAll(/ALTER INDEX\s+(\S+)\s+RENAME TO\s+\S+/gi)].map((m) => cleanName(m[1]));
 const renamedTo = [...sqlOnly.matchAll(/ALTER INDEX\s+\S+\s+RENAME TO\s+(\S+)/gi)].map((m) => cleanName(m[1]));

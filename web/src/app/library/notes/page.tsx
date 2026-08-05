@@ -21,7 +21,7 @@ function verseRef(verseId: number) {
 }
 
 export default function MyLibraryPage() {
-  const [state, setState] = useState<'loading' | 'signedout' | 'ready'>('loading');
+  const [state, setState] = useState<'loading' | 'signedout' | 'error' | 'ready'>('loading');
   const [notes, setNotes] = useState<Note[]>([]);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
@@ -37,7 +37,10 @@ export default function MyLibraryPage() {
         setBookmarks(d.bookmarks ?? []);
         setState('ready');
       })
-      .catch(() => setState('signedout'));
+      // 401 is "not signed in". ANYTHING else is a failure, and telling a signed-in
+      // reader they are signed out sends them to re-authenticate over a 500. This is the
+      // exact shape app/library/page.tsx's header calls out and says it is not repeating.
+      .catch((status) => setState(status === 401 ? 'signedout' : 'error'));
   }, []);
 
   return (
@@ -51,7 +54,7 @@ export default function MyLibraryPage() {
       </header>
 
       {state === 'loading' ? (
-        <p className="py-16 text-center text-sm text-stone-400">Loading…</p>
+        <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">Loading…</p>
       ) : state === 'signedout' ? (
         <div className="py-16 text-center">
           <p className="mb-4 text-sm text-stone-500 dark:text-stone-400">
@@ -59,10 +62,23 @@ export default function MyLibraryPage() {
           </p>
           <Link
             href="/auth/sign-in"
-            className="inline-flex min-h-[44px] items-center rounded-full bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 dark:bg-accent-500 dark:hover:bg-accent-400"
+            className="inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 dark:bg-accent-500 dark:hover:bg-accent-400"
           >
             Sign in
           </Link>
+        </div>
+      ) : state === 'error' ? (
+        <div className="py-16 text-center">
+          <p role="alert" className="mb-4 text-sm text-red-800 dark:text-red-200">
+            Your library could not be loaded. Nothing you have saved is affected.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 dark:bg-accent-500 dark:hover:bg-accent-400"
+          >
+            Try again
+          </button>
         </div>
       ) : notes.length === 0 && highlights.length === 0 && bookmarks.length === 0 ? (
         <div className="py-16 text-center">
@@ -77,7 +93,7 @@ export default function MyLibraryPage() {
         <div className="space-y-8">
           {bookmarks.length > 0 && (
             <section>
-              <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+              <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
                 Bookmarks ({bookmarks.length})
               </h2>
               <div className="flex flex-wrap gap-2">
@@ -87,7 +103,7 @@ export default function MyLibraryPage() {
                     <Link
                       key={b.id}
                       href={ref.href}
-                      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full bg-paper px-4 text-sm font-medium text-accent-700 shadow-paper hover:text-accent-800 dark:bg-stone-800/60 dark:text-accent-300 dark:shadow-none"
+                      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-paper px-4 text-sm font-medium text-accent-700 shadow-paper hover:text-accent-800 dark:bg-stone-800/60 dark:text-accent-300 dark:shadow-none"
                     >
                       <span aria-hidden>⚑</span>
                       {ref.label}
@@ -101,7 +117,7 @@ export default function MyLibraryPage() {
 
           {notes.length > 0 && (
             <section>
-              <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+              <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
                 Notes ({notes.length})
               </h2>
               <div className="space-y-2">
@@ -115,7 +131,7 @@ export default function MyLibraryPage() {
                       <Link href={ref.href} className="inline-flex min-h-[32px] items-center font-scripture text-sm font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300">
                         {ref.label}
                       </Link>
-                      <p className="mt-1 whitespace-pre-line text-sm text-stone-700 dark:text-stone-300">{n.body}</p>
+                      <p className="mt-1 whitespace-pre-line text-sm text-stone-700 dark:text-stone-300 break-words">{n.body}</p>
                     </div>
                   );
                 })}
@@ -125,7 +141,7 @@ export default function MyLibraryPage() {
 
           {highlights.length > 0 && (
             <section>
-              <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+              <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
                 Highlights ({highlights.length})
               </h2>
               <div className="flex flex-wrap gap-2">
@@ -135,7 +151,7 @@ export default function MyLibraryPage() {
                     <Link
                       key={h.id}
                       href={ref.href}
-                      className="flex min-h-[44px] items-center gap-2 rounded-full bg-paper px-4 text-sm text-stone-700 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800/60 dark:text-stone-300 dark:shadow-none dark:hover:bg-stone-800"
+                      className="flex min-h-[44px] items-center gap-2 rounded-lg bg-paper px-4 text-sm text-stone-700 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800/60 dark:text-stone-300 dark:shadow-none dark:hover:bg-stone-800"
                     >
                       <span className={`h-3 w-3 rounded-full ${DOT[h.color] ?? 'bg-yellow-400'}`} />
                       {ref.label}

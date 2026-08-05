@@ -44,21 +44,21 @@ export function TodayView() {
   // NB: a plain <div>, not <main> — the app-shell already provides the <main> landmark and the
   // scroll container (with bottom-nav padding); nesting a second <main> is invalid HTML.
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-5 py-12 sm:px-8 sm:py-16">
+ <div className="mx-auto my-6 flex w-full max-w-2xl flex-col rounded-xl border edge bg-paper px-6 py-12 shadow-paper sm:my-10 sm:px-14 sm:py-16 dark:bg-stone-950 dark:shadow-none">
       {state.status === 'loading' && (
-        <p className="mt-24 text-center font-serif text-[15px] italic text-stone-400 dark:text-stone-500">
+        <p className="mt-24 text-center font-serif text-base italic text-stone-400 dark:text-stone-500">
           Opening today&rsquo;s page&hellip;
         </p>
       )}
 
       {state.status === 'error' && (
         <div className="mt-24 text-center">
-          <p className="font-serif text-[15px] leading-relaxed text-stone-600 dark:text-stone-300">
+          <p className="font-serif text-base leading-relaxed text-stone-600 dark:text-stone-300">
             Today&rsquo;s reading could not be opened. The Scriptures are still there to search.
           </p>
           <Link
             href="/read/jhn/1"
-            className="mt-6 inline-flex min-h-[44px] items-center rounded-full bg-paper px-5 text-sm font-semibold text-stone-800 shadow-paper transition-colors hover:text-accent-800 dark:bg-stone-800 dark:text-stone-200"
+            className="mt-6 inline-flex min-h-[44px] items-center rounded-lg bg-paper px-5 text-sm font-semibold text-stone-800 shadow-paper transition-colors ease-gentle hover:text-accent-800 dark:bg-stone-800 dark:text-stone-200"
           >
             Open the Word
           </Link>
@@ -88,19 +88,19 @@ function ReadyCard({ card }: { card: TodayCard }) {
       </header>
 
       {/* The anchor verse (Spurgeon's KJV quotation, verbatim). */}
-      <blockquote className="mt-8 border-l-2 border-accent-700/40 pl-5 font-scripture text-[19px] leading-relaxed text-stone-800 dark:border-accent-500/40 dark:text-stone-100">
+      <blockquote className="mt-8 border-l-2 border-accent-700/40 pl-5 font-scripture text-lg leading-relaxed text-stone-800 dark:border-accent-500/40 dark:text-stone-100">
         {card.lead.verseText}
       </blockquote>
 
       {/* Spurgeon's devotional, verbatim + attributed. */}
-      <div className="mt-8 space-y-4 font-serif text-[17px] leading-relaxed text-stone-700 dark:text-stone-300">
+      <div className="mt-8 space-y-4 font-serif text-lg leading-relaxed text-stone-700 dark:text-stone-300">
         {paragraphs.map((p, i) => (
-          <p key={i} className="whitespace-pre-line">
+          <p key={i} className="whitespace-pre-line break-words">
             {p}
           </p>
         ))}
       </div>
-      <p className="mt-6 font-display text-[15px] italic text-stone-500 dark:text-stone-400">
+      <p className="mt-6 font-display text-base italic text-stone-500 dark:text-stone-400">
         {card.lead.attribution}
       </p>
 
@@ -111,7 +111,7 @@ function ReadyCard({ card }: { card: TodayCard }) {
           <h2 className="font-scripture text-lg font-semibold text-stone-800 dark:text-stone-100">
             How the church has read {card.lead.refDisplay}
           </h2>
-          <p className="mt-1.5 font-serif text-[14px] leading-relaxed text-stone-500 dark:text-stone-400">
+          <p className="mt-1.5 font-serif text-sm leading-relaxed text-stone-500 dark:text-stone-400">
             Weigh them together, then wrestle and pray it through yourself.
           </p>
           <div className="mt-5 space-y-3">
@@ -125,7 +125,7 @@ function ReadyCard({ card }: { card: TodayCard }) {
       <div className="mt-14 flex flex-wrap gap-3">
         <Link
           href={`/read/${card.bookSlug}/${card.chapter}`}
-          className="inline-flex min-h-[48px] items-center rounded-full bg-accent-700 px-6 text-[15px] font-semibold text-stone-50 shadow-float transition-colors hover:bg-accent-800 dark:bg-accent-600 dark:hover:bg-accent-500"
+          className="inline-flex min-h-[48px] items-center rounded-lg bg-accent-700 px-6 text-base font-semibold text-stone-50 shadow-float transition-colors ease-gentle hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
         >
           Read {card.lead.refDisplay} in full
         </Link>

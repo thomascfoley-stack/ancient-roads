@@ -17,9 +17,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      {/* Without this, reaching page content by keyboard means tabbing through the entire
+          library rail (Home, Bible, every catalog, Passage search, Word study, Settings)
+          on every single navigation. First focusable element in the document, visible only
+          when focused. */}
+      <a
+        href="#main"
+        className="skip-link rounded-lg bg-accent-700 px-4 py-2 text-sm font-semibold text-stone-50 shadow-float dark:bg-accent-500"
+      >
+        Skip to content
+      </a>
       <div className="flex h-dvh overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0">
+        <main
+          id="main"
+          tabIndex={-1}
+          className="flex-1 overflow-y-auto bg-stone-50 pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0 dark:bg-stone-900"
+        >
           {children}
         </main>
       </div>

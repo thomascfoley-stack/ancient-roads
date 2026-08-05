@@ -24525,5 +24525,99 @@
         "strip_markup": true
       }
     }
+  },
+  {
+    "id": "naves-topical-bible",
+    "slug": "naves-topical-bible",
+    "title": "Nave's Topical Bible",
+    "author": "Orville J. Nave",
+    "author_died": 1917,
+    "year_written": 1897,
+    "source_type": "topical_index",
+    "tradition": "methodist",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=Nave",
+      "edition": "CrossWire SWORD module Nave 3.0 (zLD/TEI, DistributionLicense=Public Domain); sha256 in data/raw/topical/CHECKSUMS.sha256",
+      "year": 1897,
+      "pd_basis": "pre-1929 (published 1897; author d.1917)",
+      "acquire": {
+        "adapter": "topical-index",
+        "module": "Nave",
+        "decoder": "src/ingest/sword-ld.ts"
+      }
+    }
+  },
+  {
+    "id": "torreys-topical-textbook",
+    "slug": "torreys-topical-textbook",
+    "title": "The New Topical Textbook",
+    "author": "R. A. Torrey",
+    "author_died": 1928,
+    "year_written": 1897,
+    "source_type": "topical_index",
+    "tradition": "evangelical",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=Torrey",
+      "edition": "CrossWire SWORD module Torrey 1.3 (RawLD/ThML, DistributionLicense=Public Domain); sha256 in data/raw/topical/CHECKSUMS.sha256",
+      "year": 1897,
+      "pd_basis": "pre-1929 (published 1897; author d.1928)",
+      "acquire": {
+        "adapter": "topical-index",
+        "module": "Torrey",
+        "decoder": "src/ingest/sword-ld.ts"
+      }
+    }
+  },
+  {
+    "id": "openbible-topics",
+    "slug": "openbible-topics",
+    "title": "OpenBible.info Topical Bible (topic curation)",
+    "author": "OpenBible.info",
+    "year_written": 2026,
+    "source_type": "topical_index",
+    "tradition": "reference",
+    "era": "modern",
+    "license": "CC BY",
+    "tier": 2,
+    "attribution": "Topic-to-passage curation © OpenBible.info, CC BY (openbible.info/topics)",
+    "provenance": {
+      "url": "https://www.openbible.info/topics/",
+      "edition": "topic-scores.txt dated 2026-07-27 — REFERENCES ONLY, zero verse text (the ESV shown on their site never enters the artifact); CC BY asserted in the file's own header; sha256 in data/raw/topical/CHECKSUMS.sha256",
+      "year": 2026,
+      "acquire": {
+        "adapter": "topical-index",
+        "dump": "https://a.openbible.info/data/topic-scores.zip"
+      }
+    }
+  },
+  {
+    "id": "daily-light",
+    "slug": "daily-light",
+    "title": "Daily Light on the Daily Path",
+    "author": "Jonathan Bagster",
+    "author_died": 1890,
+    "year_written": 1875,
+    "source_type": "devotional",
+    "tradition": "nonconformist",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=Daily",
+      "edition": "CrossWire SWORD module Daily 1.0 (RawLD/ThML, DistributionLicense=Public Domain); KJV compilation; sha256 in data/raw/topical/CHECKSUMS.sha256",
+      "year": 1875,
+      "pd_basis": "pre-1929 (published 1875; compiler d.1890)",
+      "acquire": {
+        "adapter": "topical-index",
+        "module": "Daily",
+        "decoder": "src/ingest/sword-ld.ts"
+      }
+    }
   }
 ]

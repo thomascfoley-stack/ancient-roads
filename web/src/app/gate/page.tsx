@@ -16,7 +16,7 @@ export default async function GatePage({
           Ancient Paths
         </h1>
         <p className="mt-2 font-serif text-sm italic text-stone-600 dark:text-stone-400">
-          A private preview — enter the password to walk in.
+          A private preview. Enter the password to walk in.
         </p>
         <form method="POST" action="/api/gate" className="mt-6">
           <input type="hidden" name="next" value={dest} />
@@ -25,16 +25,17 @@ export default async function GatePage({
             name="password"
             autoFocus
             placeholder="Password"
-            className="min-h-[44px] w-full rounded-lg bg-stone-100 px-3 text-base text-stone-900 outline-none placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
+            aria-label="Site password"
+            className="min-h-[44px] w-full rounded-lg bg-stone-100 px-3 text-base text-stone-900 outline-none placeholder:text-stone-500 dark:placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
           />
           {error && (
             <p className="mt-2 text-xs text-accent-700 dark:text-accent-300">
-              That wasn&rsquo;t it — try again.
+              That wasn&rsquo;t it. Try again.
             </p>
           )}
           <button
             type="submit"
-            className="mt-4 min-h-[44px] w-full rounded-full bg-accent-700 px-4 text-sm font-semibold text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-800 active:bg-accent-900 dark:bg-accent-500 dark:hover:bg-accent-400"
+            className="mt-4 min-h-[44px] w-full rounded-lg bg-accent-700 px-4 text-sm font-semibold text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-800 active:bg-accent-900 dark:bg-accent-500 dark:hover:bg-accent-400"
           >
             Enter
           </button>
