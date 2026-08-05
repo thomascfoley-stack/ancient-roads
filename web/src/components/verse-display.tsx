@@ -100,7 +100,7 @@ export function VerseDisplay({
   }
 
   return (
-    <div ref={rootRef} className="mx-auto max-w-2xl px-5 py-8 sm:px-6">
+    <div ref={rootRef} className="mx-auto my-6 max-w-2xl rounded-xl border border-stone-200/60 bg-paper px-6 py-12 shadow-paper sm:my-10 sm:px-14 sm:py-16 dark:border-stone-800/80 dark:bg-stone-950 dark:shadow-none">
       <h1 className="mb-8 font-scripture text-3xl font-medium text-stone-800 dark:text-stone-100">
         {bookName} {data.chapter}
       </h1>

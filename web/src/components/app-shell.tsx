@@ -32,7 +32,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main
           id="main"
           tabIndex={-1}
-          className="flex-1 overflow-y-auto pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0"
+          className="flex-1 overflow-y-auto bg-stone-50 pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0 dark:bg-stone-900"
         >
           {children}
         </main>
