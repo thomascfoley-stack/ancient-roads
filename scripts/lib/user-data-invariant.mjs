@@ -50,6 +50,34 @@ export const USER_TABLE_EXCLUDED = {
     'Migration ledger — filenames, timestamps and the applying role (migration 032). No user data, ' +
     'and app_runtime holds SELECT only. Added by the 2026-08-02 audit (M18); this list is enforced, ' +
     'so the table could not be introduced without classifying it, which is the invariant working.',
+
+  // ── The four Better Auth tables (migration 104, the SEC-1 cutover) ────────────────────────────
+  // EXCLUDED from the G1 digest, and the distinction is worth stating precisely: these hold data
+  // ABOUT users, but they are not user CONTENT. G1 exists to prove that a cutover did not silently
+  // rewrite, reassign or erase what people wrote (the three seeded corruptions in this file's
+  // header). Auth rows are churn by design -- every sign-in writes a session, every sign-out
+  // deletes one -- so a digest over them would go red on normal use and be muted within a week,
+  // taking the tables that matter with it.
+  //
+  // They are also the wrong shape for it: the digest is keyed on `user_id`, and these use Better
+  // Auth's quoted camelCase `"userId"`. A spec entry would silently measure nothing.
+  //
+  // What DOES check them is `web/test/invariants/better-auth-schema.test.ts`: the columns are
+  // derived from Better Auth's own `getAuthTables()` and compared against the migration, and no
+  // module outside `web/src/lib/auth/` may reference the tables at all.
+  auth_users:
+    'Better Auth identity rows (migration 104). Auth infrastructure, not user content; see the ' +
+    'note above. Checked by better-auth-schema.test.ts, not by the G1 digest.',
+  auth_sessions:
+    'Better Auth session rows (migration 104). Written on every sign-in and deleted on sign-out, ' +
+    'so a content digest over them is meaningless by construction.',
+  auth_accounts:
+    'Better Auth credential rows (migration 104) -- holds the bcrypt password hashes. Deliberately ' +
+    'outside the digest: hashing them into a repo-tracked checkpoint is exactly what this file ' +
+    'refuses to do with account ids, for the same reason.',
+  auth_verifications:
+    'Better Auth single-use verification and reset tokens (migration 104). Short-lived by design ' +
+    'and never user-readable content.',
 };
 
 export const USER_TABLE_SPEC = {
