@@ -65,7 +65,7 @@ export function WordPanel({
           <div className="flex items-start justify-between">
             <div>
               <p
-                dir={rtl ? 'rtl' : 'ltr'}
+                dir={rtl ? 'rtl' : 'ltr'} lang={rtl ? 'he' : 'el'}
                 className="font-scripture text-3xl leading-tight text-stone-900 dark:text-stone-100"
               >
                 {word.w}
@@ -86,7 +86,7 @@ export function WordPanel({
                 className="rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
                 aria-label="Close"
               >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
                   <path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </button>
@@ -109,7 +109,7 @@ export function WordPanel({
             <>
               {entry.lemma && (
                 <Row label="Lemma">
-                  <span dir={rtl ? 'rtl' : 'ltr'} className="font-scripture text-lg text-stone-800 dark:text-stone-100">
+                  <span dir={rtl ? 'rtl' : 'ltr'} lang={rtl ? 'he' : 'el'} className="font-scripture text-lg text-stone-800 dark:text-stone-100">
                     {entry.lemma}
                   </span>
                 </Row>

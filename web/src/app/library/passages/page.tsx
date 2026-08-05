@@ -64,7 +64,7 @@ function EntryText({ text }: { text: string }) {
   const shown = isLong && !expanded ? text.slice(0, 700).replace(/\s+\S*$/, '') + '…' : text;
   return (
     <>
-      <span className="whitespace-pre-line">{shown}</span>
+      <span className="whitespace-pre-line break-words">{shown}</span>
       {isLong && (
         <button
           onClick={() => setExpanded((v) => !v)}
@@ -123,7 +123,7 @@ function SearchResultCard({
         {passageLabel} · {r.source_title}
       </p>
       {view === 'full' && full ? (
-        <p className="whitespace-pre-line font-scripture text-base leading-relaxed text-stone-700 dark:text-stone-300">
+        <p className="whitespace-pre-line font-scripture text-base leading-relaxed text-stone-700 dark:text-stone-300 break-words">
           {full}
         </p>
       ) : (
@@ -409,7 +409,7 @@ export default function PassageSearchPage() {
 
       {/* Search input */}
       <div className="relative mb-4">
-        <svg className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
         <input
@@ -417,6 +417,7 @@ export default function PassageSearchPage() {
           value={searchQuery}
           onChange={(e) => handleSearchInput(e.target.value)}
           placeholder="Search commentaries…"
+          aria-label="Search commentaries"
           className="w-full rounded-lg bg-paper py-3 pl-10 pr-12 text-base text-stone-800 shadow-paper outline-none transition-shadow duration-200 ease-gentle placeholder:text-stone-400 focus:shadow-float sm:py-2.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
         />
         {searchQuery && (
@@ -425,7 +426,7 @@ export default function PassageSearchPage() {
             className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-stone-400 hover:text-stone-600 active:bg-stone-200/60 dark:hover:text-stone-300 dark:active:bg-stone-700/60"
             aria-label="Clear search"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>

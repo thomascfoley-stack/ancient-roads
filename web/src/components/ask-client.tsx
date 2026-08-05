@@ -165,6 +165,7 @@ export function AskClient() {
             setTimeout(() => el.scrollIntoView({ block: 'end', behavior: 'smooth' }), 300);
           }}
           placeholder="Ask a question…"
+          aria-label="Ask a question"
           rows={2}
           maxLength={500}
           className="focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-base leading-relaxed text-stone-900 outline-none placeholder:text-stone-400 dark:text-stone-100 dark:placeholder:text-stone-500"

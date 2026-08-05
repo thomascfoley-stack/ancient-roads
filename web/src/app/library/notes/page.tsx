@@ -21,7 +21,7 @@ function verseRef(verseId: number) {
 }
 
 export default function MyLibraryPage() {
-  const [state, setState] = useState<'loading' | 'signedout' | 'ready'>('loading');
+  const [state, setState] = useState<'loading' | 'signedout' | 'error' | 'ready'>('loading');
   const [notes, setNotes] = useState<Note[]>([]);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
@@ -37,7 +37,10 @@ export default function MyLibraryPage() {
         setBookmarks(d.bookmarks ?? []);
         setState('ready');
       })
-      .catch(() => setState('signedout'));
+      // 401 is "not signed in". ANYTHING else is a failure, and telling a signed-in
+      // reader they are signed out sends them to re-authenticate over a 500. This is the
+      // exact shape app/library/page.tsx's header calls out and says it is not repeating.
+      .catch((status) => setState(status === 401 ? 'signedout' : 'error'));
   }, []);
 
   return (
@@ -63,6 +66,19 @@ export default function MyLibraryPage() {
           >
             Sign in
           </Link>
+        </div>
+      ) : state === 'error' ? (
+        <div className="py-16 text-center">
+          <p role="alert" className="mb-4 text-sm text-red-800 dark:text-red-200">
+            Your library could not be loaded. Nothing you have saved is affected.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 dark:bg-accent-500 dark:hover:bg-accent-400"
+          >
+            Try again
+          </button>
         </div>
       ) : notes.length === 0 && highlights.length === 0 && bookmarks.length === 0 ? (
         <div className="py-16 text-center">
@@ -115,7 +131,7 @@ export default function MyLibraryPage() {
                       <Link href={ref.href} className="inline-flex min-h-[32px] items-center font-scripture text-sm font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300">
                         {ref.label}
                       </Link>
-                      <p className="mt-1 whitespace-pre-line text-sm text-stone-700 dark:text-stone-300">{n.body}</p>
+                      <p className="mt-1 whitespace-pre-line text-sm text-stone-700 dark:text-stone-300 break-words">{n.body}</p>
                     </div>
                   );
                 })}

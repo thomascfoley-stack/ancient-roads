@@ -34,7 +34,7 @@ export function Interlinear({
               {v}
             </span>
             <div
-              dir={rtl ? 'rtl' : 'ltr'}
+              dir={rtl ? 'rtl' : 'ltr'} lang={rtl ? 'he' : 'el'}
               className="flex flex-1 flex-wrap gap-x-1 gap-y-3"
             >
               {data.verses[String(v)]!.map((word, i) => (

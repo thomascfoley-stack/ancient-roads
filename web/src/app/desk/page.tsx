@@ -24,6 +24,7 @@ import { DeskPane } from '@/components/desk-pane';
 import { BOOK_BY_BOOK_SLUG, BOOKS } from '@/lib/bible';
 import { resolveBookSlug } from '@bible/ref-parse';
 import { MAX_PANES, decodeDesk, deskHref, encodePane, replacePane, withPane, withoutPane, type Pane } from '@/lib/desk';
+import { count } from '@/lib/plural';
 
 /** The picker needs a book to highlight; John is the app's standing default entry point. The
  *  alias fallback is the wiring invariant (book-slug-alias-wiring): EVERY BOOK_BY_BOOK_SLUG.get
@@ -102,6 +103,11 @@ function DeskInner() {
     // without the page scrolling. On mobile the flex direction flips to column and `lg:h-dvh` is
     // dropped, so the page scrolls normally through stacked panes.
     <div className="flex w-full flex-col gap-3 px-3 py-3 lg:h-dvh lg:flex-row lg:overflow-hidden">
+      {/* The POPULATED desk had no h1 at all: the only heading on this route lived in the
+          empty state above, so the working screen started at the panes' own h3 and a
+          screen reader's heading list was empty. Visually hidden because the panes carry
+          their own titles and a banner heading would just take reading space from them. */}
+      <h1 className="sr-only">Your desk, {count(panes.length, 'pane')} open</h1>
       {panes.map((pane, i) => (
         <div
           key={`${pane.kind}:${pane.kind === 'work' ? pane.slug : `${pane.book}/${pane.chapter}`}`}
