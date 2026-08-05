@@ -54,8 +54,15 @@ export default function MarketingHome() {
         />
         {/* Scrims: a whisper at the top for the bar, weight at the bottom for the type.
             The midsection (path + chapel) stays untouched. */}
+        {/* Scrim weights are tuned to THIS photograph. The previous one was a warm
+            golden-hour frame with a bright sky and a luminous path, and needed suppressing:
+            /95 at the base rising through /55. This one is overcast and already low-key, so
+            the same weights turned the stones to mud and threw away the texture the picture
+            is carrying. Base eased to /88 and the midpoint to /45, which is the least that
+            still holds the type. The top bar keeps its /60: the sky here is a bright flat
+            grey and the wordmark sits directly on it. */}
         <div aria-hidden className="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-stone-950/60 to-transparent" />
-        <div aria-hidden className="absolute inset-x-0 bottom-0 h-[78%] bg-linear-to-t from-stone-950/95 via-stone-950/55 to-transparent" />
+        <div aria-hidden className="absolute inset-x-0 bottom-0 h-[78%] bg-linear-to-t from-stone-950/88 via-stone-950/45 to-transparent" />
 
         {/* Top bar */}
         <header className="relative z-10 flex w-full items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
