@@ -21,12 +21,17 @@
 // cutover lands and those ids leave the ignore list; then, and only then, does this flip green.
 
 /**
- * The committed ceiling on multi-user upload. FALSE until SEC-1 closes.
+ * The committed ceiling on multi-user upload.
  *
- * Read by `web/test/invariants/sec1-upload-gate.test.ts` (A7), which fails if this is true while an
- * in-path account-takeover advisory is still ignored.
+ * TRUE as of 2026-08-05: SEC-1 is closed. The Better Auth cutover is live on production
+ * (docs/SECURITY.md), @neondatabase/auth is gone, and the seven better-auth advisories including
+ * GHSA-g38m have left `pnpm.auditConfig.ignoreGhsas`. UPLOADER_DESIGN §4's condition 1 is met.
+ *
+ * This is still gated: `web/test/invariants/sec1-upload-gate.test.ts` (A7) turns RED the moment any
+ * advisory SECURITY.md adjudicates as in-path reappears in the ignore list while this is true. So
+ * the flag cannot survive a regression in the thing that justified it.
  */
-export const MULTI_USER_UPLOADS = false;
+export const MULTI_USER_UPLOADS = true;
 
 /** The env switch beneath the ceiling. Both must be set for multi-user upload. */
 export const MULTI_USER_ENV = 'USER_CORPUS_MULTI_USER';
@@ -69,6 +74,8 @@ export function uploadDenial(userId: string, env: Env = process.env): string | n
   if (multiUserUploadsEnabled(env)) return null;
   if (env.NODE_ENV !== 'production') return null;
 
+  // The §4 owner-only beta. Still reachable by UNSETTING USER_CORPUS_MULTI_USER, which is why this
+  // path survives the flag going true: it is the way back to a single account without a deploy.
   const owners = ownerIds(env);
   if (owners.length === 0) return 'Uploads are not enabled on this deployment.';
   return owners.includes(userId) ? null : 'Uploads are not enabled for this account.';
