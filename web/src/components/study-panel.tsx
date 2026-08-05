@@ -186,7 +186,7 @@ function HighlightRow({ annotation }: { annotation: AnnotationControls }) {
         {annotation.color && (
           <button
             onClick={annotation.onClearHighlight}
-            className="ml-1 min-h-[44px] px-2 text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+            className="ml-1 min-h-[44px] px-2 text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-500"
           >
             clear
           </button>
@@ -217,7 +217,7 @@ function CommentariesTab({ entries }: { entries: CommentaryEntry[] }) {
         return (
           <div key={i}>
             {showEra && (
-              <p className="pt-4 pb-1.5 text-micro font-bold uppercase tracking-widest text-stone-300 dark:text-stone-600">
+              <p className="pt-4 pb-1.5 text-micro font-bold uppercase tracking-widest text-stone-300 dark:text-stone-400">
                 {era}
               </p>
             )}
@@ -297,7 +297,7 @@ function WordRow({ word, lang, defaultOpen = false }: { word: OWord; lang: 'hebr
           {word.w}
         </span>
         <span className="text-xs text-stone-500 dark:text-stone-400">{word.tr}</span>
-        {word.g && <span className="flex-1 truncate text-sm text-stone-600 dark:text-stone-300">{word.g}</span>}
+        {word.g && <span className="flex-1 truncate text-sm text-stone-600 dark:text-stone-500">{word.g}</span>}
         {word.s && (
           <span className="rounded-full bg-stone-100 px-2 py-0.5 text-micro font-semibold text-stone-500 dark:bg-stone-800 dark:text-stone-400">
             {word.s}
@@ -313,7 +313,7 @@ function WordRow({ word, lang, defaultOpen = false }: { word: OWord; lang: 'hebr
             <p className="text-stone-400">Looking up…</p>
           ) : entry ? (
             <>
-              {entry.def && <p className="text-stone-700 dark:text-stone-300">{entry.def}</p>}
+              {entry.def && <p className="text-stone-700 dark:text-stone-500">{entry.def}</p>}
               {entry.kjv && (
                 <p className="text-stone-500 dark:text-stone-400">
                   <span className="font-semibold">KJV: </span>

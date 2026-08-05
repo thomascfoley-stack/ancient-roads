@@ -257,3 +257,23 @@ html {
 .font-scripture {
   font-family: var(--font-serif);
 }
+
+/* REDUCED MOTION. There was no such block anywhere in the app, while `animate-pulse` runs on
+ * the /ask source previews for the whole compose-and-verify loop, which routinely exceeds five
+ * seconds and can repeat across retry attempts. That is auto-updating motion past the WCAG
+ * 2.2.2 threshold with no way to stop it.
+ *
+ * Motion is cut to a single frame rather than removed: the transitions still fire, so anything
+ * that relied on a transitionend still resolves, and state changes stay instant instead of
+ * jumping. `scroll-behavior: auto` is included because a reduced-motion reader should not be
+ * smooth-scrolled either. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

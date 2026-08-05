@@ -136,9 +136,17 @@ export function SidebarNavContent({
               icon={<LogOutIcon />}
               label="Sign out"
               row={row}
+              // A failed sign-out used to navigate to '/' anyway, leaving the reader on the
+              // marketing page still authenticated while believing they had signed out. On a
+              // shared device that is a false security signal, which is worse than an error.
               onClick={async () => {
-                await fetch('/api/auth/sign-out', { method: 'POST' });
-                window.location.href = '/';
+                try {
+                  const res = await fetch('/api/auth/sign-out', { method: 'POST' });
+                  if (!res.ok) throw new Error(String(res.status));
+                  window.location.href = '/';
+                } catch {
+                  alert('Sign out failed. You are still signed in. Please try again.');
+                }
               }}
             />
           ) : (
