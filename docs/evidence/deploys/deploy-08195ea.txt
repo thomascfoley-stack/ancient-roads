@@ -1,0 +1,6 @@
+deployed_at_utc: 2026-08-05T06:46:56Z
+sha:             08195ea4311250d42503ee3fed5ced6079b2de42
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+url:             https://web-lenb2a1sn-home-network-hardening.vercel.app
