@@ -286,6 +286,20 @@ export function SidebarNavContent({
             row={row}
             onNavigate={onNavigate}
           />
+          {/* MY WORKS WAS UNREACHABLE FROM HERE, which made the whole feature invisible to anyone
+              who navigates by the sidebar -- which is everyone. It was linked from the /library
+              index page and nowhere else, so it existed, worked, and could not be found.
+              This is the same failure the comment 30 lines up describes ("orphan a working
+              surface"), repeated on the newest shelf. */}
+          <SidebarLink
+            href="/library/uploads"
+            icon={<BookStackIcon />}
+            label="My Works"
+            tier="shelf"
+            active={pathname.startsWith('/library/uploads')}
+            row={row}
+            onNavigate={onNavigate}
+          />
         </div>
       </nav>
 
