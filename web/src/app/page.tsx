@@ -48,6 +48,11 @@ export default function MarketingHome() {
           fill
           priority
           sizes="100vw"
+          // 90, not the default 75. This photograph IS the landing page, and at 75 the
+          // optimizer emitted 198 KB from a 966 KB source, throwing away most of the detail
+          // the file actually holds on top of an already-upscaled resolution. Allowed via
+          // next.config.ts `images.qualities`; every other image stays at 75.
+          quality={90}
           // Keep the chapel + path in frame when portrait crops the sides (chapel sits
           // right of center, upper third).
           className="object-cover object-[62%_30%]"
