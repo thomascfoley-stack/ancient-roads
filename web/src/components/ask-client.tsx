@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { formatVerseId } from '@bible/verse-id';
 import { verseHref } from '@/lib/verse-link';
 import { count } from '@/lib/plural';
+import { useSignedIn } from '@/lib/auth/use-signed-in';
 
 // --- shapes mirrored from the server (client only renders; server verifier is truth) ---
 interface Attribution { author: string; work: string; tradition: string; year?: number }
@@ -44,6 +45,8 @@ interface Turn {
   traditions: number;
   result?: TeacherResult;
   error?: string;
+  /** A 401, which is a "you need an account" state and not a fault. Rendered with a way out. */
+  needsAuth?: boolean;
 }
 
 const EXAMPLES = [
@@ -60,6 +63,12 @@ export function AskClient() {
   const [busy, setBusy] = useState(false);
   const nextId = useRef(1);
   const bottomRef = useRef<HTMLDivElement>(null);
+  // Answering requires an account, and this page did not say so ANYWHERE until after a question
+  // had been typed and sent. A signed-out reader got the full invitation — heading, three
+  // clickable example questions, a live composer — did the work, pressed Ask, and only then met
+  // a 401. `useSignedIn` is already how the reader and sidebar make this decision; /library/notes
+  // already declares it up front. This surface was the one that let you find out the hard way.
+  const signedIn = useSignedIn();
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [turns]);
 
@@ -88,7 +97,15 @@ export function AskClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: q }),
       });
-      if (res.status === 401) { patch(id, { stage: 'error', error: 'Please sign in to explore the paths.' }); return; }
+      // Hand the question BACK to the composer. A reader who types a paragraph and presses Ask
+      // used to lose it here: setQuestion('') had already run, so the only record of what they
+      // asked was the grey bubble above an error they could not act on. `needsAuth` also lets
+      // the turn render a real sign-in link rather than an instruction to go find one.
+      if (res.status === 401) {
+        patch(id, { stage: 'error', error: 'Signing in lets Ancient Paths answer.', needsAuth: true });
+        setQuestion(q);
+        return;
+      }
       if (!res.ok || !res.body) { patch(id, { stage: 'error', error: 'Something went wrong. Please try again.' }); return; }
 
       const reader = res.body.getReader();
@@ -131,6 +148,14 @@ export function AskClient() {
           Hear what commentators across the traditions have said, quoted and attributed, never interpreted.
           <span className="mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500">Currently answering from the Gospels.</span>
         </p>
+        {!signedIn && (
+          <p className="mt-4 text-sm text-stone-600 dark:text-stone-400">
+            <Link href="/auth/sign-in" className="font-semibold text-accent-700 underline underline-offset-4 hover:text-accent-800 dark:text-accent-300 dark:hover:text-accent-200">
+              Sign in
+            </Link>{' '}
+            to ask a question. Reading the Scriptures and the library needs no account.
+          </p>
+        )}
       </header>
 
       {/* EMPTY STATE IS COMPOSED, NOT TOP-ALIGNED. This was `flex-1` with the examples pinned
@@ -215,7 +240,22 @@ function TurnView({ turn }: { turn: Turn }) {
           {turn.question}
         </div>
       </div>
-      {turn.stage === 'error' ? (
+      {turn.stage === 'error' && turn.needsAuth ? (
+        // Not an error colour. Needing an account is a normal state, not a fault, and painting
+        // it red told a reader something had gone wrong with their question. It also used to be
+        // a bare sentence with no control on it: "Please sign in" and nothing to sign in WITH,
+        // so the way out was to go hunting in the rail.
+        <div role="status" className="rounded-xl border edge bg-paper px-4 py-3 dark:bg-stone-800/60">
+          <p className="text-sm text-stone-700 dark:text-stone-300">{turn.error}</p>
+          <Link
+            href="/auth/sign-in"
+            className="mt-3 inline-flex min-h-[40px] items-center rounded-lg bg-accent-700 px-4 text-sm font-semibold text-stone-50 transition-colors ease-gentle hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
+          >
+            Sign in
+          </Link>
+          <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">Your question is still in the box below.</p>
+        </div>
+      ) : turn.stage === 'error' ? (
         <div role="alert" className="rounded-xl border border-red-300/60 bg-red-50/60 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
           {turn.error}
         </div>
