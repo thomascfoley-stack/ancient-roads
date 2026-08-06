@@ -24,6 +24,13 @@ interface Row {
   claimed_at: string | null;
   created_at: string;
   updated_at: string;
+  // Migration 105 — suggested readings.
+  search_categories: string[] | null;
+  readings_status: 'pending' | 'running' | 'ready' | 'failed' | null;
+  readings_progress: number | null;
+  readings_step: string | null;
+  readings_error: string | null;
+  readings_done_at: string | null;
 }
 
 function toDocument(r: Row): UserDocument {
@@ -46,6 +53,12 @@ function toDocument(r: Row): UserDocument {
     claimedAt: r.claimed_at,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
+    searchCategories: r.search_categories ?? null,
+    readingsStatus: r.readings_status ?? null,
+    readingsProgress: r.readings_progress ?? 0,
+    readingsStep: r.readings_step ?? null,
+    readingsError: r.readings_error ?? null,
+    readingsDoneAt: r.readings_done_at ?? null,
   };
 }
 

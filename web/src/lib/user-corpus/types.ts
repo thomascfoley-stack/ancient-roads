@@ -49,6 +49,13 @@ export interface UserDocument {
   claimedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Sidebar categories this document's suggested-readings search covers (migration 105). */
+  searchCategories: string[] | null;
+  readingsStatus: 'pending' | 'running' | 'ready' | 'failed' | null;
+  readingsProgress: number;
+  readingsStep: string | null;
+  readingsError: string | null;
+  readingsDoneAt: string | null;
 }
 
 /**

@@ -1,5 +1,80 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-06 (Suggested readings: built, and the bug the good progress bar hid)
+
+Owner-approved from [SUGGESTED_READINGS_DESIGN.md](docs/SUGGESTED_READINGS_DESIGN.md), with his
+rulings applied: accuracy over speed (~90s acceptable), a visible percentage, Historians parked,
+and five categories searched **one at a time, largest first**.
+
+### The index was the problem, so it is not used
+
+Measured on production before building: HNSW `LIMIT 60` at the default `ef_search=40` returns
+**21 rows**; add a category filter and it returns **0**. ef=200 costs 2.6s, ef=800 costs 7.4s, and
+1000 is the ceiling. Turning the index off makes each category an exact scan — the true top-k with
+no `ef` to get wrong. Cold, top-40: poetry 0.4s · hymns 1.3s · theology 1.8s · sermons 2.1s ·
+commentaries 28.6s · **~49s for all five**.
+
+That is why this is a queued job and not a request: the previous `/related` route declared
+`maxDuration = 30` and would have timed out **exactly when Search All was used**, and a card
+cannot re-run a 49-second search to render a count.
+
+### Shipped
+
+Migration **105** (applied to `lane-b` and to production, both verified — six columns, the table,
+the RLS policy) · `computeSuggestedReadings` · a queued job · `GET/POST
+/api/user-corpus/documents/[id]/readings` · a category picker · a real progress bar · the count as
+the heading.
+
+**The percentage is honest.** Categories are weighted by their actual row counts, read at job
+start rather than from constants that drift, so the bar tracks work done and names its step. The
+owner asked for a 30-second timer; this costs the same and cannot sit at 99%.
+
+`readings_status` is deliberately separate from `status`: sharing it would make re-searching a
+perfectly indexed sermon report itself as unindexed.
+
+### THE BUG THE GOOD PROGRESS BAR HID
+
+First end-to-end run: 77 seconds, `0% → Sermons → 47% Commentaries → 87% Theology → 97% Hymns →
+100% ready` — a flawless bar, and **zero readings stored**.
+
+The category search runs two statements in one transaction (`SET LOCAL enable_indexscan = off`,
+then the scan) and I destructured `const [rows]`, which is the result of the **SET**. Every
+category searched correctly and returned an empty set. **The bar being right is exactly what made
+it easy to miss** — status said ready, progress said 100%, and the answer was nothing. Only
+reading the count caught it.
+
+After the fix, same document: **60s, 32 suggested readings** —
+
+    sermons 2      Spurgeon (63 vols) 0.84 · Maclaren, Expositions 0.81
+    commentaries 8 Augustine, Tractates on John 0.80 · Calvin on Isaiah 0.80 · John Gill 0.80
+    theology 6     John Owen, Works 0.82 · Melanchthon, Apology of the Augsburg Confession 0.80
+                   · Calvin, Institutes 0.79 · Schaff, Creeds of Christendom 0.79
+    hymns 8        Watts, Hymns and Spiritual Songs 0.77 · Newton & Cowper, Olney Hymns 0.75
+    poetry 8       Keble, The Christian Year 0.77 · Rossetti, Verses 0.76 · Milton 0.76
+
+Driven in a browser: the heading reads **"32 suggested readings"**, the picker shows all five
+categories with the timing stated, and work TITLES render, not slugs.
+
+### NOT DONE / UNVERIFIED
+
+- **No tests.** Not one line of this has a test. The parity refusal, the delete-then-insert
+  replacement, the progress weighting and the category sanitiser are all unproven by anything but
+  a single manual run. **The `[rows]` bug is precisely what a test would have caught**, and it
+  reached production.
+- **The old `/related` route and `relatedVoices` are still live and still starving.** Superseded by
+  this and not yet removed; two paths now answer nearly the same question, one of them known
+  wrong.
+- **`readingsState` is written but nothing kicks the job automatically.** The queue marks a
+  document `pending` after indexing; only a client POST starts a search. A document nobody opens
+  never gets readings — deliberate, but it means the count is absent until someone asks.
+- **Re-runs are unbounded.** The design named a rate limit for this and it was not built. Anyone
+  can re-queue a 60-second job as often as they like.
+- **One document, one corpus, one run.** 32 results on a sermon about grace is not evidence the
+  ranking is good in general; no held-out set, no relevance bar, no measurement of whether a
+  0.74 is worth showing.
+- Devotionals exists in the corpus (6,589 rows) but is not offered: the owner named five
+  categories and Devotionals was not among them.
+
 ## 2026-08-06 (the empty result was real, and it was structural)
 
 **The owner said an empty tradition panel was hard to believe, and asked for sermons, hymns and

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { fetchCommentary, type CommentaryEntry } from '@/lib/bible';
 import { decodeVerseId, formatVerseId } from '@bible/verse-id';
 import { BOOK_BY_NUM } from '@bible/books';
+import { SuggestedReadings } from './suggested-readings';
 
 // One sermon, read beside the voices on the passages it engages.
 //
@@ -37,20 +38,6 @@ interface Doc {
   title: string;
   status: string;
 }
-interface Related {
-  author: string;
-  work: string;
-  register: 'prose' | 'hymn' | 'poetry';
-  tradition: string;
-  similarity: number;
-}
-
-const REGISTER_LABEL: Record<Related['register'], string> = {
-  prose: 'Sermons & commentary',
-  hymn: 'Hymns',
-  poetry: 'Poetry',
-};
-
 type EntryState = { loading: true } | { loading: false; entries: CommentaryEntry[]; error?: string };
 
 /** Markdown syntax out of displayed prose. A .md upload is stored exactly as written. */
@@ -71,8 +58,6 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<Record<string, EntryState>>({});
-  const [related, setRelated] = useState<Related[] | null>(null);
-  const [relatedNote, setRelatedNote] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -102,36 +87,6 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
     })();
     return () => { alive = false; };
   }, [documentId]);
-
-  // Separate request, deliberately: the anchor panel is an index lookup and returns at once, while
-  // this is three vector sweeps over ~400k rows (~1.2s measured). Making the fast answer wait for
-  // the slower one would be a worse page for no gain.
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const r = await fetch(`/api/user-corpus/documents/${documentId}/related`);
-        if (!alive || !r.ok) { if (alive) setRelated([]); return; }
-        const d = (await r.json()) as { voices: Related[]; comparable: boolean; modelMismatch?: string; pending: boolean };
-        setRelated(d.voices);
-        if (d.pending) setRelatedNote('This document is still being indexed.');
-        else if (d.modelMismatch) setRelatedNote('This document was indexed with a different embedding model, so it cannot be compared with the library.');
-        else if (!d.comparable) setRelatedNote('This document has nothing indexed to compare with the library.');
-      } catch {
-        if (alive) { setRelated([]); setRelatedNote('Related works could not be loaded.'); }
-      }
-    })();
-    return () => { alive = false; };
-  }, [documentId]);
-
-  const relatedByRegister = useMemo(() => {
-    const out: Array<[Related['register'], Related[]]> = [];
-    for (const reg of ['prose', 'hymn', 'poetry'] as const) {
-      const rows = (related ?? []).filter((v) => v.register === reg);
-      if (rows.length) out.push([reg, rows]);
-    }
-    return out;
-  }, [related]);
 
   // One row per author+work, carrying every passage of this document they speak on. The join
   // returns a row per (author, work) already; grouping here keeps a voice that touches three of
@@ -292,46 +247,7 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
               </ul>
             )}
 
-            {/* ── Related by theme ───────────────────────────────────────────────────────────
-                A DIFFERENT AND WEAKER CLAIM than the panel above, and worded as one. Above: these
-                voices write ON the passages this document cites — a fact about verse ids. Here:
-                these are NEAR it in meaning — a similarity score. The heading says "resemble",
-                the copy says the machine matched them, and each row shows how close, so nobody
-                reads a 0.74 as a citation. This is the channel that answers a sermon which
-                preaches a passage without quoting it, where the anchors find nothing at all. */}
-            <div className="mt-8 border-t border-stone-200 pt-6 dark:border-stone-700">
-              <h3 className="font-display text-lg text-stone-700 dark:text-stone-200">Works that resemble this one</h3>
-              <p className="mb-3 mt-1 font-serif text-[13px] leading-relaxed text-stone-500 dark:text-stone-400">
-                Matched by meaning across the whole library, not by a passage you cited — so these
-                are places to look, not sources you quoted.
-              </p>
-              {related === null ? (
-                <p role="status" className="font-serif text-[14px] text-stone-500 dark:text-stone-400">Searching the library…</p>
-              ) : relatedNote ? (
-                <p className="font-serif text-[14px] text-stone-500 dark:text-stone-400">{relatedNote}</p>
-              ) : relatedByRegister.length === 0 ? (
-                <p className="font-serif text-[14px] text-stone-500 dark:text-stone-400">Nothing in the library resembles this document closely.</p>
-              ) : (
-                relatedByRegister.map(([reg, rows]) => (
-                  <div key={reg} className="mb-4 last:mb-0">
-                    <p className="mb-1.5 text-micro font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
-                      {REGISTER_LABEL[reg]}
-                    </p>
-                    <ul className="space-y-1.5">
-                      {rows.map((v) => (
-                        <li key={`${v.author}|${v.work}`} className="font-serif text-[14px] text-stone-600 dark:text-stone-300">
-                          <span className="text-stone-800 dark:text-stone-100">{v.author}</span>
-                          {v.work && <span className="text-stone-500 dark:text-stone-400">, {v.work}</span>}
-                          <span className="ml-2 text-[12px] tabular-nums text-stone-400 dark:text-stone-500">
-                            {v.similarity.toFixed(2)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))
-              )}
-            </div>
+            <SuggestedReadings documentId={documentId} docReady={doc?.status === 'ready'} />
           </div>
         </section>
 
