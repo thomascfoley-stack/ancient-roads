@@ -1,0 +1,37 @@
+§5 WIRED — THE PIPELINE REACHES 'ready'. 2026-08-04T05:34:46Z
+
+Until this landed, NO code path could set status='ready' and no writer existed for
+user_sections, user_section_embeddings or user_section_anchors. Every stage was built and
+tested in isolation and none was connected: an uploaded document was parsed and stopped.
+
+Now: parse -> chunk -> anchor -> embed -> store -> ready, in one visible status walk.
+'ready' is set in exactly ONE place, AFTER the transactional write.
+
+== PASS (real .docx, real chunker, real KJV index, real DeepInfra call, real DB) ==
+  ✓ test/user-corpus/pipeline-to-ready.test.ts > a document goes in and comes out searchable > reaches ready, with sections, vectors and anchors all written 2339ms
+  ✓ test/user-corpus/pipeline-to-ready.test.ts > a document goes in and comes out searchable > wrote a model_slug the CORPUS will actually join against
+  ✓ test/user-corpus/pipeline-to-ready.test.ts > a document goes in and comes out searchable > found BOTH anchor channels, and their agreement survives
+  ✓ test/user-corpus/pipeline-to-ready.test.ts > a document goes in and comes out searchable > re-indexing is idempotent — a retry replaces rather than duplicates 1254ms
+  Tests  4 passed (4)
+
+What the assertions cover:
+  * status reaches 'ready' (the assertion this whole slice worked toward)
+  * embeddings == sections — a section without a vector is FTS-searchable and invisible to
+    semantic search: half-indexed, and reporting ready
+  * anchors > 0, with BOTH channels present and at least one verse found by both — the pair
+    migration 103 put 'channel' in the PK to preserve
+  * the stored model_slug joins against the corpus's OWN recorded value, read from the
+    database (user 'bge-large-en-v1.5' vs corpus 'BAAI/bge-large-en-v1.5', normalised)
+  * re-indexing is idempotent
+
+== RED-PROOFS ==
+SEED 1 - drop the DELETE from storeSections (every retry doubles the index): 4 failed
+SEED 2 - set 'ready' BEFORE storing, i.e. the false claim of searchability: 3 failed
+
+== UNVERIFIED, AND IT IS THE A6 SHAPE ==
+bible-index.ts reads web/public/bible/kjv with fs at runtime. Locally that is a symlink and
+works. ON VERCEL IT IS NOT VERIFIED: 'vercel --prod' uploads web/ ALONE and Next traces only
+the files it can see, which is exactly how three A6 deploys died. public/ ships as static
+assets; whether a serverless function can fs.readFileSync them is a separate question this
+slice has NOT answered. indexHealth() exists so the answer is a check rather than a surprise,
+and step 7's browser DoD is where it gets exercised for real.

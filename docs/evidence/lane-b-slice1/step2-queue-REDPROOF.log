@@ -1,0 +1,39 @@
+STEP 2 RED-PROOFS — every guarantee watched RED before it was believed (THE_LOOP rule 4).
+Run 2026-08-03T16:47:04Z against lane-b-uploader (ep-snowy-bird-atmdsv3g).
+
+A NOTE ON THE FIRST VERSION OF SEED 1, because it is the more useful finding.
+The concurrency assertion was originally 'run two drains and check nothing is claimed twice'.
+With FOR UPDATE SKIP LOCKED deleted it went red twice and then PASSED 8/8 — whether two
+drains actually collide is timing. A check that only sometimes fails when the bug is present
+has not been watched fail; it has had a good day. Replaced with an assertion of SKIP LOCKED's
+actual semantics (a locked row is SKIPPED, not waited on), which is deterministic. Proof below
+runs the same seed three times.
+
+--- SEED 1: remove the FOR UPDATE SKIP LOCKED clause from claimNext ---
+  SQL clause present after seeding? (comments on lines 1/40 mention it; the CLAUSE must be gone)
+    1:// The ingestion queue: a Postgres FOR UPDATE SKIP LOCKED drain (§8, "no new infra").
+    40: * row: SKIP LOCKED makes the loser take the next one instead of blocking.
+  run 1:
+    × test/user-corpus/queue-never-drops.test.ts > the queue never silently drops a document > skips a row another worker holds, instead of blocking on it 9215ms
+    → drain BLOCKED on a locked row — FOR UPDATE SKIP LOCKED is missing
+    Tests  1 failed | 8 passed (9)
+  run 2:
+    × test/user-corpus/queue-never-drops.test.ts > the queue never silently drops a document > skips a row another worker holds, instead of blocking on it 9180ms
+    → drain BLOCKED on a locked row — FOR UPDATE SKIP LOCKED is missing
+    Tests  1 failed | 8 passed (9)
+  run 3:
+    × test/user-corpus/queue-never-drops.test.ts > the queue never silently drops a document > skips a row another worker holds, instead of blocking on it 9173ms
+    → drain BLOCKED on a locked row — FOR UPDATE SKIP LOCKED is missing
+    Tests  1 failed | 8 passed (9)
+  -> RED 3/3. The drain blocks on the row an independent connection holds, and the test
+     fails on its timeout rather than on a lucky interleaving.
+
+--- SEED 2: drain() stops reaping exhausted rows ---
+    × test/user-corpus/queue-never-drops.test.ts > the queue never silently drops a document > an exhausted document is RETIRED, not left invisible in parsing 413ms
+    → expected +0 to be 1 // Object.is equality
+    Tests  1 failed | 8 passed (9)
+  -> a document at MAX_ATTEMPTS stays in 'parsing', where the claim predicate cannot see it
+     and no user is told. Exactly the silent drop §8 forbids.
+
+--- RESTORED ---
+    Tests  9 passed (9)

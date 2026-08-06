@@ -56,6 +56,34 @@ export const USER_TABLE_EXCLUDED = {
   topical_entries:
     'Corpus topical-index expansion (migration 039) — ordered topic→passage rows under sections, ' +
     'written by src/ingest/ingest-topical-index.ts. Platform content, SELECT-only for app_runtime.',
+
+  // ── The four Better Auth tables (migration 104, the SEC-1 cutover) ────────────────────────────
+  // EXCLUDED from the G1 digest, and the distinction is worth stating precisely: these hold data
+  // ABOUT users, but they are not user CONTENT. G1 exists to prove that a cutover did not silently
+  // rewrite, reassign or erase what people wrote (the three seeded corruptions in this file's
+  // header). Auth rows are churn by design -- every sign-in writes a session, every sign-out
+  // deletes one -- so a digest over them would go red on normal use and be muted within a week,
+  // taking the tables that matter with it.
+  //
+  // They are also the wrong shape for it: the digest is keyed on `user_id`, and these use Better
+  // Auth's quoted camelCase `"userId"`. A spec entry would silently measure nothing.
+  //
+  // What DOES check them is `web/test/invariants/better-auth-schema.test.ts`: the columns are
+  // derived from Better Auth's own `getAuthTables()` and compared against the migration, and no
+  // module outside `web/src/lib/auth/` may reference the tables at all.
+  auth_users:
+    'Better Auth identity rows (migration 104). Auth infrastructure, not user content; see the ' +
+    'note above. Checked by better-auth-schema.test.ts, not by the G1 digest.',
+  auth_sessions:
+    'Better Auth session rows (migration 104). Written on every sign-in and deleted on sign-out, ' +
+    'so a content digest over them is meaningless by construction.',
+  auth_accounts:
+    'Better Auth credential rows (migration 104) -- holds the bcrypt password hashes. Deliberately ' +
+    'outside the digest: hashing them into a repo-tracked checkpoint is exactly what this file ' +
+    'refuses to do with account ids, for the same reason.',
+  auth_verifications:
+    'Better Auth single-use verification and reset tokens (migration 104). Short-lived by design ' +
+    'and never user-readable content.',
 };
 
 export const USER_TABLE_SPEC = {
@@ -166,6 +194,47 @@ export const USER_TABLE_SPEC = {
     active: 'true',
     body: ['title', 'topic', 'description', 'sections', 'progress', 'is_template', 'updated_at'],
   },
+
+  // ── Slice 1's personal corpus (migrations 100/102/103) ────────────────────────────────────────
+  // These are USER DATA in the fullest sense — a pastor's unpublished sermon manuscripts — so they
+  // belong in the spec, not the exclusion list. Registering them means corpus-copy.mjs asserts it
+  // never copies them, and the cutover regression gate digests them so they provably survive.
+  //
+  // All four hard-delete via the FK cascade (document -> sections -> {embeddings, anchors}), so
+  // there is no tombstone and every row is live.
+  user_documents: {
+    anchor: ['checksum', 'created_at'],
+    tombstone: null,
+    active: 'true',
+    // `attempts` and `claimed_at` are deliberately OUT of the body: they are queue mechanics that
+    // change on every drain tick, and including them would make the digest churn against a
+    // pre-cutover baseline for reasons that have nothing to do with user data surviving.
+    body: ['title', 'doc_type', 'source_filename', 'blob_url', 'byte_size', 'status', 'parse_error',
+      'mime_type', 'page_count', 'extractable_chars'],
+  },
+  user_sections: {
+    anchor: ['document_id', 'ordinal', 'created_at'],
+    tombstone: null,
+    active: 'true',
+    body: ['heading', 'body', 'kind'],
+  },
+  user_section_embeddings: {
+    idColumns: ['section_id', 'model_slug'], // composite PK; no `id` column (migration 100)
+    anchor: ['section_id', 'model_slug'],
+    tombstone: null,
+    active: 'true',
+    // The vector itself is not in the body: 1024 floats per row would dominate the digest cost
+    // for no gain, and (section_id, model_slug) already identifies it. A vector that changed
+    // under a fixed section+model would be a model-parity breach, which ADR-102's check owns.
+    body: [],
+  },
+  user_section_anchors: {
+    idColumns: ['section_id', 'verse_id_start', 'channel'], // composite PK (migration 103)
+    anchor: ['section_id', 'verse_id_start', 'verse_id_end', 'channel'],
+    tombstone: null,
+    active: 'true',
+    body: ['match_count', 'confidence'],
+  },
   plans: {
     anchor: ['created_at'],
     tombstone: null,
@@ -208,14 +277,23 @@ const RS = `E'\\x1e'`; // record separator
 // ROW IDENTITY IS DECLARED, like the columns above and for the same reason.
 // It defaulted to a hardcoded 'id' in both the identity list and the ORDER BY,
 // which is true of every table classified before 2026-08-02 and FALSE of the
-// two added that day: plans' children key on composite PKs and have no `id`.
-// measureSql('plan_days') therefore raised 42703, which cutover.mjs reports as
-// "a column this invariant covers has been dropped or renamed ... restore from
-// the pre-cutover snapshot" — a false schema-regression verdict on a healthy
-// database, and G1 in the regression gate would have thrown raw. Neither had
-// ever been executed. Declaring idColumns keeps the default byte-identical for
-// every pre-existing table (so no committed digest baseline moves) and makes a
+// FIVE composite-PK tables added since, from BOTH lanes independently:
+//   Lane A (039/042) - plan_days (plan_id, day_index) and plan_day_readings
+//                      (plan_id, day_index, ordinal)
+//   Lane B (100/103) - user_section_embeddings (section_id, model_slug) and
+//                      user_section_anchors (section_id, verse_id_start, channel)
+// None has an `id`. measureSql therefore raised 42703, which cutover.mjs reports
+// as "a column this invariant covers has been dropped or renamed ... restore from
+// the pre-cutover snapshot" - a false schema-regression verdict on a healthy
+// database, and G1 in the regression gate would have thrown raw. Neither had ever
+// been executed. Declaring idColumns keeps the default byte-identical for every
+// pre-existing table (so no committed digest baseline moves) and makes a
 // composite-PK table measurable instead of fatal.
+//
+// The two lanes wrote this helper separately, with the same name, default and
+// dedupe. Lane B's note predicted the textual conflict and said to take either
+// side; the comment is merged instead, because both lanes' tables are now real
+// and a reader who meets only one half would think the other case was unhandled.
 const idColumnsOf = (s) => s.idColumns ?? ['id'];
 
 /** Per-table counts + active count + the ordered-row md5 digest, in one round trip. */

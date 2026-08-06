@@ -1,0 +1,35 @@
+§3c — anchorChunk: the two channels, composed. 2026-08-04T04:42:40Z
+
+THE PROSE CHANNEL IS NOT SHIPPED, decided in the open. Nothing in the tree has ever
+implemented one; Slice 0 measured exactly two (explicit 0%, uncited 90%) and every published
+number rests on those. The nearest reusable thing, src/bible/pericopes.ts, is a 34-entry
+gazetteer built for SHORT QUERIES: its corroboration fires on essentially any 5,000-word
+sermon body, so it would anchor most documents to most of its pericopes. That is a precision
+leak with a gazetteer attached, landing in the table the tradition-gap join reads. 'prose'
+stays in the CHECK constraint so implementing it later needs no migration.
+
+== PASS ==
+  Tests  16 passed (16)
+
+== RED-PROOFS ==
+SEED 1 — drop the isExplicitCitation gate, call scanReferences bare:
+  Tests  3 failed | 13 passed (16)
+SEED 2 — dedupe on verseStart alone, losing the two-channel pair:
+  Tests  1 failed | 15 passed (16)
+SEED 3 — ignore K:
+  Tests  1 failed | 15 passed (16)
+SEED 4 — write matchCount 1 for explicit instead of null:
+  Tests  1 failed | 15 passed (16)
+
+SEED 1 ESCAPED ON THE FIRST ATTEMPT — 13/13 green with the gate DELETED. The negative
+fixture was 'The Romans conquered Britain...', which has no digit after the book, so
+scanReferences returned nothing and the gate was never consulted. A test for a filter must
+feed it something to filter. Replaced with three bodies that DO produce a scanReferences hit
+the gate must reject (all parse as Isaiah N via the 'is' alias). Result above is the re-seed.
+
+KNOWN LIMIT, recorded rather than hidden: 'The Romans 8 legions marched' satisfies the gate
+(the book IS named beside a digit) and is not a citation. The heuristic cannot separate them
+without parsing the sentence. A test asserts the limit so it is met as known, not as surprise.
+
+== RESTORED ==
+  Tests  16 passed (16)

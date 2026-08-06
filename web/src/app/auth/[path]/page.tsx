@@ -1,10 +1,18 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { AuthView } from '@neondatabase/auth/react';
+import { notFound, redirect } from 'next/navigation';
+import { Suspense } from 'react';
+import { AuthForm } from '@/components/auth-forms';
+import { AUTH_PATHS, isAuthPath } from '@/lib/auth/paths';
 import { currentUser } from '@/lib/session';
 
 export const dynamicParams = false;
+
+// Was absent while `dynamicParams = false` was set. The prefab shipped its own route table; ours
+// has to declare one, and without it every /auth/* URL 404s.
+export function generateStaticParams() {
+  return AUTH_PATHS.map((path) => ({ path }));
+}
 
 // Paths that only make sense to someone who is NOT signed in. A signed-in reader who reached
 // /auth/sign-in was served a full login form with "Sign out" visible in the same viewport (A7b
@@ -19,6 +27,7 @@ export default async function AuthPage({
   params: Promise<{ path: string }>;
 }) {
   const { path } = await params;
+  if (!isAuthPath(path)) notFound();
   // Redirect rather than render an alternative: a signed-in reader on a sign-in URL almost always
   // arrived by a stale link or the back button, and the useful outcome is to be where they were
   // going. `/home` is the signed-in landing, not `/`, which is the marketing page.
@@ -51,7 +60,10 @@ export default async function AuthPage({
             Ask for the ancient paths
           </p>
         </div>
-        <AuthView path={path} />
+        {/* useSearchParams (the reset token) requires a Suspense boundary to prerender. */}
+        <Suspense fallback={<div className="bg-paper px-6 pb-8 pt-4 dark:bg-stone-900" />}>
+          <AuthForm path={path} />
+        </Suspense>
       </div>
     </main>
   );

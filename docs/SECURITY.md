@@ -1,7 +1,43 @@
 # Known security issues (tracked)
 
 ## SEC-1 — better-auth 1.4.18 vulnerabilities via `@neondatabase/auth` beta
-**Status: OPEN — LAUNCH BLOCKER (must be resolved before the app is public with real accounts).**
+**Status: CLOSED 2026-08-05. The cutover is live on production.**
+Deployment `dpl_HSUsCqGCwWVPrQuG4bL1MBq3hJFg` from `e0cfd24`, aliased to `ancientpaths.app`.
+Migrations 100-104 applied to `ep-odd-fog` and recorded in `schema_migrations`. **Verified by
+creating a real account through the deployed app**, not by reading config: production
+`auth_users` / `auth_accounts` / `auth_sessions` took a row with `providerId = 'credential'`, a
+bcrypt hash, and a live session; the test account was then deleted, leaving production at 0 users
+for the clean start.
+
+Everyone re-registers (ADR-002 clean-start). The old `NEON_AUTH_*` variables are deliberately LEFT
+in the Vercel project: nothing reads them, but a rollback to the previous deployment would need
+them, and that is precisely the situation in which they would be missing. Remove them once this
+cutover has been stable for a while.
+`@neondatabase/auth` is removed and Better Auth 1.6.26 runs in-app
+([AUTH_CUTOVER_DESIGN.md](./AUTH_CUTOVER_DESIGN.md)). Every advisory in the table below was rooted
+in the `better-auth@1.4.18` that package pinned; none of them fires any more, and `deps-audit`
+reports no un-ignored high/critical across 307 prod packages with only the two dev-tooling ids
+ignored. The seven better-auth GHSAs are out of `pnpm.auditConfig.ignoreGhsas`.
+
+**GHSA-g38m is closed STRUCTURALLY, not by configuration.** It requires an app to offer BOTH
+email/password AND social login: the attacker pre-registers the victim's address unverified, and
+the victim's later Google sign-in auto-links onto it. The cutover ships email/password only, so
+there is no OAuth callback and nothing to auto-link. That property cannot regress when someone sets
+a flag wrong; it can only regress if a social provider is added, which `web/src/lib/auth/better-auth.ts`
+says at the point where someone would add one.
+
+**`--expect-red` is now EMPTY.** GHSA-qq9h-g4jm-xgf3 (ADR-038) was the one declared acceptable red
+and is also gone by version. `deps-audit` correctly FAILED on "declared id no longer observed"
+before `scripts/audit.sh` was updated: a disappearance from the declared set is as much a gate
+failure as an addition, which is the point of enumerating it rather than thresholding it.
+
+**What is still open:** the production cutover itself. Migrations 100-104 are on the `lane-b-uploader`
+Neon branch only, production still runs the Neon Auth wiring, and the clean-start re-register has not
+happened. `MULTI_USER_UPLOADS` stays `false` until it has (UPLOADER_DESIGN §4, enforced by
+`web/test/invariants/sec1-upload-gate.test.ts`).
+
+*(Prior status, for the record: OPEN, LAUNCH BLOCKER, must be resolved before the app is public with
+real accounts.)*
 **ESCALATED 2026-07-08:** app-level mitigation of the in-path account-takeover (GHSA-g38m)
 was investigated and is **not possible** on this beta SDK (see "App-level mitigation" below).
 Moving off `@neondatabase/auth` is therefore an **urgent** blocker, not a later cleanup.
@@ -177,6 +213,35 @@ Better Auth **1.6.23**):
 **Conclusion:** g38m is unfixable on the Neon Auth beta but **fixable when we run Better Auth directly**.
 The Better Auth-direct clean-start migration IS the remediation; remove the g38m GHSAs from
 `pnpm.auditConfig` when the production cutover lands.
+
+### The pnpm-override branch does NOT close g38m - do not merge it (assessed 2026-08-05)
+
+`fix/sec1-better-auth-1-6-25` forces the whole better-auth subtree to 1.6.25 via `pnpm.overrides`
+and clears `ignoreGhsas` to `[]`. **The override upgrades the wrong copy of better-auth.**
+
+Per §"App-level mitigation" above, `createNeonAuth` returns a proxy client to a better-auth server
+**hosted by Neon**; the vulnerable OAuth-callback auto-link logic runs there, at a version we cannot
+see or set. The `better-auth` in our `node_modules` is the client SDK. Overriding it moves `pnpm
+audit` from red to green while the account-takeover path is untouched - and it deletes the ignore
+list entry that is currently the only mechanical record that SEC-1 is open. The branch's own commit
+message concedes it was "verified lockfile-only": never built, never signed in.
+
+Recorded here rather than only on the branch because a reader who meets the branch will find its
+reasoning persuasive and self-contained. **Close it unmerged.** The remediation is
+[AUTH_CUTOVER_DESIGN.md](./AUTH_CUTOVER_DESIGN.md).
+
+### The gate is now mechanical, not prose (A7, 2026-08-05)
+
+`web/test/invariants/sec1-upload-gate.test.ts` asserts NOT (multi-user uploads enabled AND an
+advisory this file adjudicates as in-path is still in `pnpm.auditConfig.ignoreGhsas`). The advisory
+set is **derived from the "In our path?" table above**, so marking a new advisory in-path there arms
+the gate automatically; the parse anchors on that header because this file carries a second GHSA
+table whose third column asks a different question. Six red-proofs, each watched fail
+(`WORKLOG.md`, 2026-08-05).
+
+Consequence for whoever lands the cutover: `MULTI_USER_UPLOADS` in
+`web/src/lib/user-corpus/access.ts` cannot be flipped to `true` until the in-path ids leave
+`ignoreGhsas`. That is the intended coupling - SEC-1 closing is what unlocks multi-user upload.
 
 ---
 

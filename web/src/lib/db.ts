@@ -11,7 +11,11 @@ function isProd(): boolean {
   return process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
 }
 
-function runtimeUrl(): string {
+// Exported so Better Auth's connection pool resolves the runtime URL through the SAME function as
+// every other query, rather than re-reading APP_DATABASE_URL with its own fallback rules. A second
+// copy would be free to disagree about the production guard below -- and the whole point of that
+// guard is that it has no exceptions.
+export function runtimeUrl(): string {
   const app = process.env.APP_DATABASE_URL;
   // SECURITY (§0): in production the runtime MUST use the least-privilege app_runtime role
   // (APP_DATABASE_URL). Silently falling back to the BYPASSRLS owner (DATABASE_URL) makes

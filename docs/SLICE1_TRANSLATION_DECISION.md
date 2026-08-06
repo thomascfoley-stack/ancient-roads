@@ -1,7 +1,29 @@
 # B4 — the translation decision: options, costs, recommendation
 
-**Status: DECISION PAPER. Decides nothing.** Tranche B-2 of the search programme order. The owner
-rules; this document exists so the ruling is possible.
+> # ✅ RULED 2026-08-03 — see **ADR-100** in [`DECISIONS.md`](DECISIONS.md)
+>
+> **Option A, with per-document detection.** This paper's recommendation was adopted, with three
+> things it left open now closed by the ADR:
+>
+> - The pre-registered bar is **end-to-end uncited-channel recall with detection running**, *not*
+>   detector top-1 accuracy — the 18 translations are not equidistant, so top-1 accuracy scores a
+>   harmless kjv↔akjv confusion the same as a catastrophic kjv↔web one (this paper's own §3).
+> - **§2's open question** ("what detects it, and what happens when it is wrong?") is answered:
+>   detection resolves to a **family**, the channel shingles against the family union when the top
+>   two are within a margin, and a below-floor fallback to the KJV family is **recorded** in
+>   `user_section_anchors.confidence` rather than applied silently.
+> - Families are **derived from measured 6-gram overlap**, never hand-typed.
+>
+> The ADR carries its own UNVERIFIED flag: the within-family-overlap premise is reasoning, not
+> measurement, and is the first thing step 3 measures.
+>
+> **§6 below is discharged separately** — the `SERMON_COMPANION.md` §3 table row is now struck in
+> place with a pointer. B2 itself is untouched and still the owner's to say.
+
+**Status: RULED — ADR-100 (2026-08-03).** Was: *DECISION PAPER, decides nothing.* Tranche B-2 of the
+search programme order. The owner rules; this document existed so the ruling was possible. The
+options, costs and numbers below stand as written and are **not** edited to match the ruling — the
+rejected option's case is the record of what the decision cost.
 
 **Why it exists:** `docs/SERMON_SEARCH_DESIGN.md` line 275 conditions Slice 1 on "the translation
 decision (§ below)" — and the document ends at line 276. The section was never written. B4 has sat on

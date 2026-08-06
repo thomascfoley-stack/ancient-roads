@@ -20,7 +20,20 @@ which is what justifies building Slice 1 at all.
 | `user_documents` | one upload | `id TEXT`, `user_id`, `doc_type`, `status`, `checksum`, `blob_url` | lifecycle status (§8); `empty` is explicit, not a silent drop |
 | `user_sections` | one chunk | `id TEXT`, `document_id→docs CASCADE`, `user_id`, `ordinal`, `kind`, `tsv` | type-aware chunk (§4); FTS via `tsv` GIN |
 | `user_section_embeddings` | one vector | `PK(section_id→sections CASCADE, model_slug)`, `user_id`, `VECTOR(1024)` | **no HNSW** — brute-force per user (§5); `model_slug` = parity (§6) |
-| `user_section_anchors` | one verse range | `PK(section_id→sections CASCADE, verse_id_start)`, `user_id`, `verse_id_end`, `channel` | fast presence path `(user_id, verse_id)` (§3) |
+| `user_section_anchors` | one verse range **per channel** | `PK(section_id→sections CASCADE, verse_id_start, channel)`, `user_id`, `verse_id_end`, `match_count`, `confidence` | fast presence path `(user_id, verse_id)` (§3) |
+
+> **Amended 2026-08-03 (migration 103).** This row previously gave the PK as
+> `(section_id, verse_id_start)` and said `confidence` "carries the shingle count K". Both were
+> wrong and step 3 would have been the first writer to find out:
+> - **`channel` is part of the key.** A verse cited explicitly *and* quoted verbatim is found by two
+>   channels; under the old key the second row was lost, destroying both the per-channel measurement
+>   §13 requires and the agreement between channels — which is the strongest evidence an anchor is
+>   real. Watched: old key keeps 1 row, new key keeps 2.
+> - **The count and the confidence are separate columns.** `match_count INT` is the shingle K of the
+>   Slice 0 trade curve (NULL where meaningless — an explicit citation is not a shingle count, and
+>   writing 1 would make `match_count >= K` filters admit every citation). `confidence REAL` is 0-1
+>   confidence in the *translation family* (ADR-100). One `REAL` could not hold both, and
+>   `UPLOADER_DESIGN.md`'s "surface filters at K>=3" would have compared against a detection score.
 
 Design choices baked in: **TEXT ids** (opaque, client/server-generatable — not BIGINT IDENTITY);
 **`user_id` denormalized on all four** so every RLS policy is a direct match (no subquery-in-policy);

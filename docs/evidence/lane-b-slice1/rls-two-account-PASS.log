@@ -1,0 +1,51 @@
+
+
+two-account RLS proof over 100_user_corpus (run rlsprobe-msdf2t0y)
+
+preconditions:
+  ✓ app connection is app_runtime — got app_runtime
+  ✓ app_runtime rolbypassrls = false — got false
+  ✓ owner connection is neondb_owner — got neondb_owner
+  ✓ user_documents: RLS enabled
+  ✓ user_sections: RLS enabled
+  ✓ user_section_embeddings: RLS enabled
+  ✓ user_section_anchors: RLS enabled
+
+leg 1 — user A writes (through app_runtime, RLS active):
+  ✓ A inserted document + section + embedding + anchor
+
+leg 2 — anti-vacuity: the rows exist and are visible to someone:
+  ✓ owner sees 1 row in user_documents for A — n=1
+  ✓ owner sees 1 row in user_sections for A — n=1
+  ✓ owner sees 1 row in user_section_embeddings for A — n=1
+  ✓ owner sees 1 row in user_section_anchors for A — n=1
+
+leg 3 — user B cannot see A (the isolation claim):
+  ✓ B sees 0 rows in user_documents for A — n=0
+  ✓ B sees 0 rows in user_sections for A — n=0
+  ✓ B sees 0 rows in user_section_embeddings for A — n=0
+  ✓ B sees 0 rows in user_section_anchors for A — n=0
+  ✓ B cannot fetch A's document by its exact id — n=0
+  ✓ B sees an empty user_sections table entirely — n=0
+
+leg 4 — B cannot write to A's rows:
+  ✓ B's UPDATE of A's document affects 0 rows — rowCount=0
+  ✓ B's DELETE of A's document affects 0 rows — rowCount=0
+  ✓ A's document survived B's attempts unmodified — rlsprobe-msdf2t0y A sermon
+
+leg 5 — B cannot forge a row attributed to A (WITH CHECK):
+  ✓ B inserting user_id=A is rejected — new row violates row-level security policy for table "user_documents"
+
+leg 6 — an unset app.current_user_id denies (fails closed):
+  ✓ no GUC set -> 0 rows, not all rows — n=0
+
+leg 7 — A deleting its document cascades to sections/embeddings/anchors:
+  ✓ A's DELETE of its own document affects 1 row — rowCount=1
+  ✓ cascade left 0 orphans in user_documents — n=0
+  ✓ cascade left 0 orphans in user_sections — n=0
+  ✓ cascade left 0 orphans in user_section_embeddings — n=0
+  ✓ cascade left 0 orphans in user_section_anchors — n=0
+
+residue after cleanup: 0 probe document(s)
+
+✓ PASS — 28 legs passed, 0 failed

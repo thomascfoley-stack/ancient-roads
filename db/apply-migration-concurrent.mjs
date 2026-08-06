@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from 'fs';
 import pg from 'pg';
 import { recordMigration } from './lib/record-migration.mjs';
+import { isAuditAllowedHost } from '../scripts/lib/target-guard.mjs';
 
 // Apply a migration containing CREATE/DROP INDEX CONCURRENTLY, which cannot run
 // inside a transaction — the standard apply-migration.mjs sends the whole file
@@ -26,20 +27,42 @@ function localEnv(name) {
 
 const file = process.argv[2];
 if (!file) { console.error('usage: node db/apply-migration-concurrent.mjs <path-to-.sql>'); process.exit(1); }
-const url = localEnv('DATABASE_URL') ?? localEnv('DATABASE_URL_UNPOOLED');
-if (!url) { console.error('owner DATABASE_URL is required'); process.exit(1); }
-// Dev-only by default; Part C prod run sets MIGRATE_ALLOW_PROD=1 (A6 2026-07-17).
+const rawUrl = localEnv('DATABASE_URL') ?? localEnv('DATABASE_URL_UNPOOLED');
+if (!rawUrl) { console.error('owner DATABASE_URL is required'); process.exit(1); }
+const url = rawUrl.replace(/^"|"$/g, '');
+
+// POOLER REFUSAL (main, bylaw-4 refuter 2026-08-03). Session SETs (lock_timeout,
+// maintenance_work_mem) and the multi-group apply protocol assume ONE server session. Through a
+// Neon pooler in transaction mode every group can land on a different backend: the SETs silently
+// apply to nothing and CIC coordination degrades.
 if (/-pooler\./.test(url)) {
-  // Session SETs (lock_timeout, maintenance_work_mem) and the multi-group apply protocol assume
-  // ONE server session. Through a Neon pooler in transaction mode, every group can land on a
-  // different backend: the SETs silently apply to nothing and CIC coordination degrades. Migrate
-  // on the DIRECT endpoint only (bylaw-4 refuter, 2026-08-03).
   console.error('✗ REFUSE: DATABASE_URL is a POOLED host (-pooler). Migrations need the direct endpoint - session SETs and CONCURRENTLY coordination do not survive transaction pooling.');
   process.exit(1);
 }
-if (!/ep-tiny-hat|localhost|127\.0\.0\.1/.test(url) && process.env.MIGRATE_ALLOW_PROD !== '1') {
-  console.error('✗ REFUSE: DATABASE_URL is not the dev endpoint (ep-tiny-hat). For the deliberate Part C prod run, set MIGRATE_ALLOW_PROD=1.');
-  process.exit(1);
+
+// TARGET GUARD (lane-b). Dev-only by default; the Part C prod run sets MIGRATE_ALLOW_PROD=1 (A6
+// 2026-07-17). A dev branch that is not a DEV_ENDPOINT is reached by declaring
+// MIGRATE_TARGET_ENDPOINT=<exact endpoint id>. Shares the one guard in scripts/lib/target-guard.mjs.
+//
+// BOTH sides of this merge are kept deliberately. main hardcoded /ep-tiny-hat|localhost/, which
+// cannot express any other dev branch and is the substring-match shape apply-migration.mjs already
+// records as fail-open (it matched the whole connection string, password included). The shared
+// guard replaces that. main's pooler check above is orthogonal and is not in the shared guard.
+if (process.env.MIGRATE_ALLOW_PROD !== '1') {
+  let allowed = false;
+  try {
+    allowed = isAuditAllowedHost(url, process.env.MIGRATE_TARGET_ENDPOINT);
+  } catch {
+    allowed = false; // unparseable target is a refusal, not a pass
+  }
+  if (!allowed) {
+    console.error(
+      '✗ REFUSE: DATABASE_URL is not localhost, not a known dev endpoint, and not declared.\n' +
+      '  Declare a dev branch by its exact endpoint id: MIGRATE_TARGET_ENDPOINT=ep-xxxx-yyyy-zzzz\n' +
+      '  For the deliberate Part C prod run, set MIGRATE_ALLOW_PROD=1.',
+    );
+    process.exit(1);
+  }
 }
 
 const text = readFileSync(file, 'utf-8');
@@ -64,7 +87,7 @@ const createdNames = [...sqlOnly.matchAll(/CREATE INDEX CONCURRENTLY(?: IF NOT E
 const renameSources = [...sqlOnly.matchAll(/ALTER INDEX\s+(\S+)\s+RENAME TO\s+\S+/gi)].map((m) => cleanName(m[1]));
 const renamedTo = [...sqlOnly.matchAll(/ALTER INDEX\s+\S+\s+RENAME TO\s+(\S+)/gi)].map((m) => cleanName(m[1]));
 
-const client = new pg.Client({ connectionString: url.replace(/^"|"$/g, ''), ssl: { rejectUnauthorized: false } });
+const client = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
 await client.connect();
 try {
   // (1) Pre-clean: drop INVALID leftovers among the names this file creates, so

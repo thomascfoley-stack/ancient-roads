@@ -1,0 +1,46 @@
+-- ============================================================
+-- 101: the shared corpus `embeddings` table becomes SELECT-only for app_runtime
+-- ============================================================
+-- SHIPS WITH 100_user_corpus.sql, deliberately, per SLICE_1_DATA_MODEL.md's "Ships-with — do NOT
+-- skip". Not a follow-up: the whole argument is that it must land in the same change set as the
+-- user tables, because it is the arrival of user content that changes what this grant costs.
+--
+-- WHY NOW AND NOT BEFORE. STATE_OF_TRUTH §7.1 (a LONG-NIGHT finding) recorded that app_runtime
+-- still holds INSERT/UPDATE/DELETE on the shared corpus `embeddings`. That was tolerable while the
+-- runtime only ever SERVED corpus rows: the blast radius of a compromised request path was one
+-- user's own data. From 100_user_corpus.sql onward, user content and corpus content coexist behind
+-- the SAME app_runtime connection, so a tenancy bug or a compromised request path could reach
+-- CORPUS INTEGRITY rather than one user's rows. The corpus is the licensed, adjudicated, published
+-- asset the product's guarantee rests on; the runtime has never needed to write it.
+--
+-- PRECONDITION, VERIFIED 2026-08-03 BEFORE APPLYING (the caveat SLICE_1_DATA_MODEL.md names as the
+-- reason this was not auto-applied — "first confirm the ingestion path does not connect as
+-- app_runtime", or ingestion breaks):
+--   - Every `INSERT INTO embeddings` in the tree lives under src/ingest/ or scripts/. Measured, not
+--     assumed: src/ingest/{ingest-sword-commentaries.mts, register-writer.ts, embed-full-corpus.ts,
+--     repair-tennyson-traherne-flat.ts}, src/retrieval/store.ts, scripts/{corpus-copy.mjs,
+--     redproof-corpus-copy.sh}.
+--   - scripts/assert-ingest-env-dev.mjs:67 REQUIRES role = neondb_owner for ingest and exits
+--     non-zero otherwise, so the ingestion path cannot be app_runtime by construction.
+--   - src/retrieval/store.ts is the only writer outside src/ingest/. Its createPgStore takes an
+--     explicit databaseUrl, and its two consumers are src/ingest/ingest-embeddings.ts (owner) and
+--     src/teacher/run.ts, which calls .search() ONLY and never .upsert().
+--   - web/src/ contains NO `INSERT INTO embeddings` anywhere. The request path does not write this
+--     table today, so nothing shipped loses a capability it uses.
+--
+-- SELECT is untouched: serving reads this table on every /ask.
+--
+--   DATABASE_URL="$(cat ~/.neon_lane_b_owner_url)" MIGRATE_TARGET_ENDPOINT=ep-snowy-bird-atmdsv3g \
+--     node db/apply-migration.mjs db/migrations/101_revoke_embeddings_writes.sql
+--
+-- REVERSE (exact inverse, should it ever be needed):
+--   GRANT INSERT, UPDATE, DELETE ON embeddings TO app_runtime;
+-- ============================================================
+
+REVOKE INSERT, UPDATE, DELETE ON embeddings FROM app_runtime;
+
+-- 001's ALTER DEFAULT PRIVILEGES grants app_runtime DML on NEW tables in this schema. That does not
+-- re-grant on an existing table, so the REVOKE above is not silently undone — but a future table
+-- named `embeddings` recreated from scratch WOULD pick the grant back up. Recorded rather than
+-- guarded: guarding it means changing 001's default privileges, which reaches every table in the
+-- schema and is a bigger change than this slice should make.

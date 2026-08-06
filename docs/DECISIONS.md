@@ -1157,3 +1157,281 @@ open decision.
 verses at 390px, or measurably overlapping the line above in a dense chapter — the fallback there is
 a larger numeral, not a larger invisible hit area, since growing the hit area starts stealing
 long-press from the first word, which is the same class of bug this ADR removes.
+## ADR-100 — B4: the uncited-quote channel shingles against ONE detected translation family per document; the bar is channel recall, not detector accuracy (2026-08-03)
+
+**Numbered in the 100-block, deliberately.** Lane B takes 100+ for ADRs on the same rule the Slice 1
+order sets for migrations, and for the same reason, one document over: `ADR-047` is **already claimed
+twice** — `53d90d1` on `main` ("Tap-a-verse opens the number") and the concurrent /plans session's
+uncommitted `docs/DECISIONS.md` ("Canonical groupings are a reviewed table"). Those two branches
+diverged at `79ff0f1` and neither can see the other's number. That is the third instance of this
+collision class in two days. A block boundary costs one line.
+
+**Context:** `docs/SLICE1_TRANSLATION_DECISION.md` states and costs the options; it decides nothing,
+by design. Slice 0 measured a **17-point swing** in uncited-channel chapter recall from the shingled
+index alone (KJV 82% / WEB 65%), which is larger than the margin K=3 clears its 70% bar by. 18
+translations ship in `web/public/bible/`. The channel does not degrade gracefully when the index is
+wrong — it goes quiet, and a quiet channel is indistinguishable from a document that quotes nothing.
+
+**Decision — Option A, with per-document detection, and three things the paper left open:**
+
+1. **Detection, not a setting, and per DOCUMENT not per user.** The translation is a property of the
+   document; a pastor's 20-year archive crosses translations mid-career. A setting also fails
+   silently for every user who never opens it, which is most of them. No user-facing translation
+   setting ships in Slice 1.
+
+2. **The pre-registered bar is on END-TO-END uncited-channel chapter recall with detection in the
+   loop, NOT on detector top-1 accuracy.** This is the substantive departure from the paper, which
+   proposed "a detector accuracy bar." Top-1 accuracy is the wrong metric because **the 18
+   translations are not equidistant**: the paper's own §3 notes that akjv/kjv/rwebster/ukjv/webster
+   are KJV-descended and share long runs verbatim. A kjv↔akjv confusion costs approximately nothing;
+   a kjv↔web confusion costs ~17 points. Top-1 accuracy weights those identically, so a detector can
+   score 95% and bleed recall, or score 70% and lose nothing. Bar: **uncited-channel chapter recall
+   ≥70%** (the floor B0 cleared) measured end to end on a held-out set with detection running, with
+   the KJV-oracle number reported beside it as the ceiling so the detector's cost is visible as a
+   subtraction rather than hidden in a pass.
+
+3. **What happens when detection is wrong** — the question the paper explicitly could not close.
+   Detection resolves to a **family**, not a single translation, and when the top two families score
+   within a pre-registered margin the channel shingles against the ~~union of the detected family~~
+   **— WITHDRAWN 2026-08-03, see the measurement below. The channel shingles against ONE detected
+   translation; the family is used only to decide which one, and the fallback is recorded.**
+   *(Schema note, migration 103: the `confidence` this ADR describes is now unambiguous — the shingle
+   count K moved to its own `match_count INT`, because two other documents were using `confidence`
+   for that instead and one `REAL` cannot hold both.)*
+   This is Option B bounded to the correlated cluster: unioning translations that already share long
+   verbatim runs adds few genuinely new 6-grams, so it buys away the cliff cheaply, while never
+   unioning across families — which is where Option B's unmeasured collision multiplication actually
+   lives. Below the confidence floor, fall back to the KJV family and **record it**: the anchor row
+   carries `channel='uncited'` with reduced `confidence` (the column exists in `100_user_corpus.sql`).
+   A fallback that is not recorded is the silent failure this whole ADR exists to prevent.
+
+**The families are DERIVED, never typed.** A hand-written family table would be this repo's
+most-repeated defect (`MASTER.md` failure-mode watchlist, artefact 1) installed inside the fix for a
+different one. Families come from measured pairwise 6-gram overlap across the 18 shipped texts, with
+the clustering threshold pre-registered before the run.
+
+**Why:** Option B's central cost lands on the metric that decides the feature and is unmeasured;
+Option A's central cost is measurable in advance. A known-measurable risk beats an unmeasured one.
+
+**~~UNVERIFIED, and it must be measured before it is relied on~~ — MEASURED 2026-08-03, AND
+DECISION 3 IS WITHDRAWN.** The premise was that within-family 6-gram overlap is high enough to make
+the union nearly free. Pre-registered (`evidence/lane-b-slice1/translation-family-PRE-REGISTRATION.md`,
+committed at `edefd92` before the run), measured, and it failed its own bar:
+
+| | |
+|---|---|
+| KJV family found at T=0.50 | **akjv, kjv, rwebster, ukjv, webster** — exactly the five predicted |
+| Union of the family's shingles | 974,681 |
+| Largest single member | 594,371 |
+| **Union cost ratio** | **1.640** |
+| Pre-registered withdrawal bar | **> 1.50** |
+
+**Claim 1 held; claim 2 failed.** The families are real — the five KJV-descended translations
+cluster exactly as predicted, at every threshold tested (0.40/0.50/0.60), against a median pairwise
+similarity of 0.053 across all 153 pairs. But unioning them is **not** nearly free: it adds 64% more
+distinct 6-grams than the largest member alone. "Translations that already share long verbatim runs
+add few genuinely new 6-grams" was wrong by a wide margin.
+
+**So decision 3 is withdrawn, per the bar set before the number existed.** The uncited channel
+shingles against **one detected translation**, with the fallback recorded in
+`user_section_anchors.confidence` — which is what `anchorChunk` already does, since it takes a
+single `VerseShingleIndex`. No code changes; the union index simply never gets built.
+
+**The rest of ADR-100 stands, and this run strengthened it.** Option B — union across all
+translations — measures a cost ratio of **7.821** (4,894,083 shingles). Rejecting it was right, and
+is now measured rather than argued. What the run refuted was my own softening of that rejection, not
+the rejection.
+
+**Left as the standing lesson:** the same "they overlap so the union is cheap" intuition produced
+both the (correct) rejection of Option B and the (wrong) family-union carve-out. Overlap high enough
+to cluster texts is not overlap high enough to make their union free — 0.83 Jaccard between
+`rwebster` and `webster` still leaves a 1.64× union across the family.
+
+**Rejected:** *Option B (all 18 indexes)* — multiplies collisions in a correlated, clustered way
+against the exact metric K exists to suppress, and the K curve was measured single-index so it does
+not transfer; it becomes clearly better if someone measures precision at K=3 holding above 60% with
+recall above 70%, and that measurement remains the honest path to overturning this ADR. *A user
+setting* — wrong granularity, and silently wrong for anyone who never opens it. *Shipping on Slice
+0's KJV numbers* — those were measured under Option A conditions against a corpus that quotes KJV.
+
+**Does not close B2.** ADR-005 pins `bge-large-en-v1.5` for the corpus; whether the same model is
+committed for **user-corpus** embedding is still the owner's to say. The Slice 1 order rules
+"proceed on bge-large." The B4 paper's §6 (the stale "Jina v3 (already chosen)" row) is discharged
+in `docs/SERMON_COMPANION.md` itself, struck in place with a pointer to the correction block that
+already stood above it — the ADR-047 pattern, so the evidence of how the contradiction arose
+survives while no reader meets the row without the correction.
+
+## ADR-101 — The Blob read-write token targets all three environments and is therefore NOT Sensitive (2026-08-03)
+
+**Context:** Slice 1 stores raw uploads in Vercel Blob (`ancient-paths-user-corpus`, region IAD1,
+**access `private`**). Connecting the store to the `web` project injects `BLOB_READ_WRITE_TOKEN`.
+Vercel enforces a hard either/or, stated in its own UI: *"Sensitive variables cannot target
+Development. Deselect Development to mark this sensitive."* A **Sensitive** variable's value cannot
+be read back from the dashboard or the API after creation; a non-Sensitive one can, by anyone with
+project access.
+
+**Decision (owner, 2026-08-03):** the connection targets **Production, Preview AND Development**,
+and the token is consequently **not Sensitive**.
+
+**Why this is a real trade-off and not a formality.** `BLOB_READ_WRITE_TOKEN` can read AND delete
+every user's uploaded manuscripts — the most sensitive content this product will hold, and the
+reason the store itself is `private` rather than `public`. Dropping Sensitive means that token's
+value is retrievable by anyone with access to the project, permanently, until it is rotated. The
+owner was shown this and chose Development coverage anyway; recorded here rather than left in a
+chat window (bylaw 1), because the next person to look at that variable should find the reasoning
+attached to it rather than infer that nobody noticed.
+
+**What this does NOT change:** the store stays `access: 'private'`, so blobs are unreachable
+without a token. This ADR is about who can read the token, not about who can read the blobs.
+
+**Rejected:** *Sensitive + Production/Preview only* — local work already reads the token from
+`web/.env.local` and the repo runs `pnpm dev` rather than `vercel dev`, so the practical gain from
+Development was small; the owner judged the convenience worth the exposure. *A second token scoped
+to Development* — would preserve both properties, but Vercel Blob issues one read-write token per
+store connection, so it would mean a second store rather than a second token.
+
+**Consequence to watch:** rotating this token is now the only way to un-expose it. If it is ever
+rotated, `web/.env.local` and any local `.env` must be updated in the same operation, or the queue
+starts failing every parse with a storage error rather than a parse error.
+
+## ADR-102 — B2 CLOSED: `bge-large-en-v1.5` is the committed embedder for user content too, and the DB slug is the short form (2026-08-03)
+
+**Context:** gate B2 asked one question the corpus's ADR-005 did not settle — whether *user-corpus*
+embedding uses the same model. It sat open through steps 1-2 while the order said "proceed on
+bge-large", so code was being built on an unratified assumption. Step 4 is where that stops being
+deferrable: the tradition-gap join compares user vectors against corpus vectors, and a mismatch is
+silent. Jina v3 is **also 1024-dim**, so wrong vectors insert, join and score cleanly forever.
+
+**Decision (owner, 2026-08-03):** **confirmed — `BAAI/bge-large-en-v1.5` via DeepInfra**, the same
+model, provider and dimensionality as the corpus. B2 is CLOSED.
+
+**The part that is not a formality — WHICH STRING.** There are two, and the parity check compares
+the wrong one by default:
+- the **DeepInfra API id** is `BAAI/bge-large-en-v1.5` — what `src/retrieval/embedder.ts:15` and
+  `web/src/lib/teacher/deepinfra.ts:7` expose as the model;
+- the **database slug** in `section_embeddings.model_slug` is the short `bge-large-en-v1.5`.
+
+Writing `model_slug: embedder.model` therefore stores a value that does **not** equal the corpus's,
+and a parity check written as `userRow.model_slug === EMBED_MODEL` is **tautologically green while
+every user row silently mismatches the corpus** — the exact bug the check exists to catch, wearing
+the check's own uniform. The parity check compares against the CORPUS value, never the client
+constant.
+
+**Consequence for the build:** the literal is hand-typed in **12 places with zero shared exports**,
+which is this repo's most-punished defect class. Slice 1 introduces one module holding both strings
+with the slug **derived** from the API id, plus a guard test asserting no other file contains either
+literal — the `test/ask-max-duration-literal.test.ts` pattern.
+
+**Rejected:** any other embedder — it cannot be joined against the corpus until 1,070,674 vectors are
+re-embedded, which would need an ADR superseding ADR-005 and a migration plan, not a slice.
+
+## ADR-103 — B0b RULED: the verbatim-engagement metric supersedes stated-text recall as the ship gate (2026-08-03)
+
+**Context:** Slice 0's own caveat says K "was read off *this* held-out set — the K choice itself
+should be validated on a further held-out set before it ships". B0a tried and **could not build the
+set**: the frozen harness requires an epigraph (quote-then-reference, Spurgeon's CCEL house style),
+so Wesley/Edwards/Whitefield yielded eligible n=0 against a floor of 20.
+
+**Decision (owner, 2026-08-03):** adopt `evidence/slice0-k-revalidation/METRIC-PROPOSAL.md`'s
+metric — **supersede for the ship decision, keep stated-text recall as a narrow regression check.**
+
+- Gold: the body contains an **≥8-word verbatim run** of the verse. Returns: **≥K** matching 6-gram
+  shingles. **Eligibility: any document with |gold| ≥ floor — no epigraph required**, which is
+  precisely what unblocks B0a.
+- **K must be RE-DERIVED, not carried over.** The paper is explicit that carrying K=3 across is
+  B-1's circularity in a new costume. Derive on one set, validate on a disjoint second.
+- Report the **exclusion rate** (|gold| = 0). On a modern non-KJV corpus it may be the headline.
+- **The two recalls never appear in one table** — different denominators (chapter-level against one
+  announced passage, vs. all engaged passages). They are not comparable.
+
+**Why keep the old metric at all:** it is the only ground truth in the system **not produced by
+substring overlap** — a human wrote the epigraph. With every other check being overlap-on-overlap,
+disagreement between the two is information about the *gold*, not just the system.
+
+**Bounded, and stated:** the new metric measures recall only within the *verbatim-quote* population.
+It says nothing about paraphrase — which Slice 0 already named as the residual (all three misses at
+n=30) and which is the semantic spine's job — nor about expository preaching that argues about a
+passage while quoting little of it. It cannot be the sole evidence the feature works.
+
+**Consequence:** the parser widening is **demoted, not deleted** — no longer a blocker, still worth
+doing later to keep the regression check alive on more than one author.
+
+## ADR-104 — The tradition-gap join is GATED on Lane A merging `served`; Slice 1 ships the rest first (2026-08-03)
+
+**Context:** the Slice 1 order requires the join to filter the corpus on `embeddings.served = true`
+using the canonical predicate, "never a second hand-written one". Discovered while planning steps
+3-7: **the column is on the database but the predicate is not on this branch.**
+`lane-b-uploader`'s `schema_migrations` lists 044, and 328,775 of 1,070,674 rows carry
+`served = true`; yet `web/src/lib/teacher/routing.ts` on `feat/lane-b-slice1-uploader` is
+**byte-identical to `main`**, where `LEGAL_CORPUS_FILTER` is still the author allowlist. The
+`(served)` rewrite exists only on Lane A's `feat/served-column-derives-publish`, which is not an
+ancestor of Lane B. Importing the canonical symbol today returns the **wrong** predicate.
+
+**Decision (owner, 2026-08-03):** build steps 3, 4 and 5 now; **the tradition-gap join waits for
+Lane A to merge `served` to `main`.** The three searches are entirely user-plane and need nothing
+from `routing.ts`.
+
+**Why not the alternatives:** cherry-picking 044 + `routing.ts` into Lane B forks the
+most-guarded file in the repo and leaves two lanes carrying divergent copies until merge — the exact
+collision file-disjointness exists to prevent, which already bit us on ADR-047 within 48 hours.
+Hand-writing `served = true` in the join is the watchlist's first artefact, in the file family where
+it has recurred most; instance 14 was `routing.ts` itself.
+
+**The cost, stated plainly rather than buried:** the order says "build only upload+search and you
+have built a filing cabinet". Until Lane A merges, that is what Slice 1 is. This ADR does not
+dispute that framing — it accepts it as the price of not forking the predicate.
+
+**Watch for:** this is a **database/code split across lanes**, not a normal dependency. Lane A
+applied a migration to the shared `dev` parent, so every branch cut from it inherited a column its
+code cannot see. Any future lane cutting from `dev` will inherit the same asymmetry.
+
+## ADR-105 — K = 3 ships: the largest K that provably cannot exclude a gold verse (2026-08-03)
+
+**Context:** ADR-103 required K to be re-derived under the new metric rather than carried over from
+Slice 0. It was, on 90 documents across 33 authors, validated on a disjoint 90 across 34
+(`evidence/lane-b-slice1/k-rederivation-{PRE-REGISTRATION-v2,RESULT}.md`). The pre-registered rule —
+"the smallest K whose mean precision ≥ 0.60" — selected **K = 2**, which cleared on SET 1 (0.729)
+and transferred to SET 2 (0.716). That derivation is valid and stands.
+
+**Then the table showed the rule had picked a dominated value.**
+
+| | K=2 | K=3 |
+|---|---|---|
+| SET 1 precision / recall | 0.729 / 0.871 | **0.935** / 0.871 |
+| SET 2 precision / recall | 0.716 / 0.891 | **0.951** / 0.891 |
+| returns per document | ~28 | ~20 |
+
+**Decision (owner, 2026-08-03): K = 3 ships.**
+
+**The reason is arithmetic, not the numbers.** Gold is defined as "the body contains an **≥8-word**
+verbatim run". An 8-word run contains exactly **three** 6-word runs (8 − 6 + 1 = 3), so every gold
+verse contributes at least three matching 6-gram shingles *by construction*, and `returns ⊇ gold`
+for any K ≤ 3. Raising K to 3 cannot drop a gold verse — it can only drop non-gold ones, which is
+exactly what the precision column shows and why recall is flat across K=1..3 on both sets and falls
+off a cliff at K=4 (0.871 → 0.728, 0.891 → 0.707). **K = 3 is the largest K that provably cannot
+exclude a gold verse**, and that is a property of the metric's own definitions, not of these
+documents.
+
+**THIS RULING WAS MADE AFTER SEEING THE TABLE, and that is recorded rather than smoothed over.**
+The honest objection is that "the number looked better once I saw it" is the move pre-registration
+exists to stop. Three things make it acceptable here, and a reader should weigh them rather than
+take the conclusion:
+
+1. **The argument does not depend on the measured values.** It follows from `8 − 6 + 1 = 3`. Had
+   both sets come back with different precisions, K=3 would still be the largest K that cannot
+   exclude a gold verse.
+2. **It is not a bar being moved.** The pre-registered precision bar (0.60) and the validation
+   requirement are untouched; K=3 clears both by a wider margin than K=2 did.
+3. **It agrees with Slice 0's independent recommendation of K=3**, reached on one author under the
+   *old* metric. Two routes, two populations, two metrics, same number. Their recalls are not
+   comparable and are not compared; the precisions are, and 0.935/0.951 sits beside Slice 0's 0.96.
+
+**Rejected:** *K = 2* — what the rule selected, and it ships ~8 extra returns per document for zero
+recall gain, which is the wall-of-noise failure the K knob exists to prevent. *A v3
+pre-registration validated on a third set* — the rigorous path, and the right one if the argument
+were empirical; it is not, so the run would confirm arithmetic at the cost of another measurement.
+
+**The rule that should have been written**, recorded so the next pre-registration copies it rather
+than the one that misfired: *the largest K that cannot exclude a gold verse, subject to precision
+≥ bar.* "Smallest K clearing the bar" silently assumes recall falls monotonically with K, which is
+false wherever gold is defined by a longer n-gram than returns are.

@@ -1,0 +1,40 @@
+§3a — THE UNCITED CHANNEL, RE-IMPLEMENTED FOR THE WEB PLANE. 2026-08-04T01:54:53Z
+
+WHY A SECOND IMPLEMENTATION WAS FORCED, rather than an extraction:
+  * scripts/slice0-anchor-recall.mts, scripts/slice0-precision.mts and
+    src/ingest/resource-textmatch.ts are ALL frozen (PRE-REGISTRATION §2). Editing them to
+    import a shared module would void every published Slice 0 number.
+  * web/ cannot import src/ingest/ — 'vercel --prod uploads web/ ALONE' is the A6 defect that
+    killed a production deploy.
+So the copies stay, and drift is held by a DIFFERENTIAL guard instead of by deletion.
+
+PARITY IS AGAINST THE REAL FROZEN EXPORTS for the tokeniser and hasher — no transcription.
+Only the ~10-line matcher loop is transcribed (cited to slice0-anchor-recall.mts:28-64),
+and that is named in the test as the one place it could be wrong in the same direction.
+
+== INDEX AGREES WITH THE FROZEN HARNESS'S OWN REPORTED NUMBERS ==
+  frozen harness prints: indexed 31102 ... 588029 distinct 6-shingles  (KJV)
+  this module asserts:   verseCount 31102, shingleToVerses.size 588029
+
+== PASS ==
+  Test Files  1 passed (1)
+  Tests  42 passed (42)
+
+== RED-PROOF 1: drop the line-break dehyphenation from the tokeniser ==
+  Tests  3 failed | 39 passed (42)
+
+== RED-PROOF 2: off-by-one on the distinctiveness floor — AND THE HOLE IT EXPOSED ==
+  FIRST ATTEMPT: seeding '<' -> '<=' passed 40/40. The seed was invisible because every
+  fixture quoted a LONG verse, so no verse with exactly minVerseShingles was ever hit.
+  188 KJV verses sit exactly on that boundary. Two boundary tests added (on it, and one
+  below it). Re-seeded against the strengthened suite:
+  × verse-level parity over the real KJV index > agrees ON the distinctiveness boundary, where a verse has EXACTLY minVerseShingles 463ms
+  Tests  1 failed | 41 passed (42)
+
+== RESTORED ==
+  Tests  42 passed (42)
+
+FROZEN ARTIFACTS UNTOUCHED THROUGHOUT:
+  c954383cbeba463d50c5469868c15f4fd895dbfc070b4e03bba79e0298a650b6  scripts/slice0-anchor-recall.mts
+  c15b1bbbc08e1cafcfd8ec321eedebabe6e63d05df8332e26e0f89533629d4f8  scripts/slice0-precision.mts
+  02b8c7f50791ccfc5a2c43c30fafc026f5b56493a277964fe6c9c7c73942242b  src/ingest/resource-textmatch.ts

@@ -103,7 +103,7 @@ so it does not need a bigger model.
 | Job | Pick (start) | Provider | License / note |
 |---|---|---|---|
 | Extraction, stance, composition | **Qwen3 32B** | DeepInfra (Nebius failover) | Apache 2.0; version-pinned |
-| Embeddings | **Jina v3** (already chosen) or Qwen3-Embedding | self/DeepInfra | 1024-dim; keep what's integrated |
+| Embeddings | ~~**Jina v3** (already chosen)~~ **WRONG — see the correction above; pinned model is `BAAI/bge-large-en-v1.5` (ADR-005)** | self/DeepInfra | 1024-dim; keep what's integrated |
 | Reranker | **BGE-reranker-v2-m3** or Jina reranker v2 | DeepInfra/self | cheap cross-encoder, big precision win |
 | Verifier entailment (V2) | prompted Qwen3 32B now; **DeBERTa-v3 MNLI** as a cheap deterministic backstop | self | tiny, runs on CPU |
 | Phase-2 fine-tunes | **Qwen3 4B/8B + LoRA** | train Modal/RunPod, serve DeepInfra/Nebius | for stance + V2 classifier |

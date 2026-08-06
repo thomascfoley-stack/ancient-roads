@@ -1,6 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { NeonAuthUIProvider } from '@neondatabase/auth/react';
-import { authClient } from '@/lib/auth/client';
 import { AppShell } from '@/components/app-shell';
 import './globals.css';
 
@@ -86,12 +84,11 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-stone-50 font-sans text-stone-900 antialiased dark:bg-stone-950 dark:text-stone-200">
-        <NeonAuthUIProvider
-          authClient={authClient}
-          social={{ providers: ['google', 'github'] }}
-        >
-          <AppShell>{children}</AppShell>
-        </NeonAuthUIProvider>
+        {/* The NeonAuthUIProvider that wrapped this is gone with the rest of the beta SDK
+            (SEC-1). It declared social={{ providers: ['google','github'] }}; the cutover ships
+            email/password only, which is what closes GHSA-g38m structurally rather than by
+            configuration. See docs/AUTH_CUTOVER_DESIGN.md §2. */}
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

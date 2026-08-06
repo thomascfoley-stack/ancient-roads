@@ -1,0 +1,57 @@
+§6 — THE THREE SEARCHES. 2026-08-04T06:33:01Z
+
+THE FINDING IS ABOUT MY OWN SUITE. The first version passed 15/15 and FOUR OF FIVE seeded
+bugs escaped it:
+  SEED 1 rank by ordinal instead of cosine    -> 15/15 PASS (should have been caught)
+  SEED 2 containment instead of range overlap -> 15/15 PASS
+  SEED 3 match-count floor drops citations    -> caught
+  SEED 4 drop the empty-query guard           -> 15/15 PASS
+  SEED 5 drop the explicit user_id predicate  -> 15/15 PASS
+
+DIAGNOSIS, measured not guessed: the fixture was 490 characters against a 1200-char chunk
+budget, so it produced exactly ONE section. Every ordering assertion was comparing a
+one-element list with itself. And every anchor was a single verse, so overlap and
+containment gave identical answers.
+
+FIXED: the fixture is now 25 paragraphs / 5,066 chars / 5 sections, and it cites Romans 8 at
+CHAPTER grain (45008001-45008999) as well as 8:28, so a wide anchor exists that a
+single-verse query must still find. Two PRECONDITIONS now fail loudly if a future edit
+shrinks the fixture below what can discriminate -- >=5 sections, and >=1 wide anchor.
+Two rows would catch a wrong ORDER BY only about half the time; five makes accidental
+agreement vanishingly unlikely. Seed 1 was re-run THREE times to confirm determinism.
+
+== PASS ==
+  ✓ test/user-corpus/search.test.ts > the three searches > the fixture can discriminate at all > indexed several sections, so an ordering test is not comparing a list of one
+  ✓ test/user-corpus/search.test.ts > the three searches > the fixture can discriminate at all > produced a CHAPTER-grain anchor as well as verse-grain ones
+  ✓ test/user-corpus/search.test.ts > the three searches > semantic > finds A's own writing
+  ✓ test/user-corpus/search.test.ts > the three searches > semantic > is EXACT brute force — equals a reference cosine computed here (SLICE_1_DATA_MODEL test 2) 335ms
+  ✓ test/user-corpus/search.test.ts > the three searches > semantic > scopes to one document when asked — same function, optional filter
+  ✓ test/user-corpus/search.test.ts > the three searches > semantic > B never sees A (SLICE_1_DATA_MODEL test 1, through the real search)
+  ✓ test/user-corpus/search.test.ts > the three searches > keyword > finds an exact line A wrote
+  ✓ test/user-corpus/search.test.ts > the three searches > keyword > B never sees A
+  ✓ test/user-corpus/search.test.ts > the three searches > keyword > returns nothing for an empty query rather than everything
+  ✓ test/user-corpus/search.test.ts > the three searches > keyword > does not throw on punctuation that would break to_tsquery 385ms
+  ✓ test/user-corpus/search.test.ts > the three searches > verse-anchor scan > answers by OVERLAP, not containment — in BOTH directions
+  ✓ test/user-corpus/search.test.ts > the three searches > verse-anchor scan > reports the channel and match count, so "quoted at length" is separable from "mentioned"
+  ✓ test/user-corpus/search.test.ts > the three searches > verse-anchor scan > a match-count floor never silently drops explicit citations
+  ✓ test/user-corpus/search.test.ts > the three searches > verse-anchor scan > B never sees A
+  ✓ test/user-corpus/search.test.ts > the three searches > fusion and bounds > fuses semantic and keyword by reciprocal rank
+  ✓ test/user-corpus/search.test.ts > the three searches > fusion and bounds > RRF ranks a result appearing in BOTH lists above one appearing in either alone
+  ✓ test/user-corpus/search.test.ts > the three searches > fusion and bounds > clamps limit and offset rather than passing them to Postgres
+  Tests  17 passed (17)
+
+== RED-PROOFS AFTER THE FIX ==
+  SEED 1 (rank by ordinal)        -> 1 failed, 3 runs out of 3
+  SEED 2 (containment not overlap) -> 1 failed
+  SEED 3 (floor drops citations)   -> 1 failed
+
+== TWO SEEDS STILL ESCAPE, AND THAT IS STRUCTURAL, NOT A GAP TO PATCH ==
+  SEED 4, empty-query guard: websearch_to_tsquery('english','   ') yields an EMPTY tsquery
+  and 'tsv @@ ' matches nothing, so the database refuses a blank search whether or not we
+  do. No fixture can make this discriminate. The guard is belt-and-braces; the test's claim
+  is downgraded in place to what it actually proves.
+  SEED 5, explicit user_id predicate: RLS is already bound by runAsUser and carries the
+  isolation alone, so deleting the predicate changes nothing observable. The test proves
+  THE BOUNDARY HOLDS -- the invariant that matters -- not the predicate. Nothing driven
+  through runAsUser could prove the latter. The policy itself is watched red in
+  scripts/redproof-user-corpus-rls.mjs.

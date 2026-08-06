@@ -140,9 +140,17 @@ export function SidebarNavContent({
               // marketing page still authenticated while believing they had signed out. On a
               // shared device that is a false security signal, which is worse than an error.
               onClick={async () => {
+                // Better Auth's own client, not a hand-rolled POST. The route that used to serve
+                // this cleared `__Secure-neon-auth*` cookies -- the wrong cookie family now -- and
+                // it sat at /api/auth/sign-out, SHADOWING the catch-all handler Better Auth mounts
+                // there. It is deleted; this is the supported path.
+                //
+                // The failure branch is main's and is kept: signOut() can reject, and a sign-out
+                // that quietly does nothing while the reader believes they are signed out is the
+                // worst outcome on a shared machine.
                 try {
-                  const res = await fetch('/api/auth/sign-out', { method: 'POST' });
-                  if (!res.ok) throw new Error(String(res.status));
+                  const { error } = await authClient.signOut();
+                  if (error) throw new Error(error.message ?? 'sign-out failed');
                   window.location.href = '/';
                 } catch {
                   alert('Sign out failed. You are still signed in. Please try again.');
@@ -275,6 +283,20 @@ export function SidebarNavContent({
             label="Word study"
             tier="shelf"
             active={pathname.startsWith('/library/word-study')}
+            row={row}
+            onNavigate={onNavigate}
+          />
+          {/* MY WORKS WAS UNREACHABLE FROM HERE, which made the whole feature invisible to anyone
+              who navigates by the sidebar -- which is everyone. It was linked from the /library
+              index page and nowhere else, so it existed, worked, and could not be found.
+              This is the same failure the comment 30 lines up describes ("orphan a working
+              surface"), repeated on the newest shelf. */}
+          <SidebarLink
+            href="/library/uploads"
+            icon={<BookStackIcon />}
+            label="My Works"
+            tier="shelf"
+            active={pathname.startsWith('/library/uploads')}
             row={row}
             onNavigate={onNavigate}
           />

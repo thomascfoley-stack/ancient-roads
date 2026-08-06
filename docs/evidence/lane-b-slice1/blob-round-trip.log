@@ -1,0 +1,35 @@
+BLOB ROUND-TRIP — @vercel/blob against the LIVE store, 2026-08-03T17:16:28Z.
+
+Store: ancient-paths-user-corpus (Vercel Blob, region IAD1, ACCESS = PRIVATE), connected to
+the 'web' project. BLOB_READ_WRITE_TOKEN injected for Production, Preview AND Development, and therefore NOT
+marked Sensitive -- Vercel forbids Sensitive vars from targeting Development, and the owner ruled
+for Development coverage over unreadability (ADR-101).
+IAD1 colocates with the Neon branch (us-east-1). Vercel's own quickstart for this store uses
+access: 'private', which is what the code already did.
+
+This closes the last unproven item. Every other suite substitutes getUserDocument to read
+bytes from disk; these four run against the real network hop.
+
+--- PASS ---
+✓ test/user-corpus/blob-round-trip.test.ts > @vercel/blob against the live store > stores and returns the exact bytes, then deletes them 986ms
+✓ test/user-corpus/blob-round-trip.test.ts > @vercel/blob against the live store > runs the WHOLE pipeline with real storage: upload -> blob -> drain -> parse -> chunking 1419ms
+✓ test/user-corpus/blob-round-trip.test.ts > @vercel/blob against the live store > deleting a document deletes its blob — the cascade leg Postgres cannot do 1710ms
+✓ test/user-corpus/blob-round-trip.test.ts > @vercel/blob against the live store > leaves no blobs of its own behind
+Tests  4 passed (4)
+
+--- RED-PROOF: remove the blob delete from deleteDocument ---
+× test/user-corpus/blob-round-trip.test.ts > @vercel/blob against the live store > deleting a document deletes its blob — the cascade leg Postgres cannot do 1539ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+Tests  1 failed | 3 passed (4)
+  -> the row vanishes and the user's file stays on Vercel's storage forever, named by nothing
+     in the database. A privacy bug, not untidiness (§8).
+
+--- A FINDING IN THE HARNESS ITSELF ---
+The first version of this suite's cleanup deleted ROWS ONLY, and five runs left 9 orphaned
+blobs in the store -- the harness committing the exact bug its third test asserts against.
+Found by listing the store rather than by trusting the cleanup. Orphans purged, cleanup now
+sweeps by prefix, and a fourth test asserts the suite leaves nothing behind.
+
+--- RESTORED, and store residue after a full run ---
+Tests  4 passed (4)
+blobs remaining under user-corpus/: 0

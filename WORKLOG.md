@@ -1,5 +1,621 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-05 (Lane B: My Works driven in a browser — the feature was dark on production)
+
+**Headline: the env var that switches uploads on was never set in Vercel. Every signed-in user
+on production got "Uploads are not available on this account yet." and no upload control at all.
+The API evidence in the entry below could not see it, because the API was called as nobody.**
+
+### What a new user actually had to do, and where it broke
+
+Driven signed-out in a browser, no URLs typed until the nav had been exhausted:
+
+1. `ancientpaths.app` is a waitlist page — "Request access" and "Log in", no sign-up.
+2. "Log in" goes to `/home`, the app itself, signed out. The sidebar there says **Sign in**.
+3. LIBRARY → scroll the sidebar → **My Works** is the last shelf entry. It IS reachable
+   (`e7ad76d` holds), and at 390px it is under Menu → My Works. **The nav is not the bug.**
+4. Signed out, `/library/uploads` correctly offers "Sign in to bring your own sermons and papers
+   into the library" with a working button (`cb18357` holds — both of the previous session's
+   unverified fixes are confirmed good).
+5. Registered a real account through `/auth/sign-up`. **And there the path ended:** My Works
+   rendered "Uploads are not available on this account yet." with no dropzone, no search box.
+
+`GET /api/user-corpus/documents` → **403**, not 401. `uploadDenial` had taken its fail-closed
+branch: `multiUserUploadsEnabled()` is `MULTI_USER_UPLOADS && env.USER_CORPUS_MULTI_USER === 'true'`,
+and **`vercel env ls production` had no `USER_CORPUS_MULTI_USER` row at all** (nor
+`USER_CORPUS_OWNER_IDS`), so an empty allowlist denied everyone. The gate working exactly as
+designed, over a variable nobody had set.
+
+The handoff doc asserted "`USER_CORPUS_MULTI_USER=true` in Vercel"; it was not. Corrected in place.
+The likely mechanism is the known one: `vercel env add` silently ignores piped stdin, so a session
+that pipes the value records a success that never happened. `--value` is the form that works.
+
+**Fix: config, no code.** `vercel env add USER_CORPUS_MULTI_USER production --value true`, then
+deploy. The SEC-1 ceiling was checked first rather than assumed — `sec1-upload-gate.test.ts` 7/7
+green, `@neondatabase/auth` gone from the deps, only two non-g38m advisories left in
+`ignoreGhsas` — so flipping the env half of an already-committed `MULTI_USER_UPLOADS = true` is
+the intended state, not a new decision. `dpl_42dKT1ypjEikqCXBzeb6wSqHpeLd`.
+
+### Then the whole loop, driven as that user
+
+Upload was the real `<input type="file">` with a real 2 KB `.md` sermon (the OS picker dialog is
+Chrome chrome and was not driven; the file input, its change handler and everything downstream
+were). Watched, not asserted:
+
+- the card appeared as **Indexing** and polled itself to **Ready** with no reload
+- text search "what did I say about the hireling" → **1 passage from your works**
+- passage search "John 10" → **Where you have written on it — quoted (12 matches)**
+- "The tradition on this" → **18 voices from the library on 7 passages this document anchors**
+
+At 390px and at 1280: no horizontal overflow (`scrollWidth == innerWidth`), no console errors.
+
+### Two defects found by reading the screen, each fixed and re-driven
+
+**1. The tradition panel printed database slugs at the reader** (`7b0a0db`). "Alexander Maclaren,
+maclaren-expositions", "Charles Haddon Spurgeon, spurgeon-sermons", "Borthwick, Jane,
+borthwick-hll". `metadata->>'work'` is a slug; `sources.title` is the name the rest of the library
+shows. LEFT JOIN on `sources.slug` — the key `blocker2-boundary-census.mts` already uses — and
+COALESCE back to the slug so a work with no `sources` row still lists its author. After:
+"Alexander Maclaren, Expositions of Holy Scripture", "Charles Haddon Spurgeon, Spurgeon: New Park
+Street & Metropolitan Tabernacle Pulpit (63 vols)". It also **explains the two Spurgeon rows**,
+which without titles read as a duplicate bug. `tradition-gap.test.ts` 11/11 and
+`tradition-gap-wiring.test.ts` 6/6 still green; the predicate is untouched, this only renames rows
+already admitted.
+
+**2. Search excerpts rendered raw markdown** (`972292d`). A preacher searching his own sermon got
+"# The Good Shepherd and the Hireling *Preached on a Lord's Day morning* **Text: John 10:11**".
+Stripped for DISPLAY only — the stored section stays byte-faithful to the uploaded file, because
+it is the user's document and the anchor channels shingle against it, so rewriting it at ingest
+would move a measured number. Also took the signed-out Sign in link from `<a>` to `next/link`:
+the one lint error in that file, which the **pre-commit lint never sees because it ignores
+`web/src`** (it reports "File ignored because of a matching ignore pattern" and then prints
+"lint clean").
+
+### NOT DONE / UNVERIFIED
+
+- **Production is NOT clean.** One test account (`browsercheck-0805@ancientpaths.app`) and one
+  document remain, deliberately, so the owner can open the working feature. Deleting them is a
+  prod write and wants the owner's go (bylaw 7).
+- **`npm run audit` was not run in full.** Typecheck (web, strict) clean and the two tradition-gap
+  suites green. The full `web/test` run has **5 files failing on `ECONNREFUSED 127.0.0.1:5432`** —
+  no local Postgres, so those are NOT RUN rather than red: `commentary-entries-provenance`,
+  `register-end-to-end`, `register-wall-surfaces`, `blob-round-trip`, `queue-never-drops`.
+- **`plainExcerpt` has no test** and no red-proof. The prompt forbade new test files; the check
+  that stands behind it is the screenshot before and after.
+- **Seen once, not chased:** clicking "The tradition on this" in the first second after a fresh
+  page load fires the request (200) but the panel never renders; a second click works. Same shape
+  for typing into the search box too fast after landing — the characters are wiped. Both smell
+  like pre-hydration input against a controlled component, not like this feature.
+- The **`MIN_CHARS_PER_PAGE = 100`** scanned-PDF threshold is still reasoning rather than
+  measurement, unchanged from the entry below. Nothing here exercised a PDF at all — the upload
+  driven was markdown.
+- Branch `feat/lane-b-slice1-uploader` is now **48 ahead of `main` and unmerged**; production runs
+  it via `deploy.sh`, which uploads the working tree, so `main` still does not reflect what is live.
+
+## 2026-08-05 (Lane B: A7 - the SEC-1 gate made mechanical; the cutover scoped)
+
+**Headline: the shortcut to closing SEC-1 does not work, and finding out why is the session's main
+result. The pnpm-override branch upgrades a copy of better-auth that is not the one running the
+vulnerable code.**
+
+### The override branch cannot close g38m
+
+`fix/sec1-better-auth-1-6-25` (2026-07-29, unmerged) forces the better-auth subtree to 1.6.25 and
+clears `ignoreGhsas` to `[]`. Measured against the code: `createNeonAuth` returns a **proxy client**
+to a better-auth server **hosted by Neon** at `NEON_AUTH_BASE_URL`; the OAuth auto-link logic runs
+there, at a version we cannot set. Our `node_modules` copy is the client SDK.
+
+So the branch would take `pnpm audit` green while the account-takeover path is untouched, and would
+delete the ignore-list entry that is the repo's only mechanical record that SEC-1 is open. Its own
+commit message says it was "verified lockfile-only" - never built, never signed in. Recorded in
+`SECURITY.md` under SEC-1, where a reader meets the claim, rather than only here. **Recommend
+closing it unmerged.**
+
+### A7 built - and it had to build the switch it guards
+
+`UPLOADER_DESIGN` §4 requires the gate be "enforced in CI, not prose". Neither half existed: there
+was no flag, and §4 condition 2 (the endpoints hard-allowlist the owner's id) was prose while all
+six user-corpus handlers called `requireUser()` and then served **any** authenticated caller.
+
+Two design points worth carrying forward:
+
+- **The ceiling is a committed constant, not an env var.** CI cannot read Vercel's environment, so a
+  gate consulting only `process.env` would be a check with no access to what it checks - green
+  forever. The env switch can only narrow the constant, so the CI assertion is about production, not
+  intent.
+- **The advisory set is derived from `SECURITY.md`'s adjudication table**, never typed. And the parse
+  must anchor on the "In our path?" header: that file carries a *second* GHSA table whose third
+  column asks "In ignoreGhsas?", so an unanchored parse sweeps up nine ledger rows including ones
+  adjudicated not-in-path. Route coverage is likewise derived by walking the route tree, so a
+  seventh route cannot quietly skip the guard.
+
+Six red-proofs, each watched fail and reverted. R2 is the interesting one: renaming the table header
+makes the suite **refuse to collect** (exit 1, "Tests no tests") rather than pass vacuously - which
+my first proof run nearly recorded as a silent pass, because the grep I used looked for a test-count
+line that a failed collection never prints.
+
+16/16 green after restore. `routes.test.ts` 14/14 unchanged. Typecheck and lint clean (0 errors;
+eslint coverage of the new files confirmed by seeding an `any` and watching it error, because a grep
+returning nothing is not proof of coverage). Commit `efba545`.
+
+### Scoped, not built: the cutover
+
+[`docs/AUTH_CUTOVER_DESIGN.md`](docs/AUTH_CUTOVER_DESIGN.md), awaiting an owner decision. Two facts
+the spike did not cost:
+
+1. **There is no mailer.** No `resend`/`sendgrid`/`nodemailer`/`postmark`/`mailgun`/`ses` dependency
+   and no `sendMail` call site anywhere in `web/src`. The spike's own g38m fix is "link only when the
+   local email is `emailVerified`", which is unimplementable without one. Password reset needs email
+   under every option.
+2. **g38m requires both email/password AND social login.** Shipping email/password only closes it
+   *structurally* rather than by configuration - a stronger property, and a much smaller cutover.
+   That is the recommendation, and it is a product call because it costs "Continue with Google".
+
+Also measured: **nothing** in `db/`, `web/src/lib/` or `scripts/` references `neon_auth` or
+`users_sync`, so clean-start orphans rows but breaks no constraint. The uploader's tables are empty
+today, which makes now the cheapest moment this cutover will ever have.
+
+### Cutover step 1 built: Better Auth runs directly (commit `6a3eaa9`)
+
+Owner ruled §2: **email/password + a mailer, no social providers.** g38m needs both credentials and
+social login present, so with no OAuth callback the class is closed structurally, not by a flag.
+
+Built: `web/src/lib/auth/better-auth.ts` (lazy, memoised, connects as `app_runtime` through db.ts's
+`runtimeUrl()`), `web/src/lib/mail.ts` (Resend over fetch, no SDK), and
+`db/migrations/104_better_auth_schema.sql`, applied to the **lane-b branch only**.
+
+Two schema notes worth carrying: `user` is a **reserved word** in Postgres and an unquoted
+`SELECT ... FROM user` silently returns the role name rather than erroring, hence the `auth_`
+prefix; and RLS is deliberately OFF on all four tables, because authentication runs before there is
+an `app.current_user_id` to key a policy on. The honest cost is that the bcrypt hashes are readable
+by anything running as `app_runtime`, so confinement is asserted instead: no module outside
+`web/src/lib/auth/` may name those tables.
+
+Both checks red-proofed. The live one matters most: `better-auth-schema.test.ts` compares two
+descriptions of a schema and would stay green against a database where 104 had never been applied,
+so `better-auth-live.test.ts` drives the real API and asserts signup stores a credential account
+with a hash, sign-in issues a session, and a wrong password is refused.
+
+Two findings from doing it:
+- Adding 104 turned `user-data-invariant` red on four unclassified tables, which is that
+  enumeration working exactly as designed. Classified as auth infrastructure, not user content:
+  session rows churn on every sign-in, so a G1 digest over them would go red on normal use and be
+  muted within a week, taking the tables that matter with it.
+- **My own skip guard was inverted** (`const SKIP = !announceSkip(...)`), so a fully configured
+  machine skipped the suite and reported green having run nothing. Caught only because the run said
+  "3 skipped" where it should have hit the database. Same family as the A7-X1 retraction.
+
+### DEPLOYED. SEC-1 is closed on production (2026-08-05)
+
+`dpl_HSUsCqGCwWVPrQuG4bL1MBq3hJFg` from `e0cfd24`, aliased to `ancientpaths.app`. Migrations 100-104
+applied to `ep-odd-fog` and recorded. Verified by **creating a real account through the deployed
+app**: production took a `credential` row with a bcrypt hash and issued a live session, then the
+test account was deleted, leaving 0 users for the clean start.
+
+**The first deploy attempt FAILED, and the reason is the A6 defect class again.** The Vercel build
+died on `Export customFetch doesn't exist in target module` from
+`@better-auth/core/dist/oauth2/validate-authorization-code.mjs`. Three packages declare a jose
+range: `@better-auth/core` ^6.1.0, `better-auth` ^6.1.3, `@vercel/oidc` ^5.9.6. npm hoisted 5.10.0
+to satisfy `@vercel/oidc` and nested 6.2.8 under `better-auth` only, so `@better-auth/core` (also
+hoisted) resolved 5.10.0, which has no `customFetch`. `--legacy-peer-deps`, required by
+`web/.npmrc`, meant the peer range was never enforced. Invisible locally: pnpm's isolated layout
+gives every package its own correct copy, and no local command runs `npm ci` against
+`web/package-lock.json`. Fixed by declaring `jose ^6.1.3` directly, and verified by reproducing
+Vercel's install (`npm ci --legacy-peer-deps` in a clean directory) rather than by reasoning.
+
+**A gap this exposes:** the three upload-root guards check the deploy lockfile is SELF-CONTAINED.
+None checks that it RESOLVES compatibly. That is a different property and it is currently unguarded.
+
+**A second tree-shape trap, caught before it shipped.** This worktree had `web/public/bible` as a
+symlink and was missing `commentaries`, `concordance`, `lexicon`, `original` and
+`corpus-manifest.json` entirely. `vercel --prod` uploads the working tree, so deploying from here
+would have shipped a reader with **zero of the 1213 commentaries**. The real directories were copied
+in first. The main clone was not used because it sits on Lane A's branch with 6 dirty files, which
+is the concurrent-tree hazard AGENTS.md records twice.
+
+### My Works is LIVE on production, verified end to end (2026-08-05)
+
+`dpl_GYLXvRPN3fvd2hhwQ6QwyfHVorcs`. `MULTI_USER_UPLOADS` is true and
+`USER_CORPUS_MULTI_USER=true` is set, because SEC-1 closing satisfies UPLOADER_DESIGN §4's
+condition 1. Red-proofed in the state that matters (flag TRUE, g38m returned to the ignore list):
+A7 fails with its own message.
+
+**Driven against production, not asserted.** Registered an account, uploaded a markdown sermon
+through `/api/user-corpus/upload` as that signed-in user, and watched the whole pipeline:
+
+- upload -> 201, `queued`
+- the `after()` drain fired on Vercel and the document reached **`ready` inside 10 seconds**:
+  2 sections, 2 embeddings, 5 anchors
+- text search -> `mode: fused` (semantic + FTS through RRF), returned the section
+- passage search -> `mode: verse`, resolved "John 10" to 43010001-43010999 and returned the
+  explicit anchor at 43010011
+- an unparseable ref -> 400, not a text search
+- delete -> 200, and the A4 cascade took sections, embeddings and anchors with it
+
+**The anchoring result is the interesting part.** Both channels fired and AGREED, which
+migration 103 records as the strongest available signal that an anchor is real:
+
+    explicit  John 10:11 · Romans 8:28          (the two citations)
+    uncited   John 10:11 (9) · Romans 8:28 (20) · John 10:13 (6)
+
+John 10:13 was never cited in the document. "The hireling flees because he is an hireling, and
+careth not for the sheep" is that verse verbatim, and the uncited channel found it. That is the
+channel doing the thing it exists for rather than merely running.
+
+`model_slug` is `bge-large-en-v1.5`, the SHORT corpus form, so ADR-102's tautology trap
+(writing the qualified `BAAI/...` and comparing it against itself) is avoided in live data.
+
+Production was left clean: 0 users, 0 sessions, 0 documents.
+
+### THE MOAT IS CONNECTED AND LIVE (2026-08-05)
+
+`dpl_2DqF5fSA8bzULBYqHhsG4mhoFEyo`. `GET /api/user-corpus/documents/[id]/voices` plus the My Works
+surface. This is the ADR-104 call site and it is one line: the join takes the corpus filter as a
+parameter precisely because, when it was built, `LEGAL_CORPUS_FILTER` was still the author allowlist
+on this branch while `served` already existed on the database. Lane A has merged, so the constant is
+now `(served)`, the gate is discharged, and the call site imports THE canonical predicate. Still
+exactly one definition of what the corpus serves.
+
+**Driven on production.** Registered, uploaded a sermon quoting John 10:11 and Romans 8:28, waited
+for `ready`, called the endpoint:
+
+    14 voices from the library on 3 passages this document anchors
+    Adam Clarke [Methodist] · Albert Barnes [Presbyterian] · Augustine of Hippo [Patristic]
+    Jane Borthwick [hymn] · Spurgeon, sermons [Baptist] · Spurgeon, morning-evening [Baptist]
+    Jamieson Fausset & Brown [Presbyterian] · John Calvin [Reformed] ...
+
+Every row `origin: 'corpus'`, so no user content crossed into the join. Rendered and checked at
+desktop and 390px; the list wraps, nothing overflows. Production left clean: 0 users, 0 documents,
+0 sections, 0 vectors, 0 anchors.
+
+**New guard, three red-proofs.** `tradition-gap-wiring.test.ts` protects the failure that is
+actually likely: someone reading `AND ${predicate}` and typing `served = true` at the call site
+because it is shorter than an import. That stays green in every other test, looks right today, and
+goes silently stale the day "served" is redefined. Seeds: filter hand-written rather than imported
+(3 failed) · the pending guard removed (1) · `routing.ts` drifting to a different definition (1).
+The literal check strips comments first, because both files discuss `served = true` in prose and a
+guard that fires on its own rationale gets switched off within a week.
+
+**The copy is deliberately narrow.** "N voices from the library on M passages this document
+anchors", never "what you missed". Slice 1 returns the voices ON the passages, not the complement;
+answering the "not" half needs a commentator-detection channel that does not exist, and
+`tradition-gap.ts` says so in its own header. Claiming the gap would be the product asserting
+something it has not measured.
+
+A queued document returns `pending: true` rather than an empty list, so "still indexing" cannot
+render as "the tradition is silent on this".
+
+The derived route-coverage check picked the new route up by itself (9 -> 10 tests) and asserted it
+goes through `guardUser`. That is what deriving the route set instead of hand-listing it was for.
+
+### Superseded: the moat was not connected
+
+`traditionGap` has **no call site anywhere outside its own module and tests**. Slice 1 therefore
+ships what the order itself calls the filing cabinet: personal upload and personal search, without
+the corpus join that nothing else could build.
+
+What changed today is that it is no longer BLOCKED. The merge brought Lane A's work, so
+`LEGAL_CORPUS_FILTER` in `routing.ts` is now `(served)` and production carries 399,597 served
+embeddings. ADR-104 gated the join on exactly that, and the gate is discharged: the function takes
+an injected `CorpusPredicate` and the production call site can now supply the canonical filter.
+What remains is a route and a UI surface, not a decision.
+
+### Mail is wired, and its ceiling is a DNS record (2026-08-05)
+
+`RESEND_API_KEY` and `MAIL_FROM` are set in production and `dpl_3gdjPe6oz23coPK1Hm4yW4iomHvT` is
+live. Delivery PROVEN, not assumed: a message sent through the same call shape `mail.ts` uses was
+accepted (`b85c8707-5199-4df2-8b10-a7a418908879`).
+
+**But `MAIL_FROM` is `onboarding@resend.dev`, which Resend restricts to the account owner's own
+address.** So password reset works for `thomascfoley@gmail.com` and, for anyone else, still fails
+silently. That is a real ceiling and it is one DNS change away, not a code change.
+
+Established by probe rather than by reading docs:
+- from `noreply@ancientpaths.app` -> 403 "domain is not verified"
+- from `onboarding@resend.dev`     -> 403 "can only send testing emails to your own email address"
+
+The domain is now REGISTERED on Resend (id `cd9ce73a-1648-405f-aeab-80182cdd140d`, status
+`not_started`) and its three DNS records are committed to
+[`docs/evidence/resend-dns-records.txt`](evidence/resend-dns-records.txt).
+
+**I could not add them.** `ancientpaths.app` is registered with Vercel and on Vercel nameservers, so
+the records belong there, but the deploy token is refused: `permission_denied ... under
+home-network-hardening`. It can deploy and write env vars; it cannot write DNS. Adding those three
+records and then flipping `MAIL_FROM` to `noreply@ancientpaths.app` is all that stands between the
+current state and reset working for every account.
+
+Note the first key supplied was send-only ("This API key is restricted to only send emails"), which
+is why the domain could not be created until the second, full-access key arrived.
+
+### Still needed from the owner
+
+- **A Resend account.** `RESEND_API_KEY` and `MAIL_FROM` are unset in production, so **password
+  reset silently does nothing** and verification mail is never sent. Sign-up and sign-in are
+  unaffected. Better Auth backgrounds both sends, so the app cannot surface the failure; the server
+  log is the only signal.
+- `MULTI_USER_UPLOADS` is still `false`, so uploads are closed on production. Flipping it is a
+  one-line change plus a redeploy, deliberately held back so auth gets a first production run
+  before multi-user upload is switched on.
+
+### NOT DONE / UNVERIFIED
+
+- The rest of the cutover: `session.ts`, `client.ts`, the handler route, the two Neon prefab pages
+  (`AuthView` / `AccountView`) replaced with our own forms, removing `@neondatabase/auth`, and the
+  `web/package-lock.json` regeneration that any deploy requires. **The app still authenticates
+  through Neon Auth**; Better Auth is built and proven beside it, not yet wired in.
+- The theming hazard in AUTH_CUTOVER_DESIGN §3 is untested: removing
+  `@import '@neondatabase/auth/ui/tailwind'` either fixes the known two-owners-of-`dark` defect or
+  breaks theming, and only a browser at 390px and desktop can say which.
+- Production is untouched. Migration 104 exists on `lane-b-uploader` only.
+- A6 quotas, the full `npm run audit`, the independent `deep-audit`, and the rebase onto `main`
+  (27 ahead, 103 behind) all still outstanding from the Slice 1 plan.
+- `MULTI_USER_UPLOADS` is `false` and must stay false until the cutover lands. Uploads are
+  single-account by construction; in production an unset allowlist denies everyone.
+
+## 2026-08-03 (Lane B: B4 ruled as ADR-100; B5 step 2 — upload, parse, status)
+
+**Headline: B4 is closed, and the upload pipeline reports honestly before it reports success — a
+parsed document lands in `chunking`, never `ready`, because steps 3 and 4 have not been built. The
+most useful finding of the session is that my own concurrency test was a false-confidence test.**
+
+### B4 — RULED, as ADR-100
+
+Option A (shingle against the user's translation) with per-**document** detection, no user setting
+in Slice 1. Three things `SLICE1_TRANSLATION_DECISION.md` deliberately left open are now closed:
+
+- **The bar is not detector accuracy.** The paper proposed one; top-1 accuracy is the wrong metric
+  because the 18 shipped translations are not equidistant. The paper's own §3 records that
+  akjv/kjv/rwebster/ukjv/webster are KJV-descended and share long verbatim runs, so a kjv↔akjv
+  confusion costs ~0 and a kjv↔web confusion costs ~17 points. A detector can score 95% and bleed
+  recall, or 70% and lose nothing. The pre-registered bar is **end-to-end uncited-channel chapter
+  recall ≥70% with detection running**, reported beside the KJV-oracle ceiling.
+- **What happens when detection is wrong.** Detection resolves to a **family**; the channel unions
+  within the family when the top two are inside a margin. That is Option B bounded to the
+  correlated cluster — cheap, because those texts already share their 6-grams — and it never
+  unions across families, which is where Option B's unmeasured collision multiplication lives.
+  Below the floor, fall back to the KJV family and **record it** in `user_section_anchors.confidence`.
+- **Families are derived from measured 6-gram overlap, never typed.**
+
+Carries its own UNVERIFIED flag: the within-family-overlap premise is reasoning, not measurement,
+and is the first thing step 3 measures. **ADR numbered 100** because ADR-047 is already claimed
+twice — `53d90d1` on `main` and the /plans session's uncommitted `DECISIONS.md` — the third
+instance of this collision class in two days. Filed as a separate task.
+
+### Migration 101 — the `embeddings` REVOKE that ships WITH the user tables
+
+`SLICE_1_DATA_MODEL.md` says "do NOT skip" and "not a follow-up that gets lost". Applied.
+Precondition verified first, exactly as that document requires: no `app_runtime` path writes
+`embeddings` (every writer is under `src/ingest/` or `scripts/`, which assert `neondb_owner`;
+`web/src/` has no `INSERT INTO embeddings` at all; `src/retrieval/store.ts`'s only non-ingest
+consumer calls `.search()`).
+
+**What it actually changed, measured rather than assumed** — and it is not quite what the doc
+implies. The INSERT path was genuinely live: `embeddings_write_policy` permits
+`user_id = current_user_id`, so `app_runtime` could pollute the shared corpus table with its own
+rows. UPDATE and DELETE of corpus rows were already denied — but only by the **absence** of a
+policy for those commands, a negative guarantee that any future `CREATE POLICY … FOR ALL` erases
+silently. After 101 all three are `permission denied` at the grant layer, which does not depend on
+policy coverage staying correct. SELECT is untouched (1,070,674 rows still readable).
+
+### Step 2 — upload, parse, status
+
+Migration 102 adds only what something requires: `mime_type` (§9's "parse-failure rate BY FILE
+TYPE" is uncomputable without it, and it must be the SNIFFED type), `page_count` and
+`extractable_chars` (numerator and denominator of the scanned-document verdict, stored so the
+verdict stays auditable), `attempts` and `claimed_at` (retry, and reclaiming a dead worker's row),
+plus a partial unique index for checksum dedupe scoped to `(user_id, checksum)`.
+
+`web/src/lib/user-corpus/`: content-based MIME sniffing, size and decompressed-size caps, sha256
+dedupe, a hand-rolled docx reader, pdfjs extraction, the parse dispatcher and its verdict, private
+blob storage, the document store, and the queue.
+
+- **The docx reader is hand-rolled on purpose.** §8 requires a decompressed-size cap, and every
+  docx library hands back the extracted content — the bomb has already gone off before any check
+  of ours could run. `inflateRawSync`'s `maxOutputLength` aborts mid-stream, which is the cap the
+  design actually asks for. Red-proofed against a zip that declares 100 bytes and inflates to 81 MB.
+- **Blob storage is `access: 'private'`.** A sermon manuscript at a public URL is the most
+  sensitive thing this product will hold, and unguessable is not private.
+- **A parsed document goes to `chunking`, not `ready`.** `ready` means indexed and searchable, and
+  nothing is indexed yet.
+- **Two terminal refusals, not one.** `failed`/needs OCR for a scan (actionable: OCR it) and
+  `empty` for a genuinely blank file (a different file). Collapsing them tells someone to OCR an
+  empty `.txt`.
+
+### THE FINDING: my own concurrency test was a false-confidence test
+
+The SKIP LOCKED assertion was first written as "run two drains, check nothing is claimed twice."
+Seeding the bug (deleting `FOR UPDATE SKIP LOCKED`) sent it red twice — and then it **passed 8/8
+with the clause still deleted**. Whether two drains collide is timing. A check that only sometimes
+fails when the bug is present has not been watched fail; it has had a good day.
+
+Rewritten to assert SKIP LOCKED's actual semantics, which are deterministic: an independent
+connection holds a real row lock, and the drain must **skip** that row rather than wait on it.
+Same seed now fails **3 runs out of 3**, on the timeout, at ~9.2s. Two tests were also found by
+being written: the docx reader dropped every `<w:tab/>` (fusing the words either side, which would
+have manufactured 6-grams that exist in no translation and quietly cost step 3 recall), and a
+"corrupt stream" fixture that flipped two bytes inside a real deflate stream proved nothing,
+because deflate tolerates that and inflates anyway.
+
+37 tests green over 4 files. Evidence under `docs/evidence/lane-b-slice1/`.
+
+### THE TWO UNPROVEN ITEMS, CLOSED (or narrowed to one line)
+
+**`MIN_CHARS_PER_PAGE = 100` is now MEASURED, and it survived.** Two populations through the real
+extractor: 120 real PDFs off this machine's ordinary document folders, and 12 of those same
+documents rasterised at 72dpi and reassembled as image-only PDFs (JPEG XObjects, DCTDecode) — real
+pages, no text layer, page count and layout controlled for.
+
+```
+TEXT  n=120  chars/page  min=0.0  p05=316.3  median=1350.7  p95=4475.0  max=5249.0
+SCAN  n=12   chars/page  min=0.0  median=0.0  max=0.0
+THRESHOLD 100 -> scans wrongly accepted 0/12 · text below threshold 3/120
+```
+
+All three below-threshold text documents are scans rather than prose, checked individually: two at
+exactly 0 chars over 13 and 2 pages, and one at 74 chars/page (222 characters across 3 pages —
+about one line per page, a stamp). **Zero confirmed false positives**, and the threshold sits in an
+empty band between 74 and 316.
+
+*The limitation that survives, and it is the interesting one:* rasterised scans yield EXACTLY zero,
+so this corpus does not sample the case the threshold exists for — a scan carrying stray text from
+a header stamp. That case has exactly ONE observation here (the 74 chars/page document), which does
+fall below 100. So this is evidence FOR the current value and against a much lower one (30 would
+have accepted it), but it is a single observation. Real scanner output, not rasterisation, is what
+closes it properly.
+
+**The pipeline is now proven end to end over real files** — real `.docx` and `.pdf` off this
+machine, through the real sniffer, the real docx reader, real pdfjs, the real verdict, the real
+queue, and Postgres under RLS as `app_runtime`. DOCX 6/6 to `chunking`, 82,534 characters
+extracted. PDF 6/6 to `chunking`, 73 pages. Real scans refused with needs-OCR and their evidence
+recorded. Dedupe refused by the database, not merely by the route.
+
+**The network hop is now proven too.** A Vercel Blob store — `ancient-paths-user-corpus`, region
+IAD1 (colocated with the Neon branch), **access PRIVATE** — was created and connected to the `web`
+project, injecting `BLOB_READ_WRITE_TOKEN` into Production and Preview as a Sensitive var. Vercel's
+own quickstart for the store uses `access: 'private'`, which is what the code already did. Four
+tests run against the live store with nothing substituted: a byte-exact binary round trip compared
+by checksum (a truncated or re-encoded blob keeps its length in plenty of failure modes), the whole
+pipeline upload → blob → drain → parse → `chunking`, and the blob leg of §8's delete cascade — the
+one leg Postgres cannot perform. Red-proofed by deleting `deleteUserDocument` from `deleteDocument`
+and watching the orphan survive.
+
+**A finding in the harness itself, which is the useful part.** The first version of that suite's
+cleanup deleted ROWS ONLY. Five runs left **9 orphaned blobs** in the store: the harness committing
+the exact bug its own third test asserts against — rows gone, files still on Vercel's storage,
+named by nothing. It was found by listing the store rather than by trusting the cleanup. Orphans
+purged, cleanup now sweeps by prefix so a test that dies between put and insert is still covered,
+and a fourth test asserts the suite leaves nothing behind. Store residue after a full run: 0.
+
+Nothing in the Slice 1 pipeline is unproven now except what is named in NOT DONE below.
+
+Both harnesses are committed and re-runnable, and both **skip visibly** without their corpora, so
+neither can be mistaken for a check that ran. Both report distributions and outcome counts only —
+the fixtures are the operator's own business documents, and no filename, excerpt, or per-document
+line appears in the harness output, the evidence, or the stored document titles.
+
+### NOT DONE / UNVERIFIED
+- **No browser check, and no UI.** `/library/uploads` is still the five-line `ComingSoon` stub; the
+  UI is step 7 and lands as **"My Works"** per the order's naming section. The DoD browser leg is
+  unmeetable at this step by construction.
+- **`npm run audit` not run in full.** Ran root `tsc` (0), cutover `tsc` (0), `eslint src test`
+  (0 errors, 34 pre-existing warnings), `knip` (nothing new), web `tsc` (0), web `eslint` (0),
+  and the web suite. Unrun: coverage thresholds, `qa`, the license gate, `next build`.
+- **Three pre-existing web-suite failures, NOT from this work, and proven so rather than asserted:**
+  `register-wall-surfaces` (2) and `register-end-to-end` (1) fail their own corpus preconditions.
+  Re-run on the clean `main` worktree at `2e906f8`, which has no `user-corpus` directory at all,
+  against the dev DB: same failures. `commentary-entries-provenance` fails in a full run and
+  passes alone, so it is order-dependent; not investigated.
+- **`maxDuration` is deliberately not exported** on the upload route. Every such export under
+  `web/src/app` is held equal to `ASK_MAX_DURATION_SEC`, because for the ask routes the ceiling and
+  the in-process budget are one number; parsing has no such relationship and adding a third
+  consumer would weaken that guard. Cost: a very large PDF can exceed the platform default and be
+  killed mid-parse. Survivable and visible — the row stays in `parsing` and the stale-claim rule
+  reclaims it by age — but it is a real limitation.
+- **pdfjs logs a benign `standardFontDataUrl` warning** during text extraction. Extraction is
+  unaffected (fonts matter for rendering, not for the text layer). Not silenced, because pointing
+  it at a filesystem path that may not exist in a serverless deployment would trade a harmless
+  warning for a real failure.
+- **Two new dependencies in the Vercel upload root**, `pdfjs-dist` and `@vercel/blob`, chosen by
+  the owner. `web/package-lock.json` regenerated by the A6 recipe (copy of `package.json` + `.npmrc`
+  in a directory with no ancestor `node_modules`): 776 entries, 0 escaping, all direct deps pinned.
+  All three A6 deploy guards green.
+
+## 2026-08-03 (Lane B / B5 step 1: migration 100 applied, RLS proven with two accounts)
+
+**Headline: the four user-corpus tables are live on `lane-b-uploader` and their isolation is
+proven by a two-account run over `app_runtime`, watched RED before it was believed. Getting there
+required fixing the migration runner, which could not reach the branch at all and was fail-open
+toward production on the way.**
+
+### WHAT SHIPPED
+
+1. `db/migrations/013_user_corpus.sql.draft` → **`db/migrations/100_user_corpus.sql`**, applied to
+   `lane-b-uploader` (`ep-snowy-bird-atmdsv3g`) as `neondb_owner`. Four tables, RLS enabled on
+   each, per-user policy on each, DML granted to `app_runtime`. Ledger row written
+   (`sha256 f64db6e46313…`). The draft was never applied anywhere, so there is no 013 to
+   reconcile. 100-block per the order; Lane A holds 039-045.
+2. **`scripts/redproof-user-corpus-rls.mjs`** — the two-account proof, 28 legs, run entirely over
+   `app_runtime` (`rolbypassrls=false`, asserted as a precondition rather than assumed).
+3. **`db/apply-migration.mjs` + `db/apply-migration-concurrent.mjs`** now share
+   `scripts/lib/target-guard.mjs` instead of each carrying a private copy of the rule.
+
+### THE MIGRATION RUNNER COULD NOT REACH THE BRANCH, AND WAS FAIL-OPEN TOWARD PROD
+
+Both runners gated on a private `/ep-tiny-hat|localhost|127\.0\.0\.1/` regex. Two defects:
+
+- **It could not admit a new dev branch at all.** `ep-snowy-bird-atmdsv3g` is not `ep-tiny-hat`,
+  so the only way through was `MIGRATE_ALLOW_PROD=1` — a flag that disables the guard for *every*
+  endpoint including `ep-odd-fog`. Reaching a dev branch by setting the allow-prod flag would have
+  left an evidence log saying exactly that about a run that never went near production.
+- **It matched a SUBSTRING of the whole connection string**, which is defect #2 that
+  `scripts/lib/target-guard.mjs` was written to close in 2026-07-27's deep audit and which its
+  header documents by name. Watched: a URL whose *password* contains `ep-tiny-hat` and whose
+  *host* is `ep-odd-fog-atnykudm` **passed the old predicate**. That is a production migration
+  authorized by a password string.
+
+This is the watchlist's first artefact again — a hand-copied rule that drifted from the one place
+that exists to hold it. The fix does not add a target to `DEV_ENDPOINTS`: it routes both runners
+through `isAuditAllowedHost`, which refuses prod *before* consulting any declaration, and reaches
+a new branch by declaring it (`MIGRATE_TARGET_ENDPOINT=<exact endpoint id>`) — the discipline
+`AUDIT_ALLOWED_ENDPOINT` / `SEED_TEST_ENDPOINT` already use. `DEV_ENDPOINTS` therefore stays a
+two-element list and cannot drift from its second hand-typed copy at `web/test/helpers/env.ts:60`,
+which nothing holds in sync.
+
+Red-proof: 8 cases × 2 runners, every case aimed at a nonexistent `.sql` so a fail-open surfaces
+as `ENOENT` rather than as a write, prod cases on a fake prod-shaped host with a bogus password.
+`docs/evidence/lane-b-slice1/migrate-target-guard-REDPROOF.log`.
+
+### THE RLS PROOF, AND THE VACUITY TRAP IT AVOIDS
+
+"User B sees 0 rows of user A's data" is *also* what an empty table returns. A test that cannot
+tell those apart is an unearned green. So leg 2 opens a second connection as `neondb_owner` and
+confirms A's four rows are really there and really visible to someone; the 0 that B sees in leg 3
+is then RLS, not emptiness. The script ABORTS if the owner connection is missing rather than
+skipping that leg and reporting the rest green.
+
+The check binds identity the way the product does — `set_config('app.current_user_id', …, true)`,
+transaction-local, inside explicit `BEGIN`/`COMMIT`, matching `runAsUser` in `web/src/lib/db.ts`.
+A session-level `SET` would have proven something the app never does and would leak identity
+through the pooler's transaction-mode pooling.
+
+Legs: preconditions (role is `app_runtime`, `rolbypassrls=false`, RLS on all four) · A writes a
+full document through `app_runtime` · owner sees it · B sees 0 across all four tables and cannot
+fetch A's document by its exact id · B's UPDATE and DELETE of A's row affect 0 rows and A's row is
+byte-unchanged after · B inserting `user_id=A` is rejected by `WITH CHECK` · unset GUC denies
+(fails closed) · A's delete cascades to 0 orphans in all four. **28/28.**
+
+**Watched RED** (`THE_LOOP` rule 4): `user_sections_policy` widened to `USING (true)` with RLS
+left ENABLED, so the preconditions still pass and leg 3 has to be what catches it. It did —
+2 legs red, `n=1` where 0 was required. Policy restored in the same run and re-verified green.
+`docs/evidence/lane-b-slice1/rls-two-account-{PASS,REDPROOF}.log`.
+
+### RE-MEASURED, NOT COPIED
+
+The order's ground-truth section is correct as amended: 832 sources (35 published · 796 staged ·
+1 quarantined), 435,991 sections, 1,070,674 embeddings, **328,775 with `served=true`**, migration
+044 applied and the sole `schema_migrations` row before today. `100_user_corpus.sql` is now the
+second. The four user tables hold 0 rows — the probe cleaned up after itself, verified.
+
+### NOT DONE / UNVERIFIED
+
+- **`npm run audit` has NOT been run in full.** Ran the legs these changes could break: root
+  `tsc --noEmit` (0), `tsconfig.cutover.json` (0), `eslint src test` (0 errors, 34 pre-existing
+  warnings), `knip` (no new findings). The suite legs — vitest+coverage, `qa`, license gate — are
+  unrun, and the full audit belongs at the end of the slice, not at step 1 of 7.
+- **Nothing has been loaded in a browser.** No UI exists yet; `/library/uploads` is still the
+  five-line `ComingSoon` stub. The DoD browser check is unmet by construction at this step.
+- **B4 (translation decision) is still unruled** and blocks the uncited-quote anchor channel.
+  Steps 2-3 build the other two channels without it.
+- **File-disjointness departure (BUILD_MODEL §2).** `db/apply-migration*.mjs` are shared Lane A
+  files, not Lane B files. Neither is modified in Lane A's working tree, so there is no live
+  collision, but the departure is real and is recorded here rather than assumed harmless.
+- **`scripts/verify-sermon-search.mjs:31` carries a fifth hand-copy** of the same endpoint regex
+  and *skips* (exit 0, "SKIPPED visibly") rather than failing when it does not recognise the URL.
+  On `lane-b-uploader` it will skip. Not touched — it is an acceptance harness for a different
+  feature, and widening its reach is not this step's job. Named so the next session sees it.
+- **`relforcerowsecurity=false`** on all four tables. Immaterial to the boundary the product
+  relies on — the app connects as `app_runtime`, and `neondb_owner` carries `rolbypassrls=true`,
+  which `FORCE` would not stop anyway — but stated rather than left to be discovered.
 ## 2026-08-04 — Design pass: a system for radius, surface and elevation; the reader gets a keyboard
 
 Owner brief: audit the whole site and bring it to a premium standard. Restraint over decoration,
