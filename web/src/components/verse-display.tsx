@@ -6,7 +6,7 @@ import type { ChapterData } from '@/lib/bible';
 import { HIGHLIGHT_BG } from '@/lib/highlight-colors';
 import { flattenToSegments, type HighlightRange } from '@/lib/highlight-range';
 import { useTextAnnotation, type AnnotationTarget } from '@/lib/use-text-annotation';
-import { isSingleWord } from '@/lib/original';
+import { singleWordOf } from '@/lib/original';
 // StoredSpan is defined in the hook that produces it (use-annotation-writes.ts), not here —
 // this component only renders the shape, it doesn't own it. Re-exported for callers that used to
 // import it from this module.
@@ -265,10 +265,11 @@ export function VerseDisplay({
           }
           onAsk={askPending}
           onDefine={
-            onDefine && isSingleWord(pending.text)
+            onDefine && singleWordOf(pending.text)
               ? () => {
                   const verse = Number(pending.key);
-                  const english = pending.text.trim();
+                  // The bare word, without the punctuation the snap brought with it.
+                  const english = singleWordOf(pending.text)!;
                   dismiss();
                   onDefine(english, verse);
                 }

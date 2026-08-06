@@ -184,9 +184,23 @@ function kjvTokens(kjv: string): string[] {
     .filter((t) => t.length > 1 && !GLOSS_LEADERS.has(t));
 }
 
+/**
+ * The single word in a selection, or null if it is not one word.
+ *
+ * Tolerant of what comes with a real selection. The reader's word-snapping hands back the
+ * canonical substring, which routinely carries a trailing full stop, a curly quote, or a verse's
+ * punctuation — `shepherd.` and `“shepherd”` are the same question as `shepherd`. A strict
+ * anchored test rejected all of those, which is why "Define" did not appear on the first word
+ * tried in the browser even though the lookup behind it worked.
+ */
+export function singleWordOf(text: string): string | null {
+  const words = text.trim().split(/[^A-Za-z'’-]+/).filter((w) => /[A-Za-z]/.test(w));
+  return words.length === 1 ? words[0]! : null;
+}
+
 /** True when a selection is one word, i.e. the only shape this lookup can answer. */
 export function isSingleWord(text: string): boolean {
-  return /^[A-Za-z][A-Za-z'’-]*$/.test(text.trim());
+  return singleWordOf(text) !== null;
 }
 
 /**

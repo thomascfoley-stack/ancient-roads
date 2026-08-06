@@ -12,7 +12,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { isSingleWord, matchEnglishWord, type LexEntry, type OWord } from '@/lib/original';
+import { isSingleWord, matchEnglishWord, singleWordOf, type LexEntry, type OWord } from '@/lib/original';
 
 const ORIGINAL = path.resolve(__dirname, '../../public/original/jhn/10.json');
 const LEXICON = path.resolve(__dirname, '../../public/lexicon/greek.json');
@@ -106,5 +106,19 @@ describe('isSingleWord', () => {
     expect(isSingleWord('good shepherd')).toBe(false);
     expect(isSingleWord('')).toBe(false);
     expect(isSingleWord('10:11')).toBe(false);
+  });
+
+  // THE CASE THAT KEPT "Define" OFF THE POPOVER IN THE BROWSER. The reader's word-snapping hands
+  // back the canonical substring, which carries the sentence's punctuation with it. A strict
+  // anchored test called `shepherd.` "not a word" and the button silently never rendered, while
+  // every unit test of the lookup behind it passed.
+  it('sees through the punctuation a real selection carries', () => {
+    expect(singleWordOf('shepherd.')).toBe('shepherd');
+    expect(singleWordOf('“shepherd”')).toBe('shepherd');
+    expect(singleWordOf(' shepherd, ')).toBe('shepherd');
+    expect(singleWordOf('shepherd’s')).toBe('shepherd’s');
+    expect(singleWordOf('good shepherd')).toBeNull();
+    expect(singleWordOf('11')).toBeNull();
+    expect(singleWordOf('')).toBeNull();
   });
 });
