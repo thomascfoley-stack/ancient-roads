@@ -60,9 +60,17 @@ export function plainExcerpt(s: string): string {
     .trim();
 }
 
-export function MyWorksClient() {
-  const [state, setState] = useState<'loading' | 'signedout' | 'unavailable' | 'ready'>('loading');
+export type MyWorksState = 'loading' | 'signedout' | 'unavailable' | 'ready';
+
+export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyWorksState }) {
+  // Seeded by the server (page.tsx), which already knows both answers. 'loading' remains the
+  // default so the component is still usable without the prop, but nothing ships that way.
+  const [state, setState] = useState<MyWorksState>(initialState);
   const [docs, setDocs] = useState<Doc[]>([]);
+  // Distinct from `state`: the shell is ready to draw long before the list has arrived. Without
+  // this the empty list renders "Nothing here yet" — telling someone with ten sermons that they
+  // have none, for as long as the fetch takes.
+  const [docsLoaded, setDocsLoaded] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState('');
@@ -81,6 +89,7 @@ export function MyWorksClient() {
     if (!r.ok) { setState('unavailable'); return; }
     const d = (await r.json()) as { documents: Doc[] };
     setDocs(d.documents);
+    setDocsLoaded(true);
     setState('ready');
   }, []);
 
@@ -292,7 +301,9 @@ export function MyWorksClient() {
       {/* ── the status wall ────────────────────────────────────────────────────────────────── */}
       <section>
         <h2 className="mb-3 font-display text-lg text-stone-700 dark:text-stone-200">Your documents</h2>
-        {docs.length === 0 ? (
+        {!docsLoaded ? (
+          <p role="status" className="font-serif text-[15px] text-stone-500 dark:text-stone-400">Loading your documents…</p>
+        ) : docs.length === 0 ? (
           <p className="font-serif text-[15px] text-stone-500 dark:text-stone-400">Nothing here yet. Add a sermon or a paper and it will be searchable alongside the library.</p>
         ) : (
           <ul className="space-y-2">
