@@ -21,7 +21,15 @@ import { ChapterNav } from '@/components/chapter-nav';
 import { Interlinear } from '@/components/interlinear';
 import { StudyPanel, type StudyTab } from '@/components/study-panel';
 import { WordPanel } from '@/components/word-panel';
-import { fetchOriginal, loadFullLexicon, type OriginalData, type OWord } from '@/lib/original';
+import { DefineSheet } from '@/components/define-sheet';
+import {
+  fetchOriginal,
+  loadFullLexicon,
+  matchEnglishWord,
+  type EnglishMatch,
+  type OriginalData,
+  type OWord,
+} from '@/lib/original';
 import { useAnnotationWrites } from '@/lib/use-annotation-writes';
 import { useSignedIn } from '@/lib/auth/use-signed-in';
 
@@ -117,6 +125,10 @@ export default function ReaderPage() {
   // focusWord carries the actual tapped OWord so a single-word tap can render the
   // focused WordPanel (not the whole-verse word list).
   const [study, setStudy] = useState<{ verse: number; tab: StudyTab; focusWordIdx?: number; focusWord?: OWord } | null>(null);
+  // "Define" on a selected English word, when the answer is NOT a single confident match.
+  const [define, setDefine] = useState<
+    { english: string; verse: number; matches: EnglishMatch[]; lexiconDown: boolean } | null
+  >(null);
 
   const handleTranslationChange = useCallback((t: Translation) => {
     setTranslation(t);
@@ -209,6 +221,29 @@ export default function ReaderPage() {
     [openStudy],
   );
 
+  /**
+   * "Define" on a single selected English word.
+   *
+   * The interlinear carries no word-by-word alignment to the English, so the match is made against
+   * what each original word records as its own meaning (gloss + Strong's KJV usage). One confident
+   * match opens the word panel directly; anything else — several candidates, or none — goes to the
+   * sheet, which says which of the two it is. Never picks one on the reader's behalf.
+   */
+  const handleDefine = useCallback(
+    async (english: string, verse: number) => {
+      if (!original) return;
+      const words = original.verses[String(verse)] ?? [];
+      const lex = await loadFullLexicon(original.lang);
+      const matches = matchEnglishWord(english, words, lex);
+      if (matches.length === 1) {
+        openStudy(verse, 'word', matches[0]!.index, matches[0]!.word);
+        return;
+      }
+      setDefine({ english, verse, matches, lexiconDown: lex === null });
+    },
+    [original, openStudy],
+  );
+
   const studyEntries = useMemo(() => {
     if (!study) return [];
     // Must match the prefetch effect's key exactly (fetchSlug, not bookSlug) or an alias URL
@@ -290,6 +325,10 @@ export default function ReaderPage() {
             signedIn={signedIn}
             onAddHighlight={addHighlight}
             onOpen={(verse, tab) => openStudy(verse, tab)}
+            // Absent until the chapter's interlinear has loaded: offering "Define" with no data
+            // behind it would answer every word with "no match", which is a lie about the verse
+            // rather than a fact about the lookup.
+            onDefine={original ? (english, verse) => void handleDefine(english, verse) : undefined}
           />
           <ChapterNav book={book} chapter={chapterNum} />
         </>
@@ -302,6 +341,20 @@ export default function ReaderPage() {
         <p className="mx-auto max-w-2xl px-6 pb-8 text-center text-xs text-stone-500 dark:text-stone-400">
           {translationAttribution(translation.id)}
         </p>
+      ) : null}
+      {define && book ? (
+        <DefineSheet
+          english={define.english}
+          reference={`${book.name} ${chapterNum}:${define.verse}`}
+          matches={define.matches}
+          lexiconDown={define.lexiconDown}
+          onPick={(m) => {
+            const verse = define.verse;
+            setDefine(null);
+            openStudy(verse, 'word', m.index, m.word);
+          }}
+          onClose={() => setDefine(null)}
+        />
       ) : null}
       {study && study.focusWord && original ? (
         <WordPanel
