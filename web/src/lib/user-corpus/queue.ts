@@ -18,6 +18,7 @@ import { getAnchorIndex } from './bible-index';
 import { getUserDocument } from './blob';
 import { chunkProse } from './chunk';
 import { setDocStatus, setParseResult } from './documents';
+import { setReadingsState } from './readings-store';
 import { embedChunks } from './embed';
 import { extractText, judgeExtraction } from './parse';
 import { storeSections } from './sections';
@@ -154,6 +155,16 @@ async function processOne(userId: string, row: Row): Promise<DocStatus> {
     await storeSections(userId, row.id, anchored.map((a, i) => ({ ...a, embedding: vectors[i]! })));
 
     await setDocStatus(userId, row.id, 'ready', null);
+
+    // The suggested-readings search can only run once the document has vectors, so this is the
+    // first moment it is possible. Marked 'pending' HERE rather than started here: the search is
+    // ~49s exactly (docs/SUGGESTED_READINGS_DESIGN.md) and the drain is already holding a claim on
+    // this row — running it inline would keep that claim for a minute and block the queue behind a
+    // job that is not ingestion. The client kicks it, and a document that is never opened simply
+    // never pays for a search nobody asked to see.
+    await setReadingsState(userId, row.id, { status: 'pending', progress: 0, step: null, error: null })
+      .catch((e) => console.error('[user-corpus] could not mark readings pending:', String((e as Error)?.message ?? e)));
+
     return 'ready';
   } catch (e) {
     if (e instanceof UploadRefused) {
