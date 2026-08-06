@@ -71,26 +71,72 @@ the one lint error in that file, which the **pre-commit lint never sees because 
 `web/src`** (it reports "File ignored because of a matching ignore pattern" and then prints
 "lint clean").
 
+### Closed on the owner's word, after the above
+
+**Production is clean.** The two test accounts are gone (`statuscheck-20260805@example.invalid`
+from an earlier session, `browsercheck-0805@ancientpaths.app` from this one); the owner's
+`thomascfoley@gmail.com` is untouched and is the only row left. Documents/sections/vectors/anchors
+all 0, sessions 0. The document was removed **through the UI**, which is the A4 cascade exercised in
+a browser for the first time: one click, and the sections, vectors and anchors went with it.
+
+**`npm run audit`, run in full: 11 of 12 gates green.** typecheck ×4 · lint ×2 · knip · deps-audit
+(307 prod packages) · vitest+coverage 58/58 · hygiene · Gate B licensing. **`qa` is RED**, on five
+suites that were already red before this session's first line of code: `commentary-entries-provenance`
+(seeds a `fixture` relation that is not there), `register-end-to-end` and `register-wall-surfaces`
+(the lane-b branch carries no devotionals and no lane works, so their own preconditions fail),
+`blob-round-trip` (live Vercel Blob), `queue-never-drops` (wants an owner seed URL). None of them
+imports anything this session touched. **Not "NOT RUN" any more — genuinely red, and left red.**
+
+**Two things the audit taught that are worth more than the run:**
+
+1. **The gate had never executed My Works.** `tradition-gap`, `search`, `routes` and
+   `pipeline-to-ready` all gate on `public/bible/kjv` resolved against `process.cwd()`, and
+   `npm run audit` invokes vitest from the REPO root where that path is one level off. All four
+   skipped — visibly, into a log nobody reads — while passing when run from `web/`. So the audit
+   reported green over the entire feature, the moat included, without running a line of it. Fixed at
+   `bible-index.ts`, where the cwd assumption actually lives: production still takes the cwd branch
+   unchanged, and a module-relative fallback catches the root invocation. **46 tests now run in the
+   gate that never had** (4 + 14 + 17 + 11).
+   **A global `process.chdir` in `vitest.config.ts` was tried FIRST and reverted** — it fixed those
+   four and broke `commentary-entries-provenance`, whose ingest import scans `web/public/commentaries`
+   from the repo root, turning a test failure into an import-time crash. Moving everyone's cwd to fix
+   four suites is not a fix, and the failure it caused is recorded here rather than quietly dropped.
+
+2. **A false red of my own making, worth naming.** The first audit attempt set shell `DATABASE_URL`
+   to the lane-b **owner** URL so the seeding suites would run. `runtimeDbUrl()` prefers
+   `process.env.DATABASE_URL`, so the annotation RLS-tenancy suite got an owner connection — and
+   **owner bypasses RLS**, so it reported user B reading user A's notes. Exactly the trap the Slice 1
+   order warns about in its own words ("never verify RLS through the owner URL"), reached from the
+   other side: it produced a false RED here, but the same wiring is what produces a false GREEN.
+
+**`plainExcerpt` is tested and red-proofed** (`web/test/user-corpus/plain-excerpt.test.ts`, 8 cases).
+The one that earned its keep: two unrelated asterisks in one excerpt. `7 * 70, and 3 * 4` came back
+as `7  70, and 3  4` — a lazy `/\*(.+?)\*/` pairing them and eating a preacher's arithmetic. Watched
+RED, then the delimiter rules tightened to require non-space on both inner edges. Half the suite is
+prose the stripper must NOT touch, because that is the half that fails while looking fixed.
+
+**Merged.** `feat/lane-b-slice1-uploader` (50 commits, 0 behind) merged to `main` at `7223bbc` and
+pushed. `main`'s tree is now byte-identical to the deployed sha `4b15184` — verified by comparing
+tree hashes, not by assuming. Production had been running this branch through `deploy.sh` since
+2026-08-05 with `main` not reflecting it; that gap is closed.
+
 ### NOT DONE / UNVERIFIED
 
-- **Production is NOT clean.** One test account (`browsercheck-0805@ancientpaths.app`) and one
-  document remain, deliberately, so the owner can open the working feature. Deleting them is a
-  prod write and wants the owner's go (bylaw 7).
-- **`npm run audit` was not run in full.** Typecheck (web, strict) clean and the two tradition-gap
-  suites green. The full `web/test` run has **5 files failing on `ECONNREFUSED 127.0.0.1:5432`** —
-  no local Postgres, so those are NOT RUN rather than red: `commentary-entries-provenance`,
-  `register-end-to-end`, `register-wall-surfaces`, `blob-round-trip`, `queue-never-drops`.
-- **`plainExcerpt` has no test** and no red-proof. The prompt forbade new test files; the check
-  that stands behind it is the screenshot before and after.
-- **Seen once, not chased:** clicking "The tradition on this" in the first second after a fresh
-  page load fires the request (200) but the panel never renders; a second click works. Same shape
-  for typing into the search box too fast after landing — the characters are wiped. Both smell
-  like pre-hydration input against a controlled component, not like this feature.
-- The **`MIN_CHARS_PER_PAGE = 100`** scanned-PDF threshold is still reasoning rather than
-  measurement, unchanged from the entry below. Nothing here exercised a PDF at all — the upload
-  driven was markdown.
-- Branch `feat/lane-b-slice1-uploader` is now **48 ahead of `main` and unmerged**; production runs
-  it via `deploy.sh`, which uploads the working tree, so `main` still does not reflect what is live.
+- **`qa` is red**, as above. Five suites. Making them green needs corpus files and dev-branch data
+  this worktree does not carry — not a code change, and not attempted.
+- **Seen three times, not chased:** typing into the search box, or clicking "The tradition on this",
+  within about a second of a page load does nothing — the click fires its request (200) but the panel
+  never renders, and typed characters are wiped. A second attempt always works. Consistent with input
+  landing before hydration against a controlled component; not specific to this feature, and not
+  investigated.
+- **Deleting a document leaves the previous search results on screen**, so a removed document can
+  still be listed under "Where you have written on it" until the next search. Seen at the very end;
+  cosmetic, unfixed.
+- The **`MIN_CHARS_PER_PAGE = 100`** scanned-PDF threshold is still reasoning rather than measurement.
+  **Nothing in this session exercised a PDF at all** — every upload driven was markdown.
+- `bible-index.ts`'s fallback is exercised by the four suites under the audit, but **the production
+  path it does not change was re-proved in a browser**: after deploying it, a fresh upload still
+  returned `quoted (12 matches)` on "John 10", the same number as before the change.
 
 ## 2026-08-05 (Lane B: A7 - the SEC-1 gate made mechanical; the cutover scoped)
 
