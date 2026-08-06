@@ -371,10 +371,28 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                           if (v.pending) {
                             return <p className="font-serif text-[14px] text-stone-500 dark:text-stone-400">This document is still being indexed.</p>;
                           }
+                          // TWO DIFFERENT FACTS, AND THE OLD COPY TOLD THE WRONG ONE. "No one in
+                          // the library writes on the passages this document anchors" was shown
+                          // whenever the voice list came back empty — including when the document
+                          // anchored NOTHING, which is not a statement about the library at all.
+                          // A sermon on grace came back with that sentence and the owner knew it
+                          // was false. `rangesConsidered` was in the response the whole time.
+                          if (v.rangesConsidered === 0) {
+                            return (
+                              <p className="font-serif text-[14px] leading-relaxed text-stone-500 dark:text-stone-400">
+                                No scripture was detected in this document, so there are no passages
+                                to look up. Verse detection finds explicit references, and quotations
+                                close to the KJV wording; a sermon that paraphrases, or quotes a
+                                modern translation, can read as having none.
+                              </p>
+                            );
+                          }
                           if (v.voices.length === 0) {
                             return (
-                              <p className="font-serif text-[14px] text-stone-500 dark:text-stone-400">
-                                No one in the library writes on the passages this document anchors.
+                              <p className="font-serif text-[14px] leading-relaxed text-stone-500 dark:text-stone-400">
+                                This document anchors {v.rangesConsidered} passage
+                                {v.rangesConsidered === 1 ? '' : 's'}, and no one in the library writes on
+                                {v.rangesConsidered === 1 ? ' it' : ' them'}.
                               </p>
                             );
                           }

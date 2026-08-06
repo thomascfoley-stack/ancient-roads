@@ -5,6 +5,7 @@
 // judgement lives in parse.ts beside the same rule for every other format, so there is one place
 // that can say a document has no usable text.
 
+import { installPdfDomGlobals } from './dom-matrix';
 import { UploadRefused } from './types';
 
 export interface PdfExtraction {
@@ -17,6 +18,10 @@ export interface PdfExtraction {
  * the request path except an actual PDF upload should pay to load it.
  */
 export async function parsePdf(bytes: Uint8Array): Promise<PdfExtraction> {
+  // BEFORE the import, not after: pdfjs 5.x runs `new DOMMatrix()` at module scope, so the
+  // throw happens while the module is being evaluated, not when a PDF is parsed. Every PDF
+  // upload on production failed with "DOMMatrix is not defined" until this line existed.
+  installPdfDomGlobals();
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
   let doc;
