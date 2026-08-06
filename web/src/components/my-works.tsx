@@ -46,11 +46,16 @@ const fmtBytes = (n: number | null) => (n == null ? '' : n < 1024 * 1024 ? `${Ma
  * John 10:11**". DISPLAY-ONLY on purpose: the stored section stays byte-faithful to the file they
  * gave us, because it is their document and the anchor channels shingle against it.
  */
-function plainExcerpt(s: string): string {
+export function plainExcerpt(s: string): string {
+  // The delimiter rules are NOT decoration. A lazy /\*(.+?)\*/ pairs the two unrelated asterisks
+  // in "7 * 70, and 3 * 4" and silently rewrites a preacher's arithmetic; real markdown emphasis
+  // never opens with a space after the marker nor closes with one before it, and requiring \S on
+  // both inner edges is exactly what separates the two. Same for the heading rule: `#` opens an
+  // ATX heading only when whitespace follows, so "sermon #1" survives.
   return s
     .replace(/(^|\s)#{1,6}\s+/g, '$1') // headings, wherever a chunk boundary left them
-    .replace(/\*\*(.+?)\*\*/g, '$1') // bold
-    .replace(/\*(.+?)\*/g, '$1') // emphasis
+    .replace(/\*\*(\S(?:[^*]*\S)?)\*\*/g, '$1') // bold
+    .replace(/\*(\S(?:[^*]*\S)?)\*/g, '$1') // emphasis
     .replace(/`([^`]+)`/g, '$1') // code spans
     .trim();
 }

@@ -39,8 +39,19 @@ export const ANCHOR_TRANSLATION = 'kjv';
 let cached: VerseShingleIndex | null = null;
 
 function bibleDir(translation: string): string {
-  // process.cwd() is the app root under `next dev`, `next start` and Vercel's runtime alike.
-  return path.join(process.cwd(), 'public', 'bible', translation);
+  // process.cwd() is the app root under `next dev`, `next start` and Vercel's runtime alike, so
+  // this branch is the one production takes and its behaviour is unchanged.
+  //
+  // The fallback exists because `npm run audit` invokes vitest from the REPO root, where cwd is one
+  // level above `web/` and this path does not exist. Four Slice 1 suites — tradition-gap, search,
+  // routes, pipeline-to-ready — read `enabled` off that same directory and so SKIPPED inside the
+  // gate while passing when run from `web/`: the audit reported green over the whole My Works
+  // feature, the moat included, without executing any of it. Resolving relative to this module as a
+  // second try fixes the gate without moving anyone's cwd, which a global chdir did — it broke
+  // `commentary-entries-provenance`, whose ingest import scans `web/public/commentaries` from root.
+  const fromCwd = path.join(process.cwd(), 'public', 'bible', translation);
+  if (existsSync(fromCwd)) return fromCwd;
+  return path.join(__dirname, '..', '..', '..', 'public', 'bible', translation);
 }
 
 function loadVerses(dir: string): IndexedVerse[] {

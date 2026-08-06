@@ -37,7 +37,7 @@ const KEY = localEnv('DEEPINFRA_API_KEY');
 if (KEY && !process.env.DEEPINFRA_API_KEY) process.env.DEEPINFRA_API_KEY = KEY;
 
 const APP_URL = runtimeDbUrl();
-const HAVE_BIBLE = existsSync(path.resolve(process.cwd(), 'public/bible/kjv'));
+const HAVE_BIBLE = existsSync(path.resolve(__dirname, '../../public/bible/kjv'));
 const enabled = Boolean(APP_URL && KEY && HAVE_BIBLE);
 if (!enabled) {
   console.warn(

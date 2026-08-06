@@ -37,7 +37,7 @@ const path = (await import('node:path')).default;
 
 const KEY = localEnv('DEEPINFRA_API_KEY');
 if (KEY && !process.env.DEEPINFRA_API_KEY) process.env.DEEPINFRA_API_KEY = KEY;
-const enabled = Boolean(runtimeDbUrl() && KEY && existsSync(path.resolve(process.cwd(), 'public/bible/kjv')));
+const enabled = Boolean(runtimeDbUrl() && KEY && existsSync(path.resolve(__dirname, '../../public/bible/kjv')));
 if (!enabled) {
   console.warn('⚠ SKIPPED (visibly): search suite needs APP_DATABASE_URL, DEEPINFRA_API_KEY and public/bible/kjv.');
 }
