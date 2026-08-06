@@ -60,9 +60,18 @@ export function plainExcerpt(s: string): string {
     .trim();
 }
 
-export function MyWorksClient() {
-  const [state, setState] = useState<'loading' | 'signedout' | 'unavailable' | 'ready'>('loading');
+export type MyWorksState = 'loading' | 'signedout' | 'unavailable' | 'ready';
+
+export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyWorksState }) {
+  // Seeded by the server (page.tsx), which already knows both answers. 'loading' remains the
+  // default so the component is still usable without the prop, but nothing ships that way.
+  const [state, setState] = useState<MyWorksState>(initialState);
   const [docs, setDocs] = useState<Doc[]>([]);
+  // Distinct from `state`: the shell is ready to draw long before the list has arrived. Without
+  // this the empty list renders "Nothing here yet" — telling someone with ten sermons that they
+  // have none, for as long as the fetch takes.
+  const [docsLoaded, setDocsLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState('');
@@ -74,13 +83,26 @@ export function MyWorksClient() {
   const fileInput = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
-    const r = await fetch('/api/user-corpus/documents');
+    // A THROW HERE USED TO BE PERMANENT. `docsLoaded` gates the list, so a network failure left
+    // "Loading your documents…" on screen for the life of the tab with nothing to retry — the same
+    // shape as the `if (!r.ok) return;` bug that pinned the whole page on "Loading…" before it.
+    // Whatever happens, the wait ends and says something.
+    let r: Response;
+    try {
+      r = await fetch('/api/user-corpus/documents');
+    } catch {
+      setDocsLoaded(true);
+      setLoadError('Your documents could not be loaded. Check your connection and try again.');
+      return;
+    }
+    setLoadError(null);
     if (r.status === 401) { setState('signedout'); return; }
     // Any other failure (403 when uploads are switched off, 500) used to `return` and leave state
     // on 'loading' forever: the page sat at "Loading…" with no upload control and no reason given.
     if (!r.ok) { setState('unavailable'); return; }
     const d = (await r.json()) as { documents: Doc[] };
     setDocs(d.documents);
+    setDocsLoaded(true);
     setState('ready');
   }, []);
 
@@ -292,7 +314,16 @@ export function MyWorksClient() {
       {/* ── the status wall ────────────────────────────────────────────────────────────────── */}
       <section>
         <h2 className="mb-3 font-display text-lg text-stone-700 dark:text-stone-200">Your documents</h2>
-        {docs.length === 0 ? (
+        {loadError ? (
+          <p role="alert" className="font-serif text-[15px] text-amber-800 dark:text-amber-300">
+            {loadError}{' '}
+            <button type="button" onClick={() => void load()} className="underline underline-offset-2">
+              Try again
+            </button>
+          </p>
+        ) : !docsLoaded ? (
+          <p role="status" className="font-serif text-[15px] text-stone-500 dark:text-stone-400">Loading your documents…</p>
+        ) : docs.length === 0 ? (
           <p className="font-serif text-[15px] text-stone-500 dark:text-stone-400">Nothing here yet. Add a sermon or a paper and it will be searchable alongside the library.</p>
         ) : (
           <ul className="space-y-2">
@@ -360,10 +391,28 @@ export function MyWorksClient() {
                           if (v.pending) {
                             return <p className="font-serif text-[14px] text-stone-500 dark:text-stone-400">This document is still being indexed.</p>;
                           }
+                          // TWO DIFFERENT FACTS, AND THE OLD COPY TOLD THE WRONG ONE. "No one in
+                          // the library writes on the passages this document anchors" was shown
+                          // whenever the voice list came back empty — including when the document
+                          // anchored NOTHING, which is not a statement about the library at all.
+                          // A sermon on grace came back with that sentence and the owner knew it
+                          // was false. `rangesConsidered` was in the response the whole time.
+                          if (v.rangesConsidered === 0) {
+                            return (
+                              <p className="font-serif text-[14px] leading-relaxed text-stone-500 dark:text-stone-400">
+                                No scripture was detected in this document, so there are no passages
+                                to look up. Verse detection finds explicit references, and quotations
+                                close to the KJV wording; a sermon that paraphrases, or quotes a
+                                modern translation, can read as having none.
+                              </p>
+                            );
+                          }
                           if (v.voices.length === 0) {
                             return (
-                              <p className="font-serif text-[14px] text-stone-500 dark:text-stone-400">
-                                No one in the library writes on the passages this document anchors.
+                              <p className="font-serif text-[14px] leading-relaxed text-stone-500 dark:text-stone-400">
+                                This document anchors {v.rangesConsidered} passage
+                                {v.rangesConsidered === 1 ? '' : 's'}, and no one in the library writes on
+                                {v.rangesConsidered === 1 ? ' it' : ' them'}.
                               </p>
                             );
                           }

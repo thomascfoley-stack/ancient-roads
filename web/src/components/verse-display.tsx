@@ -6,6 +6,7 @@ import type { ChapterData } from '@/lib/bible';
 import { HIGHLIGHT_BG } from '@/lib/highlight-colors';
 import { flattenToSegments, type HighlightRange } from '@/lib/highlight-range';
 import { useTextAnnotation, type AnnotationTarget } from '@/lib/use-text-annotation';
+import { singleWordOf } from '@/lib/original';
 // StoredSpan is defined in the hook that produces it (use-annotation-writes.ts), not here —
 // this component only renders the shape, it doesn't own it. Re-exported for callers that used to
 // import it from this module.
@@ -29,6 +30,7 @@ export function VerseDisplay({
   signedIn,
   onAddHighlight,
   onOpen,
+  onDefine,
 }: {
   data: ChapterData;
   bookName: string;
@@ -49,6 +51,10 @@ export function VerseDisplay({
   signedIn?: boolean;
   onAddHighlight?: (verse: number, range: { start: number; end: number } | null, color: string) => void;
   onOpen?: (verse: number, tab: StudyTab) => void;
+  /** Look up the original-language word behind a selected English word. Offered ONLY for
+   *  single-word selections, because that is the only question this lookup can answer — a phrase
+   *  has no one word behind it. Absent when the chapter has no interlinear data. */
+  onDefine?: (english: string, verse: number) => void;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
@@ -258,6 +264,17 @@ export function VerseDisplay({
               : undefined
           }
           onAsk={askPending}
+          onDefine={
+            onDefine && singleWordOf(pending.text)
+              ? () => {
+                  const verse = Number(pending.key);
+                  // The bare word, without the punctuation the snap brought with it.
+                  const english = singleWordOf(pending.text)!;
+                  dismiss();
+                  onDefine(english, verse);
+                }
+              : undefined
+          }
           onOpenCommentaries={onOpen ? () => openPending('commentaries') : undefined}
           onDismiss={dismiss}
         />

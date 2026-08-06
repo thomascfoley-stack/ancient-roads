@@ -5,6 +5,7 @@
 // judgement lives in parse.ts beside the same rule for every other format, so there is one place
 // that can say a document has no usable text.
 
+import { installPdfDomGlobals } from './dom-matrix';
 import { UploadRefused } from './types';
 
 export interface PdfExtraction {
@@ -17,7 +18,25 @@ export interface PdfExtraction {
  * the request path except an actual PDF upload should pay to load it.
  */
 export async function parsePdf(bytes: Uint8Array): Promise<PdfExtraction> {
+  // BEFORE the import, not after: pdfjs 5.x runs `new DOMMatrix()` at module scope, so the
+  // throw happens while the module is being evaluated, not when a PDF is parsed. Every PDF
+  // upload on production failed with "DOMMatrix is not defined" until this line existed.
+  installPdfDomGlobals();
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+
+  // pdfjs reads its worker and its base-14 font data off disk, relative to its own location.
+  // Resolving them here (rather than letting pdfjs guess) means one place knows where they are,
+  // and next.config's outputFileTracingIncludes is what guarantees they were shipped.
+  const { createRequire } = await import('node:module');
+  const require = createRequire(import.meta.url);
+  let standardFontDataUrl: string | undefined;
+  try {
+    pdfjs.GlobalWorkerOptions.workerSrc = require.resolve('pdfjs-dist/legacy/build/pdf.worker.mjs');
+    standardFontDataUrl = `${require.resolve('pdfjs-dist/package.json').replace(/package\.json$/, '')}standard_fonts/`;
+  } catch {
+    // Leave pdfjs to its own defaults. A resolution failure here is not worth refusing an upload
+    // over on its own -- if it matters, getDocument fails below and the reason reaches the user.
+  }
 
   let doc;
   try {
@@ -32,16 +51,21 @@ export async function parsePdf(bytes: Uint8Array): Promise<PdfExtraction> {
       // otherwise mean network fetches or local font lookups from inside a parse.
       disableFontFace: true,
       useSystemFonts: false,
+      standardFontDataUrl,
     }).promise;
   } catch (e) {
     // An encrypted PDF also lands here. Both are refusals the user can act on, and neither may be
     // allowed to look like a document with no text -- that is the scanned-PDF confusion in reverse.
     const msg = String((e as Error)?.message ?? e);
+    // The CAUSE is carried through. "That PDF could not be read; it may be damaged" was true and
+    // useless: it read as a claim about the file when the actual fault was ours (pdfjs failing to
+    // initialise in the serverless bundle). The owner only diagnosed the DOMMatrix outage because
+    // a different layer happened to surface the raw message, so this one now does too.
     throw new UploadRefused(
       'corrupt',
       /password|encrypt/i.test(msg)
         ? 'That PDF is password-protected, so its text cannot be read.'
-        : 'That PDF could not be read; it may be damaged.',
+        : `That PDF could not be opened. The reader reported: ${msg}`,
     );
   }
 

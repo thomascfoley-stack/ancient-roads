@@ -1,0 +1,6 @@
+deployed_at_utc: 2026-08-06T05:47:27Z
+sha:             44905740c26e1715a78c13c0880648057ab04e17
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+url:             https://web-16a7smige-home-network-hardening.vercel.app

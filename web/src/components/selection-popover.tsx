@@ -38,6 +38,9 @@ export interface SelectionPopoverProps {
   onHighlight?: (color: string) => void;
   onAddNote?: () => void;
   onAsk?: () => void;
+  /** Single-word selections only, and only where original-language data exists — the caller
+   *  decides both, so this component just renders the button when a handler arrives. */
+  onDefine?: () => void;
   /** Phase 3 (bookmarks table) wires this; the button renders ONLY when provided. */
   onBookmark?: () => void;
   onOpenCommentaries?: () => void;
@@ -52,6 +55,7 @@ export function SelectionPopover({
   onHighlight,
   onAddNote,
   onAsk,
+  onDefine,
   onBookmark,
   onOpenCommentaries,
   onDismiss,
@@ -159,6 +163,15 @@ export function SelectionPopover({
 
   const actionButtons = (
     <>
+      {onDefine && (
+        <button
+          onClick={onDefine}
+          title="Greek or Hebrew behind this word"
+          className="shrink-0 rounded-full px-2 py-1 text-xs font-medium text-stone-200 hover:text-white"
+        >
+          Define
+        </button>
+      )}
       {onAddNote && (
         <button
           onClick={onAddNote}

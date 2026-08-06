@@ -125,6 +125,120 @@ export async function fetchConcordance(strong: string): Promise<Concordance | nu
   return { strong, count: entry.count, verseIds: entry.verseIds };
 }
 
+// ---- English word -> original word ------------------------------------------
+//
+// The interlinear data has NO positional alignment between the English translation and the
+// original words: John 10:11 gives `ποιμὴν / G4166 / gloss "a shepherd"` and nothing that says
+// which English word that is. So selecting "shepherd" in the reader can only be matched against
+// what each original word CLAIMS to mean — its gloss, and the Strong's KJV-usage list.
+//
+// That is a heuristic, and the product guarantee ("report, never interpret") decides how it must
+// behave when it is unsure: it returns EVERY candidate rather than picking one, and an empty array
+// rather than a guess. The caller shows all of them, or says plainly that there is no match. What
+// it must never do is assert a single Greek word for an English one it has not actually matched.
+
+/** One original word that claims the selected English word's sense. `index` is its position in the verse. */
+export interface EnglishMatch {
+  word: OWord;
+  index: number;
+}
+
+// Leading articles/markers in a gloss ("a shepherd", "to give"), and Strong's own "X" filler.
+// Dropped ONLY when the gloss has more words after them, so a gloss that is just "the" still
+// matches the word "the".
+const GLOSS_LEADERS = new Set(['a', 'an', 'the', 'to', 'x']);
+
+/** Lowercase, drop possessives and anything that is not a letter. */
+function normalise(s: string): string {
+  return s.toLowerCase().replace(/['’]s\b/g, '').replace(/[^a-z]/g, '');
+}
+
+/**
+ * Crude English stemmer, KJV first. Used ONLY as a fallback after exact matching fails, because
+ * over-stemming invents matches and a wrong match is worse here than no match: "careth" must
+ * reach "care", but "sheep" must not become "shee".
+ */
+function stemEn(s: string): string {
+  if (s.length > 4 && s.endsWith('eth')) return s.slice(0, -3);
+  if (s.length > 4 && s.endsWith('est')) return s.slice(0, -3);
+  if (s.length > 4 && s.endsWith('ies')) return `${s.slice(0, -3)}y`;
+  if (s.length > 4 && s.endsWith('ing')) return s.slice(0, -3);
+  if (s.length > 4 && s.endsWith('ed')) return s.slice(0, -2);
+  if (s.length > 3 && s.endsWith('es')) return s.slice(0, -2);
+  if (s.length > 3 && s.endsWith('s') && !s.endsWith('ss')) return s.slice(0, -1);
+  return s;
+}
+
+function glossTokens(gloss: string): string[] {
+  const raw = gloss.split(/[^A-Za-z'’]+/).map(normalise).filter(Boolean);
+  return raw.length > 1 && GLOSS_LEADERS.has(raw[0]!) ? raw.slice(1) : raw;
+}
+
+/** Strong's KJV-usage is a comma list with parenthetical asides and `+` markers: strip both. */
+function kjvTokens(kjv: string): string[] {
+  return kjv
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\+/g, ' ')
+    .split(/[^A-Za-z'’]+/)
+    .map(normalise)
+    .filter((t) => t.length > 1 && !GLOSS_LEADERS.has(t));
+}
+
+/**
+ * The single word in a selection, or null if it is not one word.
+ *
+ * Tolerant of what comes with a real selection. The reader's word-snapping hands back the
+ * canonical substring, which routinely carries a trailing full stop, a curly quote, or a verse's
+ * punctuation — `shepherd.` and `“shepherd”` are the same question as `shepherd`. A strict
+ * anchored test rejected all of those, which is why "Define" did not appear on the first word
+ * tried in the browser even though the lookup behind it worked.
+ */
+export function singleWordOf(text: string): string | null {
+  const words = text.trim().split(/[^A-Za-z'’-]+/).filter((w) => /[A-Za-z]/.test(w));
+  return words.length === 1 ? words[0]! : null;
+}
+
+/** True when a selection is one word, i.e. the only shape this lookup can answer. */
+export function isSingleWord(text: string): boolean {
+  return singleWordOf(text) !== null;
+}
+
+/**
+ * The original words in a verse whose gloss or KJV usage claims the given English word.
+ *
+ * EXACT MATCHES WIN OUTRIGHT — the stemmed pass runs only when nothing matched exactly, so
+ * "shepherd" cannot drag in "shepherds" from another word while a real "shepherd" exists.
+ * Repeated words are collapsed by Strong's number, because John 10:11 says ποιμὴν twice and a
+ * reader wants one entry, not two identical ones.
+ *
+ * `lex` may be null when the lexicon file failed to load; matching then falls back to glosses
+ * alone, which is degraded but honest — the caller is told which it got.
+ */
+export function matchEnglishWord(
+  english: string,
+  words: OWord[],
+  lex: Record<string, LexEntry> | null,
+): EnglishMatch[] {
+  const target = normalise(english);
+  if (!target) return [];
+  const targetStem = stemEn(target);
+
+  const byKey = new Map<string, { match: EnglishMatch; exact: boolean }>();
+  words.forEach((word, index) => {
+    const tokens = [...glossTokens(word.g ?? ''), ...kjvTokens((word.s && lex?.[word.s]?.kjv) || '')];
+    if (tokens.length === 0) return;
+    const exact = tokens.includes(target);
+    if (!exact && !tokens.some((t) => stemEn(t) === targetStem)) return;
+    const key = word.s || word.l || word.w;
+    const prev = byKey.get(key);
+    if (!prev || (exact && !prev.exact)) byKey.set(key, { match: { word, index }, exact });
+  });
+
+  const all = [...byKey.values()];
+  const exact = all.filter((c) => c.exact);
+  return (exact.length > 0 ? exact : all).map((c) => c.match).sort((a, b) => a.index - b.index);
+}
+
 // ---- Morphology decoding ---------------------------------------------------
 
 const GK = {
