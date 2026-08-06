@@ -1,5 +1,120 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-06 (PDF upload was dead on production; Define; the gate; the loading flash)
+
+**Headline: PDF upload had NEVER worked on production, and it took three deploys to reach the
+bottom of it because the fix has three layers and each one only revealed the next.** Found by the
+owner uploading real sermons, not by any check in this repo.
+
+### The PDF outage — one bug wearing three masks
+
+Two of four uploaded sermons sat at *"Gave up after 3 attempts. The last error was: DOMMatrix is
+not defined"*. docx and markdown indexed normally, so the pipeline looked healthy in aggregate
+while an entire file type was dead.
+
+1. **`DOMMatrix is not defined`.** pdfjs-dist 5.x runs `new DOMMatrix()` at MODULE SCOPE in the
+   canvas code bundled into `pdf.mjs`, so under Node the IMPORT throws before a byte of PDF is
+   read. pdfjs polyfills it only from `@napi-rs/canvas`, an OPTIONAL native dependency; when
+   absent it warns and carries on to the throw. Fixed with a 2D affine `DomMatrix2D` installed
+   before the import — **not** by adding the native package, because a per-platform binary in the
+   upload root is this repo's most-repeated deploy failure (A6).
+2. **Then: "That PDF could not be read; it may be damaged."** Which was our own message blaming
+   the file for our failure. Made it carry the reader's own words — and that is the only reason
+   layer 3 was diagnosable at all.
+3. **Then: `Setting up fake worker failed: Cannot find module '/var/task/node_modules/pdfjs-dist/
+   legacy/build/pdf.worker.mjs'`.** The real root, visible only once the message was honest:
+   **pdfjs cannot be bundled.** It resolves its worker, its optional canvas, and its base-14 font
+   data by PATH at runtime, and Vercel's tracer follows imports. `serverExternalPackages:
+   ['pdfjs-dist']` plus `outputFileTracingIncludes` for the worker and `standard_fonts/`, and the
+   paths resolved explicitly in `parse-pdf.ts` rather than left to pdfjs to guess.
+
+**Why nothing caught it:** this machine HAS `@napi-rs/canvas` (pnpm installed the darwin binary),
+so PDF parsing always worked locally. The test suite says so in its own header rather than
+pretending otherwise, and asserts the property that IS checkable — that OUR matrix is the one
+installed, so the optional native package is not load-bearing on any runtime.
+
+**VERIFIED ON PRODUCTION, END TO END:** a real text-layer PDF uploaded through the file input
+reached `ready` with `parseError: null`, rendered as *good-shepherd · Ready · PDF · 1 pages*, and a
+text search returned **the PDF's own extracted text**.
+
+### MIN_CHARS_PER_PAGE is now measured, not reasoned
+
+`UPLOADER_DESIGN` recorded 100 as "reasoning, not measurement, and the honest test is a corpus of
+genuine scans and genuine text-layer PDFs". Run through the SHIPPED parser on a controlled pair —
+the same sermon with a text layer, and flattened to an image:
+
+    text-layer PDF        1 page   1874 chars   1874.0/page  -> indexed
+    scanned (image-only)  1 page      0 chars      0.0/page  -> REFUSED needs_ocr
+
+18.7x below real text, and above an actual scan. The gap the design predicted is real and empty.
+**Bounded:** n=1 pair, one generator (LibreOffice), one scan route (pdftoppm at 150dpi). It
+discharges "never measured"; it is not a corpus study.
+
+### "No one in the library writes on the passages this document anchors" was the wrong sentence
+
+Shown whenever the voice list was empty — INCLUDING when the document anchored nothing, which is
+not a statement about the library at all. A sermon on grace returned it and the owner knew it was
+false. `rangesConsidered` was in the response the whole time. The two cases now read differently,
+and the zero-anchor case says why detection can miss (paraphrase, or a modern translation).
+
+### Define: the Greek or Hebrew behind a selected word
+
+Select one English word in the reader -> **Define** -> the lexicon entry. The panel, the 5,523
+Greek entries, the Hebrew, and the concordance all already existed and were reachable only from
+the interlinear view, where you had to know the Greek word already.
+
+The mapping is the hard part and it is honest about itself: there is NO positional alignment
+between the English text and the original words, so matching runs against each word's gloss and
+its Strong's KJV-usage list. Exact matches win outright; repeats collapse by Strong's number; a
+leading article is dropped from a multi-word gloss so "a shepherd" never makes "a" mean shepherd;
+several candidates go to a sheet that says so and lets the reader choose; none says plainly that
+nothing in this verse is recorded as meaning the word. 13 tests against the real John 10 data,
+two red-proofs watched fail.
+
+**And it did not work when driven in a browser**, which is the finding worth carrying: the word-
+snap hands back `shepherd.` with the sentence's full stop, the strict gate called that "not a
+word", and the button silently never rendered. Every unit test passed throughout. Same shape as My
+Works being live with no sidebar link, one layer down. Verified after the fix: "shepherd" ->
+ποιμήν · G4166 · "a shepherd (literally or figuratively)" · KJV usage *shepherd, pastor* · 17
+verses.
+
+### The site gate, and the loading flash
+
+- **The gate was already up** — `/` is public by design, every app route 307s to `/gate`. A whole
+  day of browsing had gone through it on a stored `site_gate` cookie from an earlier session,
+  which is exactly how a wall gets believed-fine or believed-broken on no evidence. Password
+  rotated on the owner's instruction; the token is a hash of the password, so **every existing
+  session was invalidated**, the owner's included. Verified: old cookie dead, gate page shown, new
+  password admits.
+- **`MyWorksClient` opened on `state: 'loading'`**, which renders "Loading…" and nothing else — no
+  heading, no dropzone, no search box. Every visit was a blank page, then the whole surface
+  appearing at once and shifting layout under the pointer; anything typed or clicked in that
+  window went nowhere (hit three times while driving this feature). The page is now a server
+  component resolving both facts — is there a session, may this account upload — with the SAME two
+  functions the API guard calls, so page and endpoint cannot disagree. A later fix gave the
+  document list its own error state, because gating it on `docsLoaded` had reintroduced the
+  hang-forever bug one level down.
+
+### NOT DONE / UNVERIFIED
+
+- **The side-by-side sermon view is NOT built.** The owner asked for the works on the left and the
+  sermon on the right, with commentaries expandable to read in full. Nothing was started. Note the
+  real dependency: `traditionGap` returns author/work/verseId/sectionId and **no text**, so
+  "expand and read more" needs a commentary-text fetch that does not exist on this surface yet.
+- **`qa` is still red on the same 5 suites** (`commentary-entries-provenance`,
+  `register-end-to-end`, `register-wall-surfaces`, `blob-round-trip`, `queue-never-drops`) — corpus
+  files and dev-branch data this worktree does not carry. Unchanged, untouched, still not
+  attempted.
+- **The full `npm run audit` was not re-run after the PDF work.** Typecheck, lint and the affected
+  suites are green; the whole gate is not re-measured.
+- **Only ONE PDF shape was exercised** — a hand-built single-page text-layer PDF and a
+  single-page image scan. The owner's real 53-54KB sermon PDFs have not been re-uploaded since the
+  fix; **that is the check that actually matters and it has not been run.**
+- **Hydration on `/library/uploads` takes ~10-15 seconds** before the document list appears. The
+  data is there in ~200ms; the delay is client-side. Observed repeatedly, not diagnosed.
+- Google sign-in remains removed by ADR (AUTH_CUTOVER_DESIGN §2, owner-ruled). Restoring it is
+  additive but needs a Google OAuth app and the `accountLinking` work; not started.
+
 ## 2026-08-05 (Lane B: My Works driven in a browser — the feature was dark on production)
 
 **Headline: the env var that switches uploads on was never set in Vercel. Every signed-in user
