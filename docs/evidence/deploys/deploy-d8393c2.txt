@@ -1,0 +1,6 @@
+deployed_at_utc: 2026-08-06T17:23:15Z
+sha:             d8393c26fa66d548f511e8da3ec9192eb82ded85
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+url:             https://web-fgw6jx83a-home-network-hardening.vercel.app

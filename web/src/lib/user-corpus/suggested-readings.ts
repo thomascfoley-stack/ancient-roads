@@ -143,7 +143,11 @@ export async function computeSuggestedReadings(
   for (const cat of ordered) {
     await onProgress({ percent: Math.round((done / totalWeight) * 100), step: cat.label });
 
-    const [rows] = await runAsUser(userId, (sql) => [
+    // TWO statements, so the search's rows are the SECOND result. Destructuring `[rows]` here took
+    // the result of `SET LOCAL` — an empty set — and every category silently found nothing while
+    // the job reported ready with a perfect progress bar. Caught by running it end to end: 77s,
+    // 100%, and zero readings.
+    const [, rows] = await runAsUser(userId, (sql) => [
       // enable_indexscan=off is the whole point: it forces the exact scan. SET LOCAL, so it lasts
       // only for this transaction and cannot leak into any other query on the pooled connection.
       sql`SET LOCAL enable_indexscan = off`,
