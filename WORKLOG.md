@@ -1,5 +1,98 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-06 (the four open items closed, and one of my own findings retracted)
+
+### A REAL GENERATOR'S PDF, WHICH IS THE CHECK THAT COUNTED
+
+The PDF fix had only ever been proven on a PDF I hand-built. Re-run on a **41,330-byte,
+four-page LibreOffice PDF with embedded fonts** — the same class as the owner's 53-54KB files —
+through the production upload endpoint:
+
+    status ready · parseError none · 4 pages
+    text search  -> mode fused, the PDF's own prose returned
+    passage scan -> John 10, uncited(12)
+    voices       -> 18 authors on 8 passages
+
+Rendered in the UI as *the-lion-and-the-lamb · Ready · PDF · 40 KB · 4 pages*. The bytes went up
+by direct POST rather than through 55KB of base64 in a chat window; the UI upload path itself was
+proven separately the same day with a different PDF, so neither leg rests on the other.
+
+### RETRACTED: "/library/uploads takes 10-15s to hydrate"
+
+**That was my instrument, not the product.** The automation browser runs its tab
+`visibilityState: "hidden"`, and Chrome does not paint hidden tabs and throttles their timers to
+about one per second. Measured on the stuck page: `performance.getEntriesByType('paint')` **empty
+at 13.4 seconds**, with DOM interactive at 116ms and every resource finished by 438ms. The same
+"stall" reproduced on `/library/notes` (13.2s) and `/read/jhn/10` (14.3s) — routes this session
+never touched — which is what a site-wide artifact looks like and what I should have checked
+before reporting a defect.
+
+It also explains the earlier "typing in the first second is dropped": input landing before a
+hidden tab hydrates. **That observation is withdrawn too.** I chased this through two deploys on a
+bad measurement; both are recorded below rather than quietly dropped.
+
+What survives, on its own merits: the page is a synchronous client component again (an async
+server component under `app/library/loading.tsx`'s Suspense boundary left a hard load showing the
+library skeleton — that part reproduced independently of visibility), and its loading state now
+draws this page's own skeleton instead of the bare word "Loading…", so the shell is on screen
+immediately.
+
+### qa: 5 failures down to 3, and skips from 8 to 3
+
+`103 passed | 3 failed | 3 skipped` (was `95 | 5 | 8`).
+
+- **`commentary-entries-provenance` — a genuine test bug, fixed.** It seeded a `TEMP` table over
+  Neon's **pooled** endpoint, where pgbouncer hands each statement to whichever backend is free,
+  so the `CREATE` and the `INSERT` never shared a session: `relation "fixture" does not exist`,
+  every run, against any pooled target. Pointed at `seedOwnerUrl()` — the direct endpoint this
+  repo already reserves for suites that seed fixtures, and which refuses production loudly.
+  Watched fail four times before the fix; 4/4 after.
+- **`queue-never-drops` and `unit-ordinal-instrument` now RUN and pass**, by declaring the dev
+  owner URL where the helpers expect it (`web/.env.local`, gitignored) plus
+  `SEED_TEST_ENDPOINT=ep-snowy-bird-atmdsv3g`. **Not** in the shell — a shell `DATABASE_URL` is
+  what handed the RLS tenancy suite an owner connection on 2026-08-05 and produced a false red.
+- **Still red, all three environmental:** `register-end-to-end` and `register-wall-surfaces` want
+  published register data the `lane-b` branch does not carry (`catalog "devotionals" must have
+  works to fence: expected 0 to be greater than 0`); `blob-round-trip` wants the live blob store to
+  advance a document past `queued` within its window.
+
+### The reading view: a work beside the tradition
+
+`/library/uploads/[id]` — the tradition left, the sermon right, each scrolling independently above
+`lg` and stacked below, linked from the document card ("Open beside the tradition") because a
+surface reachable only by typing its URL is one nobody finds.
+
+**The open question was where commentary TEXT comes from, since `traditionGap` returns no text.**
+Answer: no new endpoint. The reader already serves whole chapters as static JSON through
+`fetchCommentary()`, which filters to published authors. The join gives an author, a work and a
+verseId — enough to fetch the chapter and keep only that author's entries covering a verse the
+document actually anchors. A per-voice text endpoint would have been a second way to serve the
+same rows with its own licensing filter to keep in step, which is this repo's most-punished shape.
+
+Voices group by author+work, so one voice on three anchored passages is one row with three
+references. Document text comes from a new bounded read (`LIMIT 400` chunks) behind an opt-in
+`?sections=1`, so the list view is not made to carry a sermon's full text to render one row.
+
+Driven on production: **19 voices on 8 passages**, Adam Clarke expanded to his full John 10:3
+commentary beside the sermon; 390px stacks cleanly, no horizontal overflow, no console errors.
+
+### NOT DONE / UNVERIFIED
+
+- **The two register suites and `blob-round-trip` are still red.** Making them green means
+  publishing register data onto the `lane-b` branch, which is a data-provisioning decision, not a
+  code fix. Not attempted.
+- **The full `npm run audit` was not re-run after the reading view landed** — typecheck, lint and
+  `qa` were.
+- **The reading view has no tests.** It was driven in a browser at both widths; that is the whole
+  of its evidence.
+- **`plain()` in `work-beside-tradition.tsx` duplicates `plainExcerpt`** from `my-works.tsx`. Two
+  copies of one rule is the shape this repo tracks; it is small and deliberate for now, and the
+  third call site is where it should become one exported function.
+- **Only one PDF generator has been exercised** (LibreOffice, plus a hand-built file). Word,
+  Pages, and scanner output remain unproven.
+- Production is clean of test accounts again; the owner's three real accounts and six documents
+  are untouched.
+
 ## 2026-08-06 (PDF upload was dead on production; Define; the gate; the loading flash)
 
 **Headline: PDF upload had NEVER worked on production, and it took three deploys to reach the
