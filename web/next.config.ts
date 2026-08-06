@@ -43,6 +43,21 @@ const CSP = [
 ].join('; ');
 
 const nextConfig: NextConfig = {
+  // PDFJS MUST NOT BE BUNDLED, and this is the root of the PDF-upload outage.
+  //
+  // Bundling rewrites pdfjs's module graph, and pdfjs does two things at RUNTIME that only work
+  // from a real node_modules:
+  //   1. `createRequire(import.meta.url)("@napi-rs/canvas")` — its optional native dependency, and
+  //      the only source it polyfills DOMMatrix from. Bundled, that require cannot resolve, so
+  //      every PDF died on `new DOMMatrix()` with "DOMMatrix is not defined" while docx and
+  //      markdown indexed normally.
+  //   2. reading `standard_fonts/*.pfb` off disk beside itself, which is why a PDF using a base-14
+  //      font (Helvetica) then failed to open at all even after DOMMatrix was polyfilled.
+  //
+  // Both are the same bug wearing two masks: a package that resolves things at runtime cannot be
+  // bundled. Externalising it makes production behave like local, where it always worked.
+  serverExternalPackages: ['pdfjs-dist'],
+
   // IMAGE QUALITY. The hero was served at 198 KB from a 966 KB source. Next's default quality
   // is 75, and in Next 16 the optimizer only serves qualities DECLARED here, so 75 was the only
   // one reachable: requesting q=90 returned zero bytes. On the single full-bleed photograph

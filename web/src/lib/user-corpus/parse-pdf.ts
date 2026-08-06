@@ -42,11 +42,15 @@ export async function parsePdf(bytes: Uint8Array): Promise<PdfExtraction> {
     // An encrypted PDF also lands here. Both are refusals the user can act on, and neither may be
     // allowed to look like a document with no text -- that is the scanned-PDF confusion in reverse.
     const msg = String((e as Error)?.message ?? e);
+    // The CAUSE is carried through. "That PDF could not be read; it may be damaged" was true and
+    // useless: it read as a claim about the file when the actual fault was ours (pdfjs failing to
+    // initialise in the serverless bundle). The owner only diagnosed the DOMMatrix outage because
+    // a different layer happened to surface the raw message, so this one now does too.
     throw new UploadRefused(
       'corrupt',
       /password|encrypt/i.test(msg)
         ? 'That PDF is password-protected, so its text cannot be read.'
-        : 'That PDF could not be read; it may be damaged.',
+        : `That PDF could not be opened. The reader reported: ${msg}`,
     );
   }
 
