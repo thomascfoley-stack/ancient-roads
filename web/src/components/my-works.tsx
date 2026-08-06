@@ -71,6 +71,7 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
   // this the empty list renders "Nothing here yet" — telling someone with ten sermons that they
   // have none, for as long as the fetch takes.
   const [docsLoaded, setDocsLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState('');
@@ -82,7 +83,19 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
   const fileInput = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
-    const r = await fetch('/api/user-corpus/documents');
+    // A THROW HERE USED TO BE PERMANENT. `docsLoaded` gates the list, so a network failure left
+    // "Loading your documents…" on screen for the life of the tab with nothing to retry — the same
+    // shape as the `if (!r.ok) return;` bug that pinned the whole page on "Loading…" before it.
+    // Whatever happens, the wait ends and says something.
+    let r: Response;
+    try {
+      r = await fetch('/api/user-corpus/documents');
+    } catch {
+      setDocsLoaded(true);
+      setLoadError('Your documents could not be loaded. Check your connection and try again.');
+      return;
+    }
+    setLoadError(null);
     if (r.status === 401) { setState('signedout'); return; }
     // Any other failure (403 when uploads are switched off, 500) used to `return` and leave state
     // on 'loading' forever: the page sat at "Loading…" with no upload control and no reason given.
@@ -301,7 +314,14 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
       {/* ── the status wall ────────────────────────────────────────────────────────────────── */}
       <section>
         <h2 className="mb-3 font-display text-lg text-stone-700 dark:text-stone-200">Your documents</h2>
-        {!docsLoaded ? (
+        {loadError ? (
+          <p role="alert" className="font-serif text-[15px] text-amber-800 dark:text-amber-300">
+            {loadError}{' '}
+            <button type="button" onClick={() => void load()} className="underline underline-offset-2">
+              Try again
+            </button>
+          </p>
+        ) : !docsLoaded ? (
           <p role="status" className="font-serif text-[15px] text-stone-500 dark:text-stone-400">Loading your documents…</p>
         ) : docs.length === 0 ? (
           <p className="font-serif text-[15px] text-stone-500 dark:text-stone-400">Nothing here yet. Add a sermon or a paper and it will be searchable alongside the library.</p>
