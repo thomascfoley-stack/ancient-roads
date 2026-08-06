@@ -1,5 +1,73 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-06 (the empty result was real, and it was structural)
+
+**The owner said an empty tradition panel was hard to believe, and asked for sermons, hymns and
+poetry that help find similar material. Those are one problem, and the diagnosis is the finding.**
+
+### Reproduced, not assumed
+
+A real sermon on grace — paraphrase throughout, no verbatim KJV — uploaded to production:
+
+    status ready · own-works search finds it · rangesConsidered 0 -> ZERO voices
+
+against a served corpus of **398,113 rows: 303,148 prose (44 authors), 83,993 unregistered
+(9), 6,887 hymn (22), 4,085 poetry (13)**. Much of it is about grace. The panel was correct and
+useless.
+
+**The cause is structural, not a bug.** `traditionGap` is keyed entirely on verse anchors, and
+translation detection is not built (ADR-100), so anchoring shingles against the KJV family. A
+preacher who paraphrases, or quotes a modern translation, anchors nothing and is invisible to that
+channel by construction — which is the residual `SERMON_SEARCH_DESIGN` §2 always named the
+semantic spine for ("anchor-only misses un-scriptural-but-relevant prose").
+
+### Measured before building
+
+- User rows and corpus rows are both `bge-large-en-v1.5`, so the cosine is meaningful. That is
+  what ADR-102's parity was FOR, and this is the first thing to actually use it.
+- **A single nearest-neighbour sweep cannot answer the ask.** Global top-12 was **8/12 Spurgeon
+  and contained no hymn and no poetry at all** — prose is 76% of served rows, so prose always wins.
+  Per-register sweeps return what was asked for: Isaac Watts, Newton & Cowper's Olney Hymns;
+  George Herbert, Christina Rossetti, Milton, Keble, Dante; John Owen, Augustine, Maclaren.
+- **`COALESCE(metadata->>'register','prose') = 'prose'` is not indexable and took 84 SECONDS.**
+  The unfiltered sweep is index-backed at ~400ms and returns the same prose. Three queries in
+  parallel: **1.24s** measured, 2.9s through the route.
+
+### Shipped
+
+`relatedVoices()` + `GET /api/user-corpus/documents/[id]/related`, surfaced in the reading view as
+**"Works that resemble this one"**, grouped Sermons & commentary / Hymns / Poetry.
+
+- Parity ENFORCED, not assumed: the centroid is built only from rows whose `model_slug` names the
+  corpus's model, and a mismatch returns `comparable: false` with the offending slug rather than an
+  empty list. A cross-model cosine returns plausible garbage with no error — the one failure here
+  that would never announce itself.
+- Same canonical `LEGAL_CORPUS_FILTER`, imported not re-typed (ADR-104).
+- `DISTINCT ON (author, work)` per register, so one prolific preacher cannot take the panel.
+- **Worded as the weaker claim it is.** The anchor panel says these voices write ON the passages
+  you cited — a fact about verse ids. This says they resemble your work — a similarity score. The
+  copy reads "matched by meaning, not by a passage you cited … places to look, not sources you
+  quoted", and every row shows its score.
+
+Driven on production on the sermon that returned nothing: the tradition panel now says plainly
+that no scripture was detected, and beneath it 18 works across all three registers.
+
+### NOT DONE / UNVERIFIED
+
+- **No tests for `relatedVoices`.** Typecheck, lint and the derived route-coverage guard are green;
+  the evidence is the measurements above and a browser. The parity-refusal path in particular has
+  **not** been red-proofed — seeding a wrong `model_slug` and watching it refuse is the check it
+  needs, and is the one the design calls non-negotiable.
+- **The centroid is a real trade.** One vector for a whole document blurs a sermon that changes
+  subject; a per-chunk sweep is better recall at a query per chunk. Not measured against
+  per-chunk — the centroid was chosen for a fixed ~1s panel, and that choice is unvalidated.
+- **No relevance bar.** Nothing is hidden for being too far away, so a document unlike anything in
+  the library still returns its six nearest per register. Scores are shown so a reader can judge,
+  which is honest but is not the same as a measured floor.
+- The anchor channel's real limitation is unchanged: **translation detection is still not built**,
+  so KJV-adjacent quoting anchors and modern translations do not.
+- Production is clean of test accounts; the owner's three accounts and six documents untouched.
+
 ## 2026-08-06 (the four open items closed, and one of my own findings retracted)
 
 ### A REAL GENERATOR'S PDF, WHICH IS THE CHECK THAT COUNTED
