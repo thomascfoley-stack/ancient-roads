@@ -24,6 +24,20 @@ export async function parsePdf(bytes: Uint8Array): Promise<PdfExtraction> {
   installPdfDomGlobals();
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
+  // pdfjs reads its worker and its base-14 font data off disk, relative to its own location.
+  // Resolving them here (rather than letting pdfjs guess) means one place knows where they are,
+  // and next.config's outputFileTracingIncludes is what guarantees they were shipped.
+  const { createRequire } = await import('node:module');
+  const require = createRequire(import.meta.url);
+  let standardFontDataUrl: string | undefined;
+  try {
+    pdfjs.GlobalWorkerOptions.workerSrc = require.resolve('pdfjs-dist/legacy/build/pdf.worker.mjs');
+    standardFontDataUrl = `${require.resolve('pdfjs-dist/package.json').replace(/package\.json$/, '')}standard_fonts/`;
+  } catch {
+    // Leave pdfjs to its own defaults. A resolution failure here is not worth refusing an upload
+    // over on its own -- if it matters, getDocument fails below and the reason reaches the user.
+  }
+
   let doc;
   try {
     doc = await pdfjs.getDocument({
@@ -37,6 +51,7 @@ export async function parsePdf(bytes: Uint8Array): Promise<PdfExtraction> {
       // otherwise mean network fetches or local font lookups from inside a parse.
       disableFontFace: true,
       useSystemFonts: false,
+      standardFontDataUrl,
     }).promise;
   } catch (e) {
     // An encrypted PDF also lands here. Both are refusals the user can act on, and neither may be

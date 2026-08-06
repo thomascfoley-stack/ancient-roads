@@ -58,6 +58,25 @@ const nextConfig: NextConfig = {
   // bundled. Externalising it makes production behave like local, where it always worked.
   serverExternalPackages: ['pdfjs-dist'],
 
+  // ...and externalising alone is still not enough, which the third deploy is what proved:
+  //
+  //   Setting up fake worker failed: "Cannot find module
+  //   '/var/task/node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs'"
+  //
+  // pdfjs loads its worker, and its base-14 font data, by PATH at runtime. Vercel's tracer follows
+  // imports, so it shipped pdf.mjs and neither of those. They have to be named.
+  //
+  // This is the third mask on one bug: a package that resolves files at runtime is invisible to
+  // static analysis, and every layer of the fix (polyfill, externalise, trace) was uncovering the
+  // same fact one error at a time. It was only diagnosable because parse failures now carry the
+  // reader's own message rather than "that PDF may be damaged".
+  outputFileTracingIncludes: {
+    '/api/user-corpus/**': [
+      './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
+      './node_modules/pdfjs-dist/standard_fonts/**',
+    ],
+  },
+
   // IMAGE QUALITY. The hero was served at 198 KB from a 966 KB source. Next's default quality
   // is 75, and in Next 16 the optimizer only serves qualities DECLARED here, so 75 was the only
   // one reachable: requesting q=90 returned zero bytes. On the single full-bleed photograph
