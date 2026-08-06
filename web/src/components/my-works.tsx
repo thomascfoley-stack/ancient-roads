@@ -190,7 +190,26 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
   }
 
   if (state === 'loading') {
-    return <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6"><p className="font-serif text-[15px] text-stone-500 dark:text-stone-400">Loading…</p></div>;
+    // THE SHAPE, NOT THE WORD. This used to render "Loading…" and nothing else — no heading, no
+    // dropzone, no search box — so every visit was a blank page and then the whole surface
+    // arriving at once, shifting the layout under the pointer. Anything typed or clicked in that
+    // window went nowhere; it was hit three separate times while driving this feature in a
+    // browser. Drawing this page's own skeleton means the shell is there immediately and nothing
+    // moves when the answer lands. Deliberately shows NO upload control: whether this account may
+    // upload is not known yet, and a control that might vanish is worse than one that arrives.
+    return (
+      <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6" aria-busy>
+        <span className="sr-only">Loading My Works</span>
+        <div aria-hidden className="animate-pulse">
+          <div className="mb-3 h-9 w-44 rounded-lg bg-stone-200/70 dark:bg-stone-800" />
+          <div className="mb-8 h-4 w-80 max-w-full rounded bg-stone-200/50 dark:bg-stone-800/70" />
+          <div className="mb-8 h-28 rounded-2xl border border-dashed border-stone-300 dark:border-stone-700" />
+          <div className="mb-8 h-11 w-full rounded-full bg-stone-200/60 dark:bg-stone-800/80" />
+          <div className="mb-3 h-5 w-40 rounded bg-stone-200/60 dark:bg-stone-800/80" />
+          <div className="h-20 rounded-xl bg-stone-200/50 dark:bg-stone-800/70" />
+        </div>
+      </div>
+    );
   }
   if (state === 'signedout' || state === 'unavailable') {
     return (
@@ -356,6 +375,17 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                       >
                         Try again
                       </button>
+                    )}
+                    {/* Reading view: the work on one side, the tradition on the other. Linked
+                        from the card because a surface reachable only by typing its URL is a
+                        surface nobody finds — the defect this whole feature already had once. */}
+                    {d.status === 'ready' && (
+                      <Link
+                        href={`/library/uploads/${d.id}`}
+                        className="inline-flex min-h-[44px] items-center rounded-full px-3 text-[13px] font-semibold text-stone-600 hover:text-accent-800 dark:text-stone-300"
+                      >
+                        Open beside the tradition
+                      </Link>
                     )}
                     {/* The corpus join (ADR-104). Only offered once the document is `ready`,
                         because anchors are what the join reads and they do not exist before then. */}

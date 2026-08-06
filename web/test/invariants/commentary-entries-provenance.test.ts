@@ -25,7 +25,7 @@ import pg from 'pg';
 import { LEGAL_COMMENTARY_ENTRIES_PREDICATE } from '@/lib/legal-corpus';
 import { FORBIDDEN_PROVENANCE_DOMAINS } from '../../../src/ingest/forbidden-provenance.mjs';
 import { announceSkip } from '../helpers/loud-skip';
-import { requireDbInCi, runtimeDbUrl } from '../helpers/env';
+import { requireDbInCi, runtimeDbUrl, seedOwnerUrl } from '../helpers/env';
 
 describe('shape — the provenance leg is conjunctive', () => {
   it('every canonical forbidden domain is excluded, and the leg is ANDed with the author legs', () => {
@@ -61,7 +61,19 @@ describe('shape — the provenance leg is conjunctive', () => {
 // skip; `runtimeDbUrl()` THROWS if that URL resolves to production. REDPROOF_DATABASE_URL is a
 // local override for a throwaway Postgres and takes precedence over neither guard — it is only
 // consulted when no test DB is configured.
-const PG_URL = requireDbInCi() ? runtimeDbUrl() : process.env.REDPROOF_DATABASE_URL;
+// A TEMP TABLE NEEDS THE SAME BACKEND FOR ITS CREATE AND ITS INSERT, and APP_DATABASE_URL is
+// Neon's POOLED endpoint — pgbouncer in transaction mode, which hands each statement to whichever
+// backend is free. So the CREATE succeeded on one session and the INSERT ran on another, where
+// the table had never existed: `relation "fixture" does not exist`, every run, on any pooled
+// target. That is why this suite was red against the lane-b branch while the predicate it tests
+// was perfectly fine.
+//
+// seedOwnerUrl() is the DIRECT endpoint, and is already what this repo reserves for suites that
+// seed their own fixtures (helpers/env.ts). It refuses production loudly and requires any
+// non-dev endpoint to be declared by exact id in SEED_TEST_ENDPOINT, so preferring it here does
+// not widen what this can be pointed at.
+const PG_URL =
+  seedOwnerUrl() ?? (requireDbInCi() ? runtimeDbUrl() : process.env.REDPROOF_DATABASE_URL);
 const SKIP = announceSkip(
   'executed — the predicate run as SQL over seeded rows',
   [{ name: 'a test DB (APP_DATABASE_URL) or a throwaway Postgres (REDPROOF_DATABASE_URL)', present: Boolean(PG_URL) }],
