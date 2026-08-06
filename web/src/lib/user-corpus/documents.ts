@@ -66,6 +66,35 @@ export async function getDocument(userId: string, id: string): Promise<UserDocum
   return r ? toDocument(r) : null;
 }
 
+/** One chunk of the user's own document, in the order they wrote it. */
+export interface UserDocumentSection {
+  id: string;
+  ordinal: number;
+  heading: string | null;
+  body: string;
+}
+
+/**
+ * The document's own text, for reading it beside the tradition.
+ *
+ * BOUNDED, like every other read here (CLAUDE.md: never an unbounded result set). 400 chunks at
+ * the ~1200-char packer is roughly a 150-page book — past the point where a single scroll pane is
+ * the right surface anyway, and the cap is stated rather than silent.
+ */
+export async function getDocumentSections(
+  userId: string,
+  documentId: string,
+): Promise<UserDocumentSection[]> {
+  const [rows] = await runAsUser(userId, (sql) => [
+    sql`SELECT id, ordinal, heading, body
+          FROM user_sections
+         WHERE user_id = ${userId} AND document_id = ${documentId}
+         ORDER BY ordinal
+         LIMIT 400`,
+  ]);
+  return rows as UserDocumentSection[];
+}
+
 export async function findByChecksum(userId: string, sum: string): Promise<UserDocument | null> {
   const [rows] = await runAsUser(userId, (sql) => [
     sql`SELECT * FROM user_documents WHERE user_id = ${userId} AND checksum = ${sum}`,

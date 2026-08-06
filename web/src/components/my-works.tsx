@@ -376,6 +376,17 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                         Try again
                       </button>
                     )}
+                    {/* Reading view: the work on one side, the tradition on the other. Linked
+                        from the card because a surface reachable only by typing its URL is a
+                        surface nobody finds — the defect this whole feature already had once. */}
+                    {d.status === 'ready' && (
+                      <Link
+                        href={`/library/uploads/${d.id}`}
+                        className="inline-flex min-h-[44px] items-center rounded-full px-3 text-[13px] font-semibold text-stone-600 hover:text-accent-800 dark:text-stone-300"
+                      >
+                        Open beside the tradition
+                      </Link>
+                    )}
                     {/* The corpus join (ADR-104). Only offered once the document is `ready`,
                         because anchors are what the join reads and they do not exist before then. */}
                     {d.status === 'ready' && !voices[d.id] && (

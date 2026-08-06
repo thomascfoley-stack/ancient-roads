@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { after } from 'next/server';
 import { guardUser } from '@/lib/user-corpus/route-guard';
-import { deleteDocument, getDocument, setDocStatus } from '@/lib/user-corpus/documents';
+import { deleteDocument, getDocument, getDocumentSections, setDocStatus } from '@/lib/user-corpus/documents';
 import { drain } from '@/lib/user-corpus/queue';
 
 export const runtime = 'nodejs';
@@ -21,7 +21,12 @@ export async function GET(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
   // "not yours" from "does not exist" would confirm that a given id exists to someone who cannot
   // read it.
   if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  return NextResponse.json({ document: doc });
+  // `?sections=1` is opt-in: the list view wants status and nothing else, and shipping a whole
+  // sermon's text to render one row would be the unbounded-payload version of the same mistake
+  // the LIMITs guard against. The reading view asks for it explicitly.
+  const wantSections = new URL(_req.url).searchParams.get('sections') === '1';
+  const sections = wantSections ? await getDocumentSections(user.id, id) : undefined;
+  return NextResponse.json({ document: doc, ...(sections ? { sections } : {}) });
 }
 
 /**
