@@ -14,8 +14,15 @@ import { uploadDenial } from '@/lib/user-corpus/access';
 // redirect's worth of work for no user-visible gain. The LABEL is what the order governs.
 export const metadata = { title: 'My Works' };
 
-// Reads the session cookie, so it cannot be prerendered.
-export const dynamic = 'force-dynamic';
+// NO `force-dynamic`. Reading the session cookie already makes this route dynamic — Next infers
+// it from `headers()` — so the directive bought nothing and cost the page.
+//
+// `app/library/loading.tsx` puts a Suspense boundary around EVERY /library/* route. Making this
+// page an async server component under `force-dynamic` meant the library skeleton ("Loading the
+// library") streamed first and the resolved segment behind it never replaced it: the document
+// list sat unmounted for 15s and beyond, with `/api/user-corpus/documents` never called once —
+// measured, not guessed. The server itself was never slow: the full HTML, with the right
+// signed-in/signed-out content already in it, arrives in ~240ms.
 
 /**
  * The state is resolved HERE, on the server, rather than by the client's first fetch.
