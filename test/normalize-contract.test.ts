@@ -13,6 +13,7 @@ import { isNormalizedSubstring } from '../src/verifier/normalize';
 const SECTIONS: SectionAttribution[] = [
   { author: 'John Calvin', work: 'Commentary on John', tradition: 'Reformed' },
   { author: 'John Chrysostom', work: 'Homilies on John', tradition: 'Patristic' },
+  { author: 'Adam Clarke', work: "Adam Clarke's Commentary", slug: 'adam-clarke', tradition: 'Methodist' },
 ];
 
 describe('normalizeContract', () => {
@@ -56,6 +57,38 @@ describe('normalizeContract', () => {
       tradition: 'Patristic',
       origin: 'corpus',
     });
+  });
+
+  it('includes the slug in backfilled attribution when the section has one', () => {
+    const out = normalizeContract(
+      {
+        contract_version: '1.1',
+        teacher: 'qwen',
+        blocks: [{ type: 'voice', section_id: 3, attribution: {}, quote: 'x' }],
+      },
+      SECTIONS,
+    ) as { blocks: Array<{ attribution: Record<string, unknown> }> };
+
+    expect(out.blocks[0]!.attribution).toEqual({
+      author: 'Adam Clarke',
+      work: "Adam Clarke's Commentary",
+      slug: 'adam-clarke',
+      tradition: 'Methodist',
+      origin: 'corpus',
+    });
+  });
+
+  it('omits slug from backfilled attribution when the section has none (never a fabricated slug)', () => {
+    const out = normalizeContract(
+      {
+        contract_version: '1.1',
+        teacher: 'qwen',
+        blocks: [{ type: 'voice', section_id: 1, attribution: {}, quote: 'x' }],
+      },
+      SECTIONS,
+    ) as { blocks: Array<{ attribution: Record<string, unknown> }> };
+
+    expect(out.blocks[0]!.attribution).not.toHaveProperty('slug');
   });
 
   it('does NOT backfill a hallucinated (out-of-range) section_id — verifier still catches it', () => {

@@ -27,6 +27,13 @@ describe('V1 verifier: schema', () => {
     expect(violations(result).some((v) => v.check === 'schema')).toBe(true);
   });
 
+  it('accepts a voice attribution carrying the optional work slug', async () => {
+    const r = validResponse() as any;
+    r.blocks[1].attribution.slug = 'chrysostom-homilies';
+    const result = await verifyV1(r, corpus, retrieval);
+    expect(result).toEqual({ ok: true });
+  });
+
   it('rejects free-text top-level output', async () => {
     const result = await verifyV1('Drunkenness is wrong because...', corpus, retrieval);
     expect(result.ok).toBe(false);

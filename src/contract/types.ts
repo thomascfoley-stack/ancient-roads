@@ -22,6 +22,11 @@ export interface FramingBlock {
 export interface Attribution {
   author: string;
   work: string;
+  // The work's library slug, e.g. "adam-clarke" — present only when the retrieved
+  // section's metadata carries one (see register-label-embeddings.mjs backfill).
+  // Lets the client link a quote back to the work; absence means "not clickable",
+  // never a broken link.
+  slug?: string;
   year?: number;
   tradition: string;
   origin: Origin;

@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { formatVerseId } from '@bible/verse-id';
 import { verseHref } from '@/lib/verse-link';
 import { count } from '@/lib/plural';
+import { deskHref, withPane } from '@/lib/desk';
 
 // --- shapes mirrored from the server (client only renders; server verifier is truth) ---
-interface Attribution { author: string; work: string; tradition: string; year?: number }
+interface Attribution { author: string; work: string; slug?: string; tradition: string; year?: number }
 type Block =
   | { type: 'framing'; text: string }
   | { type: 'voice'; attribution: Attribution; quote: string; summary?: string; anchors?: { start: number; end: number }[] }
@@ -54,10 +55,82 @@ const EXAMPLES = [
 
 const STAGE_RANK: Record<Stage, number> = { error: -1, retrieving: 0, retrieved: 1, composing: 2, rejected: 2, verifying: 3, done: 4 };
 
+// The desk href for a work slug, opening on an otherwise-empty desk — never null
+// unless the slug itself is missing (not every retrieved row has been backfilled
+// with one yet; those results render as plain text, not a broken link).
+function workHref(slug: string | undefined): string | null {
+  return slug ? deskHref(withPane([], { kind: 'work', slug })) : null;
+}
+
+// Wraps a result card in a link to its work on the study desk, when a slug is
+// known. Renders children unwrapped when it isn't — a result must never look
+// clickable and fail to navigate.
+function ResultLink({ href, children }: { href: string | null; children: React.ReactNode }) {
+  if (!href) return <>{children}</>;
+  return (
+    <Link href={href} className="group -mx-2.5 block rounded-lg px-2.5 py-1 transition-colors duration-150 ease-gentle hover:bg-stone-100/80 focus-quiet dark:hover:bg-stone-800/50">
+      {children}
+    </Link>
+  );
+}
+
+// Which register lanes to search, alongside the always-on commentary answer.
+// History has no retrieval lane yet (historian works are shelf-only) — shown
+// disabled rather than omitted, so the full category list is visible.
+type LaneKey = 'sermons' | 'theology' | 'songVerse';
+const LANE_OPTIONS: { key: LaneKey; label: string }[] = [
+  { key: 'sermons', label: 'Sermons' },
+  { key: 'theology', label: 'Theology & Confessions' },
+  { key: 'songVerse', label: 'Hymns & Sacred Poetry' },
+];
+
+function LaneFilter({ lanes, onToggle }: { lanes: Record<LaneKey, boolean>; onToggle: (key: LaneKey, value: boolean) => void }) {
+  const [open, setOpen] = useState(false);
+  const activeCount = LANE_OPTIONS.filter((o) => lanes[o.key]).length;
+
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex items-center gap-1.5 text-xs font-medium text-stone-500 transition-colors duration-150 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+      >
+        <span>Choose what to search — Commentary + {activeCount} of {LANE_OPTIONS.length} lanes</span>
+        <span aria-hidden="true" className={`transition-transform duration-150 ${open ? 'rotate-180' : ''}`}>▾</span>
+      </button>
+      {open && (
+        <ul className="mt-2 flex flex-col gap-1.5 rounded-xl bg-paper p-3 shadow-paper dark:bg-stone-800/60 dark:shadow-none">
+          {LANE_OPTIONS.map((o) => (
+            <li key={o.key}>
+              <label className="flex min-h-[28px] items-center gap-2 text-sm text-stone-700 dark:text-stone-300">
+                <input
+                  type="checkbox"
+                  checked={lanes[o.key]}
+                  onChange={(e) => onToggle(o.key, e.target.checked)}
+                  className="h-4 w-4 rounded border-stone-300 text-accent-700 focus:ring-accent-600 dark:border-stone-600 dark:bg-stone-900"
+                />
+                {o.label}
+              </label>
+            </li>
+          ))}
+          <li>
+            <label title="Historical works aren't searchable here yet." className="flex min-h-[28px] items-center gap-2 text-sm text-stone-400 dark:text-stone-600">
+              <input type="checkbox" checked={false} disabled className="h-4 w-4 rounded border-stone-300 dark:border-stone-700" />
+              History <span className="text-xs italic">(coming soon)</span>
+            </label>
+          </li>
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export function AskClient() {
   const [question, setQuestion] = useState('');
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
+  const [lanes, setLanes] = useState<Record<LaneKey, boolean>>({ sermons: true, theology: true, songVerse: true });
   const nextId = useRef(1);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -86,7 +159,7 @@ export function AskClient() {
       const res = await fetch('/api/ask/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q }),
+        body: JSON.stringify({ question: q, lanes }),
       });
       if (res.status === 401) { patch(id, { stage: 'error', error: 'Please sign in to explore the paths.' }); return; }
       if (!res.ok || !res.body) { patch(id, { stage: 'error', error: 'Something went wrong. Please try again.' }); return; }
@@ -121,7 +194,11 @@ export function AskClient() {
     } finally {
       setBusy(false);
     }
-  }, [busy, patch]);
+  }, [busy, patch, lanes]);
+
+  const toggleLane = useCallback((key: LaneKey, value: boolean) => {
+    setLanes((prev) => ({ ...prev, [key]: value }));
+  }, []);
 
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-3.75rem-env(safe-area-inset-bottom)-1px)] max-w-2xl flex-col px-4 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-10 md:min-h-[calc(100dvh-1px)]">
@@ -131,6 +208,7 @@ export function AskClient() {
           Hear what commentators across the traditions have said, quoted and attributed, never interpreted.
           <span className="mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500">Currently answering from the Gospels.</span>
         </p>
+        <LaneFilter lanes={lanes} onToggle={toggleLane} />
       </header>
 
       {/* EMPTY STATE IS COMPOSED, NOT TOP-ALIGNED. This was `flex-1` with the examples pinned
@@ -293,14 +371,17 @@ function Answer({ result }: { result: TeacherResult }) {
       {framing && <p className="font-serif text-base leading-relaxed text-stone-700 dark:text-stone-300">{framing.text}</p>}
       <div className="space-y-6">
         {voices.map((v, i) => (
-          <figure key={i} className="border-l-[3px] border-accent-300/80 pl-5 dark:border-accent-800">
-            <blockquote className="break-words font-serif text-lg leading-[1.7] text-stone-900 dark:text-stone-100">“{v.quote}”</blockquote>
-            <figcaption className="mt-2.5 text-sm text-stone-500 dark:text-stone-400">
-              <span className="font-semibold text-stone-800 dark:text-stone-200">{v.attribution.author}</span>, {v.attribution.work}
-              <span className="ml-2 rounded-full bg-stone-200/70 px-2.5 py-0.5 text-xs text-stone-600 dark:bg-stone-800 dark:text-stone-400">{v.attribution.tradition}</span>
-            </figcaption>
-            {v.summary && <p className="mt-1.5 text-sm text-stone-500 dark:text-stone-500">{v.summary}</p>}
-          </figure>
+          <ResultLink key={i} href={workHref(v.attribution.slug)}>
+            <figure className="border-l-[3px] border-accent-300/80 pl-5 dark:border-accent-800">
+              <blockquote className="break-words font-serif text-lg leading-[1.7] text-stone-900 dark:text-stone-100">“{v.quote}”</blockquote>
+              <figcaption className="mt-2.5 text-sm text-stone-500 dark:text-stone-400">
+                <span className="font-semibold text-stone-800 group-hover:text-accent-800 dark:text-stone-200 dark:group-hover:text-accent-300">{v.attribution.author}</span>, {v.attribution.work}
+                <span className="ml-2 rounded-full bg-stone-200/70 px-2.5 py-0.5 text-xs text-stone-600 dark:bg-stone-800 dark:text-stone-400">{v.attribution.tradition}</span>
+                {v.attribution.slug && <span className="ml-2 text-xs text-stone-400 opacity-0 transition-opacity group-hover:opacity-100 dark:text-stone-500">Open on desk →</span>}
+              </figcaption>
+              {v.summary && <p className="mt-1.5 text-sm text-stone-500 dark:text-stone-500">{v.summary}</p>}
+            </figure>
+          </ResultLink>
         ))}
       </div>
       <Lanes result={result} />
@@ -334,16 +415,19 @@ function LaneSection({ title, note, chunks }: { title: string; note: string; chu
       <p className="mb-3 text-sm italic text-stone-400 dark:text-stone-500">{note}</p>
       <div className="space-y-4">
         {chunks.map((c) => (
-          <figure key={c.sourceId} className="border-l-[3px] border-stone-300/70 pl-5 dark:border-stone-700">
-            <blockquote className="whitespace-pre-line break-words font-serif text-base leading-relaxed text-stone-700 dark:text-stone-300">
-              {c.content.length > 400 ? `${c.content.slice(0, 400)}…` : c.content}
-            </blockquote>
-            <figcaption className="mt-2 text-sm text-stone-500 dark:text-stone-400">
-              <span className="font-semibold text-stone-800 dark:text-stone-300">{c.metadata.author}</span>
-              {c.metadata.sourceTitle ? `, ${c.metadata.sourceTitle}` : ''}
-              {c.metadata.paraphrase ? <span title="A metrical paraphrase, not the Scripture text itself." className="ml-2 rounded-full bg-accent-700/10 px-2 py-0.5 text-micro font-medium text-accent-700 dark:text-accent-300">paraphrase · not Scripture</span> : null}
-            </figcaption>
-          </figure>
+          <ResultLink key={c.sourceId} href={workHref(c.metadata.work)}>
+            <figure className="border-l-[3px] border-stone-300/70 pl-5 dark:border-stone-700">
+              <blockquote className="whitespace-pre-line break-words font-serif text-base leading-relaxed text-stone-700 dark:text-stone-300">
+                {c.content.length > 400 ? `${c.content.slice(0, 400)}…` : c.content}
+              </blockquote>
+              <figcaption className="mt-2 text-sm text-stone-500 dark:text-stone-400">
+                <span className="font-semibold text-stone-800 group-hover:text-accent-800 dark:text-stone-300 dark:group-hover:text-accent-300">{c.metadata.author}</span>
+                {c.metadata.sourceTitle ? `, ${c.metadata.sourceTitle}` : ''}
+                {c.metadata.paraphrase ? <span title="A metrical paraphrase, not the Scripture text itself." className="ml-2 rounded-full bg-accent-700/10 px-2 py-0.5 text-micro font-medium text-accent-700 dark:text-accent-300">paraphrase · not Scripture</span> : null}
+                {c.metadata.work && <span className="ml-2 text-xs text-stone-400 opacity-0 transition-opacity group-hover:opacity-100 dark:text-stone-500">Open on desk →</span>}
+              </figcaption>
+            </figure>
+          </ResultLink>
         ))}
       </div>
     </div>

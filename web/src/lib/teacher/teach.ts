@@ -92,14 +92,21 @@ function deadlineExceeded(startedAt: number, maxDurationMs: number): boolean {
 // never returned (or emitted) as `composed`. `onEvent` streams pipeline STAGES
 // (not tokens): callers render progress + the safe retrieved sources during the
 // wait, then the verified result on `done`.
+// Which register LANES to fire, caller-controlled (the exegetical commentary
+// retrieval below is NOT gated by this — it's the always-on core answer, never
+// filtered). Each flag defaults to true; a lane set to false is skipped outright
+// (never fetched), not fetched-then-hidden.
+export type LaneFlags = { songVerse?: boolean; sermons?: boolean; theology?: boolean };
+
 export async function teach(
   query: string,
-  opts: { onEvent?: (e: TeacherEvent) => void; maxDurationMs?: number } = {},
+  opts: { onEvent?: (e: TeacherEvent) => void; maxDurationMs?: number; lanes?: LaneFlags } = {},
 ): Promise<TeachRun> {
   const emit = opts.onEvent ?? (() => {});
   const maxDurationMs = opts.maxDurationMs ?? ASK_MAX_DURATION_MS;
   const composeMs = composeTimeoutMs(maxDurationMs);
   const startedAt = Date.now();
+  const lanes = opts.lanes ?? {};
   let attempts = 0;
   let firstCheck: string | undefined;
 
@@ -112,9 +119,9 @@ export async function teach(
   const queryVec = await embedQuery(query);
   const intent = resolveIntent(query);
   const ranges = intent.inject;
-  const songVersePromise = retrieveSongVerse(queryVec, ranges);
-  const sermonPromise = retrieveSermonLane(queryVec, ranges);
-  const theologyPromise = retrieveTheologyLane(queryVec, ranges);
+  const songVersePromise = lanes.songVerse === false ? Promise.resolve([]) : retrieveSongVerse(queryVec, ranges);
+  const sermonPromise = lanes.sermons === false ? Promise.resolve([]) : retrieveSermonLane(queryVec, ranges);
+  const theologyPromise = lanes.theology === false ? Promise.resolve([]) : retrieveTheologyLane(queryVec, ranges);
   const retrieval = await retrieveCommentary(queryVec, RETRIEVE_K, { query });
   const [songVerse, sermons, theology] = await Promise.all([songVersePromise, sermonPromise, theologyPromise]);
   const withRegister = <T extends TeacherResult>(r: T): T => {
@@ -159,6 +166,7 @@ export async function teach(
   const sectionAttributions = voices.map((r) => ({
     author: r.metadata.author,
     work: r.metadata.sourceTitle,
+    slug: r.metadata.work,
     tradition: r.metadata.tradition ?? 'unknown',
     body: r.content,
   }));
