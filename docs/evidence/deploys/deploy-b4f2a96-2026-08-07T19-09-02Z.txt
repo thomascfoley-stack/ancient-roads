@@ -1,0 +1,12 @@
+deployed_at_utc: 2026-08-07T19:14:34Z
+sha:             b4f2a96ae99145d8d3d642e8cad5cc5f194f8640
+branch:          feat/ask-category-filters-and-exhaustive-search
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@50.38.2
+url:             https://web-cn1rhrx6w-home-network-hardening.vercel.app
+deployment_id:   dpl_DQhv71sbxjs5XjoNZfNDdtq31doS
+alias:           ancientpaths.app
+alias_serves:    dpl_DQhv71sbxjs5XjoNZfNDdtq31doS
+state:           live
