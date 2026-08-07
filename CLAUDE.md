@@ -75,3 +75,32 @@ Before a PR: `npm run audit` (typecheck strict · lint · knip · `pnpm audit` h
 - Emit unverified model text to a user.
 - Cache/curate/ship answers from a pipeline below the accuracy bar.
 - Interpret Scripture in the product's own voice.
+
+## UX remediation work
+
+Active spec: [`docs/UX_REMEDIATION.md`](docs/UX_REMEDIATION.md). When working any block from it:
+
+- Work **one block at a time**, on a branch named `fix/<block-id>`. Do not batch blocks.
+- **Write the exit test before the fix.** If it fails, change the fix — never the test. If a test
+  is genuinely wrong, stop and flag it in that block's Findings log.
+- Stay inside "Minimal change". Escalate reluctantly: string → CSS declaration → moving existing
+  code → new component. Do not skip levels.
+- Obey the block's "Do NOT" list. Those are the guardrails that keep this remediation small; a
+  change that violates one should be reverted even if it works.
+- **Stop and report** if a minimal change needs more than ~3 files or ~50 lines, if a "reuse the
+  existing X" instruction turns out to be false, if the fix needs a route/schema/API contract
+  change, or if the root cause differs materially from the block's hypothesis. Do not expand scope
+  to force a fix through.
+- **Scope creep goes to section 9 (Backlog), not into the branch.** (Section 8 is Wave 5 — the
+  numbering moved in spec v1.2 and the original of this snippet said 8. If a document you are
+  reading says "section 8 (Backlog)", it predates that renumber.)
+- No new dependencies without writing the justification into the Findings log first.
+- Only mark `AGENT` exit checks yourself. `BROWSER` needs a rendered page, `HUMAN` needs a
+  person's judgement, `DEVICE` needs real hardware. **Never mark the last two.**
+- Update the status board in section 1 when a block's state changes.
+- Waves are ordered. Do not start a wave until the previous one's blocks all pass their `AGENT`
+  checks and their `HUMAN`/`DEVICE` checks are passed or explicitly deferred.
+
+Naming is locked in section 2 — do not re-litigate it. The counted noun changed from `works` to
+`items` everywhere. Section 2.2 (amended v1.4) scopes the lock to **user-visible strings only**;
+wire fields such as `lanes` on `POST /api/ask/stream` are exempt.

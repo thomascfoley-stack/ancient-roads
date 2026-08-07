@@ -1,8 +1,30 @@
 ---
 doc: Ancient Paths — UX/Design Remediation Spec
-version: 1.3
+version: 1.4
 source: August 2026 in-depth UX audit deck + independent live walkthrough (authenticated desktop)
 changelog: |
+  1.4 - R0 executed (2026-08-07, branch fix/R0). Owner decisions applied on its findings:
+      - STRUCK BY RECON: N3b step 2 (move the verse click binding to the verse span) — this repo
+        shipped it, measured it breaking double-click word selection, and reverted it under owner
+        ruling ADR-047, guarded by verse-open-gesture.test.tsx. ADR-047 stands. Its exit-test line
+        ("clicking verse text opens the drawer") is struck with it, since that check could only
+        pass by breaking the ruling. N3b now reduces to step 3.
+      - STRUCK BY RECON: S2 old item 2 (import the Library skeleton into the reader) — the reader
+        already has ChapterSkeleton, built to mirror VerseDisplay's box; doing it as written
+        reintroduces the layout shift.
+      - STRUCK: S2 old items 9, 10, 11 — present in no version of this document, unrecoverable.
+        S2 renumbered so heading, status board and table all read 9 (old→new: 1→1, 3→2, 4→3, 5→4,
+        6→5, 7→6, 8→7, 12→8, 13→9). All cross-references updated. Struck rows are recorded in the
+        block rather than deleted, so S2's "nothing silently dropped" exit test can still be met.
+      - Section 2.2 amended: the naming lock applies to USER-VISIBLE STRINGS ONLY. Wire fields are
+        explicitly exempt — `lanes` on POST /api/ask/stream stays, and only its rendered label
+        changes. The greps are re-scoped to the label surfaces; as written they could not return
+        zero (R0 measured 106 hits, nearly all comments and exempt identifiers).
+      - T4: the user_profiles migration is flagged as an OWNER DECISION and is a precondition of
+        the block, not part of it. Translation has a dormant column; theme and text size have no
+        column at all.
+      - CLAUDE.md's scope-creep pointer corrected to section 9 (the Backlog). It had never been
+        appended to CLAUDE.md at all — R0 found the snippet missing, not merely stale.
   1.1 - L2c rewritten: date-locale root cause corrected after direct testing (client locale,
         not server locale). Fix retained, rationale changed, hydration check added.
       - Auth migration (Supabase/OAuth) recorded as a dependency for T1/T2, and explicitly
@@ -170,7 +192,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 3 | `T3` | Mobile — tab bar must not cover scripture | `-` |
 | 3 | `T4` | Settings that follow the user; an account section | `-` |
 | 4 | `S1` | Landing page — show the product | `-` |
-| 4 | `S2` | Polish sweep — 13 small fixes, one branch | `-` |
+| 4 | `S2` | Polish sweep — 9 small fixes, one branch | `-` |
 | 5 | `PR1a` | Prayer journal — the space and the entity | `-` |
 | 5 | `PR1b` | Prayer journal — "From the tradition" rail (separable) | `-` |
 | 5 | `PR2` | Compare a note with the tradition | `-` |
@@ -195,7 +217,7 @@ WAVE 3   [T1] <-- requires N1 + N3b
 WAVE 4   [S1] [S2]  independent
 
 WAVE 5   [N1 naming lock] --> [PR1a] --> [PR1b]
-         [S2 item 13 Lectio] ..soft..> [PR1a]
+         [S2 item 9 Lectio] ..soft..> [PR1a]
          [PR1a] --> [PR2]          (shared one-way retrieval mechanic)
          [T4 export] <-> [PR1a]    see PR1a note: whichever ships first
                                     must not hardcode its entity list
@@ -237,12 +259,47 @@ while leaving these on the old noun reads as sloppier than the jargon it replace
 
 ### 2.2 Verification greps
 
+> **Amended 2026-08-07 by owner decision, after `R0`.** The naming lock applies to
+> **user-visible strings only.** Identifiers, type tags, comments and **wire fields are
+> explicitly exempt** — renaming a wire field is an API contract change, which section 0.4
+> forbids inside a strings-only block.
+>
+> **Exempt by name, do not rename:**
+>
+> | Thing | Where | Why |
+> |---|---|---|
+> | `lanes` | request field of `POST /api/ask/stream` (`route.ts:25-27,62-71`), and the `Lanes`/`LaneKey` types in `ask-client.tsx` | API contract. Only the **rendered label** `… 3 of 3 lanes` changes. |
+> | `kind: 'work'` | desk-pane discriminated union, `lib/desk.ts` and `desk-pane.tsx` | Type tag, also serialised into `/desk?p=` URLs. |
+> | `work` | `contract/schema.json` output-contract field; `metadata->>'work'` in SQL | The output contract and the corpus schema. |
+> | `/library/notes`, `/library/uploads` | routes | Section 9 already defers route renames. |
+>
+> The greps below were written against the whole tree and **could not return zero** — `R0`
+> measured 106 hits for the first one, nearly all comments and the exempt identifiers above. They
+> are re-scoped to the label surfaces, which is what the lock actually governs.
+
 ```bash
-# must return zero user-visible hits after N1
-rg -n --glob '!*.test.*' -i 'the corpus|my works|my library|\blanes\b'
-rg -n --glob '!*.test.*' '\bAP\b'
-rg -n --glob '!*.test.*' '\d+ works?\b'
+# The label surfaces the naming lock governs. Must return zero after N1.
+LABELS='web/src/components/sidebar.tsx web/src/components/mobile-nav.tsx web/src/app/library'
+rg -n --glob '!*.test.*' -i 'the corpus|my works|my library' $LABELS
+rg -n --glob '!*.test.*' '\bAP\b' web/src/components/mobile-nav.tsx
+rg -n --glob '!*.test.*' 'lanes' web/src/components/ask-client.tsx | rg -v 'LaneKey|Lanes|lanes\[|lanes\}|lanes,|lanes:'
+
+# The counted noun. Two user-visible call sites; `count()` lives in web/src/lib/plural.ts.
+rg -n --glob '!*.test.*' "count\((.*), 'work'\)|work\\\$\{" web/src/app
 ```
+
+**Known user-visible sites, measured by `R0`** — if `N1` changes more than these plus the page
+headings, it has left its scope:
+
+| String | Site |
+|---|---|
+| `AP` | `mobile-nav.tsx:51` — exactly one occurrence in the tree |
+| `The corpus` | `sidebar.tsx:282`, `library/page.tsx:108` |
+| `My library` | `sidebar.tsx:320`, `library/page.tsx:23`, `library/notes/page.tsx:49` |
+| `My Works` | `sidebar.tsx:343`, `library/page.tsx:27`, `library/uploads/page.tsx:13`, `library/uploads/[id]/page.tsx:3` |
+| `N works` | `library/page.tsx:126` (via `count()`), `library/[catalog]/page.tsx:177` (hand-rolled ternary) |
+| `sources across the corpus` | `library/passages/page.tsx:405` |
+| `New section` | `sidebar.tsx:259` |
 
 ---
 
@@ -338,6 +395,9 @@ Fill in the table below. This is the deliverable for `R0` — no product code ch
 >   item 8's own "do not fake it" branch — logged to Backlog, not built.
 >
 > **Three defects in this document that change the plan.**
+>
+> **[Resolved 2026-08-07 by owner decision — see the v1.4 changelog. The three findings below are
+> kept as the record of what was found, not as open items.]**
 >
 > - **`S2` has lost three items.** The heading says "11 small fixes", the section 1 status board
 >   says "13", and the table lists **10** — numbered 1-8, then 12, 13. Items **9, 10 and 11 do not
@@ -779,10 +839,22 @@ on two thirds of a chapter.
 
 - **`N3a` hydration:** fix the handler gap so every verse in a chapter is interactive.
 - **`N3b` affordance:**
-  1. `cursor: pointer` plus a hover colour on verse numbers. Two CSS declarations.
-  2. Move the existing click binding up one level, from the verse-number element to the verse
-     span. This is relocating a handler, not writing one.
+  1. ~~`cursor: pointer` plus a hover colour on verse numbers. Two CSS declarations.~~
+     **ALREADY SHIPPED** (`R0`): `verse-display.tsx:272` carries `cursor-pointer` and a hover
+     shift; `:253-263` carries `role`, `tabIndex`, `aria-label` and `onKeyDown`. Verify, do not
+     re-add.
+  2. ~~Move the existing click binding up one level, from the verse-number element to the verse
+     span. This is relocating a handler, not writing one.~~ **STRUCK BY OWNER DECISION,
+     2026-08-07, on `R0`'s finding.** This repo shipped exactly that binding, measured it breaking
+     double-click word selection (the first click opened `StudyPanel`, whose `fixed inset-0` scrim
+     swallowed the second), and reverted it under **owner ruling ADR-047**
+     (`docs/DECISIONS.md:1099`), guarded by `web/test/invariants/verse-open-gesture.test.tsx`.
+     ADR-047 stands. Reinstating this needs an owner ruling that supersedes it, which is not a
+     remediation decision. **Do not do this step, and do not touch that test.**
   3. When the verse drawer opens, dismiss the text-selection toolbar. One call.
+
+  **What remains in `N3b` is step 3 alone.** If `N3a`'s hydration gap is also disproved, `N3b`
+  closes on one call and `N3` should be re-scoped rather than padded.
 
 **Do NOT**
 
@@ -796,9 +868,13 @@ on two thirds of a chapter.
 - [ ] `BROWSER` Every verse in John 1 opens the drawer on tap.
 - [ ] `BROWSER` Same for three sampled chapters including one Psalm and one single-chapter book.
 - [ ] `BROWSER` Verse numbers show a hover state on desktop.
-- [ ] `BROWSER` Clicking verse text opens the same drawer.
+- [ ] ~~`BROWSER` Clicking verse text opens the same drawer.~~ **Struck with step 2** — this check
+      asserts the behaviour ADR-047 forbids. Leaving it would be an exit test that can only pass
+      by breaking an owner ruling.
 - [ ] `BROWSER` Selecting and copying a verse still works and does not open the drawer.
 - [ ] `BROWSER` The selection toolbar and the drawer are never on screen simultaneously.
+- [ ] `AGENT` `web/test/invariants/verse-open-gesture.test.tsx` is green and unmodified —
+      `git diff` shows no change to it.
 
 **Findings log**
 
@@ -1082,15 +1158,44 @@ The `Account` section contains exactly one link — back to highlights and notes
 email display, no password change, no export, no deletion. For a product asking people to
 entrust years of study notes, export and deletion are trust features, not admin chores.
 
-**Root cause** — hypothesis
+**Root cause** — ~~hypothesis~~ **corrected by `R0`**
 
-Preferences implemented against local storage; the account record they could live on already
-exists, because notes are already persisted to it. Confirm in `R0`.
+~~Preferences implemented against local storage; the account record they could live on already
+exists, because notes are already persisted to it.~~
+
+Preferences are `localStorage` only — theme and size at `web/src/lib/reading-prefs.ts:53-74`,
+translation at `settings-form.tsx:29-36` and `read/[book]/[chapter]/page.tsx:56,135`. **The
+account record they could live on does not exist for this purpose.** `user_profiles` is declared
+in `USER_TABLE_SPEC` and already carries a dormant `preferred_translation`, but **no application
+code reads or writes that table** and prod held 0 rows at the last census. Notes persist to
+`notes`, a different table — so the block's "because notes are already persisted to it" does not
+transfer.
+
+> ### ⚑ OWNER DECISION REQUIRED BEFORE `T4` STARTS
+>
+> **Flagged 2026-08-07 by owner decision, on `R0`'s finding. `T4` does not begin until this is
+> ruled.** The three preferences do not have one answer:
+>
+> | Pref | Column today | Cheapest honest path |
+> |---|---|---|
+> | Default translation | **`user_profiles.preferred_translation` exists, dormant** | Wire up the dormant column. No migration. ~30 lines. |
+> | Theme | none | Needs a column |
+> | Text size | none | Needs a column |
+>
+> So the choice is: **(a)** ship translation only against the dormant column and leave theme and
+> size device-local with honest copy; **(b)** migrate — add columns for theme and size, with RLS,
+> and re-think `layout.tsx:82`, the synchronous anti-FOUC script that reads `localStorage` before
+> paint and would now be racing a server value; or **(c)** defer `T4` behind the auth migration,
+> which `T2` already notes entangles account management with Supabase.
+>
+> A schema change is a section 0.4 stop-and-report, and `docs/DECISIONS.md` is where the ruling
+> goes. **Recorded as flagged, not decided** — the owner rules when `T4` comes up.
 
 **Minimal change** — do not exceed
 
-1. Move theme, text size, default translation onto the existing account record. Read on load,
-   write on change. This is choosing a different store, not building one.
+1. Move theme, text size, default translation onto the account record — **scope set by the owner
+   ruling above, which is a precondition of this block, not part of it.** Read on load, write on
+   change.
 2. Account page, in this order: email display -> password change -> export -> delete.
 3. Export can be a synchronous JSON download of notes, highlights and bookmarks. ~30 lines. It
    does not need to be a background job with an emailed link until someone has enough data to
@@ -1167,29 +1272,44 @@ The page was written to establish a position rather than to demonstrate a produc
 
 ---
 
-### `S2` — Polish sweep: 11 small fixes, one branch
+### `S2` — Polish sweep: 9 small fixes, one branch
 
 **Wave:** 4 · **Severity:** P2 Medium · **Depends on:** `R0`, `N1` · **Blocks:** — · **Status:** `[ ]`
 
-Grouped deliberately: one branch, one review, one regression pass. Reviewing eleven one-line
+Grouped deliberately: one branch, one review, one regression pass. Reviewing nine one-line
 changes separately costs more than making them.
+
+> **Renumbered 2026-08-07 by owner decision, after `R0`.** This table read 1-8, 12, 13 against a
+> heading of "11" and a status-board entry of "13" — three counts, none of them the row count.
+> Old item 2 (reader skeleton) is **struck**: `R0` proved the reader already has `ChapterSkeleton`
+> and that importing the Library one would reintroduce the layout shift it exists to prevent. Old
+> items 9, 10 and 11 are **struck**: they appear nowhere in any version of this document and
+> cannot be recovered. Everything else is renumbered sequentially, so heading, board and table now
+> agree at **9**. Old → new: 1→1, 3→2, 4→3, 5→4, 6→5, 7→6, 8→7, 12→8, 13→9.
 
 **Minimal change** — in this order
 
 | # | Fix | Cost | Source |
 |---|---|---|---|
 | 1 | **Translation explainer.** One line in the picker: *"All 18 are public domain, so we can quote them freely. Modern translations require licences; we're working on it."* Converts a perceived defect into a stated position. **Do this first — it is free.** | string | both |
-| 2 | **Reader loading state.** The skeleton component already exists on Library pages (confirm in `R0`) — import it. Zero new code. | import | walkthrough |
-| 3 | **Tag contrast.** Raise the muted-gray token until denomination tags clear 4.5:1 on the dark background. | 1 token | walkthrough |
-| 4 | **Ask checkbox colour.** `accent-color` on the lane checkboxes to pick up the terracotta instead of browser blue. | 1 decl | walkthrough |
-| 5 | **Single-chapter books** render as links while every other book renders as a button, in the same picker. Make them buttons. | 1 swap | deck |
-| 6 | **Jump-to-chapter input** in the picker — one input filtering an array already in memory. Psalm 119 currently costs a lot of scrolling. | small | deck |
-| 7 | **`aria-label` + tooltip on every icon-only button** — the Library `+`, the sidebar pencil and `+`. | small | both |
-| 8 | **Work TOC titles.** **Check before doing:** if the source data has real section titles, surface them instead of `Part 1 of 23`. If it does not, this is a content-ingestion problem — log it against the corpus pipeline in section 9 and **do not fake it here.** | conditional | walkthrough |
-| 12 | **Era accents in the verse panel.** Fifteen voices on a verse render as visually identical cards, so parsing "the fathers think X, the Reformers think Y" means reading every name and date. Add a left-border tint per era group on the existing commentary card, coloured by the `era` field the data already carries. ~4 CSS declarations, palette tokens only. | 4 decls | third-party audit, triaged |
-| 13 | **Reading presets in the `Aa` control.** Text size is incremental-only, so users hand-tune with no vocabulary for reading modes. Add three named presets — **Study** (denser, more verses per screen beside an open panel), **Read** (current default, unchanged), **Lectio** (largest, widest spacing and measure). Each is a stored configuration of existing CSS variables. Steppers remain for fine-tuning. | small | third-party audit, triaged |
+| 2 | **Tag contrast.** Raise the muted-gray token until denomination tags clear 4.5:1 on the dark background. **`R0`:** the offender is `commentary-panel.tsx:229` — `text-stone-500` with no `dark:` variant, so the tag keeps a light-mode value on a dark card. Measure the one-class fix against the global token move before choosing; the local fix may be nearer the finding. | 1 token | walkthrough |
+| 3 | **Ask checkbox colour.** `accent-color` on the lane checkboxes to pick up the terracotta instead of browser blue. **`R0`: ALREADY SHIPPED** at `e196e4b` (`ask-client.tsx:117`). Verify, then mark done — do not redo. | 1 decl | walkthrough |
+| 4 | **Single-chapter books** render as links while every other book renders as a button, in the same picker. Make them buttons. **`R0`:** the split is at `book-picker.tsx:171-184` and is conditional on the picker's *mode* (`onPick` present → `<button>`, absent → `<Link>`), not on the book. The same split exists for chapter cells at `:77,81`. Fix the mode inconsistency, not the book branch. | 1 swap | deck |
+| 5 | **Jump-to-chapter input** in the picker — one input filtering an array already in memory. Psalm 119 currently costs a lot of scrolling. **`R0`: confirmed absent** — no `<input>` in `book-picker.tsx`. | small | deck |
+| 6 | **`aria-label` + tooltip on every icon-only button** — the Library `+`, the sidebar pencil and `+`. **`R0`: the `aria-label` half is already shipped** (`sidebar.tsx:474,481`; the Library `+` has both an `aria-label` and a `title`). What is genuinely missing is a `title` tooltip on the sidebar controls — and note MASTER `UX-2`: `title` is hover-only and touch has no hover, so a tooltip is not a fix for discoverability on mobile. | small | both |
+| 7 | **Work TOC titles.** **Check before doing:** if the source data has real section titles, surface them instead of `Part 1 of 23`. If it does not, this is a content-ingestion problem — log it against the corpus pipeline in section 9 and **do not fake it here.** **`R0`: the conditional resolves to the second branch.** `work-toc.tsx:205-208` chunks one work into slices whose headings are all one title plus `(i/n)`; no per-chunk titles exist. **Already filed in section 9 — do not build.** | conditional | walkthrough |
+| 8 | **Era accents in the verse panel.** Fifteen voices on a verse render as visually identical cards, so parsing "the fathers think X, the Reformers think Y" means reading every name and date. Add a left-border tint per era group on the existing commentary card, coloured by the `era` field the data already carries. ~4 CSS declarations, palette tokens only. **`R0`: the field exists** — `eraLabel()`, `commentary-panel.tsx:135`, already used to group at `:391-399`. | 4 decls | third-party audit, triaged |
+| 9 | **Reading presets in the `Aa` control.** Text size is incremental-only, so users hand-tune with no vocabulary for reading modes. Add three named presets — **Study** (denser, more verses per screen beside an open panel), **Read** (current default, unchanged), **Lectio** (largest, widest spacing and measure). Each is a stored configuration of existing CSS variables. Steppers remain for fine-tuning. | small | third-party audit, triaged |
 
-**Item 12 — additional constraints**
+**Struck by owner decision, 2026-08-07** — recorded here so the sweep's "nothing silently dropped"
+exit test can still be satisfied:
+
+| Old # | Fix | Disposition |
+|---|---|---|
+| 2 | Reader loading state — import the Library skeleton | **Struck by recon.** Already done and differently: `ChapterSkeleton`, `read/[book]/[chapter]/page.tsx:446`, deliberately mirrors `VerseDisplay`'s box. Doing it as written is a regression. |
+| 9, 10, 11 | *(unknown)* | **Struck.** Present in no version of this document and unrecoverable. If they are ever remembered, they re-enter as new items at the end of the table, not by reviving these numbers. |
+
+**Item 8 — additional constraints**
 
 - Do not add avatars, icons, or illustrations. The third-party audit proposed line-art quills;
   rejected as decorative and off-brand.
@@ -1201,11 +1321,11 @@ changes separately costs more than making them.
   textual era headers (`MODERN`) and shows author, year and tradition on every card. The tint
   reinforces that; it must not replace it, or the feature is invisible to colourblind users.
   If anyone later proposes removing the text headers "because the colours do that now", refuse.
-- Check this against item 3 (tag contrast) on the same branch — era tint and tradition tag are
+- Check this against item 2 (tag contrast) on the same branch — era tint and tradition tag are
   two encodings of adjacent information on one card. Make sure the result reads as one signal,
   not two competing ones.
 
-**Item 13 — additional constraints**
+**Item 9 — additional constraints**
 
 - Do not remove the A-/A+ steppers. Do not add a fourth preset or a custom-preset builder.
 - No new settings store. Presets save through the same settings record `T4` syncs. **If `S2`
@@ -1219,7 +1339,7 @@ changes separately costs more than making them.
 - `Lectio`'s typography is reused as the prayer-space text style in `PR1a`. Do not diverge them
   later without updating both.
 
-**Item 12 / 13 exit tests**
+**Item 8 / 9 exit tests**
 
 - [ ] `BROWSER` The John 1:1 panel shows a distinct border colour per era group.
 - [ ] `AGENT` Border-vs-card contrast is >= 3:1, measured with a real tool (WCAG 1.4.11 for non-text UI).
@@ -1255,12 +1375,12 @@ changes separately costs more than making them.
 ## 8. Wave 5 — Product: the second half of the promise
 
 > **This wave is not remediation.** Waves 1-4 close audit findings; this builds a feature. It
-> lives here because it shares the naming lock (`N1`), the polish work (`S2` item 13), and
+> lives here because it shares the naming lock (`N1`), the polish work (`S2` item 9), and
 > constraint **C9**. Section 10's definition of done does **not** include this wave — the
 > remediation closes without it.
 
 **Sequenced after Wave 2** (naming must be locked — the sidebar section label depends on it).
-Soft dependency on `S2` item 13. Otherwise independent of Waves 3-4: `PR1a` can start in
+Soft dependency on `S2` item 9. Otherwise independent of Waves 3-4: `PR1a` can start in
 parallel with Wave 3.
 
 **Constraint C9 governs this entire wave.** Read section 0.5 before writing any code — the
@@ -1270,7 +1390,7 @@ error-reporting leak vector in particular, which no audit caught.
 
 ### `PR1a` — Prayer journal: the space and the entity
 
-**Wave:** 5 · **Severity:** P1 Product · **Depends on:** `N1`, `N4`, soft `S2`#13 · **Blocks:** `PR1b`, `PR2` · **Status:** `[ ]`
+**Wave:** 5 · **Severity:** P1 Product · **Depends on:** `N1`, `N4`, soft `S2`#9 · **Blocks:** `PR1b`, `PR2` · **Status:** `[ ]`
 
 **Observed**
 
@@ -1287,7 +1407,7 @@ tool.
 
 1. A **Pray** action in the verse panel, alongside Highlight and Notes.
 2. **The prayer space:** the existing note-editor shell re-framed. Verse pinned at top, warmer
-   background from existing palette tokens, `Lectio` preset typography (`S2` item 13). At most
+   background from existing palette tokens, `Lectio` preset typography (`S2` item 9). At most
    one prompt line, lectio-style: *"Read it again slowly. What is the text saying to you?"*
 3. **Save creates a prayer entity** — distinct from notes, per the data-model rule below.
 4. **The journal:** prayers listed in the repurposed sidebar PRAYERS section (`N4`) — ordered,
@@ -1451,9 +1571,9 @@ Each row is a block whose "reuse the existing X" premise `R0` killed. The estima
 | A way to hide a sidebar section | `N4` | **No feature-flag mechanism exists.** The repo's only "not built yet" idiom is the `ComingSoon` stub `N4` exists to delete. | **Unchanged in size, changed in kind:** a static edit to `SEED_SECTIONS` (`sidebar.tsx:24-27`), not a flag lookup. No new mechanism — do not build one for two sections. |
 | Prayer-journal persistence | `PR1a` (via `N4`) | The Channels shell `N4` hands over is **`localStorage` only**. `sidebar.tsx` has no `fetch`; `/api/channels/route.ts` and the `channels` table exist and it never calls them. | **Was "re-frame the existing shell". Now: `PR1a` must build its own persistence** — table, RLS, API route, client wiring. Materially larger. Re-estimate `PR1a` before Wave 5 is scheduled. |
 | Verse-span click binding | `N3b` step 2 | Already shipped, measured breaking word selection, reverted under **owner ruling ADR-047**, guarded by `verse-open-gesture.test.tsx`. | **Removed from `N3b`, not re-estimated.** Reinstating it needs an owner ruling that supersedes ADR-047, which is not a remediation decision. `N3b` keeps steps 1 (already shipped) and 3. |
-| Reader loading skeleton | `S2` item 2 | The reader already has `ChapterSkeleton`, purpose-built to mirror `VerseDisplay`'s box. The Library "component" is a route-convention `loading.tsx`. | **Zero. Already done.** Mark the item done in the sweep with this note; doing it as written regresses layout shift. |
-| Work TOC section titles | `S2` item 8 | Item 8's own conditional resolves to "do not fake it": `work-toc.tsx:205-208` chunks one work into `Part N` slices whose headings are all one title plus `(i/n)`. No per-chunk titles exist in the data. | **Out of `S2` entirely.** This is a corpus/ingestion change (real section boundaries at ingest), owned by the ingestion pipeline and governed by the `quality-slice` skill. Not a UI fix at any size. |
-| `S2` items 9, 10 and 11 | `S2` | **Missing from the document.** Heading says 11 fixes, status board says 13, table lists 10 (1-8, 12, 13). The v1.2 changelog only records adding 12-13, so these were not renumbered away. | **Unknown — owner input required.** `S2` cannot satisfy its own "nothing silently dropped" exit test until these are recovered or explicitly struck. |
+| Reader loading skeleton | `S2` old item 2 (struck) | The reader already has `ChapterSkeleton`, purpose-built to mirror `VerseDisplay`'s box. The Library "component" is a route-convention `loading.tsx`. | **Zero. Already done.** Mark the item done in the sweep with this note; doing it as written regresses layout shift. |
+| Work TOC section titles | `S2` item 7 | Item 8's own conditional resolves to "do not fake it": `work-toc.tsx:205-208` chunks one work into `Part N` slices whose headings are all one title plus `(i/n)`. No per-chunk titles exist in the data. | **Out of `S2` entirely.** This is a corpus/ingestion change (real section boundaries at ingest), owned by the ingestion pipeline and governed by the `quality-slice` skill. Not a UI fix at any size. |
+| `S2` old items 9, 10 and 11 (struck) | `S2` | **Missing from the document.** Heading says 11 fixes, status board says 13, table lists 10 (1-8, 12, 13). The v1.2 changelog only records adding 12-13, so these were not renumbered away. | **Unknown — owner input required.** `S2` cannot satisfy its own "nothing silently dropped" exit test until these are recovered or explicitly struck. |
 
 ### Pre-seeded at planning time
 
@@ -1510,7 +1630,7 @@ Findings are attributed throughout. Confidence varies and it matters when scopin
 | **deck** | From the audit deck only, screenshot-backed. The walkthrough had no access to that surface (landing, sign-up, mobile) or deliberately avoided it (creating plans/channels, to keep the session read-only). |
 | **walkthrough** | From the live desktop walkthrough only; absent from the deck. |
 | **disputed** | The two observers saw different behaviour. Only `L1`. Its fix is designed to close the finding either way. |
-| **third-party, triaged** | From a third-party "Deep UX/UI audit". That review contained **no new bugs and no evidence of product use**. Three items survived triage: prayer mode (promoted to `PR1a`/`PR1b`), era accents and reading presets (`S2` items 12-13). Rejected: "Voices/Tradition" renaming, hiding category counts, an auto-hiding tab bar, semantic search, and commentator avatars. |
+| **third-party, triaged** | From a third-party "Deep UX/UI audit". That review contained **no new bugs and no evidence of product use**. Three items survived triage: prayer mode (promoted to `PR1a`/`PR1b`), era accents and reading presets (`S2` items 8-9). Rejected: "Voices/Tradition" renaming, hiding category counts, an auto-hiding tab bar, semantic search, and commentator avatars. |
 
 ### Rejected third-party suggestions, and why
 
@@ -1520,7 +1640,7 @@ Findings are attributed throughout. Confidence varies and it matters when scopin
 | Hide category counts | Rejected. Conflicts with the honesty-about-coverage principle both audits praised. |
 | Auto-hiding mobile tab bar | Rejected. Directly contradicts `T3`'s "do not restructure the mobile navigation" — and `T3`'s actual bug is padding, which auto-hide would mask rather than fix. |
 | Semantic search | Rejected as a checklist item. Partially exists already as Ask retrieval; a real version is an infrastructure project, not a block. |
-| Avatar / line-art icons for commentators | Rejected as decorative and off-brand. See `S2` item 12's constraints. |
+| Avatar / line-art icons for commentators | Rejected as decorative and off-brand. See `S2` item 8's constraints. |
 
 One correction to pass back to whoever prepared the deck: its cover slide states
 *15 findings · 2 critical · 4 high · 9 medium*, but the individual slide tags show three at
