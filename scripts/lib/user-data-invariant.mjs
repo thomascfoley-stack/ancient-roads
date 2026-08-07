@@ -57,6 +57,26 @@ export const USER_TABLE_EXCLUDED = {
     'Corpus topical-index expansion (migration 039) — ordered topic→passage rows under sections, ' +
     'written by src/ingest/ingest-topical-index.ts. Platform content, SELECT-only for app_runtime.',
 
+  // ── Suggested readings (migration 105) ───────────────────────────────────────────────────────
+  // USER-SCOPED (user_id + RLS) but NOT user CONTENT, which is the distinction G1 turns on. These
+  // rows are DERIVED — corpus works ranked against a user's document — and nobody wrote them, so
+  // "erase" costs one click of Search rather than losing something authored. G1 exists to prove a
+  // cutover did not rewrite, reassign or erase what people WROTE.
+  //
+  // And a digest over them would go red on ordinary use: `replaceReadings` is DELETE-then-INSERT
+  // for the whole document on every recompute (readings-store.ts:56-68), so re-running a search
+  // with a different category selection rewrites the entire set. That is precisely the failure the
+  // Better Auth note below describes — a check that reddens during normal use gets muted within a
+  // week, and takes the tables that matter with it.
+  //
+  // The tenancy property (no cross-user read) is real and is covered where it belongs: the RLS
+  // policy in migration 105 plus the two-account tenancy suites, not a content digest.
+  user_document_readings:
+    'Derived per-user reading suggestions (migration 105) — corpus works ranked against a user ' +
+    'document, recomputed by delete-then-insert on every search. Not authored content, and a ' +
+    'digest over it would churn on normal use; RLS/tenancy is covered by its policy and the ' +
+    'two-account suites. See the note above.',
+
   // ── The four Better Auth tables (migration 104, the SEC-1 cutover) ────────────────────────────
   // EXCLUDED from the G1 digest, and the distinction is worth stating precisely: these hold data
   // ABOUT users, but they are not user CONTENT. G1 exists to prove that a cutover did not silently
