@@ -115,15 +115,30 @@ open a quoted result, and "the results should be exhaustive". Branch
 
 ### NOT DONE / UNVERIFIED
 
-- **NOT DEPLOYED.** Deploy is ⚑ owner-executed per occasion (`AGENTS.md`), the branch wants
-  an independent review under bylaw 4, and `vercel --prod` uploads the WORKING TREE — which
-  still holds another session's untracked P4.0 evidence, a design doc and a script. Those
-  were left exactly as found; `deploy.sh`'s clean-tree gate would (correctly) refuse until
-  whoever owns them commits or stashes them. **A locally-green `next build` was also not
-  obtainable**: main's `/account/settings` prerenders against the database and there are no
-  DB credentials here, so it fails on `APP_DATABASE_URL` locally. It should build on Vercel,
-  where `deploy.sh` asserts that variable exists — but that is an expectation, not a check
-  I ran.
+- **DEPLOY ATTEMPTED ON THE OWNER'S GO, AND REFUSED BY A GATE. Nothing shipped** — verified
+  after the fact, not assumed: `ancientpaths.app` still serves `dpl_FcVa2CQ…` (created
+  2026-08-06, 24h before), and the newest receipt is still the pre-existing
+  `deploy-f9d0b89.txt`. The refusal is `PREDEPLOY_DB_URL is not set`, the P0.3 gate proving
+  `embeddings.served` (migration 044) exists on the TARGET database before shipping a bundle
+  that queries it — without which every `/ask` 500s. It fired BEFORE the build and BEFORE
+  any upload. That credential is a production connection string; per `AGENTS.md` it is not
+  mine to source, and pulling it to disk is separately forbidden, so **this is the owner's
+  step**: `export PREDEPLOY_DB_URL=… && ./deploy.sh`, from a clean tree.
+- **`next build` was broken for everyone without production credentials — FIXED (`722529f`).**
+  Not an environment quirk, an actual defect, and it would have blocked the owner too.
+  `/account/[path]` and `/auth/[path]` both declare `generateStaticParams`, so Next
+  PRERENDERED them, and both read the session — which reaches the database. Neither can be
+  prerendered even in principle: their output depends on who is asking. `generateStaticParams`
+  stays on both (with `dynamicParams = false` it is the 404 allowlist, a different job under
+  the same name); `dynamic = 'force-dynamic'` added. Both routes now report ƒ (Dynamic) and
+  the build completes. Each half arrived innocently — /auth's `currentUser()` from the A7b
+  signed-in-on-sign-in fix, /account's from the SEC-1 in-page auth enforcement — and each
+  silently made a prerendered page request-dependent. **`deploy.sh` had been unrunnable here
+  since SEC-1 landed and nothing said so, because nobody had deployed since**: the
+  "a gate nobody runs is not a gate" entry on the watchlist, recurring exactly as written.
+- **The branch is still unmerged.** Deploying a branch is legal under `deploy.sh`'s
+  merge-first rule (it contains `origin/main`), but PR #75 should be merged so git records
+  what production runs.
 - **`main` was RED on arrival; both failures are now fixed on this branch.** Confirmed
   pre-existing by running them in a scratch worktree at clean `main` @ `7e3a612` with none of
   my commits applied; both arrived with the suggested-readings merge earlier today.
