@@ -33,15 +33,27 @@ open a quoted result, and "the results should be exhaustive". Branch
 
 ### NOT DONE / UNVERIFIED
 
-- **NOT DEPLOYED, and `main` is RED — pre-existing, not from this work.** Two genuine
-  failures on clean `main` @ `7e3a612`, confirmed by running them in a scratch worktree with
-  none of my commits: `user_document_readings` is missing from `USER_TABLE_SPEC`
-  (unregistered USER DATA — the cutover gate cannot prove those rows survive), and
-  `web/src/app/api/user-corpus/documents/[id]/related/route.ts` declares `maxDuration = 30`
-  against `ASK_MAX_DURATION_SEC = 300`. Both arrived with the suggested-readings merge
-  earlier today. Not fixed here: they are another lane's in-flight work, and the
-  `maxDuration` one is a design call (is 30s right for that route, or is the
-  every-route-identical rule too strict?) that is not mine to make unilaterally.
+- **NOT DEPLOYED.** Deploy is ⚑ owner-executed per occasion (`AGENTS.md`), the branch wants
+  an independent review under bylaw 4, and `vercel --prod` uploads the WORKING TREE — which
+  still holds another session's untracked P4.0 evidence, a design doc and a script. Those
+  were left exactly as found; `deploy.sh`'s clean-tree gate would (correctly) refuse until
+  whoever owns them commits or stashes them. **A locally-green `next build` was also not
+  obtainable**: main's `/account/settings` prerenders against the database and there are no
+  DB credentials here, so it fails on `APP_DATABASE_URL` locally. It should build on Vercel,
+  where `deploy.sh` asserts that variable exists — but that is an expectation, not a check
+  I ran.
+- **`main` was RED on arrival; both failures are now fixed on this branch.** Confirmed
+  pre-existing by running them in a scratch worktree at clean `main` @ `7e3a612` with none of
+  my commits applied; both arrived with the suggested-readings merge earlier today.
+  `user_document_readings` is now classified EXCLUDED with its reasoning (derived, not
+  authored, and delete-then-inserted on every recompute, so a G1 digest would redden on
+  ordinary use). The `maxDuration` one was **the guard's defect, not the route's** — the
+  route runs a plain vector query and never touches `teach()`, so "every literal equals
+  ASK_MAX_DURATION_SEC" was demanding a 300s ceiling for a job that wants 30. Split it by
+  what the constant means: pipeline routes (DERIVED from their imports) must match; others
+  may set their own budget but never exceed the ceiling. Both legs red-proofed. **Owner
+  should still confirm the `related` route's 30s is the intended budget** — I preserved the
+  author's number rather than picking one.
 - **Live click-through of the desk links and Load More is UNVERIFIED.** No dev database in
   this session, so `/library/[catalog]` 500s locally (`APP_DATABASE_URL … must be set`) and
   `/ask` returns 401. Verified instead: the checkbox panel driven in a real browser at 390px
