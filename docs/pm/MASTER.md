@@ -113,13 +113,40 @@ The first pass should be the one where, if something breaks, you know what broke
 | # | Item | Note |
 |---|---|---|
 | UX-1 | **The Bible cannot be reached on the desk** | **Corrected 2026-08-02**: this row first said the pane model could not hold Scripture and needed a design decision. Wrong — `lib/desk.ts` already has `kind:'scripture'` beside `kind:'work'` and `/desk` renders both, so a Bible pane opens today by URL. It is a **picker gap**: `+` routes to `/library?desk=…`, which offers catalogs of works only. Much cheaper than filed |
-| UX-2 | **The `+` affordance is unexplained** | Row opens the work alone, `+` adds it to the desk, nothing says so; the tooltip is hover-only and absent on touch |
+| UX-2 | **The `+` affordance is unexplained** | Row opens the work alone, `+` adds it to the desk, nothing says so; the tooltip is hover-only and absent on touch. **ADDRESSED 2026-08-07** (`e196e4b`): one visible line above the work list — "Tap a work to read it, or + to open it beside what is on your desk" — rather than a label on every row, which is the same answer twenty times down a page. **NOT browser-verified**: `/library/[catalog]` needs DB credentials the working tree does not have, so this is typecheck-and-lint only (WORKLOG 2026-08-07 NOT DONE). A 2026-08-07 UX walk reported the `+` as having "no label or tooltip" — it has both an `aria-label` and a `title`; this row already had the real diagnosis |
 | UX-4 | **Results cannot be opened; searches do not persist** | Captured 2026-08-02, deliberately NOT designed (owner is mid-thought and said so). Settled: click a result -> open in reader, WITHOUT losing the search; searches persist with history; history probably lives in the study-partner tabs. Open: which thing opens (the anchored passage or the voice's own work), per-device vs per-account history, and whether a stored search keeps the answer — caching generated output is governed by the accuracy bar and goes stale when the corpus moves, as it just did. **Same problem as UX-1 and should be one slice with it** |
 | UX-3 | **Desk layout model** | Grid not a row (top-to-bottom as well as left-to-right), no 3-pane cap, drag-resize, collapsible left chrome. **The cap is doing performance work**: an uncapped grid over `spurgeon-sermons` (118,371 sections) is a virtualisation problem before it is a layout one |
 
 [Order](orders/2026-08-02-reader-ux-desk-and-bible.md). Deliberately not merged into A8: these are
 client changes to a working surface, and A8's remaining act is a status flip that has been kept
 narrow on purpose.
+
+### UX-5 — the rail hid five features below an unmarked scroll (CLOSED 2026-08-07, `e196e4b`)
+
+Filed and closed in one pass, from an owner-supplied UX walk of the live app. The rail's `<nav>`
+scrolls while `Settings` sits OUTSIDE it behind a `border-t`, so a cut-off list read as a finished
+one. **Measured before the fix, at 1280x720: 158px of overflow hiding exactly five destinations** —
+Theology & Creeds, Passage search, My library, Word study, and My Works, the last of these being
+the most differentiated feature in the product. Closed with a content mask (background-agnostic,
+because the same component renders on two different surfaces) applied only while something is
+below; red-proofed both ways — on with 418px hidden, off at the bottom.
+
+**The same walk's other findings landed with it**, and four of its claims were wrong in ways worth
+keeping: the verse handle already had a pointer cursor, a hover shift and full ARIA; selecting
+verse text already opens a popover; the library `+` already had a label and a tooltip (UX-2 above
+had the real diagnosis); and the ToC's `Part N` rows are mechanical chunks of one work, so the
+per-chunk titles it asked for do not exist in the data. **Two defects it did not name** turned up
+while working the list: `/account/settings` exists and **nothing linked to it** — the
+orphaned-surface bug on its fourth surface after the Library hub, the Historians shelf and My Works
+— and the `/ask` lane checkboxes carried `text-accent-700`, the `@tailwindcss/forms` idiom, with
+that plugin **not installed**, so the class was inert and the boxes rendered browser-blue. That is
+the watchlist's "a dead check that looks like the fix" wearing a stylesheet.
+
+**Ask latency is NOT in this tranche and should not be**: it is a retrieval/compose change, gated
+by the accuracy diagnostic and `interpretation_bait` through the live loop. Swapping the example
+prompts for ones that "reliably succeed" is likewise not done — that is tuning to the demo.
+`npm run audit` did not run (refuses without a dev `DATABASE_URL`); DB-free legs green, DB-backed
+legs NOT RUN. See WORKLOG 2026-08-07.
 
 ## Owner decisions outstanding
 
