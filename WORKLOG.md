@@ -1,5 +1,62 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-06 — /ask category filters, clickable results, and two silently-truncated lists
+
+Owner asked for three things on the product surfaces: choose what to search by category,
+open a quoted result, and "the results should be exhaustive". Branch
+`feat/ask-category-filters-and-exhaustive-search`, two commits, rebased onto `main`.
+
+### DONE
+
+- **`/ask` lane filters.** `teach()` fired all three register lanes unconditionally, so a
+  reader could not choose what to search. Added `LaneFlags` to `teach()` and a
+  boundary-validated `lanes` field on `POST /api/ask/stream`; a lane set `false` is SKIPPED
+  (never fetched), not fetched-then-hidden. Omitted/malformed reproduces today's behaviour
+  exactly. The exegetical pool is deliberately NOT gated — it is the always-on core answer.
+- **Clickable results.** Lane chunks already carried `metadata.work` (a real slug) over the
+  wire, unused. Voices carried only a display title, so a quote could not be resolved back
+  to its work at all — threaded an OPTIONAL `slug` through retrieve → teach →
+  normalize-contract → the contract (both `src/` and `web/` copies, sync guard green), and
+  linked both card kinds to the existing desk. A row with no backfilled slug renders as
+  plain text, never a broken link.
+- **Two silently-truncated lists, now exhaustive AND honest about it.** Catalog *search*
+  sent a fixed `limit=25` and never an offset, though `/api/search/works` has accepted both
+  since it was written — same "every layer correct, the feature does not exist" shape as the
+  tradition filter. Catalog *browse* took `limit: 100` with no offset and no count, so a
+  catalog over 100 works had no route to the rest and no indication a remainder existed.
+  Both now page, and both now SHOW the total.
+- **Found by my own test, then red-proofed:** `?page=1e9` is an integer to
+  `Number.isInteger`, so bounding validity without bounding MAGNITUDE emitted a 99-billion
+  OFFSET — the same H10 defect the 2026-08-02 audit found in `/api/search/works`. Clamped,
+  then removed the clamp and watched the test go red before restoring it. Same red-proof
+  done for the offset wiring itself (3 tests red, restored green).
+
+### NOT DONE / UNVERIFIED
+
+- **NOT DEPLOYED, and `main` is RED — pre-existing, not from this work.** Two genuine
+  failures on clean `main` @ `7e3a612`, confirmed by running them in a scratch worktree with
+  none of my commits: `user_document_readings` is missing from `USER_TABLE_SPEC`
+  (unregistered USER DATA — the cutover gate cannot prove those rows survive), and
+  `web/src/app/api/user-corpus/documents/[id]/related/route.ts` declares `maxDuration = 30`
+  against `ASK_MAX_DURATION_SEC = 300`. Both arrived with the suggested-readings merge
+  earlier today. Not fixed here: they are another lane's in-flight work, and the
+  `maxDuration` one is a design call (is 30s right for that route, or is the
+  every-route-identical rule too strict?) that is not mine to make unilaterally.
+- **Live click-through of the desk links and Load More is UNVERIFIED.** No dev database in
+  this session, so `/library/[catalog]` 500s locally (`APP_DATABASE_URL … must be set`) and
+  `/ask` returns 401. Verified instead: the checkbox panel driven in a real browser at 390px
+  and desktop (toggles, counter, no overflow, no console errors from this code), the request
+  path exercised end-to-end through the real route with the new `lanes` field, and the
+  pagination logic under component tests. The link-click itself has not been watched work.
+- **Slug coverage is unmeasured.** How many currently-served commentary authors actually
+  have `metadata.work` backfilled is a live-DB fact. Un-backfilled rows degrade to
+  non-clickable, so the failure mode is invisible-but-safe rather than broken.
+- **`/ask` is still top-K by construction** and cannot be made "exhaustive" by raising a
+  limit — it is ranked retrieval feeding a composer. The exhaustive surface is catalog
+  search. Six `source_type`s still have no retrieval lane at all (`devotional`,
+  `topical_index`, `art`, `note`, `document`, `bible`); `historian` and `lexicon` remain
+  excluded BY DECISION (`routing.ts:126`, `:171`), left standing on the owner's call.
+
 ## 2026-08-06 (Suggested readings: built, and the bug the good progress bar hid)
 
 Owner-approved from [SUGGESTED_READINGS_DESIGN.md](docs/SUGGESTED_READINGS_DESIGN.md), with his
