@@ -1,5 +1,87 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-07 — deploy.sh reviewed, fixed, and given the tests it never had
+
+Owner asked for a review of `deploy.sh`, then for the findings to be applied and made
+bulletproof. Ten findings; all applied. The load-bearing change is not any single fix — it is
+that this file is now **executable under test**, which it has never been.
+
+### What the review found
+
+- **The receipt block died before writing the receipt.** `DEPLOY_URL="$(grep … | tail -1)"` —
+  under the `pipefail` added at `5644522` (2026-08-03), no match makes the pipeline exit 1, the
+  assignment fails, and `set -e` kills the script **after the upload**, so no receipt and no
+  "Done!". The `${DEPLOY_URL:-…}` fallback was unreachable. **Dated regression, and the evidence
+  is committed:** `deploy-98124b2.txt` and `deploy-4275bf2.txt` contain that fallback string —
+  they were written when it still worked. The pipefail commit fixed one unearned green and broke
+  the receipt beside it.
+- **The failure mode the file's own header names was never checked.** The header records vercel
+  "exits 0 with an error body"; `pipefail` catches only the non-zero case, and nothing asserted
+  the alias had moved. Proven, not argued: against the old script the harness case
+  `alias-mismatch-is-a-failure` **exits 0 and writes a clean receipt** while the alias serves a
+  different deployment.
+- **A receipt could not distinguish shipped from attempted.** The two receipts above are for
+  deploys MASTER records as FAILED and are shaped exactly like the successes.
+- **Two `STOP:` messages were unreachable** (`whoami`, `env ls`) — same bare-assignment class as
+  the grep, so both surfaced as a naked `exit 1`. A third instance: the corpus `find` counters,
+  whose "Warning: only N chapters" could not print when the directory was missing.
+- **Org reachable ≠ project present**, while the comment above it claimed to assert the project.
+- Fixed shared `/tmp/vercel-deploy.log` (two lanes, one file, and the receipt's URL is parsed from
+  it); the clean-tree gate went stale across a minutes-long build; `npx vercel` unpinned while two
+  parsers depend on its output format; `deploy-<sha7>.txt` overwritten on redeploy.
+
+### Fixed
+
+Post-deploy verification is an **identity comparison** — the deployment id of what we pushed
+against the id the alias serves, both extracted by the same regex — so a CLI format change makes
+both sides empty and the answer `unverified`, never a false `live`. Three states, three exit
+codes: `live` 0, `unverified` 2, `mismatch` 3. The receipt is written by an **EXIT trap** armed
+the moment the upload starts, so it survives every path out, carrying `state:` honestly.
+Assertions moved above the build (seconds of network before minutes of work), the clean-tree
+check runs a second time immediately before the upload, the CLI is pinned at `vercel@50.38.2`,
+and `--meta sha=` now stamps the commit onto the deployment.
+
+### Verified, by watching it fail first
+
+`test/deploy-sh-gates.sh` — 20 cases, **57 assertions**, throwaway git repos with a real bare
+`origin` and a stubbed `npx`; no network, no credentials, no Vercel account. Wired into
+`scripts/audit.sh`, which CI already runs, because *a gate nobody runs is not a gate*.
+
+- **Against the previous `deploy.sh`: 31 red.** Each maps to a finding above.
+- **Eight seeded mutations, each caught by the case that names it:** dropping `|| true` on the URL
+  grep, restoring the bare `whoami` assignment, deleting the project-present check, deleting the
+  second clean-tree check, deleting the env-parse sanity check, reverting the CLI cwd to the repo
+  root, substring-matching `web` (a project called `webhooks` passed), and making verification
+  always report `live` — that last one reddens `alias-mismatch-is-a-failure`, which is the
+  dangerous defect this work exists to prevent.
+- **Found by running it, not by reading it:** `mktemp "…/vercel-deploy.XXXXXX.log"` on macOS
+  (BSD) ignores the trailing suffix and creates a file named **literally** `vercel-deploy.XXXXXX.log`
+  — the fixed shared path the change was removing, wearing the disguise of a fix. The X's now go
+  last, and the harness asserts the path contains no `XXXXXX`. When that mutation is seeded it
+  breaks 17 assertions across later cases, because a fixed path really does collide across runs.
+
+### NOT DONE / UNVERIFIED
+
+- **`npm run audit` did NOT run — it is a NOT RUN, not a green and not a red.** It refuses at its
+  first gate on this machine: `FAIL: no DATABASE_URL in root .env.local`. The change touches no
+  TypeScript (bash + markdown only), so the TS gates cannot be affected by it, but that is an
+  argument, not a run.
+- **`vercel inspect`'s real output was never seen by this work.** The `dpl_[A-Za-z0-9]+` regex is
+  grounded in WORKLOG 2026-08-04, where `vercel inspect ancientpaths.app` returned
+  `dpl_78bFFJYSrRkbkFMSEFjpeizzhhSP` by hand; it has not been run against live Vercel here. If it
+  does not match, the deploy reports **exit 2 / `unverified`** — loud and honest — never a false
+  `live`. First real deploy should confirm it lands on `live`.
+- **The pinned `vercel@50.38.2` is the version in this machine's npx cache, and the one whose
+  interface was checked** (`inspect --format json`, `inspect <alias>`, `deploy --meta`). It is
+  **not** established that past successful deploys used it; npm's `latest` is 58.7.1.
+- **The ancestry gate is still a proxy.** `origin/main` is not "what is live", so a lane deploying
+  from an unmerged branch remains invisible to it. The `--meta sha=` stamp is the first half of
+  the real fix; the reverse lookup is deliberately unbuilt because no deployment carries the stamp
+  yet, so it could not be tested. Measured: the six most recent receipts all name shas that are
+  ancestors of `main`, so the proxy has held so far.
+- **Not deployed.** Deploy is ⚑ owner-executed per occasion, and the working tree still holds
+  another session's untracked evidence — left exactly as found.
+
 ## 2026-08-06 — /ask category filters, clickable results, and two silently-truncated lists
 
 Owner asked for three things on the product surfaces: choose what to search by category,
