@@ -165,10 +165,20 @@ export default async function CatalogPage({
         <>
         {/* The count makes the page cap VISIBLE. Without it a capped list reads as a complete one,
             which is the silent-truncation shape this repo's watchlist names. */}
-        <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
-          {total <= PAGE_SIZE
-            ? `${total}${totalCapped ? '+' : ''} work${total === 1 ? '' : 's'}`
-            : `Showing ${firstShown}–${lastShown} of ${total}${totalCapped ? '+' : ''}`}
+        {/* WHAT THE + DOES, said once and visibly. Each + already carries an aria-label and a
+            `title`, so a screen reader and a hovering mouse were both told — but `title` is a
+            hover tooltip, and touch has no hover, so on a phone the control was a bare glyph
+            with no explanation anywhere (MASTER.md UX-2). Said here rather than as a visible
+            label on every row: the answer is the same twenty times down the page, and twenty
+            copies of it is how a work list stops looking like a reading surface. */}
+        <p className="mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
+          <span>
+            {total <= PAGE_SIZE
+              ? `${total}${totalCapped ? '+' : ''} work${total === 1 ? '' : 's'}`
+              : `Showing ${firstShown}–${lastShown} of ${total}${totalCapped ? '+' : ''}`}
+          </span>
+          <span aria-hidden>·</span>
+          <span>Tap a work to read it, or + to open it beside what is on your desk.</span>
         </p>
         <ul className="space-y-2">
           {works.map((w) => (

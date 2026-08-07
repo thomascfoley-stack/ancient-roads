@@ -305,9 +305,7 @@ export default function ReaderPage() {
             <ChapterNav book={book} chapter={chapterNum} />
           </>
         ) : (
-          <div className="flex min-h-[60vh] items-center justify-center">
-            <p className="text-sm text-stone-500 dark:text-stone-400">Loading Greek / Hebrew…</p>
-          </div>
+          <ChapterSkeleton label="Loading Greek and Hebrew" />
         )
       ) : data ? (
         <>
@@ -333,9 +331,7 @@ export default function ReaderPage() {
           <ChapterNav book={book} chapter={chapterNum} />
         </>
       ) : (
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-sm text-stone-500 dark:text-stone-400">Loading…</p>
-        </div>
+        <ChapterSkeleton label={`Loading ${book.name} ${chapterNum}`} />
       )}
       {translationAttribution(translation.id) ? (
         <p className="mx-auto max-w-2xl px-6 pb-8 text-center text-xs text-stone-500 dark:text-stone-400">
@@ -425,6 +421,45 @@ export default function ReaderPage() {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * The reading surface's own shape, held while the chapter loads.
+ *
+ * This replaced a centred `<p>Loading…</p>` — so the claim that the reader gave "no feedback at
+ * all" was not quite right, but the complaint underneath it was: the Library shows a pulsing
+ * skeleton and the reader showed a bare word in the middle of an empty screen, so the same app
+ * answered the same question two different ways, and the reader's answer also threw the page
+ * into a full relayout when the verses arrived.
+ *
+ * The container classes below MIRROR VerseDisplay's outermost div deliberately. That is a
+ * duplication with a purpose: the skeleton is only worth having if it occupies the same box the
+ * real content will, which is what stops the layout shift. If VerseDisplay's card changes, this
+ * follows it.
+ *
+ * `animate-pulse` is already inert under prefers-reduced-motion (globals.css), and the bars are
+ * aria-hidden behind one sr-only line so a screen reader hears the state once instead of
+ * hearing nothing or hearing eleven empty divs.
+ */
+function ChapterSkeleton({ label }: { label: string }) {
+  // Ragged, not uniform: equal-length bars read as a table, and Scripture does not set that way.
+  const lines = ['w-[95%]', 'w-[88%]', 'w-full', 'w-[72%]', 'w-[92%]', 'w-[84%]', 'w-full', 'w-[63%]'];
+  return (
+    <div
+      aria-busy
+      className="mx-auto my-6 max-w-2xl rounded-xl border edge bg-paper px-6 py-12 shadow-paper sm:my-10 sm:px-14 sm:py-16 dark:bg-stone-950 dark:shadow-none"
+    >
+      <span className="sr-only">{label}</span>
+      <div aria-hidden className="animate-pulse">
+        <div className="mb-8 h-8 w-40 rounded-lg bg-stone-200/70 dark:bg-stone-800" />
+        <div className="space-y-3.5">
+          {lines.map((w, i) => (
+            <div key={i} className={`h-4 ${w} rounded bg-stone-200/60 dark:bg-stone-800/80`} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

@@ -210,7 +210,7 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
                         <span className="min-w-0">
                           <span className="font-serif text-[15px] text-stone-800 dark:text-stone-100">{g.author}</span>
                           {g.work && <span className="ml-1 font-serif text-[14px] text-stone-500 dark:text-stone-400">, {g.work}</span>}
-                          <span className="mt-0.5 block text-[13px] text-stone-400 dark:text-stone-500">
+                          <span className="mt-0.5 block text-[13px] text-stone-500 dark:text-stone-400">
                             {g.tradition && <span className="uppercase tracking-wide">{g.tradition}</span>}
                             {g.tradition && ' · '}
                             {g.verseIds.slice(0, 4).map((v) => formatVerseId(v)).join(', ')}
@@ -229,7 +229,7 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
                             <ul className="space-y-4">
                               {st.entries.map((e, i) => (
                                 <li key={`${e.sourceUrl}-${e.verseStart}-${i}`}>
-                                  <p className="mb-1 text-micro font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+                                  <p className="mb-1 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
                                     {e.sourceTitle}
                                   </p>
                                   <p className="whitespace-pre-line font-serif text-[15px] leading-relaxed text-stone-700 dark:text-stone-300">

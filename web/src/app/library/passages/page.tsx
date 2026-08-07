@@ -119,7 +119,7 @@ function SearchResultCard({
           </span>
         )}
       </div>
-      <p className="mb-2 text-xs text-stone-400 dark:text-stone-500">
+      <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
         {passageLabel} · {r.source_title}
       </p>
       {view === 'full' && full ? (
@@ -475,7 +475,7 @@ export default function PassageSearchPage() {
             </p>
           ) : (
             <>
-              <p className="mb-3 text-xs text-stone-400 dark:text-stone-500">
+              <p className="mb-3 text-xs text-stone-500 dark:text-stone-400">
                 {searchTotal}{searchTotalCapped ? '+' : ''} result{searchTotal !== 1 ? 's' : ''}
                 {traditionFilter ? ` in ${traditionFilter}` : ''}
               </p>

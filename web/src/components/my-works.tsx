@@ -250,7 +250,7 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
           <span className="font-serif text-[15px] text-stone-600 dark:text-stone-300">
             {busy ? 'Uploading…' : 'Add a document'}
           </span>
-          <span className="mt-1 text-[13px] text-stone-400 dark:text-stone-500">PDF, Word, text or Markdown</span>
+          <span className="mt-1 text-[13px] text-stone-500 dark:text-stone-400">PDF, Word, text or Markdown</span>
           <input
             ref={fileInput}
             id="my-works-file"
@@ -300,7 +300,7 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
               {presence.map((p) => (
                 <li key={`${p.sectionId}-${p.channel}-${p.verseStart}`} className="rounded-xl bg-paper px-4 py-3 shadow-paper dark:bg-stone-800 dark:shadow-none">
                   <span className="font-serif text-[15px] text-stone-700 dark:text-stone-200">{p.title}</span>
-                  <span className="ml-2 text-[13px] text-stone-400 dark:text-stone-500">
+                  <span className="ml-2 text-[13px] text-stone-500 dark:text-stone-400">
                     {/* channel and strength, so "quoted at length" is separable from "mentioned once" */}
                     {p.channel === 'explicit' ? 'cited' : `quoted (${p.matchCount ?? 0} matches)`}
                   </span>
@@ -319,7 +319,7 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
               {hits.map((h) => (
                 <li key={h.sectionId} className="rounded-xl bg-paper px-4 py-3 shadow-paper dark:bg-stone-800 dark:shadow-none">
                   <p className="font-display text-[15px] text-stone-700 dark:text-stone-200">{h.title}</p>
-                  {h.heading && <p className="text-[13px] text-stone-400 dark:text-stone-500">{h.heading}</p>}
+                  {h.heading && <p className="text-[13px] text-stone-500 dark:text-stone-400">{h.heading}</p>}
                   <p className="mt-1 font-serif text-[15px] leading-relaxed text-stone-600 dark:text-stone-300">
                     {(() => { const t = plainExcerpt(h.text); return t.length > 320 ? `${t.slice(0, 320)}…` : t; })()}
                   </p>
@@ -354,7 +354,7 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                     <span className="font-serif text-[15px] text-stone-700 dark:text-stone-200">{d.title}</span>
                     <span className={`text-[13px] font-semibold ${s.tone}`}>{s.label}</span>
                   </div>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-3 text-[13px] text-stone-400 dark:text-stone-500">
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 text-[13px] text-stone-500 dark:text-stone-400">
                     {d.mimeType && <span className="uppercase">{d.mimeType}</span>}
                     {d.byteSize != null && <span>{fmtBytes(d.byteSize)}</span>}
                     {d.pageCount != null && <span>{d.pageCount} pages</span>}
@@ -462,7 +462,7 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                                   <li key={x.sourceId} className="font-serif text-[14px] text-stone-600 dark:text-stone-300">
                                     <span className="text-stone-800 dark:text-stone-100">{x.author}</span>
                                     {x.work && <span className="text-stone-500 dark:text-stone-400">, {x.work}</span>}
-                                    {x.tradition && <span className="ml-2 text-[12px] uppercase tracking-wide text-stone-400 dark:text-stone-500">{x.tradition}</span>}
+                                    {x.tradition && <span className="ml-2 text-[12px] uppercase tracking-wide text-stone-500 dark:text-stone-400">{x.tradition}</span>}
                                   </li>
                                 ))}
                               </ul>

@@ -148,7 +148,7 @@ export default function MarketingHome() {
 
           <p className="mt-20 text-center font-display text-lg italic text-stone-500 dark:text-stone-400">
             &ldquo;Study to shew thyself approved unto God.&rdquo;{' '}
-            <span className="text-sm not-italic text-stone-400 dark:text-stone-500">2 Timothy 2:15</span>
+            <span className="text-sm not-italic text-stone-500 dark:text-stone-400">2 Timothy 2:15</span>
           </p>
         </div>
       </section>

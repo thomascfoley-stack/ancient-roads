@@ -135,7 +135,7 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-[12px] leading-relaxed text-stone-400 dark:text-stone-500">
+          <p className="mt-2 text-[12px] leading-relaxed text-stone-500 dark:text-stone-400">
             Searched one at a time, largest first. Everything takes about a minute and a half —
             it reads every work rather than sampling, so the answer is exact.
           </p>
@@ -198,7 +198,7 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
         <>
           {byCategory.map(([cat, rows]) => (
             <div key={cat.id} className="mb-4 last:mb-0">
-              <p className="mb-1.5 text-micro font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+              <p className="mb-1.5 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
                 {LABEL.get(cat.id)} · {rows.length}
               </p>
               <ul className="space-y-1.5">
@@ -206,7 +206,7 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
                   <li key={`${v.author}|${v.work}`} className="font-serif text-[14px] text-stone-600 dark:text-stone-300">
                     <span className="text-stone-800 dark:text-stone-100">{v.author}</span>
                     {v.workTitle && <span className="text-stone-500 dark:text-stone-400">, {v.workTitle}</span>}
-                    <span className="ml-2 text-[12px] tabular-nums text-stone-400 dark:text-stone-500">
+                    <span className="ml-2 text-[12px] tabular-nums text-stone-500 dark:text-stone-400">
                       {v.similarity.toFixed(2)}
                     </span>
                   </li>
@@ -217,7 +217,7 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
           {state.doneAt && (
             // Nothing re-runs these when the corpus grows, so say when the answer was computed
             // rather than let a reader assume it is current.
-            <p className="mt-3 text-[12px] text-stone-400 dark:text-stone-500">
+            <p className="mt-3 text-[12px] text-stone-500 dark:text-stone-400">
               Searched {new Date(state.doneAt).toLocaleDateString()} ·{' '}
               {state.categories.map((c) => LABEL.get(c) ?? c).join(', ')}
             </p>

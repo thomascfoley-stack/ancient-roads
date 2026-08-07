@@ -190,8 +190,8 @@ export function CatalogSearch({
                       never to a blank and never to the slug. */}
                   <span className="mt-0.5 block truncate text-xs text-stone-500 dark:text-stone-400">
                     {r.author ?? 'Unattributed'}
-                    {r.tradition && <span className="text-stone-400 dark:text-stone-500"> · {r.tradition}</span>}
-                    {r.heading && <span className="text-stone-400 dark:text-stone-500"> · {r.heading}</span>}
+                    {r.tradition && <span className="text-stone-500 dark:text-stone-400"> · {r.tradition}</span>}
+                    {r.heading && <span className="text-stone-500 dark:text-stone-400"> · {r.heading}</span>}
                   </span>
                   <span
                     className="mt-1 block text-sm leading-relaxed text-stone-600 [&_mark]:bg-accent-100 [&_mark]:text-stone-900 dark:text-stone-300 dark:[&_mark]:bg-accent-900/60 dark:[&_mark]:text-stone-100"

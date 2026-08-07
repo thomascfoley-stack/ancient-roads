@@ -113,8 +113,29 @@ export function SettingsForm() {
         </p>
       </section>
 
+      {/* A UX walk read this section as mislabelled — "Account" holding nothing but a link to
+          highlights and notes — and suggested either building profile/subscription UI or renaming
+          the heading. Both were the wrong fix: `/account/settings` ALREADY EXISTS, renders the
+          signed-in email and a working change-password form (account-settings.tsx), and NOTHING
+          in the app linked to it. Grepped: zero `href` to /account anywhere outside the route
+          itself, so it could only ever be reached by typing the URL. This is the orphaned-surface
+          bug this repo has now hit on the Library hub, the Historians shelf and My Works — the
+          heading was accurate all along and the destination was missing.
+
+          "Your saved work" is split out under its own heading because it is genuinely not
+          account settings, which is the part of the complaint that was right. */}
       <section className={row}>
         <p className={label}>Account</p>
+        <Link
+          href="/account/settings"
+          className="inline-flex min-h-[44px] items-center text-sm font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300"
+        >
+          Email and password →
+        </Link>
+      </section>
+
+      <section className={row}>
+        <p className={label}>Your saved work</p>
         <Link
           href="/library/notes"
           className="inline-flex min-h-[44px] items-center text-sm font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300"

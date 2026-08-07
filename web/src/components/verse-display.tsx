@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChapterData } from '@/lib/bible';
 import { HIGHLIGHT_BG } from '@/lib/highlight-colors';
@@ -15,6 +15,63 @@ import { SelectionPopover } from './selection-popover';
 import type { StudyTab } from './study-panel';
 
 export type { StoredSpan };
+
+const HINT_KEY = 'verse-handle-hint:v1';
+
+/**
+ * Shown once, ever, then never again: what the verse number does.
+ *
+ * Highlighting, notes, bookmarks, "Ask about this verse" and the commentary panel all hang off
+ * tapping the small superscript number, and that is the app's richest interaction. It is also
+ * the least announced one — the handle carries a hover colour and a pointer cursor, and hover
+ * is not something a phone has, so on touch there is no resting cue at all that the number is
+ * a control. One sentence the first time a chapter opens closes that, where a permanent banner
+ * over a devotional reading surface would be a tax on every subsequent visit.
+ *
+ * `null` while undecided, deliberately: reading localStorage during render would differ between
+ * the server pass (no storage) and the client's first pass, which is the React #418 hydration
+ * mismatch this repo already ate once in the sidebar. Nothing renders until an effect has run.
+ */
+function VerseHandleHint() {
+  const [show, setShow] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    try {
+      setShow(localStorage.getItem(HINT_KEY) === null);
+    } catch {
+      // Private mode: no storage, so no way to remember a dismissal. Showing the hint on every
+      // visit would be worse than never showing it.
+      setShow(false);
+    }
+  }, []);
+
+  const dismiss = () => {
+    setShow(false);
+    try {
+      localStorage.setItem(HINT_KEY, '1');
+    } catch {
+      // Nothing to do — the hint is already gone for this session.
+    }
+  };
+
+  if (!show) return null;
+
+  return (
+    <div className="mb-8 flex items-start gap-3 rounded-lg bg-accent-50/70 px-4 py-3 dark:bg-accent-950/30">
+      <p className="flex-1 font-sans text-[13px] leading-relaxed text-stone-700 dark:text-stone-300">
+        Tap any <span className="font-sans text-micro font-semibold text-accent-600 dark:text-accent-300">verse&nbsp;number</span> for
+        highlights, notes, word study and what the commentators said. Selecting the text itself
+        offers the same tools for a phrase.
+      </p>
+      <button
+        onClick={dismiss}
+        className="-mr-1 -mt-1 shrink-0 rounded-md px-2 py-1 font-sans text-xs font-semibold text-stone-600 transition-colors ease-gentle hover:bg-accent-100/70 hover:text-stone-800 dark:text-stone-400 dark:hover:bg-accent-900/40 dark:hover:text-stone-200"
+      >
+        Got it
+      </button>
+    </div>
+  );
+}
 
 export function VerseDisplay({
   data,
@@ -97,6 +154,19 @@ export function VerseDisplay({
 
   // Hand the selection to /ask as a PREFILL (never auto-submit — a reload must not spend a
   // teacher run). The question carries the excerpt + locus, no host URL.
+  // TWO FLOATING SURFACES, ONE AT A TIME. The selection popover is owned here; the study
+  // drawer is owned by the page (`selectedVerse`), so neither one could see the other and both
+  // could be on screen at once — a stale selection toolbar stacked over the verse drawer,
+  // observed in the 2026-08-07 UX walk. Closed at BOTH ends, because the two ends are
+  // different bugs: this one drops the selection when a verse handle is used...
+  const openVerse = useCallback(
+    (verse: number) => {
+      dismiss();
+      onVerseClick(verse);
+    },
+    [dismiss, onVerseClick],
+  );
+
   function askPending() {
     if (!pending) return;
     const excerpt = pending.text.length > 220 ? `${pending.text.slice(0, 217)}…` : pending.text;
@@ -110,6 +180,7 @@ export function VerseDisplay({
       <h1 className="mb-8 font-scripture text-3xl font-medium text-stone-800 dark:text-stone-100">
         {bookName} {data.chapter}
       </h1>
+      <VerseHandleHint />
       <div className="reading-scale font-scripture leading-[1.9] text-stone-800 dark:text-stone-200">
         {data.verses.map((v) => {
           if (!v.text) return null;
@@ -183,14 +254,22 @@ export function VerseDisplay({
                 role="button"
                 tabIndex={0}
                 aria-label={`Verse ${v.verse}, read commentary`}
-                onClick={() => onVerseClick(v.verse)}
+                onClick={() => openVerse(v.verse)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    onVerseClick(v.verse);
+                    openVerse(v.verse);
                   }
                 }}
-                className="relative mr-0.5 cursor-pointer font-sans text-micro font-semibold text-accent-600/80 select-none before:absolute before:-inset-y-1 before:-left-1.5 before:-right-0.5 before:content-[''] hover:text-accent-700 dark:text-accent-300/80 dark:hover:text-accent-200"
+                /* RESTING OPACITY, not a new affordance. This handle already had
+                   `cursor-pointer`, a hover colour shift, role/tabIndex/aria-label and the
+                   global :focus-visible ring — a UX pass reporting "no hover state, no cursor
+                   change, nothing" was measurably wrong about all three. What it was right
+                   about is that the RESTING state reads as faded typography rather than a
+                   control, and hover is not a cue that exists on touch at all. Dropping the
+                   /80 costs no layout and no reading-surface noise; it just stops the one
+                   interactive mark on the page from looking like decoration. */
+                className="relative mr-0.5 cursor-pointer font-sans text-micro font-semibold text-accent-600 select-none before:absolute before:-inset-y-1 before:-left-1.5 before:-right-0.5 before:content-[''] hover:text-accent-700 dark:text-accent-300 dark:hover:text-accent-200"
               >
                 {v.verse}
               </sup>
@@ -240,7 +319,11 @@ export function VerseDisplay({
 
       {/* The shared Logos-style selection popover (Phase 1): floating card on md+, docked-low bar
           on mobile. No onBookmark yet — Phase 3 (bookmarks table) wires it. */}
-      {pending && (
+      {/* ...and this is the other end: an INVARIANT rather than another handler. However the
+          drawer came to be open — verse handle, `#v16` deep link, a jump from My library — the
+          popover does not co-render with it. A guard that depends on every future path
+          remembering to call `dismiss()` is the kind that goes stale. */}
+      {pending && selectedVerse === null && (
         <SelectionPopover
           pending={pending}
           contextLabel={`${bookName} ${data.chapter}:${pending.key} · ${translation.toUpperCase()}`}

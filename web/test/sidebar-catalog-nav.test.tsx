@@ -45,6 +45,26 @@ import { CATALOGS, CATALOG_IDS } from '@/lib/catalog-defs';
 vi.mock('next/navigation', () => ({ usePathname: () => '/' }));
 vi.mock('@/lib/auth/client', () => ({ authClient: { useSession: () => ({ data: null }) } }));
 
+// jsdom implements MutationObserver but NOT ResizeObserver, and the rail's `useMoreBelow` (which
+// decides whether the "there is more below" fade is on) constructs one on mount. Without this the
+// effect throws and the render half of this file — the load-bearing half, per the header — goes
+// red for a reason that has nothing to do with catalog links.
+//
+// Stubbed HERE rather than guarded in sidebar.tsx with a `typeof ResizeObserver !== 'undefined'`:
+// the gap is in this test environment, not in the product, and every browser the app supports has
+// had ResizeObserver for years. A guard in the component would make the shipped code carry a
+// branch that only ever runs in jsdom — and would silently disable the fade if it ever ran in a
+// real browser that lacked it, which is the failure mode you least want to hide.
+//
+// It observes nothing: this file asserts on the rendered anchors, not on scroll behaviour. A stub
+// that pretended to measure would be a mock asserting what it was told.
+class NoopResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+vi.stubGlobal('ResizeObserver', NoopResizeObserver);
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SIDEBAR = path.join(ROOT, 'src/components/sidebar.tsx');
 

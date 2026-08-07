@@ -265,6 +265,27 @@ html {
 /* Reader font-size control (set --reading-size on the reading container) */
 .reading-scale { font-size: var(--reading-size, 1.125rem); }
 
+/* SCROLL FADE for a list whose container ends before the list does.
+ *
+ * The sidebar rail is the case this exists for. Its `<nav>` scrolls, but Settings sits
+ * OUTSIDE that scroll region behind a `border-t`, so a list cut off mid-item reads as a
+ * list that finished: the divider looks like the terminator. Measured 2026-08-07 at
+ * 1280x720, five real destinations sat below the fold — Theology & Creeds, Passage search,
+ * My library, Word study, My Works — with nothing on screen saying so.
+ *
+ * A MASK, not a background gradient, deliberately. The same component renders in two hosts
+ * with different surfaces (the rail is stone-100/stone-950, the mobile menu sheet is
+ * stone-50/stone-900), so a `to-transparent` gradient would have to know its host's
+ * background and would silently mismatch the day either one changes. A mask fades the
+ * CONTENT and is background-agnostic, so it is correct in both without being told where
+ * it is.
+ *
+ * Applied only while something is actually below — see `useMoreBelow` in sidebar.tsx.
+ * A fade that is always on is not a signal, it is decoration. */
+.scroll-fade-b {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 2rem), transparent);
+}
+
 @keyframes slide-up {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }

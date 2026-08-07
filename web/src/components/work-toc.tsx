@@ -187,7 +187,12 @@ export function WorkToc({
                     }`}
                   >
                     <span className="line-clamp-2">{label}</span>
-                    {here && <span className="shrink-0 text-micro font-semibold uppercase tracking-wider">Reading</span>}
+                    {/* `here && !open`, matching this row's own `data-active` two lines up, which
+                        already had it right. With just `here`, expanding the unit you are reading
+                        printed "Reading" on the parent AND on the active chunk row below it —
+                        two claims about where you are, on screen at once. The chunk is the more
+                        specific of the two, so the parent yields to it. */}
+                    {here && !open && <span className="shrink-0 text-micro font-semibold uppercase tracking-wider">Reading</span>}
                   </button>
                   {/* Only a chunked unit gets a disclosure; only the open one mounts its rows. */}
                   {chunked && (

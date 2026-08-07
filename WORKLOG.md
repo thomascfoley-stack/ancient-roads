@@ -1,5 +1,127 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-07 — a UX walk's findings applied: sidebar discoverability + ten more
+
+Owner supplied a UX audit of the live app (`ancient-paths-ux-audit.html`, a read-only walkthrough
+of ancientpaths.app) and asked for it applied, alongside a separately-reported sidebar defect.
+Client-only tranche: **no retrieval, corpus, auth or data path is touched.**
+
+### The headline defect, measured before it was fixed
+
+The rail's `<nav>` scrolls; `Settings` sits OUTSIDE that scroll region behind a `border-t`, so a
+cut-off list reads as a finished one. Measured at 1280x720 before any change: **158px of overflow
+hiding exactly five destinations** — Theology & Creeds, Passage search, My library, Word study,
+My Works. The report was precisely right, including the list. `My Works` (upload your own
+documents, searchable beside the corpus) is the most differentiated thing in the app and was the
+last item under the fold.
+
+Fixed with a **mask**, not a background gradient: the same component renders in two hosts with
+different surfaces (rail `stone-100/950`, mobile sheet `stone-50/900`), so a `to-transparent`
+gradient would have to know its host's background. A mask fades the content and is
+background-agnostic. Applied only while something IS below (`useMoreBelow` — scroll + Resize +
+MutationObserver, because the sections arrive from localStorage a tick after mount and a
+ResizeObserver on a flex-sized container never fires for its children's growth).
+
+**Red-proof:** fade ON with 418px hidden, OFF at the bottom (`remaining 0.5px`), watched both ways
+in the browser. A fade that is always on is decoration, not a signal.
+
+### Where the audit was wrong, and the correction stands in the code
+
+Four claims did not survive checking. Recorded because the corrections are the useful part:
+
+- **"Verse numbers have no hover state, no cursor change, nothing."** False three ways: the handle
+  already had `cursor-pointer`, a hover colour shift, `role`/`tabIndex`/`aria-label`, and the
+  global `:focus-visible` ring. What was true is that the RESTING state (accent at 80% opacity)
+  reads as faded typography, and hover is not a cue that exists on touch. Raised to full opacity
+  and added a one-time first-use hint; did not add the affordances it already had.
+- **"Selecting verse text does nothing."** Selecting opens `SelectionPopover`. *Clicking* does
+  nothing, which is a different claim.
+- **"The + button on library rows has no label or tooltip."** It has both an `aria-label` and a
+  `title`. The real gap is MASTER.md's UX-2: `title` is hover-only and touch has no hover. Said
+  once, visibly, above the list rather than 20 times down it.
+- **"ToC shows Part N of 23, not real titles."** The ToC's TOP level shows real titles; `Part N` is
+  only on expanded chunk rows, and per `work-toc.tsx:205-208` those chunks are mechanical slices of
+  ONE work whose headings are all the same title with an `(i/n)` suffix. There are no per-chunk
+  titles to pull — the audit's "bigger change" here is not buildable from the data. NOT DONE, with
+  a reason.
+
+### Two defects the audit did not name, found while working its list
+
+- **`Account` in Settings was not mislabelled — its destination was missing.** `/account/settings`
+  already exists, renders the signed-in email and a working change-password form, and **nothing in
+  the app linked to it** (grepped: zero `href` to `/account` outside the route itself). It could
+  only be reached by typing the URL. The orphaned-surface bug, now on its fourth surface after the
+  Library hub, the Historians shelf and My Works. Linked; the highlights/notes link split out under
+  `Your saved work`, which is the part of the complaint that was right.
+- **The `/ask` lane checkboxes carried a dead class that looked like the fix.** They were
+  `text-accent-700 focus:ring-accent-600` — the `@tailwindcss/forms` idiom, and **that plugin is
+  not installed**, so both classes were inert and every box rendered in native browser blue. Now
+  `accent-accent-700`, which is plain CSS. Verified: `accentColor` computes to the terracotta, not
+  `auto`.
+
+### Contrast: measured, not eyeballed
+
+The muted pair `text-stone-400 dark:text-stone-500` measured **2.54:1 light / 3.58:1 dark** —
+both under WCAG AA's 4.5:1 for normal text. Swept to `text-stone-500 dark:text-stone-400`
+(**4.75 / 6.70**), the pair already used elsewhere in the app, across 20 sites in 10 files.
+
+One site could not take the sweep blindly: `ask-client.tsx`'s progress steps used the failing pair
+as the *pending* tier against the passing pair as *done*, so replacing it collapsed the two. It
+collapsed anyway, deliberately — the icon column already distinguishes the three tiers by SHAPE
+(terracotta check / spinner / empty ring), so the signal was never colour-only and the second
+colour was redundant.
+
+### The rest
+
+- Reader loading: a bare centred `Loading…` -> a skeleton mirroring `VerseDisplay`'s card, so the
+  Library and the reader answer the same question the same way and the page stops relayouting when
+  verses land. (The audit said "no feedback at all"; there was feedback, it was just the odd one
+  out.) Forced the loading branch by stalling `/bible/` fetches to watch it render.
+- Selection popover and verse drawer could co-render — owned by different components, neither able
+  to see the other. Closed at both ends: `openVerse` dismisses the selection, AND the popover does
+  not render while `selectedVerse !== null`. The second is the invariant; the first alone would
+  rot the moment a new path opened the drawer.
+- Channels / Study Partners empty states said "Nothing here yet" and explained nothing. They now
+  say what each thing is AND that it is not built — both destinations are `ComingSoon` stubs, so
+  "add one to get started" would have walked the reader into a dead end.
+- ToC printed "Reading" on the parent row AND the active chunk when a unit was expanded. The row's
+  own `data-active` already had the right condition (`here && !open`); the label did not.
+- `/ask` failure was an apology with nothing to press. Added a retry that re-asks THAT turn's
+  question (the composer is cleared on submit, so retrying meant retyping), on both the fallback
+  and error paths, plus a plain-English reason. Expectation moved up front: "usually 15-45 seconds
+  — every quote is verified before you see it."
+
+### Gate
+
+`web` typecheck + test typecheck + root typecheck clean · `eslint` clean (web 0 problems; root 35
+pre-existing warnings, 0 errors) · `knip` clean · **`next build` passes** · **web suite 602 passed
+/ 188 skipped, 84 files** · verified in a browser at **390px and desktop**, no horizontal overflow
+(`scrollWidth === clientWidth === 390`), interactions exercised (hint dismiss + persistence, verse
+drawer open, translation switch, menu sheet).
+
+One test needed a change and it was mine: jsdom has no `ResizeObserver`, so `useMoreBelow` threw
+in `sidebar-catalog-nav.test.tsx`. Stubbed in the TEST, not guarded in the component — the gap is
+in the environment, and a `typeof ResizeObserver !== 'undefined'` guard in shipped code would
+silently disable the fade in any real browser that lacked it.
+
+### NOT DONE / UNVERIFIED
+
+- **`npm run audit` did not run.** It refuses at its first gate: `FAIL: no DATABASE_URL in root
+  .env.local`. This tree has no dev DB credentials. Every DB-free leg was run individually and is
+  listed above; the DB-backed legs (`qa`, root `vitest --coverage`, licence gate) are **NOT RUN**.
+- **`/library/[catalog]` was not loaded in a browser.** It queries the DB and returns "Something
+  went wrong" here, so the `+` explanation line and `catalog-search.tsx`'s tag contrast are
+  verified by typecheck, lint and measurement only — NOT by eye. They are a class swap and an
+  additive `<span>`, but that is an argument, not a screenshot.
+- **Ask latency is untouched, deliberately.** The audit's headline (45s, three retries, failure on
+  the app's own example prompt) is a retrieval/compose change, which CLAUDE.md gates behind the
+  accuracy diagnostic and `interpretation_bait` through the live loop. It does not belong in a UX
+  tranche. Swapping the example prompts is also NOT done — picking prompts that "reliably succeed"
+  without measuring is tuning to the demo.
+- **`Account` content** (profile, subscription) not built — a product decision, not a defect.
+- The tradition-tag sweep changed muted text on 10 files' worth of surfaces; only `/home`, `/ask`,
+  `/settings` and the reader were looked at. `/library/*` and `my-works` were not.
+
 ## 2026-08-07 — deploy.sh reviewed, fixed, and given the tests it never had
 
 Owner asked for a review of `deploy.sh`, then for the findings to be applied and made

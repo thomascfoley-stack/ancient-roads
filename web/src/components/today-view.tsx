@@ -46,7 +46,7 @@ export function TodayView() {
   return (
  <div className="mx-auto my-6 flex w-full max-w-2xl flex-col rounded-xl border edge bg-paper px-6 py-12 shadow-paper sm:my-10 sm:px-14 sm:py-16 dark:bg-stone-950 dark:shadow-none">
       {state.status === 'loading' && (
-        <p className="mt-24 text-center font-serif text-base italic text-stone-400 dark:text-stone-500">
+        <p className="mt-24 text-center font-serif text-base italic text-stone-500 dark:text-stone-400">
           Opening today&rsquo;s page&hellip;
         </p>
       )}

@@ -104,11 +104,17 @@ function LaneFilter({ lanes, onToggle }: { lanes: Record<LaneKey, boolean>; onTo
           {LANE_OPTIONS.map((o) => (
             <li key={o.key}>
               <label className="flex min-h-[28px] items-center gap-2 text-sm text-stone-700 dark:text-stone-300">
+                {/* `accent-*`, not `text-*`. The class here used to be `text-accent-700
+                    focus:ring-accent-600`, which is the @tailwindcss/forms idiom — and that
+                    plugin is NOT installed (checked package.json), so both classes were inert
+                    and every one of these boxes rendered in native browser blue against a
+                    terracotta app. A dead class that looks like the fix is worse than no class:
+                    it reads as handled. `accent-color` is plain CSS and needs no plugin. */}
                 <input
                   type="checkbox"
                   checked={lanes[o.key]}
                   onChange={(e) => onToggle(o.key, e.target.checked)}
-                  className="h-4 w-4 rounded border-stone-300 text-accent-700 focus:ring-accent-600 dark:border-stone-600 dark:bg-stone-900"
+                  className="h-4 w-4 rounded border-stone-300 accent-accent-700 dark:border-stone-600 dark:bg-stone-900 dark:accent-accent-500"
                 />
                 {o.label}
               </label>
@@ -206,7 +212,13 @@ export function AskClient() {
         <h1 className="font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100">Explore the paths</h1>
         <p className="mt-2 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400">
           Hear what commentators across the traditions have said, quoted and attributed, never interpreted.
-          <span className="mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500">Currently answering from the Gospels.</span>
+          {/* EXPECTATION SET BEFORE THE WAIT, not during it. A first answer can take the better
+              part of a minute, because retrieval, composition and a word-for-word verification
+              pass all happen before anything is shown. Unannounced, that reads as a stall; named
+              here, it reads as the checking the line above just promised. */}
+          <span className="mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500">
+            Currently answering from the Gospels. An answer usually takes 15–45 seconds — every quote is verified before you see it.
+          </span>
         </p>
         <LaneFilter lanes={lanes} onToggle={toggleLane} />
       </header>
@@ -248,7 +260,10 @@ export function AskClient() {
             heard nothing until they went looking. Failure was the only announced state.
             `polite` rather than `assertive` so it waits for a pause instead of interrupting. */}
         <div aria-live="polite" aria-busy={busy} className={turns.length === 0 ? 'sr-only' : 'space-y-8'}>
-          {turns.map((t) => <TurnView key={t.id} turn={t} />)}
+          {/* Retry re-asks THIS turn's question, not whatever is in the composer — `ask` clears
+              the composer on submit, so by the time a turn can fail its question exists only on
+              the turn itself. */}
+          {turns.map((t) => <TurnView key={t.id} turn={t} onRetry={() => ask(t.question)} busy={busy} />)}
         </div>
         <div ref={bottomRef} className="scroll-mb-48 md:scroll-mb-36" />
       </div>
@@ -285,7 +300,7 @@ export function AskClient() {
   );
 }
 
-function TurnView({ turn }: { turn: Turn }) {
+function TurnView({ turn, onRetry, busy }: { turn: Turn; onRetry: () => void; busy: boolean }) {
   return (
     <div>
       <div className="mb-4 flex justify-end">
@@ -296,13 +311,34 @@ function TurnView({ turn }: { turn: Turn }) {
       {turn.stage === 'error' ? (
         <div role="alert" className="rounded-xl border border-red-300/60 bg-red-50/60 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
           {turn.error}
+          {/* An error told the reader to "please try again" and gave them nothing to try it
+              with — the question is already gone from the composer by then (`ask` clears it),
+              so trying again meant retyping it. */}
+          <RetryButton onRetry={onRetry} busy={busy} tone="error" />
         </div>
       ) : turn.stage === 'done' && turn.result ? (
-        <Answer result={turn.result} />
+        <Answer result={turn.result} onRetry={onRetry} busy={busy} />
       ) : (
         <Progress turn={turn} />
       )}
     </div>
+  );
+}
+
+function RetryButton({ onRetry, busy, tone }: { onRetry: () => void; busy: boolean; tone: 'error' | 'fallback' }) {
+  return (
+    <button
+      type="button"
+      onClick={onRetry}
+      disabled={busy}
+      className={`mt-3 inline-flex min-h-[36px] items-center rounded-lg border px-3 text-xs font-semibold transition-colors ease-gentle disabled:cursor-not-allowed disabled:opacity-40 ${
+        tone === 'error'
+          ? 'border-red-300/70 hover:bg-red-100/60 dark:border-red-900/70 dark:hover:bg-red-950/50'
+          : 'border-accent-300/70 text-accent-900 hover:bg-accent-100/60 dark:border-accent-800 dark:text-accent-200 dark:hover:bg-accent-950/50'
+      }`}
+    >
+      {busy ? 'Asking…' : 'Ask again'}
+    </button>
   );
 }
 
@@ -314,7 +350,12 @@ function Progress({ turn }: { turn: Turn }) {
       {done ? <span className="font-bold text-accent-700 dark:text-accent-300">✓</span>
         : active ? <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-stone-400 border-t-transparent" />
           : <span className="inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-300 dark:border-stone-600" />}
-      <span className={done ? 'text-stone-500 dark:text-stone-400' : active ? 'font-medium text-stone-700 dark:text-stone-200' : 'text-stone-400 dark:text-stone-500'}>{label}</span>
+      {/* Two tiers of text colour, not three. `done` and `pending` used to differ (stone-500/400
+          vs stone-400/500), but that second pair measured 2.54:1 on light and 3.58:1 on dark —
+          both under WCAG AA's 4.5:1 for normal text. The distinction is not lost: the icon
+          column above already says which tier a step is in, with a terracotta ✓, a spinner, or
+          an empty ring — three different SHAPES, so the signal was never colour-only anyway. */}
+      <span className={active ? 'font-medium text-stone-700 dark:text-stone-200' : 'text-stone-500 dark:text-stone-400'}>{label}</span>
     </div>
   );
 
@@ -351,7 +392,7 @@ function Progress({ turn }: { turn: Turn }) {
   );
 }
 
-function Answer({ result }: { result: TeacherResult }) {
+function Answer({ result, onRetry, busy }: { result: TeacherResult; onRetry: () => void; busy: boolean }) {
   if (result.kind === 'empty') {
     return (
       <p className="rounded-xl bg-paper px-4 py-3 font-serif text-base text-stone-600 shadow-paper dark:bg-stone-800/60 dark:text-stone-300 dark:shadow-none">
@@ -359,7 +400,7 @@ function Answer({ result }: { result: TeacherResult }) {
       </p>
     );
   }
-  if (result.kind === 'fallback') return <><Fallback retrieval={result.retrieval} /><Lanes result={result} /></>;
+  if (result.kind === 'fallback') return <><Fallback retrieval={result.retrieval} onRetry={onRetry} busy={busy} /><Lanes result={result} /></>;
 
   const blocks = result.response.blocks;
   const framing = blocks.find((b) => b.type === 'framing') as Extract<Block, { type: 'framing' }> | undefined;
@@ -412,7 +453,7 @@ function LaneSection({ title, note, chunks }: { title: string; note: string; chu
   return (
     <div className="pt-2">
       <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">{title}</p>
-      <p className="mb-3 text-sm italic text-stone-400 dark:text-stone-500">{note}</p>
+      <p className="mb-3 text-sm italic text-stone-500 dark:text-stone-400">{note}</p>
       <div className="space-y-4">
         {chunks.map((c) => (
           <ResultLink key={c.sourceId} href={workHref(c.metadata.work)}>
@@ -444,12 +485,26 @@ function Lanes({ result }: { result: Extract<TeacherResult, { kind: 'composed' |
   );
 }
 
-function Fallback({ retrieval }: { retrieval: Retrieved[] }) {
+function Fallback({ retrieval, onRetry, busy }: { retrieval: Retrieved[]; onRetry: () => void; busy: boolean }) {
   return (
     <div>
-      <p className="mb-5 rounded-xl bg-accent-50 px-4 py-3 font-serif text-base text-accent-900 shadow-paper dark:bg-accent-950/30 dark:text-accent-200 dark:shadow-none">
-        A grounded answer couldn’t be composed for this one. Here are the sources we found. Read them directly.
-      </p>
+      {/* WHY, and a way forward. This block used to be one apologetic sentence and a dead end:
+          no reason, and nothing to press. A reader who has just waited through three visible
+          "Refining the answer" attempts is owed both — and the reason here is a GOOD one, so
+          saying it out loud turns an apparent failure into the guarantee working. The wording
+          stays at the level of the product promise and does not surface raw verifier
+          `violations`, which name internal checks and would read as a stack trace. */}
+      <div className="mb-5 rounded-xl bg-accent-50 px-4 py-3 shadow-paper dark:bg-accent-950/30 dark:shadow-none">
+        <p className="font-serif text-base text-accent-900 dark:text-accent-200">
+          A grounded answer couldn’t be composed for this one. Here are the sources we found. Read them directly.
+        </p>
+        <p className="mt-2 font-sans text-xs leading-relaxed text-accent-800/90 dark:text-accent-300/90">
+          Every quote is checked word-for-word against the original before it is shown. This
+          draft didn’t pass that check, so the sources are given to you unedited rather than an
+          answer we can’t stand behind. Asking again often composes cleanly.
+        </p>
+        <RetryButton onRetry={onRetry} busy={busy} tone="fallback" />
+      </div>
       <div className="space-y-5">
         {retrieval.map((r) => (
           <figure key={r.sourceId} className="border-l-[3px] border-stone-300/80 pl-5 dark:border-stone-700">

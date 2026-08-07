@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { authClient } from '@/lib/auth/client';
@@ -42,6 +42,48 @@ function newId(): string {
 
 function storageKey(userId: string | undefined): string {
   return `study-sections:v1:${userId ?? 'guest'}`;
+}
+
+/**
+ * True while the element has content scrolled out of view below its own bottom edge.
+ *
+ * Drives the `.scroll-fade-b` mask on the rail's `<nav>` (see globals.css for why the rail
+ * needs one at all). The measurement has to survive three separate ways the answer changes,
+ * and an earlier sketch that only listened for `scroll` was wrong on the two that matter most
+ * — the list is at scrollTop 0 on first paint, which is exactly when a reader decides the
+ * list is complete:
+ *   - the container resizes (window resize, sidebar collapse, phone rotation) -> ResizeObserver
+ *   - the CONTENT grows or shrinks (study sections arrive from localStorage a tick after mount,
+ *     a section is renamed, an inline form opens) -> MutationObserver, because a ResizeObserver
+ *     on a flex-sized container never fires for its own children's growth
+ *   - the reader scrolls -> the listener
+ * `measure` is three property reads, and React bails out when the boolean is unchanged, so
+ * running it on every mutation is cheaper than being wrong.
+ */
+function useMoreBelow<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [moreBelow, setMoreBelow] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // 1px of tolerance: fractional layout leaves scrollTop + clientHeight a hair under
+    // scrollHeight at the true bottom, which would pin the fade on forever.
+    const measure = () => setMoreBelow(el.scrollHeight - el.scrollTop - el.clientHeight > 1);
+    measure();
+    el.addEventListener('scroll', measure, { passive: true });
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    const mo = new MutationObserver(measure);
+    mo.observe(el, { childList: true, subtree: true, characterData: true });
+    return () => {
+      el.removeEventListener('scroll', measure);
+      ro.disconnect();
+      mo.disconnect();
+    };
+  }, []);
+
+  return { ref, moreBelow };
 }
 
 // Shared nav content, rendered inside the desktop rail and the mobile menu
@@ -86,10 +128,14 @@ export function SidebarNavContent({
   );
 
   const row = touch ? 'min-h-[44px] py-2.5' : 'py-1.5';
+  const { ref: navRef, moreBelow } = useMoreBelow<HTMLElement>();
 
   return (
     <>
-      <nav className="flex-1 overflow-y-auto px-2 py-3">
+      <nav
+        ref={navRef}
+        className={`flex-1 overflow-y-auto px-2 py-3 ${moreBelow ? 'scroll-fade-b' : ''}`}
+      >
         {/* Quick links */}
         <div className="mb-1 px-2">
           <SidebarLink
@@ -452,9 +498,7 @@ function StudySectionView({
           />
         </div>
       )}
-      {section.items.length === 0 && !addingItem && (
-        <p className="px-4 py-2 text-xs text-stone-500 dark:text-stone-400">Nothing here yet</p>
-      )}
+      {section.items.length === 0 && !addingItem && <SectionEmptyState id={section.id} />}
       {section.items.map((item) => {
         const href =
           section.kind === 'channels' ? `/channel/${item.id}` : `/study/${item.id}`;
@@ -480,6 +524,36 @@ function StudySectionView({
         );
       })}
     </div>
+  );
+}
+
+/**
+ * What an empty study section actually says.
+ *
+ * It used to say "Nothing here yet" for every section, which names the state and explains
+ * nothing: a reader looking at CHANNELS / STUDY PARTNERS on the Home rail has no way to learn
+ * what either one IS. Reading Plans' empty state is the standard in this app — it explains the
+ * three plan types with examples before asking for anything — and this is that pattern at rail
+ * scale.
+ *
+ * IT ALSO HAS TO BE HONEST. `/channel/[id]` and `/study/[id]` are both `ComingSoon` stubs, so
+ * an empty state that says "add one to get started" would be walking the reader into a dead
+ * end — worse than the bare line it replaces. The copy below is drawn from those two pages'
+ * own descriptions and says plainly that the thing is not built. The seeded sections are
+ * matched by ID, not by `kind`: a section the reader creates themselves is also `kind:'group'`
+ * and must NOT inherit Study Partners' copy.
+ */
+function SectionEmptyState({ id }: { id: string }) {
+  const copy =
+    id === 'channels'
+      ? 'Group study spaces — a class or cohort working through a passage together. Being built.'
+      : id === 'partners'
+        ? 'A space of your own for each sermon or class, with your notes kept together. Being built.'
+        : 'Empty. Use + on the heading to add to this section.';
+  return (
+    <p className="px-4 py-1 pb-2 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+      {copy}
+    </p>
   );
 }
 
