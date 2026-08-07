@@ -1,5 +1,59 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-07 — UX remediation block `R0`: recon only, no product code
+
+`docs/UX_REMEDIATION.md` (owner-supplied, v1.3 — 19 blocks over 5 waves) was written from
+**outside this repo**, from a live walkthrough and the August audit deck. `R0` exists to confirm
+or kill the "reuse the existing X" claims the later blocks rest on. Branch `fix/R0`, from
+`ef5f619`. **Diff is that one document. Zero product files touched** — that is `R0`'s own exit
+test, and it holds.
+
+Full table and findings live in the block itself (`docs/UX_REMEDIATION.md` §3). The load-bearing
+results:
+
+**Four reuse claims are false.** `T4` assumes preferences can move onto "the account record that
+already persists notes" — `user_profiles` exists, declares a dormant `preferred_translation`, has
+**zero application read/write paths** and 0 rows in the last prod census, and has no column for
+theme or text size. That makes `T4` a migration plus an owner call, not a store swap. `N4` assumes
+a feature flag exists — none does; and the Channels shell it hands to `PR1a` is **localStorage
+only** (`sidebar.tsx` contains no `fetch`, while `/api/channels` and the `channels` table exist and
+are never called), so `PR1a` must build its own persistence. `N3b` step 2 asks for the verse-span
+click binding **this repo shipped, measured breaking word selection, and reverted under owner
+ruling ADR-047**, guarded by `verse-open-gesture.test.tsx`. `S2` item 2 asks to import a Library
+skeleton that is a route-convention `loading.tsx`, into a reader that already has `ChapterSkeleton`
+built to mirror `VerseDisplay`'s box.
+
+**Five items are already shipped**, all at `e196e4b` — after both audits were written: the Ask
+checkbox `accent-color`, the sidebar icon `aria-label`s, the sidebar scroll affordance (`N2`), the
+verse-number hover/cursor/ARIA (`N3b` step 1), and the `/account/settings` link. `T4`'s real gap is
+export and deletion, not "the Account section is a single link".
+
+**Two spec claims are about things not in this build:** `T3`'s "duplicate Search tab" — the mobile
+bar has four tabs and none is Search; and `S2` item 8's TOC titles, which item 8's own conditional
+already resolves to "do not fake it" (the data has no per-chunk titles, `work-toc.tsx:205-208`).
+
+**Three defects in the spec that change the plan**, filed for the owner: `S2` has **lost items 9,
+10 and 11** (heading says 11 fixes, board says 13, table lists 10 — and the changelog does not
+record a renumber), so `S2` cannot satisfy its own "nothing silently dropped" test; section 2.2's
+verification greps **cannot return zero** because `lanes` is the wire field of `POST
+/api/ask/stream` and renaming it is an API contract change the spec forbids; and the CLAUDE.md
+snippet points scope creep at "section 8", which has been Wave 5 since v1.2 — the Backlog is
+section 9.
+
+### NOT DONE / UNVERIFIED
+
+- **No fix block started.** `R0` was the whole scope. Status board updated; `R0` marked `x`.
+- **`npm run audit` NOT RUN.** It refuses without a dev `DATABASE_URL`, which this tree lacks
+  (same constraint as the entry below). No code changed, so nothing to gate — but the claim
+  "audit green" is not being made.
+- **Nothing was verified in a browser.** `R0` is a read of the tree. Every "already shipped"
+  finding above is read from source and from `e196e4b`'s WORKLOG entry, not re-observed live.
+- **`INSTR` recommended next**, and it needs a live authenticated session this session did not
+  have. Two things narrowed for it: the plan-write toast collapses **four** distinct statuses
+  (401/400/404/500) into one message, and the 404 arm (`store.ts:300`) is a candidate the deck's
+  auth-scope hypothesis does not cover; and the Ask client **cannot** produce the deck's silent
+  reset from its fetch path — `turns` has no reset, so a reset means an unmount.
+
 ## 2026-08-07 — a UX walk's findings applied: sidebar discoverability + ten more
 
 Owner supplied a UX audit of the live app (`ancient-paths-ux-audit.html`, a read-only walkthrough
