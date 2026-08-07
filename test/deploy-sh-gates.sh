@@ -123,6 +123,20 @@ begin() {
   REPO="$SANDBOX/repo-$CASE_N"
   ORIGIN="$SANDBOX/origin-$CASE_N.git"
   git init -q --bare "$ORIGIN"
+  # PIN THE BARE REPO'S HEAD, exactly as $REPO's is pinned below.
+  #
+  # `git init --bare` takes its HEAD from `init.defaultBranch`, which is `main` on the machine this
+  # harness was written on and `master` on the CI runner. With HEAD at an unborn `master`, the
+  # `git clone` in "behind-origin-main-blocked" checks out nothing, its commit lands on `master`,
+  # and `git push origin main` never reaches origin/main — so the tree under test was NOT behind,
+  # the ancestry gate correctly did nothing, and the case reported the GATE as broken.
+  #
+  # The gate was fine. The harness was environment-dependent, and in the direction that matters:
+  # on a `master`-default machine the single case protecting against one lane un-shipping
+  # another's live work was VACUOUS. Reproduced locally with
+  # `GIT_CONFIG_KEY_0=init.defaultBranch GIT_CONFIG_VALUE_0=master`, which turns all 57 green into
+  # the exact 4 failures CI reported.
+  git --git-dir="$ORIGIN" symbolic-ref HEAD refs/heads/main
   git init -q "$REPO"
   (
     cd "$REPO" || exit 1
