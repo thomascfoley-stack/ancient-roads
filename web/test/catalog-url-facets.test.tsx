@@ -41,9 +41,13 @@ const DESK = 'work:matthew-henry';
 beforeEach(() => {
   listCatalogWorks.mockReset();
   catalogTraditions.mockReset();
-  listCatalogWorks.mockResolvedValue([
-    { slug: 'olney-hymns', title: 'Olney Hymns', author: 'John Newton', tradition: 'anglican', sourceType: 'hymn', sections: 3 },
-  ]);
+  listCatalogWorks.mockResolvedValue({
+    works: [
+      { slug: 'olney-hymns', title: 'Olney Hymns', author: 'John Newton', tradition: 'anglican', sourceType: 'hymn', sections: 3 },
+    ],
+    total: 1,
+    totalCapped: false,
+  });
   // Two traditions, because the chip row only renders when there is more than one.
   catalogTraditions.mockResolvedValue([
     { tradition: 'anglican', works: 1 },
@@ -111,6 +115,87 @@ describe('catalog filter links carry the open desk', () => {
     const one = filterLinks(await anchors({ tradition: ['reformed', 'anglican'] })).map((a) => a.getAttribute('href'));
     const two = filterLinks(await anchors({ tradition: ['anglican', 'reformed'] })).map((a) => a.getAttribute('href'));
     expect(one).toEqual(two);
+  });
+});
+
+describe('the work list is paged, and the cap is visible', () => {
+  /** A page of `n` works out of `total`, so the pagination controls have something to render. */
+  const pageOf = (n: number, total: number) => ({
+    works: Array.from({ length: n }, (_, i) => ({
+      slug: `w${i}`, title: `Work ${i}`, author: 'A', tradition: 'anglican', sourceType: 'hymn', units: 1,
+    })),
+    total,
+    totalCapped: false,
+  });
+
+  it('offsets the query by the requested page — the cap becomes passable', async () => {
+    // SEED: drop `offset` from the listCatalogWorks call in page.tsx → RED. Without it every page
+    // renders page one, which is the silent-truncation defect wearing a Next button.
+    listCatalogWorks.mockResolvedValue(pageOf(100, 250));
+    await anchors({ page: '3' });
+    expect(listCatalogWorks).toHaveBeenCalledWith(expect.objectContaining({ offset: 200, limit: 100 }));
+  });
+
+  it('a bad or absent ?page= degrades to the first page rather than 400ing', async () => {
+    listCatalogWorks.mockResolvedValue(pageOf(100, 250));
+    for (const bad of ['0', '-4', 'abc', '2.5', '', undefined]) {
+      listCatalogWorks.mockClear();
+      await anchors(bad === undefined ? {} : { page: bad });
+      expect(listCatalogWorks, `?page=${bad}`).toHaveBeenCalledWith(expect.objectContaining({ offset: 0 }));
+    }
+  });
+
+  it('bounds the MAGNITUDE of ?page=, not just its integer-ness', async () => {
+    // SEED: drop the Math.min in parsePage → RED. `Number('1e9')` IS an integer, so a validity
+    // check alone emits a 99-billion OFFSET — the H10 defect, one surface over.
+    listCatalogWorks.mockResolvedValue(pageOf(0, 250));
+    for (const huge of ['1e9', '99999999999999999999', '2147483647']) {
+      listCatalogWorks.mockClear();
+      await anchors({ page: huge });
+      const { offset } = listCatalogWorks.mock.calls[0]![0] as { offset: number };
+      expect(offset, `?page=${huge} produced an unbounded offset`).toBeLessThanOrEqual(100_000);
+    }
+  });
+
+  it('renders Next but not Previous on page one, and both in the middle', async () => {
+    listCatalogWorks.mockResolvedValue(pageOf(100, 250));
+    const first = (await anchors({})).map((a) => (a.textContent ?? '').trim());
+    expect(first).toContain('Next →');
+    expect(first).not.toContain('← Previous');
+
+    const middle = (await anchors({ page: '2' })).map((a) => (a.textContent ?? '').trim());
+    expect(middle).toContain('Next →');
+    expect(middle).toContain('← Previous');
+  });
+
+  it('renders NO pagination when everything fits on one page', async () => {
+    listCatalogWorks.mockResolvedValue(pageOf(4, 4));
+    const labels = (await anchors({})).map((a) => (a.textContent ?? '').trim());
+    expect(labels).not.toContain('Next →');
+    expect(labels).not.toContain('← Previous');
+  });
+
+  it('a paging link keeps every filter, and a FILTER link resets the page', async () => {
+    // The two halves of the same rule. Carrying "page 4" through a chip click lands the reader on
+    // an empty page of a shorter list; dropping a filter on a page click silently widens the shelf.
+    listCatalogWorks.mockResolvedValue(pageOf(100, 250));
+    const links = filterLinks(await anchors({ page: '2', sub: 'hymns', tradition: 'reformed', desk: DESK }));
+    const paramsOf = (label: string) => {
+      const a = links.find((x) => (x.textContent ?? '').trim().startsWith(label));
+      if (!a) throw new Error(`no "${label}" link rendered`);
+      return new URL(a.getAttribute('href')!, 'https://x.test').searchParams;
+    };
+
+    const next = paramsOf('Next');
+    expect(next.get('page')).toBe('3');
+    expect(next.get('sub')).toBe('hymns');
+    expect(next.getAll('tradition')).toEqual(['reformed']);
+    expect(next.get('desk')).toBe(DESK);
+
+    // Every filter chip drops ?page= entirely (page 0 is never serialised).
+    for (const label of ['All traditions', 'anglican', 'Poetry']) {
+      expect(paramsOf(label).get('page'), `${label} kept the page`).toBeNull();
+    }
   });
 });
 

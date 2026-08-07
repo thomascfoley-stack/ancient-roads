@@ -10,10 +10,31 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CATALOGS, catalogTraditions, isCatalogId, isSubFilterOf, listCatalogWorks } from '@/lib/catalog';
 import { CatalogSearch } from '@/components/catalog-search';
-import { catalogHref, toggleTradition, type CatalogUrlState } from '@/lib/catalog-href';
+import { catalogHref, toggleTradition, withFacet, type CatalogUrlState } from '@/lib/catalog-href';
 import { decodeDesk, deskHref as deskHrefWith, withPane } from '@/lib/desk';
 
 export const dynamic = 'force-dynamic';
+
+/** Works per page. Matches the previous fixed `limit`, so page one is unchanged. */
+const PAGE_SIZE = 100;
+/** Mirrors `MAX_OFFSET / PAGE_SIZE` in lib/catalog.ts — paging past the offset bound is not a use
+ *  case, and the URL must not be able to ask for an offset the query layer will silently clamp. */
+const MAX_PAGE = 1000;
+
+/**
+ * `?page=` is 1-based and reader-facing; everything below is 0-based. Anything unparseable degrades
+ * to page one rather than 400ing — a stale or hand-edited bookmark should still show the shelf,
+ * which is the same rule this page already applies to an unknown `?sub=`.
+ *
+ * MAGNITUDE is bounded as well as integer-ness. `Number('1e9')` is an integer, so a validity check
+ * alone let `?page=1e9` through as a 99-billion OFFSET — the exact defect the 2026-08-02 audit
+ * found in /api/search/works (H10), which validated integer-NESS and never bounded magnitude.
+ */
+function parsePage(raw: string | undefined): number {
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n <= 1) return 0;
+  return Math.min(n - 1, MAX_PAGE);
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ catalog: string }> }) {
   const { catalog } = await params;
@@ -25,11 +46,12 @@ export default async function CatalogPage({
   searchParams,
 }: {
   params: Promise<{ catalog: string }>;
-  searchParams: Promise<{ sub?: string; tradition?: string | string[]; desk?: string }>;
+  searchParams: Promise<{ sub?: string; tradition?: string | string[]; desk?: string; page?: string }>;
 }) {
   const { catalog } = await params;
   if (!isCatalogId(catalog)) notFound();
-  const { sub, tradition, desk } = await searchParams;
+  const { sub, tradition, desk, page: pageParam } = await searchParams;
+  const page = parsePage(pageParam);
   const def = CATALOGS[catalog];
   // Own-key membership. `def.subFilters?.[sub]` walked the prototype chain, so `?sub=constructor`
   // passed this guard as a truthy value and then threw on the spread downstream — a 500 from a
@@ -45,8 +67,8 @@ export default async function CatalogPage({
     .filter(Boolean);
   const selectedSet = new Set(selected);
 
-  const [works, traditions] = await Promise.all([
-    listCatalogWorks({ catalog, subFilter, traditions: selected, limit: 100 }),
+  const [{ works, total, totalCapped }, traditions] = await Promise.all([
+    listCatalogWorks({ catalog, subFilter, traditions: selected, limit: PAGE_SIZE, offset: page * PAGE_SIZE }),
     catalogTraditions(catalog, subFilter),
   ]);
 
@@ -59,9 +81,17 @@ export default async function CatalogPage({
   // THE WHOLE URL STATE, in one value. Every link below is built from this by `catalogHref`, so a
   // facet cannot be dropped by a link that predates it — which is exactly how `?desk=` was being
   // lost on the first chip click (2026-08-02 audit; see lib/catalog-href.ts for the full account).
-  const urlState: CatalogUrlState = { sub: subFilter, traditions: selected, desk };
-  const hrefWith = (over: Partial<CatalogUrlState>): string => catalogHref(catalog, { ...urlState, ...over });
+  const urlState: CatalogUrlState = { sub: subFilter, traditions: selected, desk, page };
+  // FILTER links go through `withFacet`, which resets the page (a narrower list has fewer pages).
+  // PAGING links keep every filter and change only the page.
+  const hrefWith = (over: Partial<CatalogUrlState>): string => catalogHref(catalog, withFacet(urlState, over));
   const hrefToggling = (t: string): string => catalogHref(catalog, toggleTradition(urlState, t));
+  const hrefPage = (p: number): string => catalogHref(catalog, { ...urlState, page: p });
+
+  const firstShown = total === 0 ? 0 : page * PAGE_SIZE + 1;
+  const lastShown = page * PAGE_SIZE + works.length;
+  const hasPrev = page > 0;
+  const hasNext = lastShown < total;
 
   const chip =
     'inline-flex min-h-[36px] items-center rounded-lg border px-3 text-xs transition-colors ease-gentle';
@@ -128,8 +158,18 @@ export default async function CatalogPage({
       )}
 
       {works.length === 0 ? (
-        <p className="text-sm text-stone-500 dark:text-stone-400">No works here yet.</p>
+        <p className="text-sm text-stone-500 dark:text-stone-400">
+          {page > 0 ? 'No works on this page.' : 'No works here yet.'}
+        </p>
       ) : (
+        <>
+        {/* The count makes the page cap VISIBLE. Without it a capped list reads as a complete one,
+            which is the silent-truncation shape this repo's watchlist names. */}
+        <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
+          {total <= PAGE_SIZE
+            ? `${total}${totalCapped ? '+' : ''} work${total === 1 ? '' : 's'}`
+            : `Showing ${firstShown}–${lastShown} of ${total}${totalCapped ? '+' : ''}`}
+        </p>
         <ul className="space-y-2">
           {works.map((w) => (
             <li key={w.slug} className="flex items-stretch gap-2">
@@ -163,6 +203,25 @@ export default async function CatalogPage({
             </li>
           ))}
         </ul>
+
+        {(hasPrev || hasNext) && (
+          <nav aria-label="Pagination" className="mt-6 flex items-center justify-between gap-3">
+            {hasPrev ? (
+              <Link href={hrefPage(page - 1)} rel="prev" className={`${chip} ${off}`}>← Previous</Link>
+            ) : (
+              <span />
+            )}
+            <span className="text-xs tabular-nums text-stone-400">
+              Page {page + 1} of {Math.max(1, Math.ceil(total / PAGE_SIZE))}
+            </span>
+            {hasNext ? (
+              <Link href={hrefPage(page + 1)} rel="next" className={`${chip} ${off}`}>Next →</Link>
+            ) : (
+              <span />
+            )}
+          </nav>
+        )}
+        </>
       )}
     </div>
   );

@@ -152,7 +152,7 @@ describe.skipIf(SKIP)('Phase 4 §A — a shelved work that is later staged/quara
 
   it('BASELINE: while published, the work IS in its catalog and IS findable by search', async () => {
     await setStatus('published');
-    const works = await listCatalogWorks({ catalog: 'sermons', limit: 100 });
+    const { works } = await listCatalogWorks({ catalog: 'sermons', limit: 100 });
     expect(works.map((w) => w.slug), 'a published work must appear in its catalog').toContain(SLUG);
 
     const hits = await searchSections({ query: TOKEN });
@@ -162,7 +162,7 @@ describe.skipIf(SKIP)('Phase 4 §A — a shelved work that is later staged/quara
 
   it('STAGED: the work must vanish from the CATALOG', async () => {
     await setStatus('staged');
-    const works = await listCatalogWorks({ catalog: 'sermons', limit: 100 });
+    const { works } = await listCatalogWorks({ catalog: 'sermons', limit: 100 });
     expect(works.map((w) => w.slug), 'a staged work must NOT be listed in the catalog').not.toContain(SLUG);
   }, 60_000);
 
@@ -177,7 +177,7 @@ describe.skipIf(SKIP)('Phase 4 §A — a shelved work that is later staged/quara
 
   it('QUARANTINED: catalog and search stay clean, and an in-work search finds nothing', async () => {
     await setStatus('quarantined');
-    const works = await listCatalogWorks({ catalog: 'sermons', limit: 100 });
+    const { works } = await listCatalogWorks({ catalog: 'sermons', limit: 100 });
     expect(works.map((w) => w.slug)).not.toContain(SLUG);
     const hits = await searchSections({ query: TOKEN });
     expect(hits.results.map((r) => r.slug)).not.toContain(SLUG);
