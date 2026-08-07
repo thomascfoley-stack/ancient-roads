@@ -18,6 +18,10 @@ export interface RetrievedChunk {
     verseId: number;
     verseEnd: number;
     model: string;
+    // The work's library slug, when the row's metadata carries one (ingest sets it
+    // for register works; register-label-embeddings.mjs backfills it for the classic
+    // commentary set by author match). Not every served row has it yet.
+    work?: string;
   };
 }
 

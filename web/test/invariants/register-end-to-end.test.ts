@@ -150,7 +150,7 @@ describe.skipIf(SKIP)('§B1 per-register end-to-end (real route handlers, real D
       // ── 1. CATALOG ────────────────────────────────────────────────────────────
       const cat = catalogFor(rep.sourceType);
       if (cat) {
-        const works = await listCatalogWorks({ catalog: cat, limit: 500 });
+        const { works } = await listCatalogWorks({ catalog: cat, limit: 500 });
         const hit = works.find((w) => w.slug === rep.slug);
         if (!hit) note(`catalog "${cat}" does not list it`);
         else {

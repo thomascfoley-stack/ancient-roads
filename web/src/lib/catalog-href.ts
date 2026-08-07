@@ -29,6 +29,16 @@ export interface CatalogUrlState {
   traditions?: readonly string[];
   /** The encoded desk, carried verbatim so `+` appends rather than replacing. */
   desk?: string;
+  /**
+   * The 0-based page of the work list. Undefined/0 is the first page and is never serialised.
+   *
+   * UNLIKE the other facets, this one is deliberately DROPPED by every FILTER link — see
+   * `withFacet`. A filter narrows the result set, so carrying "page 4" through a chip click lands
+   * the reader on an empty page of a shorter list, which reads as "this filter has no works". The
+   * search box resets to offset 0 on a filter change for the same reason; the two surfaces on this
+   * page now agree. Paging links carry every OTHER facet, so a page change never drops a filter.
+   */
+  page?: number;
 }
 
 /**
@@ -42,8 +52,18 @@ export function catalogHref(catalog: CatalogId, state: CatalogUrlState = {}): st
   if (state.sub) qs.set('sub', state.sub);
   for (const t of [...(state.traditions ?? [])].sort()) qs.append('tradition', t);
   if (state.desk) qs.set('desk', state.desk);
+  if (state.page && state.page > 0) qs.set('page', String(state.page + 1)); // 1-based in the URL
   const q = qs.toString();
   return `/library/${catalog}${q ? `?${q}` : ''}`;
+}
+
+/**
+ * Change one FILTER facet, resetting the page. Every filter link on the page goes through this, so
+ * "narrowing the list sends you back to its first page" is a property of the builder rather than
+ * something each of four call sites has to remember — the failure mode this module exists to stop.
+ */
+export function withFacet(state: CatalogUrlState, over: Partial<CatalogUrlState>): CatalogUrlState {
+  return { ...state, ...over, page: 0 };
 }
 
 /**
@@ -54,5 +74,5 @@ export function toggleTradition(state: CatalogUrlState, tradition: string): Cata
   const next = new Set(state.traditions ?? []);
   if (next.has(tradition)) next.delete(tradition);
   else next.add(tradition);
-  return { ...state, traditions: [...next] };
+  return withFacet(state, { traditions: [...next] });
 }

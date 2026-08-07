@@ -1,5 +1,171 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-07 — deploy.sh reviewed, fixed, and given the tests it never had
+
+Owner asked for a review of `deploy.sh`, then for the findings to be applied and made
+bulletproof. Ten findings; all applied. The load-bearing change is not any single fix — it is
+that this file is now **executable under test**, which it has never been.
+
+### What the review found
+
+- **The receipt block died before writing the receipt.** `DEPLOY_URL="$(grep … | tail -1)"` —
+  under the `pipefail` added at `5644522` (2026-08-03), no match makes the pipeline exit 1, the
+  assignment fails, and `set -e` kills the script **after the upload**, so no receipt and no
+  "Done!". The `${DEPLOY_URL:-…}` fallback was unreachable. **Dated regression, and the evidence
+  is committed:** `deploy-98124b2.txt` and `deploy-4275bf2.txt` contain that fallback string —
+  they were written when it still worked. The pipefail commit fixed one unearned green and broke
+  the receipt beside it.
+- **The failure mode the file's own header names was never checked.** The header records vercel
+  "exits 0 with an error body"; `pipefail` catches only the non-zero case, and nothing asserted
+  the alias had moved. Proven, not argued: against the old script the harness case
+  `alias-mismatch-is-a-failure` **exits 0 and writes a clean receipt** while the alias serves a
+  different deployment.
+- **A receipt could not distinguish shipped from attempted.** The two receipts above are for
+  deploys MASTER records as FAILED and are shaped exactly like the successes.
+- **Two `STOP:` messages were unreachable** (`whoami`, `env ls`) — same bare-assignment class as
+  the grep, so both surfaced as a naked `exit 1`. A third instance: the corpus `find` counters,
+  whose "Warning: only N chapters" could not print when the directory was missing.
+- **Org reachable ≠ project present**, while the comment above it claimed to assert the project.
+- Fixed shared `/tmp/vercel-deploy.log` (two lanes, one file, and the receipt's URL is parsed from
+  it); the clean-tree gate went stale across a minutes-long build; `npx vercel` unpinned while two
+  parsers depend on its output format; `deploy-<sha7>.txt` overwritten on redeploy.
+
+### Fixed
+
+Post-deploy verification is an **identity comparison** — the deployment id of what we pushed
+against the id the alias serves, both extracted by the same regex — so a CLI format change makes
+both sides empty and the answer `unverified`, never a false `live`. Three states, three exit
+codes: `live` 0, `unverified` 2, `mismatch` 3. The receipt is written by an **EXIT trap** armed
+the moment the upload starts, so it survives every path out, carrying `state:` honestly.
+Assertions moved above the build (seconds of network before minutes of work), the clean-tree
+check runs a second time immediately before the upload, the CLI is pinned at `vercel@50.38.2`,
+and `--meta sha=` now stamps the commit onto the deployment.
+
+### Verified, by watching it fail first
+
+`test/deploy-sh-gates.sh` — 20 cases, **57 assertions**, throwaway git repos with a real bare
+`origin` and a stubbed `npx`; no network, no credentials, no Vercel account. Wired into
+`scripts/audit.sh`, which CI already runs, because *a gate nobody runs is not a gate*.
+
+- **Against the previous `deploy.sh`: 31 red.** Each maps to a finding above.
+- **Eight seeded mutations, each caught by the case that names it:** dropping `|| true` on the URL
+  grep, restoring the bare `whoami` assignment, deleting the project-present check, deleting the
+  second clean-tree check, deleting the env-parse sanity check, reverting the CLI cwd to the repo
+  root, substring-matching `web` (a project called `webhooks` passed), and making verification
+  always report `live` — that last one reddens `alias-mismatch-is-a-failure`, which is the
+  dangerous defect this work exists to prevent.
+- **Found by running it, not by reading it:** `mktemp "…/vercel-deploy.XXXXXX.log"` on macOS
+  (BSD) ignores the trailing suffix and creates a file named **literally** `vercel-deploy.XXXXXX.log`
+  — the fixed shared path the change was removing, wearing the disguise of a fix. The X's now go
+  last, and the harness asserts the path contains no `XXXXXX`. When that mutation is seeded it
+  breaks 17 assertions across later cases, because a fixed path really does collide across runs.
+
+### NOT DONE / UNVERIFIED
+
+- **`npm run audit` did NOT run — it is a NOT RUN, not a green and not a red.** It refuses at its
+  first gate on this machine: `FAIL: no DATABASE_URL in root .env.local`. The change touches no
+  TypeScript (bash + markdown only), so the TS gates cannot be affected by it, but that is an
+  argument, not a run.
+- **`vercel inspect`'s real output was never seen by this work.** The `dpl_[A-Za-z0-9]+` regex is
+  grounded in WORKLOG 2026-08-04, where `vercel inspect ancientpaths.app` returned
+  `dpl_78bFFJYSrRkbkFMSEFjpeizzhhSP` by hand; it has not been run against live Vercel here. If it
+  does not match, the deploy reports **exit 2 / `unverified`** — loud and honest — never a false
+  `live`. First real deploy should confirm it lands on `live`.
+- **The pinned `vercel@50.38.2` is the version in this machine's npx cache, and the one whose
+  interface was checked** (`inspect --format json`, `inspect <alias>`, `deploy --meta`). It is
+  **not** established that past successful deploys used it; npm's `latest` is 58.7.1.
+- **The ancestry gate is still a proxy.** `origin/main` is not "what is live", so a lane deploying
+  from an unmerged branch remains invisible to it. The `--meta sha=` stamp is the first half of
+  the real fix; the reverse lookup is deliberately unbuilt because no deployment carries the stamp
+  yet, so it could not be tested. Measured: the six most recent receipts all name shas that are
+  ancestors of `main`, so the proxy has held so far.
+- **Not deployed.** Deploy is ⚑ owner-executed per occasion, and the working tree still holds
+  another session's untracked evidence — left exactly as found.
+
+## 2026-08-06 — /ask category filters, clickable results, and two silently-truncated lists
+
+Owner asked for three things on the product surfaces: choose what to search by category,
+open a quoted result, and "the results should be exhaustive". Branch
+`feat/ask-category-filters-and-exhaustive-search`, two commits, rebased onto `main`.
+
+### DONE
+
+- **`/ask` lane filters.** `teach()` fired all three register lanes unconditionally, so a
+  reader could not choose what to search. Added `LaneFlags` to `teach()` and a
+  boundary-validated `lanes` field on `POST /api/ask/stream`; a lane set `false` is SKIPPED
+  (never fetched), not fetched-then-hidden. Omitted/malformed reproduces today's behaviour
+  exactly. The exegetical pool is deliberately NOT gated — it is the always-on core answer.
+- **Clickable results.** Lane chunks already carried `metadata.work` (a real slug) over the
+  wire, unused. Voices carried only a display title, so a quote could not be resolved back
+  to its work at all — threaded an OPTIONAL `slug` through retrieve → teach →
+  normalize-contract → the contract (both `src/` and `web/` copies, sync guard green), and
+  linked both card kinds to the existing desk. A row with no backfilled slug renders as
+  plain text, never a broken link.
+- **Two silently-truncated lists, now exhaustive AND honest about it.** Catalog *search*
+  sent a fixed `limit=25` and never an offset, though `/api/search/works` has accepted both
+  since it was written — same "every layer correct, the feature does not exist" shape as the
+  tradition filter. Catalog *browse* took `limit: 100` with no offset and no count, so a
+  catalog over 100 works had no route to the rest and no indication a remainder existed.
+  Both now page, and both now SHOW the total.
+- **Found by my own test, then red-proofed:** `?page=1e9` is an integer to
+  `Number.isInteger`, so bounding validity without bounding MAGNITUDE emitted a 99-billion
+  OFFSET — the same H10 defect the 2026-08-02 audit found in `/api/search/works`. Clamped,
+  then removed the clamp and watched the test go red before restoring it. Same red-proof
+  done for the offset wiring itself (3 tests red, restored green).
+
+### NOT DONE / UNVERIFIED
+
+- **DEPLOY ATTEMPTED ON THE OWNER'S GO, AND REFUSED BY A GATE. Nothing shipped** — verified
+  after the fact, not assumed: `ancientpaths.app` still serves `dpl_FcVa2CQ…` (created
+  2026-08-06, 24h before), and the newest receipt is still the pre-existing
+  `deploy-f9d0b89.txt`. The refusal is `PREDEPLOY_DB_URL is not set`, the P0.3 gate proving
+  `embeddings.served` (migration 044) exists on the TARGET database before shipping a bundle
+  that queries it — without which every `/ask` 500s. It fired BEFORE the build and BEFORE
+  any upload. That credential is a production connection string; per `AGENTS.md` it is not
+  mine to source, and pulling it to disk is separately forbidden, so **this is the owner's
+  step**: `export PREDEPLOY_DB_URL=… && ./deploy.sh`, from a clean tree.
+- **`next build` was broken for everyone without production credentials — FIXED (`722529f`).**
+  Not an environment quirk, an actual defect, and it would have blocked the owner too.
+  `/account/[path]` and `/auth/[path]` both declare `generateStaticParams`, so Next
+  PRERENDERED them, and both read the session — which reaches the database. Neither can be
+  prerendered even in principle: their output depends on who is asking. `generateStaticParams`
+  stays on both (with `dynamicParams = false` it is the 404 allowlist, a different job under
+  the same name); `dynamic = 'force-dynamic'` added. Both routes now report ƒ (Dynamic) and
+  the build completes. Each half arrived innocently — /auth's `currentUser()` from the A7b
+  signed-in-on-sign-in fix, /account's from the SEC-1 in-page auth enforcement — and each
+  silently made a prerendered page request-dependent. **`deploy.sh` had been unrunnable here
+  since SEC-1 landed and nothing said so, because nobody had deployed since**: the
+  "a gate nobody runs is not a gate" entry on the watchlist, recurring exactly as written.
+- **The branch is still unmerged.** Deploying a branch is legal under `deploy.sh`'s
+  merge-first rule (it contains `origin/main`), but PR #75 should be merged so git records
+  what production runs.
+- **`main` was RED on arrival; both failures are now fixed on this branch.** Confirmed
+  pre-existing by running them in a scratch worktree at clean `main` @ `7e3a612` with none of
+  my commits applied; both arrived with the suggested-readings merge earlier today.
+  `user_document_readings` is now classified EXCLUDED with its reasoning (derived, not
+  authored, and delete-then-inserted on every recompute, so a G1 digest would redden on
+  ordinary use). The `maxDuration` one was **the guard's defect, not the route's** — the
+  route runs a plain vector query and never touches `teach()`, so "every literal equals
+  ASK_MAX_DURATION_SEC" was demanding a 300s ceiling for a job that wants 30. Split it by
+  what the constant means: pipeline routes (DERIVED from their imports) must match; others
+  may set their own budget but never exceed the ceiling. Both legs red-proofed. **Owner
+  should still confirm the `related` route's 30s is the intended budget** — I preserved the
+  author's number rather than picking one.
+- **Live click-through of the desk links and Load More is UNVERIFIED.** No dev database in
+  this session, so `/library/[catalog]` 500s locally (`APP_DATABASE_URL … must be set`) and
+  `/ask` returns 401. Verified instead: the checkbox panel driven in a real browser at 390px
+  and desktop (toggles, counter, no overflow, no console errors from this code), the request
+  path exercised end-to-end through the real route with the new `lanes` field, and the
+  pagination logic under component tests. The link-click itself has not been watched work.
+- **Slug coverage is unmeasured.** How many currently-served commentary authors actually
+  have `metadata.work` backfilled is a live-DB fact. Un-backfilled rows degrade to
+  non-clickable, so the failure mode is invisible-but-safe rather than broken.
+- **`/ask` is still top-K by construction** and cannot be made "exhaustive" by raising a
+  limit — it is ranked retrieval feeding a composer. The exhaustive surface is catalog
+  search. Six `source_type`s still have no retrieval lane at all (`devotional`,
+  `topical_index`, `art`, `note`, `document`, `bible`); `historian` and `lexicon` remain
+  excluded BY DECISION (`routing.ts:126`, `:171`), left standing on the owner's call.
+
 ## 2026-08-06 (Suggested readings: built, and the bug the good progress bar hid)
 
 Owner-approved from [SUGGESTED_READINGS_DESIGN.md](docs/SUGGESTED_READINGS_DESIGN.md), with his

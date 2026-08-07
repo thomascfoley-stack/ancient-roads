@@ -48,6 +48,11 @@ gate "deps — advisory bulk-endpoint (prod, high+ CVEs)" node scripts/deps-audi
 gate "tests + coverage — vitest"          $PNPM exec vitest run --coverage
 gate "qa — Layer 1 invariants + regressions" $PNPM run qa
 gate "hygiene — no test residue in dev (post-suite)" node scripts/check-test-residue.mjs
+# deploy.sh is bash, so vitest never saw it: every line of the gate in front of the irreversible
+# operation ran for the first time DURING that operation, and its whole history is defects found
+# by deploying. This harness runs it against throwaway git repos and a stubbed CLI. It needs no
+# network, no credentials and no Vercel account — see the file header for the red-proof procedure.
+gate "deploy.sh — gate harness (bash)"    bash test/deploy-sh-gates.sh
 gate "data — Gate B license (fail-closed)" $PNPM exec tsx src/ingest/check-licenses.ts
 
 # Informational: source files the test suite never touches.

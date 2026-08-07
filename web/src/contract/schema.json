@@ -55,6 +55,7 @@
           "properties": {
             "author": { "type": "string", "minLength": 1 },
             "work": { "type": "string", "minLength": 1 },
+            "slug": { "type": "string", "minLength": 1 },
             "year": { "type": "integer" },
             "tradition": { "type": "string", "minLength": 1 },
             "origin": { "enum": ["corpus", "user_library"] }

@@ -8,6 +8,15 @@ import { currentUser } from '@/lib/session';
 
 export const dynamicParams = false;
 
+// PER-REQUEST, never prerendered — same reason as /account/[path], and it arrived the same way.
+// The `currentUser()` check below (added by the A7b fix for a signed-in reader being served a
+// login form) makes this page's OUTPUT depend on who is asking, which is precisely what a build-
+// time prerender cannot know. Next tried anyway and `next build` died on /auth/sign-up with
+// "SECURITY: APP_DATABASE_URL … is required in production", so the app could not be built at all
+// without production credentials. `generateStaticParams` below stays: with `dynamicParams = false`
+// it is the ALLOWLIST that makes /auth/anything-else a 404, not a promise of static output.
+export const dynamic = 'force-dynamic';
+
 // Was absent while `dynamicParams = false` was set. The prefab shipped its own route table; ours
 // has to declare one, and without it every /auth/* URL 404s.
 export function generateStaticParams() {

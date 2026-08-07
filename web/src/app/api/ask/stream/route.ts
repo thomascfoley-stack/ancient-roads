@@ -3,7 +3,7 @@ import { requireUser } from '@/lib/session';
 import { checkAskRateLimit } from '@/lib/rate-limit';
 import { apiError } from '@/lib/api-error';
 import { logEvent } from '@/lib/observability';
-import { teach, type TeacherEvent } from '@/lib/teacher/teach';
+import { teach, type TeacherEvent, type LaneFlags } from '@/lib/teacher/teach';
 import { logAskOutcome } from '@/lib/ask-outcome-log';
 
 export const runtime = 'nodejs';
@@ -14,11 +14,28 @@ export const runtime = 'nodejs';
 // cannot drift. Do not re-import the constant here -- it does not build.
 export const maxDuration = 300;
 
-// POST /api/ask/stream { question } → newline-delimited JSON (NDJSON) stream of
-// TeacherEvents (retrieving → retrieved → composing → verifying → done). The
-// verifier runs server-side inside teach() before any `done` event, so the
-// client never receives unverified model output. Authed-only. Pre-stream errors
-// use the stable envelope (docs/API_ERRORS.md).
+// Boundary-validate the caller-supplied lane toggles: each key, if present, must
+// be a strict boolean — anything else (string "false", 0, null, ...) is dropped
+// rather than coerced, so a malformed value falls back to the safe default
+// (lane included) instead of silently doing the opposite of what was asked.
+function parseLaneFlags(raw: unknown): LaneFlags {
+  if (typeof raw !== 'object' || raw === null) return {};
+  const r = raw as Record<string, unknown>;
+  const flags: LaneFlags = {};
+  if (typeof r.songVerse === 'boolean') flags.songVerse = r.songVerse;
+  if (typeof r.sermons === 'boolean') flags.sermons = r.sermons;
+  if (typeof r.theology === 'boolean') flags.theology = r.theology;
+  return flags;
+}
+
+// POST /api/ask/stream { question, lanes? } → newline-delimited JSON (NDJSON)
+// stream of TeacherEvents (retrieving → retrieved → composing → verifying →
+// done). `lanes` optionally toggles the Sermons/Theology/Hymns register lanes
+// (each defaults to included when omitted or malformed) — it never filters the
+// exegetical commentary voices, which are always-on. The verifier runs
+// server-side inside teach() before any `done` event, so the client never
+// receives unverified model output. Authed-only. Pre-stream errors use the
+// stable envelope (docs/API_ERRORS.md).
 export async function POST(req: NextRequest) {
   let user: { id: string; email: string };
   try {
@@ -42,7 +59,7 @@ export async function POST(req: NextRequest) {
     return apiError(code, { retryAfterSec: rl.retryAfterSec });
   }
 
-  let body: { question?: unknown };
+  let body: { question?: unknown; lanes?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -51,6 +68,7 @@ export async function POST(req: NextRequest) {
   const question = typeof body.question === 'string' ? body.question.trim() : '';
   if (!question) return apiError('INVALID_REQUEST', { message: 'A question is required.' });
   if (question.length > 500) return apiError('INVALID_REQUEST', { message: 'That question is too long (max 500 characters).' });
+  const lanes = parseLaneFlags(body.lanes);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
@@ -60,7 +78,7 @@ export async function POST(req: NextRequest) {
       };
       const startedAt = Date.now();
       try {
-        const { result, meta } = await teach(question, { onEvent: write });
+        const { result, meta } = await teach(question, { onEvent: write, lanes });
         logAskOutcome(result.kind, Date.now() - startedAt, meta);
       } catch (e) {
         console.error('teacher stream error:', (e as Error).message);

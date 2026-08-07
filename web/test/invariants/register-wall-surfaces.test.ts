@@ -62,7 +62,7 @@ describe.skipIf(SKIP)('register wall — the NEW catalog + search surfaces', () 
   it('every catalog returns ONLY its declared types (fence holds against real data)', async () => {
     for (const id of CATALOG_IDS) {
       const allowed = new Set(CATALOGS[id].types);
-      const works = await listCatalogWorks({ catalog: id, limit: 100 });
+      const { works } = await listCatalogWorks({ catalog: id, limit: 100 });
       // precondition: a fence over an empty shelf proves nothing
       expect(works.length, `precondition: catalog "${id}" must have works to fence`).toBeGreaterThan(0);
       for (const w of works) {
@@ -86,7 +86,7 @@ describe.skipIf(SKIP)('register wall — the NEW catalog + search surfaces', () 
 
     const surfaced = new Set<string>();
     for (const id of CATALOG_IDS) {
-      for (const w of await listCatalogWorks({ catalog: id, limit: 100 })) surfaced.add(w.sourceType);
+      for (const w of (await listCatalogWorks({ catalog: id, limit: 100 })).works) surfaced.add(w.sourceType);
     }
     for (const t of NON_CATALOG_TYPES) {
       expect(surfaced.has(t), `"${t}" reached a catalog — the wall is breached in the UI layer`).toBe(false);
@@ -107,8 +107,8 @@ describe.skipIf(SKIP)('register wall — the NEW catalog + search surfaces', () 
   }, 120_000);
 
   it('the Hymns & Poetry sub-filter narrows rather than widens', async () => {
-    const hymns = await listCatalogWorks({ catalog: 'hymns-poetry', subFilter: 'hymns', limit: 100 });
-    const poetry = await listCatalogWorks({ catalog: 'hymns-poetry', subFilter: 'poetry', limit: 100 });
+    const { works: hymns } = await listCatalogWorks({ catalog: 'hymns-poetry', subFilter: 'hymns', limit: 100 });
+    const { works: poetry } = await listCatalogWorks({ catalog: 'hymns-poetry', subFilter: 'poetry', limit: 100 });
     expect(hymns.length + poetry.length).toBeGreaterThan(0);
     for (const w of hymns) expect(w.sourceType, 'the hymns sub-filter must return only hymns').toBe('hymn');
     for (const w of poetry) expect(w.sourceType, 'the poetry sub-filter must return only poetry').toBe('poetry');

@@ -38,9 +38,15 @@ export async function parsePdf(bytes: Uint8Array): Promise<PdfExtraction> {
     // over on its own -- if it matters, getDocument fails below and the reason reaches the user.
   }
 
+  // The LOADING TASK is kept, not discarded by chaining `.promise` off it. pdfjs 6 removed
+  // `PDFDocumentProxy.destroy()` (the CVE fix for GHSA-hq66-cqwq-w95j is 6.2.108, so the upgrade
+  // is not optional); teardown now lives on the loading task, which is the more honest handle
+  // anyway — it is what owns the WORKER, and an undestroyed worker is the leak that matters
+  // inside a serverless function.
+  let task;
   let doc;
   try {
-    doc = await pdfjs.getDocument({
+    task = pdfjs.getDocument({
       // pdfjs takes ownership of the buffer it is given and detaches it. Copy, so a caller that
       // still needs the raw bytes (to compute a checksum, or to upload the original to blob
       // storage) does not silently receive an empty Uint8Array afterwards.
@@ -52,7 +58,8 @@ export async function parsePdf(bytes: Uint8Array): Promise<PdfExtraction> {
       disableFontFace: true,
       useSystemFonts: false,
       standardFontDataUrl,
-    }).promise;
+    });
+    doc = await task.promise;
   } catch (e) {
     // An encrypted PDF also lands here. Both are refusals the user can act on, and neither may be
     // allowed to look like a document with no text -- that is the scanned-PDF confusion in reverse.
@@ -86,7 +93,9 @@ export async function parsePdf(bytes: Uint8Array): Promise<PdfExtraction> {
       page.cleanup();
     }
   } finally {
-    await doc.destroy();
+    // `task.destroy()` also tears the document down — it is documented as "abort all network
+    // requests and destroy the worker", and it is the only teardown pdfjs 6 still exposes here.
+    await task.destroy();
   }
 
   const text = chunks

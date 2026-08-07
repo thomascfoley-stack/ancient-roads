@@ -91,6 +91,72 @@ describe('CatalogSearch sends the filter it is showing', () => {
     expect(new URL(calls.at(-1)!, 'https://x.test').searchParams.getAll('tradition')).toEqual(['reformed']);
   });
 
+  it('sends offset=0 on a fresh search, and Load More asks for the next page', async () => {
+    // First page: 25 results out of 60 total, so "Load more" should render and, on click,
+    // request offset=25 (the count already shown) — not a hardcoded page number.
+    const firstPage = {
+      results: Array.from({ length: 25 }, (_, i) => ({
+        slug: 'watts-hymns', title: `Hymn ${i}`, author: 'Isaac Watts', sourceType: 'hymn',
+        tradition: null, ordinal: i, unitOrdinal: i, heading: null, snippet: 'x', rank: 1,
+      })),
+      total: 60,
+      totalCapped: false,
+    };
+    const secondPage = {
+      results: Array.from({ length: 25 }, (_, i) => ({
+        slug: 'watts-hymns', title: `Hymn ${25 + i}`, author: 'Isaac Watts', sourceType: 'hymn',
+        tradition: null, ordinal: 25 + i, unitOrdinal: 25 + i, heading: null, snippet: 'x', rank: 1,
+      })),
+      total: 60,
+      totalCapped: false,
+    };
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      calls.push(String(input));
+      const body = calls.length === 1 ? firstPage : secondPage;
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+    }) as typeof fetch;
+
+    const { container, findByText } = render(<CatalogSearch catalog="hymns-poetry" label="Hymns & Poetry" />);
+    fireEvent.change(container.querySelector('input')!, { target: { value: 'grace' } });
+    fireEvent.submit(container.querySelector('form')!);
+    const loadMoreBtn = await findByText(/Load more \(25 of 60\)/);
+    expect(new URL(calls[0]!, 'https://x.test').searchParams.get('offset')).toBe('0');
+
+    fireEvent.click(loadMoreBtn);
+    await findByText(/Load more \(50 of 60\)/);
+    expect(new URL(calls[1]!, 'https://x.test').searchParams.get('offset')).toBe('25');
+
+    // Appended, not replaced: both pages' items are on screen.
+    expect(container.textContent).toContain('Hymn 0');
+    expect(container.textContent).toContain('Hymn 49');
+  });
+
+  it('a fresh search after Load More replaces results and resets to offset 0', async () => {
+    const page1 = { results: [{ slug: 'a', title: 'A', author: null, sourceType: 'sermon', tradition: null, ordinal: 1, unitOrdinal: 1, heading: null, snippet: 'x', rank: 1 }], total: 2, totalCapped: false };
+    const page2 = { results: [{ slug: 'a', title: 'A2', author: null, sourceType: 'sermon', tradition: null, ordinal: 2, unitOrdinal: 2, heading: null, snippet: 'x', rank: 1 }], total: 2, totalCapped: false };
+    const freshSearch = { results: [{ slug: 'b', title: 'B', author: null, sourceType: 'sermon', tradition: null, ordinal: 1, unitOrdinal: 1, heading: null, snippet: 'x', rank: 1 }], total: 1, totalCapped: false };
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      calls.push(String(input));
+      const body = calls.length === 1 ? page1 : calls.length === 2 ? page2 : freshSearch;
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+    }) as typeof fetch;
+
+    const { container, findByText } = render(<CatalogSearch catalog="sermons" label="Sermons" />);
+    fireEvent.change(container.querySelector('input')!, { target: { value: 'first' } });
+    fireEvent.submit(container.querySelector('form')!);
+    const loadMoreBtn = await findByText(/Load more/);
+    fireEvent.click(loadMoreBtn);
+    await findByText('A2');
+
+    fireEvent.change(container.querySelector('input')!, { target: { value: 'second' } });
+    fireEvent.submit(container.querySelector('form')!);
+    await findByText('B');
+    await waitFor(() => {
+      expect(container.textContent).not.toContain('A2');
+    });
+    expect(new URL(calls.at(-1)!, 'https://x.test').searchParams.get('offset')).toBe('0');
+  });
+
   it('a REJECTED request renders as an error, never as "No matches."', async () => {
     // A 400 that renders as an empty result set is the unearned-green shape in UI form: the screen
     // reports a clean answer to a query the server refused.

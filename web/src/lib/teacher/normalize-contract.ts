@@ -76,6 +76,10 @@ export interface SectionAttribution {
   author: string;
   work: string;
   tradition: string;
+  // The work's library slug, when known — lets the client link the quote back to
+  // the work. Omitted (not empty-string) when the source row has no slug, so a
+  // missing value degrades to "not clickable" rather than a broken link.
+  slug?: string;
   // The section's full text, used for snap-to-source quote repair. Optional so
   // callers that only need attribution backfill (e.g. tests) can omit it.
   body?: string;
@@ -106,6 +110,7 @@ export function normalizeContract(
           b.attribution = {
             author: src.author,
             work: src.work,
+            ...(src.slug ? { slug: src.slug } : {}),
             tradition: src.tradition,
             origin: 'corpus',
           };

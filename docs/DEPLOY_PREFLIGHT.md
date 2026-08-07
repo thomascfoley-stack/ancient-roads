@@ -39,21 +39,47 @@ here, and the gate is you.
 
 ## 1. The ordered sequence, and what each step refuses on
 
-`deploy.sh` runs under `set -e` — any non-zero exit aborts immediately.
+`deploy.sh` runs under `set -euo pipefail` — any non-zero exit aborts immediately.
+
+**Re-ordered 2026-08-06:** the account/project/env assertions moved ABOVE the build. They are
+seconds of network and no state; `next build` is minutes. A wrong-account run now stops before it
+has done any work. "Verified" below now means *by `test/deploy-sh-gates.sh`* — a bash harness that
+runs this script against throwaway git repos and a stubbed CLI, with no network and no Vercel
+account — except where a row says it was executed for real.
 
 | # | Step | Refuses when | Verified |
 |---|---|---|---|
-| 1 | **Clean-tree gate** — `git status --porcelain` | any modified **or untracked** file | read |
-| 2 | `npx` present | Node missing | read |
-| 3 | **Bible file count** | **never — WARNS only** below 1,000 | measured: 22,590 |
-| 4 | **Commentary file count** | **never — WARNS only** below 1,000 | measured: 1,213 |
-| 5 | **`predeploy-gate.ts`**, `DEPLOYING=1` | see §2 | **executed, EXIT=0** |
-| 6 | **`cd web && npx next build`** | any build error | **executed, EXIT=0** after §0 |
-| 7 | `npx vercel --prod --archive=tgz` | Vercel-side | **not run — this is the deploy** |
+| 1 | **Repo-root anchor** — `git rev-parse --show-toplevel` | not inside a git repo | harness |
+| 2 | **Clean-tree gate** — `git status --porcelain` | any modified **or untracked** file | harness |
+| 3 | **Ancestry gate** — HEAD must contain `origin/main` | the tree would revert shipped work | harness |
+| 4 | `npx` present | Node missing | read |
+| 5 | **Bible file count** | **never — WARNS only** below 1,000 | measured: 22,590 |
+| 6 | **Commentary file count** | **never — WARNS only** below 1,000 | measured: 1,213 |
+| 7 | **`predeploy-gate.ts`**, `DEPLOYING=1` | see §2 | **executed, EXIT=0** |
+| 8 | **Target assertion** — `whoami`, org reachable, project present | wrong account/org/project | harness |
+| 9 | **Env assertion** — 7 required names in Production | any missing; also refuses if the check could not run | harness |
+| 10 | **`cd web && npx next build`** | any build error | **executed, EXIT=0** after §0 |
+| 11 | **Second clean-tree check** | the tree changed during the build | harness |
+| 12 | `vercel --prod --archive=tgz --meta sha=…` (CLI pinned) | Vercel-side | executed many times |
+| 13 | **Post-deploy verification** — alias must serve this deployment | the alias serves something else | harness |
 
-**Steps 3 and 4 are warnings, not gates.** They print `Warning:` and continue. A corpus of 5 files
-would warn and proceed to step 5, which is where it is actually caught. Do not read those lines as
+**Steps 5 and 6 are warnings, not gates.** They print `Warning:` and continue. A corpus of 5 files
+would warn and proceed to step 7, which is where it is actually caught. Do not read those lines as
 protection — `predeploy-gate.ts` is the protection.
+
+### Exit codes — 2 and 3 are new, and they do not mean the same thing
+
+| exit | meaning | production |
+|---|---|---|
+| 0 | `ancientpaths.app` is served by this deployment, checked by id | changed, as intended |
+| 1 | a gate refused | untouched (upload never started) |
+| 2 | **UNVERIFIED** — the upload finished and the check could not run | unknown; check by hand |
+| 3 | **MISMATCH** — the alias serves a different deployment | the deploy did not take |
+
+Exit 2 is not a failure report. It says nobody knows yet, which is the honest answer when an
+instrument could not run — see the watchlist entry in `docs/pm/MASTER.md` about negative results
+that are really a NOT RUN. A receipt is written in every case from step 12 onward, and its
+`state:` field carries the same word.
 
 ### Abort state after each step
 

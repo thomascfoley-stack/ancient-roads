@@ -25,8 +25,18 @@ import type { CatalogId } from '@/lib/catalog';
 import { sanitizeSnippet } from '@/lib/snippet';
 import type { SectionSearchResult } from '@/lib/search-sections';
 
+// PAGE_SIZE matches the fixed `limit` this component always sent before pagination existed — the
+// first page's behavior is unchanged. Load More appends via `offset`, which /api/search/works has
+// accepted since it was written (search-sections.ts); only this component never asked for more
+// than page one. Same "the API already does this, the UI just never asked" shape as the desk-pane
+// slug work.
+const PAGE_SIZE = 25;
+
 type Page = { results: SectionSearchResult[]; total: number; totalCapped: boolean };
 type State = { kind: 'ok'; page: Page } | { kind: 'error'; message: string };
+function resultKey(r: SectionSearchResult): string {
+  return `${r.slug}#${r.ordinal}`;
+}
 
 export function CatalogSearch({
   catalog,
@@ -41,23 +51,28 @@ export function CatalogSearch({
   const [q, setQ] = useState('');
   const [state, setState] = useState<State | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const seq = useRef(0);
 
   // Stable key for the selection, so the re-run effect below depends on the VALUES rather than on
   // the array identity a server component hands us fresh on every render (which would loop).
   const tradKey = [...traditions].sort().join(',');
 
+  // `offset` drives BOTH a fresh search (0, replaces `state`) and Load More (results.length so
+  // far, appends). One function for both, distinguished by the offset, keeps "what a page looks
+  // like" defined in exactly one place.
   const run = useCallback(
-    async (query: string) => {
+    async (query: string, offset: number) => {
       const term = query.trim();
       if (!term) {
         setState(null);
         return;
       }
       const mine = ++seq.current;
-      setBusy(true);
+      if (offset === 0) setBusy(true);
+      else setLoadingMore(true);
       try {
-        const params = new URLSearchParams({ q: term, catalog, limit: '25' });
+        const params = new URLSearchParams({ q: term, catalog, limit: String(PAGE_SIZE), offset: String(offset) });
         // One repeated param per value. `multiParam` on the route also accepts a comma-joined
         // form; repeating is used here because a tradition containing a comma would corrupt the
         // joined form and silently drop a filter.
@@ -70,24 +85,39 @@ export function CatalogSearch({
           throw new Error(body?.error ?? `search failed (${res.status})`);
         }
         const page = (await res.json()) as Page;
-        if (mine === seq.current) setState({ kind: 'ok', page });
+        if (mine !== seq.current) return;
+        setState((prev) => {
+          const prior = offset > 0 && prev?.kind === 'ok' ? prev.page.results : [];
+          const seen = new Set(prior.map(resultKey));
+          const results = [...prior, ...page.results.filter((r) => !seen.has(resultKey(r)))];
+          return { kind: 'ok', page: { results, total: page.total, totalCapped: page.totalCapped } };
+        });
       } catch (err) {
         if (mine === seq.current) {
           setState({ kind: 'error', message: err instanceof Error ? err.message : 'search failed' });
         }
       } finally {
-        if (mine === seq.current) setBusy(false);
+        if (mine === seq.current) {
+          setBusy(false);
+          setLoadingMore(false);
+        }
       }
     },
     [catalog, tradKey],
   );
 
-  // Re-run when the filter changes, so results can never be stale against the lit chips. Guarded on
-  // a non-empty query: toggling chips with an empty box must not fire a search.
+  // Re-run from the top when the filter changes, so results can never be stale against the lit
+  // chips — a filter change always replaces (offset 0), never appends. Guarded on a non-empty
+  // query: toggling chips with an empty box must not fire a search.
   const submitted = useRef('');
   useEffect(() => {
-    if (submitted.current) void run(submitted.current);
+    if (submitted.current) void run(submitted.current, 0);
   }, [tradKey, run]);
+
+  const loadMore = useCallback(() => {
+    if (state?.kind !== 'ok' || busy || loadingMore) return;
+    void run(submitted.current, state.page.results.length);
+  }, [run, state, busy, loadingMore]);
 
   return (
     <div className="mb-8">
@@ -95,7 +125,7 @@ export function CatalogSearch({
         onSubmit={(e) => {
           e.preventDefault();
           submitted.current = q.trim();
-          void run(q);
+          void run(q, 0);
         }}
         className="flex gap-2"
       >
@@ -174,6 +204,21 @@ export function CatalogSearch({
               </li>
             ))}
           </ul>
+
+          {state.page.results.length < state.page.total && (
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="min-h-[44px] rounded-full bg-paper px-6 text-sm font-medium text-stone-600 shadow-paper transition-all duration-200 ease-gentle hover:text-accent-800 hover:shadow-float active:bg-stone-100 disabled:opacity-40 dark:bg-stone-800 dark:text-stone-300 dark:shadow-none"
+              >
+                {loadingMore
+                  ? 'Loading…'
+                  : `Load more (${state.page.results.length} of ${state.page.total}${state.page.totalCapped ? '+' : ''})`}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -81,6 +81,20 @@ function maxDurationLiteral(relPath: string): number | null {
   return /^\d+$/.test(m[1]!.trim()) ? Number(m[1]!.trim()) : NaN;
 }
 
+/** Importing the teacher pipeline is what makes ASK_MAX_DURATION_SEC a route's in-process budget. */
+const IMPORTS_TEACH = /\bfrom\s+['"]@\/lib\/teacher\/teach['"]/;
+
+/**
+ * Does this route run the ask pipeline? DERIVED from the route's own imports, never listed.
+ *
+ * Read from `codeOnly`, so a route that merely NAMES teach() in a comment — /api/ask/stream does,
+ * twice — is not miscounted as one. A hand-maintained exemption list here would be the very defect
+ * this file's header calls the tenth instance, committed in the same file a second time.
+ */
+function usesAskPipeline(relPath: string): boolean {
+  return IMPORTS_TEACH.test(codeOnly(readFileSync(path.join(ROOT, relPath), 'utf8')));
+}
+
 describe('route segments — maxDuration is a literal, and it matches the budget constant', () => {
   const routes = routesMentioningMaxDuration();
 
@@ -106,9 +120,28 @@ describe('route segments — maxDuration is a literal, and it matches the budget
     }
   });
 
-  it('every literal equals ASK_MAX_DURATION_SEC — the two may not drift', () => {
-    for (const r of routes) {
+  it('every ASK-PIPELINE route equals ASK_MAX_DURATION_SEC — the two may not drift', () => {
+    // The property is ceiling >= budget, and ASK_MAX_DURATION_SEC is the budget only for routes
+    // that actually run teach(). Asserting it of EVERY maxDuration route was true while every such
+    // route was an ask route, and stopped being true when the user-corpus routes arrived: it went
+    // red on `related` (a plain vector query deliberately given 30s), demanding that route be given
+    // a 300s ceiling it has no use for. That is a test making code fit the test.
+    const pipeline = routes.filter(usesAskPipeline);
+    expect(pipeline.length, 'no ask-pipeline route found — the derivation is broken').toBeGreaterThan(0);
+    expect(pipeline, 'the ask routes must be classified as pipeline routes').toContain('web/src/app/api/ask/route.ts');
+    for (const r of pipeline) {
       expect(maxDurationLiteral(r), `${r}: maxDuration literal != ASK_MAX_DURATION_SEC`).toBe(ASK_MAX_DURATION_SEC);
+    }
+  });
+
+  it('a non-pipeline route may set its own budget, but never above the platform ceiling', () => {
+    // Drift is still caught in the direction that matters. A route whose ceiling EXCEEDS the ask
+    // family's is either a mistake or a new ceiling nobody raised deliberately; a route BELOW it is
+    // a legitimate "this should be quick" and stays legal without anything being hand-listed.
+    for (const r of routes.filter((x) => !usesAskPipeline(x))) {
+      const v = maxDurationLiteral(r);
+      expect(v, `${r}: maxDuration ${v} exceeds ASK_MAX_DURATION_SEC (${ASK_MAX_DURATION_SEC})`)
+        .toBeLessThanOrEqual(ASK_MAX_DURATION_SEC);
     }
   });
 });
