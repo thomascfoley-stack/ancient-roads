@@ -1,0 +1,13 @@
+
+
+served-reconcile — target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (read-only)
+  works with keyed rows: 136; sources rows: 135
+  published & fully served (of what may legally serve): 123
+  unpublished & fully unserved:  9
+  published, NO keyed rows (legacy author cohort / sections-model, unreachable by slug): 2 — spurgeon-talks-to-farmers, josephus-whiston
+  E3-deferred: published works with FORBIDDEN-provenance rows correctly unserved: 1 — wesley-crosswire (1021)
+  inert orphans (keyed rows, no sources row, 0 served — E3 cleanup inventory): 3 — poole-tcp (1308), pnt-crosswire (288), scofield-crosswire (1215)
+  work-less legacy rows: 112815 (12432 served) — reported, not asserted
+
+[31mDIVERGENCE — 1 violation(s):[0m
+  published-not-fully-served: calvin-crosswire — 2 clean-provenance row(s) unserved (5088/6215 served)

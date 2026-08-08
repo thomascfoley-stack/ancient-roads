@@ -10,14 +10,20 @@
 // Ranked queue: verse-anchored hymn/poetry flagships first (cheap, high-value,
 // exercise the new register path), then prose (sermons/fathers/theology), then
 // historians (staged). Resume: a work whose sources row already has embedded rows
-// is skipped. Breakers: quarantine-rate >30% of ATTEMPTED halts; a run-level cap.
+// is skipped. Breakers (INGESTION_LOOP.md §4, loop-breakers.ts): quarantine-rate
+// and consecutive-failure HALT; staged-backlog and budget PAUSE — every trip
+// writes its reason and the run emits a publish digest + escalation list
+// (loop-digest.ts → docs/evidence/ingest-runs/). Failures are classified to
+// decision-tree codes; an unmapped code is the novel-fork stop and escalates.
 
 import pg from 'pg';
-import { readFileSync, appendFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { acquireGutenberg } from './adapter-gutenberg.js';
 import { acquireCcel } from './adapter-ccel.js';
 import { assertDevBranch } from './register-writer.js';
 import { SERVED_PROSE_WORKS, SERVED_SONG_VERSE_WORKS } from '../../web/src/lib/teacher/routing.js';
+import { checkBreakers, classifyFailure, KNOWN_FAILURE_CODES, DEFAULT_BREAKERS } from './loop-breakers.js';
+import { buildDigest, digestMarkdown, type DigestRow } from './loop-digest.js';
 
 // A work is PUBLISHED (served) only if it is in the served allowlists — the same
 // lists LEGAL_CORPUS_FILTER / SONG_VERSE_CORPUS_FILTER enforce. origen-commentary,
@@ -98,6 +104,33 @@ async function main() {
   mkdirSync('data', { recursive: true });
   const log = (row: LogRow) => { appendFileSync(RUN_LOG, JSON.stringify(row) + '\n'); console.log(`  [${row.result}] ${row.slug} ${row.units ?? ''}${row.embedded ? `/${row.embedded}emb` : ''} ${row.reason ?? ''}`); };
 
+  // ── breaker + digest state (INGESTION_LOOP.md §2/§4) ──────────────────────
+  const startedAt = new Date();
+  const digestRows: DigestRow[] = [];
+  let stagedThisRun = 0;
+  const recentCodes: string[] = [];
+  let outcome: 'queue-empty' | 'paused' | 'halted' = 'queue-empty';
+  let outcomeReason: string | undefined;
+  // --staged-cap / --max-attempts / --max-hours override the defaults; the
+  // consecutive-failure and quarantine-rate limits are design constants.
+  const breakerCfg = {
+    ...DEFAULT_BREAKERS,
+    stagedCap: Number(arg('--staged-cap') ?? DEFAULT_BREAKERS.stagedCap),
+    maxAttempts: Number(arg('--max-attempts') ?? 0),
+    maxElapsedMs: Number(arg('--max-hours') ?? 6) * 60 * 60 * 1000,
+  };
+  // A failure whose code the decision tree covers quarantines the work; a code
+  // it does NOT cover is the novel-fork stop — escalate, never invent a fix.
+  const failWork = (slug: string, adapter: string, sourceType: string, message: string) => {
+    const code = classifyFailure(message);
+    const known = (KNOWN_FAILURE_CODES as readonly string[]).includes(code);
+    if (known) { quarantined++; recentCodes.push(code); }
+    const result = known ? 'quarantined' as const : 'escalated' as const;
+    const reason = `${code}: ${message.slice(0, 180)}`;
+    log({ at: new Date().toISOString(), slug, adapter, result, reason });
+    digestRows.push({ slug, adapter, sourceType, result, code, reason });
+  };
+
   let attempted = 0, quarantined = 0;
   try {
     for (const entry of queue) {
@@ -122,16 +155,23 @@ async function main() {
 
       attempted++;
       const publish = SERVED.has(slug);
+      const sourceType = entry.source_type as string;
+      const banked = (result: 'published' | 'staged', units: number, anchored: number, embedded: number) => {
+        stagedThisRun++;
+        log({ at: new Date().toISOString(), slug, adapter: acq.adapter, result, units, anchored, embedded });
+        digestRows.push({ slug, adapter: acq.adapter, sourceType, result, units, anchored, embedded });
+      };
       const runWork = async (): Promise<void> => {
         if (acq.adapter === 'gutenberg') {
           const r = await acquireGutenberg(entry, { write: true, publish });
-          log({ at: new Date().toISOString(), slug, adapter: 'gutenberg', result: publish ? 'published' : 'staged', units: r.sections, anchored: r.anchored, embedded: r.embedded });
+          banked(publish ? 'published' : 'staged', r.sections, r.anchored, r.embedded);
         } else if (acq.adapter === 'ccel') {
           const r = await acquireCcel(entry, { write: true, publish });
-          if (r.skipped) { quarantined++; log({ at: new Date().toISOString(), slug, adapter: 'ccel', result: 'quarantined', reason: r.reason }); }
-          else log({ at: new Date().toISOString(), slug, adapter: 'ccel', result: publish ? 'published' : 'staged', units: r.units, anchored: r.anchored, embedded: r.embedded });
+          if (r.skipped) failWork(slug, 'ccel', sourceType, r.reason ?? 'adapter skip, no reason');
+          else banked(publish ? 'published' : 'staged', r.units, r.anchored, r.embedded);
         } else {
           log({ at: new Date().toISOString(), slug, adapter: acq.adapter, result: 'escalated', reason: `adapter "${acq.adapter}" not run by this loop (sword/helloao/archive/github have separate paths)` });
+          digestRows.push({ slug, adapter: acq.adapter, sourceType, result: 'escalated', reason: `adapter "${acq.adapter}" not run by this loop` });
         }
       };
       try {
@@ -141,23 +181,43 @@ async function main() {
           console.log(`  ⟳ transient connection error on ${slug} — reconnecting + retrying once`);
           await reconnect();
           try { await runWork(); }
-          catch (e2) { quarantined++; log({ at: new Date().toISOString(), slug, adapter: acq.adapter, result: 'quarantined', reason: `retry failed: ${(e2 as Error).message.slice(0, 180)}` }); }
+          catch (e2) { failWork(slug, acq.adapter, sourceType, `retry failed: ${(e2 as Error).message}`); }
         } else {
-          quarantined++;
-          log({ at: new Date().toISOString(), slug, adapter: acq.adapter, result: 'quarantined', reason: (e as Error).message.slice(0, 200) });
+          failWork(slug, acq.adapter, sourceType, (e as Error).message);
         }
       }
 
-      // breaker: quarantine-rate > 30% of attempted (min 4 attempts)
-      if (attempted >= 4 && quarantined / attempted > 0.3) {
-        console.error(`\n⛔ BREAKER: quarantine rate ${quarantined}/${attempted} > 30% — halting. Investigate before resuming.`);
+      // ── the circuit breakers (INGESTION_LOOP.md §4): the loop stops itself ──
+      const trip = checkBreakers(
+        { attempted, quarantined, stagedThisRun, recentCodes, elapsedMs: Date.now() - startedAt.getTime() },
+        breakerCfg,
+      );
+      if (trip) {
+        outcome = trip.action === 'halt' ? 'halted' : 'paused';
+        outcomeReason = `${trip.breaker}: ${trip.reason}`;
+        console.error(`\n${trip.action === 'halt' ? '⛔ BREAKER HALT' : '⏸ BREAKER PAUSE'}: ${outcomeReason}`);
         break;
       }
     }
   } finally {
     await db.end();
   }
-  console.log(`\nloop done: ${attempted} attempted, ${quarantined} quarantined.`);
+
+  // ── the digest (INGESTION_LOOP.md §2/§8): the batched unit of owner review ──
+  const digest = buildDigest(digestRows, {
+    startedAt: startedAt.toISOString(),
+    endedAt: new Date().toISOString(),
+    outcome,
+    outcomeReason,
+  });
+  const stamp = startedAt.toISOString().replace(/[:.]/g, '-');
+  const digestDir = 'docs/evidence/ingest-runs';
+  mkdirSync(digestDir, { recursive: true });
+  writeFileSync(`${digestDir}/digest-${stamp}.json`, JSON.stringify(digest, null, 2));
+  writeFileSync(`${digestDir}/digest-${stamp}.md`, digestMarkdown(digest));
+  console.log(`\nloop ${outcome}${outcomeReason ? ` (${outcomeReason})` : ''}: ${attempted} attempted, ${stagedThisRun} staged/published, ${quarantined} quarantined.`);
+  console.log(`digest: ${digestDir}/digest-${stamp}.md`);
+  if (outcome === 'halted') process.exitCode = 1;
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

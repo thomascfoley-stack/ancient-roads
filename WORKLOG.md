@@ -1,5 +1,105 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-08 (ingestion cleanup) — P4.0 prepared to the owner's terminal; the loop's missing breakers and the post-flip instruments built
+
+**`fix/final-sweep`, tree clean at arrival.** Owner directive: execute the ingestion cleanup.
+Scope came from the gap analysis against `INGESTION_LOOP.md` and the A9 row: P4.0 (serve the
+published-but-unserved), the unbuilt P0.4/P0.5 instruments, and the four coded-but-absent
+circuit breakers. Evidence: `docs/evidence/p40-prep-2026-08-08/session-checks.txt`.
+
+**P4.0 IS DONE — it ran 2026-08-05, and an earlier draft of this entry said otherwise.**
+The flip executed at 06:26-06:27 UTC with `serve-89-2026-08-05.json`: **59,023 embedding rows
+-> served=true across all 89 slugs**, 0 status rows moved (a pure serve flip), gate held,
+snapshot at `work-order-v2-stage2/flip-pre-snapshot-2026-08-05T06-27-04-926Z.json`, run log
+beside it. The A9 board row ("Admission (P4.0) still OPEN") was stale by four days when I read
+it this morning, and I repeated its staleness here before finding the run log — the board's own
+warning, again. Two follow-ups happened after: 2026-08-06 the owner quarantined `calvin-calcom`
+and `augustine-confessions` back out (P0.1 aggregates: a TOC landing page and a thin duplicate;
+1,484 rows unserved, `evidence/register-cleanup/`), leaving **85 net served works** from the
+batch. Two slugs flipped with **no work-keyed rows** and need their own answers:
+`josephus-whiston` (expected — sections-model historian, shelf-served via the Book Reader) and
+`spurgeon-talks-to-farmers` (**a real residual gap** — the owner ruled "add it, so all sermons
+are live" on 08-02, but prod holds no work-keyed rows for it; either it was never copied
+dev->prod or its rows sit in the work-less flat cohort. Unresolved, needs a prod read).
+**Remaining:** nothing — verification RAN (owner go, 2026-08-08 evening). Results:
+
+- **`served-reconcile` (first live run, and it earned its existence):** 135 sources / 136 keyed
+  works. First pass found 5 "violations"; diagnosis showed the instrument, not the corpus, was
+  wrong about four of them — calvin-crosswire/wesley-crosswire's unserved remainders are
+  **biblehub-provenance rows that must STAY unserved** (the E3 deferred cleanup; serving them
+  is the licensing violation), and the three no-sources-row works (poole-tcp, pnt-crosswire,
+  scofield-crosswire; 2,811 rows, all biblehub, 0 served) are **inert E3 inventory**, not
+  ungoverned serving. The core now classifies unserved-by-provenance (fail-closed when the
+  split is absent) and red-proofs all of it (8 tests). Final prod result: **123 published works
+  fully served of everything legally servable; 1 E3-deferred (wesley-crosswire, 1,021 rows);
+  3 inert orphans; 2 published-keyless (see below); ONE real violation — `calvin-crosswire`
+  has 2 clean-provenance (`books.google.com`) rows unserved.** Serve-or-quarantine on those 2
+  rows is an owner-terminal write; flagged, not executed. Evidence:
+  `docs/evidence/p40-prep-2026-08-08/served-reconcile-prod-2026-08-08-final.txt`.
+- **`coverage-census` baseline (prod, written to
+  `docs/evidence/corpus-copy/coverage-baseline-2026-08-08.json`, 1,189 chapters):** 29,724 of
+  31,103 canon verses carry a served exegetical voice (**95.6%**); 23,981 carry ≥2 distinct
+  authors (**77.1%**); 0 served exegetical rows lack a verse key. This is the floor every P4.n
+  catch-up batch now diffs against.
+- **`spurgeon-talks-to-farmers` measured:** 298 sections in the 006 model (Book-Reader served,
+  sources row published/sermon/PD) and **zero work-keyed embeddings on prod** — it never got
+  sermon-lane rows. Serving it on /ask = a dev→prod embeddings copy + one-slug flip; small
+  Lane A follow-up, owner go. `josephus-whiston` keyless is expected (sections-model historian).
+
+**Archive.org forks RULED by the owner 2026-08-08 — ADR-110:** cross-copy containment (aligned
+sections, calibrated threshold) is the fresh-work text-match proof; fresh OCR works ship
+**staged only** until an alignment validation pass; Menno Simons **held** until a non-verse
+theology retrieval path exists. First buildable slice: Ryle on one Gospel from the 1857 scans,
+staged, with calibration evidence committed before anything is staged.
+
+The 89-slug payload had been fully pre-verified locally before the flip was found: all pass the
+slug regex, none are `serve:false` in HEAD or the working-tree manifest, all manifest-present,
+zero MUST_NOT_SERVE authors, zero `theology`/`fiction` types (the P0.1 hazard did not bite).
+
+**Built, each with red-proof tests watched fail (30 tests, all green; tsc + eslint clean):**
+
+- **`scripts/served-reconcile.mjs`** (order P0.5 — never built). The standing post-flip
+  instrument that replaces `verify-served-backfill` whose validity window ends at this flip by
+  its own header. Asserts: published ⇒ all work-keyed rows served; staged/quarantined/ingesting
+  ⇒ zero served; the work-less legacy cohort and the published-but-keyless author cohort are
+  their own lines, never folded in. Read-only; prod needs `RECONCILE_ALLOW_PROD=1` (bylaw 7).
+- **`scripts/coverage-census.mts`** (order P0.4 — never built). Per book/chapter: real verses,
+  verses with any served exegetical voice, verses with ≥2 distinct authors, over the canon from
+  `RAW_VERSE_COUNTS` (no phantom 999-sentinel verses). `--write-baseline` / `--baseline` diffs
+  enforce the pre-registered floor: no chapter that had ≥2-author coverage loses any.
+- **`src/ingest/loop-breakers.ts` + `loop-digest.ts`, wired into `adapter-loop.ts`** — the four
+  breakers the design names that the code lacked: staged-backlog PAUSE (run-scoped digest-batch
+  cap, default 30 — a global count is meaningless against ~800 already-staged dev works),
+  consecutive-failure HALT (3 identical codes), budget PAUSE (elapsed/attempts caps), and the
+  novel-fork stop made real: failures classify to decision-tree codes (`embed-429`, `fetch`,
+  `license`, `parse`); an unmapped code now lands `escalated`, not `quarantined`. Every run
+  emits `docs/evidence/ingest-runs/digest-<stamp>.{md,json}` — the publish digest and
+  escalation list the loop was always supposed to arrive with. Halt exits 1; pause exits 0.
+
+### NOT DONE / UNVERIFIED
+
+- **One real residual on prod:** `calvin-crosswire`'s 2 `books.google.com`-provenance rows are
+  unserved on a published work. Serve-or-quarantine is an owner-terminal write — flagged, not
+  executed. Everything else the reconcile names is classified, not open.
+- **`spurgeon-talks-to-farmers` has no sermon-lane rows on prod** (298 sections, 0 work-keyed
+  embeddings). Serving it on /ask needs a dev→prod embeddings copy + one-slug flip — owner go.
+- **`adapter-loop.ts` NOT EXECUTED** — no dev `DATABASE_URL` on this machine (root `.env.local`
+  has none), so the wired loop is typecheck/test-verified only. First live run should be
+  `--dry`, then a small `--only` batch.
+- **Archive.org lane is unblocked but not built** — ADR-110 ruled the forks; the Ryle slice
+  (calibrate, fetch, align, stage, validate) is its own slice, not started here.
+- **Scheduling deliberately NOT built.** Nothing in the design requires cron; its answer to
+  unattended safety is the breakers + resumability now coded. A scheduled runner would
+  auto-spend DeepInfra budget from CI secrets — an owner decision, filed here not guessed.
+- **Auto-decide auto-FIXES not wired** (re-chunk/re-anchor/re-embed per failure code). The
+  taxonomy and escalation path are coded; applying fixes autonomously without per-fix
+  re-measurement harnesses would be the open loop THE_LOOP forbids.
+- **3 root-suite failures, all PRE-EXISTING, none from this session's files:**
+  `target-guard` + `upload-root-lockfile` (no dev `DATABASE_URL` in root `.env.local`;
+  lockfile-range drift) and `user-data-invariant` (`prayers` table from migration 107 missing
+  from USER_TABLE_SPEC — Lane C's surface, likely in-flight). 674 passed / 3 failed.
+  `npm run audit` NOT RUN (refuses without a dev `DATABASE_URL`, as all week).
+
 ## 2026-08-08 (final sweep) — L1, L1b, T1 shipped; T3 code-complete; the real boundary named
 
 **`main` `636a07c` · production `af49032` · zero code commits between them.** Suite **104 files /

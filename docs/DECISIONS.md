@@ -1615,3 +1615,34 @@ Auth), and **no revoke-sessions-on-password-reset field** exists (default behavi
 
 **Status:** RULED. Proceeding with `AUTH_V2_IMPLEMENTATION.md` §7-onward. Revisit if Neon ever
 exposes a linking-policy or password-policy field.
+
+## ADR-110 — The three archive.org forks RULED: cross-copy containment, staged-only alignment, Menno held (2026-08-08)
+
+`docs/ARCHIVE_ORG_INGEST_DESIGN.md` parked three forks for the owner, each of which would corrupt
+the corpus if guessed. The owner ruled all three on 2026-08-08:
+
+- **FORK A — the fresh-work text-match proof: option (a), cross-copy containment.** A fresh
+  archive.org work proves it is the claimed PD edition by 3-gram shingle-hash containment between
+  TWO independent scans of the same edition, over aligned sections (never byte offsets — the POC
+  showed naive containment scores a same-edition pair BELOW a different-work pair), at a threshold
+  calibrated on same-edition vs different-edition pairs BEFORE first use. An uncalibrated
+  threshold is not a proof.
+- **FORK B — OCR verse-alignment: accepted as staged-only.** Fresh archive.org works are NOT
+  covered by any auto-publish pre-authorization. They ship `staged` and stay there until a
+  validation pass (spot-checked aligned entries against the scan) confirms verse attribution —
+  a wrong boundary attributes one author's words to the wrong verse, the one thing this product
+  must never do. Provenance-*repairs* (which don't re-parse) are unaffected.
+- **FORK C — Menno Simons and the non-verse `theology` works: HELD.** No `theology` retrieval
+  path exists; ingesting Menno today stores content nothing can retrieve. Do not ingest
+  non-verse works until that path has its own design. (Note: the register sweep already landed
+  treatise-form works typed `theology`/`confession` into the served theology lane; this hold is
+  specifically about works with NO verse-anchored retrieval path at all — Menno's treatises.)
+
+**First buildable slice under these rulings** (the design doc's own recommendation): J.C. Ryle
+on one Gospel via archive.org — cross-copy proof available (multiple archive.org copies of the
+1857 edition), single clean volume, passage-structured — shipped `staged` with an alignment
+validation pass, then a Lapide. Ryle's CCEL editions are already served (the 2026-08-05 flip);
+the archive.org slice adds the Anglican voice from the primary scans, not a duplicate of CCEL.
+
+**Status:** RULED. The forks unblock the archive lane; the lane's first run is its own slice
+with the calibration evidence committed before any work is staged.
