@@ -202,7 +202,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 3 | `T4` | Settings that follow the user; an account section | `-` |
 | 4 | `S1` | Landing page — show the product | `-` |
 | 4 | `S2` | Polish sweep — 9 small fixes, one branch | `~` |
-| 5 | `PR1a` | Prayer journal — the space and the entity | `-` **DRAFTED; all open questions ruled 2026-08-08. Ready to build, gated only on `N4` sequencing (it waits for this).** |
+| 5 | `PR1a` | Prayer journal — the space and the entity | `[x]` **BUILT AND DEV-VERIFIED 2026-08-08.** RLS proven two-account over `app_runtime`; carry-forward run against the live dev DB. **Prod migration 107 awaits the owner's go.** Signed-in browser walk NOT RUN (no local Neon Auth creds). |
 | 5 | `PR1b` | Prayer journal — "From the tradition" rail (separable) | `-` |
 | 5 | `PR2` | Compare a note with the tradition | `-` |
 
@@ -218,14 +218,14 @@ it is. Re-measure before trusting; this was written 2026-08-08.
 | `L2` step 2 | `x` (step 1) | Optimistic toggle — now cosmetic, since the write succeeds. Ships with any later deploy. | agent, low priority |
 | `N3` | `!` | Blocked: `N3a`'s root cause has no mechanism in the source. Unblocks only via `N3c`. | blocked by `N3c` |
 | `N3c` | `x` | **RUN 2026-08-08: did not reproduce, and the mechanism is disproved** — a both-ends-bounded dead range is not a hydration abort. Unblocks `N3`. | ⚑ owner (strike `N3a`?) |
-| `N4` | `!` | Blocked on `PR1a`: "nothing user-created dropped" needs a destination that does not exist. | blocked by `PR1a` |
+| `N4` | `-` | **UNBLOCKED 2026-08-08** — `PR1a` shipped the destination and the carry-forward that discharges the "nothing user-created dropped" ruling. Route redirect still to do. | agent |
 | `T1` | `!` | Blocked: the metric is not instrumented and there is nowhere to count it. Deliberately deferred in §9. | ⚑ owner (schedule the prerequisite) |
 | `T2` | `-` | **RULED, not executed.** Sender fix → verification on. Runnable checklist staged below. | ⚑ owner (execute) |
 | `T3` | `-` | **DEVICE only**, and its step 1 appears already implemented — so the device pass is a diagnosis, not a fix. | ⚑ owner (hardware) |
 | `T4` | `-` | **HELD** on the owner seeing the `layout.tsx:82` first-paint flash. Now schedulable against the deployed build. | ⚑ owner (observe, then rule) |
 | `S1` | `-` | **Owner-blocked in substance** — three of four items are content only the owner can write. Page skeletons staged below. | ⚑ owner (supply content) |
 | `S2` | `~` | 5 of 9 closed. Item 4 parked (needs a rendered judgment), 6 closed as a measurement, 7 out to §9, 9 parked on a design decision. | ⚑ owner (item 9's interaction call) |
-| `PR1a` | `-` | Drafted, OWNER-REVIEW. Three open questions being answered this session. | ⚑ owner → then agent |
+| `PR1a` | `[x]` | Built and dev-verified 2026-08-08. Prod migration 107 staged, awaiting owner go. | ⚑ owner (prod 107) |
 | `PR1b`, `PR2` | `-` | Wave 5, gated behind `PR1a`. Not in the remediation's definition of done. | — |
 
 ### Dependency graph
@@ -2092,7 +2092,52 @@ error-reporting leak vector in particular, which no audit caught.
 
 ### `PR1a` — Prayer journal: the space and the entity
 
-**Wave:** 5 · **Severity:** P1 Product · **Depends on:** `N1`, `N4`, soft `S2`#9 · **Blocks:** `PR1b`, `PR2` · **Status:** `[ ]`
+**Wave:** 5 · **Severity:** P1 Product · **Depends on:** `N1`, `N4`, soft `S2`#9 · **Blocks:** `PR1b`, `PR2` · **Status:** `[x]` **BUILT AND DEV-VERIFIED 2026-08-08 — production migration awaits the owner's go.**
+
+#### Completion record — 2026-08-08
+
+**Shipped.** Migration `107_prayers.sql` (own table, RLS, grants stated not assumed — the 106
+lesson, with a self-verifying `DO $$` block that raises rather than reporting a broken migration
+applied); `lib/prayers.ts`; `POST/GET /api/prayers`; `components/prayer-journal.tsx`; `/prayers`;
+the **Pray action** in the study panel; and the **first-launch carry-forward** that discharges
+`N4`'s migration ruling.
+
+**Verified against the LIVE DEV DATABASE, not a mock.**
+
+| Check | Result |
+|---|---|
+| Migration 107 applied to dev | `✓ ledger 107_prayers.sql` · grants `SELECT,INSERT,UPDATE,DELETE` · 1 policy |
+| **RLS, two accounts, over `app_runtime`** (not owner) | B cannot read / update / delete A's prayer; A's text intact; A can edit and delete their own |
+| **Carry-forward through the real data layer** | 4 prayers written to dev and read back through RLS; second run created 0; source key intact; rows cleaned up |
+| Unit + invariant suites | 20 prayer tests + 5 rendered tests green; **12 seeded red-proofs watched fail**, each on its intended test only |
+| Browser, 390px and 1280px | `/prayers` renders, **no horizontal overflow at either width** |
+
+**The Pray action is an ACTION, not a fourth tab.** `commentaries`/`word`/`notes` are facets of a
+verse; prayer is something the reader *does* with it. A tab would file responding-to-the-text
+alongside studying it — the exact conflation this block exists to undo. It carries the verse as a
+reference the prayer space pre-fills and never requires.
+
+**The carry-forward's three constraints are enforced in code and red-proofed, not asserted.** Runs
+once (marker written BEFORE the first post, so a dead tab cannot re-run what landed); best-effort
+(a failing API returns 0 and the journal still opens); **does not delete its `localStorage` source
+this release** — which is what makes the once-only guard's "a miss beats a duplicate" choice safe
+rather than lossy. A duplicated prayer is someone's words twice with no way to tell which is real.
+
+**A defect the browser pass found in this block's own code, and fixed:** a signed-out visitor was
+shown a red *"Your prayers could not be loaded"* beside a permanent *"Loading…"* — the app
+reporting its own auth state as a fault, on the page least suited to alarming anyone. `load()` now
+treats 401 as a state (a sign-in invitation) and a real failure as an error, with both branches
+red-proofed. **This is the argument for the browser pass being a gate:** every test was green.
+
+**NOT RUN, and recorded as such:** a **signed-in browser walk** — local sign-in needs Neon Auth
+credentials (`NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`) that are not in this working tree, so
+`/api/auth/get-session` 500s locally. The signed-in states are covered by rendered jsdom tests and
+by the live-dev data-layer run, which is not the same thing as a walk and is not claimed to be.
+
+**Known gap, deliberately not decided here:** the sidebar also writes a `guest` key when signed
+out, and that data is **not** carried forward. Carrying it would move one person's list into
+whichever account signs in next on a shared browser. A missed carry is recoverable (the source is
+still on disk); that leak is not. Owner call if it should be revisited.
 
 **Observed**
 
@@ -2375,6 +2420,45 @@ revisit.
 
 Anything moved out of a block during execution lands here. Pre-seeded with items deliberately
 deferred at planning time.
+
+### Filed 2026-08-08 by `PR1a`'s browser pass — two findings outside this block
+
+Both found while verifying `PR1a`, both **measured against production, not inferred**, and neither
+touched — reporting a finding is not licence to fix it in an unrelated branch.
+
+**F1 — the product's entire font stack is blocked by the product's own CSP. LIVE.**
+`layout.tsx:58,65` loads `https://fonts.googleapis.com/css2?...EB+Garamond...Literata...Source+Sans+3`.
+The production CSP header, read from `https://ancientpaths.app/`, is `style-src 'self'
+'unsafe-inline'` and `font-src 'self' data:` — no `fonts.googleapis.com`, no `fonts.gstatic.com`.
+The browser reports the stylesheet request **blocked**, and `[...document.fonts]` contains only the
+Next-served Geist faces: **not one of the three families is ever downloaded.** Readers see the
+CSS fallbacks (Georgia / Times) unless they happen to have the fonts installed locally, which is
+why this has been invisible on developer machines.
+
+> **A check that proved nothing, recorded because the near-miss is the lesson.**
+> `document.fonts.check('16px "EB Garamond"')` returned `true` and briefly read as "the font
+> loaded". The control settles it: `document.fonts.check('16px "Zzz Not A Font"')` **also** returns
+> `true`. The API answers "can text in this family be rendered", which a fallback always satisfies.
+> The load-bearing evidence is the empty face list and the explicit block message. **Run the
+> control before believing the probe.**
+
+Two remedies, and it is a deliberate choice, not a patch: self-host via `next/font/google` (keeps
+the CSP tight, removes a third-party request from every page load), or widen the CSP to allow
+Google's font hosts. Fixing it silently in a prayer-journal branch would bury a typography decision
+for the whole product inside an unrelated diff.
+
+**F2 — a stale auth gate is red at HEAD, and it now asserts the opposite of the shipped
+architecture.** `web/test/invariants/better-auth-wiring.test.ts` dates from the move *to* Better
+Auth and demands that `@neondatabase/auth` **not** be a dependency — but ADR-107/108 moved the app
+*back* to Neon Auth, so 2 of its 8 assertions fail. Verified pre-existing: red with this branch's
+changes stashed. Related dead weight from the same cutover: `src/lib/auth/better-auth.ts` is
+imported by **no production code** (only by this test), and `better-auth` is still in
+`web/package.json`. **Reassuring finding:** only one auth path is actually mounted —
+`api/auth/[...path]/route.ts` serves Neon Auth alone, so this is dead code, not a second live
+front door.
+
+Bylaw 3 says a check that cannot be made honest should be removed rather than padded, but deleting
+an auth guard written by another session is an owner-level call, so it is filed rather than taken.
 
 ### Filed by `R0` — false reuse claims, with revised estimates
 
