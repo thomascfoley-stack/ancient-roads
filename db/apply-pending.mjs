@@ -182,7 +182,26 @@ try {
     const full = path.join(DIR, f);
     const text = readFileSync(full, 'utf-8');
     try {
-      await client.query(text); // simple protocol: one implicit transaction per file
+      // CONCURRENTLY CANNOT RUN IN A TRANSACTION, AND `client.query(wholeFile)` IS ONE.
+      //
+      // A multi-statement simple query is wrapped in an implicit transaction by Postgres, so a file
+      // containing `CREATE INDEX CONCURRENTLY` does not error cleanly — it WEDGES. Measured
+      // 2026-08-08: migration 044 sat in a CI step for 35 minutes with no output and no failure,
+      // and I read it as "a slow backfill on a big table" until I opened the file. Its own header
+      // says, in as many words, "run via db/apply-migration-concurrent.mjs (splits on --SPLIT--;
+      // single client)". Eleven migrations carry CONCURRENTLY; this runner would have wedged on any
+      // of them.
+      //
+      // So: same split the concurrent runner uses, each part its own statement, no implicit
+      // transaction spanning them. The cost is that a file which fails halfway is half-applied —
+      // which is exactly why those files are written with IF NOT EXISTS and idempotent backfills,
+      // as 044's header records.
+      if (/CONCURRENTLY/i.test(text)) {
+        const parts = text.split(/^--SPLIT--$/m).map((s) => s.trim()).filter(Boolean);
+        for (const part of parts) await client.query(part);
+      } else {
+        await client.query(text); // simple protocol: one implicit transaction per file
+      }
       await recordMigration(client, full, text);
       console.log(`  ✓ ${f}`);
     } catch (e) {

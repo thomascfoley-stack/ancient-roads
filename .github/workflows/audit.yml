@@ -175,7 +175,12 @@ jobs:
           MIGRATE_TARGET_ENDPOINT: ep-tiny-bonus-at3izo3y
         run: node db/describe-target.mjs
 
+      # timeout-minutes, because this step wedged CI for 35 minutes on 2026-08-08 (CONCURRENTLY in
+      # an implicit transaction) with no output and no failure. An unbounded migration step is a way
+      # for one bad file to block every future run; 10 minutes is far above any legitimate apply
+      # here and far below "nobody notices".
       - name: apply pending migrations to the test branch
+        timeout-minutes: 10
         env:
           MIGRATE_TARGET_ENDPOINT: ep-tiny-bonus-at3izo3y
           # DERIVED, not guessed — db/describe-target.mjs read the branch on 2026-08-08 and reported
