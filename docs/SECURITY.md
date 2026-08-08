@@ -104,6 +104,34 @@ ignored. The seven better-auth GHSAs are out of `pnpm.auditConfig.ignoreGhsas`.
 > stays green. That is an unverifiable precondition and it should be recorded as one rather than
 > assumed.
 
+### `Verify at Sign-up` — OWNER-ATTESTED ON, 2026-08-08
+
+**The owner confirmed from the Neon console on 2026-08-08 that `Verify at Sign-up` is ON**, with
+**Verification method = Verification code** (not link). `Sign-up with Email` and `Sign-in with
+Email` both ON. The ruling at the top of this file is therefore in force, and GHSA-g38m's
+precondition — an *unverified* local account for a later OAuth sign-in to auto-link onto — cannot
+be created.
+
+**This is the owner's attestation of a console state, not a verification by this repo, and the
+distinction is load-bearing.** Nothing here observed the toggle and nothing here can. Specifically:
+
+- **A silent regression is undetectable.** If the toggle is ever switched off — deliberately, by a
+  Neon default change, or during a project migration — every test, gate and deploy check in this
+  repo stays green while the account-takeover precondition reassembles itself. The failure is not
+  loud, and the only signal is someone looking at the console again.
+- **Re-attest it, do not carry it forward.** This line records what was true on 2026-08-08. Reading
+  it later as "the toggle is on" is the citing-a-documented-fact-forward defect that migration 039
+  committed (watchlist, instance fifteen) and that the superseded paragraph above committed too.
+  Anyone relying on this should re-open the console, not re-read this sentence.
+
+**A coupling this creates, and it points the other way.** Verification-on makes auth mail
+**load-bearing for every new signup** — and that mail now leaves Neon's shared sender
+`auth@mail.myneon.app`, replacing the project's branded Resend sender, which C5 already records as
+a deliverability regression. So the mitigation for an account-takeover advisory is paid for with a
+hard dependency on shared-sender deliverability: **if that mail stops arriving, nobody can sign up
+at all.** That is the right trade — a blocked signup is recoverable, an auto-linked account is not
+— but it is a trade, and the failure mode moved rather than vanished.
+
 **`--expect-red` is now EMPTY.** GHSA-qq9h-g4jm-xgf3 (ADR-038) was the one declared acceptable red
 and is also gone by version. `deps-audit` correctly FAILED on "declared id no longer observed"
 before `scripts/audit.sh` was updated: a disappearance from the declared set is as much a gate
