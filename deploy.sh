@@ -298,7 +298,7 @@ fi
 # time, so a deploy missing one succeeds, prints "Done!", and then 503s or throws on every
 # request: no APP_DATABASE_URL -> every DB path throws by design (db.ts:20-25); no SITE_PASSWORD
 # -> site-wide 503 from middleware, indistinguishable from an outage and notified to nobody; no
-# DEEPINFRA_API_KEY -> /api/ask throws; no NEON_AUTH_* -> login broken.
+# DEEPINFRA_API_KEY -> /api/ask throws; no BETTER_AUTH_*/NEON_AUTH_* -> login broken.
 #
 # NAMES ONLY. `vercel env ls` never prints values and neither does this.
 #
@@ -307,6 +307,16 @@ fi
 # the table format ever changed, every variable would read as missing and the STOP would blame
 # the project for the parser's problem. Now a failed command and an unparseable table each say so
 # in their own words, and neither is reported as "missing variables".
+#
+# BOTH AUTH SYSTEMS, WHILE BOTH RUN (2026-08-08, ADR-107/108/109, AUTH_V2_IMPLEMENTATION.md §9).
+# This list checked only NEON_AUTH_* — stale in both directions per pre-deploy audit finding 15:
+# production has run on BETTER_AUTH_URL/BETTER_AUTH_SECRET since the 2026-08-05 cutover (checked
+# nowhere here), and the Neon Auth cutover now under way still leaves better-auth.ts in the tree
+# until step 10. Added the Better Auth pair; drop it once step 10 removes the package. Removed
+# NEON_AUTH_JWKS_URL — it is not a real config field on the installed
+# `@neondatabase/auth@0.4.2-beta` SDK (checked its types directly: `NeonAuthConfig` is
+# `{baseUrl, cookies, logger, logLevel}`), and no code anywhere in this repo reads it; `jwks` is
+# just a method the SDK derives from `baseUrl`, not a separate env var.
 # ---------------------------------------------------------------------------
 echo ""
 echo "Checking production environment..."
@@ -326,7 +336,8 @@ if [ -z "$ENV_NAMES" ]; then
 fi
 MISSING=""
 for v in APP_DATABASE_URL DATABASE_URL DEEPINFRA_API_KEY SITE_PASSWORD \
-         NEON_AUTH_BASE_URL NEON_AUTH_COOKIE_SECRET NEON_AUTH_JWKS_URL; do
+         BETTER_AUTH_URL BETTER_AUTH_SECRET \
+         NEON_AUTH_BASE_URL NEON_AUTH_COOKIE_SECRET; do
   printf '%s\n' "$ENV_NAMES" | grep -qx "$v" || MISSING="$MISSING $v"
 done
 if [ -n "$MISSING" ]; then

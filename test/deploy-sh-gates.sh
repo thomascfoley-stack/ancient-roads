@@ -76,7 +76,8 @@ case "$cmd" in
         else
           printf '%s\n' "  name                       value       environments   created"
           for n in APP_DATABASE_URL DATABASE_URL DEEPINFRA_API_KEY SITE_PASSWORD \
-                   NEON_AUTH_BASE_URL NEON_AUTH_COOKIE_SECRET NEON_AUTH_JWKS_URL; do
+                   BETTER_AUTH_URL BETTER_AUTH_SECRET \
+                   NEON_AUTH_BASE_URL NEON_AUTH_COOKIE_SECRET; do
             case " ${FAKE_ENV_DROP:-} " in *" $n "*) continue ;; esac
             printf '  %-26s Encrypted   Production     1d ago\n' "$n"
           done
