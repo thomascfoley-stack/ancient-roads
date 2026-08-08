@@ -240,3 +240,169 @@ all client measurements are Chromium, and `mask-image` and `accent-color` were n
 `db-invariants` red on `main` is flaky or real; Vercel dashboard build settings, which can shadow
 `vercel.json`; and the live ACL state of any database — every data-layer conclusion is derived from
 migration text, deliberately, since no agent held credentials.
+
+---
+
+# A1 — attack-surface lens, completed 2026-08-07
+
+The lens that died mid-run in the first sweep, re-run as **two** non-overlapping agents (upload/parse,
+and routes/authz) because the original exhausted itself trying to cover both. Both completed.
+
+**This closes the coverage gap named above.** It also changes the verdict's shape: the first sweep
+blocked the deploy on a build failure. These findings block it on **security**, and two of them are
+live on production today.
+
+## CRITICAL
+
+- [ ] **A1-1. ReDoS in the .docx text extractor — a 919-byte upload burns 46 seconds of CPU.**
+      `web/src/lib/user-corpus/parse-docx.ts:129,130,131,138`. All four regexes are
+      `<w:tag` + `[^>]*` + a required terminator; on input where the terminator never arrives the
+      engine retries every prefix from every start offset.
+      **Independently reproduced** with the verbatim regexes copied from the file — clean quadratic:
+
+      | payload | `<w:tab` pass |
+      |---|---|
+      | 16 KB | 22 ms |
+      | 32 KB | 90 ms |
+      | 64 KB | 354 ms |
+      | 128 KB | 1,418 ms |
+
+      Each doubling costs ~4×. The agent measured the same curve end-to-end through the real
+      `parseDocx` (512 KB of `document.xml`, a **919-byte** upload → 46,047 ms, extracting 0 chars).
+      **The zip-bomb cap does not bound this — it authorises it:** `MAX_DECOMPRESSED_BYTES` is
+      80 MB, three orders of magnitude above what is needed. A document.xml at the cap compresses
+      to ~150 KB, legal under both caps, and extrapolates to days of CPU per file.
+      *Reachable:* `access.ts:34` sets `MULTI_USER_UPLOADS = true`, so any signed-up account can
+      POST to `/api/user-corpus/upload`, which has **no rate limit**. The work runs in `after()`
+      *after* the 201 returns, `drain()` processes 5 documents per invocation, and `MAX_ATTEMPTS = 3`
+      re-serves each payload three times.
+      *Fix shape:* bound the input to the regex pass, or make the tag scanner non-backtracking.
+
+## HIGH
+
+- [ ] **A1-2. Better Auth's rate limiter is in-memory, so signup / signin / password-reset are
+      effectively unthrottled on serverless.** `web/src/lib/auth/better-auth.ts:52-123` sets neither
+      `rateLimit` nor `secondaryStorage`, so storage defaults to a module-level `Map` — one per
+      lambda instance, reset on every cold start. The library defaults (3/10s on sign-in/sign-up,
+      3/60s on forget-password) bound one instance, not one attacker. **This repo built a DB-backed
+      limiter (`api_rate_limit`) for `/api/gate` and `/api/ask` and left the highest-value endpoints
+      on the library default.** With `requireEmailVerification: false`, fleet-width signup is free.
+- [ ] **A1-3. One attacker can take `/ask` offline for everyone.** `web/src/lib/rate-limit.ts:30,99-105`.
+      Per-user caps key on `user.id`, and accounts are free, unverified and (per A1-2) unthrottled;
+      `ASK_LIMIT_GLOBAL_PER_DAY` (2,000) is the only surviving bound. ~20 accounts × 100 asks
+      returns `limited: 'global'` for every real user until midnight UTC. No allowlist or priority
+      tier. **Holds even if A1-2 is fully fixed.**
+- [ ] **A1-4. No advisory scan ever reads the lockfile that ships.** `scripts/deps-audit.mjs:39-63`,
+      `scripts/audit.sh:47` run `pnpm` against the **root** `pnpm-lock.yaml`; production installs
+      `web/package-lock.json` with `npm ci`. Different resolvers, different lockfiles, different
+      transitive closures — and only one is scanned. This is the same two-lockfile split that
+      produced blocking finding 1, in the control that was supposed to catch the pdfjs advisory.
+
+## MEDIUM
+
+- [ ] **A1-5. Open redirect in the gate's `next` parameter.** `web/src/app/api/gate/route.ts:46,57`.
+      The guard is `startsWith('/') && !startsWith('//')`; WHATWG URL treats `\` as `/`, so
+      `next=/\evil.com` passes. **Independently reproduced:** `new URL('/\\evil.com', …)` →
+      `https://evil.com/`. A preview-holder is sent `…/gate?next=/\evil.com`, types the shared
+      password, and is 303'd to a clone that asks for it again. `form-action 'self'` does not cover
+      redirect destinations.
+- [ ] **A1-6. `BETTER_AUTH_URL` is optional with no boot assertion.** `better-auth.ts:54`. If unset,
+      dropped or rotated to empty, the base URL is inferred from the request Host header — so
+      `POST /api/auth/forget-password` with a spoofed `Host` mails the victim a valid reset token
+      pointing at the attacker. Account takeover from a real email from the real sender. Contrast
+      `db.ts:24-29`, which throws on a missing URL.
+- [ ] **A1-7. `/api/messages` returns an unbounded result set.** `route.ts:12` → `chat.ts:97-108`.
+      `limit` is `parseInt`'d and flows straight into `LIMIT ${limit}` with no range check. Direct
+      CLAUDE.md breach ("never return unbounded result sets").
+- [ ] **A1-8. No length caps and no rate limit on any authenticated write route.**
+      `annotations/route.ts:41-45`, `messages/route.ts:28-44`, `channels/route.ts:18-22`,
+      `chats/route.ts:18-22`, `plans/route.ts:63`. Only the bookmark `label` is capped. Uncapped:
+      note bodies, message `content`, `sources` (arbitrary `unknown` → `jsonb`), channel/chat names.
+      `POST /api/plans` with `weeks:104, daysPerWeek:7` writes 728 `plan_days` rows per call,
+      repeatable; `listPlans` caps the *read* at 100, which hides the growth.
+- [ ] **A1-9. `/api/eval/bait` bypasses every ask limiter** — `route.ts:12,22-32` calls `teach()`
+      directly with `maxDuration = 300`. Auth is a sound constant-time bearer check that fails
+      closed, but a leaked `EVAL_HARNESS_SECRET` (a CI/ops value, wider blast radius than a session)
+      is an uncapped bill where a leaked user session is capped at 100/day.
+- [ ] **A1-10. `/api/search/works` caps neither `q` nor the `work` slug**, while its sibling
+      `search/commentaries/route.ts:62,66` caps both. The catalog page applies no filter-cardinality
+      bound although the API route does (`MAX_FILTER_VALUES = 32`). Both unauthenticated, and the
+      per-IP throttle fails **open** by design (`public-read-limit.ts:20-24`).
+- [ ] **A1-11. The pdfjs "RCE fix" is a version bump, and its stated mechanism is not corroborated.**
+      `parse-pdf.ts:49-61`. The bump is real and complete (6.2.108 in all four version records), but
+      `isEvalSupported` and `new Function(` occur **zero times in both 5.7.284 and 6.2.108** worker
+      builds — pdf.js removed that machinery before either release. So `d589140`'s claim of
+      "arbitrary JavaScript execution on opening a malicious PDF" is not supported by its own
+      before-state. Neither agent could establish what the advisory was or that 6.2.108 is the first
+      fixed version. **Treat "the RCE is fixed" as resting on npm's advisory DB, not on anything
+      verified here** — and correct the commit's claim rather than leaving it as repo history.
+- [ ] **A1-12. `cmaps/` and `wasm/` are shipped by pdfjs 6.2.108 and traced by nothing.**
+      `next.config.ts:73-78` names only the worker and `standard_fonts`. `parse-pdf.ts` sets no
+      `cMapUrl`, and `ignoreErrors` defaults true — so a CJK PDF yields near-zero text, which
+      `judgeExtraction` converts to `needs_ocr`. **A silent wrong verdict** in a module whose header
+      promises never to index silently.
+- [ ] **A1-13. Server paths and third-party error bodies reach any uploader.**
+      `parse-pdf.ts:75` → `queue.ts:176` → `documents.ts:48` → the documents API. `d589140`'s own
+      body quotes `Cannot find module '/var/task/node_modules/pdfjs-dist/…'`. Deployment layout,
+      dependency paths and vendor error text all reach the client. The synchronous route boundary is
+      correctly generic; the leak is entirely on the async queue path.
+- [ ] **A1-14. The 25 MB upload cap is enforced after the body is fully in memory.**
+      `upload/route.ts:27,33,36` — `formData()` and `arrayBuffer()` both buffer before
+      `assertWithinSizeCap` runs.
+
+## LOW
+
+- [ ] **A1-15.** `middleware.ts:57` — matcher exclusions are not segment-anchored; `/gateway`,
+      `/gate-status`, `/api/gateway` all bypass the middleware. Latent (no such route exists), but
+      the next route named `/gate*` ships with no gate and no fail-closed behaviour.
+- [ ] **A1-16.** `catch { return 401 }` conflates auth failure with server and RLS failure on four
+      routes (`annotations`, `channels`, `chats`, `messages`). `annotations/all/route.ts:6-20`
+      documents this exact defect and fixes it for itself; the four routes it names as precedent
+      were never changed. **A real isolation failure would be triaged as a session bug.**
+- [ ] **A1-17.** `annotations/route.ts:41` → `highlight-colors.ts:30` — unvalidated `color` reaches a
+      prototype-chain lookup. Not XSS, self-inflicted. Third instance of a class this repo already
+      fixed twice, in the two places the author was looking at.
+- [ ] **A1-18.** `parse-pdf.ts:46-77` — the missing `task.destroy()` on the rejection path is
+      **CONFIRMED as code and REFUTED as consequence**: 200 consecutive failing parses held
+      `heapUsed` flat at 102-104 MB and exited clean. pdf.js 6 uses a same-thread fake worker under
+      Node, and `_transport` is still null on that path. One-line hygiene fix; a genuine leak only
+      when pdfjs gains a real `worker_threads` path.
+- [ ] **A1-19.** `parse-pdf.ts:98` — `await task.destroy()` in the `finally` rethrows, masking the
+      parse error it was unwinding.
+- [ ] **A1-20.** `/api/health` discloses git SHA, corpus hash, file count and published-work count
+      unauthenticated once the gate is removed, with a DB round-trip per request and no throttle.
+
+## What A1 verified clean — the parts that genuinely hold
+
+**Upload/parse:** file type is sniffed from magic bytes, never trusted from `Content-Type` or the
+extension, and the door and the parser call the *same* function so they cannot disagree. The
+declared-size zip-bomb cap holds empirically (a 199 KB .docx declaring 200 MB refused in 1 ms);
+zip64 sentinels, non-deflate methods and header bounds all refuse rather than parse. **No SSRF** —
+`data:` only, never `url`/`range`; `enableScripting` never passed so the sandbox never loads;
+`useWorkerFetch:false`, `disableFontFace:true`. **No eval sinks** in either pdfjs build. No path
+traversal — storage keys are `userId` + a server-generated uuid; the user filename never enters the
+key. Strict UTF-8 for txt/md.
+
+**Routes:** **IDOR is clean across every user-scoped read and write traced** — `annotations.ts` (11
+functions), `chat.ts` (8), `plan/store.ts` (5), `library.ts` (6) each run through `runAsUser` **and**
+carry an explicit `user_id =` predicate; child-table inserts use `INSERT … SELECT … WHERE EXISTS`.
+No SQL injection: every dynamic value is bound; the only interpolated fragments are compile-time
+constants. `/api/gate` uses `timingSafeEqual` with a length pre-check, throttles *before* comparing,
+and reads `x-forwarded-for` rightmost — returning `null` rather than a shared bucket, which is
+correct and unusual. `/api/ask` orders auth → limit → parse → cap before `teach()`, and the limiter
+fails **closed**. `BETTER_AUTH_SECRET` fails closed in both directions. Sessions are `__Secure-`
+prefixed on https with `revokeSessionsOnPasswordReset`. Next.js 16.3.0 is past CVE-2025-29927
+(the middleware bypass — checked because the middleware is the gate). `?page=1e9` is genuinely
+closed. Prompt injection is architecturally bounded: the verifier runs server-side before any `done`
+event, so raw model text cannot reach the client.
+
+## Coverage after A1
+
+Every one of the 26 API route handlers is now audited — 19 by the routes lens, 7 by the upload lens.
+
+**Still not covered:** nothing was driven against a running server or a live database, so A1-2,
+A1-3, A1-7 and A1-6 are high-confidence code reads, **not red-proofed** (A1-1 and A1-5 are the two I
+reproduced myself). No second account, so nothing here speaks to RLS as enforced in production. The
+teacher/verifier internals and `sanitizeSnippet` were traced at the boundary but not line-audited —
+that is an AI-pipeline lens. No encrypted PDF and no CJK PDF were constructed, so A1-12 rests on
+package layout and defaults rather than an observed run.

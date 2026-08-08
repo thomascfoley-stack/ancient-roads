@@ -12,7 +12,7 @@ Last measured: 2026-08-07, branch `fix/L2` @ `7bc3bdd`.
 |---|---|---|
 | `docs/UX_REMEDIATION.md` | **The master doc.** 19 blocks, 5 waves, status board §1, per-block exit tests | Live; v1.4 |
 | This file | Sequencing, sizing, blockers | New |
-| `docs/evidence/predeploy-audit-2026-08-07/CHECKLIST.md` | 39 audit findings — **belongs to no wave** | 2 closed, 37 open |
+| `docs/evidence/predeploy-audit-2026-08-07/CHECKLIST.md` | 59 audit findings — **belongs to no wave** | 2 closed, 57 open |
 | `docs/pm/MASTER.md` | Repo programme sheet (Lanes A/B) | **Had no row for this work until now** |
 
 **Three streams run in parallel and only one is in the spec.** That is the thing to hold onto when
@@ -24,7 +24,8 @@ deploy.
 **Done:** `R0` (recon — killed 4 false "reuse" claims), `INSTR` (diagnosed both loops).
 **Partial:** `L2` step 1 — migration 106 applied to production; `Mark as read` and `Delete plan`
 work for the first time ever. Step 2 (optimistic toggle) deferred to the next deploy.
-**Deploy blockers:** 2 of 5 closed (lockfile + its guard). 3 open.
+**Deploy blockers:** 3 of 5 closed (lockfile, its guard, A1). 2 open — CI red, rollback doc.
+**New from A1:** a CRITICAL ReDoS and two HIGHs that are live on production now, independent of the deploy.
 
 Everything else is `-`.
 
@@ -37,7 +38,7 @@ Three separate items are stuck behind this: `L1`'s retry control (already writte
 
 | # | Item | Size | Gate |
 |---|---|---|---|
-| A1 | Re-run the attack-surface audit lens — it died mid-run and owned the pdfjs 5→6 major bump | 1 session | — |
+| A1 | ~~Re-run the attack-surface audit lens~~ **DONE 2026-08-07.** Split into two lenses (upload/parse, routes/authz); both completed. **20 findings, 1 CRITICAL, 3 HIGH.** All 26 API routes now audited. Two reproduced independently. Verdict shifted: the deploy was blocked on a build failure, it is now blocked on **security** | done | — |
 | A2 | Push `fix/L2`; get CI green. `db-invariants` is red on `main` (`work-reader.test.ts:246`, 429-before-400) — unknown if flaky | 1 session | may be a real bug |
 | A3 | Fix `DEPLOY_PREFLIGHT.md`'s rollback target — it names a 3-week-old deploy as live and points recovery at a bundle predating migrations 044/045 | small | — |
 | A4 | **Deploy** | ⚑ owner | A1–A3 |
@@ -83,7 +84,24 @@ Ordered by the spec's waves. Sizes are from `R0`'s findings, not guesses.
 definition of done. `PR1a` also grew: `R0` found the Channels shell it was to reuse is
 localStorage-only, so it must build its own persistence.
 
-## Stream C — audit findings (37 open)
+## Stream C — audit findings (57 open, 1 CRITICAL)
+
+**A1 added 20, and three of them are not deploy blockers — they are live defects on production
+today**, reachable by any signed-up account once the preview gate comes off:
+
+- **A1-1 CRITICAL** — .docx ReDoS: a 919-byte upload burns 46s of CPU; the 80 MB decompression cap
+  authorises rather than bounds it. Reproduced independently (quadratic confirmed).
+- **A1-2 HIGH** — Better Auth's limiter is in-memory, so signup/signin/reset are unthrottled on
+  serverless. This repo built a DB-backed limiter for `/api/gate` and `/api/ask` and left the
+  highest-value endpoints on the library default.
+- **A1-3 HIGH** — one attacker can exhaust the 2,000/day global ask ceiling and take `/ask` offline
+  for everyone. Holds even after A1-2 is fixed.
+
+Also **A1-11**: the pdfjs "RCE fix" (`d589140`) is a version bump whose stated mechanism is not
+corroborated by its own before-state — `isEvalSupported`/`new Function` occur zero times in *both*
+versions. The commit's claim should be corrected in repo history rather than left standing.
+
+
 
 Not in any wave and mostly not blocking, but two deserve scheduling:
 
@@ -121,7 +139,15 @@ conversation about people and hardware, not about agent time.
 
 ## Suggested next three sessions
 
-1. **A1 + A2** — re-run the attack-surface lens, push, resolve the CI red.
-2. **A3 + A4** — fix the rollback doc, deploy. Unblocks `L1`, `L2` step 2, UX-5.
-3. **`L2c` + `L2b` + `N1`** — three small, independent, high-visibility blocks; closes Wave 1's
-   remainder and starts Wave 2.
+**Revised after A1**, whose findings outrank the deploy: three of them are live on production now
+and do not wait for a ship.
+
+1. **A1-1 (CRITICAL ReDoS) + A1-5 (open redirect)** — both reproduced, both small, both live. The
+   ReDoS is a bounded-input fix on four regexes; the redirect is one guard.
+2. **A1-2 + A1-3** — move Better Auth onto the DB-backed limiter this repo already has, and give
+   the global ask ceiling something an attacker cannot trivially exhaust. ⚑ A1-3's remedy is a
+   product decision (allowlist? priority tier? per-IP floor?), not just code.
+3. **A2 + A3 + A4** — CI green, rollback doc, deploy. Unblocks `L1`, `L2` step 2, UX-5.
+
+Then `L2c` + `L2b` + `N1` — three small, independent, high-visibility blocks that close Wave 1's
+remainder and start Wave 2.
