@@ -7,17 +7,37 @@
 > Measured that day: `@neondatabase/auth@latest` is still `0.4.2-beta`, still pinning
 > `better-auth@1.4.18`. See [`AUTH_NEON_MANAGED_EVALUATION.md`](./AUTH_NEON_MANAGED_EVALUATION.md)
 > — including the standing rule: **do not migrate while Neon's managed version is below 1.6.11.**
-> **RE-OPENING IN PROGRESS 2026-08-08** (ADR-107, ADR-108, ADR-109) — cutover mid-implementation
-> on `fix/a1-security`, not yet deployed. **GHSA-g38m is not merely re-opened by version this
-> time: the in-path account-takeover it names is unmitigated and active by configuration**, because
-> Google OAuth is already enabled in the Neon Auth console (shared/test keys) alongside
-> email/password, and the owner accepted that risk knowingly (ADR-109) after three independent
-> checks (SDK types, OAuth setup guide, management API schema) found no account-linking lever
-> exposed anywhere on the current surface — corroborating the "NOT POSSIBLE" finding below.
-> Two more gaps found the same way: no minimum-password-length field and no
-> revoke-sessions-on-password-reset field exist in Neon's `email_and_password` config at all.
-> **Do not mark this CLOSED again once Neon Auth actually serves production** — update this block
-> instead, citing ADR-109.
+> **RE-OPENED, AND LIVE ON PRODUCTION, 2026-08-08** (ADR-107, ADR-108, ADR-109). Neon Auth serves
+> `ancientpaths.app` as of deploy `f197406` (`dpl_9sEyz51uegvYXbiGbNc4afMW61i7`); email/password
+> and Google sign-in both verified working. `@neondatabase/auth@0.4.2-beta` is installed, pinning
+> `better-auth@1.4.18` — the dependency this entire section is rooted in.
+>
+> **GHSA-g38m is no longer merely re-opened by version: its precondition is fully assembled and
+> reachable by any visitor.** Confirmed against the Neon console 2026-08-08 — sign-up with email
+> ON, **`Verify at Sign-up` OFF**, Google OAuth live. So an attacker can register an address they
+> do not own, unverified, and the real owner's later Google sign-in auto-links onto that account.
+> No verified-email-before-link control exists anywhere on Neon's surface: SDK types, the OAuth
+> setup guide, and the management API schema were each checked independently, corroborating the
+> 2026-07-08 "App-level mitigation: NOT POSSIBLE" finding below against the current version.
+> The owner accepted this knowingly (ADR-109) and then shipped the Google button that exercises it.
+>
+> **The one available mitigation is a console toggle, and it is a trade-off, not a free win:**
+> turning `Verify at Sign-up` ON breaks the precondition, but costs the property that a mail outage
+> must never lock out every account including the owner's (`requireEmailVerification: false`, held
+> deliberately since the 08-05 cutover). Neither state is safe in both directions. UNDECIDED.
+>
+> Two further gaps from the same API-schema read: **no minimum-password-length field** and **no
+> revoke-sessions-on-password-reset field** exist in Neon's `email_and_password` config, so the
+> 12-char minimum and reset-revokes-sessions properties Better Auth enforced are UNENFORCED and
+> UNVERIFIABLE here. The 12-char rule now lives only in the client form (`auth-forms.tsx`), which
+> is a hint, not a control.
+>
+> **Not a CVE, but security-adjacent and easy to lose:** auth mail now comes from Neon's shared
+> server as `auth@mail.myneon.app`, replacing the project's own Resend sender. Password-reset mail
+> — the account-recovery path — now arrives from a domain readers have no reason to trust.
+>
+> **Do not mark this CLOSED without re-measuring.** Closure requires the managed better-auth
+> version to reach ≥1.6.11, which is Neon's to ship, not ours.
 **Status: CLOSED 2026-08-05. The cutover is live on production.**
 Deployment `dpl_HSUsCqGCwWVPrQuG4bL1MBq3hJFg` from `e0cfd24`, aliased to `ancientpaths.app`.
 Migrations 100-104 applied to `ep-odd-fog` and recorded in `schema_migrations`. **Verified by

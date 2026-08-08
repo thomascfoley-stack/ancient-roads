@@ -20,6 +20,14 @@ be building against something that cannot run, and you would not find out until 
 | 1 | **Enable Auth** on the Neon project | Neon Console → project → Auth → "Enable Auth" |
 | 2 | Copy the **Auth URL** → becomes `NEON_AUTH_BASE_URL` | Neon Console → Auth → Configuration tab |
 | 3 | Mint `NEON_AUTH_COOKIE_SECRET` (`openssl rand -base64 32`) and set **both** vars in Vercel **production** | Vercel dashboard |
+| 4 | **Add `https://ancientpaths.app` to trusted domains** — required for OAuth **and** email-verification redirects | Neon Console → Auth → Configuration → Domains |
+
+> **Action 4 was missing from this list on 2026-08-08 and cost a debugging cycle.** The list was
+> empty, and Neon's own wording is absolute: "Your app will only redirect to domains on this list.
+> All others will be blocked." A correct build with correct env vars still fails, and **nothing in
+> the repo can see it** — not the SDK types, not `deploy.sh`'s env assertion, not any test. The
+> symptom is a Google sign-in that dies at the redirect with no local signal. Check it FIRST when
+> OAuth misbehaves.
 
 Ask the owner to confirm all three before starting. If they are not done, **say so and stop** —
 that is the correct outcome, not a blocker to work around.

@@ -1,5 +1,62 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-08 — Google SSO LIVE and working; the Neon Auth cutover is functionally complete
+
+`f197406` deployed and verified: alias `ancientpaths.app` serves `dpl_9sEyz51uegvYXbiGbNc4afMW61i7`,
+receipt `state: live`. **Owner confirmed Google sign-in works end to end.** That is the first proof
+the whole Neon Auth path functions — OAuth round trip out to Google and back, session established,
+trusted-domain policy satisfied. Email/password and Google are both live.
+
+**The missing piece was console config, not code.** Neon's trusted-domains list was EMPTY, and its
+own text is unambiguous: "Your app will only redirect to domains on this list. All others will be
+blocked." Adding `https://ancientpaths.app` is what made the flow complete. Worth recording because
+nothing in the repo, the SDK types, or the deploy gate can see that setting — a correct build would
+have failed indefinitely with no local signal. The runbook's §0 owner-actions list did not include
+it; **it should.**
+
+**§7 property VERIFIED from the console, not assumed:** `Verify at Sign-up` is **OFF**, matching
+Better Auth's `requireEmailVerification: false` — the property that stops a mail outage locking out
+every account including the owner's. Carried over correctly.
+
+### Console findings recorded, three of them adverse
+
+1. **GHSA-g38m is now ACTIVELY EXERCISED, not merely accepted.** ADR-109 accepted the risk when no
+   button existed. The console now shows the exploit's full precondition assembled: sign-up with
+   email ON, `Verify at Sign-up` OFF (so anyone can register an address they do not own,
+   unverified), and Google OAuth live. A later Google sign-in by the real owner of that address
+   auto-links onto the attacker's account. No verified-email-before-link control exists on Neon's
+   surface (SDK types, OAuth guide, management API — all three checked, 2026-08-08). **Turning
+   `Verify at Sign-up` ON would break the precondition, at the cost of the lockout property above.
+   That is a live owner trade-off, not a settled one.**
+2. **Auth email is a REGRESSION.** Neon uses its **shared** mail server, sender
+   `auth@mail.myneon.app`. Better Auth sent reset/verification mail through the project's own
+   Resend account with Ancient Paths branding (`sendResetPassword` / `sendVerificationEmail` in
+   `better-auth.ts`, both now dead code for auth). Password resets now arrive from a `myneon.app`
+   address readers have no reason to recognise, with worse deliverability on a security-critical
+   mail. Fixable via the console's "Configure email provider".
+3. **Google is on Neon's SHARED development keys.** Neon's own production checklist says replace
+   them. Until then the consent screen names Neon, not Ancient Paths.
+4. **`Allow Localhost` is ON**, which Neon's hint says reduces production security. Fine while
+   testing locally; should be off otherwise.
+
+### NOT DONE / UNVERIFIED
+
+- **RLS under Neon's user-id format is STILL UNPROVEN, and this is the biggest remaining risk.**
+  A successful sign-in proves a session exists; it does NOT prove `runAsUser` binds
+  `app.current_user_id` to a value the policies match. The failure mode is silent: policies that
+  match nothing read as "no data" (looks like the expected clean start) rather than as an error.
+  **Needs a real write-then-read, and a two-account check, before anyone trusts tenancy.** The old
+  two-account suites (`tenancy`, `highlight-tenancy`, `plan-tenancy`) are the right harness and
+  currently NOT RUN for want of a dev DB URL.
+- **Rate limiting on Neon's auth endpoints: unverified and undocumented.** A1-2's fix does not
+  transfer (the managed service owns its limiter); Neon documents no auth-endpoint limits.
+- **The sign-out trap remains OPEN** — see the prior entry. Anyone holding a pre-cutover cookie
+  gets a false "you are still signed in" alert that freezes the page behind it.
+- **§10 has NOT run.** Migration 104's `auth_*` tables, the Better Auth tests, and the `better-auth`
+  package are all untouched, so rollback is still `git revert` + redeploy. SEC-1's re-opening
+  (§10 item 4) is recorded in `docs/SECURITY.md` but the package removal is not done.
+- `npm run audit` still refuses locally (no dev `DATABASE_URL`).
+
 ## 2026-08-08 — Neon Auth LIVE, verified; the "broken UI" diagnosed; Google SSO added
 
 **Deployed and verified serving.** `117b64e` live on `ancientpaths.app`, deployment
