@@ -84,16 +84,16 @@ Ordered by the spec's waves. Sizes are from `R0`'s findings, not guesses.
 definition of done. `PR1a` also grew: `R0` found the Channels shell it was to reuse is
 localStorage-only, so it must build its own persistence.
 
-## Stream C — audit findings (55 open, 0 CRITICAL)
+## Stream C — audit findings (54 open, 0 CRITICAL)
 
 **A1 added 20, and three of them are not deploy blockers — they are live defects on production
 today**, reachable by any signed-up account once the preview gate comes off:
 
 - ~~**A1-1 CRITICAL** — .docx ReDoS~~ **FIXED 2026-08-07 (`1ab40de`)**, red-proofed; 5657-11260×
   faster at 256 KB, full web suite green.
-- **A1-2 HIGH** — Better Auth's limiter is in-memory, so signup/signin/reset are unthrottled on
-  serverless. This repo built a DB-backed limiter for `/api/gate` and `/api/ask` and left the
-  highest-value endpoints on the library default.
+- ~~**A1-2 HIGH** — Better Auth's in-memory limiter~~ **FIXED 2026-08-07 (`3426186`)**, red-proofed
+  under real concurrency (50 simultaneous → exactly 3 allowed, no lost updates). No migration
+  needed; `api_rate_limit` already existed.
 - **A1-3 HIGH** — one attacker can exhaust the 2,000/day global ask ceiling and take `/ask` offline
   for everyone. Holds even after A1-2 is fixed.
 
@@ -143,9 +143,8 @@ conversation about people and hardware, not about agent time.
 and do not wait for a ship.
 
 1. ~~**A1-1 + A1-5**~~ **DONE 2026-08-07** (`1ab40de`, `d6a1e22`), both red-proofed.
-2. **A1-2 + A1-3** — move Better Auth onto the DB-backed limiter this repo already has, and give
-   the global ask ceiling something an attacker cannot trivially exhaust. ⚑ A1-3's remedy is a
-   product decision (allowlist? priority tier? per-IP floor?), not just code.
+2. ~~A1-2~~ **DONE** (`3426186`). **A1-3 remains** ⚑ — its remedy is a product decision (allowlist?
+   priority tier? per-IP floor?), not just code, and needs the owner.
 3. **A2 + A3 + A4** — CI green, rollback doc, deploy. Unblocks `L1`, `L2` step 2, UX-5.
 
 Then `L2c` + `L2b` + `N1` — three small, independent, high-visibility blocks that close Wave 1's

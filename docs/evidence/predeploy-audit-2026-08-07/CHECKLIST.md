@@ -280,7 +280,7 @@ live on production today.
 
 ## HIGH
 
-- [ ] **A1-2. Better Auth's rate limiter is in-memory, so signup / signin / password-reset are
+- [x] **A1-2. FIXED `3426186`.** Better Auth's rate limiter is in-memory, so signup / signin / password-reset are
       effectively unthrottled on serverless.** `web/src/lib/auth/better-auth.ts:52-123` sets neither
       `rateLimit` nor `secondaryStorage`, so storage defaults to a module-level `Map` — one per
       lambda instance, reset on every cold start. The library defaults (3/10s on sign-in/sign-up,
@@ -426,3 +426,34 @@ with the fix it passes and genuine paths (`/read/jhn/1#v14`, `?q=grace`) survive
 
 **Still open from A1:** A1-2 and A1-3 (both HIGH, both live) — A1-3's remedy needs an owner call on
 what replaces a flat global ceiling. A1-4, and the MEDIUM/LOW list.
+
+
+## A1-2 closed — 2026-08-07 (`3426186`)
+
+Better Auth now rate-limits through `api_rate_limit` (migration 008), the table already backing
+`/api/gate` and `/api/ask`. **No new table, no migration, no dependency** — the mechanism existed
+and simply was not wired here.
+
+Two choices worth recording. **`customStorage`, not `secondaryStorage`**: the latter would also
+relocate *session* storage, far beyond this finding. **`consume`, not `get`/`set`**: Better Auth
+prefers an atomic `consume` and otherwise falls back to `legacyConsume`, whose own source comment
+concedes it is "best-effort" under concurrency — useless against an attack that is concurrent by
+definition. `get`/`set` are still implemented properly (the interface requires them, and a future
+version could bypass `consume`), database-backed and failing closed on a read error rather than
+reporting "no prior requests", which would ALLOW.
+
+Red-proofed twice. The unit test's first assertion — *that `rateLimit` is configured at all* — is
+the one that catches the original defect, which was an **absent** option rather than a wrong one;
+watched red before the wiring. Then against a throwaway Postgres with the real statement:
+
+```
+50 simultaneous attempts, max=3  ->  allowed: 3
+stored counter: 50               (no lost updates)
+four separate instances, one key: true,true,true,false
+```
+
+The last line is the property the in-memory Map could not have: independently constructed storages
+share one counter. Typecheck clean; full web suite 617 passed, 0 failed.
+
+**Still open from A1:** A1-3 (HIGH, live) — needs an owner call on what replaces a flat global
+ceiling. A1-4, and the MEDIUM/LOW list.
