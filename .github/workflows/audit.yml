@@ -190,6 +190,11 @@ jobs:
           # next run try to re-apply non-idempotent DDL (`relation "plans" already exists`). A
           # one-shot list must be REPLACED each time, not widened. Remove this line entirely once
           # the run is green; leaving it re-forgets every run and breaks the same way.
+          # 039 and 042 ARE applied (a previous run did it) but lost their ledger rows to an
+          # over-wide forget, so assert them back without running. 044/045 are genuinely missing —
+          # the column read says `embeddings.served` is absent — so they stay in the forget list.
+          # BOTH lines are one-shot: delete them once the run is green.
+          APPLY_PENDING_MARK_APPLIED: '39,42'
           APPLY_PENDING_FORGET: '44,45'
         run: node db/apply-pending.mjs
 

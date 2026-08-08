@@ -105,6 +105,34 @@ try {
     }
   }
 
+  // THE INVERSE OF FORGET: record a migration as applied WITHOUT running it.
+  //
+  // Needed because forget + stop-on-failure can leave the ledger under-claiming. On 2026-08-08 a
+  // forget list deleted rows for 039, 042, 044 and 045; 039 then failed with
+  // `relation "plans" already exists` (it HAD been applied by an earlier run), the runner stopped
+  // as designed, and the remaining three never re-ran — so four rows were gone while two of the
+  // objects existed. Forgetting is only safe if there is a way to un-forget.
+  //
+  // Same posture as the bootstrap: the caller asserts, the runner records and prints. It never
+  // infers "already applied" from a failure, because a DDL file that fails halfway is exactly the
+  // case where that inference is wrong.
+  const markApplied = (process.env.APPLY_PENDING_MARK_APPLIED ?? '')
+    .split(',')
+    .map((n) => n.trim())
+    .filter(Boolean);
+  if (markApplied.length && rows !== null) {
+    const names = files.filter((f) => markApplied.includes(String(Number(f.match(/^\d+/)[0]))));
+    const already = new Set(rows.map((r) => r.filename));
+    const toMark = names.filter((f) => !already.has(f));
+    for (const f of toMark) {
+      await recordMigration(client, path.join(DIR, f), readFileSync(path.join(DIR, f), 'utf-8'));
+    }
+    if (toMark.length) {
+      console.warn(`  ⚠ marked ${toMark.length} as applied WITHOUT running (caller's assertion): ${toMark.join(', ')}`);
+      rows = [...rows, ...toMark.map((filename) => ({ filename }))];
+    }
+  }
+
   let applied;
   if (rows === null) {
     // No ledger on this target. Replaying 001 onward against a populated database is destructive,
