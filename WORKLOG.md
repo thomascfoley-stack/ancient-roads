@@ -1,5 +1,48 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-07 — `L2` step 1 LIVE: migration 106 applied to production, both plan writes fixed
+
+Branch `fix/L2`. **Two features that had never worked for any user now work**: `Mark as read`
+(`UPDATE plan_days`) and `Delete plan` (`DELETE plans`), both of which were 500ing with
+`permission denied`. Cause and diagnosis in the INSTR entry below.
+
+`db/migrations/106_plan_write_grants.sql` grants exactly the two verbs `store.ts` uses and nothing
+more — no `UPDATE` on `plans` (nothing updates a plan row), no `DELETE` on either child (both
+cascade, and cascade runs with the referencing table's owner privileges).
+
+**Red-proofed before it was applied**, on a throwaway local Postgres: production's privilege state
+reproduced by replaying `001 → 032 → 039` rather than assuming it (all three tables born
+`INSERT,SELECT` — the empirical confirmation of the causal chain), then three checks watched RED —
+both `store.ts` queries verbatim, and the migration's own `DO`-block verification. The cascade
+claim was proven **with a control**: children hold no `DELETE`, the parent delete cascades both
+away, and a direct child delete is still refused. Had `DELETE` leaked onto the child, that control
+would have passed.
+
+Applied to production by the owner at the terminal; the agent holds no prod connection string and
+did not acquire one. Ledger: `sha256 7893d0d8ebc5…`.
+
+**Verified live:** 10/10 marks persist · `read_days` 0 → 10 of 15 · survives a hard reload · list
+and detail figures agree · `UP NEXT` advances to Romans 11 · `Delete plan` works, which cleared the
+stranded test plan and **left production as found**. And the diagnostic loop closes: a `POST` to an
+unknown plan UUID now returns `404` where it returned `500` before, confirming the exception had
+been masking `store.ts:300` rather than the row-matching being wrong.
+
+### NOT DONE / UNVERIFIED
+
+- **`L2` step 2 (optimistic toggle + visible rollback) is NOT done**, and its exit check is
+  unmarked. It is a client change; production is 6 commits behind `HEAD`, so nothing client-side
+  reaches users without a gated deploy. Ships with the next deploy.
+- **A correction to this session's own apply instructions.** They said to watch for a
+  `NOTICE: 106 OK` line and for `WARNING:` lines. **node-pg surfaces neither** — they are client
+  events and `apply-migration.mjs` registers no listener. Their absence proves nothing, and the
+  migration's over-grant `WARNING` checks produced no observable output. That was a check that
+  could not fail. What did hold: `RAISE EXCEPTION` aborts the run and the file is one
+  multi-statement query, so `✓ applied` does prove the two `has_table_privilege` assertions passed.
+  **The over-grant assertions remain unverified in production** and belong in a CI test.
+- **Other post-032 tables are still unaudited** for the same missing grant. Filed to the Backlog.
+- `npm run audit` NOT RUN (no dev `DATABASE_URL`). The migration's proof is the local red/green
+  plus the live behaviour above, not a green gate.
+
 ## 2026-08-07 — UX remediation `INSTR`: the plan write is a missing GRANT, not an auth fault
 
 Branch `fix/INSTR`. **Diff is docs only** — that is the block's own exit test. Live authenticated

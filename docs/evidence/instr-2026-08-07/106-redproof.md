@@ -73,3 +73,54 @@ did not.
   only. `039:54-59`'s policy is unchanged by this migration and still gates row visibility.
 - Postgres 14 locally vs. Neon's server version. The privilege semantics used here are not
   version-sensitive, but the run is what it is.
+
+---
+
+# Production apply and verification — 2026-08-07
+
+Applied by the owner at the terminal (the agent holds no production connection string):
+
+```
+✓ ledger: 106_plan_write_grants.sql (neondb_owner, sha256 7893d0d8ebc5…)
+✓ applied db/migrations/106_plan_write_grants.sql
+```
+
+**A correction about what that output does and does not prove.** The apply instructions said to
+watch for a `NOTICE: 106 OK` line and for `WARNING:` lines. **node-pg surfaces neither** — it emits
+them as client events and `apply-migration.mjs` registers no listener. So their absence is not
+evidence of anything, and the over-grant checks in the migration's `DO` block produced no
+observable output on this run. That was a check that could not fail.
+
+What IS load-bearing and did hold: `RAISE EXCEPTION` propagates as a real error and would have
+aborted the run, and the file is a single multi-statement query, so an abort would have rolled the
+grants back with it. `✓ applied` therefore proves the two `has_table_privilege` assertions passed.
+The over-grant assertions remain unverified in production and belong in a CI test, as the
+migration comment already says.
+
+## Live verification against production
+
+| Check | Result |
+|---|---|
+| Ten consecutive marks, days 1-10 | **10/10 → `200 {"ok":true}`** |
+| Counter moved | `read_days` **0 → 10** of 15 |
+| Survives a hard reload | **yes** — `10 of 15 days` after `location.reload()` |
+| List figure matches detail figure | **yes** — both `10 of 15 days` |
+| `UP NEXT` advanced correctly | **yes** — Romans 11, `FRI, AUG 21` |
+| `Delete plan` through the UI | **succeeds** — `{"plans":[]}`, and `GET` the deleted id → `404 NOT_FOUND` |
+| Stranded artifact cleared | **yes** — the test account is empty; production left as found |
+
+**One check closes the diagnostic loop.** Before the migration, `POST` to an unknown plan UUID
+returned **500**, because the UPDATE threw before it could match zero rows — which is how the 404
+arm at `store.ts:300` was proven unreachable. After the migration the identical request returns
+**`404 {"code":"NOT_FOUND","message":"No such plan day."}`**. The arm is now reachable, confirming
+the exception had been masking it rather than the row-matching logic being wrong.
+
+## Still open on `L2`
+
+`L2`'s minimal change has two steps. **Step 1 (fix the endpoint) is done and verified above.
+Step 2 (optimistic toggle with visible rollback) is NOT done**, and its exit check — "with the
+endpoint forced to fail, the checkbox visibly rolls back and the toast still appears" — is
+therefore unmarked. Deferred deliberately: it is a client change, production is 6 commits behind
+`HEAD`, and any client edit made now cannot reach users without a gated deploy. With the write
+succeeding, the failure path it improves is now rare rather than universal, so it belongs with the
+next deploy rather than ahead of it.

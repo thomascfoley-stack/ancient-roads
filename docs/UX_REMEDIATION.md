@@ -180,7 +180,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 1 | `INSTR` | Instrument both loops before touching them | `x` |
 | 1 | `L1` | Ask — guarantee a terminal state, never lose the question | `-` |
 | 1 | `L1b` | Ask — set an expectation for the wait | `-` |
-| 1 | `L2` | Plan progress write must succeed | `!` |
+| 1 | `L2` | Plan progress write must succeed | `~` |
 | 1 | `L2c` | Human-readable plan names, correctly localised dates | `-` |
 | 2 | `N1` | Rename sweep — strings only, no route changes | `-` |
 | 2 | `N2` | Sidebar must reveal it has more in it | `-` |
@@ -679,7 +679,7 @@ That is the entire block.
 
 ### `L2` — Plan progress write must succeed
 
-**Wave:** 1 · **Severity:** P0 Critical · **Depends on:** `INSTR` · **Blocks:** — · **Status:** `[!]` **BLOCKED — needs an owner-gated production GRANT migration; see INSTR**
+**Wave:** 1 · **Severity:** P0 Critical · **Depends on:** `INSTR` · **Blocks:** — · **Status:** `[~]` **step 1 DONE and verified in production 2026-08-07 (migration 106); step 2 deferred to the next deploy**
 
 **Observed** — reported by the audit deck; not independently verified
 
@@ -712,14 +712,37 @@ explicit that this is inference. `INSTR` confirms or kills it in minutes.
 
 **Exit test**
 
-- [ ] `AGENT` `Mark as read` increments the counter and the increment survives a hard reload.
-- [ ] `AGENT` Ten consecutive marks across ten readings all persist.
-- [ ] `AGENT` With the endpoint forced to fail, the checkbox visibly rolls back and the toast still appears — no divergence between UI state and stored state.
-- [ ] `AGENT` The progress figure on the plan list matches the plan detail after each change.
+- [x] `AGENT` `Mark as read` increments the counter and the increment survives a hard reload. Verified live: 0 → 10 of 15, survived `location.reload()`.
+- [x] `AGENT` Ten consecutive marks across ten readings all persist. 10/10 → `200 {"ok":true}`.
+- [ ] `AGENT` With the endpoint forced to fail, the checkbox visibly rolls back and the toast still appears — no divergence between UI state and stored state. **NOT DONE — step 2 (optimistic toggle) deferred to the next deploy; see the Findings log. There is currently no optimistic update, so there is no rollback to test.**
+- [x] `AGENT` The progress figure on the plan list matches the plan detail after each change. Both read `10 of 15 days` after reload.
 
 **Findings log**
 
-> _(write here — paste the actual failing response from INSTR)_
+> **Step 1 DONE, verified against production 2026-08-07. Step 2 deferred.** Evidence:
+> [`106-redproof.md`](../evidence/instr-2026-08-07/106-redproof.md).
+>
+> The failing response `INSTR` captured: `500 {"error":{"code":"INTERNAL",...}}`, 5/5, with the
+> server log reading `permission denied for table plan_days`. **Not validation, not auth-scope — a
+> missing `GRANT`**, because `039` created `plans` and `plan_days` citing a "no GRANT needed"
+> comment that `032` had already invalidated. `Delete plan` was broken identically and neither
+> audit had tried it.
+>
+> Fixed by `db/migrations/106_plan_write_grants.sql`: `UPDATE` on `plan_days`, `DELETE` on `plans`,
+> derived from the only write verbs in `store.ts` and nothing more. Red-proofed on a throwaway
+> Postgres first — the production privilege state reproduced from `001 → 032 → 039`, three checks
+> watched RED, and the cascade claim proven with a control that could have falsified it. Applied to
+> production by the owner; ledger records `sha256 7893d0d8ebc5…`.
+>
+> Live: 10/10 marks persist, `0 → 10 of 15`, survives a hard reload, list and detail agree, and
+> `Delete plan` now works — which cleared the stranded test plan and left production as found.
+> A `POST` to an unknown plan UUID now returns `404` where it returned `500` before, confirming the
+> exception had been masking `store.ts:300` rather than the row-matching being wrong.
+>
+> **Step 2 (optimistic toggle + visible rollback) is deliberately NOT done.** It is a client change;
+> production is 6 commits behind `HEAD`, so nothing client-side reaches users without a gated
+> deploy. With the write succeeding, the path it improves is now rare rather than universal. It
+> ships with the next deploy, and its exit check stays unmarked until then.
 
 ---
 
