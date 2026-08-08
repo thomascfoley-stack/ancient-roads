@@ -10,7 +10,7 @@ import { MyWorksClient } from '@/components/my-works';
 //
 // The route stays /library/uploads: it is linked from the sidebar and changing a URL is a
 // redirect's worth of work for no user-visible gain. The LABEL is what the order governs.
-export const metadata = { title: 'My Works' };
+export const metadata = { title: 'My uploads' };
 
 // ── WHY THIS IS SYNCHRONOUS, AND STAYS SYNCHRONOUS ───────────────────────────────────────────────
 // It was briefly an async server component that resolved the session and the upload permission

@@ -402,7 +402,7 @@ export default function PassageSearchPage() {
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-500 dark:text-stone-400">
           Search what others before you have said, or browse passage by passage.
           {manifest && manifest.length > 0 && (
-            <> {manifest.length} sources across the corpus.</>
+            <> {manifest.length} sources across the library.</>
           )}
         </p>
       </header>

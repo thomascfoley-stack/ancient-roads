@@ -20,11 +20,11 @@ export const dynamic = 'force-dynamic';
 
 const YOURS = [
   { href: '/library/notes', label: 'Notes' },
-  { href: '/library/books', label: 'My library' },
+  { href: '/library/books', label: 'Saved' },
   { href: '/library/word-study', label: 'Word study' },
   // "My Works", never "Uploads" or "Sermons" — the Slice 1 order governs the NAV LABEL as well
   // as the page title, and "Sermons" is two entries above this one as a corpus register.
-  { href: '/library/uploads', label: 'My Works' },
+  { href: '/library/uploads', label: 'My uploads' },
 ];
 
 async function personal(): Promise<{ reading: ContinueReadingRow[]; shelf: LibraryItem[] } | null> {
@@ -105,7 +105,7 @@ export default async function LibraryHubPage({
       </section>
 
       <section>
-        <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">The corpus</h2>
+        <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">All items</h2>
         {/* A CATALOGUE, NOT A CONTROL PANEL. Six equal bordered rectangles in a grid
             presented 2,000 years of voices like a settings page: every shelf the same size and
             weight, the name at 18px, the count buried at 12px in the corner. A library is a
@@ -123,7 +123,7 @@ export default async function LibraryHubPage({
                   {CATALOGS[id].label}
                 </span>
                 <span className="ml-auto shrink-0 tabular-nums text-sm text-stone-500 dark:text-stone-400">
-                  {count(worksIn(id), 'work')}
+                  {count(worksIn(id), 'item')}
                 </span>
               </Link>
             </li>

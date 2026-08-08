@@ -46,7 +46,7 @@ export default function MyLibraryPage() {
   return (
     <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6">
       <header className="mb-6">
-        <h1 className="font-scripture text-3xl font-medium text-stone-800 dark:text-stone-100">My library</h1>
+        <h1 className="font-scripture text-3xl font-medium text-stone-800 dark:text-stone-100">Saved</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-500 dark:text-stone-400">
           Every verse you have highlighted, bookmarked, or written a note on, in one place. Tap any
           reference to jump back to it in the reader.

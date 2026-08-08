@@ -48,7 +48,7 @@ export function MobileNav() {
     // so the tab could also never light up.
     { href: '/home', label: 'Home', active: pathname === '/home', icon: <HomeIcon /> },
     { href: '/read/jhn/1', label: 'Bible', active: pathname.startsWith('/read'), icon: <BookIcon /> },
-    { href: '/ask', label: 'AP', active: pathname.startsWith('/ask'), icon: <AskIcon /> },
+    { href: '/ask', label: 'Ask', active: pathname.startsWith('/ask'), icon: <AskIcon /> },
     // → the hub, not /library/commentaries: that slug is shadowed by the old
     // passage-browse page, so the tab labelled "Library" landed on the one catalog
     // that does not render (ship-committee LENS 1, BROKEN #1/#2).

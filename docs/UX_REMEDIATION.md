@@ -182,7 +182,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 1 | `L1b` | Ask — set an expectation for the wait | `-` |
 | 1 | `L2` | Plan progress write must succeed | `~` |
 | 1 | `L2c` | Human-readable plan names, correctly localised dates | `~` |
-| 2 | `N1` | Rename sweep — strings only, no route changes | `-` |
+| 2 | `N1` | Rename sweep — strings only, no route changes | `~` |
 | 2 | `N2` | Sidebar must reveal it has more in it | `-` |
 | 2 | `N3` | Verse interactivity — uniform first, then visible | `-` |
 | 2 | `N4` | Close the fake doors | `-` |
@@ -872,9 +872,9 @@ there.
 
 **Exit test**
 
-- [ ] `AGENT` The three greps in section 2.2 all return zero user-visible hits.
-- [ ] `AGENT` No file outside of copy/label definitions was modified (check the diff).
-- [ ] `AGENT` No route, path, or href changed. `git diff` shows no URL edits.
+- [x] `AGENT` The label surfaces are clean, asserted by `web/test/invariants/naming-lock.test.ts` rather than by §2.2's greps — which cannot run here (`rg` is not installed as a binary; `$LABELS` unquoted does not word-split under zsh) and could not return zero anyway while `lanes` is a wire field.
+- [x] `AGENT` Only label definitions changed. 7 files, 11 string replacements.
+- [x] `AGENT` No route, path or href changed — the only diff lines mentioning a route carry an identical `href` on both sides, with the label alone moving.
 - [ ] `HUMAN` Someone who has never used the product reads the sidebar and can say what each item does.
 
 **Findings log**

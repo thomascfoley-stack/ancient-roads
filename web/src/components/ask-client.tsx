@@ -96,7 +96,7 @@ function LaneFilter({ lanes, onToggle }: { lanes: Record<LaneKey, boolean>; onTo
         aria-expanded={open}
         className="flex items-center gap-1.5 text-xs font-medium text-stone-500 transition-colors duration-150 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
       >
-        <span>Choose what to search — Commentary + {activeCount} of {LANE_OPTIONS.length} lanes</span>
+        <span>Choose what to search — Commentary + {activeCount} of {LANE_OPTIONS.length} collections</span>
         <span aria-hidden="true" className={`transition-transform duration-150 ${open ? 'rotate-180' : ''}`}>▾</span>
       </button>
       {open && (

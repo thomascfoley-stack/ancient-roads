@@ -279,7 +279,7 @@ export function SidebarNavContent({
           <SidebarLink
             href="/library"
             icon={<BookStackIcon />}
-            label="The corpus"
+            label="All items"
             active={pathname === '/library'}
             row={row}
             onNavigate={onNavigate}
@@ -317,7 +317,7 @@ export function SidebarNavContent({
           <SidebarLink
             href="/library/notes"
             icon={<BookStackIcon />}
-            label="My library"
+            label="Saved"
             tier="shelf"
             active={pathname.startsWith('/library/notes')}
             row={row}
@@ -340,7 +340,7 @@ export function SidebarNavContent({
           <SidebarLink
             href="/library/uploads"
             icon={<BookStackIcon />}
-            label="My Works"
+            label="My uploads"
             tier="shelf"
             active={pathname.startsWith('/library/uploads')}
             row={row}

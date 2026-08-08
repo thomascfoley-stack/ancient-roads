@@ -174,7 +174,7 @@ export default async function CatalogPage({
         <p className="mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
           <span>
             {total <= PAGE_SIZE
-              ? `${total}${totalCapped ? '+' : ''} work${total === 1 ? '' : 's'}`
+              ? `${total}${totalCapped ? '+' : ''} item${total === 1 ? '' : 's'}`
               : `Showing ${firstShown}–${lastShown} of ${total}${totalCapped ? '+' : ''}`}
           </span>
           <span aria-hidden>·</span>
