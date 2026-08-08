@@ -15,10 +15,39 @@ Resend sender. Verification-on makes that mail load-bearing for every new signup
 
 Shipping in the other order converts a security fix into a signup outage.
 
-**Not closed by this ruling, and to be checked on execution:** accounts already created unverified
-(the test account at minimum) — grandfathered or prompted? If grandfathered, the precondition
-survives for exactly those accounts and the closure is partial rather than structural. Count them
-before assuming the set is empty.
+**CLOSED 2026-08-08 BY COUNTING, on the owner's explicit go for one production read.** The
+question was: accounts already created unverified — grandfathered or prompted? If grandfathered,
+the precondition survives for exactly those accounts and the closure is partial rather than
+structural.
+
+**Measured on `ep-odd-fog`, not assumed. Two accounts existed; one was unverified:**
+
+| | Account | Provider | Created |
+|---|---|---|---|
+| verified | `thomascfoley@gmail.com` (owner) | `google` | 2026-07-07 |
+| **unverified** | `thomas@thomas.com` (test account) | `credential` | 2026-08-08 08:10 |
+
+The owner's account is **Google-only with no `credential` row**, so g38m's precondition — an
+unverified *local* account for a later OAuth sign-in to link onto — never applied to it. The
+unverified set was therefore exactly the test account created during that morning's cutover
+testing, and the owner ruled: delete it, recreate post-toggle.
+
+**Deleted 2026-08-08** in one transaction after checking what it owned — 2 transient
+`api_rate_limit` counters and nothing else: no notes, plans, prayers or highlights. Removed:
+`neon_auth.user` 1, `neon_auth.account` 1, `neon_auth.session` 1, `api_rate_limit` 2. The delete
+asserted `rowCount === 1` on the user and would have rolled back otherwise.
+
+**Production now holds 1 account, 0 unverified.** So the closure is **structural for the current
+population**, not partial — and it stays structural only while `Verify at Sign-up` remains on,
+because that toggle is the only thing preventing a new unverified account from being created.
+
+> **Still holding 7 rows: `public.auth_users`**, the dead Better Auth table from migration 104. It
+> is read by no application code (the live identities are in `neon_auth.*`), yet it retains
+> pre-cutover user records. **Nobody has looked at what those rows contain.** If they carry email
+> addresses and password hashes, that is retained credential material in an orphaned table, which
+> is a data-retention question rather than an access-control one — `ADR-108`'s "clean start" says
+> nothing about deleting what was left behind. `AUTH_V2_IMPLEMENTATION.md` §10 (drop the `auth_*`
+> tables) has never run, and this is the reason it should.
 
 Rationale and the rejected options (OAuth-only; accept-the-risk) are in
 [`UX_REMEDIATION.md`](./UX_REMEDIATION.md) block `T2`.
