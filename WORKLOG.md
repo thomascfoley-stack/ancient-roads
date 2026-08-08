@@ -1,5 +1,72 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-08 (later) — three rulings executed: F2 deleted, F1-fonts spec'd, 107 applied, deployed
+
+**Prod:** migration 107 applied to `ep-odd-fog`; `ancientpaths.app` serves **`9729a1a`**
+(`dpl_3LBJPEkKHzTFrYFi3836DqVryucL`). Migration first, deploy second, as ordered.
+
+**Ruling 1 — F2.** Deleted `src/lib/auth/better-auth.ts`, five test files importing it, and the
+`better-auth` dependency. **Two of those files were GREEN while certifying a system nothing runs.**
+Web suite went from 1 failing file to 98/98 — the HEAD red is cleared.
+
+> **Not deleted on a name match.** `better-auth-wiring.test.ts` held four checks that are LIVE and
+> independent of which auth system is mounted: they guard a production 500 where `AUTH_PATHS`,
+> exported from a `'use client'` module, reached `generateStaticParams` as a client reference proxy
+> (`.map is not a function`). Moved intact to `auth-route-table.test.ts` and re-red-proofed there.
+
+**Two things found while doing it, reported not resolved:**
+- **A1-2's persistent auth rate limiter is wired into nothing.** Its only call site was the dead
+  `better-auth.ts`; the live `neon-auth.ts` configures no rate limiting at all. Seven green tests
+  were proving a limiter nobody calls. Module kept so re-wiring stays easy and its absence is not
+  mistaken for resolution.
+- **`docs/SECURITY.md` contradicted itself on GHSA-g38m.** One paragraph still declared it closed
+  *structurally* because "the cutover ships email/password only, so there is no OAuth callback and
+  nothing to auto-link" — true when written, false since Google SSO went live the same day. It also
+  named its guard as a comment inside `better-auth.ts`, **a file no production code had imported
+  since the Neon cutover** — so the warning meant to fire when a social provider was added sat in a
+  module nothing loaded, and Google was added without it ever being read. Superseded in place, not
+  deleted, so a reader arriving there meets the correction.
+
+**Ruling 2 — `F1-fonts`** promoted to its own block. Self-host via `next/font`; **no CSP widening**.
+Written up around why it survived every audit: the fallback chain hides it on exactly the machines
+that would catch it, because the people auditing tend to have the fonts installed locally. X5 is
+therefore "verify on a machine WITHOUT them" — otherwise the check cannot fail.
+
+**Ruling 3 — 107 applied to production**, ledger `sha256 1dd512ec8cb6…`, the same hash as the dev
+application. Verified afterwards by querying the catalog rather than trusting the runner: grants,
+RLS, policy, columns, indexes identical to dev. The carry-forward coupling is now flagged **at
+`sidebar.tsx`'s `storageKey`**, where someone doing the cleanup would actually be looking.
+
+### NOT DONE / UNVERIFIED
+
+- **The signed-in `/prayers` walk is the owner's**, by their decision, and is the check this agent
+  will not tick.
+- **The two-account RLS proof was NOT re-run against production.** Only the `neondb_owner` prod URL
+  is on this machine, and `neondb_owner` bypasses RLS — the check would have passed **vacuously**.
+  Dev proved it against the byte-identical migration. **Strong inference, not measurement.**
+- **`npm run audit` — NOT RUN** (needs a dev `DATABASE_URL`). Web typecheck, lint and the full web
+  suite are green; `deploy.sh`'s own gate chain ran and passed.
+- **The Neon console's `Verify at Sign-up` toggle is unobservable from this repo.** It is now the
+  sole mitigation for GHSA-g38m. No test, gate or deploy check can see it, so if it is off
+  everything here stays green. Recorded in `SECURITY.md` as an unverifiable precondition.
+- **`rate-limit-storage.ts` is now listed by knip as unused** — the honest state, and a standing
+  reminder that the rate limiter needs re-wiring or a deliberate ruling.
+
+### Operator errors this session, since the gates caught them and the record should say so
+
+- **Ran `deploy.sh` in the foreground under a 2-minute timeout**; the shell died mid-upload leaving
+  a receipt reading *"upload started, outcome unknown"*. `vercel ls` proved nothing shipped.
+  Annotated rather than deleted — that phrasing is exactly what gets misread later as success.
+- **Edited docs while a deploy was building**, and the second clean-tree check blocked it. The gate
+  exists for concurrent writers; this time the concurrent writer was me.
+- **`echo "EXIT=$?"` after `deploy.sh`** made the harness report exit 0 for a run that exited 1 —
+  the same unearned-green shape `deploy.sh`'s own header warns about, one layer up.
+- **`git add -A` by directory** swept two rulings' work into the F2 commit. Second instance this
+  session; corrected at `078a091`. **Stage by name.**
+- **`git checkout main` failed silently** because `main` is checked out in `.claude/worktrees/final`,
+  and the follow-on merge then reported "Already up to date" against the wrong branch. Caught by
+  comparing SHAs, which is the only reason it was not reported as a merge.
+
 ## 2026-08-08 — PR1a complete: the Pray action, the carry-forward, and a live typography finding
 
 **Lane:** UX remediation, Wave 5 · **Branch:** `fix/PR1a` (pushed, 6 commits) · **Prod:** untouched
