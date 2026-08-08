@@ -69,6 +69,15 @@ export function ReaderHeader({
           </button>
           {versionOpen && (
             <div className="absolute right-0 top-full mt-1 max-h-[70dvh] w-56 overflow-y-auto overscroll-contain rounded-xl bg-paper py-1 shadow-float ring-1 ring-stone-200 dark:bg-stone-800 dark:ring-stone-700">
+              {/* S2 item 1. A reader hunting for ESV/NIV/NLT finds them silently absent and reads
+                  that as a gap. It is a stance: every translation here is public domain, which is
+                  precisely why this product can quote them at length and license them onward.
+                  Saying so converts a perceived defect into a position — and it belongs HERE, in
+                  the list that raises the question, not on a settings page nobody opens. */}
+              <p className="border-b border-stone-200 px-4 py-2.5 text-xs leading-relaxed text-stone-500 dark:border-stone-700 dark:text-stone-400">
+                All {TRANSLATIONS.length} are public domain, so we can quote them freely. Modern
+                translations require licences; we&rsquo;re working on it.
+              </p>
               {TRANSLATIONS.map((t) => (
                 <button
                   key={t.id}
