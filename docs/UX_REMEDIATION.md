@@ -204,6 +204,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 4 | `S2` | Polish sweep — 9 small fixes, one branch | `~` |
 | 5 | `PR1a` | Prayer journal — the space and the entity | `[x]` **BUILT AND DEV-VERIFIED 2026-08-08.** RLS proven two-account over `app_runtime`; carry-forward run against the live dev DB. Migration 107 **applied to production** 2026-08-08 (owner go; verified against the catalog, identical to dev). Signed-in browser walk NOT RUN by the agent — **the owner is running it**. |
 | 5? | `F1-fonts` | Font stack blocked by our own CSP — self-host via `next/font` | `-` **SPEC'D 2026-08-08, not started. WAVE ASSIGNMENT IS AN OPEN OWNER CALL** — filed as Wave 5, which puts it OUTSIDE the §10 definition of done, yet the owner called it "the highest visual-impact item remaining". Those two cannot both be right. |
+| 5 | `PR1c` | Prayer-surface polish (PR1a residue) | `x` **DONE 2026-08-08.** Dead `/channel/*` + `/study/*` rail links resolved to `/prayers`; `window.confirm` replaced with an in-page two-step. 4 seeds red. |
 | 5 | `PR1b` | Prayer journal — "From the tradition" rail (separable) | `-` |
 | 5 | `PR2` | Compare a note with the tradition | `-` |
 
@@ -2501,6 +2502,65 @@ comes with it.
 
 > X5 is the point of the block. Every prior check passed on a machine where the fonts were already
 > present. A verification that cannot fail is not a verification (`docs/THE_LOOP.md` §6).
+
+### `PR1c` — Prayer-surface polish (PR1a residue)
+
+**Wave:** 5 · **Severity:** P2 · **Depends on:** `PR1a`, `N4` · **Blocks:** — · **Status:** `[x]` **DONE 2026-08-08.** `AGENT` checks pass; no `BROWSER`/`HUMAN` check ticked.
+
+Two defects found by the owner's post-deploy verification of `PR1a`. Both small, one branch.
+
+**Item 1 — dead affordances rendered as live navigation.** `N4` removed the two *seeded* sidebar
+sections, but readers who had already made their own — `MY SERMONS`, `BIBLE STUDIES` — still hold
+them in `localStorage`, and their items still rendered as links. **Both destinations were dead:**
+`/channel/[id]` redirects to `/prayers` (N4), and `/study/[id]` is a `ComingSoon` placeholder.
+
+> **The `/study/[id]` half was NOT in the reported finding, and was fixed with it.** It is the
+> other branch of the same ternary (`sidebar.tsx`, one expression), pointing at the same kind of
+> placeholder this remediation exists to remove. Fixing only the reported half would have shipped
+> the identical fake door one line over, and the block's own exit check would have been false.
+> Recorded here rather than filed to §9 because it is the same line of code, not adjacent work.
+
+**Resolved, not made inert.** Both now go to `/prayers`, which is TRUE rather than convenient:
+`PR1a`'s carry-forward already migrated these items into the journal, so the journal genuinely
+contains what the reader is clicking. The `#` channel glyph went with the retired concept.
+
+**Item 2 — `window.confirm` in the delete path.** It froze the renderer 60+ seconds during
+verification and is impassable to automation and to assistive tech. *A modal that blocks the main
+thread is an outage with a button on it* — and behind this one is someone's own words.
+
+Replaced with an in-page two-step (`Delete` → `Delete this prayer?` with `Keep` / `Delete`),
+focusable, cancellable, `role="group"`, and cleared when a different prayer is opened so a pending
+confirmation cannot follow the reader onto another entry. **The confirmation was replaced, not
+removed** — deleting a prayer on one unguarded click would be worse than the dialog was.
+
+**Exit tests** — 4 seeds watched red, each on its own check.
+
+| # | Check | Kind | State |
+|---|---|---|---|
+| X1 | No rail item links to `/channel/[id]` | `AGENT` | pass |
+| X2 | No rail item links to `/study/[id]`, which is still a placeholder — with a precondition assert so the check cannot go vacuous if that route is ever deleted | `AGENT` | pass |
+| X3 | **A headless delete completes end to end without page-context patching** | `AGENT` | pass |
+| X4 | `Keep` cancels without deleting | `AGENT` | pass |
+
+> **X3 is the one that matters, and its value is in what it does NOT do.** jsdom's `window.confirm`
+> returns `undefined`, so the old path fails closed there and the tempting fix is
+> `vi.stubGlobal('confirm', () => true)`. **That asserts the opposite of the requirement:** it
+> proves the blocking dialog is still in the path and that only a patched environment gets past it.
+> The test therefore stubs *no* dialog and asserts the `DELETE` reached the API. Seeded
+> `window.confirm` back in — it went red without needing to know the dialog had returned.
+
+**Also fixed, because it was an ESLint ERROR in a file this block edits:** the signed-out sign-in
+control was an `<a>` (`@next/next/no-html-link-for-pages`), introduced with `PR1a`'s signed-out
+state and live on `main`. An anchor forces a full document reload on the way to sign-in. Now
+`next/link`.
+
+**No new dependency.** The headless test uses `fireEvent` rather than `@testing-library/user-event`,
+which is not a dependency here — and a new one needs its justification written first.
+
+**Observed, not ticked:** on the dev build the rendered rail contains **zero** `/channel/*` or
+`/study/*` hrefs and no horizontal overflow. Observation is not the check.
+
+---
 
 ### `PR1b` — Prayer journal: the "From the tradition" rail
 
