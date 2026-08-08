@@ -126,16 +126,36 @@ function inflateEntry(bytes: Uint8Array, view: DataView, entry: CentralEntry): U
  * shingles the uncited-quote channel depends on in step 3.
  */
 function xmlToText(xml: string): string {
+  // `[^<>]`, NOT `[^>]`, in every attribute scan below — audit A1-1 (CRITICAL).
+  //
+  // `<w:tab` + `[^>]*` + a required `>` is quadratic on input where the `>` never arrives: the
+  // engine retries every prefix from every start offset. Measured before this change, a 919-BYTE
+  // upload (512 KB of document.xml, compressed) burned 46 seconds of CPU through parseDocx and
+  // extracted zero characters. MAX_DECOMPRESSED_BYTES is 80 MB, three orders of magnitude above
+  // what the attack needs, so the zip-bomb cap authorised this rather than bounding it.
+  //
+  // Excluding `<` bounds each start position's scan to the distance to the next `<`, so the total
+  // is linear. It is semantically identical on well-formed input: an XML attribute value cannot
+  // contain a raw `<` (it must be `&lt;`).
   const withBreaks = xml
-    .replace(/<w:tab\b[^>]*\/?>/g, '\t')
-    .replace(/<w:br\b[^>]*\/?>/g, '\n')
-    .replace(/<\/w:p>/g, '\n');
+    .replace(/<w:tab\b[^<>]*\/?>/g, '\t')
+    .replace(/<w:br\b[^<>]*\/?>/g, '\n')
+    .replace(/<\/w:p>/g, '\n'); // no quantifier, so never quadratic — left alone deliberately
   const out: string[] = [];
   // The alternation must carry BOTH separators the substitutions above introduce. It listed only
   // \n, so every <w:tab/> was substituted and then silently dropped, fusing the words either side
   // of a tab -- which manufactures a 6-gram that exists in no translation and in no sermon, and
   // would have quietly cost recall in step 3's uncited-quote channel.
-  const re = /<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|([\n\t])/g;
+  // Two narrowings here, both for A1-1. The attribute scan takes the same `[^<>]` as above. The
+  // BODY moves from `[\s\S]*?` to `[^<]*`: a lazy any-char body searching for a `</w:t>` that never
+  // arrives is the same quadratic in a different costume, and it was the most expensive of the
+  // three (3,081 ms on 128 KB, against 1,059 ms for the tab pass).
+  //
+  // `[^<]*` is not merely faster, it is the correct class: `<w:t>` holds character data, and a raw
+  // `<` cannot appear inside it — a literal must be `&lt;`. The one behaviour it gives up is
+  // matching ACROSS a nested element, which `<w:t>` may not contain in any valid document; such a
+  // run now yields no match instead of swallowing the markup as text, which is the safer failure.
+  const re = /<w:t(?:\s[^<>]*)?>([^<]*)<\/w:t>|([\n\t])/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(withBreaks)) !== null) {
     if (m[2]) out.push(m[2]);
@@ -174,3 +194,8 @@ export function parseDocx(bytes: Uint8Array): string {
   }
   return xmlToText(new TextDecoder().decode(inflateEntry(bytes, view, doc)));
 }
+
+// Test seam for `web/test/invariants/docx-extract-redos.test.ts`. `xmlToText` is the whole of the
+// A1-1 attack surface, and the invariant it must hold — linear cost in input size — is measurable
+// only by calling it directly; going through parseDocx would time the zip reader too.
+export const xmlToTextForTest = xmlToText;
