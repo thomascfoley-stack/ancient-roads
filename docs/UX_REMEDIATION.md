@@ -2340,7 +2340,39 @@ tool.
 
 ### `F1-fonts` — the font stack is blocked by our own CSP
 
-**Wave:** 5 · **Severity:** P1 Product · **Depends on:** — · **Blocks:** — · **Status:** `[ ]` **SPEC'D 2026-08-08, owner-ruled, not started**
+**Wave:** 5 · **Severity:** P1 Product · **Depends on:** — · **Blocks:** — · **Status:** `[x]` **BUILT 2026-08-08. `AGENT` checks pass; X3/X5 are `BROWSER`/`HUMAN` and stay unticked.**
+
+#### Findings log — 2026-08-08
+
+**1. My own exit test was incapable of failing, and only a seed found it.** The scan for external
+font hosts stripped comments before matching (borrowed from `prayers-c9.test.ts`, where
+`layout.tsx`'s header legitimately names `fonts.googleapis.com` while explaining why it must not be
+used). The stripper was `/\/\/.*$/gm` — and **the `//` in `https://` is a line-comment start to
+that regex**, so it deleted the URL, the exact string being hunted, before the scan ran. Seeded the
+real `<link>` back into `layout.tsx`: suite stayed **green**. Fixed to `/(^|[^:])\/\/.*$/gm` and
+re-seeded to red. *A comment stripper that eats URLs cannot police URLs.*
+
+**2. Two of the five exit tests were corrected mid-block, and the correction is the finding.** The
+first versions asserted `variable: '--font-display'` in `layout.tsx` and that `globals.css`
+*contains* "Georgia". Both passed; both were wrong, and the pair contradicted itself. Binding
+next/font straight to `--font-display` was **measured in the browser** to override the whole
+`@theme` declaration — computed value became `"EB Garamond", "EB Garamond Fallback"`, Georgia gone
+at runtime — while the string "Georgia" sat in the stylesheet keeping the fallback test green. **A
+test that reads the stylesheet cannot see a value the cascade overrode.** Flagged here rather than
+quietly rewritten, per the block rules. The fix changed: next/font owns `--font-*-face`, and
+`globals.css` composes it into the chain.
+
+**3. Measured after the fix** (observation, not a ticked check): computed `--font-display` is
+`"EB Garamond", "EB Garamond Fallback", "EB Garamond", Georgia, "Times New Roman", serif` — the
+self-hosted face, next/font's metric-compatible fallback, and the original chain, all three
+present. `[...document.fonts]` enumerates **EB Garamond, Literata and Source Sans 3** as loaded
+faces. No CSP violation in console. The control ran too: `document.fonts.check('16px "Zzz Not A
+Font"')` returned **`true`**, confirming again that `check()` proves nothing and enumeration is the
+only honest probe.
+
+**Unticked and staying that way:** X3 (`BROWSER`, on the deployed build) and X5 (`HUMAN`, verify on
+a machine without the three fonts installed). The observations above were taken on a machine that
+*may* have these fonts locally — which is exactly why X5 exists and why no agent may close it.
 
 **Owner ruling 2026-08-08:** self-host the stack via `next/font`. **No CSP widening.** Highest
 visual-impact item remaining.

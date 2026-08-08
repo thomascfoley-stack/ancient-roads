@@ -2,6 +2,60 @@ import type { Metadata, Viewport } from 'next';
 import { AppShell } from '@/components/app-shell';
 import './globals.css';
 
+import { EB_Garamond, Literata, Source_Sans_3 } from 'next/font/google';
+
+// ── THE FONT STACK IS SELF-HOSTED. DO NOT PUT IT BACK ON A CDN. ─────────────────────────────────
+// Block `F1-fonts`. These three families were loaded from `fonts.googleapis.com` with a <link>,
+// while this app's own CSP header (next.config.ts) is `style-src 'self' 'unsafe-inline'` and
+// `font-src 'self' data:`. The browser BLOCKED that stylesheet, and not one of the three faces was
+// ever downloaded — every reader saw the fallback chain (Georgia / Times) instead of the
+// typography the product was designed in.
+//
+// It survived every audit because the fallback hides it on precisely the machines that would catch
+// it: the people auditing tend to have these faces installed locally, so the page renders
+// correctly and the block shows only as console noise.
+//
+// `next/font/google` downloads the faces at BUILD time and serves them from `/_next` — so
+// everything is `'self'` and the CSP passes untouched. Widening the CSP was the rejected remedy
+// (owner ruling 2026-08-08): it loosens a security header for a problem self-hosting solves
+// outright, and puts a third-party request on the critical path of every page load.
+//
+// `display: 'swap'` keeps text readable while a face loads, which is what the old `&display=swap`
+// query parameter was for.
+//
+// ── WHY THESE ARE `--font-*-FACE`, NOT `--font-*` ──────────────────────────────────────────────
+// MEASURED, not assumed. Binding next/font directly to `--font-display` made its class WIN over
+// globals.css's `@theme` block, and the computed value became `"EB Garamond", "EB Garamond
+// Fallback"` — the Georgia / Times chain was gone at runtime, while still sitting in the
+// stylesheet looking present. The block says "Do NOT drop the CSS fallback chains", and that
+// would have dropped them invisibly.
+//
+// So next/font owns a `-face` variable, and globals.css COMPOSES it into the chain:
+//     --font-display: var(--font-display-face), Georgia, 'Times New Roman', serif;
+// which keeps both — next/font's metric-compatible fallback (it prevents layout shift, which
+// Georgia alone does not) AND the original chain behind it.
+
+const ebGaramond = EB_Garamond({
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+  display: 'swap',
+  variable: '--font-display-face',
+});
+
+const literata = Literata({
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+  display: 'swap',
+  variable: '--font-serif-face',
+});
+
+const sourceSans3 = Source_Sans_3({
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+  display: 'swap',
+  variable: '--font-sans-face',
+});
+
 export const metadata: Metadata = {
   // The site's canonical origin, used to resolve OG/Twitter/canonical URLs to absolute.
   // ancientpaths.app is the purchased production domain (2026-07-16). Overridable in
@@ -53,18 +107,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${ebGaramond.variable} ${literata.variable} ${sourceSans3.variable}`}
+    >
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Literata:ital,opsz,wght@0,7..72,400..700;1,7..72,400..700&family=Source+Sans+3:ital,wght@0,400..700;1,400..700&display=swap"
-          rel="stylesheet"
-        />
         <script
           dangerouslySetInnerHTML={{
             // TWO FIXES, and the second is the one that mattered.
