@@ -2123,6 +2123,29 @@ once (marker written BEFORE the first post, so a dead tab cannot re-run what lan
 this release** — which is what makes the once-only guard's "a miss beats a duplicate" choice safe
 rather than lossy. A duplicated prayer is someone's words twice with no way to tell which is real.
 
+> ### ⚠ LOAD-BEARING COUPLING — do not "clean up" `study-sections:v1:<userId>`
+>
+> **The once-only guard and the surviving source key are ONE decision, not two.** Read separately,
+> the leftover `localStorage` key looks like dead weight a later release should tidy away. It is
+> not. It is the reason the guard is allowed to be as strict as it is.
+>
+> The guard writes its marker BEFORE the first post and never retries a half-run, because after a
+> crash mid-loop we cannot tell which prayers landed, and a duplicate is worse than a miss —
+> someone's words twice, with no way for them to tell which is real. **That trade is only
+> acceptable while the source still exists**, because "a miss" then means "recoverable later",
+> not "gone".
+>
+> **Delete the key and the same unchanged code silently becomes data loss.** No test fails, no
+> type breaks, and the failure is invisible until someone notices prayers that were never carried.
+> `prayer-carry-forward.test.ts` guards the module against removing its own source, but it cannot
+> see a `removeItem` added anywhere else — `sidebar.tsx`, a migration script, a storage-cleanup
+> helper.
+>
+> **Before removing that key, a reconciliation pass must exist first**: read the source, compare
+> against prayers already carried, create only what is missing. Then the key can go. Not before.
+> The same warning sits at the key's definition in `sidebar.tsx`, which is where someone doing the
+> cleanup would actually be looking.
+
 **A defect the browser pass found in this block's own code, and fixed:** a signed-out visitor was
 shown a red *"Your prayers could not be loaded"* beside a permanent *"Loading…"* — the app
 reporting its own auth state as a fault, on the page least suited to alarming anyone. `load()` now
@@ -2314,6 +2337,87 @@ tool.
 
 ---
 
+### `F1-fonts` — the font stack is blocked by our own CSP
+
+**Wave:** 5 · **Severity:** P1 Product · **Depends on:** — · **Blocks:** — · **Status:** `[ ]` **SPEC'D 2026-08-08, owner-ruled, not started**
+
+**Owner ruling 2026-08-08:** self-host the stack via `next/font`. **No CSP widening.** Highest
+visual-impact item remaining.
+
+**Observed**
+
+`web/src/app/layout.tsx:58,65` loads EB Garamond, Literata and Source Sans 3 from
+`https://fonts.googleapis.com/css2?...`. The production CSP header, read from
+`https://ancientpaths.app/`, is:
+
+```
+style-src 'self' 'unsafe-inline'; font-src 'self' data:
+```
+
+No `fonts.googleapis.com`, no `fonts.gstatic.com`. **The stylesheet request is blocked and not one
+of the three families is ever downloaded** — `[...document.fonts]` on a loaded page contains only
+the Next-served Geist faces. Every reader sees the CSS fallback chain (Georgia / Times) instead of
+the typography the product was designed in. On a concordance whose entire visual identity is
+typographic, this is the largest single visual defect in the app.
+
+**Why every audit so far has missed it, and why the next one would too**
+
+> **The defect is masked on exactly the machines that would find it.** `layout.tsx` declares
+> `font-family: "EB Garamond", Georgia, "Times New Roman", serif`. Designers and developers tend to
+> have EB Garamond and Literata **installed locally** — they were chosen by someone who had them —
+> so the browser satisfies the family from the system and the page looks correct. The CSP block is
+> silent in the rendered result. It appears only in the console, among the noise, on a page nobody
+> was auditing for fonts.
+>
+> **A plausible-looking probe agrees with the wrong answer.**
+> `document.fonts.check('16px "EB Garamond"')` returns `true` here — and it returns `true` for
+> `'16px "Zzz Not A Font"'` as well, because it answers "can text in this family be rendered",
+> which a fallback always satisfies. **Run the control before believing the probe.**
+>
+> The two checks that actually settle it, for whoever audits this next:
+> 1. `[...document.fonts].map(f => f.family)` — the faces genuinely loaded. Webfonts absent = blocked.
+> 2. The CSP header itself, read from production with `curl -sI`, not from `next.config.ts` — the
+>    shipped header is the one that matters.
+
+**Minimal change**
+
+`next/font/google` at build time. It downloads the faces, self-hosts them under `/_next`, and
+generates the `@font-face` CSS — so everything is `'self'` and the existing CSP passes untouched.
+This also removes a render-blocking third-party request from every page load and the FOUT that
+comes with it.
+
+1. `layout.tsx` — replace the `<link rel="preconnect">` / `<link rel="stylesheet">` pair with
+   `next/font/google` imports for EB Garamond, Literata and Source Sans 3, binding each to the CSS
+   variable the theme already uses.
+2. `globals.css` — point the existing `@theme` font variables at the generated families. **The
+   fallback chains stay**; self-hosting is not a reason to remove a safety net.
+3. Delete nothing else. The CSP is correct as it stands and is not to be touched — that is the
+   ruling.
+
+**Do NOT**
+
+- **Do NOT widen the CSP** to allow `fonts.googleapis.com` / `fonts.gstatic.com`. Ruled out: it
+  loosens a security header for a problem that self-hosting solves outright, and puts a
+  third-party request on the critical path of every page.
+- Do NOT change the typefaces, sizes, weights or the `@theme` variable names. This block makes the
+  chosen fonts actually load; it does not redesign anything.
+- Do NOT drop the CSS fallback chains.
+- Do NOT subset aggressively on a first pass — these are reading faces and the product renders
+  Greek and Hebrew elsewhere.
+
+**Exit checks**
+
+| # | Check | Kind |
+|---|---|---|
+| X1 | `grep -r "fonts.googleapis.com" web/src` returns nothing | `AGENT` |
+| X2 | An invariant test fails if any `fonts.googleapis.com` / `fonts.gstatic.com` URL reappears in `web/src` — **red-proofed by re-adding the link and watching it go red** | `AGENT` |
+| X3 | On the deployed page, `[...document.fonts].map(f => f.family)` **contains all three families**. This is the check the old probe could not make; assert on the loaded-face list, never on `document.fonts.check()` | `BROWSER` |
+| X4 | Console shows **no CSP violation** on load, and the production CSP header is **unchanged** from the value quoted above (`curl -sI`) | `BROWSER` |
+| X5 | Verified on a machine **without** the three fonts installed locally, or with them disabled — otherwise the check cannot fail, which is the whole reason this defect survived | `HUMAN` |
+
+> X5 is the point of the block. Every prior check passed on a machine where the fonts were already
+> present. A verification that cannot fail is not a verification (`docs/THE_LOOP.md` §6).
+
 ### `PR1b` — Prayer journal: the "From the tradition" rail
 
 **Wave:** 5 · **Severity:** P2 Product · **Depends on:** `PR1a` · **Blocks:** — · **Status:** `[ ]`
@@ -2426,7 +2530,9 @@ deferred at planning time.
 Both found while verifying `PR1a`, both **measured against production, not inferred**, and neither
 touched — reporting a finding is not licence to fix it in an unrelated branch.
 
-**F1 — the product's entire font stack is blocked by the product's own CSP. LIVE.**
+**F1 — PROMOTED 2026-08-08 to its own block, [`F1-fonts`](#f1-fonts--the-font-stack-is-blocked-by-our-own-csp). Summary retained here for the audit trail.**
+
+**The product's entire font stack is blocked by the product's own CSP. LIVE.**
 `layout.tsx:58,65` loads `https://fonts.googleapis.com/css2?...EB+Garamond...Literata...Source+Sans+3`.
 The production CSP header, read from `https://ancientpaths.app/`, is `style-src 'self'
 'unsafe-inline'` and `font-src 'self' data:` — no `fonts.googleapis.com`, no `fonts.gstatic.com`.
@@ -2442,10 +2548,7 @@ why this has been invisible on developer machines.
 > The load-bearing evidence is the empty face list and the explicit block message. **Run the
 > control before believing the probe.**
 
-Two remedies, and it is a deliberate choice, not a patch: self-host via `next/font/google` (keeps
-the CSP tight, removes a third-party request from every page load), or widen the CSP to allow
-Google's font hosts. Fixing it silently in a prayer-journal branch would bury a typography decision
-for the whole product inside an unrelated diff.
+**RULED 2026-08-08: self-host via `next/font`. No CSP widening.** See the block.
 
 **F2 — a stale auth gate is red at HEAD, and it now asserts the opposite of the shipped
 architecture.** `web/test/invariants/better-auth-wiring.test.ts` dates from the move *to* Better

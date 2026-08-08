@@ -40,6 +40,26 @@ function newId(): string {
     : Math.random().toString(36).slice(2);
 }
 
+/**
+ * ⚠ DO NOT DELETE OR CLEAR THIS KEY. It is load-bearing for a feature in another file.
+ *
+ * `lib/prayer-carry-forward.ts` migrates these objects into the prayer journal once, on first
+ * launch, and deliberately LEAVES THIS KEY IN PLACE. That is not an oversight to tidy up in a
+ * later release — it is half of a single decision:
+ *
+ * The carry-forward writes its once-only marker BEFORE the first post and never retries a
+ * half-completed run, because after a crash mid-loop it cannot tell which prayers landed, and a
+ * duplicate is worse than a miss: someone's words twice, with no way for them to tell which is
+ * real. **That trade is only acceptable while this key still exists**, because then "a miss" means
+ * "recoverable later" rather than "gone".
+ *
+ * Remove this key and the carry-forward's unchanged code silently becomes DATA LOSS. Nothing goes
+ * red — its own test only guards against the module deleting its own source, and cannot see a
+ * `removeItem` added here or in a cleanup script.
+ *
+ * Before removing it, a reconciliation pass must exist: read the source, compare against prayers
+ * already carried, create only what is missing. Then this can go. Not before.
+ */
 function storageKey(userId: string | undefined): string {
   return `study-sections:v1:${userId ?? 'guest'}`;
 }
