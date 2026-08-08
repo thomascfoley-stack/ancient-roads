@@ -21,10 +21,18 @@ interface StudySection {
   items: StudyItem[];
 }
 
-const SEED_SECTIONS: StudySection[] = [
-  { id: 'channels', kind: 'channels', name: 'Channels', items: [] },
-  { id: 'partners', kind: 'group', name: 'Study Partners', items: [] },
-];
+// N4. Both seeded sections were fake doors: `+` opened a name field, creating an object
+// succeeded, and the reader landed on a placeholder saying the feature was being built.
+//
+//   - CHANNELS is REPURPOSED, not hidden. `PR1a` shipped the prayer journal, which is the real
+//     feature behind the shell this section was, so the rail now links straight to it below.
+//   - STUDY PARTNERS is RETIRED, not deferred. Any future cohort feature is greenfield.
+//   - `New section` went with them: it has no referent once user-defined sections are gone.
+//
+// NOT badged "coming soon" — that would be a second fake door, which is what this block exists to
+// remove. Nothing user-created is lost: `PR1a`'s carry-forward migrates existing items into the
+// journal on first launch, and deliberately leaves this key in place (see `storageKey` above).
+const SEED_SECTIONS: StudySection[] = [];
 
 const DOT_COLORS = ['#8a4436', '#5c6b46', '#8a6a33', '#4e5d6b', '#7d5a4f'];
 
@@ -124,7 +132,6 @@ export function SidebarNavContent({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const [sections, setSections] = useState<StudySection[] | null>(null);
-  const [addingSection, setAddingSection] = useState(false);
 
   useEffect(() => {
     try {
@@ -235,6 +242,25 @@ export function SidebarNavContent({
           )}
         </div>
 
+        {/* PRAYER JOURNAL — N4's repurposing of CHANNELS, pointing at the shipped PR1a surface.
+            The block allows exactly two states for this section, the real journal or nothing, and
+            says so in terms: "No third state." */}
+        <div className="mt-4">
+          <div className="mb-1 px-4">
+            <span className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+              Prayer journal
+            </span>
+          </div>
+          <SidebarLink
+            href="/prayers"
+            icon={<PrayerIcon />}
+            label="My prayers"
+            active={pathname.startsWith('/prayers')}
+            row={row}
+            onNavigate={onNavigate}
+          />
+        </div>
+
         {/* Study sections (user-defined parent/child) */}
         {sections?.map((section) => (
           <StudySectionView
@@ -257,30 +283,6 @@ export function SidebarNavContent({
             }
           />
         ))}
-
-        {/* New section */}
-        {sections && (
-          <div className="mt-3 px-2">
-            {addingSection ? (
-              <InlineNameForm
-                placeholder="section name"
-                onSubmit={(name) => {
-                  save([...sections, { id: newId(), kind: 'group', name, items: [] }]);
-                  setAddingSection(false);
-                }}
-                onCancel={() => setAddingSection(false)}
-              />
-            ) : (
-              <button
-                onClick={() => setAddingSection(true)}
-                className={`flex w-full items-center gap-2.5 rounded-md px-2 text-sm text-stone-500 dark:text-stone-400 transition-colors ease-gentle hover:bg-stone-100 hover:text-stone-600 active:bg-stone-200/70 dark:hover:bg-stone-800 dark:hover:text-stone-300 ${row}`}
-              >
-                <span className="flex w-4 items-center justify-center"><PlusIcon /></span>
-                <span className="flex-1 truncate text-left">New section</span>
-              </button>
-            )}
-          </div>
-        )}
 
         {/* Library */}
         <div className="mt-4">
@@ -706,6 +708,17 @@ function NoteIcon() {
   return (
     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 18V6l11-2v12M9 18a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zm11-2a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+    </svg>
+  );
+}
+
+/** Hands together — the prayer journal (N4/PR1a). Deliberately not a chat bubble: the section it
+ *  replaced was a study-assistant shell, and reusing that icon would carry the retired concept
+ *  into the surface that supersedes it. */
+function PrayerIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v9m0 0c0 3 2 5 4 6H8c2-1 4-3 4-6zM9 6.5C9 5 10 4 10 4M15 6.5C15 5 14 4 14 4" />
     </svg>
   );
 }

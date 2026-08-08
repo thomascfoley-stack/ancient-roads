@@ -194,7 +194,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 2 | `N1` | Rename sweep — strings only, no route changes | `x` |
 | 2 | `N2` | Sidebar must reveal it has more in it | `x` |
 | 2 | `N3` | Verse interactivity — uniform first, then visible | `!` |
-| 2 | `N4` | Close the fake doors | `-` |
+| 2 | `N4` | Close the fake doors | `x` **DONE 2026-08-08.** Channels → Prayer journal (links to shipped `PR1a`), Study Partners retired, `New section` removed, `/channel/[id]` redirects. 7 seeds red. `BROWSER` checks unticked. |
 | 2 | `L2b` | Plan builder must not open in an error state | `x` |
 | 3 | `T1` | First run — teach the one idea that differentiates | `!` |
 | 3 | `T2` | Verify-at-signup ON (both methods kept) — RULED, sender fix first | `-` |
@@ -1290,7 +1290,35 @@ UI for an unshipped feature left enabled rather than gated.
 
 **Findings log**
 
-> _(write here — including the route decision and the pre-existing-objects decision)_
+> **EXECUTED 2026-08-08, unblocked by `PR1a` shipping.** The block's open sequencing question —
+> "either `N4` waits for `PR1a`, or it ships a client-side one-time carry-forward into localStorage
+> that `PR1a` later imports" — resolved the **first** way. `PR1a` is live, so the destination
+> exists and its first-launch carry-forward already migrates the objects. No second migration was
+> written, and none should be.
+>
+> **Route decision (exit check 3):** REDIRECT, per the owner's 2026-08-08 ruling.
+> `app/channel/[id]/page.tsx` now calls `redirect('/prayers')` and renders nothing. The dynamic
+> segment is deliberately ignored — every id resolves to the same place, because no channel ever
+> had content; the route only ever rendered a placeholder. **The route file is deliberately KEPT**:
+> deleting it would produce the 404 the ruling rejected, so a test asserts it still exists.
+>
+> **Pre-existing-objects decision (exit check 2):** MIGRATE, discharged by `PR1a` rather than here.
+> Nothing user-created is hidden or dropped, and `PR1a`'s carry-forward leaves its `localStorage`
+> source in place — a coupling flagged at `sidebar.tsx`'s `storageKey`, because deleting that key
+> in a later release silently converts a recoverable miss into data loss.
+>
+> **Dispositions:** `SEED_SECTIONS` is now empty — Study Partners retired (not deferred), Channels
+> repurposed to a `Prayer journal` section linking to `/prayers`, `New section` removed with them
+> since it had no referent once sections were gone. Nothing is badged "coming soon"; that would be
+> the second fake door this block exists to remove, and a test forbids it.
+>
+> **Seven exit tests, seven seeds watched red**, each on its own check — including the two that
+> matter most: re-badging the section "Coming soon", and **deleting** the channel route, which is
+> the 404 the owner ruled against and would otherwise have read as a pass.
+>
+> **Unticked:** exit checks 1 and 4 are `BROWSER`. Observed on the dev build — `/channel/abc123`
+> landed on `/prayers`, and the rail showed no Study Partners and no New section — but observation
+> is not the check, and no agent closes it.
 
 ---
 
