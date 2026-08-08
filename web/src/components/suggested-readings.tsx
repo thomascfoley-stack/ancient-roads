@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { READING_CATEGORIES, type ReadingCategoryId } from '@/lib/user-corpus/suggested-readings';
+import { DISPLAY_LOCALE } from '@/lib/locale';
 
 // Suggested readings: pick what to search, watch it search, read what it found.
 //
@@ -218,7 +219,7 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
             // Nothing re-runs these when the corpus grows, so say when the answer was computed
             // rather than let a reader assume it is current.
             <p className="mt-3 text-[12px] text-stone-500 dark:text-stone-400">
-              Searched {new Date(state.doneAt).toLocaleDateString()} ·{' '}
+              Searched {new Date(state.doneAt).toLocaleDateString(DISPLAY_LOCALE)} ·{' '}
               {state.categories.map((c) => LABEL.get(c) ?? c).join(', ')}
             </p>
           )}

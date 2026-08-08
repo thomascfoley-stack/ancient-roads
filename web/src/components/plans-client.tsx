@@ -23,6 +23,7 @@ import { VerseRef } from '@/components/verse-ref';
 import { DEFAULT_TRANSLATION } from '@/lib/bible';
 import { storedTranslation, type PassageTarget } from '@/lib/verse-preview';
 import { count } from '@/lib/plural';
+import { DISPLAY_LOCALE } from '@/lib/locale';
 
 interface PlanListRow {
   id: string;
@@ -224,7 +225,10 @@ function todayLocalDate(): string {
 
 function prettyDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number) as [number, number, number];
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(undefined, {
+  // DISPLAY_LOCALE, not `undefined` — block L2c. `undefined` resolves against the READER's runtime,
+  // so a zh-CN browser rendered `8月8日周六` in an all-English product. The audit deck screenshotted
+  // exactly this and filed it as a server-locale leak; it is the client's.
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(DISPLAY_LOCALE, {
     weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC',
   });
 }

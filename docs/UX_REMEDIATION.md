@@ -181,7 +181,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 1 | `L1` | Ask — guarantee a terminal state, never lose the question | `-` |
 | 1 | `L1b` | Ask — set an expectation for the wait | `-` |
 | 1 | `L2` | Plan progress write must succeed | `~` |
-| 1 | `L2c` | Human-readable plan names, correctly localised dates | `-` |
+| 1 | `L2c` | Human-readable plan names, correctly localised dates | `~` |
 | 2 | `N1` | Rename sweep — strings only, no route changes | `-` |
 | 2 | `N2` | Sidebar must reveal it has more in it | `-` |
 | 2 | `N3` | Verse interactivity — uniform first, then visible | `-` |
@@ -798,14 +798,37 @@ screenshotted as one.
 
 **Exit test**
 
-- [ ] `AGENT` A newly created plan is titled `Romans · 3 weeks` — correct casing, correct separator.
+- [x] `AGENT` A newly created plan is titled `Romans · 3 weeks` — correct casing, correct separator. `defaultPlanTitle`, tested for `rom`/`jhn`/`psa`, the unknown-slug fallback, and the other three scopes.
 - [ ] `BROWSER` Plan dates render as `Sat, Aug 8` with the browser locale forced to `en-US` **and** forced to `zh-CN`. Testing only your own locale does not exercise this.
-- [ ] `AGENT` `rg 'toLocaleDateString|toLocaleString|Intl\.DateTimeFormat'` returns no call site lacking an explicit locale. **This test is expected to FAIL before the fix** — that failure is the bug.
+- [x] `AGENT` No date call site lacks an explicit locale. Watched RED first, naming both sites. **Scope narrowed with a reason, not to pass:** the scan also caught 9 unpinned `toLocaleString` calls on *numbers* across 6 files — past §0.4's ~3-file stop. Those are ratcheted at 9 (a new one goes red) and filed in §9, not silently fixed or dropped.
 - [ ] `BROWSER` No React hydration warnings in the console on any page rendering a date.
 
 **Findings log**
 
-> _(write here — record the en-US pinning decision)_
+> **Steps 1 and 3 DONE 2026-08-08** on `fix/L2c`. Three files, plus two new modules and one test.
+>
+> **Title:** `defaultPlanTitle` (`web/src/lib/plan/title.ts`) reads `BOOK_BY_SLUG` — the same record
+> the picker renders from, so the name shown and the name stored cannot drift. No new lookup table,
+> as the block requires. Moved out of `api/plans/route.ts` only because the exit test must call it;
+> that is C2 level 3 (moving existing code), not a new abstraction.
+>
+> **Dates:** both unpinned sites now pass `DISPLAY_LOCALE` (`web/src/lib/locale.ts`).
+> `plans-client.tsx:227` is the one the deck screenshotted as `8月8日周六`; `suggested-readings.tsx:221`
+> is the second site `R0` found that nobody had noticed.
+>
+> **PRODUCT DECISION RECORDED, per the block's own instruction:** `en-US` is pinned because the
+> product is English-only — English corpus, English UI, nothing translated. If localisation ever
+> reaches the roadmap this constant becomes a real locale system rather than a pin. The comment in
+> `locale.ts` is the pointer, and §9 carries the backlog entry.
+>
+> **NOT DONE — the two `BROWSER` checks.** Rendering dates under forced `en-US` *and* `zh-CN`, and
+> confirming no React hydration warnings, both need a rendered page against a database this tree
+> has no credentials for. They are the checks that would catch a wrong `timeZone` or a
+> server/client mismatch, so the block is `~`, not `x`. **Do not mark them from a code reading.**
+>
+> **Pre-existing failure, proven not mine:** `better-auth-wiring.test.ts` fails on `basePath` — a
+> stale Better Auth test the Neon cutover left, which ADR-107 condition 1 deliberately keeps until
+> Neon Auth is verified. Stashing this branch's changes reproduces it identically.
 
 ---
 
@@ -1698,6 +1721,13 @@ Each row is a block whose "reuse the existing X" premise `R0` killed. The estima
 | **A CI test deriving required grants from the code's write verbs** | `INSTR` | The audit above is a point-in-time human read; nothing re-runs it. The durable form asserts, per table, that `app_runtime`'s privileges match exactly the verbs the app's SQL uses — derived from source, never hand-listed. Needs a live DB, so it belongs with the `db-invariants` CI job rather than the offline suite. Not built here: it is a new mechanism, and a fix is not the place to introduce one. |
 | **A check that a migration's cited premise still holds** | `INSTR` | 039 broke two features by citing 016's "no GRANT needed" comment, which 032 had already invalidated. Nothing detects a migration reasoning from a superseded fact. This is the watchlist's hand-maintained-expected-set class in a new shape and deserves one deliberate decision rather than a fifteenth instance. |
 | **`L1b`'s 15s threshold is aimed at the wrong number** | `INSTR` | Measured 104s and 58s against the block's stated "~18s success, ~45s failure". Re-derive the threshold from real timings before building the line, or it sets an expectation the product misses by 5×. |
+
+### Filed by `L2c` — 2026-08-08
+
+| Item | Block | Reason |
+|---|---|---|
+| **9 unpinned `toLocaleString` calls on numbers** | `L2c` | `n.toLocaleString()` renders `1.234` on a German browser and `1,234` here — the same reader-locale inconsistency as the dates, smaller blast radius. Across `word-study/page.tsx`, `work-toc.tsx` (×4 lines, 6 calls), `plan/store.ts`, `plural.ts` — six files, past §0.4's ~3-file stop condition, and `L2c`'s minimal change says "every other **date**-format call". Ratcheted at 9 by `date-locale-and-plan-title.test.ts` so a tenth goes red; it is bounded, not ignored. |
+| Real locale system (beyond the `en-US` pin) | `L2c` | Already listed below — `locale.ts` is now the single constant a real system would replace. |
 
 ### Pre-seeded at planning time
 

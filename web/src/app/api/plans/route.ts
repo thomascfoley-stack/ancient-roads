@@ -4,6 +4,7 @@ import { apiError } from '@/lib/api-error';
 import { parsePlanSpec } from '@/lib/plan/spec';
 import { resolveCanonicalGroup } from '@/lib/plan/canonical-groups';
 import { createPlan, listPlans, topicTitle } from '@/lib/plan/store';
+import { defaultPlanTitle } from '@/lib/plan/title';
 
 export const runtime = 'nodejs';
 
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
       const t = await topicTitle(parsed.spec.scope).catch(() => null);
       title = t ? `${t} in ${parsed.spec.weeks} week${parsed.spec.weeks === 1 ? '' : 's'}` : 'Topical plan';
     } else {
-      title = defaultTitle(parsed.spec);
+      title = defaultPlanTitle(parsed.spec);
     }
   }
   title = title.slice(0, 200);
@@ -72,21 +73,3 @@ export async function POST(req: NextRequest) {
     return apiError('INTERNAL');
   }
 }
-
-function defaultTitle(spec: PlanSpecForTitle): string {
-  const what =
-    spec.scope.kind === 'book' ? spec.scope.book
-    : spec.scope.kind === 'range' ? spec.scope.ref
-    : spec.scope.kind === 'books' ? resolveCanonicalGroup(spec.scope.group)?.label ?? spec.scope.group
-    : 'Topical plan'; // topic scope resolves its verified title above; this arm is unreachable there
-  return `${what} in ${spec.weeks} week${spec.weeks === 1 ? '' : 's'}`;
-}
-
-type PlanSpecForTitle = {
-  scope:
-    | { kind: 'book'; book: string }
-    | { kind: 'range'; ref: string }
-    | { kind: 'books'; group: string }
-    | { kind: 'topic'; workSlug: string; sectionId: number };
-  weeks: number;
-};
