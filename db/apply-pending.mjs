@@ -77,9 +77,33 @@ try {
     .filter((f) => /^\d+_.*\.sql$/.test(f))
     .sort((a, b) => Number(a.match(/^\d+/)[0]) - Number(b.match(/^\d+/)[0]));
 
-  const { rows } = await client.query(
+  let { rows } = await client.query(
     `SELECT filename FROM schema_migrations`,
   ).catch(() => ({ rows: null }));
+
+  // ONE-SHOT LEDGER CORRECTION. A bootstrap assumption can be wrong, and when it is, the wrong rows
+  // persist and the missing migrations are skipped forever. That happened on 2026-08-08: the CI
+  // branch was declared "applied through 103" on the evidence that its suite was green apart from
+  // auth, and 105 then failed with `relation "user_documents" does not exist` — migrations 100..103
+  // are Lane B's and had only ever been applied to `lane-b-uploader`.
+  //
+  // So the ledger needs to be able to forget a claim it should not have made. Comma-separated
+  // numbers; deletes only those rows, logs what it removed, and is a no-op once they are gone.
+  const forget = (process.env.APPLY_PENDING_FORGET ?? '')
+    .split(',')
+    .map((n) => n.trim())
+    .filter(Boolean);
+  if (forget.length && rows !== null) {
+    const names = files.filter((f) => forget.includes(String(Number(f.match(/^\d+/)[0]))));
+    if (names.length) {
+      const { rowCount } = await client.query(
+        `DELETE FROM schema_migrations WHERE filename = ANY($1::text[])`,
+        [names],
+      );
+      console.warn(`  ⚠ forgot ${rowCount} ledger row(s) so they re-apply: ${names.join(', ')}`);
+      rows = rows.filter((r) => !names.includes(r.filename));
+    }
+  }
 
   let applied;
   if (rows === null) {

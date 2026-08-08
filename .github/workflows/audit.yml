@@ -176,7 +176,14 @@ jobs:
           # the one that landed that day and was never applied here. If 100..103 turn out to be
           # missing too, their own tests say so — this records them, it does not hide them.
           # Remove this line once the ledger exists; after the first run it is a no-op.
-          APPLY_PENDING_ASSUME_APPLIED_THROUGH: '103'
+          APPLY_PENDING_ASSUME_APPLIED_THROUGH: '99'
+          # ONE-SHOT, remove after the next green run. The first bootstrap declared 103 on the
+          # evidence that this suite was green apart from auth. It was WRONG: 105 then failed with
+          # `relation "user_documents" does not exist`, because 100..103 are Lane B's and had only
+          # ever been applied to `lane-b-uploader` (MASTER B1 says so in as many words — I should
+          # have read it before choosing the number). These four rows were recorded as applied and
+          # never run, so they must be forgotten before they can be applied.
+          APPLY_PENDING_FORGET: '100,101,102,103'
         run: node db/apply-pending.mjs
 
       - name: DB-backed invariants (real DB) — whole directory, no allowlist
