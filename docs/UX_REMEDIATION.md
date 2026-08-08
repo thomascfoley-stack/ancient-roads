@@ -2558,6 +2558,36 @@ revisit.
 Anything moved out of a block during execution lands here. Pre-seeded with items deliberately
 deferred at planning time.
 
+### Filed 2026-08-08 — DEPLOY BLOCKED by a concurrent session writing into the deploy tree
+
+**`F1-fonts` is built, merged to `main` (`8e1de21`) and NOT DEPLOYED.** `deploy.sh`'s clean-tree
+gate refused, correctly:
+
+```
+✗ DEPLOY BLOCKED — the working tree is dirty.
+?? docs/FEATURE_AUDIT.md
+```
+
+`docs/FEATURE_AUDIT.md` — 114 lines, 11,457 bytes, mtime 2026-08-08 10:58, i.e. **written during
+this run** — is not this session's work. It cites `Polish_Plan.md` (Desktop) Phase 0 and
+`docs/MARKETING_SITE_DESIGN.md` §5, neither of which this session has touched or read, and its own
+header records that the second does not exist in the working tree.
+
+**This is `AGENTS.md`'s "one agent per working tree" hazard, live**, and the same shape as the
+2026-07-12 incident that rule exists for: a session deployed a concurrent session's un-reviewed
+in-flight changes to production without either intending it.
+
+**Not worked around, and the reasoning is deliberate.** `vercel --prod` uploads `web/` alone (A6),
+so a file in `docs/` physically cannot reach production — which is an argument for *bypassing* the
+gate, and it is rejected. Reasoning past a safety gate on a case-by-case judgement is how the gate
+stops meaning anything. The file is also not this session's to commit, stash, or delete.
+
+**Owner action required, and it is a choice, not a fix:** identify the concurrent session and let
+it commit its own work, or authorise this session to set the file aside. Until then every deploy in
+this queue is blocked, `F1-fonts` included.
+
+**What is NOT blocked:** building and merging the remaining queue items. Only the deploy step waits.
+
 ### Filed 2026-08-08 by `PR1a`'s browser pass — two findings outside this block
 
 Both found while verifying `PR1a`, both **measured against production, not inferred**, and neither
