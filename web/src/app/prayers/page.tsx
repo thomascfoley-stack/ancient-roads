@@ -5,6 +5,11 @@ import { PrayerJournal } from '@/components/prayer-journal';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Prayer journal' };
 
-export default function PrayersPage() {
-  return <PrayerJournal />;
+export default async function PrayersPage({ searchParams }: { searchParams: Promise<{ verse?: string }> }) {
+  const { verse } = await searchParams;
+  // `?verse=` PRE-FILLS the reference; it never requires one. A prayer stands alone (owner ruling
+  // 2026-08-08), so anything unparseable simply opens the journal rather than erroring.
+  const n = Number(verse);
+  const verseId = Number.isInteger(n) && n > 0 ? n : null;
+  return <PrayerJournal initialVerseId={verseId} />;
 }

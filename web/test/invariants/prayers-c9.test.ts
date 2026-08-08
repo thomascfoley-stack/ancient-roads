@@ -98,6 +98,14 @@ describe('PR1a / C9 — prayer text enters no index', () => {
     expect(leaking, 'a retrieval surface reads prayers — C9 forbids the user\'s words becoming corpus').toEqual([]);
   });
 
+  it('the carry-forward reaches no AI either, transitively', () => {
+    // The migration turns study-list names into prayer BODIES, so it is inside C9's boundary even
+    // though it never touches the prayers table. Same graph walk, same rule.
+    const graph = [...importGraph('lib/prayer-carry-forward.ts')];
+    expect(graph.length, 'carry-forward module not found — this check would be vacuous').toBeGreaterThan(0);
+    expect(graph.filter((f) => AI_MODULES.test(f)), 'the carry-forward must reach no model').toEqual([]);
+  });
+
   it('prayers are absent from the annotations/notes surfaces', () => {
     // A prayer is a distinct entity, never notes-with-a-flag. If the notes layer knows about
     // prayers, the separation has already collapsed.
