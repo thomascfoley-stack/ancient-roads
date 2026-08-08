@@ -1,5 +1,50 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-07 — A1 attack-surface audit, and its two reproduced findings fixed
+
+Branch `fix/a1-security`. The lens that died mid-run in the first pre-deploy sweep, re-run as **two**
+agents (upload/parse, routes/authz) because the original exhausted itself covering both. Both
+completed; **all 26 API route handlers are now audited.** 20 findings: 1 CRITICAL, 3 HIGH.
+
+**The verdict changed shape.** The deploy was blocked on a build failure; it is now blocked on
+security, and three findings are **live on production today**, independent of any deploy.
+
+**A1-1 (CRITICAL), fixed `1ab40de`.** A 919-byte .docx upload burned **46 seconds of CPU**. Three of
+the four regexes in `xmlToText` were `<w:tag` + `[^>]*` + a required terminator — quadratic when the
+terminator never arrives. `MAX_DECOMPRESSED_BYTES` is 80 MB, three orders of magnitude above what
+the attack needs, so the zip-bomb cap **authorised** this rather than bounding it. Reachable by any
+signed-up account, on a route with no rate limit, running inside `after()` past the 201, re-served
+three times by `MAX_ATTEMPTS`. Fixed by narrowing to `[^<>]*` (and the `<w:t>` body to `[^<]*`) —
+the semantically correct classes, since XML attribute values and character data cannot hold a raw
+`<`. Red-proofed: 1059/1254/3077 ms on 128 KB before, **4 ms** after; 5657-11260× faster at 256 KB.
+
+**A1-5 (MEDIUM), fixed `d6a1e22`.** `/\evil.com` passed the gate's `startsWith('/') &&
+!startsWith('//')` guard and resolved to `https://evil.com/` — WHATWG treats a backslash as a slash.
+Replaced with resolve-and-compare rather than a third prefix clause: the prefix rule reasons about
+the string while the browser reasons about the resolved URL. Red-proofed **both ways**.
+
+**Also found and NOT fixed:** A1-2 (Better Auth's limiter is an in-memory Map, so signup/signin/reset
+are unthrottled on serverless — this repo built a DB-backed limiter for `/api/gate` and `/api/ask`
+and left the highest-value endpoints on the library default); A1-3 (one attacker can exhaust the
+2,000/day global ask ceiling and take `/ask` offline for everyone); A1-4 (no advisory scan reads the
+lockfile that ships).
+
+**A correction owed to repo history:** `d589140`'s claimed "PDF.js RCE fix" is a version bump whose
+stated mechanism is not corroborated by its own before-state — `isEvalSupported` and `new Function(`
+occur **zero times in both 5.7.284 and 6.2.108**. The bump is real; the explanation is not, and
+neither agent could establish what the advisory was.
+
+### NOT DONE / UNVERIFIED
+
+- **A1-2 and A1-3 are open and live.** A1-3's remedy is a product decision (allowlist? priority
+  tier? per-IP floor?), not just code — owner call.
+- **Only A1-1 and A1-5 are red-proofed.** A1-2, A1-3, A1-6 and A1-7 are high-confidence code reads;
+  nothing was driven against a running server, no second account was created, so **nothing in A1
+  speaks to RLS as enforced in production**.
+- The deploy remains blocked: `db-invariants` red on `main`, and `DEPLOY_PREFLIGHT.md` still points
+  rollback at a bundle predating migrations 044/045.
+- `npm run audit` NOT RUN (no dev `DATABASE_URL`). Web suite green: 610 passed, 188 skipped.
+
 ## 2026-08-07 — `L2` step 1 LIVE: migration 106 applied to production, both plan writes fixed
 
 Branch `fix/L2`. **Two features that had never worked for any user now work**: `Mark as read`

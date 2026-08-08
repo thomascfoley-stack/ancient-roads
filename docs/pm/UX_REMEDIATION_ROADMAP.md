@@ -84,13 +84,13 @@ Ordered by the spec's waves. Sizes are from `R0`'s findings, not guesses.
 definition of done. `PR1a` also grew: `R0` found the Channels shell it was to reuse is
 localStorage-only, so it must build its own persistence.
 
-## Stream C — audit findings (57 open, 1 CRITICAL)
+## Stream C — audit findings (55 open, 0 CRITICAL)
 
 **A1 added 20, and three of them are not deploy blockers — they are live defects on production
 today**, reachable by any signed-up account once the preview gate comes off:
 
-- **A1-1 CRITICAL** — .docx ReDoS: a 919-byte upload burns 46s of CPU; the 80 MB decompression cap
-  authorises rather than bounds it. Reproduced independently (quadratic confirmed).
+- ~~**A1-1 CRITICAL** — .docx ReDoS~~ **FIXED 2026-08-07 (`1ab40de`)**, red-proofed; 5657-11260×
+  faster at 256 KB, full web suite green.
 - **A1-2 HIGH** — Better Auth's limiter is in-memory, so signup/signin/reset are unthrottled on
   serverless. This repo built a DB-backed limiter for `/api/gate` and `/api/ask` and left the
   highest-value endpoints on the library default.
@@ -142,8 +142,7 @@ conversation about people and hardware, not about agent time.
 **Revised after A1**, whose findings outrank the deploy: three of them are live on production now
 and do not wait for a ship.
 
-1. **A1-1 (CRITICAL ReDoS) + A1-5 (open redirect)** — both reproduced, both small, both live. The
-   ReDoS is a bounded-input fix on four regexes; the redirect is one guard.
+1. ~~**A1-1 + A1-5**~~ **DONE 2026-08-07** (`1ab40de`, `d6a1e22`), both red-proofed.
 2. **A1-2 + A1-3** — move Better Auth onto the DB-backed limiter this repo already has, and give
    the global ask ceiling something an attacker cannot trivially exhaust. ⚑ A1-3's remedy is a
    product decision (allowlist? priority tier? per-IP floor?), not just code.

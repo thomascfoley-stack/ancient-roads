@@ -254,7 +254,7 @@ live on production today.
 
 ## CRITICAL
 
-- [ ] **A1-1. ReDoS in the .docx text extractor — a 919-byte upload burns 46 seconds of CPU.**
+- [x] **A1-1. FIXED `1ab40de`.** ReDoS in the .docx text extractor — a 919-byte upload burns 46 seconds of CPU.**
       `web/src/lib/user-corpus/parse-docx.ts:129,130,131,138`. All four regexes are
       `<w:tag` + `[^>]*` + a required terminator; on input where the terminator never arrives the
       engine retries every prefix from every start offset.
@@ -300,7 +300,7 @@ live on production today.
 
 ## MEDIUM
 
-- [ ] **A1-5. Open redirect in the gate's `next` parameter.** `web/src/app/api/gate/route.ts:46,57`.
+- [x] **A1-5. FIXED `d6a1e22`.** Open redirect in the gate's `next` parameter. `web/src/app/api/gate/route.ts:46,57`.
       The guard is `startsWith('/') && !startsWith('//')`; WHATWG URL treats `\` as `/`, so
       `next=/\evil.com` passes. **Independently reproduced:** `new URL('/\\evil.com', …)` →
       `https://evil.com/`. A preview-holder is sent `…/gate?next=/\evil.com`, types the shared
@@ -406,3 +406,23 @@ reproduced myself). No second account, so nothing here speaks to RLS as enforced
 teacher/verifier internals and `sanitizeSnippet` were traced at the boundary but not line-audited —
 that is an AI-pipeline lens. No encrypted PDF and no CJK PDF were constructed, so A1-12 rests on
 package layout and defaults rather than an observed run.
+
+
+---
+
+## A1-1 and A1-5 closed — 2026-08-07
+
+**A1-1** (`1ab40de`): `[^>]*` → `[^<>]*` in every attribute scan, and the `<w:t>` body from
+`[\s\S]*?` to `[^<]*`. Both are the semantically correct classes, not merely faster ones — XML
+attribute values and character data cannot hold a raw `<`. Red-proofed: 1059/1254/3077 ms on 128 KB
+before, all five tests in **4 ms** after; at 256 KB the three passes are **5657×, 5141× and 11260×**
+faster. The test is timed rather than structural on purpose — a grep for `[^>]*` passes the moment
+someone writes the same defect differently. Full web suite green (610 passed), `parse-docx.test.ts`
+and its zip-bomb cases still pass.
+
+**A1-5** (`d6a1e22`): replaced the two-clause prefix rule with resolve-and-compare (`safeNext`).
+Red-proofed **both ways** — with the old guard seeded back in, the test fails on all five bypasses;
+with the fix it passes and genuine paths (`/read/jhn/1#v14`, `?q=grace`) survive untouched.
+
+**Still open from A1:** A1-2 and A1-3 (both HIGH, both live) — A1-3's remedy needs an owner call on
+what replaces a flat global ceiling. A1-4, and the MEDIUM/LOW list.

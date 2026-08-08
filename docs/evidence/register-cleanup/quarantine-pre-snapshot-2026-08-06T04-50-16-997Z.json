@@ -1,0 +1,29 @@
+{
+  "host": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "direction": "published->quarantined",
+  "slugFile": "docs/evidence/register-cleanup/quarantine-slugs.json",
+  "slugs": [
+    "calvin-calcom",
+    "augustine-confessions"
+  ],
+  "servedBefore": {
+    "calvin-calcom": {
+      "rows": 860,
+      "served": 860
+    },
+    "augustine-confessions": {
+      "rows": 624,
+      "served": 624
+    }
+  },
+  "sources": [
+    {
+      "slug": "augustine-confessions",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom",
+      "status": "published"
+    }
+  ]
+}
