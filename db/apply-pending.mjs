@@ -81,19 +81,43 @@ try {
     `SELECT filename FROM schema_migrations`,
   ).catch(() => ({ rows: null }));
 
+  let applied;
   if (rows === null) {
-    // No ledger on this target. recordMigration() creates it (032's DDL) on the first apply, but
-    // with no ledger we cannot know what is already applied — and replaying 001 onward against a
-    // populated database is destructive. Refuse loudly rather than guess.
-    console.error(
-      '✗ REFUSE: this target has no schema_migrations table, so "pending" cannot be computed.\n' +
-        '  Apply one migration with db/apply-migration.mjs first (it creates the ledger), or\n' +
-        '  seed the target from a snapshot that has one. Replaying from 001 is not safe here.',
+    // No ledger on this target. Replaying 001 onward against a populated database is destructive,
+    // so we cannot simply proceed — but refusing outright leaves a target permanently unusable,
+    // which is where the CI branch was: no ledger, so no migration had ever been recorded there,
+    // so nothing could compute "pending".
+    //
+    // The escape is an EXPLICIT, DECLARED ASSUMPTION rather than a guess. The caller states the
+    // highest migration number it believes is already applied; this records 001..N as applied
+    // WITHOUT running them, and applies N+1 onward normally. The assumption is the caller's and it
+    // is printed, so a wrong one is visible in the log rather than silent.
+    const through = Number(process.env.APPLY_PENDING_ASSUME_APPLIED_THROUGH);
+    if (!Number.isInteger(through) || through < 0) {
+      console.error(
+        '✗ REFUSE: this target has no schema_migrations table, so "pending" cannot be computed.\n' +
+          '  Replaying from 001 against a populated database is destructive, so this is not a guess\n' +
+          '  the runner will make.\n' +
+          '  If you know the target is already migrated through N, say so explicitly:\n' +
+          '    APPLY_PENDING_ASSUME_APPLIED_THROUGH=N node db/apply-pending.mjs\n' +
+          '  That records 001..N as applied WITHOUT running them, then applies N+1 onward.',
+      );
+      process.exit(1);
+    }
+    console.warn(
+      `  ⚠ no ledger on this target. BOOTSTRAPPING on the caller's declared assumption that\n` +
+        `    migrations 001..${String(through).padStart(3, '0')} are ALREADY APPLIED. They will be recorded, not run.\n` +
+        `    If that is wrong, the missing ones stay missing and their tests will say so.`,
     );
-    process.exit(1);
+    const assumed = files.filter((f) => Number(f.match(/^\d+/)[0]) <= through);
+    for (const f of assumed) {
+      await recordMigration(client, path.join(DIR, f), readFileSync(path.join(DIR, f), 'utf-8'));
+    }
+    console.log(`  ✓ recorded ${assumed.length} migration(s) as pre-applied`);
+    applied = new Set(assumed);
+  } else {
+    applied = new Set(rows.map((r) => r.filename));
   }
-
-  const applied = new Set(rows.map((r) => r.filename));
   const pending = files.filter((f) => !applied.has(f));
 
   if (pending.length === 0) {

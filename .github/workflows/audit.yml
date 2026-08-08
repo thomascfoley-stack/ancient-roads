@@ -169,6 +169,14 @@ jobs:
       - name: apply pending migrations to the test branch
         env:
           MIGRATE_TARGET_ENDPOINT: ep-tiny-bonus-at3izo3y
+          # This branch has never carried a ledger, so "pending" is uncomputable until one exists,
+          # and replaying from 001 against a populated database is destructive. The assumption is
+          # declared rather than guessed, and it is EVIDENCE-BACKED: before 2026-08-05 this suite
+          # was green apart from auth, so the schema was current through 103; 104 (Better Auth) is
+          # the one that landed that day and was never applied here. If 100..103 turn out to be
+          # missing too, their own tests say so — this records them, it does not hide them.
+          # Remove this line once the ledger exists; after the first run it is a no-op.
+          APPLY_PENDING_ASSUME_APPLIED_THROUGH: '103'
         run: node db/apply-pending.mjs
 
       - name: DB-backed invariants (real DB) — whole directory, no allowlist

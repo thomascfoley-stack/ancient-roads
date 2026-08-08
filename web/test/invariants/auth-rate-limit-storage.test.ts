@@ -48,7 +48,10 @@ describe('better-auth rate limiting is database-backed', () => {
 
     expect(statements).toHaveLength(1);
     expect(statements[0]).toMatch(/INSERT INTO api_rate_limit/);
-    expect(statements[0]).toMatch(/ON CONFLICT .* DO UPDATE SET count = api_rate_limit\.count \+ 1/s);
+    // `[\s\S]` rather than `.` with the /s flag: web/test's tsconfig targets below es2018, where
+    // TS1501 rejects that flag. Caught by CI, not locally — `tsc -p web/tsconfig.json` does not
+    // cover web/test.
+    expect(statements[0]).toMatch(/ON CONFLICT [\s\S]* DO UPDATE SET count = api_rate_limit\.count \+ 1/);
     expect(statements[0], 'a SELECT before the write is the race this exists to close').not.toMatch(/^\s*SELECT/i);
   });
 
