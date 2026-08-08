@@ -2586,6 +2586,50 @@ revisit.
 Anything moved out of a block during execution lands here. Pre-seeded with items deliberately
 deferred at planning time.
 
+### Filed 2026-08-08 — RATE LIMITER RE-WIRE: **STOPPED**, cannot be done without redesign
+
+**Instructed:** wire A1-2's persistent rate limiter into the live auth path; *"if the limiter as
+built can't serve the live path without redesign, STOP, report, don't redesign unilaterally."*
+**It can't. Stopping.**
+
+**The limiter is a Better Auth plugin adapter.** `web/src/lib/auth/rate-limit-storage.ts:73`
+exports `createAuthRateLimitStorage`, and its own header (`:21`, `:32`) states the contract it
+implements: Better Auth's atomic `consume`, taking a `ConsumeRule` whose `window` is in seconds,
+returning the `null`-not-`undefined` shape *"Better Auth's `BetterAuthRateLimitStorage` types it
+that way"*. It was built to be passed as `authOptions.rateLimit.customStorage` — a plugin point
+that exists **only when we run the better-auth instance ourselves**.
+
+**We no longer do.** ADR-107/108 replaced the self-hosted instance with Neon's hosted one:
+
+- `web/src/lib/auth/neon-auth.ts:25,31` — the entire config is `{ baseUrl, cookies: { secret } }`.
+- The SDK's type is `NeonAuthConfig = NeonAuthBase & NeonAuthLoggingInput`, and its **complete**
+  field set is `baseUrl`, `cookies`, `loginUrl?`, `log?`.
+- **Measured across the whole SDK type surface: `rateLimit` 0 occurrences, `customStorage` 0,
+  `secondaryStorage` 0.** There is no plugin point to pass it to.
+- `web/src/app/api/auth/[...path]/route.ts:16,20` — GET/POST delegate to `getAuth().handler()`,
+  which `fetch`es `baseUrl`. **better-auth runs on Neon's servers, not ours.** Our code is an HTTP
+  proxy, and a storage adapter cannot be injected into a process we do not run.
+
+**Current call sites of the limiter: 0** (repo-wide, excluding its own file).
+
+**So the re-wire is not a wiring job — it is a different limiter.** Serving the live path means
+rate-limiting *in front of* the proxy route rather than inside better-auth: different placement,
+different keying (IP + path, since better-auth's rule model is not ours to read), different
+failure semantics, and a decision about what Neon's hosted service already enforces — **which is
+unknown and not observable from this repo.** That is a design, and designs are ruled on, not
+improvised. `CLAUDE.md`: *"Design before code… get approval before implementing."*
+
+**What the owner must decide:**
+1. **Build a proxy-level limiter** in `route.ts` — new design, needs a written spec first.
+2. **Confirm Neon's hosted rate limiting** is sufficient and **delete** `rate-limit-storage.ts` —
+   bylaw 3, deletion is an allowed remedy, and a module with zero call sites is debt.
+3. **Leave it orphaned** — the current state, which is the one option that should not survive a
+   decision, because 7 green tests were certifying it until 2026-08-08.
+
+**Until then A1-2 is UNMITIGATED on the live path.** That is not a regression this run introduced —
+it has been true since the Neon cutover — but it was previously hidden behind a passing test suite,
+and it should not be hidden again.
+
 ### Filed 2026-08-08 — DEPLOY BLOCKED by a concurrent session writing into the deploy tree
 
 **`F1-fonts` is built, merged to `main` (`8e1de21`) and NOT DEPLOYED.** `deploy.sh`'s clean-tree
