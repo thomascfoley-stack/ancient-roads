@@ -92,6 +92,13 @@ session under Neon Auth) and rate limiting on Neon's hosted auth endpoints (undo
 ADR-109 research — must be probed empirically once something is actually live). Both deferred to
 post-deploy verification, §9/§10.
 
+**`npm run audit` (the full gate) REFUSED, not NOT-RUN**: `scripts/audit.sh`'s first leg fails
+closed with no dev `DATABASE_URL` in root `.env.local` — this session has none. Ran the
+DB-independent legs directly instead: `tsc --noEmit` clean under both `tsconfig.json` and
+`tsconfig.test.json`, and the `test/invariants/` run reported above. Did not attempt to work
+around the refusal (e.g. supplying a URL myself) — no dev DB credentials available to this
+session, consistent with §0's owner-gate framing for anything touching real infrastructure.
+
 Branch `fix/a1-security`. The lens that died mid-run in the first pre-deploy sweep, re-run as **two**
 agents (upload/parse, routes/authz) because the original exhausted itself covering both. Both
 completed; **all 26 API route handlers are now audited.** 20 findings: 1 CRITICAL, 3 HIGH.
