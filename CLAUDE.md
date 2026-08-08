@@ -35,6 +35,7 @@ Ancient Paths is a **concordance, not a commentator.** It reports what others ha
 - **The repo is the shared channel. Do not leave status or recommendations only in chat.** After any unit of work, write what you did, what you found, and what you recommend next into `WORKLOG.md`; update `ROADMAP.md` status; log irreversible/architectural calls in `docs/DECISIONS.md`.
 - **The source of truth for status is `ROADMAP.md`, for history/rationale `WORKLOG.md`, for process `docs/ENGINEERING.md`, and for the current VERIFIED system state (numbers/corpus/gates/open gaps, checked against prod) `docs/STATE_OF_TRUTH.md`.** Keep them current — reconcile docs to the actual tree, never to memory.
 - **Commit per logical change and push.** Never leave a large uncommitted working tree; the live site must not run ahead of git history with no backup.
+- **Only one agent session per working tree at a time — a second session must be read-only AND write-free, or work in a separate clone.** Any write by a second session blocks the first's deploy: `deploy.sh` gates on a clean tree and cannot tell whose file it is. See `AGENTS.md` ground rules.
 
 ## Engineering values
 

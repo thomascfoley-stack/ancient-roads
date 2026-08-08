@@ -45,6 +45,11 @@ rediscovering them. Do not duplicate their content here - go read them.
 ## Ground rules for any agent session
 
 - `npm run audit` is the definition of green. Run it before claiming done.
+- **Only one agent session per working tree at a time. A second session must be read-only AND
+  write-free, or work in a separate clone** — any write blocks the first session's deploy, because
+  `deploy.sh` gates on a clean tree and cannot tell whose file it is (2026-08-08: an untracked
+  `docs/` file from a second session blocked a ready deploy; the rule below was scoped to deploys
+  and DB writes, so it did not cover the session that caused it).
 - One agent per working tree for anything that deploys or writes a database. Concurrent
   sessions have shipped each other's half-finished work here before (2026-07-12) and clobbered
   cutover checkpoints (2026-07-27). The guards exist, but do not lean on them.
