@@ -1283,10 +1283,21 @@ UI for an unshipped feature left enabled rather than gated.
 
 **Exit test**
 
-- [ ] `BROWSER` A fresh account cannot create any object that leads to a placeholder page.
-- [ ] `AGENT` No orphaned channels or study partners remain in the sidebar for accounts that already created them; the hide-or-migrate decision is recorded in the Findings log and implemented.
-- [ ] `AGENT` The old Channels route either redirects or 404s per the recorded decision — it does not render a placeholder.
-- [ ] `BROWSER` The sidebar PRAYER JOURNAL section either shows the shipped `PR1a` journal, or is hidden. **No third state.**
+- [x] `BROWSER` A fresh account cannot create any object that leads to a placeholder page. — **CLOSED 2026-08-08 by the owner** on browser-extension verification.
+- [~] `AGENT` No orphaned channels or study partners remain in the sidebar for accounts that already created them; the hide-or-migrate decision is recorded in the Findings log and implemented. — **NOT FULLY MET. Reopened by the owner's extension pass**, which found rail entries (`MY SERMONS`, `BIBLE STUDIES`) in *existing* readers' `localStorage` still linking to `/channel/*`. The seeded sections were removed, but reader-created ones survive. Carried to block `PR1c` item 1 — this check closes when that does.
+- [x] `AGENT` The old Channels route either redirects or 404s per the recorded decision — it does not render a placeholder. — **CLOSED 2026-08-08 by the owner** on extension evidence, and the status settled by measurement: **`307 Temporary Redirect → /prayers`**.
+- [x] `BROWSER` The sidebar PRAYER JOURNAL section either shows the shipped `PR1a` journal, or is hidden. **No third state.** — **CLOSED 2026-08-08 by the owner.**
+
+> **How the 307 was settled, and why the obvious command could not do it.** `curl -I` against
+> **production** returns `307 → /gate?next=%2Fchannel%2Fabc123` — **that is the site-password gate,
+> not this route's redirect.** The control proves it: `/prayers`, which has no redirect of its own,
+> returns an identical `307 → /gate?next=%2Fprayers`. An unauthenticated `curl` cannot observe this
+> redirect at all, and closing the check on that response would have been an unearned green
+> measuring a different mechanism. Measured instead where no gate intercepts (local build):
+> `HTTP/1.1 307 Temporary Redirect`, `location: /prayers`. **307 is correct** — it is Next's
+> `redirect()` default, preserves the request method, and unlike a 301/308 is not permanently
+> cached, so retiring this route stays reversible. The owner's extension evidence was taken from an
+> authenticated session past the gate and saw the real behaviour.
 
 **Findings log**
 
@@ -2398,9 +2409,21 @@ faces. No CSP violation in console. The control ran too: `document.fonts.check('
 Font"')` returned **`true`**, confirming again that `check()` proves nothing and enumeration is the
 only honest probe.
 
-**Unticked and staying that way:** X3 (`BROWSER`, on the deployed build) and X5 (`HUMAN`, verify on
-a machine without the three fonts installed). The observations above were taken on a machine that
-*may* have these fonts locally — which is exactly why X5 exists and why no agent may close it.
+**X3 CLOSED 2026-08-08 by the owner**, on browser-extension verification of the deployed build:
+faces enumerated (not `check()`ed), all served from `'self'`, CSSOM clean. Recorded as the owner's
+verification, not the agent's — no agent ticked it.
+
+> **Wording correction that came with the closure, and it prevents a false alarm later.** The
+> stack is **EB Garamond = DISPLAY** (headings, inscriptional old-style) and **Literata = READING**
+> (scripture, commentary, answers), with Source Sans 3 for UI chrome. So **a reader page loading
+> ZERO EB Garamond faces is CORRECT, not a failure** — a long-form reading view legitimately has no
+> display type on it. Anyone auditing this later who expects all three families on every page will
+> "find" a regression that is the design working. Assert per-surface, or assert the union across
+> surfaces; never assert three families on an arbitrary page.
+
+**Still unticked:** X5 (`HUMAN`) — verify on a machine **without** these fonts installed. Every
+observation so far, agent and extension alike, was taken on machines that may have them locally,
+which is precisely the masking this block exists to defeat.
 
 **Owner ruling 2026-08-08:** self-host the stack via `next/font`. **No CSP widening.** Highest
 visual-impact item remaining.
@@ -2585,6 +2608,28 @@ revisit.
 
 Anything moved out of a block during execution lands here. Pre-seeded with items deliberately
 deferred at planning time.
+
+### Filed 2026-08-08 by the owner's post-deploy extension verification
+
+Recorded **verbatim** as filed. None investigated, none fixed — they are queue items, not findings
+this session closed.
+
+> post-deploy 503s in minute one (18/18 clean after — watch tomorrow); /home hydration blocks ~30s
+> on heavy devotional page — client bundle review; /api/prayers updates are POST-to-collection not
+> PATCH-on-resource — works, unusual, note for the API-style pass.
+
+Notes on disposition only, added without altering the text above:
+
+- **The 503s have a one-day clock on them.** "18/18 clean after" is the reassuring half; a
+  cold-start burst in minute one is the ordinary explanation and it is not the only one. If they
+  recur tomorrow *without* a deploy, the cause is not cold start and the item changes character.
+- **`/home` at ~30s is the largest live performance defect on the board** and is a client-bundle
+  question, not a retrieval one — so it is independent of the accuracy bar and can be worked
+  without an eval.
+- **The `/api/prayers` shape is mine** (`PR1a`): a single `POST` to the collection carrying
+  `kind: 'create' | 'update' | 'delete'` rather than `PATCH`/`DELETE` on `/api/prayers/[id]`. It
+  works and is tested; it is unusual, and it belongs in an API-style pass rather than a one-off
+  correction, because changing it in isolation would leave this the only route shaped that way.
 
 ### Filed 2026-08-08 — RATE LIMITER RE-WIRE: **STOPPED**, cannot be done without redesign
 
