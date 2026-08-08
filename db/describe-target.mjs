@@ -65,6 +65,29 @@ try {
     '104': ['auth_users', 'auth_sessions', 'auth_accounts', 'auth_verifications'],
     '105': ['user_document_readings'],
   };
+  // COLUMNS TOO. The first version of this checked tables only, and missed migration 044 — which
+  // ADDS `embeddings.served` rather than creating a table — so `licensing.test.ts` failed with
+  // `column "served" does not exist` after a run that had reported everything present. A migration
+  // that alters is invisible to a presence check that only looks for new relations.
+  const COLUMN_BY_MIGRATION = {
+    '024': ['sections.unit_ordinal'],
+    '031': ['sections.source_url'],
+    '044': ['embeddings.served'],
+  };
+  console.log('\nCOLUMN PRESENCE:');
+  for (const [n, cols] of Object.entries(COLUMN_BY_MIGRATION)) {
+    const missing = [];
+    for (const c of cols) {
+      const [t, col] = c.split('.');
+      const { rows: r } = await client.query(
+        `SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name=$1 AND column_name=$2`,
+        [t, col],
+      );
+      if (!r.length) missing.push(c);
+    }
+    console.log(`  ${n}: ${missing.length === 0 ? 'ALL PRESENT' : 'MISSING ' + missing.join(', ')}`);
+  }
+
   const have = new Set(tables.map((t) => t.tablename));
   console.log('\nPRESENCE BY MIGRATION:');
   for (const [n, names] of Object.entries(CREATED_BY)) {

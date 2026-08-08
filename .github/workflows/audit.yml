@@ -179,12 +179,14 @@ jobs:
         env:
           MIGRATE_TARGET_ENDPOINT: ep-tiny-bonus-at3izo3y
           # DERIVED, not guessed — db/describe-target.mjs read the branch on 2026-08-08 and reported
-          # 039 (plans, plan_days, verse_coverage, topical_entries) and 042 (plan_day_readings) as
+          # 039 and 042 as missing. 044/045 were added after `licensing.test.ts` then failed with
+          # `column "served" does not exist` — a table-presence check cannot see a migration that
+          # ALTERS, which is why describe-target now checks columns too. Missing were
           # the ONLY missing migrations; 100/104/105 and everything else were present. The earlier
           # bootstrap had recorded 039 and 042 as applied because they fall below the declared
           # cutoff, so they must be forgotten before they can be applied. ONE-SHOT: remove after the
           # next green run, when it becomes a no-op.
-          APPLY_PENDING_FORGET: '39,42'
+          APPLY_PENDING_FORGET: '39,42,44,45'
         run: node db/apply-pending.mjs
 
       - name: DB-backed invariants (real DB) — whole directory, no allowlist
