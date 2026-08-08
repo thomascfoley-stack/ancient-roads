@@ -166,6 +166,15 @@ jobs:
       # The target is declared by exact endpoint id, the same reviewable statement SEED_TEST_ENDPOINT
       # already makes below. apply-pending.mjs refuses production regardless of what is declared and
       # has no MIGRATE_ALLOW_PROD escape hatch.
+      # DIAGNOSTIC, read-only. Prints the ledger and the real table inventory so the bootstrap
+      # assumption below can be DERIVED rather than guessed. Two guesses cost two CI runs on
+      # 2026-08-08; this answers it in one. Safe to keep — it changes nothing and the output is the
+      # record of what the target actually held.
+      - name: describe the test branch (read-only)
+        env:
+          MIGRATE_TARGET_ENDPOINT: ep-tiny-bonus-at3izo3y
+        run: node db/describe-target.mjs
+
       - name: apply pending migrations to the test branch
         env:
           MIGRATE_TARGET_ENDPOINT: ep-tiny-bonus-at3izo3y
