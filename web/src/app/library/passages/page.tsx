@@ -398,7 +398,7 @@ export default function PassageSearchPage() {
   return (
     <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6">
       <header className="mb-6">
-        <h1 className="font-scripture text-3xl font-medium text-stone-800 dark:text-stone-100">Passage search</h1>
+        <h1 className="font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100">Passage search</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-500 dark:text-stone-400">
           Search what others before you have said, or browse passage by passage.
           {manifest && manifest.length > 0 && (

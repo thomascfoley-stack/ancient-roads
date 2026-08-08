@@ -19,10 +19,11 @@ export function Interlinear({
   return (
     <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6">
       <div className="mb-6 flex items-baseline justify-between">
-        <h1 className="font-scripture text-3xl font-medium text-stone-800 dark:text-stone-100">
+        {/* PRD §5: chapter title is 30px EB Garamond. */}
+        <h1 className="font-display text-3xl font-medium tracking-[-0.01em] text-stone-900 dark:text-stone-100">
           {bookName} {data.chapter}
         </h1>
-        <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-500 dark:bg-stone-800 dark:text-stone-400">
+        <span className="bg-stone-100 px-3 py-1 text-xs font-medium text-stone-500 dark:bg-stone-800 dark:text-stone-400">
           {rtl ? 'Hebrew' : 'Greek'} interlinear
         </span>
       </div>
@@ -30,7 +31,8 @@ export function Interlinear({
       <div className="space-y-5">
         {verseNums.map((v) => (
           <div key={v} className="flex gap-2">
-            <span className="mt-1.5 shrink-0 select-none font-sans text-micro font-semibold text-accent-600/80 dark:text-accent-300/80">
+            {/* PRD §4: verse numbers are 11px Source Sans, antique gold, old-style figures. */}
+            <span className="mt-1.5 shrink-0 select-none font-sans text-micro font-semibold text-accent-600 [font-feature-settings:'onum'] dark:text-accent-400">
               {v}
             </span>
             <div
@@ -66,7 +68,7 @@ export function Interlinear({
         ))}
       </div>
 
-      <div className="mt-10 border-t border-stone-100 pt-6 text-center text-xs text-stone-500 dark:text-stone-400">
+      <div className="mt-10 border-t edge pt-6 text-center text-xs text-stone-500 dark:text-stone-400">
         <p>Tap any word for its {rtl ? 'Hebrew' : 'Greek'} definition, morphology, and commentaries.</p>
         {/* Attribution required by the licences of the source data (§7 licensing fix). Full
             per-work records in DATA_SOURCES.md. Strong's is PD; the text + morphology are not. */}

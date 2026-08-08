@@ -276,7 +276,7 @@ html {
  * My library, Word study, My Works — with nothing on screen saying so.
  *
  * A MASK, not a background gradient, deliberately. The same component renders in two hosts
- * with different surfaces (the rail is stone-100/stone-950, the mobile menu sheet is
+ * with different surfaces (the rail is stone-200/stone-900, the mobile menu sheet is
  * stone-50/stone-900), so a `to-transparent` gradient would have to know its host's
  * background and would silently mismatch the day either one changes. A mask fades the
  * CONTENT and is background-agnostic, so it is correct in both without being told where

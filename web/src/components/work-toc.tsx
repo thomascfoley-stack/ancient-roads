@@ -106,7 +106,7 @@ export function WorkToc({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -114,7 +114,7 @@ export function WorkToc({
       <div
         ref={dialog.ref}
         {...dialog.dialogProps}
-        className="flex max-h-[88dvh] w-full max-w-2xl flex-col rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] shadow-deep animate-slide-up dark:bg-stone-900"
+        className="flex max-h-[88dvh] w-full max-w-2xl flex-col rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] animate-slide-up dark:bg-stone-900"
         style={drag.style}
       >
         {/* Grab handle (drag down to dismiss) */}
@@ -147,7 +147,7 @@ export function WorkToc({
             onChange={(e) => setQuery(e.target.value)}
             placeholder={`Search ${toc.length.toLocaleString()} entries…`}
             aria-label="Search the contents"
-            className="w-full rounded-lg bg-stone-100 px-3 py-2 text-base sm:text-sm text-stone-800 placeholder:text-stone-500 dark:placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:bg-stone-800 dark:text-stone-100"
+            className="w-full border edge bg-transparent px-3 py-2 text-base sm:text-sm text-stone-800 placeholder:text-stone-500 dark:placeholder:text-stone-400 dark:text-stone-100"
           />
           {query.trim() !== '' && (
             <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
@@ -171,7 +171,7 @@ export function WorkToc({
                 {/* A FACTUAL header: the entry's own first letter, or the Bible book its own
                     anchor decodes to. Never an inferred theme. */}
                 {groupLabel && (
-                  <p className="sticky top-0 z-10 -mx-3 bg-paper/95 px-4 pb-1 pt-2 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400 backdrop-blur dark:bg-stone-900/95">
+                  <p className="sticky top-0 z-10 -mx-3 bg-paper px-4 pb-1 pt-2 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400 dark:bg-stone-900">
                     {groupLabel}
                   </p>
                 )}

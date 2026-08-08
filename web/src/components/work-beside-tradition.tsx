@@ -195,12 +195,12 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
                 No one in the library writes on the {passages === 1 ? 'passage' : 'passages'} this document anchors.
               </p>
             ) : (
-              <ul className="space-y-2">
+              <ul className="border-y edge">
                 {grouped.map((g) => {
                   const key = `${g.author}|${g.work}`;
                   const st = open[key];
                   return (
-                    <li key={key} className="rounded-xl bg-paper shadow-paper dark:bg-stone-800 dark:shadow-none">
+                    <li key={key} className="border-b edge last:border-b-0">
                       <button
                         type="button"
                         aria-expanded={Boolean(st)}
@@ -220,7 +220,7 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
                         <span aria-hidden className="shrink-0 text-stone-400">{st ? '−' : '+'}</span>
                       </button>
                       {st && (
-                        <div className="border-t border-stone-100 px-4 py-3 dark:border-stone-700">
+                        <div className="border-t edge px-4 py-3">
                           {st.loading ? (
                             <p role="status" className="font-serif text-[14px] text-stone-500 dark:text-stone-400">Loading…</p>
                           ) : st.error ? (
@@ -256,7 +256,8 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
           <h2 id="work-heading" className="mb-3 font-display text-lg text-stone-700 dark:text-stone-200">
             Your work
           </h2>
-          <div className="rounded-xl bg-paper px-5 py-6 shadow-paper sm:px-8 lg:max-h-[calc(100vh-13rem)] lg:overflow-y-auto dark:bg-stone-900 dark:shadow-none">
+          {/* Parchment surface with a 1px hairline — no card chrome (PRD §3). */}
+          <div className="border edge px-5 py-6 sm:px-8 lg:max-h-[calc(100vh-13rem)] lg:overflow-y-auto dark:bg-stone-900">
             {doc === null ? (
               <p role="status" className="font-serif text-[15px] text-stone-500 dark:text-stone-400">Loading…</p>
             ) : sections.length === 0 ? (

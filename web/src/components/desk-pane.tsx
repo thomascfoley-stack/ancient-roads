@@ -54,13 +54,13 @@ function PaneFrame({
   return (
     <section
       aria-label={`${title} (${register})`}
- className="flex min-h-0 min-w-0 flex-1 flex-col rounded-2xl border edge bg-white/40 dark:bg-stone-950/30"
+ className="flex min-h-0 min-w-0 flex-1 flex-col rounded-2xl border edge bg-paper/60 dark:bg-stone-950/30"
     >
  <header className="flex items-start justify-between gap-2 border-b edge px-4 py-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             {/* The register label. Never omitted, never inferred from position. */}
-            <span className="shrink-0 rounded-full bg-stone-200/70 px-2 py-0.5 text-micro font-semibold uppercase tracking-wider text-stone-600 dark:bg-stone-800 dark:text-stone-300">
+            <span className="shrink-0 bg-stone-200/70 px-2 py-0.5 text-micro font-semibold uppercase tracking-wider text-stone-600 dark:bg-stone-800 dark:text-stone-300">
               {register}
             </span>
             <Link href={fullHref} className="truncate font-scripture text-sm text-stone-800 hover:underline dark:text-stone-100">
@@ -76,7 +76,7 @@ function PaneFrame({
               onClick={onContents}
               aria-label={`Contents of ${title}`}
               title="Contents"
-              className="flex min-h-[32px] min-w-[32px] items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-stone-800 dark:hover:text-stone-200"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-stone-800 dark:hover:text-stone-200"
             >
               <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden>
                 <path d="M2 3.5h11M2 7.5h11M2 11.5h7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -87,7 +87,7 @@ function PaneFrame({
             type="button"
             onClick={onClose}
             aria-label={`Close ${title}`}
-            className="flex min-h-[32px] min-w-[32px] items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-stone-800 dark:hover:text-stone-200"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-stone-800 dark:hover:text-stone-200"
           >
             ✕
           </button>
@@ -182,7 +182,8 @@ function ScripturePaneView({
         <div className="space-y-1.5 font-scripture text-base leading-relaxed text-stone-800 dark:text-stone-100">
           {data.verses.map((v) => (
             <p key={v.verse}>
-              <span className="mr-1.5 align-super text-micro tabular-nums text-stone-500 dark:text-stone-400">{v.verse}</span>
+              {/* PRD §4: verse numbers are 11px Source Sans, antique gold, old-style figures. */}
+              <span className="mr-1.5 align-super font-sans text-micro tabular-nums text-accent-600 dark:text-accent-400">{v.verse}</span>
               {v.text}
             </p>
           ))}
@@ -333,7 +334,7 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
               type="button"
               onClick={() => void loadMore()}
               disabled={busy}
- className="mt-4 min-h-[40px] w-full rounded-full border edge text-sm text-stone-600 hover:bg-accent-50/50 disabled:opacity-50 dark:text-stone-300 dark:hover:bg-accent-950/20"
+ className="mt-4 min-h-[44px] w-full border edge font-sans text-sm text-stone-600 hover:bg-accent-50/50 disabled:opacity-50 dark:text-stone-300 dark:hover:bg-accent-950/20"
             >
               {busy ? 'Loading…' : 'Read more'}
             </button>
