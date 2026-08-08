@@ -30,8 +30,19 @@ const PKG = path.join(REPO, 'web/package.json');
 
 interface Lock {
   lockfileVersion: number;
-  packages: Record<string, { version?: string; resolved?: string }>;
+  packages: Record<
+    string,
+    { version?: string; resolved?: string; dependencies?: Record<string, string>; devDependencies?: Record<string, string> }
+  >;
 }
+
+interface Pkg {
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+}
+
+const readLock = (): Lock => JSON.parse(readFileSync(LOCK, 'utf8')) as Lock;
+const readPkg = (): Pkg => JSON.parse(readFileSync(PKG, 'utf8')) as Pkg;
 
 describe('web/ ships a self-contained lockfile', () => {
   it('the lockfile exists at the upload root', () => {
@@ -61,14 +72,75 @@ describe('web/ ships a self-contained lockfile', () => {
     // The point of the lockfile is that the RANGES stop deciding. If a dependency were added to
     // package.json without regenerating, `npm ci` would refuse the deploy — this says so first.
     // SEED: add a dependency to web/package.json without regenerating -> RED.
-    const lock = JSON.parse(readFileSync(LOCK, 'utf8')) as Lock;
-    const pkg = JSON.parse(readFileSync(PKG, 'utf8')) as {
-      dependencies?: Record<string, string>;
-      devDependencies?: Record<string, string>;
-    };
+    const lock = readLock();
+    const pkg = readPkg();
     const direct = [...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.devDependencies ?? {})];
     expect(direct.length).toBeGreaterThan(5);
     const unpinned = direct.filter((d) => !lock.packages[`node_modules/${d}`]?.version);
     expect(unpinned, `not in the lockfile: ${unpinned.join(', ')} — run the regeneration recipe above`).toEqual([]);
+  });
+
+  // ── the check above is NOT the check `npm ci` performs, and the gap shipped a broken deploy ──
+  //
+  // The test above asks whether each direct dependency has SOME locked version. `npm ci` asks
+  // whether the lockfile's recorded RANGES still equal package.json's. Those differ precisely when
+  // a range CHANGES while the name stays — which is what every dependabot bump produces.
+  //
+  // Measured 2026-08-07 (pre-deploy audit, docs/evidence/predeploy-audit-2026-08-07/CHECKLIST.md):
+  // web/package.json declared `pdfjs-dist: ^6.2.108` while this lockfile recorded `^5.4.149` and an
+  // installed 5.7.284. `npm ci --legacy-peer-deps` — the exact command in web/vercel.json — failed
+  // with `Invalid: lock file's pdfjs-dist@5.7.284 does not satisfy pdfjs-dist@6.2.108` (+12 more).
+  // The four tests above were GREEN on that tree. The comment at line 62 claimed they would say so
+  // first; they could not, by construction.
+  //
+  // Nothing else can catch it: CI installs from the ROOT pnpm-lock.yaml (which the bump DID update),
+  // and a local `next build` resolves through the pnpm-linked web/node_modules where the new version
+  // IS installed. The two lockfiles are compared in exactly one place — the Vercel builder, after
+  // the upload, which is past the irreversible step.
+  //
+  // So: compare the same field npm compares, rather than a proxy for it.
+  // SEED: change any range in web/package.json without regenerating -> RED.
+  it('the lockfile records the same dependency ranges package.json declares', () => {
+    const lock = readLock();
+    const pkg = readPkg();
+    const root = lock.packages[''];
+    expect(root, 'lockfile has no root package entry — it is not a v2+ lockfile npm ci can use').toBeDefined();
+
+    for (const field of ['dependencies', 'devDependencies'] as const) {
+      const declared = pkg[field] ?? {};
+      const locked = root?.[field] ?? {};
+      const drifted = Object.keys(declared)
+        .filter((name) => declared[name] !== locked[name])
+        .map((name) => `${name}: package.json wants ${declared[name]}, lockfile records ${locked[name] ?? '(absent)'}`);
+      const removed = Object.keys(locked).filter((name) => !(name in declared));
+
+      expect(
+        drifted,
+        `web/package-lock.json is stale in ${field} — \`npm ci --legacy-peer-deps\` will REFUSE this ` +
+          'on the Vercel builder, after the upload. Regenerate with the recipe at the top of this file.',
+      ).toEqual([]);
+      expect(
+        removed,
+        `lockfile ${field} lists packages package.json no longer declares: ${removed.join(', ')}`,
+      ).toEqual([]);
+    }
+  });
+
+  // Belt to the braces above: a range can match while the RESOLVED version does not satisfy it,
+  // if the two blocks were hand-edited apart. Compares the installed version against the declared
+  // range for the one shape that needs no semver parser — an exact caret major.
+  it('each installed direct version satisfies its declared major', () => {
+    const lock = readLock();
+    const pkg = readPkg();
+    const declared = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
+    const mismatched: string[] = [];
+    for (const [name, range] of Object.entries(declared)) {
+      const caret = /^\^(\d+)\./.exec(range);
+      const installed = lock.packages[`node_modules/${name}`]?.version;
+      if (!caret || !installed) continue; // non-caret ranges and absent entries are the tests above
+      const installedMajor = /^(\d+)\./.exec(installed)?.[1];
+      if (installedMajor !== caret[1]) mismatched.push(`${name}: range ${range}, installed ${installed}`);
+    }
+    expect(mismatched, `installed version is a different major than package.json declares`).toEqual([]);
   });
 });
