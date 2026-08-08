@@ -132,6 +132,33 @@ export const SERMON_NOTE = 'Preached expositions, not verse-by-verse commentary;
 export const THEOLOGY_NOTE = 'Systematic and confessional reflections on this passage: topical, not verse-commentary.';
 export const SONG_VERSE_NOTE = 'Sung and poetic responses to this passage: not commentary, and (where marked) a metrical paraphrase, not the Scripture text itself.';
 
+/**
+ * A left-border tint per era — S2 item 8.
+ *
+ * Fifteen voices on one verse render as visually identical cards, so parsing "the fathers think X,
+ * the Reformers think Y" means reading every name and year. The `era` bucket already exists and the
+ * panel already groups by it; this makes the grouping visible at a glance.
+ *
+ * PALETTE TOKENS ONLY, no new hues — the block forbids them. The suggested mapping is deep
+ * terracotta for the Early Church and olive for the Reformation; olive is not in this app's ladder,
+ * so Reformation takes a lighter accent rather than importing a hue for one row.
+ *
+ * COLOUR IS REDUNDANT HERE, NEVER THE SOLE ENCODING. The panel keeps its uppercase era heading and
+ * every card keeps author, year and tradition. If anyone later proposes dropping the text headings
+ * "because the colours do that now", the answer is no, and `s2-era-accent.test.ts` enforces it.
+ */
+const ERA_ACCENT: Record<string, string> = {
+  'Early Church': 'border-l-accent-700 dark:border-l-accent-400',
+  'Medieval': 'border-l-accent-500 dark:border-l-accent-300',
+  'Reformation': 'border-l-accent-300 dark:border-l-accent-200',
+  'Modern': 'border-l-stone-400 dark:border-l-stone-500',
+};
+
+/** The tint for an era, or a neutral edge when the year is unknown. */
+export function eraAccent(era: string): string {
+  return ERA_ACCENT[era] ?? 'border-l-stone-300 dark:border-l-stone-600';
+}
+
 export function eraLabel(year: number | null): string {
   if (!year) return '';
   if (year <= 500) return 'Early Church';
@@ -399,7 +426,10 @@ export function CommentaryPanel({
                       {era}
                     </p>
                   )}
-                  <div className="mb-2">
+                  {/* The tint rides a left border on the card's wrapper, so it needs no change to
+                      EntryCard and cannot disturb the card's own spacing. `pl-3` keeps the text off
+                      the rule. */}
+                  <div className={`mb-2 border-l-2 pl-3 ${eraAccent(era)}`}>
                     <EntryCard entry={entry} />
                   </div>
                 </div>
