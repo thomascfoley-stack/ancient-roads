@@ -108,6 +108,32 @@ The first pass should be the one where, if something breaks, you know what broke
 | B4 | Translation decision — shingle against the user's translation, or all. Moved the headline 17 points | **RULED 2026-08-03 — ADR-100.** Option A, per-**document** detection, no user setting in Slice 1. Three things the [paper](../SLICE1_TRANSLATION_DECISION.md) left open are closed by the ADR: the bar is **end-to-end channel recall with detection running, not detector top-1 accuracy** (the 18 translations are not equidistant — kjv↔akjv costs ~0, kjv↔web costs ~17 points); detection resolves to a **family**, ~~and unions within it when the top two are close~~ **(union WITHDRAWN 2026-08-03 — measured)**, with a below-floor fallback **recorded** in `user_section_anchors.confidence` rather than applied silently; families are **derived from measured 6-gram overlap, never typed**. **MEASURED, pre-registered at `edefd92` before the run:** the five KJV-descended translations cluster exactly as predicted (claim 1 holds, at every threshold tested, against a median pairwise Jaccard of 0.053 across 153 pairs) — but the family union costs **1.640×** the largest member against a pre-registered withdrawal bar of 1.50, so decision 3 is withdrawn and the channel shingles against ONE detected translation. The rest of the ADR is strengthened: Option B (union across all 18) measures **7.821×**, so rejecting it is now measured rather than argued. [pre-registration](../evidence/lane-b-slice1/translation-family-PRE-REGISTRATION.md) · [result](../evidence/lane-b-slice1/translation-family-RESULT.md) |
 | B5 | Slice 1 — prose/sermons end-to-end + the tradition-gap join | **IN PROGRESS.** All of B0-B4 now closed or ruled (B2→ADR-102, B0b→ADR-103, B4→ADR-100 as amended). **Done:** step 1 (migrations 100-103 on `lane-b-uploader`; RLS proven two-account over `app_runtime`, 28 legs watched red), step 2 (upload/parse/status; docx zip-bomb cap, scanned-PDF loud failure, `SKIP LOCKED` drain — all red-proofed; blob round-trip proven against the live store), step 3a-3d (the uncited channel with differential parity to the FROZEN primitives, the prose packer at the corrected 1200-char budget, `anchorChunk` with two channels, and the pre-registered family measurement). **Next:** §4 — ADR-103's metric as a fresh vN, deriving K on one set and validating on a disjoint second. **Gated:** the tradition-gap join, on Lane A merging `served` (ADR-104) — until then Slice 1 is, in the order's own words, the filing cabinet |
 
+## Lane C — UX remediation (opened 2026-08-07)
+
+A third lane, file-disjoint from A and B: client surfaces plus the plan data layer. Spec is
+[`docs/UX_REMEDIATION.md`](../UX_REMEDIATION.md) (19 blocks, 5 waves); sequencing and blockers in
+[`UX_REMEDIATION_ROADMAP.md`](UX_REMEDIATION_ROADMAP.md). **This lane had no row here until
+2026-08-07, by which point it had already applied a migration to production** — caught by its own
+pre-deploy audit (finding 6), not by this board.
+
+| # | Gate | Status |
+|---|---|---|
+| C1 | `R0` recon — confirm or kill the spec's "reuse the existing X" claims | **DONE 2026-08-07.** Four false, five items already shipped at `e196e4b`, two claims about things not in this build. Three defects in the spec itself, since corrected by owner decision (v1.4) |
+| C2 | `INSTR` — instrument both broken loops | **DONE 2026-08-07.** `Mark as read` was `500`, 5/5 — **not** the auth-scope fault the audit deck inferred, and not the 404 `R0` guessed. `permission denied for table plan_days`: `032` narrowed the schema default, `039` then created `plans`/`plan_days` citing a `016` comment `032` had already invalidated. **`Delete plan` was broken identically and neither audit had tried it.** Ask did NOT reproduce — 2/2 succeeded; what showed up was latency (~104s/~58s vs the block's stated 18s/45s) |
+| C3 | ⚑ `L2` — the plan-write outage | **STEP 1 DONE AND LIVE 2026-08-07.** `db/migrations/106_plan_write_grants.sql` — `UPDATE` on `plan_days`, `DELETE` on `plans`, derived from the only write verbs in `store.ts`. Red-proofed on a throwaway by replaying `001 → 032 → 039`, three checks watched RED, cascade proven with a control. Owner-applied; ledger `sha256 7893d0d8ebc5…`. Verified live: 10/10 marks persist, survives reload, delete works. Step 2 (optimistic toggle) deferred to the next deploy |
+| C4 | ⚑ Deploy — ships `L1`'s retry, `L2` step 2, and UX-5 | **BLOCKED.** Pre-deploy deep audit (5 lenses) returned **DO NOT DEPLOY**: `npm ci` would have failed on the builder *after* the upload, and the guard written for exactly that class was green. Both closed at `7bc3bdd`. **Still open:** the attack-surface lens died mid-run and owned the pdfjs 5→6 major bump; `db-invariants` is red on `main`; `DEPLOY_PREFLIGHT.md` points rollback at a bundle predating migrations 044/045. [Checklist](../evidence/predeploy-audit-2026-08-07/CHECKLIST.md) |
+| C5 | Waves 1–4 closed | **OPEN.** `T1`/`T2` wait on an auth migration that does not exist; `T4` on an owner schema call; `T3` is `DEVICE`-only; `S1` needs owner-supplied content. See the roadmap |
+
+**Watchlist, instance fifteen — and it is the same shape as fourteen, one layer down.** `039` broke
+two shipped features by **citing a documented fact forward instead of re-reading the current
+state**: `016`'s "migration 001 grants full DML, so no new GRANT is needed" was true when written
+and false once `032` narrowed the default. The cure for a hand-maintained grant was a narrower
+default, and nothing checks that a migration's cited premise still holds. **Sixteen is in the same
+audit:** `upload-root-lockfile.test.ts` was written to catch A6's lockfile failure and asserted a
+dependency has *some* locked version rather than a *satisfying* one — green on the tree where
+`npm ci` refused. Both are assertions weaker than the property they name, guarding the exact defect
+they exist for.
+
 ### Queued behind A8 — filed 2026-08-02
 
 | # | Item | Note |
