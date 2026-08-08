@@ -183,7 +183,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 1 | `L2` | Plan progress write must succeed | `~` |
 | 1 | `L2c` | Human-readable plan names, correctly localised dates | `~` |
 | 2 | `N1` | Rename sweep — strings only, no route changes | `~` |
-| 2 | `N2` | Sidebar must reveal it has more in it | `-` |
+| 2 | `N2` | Sidebar must reveal it has more in it | `~` |
 | 2 | `N3` | Verse interactivity — uniform first, then visible | `-` |
 | 2 | `N4` | Close the fake doors | `-` |
 | 2 | `L2b` | Plan builder must not open in an error state | `~` |
@@ -927,7 +927,32 @@ A scrollable container with no overflow affordance, visually terminated by a pin
 
 **Findings log**
 
-> _(write here — note whether step 1 alone was sufficient)_
+> **REWORK DONE 2026-08-08** on `fix/N2`. **The block's original ask already shipped** at `e196e4b`
+> (the `useMoreBelow` mask, red-proofed both ways, 158px of overflow hiding five destinations). `R0`
+> recorded that. What this branch fixes is what the mask COST, found by the pre-deploy audit
+> (finding 8) and not by this block:
+>
+> **The fade was swallowing focusable rows.** Measured at 1280x720: the scrollport is 622px and
+> "Hymns & Poetry" occupied 589-621 — entirely inside the 32px ramp, at ~3% opacity down to 0, while
+> remaining a live link. And because that row is *already fully in view*, Tab does not scroll it
+> (`scrollTop` 0 before and after `focus()`), so the global `:focus-visible` ring faded out with it.
+> A keyboard user's focus vanished. WCAG 2.4.7, on every page that renders the rail, and the same
+> shape at 390px where the sheet is scrollable the instant it opens.
+>
+> **Fix: `padding-bottom: 2rem` on the scrollport**, so the ramp always lands on empty space and no
+> focusable element can be inside it. Padding rather than a shorter ramp — shortening the gradient
+> would weaken the very signal the fade exists to give. The invariant asserts padding **>= ramp
+> height**, so the two cannot drift apart; seeded at 1rem and watched red.
+>
+> **Step 1 of the block's minimal change ("reduce padding so the items fit") was NOT taken and
+> should be struck.** It is the opposite of what the measurement showed: at 1280x720 there were
+> 158px of overflow — five destinations' worth — so no plausible padding reduction removes it, and
+> tightening rows would have made the ramp problem worse by fitting more of them into it.
+>
+> **NOT DONE — all three exit checks.** Two are `BROWSER` (three viewport heights; all eleven items
+> reachable) and one is `HUMAN` (someone finds `My uploads` unaided). jsdom implements neither
+> `mask-image` nor layout, so a rendered assertion here would prove nothing — stated plainly rather
+> than dressed up. Block is `~`.
 
 ---
 

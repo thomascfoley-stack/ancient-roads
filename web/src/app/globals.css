@@ -284,6 +284,21 @@ html {
  * A fade that is always on is not a signal, it is decoration. */
 .scroll-fade-b {
   mask-image: linear-gradient(to bottom, #000 calc(100% - 2rem), transparent);
+  /* THE RAMP MUST FALL ON EMPTY SPACE, NOT ON A ROW — pre-deploy audit finding 8 (WCAG 2.4.7).
+   *
+   * Measured at 1280x720 before this line: the rail's scrollport is 622px and "Hymns & Poetry"
+   * occupied 589-621 — entirely inside the 32px ramp, rendered from ~3% opacity down to 0 while
+   * remaining a live link. And because that row is ALREADY FULLY IN VIEW, Tab does not scroll it
+   * (scrollTop measured 0 before and after `focus()`), so the global :focus-visible ring fades out
+   * with it. A keyboard user's focus simply vanishes. Same shape at 390px in the mobile sheet,
+   * which is scrollable the instant it opens.
+   *
+   * Padding, not a shorter ramp: shortening the gradient weakens the signal the fade exists to
+   * give. Reserving 2rem of empty scrollport below the last row means the ramp always lands on
+   * nothing, so no focusable element can be inside it — the fade keeps its full strength and the
+   * focus ring keeps its full opacity. The two stay equal by construction, which is what the
+   * invariant asserts. */
+  padding-bottom: 2rem;
 }
 
 @keyframes slide-up {
