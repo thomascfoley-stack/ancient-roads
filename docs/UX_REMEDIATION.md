@@ -206,6 +206,28 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 5 | `PR1b` | Prayer journal — "From the tradition" rail (separable) | `-` |
 | 5 | `PR2` | Compare a note with the tradition | `-` |
 
+### Every open block, its gate, and who owns it
+
+**No block is ambiguous.** If it is not `x`, this table says what it is waiting for and whose move
+it is. Re-measure before trusting; this was written 2026-08-08.
+
+| Block | State | Gate — what it is actually waiting for | Owner of the next move |
+|---|---|---|---|
+| `L1` | `-` | The retry control shipped with `be67cb9`; what remains is the unhandled-throw guard, and `INSTR` never reproduced the failure it guards against (n=3 "did not reproduce"). **Arguably wants `N3c` first** — a throw that unmounts is the only mechanism left. | agent, after `N3c` |
+| `L1b` | `-` | **Its premise is disproved.** Written as "~18s success, ~45s failure"; measured 104s · 58s · 64s. The 15-second threshold must be re-derived from that series before anything is built. | ⚑ owner (pick the threshold) |
+| `L2` step 2 | `x` (step 1) | Optimistic toggle — now cosmetic, since the write succeeds. Ships with any later deploy. | agent, low priority |
+| `N3` | `!` | Blocked: `N3a`'s root cause has no mechanism in the source. Unblocks only via `N3c`. | blocked by `N3c` |
+| `N3c` | `-` | **BROWSER only.** Protocol staged below — a session can start at step 1. | agent, next browser sitting |
+| `N4` | `!` | Blocked on `PR1a`: "nothing user-created dropped" needs a destination that does not exist. | blocked by `PR1a` |
+| `T1` | `!` | Blocked: the metric is not instrumented and there is nowhere to count it. Deliberately deferred in §9. | ⚑ owner (schedule the prerequisite) |
+| `T2` | `-` | **RULED, not executed.** Sender fix → verification on. Runnable checklist staged below. | ⚑ owner (execute) |
+| `T3` | `-` | **DEVICE only**, and its step 1 appears already implemented — so the device pass is a diagnosis, not a fix. | ⚑ owner (hardware) |
+| `T4` | `-` | **HELD** on the owner seeing the `layout.tsx:82` first-paint flash. Now schedulable against the deployed build. | ⚑ owner (observe, then rule) |
+| `S1` | `-` | **Owner-blocked in substance** — three of four items are content only the owner can write. Page skeletons staged below. | ⚑ owner (supply content) |
+| `S2` | `~` | 5 of 9 closed. Item 4 parked (needs a rendered judgment), 6 closed as a measurement, 7 out to §9, 9 parked on a design decision. | ⚑ owner (item 9's interaction call) |
+| `PR1a` | `-` | Drafted, OWNER-REVIEW. Three open questions being answered this session. | ⚑ owner → then agent |
+| `PR1b`, `PR2` | `-` | Wave 5, gated behind `PR1a`. Not in the remediation's definition of done. | — |
+
 ### Dependency graph
 
 ```
@@ -1096,6 +1118,45 @@ thrown *during* it.
 4. Write the cause into the Findings log. **Do not fix in this block** — `N3a` is where a fix lands,
    and only once there is something located to fix.
 
+### PROTOCOL — staged 2026-08-08. Start at step 1; no orientation needed.
+
+**What you are looking for.** React hydration walks the server-rendered tree and attaches handlers.
+If it throws partway, React discards the rest of that subtree — **every handler after the throw
+point is dead, every one before it works.** That is exactly "verses 1-22 live, 23-32 dead", with no
+per-verse mechanism required. `verse-display.tsx:185` is a single unconditional map, so the source
+cannot produce that pattern; only an abort can.
+
+**How #418 presents.** In production React errors are minified to a code and a link. #418 is
+"Hydration failed because the initial UI does not match what was rendered on the server." It is
+logged via `console.error` **during** hydration — which is why a console read taken *after*
+navigation sees nothing, and why A7's X1 check was retracted.
+
+**Steps.**
+
+1. **Arm before navigating.** In the pane, on any page: wrap `console.error`, add `window.onerror`
+   and `unhandledrejection` listeners, push into a global array. **Then** navigate to a reader page.
+   Arming after the load is the mistake that produced a false green once already.
+2. **Hard-load** `/read/jhn/1`. Not a client-side route change — hydration only happens on a real
+   document load.
+3. **Read the array.** Record whether #418 (or #423/#425, its siblings) fired, and the full text.
+4. **Locate the boundary.** Walk the verse handles: `document.querySelectorAll('[role="button"][aria-label*="read commentary"]')`.
+   Count them, then click one *early* (verse 3) and one *late* (verse 30) and see which opens the
+   panel. **The index where behaviour changes is the throw point.**
+5. **Distinguish the two candidates** — this is the step that decides the fix:
+   - **Hydration kill:** the handles all EXIST in the DOM (server-rendered) but the late ones do
+     not respond. Handler attachment stopped.
+   - **Never attached:** the late handles are absent from the DOM entirely. A render problem, not a
+     hydration one — and a different fix.
+6. **If #418 fired, find the mismatching node.** The dev build names it; production does not. Reproduce
+   locally against `next dev` with the same chapter to get the readable message.
+7. **Write the cause into this block. Do not fix here** — `N3a` is where a fix lands.
+
+**Prime suspects, from what this repo already knows.** A7b proved `layout.tsx:58`'s
+`suppressHydrationWarning` does **not** cover the two mismatches it found (`sidebar.tsx:115-134`
+Sign in/Sign out, `reader-header.tsx:68` WEB/KJV). Both are auth- or preference-dependent — server
+renders one thing, client another. `reader-header` is on the reader page, which makes it the first
+place to look.
+
 **Do NOT**
 
 - Do not edit `verse-display.tsx`. Owner ruling 2026-08-08: it has no mechanism to fix.
@@ -1458,6 +1519,44 @@ is a prerequisite of option 1, not a nicety beside it. Fixable in the Neon conso
 - [ ] `BROWSER` If verification is on: a new account receives the mail, from the branded sender, and
       can still reach the product before verifying.
 
+### ⚑ EXECUTION CHECKLIST — staged 2026-08-08, NOT executed. Runnable cold by a future session.
+
+Everything short of execution. Steps 1-3 are console work only the owner can do; 4-6 are checks
+that must happen **in this order**, because two of them can invalidate the plan.
+
+**BEFORE turning anything on — the two parked checks. Run these first; they can change the plan.**
+
+- [ ] **1. Count existing unverified accounts.** Verification-on governs *new* registrations only.
+      If accounts already exist unverified, g38m's precondition survives for exactly those and the
+      closure is **partial, not structural**. Do not assume the set is empty — the test account is
+      at least one. Read it from the Neon Auth console's user list, or from `neon_auth` in the
+      database (read-only). **Record the number.** If it is non-zero, decide: grandfather them (and
+      say so in `SECURITY.md`, because the closure is then partial) or prompt them to verify.
+- [ ] **2. Confirm a mail failure is a signup OUTAGE, not an owner LOCKOUT.** Expected: existing
+      accounts and live sessions are unaffected, so only *new* signups stall. Confirm against the
+      owner's own recovery path specifically — if the owner's account ever needs a password reset
+      while mail is broken, that is a lockout and this ruling needs revisiting.
+
+**Then execute, in this order — the order is the ruling.**
+
+- [ ] **3. Fix the sender.** Neon Console → project → Auth → **Configure email provider**. Today it
+      sends from the shared `auth@mail.myneon.app`; point it at the project's own Resend account so
+      mail arrives branded and deliverable. Verification-on makes this mail load-bearing for every
+      new account, so it comes **first**.
+- [ ] **4. Verify the sender works** before relying on it: trigger one password-reset to a real
+      inbox and confirm it arrives, from the right address, not in spam.
+- [ ] **5. Turn `Verify at Sign-up` ON.** Neon Console → Auth → Configuration.
+- [ ] **6. Prove it end to end:** sign up a fresh address → mail arrives → the account cannot be
+      used to auto-link a Google identity before verification → after verifying, both paths work.
+
+**Then record.**
+
+- [ ] **7. Update `docs/SECURITY.md`**: g38m closed by verification, the date, the unverified-account
+      count from step 1, and whether the closure is structural or partial.
+
+**Do NOT** turn verification on before step 4 passes. That converts a security fix into a signup
+outage, which is the one failure this sequencing exists to prevent.
+
 **Findings log**
 
 > Call sites for whoever executes: all five auth actions go through `@/lib/auth/client` and are
@@ -1637,7 +1736,15 @@ transfer.
 > `runAsUser` sets `app.current_user_id` from that same value — so a prefs table is only as correct
 > as that binding, which is worth asserting rather than assuming.
 >
-> ### ⚑ RULED 2026-08-08: HELD until the owner has seen the first-paint flash in the browser pass
+> ### ⚑ RULED 2026-08-08: HELD until the owner has seen the first-paint flash
+>
+> **The observation is now SCHEDULABLE against the deployed build.** `layout.tsx:82`'s behaviour is
+> live-visible on **every page load** of `be67cb9` — the inline script reads `localStorage`
+> synchronously before paint, so what you are looking for is present on any load, not something to
+> reproduce. **How to see it:** open the app with `reader-theme=dark` stored, then hard-reload and
+> watch the first frame. Today there is no flash *because* the script runs before paint — that is
+> the property option B would give up. Set the theme, reload, and judge whether losing that is
+> acceptable; then rule. Nothing else in `T4` starts first.
 >
 > The store-vs-migrate choice is **deliberately not made yet.** Option B's real cost is the
 > `layout.tsx:82` flash — a server-held theme is correct one render *after* paint — and that is a
@@ -1710,6 +1817,58 @@ The page was written to establish a position rather than to demonstrate a produc
 - [ ] `BROWSER` Privacy, terms and contact are reachable from the landing page.
 - [ ] `BROWSER` The page answers what it costs and when access opens.
 - [ ] `HUMAN` Waitlist conversion measured before and after — otherwise there is no way to know whether the screenshot earned its place.
+
+### PAGE SKELETONS — staged 2026-08-08. **Sections only, no copy.** ⚑ owner-blocked on review.
+
+Three routes do not exist (`/privacy`, `/terms`, `/contact`); `/about` does. These are the sections
+each page needs — **not the words.** An agent should not draft a privacy policy or terms of service:
+they are legal statements about what this business actually does, and getting them wrong is worse
+than not having them. What follows is the structure to fill.
+
+**Two things make these unusually easy to write honestly here**, and both should be said plainly on
+the page rather than buried: the corpus is public-domain or permissively-licensed by construction
+(`DATA_SOURCES.md`), and **the product never sends user content to a model as training data** — C9
+already forbids user content entering any retrieval corpus. Most products cannot say either.
+
+#### `/privacy`
+- What is collected: account email, and what the reader creates (notes, highlights, plans, uploads).
+- What is **not**: no analytics vendor, no tracking pixels, no ad networks — **true today and worth
+  stating, because it is a differentiator and a constraint** (see §9's T1 prerequisite: adding
+  analytics later means amending this page, deliberately).
+- Where it lives: Neon (Postgres), region; Vercel for hosting; Neon Auth for identity; DeepInfra for
+  embeddings — **and what is sent to each.** Uploaded documents are embedded; prayers and notes are
+  not (C9).
+- Third parties, named, with why each exists.
+- Retention, and what deletion actually removes — **must match what `T4`'s delete builds**, so these
+  two are written together or the page becomes a promise the code does not keep.
+- Reader rights: export, delete, correct. **Do not claim any of these before `T4` ships them.**
+- Contact for privacy questions.
+- Last-updated date.
+
+#### `/terms`
+- What the service is, in one paragraph: a concordance that quotes and attributes, **and never
+  interprets** — the product guarantee, stated as a term rather than only as marketing.
+- Account rules: eligibility, one person per account, responsibility for credentials.
+- Acceptable use, and what gets an account closed.
+- **Content ownership: the reader's notes, prayers and uploads are theirs.** State the licence
+  granted to operate the service, and keep it minimal — no "we may use your content to improve our
+  services", which would contradict C9 in a legally binding document.
+- The corpus: public domain / permissively licensed, quoted with attribution; modern translations
+  are absent for licensing reasons (the same stance `S2` item 1 now states in the picker).
+- Availability, and that this is a private preview: no uptime guarantee yet.
+- Liability, governing law, changes to terms.
+- Last-updated date.
+
+#### `/contact`
+- One reachable route — an address that a person reads.
+- What to use it for: access requests, privacy, bugs, licensing questions about a work.
+- Expected response time, stated honestly, including "this is a small project".
+- No form required; a mailto is sufficient and avoids collecting anything.
+
+#### Wiring, when the content exists
+- A `<footer>` on the landing page linking all four (`/about` already exists) — the landing page
+  currently has **zero** matches for `<footer>`, `Privacy` or `Terms`.
+- Same footer on the marketing surface only; the app shell has its own chrome.
 
 **Findings log**
 
