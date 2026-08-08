@@ -84,6 +84,10 @@ irreversible orphaning feel safe.
 
 ## 4. Sequence
 
+> **The step-by-step runbook is [`AUTH_V2_IMPLEMENTATION.md`](./AUTH_V2_IMPLEMENTATION.md)** —
+> self-contained, written for a fresh session with no context. This section is the shape; that file
+> is the execution.
+
 Each step is independently revertible until step 6.
 
 | # | Step | Who |
