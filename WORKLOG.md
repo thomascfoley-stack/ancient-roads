@@ -1,5 +1,27 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-08 (night, follow-up) — reader column width is now reader-adjustable
+
+**Owner request in session:** the centered 66ch reader column wastes space on wide desktop
+screens; the reader should be able to widen or narrow it. Built on the existing reading-prefs
+pattern rather than inventing a new one: `READING_MEASURES` (54/60/66/74/84ch, default 66ch =
+the PRD measure; wider steps are the owner's call, overriding PRD §3's 65–70ch guidance) in
+`lib/reading-prefs.ts`, stored as `reader-measure`, applied as `--reading-measure` by the same
+hook and the layout pre-hydration script. `.reading-measure` in globals.css resolves it;
+`verse-display.tsx` and the page's `ChapterSkeleton` (they mirror each other by comment
+contract) swapped `max-w-[66ch]` → `reading-measure`. Controls in BOTH surfaces that already
+offer theme/size: the reader header Aa popover (⇤/⇥, aria-labels) and /settings "Column width"
+section (Narrowest..Widest labels + a line saying Standard is the designed measure).
+
+**Wall:** eslint 0 errors on the 7 touched files; vitest settings-and-auth-routes +
+verse-deep-link + selection-popover-layout 22/22 green; `next build` PASSED.
+
+### NOT DONE / UNVERIFIED
+- Not seen in a browser — pattern-identical to the proven text-size control, but the ⇤/⇥
+  popover buttons and the 74/84ch widths deserve one look on /read/psa/23 at 1280px+.
+- The commentary sidebar layout at wide measures was not re-checked (reader column and sidebar
+  share the page at desktop widths).
+
 ## 2026-08-08 (night) — the redesign's browser visual pass: three defects found and fixed, all app-side
 
 **The handover's big outstanding item** (docs/VISUAL_REDESIGN_HANDOVER.md §6.1): nothing restyled

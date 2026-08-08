@@ -458,7 +458,7 @@ function ChapterSkeleton({ label }: { label: string }) {
   return (
     <div
       aria-busy
-      className="mx-auto my-12 max-w-[66ch] px-6 sm:my-20"
+      className="reading-measure mx-auto my-12 px-6 sm:my-20"
     >
       <span className="sr-only">{label}</span>
       <div aria-hidden className="animate-pulse">

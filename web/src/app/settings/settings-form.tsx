@@ -13,14 +13,15 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { DEFAULT_TRANSLATION, TRANSLATIONS, type Translation } from '@/lib/bible';
-import { READING_SIZES, useReadingPrefs } from '@/lib/reading-prefs';
+import { READING_MEASURES, READING_SIZES, useReadingPrefs } from '@/lib/reading-prefs';
 
 const TRANSLATION_KEY = 'translation';
 
 const SIZE_LABELS = ['Small', 'Medium', 'Large', 'Larger', 'Largest'];
+const MEASURE_LABELS = ['Narrowest', 'Narrow', 'Standard', 'Wide', 'Widest'];
 
 export function SettingsForm() {
-  const { dark, sizeIdx, ready, setDark, setSizeIdx } = useReadingPrefs();
+  const { dark, sizeIdx, measureIdx, ready, setDark, setSizeIdx, setMeasureIdx } = useReadingPrefs();
   // The DEFAULT during the first client render, never localStorage — the reader page's translation
   // badge was a React #418 hydration error for exactly this reason until earlier today.
   const [translation, setTranslation] = useState<string>(DEFAULT_TRANSLATION);
@@ -93,6 +94,34 @@ export function SettingsForm() {
             A+
           </button>
         </div>
+      </section>
+
+      <section className={row}>
+        <p className={label}>Column width</p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setMeasureIdx(measureIdx - 1)}
+            disabled={measureIdx === 0}
+            aria-label="Narrower column"
+            className="h-11 w-11 border edge text-sm text-stone-600 hover:bg-stone-100 disabled:opacity-40 dark:text-stone-300 dark:hover:bg-stone-800"
+          >
+            ⇤
+          </button>
+          <div className="flex-1 text-center text-sm text-stone-600 dark:text-stone-300">
+            {ready ? (MEASURE_LABELS[measureIdx] ?? `${measureIdx + 1}`) : '·'}
+          </div>
+          <button
+            onClick={() => setMeasureIdx(measureIdx + 1)}
+            disabled={measureIdx === READING_MEASURES.length - 1}
+            aria-label="Wider column"
+            className="h-11 w-11 border edge text-base text-stone-700 hover:bg-stone-200 disabled:opacity-40 dark:text-stone-200 dark:hover:bg-stone-800"
+          >
+            ⇥
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
+          Standard is the designed 66-character measure; widen it to fill a large screen.
+        </p>
       </section>
 
       <section className={row}>

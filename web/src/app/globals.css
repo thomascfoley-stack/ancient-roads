@@ -283,6 +283,11 @@ html {
 /* Reader font-size control (set --reading-size on the reading container) */
 .reading-scale { font-size: var(--reading-size, 1.125rem); }
 
+/* Reader column-width control (set --reading-measure on <html>). 66ch is the PRD's
+   measure and the default; the wider steps are an owner request (2026-08-08) — see
+   READING_MEASURES in lib/reading-prefs.ts. */
+.reading-measure { max-width: var(--reading-measure, 66ch); }
+
 /* SCROLL FADE for a list whose container ends before the list does.
  *
  * The sidebar rail is the case this exists for. Its `<nav>` scrolls, but Settings sits

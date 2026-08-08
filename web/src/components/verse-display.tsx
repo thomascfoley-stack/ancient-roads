@@ -180,10 +180,12 @@ export function VerseDisplay({
   const firstVerse = data.verses.find((v) => v.text)?.verse;
 
   return (
-    // PRD §5: a bare 66ch reading column on the parchment page — no card chrome. Separation
+    // PRD §5: a bare reading column on the parchment page — no card chrome. Separation
     // comes from the one hairline under the title and whitespace (5rem margins desktop, 3rem
-    // mobile). ChapterSkeleton in the page MIRRORS this container; change one, change both.
-    <div ref={rootRef} className="mx-auto my-12 max-w-[66ch] px-6 sm:my-20">
+    // mobile). Width is the reader's: `.reading-measure` resolves --reading-measure, default
+    // 66ch (lib/reading-prefs.ts). ChapterSkeleton in the page MIRRORS this container; change
+    // one, change both.
+    <div ref={rootRef} className="reading-measure mx-auto my-12 px-6 sm:my-20">
       <h1 className="mb-4 font-display text-[30px] font-medium leading-[1.2] tracking-[-0.01em] text-stone-900 dark:text-stone-100">
         {bookName} {data.chapter}
       </h1>

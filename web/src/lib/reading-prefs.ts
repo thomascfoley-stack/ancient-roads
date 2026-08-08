@@ -20,18 +20,27 @@ import { useCallback, useEffect, useState } from 'react';
 export const READING_SIZES = ['1rem', '1.125rem', '1.25rem', '1.4rem', '1.6rem'] as const;
 export const DEFAULT_SIZE_IDX = 1;
 
+/** The five reading-column widths. 66ch is the PRD's measure (§3: 65–70 characters) and
+ *  stays the default; the wider steps exist by owner request (2026-08-08) because the
+ *  centered column leaves large empty margins on wide desktop screens. */
+export const READING_MEASURES = ['54ch', '60ch', '66ch', '74ch', '84ch'] as const;
+export const DEFAULT_MEASURE_IDX = 2;
+
 export const THEME_KEY = 'reader-theme';
 export const SIZE_KEY = 'reader-size';
+export const MEASURE_KEY = 'reader-measure';
 /** The class the `dark:` variant keys off (globals.css). NOT `dark` — that one is not ours. */
 export const DARK_CLASS = 'reader-dark';
 
 export interface ReadingPrefs {
   dark: boolean;
   sizeIdx: number;
+  measureIdx: number;
   /** True once the stored values have been read; false during the first client render. */
   ready: boolean;
   setDark: (next: boolean) => void;
   setSizeIdx: (idx: number) => void;
+  setMeasureIdx: (idx: number) => void;
 }
 
 /**
@@ -44,6 +53,7 @@ export interface ReadingPrefs {
 export function useReadingPrefs(): ReadingPrefs {
   const [dark, setDarkState] = useState(false);
   const [sizeIdx, setSizeIdxState] = useState(DEFAULT_SIZE_IDX);
+  const [measureIdx, setMeasureIdxState] = useState(DEFAULT_MEASURE_IDX);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -57,6 +67,11 @@ export function useReadingPrefs(): ReadingPrefs {
     const cur = localStorage.getItem(SIZE_KEY);
     const idx = cur ? (READING_SIZES as readonly string[]).indexOf(cur) : DEFAULT_SIZE_IDX;
     setSizeIdxState(idx >= 0 ? idx : DEFAULT_SIZE_IDX);
+    const curMeasure = localStorage.getItem(MEASURE_KEY);
+    const mIdx = curMeasure
+      ? (READING_MEASURES as readonly string[]).indexOf(curMeasure)
+      : DEFAULT_MEASURE_IDX;
+    setMeasureIdxState(mIdx >= 0 ? mIdx : DEFAULT_MEASURE_IDX);
     setReady(true);
   }, []);
 
@@ -74,5 +89,13 @@ export function useReadingPrefs(): ReadingPrefs {
     localStorage.setItem(SIZE_KEY, val);
   }, []);
 
-  return { dark, sizeIdx, ready, setDark, setSizeIdx };
+  const setMeasureIdx = useCallback((idx: number) => {
+    const clamped = Math.max(0, Math.min(READING_MEASURES.length - 1, idx));
+    setMeasureIdxState(clamped);
+    const val = READING_MEASURES[clamped]!;
+    document.documentElement.style.setProperty('--reading-measure', val);
+    localStorage.setItem(MEASURE_KEY, val);
+  }, []);
+
+  return { dark, sizeIdx, measureIdx, ready, setDark, setSizeIdx, setMeasureIdx };
 }
