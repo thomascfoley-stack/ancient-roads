@@ -25,6 +25,7 @@ import { Pool } from '@neondatabase/serverless';
 import { betterAuth, type BetterAuthOptions } from 'better-auth';
 import { runtimeUrl } from '@/lib/db';
 import { actionEmail, sendMail } from '@/lib/mail';
+import { createAuthRateLimitStorage } from './rate-limit-storage';
 
 let _pool: Pool | null = null;
 
@@ -63,6 +64,25 @@ export const authOptions = {
   session: { modelName: 'auth_sessions' },
   account: { modelName: 'auth_accounts' },
   verification: { modelName: 'auth_verifications' },
+
+  // ── THE LIMITER IS THE DATABASE'S, NOT THIS PROCESS'S — audit A1-2 (HIGH) ────────────────────
+  // Unset, Better Auth resolves storage to `"memory"`: a module-level Map, one per lambda, reset on
+  // every cold start. Its own defaults (3 per 10s on sign-in/sign-up, 3 per 60s on forget-password)
+  // therefore bounded ONE INSTANCE rather than one attacker — and accounts here are free and
+  // unverified, so that was fleet-width signup, distributed credential stuffing, and unbounded
+  // password-reset mail to any address an attacker chose.
+  //
+  // The mechanism already existed and was not being used here: `api_rate_limit` (migration 008)
+  // backs /api/gate and /api/ask. No new table, no migration, no dependency.
+  //
+  // `customStorage`, NOT `secondaryStorage` — the latter would also relocate SESSION storage, which
+  // is a much larger change than this finding. And it implements `consume`, so Better Auth takes
+  // its atomic path instead of `legacyConsume`, whose own comment concedes it is "best-effort"
+  // under concurrency. The attack is concurrent by definition.
+  rateLimit: {
+    enabled: true,
+    customStorage: createAuthRateLimitStorage(),
+  },
 
   emailAndPassword: {
     enabled: true,
