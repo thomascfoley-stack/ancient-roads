@@ -217,7 +217,7 @@ it is. Re-measure before trusting; this was written 2026-08-08.
 | `L1b` | `-` | **Its premise is disproved.** Written as "~18s success, ~45s failure"; measured 104s · 58s · 64s. The 15-second threshold must be re-derived from that series before anything is built. | ⚑ owner (pick the threshold) |
 | `L2` step 2 | `x` (step 1) | Optimistic toggle — now cosmetic, since the write succeeds. Ships with any later deploy. | agent, low priority |
 | `N3` | `!` | Blocked: `N3a`'s root cause has no mechanism in the source. Unblocks only via `N3c`. | blocked by `N3c` |
-| `N3c` | `-` | **BROWSER only.** Protocol staged below — a session can start at step 1. | agent, next browser sitting |
+| `N3c` | `x` | **RUN 2026-08-08: did not reproduce, and the mechanism is disproved** — a both-ends-bounded dead range is not a hydration abort. Unblocks `N3`. | ⚑ owner (strike `N3a`?) |
 | `N4` | `!` | Blocked on `PR1a`: "nothing user-created dropped" needs a destination that does not exist. | blocked by `PR1a` |
 | `T1` | `!` | Blocked: the metric is not instrumented and there is nowhere to count it. Deliberately deferred in §9. | ⚑ owner (schedule the prerequisite) |
 | `T2` | `-` | **RULED, not executed.** Sender fix → verification on. Runnable checklist staged below. | ⚑ owner (execute) |
@@ -1117,6 +1117,68 @@ thrown *during* it.
 3. Check whether the last-working verse index correlates with the throw point.
 4. Write the cause into the Findings log. **Do not fix in this block** — `N3a` is where a fix lands,
    and only once there is something located to fix.
+
+### RESULT 2026-08-08 — ⚑ **DID NOT REPRODUCE, and the reported shape is not producible by the mechanism it was attributed to.**
+
+Run against the deployed build `be67cb9`, `/read/jhn/1`, hard document load.
+
+| Probe | Result |
+|---|---|
+| React #418 (or #423/#425) in the console | **none** |
+| Verse spans in the DOM | **51** (John 1 is 51 verses) |
+| Interactive handles | **51** — every verse, none missing |
+| Handles that respond (opened the panel) | **verses 3, 22, 23, 32, 45, 51 — all six** |
+
+So on this build: no hydration error, no truncation, and **no dead range.** The panel opens on
+verses either side of the reported boundary and at the end of a chapter twice as long as the deck's
+sample.
+
+### The finding that reframes this — the reported range is bounded at BOTH ends
+
+The deck reported *"verses 1–22 open the study panel; verses 23–32 render as plain text and ignore
+taps."* **A hydration abort cannot produce that.** React discards the remainder of the subtree at
+the throw, so everything after the throw point is dead — the dead range runs to the END of the
+chapter. John 1 has **51** verses; a range that stops at 32 and (implicitly) resumes is not what an
+abort looks like.
+
+That kills the mechanism this block was opened to investigate. Three candidates survive, and they
+are cheap to separate next time:
+
+1. **The observation was of a partial page** — the reader scrolled to ~32 and reported the boundary
+   of what they had loaded or looked at, not a boundary in behaviour.
+2. **It was real and is now fixed.** `be67cb9` is many commits past what the deck saw, and
+   `verse-display.tsx` changed materially in that window (`e196e4b`'s hint and handle work).
+3. **It is environment-specific** — a slower device, a different browser, or a mid-load interaction
+   that this pane does not reproduce.
+
+### What this does to `N3` and `L1`
+
+- **`N3a` should be struck, not merely blocked.** Its stated root cause has no mechanism in the
+  source (established 2026-08-08), and now its *symptom* does not reproduce on the shipped build
+  either. Two independent reasons. ⚑ Owner call: strike `N3a`, leaving `N3b` step 3 as the whole of
+  `N3`.
+- **`L1`'s remaining guard loses its motivation.** It exists to catch an unhandled throw that
+  unmounts the Ask turn. That reset has now failed to reproduce **four** times with a recorder armed
+  correctly, and this run finds no client-side throw on the reader page either. The guard is still
+  cheap and still correct defensive practice — but it should be built as defence, not as a fix for
+  an observed defect, and the block should say so.
+
+### NOT PROVEN, and worth stating plainly
+
+**This is one build, one browser, one chapter, in a desktop pane.** "Did not reproduce" is not "does
+not happen" — the deck's reviewer saw something, and three of this session's own findings began as
+reports that looked wrong and turned out to be real. What is *proven* is narrower and stronger: the
+**mechanism** is wrong. A both-ends-bounded dead range is not a hydration abort, whatever else it
+might be.
+
+### CSP note, unchanged and unrelated
+
+The console is not silent: every load still emits the Google Fonts CSP refusal (pre-deploy audit
+finding 7, already filed in §9). It is not a hydration error and does not affect this result — but
+it does mean "the console has errors on every reader load" remains true, which is what made A7b's
+report plausible in the first place.
+
+---
 
 ### PROTOCOL — staged 2026-08-08. Start at step 1; no orientation needed.
 
