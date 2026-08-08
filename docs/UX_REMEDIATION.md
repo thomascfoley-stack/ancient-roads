@@ -187,7 +187,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 2 | `N3` | Verse interactivity — uniform first, then visible | `!` |
 | 2 | `N4` | Close the fake doors | `-` |
 | 2 | `L2b` | Plan builder must not open in an error state | `~` |
-| 3 | `T1` | First run — teach the one idea that differentiates | `-` |
+| 3 | `T1` | First run — teach the one idea that differentiates | `!` |
 | 3 | `T2` | Sign-up basics + passive email verification | `-` |
 | 3 | `T3` | Mobile — tab bar must not cover scripture | `-` |
 | 3 | `T4` | Settings that follow the user; an account section | `-` |
@@ -1288,7 +1288,47 @@ code cost of the three, least certain to help. Ship the first two, measure, then
 
 **Findings log**
 
-> _(write here — record the baseline figure)_
+> ## T1 BASELINE CAPTURE — 2026-08-08. Measurement only; no product code touched.
+>
+> **RESULT: the baseline cannot be captured, because the metric is not instrumented and no
+> instrumentation exists to capture it with. That is the finding, and it is a blocker for the block
+> rather than a detail of it.**
+>
+> The block's metric is *"% of new accounts opening a verse drawer in their first session."*
+> Measured against the tree:
+>
+> | What the metric needs | What exists |
+> |---|---|
+> | An event when the verse drawer opens | **None.** `verse-display.tsx` and `study-panel.tsx` contain zero `logEvent` calls. |
+> | A client analytics pipeline | **None.** Zero analytics dependencies in `web/package.json` (no PostHog/Segment/Mixpanel/Plausible/Amplitude/Vercel Analytics), and zero `track(` / `gtag` / `analytics.` call sites in `web/src`. |
+> | A notion of "first session" | **None.** No session-scoped event exists to group by. |
+> | Somewhere to aggregate it | **None that can answer a question.** `observability.ts:25-34` is the whole of it: `logEvent` builds a JSON line and `console.log`s it into Vercel runtime logs. Nothing consumes, stores or aggregates those lines — pre-deploy audit finding 17. |
+>
+> `ObsEvent` defines exactly seven events (`rate_limit_hit`, `rate_limit_fail_open`,
+> `rate_limit_fail_closed`, `gate_rate_limit_hit`, `gate_locked`, `ask_outcome`, `waitlist_signup`,
+> `error`) and **not one is user behaviour.**
+>
+> ### Why no proxy was substituted
+>
+> A tempting stand-in is "new accounts that created a highlight or note in their first day", which
+> *is* answerable from the database. It was deliberately not used. It measures **writing**, not
+> **opening** — the block's whole thesis is that the drawer is where value becomes obvious, and a
+> reader can open it fifteen times and write nothing. A proxy that moves for a different reason than
+> the change would make `T1` look successful or failed on evidence about something else. Recording
+> "unmeasurable" is the true statement; recording a proxy figure would be the unearned green this
+> repo audits for.
+>
+> ### Sequencing consequence
+>
+> `T1`'s own third exit check requires the metric instrumented, and its fourth requires the baseline
+> recorded **before shipping** (owner ruling 2026-08-08). Both are now blocked on work that is not in
+> this block: **an event on drawer-open, and something that can count it.** `T1` cannot ship until
+> that exists — not because the redirect is hard, but because shipping first destroys the only
+> comparison that would make the block's success legible, which is exactly what the owner's ruling
+> was protecting.
+>
+> **Filed to §9** as the prerequisite. No code was written, toggled or measured-and-changed in this
+> pass, per the brief.
 
 ---
 
@@ -1876,6 +1916,12 @@ Each row is a block whose "reuse the existing X" premise `R0` killed. The estima
 | Collection and topic modes do not derive their own schedule | `L2b` | They inherit whatever the book mode left. Paul's letters (87 chapters) opens at the 15 slots carried over from Romans — it *fits*, so no error state, but the number is arbitrary rather than proportionate. Out of L2b's "one function, one call site". |
 | **9 unpinned `toLocaleString` calls on numbers** | `L2c` | `n.toLocaleString()` renders `1.234` on a German browser and `1,234` here — the same reader-locale inconsistency as the dates, smaller blast radius. Across `word-study/page.tsx`, `work-toc.tsx` (×4 lines, 6 calls), `plan/store.ts`, `plural.ts` — six files, past §0.4's ~3-file stop condition, and `L2c`'s minimal change says "every other **date**-format call". Ratcheted at 9 by `date-locale-and-plan-title.test.ts` so a tenth goes red; it is bounded, not ignored. |
 | Real locale system (beyond the `en-US` pin) | `L2c` | Already listed below — `locale.ts` is now the single constant a real system would replace. |
+
+### Filed by the T1 baseline capture — 2026-08-08
+
+| Item | Block | Reason |
+|---|---|---|
+| **Instrument drawer-open, and somewhere to count it** | `T1` | `T1`'s metric ("% of new accounts opening a verse drawer in their first session") has no event, no analytics pipeline, no session grouping and no aggregation — `logEvent` is one `console.log` into Vercel runtime logs that nothing consumes. `T1` is blocked on this: its own exit checks require the metric instrumented AND a pre-change baseline, and shipping first destroys the comparison. Scope is small (one event at the drawer-open call site) but the *aggregation* half is a real decision — an analytics vendor is a dependency, and §0.5's C9 constrains what may ever be sent. |
 
 ### Pre-seeded at planning time
 
