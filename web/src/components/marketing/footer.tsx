@@ -6,11 +6,11 @@ import Link from 'next/link';
 // `#` links would be worse than shipping no column. Add the column when the routes exist.
 export function MarketingFooter() {
   return (
-    <footer className="border-t border-stone-200 bg-stone-100 px-5 py-16 sm:px-8 sm:py-24">
+    <footer className="border-t edge bg-stone-50 px-5 py-16 sm:px-8 sm:py-24">
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-12 sm:mb-16 sm:grid-cols-2 sm:gap-20">
           <div>
-            <Link href="/" className="font-display text-3xl tracking-tight text-stone-900 sm:text-4xl">
+            <Link href="/" className="inline-flex min-h-[44px] items-center font-display text-3xl tracking-tight text-stone-900 sm:text-4xl">
               Ancient Paths
             </Link>
             <p className="mt-6 max-w-sm font-serif text-lg leading-relaxed text-stone-900/60 sm:text-xl">
@@ -21,26 +21,26 @@ export function MarketingFooter() {
           <div className="grid grid-cols-2 gap-10">
             <div className="space-y-5">
               <h4 className="text-micro font-bold uppercase tracking-[0.3em] text-stone-900">Product</h4>
-              <ul className="space-y-3 text-xs uppercase tracking-widest text-stone-900/50">
+              <ul className="space-y-1 text-xs uppercase tracking-widest text-stone-900/50">
                 <li>
-                  <Link href="/" className="transition-colors ease-gentle hover:text-stone-900">Home</Link>
+                  <Link href="/" className="inline-flex min-h-[40px] items-center transition-colors ease-gentle hover:text-stone-900">Home</Link>
                 </li>
                 <li>
-                  <Link href="/features" className="transition-colors ease-gentle hover:text-stone-900">Features</Link>
+                  <Link href="/features" className="inline-flex min-h-[40px] items-center transition-colors ease-gentle hover:text-stone-900">Features</Link>
                 </li>
                 <li>
-                  <Link href="/why" className="transition-colors ease-gentle hover:text-stone-900">Why</Link>
+                  <Link href="/why" className="inline-flex min-h-[40px] items-center transition-colors ease-gentle hover:text-stone-900">Why</Link>
                 </li>
               </ul>
             </div>
             <div className="space-y-5">
               <h4 className="text-micro font-bold uppercase tracking-[0.3em] text-stone-900">Contact</h4>
-              <ul className="space-y-3 text-xs uppercase tracking-widest text-stone-900/50">
+              <ul className="space-y-1 text-xs uppercase tracking-widest text-stone-900/50">
                 <li>
-                  <Link href="/about" className="transition-colors ease-gentle hover:text-stone-900">About</Link>
+                  <Link href="/about" className="inline-flex min-h-[40px] items-center transition-colors ease-gentle hover:text-stone-900">About</Link>
                 </li>
                 <li>
-                  <Link href="/home" className="transition-colors ease-gentle hover:text-stone-900">Log in</Link>
+                  <Link href="/home" className="inline-flex min-h-[40px] items-center transition-colors ease-gentle hover:text-stone-900">Log in</Link>
                 </li>
               </ul>
             </div>

@@ -19,7 +19,7 @@ export default async function GatePage({
       {/* Form column */}
       <div className="flex w-full items-center justify-center px-5 py-16 lg:w-2/3">
         <div className="w-full max-w-[380px] text-center">
-          <Link href="/" className="font-display text-2xl tracking-tight text-stone-900/40">
+          <Link href="/" className="inline-flex min-h-[44px] items-center font-display text-2xl tracking-tight text-stone-900/40">
             Ancient Paths
           </Link>
           <h1 className="mt-10 font-display text-4xl text-stone-900 sm:text-5xl">Walk in.</h1>
@@ -58,9 +58,12 @@ export default async function GatePage({
             </button>
           </form>
 
-          <p className="mt-10 text-micro uppercase tracking-[0.2em] text-stone-900/40">
+          <p className="mt-8 text-micro uppercase tracking-[0.2em] text-stone-900/40">
             No password?{' '}
-            <Link href="/#doors" className="font-bold text-sage-600 transition-colors ease-gentle hover:text-stone-900">
+            <Link
+              href="/#doors"
+              className="inline-flex min-h-[44px] items-center font-bold text-sage-600 transition-colors ease-gentle hover:text-stone-900"
+            >
               Request access
             </Link>
           </p>

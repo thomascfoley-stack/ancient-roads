@@ -1923,6 +1923,12 @@ The page was written to establish a position rather than to demonstrate a produc
 
 ### PAGE SKELETONS — staged 2026-08-08. **Sections only, no copy.** ⚑ owner-blocked on review.
 
+> **Owner ruling 2026-08-08 (evening, in session):** a standard generic Terms of Service and
+> Privacy Policy WILL be drafted, with the corporate entity named per the owner ("Ancient Terms
+> as the Corp" — entity name to be confirmed when drafted), **deliberately deferred** — not part
+> of the marketing redesign (ADR-111). The skeletons below remain the structure to fill when
+> that work is scheduled.
+
 Three routes do not exist (`/privacy`, `/terms`, `/contact`); `/about` does. These are the sections
 each page needs — **not the words.** An agent should not draft a privacy policy or terms of service:
 they are legal statements about what this business actually does, and getting them wrong is worse

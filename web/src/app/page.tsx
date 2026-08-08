@@ -143,10 +143,10 @@ export default function MarketingHome() {
                   ))}
                 </div>
               </div>
-              <div className="mt-auto flex justify-between gap-3 border-t border-stone-200 pt-7 text-[9px] font-bold uppercase tracking-[0.25em] text-stone-500/70">
-                <span>No paraphrase</span>
-                <span>No summary</span>
-                <span>Their words</span>
+              <div className="mt-auto flex flex-wrap justify-between gap-x-4 gap-y-2 border-t border-stone-200 pt-7 text-[9px] font-bold uppercase tracking-[0.25em] text-stone-500/70">
+                <span className="whitespace-nowrap">No paraphrase</span>
+                <span className="whitespace-nowrap">No summary</span>
+                <span className="whitespace-nowrap">Their words</span>
               </div>
             </div>
           </div>

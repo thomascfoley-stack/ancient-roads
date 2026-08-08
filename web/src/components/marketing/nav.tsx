@@ -4,6 +4,11 @@ import Link from 'next/link';
 // light-only: the marketing surface is a brand statement, not a reader surface, so it
 // does not carry dark: variants (the reader's .reader-dark class changes nothing here).
 //
+// PRD §6 navigation: 56px parchment bar with a 1px hairline bottom border, EB Garamond
+// wordmark left, 14px Source Sans links center (ink-wash, hover ink), hairline-bordered
+// auth CTA right. The old `onDark` transparent-over-hero variant is gone: the PRD hero
+// puts its type on a parchment band at the bottom, so the bar never sits over imagery.
+//
 // Server component; the active page is a prop rather than usePathname so these pages
 // stay fully static.
 export type MarketingPage = 'home' | 'features' | 'why';
@@ -14,55 +19,41 @@ const LINKS: { key: MarketingPage; href: string; label: string }[] = [
   { key: 'why', href: '/why', label: 'Why' },
 ];
 
-export function MarketingNav({ active, onDark = false }: { active?: MarketingPage; onDark?: boolean }) {
-  // Over the hero photograph the bar is transparent with light text; on cream pages it
-  // is the mockup's translucent cream bar with ink text.
-  const text = onDark ? 'text-stone-50' : 'text-stone-900';
-  const dim = onDark ? 'text-stone-50/70 hover:text-stone-50' : 'text-stone-900/60 hover:text-stone-900';
+export function MarketingNav({ active }: { active?: MarketingPage }) {
   return (
-    <header
-      className={`${
-        onDark
-          ? 'absolute inset-x-0 top-0 z-40'
-          : 'sticky top-0 z-40 border-b border-sage-500/10 bg-stone-100/90 backdrop-blur-sm'
-      }`}
-    >
-      <nav className="mx-auto grid max-w-7xl grid-cols-[1fr_auto] items-center gap-y-1 px-5 py-4 sm:grid-cols-[1fr_auto_1fr] sm:px-8 sm:py-5">
-        {/* Wordmark: left on mobile, centered on sm+ (mockup order restored via CSS order). */}
+    <header className="sticky top-0 z-40 border-b edge bg-stone-50">
+      <nav className="mx-auto grid max-w-7xl grid-cols-[1fr_auto] items-center px-5 py-2 sm:h-14 sm:grid-cols-[1fr_auto_1fr] sm:px-8 sm:py-0">
+        {/* Wordmark: left on all sizes (PRD §6); mobile wraps the links to a second row. */}
         <Link
           href="/"
-          className={`font-display text-2xl tracking-tight sm:order-2 sm:justify-self-center sm:text-3xl ${text}`}
+          className="justify-self-start font-display text-lg font-medium tracking-[-0.01em] text-stone-900 sm:order-1"
         >
           Ancient Paths
         </Link>
 
+        {/* Auth CTA: the PRD primary button — 1px ink hairline, instant fill on hover. */}
         <Link
           href="/home"
-          className={`justify-self-end rounded-full border px-5 py-2 text-micro font-semibold uppercase tracking-[0.2em] transition-colors ease-gentle sm:order-3 sm:px-7 sm:py-2.5 ${
-            onDark
-              ? 'border-stone-50/40 text-stone-50/95 hover:bg-stone-50 hover:text-stone-900'
-              : 'border-stone-900/30 text-stone-900 hover:bg-stone-900 hover:text-stone-50'
-          }`}
+          className="inline-flex min-h-[44px] items-center justify-self-end border border-stone-900 px-5 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 sm:order-3"
         >
           Log in
         </Link>
 
-        <div className="col-span-2 flex items-center gap-6 sm:order-1 sm:col-span-1 sm:gap-8">
+        <div className="col-span-2 flex items-center gap-6 sm:order-2 sm:col-span-1 sm:justify-self-center sm:gap-8">
           {LINKS.map((l) =>
             l.key === active ? (
               <span
                 key={l.key}
                 aria-current="page"
-                className={`flex items-center gap-2 text-micro font-semibold uppercase tracking-[0.2em] ${text}`}
+                className="flex min-h-[44px] items-center border-b border-stone-900 font-sans text-sm text-stone-900"
               >
-                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-sage-500" />
                 {l.label}
               </span>
             ) : (
               <Link
                 key={l.key}
                 href={l.href}
-                className={`text-micro uppercase tracking-[0.2em] transition-colors ease-gentle ${dim}`}
+                className="flex min-h-[44px] items-center font-sans text-sm text-stone-500 transition-colors duration-150 ease-gentle hover:text-stone-900"
               >
                 {l.label}
               </Link>
