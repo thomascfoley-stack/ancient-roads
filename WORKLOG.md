@@ -56,8 +56,41 @@ doesn't appear to be there. **Owner ruling (ADR-109): accept the risk knowingly.
 stays enabled; GHSA-g38m's precondition goes live, unmitigated, the moment Neon Auth serves
 production. Recorded in `docs/SECURITY.md` SEC-1 (re-opening-in-progress block) and ADR-109. The
 "no social providers" invariant test from §7/§8 is now moot for this cutover — skipping it rather
-than asserting a property the owner has deliberately decided not to hold. Proceeding to the
-remaining §7 items (RLS id-format, rate limiting) and §8 tests.
+than asserting a property the owner has deliberately decided not to hold.
+
+## 2026-08-08 — Neon Auth cutover §8: Neon-equivalent tests written, both old-suite failures are the expected ones
+
+Wrote three new files: `neon-auth-config.test.ts` (fail-closed on missing env, memoization — no
+DB/live creds needed), `neon-auth-wiring.test.ts` (route/client/session all reference the Neon SDK,
+not better-auth; no stray baseURL/basePath override), `neon-auth-live.test.ts` (signup/signin/
+wrong-password against the real hosted service, gated on `NEON_AUTH_BASE_URL`/
+`NEON_AUTH_COOKIE_SECRET` — NOT RUN here, since those are Vercel-production-only per §0 and nobody
+has run this locally yet).
+
+**Found and fixed one real test-infrastructure gap along the way, not a source bug**:
+`@neondatabase/auth/next/server`'s bundled `.mjs` imports `next/headers` with no extension; Next's
+own bundler resolves that fine, but vitest hands node_modules packages to Node's native ESM loader
+by default, which requires an exact extension for subpath imports and threw `MODULE_NOT_FOUND`
+even though `next/headers.js` exists on disk. Fixed in `web/vitest.config.ts` by inlining
+`@neondatabase/auth` so Vite's own (bundler-lenient) resolver handles it instead — this would never
+have hit production, only vitest's SSR-external path.
+
+Two of my own new-test assertions also false-failed on their first run — regexes matching my own
+explanatory comments (the words "Host" and "better-auth" in prose) rather than actual code. Fixed
+by scoping to import-statement lines / removing the redundant source-grep once the two behavioral
+throw tests already covered the property. Neither was a source defect.
+
+**Full `test/invariants/` run (75 files, 463 tests): 344 passed, 117 honest NOT RUN (missing
+DB/secrets, as before), exactly 2 failed — both in `better-auth-wiring.test.ts`, both the ones
+runbook §8 named as expected to fail** (`client.ts declares no basePath` — Neon's client takes
+none; `@neondatabase/auth is not a dependency` — it's back, deliberately, until step 10). No other
+regressions anywhere in the suite. Both `tsconfig.json` and the stricter `tsconfig.test.json`
+typecheck clean.
+
+**Not yet verified, and cannot be from here**: RLS id-format binding (needs a live signed-in
+session under Neon Auth) and rate limiting on Neon's hosted auth endpoints (undocumented, per the
+ADR-109 research — must be probed empirically once something is actually live). Both deferred to
+post-deploy verification, §9/§10.
 
 Branch `fix/a1-security`. The lens that died mid-run in the first pre-deploy sweep, re-run as **two**
 agents (upload/parse, routes/authz) because the original exhausted itself covering both. Both

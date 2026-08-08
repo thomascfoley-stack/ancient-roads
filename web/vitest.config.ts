@@ -30,5 +30,16 @@ export default defineConfig({
     // `@vitest-environment jsdom` docblock — the suite default stays node).
     include: ['test/**/*.test.{ts,tsx}'],
     environment: 'node',
+    server: {
+      deps: {
+        // @neondatabase/auth's next/server entry does `import ... from 'next/headers'` with no
+        // extension. Next's own bundler resolves that fine (custom resolution it controls); left
+        // external, vitest hands the .mjs to Node's native loader, which requires an exact
+        // extension for ESM subpath imports and throws MODULE_NOT_FOUND even though
+        // next/headers.js exists on disk. Inlining routes it through Vite's resolver instead,
+        // which is lenient the way bundlers are expected to be.
+        inline: [/@neondatabase\/auth/],
+      },
+    },
   },
 });
