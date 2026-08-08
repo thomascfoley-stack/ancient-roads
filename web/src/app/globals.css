@@ -27,9 +27,15 @@
   /* Type system — EB Garamond for display/headings (inscriptional old-style),
      Literata for long-form reading (scripture, commentary, answers),
      Source Sans 3 for UI chrome. */
-  --font-sans: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif;
-  --font-serif: 'Literata', Georgia, 'Times New Roman', serif;
-  --font-display: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  /* SELF-HOSTED (block F1-fonts). `--font-*-face` is set by next/font in layout.tsx and expands
+     to the real family plus next/font's metric-compatible fallback. It is COMPOSED into the chain
+     here rather than replacing it: binding next/font straight to `--font-display` was measured to
+     override this whole declaration, silently discarding Georgia while it still read as present
+     in this file. The named family stays in the chain so a build without next/font still asks for
+     it by name. */
+  --font-sans: var(--font-sans-face), 'Source Sans 3', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-serif-face), 'Literata', Georgia, 'Times New Roman', serif;
+  --font-display: var(--font-display-face), 'EB Garamond', Georgia, 'Times New Roman', serif;
 
   /* Warm remap of the stone scale — bone/parchment lights, ink/charcoal darks.
      Each step keeps Tailwind's original lightness, so every existing
