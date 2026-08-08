@@ -4,7 +4,13 @@ import { useState } from 'react';
 
 type State = 'idle' | 'submitting' | 'done' | 'error';
 
-/** Public waitlist capture on the marketing landing. Posts to /api/waitlist (rate-limited). */
+/** Public waitlist capture on the marketing landing. Posts to /api/waitlist (rate-limited).
+ *
+ * Styled for the 2026-08-08 marketing redesign: pill input + sage pill button, and a
+ * DESIGNED success state (the mockup's "Request received" moment rendered inline, so no
+ * new route is needed and the reader keeps their scroll position). Error states keep the
+ * serif voice rather than a browser default. Light-only, like the rest of the marketing
+ * tier. */
 export function WaitlistForm() {
   const [email, setEmail] = useState('');
   const [state, setState] = useState<State>('idle');
@@ -23,7 +29,7 @@ export function WaitlistForm() {
       const data = (await res.json().catch(() => ({}))) as { message?: string };
       if (res.ok) {
         setState('done');
-        setMessage(data.message ?? "You're on the list. We'll be in touch.");
+        setMessage(data.message ?? '');
       } else {
         setState('error');
         setMessage(data.message ?? 'Something went wrong. Please try again.');
@@ -36,17 +42,24 @@ export function WaitlistForm() {
 
   if (state === 'done') {
     return (
-      <p
-        role="status"
-        className="mx-auto max-w-md rounded-2xl bg-paper px-5 py-4 font-serif text-base text-stone-700 shadow-paper dark:bg-stone-800 dark:text-stone-200"
-      >
-        {message}
-      </p>
+      <div role="status" className="mx-auto max-w-md rounded-2xl bg-paper px-8 py-8 text-center shadow-card">
+        <p className="text-micro font-bold uppercase tracking-[0.3em] text-sage-600">Request received</p>
+        <p className="mt-3 font-display text-2xl text-stone-900">Your name is on the list.</p>
+        <p className="mt-3 font-serif text-base leading-relaxed text-stone-900/70">
+          We are opening the doors slowly, a few at a time, so the first rooms stay quiet.
+          {email ? (
+            <>
+              {' '}
+              You will hear from us at <span className="font-semibold italic text-stone-900">{email}</span>.
+            </>
+          ) : null}
+        </p>
+      </div>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto flex w-full max-w-md flex-col items-center gap-3 sm:flex-row">
+    <form onSubmit={onSubmit} className="mx-auto flex w-full max-w-xl flex-col items-center gap-3 sm:flex-row">
       <label htmlFor="waitlist-email" className="sr-only">
         Email address
       </label>
@@ -56,19 +69,19 @@ export function WaitlistForm() {
         required
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        placeholder="you@example.com"
+        placeholder="Your email address"
         autoComplete="email"
-        className="min-h-[48px] w-full flex-1 rounded-lg border border-stone-300 bg-stone-50 px-5 text-base text-stone-900 shadow-inner outline-none transition-colors ease-gentle placeholder:text-stone-500 dark:placeholder:text-stone-400 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
+        className="min-h-[52px] w-full flex-1 rounded-full border border-stone-200 bg-paper px-7 font-serif text-base text-stone-900 shadow-paper outline-none transition-colors ease-gentle placeholder:text-stone-500 focus:border-sage-500 focus:ring-2 focus:ring-sage-500/30 sm:text-lg"
       />
       <button
         type="submit"
         disabled={state === 'submitting'}
-        className="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg bg-accent-700 px-6 text-base font-semibold text-stone-50 shadow-float transition-[opacity,transform,box-shadow,background-color,border-color] duration-200 ease-gentle hover:bg-accent-800 active:scale-[0.99] disabled:opacity-40 sm:w-auto dark:bg-accent-500 dark:hover:bg-accent-400"
+        className="inline-flex min-h-[52px] w-full items-center justify-center whitespace-nowrap rounded-full bg-sage-500 px-8 text-micro font-bold uppercase tracking-[0.2em] text-stone-50 shadow-float transition-[background-color,opacity,transform] duration-300 ease-gentle hover:bg-stone-900 active:scale-[0.99] disabled:opacity-40 sm:w-auto"
       >
-        {state === 'submitting' ? 'Joining…' : 'Request access'}
+        {state === 'submitting' ? 'Sending…' : 'Request access'}
       </button>
       {state === 'error' && (
-        <p role="alert" className="w-full text-center text-sm text-accent-700 dark:text-accent-400">
+        <p role="alert" className="w-full text-center font-serif text-sm italic text-accent-700">
           {message}
         </p>
       )}

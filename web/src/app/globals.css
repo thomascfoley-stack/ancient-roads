@@ -112,6 +112,20 @@
    * Ladder: 11 · 12 · 14 · 16 · 18 · 20 · 24 · 30 · 36 · 48 · 72 */
   --text-micro: 0.6875rem; /* 11px */
 
+  /* The MARKETING accent — sage, from the 2026-08-08 UX Pilot redesign (#7D8570 base,
+   * #C5CCBD soft). Marketing surface only (/ /features /why /gate): the app's accent
+   * stays the oxblood above. Steps mirror the mockup's three uses: chip tint, soft
+   * fill, primary CTA, CTA hover, deep text-on-cream. */
+  --color-sage-100: oklch(93% 0.012 128);
+  --color-sage-300: oklch(83% 0.022 126);
+  --color-sage-500: oklch(60% 0.035 128);
+  --color-sage-600: oklch(53% 0.038 128);
+  --color-sage-700: oklch(46% 0.038 128);
+
+  /* The marketing card lift (mockup shadow-card): one soft, long-throw shadow for the
+   * white demo cards on cream. */
+  --shadow-card: 0 20px 60px -20px oklch(20% 0.01 50 / 0.12);
+
   --radius-sm: 0.25rem;  /*  4px  highlight chips, inline marks */
   --radius-md: 0.375rem; /*  6px  dense rows, sidebar nav items */
   --radius-lg: 0.5rem;   /*  8px  CONTROLS: buttons, inputs, selects */

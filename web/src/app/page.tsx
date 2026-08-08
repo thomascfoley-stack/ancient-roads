@@ -1,157 +1,300 @@
-import Link from 'next/link';
 import Image from 'next/image';
 import { WaitlistForm } from '@/components/waitlist-form';
+import { MarketingNav } from '@/components/marketing/nav';
+import { MarketingFooter } from '@/components/marketing/footer';
 
 // PUBLIC marketing landing, outside the SITE_PASSWORD wall (gate.ts isPublicPath).
 // The signed-in app home lives at /home. Pre-launch the CTA is a waitlist, not live
 // signup; "Log in" links into the gated app for the owner and existing testers.
 //
-// DESIGN: the photograph carries the page. It is the message (you are standing on the
-// ancient path; it leads to the church door), so it fills the viewport uncovered. The
-// chapel and the path's vanishing point stay clear; type sits low, on the stones,
-// over a gradient scrim. Everything secondary lives below the fold on parchment.
+// REDESIGNED 2026-08-08 from the owner's UX Pilot mockup (see docs/DECISIONS.md ADR
+// superseding S1's "do not rewrite the hero"): cream editorial-magazine layout, sage
+// accent, EB Garamond display. Light-only by design; the reader's theme applies to the
+// app, not the brand surface.
+//
+// EVERY FEATURE CLAIM BELOW WAS TRUTH-PASSED against the shipped code and served corpus
+// on 2026-08-08. In particular: "ten voices" on John 1:1 is the measured post-filter
+// count (exactly 10 distinct served authors); the Chrysostom pull quote is VERBATIM from
+// his Homily IV on John 1:1 as served by this corpus (replacing the mockup's invented
+// paraphrase); and the four "Answered by" rows name only served works, mirroring the
+// real /ask lanes. Do not swap any of these for nicer-sounding examples without
+// re-verifying — a fabricated quote here would break the product's own guarantee on its
+// front door.
 export const metadata = {
   description:
-    'Search the Scriptures and learn with the fathers of the faith. Read how Augustine, Calvin, Wesley and others wrestled with the same verses, then pray it through. Request early access.',
+    'Ask any question of Scripture. Ancient Paths answers only in the words of the Church, always cited, never its own. Commentaries, sermons, hymns and creeds from two thousand years. Request early access.',
 };
 
-// Curly apostrophes and quotes throughout, matching the JSX entities used elsewhere on
-// this page. The straight ' and " that used to be in these strings sat inches from
-// &rsquo;/&ldquo; in the same rendered paragraph.
-const BEATS = [
-  {
-    title: 'Walk the same paths',
-    body: 'Sit with the verse in front of you and see how the church read it. On “In the beginning was the Word,” hear what Augustine, Chrysostom, and Calvin have to say about it.',
-  },
-  {
-    title: 'Learn with those who came before',
-    body: 'Calvin, Wesley, Matthew Henry, the early fathers, each speaking to the passage you’re in. Not one voice handed to you. Many, to weigh and pray over.',
-  },
-  {
-    title: 'Built to never interpret Scripture',
-    body: 'Ancient Paths is designed to never tell you what a verse means. It leads you to those who wrestled these words before you and laid the paths we walk, so your theology is your own, and it’s solid.',
-  },
-  {
-    title: 'AI is not the Holy Spirit',
-    body: 'People are starting to ask AI about the Bible, its meaning and how to apply it to their lives. We won’t answer those questions on purpose. The Holy Spirit speaks to our hearts as we labor over the Word and wrestle our lives and wills into submission to it. Ancient Paths is designed to give you the best of today’s technology to assist you as you labor and never replace the Helper. The teaching belongs to Him, as does the glory.',
-  },
+// The four register rows in the ANSWERED BY card. Register labels match the real /ask
+// lanes (ask-client.tsx LANE_OPTIONS + the always-on commentary answer); every work
+// named is in the served lists (teacher/routing.ts) and, for Calvin on Romans 6:4, the
+// static reader data. The Nicene phrase is the creed's own wording, served via Schaff's
+// Creeds of Christendom in the theology lane.
+const ANSWERED_BY = [
+  { register: 'Commentary', line: 'John Calvin on Romans 6:4' },
+  { register: 'Sermon', line: 'Spurgeon, Metropolitan Tabernacle Pulpit' },
+  { register: 'Hymn', line: 'Watts, Hymns and Spiritual Songs' },
+  { register: 'Creed', line: 'Nicene, rose again the third day' },
+];
+
+// The verse panel demo: the REAL served voices on John 1:1 (10 distinct authors through
+// isPublishedCommentaryEntry; the five named here plus Adam Clarke, Barnes, Aquinas'
+// Catena, Hodge and Watts behind "+5 more").
+const VOICES = ['Augustine', 'Chrysostom', 'Calvin', 'Wesley', 'Matthew Henry'];
+
+const STEPS = [
+  'You ask.',
+  'Two thousand years are searched.',
+  'They answer, in their own words, cited.',
 ];
 
 export default function MarketingHome() {
   return (
-    <main>
-      {/* The photograph, full viewport */}
+    <main className="bg-stone-100">
+      {/* 1 — HERO. The misty forest carries the section; type sits on a left-weighted scrim. */}
       <section className="relative flex min-h-dvh flex-col overflow-hidden">
         <Image
-          src="/hero-road.jpg"
-          alt="A worn stone path lined with olive trees, leading up to an ancient chapel"
+          src="/marketing/hero-forest.jpg"
+          alt="Misty pine forest at dawn, sunlight breaking through the trees"
           fill
           priority
           sizes="100vw"
-          // 90, not the default 75. This photograph IS the landing page, and at 75 the
-          // optimizer emitted 198 KB from a 966 KB source, throwing away most of the detail
-          // the file actually holds on top of an already-upscaled resolution. Allowed via
-          // next.config.ts `images.qualities`; every other image stays at 75.
           quality={90}
-          // Keep the chapel + path in frame when portrait crops the sides (chapel sits
-          // right of center, upper third).
-          className="object-cover object-[62%_30%]"
+          className="object-cover object-center"
         />
-        {/* Scrims: a whisper at the top for the bar, weight at the bottom for the type.
-            The midsection (path + chapel) stays untouched. */}
-        {/* Scrim weights are tuned to THIS photograph. The previous one was a warm
-            golden-hour frame with a bright sky and a luminous path, and needed suppressing:
-            /95 at the base rising through /55. This one is overcast and already low-key, so
-            the same weights turned the stones to mud and threw away the texture the picture
-            is carrying. Base eased to /88 and the midpoint to /45, which is the least that
-            still holds the type. The top bar keeps its /60: the sky here is a bright flat
-            grey and the wordmark sits directly on it. */}
-        <div aria-hidden className="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-stone-950/60 to-transparent" />
-        <div aria-hidden className="absolute inset-x-0 bottom-0 h-[78%] bg-linear-to-t from-stone-950/88 via-stone-950/45 to-transparent" />
+        <div aria-hidden className="absolute inset-0 bg-linear-to-r from-stone-950/55 via-stone-950/25 to-transparent" />
+        <div aria-hidden className="absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-stone-950/40 to-transparent" />
 
-        {/* Top bar */}
-        <header className="relative z-10 flex w-full items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
-          {/* Sentence case, not Title Case On Every Word: the tagline is a sentence, and
-              capitalising every word is the single loudest amateur tell on the page.
-              Contrast raised from stone-200/85, which sat on bright sky at 11px. */}
-          <div className="flex max-w-[15rem] flex-col sm:max-w-none">
-            <span className="font-serif text-base font-medium tracking-wide text-stone-50">
-              Ancient Paths
-            </span>
-            <span className="mt-1 font-serif text-xs leading-snug text-stone-100/90 [text-shadow:0_1px_8px_rgba(0,0,0,0.75)]">
-              AI designed to lead you to the Holy Spirit, not be the Holy Spirit
-            </span>
+        <MarketingNav active="home" onDark />
+
+        <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 items-center px-5 pb-16 pt-28 sm:px-8">
+          <div className="max-w-3xl">
+            <p className="mb-6 text-micro font-bold uppercase tracking-[0.3em] text-stone-50/90 sm:mb-8">
+              For those who preach and study the Word
+            </p>
+            <h1 className="font-display text-5xl leading-[1.02] text-stone-50 sm:text-6xl lg:text-7xl xl:text-[80px] xl:leading-[0.95]">
+              You aren&rsquo;t the first
+              <br />
+              <span className="font-normal italic">to study or preach this text.</span>
+            </h1>
+            <p className="mt-6 max-w-lg font-serif text-lg leading-relaxed text-stone-50/90 sm:mt-8 sm:text-xl">
+              Ask any question of Scripture. Ancient Paths answers only in the words of the Church,
+              always cited, never its own.
+            </p>
+            <div className="mt-8 sm:mt-10">
+              <a
+                href="#ask"
+                className="inline-flex min-h-[52px] items-center rounded-full bg-sage-500 px-9 text-micro font-semibold uppercase tracking-[0.2em] text-stone-50 shadow-float transition-colors duration-300 ease-gentle hover:bg-stone-50 hover:text-stone-900"
+              >
+                See it answered
+              </a>
+            </div>
           </div>
-          <Link
-            href="/home"
-            className="inline-flex min-h-[40px] items-center rounded-lg border border-stone-50/30 px-4 text-sm font-semibold text-stone-50/95 backdrop-blur-sm transition-colors ease-gentle hover:border-stone-50/60 hover:text-white"
-          >
-            Log in
-          </Link>
-        </header>
+        </div>
+      </section>
 
-        {/* The words, set on the stones */}
-        <div className="relative z-10 mt-auto flex w-full flex-col items-center px-5 pb-12 pt-24 text-center sm:pb-16">
-          <p className="max-w-xl font-display text-base italic leading-relaxed text-stone-100/95 [text-shadow:0_1px_12px_rgba(0,0,0,0.6)] sm:text-lg">
-            &ldquo;Ask for the ancient paths, where the good way is, and walk in it.&rdquo;
+      {/* 2 — THE ASK MOMENT */}
+      <section id="ask" className="px-5 py-20 sm:px-8 sm:py-32">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-14 text-center sm:mb-20">
+            <p className="mb-5 text-micro font-bold uppercase tracking-[0.3em] text-sage-600">Ask the tradition</p>
+            <h2 className="font-display text-4xl leading-tight text-stone-900 sm:text-6xl lg:text-7xl">
+              Ask, and be answered by the Church.
+            </h2>
+          </div>
+
+          <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
+            {/* Your question — the reader's own study; the product never reads or writes it. */}
+            <div className="flex flex-col rounded-2xl border border-stone-200 bg-paper p-8 shadow-card sm:p-12">
+              <div className="mb-auto">
+                <p className="mb-5 text-micro font-bold uppercase tracking-[0.3em] text-stone-500">Your study</p>
+                <h3 className="mb-5 font-display text-2xl text-stone-900 sm:text-3xl">Easter Sunrise Sermon</h3>
+                <div className="space-y-4 font-serif text-base text-stone-900/60 sm:text-lg">
+                  <p>The stone was not rolled away to let Jesus out, but to let the witnesses in.</p>
+                  <p>As we gather this morning, we recall that our hope is built on a physical reality.</p>
+                  <p>If Christ be not raised, our faith is in vain.</p>
+                </div>
+              </div>
+              <div className="mt-8 flex items-center gap-4 rounded-full border border-stone-200 bg-stone-100 px-6 py-4">
+                <svg aria-hidden viewBox="0 0 8 12" className="h-3 w-2 shrink-0 fill-sage-500">
+                  <path d="M0 0l8 6-8 6z" />
+                </svg>
+                <span className="font-serif text-sm italic text-stone-900 sm:text-base">
+                  What did the early Church say about the resurrection body?
+                </span>
+              </div>
+            </div>
+
+            {/* Answered by — the four real registers, real served works. */}
+            <div className="flex flex-col rounded-2xl border border-stone-200 bg-paper p-8 shadow-card sm:p-12">
+              <div>
+                <p className="mb-7 text-micro font-bold uppercase tracking-[0.3em] text-stone-500">Answered by</p>
+                <div className="space-y-5">
+                  {ANSWERED_BY.map((row, i) => (
+                    <div
+                      key={row.register}
+                      className={i < ANSWERED_BY.length - 1 ? 'border-b border-stone-200/60 pb-5' : 'pb-1'}
+                    >
+                      <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sage-600">
+                        {row.register}
+                      </p>
+                      <p className="font-display text-lg text-stone-900 sm:text-xl">{row.line}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-auto flex justify-between gap-3 border-t border-stone-200 pt-7 text-[9px] font-bold uppercase tracking-[0.25em] text-stone-500/70">
+                <span>No paraphrase</span>
+                <span>No summary</span>
+                <span>Their words</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3 — HOW IT WORKS */}
+      <section className="border-y border-stone-200/60 px-5 py-16 sm:px-8 sm:py-24">
+        <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-3 md:gap-0">
+          {STEPS.map((step, i) => (
+            <div
+              key={step}
+              className={`text-center md:px-12 ${i < STEPS.length - 1 ? 'md:border-r md:border-stone-200/60' : ''}`}
+            >
+              <span className="mb-3 block font-display text-3xl italic text-sage-500/40 sm:text-4xl">
+                0{i + 1}
+              </span>
+              <p className="font-serif text-lg text-stone-900 sm:text-xl">{step}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 4 — CONVICTION */}
+      <section className="bg-stone-950 px-5 py-24 text-stone-100 sm:px-8 sm:py-36">
+        <div className="mx-auto max-w-4xl text-center">
+          <h2 className="mb-8 font-display text-4xl sm:mb-12 sm:text-6xl lg:text-7xl">
+            Built to never interpret Scripture
+          </h2>
+          <p className="mx-auto mb-14 max-w-2xl font-serif text-lg leading-relaxed opacity-70 sm:mb-20 sm:text-xl">
+            We believe interpretation is the work of the Holy Spirit through the historic community of
+            the Church, not the work of a large language model.
           </p>
-          <p className="mt-2 text-micro font-semibold uppercase tracking-[0.3em] text-stone-200/90 [text-shadow:0_1px_10px_rgba(0,0,0,0.7)]">
-            Jeremiah 6:16
+          <div className="border-t border-stone-100/10 pt-14 sm:pt-20">
+            <p className="mb-6 font-serif text-2xl italic leading-snug sm:text-3xl">
+              &ldquo;Study to shew thyself approved unto God, a workman that needeth not to be ashamed,
+              rightly dividing the word of truth.&rdquo;
+            </p>
+            <p className="font-serif text-base opacity-60 sm:text-lg">2 Timothy 2:15</p>
+          </div>
+        </div>
+      </section>
+
+      {/* 5 — PHILOSOPHY */}
+      <section className="px-5 py-24 sm:px-8 sm:py-36">
+        <div className="mx-auto max-w-5xl text-center">
+          <p className="mb-8 text-micro font-bold uppercase tracking-[0.3em] text-sage-600">Our philosophy</p>
+          <h2 className="mb-10 font-display text-4xl uppercase leading-tight text-stone-900 sm:text-6xl lg:text-7xl">
+            Reconnecting with <span className="normal-case italic">ancient wisdom</span> in a{' '}
+            <span className="normal-case italic">hurried</span> world
+          </h2>
+          <p className="mx-auto max-w-2xl font-serif text-lg leading-relaxed text-stone-900/70 sm:text-xl">
+            The great cloud of witnesses gave their lives to these Scriptures. Ancient Paths bridges the
+            gap between the reader in a hurried age and the slow, deep wells of the historic Church.
           </p>
+        </div>
+      </section>
 
-          <h1 className="mt-6 font-display text-5xl font-medium tracking-tight text-stone-50 [text-shadow:0_2px_24px_rgba(0,0,0,0.45)] sm:text-7xl">
-            Ancient Paths
-          </h1>
-
-          <p className="mt-4 max-w-md font-serif text-lg leading-relaxed text-stone-100/95 sm:max-w-lg">
-            Search the Scriptures and learn with the fathers of the faith.
-          </p>
-
-          <div className="mt-8 w-full max-w-md">
-            <WaitlistForm />
-            <p className="mt-3 font-serif text-sm text-stone-200/75">
-              We&rsquo;re opening the doors slowly. Leave your email and we&rsquo;ll invite you in.
+      {/* 6 — THE VERSE PANEL */}
+      <section className="px-5 pb-24 sm:px-8 sm:pb-36">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-20">
+          <div>
+            <p className="mb-5 text-micro font-bold uppercase tracking-[0.3em] text-sage-600">The verse panel</p>
+            <h2 className="mb-6 font-display text-4xl leading-[1.1] text-stone-900 sm:text-5xl">
+              Walk the same paths
+            </h2>
+            <p className="max-w-md font-serif text-lg text-stone-900/60">
+              Sit with the verse in front of you and hear how the Church has read it, across
+              seventeen centuries, without the noise of modern algorithms.
             </p>
           </div>
-        </div>
-      </section>
 
-      {/* Below the fold: parchment.
-          The four beats were four identical rounded-2xl cards sitting on a background one
-          percent darker than they were, so they read as faint rectangles that carried no
-          hierarchy: a two-line beat and a six-line manifesto in the same box, at the same
-          weight, with a 16px title barely above its own 15px body. The chrome is gone. The
-          title now does the separating, in the display face a clear step above the body,
-          with a hairline between entries. Nothing was added here; the box was removed.
-          Measure tightened from max-w-2xl (~88 characters at this size) to max-w-xl. */}
-      <section className="bg-stone-50 px-5 py-20 sm:py-28 dark:bg-stone-950">
-        <div className="mx-auto max-w-xl">
-          <p className="text-center font-serif text-lg leading-relaxed text-stone-700 dark:text-stone-300">
-            When a verse is hard, you don&rsquo;t have to ask a chatbot what it means. Read how the men
-            who gave their lives to Scripture wrestled with the same words. Then wrestle and pray over
-            it yourself. The Holy Spirit is our helper, and He will teach you all things.{' '}
-            <span className="whitespace-nowrap text-base text-stone-500 dark:text-stone-400">John 14:26</span>
-          </p>
+          <div className="rounded-2xl border border-stone-200 bg-paper p-8 shadow-card sm:p-12">
+            <div className="mb-8 sm:mb-10">
+              <p className="font-display text-2xl leading-snug text-stone-900 sm:text-3xl">
+                In the beginning was the Word, and the Word was with God, and the Word was God.
+              </p>
+              <p className="mt-4 text-micro uppercase tracking-[0.1em] text-stone-500">John 1:1</p>
+            </div>
 
-          <ul className="mt-16 divide-y divide-stone-200/80 dark:divide-stone-800">
-            {BEATS.map((b) => (
-              <li key={b.title} className="py-8 first:pt-0 last:pb-0">
-                <h2 className="font-display text-2xl tracking-tight text-stone-900 dark:text-stone-100">
-                  {b.title}
-                </h2>
-                <p className="mt-3 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400">
-                  {b.body}
+            <div className="space-y-8">
+              <div>
+                <p className="mb-4 text-micro font-bold uppercase tracking-[0.2em] text-stone-500">
+                  Ten voices on this verse
                 </p>
-              </li>
-            ))}
-          </ul>
+                <div className="flex flex-wrap gap-2">
+                  {VOICES.map((v, i) => (
+                    <span
+                      key={v}
+                      className={`rounded-full px-4 py-2 text-micro uppercase tracking-widest sm:px-5 ${
+                        i === 0 ? 'bg-sage-500 text-stone-50' : 'bg-stone-100 text-stone-900/60'
+                      }`}
+                    >
+                      {v}
+                    </span>
+                  ))}
+                  <span className="rounded-full px-3 py-2 text-micro uppercase tracking-widest text-sage-600">
+                    +5 more
+                  </span>
+                </div>
+              </div>
 
-          <p className="mt-20 text-center font-display text-lg italic text-stone-500 dark:text-stone-400">
-            &ldquo;Study to shew thyself approved unto God.&rdquo;{' '}
-            <span className="text-sm not-italic text-stone-500 dark:text-stone-400">2 Timothy 2:15</span>
-          </p>
+              {/* VERBATIM from the served corpus: Chrysostom, Homily IV on John 1:1 (NPNF
+                  translation; entry present in web/public/commentaries/jhn/1.json). Replaces
+                  the mockup's invented paraphrase. Re-verify before ever changing this. */}
+              <div className="border-l-4 border-l-sage-500 border-t border-t-stone-200 pl-6 pt-8 sm:pl-8">
+                <p className="font-serif text-lg italic leading-relaxed text-stone-900 sm:text-xl">
+                  &ldquo;&hellip;the Father was never without the Word, but He was always God with God,
+                  yet Each in His proper Person.&rdquo;
+                </p>
+                <p className="mt-5 text-micro uppercase tracking-[0.2em] text-stone-500">
+                  Chrysostom, Homily IV on John
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
+
+      {/* 7 — EMAIL CAPTURE. #doors is the cross-page CTA target (Features/Why "Request access"). */}
+      <section id="doors" className="relative overflow-hidden px-5 py-28 sm:px-8 sm:py-44">
+        <Image
+          src="/marketing/steps-fog.jpg"
+          alt=""
+          aria-hidden
+          fill
+          sizes="100vw"
+          className="object-cover grayscale"
+        />
+        <div aria-hidden className="absolute inset-0 bg-stone-100/85" />
+
+        <div className="relative z-10 mx-auto max-w-2xl text-center">
+          <h2 className="mb-10 font-display text-4xl text-stone-900 sm:mb-12 sm:text-6xl">
+            We are opening the doors slowly
+          </h2>
+          <WaitlistForm />
+          <p className="mt-4 font-serif text-sm text-stone-900/60">
+            The preview is free. We invite a few readers at a time, and your email is used for the
+            invitation alone.
+          </p>
+          <p className="mt-10 font-serif text-lg italic text-stone-900/60 sm:text-xl">
+            &ldquo;Ask for the ancient paths, where the good way is, and walk in it.&rdquo;
+          </p>
+          <p className="mt-2 text-micro uppercase tracking-[0.3em] text-stone-900/40">Jeremiah 6:16</p>
+        </div>
+      </section>
+
+      <MarketingFooter />
     </main>
   );
 }

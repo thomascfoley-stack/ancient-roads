@@ -44,8 +44,10 @@ export default async function AuthPage({
 
   return (
     <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-5 py-10 sm:px-6 sm:py-12">
+      {/* The marketing tier's dusk forest (2026-08-08 redesign): entering auth reads as
+          walking deeper into the same woods the landing page opens on. */}
       <Image
-        src="/hero-road.jpg"
+        src="/marketing/forest-dusk-2.jpg"
         alt=""
         fill
         priority
@@ -54,7 +56,7 @@ export default async function AuthPage({
       />
       <div
         aria-hidden
-        className="absolute inset-0 bg-stone-950/10 dark:bg-stone-950/50"
+        className="absolute inset-0 bg-stone-950/30 dark:bg-stone-950/50"
       />
 
       <div className="relative z-10 w-full max-w-sm overflow-hidden rounded-2xl shadow-deep">

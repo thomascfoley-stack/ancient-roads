@@ -1,5 +1,131 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-08 (evening) — marketing site replaced from the owner's UX Pilot design (ADR-111), STAGED for owner review, NOT deployed
+
+**Branch `feat/marketing-site`** (from `fix/final-sweep` after committing that session's pending
+ingestion work at `c74d921` — its tree was clean before this began). Owner supplied a five-page
+UX Pilot mockup and ruled full replacement in session, including the hero S1 had guarded;
+recorded as **ADR-111**, S1 rows updated.
+
+**The truth pass ran BEFORE the copy** (POLISH_PLAN.md Phase 0), and it changed the page:
+- "Ten voices on this verse" (John 1:1) — TRUE, measured: exactly 10 distinct authors through
+  `isPublishedCommentaryEntry` over `web/public/commentaries/jhn/1.json` (Chrysostom, Augustine,
+  Clarke, Henry, Barnes, Wesley, Calvin, Aquinas/Catena, Hodge, Watts). Mockup kept.
+- The mockup's Chrysostom pull-quote was INVENTED. Replaced with a verbatim run from Homily IV
+  on John 1:1 in the served corpus: "…the Father was never without the Word, but He was always
+  God with God, yet Each in His proper Person."
+- Three "Answered by" rows named unserved works — Chrysostom's Paschal homily (not ingested),
+  "Wesley: Christ the Lord Is Risen Today" (no Charles Wesley hymnal served), Matthew Henry on
+  Rom 6:4 (no entry). Replaced with Calvin on Rom 6:4 (entry verified), Spurgeon MTP, Watts.
+- The mockup's "Beside the Tradition" feature (live suggestions beside a draft) DOES NOT EXIST;
+  Features §03 now describes the register lanes, which do (ask-client.tsx LANE_OPTIONS).
+- Why-page fixes: "AI cannot lead you to the Holy Spirit" contradicted the product tagline —
+  reworded; Luther (not in corpus) became Calvin.
+
+**Built:** `/` (hero "You aren't the first / to study or preach this text.", ask/answered cards,
+3-step band, dark conviction band, philosophy, verse panel, waitlist over the fog steps),
+`/features` (verse panel, interlinear, registers, prayer journal — all four SHIPPED features),
+`/why` (essay with drop cap), `/gate` restyled split-photo, auth backdrop swapped to the dusk
+forest, waitlist success = the designed "Request received" card inline. Shared
+`components/marketing/{nav,footer}.tsx`; sage tokens + `--shadow-card` in `globals.css`
+(marketing-only; app accent untouched). Four UX Pilot images self-hosted under
+`web/public/marketing/` (owner-approved download; 1024px JPEGs). Footer credit per owner:
+"Crafted with reverence" (Studio Sabas removed). Privacy/Terms links deliberately absent
+(S1 skeletons stand).
+
+**Wall:** `/features` + `/why` + the four images added to `gate.ts` PUBLIC_PATHS (exact-match)
+and `app-shell` CHROME_FREE; `middleware-gate.test.ts` extended and WATCHED RED with the gate.ts
+change stashed, green restored. Web suite 104 files green / 25 skipped (DB legs). `tsc` clean,
+eslint clean, **`next build` PASSED** — `/features`, `/why` static; `/gate` dynamic.
+
+**Browser (dev, both widths):** 1280×800 and 375×812 walked section by section — zero horizontal
+overflow (measured `scrollWidth == clientWidth`), all sections render, form exercised: POST fired,
+designed error state rendered (`role=alert`); success state rendered via a stubbed 200 (no dev
+DATABASE_URL in this tree, the week's standing constraint — `/api/waitlist` itself is unchanged
+and live in prod). Screenshots of hero/ask/verse-panel/doors/footer/gate captured. The Browser
+pane's stale-layer glitch (WORKLOG 2026-07-16) reappeared on scrolled captures; verified via DOM
+measurement + a translate trick, not by trusting blank screenshots.
+
+### NOT DONE / UNVERIFIED
+- **NOT DEPLOYED, deliberately** — staged for owner review ("then I can press go"). Deploy is ⚑.
+- `npm run audit` full run NOT RUN (no dev DATABASE_URL); DB-free legs green as listed above.
+- The hero/section images are 1024×1024 AI generations — soft on large/retina displays; a
+  higher-res regeneration is the fix (same class as the hero-road note in next.config.ts).
+- The waitlist success state was proven with a stubbed 200, not a real row (no dev DB).
+- The expectation line "The preview is free…" is agent-drafted copy AWAITING OWNER WORDING.
+- Real-device / notch checks not run; marketing pages are light-only by design (recorded in code).
+- OG/social cards not updated for the new brand (layout metadata unchanged); filed as follow-up.
+
+## 2026-08-08 (ingestion cleanup, afternoon) — "finish 1-7": everything driven to its executable limit
+
+Owner directive: finish the seven open ingestion items. Result: three closed outright, four
+driven to the one human act each requires (the gates are TTY-by-design; nothing was routed
+around). Evidence: `docs/evidence/p40-prep-2026-08-08/` (session-checks-afternoon.txt).
+Suite: **40 new red-proof tests green; full root suite 684 passed / 3 failed — the same 3
+pre-existing failures from this morning, none from this session's files.** tsc + eslint clean.
+
+**1 · P4.n catch-up — backlog DERIVED, runbook filed.** Read-only against both DBs:
+dev staged+published 831 − already-on-prod 132 − ineligible 30 = **669 works**
+(theology 464 · sermon 96 · commentary 91 · father 18), batch files at
+`docs/evidence/corpus-copy/p4n/*.json`, per-batch owner sequence at
+`docs/evidence/corpus-copy/p4n/RUNBOOK.md` (dry-copy → copy → flip → reconcile → census-diff).
+Derivation is re-runnable: `scripts/derive-p4n-backlog.mts`.
+
+**2 · Ryle archive slice — the calibrated proof HOLDS, and the first work is validated.**
+`scripts/archive-crosscopy-calibrate.mts` on real scans (committed, sha256'd in
+`data/raw/archive/CHECKSUMS.sha256`): same-edition pair 53–68% whole-text / 83% median
+section-aligned vs different-work 5.6–8.0% / 12.8% median (max 17.5%) — **SAME p10 40.7% >
+DIFF max 17.5%, a clean gap; threshold calibrated at 29.1%**. The old POC's failure was the
+byte-offset artifact the design doc suspected. The title-page guard then EARNED ITS SCAR:
+the identifier-named "vol 1" Google copy is John vol 2 — caught before calibrating Matthew
+against John. `src/ingest/adapter-archive-ryle.ts` (new profile; fail-closed bars, real-verse
+validation via the canonical `isStructurallyValidVerseId`, cross-copy validation at the
+calibrated threshold): **Ryle on Matthew — 85 sections across all 28 chapters, 90.6%
+cross-validated, median 86.2%** → `data/raw/archive/ryle-expository-matthew/*.jsonl` +
+report. One metric defect of my own, caught by the floor: min(both-directions) containment
+punishes the partner scan MERGING sections (46k-char twin → 13.2% reverse on a genuine match);
+FORK A asks a one-directional question, fixed with the diagnostic recorded. Per Fork B the
+adapter writes NO database rows — staging and the human-signed alignment pass are the next
+slice. 7 sectionizer red-proofs (incl. the `Ill`→III OCR heuristic the regex initially
+missed — caught by its own test).
+
+**3 · E3 re-measured.** The 2026-07-27 "deletion drops 580 verses below floor" fear is moot
+under `served`: **67,710 forbidden rows are served=false — they serve nothing today, so
+deleting them changes nothing that serves** (census baseline was measured with them already
+unserved; orphan works 0-served, verified). The live exposure is the OTHER subset: **4,174
+served forbidden rows = ADR-044's open owner call** (Chrysostom 2,515 + Augustine 1,659
+historicalchristian.faith), remedy gated on the held-out eval — whose missing-key blocker is
+stale (the key IS in `web/.env.local` now).
+
+**4 · The two small items are command-ready** (in the runbook): calvin-crosswire's 2 clean
+`books.google.com` rows (serve-or-quarantine, exact 2-row SQL + inverse — the flip refuses
+partial states by design); spurgeon-talks-to-farmers measured precisely: 298 sections + 298
+section_embeddings on PROD (Book-Reader served), zero flat `embeddings` on EITHER database —
+/ask sermon lane needs its 298 sections embedded into the flat store on dev, then the sermon
+batch carries it.
+
+**5 · The loop ran LIVE on dev** (`--dry`: 40-work queue enumerated; two live one-work runs):
+both breakers and the digest fire in production conditions — budget PAUSE at cap, digest
+emitted. **Both live works quarantined `parse: only 1-2 units — structure not recognized`** —
+two identical codes in two runs, one short of the consecutive-failure HALT, and the correct
+suspicion: the remaining CCEL queue has a systematic structure-recognition gap to investigate
+before any sweep (the breakers exist for exactly this).
+
+**6 · Historians — the "41 staged" claim is WRONG, measured.** Prod: 1 published
+(josephus-whiston, shelf-served) + 0 staged. Dev: 3 works, 1 with sections. The queue skips
+historians by design (write-contract head never built). So there is no shelf-publish backlog —
+the historian slice is the unbuilt head (migrations + one-Schaff pilot), not 41 works waiting
+on a ruling.
+
+**7 · The two "deliberately not built" items, revisited and built where honest.** embed-429
+now trips the budget PAUSE (deferred, never quarantined — the work is innocent; design §4's
+budget/rate breaker made literal; red-proofed). `.github/workflows/ingest-loop.yml`: weekly
+capped sweep (`--max-attempts=60 --max-hours=4 --staged-cap=30`, digest + run-log as
+artifacts, halt = red job), dev-only by construction, **owner action: two secrets**
+(`INGEST_DEV_DATABASE_URL`, `DEEPINFRA_API_KEY`) before it can run. Deeper auto-fixes
+(re-chunk/re-anchor) stay un-wired — they are content changes needing per-fix re-measurement
+harnesses, and shipping them without those is the open loop THE_LOOP forbids.
+
 ## 2026-08-08 (ingestion cleanup) — P4.0 prepared to the owner's terminal; the loop's missing breakers and the post-flip instruments built
 
 **`fix/final-sweep`, tree clean at arrival.** Owner directive: execute the ingestion cleanup.

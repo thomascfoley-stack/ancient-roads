@@ -1646,3 +1646,29 @@ the archive.org slice adds the Anglican voice from the primary scans, not a dupl
 
 **Status:** RULED. The forks unblock the archive lane; the lane's first run is its own slice
 with the calibration evidence committed before any work is staged.
+
+## ADR-111 — Marketing site replaced from the owner's UX Pilot design; S1's hero guardrail superseded (2026-08-08)
+
+The owner supplied a five-page UX Pilot mockup (Home, Features, Why, Login, Password) and ruled,
+in session: **full replacement is the new direction** — the cream editorial layout, sage accent,
+"You aren't the first / to study or preach this text." hero, all five pages, hero rewrite included.
+This supersedes `UX_REMEDIATION.md` S1's "Do not rewrite the hero" guardrail, which was written to
+keep a minimal remediation minimal, not to freeze the page forever; a deliberate owner-directed
+redesign is exactly the kind of decision that guardrail deferred to.
+
+What survives from S1's intent, because it was about honesty rather than layout:
+- **The truth pass ran first** (POLISH_PLAN.md Phase 0). Every feature claim was verified against
+  the shipped code and served corpus; the mockup's fabricated Chrysostom pull-quote was replaced
+  with a VERBATIM line from his Homily IV on John 1:1 as served by this corpus, and the three
+  "Answered by" rows naming unserved works (Chrysostom's Paschal homily, a Charles Wesley hymnal,
+  Matthew Henry on a verse he has no entry for) were replaced with served ones.
+- **The mockup's "Beside the Tradition" feature section was NOT built as claimed** — no such
+  draft-suggestion feature exists. The Features page section 03 describes the register lanes,
+  which do.
+- **Privacy/Terms footer links are still absent, deliberately** — S1's page-skeleton ruling stands:
+  those are owner-authored legal content, and dead links are worse than no column.
+- The expectation-setting line under the waitlist ("The preview is free…") is agent-drafted and
+  flagged for owner review.
+
+**Status:** RULED (owner, in session). Implementation on `feat/marketing-site`; deploy remains
+owner-gated per bylaw 7 / A-lane ⚑.

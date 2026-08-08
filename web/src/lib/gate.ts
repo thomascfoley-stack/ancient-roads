@@ -13,11 +13,19 @@ export const GATE_COOKIE = 'site_gate';
 const PUBLIC_PATHS = new Set([
   '/',
   '/about',
+  '/features',
+  '/why',
   '/api/waitlist',
   // The marketing hero image. Static assets the PUBLIC pages render must be listed here
   // too: dev runs gate-free so a missing entry only breaks in production (the photo 307'd
   // to /gate on the live site, 2026-07-16). Corpus data (/bible, /commentaries) stays gated.
   '/hero-road.jpg',
+  // The 2026-08-08 marketing redesign's photography (all four AI-generated, no
+  // provenance/licensing concern). Exact-match entries, same rule as above.
+  '/marketing/hero-forest.jpg',
+  '/marketing/steps-fog.jpg',
+  '/marketing/forest-dusk-1.jpg',
+  '/marketing/forest-dusk-2.jpg',
 ]);
 
 export function isPublicPath(pathname: string): boolean {

@@ -9,7 +9,7 @@ import { Omnibox } from './omnibox';
 // tier. The marketing landing (/) and the password gate (/gate) render full-bleed and
 // chrome-free — a stranger must not see the app's navigation, and the gate must not leak the
 // app's structure to someone who hasn't entered the password yet.
-const CHROME_FREE = new Set(['/', '/about', '/gate']);
+const CHROME_FREE = new Set(['/', '/about', '/features', '/why', '/gate']);
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
