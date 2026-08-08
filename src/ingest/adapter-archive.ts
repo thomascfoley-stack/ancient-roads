@@ -395,6 +395,6 @@ async function main() {
   console.log(`\nALL BARS PASSED → ${entries.length} entries → ${out}`);
 }
 
-if (process.argv[1] && /adapter-archive/.test(process.argv[1])) {
+if (process.argv[1] && /adapter-archive\.ts$/.test(process.argv[1])) {
   main().catch((e: unknown) => { console.error(e instanceof Error ? e.message : e); process.exit(1); });
 }

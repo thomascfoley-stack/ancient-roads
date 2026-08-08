@@ -111,6 +111,7 @@ async function main() {
   const recentCodes: string[] = [];
   let outcome: 'queue-empty' | 'paused' | 'halted' = 'queue-empty';
   let outcomeReason: string | undefined;
+  let rateLimited = false;
   // --staged-cap / --max-attempts / --max-hours override the defaults; the
   // consecutive-failure and quarantine-rate limits are design constants.
   const breakerCfg = {
@@ -123,6 +124,15 @@ async function main() {
   // it does NOT cover is the novel-fork stop — escalate, never invent a fix.
   const failWork = (slug: string, adapter: string, sourceType: string, message: string) => {
     const code = classifyFailure(message);
+    // The budget/rate breaker (design §4): an exhausted provider 429 pauses
+    // the RUN — the work is innocent and is deferred, never quarantined.
+    if (code === 'embed-429') {
+      rateLimited = true;
+      const reason = 'embed-429: provider rate-limited — deferred, NOT quarantined';
+      log({ at: new Date().toISOString(), slug, adapter, result: 'skipped', reason });
+      digestRows.push({ slug, adapter, sourceType, result: 'skipped', code, reason });
+      return;
+    }
     const known = (KNOWN_FAILURE_CODES as readonly string[]).includes(code);
     if (known) { quarantined++; recentCodes.push(code); }
     const result = known ? 'quarantined' as const : 'escalated' as const;
@@ -189,7 +199,7 @@ async function main() {
 
       // ── the circuit breakers (INGESTION_LOOP.md §4): the loop stops itself ──
       const trip = checkBreakers(
-        { attempted, quarantined, stagedThisRun, recentCodes, elapsedMs: Date.now() - startedAt.getTime() },
+        { attempted, quarantined, stagedThisRun, recentCodes, elapsedMs: Date.now() - startedAt.getTime(), rateLimited },
         breakerCfg,
       );
       if (trip) {

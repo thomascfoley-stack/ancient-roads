@@ -1,0 +1,19 @@
+── title-page guard ──
+ryle-01 vs ryle-01-goog: {"ok":true,"a":{"gospel":"MATTHEW","volume":null},"b":{"gospel":"MATTHEW","volume":null}}
+lapide extract: null
+
+── M1: whole-text 3-gram containment ──
+SAME  ryle01 ⊂ ryle01-goog: 68.3%
+SAME  ryle01-goog ⊂ ryle01: 53.4%
+DIFF   ryle01 ⊂ lapide: 8.0%
+DIFF   lapide ⊂ ryle01: 5.6%
+
+── M2: section-aligned 3-gram containment (min of both directions) ──
+sections: ryle01=83, ryle01-goog=63
+paired sections (same chapter:verseStart in both): 42
+SAME median: 83.0%  (p10 40.7 / p90 88.9)
+DIFF median: 12.8%  (max 17.5)
+
+── verdict ──
+separation: SAME p10 40.7% > DIFF max 17.5%  → DISCRIMINATES with a clean gap
+calibrated section-containment threshold: 29.1% (midpoint of the gap)

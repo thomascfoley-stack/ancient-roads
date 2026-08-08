@@ -61,6 +61,8 @@ export interface LoopBreakerState {
   /** failure codes of quarantined works, in order — escalations never enter */
   recentCodes: string[];
   elapsedMs: number;
+  /** a work hit an exhausted provider rate limit this run (budget/rate breaker) */
+  rateLimited?: boolean;
 }
 
 /**
@@ -84,6 +86,16 @@ export function checkBreakers(s: LoopBreakerState, cfg: BreakerConfig = DEFAULT_
       breaker: 'quarantine-rate',
       action: 'halt',
       reason: `quarantine rate ${s.quarantined}/${s.attempted} > ${Math.round(cfg.quarantineRate * 100)}% — investigate before resuming`,
+    };
+  }
+  // The budget/rate breaker (INGESTION_LOOP.md §4): an exhausted provider 429
+  // is a PAUSE, never a quarantine — the work is innocent; the run is out of
+  // budget. Checkpoint and resume; the loop is idempotent, so a pause is free.
+  if (s.rateLimited) {
+    return {
+      breaker: 'budget',
+      action: 'pause',
+      reason: 'DeepInfra 429 backoff exhausted — pausing; resume the run later (the work is not quarantined)',
     };
   }
   if (cfg.maxElapsedMs > 0 && s.elapsedMs >= cfg.maxElapsedMs) {

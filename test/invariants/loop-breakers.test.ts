@@ -78,6 +78,12 @@ describe('budget breaker', () => {
     expect(t?.breaker).toBe('budget');
     expect(t?.action).toBe('pause');
   });
+  it('RED: an exhausted provider 429 trips PAUSE, never a halt or a quarantine', () => {
+    const t = checkBreakers(state({ rateLimited: true, attempted: 2 }));
+    expect(t?.breaker).toBe('budget');
+    expect(t?.action).toBe('pause');
+    expect(t?.reason).toContain('429');
+  });
   it('no caps set means no budget trip', () => {
     expect(checkBreakers(state({ attempted: 9999, elapsedMs: 999999 }), { ...DEFAULT_BREAKERS, maxElapsedMs: 0, maxAttempts: 0 })).toBeNull();
   });

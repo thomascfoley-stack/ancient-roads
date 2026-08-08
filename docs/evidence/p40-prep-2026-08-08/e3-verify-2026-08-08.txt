@@ -1,0 +1,5 @@
+
+
+served rows with forbidden provenance (must be 0): [{"n":4174}]
+served=false forbidden rows (the E3 delete set): [{"n":67710}]
+served rows per orphan work (must be 0): [{"work":"scofield-crosswire","served_n":0},{"work":"pnt-crosswire","served_n":0},{"work":"poole-tcp","served_n":0}]

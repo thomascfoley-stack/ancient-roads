@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "startedAt": "2026-08-08T21:46:38.484Z",
+    "endedAt": "2026-08-08T21:46:39.643Z",
+    "outcome": "paused",
+    "outcomeReason": "budget: 1 attempts reached the run cap of 1 — checkpoint and resume"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 0,
+    "skipped": 0,
+    "quarantined": 1,
+    "escalated": 0
+  },
+  "staged": [],
+  "escalations": [],
+  "quarantined": [
+    {
+      "slug": "neander-a-expo-phil",
+      "adapter": "ccel",
+      "sourceType": "commentary",
+      "result": "quarantined",
+      "code": "parse",
+      "reason": "parse: only 2 units — structure not recognized"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "startedAt": "2026-08-08T21:46:22.134Z",
+    "endedAt": "2026-08-08T21:46:23.569Z",
+    "outcome": "paused",
+    "outcomeReason": "budget: 1 attempts reached the run cap of 1 — checkpoint and resume"
+  },
+  "counts": {
+    "published": 0,
+    "staged": 0,
+    "skipped": 0,
+    "quarantined": 1,
+    "escalated": 0
+  },
+  "staged": [],
+  "escalations": [],
+  "quarantined": [
+    {
+      "slug": "spurgeon-catechism",
+      "adapter": "ccel",
+      "sourceType": "confession",
+      "result": "quarantined",
+      "code": "parse",
+      "reason": "parse: only 1 units — structure not recognized"
+    }
+  ]
+}

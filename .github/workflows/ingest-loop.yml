@@ -1,0 +1,55 @@
+name: ingest-loop
+
+# The autonomous ingestion sweep (INGESTION_LOOP.md), SCHEDULED — with the
+# safety answer the design actually specifies: breakers + resumability, not
+# blind continuity. Every run is capped (attempts, hours, staged batch), emits
+# a publish digest as an artifact, and publishes NOTHING — publish stays a
+# human digest decision, always.
+#
+# OWNER ACTIONS REQUIRED before this can run (secrets are never in the repo):
+#   1. INGEST_DEV_DATABASE_URL  — dev (ep-tiny-hat) OWNER connection string
+#   2. DEEPINFRA_API_KEY        — embedding provider key
+# Without both, the first step exits 2 (assertDevBranch fails closed) and the
+# run is a no-op. The loop targets dev only by construction (NEON_BRANCH=dev
+# + assertDevBranch); production is unreachable from this workflow.
+#
+# Cadence: weekly. A run that finds nothing to do costs one dev census; a run
+# that finds a broken gate HALTS by breaker and the digest says why. Resume is
+# free (idempotent, resume-skip), so a paused run is continued by the next
+# scheduled run automatically.
+
+on:
+  schedule:
+    - cron: '41 6 * * 3' # Wednesdays 06:41 UTC — off the :00/:30 herd marks
+  workflow_dispatch: # manual trigger, same caps
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300 # hard ceiling above the --max-hours=4 breaker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+      - name: ingestion sweep (capped)
+        env:
+          DATABASE_URL: ${{ secrets.INGEST_DEV_DATABASE_URL }}
+          NEON_BRANCH: dev
+          DEEPINFRA_API_KEY: ${{ secrets.DEEPINFRA_API_KEY }}
+        # --max-attempts=60: at most 60 works per run — the digest stays a
+        # reviewable size, and spend is bounded per run by construction.
+        # Exit 1 (breaker HALT) fails the job so the halt is loud in Actions.
+        run: npx tsx src/ingest/adapter-loop.ts --max-attempts=60 --max-hours=4 --staged-cap=30
+      - name: upload digest + run-log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ingest-run-${{ github.run_id }}
+          path: |
+            docs/evidence/ingest-runs/
+            data/ingest-run-log.jsonl
+          retention-days: 90
