@@ -1,0 +1,26 @@
+deployed_at_utc: 2026-08-08T17:21:09Z
+sha:             dda45dff5f233f65efe485936273d2e70321a8cb
+branch:          fix/PR1a
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@50.38.2
+url:             (not parsed - see /var/folders/fq/79gh1x1j27z5n7kx60742kkh0000gn/T//vercel-deploy.Uh8Srw)
+deployment_id:   (not resolved)
+alias:           ancientpaths.app
+alias_serves:    (not resolved)
+state:           upload started, outcome unknown
+
+--- ANNOTATED 2026-08-08, AFTER THE FACT ---
+outcome:         NO DEPLOYMENT WAS CREATED. This receipt is of an ABORTED attempt.
+cause:           the agent ran deploy.sh in the foreground under a 2-minute command
+                 timeout and the shell was killed mid-upload. Not a deploy failure and
+                 not a product fault — an operator mistake. deploy.sh takes minutes;
+                 it must be run detached.
+verified how:    `vercel ls` immediately afterwards showed the newest production
+                 deployment at 9h old, i.e. unchanged. Confirmed independently rather
+                 than inferred from the killed shell.
+state:           superseded by the receipt from the completed run.
+why kept:        "state: upload started, outcome unknown" is exactly the ambiguous
+                 record that gets read later as a successful deploy. Labelling it is
+                 cheaper than deleting it and rediscovering the ambiguity.
