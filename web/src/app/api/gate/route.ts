@@ -41,11 +41,7 @@ export async function POST(req: NextRequest) {
 
   const form = await req.formData();
   const attempt = form.get('password');
-  const rawNext = form.get('next');
-  const next =
-    typeof rawNext === 'string' && rawNext.startsWith('/') && !rawNext.startsWith('//')
-      ? rawNext
-      : '/home';
+  const next = safeNext(form.get('next'));
 
   if (typeof attempt !== 'string' || !passwordMatches(attempt, password)) {
     const url = new URL('/gate', req.url);
@@ -63,4 +59,37 @@ export async function POST(req: NextRequest) {
     maxAge: 60 * 60 * 24 * 30,
   });
   return res;
+}
+
+/**
+ * Clamp the post-unlock redirect to this site. Exported for `web/test/invariants/gate-next-redirect.test.ts`.
+ *
+ * WAS: `rawNext.startsWith('/') && !rawNext.startsWith('//')`, which reads as "same-site only" and
+ * is not. WHATWG URL treats a backslash as a slash for special schemes, so `/\evil.com` passed both
+ * clauses and `new URL('/\\evil.com', req.url)` resolved to `https://evil.com/` — an open redirect
+ * out of the password gate, straight into a clone that asks for the password again (audit A1-5,
+ * measured 2026-08-07).
+ *
+ * The prefix rule was already two clauses deep and still wrong, because it reasons about the STRING
+ * while the browser reasons about the RESOLVED URL. A third clause for backslash would be the same
+ * bug waiting for the next separator the parser accepts. So: resolve it exactly as the route does
+ * one line later, and compare origins. That asks the question the browser will actually answer.
+ *
+ * A relative base is used rather than the request URL so this is a pure function of its input —
+ * `https://gate.invalid` is a placeholder origin, never fetched, and any input that escapes it
+ * would escape the real origin identically.
+ */
+export function safeNext(raw: unknown): string {
+  if (typeof raw !== 'string' || raw === '') return '/home';
+  const BASE = 'https://gate.invalid';
+  try {
+    const resolved = new URL(raw, BASE);
+    if (resolved.origin !== BASE) return '/home';
+    // Return the resolved path rather than the raw string: the URL parser has already stripped the
+    // tab/newline/carriage-return characters it ignores, so what is returned is what a browser
+    // would have navigated to, not what the attacker typed.
+    return `${resolved.pathname}${resolved.search}${resolved.hash}`;
+  } catch {
+    return '/home'; // unparseable is a refusal, not a pass
+  }
 }
