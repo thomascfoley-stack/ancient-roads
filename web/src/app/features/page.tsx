@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { MarketingNav } from '@/components/marketing/nav';
 import { MarketingFooter } from '@/components/marketing/footer';
+import { VersePanelDemo } from '@/components/marketing/verse-panel-demo';
 
 // PUBLIC features page (gate.ts isPublicPath, app-shell CHROME_FREE). Part of the
 // 2026-08-08 marketing redesign; see app/page.tsx for the design provenance.
@@ -36,8 +37,6 @@ const REGISTERS = [
   { register: 'Hymns & Sacred Poetry', line: 'Watts, Hymns and Spiritual Songs', sub: 'With Olney Hymns, Herbert, and the psalters' },
 ];
 
-const VOICES = ['Augustine', 'Chrysostom', 'Calvin', 'Wesley', 'Matthew Henry'];
-
 function SectionNumber({ n }: { n: string }) {
   return <span className="mb-6 block font-display text-5xl font-light italic text-accent-600/40 sm:text-6xl">{n}</span>;
 }
@@ -66,50 +65,10 @@ export default function FeaturesPage() {
             </p>
           </div>
 
-          {/* Demo block duplicated from app/page.tsx §6 (inline-until-3rd-call-site rule).
-              The quote is VERBATIM Chrysostom, Homily IV on John 1:1, from the served
-              corpus — keep the two copies in sync and re-verify before changing. */}
-          <div className="border-t edge pt-8 sm:pt-10">
-            <div className="mb-8">
-              <p className="font-display text-2xl leading-snug text-stone-900 sm:text-3xl">
-                In the beginning was the Word, and the Word was with God, and the Word was God.
-              </p>
-              <p className="mt-4 font-sans text-micro uppercase tracking-[0.1em] text-stone-500">John 1:1</p>
-            </div>
-            <div className="space-y-8">
-              <div>
-                <p className="mb-4 text-micro font-semibold uppercase tracking-[0.2em] text-stone-500">
-                  Ten voices on this verse
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {VOICES.map((v, i) => (
-                    <span
-                      key={v}
-                      className={`border px-4 py-2 text-micro uppercase tracking-widest ${
-                        i === 0
-                          ? 'border-accent-600 text-accent-600'
-                          : 'border-stone-200 text-stone-500'
-                      }`}
-                    >
-                      {v}
-                    </span>
-                  ))}
-                  <span className="px-3 py-2 text-micro uppercase tracking-widest text-accent-600">
-                    +5 more
-                  </span>
-                </div>
-              </div>
-              <div className="border-l-[3px] border-l-accent-600 border-t border-t-stone-200 pl-6 pt-8 sm:pl-8">
-                <p className="max-w-[62ch] font-serif text-[17px] italic leading-[1.75] text-stone-900 sm:text-lg">
-                  &ldquo;&hellip;the Father was never without the Word, but He was always God with God,
-                  yet Each in His proper Person.&rdquo;
-                </p>
-                <p className="mt-5 font-serif text-sm uppercase tracking-[0.05em] text-stone-500">
-                  Chrysostom, Homily IV on John
-                </p>
-              </div>
-            </div>
-          </div>
+          {/* Interactive demo, shared with app/page.tsx §6 (3rd call-site threshold waived:
+              a stateful client component should not be duplicated). Excerpts pinned verbatim
+              by test/marketing-verse-panel-sync.test.ts. */}
+          <VersePanelDemo />
         </div>
       </section>
 

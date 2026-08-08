@@ -235,10 +235,13 @@ export function SelectionPopover({
         style={pos ? { top: pos.top, left: pos.left } : { top: -9999, left: -9999, visibility: 'hidden' }}
         {...holdSelection}
       >
-        {/* PRD §5/§8: night-surface pill, 1px night-hairline border, NO shadow, 150ms fade.
-            Dark mode inverts it to parchment with a dark border. rounded-full is deliberate —
-            the PRD names this a pill, the mockup renders it rounded-full. */}
-        <div className="w-max max-w-[420px] animate-[fade-in_150ms_var(--ease-gentle)] rounded-full border border-stone-800 bg-stone-950 px-4 py-2.5 dark:border-stone-900 dark:bg-stone-50">
+        {/* PRD §5/§8: night surface, 1px night-hairline border, NO shadow, 150ms fade.
+            Dark mode inverts it to parchment with a dark border. NOT rounded-full: the PRD's
+            "pill" is the mockup's ONE-ROW toolbar (the mobile bar below keeps it); this desktop
+            card stacks label/swatches/actions/copy, and rounded-full on a multi-row box renders
+            an ellipse that clips its own corners (measured: 168x131 signed-out). Square corners
+            per the global radius-0 rule. */}
+        <div className="w-max max-w-[420px] animate-[fade-in_150ms_var(--ease-gentle)] border border-stone-800 bg-stone-950 px-4 py-2.5 dark:border-stone-900 dark:bg-stone-50">
           {/* AA on both skins: ink-wash (stone-500) fails 4.5:1 at 11px on the dark pill, so
               the label lightens to stone-400 there; on parchment in dark mode ink-wash passes. */}
           <div className="px-1 pb-1.5 font-sans text-micro font-medium small-caps tracking-[0.08em] text-stone-400 dark:text-stone-500">{contextLabel}</div>

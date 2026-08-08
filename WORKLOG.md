@@ -96,7 +96,13 @@ pane's stale-layer glitch (WORKLOG 2026-07-16) reappeared on scrolled captures; 
 measurement + a translate trick, not by trusting blank screenshots.
 
 ### NOT DONE / UNVERIFIED
-- **NOT DEPLOYED, deliberately** — staged for owner review ("then I can press go"). Deploy is ⚑.
+- ~~NOT DEPLOYED~~ **SUPERSEDED same evening: the owner pressed go.** Three deploys shipped
+  (d7a45f3, efa9756, and the final pass), each alias-identity-verified by deploy.sh; the PRD
+  restyle landed between review and deploy and re-skinned these pages (see the restyle entry
+  below and VISUAL_REDESIGN_HANDOVER.md). Hero became Proverbs 11:14 (KJV wording), the verse
+  panel became INTERACTIVE (ten clickable voices, every excerpt verbatim served corpus text,
+  pinned by test/marketing-verse-panel-sync.test.ts, red-proofed), and the owner's why-page
+  trades shipped with John 14:26 verbatim from rwebster. Deploy is ⚑.
 - `npm run audit` full run NOT RUN (no dev DATABASE_URL); DB-free legs green as listed above.
 - The hero/section images are 1024×1024 AI generations — soft on large/retina displays; a
   higher-res regeneration is the fix (same class as the hero-road note in next.config.ts).

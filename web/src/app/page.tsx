@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { WaitlistForm } from '@/components/waitlist-form';
 import { MarketingNav } from '@/components/marketing/nav';
 import { MarketingFooter } from '@/components/marketing/footer';
+import { VersePanelDemo } from '@/components/marketing/verse-panel-demo';
 
 // PUBLIC marketing landing, outside the SITE_PASSWORD wall (gate.ts isPublicPath).
 // The signed-in app home lives at /home. Pre-launch the CTA is a waitlist, not live
@@ -38,11 +39,6 @@ const ANSWERED_BY = [
   { register: 'Creed', line: 'Nicene, rose again the third day' },
 ];
 
-// The verse panel demo: the REAL served voices on John 1:1 (10 distinct authors through
-// isPublishedCommentaryEntry; the five named here plus Adam Clarke, Barnes, Aquinas'
-// Catena, Hodge and Watts behind "+5 more").
-const VOICES = ['Augustine', 'Chrysostom', 'Calvin', 'Wesley', 'Matthew Henry'];
-
 const STEPS = [
   'You ask.',
   'Two thousand years are searched.',
@@ -62,7 +58,10 @@ export default function MarketingHome() {
       {/* 1 — HERO. PRD §5: full-viewport warm imagery, NO scrim gradient; the type sits
           on a parchment band at the bottom of the hero. */}
       <section className="flex min-h-dvh flex-col">
-        <div className="relative min-h-[48dvh] flex-1 sm:min-h-[54dvh]">
+        {/* Image band min-height: 36dvh on desktop (was 54) — at 54 the headline started
+            below the fold on a laptop viewport (owner call 2026-08-08); flex-1 still lets
+            the image grow on tall screens. */}
+        <div className="relative min-h-[42dvh] flex-1 sm:min-h-[36dvh]">
           <Image
             src="/marketing/hero-forest.jpg"
             alt="Misty pine forest at dawn, sunlight breaking through the trees"
@@ -75,7 +74,7 @@ export default function MarketingHome() {
         </div>
 
         <div className="border-t edge bg-stone-50">
-          <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
+          <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-12">
             <p className="mb-5 text-micro font-semibold uppercase tracking-[0.3em] text-stone-500 sm:mb-6">
               For those who preach and study the Word
             </p>
@@ -232,52 +231,10 @@ export default function MarketingHome() {
             </p>
           </div>
 
-          <div className="border-t edge pt-8 sm:pt-10">
-            <div className="mb-8 sm:mb-10">
-              <p className="font-display text-2xl leading-snug text-stone-900 sm:text-3xl">
-                In the beginning was the Word, and the Word was with God, and the Word was God.
-              </p>
-              <p className="mt-4 font-sans text-micro uppercase tracking-[0.1em] text-stone-500">John 1:1</p>
-            </div>
-
-            <div className="space-y-8">
-              <div>
-                <p className="mb-4 text-micro font-semibold uppercase tracking-[0.2em] text-stone-500">
-                  Ten voices on this verse
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {VOICES.map((v, i) => (
-                    <span
-                      key={v}
-                      className={`border px-4 py-2 text-micro uppercase tracking-widest ${
-                        i === 0
-                          ? 'border-accent-600 text-accent-600'
-                          : 'border-stone-200 text-stone-500'
-                      }`}
-                    >
-                      {v}
-                    </span>
-                  ))}
-                  <span className="px-3 py-2 text-micro uppercase tracking-widest text-accent-600">
-                    +5 more
-                  </span>
-                </div>
-              </div>
-
-              {/* VERBATIM from the served corpus: Chrysostom, Homily IV on John 1:1 (NPNF
-                  translation; entry present in web/public/commentaries/jhn/1.json). Replaces
-                  the mockup's invented paraphrase. Re-verify before ever changing this. */}
-              <div className="border-l-[3px] border-l-accent-600 border-t border-t-stone-200 pl-6 pt-8 sm:pl-8">
-                <p className="max-w-[62ch] font-serif text-[17px] italic leading-[1.75] text-stone-900 sm:text-lg">
-                  &ldquo;&hellip;the Father was never without the Word, but He was always God with God,
-                  yet Each in His proper Person.&rdquo;
-                </p>
-                <p className="mt-5 font-serif text-sm uppercase tracking-[0.05em] text-stone-500">
-                  Chrysostom, Homily IV on John
-                </p>
-              </div>
-            </div>
-          </div>
+          {/* Interactive (owner call 2026-08-08): click a voice, read that voice. Every
+              excerpt is verbatim served corpus text, pinned by
+              test/marketing-verse-panel-sync.test.ts. */}
+          <VersePanelDemo />
         </div>
       </section>
 

@@ -189,7 +189,20 @@ export function VerseDisplay({
       </h1>
       <div aria-hidden className="mb-12 border-b edge" />
       <VerseHandleHint />
-      <div className="reading-scale font-scripture leading-[1.9] text-stone-900 dark:text-stone-200">
+      {/* PRD §5 chapter opening: the drop cap is this CONTAINER's ::first-letter. The first
+          verse's own span cannot carry it — ::first-letter needs a block container, and
+          `inline-block` on a span inside the continuous verse flow contains the float, so any
+          first verse shorter than the cap punched a blank line into the flow (measured on
+          /read/psa/23). Container-level, the cap floats and every following line wraps it.
+          The verse-1 number <sup> floats too: out-of-flow content is skipped when the first
+          letter is determined, otherwise the cap would be the DIGIT (measured — a giant "1").
+          leading-[0.88], not the mockup's 0.9: at 4.8rem, 0.9 makes the float box 69.1px
+          against a 2-line height of 68.4px (18px × 1.9 × 2), and that 0.7px overhang drags a
+          THIRD line into the indent, leaving a hole under the cap glyph. 0.88 = 67.6px, a
+          clean two-line cap. Pure CSS either way: the DOM and the text-node offsets the
+          anchoring engine walks are untouched, and the letter stays part of the verse for
+          screen readers. */}
+      <div className="reading-scale font-scripture leading-[1.9] text-stone-900 dark:text-stone-200 first-letter:float-left first-letter:mr-2 first-letter:font-display first-letter:text-[4.8rem] first-letter:leading-[0.88] first-letter:text-accent-600 first-letter:[font-feature-settings:'onum'] dark:first-letter:text-accent-400">
         {data.verses.map((v) => {
           if (!v.text) return null;
           const isSelected = v.verse === selectedVerse;
@@ -282,8 +295,13 @@ export function VerseDisplay({
                    interactive mark on the page from looking like decoration. */
                 /* Verse numbers (PRD §4): 11px Source Sans, antique gold, old-style
                    figures, weight 500. Dark mode takes the PRD's brighter gold (accent-400)
-                   rather than the paler accent-300. */
-                className="relative mr-0.5 cursor-pointer font-sans text-micro font-medium text-accent-600 select-none [font-feature-settings:'onum'] before:absolute before:-inset-y-1 before:-left-1.5 before:-right-0.5 before:content-[''] hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300"
+                   rather than the paler accent-300.
+                   Verse 1's number FLOATS so the container's ::first-letter drop cap lands on
+                   the verse text, not this digit — see the container comment above the map.
+                   `leading-none` must ride along: preflight gives sup `line-height: 0`, which
+                   is invisible inline but collapses a FLOAT to a zero-height box — the
+                   accessibility tree prunes it and the tap target shrinks to the pseudo. */
+                className={`relative mr-0.5 cursor-pointer font-sans text-micro font-medium text-accent-600 select-none [font-feature-settings:'onum'] before:absolute before:-inset-y-1 before:-left-1.5 before:-right-0.5 before:content-[''] hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300${v.verse === firstVerse ? ' float-left leading-none' : ''}`}
               >
                 {v.verse}
               </sup>
@@ -296,19 +314,7 @@ export function VerseDisplay({
               )}
               {/* The verse-text container: its text nodes concatenate to exactly v.text, so the
                   anchoring mapper (rangeToOffsetsInContainer) walks it to derive offsets into v.text. */}
-              <span
-                data-verse-text={v.verse}
-                // PRD §5 chapter opening: a drop cap on the first verse (EB Garamond, antique
-                // gold, old-style figures, margin-right 0.5rem, line-height 0.9; 4.8rem per the
-                // mockup). Pure CSS ::first-letter — the DOM and the offsets the anchoring engine
-                // walks are untouched, and the letter stays part of the verse for screen readers.
-                // `inline-block` because ::first-letter only applies to a block-level container.
-                className={
-                  v.verse === firstVerse
-                    ? "inline-block first-letter:float-left first-letter:mr-2 first-letter:font-display first-letter:text-[4.8rem] first-letter:leading-[0.9] first-letter:text-accent-600 first-letter:[font-feature-settings:'onum'] dark:first-letter:text-accent-400"
-                    : undefined
-                }
-              >
+              <span data-verse-text={v.verse}>
                 {segments.map((seg, i) =>
                   seg.color ? (
                     <span key={i} className={`rounded-[3px] ${HIGHLIGHT_BG[seg.color] ?? ''}`}>
