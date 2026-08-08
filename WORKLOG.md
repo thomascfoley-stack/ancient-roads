@@ -1,5 +1,61 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-08 (queue run) — F1-fonts + N4 built and merged; DEPLOY BLOCKED; rate limiter STOPPED
+
+**main `b72a8ee` · production `9729a1a` — THEY DO NOT MATCH, and the gap is the headline.**
+
+**Item 1 — unverified accounts: 1 total, 0 unverified** (re-measured, not quoted). Already
+resolved earlier today; the test account was the whole unverified set and was deleted on the
+owner's prior go. No writes this run.
+
+**Item 2 — `F1-fonts`: BUILT, MERGED (`1bb5c3c` → `8e1de21`), NOT DEPLOYED.** Self-hosted via
+`next/font`; CSP untouched. **Two defects in my own exit tests, both found by seeding:**
+
+> **The scan could not fail.** It stripped comments before matching — and the stripper
+> `/\/\/.*$/gm` treats the `//` in `https://` as a line comment, so it deleted the URL, *the exact
+> string being hunted*, before scanning. Seeded the real `<link>` back in: **suite stayed green.**
+> Fixed to `/(^|[^:])\/\/.*$/gm`, re-seeded to red. A comment stripper that eats URLs cannot
+> police URLs.
+>
+> **Two tests contradicted each other.** Binding `next/font` straight to `--font-display` was
+> measured in the browser to override the whole `@theme` declaration — Georgia gone at runtime —
+> while the string "Georgia" sat in `globals.css` keeping the fallback test green. *A test that
+> reads the stylesheet cannot see a value the cascade overrode.* The **fix** changed, not the
+> property: `next/font` owns `--font-*-face` and `globals.css` composes it into the chain.
+
+**Item 3 — `N4`: BUILT, MERGED (`b133ba8` → `658df10`), NOT DEPLOYED.** Channels → a `Prayer
+journal` section linking to shipped `/prayers`; Study Partners retired; `New section` removed;
+`/channel/[id]` redirects. The route file is deliberately **kept** — deleting it yields the 404 the
+owner ruled against, and a test asserts its existence so absence fails rather than passes. Seven
+seeds red, including "re-badge as Coming soon" and "delete the route".
+
+**Item 4 — rate limiter: STOPPED, as instructed.** It is a Better Auth plugin adapter
+(`rate-limit-storage.ts:73`) and the live path is Neon's **hosted** better-auth reached over
+`fetch` (`neon-auth.ts:25,31`; `api/auth/[...path]/route.ts:16,20`). Measured across the SDK type
+surface: `rateLimit` 0, `customStorage` 0, `secondaryStorage` 0 — there is no plugin point. A
+storage adapter cannot be injected into a process we do not run. Re-wiring is a *different
+limiter*, so it was reported rather than improvised.
+
+### NOT DONE / UNVERIFIED
+
+- **NOTHING WAS DEPLOYED.** `deploy.sh`'s clean-tree gate refused on `docs/FEATURE_AUDIT.md`, an
+  untracked 114-line file this session never wrote, citing `Polish_Plan.md` and
+  `MARKETING_SITE_DESIGN.md` which this session has never touched. **mtime moved 10:58 → 11:03
+  during the run — a concurrent session is actively writing to the deploy tree.** This is
+  `AGENTS.md`'s one-agent-per-tree hazard, live, and the same shape as 2026-07-12.
+  **Not worked around:** `vercel --prod` uploads `web/` alone, so a `docs/` file physically cannot
+  ship — which is an argument for bypassing the gate, and it is rejected. Reasoning past a safety
+  gate case-by-case is how it stops meaning anything.
+- **12 commits sit on `main` and not in production**, F1-fonts and N4 among them.
+- **A1-2 is unmitigated on the live auth path.** Not introduced here — true since the cutover — but
+  it was hidden behind 7 passing tests until today.
+- **No `BROWSER`/`HUMAN` check ticked.** `F1-fonts` X3/X5, `N4` checks 1 and 4, the `/prayers` walk.
+  Observations were taken (fonts enumerate; `/channel/abc123` → `/prayers`; rail clean) and X5
+  specifically requires a machine *without* these fonts installed, which this was not.
+- **`npm run audit` NOT RUN** (needs a dev `DATABASE_URL`). Web typecheck, lint and the full suite
+  are green: **100 files, 678 tests**, in the same tree that would be deployed, verified
+  byte-identical to `main`.
+
 ## 2026-08-08 (later) — three rulings executed: F2 deleted, F1-fonts spec'd, 107 applied, deployed
 
 **Prod:** migration 107 applied to `ep-odd-fog`; `ancientpaths.app` serves **`9729a1a`**
