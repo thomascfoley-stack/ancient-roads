@@ -186,7 +186,11 @@ jobs:
           # bootstrap had recorded 039 and 042 as applied because they fall below the declared
           # cutoff, so they must be forgotten before they can be applied. ONE-SHOT: remove after the
           # next green run, when it becomes a no-op.
-          APPLY_PENDING_FORGET: '39,42,44,45'
+          # ONLY 44,45 — 039 and 042 were applied by the 03:43 run, and re-forgetting them made the
+          # next run try to re-apply non-idempotent DDL (`relation "plans" already exists`). A
+          # one-shot list must be REPLACED each time, not widened. Remove this line entirely once
+          # the run is green; leaving it re-forgets every run and breaks the same way.
+          APPLY_PENDING_FORGET: '44,45'
         run: node db/apply-pending.mjs
 
       - name: DB-backed invariants (real DB) — whole directory, no allowlist
