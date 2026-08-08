@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { MarketingNav } from '@/components/marketing/nav';
 import { MarketingFooter } from '@/components/marketing/footer';
@@ -23,8 +24,23 @@ export default function WhyPage() {
     <main className="bg-stone-50">
       <MarketingNav active="why" />
 
-      <header className="px-5 pb-12 pt-16 sm:px-8 sm:pb-20 sm:pt-28">
-        <div className="mx-auto max-w-4xl text-center">
+      {/* The hero photograph, faint, behind the header ONLY (owner call 2026-08-08) — the
+          same banded pattern as the Home hero (photo, then a hairline into solid
+          parchment), not a fixed sitewide backdrop with the essay floating over it as a
+          card. It scrolls away with the header, and a bottom gradient dissolves it into
+          the solid stone-50 the essay sits on, so there is never a hard edge and 18px
+          reading text is never on top of the photo. */}
+      <header className="relative overflow-hidden px-5 pb-16 pt-16 sm:px-8 sm:pb-24 sm:pt-28">
+        <Image
+          src="/marketing/hero-path.jpg"
+          alt=""
+          fill
+          sizes="100vw"
+          quality={75}
+          className="object-cover object-[38%_40%] opacity-[0.35]"
+        />
+        <div aria-hidden className="absolute inset-0 bg-linear-to-b from-stone-50/40 via-stone-50/70 to-stone-50" />
+        <div className="relative mx-auto max-w-4xl text-center">
           <p className="mb-5 text-micro font-semibold uppercase tracking-[0.3em] text-stone-500">Why we exist</p>
           <h1 className="font-display text-5xl leading-tight tracking-[-0.01em] text-stone-900 sm:text-7xl lg:text-8xl">
             Why we built this

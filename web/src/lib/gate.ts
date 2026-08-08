@@ -20,10 +20,10 @@ const PUBLIC_PATHS = new Set([
   // too: dev runs gate-free so a missing entry only breaks in production (the photo 307'd
   // to /gate on the live site, 2026-07-16). Corpus data (/bible, /commentaries) stays gated.
   '/hero-road.jpg',
-  // The 2026-08-08 marketing redesign's photography. hero-track.jpg is "Misty Forest
-  // Track" by Mr Moss (CC BY 2.0, credited in the marketing footer); the other three
-  // are AI-generated. Exact-match entries, same rule as above.
-  '/marketing/hero-track.jpg',
+  // The 2026-08-08 marketing redesign's photography. hero-path.jpg is iStock #1337429689
+  // (owner-purchased, standard license, no credit required — see app/page.tsx). The
+  // other three are AI-generated. Exact-match entries, same rule as above.
+  '/marketing/hero-path.jpg',
   '/marketing/steps-fog.jpg',
   '/marketing/forest-dusk-1.jpg',
   '/marketing/forest-dusk-2.jpg',

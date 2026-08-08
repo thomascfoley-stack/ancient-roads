@@ -62,19 +62,19 @@ export default function MarketingHome() {
             below the fold on a laptop viewport (owner call 2026-08-08); flex-1 still lets
             the image grow on tall screens. */}
         <div className="relative min-h-[42dvh] flex-1 sm:min-h-[36dvh]">
-          {/* "Misty Forest Track" by Mr Moss, CC BY 2.0 (credit in the footer). Its own
-              filename, not hero-forest.jpg reused: the image optimizer caches by URL, so
-              replacing bytes under the old name served the stale photo. */}
+          {/* iStock #1337429689 (credit: RnDmS), purchased/licensed by the owner directly —
+              NOT CC, so no attribution line is required and none is given (unlike the prior
+              two photos, an iStock standard license does not obligate a credit). Ancient
+              stone path atop a hillside at golden hour — Tel Megiddo, Jezreel Valley. Own
+              filename again: the optimizer caches by URL. */}
           <Image
-            src="/marketing/hero-track.jpg"
-            alt="Sunlight breaking through mist over a dirt track in a pine forest"
+            src="/marketing/hero-path.jpg"
+            alt="An ancient stone path along a golden hillside at sunset, leading toward trees on a ridge"
             fill
             priority
             sizes="100vw"
             quality={90}
-            // 72% vertical: the track runs through the lower third of the frame, and a
-            // centered crop in the wide band cut it out entirely.
-            className="object-cover object-[50%_72%]"
+            className="object-cover object-[38%_50%]"
           />
         </div>
 

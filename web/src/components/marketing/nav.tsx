@@ -20,9 +20,13 @@ const LINKS: { key: MarketingPage; href: string; label: string }[] = [
 ];
 
 export function MarketingNav({ active }: { active?: MarketingPage }) {
+  // A plain <nav>, not <header><nav>: each page's own title section owns the single
+  // <header>/banner landmark (Features, Why) — a second top-level <header> here doubled
+  // it, which a screen reader announces as two "banner" regions on one page. The nav
+  // landmark alone carries the sticky/border/background styling just as well.
   return (
-    <header className="sticky top-0 z-40 border-b edge bg-stone-50">
-      <nav className="mx-auto grid max-w-7xl grid-cols-[1fr_auto] items-center px-5 py-2 sm:h-14 sm:grid-cols-[1fr_auto_1fr] sm:px-8 sm:py-0">
+    <nav className="sticky top-0 z-40 border-b edge bg-stone-50">
+      <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto] items-center px-5 py-2 sm:h-14 sm:grid-cols-[1fr_auto_1fr] sm:px-8 sm:py-0">
         {/* Wordmark: left on all sizes (PRD §6); mobile wraps the links to a second row. */}
         <Link
           href="/"
@@ -61,7 +65,7 @@ export function MarketingNav({ active }: { active?: MarketingPage }) {
             ),
           )}
         </div>
-      </nav>
-    </header>
+      </div>
+    </nav>
   );
 }

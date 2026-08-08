@@ -37,7 +37,7 @@ describe('middleware allowlist — the marketing flip gate', () => {
     for (const p of [
       '/', '/about', '/features', '/why', '/api/waitlist', '/hero-road.jpg',
       // The 2026-08-08 redesign's photography — same lesson as hero-road.jpg above.
-      '/marketing/hero-track.jpg', '/marketing/steps-fog.jpg',
+      '/marketing/hero-path.jpg', '/marketing/steps-fog.jpg',
       '/marketing/forest-dusk-1.jpg', '/marketing/forest-dusk-2.jpg',
     ]) {
       expect(await gateOutcome(p), `${p} must be public`).toBeNull();
