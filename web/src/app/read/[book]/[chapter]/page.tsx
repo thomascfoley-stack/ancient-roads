@@ -158,6 +158,13 @@ export default function ReaderPage() {
   }, [book, fetchSlug, chapterNum, translation, hydrated]);
 
   // ── deep link to a verse (`/read/jhn/3#v16`) ───────────────────────────────────────────────
+  const openStudy = useCallback(
+    (verse: number, tab: StudyTab, focusWordIdx?: number, focusWord?: OWord) => {
+      setStudy({ verse, tab, focusWordIdx, focusWord });
+    },
+    [],
+  );
+
   // Read from `window.location.hash` in an effect, NOT from useSearchParams: the hash is not sent
   // to the server, so there is nothing for a first client render to disagree with, and no Suspense
   // boundary is needed. Given this session spent an afternoon on a hydration mismatch, the shape
@@ -168,11 +175,17 @@ export default function ReaderPage() {
   // fragment scroll is a no-op here.
   useEffect(() => {
     if (!data) return;
-    const m = /^#v(\d+)$/.exec(window.location.hash);
+    // `#v12` scrolls. `#v12:study` also OPENS the study drawer — added for T1, whose spec assumed
+    // a drawer-opening deep link already existed. It did not: this effect scrolled and nothing
+    // more, and there are no query params on this route. Extending the hash the effect already
+    // parses is the smallest change that makes the claim true, and it reuses `openStudy` rather
+    // than adding a second way to open the panel.
+    const m = /^#v(\d+)(:study)?$/.exec(window.location.hash);
     if (!m) return;
     const verse = Number(m[1]);
     const el = document.querySelector(`[data-verse="${verse}"]`);
     if (!el) return; // a hash naming a verse this chapter does not have is ignored, not an error
+    if (m[2]) openStudy(verse, 'commentaries');
     el.scrollIntoView({ block: 'center' });
     // A brief emphasis, because scrolling alone does not say WHICH verse was meant when the whole
     // screen is verses.
@@ -185,7 +198,7 @@ export default function ReaderPage() {
     setFlashVerse(verse);
     const t = setTimeout(() => setFlashVerse(null), 2200);
     return () => clearTimeout(t);
-  }, [data]);
+  }, [data, openStudy]);
 
   // Prefetch commentary for the chapter.
   useEffect(() => {
@@ -209,12 +222,6 @@ export default function ReaderPage() {
     if ((study || interlinear) && original) loadFullLexicon(original.lang);
   }, [study, interlinear, original]);
 
-  const openStudy = useCallback(
-    (verse: number, tab: StudyTab, focusWordIdx?: number, focusWord?: OWord) => {
-      setStudy({ verse, tab, focusWordIdx, focusWord });
-    },
-    [],
-  );
 
   const handleVerseClick = useCallback((verse: number) => openStudy(verse, 'commentaries'), [openStudy]);
   const handleWordClick = useCallback(

@@ -132,6 +132,23 @@ function LaneFilter({ lanes, onToggle }: { lanes: Record<LaneKey, boolean>; onTo
   );
 }
 
+/**
+ * When to tell the reader this answer is taking longer than usual.
+ *
+ * **The block said ~15s. That number came from a premise INSTR measured false** — it was written
+ * for "~18s success, ~45s failure", and the real series was **104s / 58s / 64s** (WORKLOG
+ * 2026-08-07). At 15s the line would appear on every single request, so copy that claims an
+ * exception would in fact be describing the norm. A message that is false whenever it is shown is
+ * worse than no message.
+ *
+ * DERIVED, and stated as provisional: 90s sits above both the measured median (64s) and mean
+ * (~75s) and below the observed maximum (104s), so it fires on a genuinely slow tail rather than
+ * on an ordinary wait. **n=3.** That is a weak basis and it is recorded as one — the honest claim
+ * is "above typical for every request we have measured", not "the 90th percentile". Re-derive when
+ * there is a real latency series; the owner may override on sight.
+ */
+export const SLOW_ANSWER_NOTICE_MS = 90_000;
+
 export function AskClient() {
   const [question, setQuestion] = useState('');
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -195,6 +212,24 @@ export function AskClient() {
           }
         }
       }
+      // L1 — THE TERMINAL-STATE GUARD, and the hole it closes is not an exception.
+      //
+      // The block's invariant is that every submission resolves to exactly one of two terminal
+      // states. The `catch` below covers throws; it does NOT cover the stream simply ENDING
+      // without a `done` or `error` event — a truncated response, an intermediary giving up, a
+      // handler that returns without emitting. Nothing throws, so nothing is caught: the loop
+      // exits, `busy` clears, and the turn sits on `retrieving` forever with no answer, no error
+      // and no retry. INSTR measured this endpoint at 58-104s, squarely in the range where a proxy
+      // abandons a stream.
+      //
+      // Reached only when the stream closed mid-flight, so a completed answer is untouched.
+      setTurns((prev) =>
+        prev.map((t) =>
+          t.id === id && t.stage !== 'done' && t.stage !== 'error'
+            ? { ...t, stage: 'error', error: 'The answer stopped partway. Please try again.' }
+            : t,
+        ),
+      );
     } catch {
       patch(id, { stage: 'error', error: 'Network error. Please try again.' });
     } finally {
@@ -344,6 +379,15 @@ function RetryButton({ onRetry, busy, tone }: { onRetry: () => void; busy: boole
 
 function Progress({ turn }: { turn: Turn }) {
   const rank = STAGE_RANK[turn.stage];
+
+  // L1b — one timer, one line, inside the panel that is already the progress indicator. No
+  // spinner, no percentage, no countdown (all three forbidden by the block). Threshold derived
+  // from measurement, not from the block's ~15s — see SLOW_ANSWER_NOTICE_MS.
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSlow(true), SLOW_ANSWER_NOTICE_MS);
+    return () => clearTimeout(t);
+  }, []);
   const refining = turn.stage === 'composing' && turn.attempt > 0;
   const step = (label: string, done: boolean, active: boolean) => (
     <div className="flex items-center gap-2.5">
@@ -374,6 +418,11 @@ function Progress({ turn }: { turn: Turn }) {
         )}
         {step(refining ? `Refining the answer (attempt ${turn.attempt + 1})…` : 'Composing a grounded answer', rank >= 3, turn.stage === 'composing')}
         {step('Verifying every quote is word-for-word', rank >= 4, turn.stage === 'verifying')}
+        {slow && (
+          <p role="status" className="mt-1 font-serif text-sm leading-relaxed text-stone-500 dark:text-stone-400">
+            This one is taking longer than usual — still verifying every quote.
+          </p>
+        )}
       </div>
 
       {turn.sources.length > 0 && (
