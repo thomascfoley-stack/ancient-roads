@@ -188,7 +188,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 2 | `N4` | Close the fake doors | `-` |
 | 2 | `L2b` | Plan builder must not open in an error state | `~` |
 | 3 | `T1` | First run — teach the one idea that differentiates | `!` |
-| 3 | `T2` | The unverified-signup trade-off, post-migration (P1) | `-` ⚑ |
+| 3 | `T2` | Verify-at-signup ON (both methods kept) — RULED, sender fix first | `-` |
 | 3 | `T3` | Mobile — tab bar must not cover scripture | `-` |
 | 3 | `T4` | Settings that follow the user; an account section | `-` |
 | 4 | `S1` | Landing page — show the product | `-` |
@@ -1360,7 +1360,34 @@ management API all checked, 2026-08-08).
 
 **Root cause** — not a missing feature; a setting whose two safe positions each cost something
 
-**The decision, which is the block** ⚑
+### ⚑ RULED 2026-08-08 — keep BOTH methods; `Verify at Sign-up` **ON**, after the sender is fixed
+
+Owner ruling. Option 3 (OAuth-only) was considered and rejected: keeping email/password matters
+more than the simplicity of deleting it. So both sign-in paths stay, and **g38m is closed by
+verification instead** — an unverified local account can no longer exist, so a later Google sign-in
+has nothing to auto-link onto.
+
+**Sequenced, and the order is the whole ruling:**
+
+1. **Fix the Neon mail sender first.** Console → Configure email provider. Today auth mail sends
+   from the shared `auth@mail.myneon.app`; verification-on makes that mail load-bearing for every
+   new account, so shipping in the other order turns a security fix into a signup outage.
+2. **Then turn `Verify at Sign-up` ON.**
+3. Record both in `docs/SECURITY.md` beside SEC-1, with the date.
+
+**Two questions this ruling does not answer, and they are the first things to check on execution:**
+
+- **Existing email/password accounts.** Verification-on governs new registrations. Accounts already
+  created unverified — the test account at minimum — need a decision: grandfathered, or prompted to
+  verify. If grandfathered, g38m's precondition survives for exactly those accounts, and the
+  closure is partial rather than structural. **Check the count before assuming it is empty.**
+- **Owner lockout.** Verification-on plus a mail failure means no new account can complete signup.
+  Existing sessions and existing accounts are unaffected, so this is a signup outage rather than a
+  lockout — but confirm that is true of the owner's own recovery path before relying on it.
+
+**The rejected options, retained so the reasoning is legible**
+
+
 
 | Option | Closes g38m | Cost |
 |---|---|---|

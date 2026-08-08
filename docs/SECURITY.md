@@ -1,5 +1,30 @@
 # Known security issues (tracked)
 
+## GHSA-g38m — RULED 2026-08-08: closed by verification, both sign-in methods kept
+
+**Owner ruling.** Email/password **and** Google both stay. `Verify at Sign-up` goes **ON**, which
+removes the exploit's precondition: g38m needs an *unverified* local account for a later OAuth
+sign-in to auto-link onto, and verification-on means one cannot be created.
+
+**Order is load-bearing.** Neon's auth mail currently sends from the shared
+`auth@mail.myneon.app`, which is a deliverability regression against the project's previous branded
+Resend sender. Verification-on makes that mail load-bearing for every new signup, so:
+
+1. Fix the sender (Neon console → Configure email provider), **then**
+2. turn `Verify at Sign-up` on.
+
+Shipping in the other order converts a security fix into a signup outage.
+
+**Not closed by this ruling, and to be checked on execution:** accounts already created unverified
+(the test account at minimum) — grandfathered or prompted? If grandfathered, the precondition
+survives for exactly those accounts and the closure is partial rather than structural. Count them
+before assuming the set is empty.
+
+Rationale and the rejected options (OAuth-only; accept-the-risk) are in
+[`UX_REMEDIATION.md`](./UX_REMEDIATION.md) block `T2`.
+
+---
+
 ## SEC-1 — better-auth 1.4.18 vulnerabilities via `@neondatabase/auth` beta
 
 > **CLOSED 2026-08-05** by the direct cutover to self-hosted better-auth 1.6.26.
