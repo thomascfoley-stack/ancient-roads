@@ -59,7 +59,8 @@
       "postcss": "^8.5.22",
       "fast-uri": "^3.1.5",
       "sharp": "^0.35.0",
-      "undici": "^7.29.0"
+      "undici": "^7.29.0",
+      "nanoid": "^3.3.17"
     },
     "auditConfig": {
       "//": "SEC-1 CLOSED 2026-08-05 by the Better Auth direct cutover (docs/AUTH_CUTOVER_DESIGN.md): @neondatabase/auth is removed and better-auth 1.6.26 runs in-app, so every advisory rooted in the pinned 1.4.18 is gone by version rather than ignored. GHSA-g38m is additionally closed STRUCTURALLY - the app ships email/password only, and that exploit requires social login to auto-link onto. Remaining entries are dev/build tooling (vitest/vite/esbuild/postcss), never executed in the prod runtime.",
