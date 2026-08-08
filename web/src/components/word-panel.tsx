@@ -53,37 +53,41 @@ export function WordPanel({
   const rtl = lang === 'hebrew';
 
   return (
+    // PRD §3 scrim: rgba(26,20,15,0.32) light / rgba(251,248,242,0.08) dark, NO blur.
     <div
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/30 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-stone-950/[0.32] animate-fade-in dark:bg-stone-50/[0.08]"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-t-2xl bg-paper shadow-deep animate-slide-up dark:bg-stone-900 dark:text-stone-300">
+      <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-t-2xl bg-paper animate-slide-up dark:bg-stone-900 dark:text-stone-300">
         {/* Header: the word itself */}
-        <div className="sticky top-0 z-10 border-b border-stone-100 bg-white/95 px-5 py-4 backdrop-blur-sm dark:border-stone-800 dark:bg-stone-900/95">
+        <div className="sticky top-0 z-10 border-b edge bg-paper px-5 py-4 dark:bg-stone-900">
           <div className="flex items-start justify-between">
             <div>
+              {/* PRD word-study headword is 22px EB Garamond — but this headword is the
+                  ORIGINAL-LANGUAGE word, whose glyphs EB Garamond does not carry, so it
+                  keeps the reading face (font-scripture) at the PRD's 22px. */}
               <p
                 dir={rtl ? 'rtl' : 'ltr'} lang={rtl ? 'he' : 'el'}
-                className="font-scripture text-3xl leading-tight text-stone-900 dark:text-stone-100"
+                className="font-scripture text-[22px] leading-tight text-stone-900 dark:text-stone-100"
               >
                 {word.w}
               </p>
-              <p className="mt-0.5 text-sm text-stone-500">
+              <p className="mt-0.5 text-sm text-stone-500 dark:text-stone-400">
                 {word.tr}
                 {entry?.pron && <span className="text-stone-500 dark:text-stone-400"> · {entry.pron}</span>}
               </p>
             </div>
             <div className="flex items-center gap-2">
               {word.s && (
-                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                <span className="bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-500 dark:bg-stone-800 dark:text-stone-400">
                   {word.s}
                 </span>
               )}
               <button
                 onClick={onClose}
-                className="rounded-full p-1.5 text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+                className="flex h-11 w-11 items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800"
                 aria-label="Close"
               >
                 <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -101,7 +105,7 @@ export function WordPanel({
           {loading ? (
             <p className="py-6 text-center text-sm text-stone-500 dark:text-stone-400">Looking up…</p>
           ) : lexDown ? (
-            <p className="text-sm text-stone-500">
+            <p className="text-sm text-stone-500 dark:text-stone-400">
               {word.g ? `Gloss: ${word.g}. ` : ''}The lexicon isn&rsquo;t available right now, so
               this word&rsquo;s dictionary entry can&rsquo;t be shown.
             </p>
@@ -114,16 +118,17 @@ export function WordPanel({
                   </span>
                 </Row>
               )}
-              {entry.def && <Row label="Definition"><span className="text-stone-700 dark:text-stone-300">{entry.def}</span></Row>}
+              {/* PRD §5 word study: definition 18px Literata at 1.75; etymology 14px ink-wash. */}
+              {entry.def && <Row label="Definition"><span className="font-scripture text-lg leading-[1.75] text-stone-800 dark:text-stone-200">{entry.def}</span></Row>}
               {entry.derivation && (
-                <Row label="Derivation"><span className="text-stone-600 dark:text-stone-400">{entry.derivation}</span></Row>
+                <Row label="Derivation"><span className="font-scripture text-sm text-stone-500 dark:text-stone-400">{entry.derivation}</span></Row>
               )}
               {entry.kjv && (
-                <Row label="KJV usage"><span className="text-stone-600 italic dark:text-stone-400">{entry.kjv}</span></Row>
+                <Row label="KJV usage"><span className="font-scripture text-sm text-stone-600 italic dark:text-stone-400">{entry.kjv}</span></Row>
               )}
             </>
           ) : (
-            <p className="text-sm text-stone-500">
+            <p className="text-sm text-stone-500 dark:text-stone-400">
               {word.g ? `Gloss: ${word.g}. ` : ''}No dictionary entry linked for this word
               {word.l && <> (lemma <span className="font-scripture">{word.l}</span>)</>}.
             </p>
@@ -131,7 +136,7 @@ export function WordPanel({
         </div>
 
         {concordance && concordance.count > 1 && (
-          <div className="border-t border-stone-100 px-5 py-4 dark:border-stone-800">
+          <div className="border-t edge px-5 py-4">
             <p className="mb-2 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
               Also appears in {concordance.count} verse{concordance.count === 1 ? '' : 's'}
             </p>
@@ -145,7 +150,7 @@ export function WordPanel({
                     <a
                       key={vid}
                       href={slug ? `/read/${slug}/${chapter}` : undefined}
-                      className="rounded-full bg-stone-100 px-2.5 py-1 text-xs text-stone-600 transition-colors ease-gentle hover:bg-amber-100 hover:text-amber-800 dark:bg-stone-800 dark:text-stone-300"
+                      className="bg-stone-100 px-2.5 py-1 text-xs text-stone-600 transition-colors ease-gentle hover:bg-accent-100 hover:text-accent-800 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-accent-950/40 dark:hover:text-accent-300"
                     >
                       {formatVerseId(vid)}
                     </a>
@@ -157,7 +162,7 @@ export function WordPanel({
                 <button
                   onClick={() => setCcPage((p) => Math.max(0, p - 1))}
                   disabled={ccPage === 0}
-                  className="rounded px-2 py-1 hover:text-stone-600 disabled:opacity-40"
+                  className="inline-flex min-h-[44px] items-center px-2 hover:text-stone-600 disabled:opacity-40 dark:hover:text-stone-300"
                 >
                   ← prev
                 </button>
@@ -168,7 +173,7 @@ export function WordPanel({
                 <button
                   onClick={() => setCcPage((p) => p + 1)}
                   disabled={(ccPage + 1) * CONCORDANCE_PAGE >= concordance.count}
-                  className="rounded px-2 py-1 hover:text-stone-600 disabled:opacity-40"
+                  className="inline-flex min-h-[44px] items-center px-2 hover:text-stone-600 disabled:opacity-40 dark:hover:text-stone-300"
                 >
                   next →
                 </button>
@@ -177,10 +182,11 @@ export function WordPanel({
           </div>
         )}
 
-        <div className="border-t border-stone-100 px-5 py-4">
+        <div className="border-t edge px-5 py-4">
+          {/* PRD §6 primary CTA: 1px ink hairline, transparent, ink fill on hover. */}
           <button
             onClick={onShowCommentary}
-            className="w-full rounded-xl bg-stone-800 px-4 py-2.5 text-sm font-medium text-white transition-colors ease-gentle hover:bg-stone-700"
+            className="min-h-[44px] w-full rounded-xl border border-stone-900 px-4 py-2.5 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 transition-colors ease-gentle hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
           >
             Read commentaries on {reference}
           </button>

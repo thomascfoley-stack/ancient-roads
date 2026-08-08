@@ -40,10 +40,13 @@ export function ReaderHeader({
 
   return (
     <>
- <header className="sticky top-0 z-40 flex items-center justify-between border-b edge bg-stone-50/95 px-3 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] backdrop-blur-sm sm:px-4 dark:bg-stone-950/95">
+      {/* PRD §6 nav bar: parchment, 1px hairline below, NO blur (§3 bans scrim blur). */}
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b edge bg-stone-50 px-3 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] sm:px-4 dark:bg-stone-950">
+        {/* Hairline-bordered square button (PRD §6 CTA); hover is the PRD's INSTANT ink
+            fill, so deliberately no transition here. */}
         <button
           onClick={() => setPickerOpen(true)}
-          className="min-h-[44px] rounded-lg bg-paper px-4 text-sm font-semibold text-stone-800 shadow-paper hover:bg-stone-100 active:bg-stone-200 transition-colors ease-gentle sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700"
+          className="min-h-[44px] border edge px-4 text-sm font-semibold text-stone-900 hover:bg-stone-900 hover:text-stone-50 sm:min-h-0 sm:py-1.5 dark:text-stone-200 dark:hover:bg-stone-200 dark:hover:text-stone-950"
         >
           {chapterLabel}
         </button>
@@ -52,10 +55,12 @@ export function ReaderHeader({
         <button
           onClick={onToggleInterlinear}
           title="Greek / Hebrew interlinear"
-          className={`min-h-[44px] min-w-[44px] rounded-full px-3 text-xs font-semibold shadow-paper transition-colors ease-gentle sm:min-h-0 sm:min-w-0 sm:py-1.5 ${
+          className={`min-h-[44px] min-w-[44px] px-3 text-xs font-semibold sm:min-h-0 sm:min-w-0 sm:py-1.5 ${
             interlinear
-              ? 'bg-amber-600 text-white hover:bg-amber-700'
-              : 'bg-paper text-stone-500 hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700'
+              ? // The ON state wears antique gold (the link/accent colour), never
+                // candle-flame — the flame is reserved for the PRD's rare moments.
+                'bg-accent-600 text-stone-50 hover:bg-accent-700 dark:bg-accent-400 dark:text-stone-950 dark:hover:bg-accent-500'
+              : 'border edge text-stone-500 hover:bg-stone-900 hover:text-stone-50 dark:text-stone-400 dark:hover:bg-stone-200 dark:hover:text-stone-950'
           }`}
         >
           אα
@@ -63,18 +68,18 @@ export function ReaderHeader({
         <div className="relative" ref={versionRef}>
           <button
             onClick={() => setVersionOpen((v) => !v)}
-            className="min-h-[44px] rounded-lg bg-paper px-3 text-xs font-medium text-stone-500 shadow-paper hover:bg-stone-100 active:bg-stone-200 transition-colors ease-gentle sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+            className="min-h-[44px] border edge px-3 text-xs font-medium text-stone-500 hover:bg-stone-900 hover:text-stone-50 sm:min-h-0 sm:py-1.5 dark:text-stone-400 dark:hover:bg-stone-200 dark:hover:text-stone-950"
           >
             {translation.abbr}
           </button>
           {versionOpen && (
-            <div className="absolute right-0 top-full mt-1 max-h-[70dvh] w-56 overflow-y-auto overscroll-contain rounded-xl bg-paper py-1 shadow-float ring-1 ring-stone-200 dark:bg-stone-800 dark:ring-stone-700">
+            <div className="absolute right-0 top-full mt-1 max-h-[70dvh] w-56 overflow-y-auto overscroll-contain border edge bg-paper py-1 dark:bg-stone-900">
               {/* S2 item 1. A reader hunting for ESV/NIV/NLT finds them silently absent and reads
                   that as a gap. It is a stance: every translation here is public domain, which is
                   precisely why this product can quote them at length and license them onward.
                   Saying so converts a perceived defect into a position — and it belongs HERE, in
                   the list that raises the question, not on a settings page nobody opens. */}
-              <p className="border-b border-stone-200 px-4 py-2.5 text-xs leading-relaxed text-stone-500 dark:border-stone-700 dark:text-stone-400">
+              <p className="border-b edge px-4 py-2.5 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
                 All {TRANSLATIONS.length} are public domain, so we can quote them freely. Modern
                 translations require licences; we&rsquo;re working on it.
               </p>
@@ -85,9 +90,9 @@ export function ReaderHeader({
                     onTranslationChange(t);
                     setVersionOpen(false);
                   }}
-                  className={`flex min-h-[44px] w-full items-center justify-between px-4 py-2.5 text-left text-sm hover:bg-stone-50 active:bg-stone-100 dark:hover:bg-stone-700 ${
+                  className={`flex min-h-[44px] w-full items-center justify-between px-4 py-2.5 text-left text-sm hover:bg-stone-50 active:bg-stone-100 dark:hover:bg-stone-800 ${
                     t.id === translation.id
-                      ? 'bg-stone-50 font-semibold text-stone-900 dark:bg-stone-700 dark:text-white'
+                      ? 'bg-stone-50 font-semibold text-stone-900 dark:bg-stone-800 dark:text-stone-50'
                       : 'text-stone-700 dark:text-stone-300'
                   }`}
                 >

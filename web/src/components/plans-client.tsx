@@ -70,11 +70,17 @@ type ListState =
   | { status: 'error' }
   | { status: 'ready'; plans: PlanListRow[] };
 
-// `rounded-lg` is the control radius (see the ladder in globals.css). `text-base sm:text-sm`
-// rather than a flat `text-sm`: iOS Safari zooms the viewport when a focused field is under
-// 16px, which on the builder threw the whole page off-centre mid-form.
+// PRD §6 inputs: 1px hairline (`edge` flips light/dark), parchment surface, square corners
+// (the radius ladder in globals.css is all 0, so `rounded-lg` compiles to nothing).
+// `text-base sm:text-sm` rather than a flat `text-sm`: iOS Safari zooms the viewport when a
+// focused field is under 16px, which on the builder threw the whole page off-centre mid-form.
 const FIELD =
-  'min-h-[44px] rounded-lg border border-stone-300 bg-paper px-3 text-base text-stone-800 sm:text-sm dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100';
+  'min-h-[44px] rounded-lg border edge bg-stone-50 px-3 text-base text-stone-900 sm:text-sm dark:bg-stone-900 dark:text-stone-100';
+
+// PRD §6 primary CTA: 1px ink hairline on transparent; hover fills with ink INSTANTLY (no
+// background transition — the PRD's motion budget is fade-only and hover is an immediate fill).
+const PRIMARY_BUTTON =
+  'inline-flex min-h-[44px] items-center justify-center border border-stone-900 bg-transparent px-6 py-3 text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 disabled:opacity-40 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950';
 
 export function PlansClient() {
   const [list, setList] = useState<ListState>({ status: 'loading' });
@@ -117,7 +123,7 @@ export function PlansClient() {
           left a large dead gap beside the rail. Each view now owns its own measure. */}
       {!open && (
         <header className="mx-auto mb-6 max-w-3xl">
-          <h1 className="font-display text-3xl text-stone-800 dark:text-stone-100">Reading plans</h1>
+          <h1 className="font-display text-3xl font-medium text-stone-900 dark:text-stone-100">Reading plans</h1>
           <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
             Choose what to read and how long you want to take. We lay the readings out day by day
             and keep your place as you go.
@@ -143,7 +149,7 @@ export function PlansClient() {
       ) : (
         <div className="mx-auto max-w-3xl">
           {list.plans.length > 0 && (
-            <div className="space-y-2">
+            <div className="border-b edge">
               {list.plans.map((p) => <PlanRow key={p.id} plan={p} onOpen={() => void openPlan(p.id)} />)}
             </div>
           )}
@@ -155,7 +161,7 @@ export function PlansClient() {
           ) : (
             <button
               onClick={() => setBuilding(true)}
-              className="mt-5 inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-accent-700 px-5 text-sm font-medium text-stone-50 shadow-paper transition-colors ease-gentle hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
+              className={`mt-5 ${PRIMARY_BUTTON}`}
             >
               {list.plans.length === 0 ? 'Build my first plan' : 'New plan'}
             </button>
@@ -173,9 +179,11 @@ function EmptyState() {
     ['A collection', 'Paul’s letters, the Gospels, or the whole Bible in a year'],
     ['A topic', 'Prayer or forgiveness, gathered by Nave’s and Torrey’s'],
   ] as const;
+  // No card chrome: a hairline-bounded quiet block, per the PRD's empty-state rule
+  // (type and hairlines, no boxes).
   return (
-    <div className="rounded-xl bg-stone-100/70 p-5 dark:bg-stone-800/40">
-      <p className="text-sm font-medium text-stone-700 dark:text-stone-200">No plans yet. You can build:</p>
+    <div className="border-y edge py-5">
+      <p className="text-sm font-medium text-stone-900 dark:text-stone-100">No plans yet. You can build:</p>
       <ul className="mt-3 space-y-2">
         {examples.map(([what, eg]) => (
           <li key={what} className="text-sm">
@@ -188,11 +196,12 @@ function EmptyState() {
   );
 }
 
+// PRD §5: 2px vellum track, 2px antique-gold fill, SQUARE ends (no rounded-full here).
 function ProgressBar({ pct }: { pct: number }) {
   return (
-    <div className="h-1.5 overflow-hidden rounded-full bg-stone-300/50 dark:bg-stone-700">
+    <div className="h-[2px] bg-stone-200 dark:bg-stone-800">
       <div
-        className="h-full rounded-full bg-accent-600 transition-[width] duration-500 ease-gentle"
+        className="h-full bg-accent-600 transition-[width] duration-200 ease-gentle dark:bg-accent-400"
         style={{ width: `${pct}%` }}
       />
     </div>
@@ -202,18 +211,25 @@ function ProgressBar({ pct }: { pct: number }) {
 function PlanRow({ plan, onOpen }: { plan: PlanListRow; onOpen: () => void }) {
   const pct = plan.total_days > 0 ? Math.round((plan.read_days / plan.total_days) * 100) : 0;
   const done = plan.total_days > 0 && plan.read_days === plan.total_days;
+  // PRD §5 Plans: a hairline-separated ROW, not a card — 11px Source Sans metadata kicker
+  // (0.05em tracking, ink-wash), 18px Literata title in ink that warms to antique gold on hover.
   return (
     <button
       onClick={onOpen}
-      className="block w-full rounded-xl bg-stone-100/80 px-4 py-3 text-left transition-colors ease-gentle hover:bg-stone-200/60 dark:bg-stone-800/50 dark:hover:bg-stone-800"
+      className="group block w-full border-t edge px-1 py-6 text-left transition-colors ease-gentle hover:bg-stone-100/50 dark:hover:bg-stone-800/40"
     >
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="truncate font-medium text-stone-800 dark:text-stone-100">{plan.title}</span>
-        <span className="shrink-0 text-xs text-stone-500 dark:text-stone-400">
-          {done ? 'Finished' : `${plan.read_days} of ${plan.total_days} days`}
+      <span className="block text-micro font-medium uppercase tracking-[0.05em] text-stone-500 dark:text-stone-400">
+        {count(plan.total_days, 'day')}
+      </span>
+      <span className="mt-1 block truncate font-serif text-[18px] font-medium text-stone-900 transition-colors ease-gentle group-hover:text-accent-600 dark:text-stone-100 dark:group-hover:text-accent-400">
+        {plan.title}
+      </span>
+      <span className="mt-4 flex items-center gap-6">
+        <span className="w-full max-w-[200px]"><ProgressBar pct={pct} /></span>
+        <span className="shrink-0 text-micro font-medium text-stone-500 dark:text-stone-400">
+          {done ? 'Finished' : `Day ${plan.read_days} of ${plan.total_days}`}
         </span>
-      </div>
-      <div className="mt-2"><ProgressBar pct={pct} /></div>
+      </span>
     </button>
   );
 }
@@ -376,20 +392,23 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
     }
   };
 
-  const stepLabel = 'mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400';
+  // PRD §5 builder form labels: 12px Source Sans, uppercase, 0.08em tracking, ink-wash.
+  const stepLabel = 'mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400';
 
   return (
-    <form onSubmit={submit} className="mt-5 rounded-xl bg-stone-100/80 p-4 shadow-paper dark:bg-stone-800/50">
+    <form onSubmit={submit} className="mt-5 border edge p-4 sm:p-6">
       <p className={stepLabel}>1 · What to read</p>
-      <div className="flex gap-1 rounded-full bg-stone-200/60 p-1 dark:bg-stone-900/60" role="tablist" aria-label="What kind of plan">
+      {/* Segmented control, but SQUARE — the old rounded-full pill fought the no-radius PRD
+          (rounded-full is reserved for true pills: dots, swatches, avatar). 44px rows. */}
+      <div className="flex gap-1 border edge p-1" role="tablist" aria-label="What kind of plan">
         {MODES.map((m) => (
           <button
             key={m.key} type="button" role="tab" aria-selected={mode === m.key}
             onClick={() => setMode(m.key)}
-            className={`min-h-[36px] flex-1 rounded-lg px-3 text-xs font-medium transition-colors ease-gentle ${
+            className={`min-h-[44px] flex-1 px-3 text-xs font-semibold uppercase tracking-[0.08em] transition-colors ease-gentle ${
               mode === m.key
-                ? 'bg-paper text-stone-800 shadow-paper dark:bg-stone-700 dark:text-stone-100'
-                : 'text-stone-500 hover:text-stone-700 dark:text-stone-400'
+                ? 'bg-stone-900 text-stone-50 dark:bg-stone-100 dark:text-stone-900'
+                : 'text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100'
             }`}
           >
             {m.label}
@@ -400,7 +419,7 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
 
       <div className="mt-3">
         {mode === 'book' && (
-          <label className="flex flex-col gap-1 text-xs font-medium text-stone-500 dark:text-stone-400">
+          <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400">
             Book
             <select value={book} onChange={(e) => pickBook(e.target.value)} className={FIELD}>
               {BOOKS.map((b) => <option key={b.slug} value={b.slug}>{b.name}</option>)}
@@ -408,7 +427,7 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
           </label>
         )}
         {mode === 'books' && (
-          <label className="flex flex-col gap-1 text-base sm:text-xs font-medium text-stone-500 dark:text-stone-400">
+          <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400">
             Collection
             <select value={group} onChange={(e) => setGroup(e.target.value)} className={FIELD}>
               {Object.entries(CANONICAL_GROUPS).map(([k, g]) => <option key={k} value={k}>{g.label}</option>)}
@@ -425,17 +444,17 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
 
       <p className={`${stepLabel} mt-5`}>2 · How long</p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <label className="flex flex-col gap-1 text-xs font-medium text-stone-500 dark:text-stone-400">
+        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400">
           Weeks
           <input type="number" min={1} max={104} value={weeks}
             onChange={(e) => setWeeks(Number(e.target.value))} className={FIELD} required />
         </label>
-        <label className="flex flex-col gap-1 text-base sm:text-xs font-medium text-stone-500 dark:text-stone-400">
+        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400">
           Days each week
           <input type="number" min={1} max={7} value={daysPerWeek}
             onChange={(e) => setDaysPerWeek(Number(e.target.value))} className={FIELD} required />
         </label>
-        <label className="flex flex-col gap-1 text-base sm:text-xs font-medium text-stone-500 dark:text-stone-400">
+        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400">
           Starting
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={FIELD} required />
         </label>
@@ -444,10 +463,10 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
       {preview && (
         <div
           aria-live="polite"
-          className={`mt-4 rounded-lg px-4 py-3 text-base sm:text-sm ${
+          className={`mt-4 border px-4 py-3 text-base sm:text-sm ${
             preview.ok
-              ? 'bg-paper text-stone-700 shadow-paper dark:bg-stone-900/70 dark:text-stone-200'
-              : 'bg-accent-50 text-accent-800 dark:bg-accent-950/40 dark:text-accent-200'
+              ? 'edge text-stone-700 dark:text-stone-200'
+              : 'border-accent-300 bg-accent-50 text-accent-800 dark:border-accent-700 dark:bg-accent-950/40 dark:text-accent-200'
           }`}
         >
           {preview.ok ? (
@@ -467,7 +486,7 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
       )}
 
       {notice && (
-        <p className="mt-3 rounded-md bg-accent-50 px-3 py-2 text-sm text-accent-800 dark:bg-accent-950/40 dark:text-accent-200">
+        <p className="mt-3 border border-accent-300 bg-accent-50 px-3 py-2 text-sm text-accent-800 dark:border-accent-700 dark:bg-accent-950/40 dark:text-accent-200">
           {notice}
         </p>
       )}
@@ -475,7 +494,7 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
       <div className="mt-4 flex items-center gap-3">
         <button
           type="submit" disabled={busy || preview?.ok === false}
-          className="inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-medium text-stone-50 shadow-paper transition-colors ease-gentle hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400 disabled:opacity-40"
+          className={PRIMARY_BUTTON}
         >
           {busy ? 'Building…' : 'Create plan'}
         </button>
@@ -505,13 +524,13 @@ function TopicPicker({
           className={`${FIELD} flex-1`} aria-label="Search topics"
         />
         <button type="button" onClick={onSearch} disabled={searching}
-          className="inline-flex min-h-[44px] shrink-0 items-center rounded-md bg-stone-200/80 px-4 text-sm font-medium text-stone-700 transition-colors ease-gentle hover:bg-stone-300/70 disabled:opacity-50 dark:bg-stone-700 dark:text-stone-200">
+          className="inline-flex min-h-[44px] shrink-0 items-center border border-stone-500 bg-transparent px-4 text-sm font-semibold tracking-[0.02em] text-stone-500 hover:bg-stone-500 hover:text-stone-50 disabled:opacity-50 dark:border-stone-400 dark:text-stone-300 dark:hover:bg-stone-400 dark:hover:text-stone-950">
           {searching ? 'Searching…' : 'Search'}
         </button>
       </div>
 
       {error && (
-        <p className="mt-2 rounded-md bg-accent-50 px-3 py-2 text-xs text-accent-800 dark:bg-accent-950/40 dark:text-accent-200">{error}</p>
+        <p className="mt-2 border border-accent-300 bg-accent-50 px-3 py-2 text-xs text-accent-800 dark:border-accent-700 dark:bg-accent-950/40 dark:text-accent-200">{error}</p>
       )}
 
       {matches !== null && !error && (
@@ -527,9 +546,9 @@ function TopicPicker({
                   return (
                     <button
                       key={`${m.workSlug}-${m.sectionId}`} type="button" onClick={() => setPicked(m)} aria-pressed={on}
-                      className={`flex min-h-[44px] w-full items-center justify-between gap-3 rounded-lg border px-3 py-1.5 text-left transition-colors ease-gentle ${
-                        on ? 'border-accent-700 bg-accent-50 dark:bg-accent-950/40'
- : 'edge hover:border-accent-300 '
+                      className={`flex min-h-[44px] w-full items-center justify-between gap-3 border px-3 py-1.5 text-left transition-colors ease-gentle ${
+                        on ? 'border-accent-700 bg-accent-50 dark:border-accent-500 dark:bg-accent-950/40'
+ : 'edge hover:border-accent-300'
                       }`}
                     >
                       <span className="min-w-0">
@@ -660,7 +679,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
           returns here. From lg the two sit side by side and the plan never loses its place. */}
       <div className={`min-w-0 lg:flex-1 ${pane ? 'hidden lg:block' : ''}`}>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <button onClick={onBack} className="inline-flex min-h-[44px] items-center text-sm text-accent-700 hover:text-accent-800 dark:text-accent-300">
+        <button onClick={onBack} className="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline dark:text-accent-300">
           ← All plans
         </button>
         <button onClick={remove} className="inline-flex min-h-[44px] items-center text-xs text-stone-500 dark:text-stone-400 hover:text-accent-700">
@@ -672,7 +691,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
           open this route had no h1 at all and the document started at h2. The plan title
           IS the subject of the screen once one is open, so it takes the h1 rather than
           adding a second heading above it. */}
-      <h1 className="font-display text-2xl text-stone-800 dark:text-stone-100">{open.plan.title}</h1>
+      <h1 className="font-display text-2xl font-medium text-stone-900 dark:text-stone-100">{open.plan.title}</h1>
       {writeError && (
         <p role="alert" className="mt-2 text-sm text-red-800 dark:text-red-200">{writeError}</p>
       )}
@@ -682,11 +701,11 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
       </div>
 
       {upNext ? (
-        <div className="mt-4 rounded-xl bg-paper px-4 py-3 shadow-paper dark:bg-stone-900/70">
-          <p className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+        <div className="mt-4 border edge px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400">
             Up next{upNext.day_date <= today ? ' · due now' : ` · ${prettyDate(upNext.day_date)}`}
           </p>
-          <p className="mt-1 font-serif text-lg text-stone-800 dark:text-stone-100">
+          <p className="mt-1 font-serif text-lg text-stone-900 dark:text-stone-100">
             {readingsByDay.has(upNext.day_index)
               ? count(readingsByDay.get(upNext.day_index)!.length, 'passage')
               : dayRef(upNext)}
@@ -695,7 +714,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
             <button
               type="button"
               onClick={() => upNextTarget && setPane(upNextTarget)}
-              className="inline-flex min-h-[36px] items-center rounded-lg bg-accent-700 px-4 text-xs font-medium text-stone-50 transition-colors ease-gentle hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400">
+              className="inline-flex min-h-[36px] items-center border border-stone-900 bg-transparent px-4 text-xs font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950">
               Read it
             </button>
             <button onClick={() => void toggle(upNext)} disabled={busyDay === upNext.day_index}
@@ -705,19 +724,21 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
           </div>
         </div>
       ) : (
-        <p className="mt-4 rounded-xl bg-paper px-4 py-3 text-sm text-stone-600 shadow-paper dark:bg-stone-900/70 dark:text-stone-300">
+        <p className="mt-4 border edge px-4 py-3 text-sm text-stone-600 dark:text-stone-300">
           Every day is read. Well done.
         </p>
       )}
 
-      <p className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">All readings</p>
-      <ol className="space-y-1.5">
+      <p className="mb-2 mt-6 text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400">All readings</p>
+      {/* PRD §5 schedule list: hairlines between days, not tinted card rows. The up-next day
+          keeps a quiet accent tint so the list still answers "where am I" at a glance. */}
+      <ol className="border-b edge">
         {open.days.map((d) => {
           const readings = readingsByDay.get(d.day_index);
           const isNext = upNext?.day_index === d.day_index;
           return (
             <li key={d.day_index}
-              className={`rounded-lg px-3 py-2 ${isNext ? 'bg-accent-50 dark:bg-accent-950/30' : 'bg-stone-100/60 dark:bg-stone-800/40'}`}>
+              className={`border-t edge px-3 py-2 ${isNext ? 'bg-accent-50 dark:bg-accent-950/30' : ''}`}>
               <div className="flex min-h-[44px] items-center gap-3">
                 <button
                   onClick={() => void toggle(d)} disabled={busyDay === d.day_index}
@@ -732,7 +753,8 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                   </svg>
                 </button>
-                <span className="w-20 shrink-0 text-xs text-stone-500 dark:text-stone-400">{prettyDate(d.day_date)}</span>
+                {/* PRD §5: dates in small-caps Source Sans, ink-wash. */}
+                <span className="w-20 shrink-0 font-sans text-xs small-caps tracking-[0.05em] text-stone-500 dark:text-stone-400">{prettyDate(d.day_date)}</span>
                 {readings ? (
                   <span className={`flex-1 truncate text-sm font-medium ${d.completed_at ? 'text-stone-400 line-through' : 'text-stone-700 dark:text-stone-200'}`}>
                     {readings.length} passage{readings.length === 1 ? '' : 's'}
@@ -746,8 +768,10 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
                       translation={translation}
                       onOpen={setPane}
                       active={pane?.verseStart === d.verse_start && pane?.verseEnd === d.verse_end}
-                      className={`text-sm font-medium ${
-                        d.completed_at ? 'text-stone-400 line-through' : 'text-stone-700 dark:text-stone-200'
+                      // PRD §5 schedule list: the reading reference is 18px Literata in
+                      // antique gold; a read day falls back to ink-wash with the strike.
+                      className={`font-serif text-[18px] ${
+                        d.completed_at ? 'text-stone-400 line-through' : 'text-accent-600 dark:text-accent-400'
                       }`}
                     />
                   </span>
@@ -764,7 +788,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
                         translation={translation}
                         onOpen={setPane}
                         active={pane?.verseStart === r.verse_start && pane?.verseEnd === r.verse_end}
-                        className={`shrink-0 font-medium ${d.completed_at ? 'text-stone-400' : 'text-stone-700 dark:text-stone-200'}`}
+                        className={`shrink-0 font-serif text-base ${d.completed_at ? 'text-stone-400' : 'text-accent-600 dark:text-accent-400'}`}
                       />
                       {r.label && <span className="truncate text-xs text-stone-500 dark:text-stone-400">{r.label}</span>}
                     </li>

@@ -21,7 +21,7 @@ export function MarketingFooter() {
           <div className="grid grid-cols-2 gap-10">
             <div className="space-y-5">
               <h4 className="text-micro font-bold uppercase tracking-[0.3em] text-stone-900">Product</h4>
-              <ul className="space-y-1 text-xs uppercase tracking-widest text-stone-900/50">
+              <ul className="space-y-1 text-xs uppercase tracking-widest text-stone-500">
                 <li>
                   <Link href="/" className="inline-flex min-h-[40px] items-center transition-colors ease-gentle hover:text-stone-900">Home</Link>
                 </li>
@@ -35,7 +35,7 @@ export function MarketingFooter() {
             </div>
             <div className="space-y-5">
               <h4 className="text-micro font-bold uppercase tracking-[0.3em] text-stone-900">Contact</h4>
-              <ul className="space-y-1 text-xs uppercase tracking-widest text-stone-900/50">
+              <ul className="space-y-1 text-xs uppercase tracking-widest text-stone-500">
                 <li>
                   <Link href="/about" className="inline-flex min-h-[40px] items-center transition-colors ease-gentle hover:text-stone-900">About</Link>
                 </li>
@@ -47,9 +47,9 @@ export function MarketingFooter() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-6 border-t border-stone-200 pt-10 md:flex-row">
-          <p className="text-micro uppercase tracking-[0.2em] text-stone-900/40">© 2026 Ancient Paths</p>
-          <p className="text-micro uppercase tracking-[0.2em] text-stone-900/40">Crafted with reverence</p>
+        <div className="mt-12 flex flex-col items-center justify-between gap-6 border-t edge pt-10 md:flex-row">
+          <p className="text-micro uppercase tracking-[0.2em] text-stone-500">© 2026 Ancient Paths</p>
+          <p className="text-micro uppercase tracking-[0.2em] text-stone-500">Crafted with reverence</p>
         </div>
       </div>
     </footer>

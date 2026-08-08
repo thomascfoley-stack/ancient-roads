@@ -39,70 +39,72 @@ const REGISTERS = [
 const VOICES = ['Augustine', 'Chrysostom', 'Calvin', 'Wesley', 'Matthew Henry'];
 
 function SectionNumber({ n }: { n: string }) {
-  return <span className="mb-6 block font-display text-5xl font-light italic text-sage-500/40 sm:text-6xl">{n}</span>;
+  return <span className="mb-6 block font-display text-5xl font-light italic text-accent-600/40 sm:text-6xl">{n}</span>;
 }
 
 export default function FeaturesPage() {
   return (
-    <main className="bg-stone-100">
+    <main className="bg-stone-50">
       <MarketingNav active="features" />
 
-      <header className="border-b border-stone-200/60 px-5 pb-16 pt-16 sm:px-8 sm:pb-24 sm:pt-28">
+      <header className="border-b edge px-5 pb-16 pt-16 sm:px-8 sm:pb-24 sm:pt-28">
         <div className="mx-auto max-w-7xl">
-          <p className="mb-5 text-micro font-bold uppercase tracking-[0.3em] text-sage-600">Features</p>
-          <h1 className="font-display text-5xl text-stone-900 sm:text-7xl lg:text-8xl">Tools for the labor</h1>
+          <p className="mb-5 text-micro font-semibold uppercase tracking-[0.3em] text-stone-500">Features</p>
+          <h1 className="font-display text-5xl tracking-[-0.01em] text-stone-900 sm:text-7xl lg:text-8xl">Tools for the labor</h1>
         </div>
       </header>
 
-      {/* 01 — The Verse Panel */}
-      <section className="border-b border-stone-200/40 px-5 py-16 sm:px-8 sm:py-28">
+      {/* 01 — The Verse Panel. Demo blocks are type and hairlines, no cards (PRD §5). */}
+      <section className="border-b edge px-5 py-16 sm:px-8 sm:py-28">
         <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2 lg:gap-20">
           <div>
             <SectionNumber n="01" />
             <h2 className="mb-6 font-display text-4xl text-stone-900 sm:text-5xl">The Verse Panel</h2>
-            <p className="max-w-md font-serif text-lg leading-relaxed text-stone-900/70 sm:text-xl">
+            <p className="max-w-[62ch] font-serif text-[17px] leading-[1.75] text-stone-500 sm:text-lg">
               See how the Church has understood the Word across centuries, continents, and traditions,
               all in one quiet view.
             </p>
           </div>
 
-          {/* Demo card duplicated from app/page.tsx §6 (inline-until-3rd-call-site rule).
+          {/* Demo block duplicated from app/page.tsx §6 (inline-until-3rd-call-site rule).
               The quote is VERBATIM Chrysostom, Homily IV on John 1:1, from the served
               corpus — keep the two copies in sync and re-verify before changing. */}
-          <div className="rounded-2xl border border-stone-200 bg-paper p-8 shadow-card sm:p-12">
+          <div className="border-t edge pt-8 sm:pt-10">
             <div className="mb-8">
               <p className="font-display text-2xl leading-snug text-stone-900 sm:text-3xl">
                 In the beginning was the Word, and the Word was with God, and the Word was God.
               </p>
-              <p className="mt-4 text-micro uppercase tracking-[0.1em] text-stone-500">John 1:1</p>
+              <p className="mt-4 font-sans text-micro uppercase tracking-[0.1em] text-stone-500">John 1:1</p>
             </div>
             <div className="space-y-8">
               <div>
-                <p className="mb-4 text-micro font-bold uppercase tracking-[0.2em] text-stone-500">
+                <p className="mb-4 text-micro font-semibold uppercase tracking-[0.2em] text-stone-500">
                   Ten voices on this verse
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {VOICES.map((v, i) => (
                     <span
                       key={v}
-                      className={`rounded-full px-4 py-2 text-micro uppercase tracking-widest sm:px-5 ${
-                        i === 0 ? 'bg-sage-500 text-stone-50' : 'bg-stone-100 text-stone-900/60'
+                      className={`border px-4 py-2 text-micro uppercase tracking-widest ${
+                        i === 0
+                          ? 'border-accent-600 text-accent-600'
+                          : 'border-stone-200 text-stone-500'
                       }`}
                     >
                       {v}
                     </span>
                   ))}
-                  <span className="rounded-full px-3 py-2 text-micro uppercase tracking-widest text-sage-600">
+                  <span className="px-3 py-2 text-micro uppercase tracking-widest text-accent-600">
                     +5 more
                   </span>
                 </div>
               </div>
-              <div className="border-l-4 border-l-sage-500 border-t border-t-stone-200 pl-6 pt-8 sm:pl-8">
-                <p className="font-serif text-lg italic leading-relaxed text-stone-900 sm:text-xl">
+              <div className="border-l-[3px] border-l-accent-600 border-t border-t-stone-200 pl-6 pt-8 sm:pl-8">
+                <p className="max-w-[62ch] font-serif text-[17px] italic leading-[1.75] text-stone-900 sm:text-lg">
                   &ldquo;&hellip;the Father was never without the Word, but He was always God with God,
                   yet Each in His proper Person.&rdquo;
                 </p>
-                <p className="mt-5 text-micro uppercase tracking-[0.2em] text-stone-500">
+                <p className="mt-5 font-serif text-sm uppercase tracking-[0.05em] text-stone-500">
                   Chrysostom, Homily IV on John
                 </p>
               </div>
@@ -112,30 +114,30 @@ export default function FeaturesPage() {
       </section>
 
       {/* 02 — The Interlinear */}
-      <section className="border-b border-stone-200/40 bg-stone-200/20 px-5 py-16 sm:px-8 sm:py-28">
+      <section className="border-b edge px-5 py-16 sm:px-8 sm:py-28">
         <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2 lg:gap-20">
           <div className="lg:order-2">
             <SectionNumber n="02" />
             <h2 className="mb-6 font-display text-4xl text-stone-900 sm:text-5xl">The Interlinear</h2>
-            <p className="max-w-md font-serif text-lg leading-relaxed text-stone-900/70 sm:text-xl">
+            <p className="max-w-[62ch] font-serif text-[17px] leading-[1.75] text-stone-500 sm:text-lg">
               Peel back the layers of translation. Touch the original Greek and Hebrew with a layout
               designed for meditation, not just mechanics.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-stone-200 bg-paper p-8 shadow-card sm:p-12 lg:order-1">
+          <div className="border-t edge pt-8 sm:pt-10 lg:order-1">
             <div className="flex flex-wrap gap-x-10 gap-y-8 sm:gap-x-12">
               {GREEK.map((x) => (
                 <div key={x.w} className="text-center">
                   <p lang="grc" className="font-display text-2xl text-stone-900 sm:text-3xl">{x.w}</p>
-                  <p className="mt-2 text-micro uppercase tracking-widest text-sage-600">{x.t}</p>
+                  <p className="mt-2 text-micro uppercase tracking-widest text-accent-600">{x.t}</p>
                   <p className="mt-1 font-serif text-sm italic text-stone-500">{x.g}</p>
                 </div>
               ))}
             </div>
-            <div className="mt-12 border-t border-stone-200 pt-7">
-              <p className="text-micro font-bold uppercase tracking-[0.2em] text-stone-500">Morphology</p>
-              <p className="mt-3 font-serif text-base text-stone-900/70">
+            <div className="mt-12 border-t edge pt-7">
+              <p className="text-micro font-semibold uppercase tracking-[0.2em] text-stone-500">Morphology</p>
+              <p className="mt-3 max-w-[62ch] font-serif text-[17px] leading-[1.75] text-stone-500">
                 λόγος: noun, masculine, singular, nominative. Word, speech; the Divine Expression
                 (Strong&rsquo;s G3056).
               </p>
@@ -145,26 +147,26 @@ export default function FeaturesPage() {
       </section>
 
       {/* 03 — The Registers (replaces the mockup's unshipped "Beside the Tradition") */}
-      <section className="border-b border-stone-200/40 px-5 py-16 sm:px-8 sm:py-28">
+      <section className="border-b edge px-5 py-16 sm:px-8 sm:py-28">
         <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2 lg:gap-20">
           <div>
             <SectionNumber n="03" />
             <h2 className="mb-6 font-display text-4xl text-stone-900 sm:text-5xl">Every voice in its register</h2>
-            <p className="max-w-md font-serif text-lg leading-relaxed text-stone-900/70 sm:text-xl">
+            <p className="max-w-[62ch] font-serif text-[17px] leading-[1.75] text-stone-500 sm:text-lg">
               Ask a question and each register answers separately: commentary, sermons, theology and
               confessions, hymns and sacred poetry. Labeled and attributed, never blended into one
               anonymous voice.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-stone-200 bg-paper p-8 shadow-card sm:p-12">
-            <p className="mb-7 text-micro font-bold uppercase tracking-[0.3em] text-sage-600">
+          <div className="border-t edge pt-8 sm:pt-10">
+            <p className="mb-7 text-micro font-semibold uppercase tracking-[0.3em] text-stone-500">
               One question, four registers
             </p>
             <div className="space-y-6">
               {REGISTERS.map((row) => (
                 <div key={row.register} className="flex items-start gap-4">
-                  <span className="mt-1 shrink-0 bg-sage-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-sage-700">
+                  <span className="mt-1 shrink-0 border border-stone-200 px-2 py-0.5 text-micro font-semibold uppercase tracking-widest text-stone-500">
                     {row.register}
                   </span>
                   <div>
@@ -179,37 +181,37 @@ export default function FeaturesPage() {
       </section>
 
       {/* 04 — Prayer Journal */}
-      <section className="border-b border-stone-200/40 bg-stone-200/20 px-5 py-16 sm:px-8 sm:py-28">
+      <section className="border-b edge px-5 py-16 sm:px-8 sm:py-28">
         <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2 lg:gap-20">
           <div className="lg:order-2">
             <SectionNumber n="04" />
             <h2 className="mb-6 font-display text-4xl text-stone-900 sm:text-5xl">Prayer Journal</h2>
-            <p className="max-w-md font-serif text-lg leading-relaxed text-stone-900/70 sm:text-xl">
+            <p className="max-w-[62ch] font-serif text-[17px] leading-[1.75] text-stone-500 sm:text-lg">
               A space for your own labor of prayer, kept beside the Scriptures you pray over. Your
               prayers are yours alone: never indexed, never sent to a model, never used to train
               anything.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-stone-200 bg-paper p-8 shadow-card sm:p-12 lg:order-1">
+          <div className="border-t edge pt-8 sm:pt-10 lg:order-1">
             <div className="mb-8 flex items-start justify-between gap-4">
               <div>
-                <p className="text-micro font-bold uppercase tracking-[0.2em] text-stone-500">Friday, August 8</p>
+                <p className="font-sans text-sm uppercase tracking-[0.05em] text-stone-500">Friday, August 8</p>
                 <p className="mt-2 font-display text-xl italic text-stone-900 sm:text-2xl">He restores my soul</p>
               </div>
-              <span className="rounded-full bg-stone-100 px-3 py-1 text-micro uppercase tracking-widest text-stone-900/60">
+              <span className="border border-stone-200 px-3 py-1 text-micro uppercase tracking-widest text-stone-500">
                 Psalm 23
               </span>
             </div>
-            <div className="space-y-5 font-serif text-lg italic leading-relaxed text-stone-900/80">
+            <div className="max-w-[62ch] space-y-5 font-serif text-[17px] italic leading-[1.75] text-stone-900">
               <p>
                 The restoration is not a fixing of what was broken, but a return to what was intended.
                 In the quiet of this morning, I feel the weight of the last month lifting.
               </p>
               <p>Guide me in paths of righteousness for Thy name&rsquo;s sake. Not for my own comfort, but for Your glory.</p>
             </div>
-            <div className="mt-10 border-t border-stone-200 pt-6">
-              <p className="text-micro uppercase tracking-widest text-sage-600">Yours alone</p>
+            <div className="mt-10 border-t edge pt-6">
+              <p className="text-micro uppercase tracking-widest text-stone-500">Yours alone</p>
             </div>
           </div>
         </div>
@@ -220,7 +222,7 @@ export default function FeaturesPage() {
         <h2 className="mb-10 font-display text-4xl text-stone-900 sm:text-6xl">Begin your journey</h2>
         <Link
           href="/#doors"
-          className="inline-flex min-h-[52px] items-center rounded-full bg-sage-500 px-10 text-micro font-semibold uppercase tracking-[0.2em] text-stone-50 shadow-float transition-colors duration-300 ease-gentle hover:bg-stone-900"
+          className="inline-flex min-h-[44px] items-center border border-stone-900 px-6 py-3 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50"
         >
           Request access
         </Link>

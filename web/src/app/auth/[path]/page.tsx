@@ -59,7 +59,8 @@ export default async function AuthPage({
         className="absolute inset-0 bg-stone-950/30 dark:bg-stone-950/50"
       />
 
-      <div className="relative z-10 w-full max-w-sm overflow-hidden rounded-2xl shadow-deep">
+      {/* PRD §6 modal treatment: parchment surface, 1px hairline, no shadow, no radius. */}
+      <div className="relative z-10 w-full max-w-sm border edge">
         <div className="bg-paper px-6 pb-2 pt-8 text-center dark:bg-stone-900">
           {/* An h1, not just a branded link. This route had NO heading element at all, so its
           heading list was empty and the form had nothing naming it. */}

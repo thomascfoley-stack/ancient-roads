@@ -66,7 +66,7 @@ export function MobileNav() {
       {!keyboardOpen && (
         <nav
           aria-label="Primary"
-          className="fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around bg-paper/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-1px_2px_rgba(35,28,18,0.06),0_-8px_24px_-12px_rgba(35,28,18,0.18)] md:hidden dark:bg-stone-900/95"
+          className="fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t edge bg-stone-50 pb-[env(safe-area-inset-bottom)] md:hidden dark:bg-stone-950"
         >
           {tabs.map((t) => (
             <Link
@@ -106,7 +106,7 @@ function MenuSheet({ onClose }: { onClose: () => void }) {
   const dialog = useDialog(onClose, 'Menu');
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-stone-950/40 animate-fade-in md:hidden"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-stone-950/[0.32] animate-fade-in md:hidden dark:bg-stone-50/[0.08]"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -114,7 +114,7 @@ function MenuSheet({ onClose }: { onClose: () => void }) {
       <div
         ref={dialog.ref}
         {...dialog.dialogProps}
-        className="flex max-h-[85dvh] w-full flex-col rounded-t-3xl bg-stone-50 pb-[env(safe-area-inset-bottom)] shadow-deep animate-slide-up dark:bg-stone-900"
+        className="flex max-h-[85dvh] w-full flex-col border-t edge bg-stone-50 pb-[env(safe-area-inset-bottom)] animate-slide-up dark:bg-stone-900"
         style={drag.style}
       >
         <div className="flex items-center justify-between px-5 pb-1 pt-3" {...drag.handleProps}>
@@ -123,7 +123,7 @@ function MenuSheet({ onClose }: { onClose: () => void }) {
           <button
             onClick={onClose}
             aria-label="Close menu"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-200/70 hover:text-stone-600 active:bg-stone-200 dark:hover:bg-stone-800"
+            className="flex h-11 w-11 items-center justify-center text-stone-500 transition-colors ease-gentle hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
           >
             <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />

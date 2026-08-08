@@ -29,20 +29,22 @@ export default function AppError({
       <h1 className="font-display text-3xl tracking-tight text-stone-900 dark:text-stone-100">
         Something went wrong
       </h1>
-      <p className="mt-3 font-serif text-base leading-relaxed text-stone-600 dark:text-stone-400">
+      <p className="mt-3 max-w-[62ch] font-serif text-lg leading-relaxed text-stone-500 dark:text-stone-400">
         This page failed to load. Nothing you have saved is affected.
       </p>
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+        {/* PRD §6 buttons: hairline-bordered, square, no shadow. Primary is the 1px ink
+            hairline that fills on hover; secondary steps down to ink-wash. */}
         <button
           type="button"
           onClick={reset}
-          className="inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-semibold text-stone-50 transition-colors ease-gentle hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
+          className="inline-flex min-h-[44px] items-center border border-stone-900 bg-transparent px-6 text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-900"
         >
           Try again
         </button>
         <Link
           href="/home"
-          className="inline-flex min-h-[44px] items-center rounded-lg bg-paper px-5 text-sm font-semibold text-stone-700 shadow-paper transition-shadow ease-gentle hover:shadow-float dark:bg-stone-800 dark:text-stone-200 dark:shadow-none"
+          className="inline-flex min-h-[44px] items-center border border-stone-500 bg-transparent px-6 text-sm font-semibold tracking-[0.02em] text-stone-600 hover:bg-stone-500 hover:text-stone-50 dark:border-stone-400 dark:text-stone-300 dark:hover:bg-stone-400 dark:hover:text-stone-950"
         >
           Go home
         </Link>

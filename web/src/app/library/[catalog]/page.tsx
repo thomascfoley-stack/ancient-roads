@@ -103,7 +103,7 @@ export default async function CatalogPage({
       <nav className="mb-2 text-xs text-stone-500 dark:text-stone-400">
         <Link href="/library" className="hover:underline">Library</Link> · {def.label}
       </nav>
-      <h1 className="mb-5 font-scripture text-2xl text-stone-800 dark:text-stone-100">{def.label}</h1>
+      <h1 className="mb-5 font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100">{def.label}</h1>
 
       {/* The SAME selection drives the search and the work list below. One source of truth (the
           URL), so a lit chip can never mean two different things on one screen. */}
@@ -180,33 +180,36 @@ export default async function CatalogPage({
           <span aria-hidden>·</span>
           <span>Tap a work to read it, or + to open it beside what is on your desk.</span>
         </p>
-        <ul className="space-y-2">
+        {/* PRD §5 Library catalog rows: full-width, hairline-separated, no cards — 17px
+            Literata title, 11px Source Sans ink-wash metadata, unit count right in tabular
+            figures. */}
+        <ul className="border-y edge">
           {works.map((w) => (
-            <li key={w.slug} className="flex items-stretch gap-2">
+            <li key={w.slug} className="flex items-stretch gap-2 border-b edge last:border-b-0">
               <Link
                 href={`/work/${w.slug}`}
                 // min-w-0: without it this flex item's automatic minimum is the UNWRAPPED title
                 // width (truncate sets nowrap), so long-titled rows grew past the container and
                 // every + landed at a different x. One class is the whole uniformity fix.
- className="flex min-h-[44px] min-w-0 flex-1 items-center justify-between gap-3 rounded-xl border edge px-4 py-3 hover:bg-accent-50/50 dark:hover:bg-accent-950/20"
+ className="group flex min-h-[44px] min-w-0 flex-1 items-center justify-between gap-3 py-3 transition-colors ease-gentle hover:bg-accent-50/40 dark:hover:bg-accent-950/20"
               >
                 <span className="min-w-0">
-                  <span className="block truncate font-scripture text-stone-800 dark:text-stone-100">{w.title}</span>
-                  <span className="block truncate text-xs text-stone-500 dark:text-stone-400">
+                  <span className="block truncate font-scripture text-[17px] text-stone-900 group-hover:text-accent-800 dark:text-stone-100 dark:group-hover:text-accent-300">{w.title}</span>
+                  <span className="block truncate text-micro uppercase tracking-wider text-stone-500 dark:text-stone-400">
                     {w.author ?? 'Unattributed'}
                     {w.tradition ? ` · ${w.tradition}` : ''}
                     {/* the register label: a reader must always be able to tell what kind of work this is */}
                     {` · ${w.sourceType}`}
                   </span>
                 </span>
-                <span className="shrink-0 text-xs tabular-nums text-stone-500 dark:text-stone-400">{w.units}</span>
+                <span className="shrink-0 text-micro tabular-nums text-stone-500 dark:text-stone-400">{w.units}</span>
               </Link>
               {/* Open this work beside what is already on the desk. */}
               <Link
                 href={deskHrefFor(w.slug)}
                 aria-label={`Add ${w.title} to your desk`}
                 title="Add to desk"
-                className="flex min-h-[44px] w-11 shrink-0 items-center justify-center rounded-xl border border-dashed border-stone-300 text-stone-500 dark:text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
+                className="my-2 flex min-h-[44px] w-11 shrink-0 items-center justify-center border border-dashed border-stone-300 text-stone-500 dark:text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
               >
                 +
               </Link>

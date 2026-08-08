@@ -41,23 +41,34 @@ export const FIRST_RUN_DESTINATION = '/read/jhn/1#v1:study';
 
 const MIN_PASSWORD = 12;
 
+// PRD §6 inputs: parchment surface, 1px vellum hairline (`edge`, which also flips the color in
+// dark mode — a layered `dark:border-*` pair cannot be trusted to, per globals.css:226). Focus is
+// the global 2px antique-gold :focus-visible outline, NOT a focus border: an unlayered `.edge`
+// rule beats any layered `focus:border-accent-*`, so a gold focus border could never paint.
+// `outline-none` is deliberately gone so that outline shows.
 const field =
-  'w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-base text-stone-900 ' +
-  'outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-300 ' +
-  'dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100 dark:focus:ring-stone-700';
-const label = 'block text-sm font-medium text-stone-700 dark:text-stone-300';
+  'w-full border edge bg-stone-50 px-3 py-2.5 text-sm text-stone-900 ' +
+  'placeholder:text-stone-500 dark:bg-stone-950 dark:text-stone-100 dark:placeholder:text-stone-400';
+// PRD §4 form labels: 12px Source Sans, weight 600, uppercase, 0.08em, ink-wash.
+const label =
+  'block text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400';
+// PRD §6 primary button: 1px ink hairline, transparent until hover fills ink and inverts the
+// label. No transition — the PRD's hover is an instant fill, not a crossfade.
 const button =
-  'w-full rounded-lg bg-stone-900 px-4 py-2.5 text-base font-medium text-paper transition ' +
-  'hover:bg-stone-800 disabled:opacity-60 dark:bg-stone-100 dark:text-stone-900 ' +
-  'dark:hover:bg-stone-200';
-const quiet = 'text-sm text-stone-600 underline underline-offset-4 dark:text-stone-400';
+  'w-full border border-stone-900 bg-transparent px-4 py-3 text-sm font-semibold tracking-[0.02em] ' +
+  'text-stone-900 hover:bg-stone-900 hover:text-stone-50 disabled:opacity-60 ' +
+  'dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-900';
+// PRD §6 text link: antique gold, no underline until hover.
+const quiet =
+  'text-sm font-semibold text-accent-600 underline-offset-4 hover:underline dark:text-accent-400';
 // Secondary weight against the primary submit above it: this is an alternative to the form, not
-// the form's action. Same geometry so the two read as one stack.
+// the form's action. Same geometry so the two read as one stack. PRD §6 secondary: the same
+// hairline treatment stepped down to ink-wash.
 const socialButton =
-  'flex w-full items-center justify-center gap-3 rounded-lg border border-stone-300 bg-white ' +
-  'px-4 py-2.5 text-base font-medium text-stone-800 transition hover:bg-stone-50 ' +
-  'disabled:opacity-60 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100 ' +
-  'dark:hover:bg-stone-900';
+  'flex w-full items-center justify-center gap-3 border border-stone-500 bg-transparent ' +
+  'px-4 py-3 text-sm font-semibold tracking-[0.02em] text-stone-600 hover:bg-stone-500 ' +
+  'hover:text-stone-50 disabled:opacity-60 dark:border-stone-400 dark:text-stone-300 ' +
+  'dark:hover:bg-stone-400 dark:hover:text-stone-950';
 
 /** Google's brand mark, inlined: the CSP here is `style-src 'self'` and blocks remote assets. */
 function GoogleMark() {
@@ -258,7 +269,7 @@ export function AuthForm({ path }: { path: AuthMode }) {
         <>
           <div className="mt-6 flex items-center gap-3" aria-hidden="true">
             <span className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
-            <span className="text-xs uppercase tracking-wide text-stone-500 dark:text-stone-400">or</span>
+            <span className="text-micro uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400">or</span>
             <span className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
           </div>
           <button type="button" onClick={google} disabled={busy} className={`mt-6 ${socialButton}`}>

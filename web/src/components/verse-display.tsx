@@ -57,7 +57,7 @@ function VerseHandleHint() {
   if (!show) return null;
 
   return (
-    <div className="mb-8 flex items-start gap-3 rounded-lg bg-accent-50/70 px-4 py-3 dark:bg-accent-950/30">
+    <div className="mb-8 flex items-start gap-3 border edge bg-paper px-4 py-3 dark:bg-stone-900">
       <p className="flex-1 font-sans text-[13px] leading-relaxed text-stone-700 dark:text-stone-300">
         Tap any <span className="font-sans text-micro font-semibold text-accent-600 dark:text-accent-300">verse&nbsp;number</span> for
         highlights, notes, word study and what the commentators said. Selecting the text itself
@@ -65,7 +65,7 @@ function VerseHandleHint() {
       </p>
       <button
         onClick={dismiss}
-        className="-mr-1 -mt-1 shrink-0 rounded-md px-2 py-1 font-sans text-xs font-semibold text-stone-600 transition-colors ease-gentle hover:bg-accent-100/70 hover:text-stone-800 dark:text-stone-400 dark:hover:bg-accent-900/40 dark:hover:text-stone-200"
+        className="-mr-1 -mt-1 shrink-0 px-2 py-1 font-sans text-xs font-semibold text-stone-600 transition-colors ease-gentle hover:bg-accent-100/70 hover:text-stone-800 dark:text-stone-400 dark:hover:bg-accent-900/40 dark:hover:text-stone-200"
       >
         Got it
       </button>
@@ -175,13 +175,21 @@ export function VerseDisplay({
     router.push(`/ask?q=${encodeURIComponent(q)}`);
   }
 
+  // The chapter's opening verse, for the drop cap below. `find`, not `[0]`: a verse with no text
+  // renders nothing, and a cap on an empty verse would float over the next one.
+  const firstVerse = data.verses.find((v) => v.text)?.verse;
+
   return (
- <div ref={rootRef} className="mx-auto my-6 max-w-2xl rounded-xl border edge bg-paper px-6 py-12 shadow-paper sm:my-10 sm:px-14 sm:py-16 dark:bg-stone-950 dark:shadow-none">
-      <h1 className="mb-8 font-scripture text-3xl font-medium text-stone-800 dark:text-stone-100">
+    // PRD §5: a bare 66ch reading column on the parchment page — no card chrome. Separation
+    // comes from the one hairline under the title and whitespace (5rem margins desktop, 3rem
+    // mobile). ChapterSkeleton in the page MIRRORS this container; change one, change both.
+    <div ref={rootRef} className="mx-auto my-12 max-w-[66ch] px-6 sm:my-20">
+      <h1 className="mb-4 font-display text-[30px] font-medium leading-[1.2] tracking-[-0.01em] text-stone-900 dark:text-stone-100">
         {bookName} {data.chapter}
       </h1>
+      <div aria-hidden className="mb-12 border-b edge" />
       <VerseHandleHint />
-      <div className="reading-scale font-scripture leading-[1.9] text-stone-800 dark:text-stone-200">
+      <div className="reading-scale font-scripture leading-[1.9] text-stone-900 dark:text-stone-200">
         {data.verses.map((v) => {
           if (!v.text) return null;
           const isSelected = v.verse === selectedVerse;
@@ -202,8 +210,11 @@ export function VerseDisplay({
           const segments = flattenToSegments(v.text.length, native);
           const hasNote = notedVerses?.has(v.verse);
           const isBookmarked = bookmarkedVerses?.has(v.verse);
-          const outerBg = isSelected ? 'bg-accent-100/70 dark:bg-accent-500/20' : '';
-          const flashRing = v.verse === flashVerse ? ' ring-2 ring-accent-400/70' : '';
+          // PRD §5: a selected verse highlights in vellum (night hairline in dark), 100ms fade.
+          const outerBg = isSelected ? 'bg-stone-200 transition-colors duration-100 ease-gentle dark:bg-stone-800' : '';
+          // The deep-link flash is one of the three sanctioned candle-flame uses (PRD §4).
+          // Stays a `ring`, not an outline: verse-deep-link.test.tsx asserts the `ring-2` class.
+          const flashRing = v.verse === flashVerse ? ' ring-2 ring-flame/70' : '';
           return (
             <span
               key={v.verse}
@@ -269,7 +280,10 @@ export function VerseDisplay({
                    control, and hover is not a cue that exists on touch at all. Dropping the
                    /80 costs no layout and no reading-surface noise; it just stops the one
                    interactive mark on the page from looking like decoration. */
-                className="relative mr-0.5 cursor-pointer font-sans text-micro font-semibold text-accent-600 select-none before:absolute before:-inset-y-1 before:-left-1.5 before:-right-0.5 before:content-[''] hover:text-accent-700 dark:text-accent-300 dark:hover:text-accent-200"
+                /* Verse numbers (PRD §4): 11px Source Sans, antique gold, old-style
+                   figures, weight 500. Dark mode takes the PRD's brighter gold (accent-400)
+                   rather than the paler accent-300. */
+                className="relative mr-0.5 cursor-pointer font-sans text-micro font-medium text-accent-600 select-none [font-feature-settings:'onum'] before:absolute before:-inset-y-1 before:-left-1.5 before:-right-0.5 before:content-[''] hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300"
               >
                 {v.verse}
               </sup>
@@ -282,7 +296,19 @@ export function VerseDisplay({
               )}
               {/* The verse-text container: its text nodes concatenate to exactly v.text, so the
                   anchoring mapper (rangeToOffsetsInContainer) walks it to derive offsets into v.text. */}
-              <span data-verse-text={v.verse}>
+              <span
+                data-verse-text={v.verse}
+                // PRD §5 chapter opening: a drop cap on the first verse (EB Garamond, antique
+                // gold, old-style figures, margin-right 0.5rem, line-height 0.9; 4.8rem per the
+                // mockup). Pure CSS ::first-letter — the DOM and the offsets the anchoring engine
+                // walks are untouched, and the letter stays part of the verse for screen readers.
+                // `inline-block` because ::first-letter only applies to a block-level container.
+                className={
+                  v.verse === firstVerse
+                    ? "inline-block first-letter:float-left first-letter:mr-2 first-letter:font-display first-letter:text-[4.8rem] first-letter:leading-[0.9] first-letter:text-accent-600 first-letter:[font-feature-settings:'onum'] dark:first-letter:text-accent-400"
+                    : undefined
+                }
+              >
                 {segments.map((seg, i) =>
                   seg.color ? (
                     <span key={i} className={`rounded-[3px] ${HIGHLIGHT_BG[seg.color] ?? ''}`}>

@@ -47,16 +47,16 @@ export function BookPicker({
     // nothing, which is honest — the grid shows what matches.
     const shownChapters = jump.trim() === '' ? chapters : chapters.filter((c) => String(c).startsWith(jump.trim()));
     const chapterCell = (c: number) =>
-      `flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-colors ease-gentle ${
+      `flex h-12 items-center justify-center text-sm font-medium transition-colors ease-gentle ${
         selectedBook.slug === currentBook.slug && c === currentChapter
           ? 'bg-accent-700 text-stone-50 dark:bg-accent-500'
-          : 'bg-paper text-stone-700 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:shadow-none'
+          : 'border edge bg-paper text-stone-700 hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-900 dark:text-stone-200'
       }`;
     return (
       <div
         ref={dialog.ref}
         {...dialog.dialogProps}
-        className="fixed inset-0 z-50 overflow-auto overscroll-contain bg-stone-50/97 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] backdrop-blur-sm dark:bg-stone-950/97"
+        className="fixed inset-0 z-50 overflow-auto overscroll-contain bg-stone-50/97 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] dark:bg-stone-950/97"
       >
         <div className="mx-auto max-w-lg px-4 py-6">
           <div className="flex items-center justify-between mb-6">
@@ -81,6 +81,7 @@ export function BookPicker({
               Shown only where it earns its place: below ~24 chapters the grid is already one
               glance, and an extra control would be noise on 44 of the 66 books. */}
           {selectedBook.chapterCount > 24 && (
+            // PRD §6 input: parchment surface, 1px hairline, square corners, gold border on focus.
             <input
               type="number"
               inputMode="numeric"
@@ -90,7 +91,7 @@ export function BookPicker({
               onChange={(e) => setJump(e.target.value)}
               aria-label={`Jump to a chapter in ${selectedBook.name}, 1 to ${selectedBook.chapterCount}`}
               placeholder={`Jump to a chapter (1–${selectedBook.chapterCount})`}
-              className="mb-4 min-h-[44px] w-full rounded-xl bg-paper px-4 text-base text-stone-800 shadow-paper outline-none placeholder:text-stone-400 focus-quiet dark:bg-stone-800 dark:text-stone-100 dark:shadow-none dark:placeholder:text-stone-500"
+              className="mb-4 min-h-[44px] w-full border edge bg-paper px-4 font-sans text-base text-stone-900 outline-none placeholder:text-stone-400 focus:border-accent-600 focus-quiet dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus:border-accent-400"
             />
           )}
           <div className="grid grid-cols-6 gap-2">
@@ -115,13 +116,13 @@ export function BookPicker({
     <div
       ref={dialog.ref}
       {...dialog.dialogProps}
-      className="fixed inset-0 z-50 overflow-auto overscroll-contain bg-stone-50/97 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] backdrop-blur-sm dark:bg-stone-950/97"
+      className="fixed inset-0 z-50 overflow-auto overscroll-contain bg-stone-50/97 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] dark:bg-stone-950/97"
     >
       <div className="mx-auto max-w-lg px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => setSort(sort === 'canonical' ? 'alpha' : 'canonical')}
-            className="inline-flex min-h-[44px] items-center rounded-lg bg-paper px-4 text-xs font-medium text-stone-600 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:shadow-none"
+            className="inline-flex min-h-[44px] items-center border edge bg-paper px-4 text-xs font-medium text-stone-600 hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-900 dark:text-stone-300"
           >
             {sort === 'canonical' ? 'A–Z' : '1–66'}
           </button>
@@ -178,10 +179,10 @@ function BookSection({
   onPick?: (b: Book, chapter: number) => void;
 }) {
   const cell = (slug: string) =>
-    `flex min-h-[48px] items-center justify-center rounded-xl px-2 py-2 text-center text-sm transition-colors ease-gentle ${
+    `flex min-h-[48px] items-center justify-center px-2 py-2 text-center text-sm transition-colors ease-gentle ${
       slug === currentSlug
         ? 'bg-accent-700 text-stone-50 dark:bg-accent-500'
-        : 'bg-paper text-stone-700 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:shadow-none'
+        : 'border edge bg-paper text-stone-700 hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-900 dark:text-stone-200'
     }`;
   return (
     <div className="mb-6">

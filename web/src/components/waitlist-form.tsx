@@ -6,11 +6,11 @@ type State = 'idle' | 'submitting' | 'done' | 'error';
 
 /** Public waitlist capture on the marketing landing. Posts to /api/waitlist (rate-limited).
  *
- * Styled for the 2026-08-08 marketing redesign: pill input + sage pill button, and a
- * DESIGNED success state (the mockup's "Request received" moment rendered inline, so no
- * new route is needed and the reader keeps their scroll position). Error states keep the
- * serif voice rather than a browser default. Light-only, like the rest of the marketing
- * tier. */
+ * Styled for the 2026-08-08 marketing redesign (PRD §6): hairline-bordered square input
+ * with an antique-gold focus border, the ink-hairline CTA, and a DESIGNED success state
+ * (the "Request received" moment rendered inline, so no new route is needed and the
+ * reader keeps their scroll position). Error states keep the serif voice rather than a
+ * browser default. Light-only, like the rest of the marketing tier. */
 export function WaitlistForm() {
   const [email, setEmail] = useState('');
   const [state, setState] = useState<State>('idle');
@@ -42,10 +42,10 @@ export function WaitlistForm() {
 
   if (state === 'done') {
     return (
-      <div role="status" className="mx-auto max-w-md rounded-2xl bg-paper px-8 py-8 text-center shadow-card">
-        <p className="text-micro font-bold uppercase tracking-[0.3em] text-sage-600">Request received</p>
+      <div role="status" className="mx-auto max-w-md border edge px-8 py-8 text-center">
+        <p className="text-micro font-semibold uppercase tracking-[0.3em] text-stone-500">Request received</p>
         <p className="mt-3 font-display text-2xl text-stone-900">Your name is on the list.</p>
-        <p className="mt-3 font-serif text-base leading-relaxed text-stone-900/70">
+        <p className="mt-3 font-serif text-base leading-relaxed text-stone-500">
           We are opening the doors slowly, a few at a time, so the first rooms stay quiet.
           {email ? (
             <>
@@ -63,6 +63,8 @@ export function WaitlistForm() {
       <label htmlFor="waitlist-email" className="sr-only">
         Email address
       </label>
+      {/* PRD §6 input: parchment, 1px hairline, 14px Source Sans, antique-gold focus
+          border, no ring/shadow, square. */}
       <input
         id="waitlist-email"
         type="email"
@@ -71,12 +73,13 @@ export function WaitlistForm() {
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Your email address"
         autoComplete="email"
-        className="min-h-[52px] w-full flex-1 rounded-full border border-stone-200 bg-paper px-7 font-serif text-base text-stone-900 shadow-paper outline-none transition-colors ease-gentle placeholder:text-stone-500 focus:border-sage-500 focus:ring-2 focus:ring-sage-500/30 sm:text-lg"
+        className="min-h-[52px] w-full flex-1 border border-stone-200 bg-transparent px-5 font-sans text-sm text-stone-900 outline-none placeholder:text-stone-500 focus:border-accent-600"
       />
+      {/* PRD §6 primary CTA: 1px ink hairline, instant ink fill on hover (no transition). */}
       <button
         type="submit"
         disabled={state === 'submitting'}
-        className="inline-flex min-h-[52px] w-full items-center justify-center whitespace-nowrap rounded-full bg-sage-500 px-8 text-micro font-bold uppercase tracking-[0.2em] text-stone-50 shadow-float transition-[background-color,opacity,transform] duration-300 ease-gentle hover:bg-stone-900 active:scale-[0.99] disabled:opacity-40 sm:w-auto"
+        className="inline-flex min-h-[52px] w-full items-center justify-center whitespace-nowrap border border-stone-900 px-6 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 disabled:opacity-40 sm:w-auto"
       >
         {state === 'submitting' ? 'Sending…' : 'Request access'}
       </button>

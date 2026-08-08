@@ -48,19 +48,24 @@ export function AccountSettings({ email }: { email: string }) {
     }
   }
 
+  // Same input treatment as auth-forms.tsx: parchment surface, 1px vellum hairline via `edge`,
+  // focus carried by the global antique-gold :focus-visible outline (an unlayered `.edge` rule
+  // beats any layered `focus:border-*`, so a focus border could never paint — see globals.css:226).
   const field =
-    'w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-base text-stone-900 ' +
-    'outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-300 ' +
-    'dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100 dark:focus:ring-stone-700';
+    'w-full border edge bg-stone-50 px-3 py-2.5 text-sm text-stone-900 ' +
+    'placeholder:text-stone-500 dark:bg-stone-950 dark:text-stone-100 dark:placeholder:text-stone-400';
+  // PRD §4 form labels: 12px Source Sans, weight 600, uppercase, 0.08em, ink-wash.
+  const label =
+    'block text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400';
 
   return (
     <div className="mx-auto w-full max-w-lg px-5 py-10 sm:px-6">
-      <h1 className="font-display text-2xl font-medium text-stone-900 dark:text-stone-100">
+      <h1 className="font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100">
         Your account
       </h1>
       <p className="mt-1 font-serif text-sm text-stone-600 dark:text-stone-400">{email}</p>
 
-      <form onSubmit={submit} className="mt-8 space-y-4">
+      <form onSubmit={submit} className="mt-8 space-y-4 border-t edge pt-8">
         <h2 className="font-display text-lg text-stone-900 dark:text-stone-100">Change password</h2>
 
         {note && (
@@ -77,24 +82,25 @@ export function AccountSettings({ email }: { email: string }) {
         )}
 
         <div>
-          <label htmlFor="current" className="block text-sm font-medium text-stone-700 dark:text-stone-300">
+          <label htmlFor="current" className={label}>
             Current password
           </label>
           <input id="current" name="current" type="password" required autoComplete="current-password" className={`mt-1.5 ${field}`} />
         </div>
 
         <div>
-          <label htmlFor="next" className="block text-sm font-medium text-stone-700 dark:text-stone-300">
+          <label htmlFor="next" className={label}>
             New password
           </label>
           <input id="next" name="next" type="password" required minLength={MIN_PASSWORD} autoComplete="new-password" className={`mt-1.5 ${field}`} />
           <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">At least {MIN_PASSWORD} characters.</p>
         </div>
 
+        {/* PRD §6 primary: 1px ink hairline, hover fills ink and inverts; instant fill, no transition. */}
         <button
           type="submit"
           disabled={busy}
-          className="w-full rounded-lg bg-stone-900 px-4 py-2.5 text-base font-medium text-paper transition hover:bg-stone-800 disabled:opacity-60 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+          className="w-full border border-stone-900 bg-transparent px-4 py-3 text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 disabled:opacity-60 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-900"
         >
           {busy ? 'Working...' : 'Change password'}
         </button>

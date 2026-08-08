@@ -26,7 +26,7 @@ export function MarketingNav({ active }: { active?: MarketingPage }) {
         {/* Wordmark: left on all sizes (PRD §6); mobile wraps the links to a second row. */}
         <Link
           href="/"
-          className="justify-self-start font-display text-lg font-medium tracking-[-0.01em] text-stone-900 sm:order-1"
+          className="inline-flex min-h-[44px] items-center justify-self-start font-display text-lg font-medium tracking-[-0.01em] text-stone-900 sm:order-1"
         >
           Ancient Paths
         </Link>

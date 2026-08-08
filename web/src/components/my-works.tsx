@@ -204,7 +204,7 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
           <div className="mb-3 h-9 w-44 rounded-lg bg-stone-200/70 dark:bg-stone-800" />
           <div className="mb-8 h-4 w-80 max-w-full rounded bg-stone-200/50 dark:bg-stone-800/70" />
           <div className="mb-8 h-28 rounded-2xl border border-dashed border-stone-300 dark:border-stone-700" />
-          <div className="mb-8 h-11 w-full rounded-full bg-stone-200/60 dark:bg-stone-800/80" />
+          <div className="mb-8 h-11 w-full rounded bg-stone-200/60 dark:bg-stone-800/80" />
           <div className="mb-3 h-5 w-40 rounded bg-stone-200/60 dark:bg-stone-800/80" />
           <div className="h-20 rounded-xl bg-stone-200/50 dark:bg-stone-800/70" />
         </div>
@@ -223,7 +223,7 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
         {state === 'signedout' && (
           <Link
             href="/auth/sign-in"
-            className="mt-5 inline-block min-h-[44px] rounded-full bg-stone-900 px-5 py-2.5 text-[15px] font-medium text-paper hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900"
+            className="mt-5 inline-flex min-h-[44px] items-center border border-stone-900 px-6 py-2.5 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
           >
             Sign in
           </Link>
@@ -278,12 +278,12 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search your works, or type a passage like Romans 8"
             aria-label="Search your works"
-            className="min-h-[44px] w-full rounded-full border border-stone-200 bg-paper px-4 font-serif text-[15px] text-stone-700 placeholder:text-stone-400 focus:border-accent-400 focus:outline-none dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200"
+            className="min-h-[44px] w-full border edge bg-transparent px-4 font-serif text-[15px] text-stone-700 placeholder:text-stone-400 dark:text-stone-200"
           />
           <button
             type="submit"
             disabled={searching}
-            className="min-h-[44px] shrink-0 rounded-full bg-paper px-5 text-sm font-semibold text-stone-700 shadow-paper transition-all hover:text-accent-800 hover:shadow-float disabled:opacity-50 dark:bg-stone-800 dark:text-stone-200 dark:shadow-none"
+            className="min-h-[44px] shrink-0 border border-stone-900 px-5 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 disabled:opacity-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
           >
             {searching ? 'Searching…' : 'Search'}
           </button>
@@ -296,9 +296,9 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
             <h2 className="font-display text-lg text-stone-700 dark:text-stone-200">
               {presence.length === 0 ? 'You have not written on that passage yet' : 'Where you have written on it'}
             </h2>
-            <ul className="mt-3 space-y-2">
+            <ul className="mt-3 border-y edge">
               {presence.map((p) => (
-                <li key={`${p.sectionId}-${p.channel}-${p.verseStart}`} className="rounded-xl bg-paper px-4 py-3 shadow-paper dark:bg-stone-800 dark:shadow-none">
+                <li key={`${p.sectionId}-${p.channel}-${p.verseStart}`} className="border-b edge px-1 py-3 last:border-b-0">
                   <span className="font-serif text-[15px] text-stone-700 dark:text-stone-200">{p.title}</span>
                   <span className="ml-2 text-[13px] text-stone-500 dark:text-stone-400">
                     {/* channel and strength, so "quoted at length" is separable from "mentioned once" */}
@@ -315,9 +315,9 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
             <h2 className="font-display text-lg text-stone-700 dark:text-stone-200">
               {hits.length === 0 ? 'Nothing found in your works' : `${hits.length} passage${hits.length === 1 ? '' : 's'} from your works`}
             </h2>
-            <ul className="mt-3 space-y-3">
+            <ul className="mt-3 border-y edge">
               {hits.map((h) => (
-                <li key={h.sectionId} className="rounded-xl bg-paper px-4 py-3 shadow-paper dark:bg-stone-800 dark:shadow-none">
+                <li key={h.sectionId} className="border-b edge px-1 py-4 last:border-b-0">
                   <p className="font-display text-[15px] text-stone-700 dark:text-stone-200">{h.title}</p>
                   {h.heading && <p className="text-[13px] text-stone-500 dark:text-stone-400">{h.heading}</p>}
                   <p className="mt-1 font-serif text-[15px] leading-relaxed text-stone-600 dark:text-stone-300">
@@ -345,16 +345,18 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
         ) : docs.length === 0 ? (
           <p className="font-serif text-[15px] text-stone-500 dark:text-stone-400">Nothing here yet. Add a sermon or a paper and it will be searchable alongside the library.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="border-y edge">
             {docs.map((d) => {
               const s = STATUS[d.status];
               return (
-                <li key={d.id} className="rounded-xl bg-paper px-4 py-3 shadow-paper dark:bg-stone-800 dark:shadow-none">
+                /* PRD §5 My Works: hairline list rows, no cards — 18px Literata titles,
+                   14px Source Sans ink-wash metadata. */
+                <li key={d.id} className="border-b edge px-1 py-4 last:border-b-0">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                    <span className="font-serif text-[15px] text-stone-700 dark:text-stone-200">{d.title}</span>
+                    <span className="font-serif text-lg text-stone-900 dark:text-stone-100">{d.title}</span>
                     <span className={`text-[13px] font-semibold ${s.tone}`}>{s.label}</span>
                   </div>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-3 text-[13px] text-stone-500 dark:text-stone-400">
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 font-sans text-sm text-stone-500 dark:text-stone-400">
                     {d.mimeType && <span className="uppercase">{d.mimeType}</span>}
                     {d.byteSize != null && <span>{fmtBytes(d.byteSize)}</span>}
                     {d.pageCount != null && <span>{d.pageCount} pages</span>}
@@ -371,7 +373,7 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                       <button
                         type="button"
                         onClick={() => void retry(d.id)}
-                        className="min-h-[44px] rounded-full px-3 text-[13px] font-semibold text-stone-600 hover:text-accent-800 dark:text-stone-300"
+                        className="min-h-[44px] px-3 text-[13px] font-semibold text-stone-600 hover:text-accent-800 dark:text-stone-300"
                       >
                         Try again
                       </button>
@@ -382,7 +384,7 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                     {d.status === 'ready' && (
                       <Link
                         href={`/library/uploads/${d.id}`}
-                        className="inline-flex min-h-[44px] items-center rounded-full px-3 text-[13px] font-semibold text-stone-600 hover:text-accent-800 dark:text-stone-300"
+                        className="inline-flex min-h-[44px] items-center px-3 text-[13px] font-semibold text-stone-600 hover:text-accent-800 dark:text-stone-300"
                       >
                         Open beside the tradition
                       </Link>
@@ -393,7 +395,7 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                       <button
                         type="button"
                         onClick={() => void loadVoices(d.id)}
-                        className="min-h-[44px] rounded-full px-3 text-[13px] font-semibold text-stone-600 hover:text-accent-800 dark:text-stone-300"
+                        className="min-h-[44px] px-3 text-[13px] font-semibold text-stone-600 hover:text-accent-800 dark:text-stone-300"
                       >
                         The tradition on this
                       </button>
@@ -401,14 +403,14 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                     <button
                       type="button"
                       onClick={() => void remove(d.id)}
-                      className="min-h-[44px] rounded-full px-3 text-[13px] font-semibold text-stone-500 hover:text-red-700 dark:text-stone-400"
+                      className="min-h-[44px] px-3 text-[13px] font-semibold text-stone-500 hover:text-red-700 dark:text-stone-400"
                     >
                       Remove
                     </button>
                   </div>
 
                   {voices[d.id] && (
-                    <div className="mt-3 border-t border-stone-200 pt-3 dark:border-stone-700">
+                    <div className="mt-3 border-t edge pt-3">
                       {voices[d.id].loading && (
                         <p className="font-serif text-[14px] text-stone-500 dark:text-stone-400">Reading the tradition…</p>
                       )}

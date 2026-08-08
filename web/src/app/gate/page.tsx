@@ -15,15 +15,15 @@ export default async function GatePage({
   const { next, error } = await searchParams;
   const dest = next && next.startsWith('/') && !next.startsWith('//') ? next : '/home';
   return (
-    <main className="flex min-h-dvh bg-stone-100">
+    <main className="flex min-h-dvh bg-stone-50">
       {/* Form column */}
       <div className="flex w-full items-center justify-center px-5 py-16 lg:w-2/3">
         <div className="w-full max-w-[380px] text-center">
-          <Link href="/" className="inline-flex min-h-[44px] items-center font-display text-2xl tracking-tight text-stone-900/40">
+          <Link href="/" className="inline-flex min-h-[44px] items-center font-display text-2xl tracking-[-0.01em] text-stone-500">
             Ancient Paths
           </Link>
           <h1 className="mt-10 font-display text-4xl text-stone-900 sm:text-5xl">Walk in.</h1>
-          <p className="mt-4 font-serif text-lg italic leading-relaxed text-stone-900/60">
+          <p className="mt-4 font-serif text-lg italic leading-relaxed text-stone-500">
             A private preview. Enter the password to walk in.
           </p>
 
@@ -32,17 +32,19 @@ export default async function GatePage({
             <div>
               <label
                 htmlFor="gate-password"
-                className="mb-3 block text-micro font-bold uppercase tracking-[0.3em] text-stone-900"
+                className="mb-2 block font-sans text-xs font-semibold uppercase tracking-[0.08em] text-stone-500"
               >
                 Password
               </label>
+              {/* PRD §6 input: parchment, 1px hairline, 14px Source Sans, antique-gold
+                  focus border, no shadow, no radius. */}
               <input
                 id="gate-password"
                 type="password"
                 name="password"
                 autoFocus
                 placeholder="••••••••"
-                className="min-h-[52px] w-full rounded-xl border border-stone-200 bg-paper px-5 font-serif text-lg text-stone-900 shadow-paper outline-none transition-colors ease-gentle placeholder:text-stone-400 focus:border-sage-500"
+                className="min-h-[52px] w-full border border-stone-200 bg-transparent px-5 font-sans text-sm text-stone-900 outline-none placeholder:text-stone-400 focus:border-accent-600"
               />
               {error && (
                 <p className="mt-3 font-serif text-sm italic text-accent-700">
@@ -50,19 +52,20 @@ export default async function GatePage({
                 </p>
               )}
             </div>
+            {/* PRD §6 primary CTA: 1px ink hairline, instant ink fill on hover. */}
             <button
               type="submit"
-              className="min-h-[52px] w-full rounded-full bg-accent-600 text-micro font-semibold uppercase tracking-[0.2em] text-stone-50 shadow-float transition-colors duration-200 ease-gentle hover:bg-accent-700 active:bg-accent-800"
+              className="min-h-[52px] w-full border border-stone-900 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50"
             >
               Enter
             </button>
           </form>
 
-          <p className="mt-8 text-micro uppercase tracking-[0.2em] text-stone-900/40">
+          <p className="mt-8 text-micro uppercase tracking-[0.2em] text-stone-500">
             No password?{' '}
             <Link
               href="/#doors"
-              className="inline-flex min-h-[44px] items-center font-bold text-sage-600 transition-colors ease-gentle hover:text-stone-900"
+              className="inline-flex min-h-[44px] items-center font-semibold text-accent-600 hover:underline"
             >
               Request access
             </Link>

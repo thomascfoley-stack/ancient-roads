@@ -20,20 +20,20 @@ export const metadata = {
 
 export default function WhyPage() {
   return (
-    <main className="bg-stone-100">
+    <main className="bg-stone-50">
       <MarketingNav active="why" />
 
       <header className="px-5 pb-12 pt-16 sm:px-8 sm:pb-20 sm:pt-28">
         <div className="mx-auto max-w-4xl text-center">
-          <p className="mb-5 text-micro font-bold uppercase tracking-[0.3em] text-sage-600">Why we exist</p>
-          <h1 className="font-display text-5xl leading-tight text-stone-900 sm:text-7xl lg:text-8xl">
+          <p className="mb-5 text-micro font-semibold uppercase tracking-[0.3em] text-stone-500">Why we exist</p>
+          <h1 className="font-display text-5xl leading-tight tracking-[-0.01em] text-stone-900 sm:text-7xl lg:text-8xl">
             Why we built this
           </h1>
         </div>
       </header>
 
-      <article className="mx-auto max-w-[680px] px-5 pb-24 font-serif text-lg leading-[1.8] text-stone-900/80 sm:px-8 sm:pb-40">
-        <p className="mb-12 first-letter:float-left first-letter:pr-3 first-letter:pt-1 first-letter:font-display first-letter:text-7xl first-letter:leading-[0.8] first-letter:text-stone-900">
+      <article className="mx-auto max-w-[66ch] px-5 pb-24 font-serif text-lg leading-[1.8] text-stone-700 sm:px-8 sm:pb-40">
+        <p className="mb-12 first-letter:float-left first-letter:pr-3 first-letter:pt-1 first-letter:font-display first-letter:text-7xl first-letter:leading-[0.8] first-letter:text-accent-600">
           In an age defined by the immediate, the shallow, and the algorithmic, we found ourselves
           drifting further from the quiet waters of tradition. The modern world offers a thousand
           interpretations at the speed of a keystroke, yet few provide the depth required to nourish a
@@ -59,11 +59,12 @@ export default function WhyPage() {
           Holy Spirit.
         </p>
 
-        <div className="my-16 border-l-4 border-sage-500 pl-8 sm:my-20 sm:pl-10">
+        {/* PRD verse blockquote: 3px antique-gold left border, small-caps citation. */}
+        <div className="my-16 border-l-[3px] border-accent-600 pl-8 sm:my-20 sm:pl-10">
           <blockquote className="font-serif text-2xl italic leading-snug text-stone-900 sm:text-3xl">
             &ldquo;But the Comforter, which is the Holy Ghost&hellip; he shall teach you all things.&rdquo;
           </blockquote>
-          <cite className="mt-6 block text-micro font-bold not-italic uppercase tracking-[0.2em] text-stone-900/60">
+          <cite className="mt-6 block font-sans text-micro font-semibold not-italic uppercase tracking-[0.2em] text-stone-500">
             John 14:26
           </cite>
         </div>
@@ -81,18 +82,18 @@ export default function WhyPage() {
 
         <h2 className="mb-8 mt-20 font-display text-3xl text-stone-900 sm:text-4xl">The cloud of witnesses</h2>
         <p className="mb-8">
-          When you read a verse in Ancient Paths, you are not just reading text. You are stepping into
-          a two-thousand-year-old conversation. You are hearing the same words that Augustine heard,
+          When you read a verse in Ancient Paths, you are not just reading text. You are stepping into a
+          two-thousand-year-old conversation. You are hearing the same words that Augustine heard,
           that Calvin wrestled with, and that Wesley preached. It is the steady, quiet voice of the
           Church that has survived empires, schisms, and wars. It is a path that has already been
           walked.
         </p>
 
-        <div aria-hidden className="my-16 flex justify-center text-sage-500/40 sm:my-20">
+        <div aria-hidden className="my-16 flex justify-center text-accent-600/40 sm:my-20">
           <span className="text-2xl tracking-[1.5em]">• • •</span>
         </div>
 
-        <p className="mt-12 text-center font-serif italic text-stone-900/60">
+        <p className="mt-12 text-center font-serif italic text-stone-500">
           Our hope is that through this labor, you would find not just information, but a deeper
           communion with the One who spoke the Word in the beginning.
         </p>
@@ -100,7 +101,7 @@ export default function WhyPage() {
         <div className="mt-16 text-center sm:mt-20">
           <Link
             href="/#doors"
-            className="inline-flex min-h-[52px] items-center rounded-full bg-sage-500 px-10 text-micro font-semibold uppercase tracking-[0.2em] text-stone-50 shadow-float transition-colors duration-300 ease-gentle hover:bg-stone-900"
+            className="inline-flex min-h-[44px] items-center border border-stone-900 px-6 py-3 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50"
           >
             Request access
           </Link>

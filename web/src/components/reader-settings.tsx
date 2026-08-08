@@ -30,23 +30,23 @@ export function ReaderSettings() {
       <button
         onClick={() => setOpen((v) => !v)}
         title="Reading settings"
-        className="min-h-[44px] rounded-lg bg-paper px-3 text-xs font-semibold text-stone-500 shadow-paper transition-colors ease-gentle hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+        className="min-h-[44px] border edge bg-paper px-3 text-xs font-semibold text-stone-500 transition-colors ease-gentle hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
       >
         Aa
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-56 rounded-xl bg-paper p-3 shadow-float ring-1 ring-stone-200 dark:bg-stone-800 dark:ring-stone-700">
+        <div className="absolute right-0 top-full mt-1 w-56 animate-[fade-in_150ms_var(--ease-gentle)] border edge bg-paper p-3 dark:bg-stone-900">
           <p className="mb-1.5 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Theme</p>
-          <div className="mb-3 flex rounded-lg bg-stone-100 p-0.5 dark:bg-stone-700">
+          <div className="mb-3 flex bg-stone-100 p-0.5 dark:bg-stone-700">
             <button
               onClick={() => applyDark(false)}
-              className={`min-h-[40px] flex-1 rounded-md py-1 text-sm font-medium transition-colors ease-gentle ${!dark ? 'bg-paper text-stone-800 shadow-paper' : 'text-stone-500 dark:text-stone-400'}`}
+              className={`min-h-[40px] flex-1 py-1 text-sm font-medium transition-colors ease-gentle ${!dark ? 'bg-paper text-stone-800' : 'text-stone-500 dark:text-stone-400'}`}
             >
               Light
             </button>
             <button
               onClick={() => applyDark(true)}
-              className={`min-h-[40px] flex-1 rounded-md py-1 text-sm font-medium transition-colors ease-gentle ${dark ? 'bg-stone-900 text-stone-100 shadow-paper' : 'text-stone-500 dark:text-stone-300'}`}
+              className={`min-h-[40px] flex-1 py-1 text-sm font-medium transition-colors ease-gentle ${dark ? 'bg-stone-900 text-stone-100' : 'text-stone-500 dark:text-stone-300'}`}
             >
               Dark
             </button>

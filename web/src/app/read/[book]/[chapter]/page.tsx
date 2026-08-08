@@ -407,7 +407,7 @@ export default function ReaderPage() {
       {writeError && (
         <div
           role="alert"
-          className="fixed inset-x-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom)+1rem)] z-50 mx-auto flex w-fit max-w-[92vw] items-center gap-3 rounded-full border border-red-300/60 bg-red-50/95 px-4 py-2 text-sm text-red-800 shadow-float backdrop-blur-sm md:bottom-4 dark:border-red-900/60 dark:bg-red-950/90 dark:text-red-200"
+          className="fixed inset-x-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom)+1rem)] z-50 mx-auto flex w-fit max-w-[92vw] items-center gap-3 rounded-full border border-red-300/60 bg-red-50/95 px-4 py-2 text-sm text-red-800 md:bottom-4 dark:border-red-900/60 dark:bg-red-950/90 dark:text-red-200"
         >
           <span>{writeError.message}.</span>
           <button
@@ -445,8 +445,8 @@ export default function ReaderPage() {
  *
  * The container classes below MIRROR VerseDisplay's outermost div deliberately. That is a
  * duplication with a purpose: the skeleton is only worth having if it occupies the same box the
- * real content will, which is what stops the layout shift. If VerseDisplay's card changes, this
- * follows it.
+ * real content will, which is what stops the layout shift. If VerseDisplay's container changes,
+ * this follows it.
  *
  * `animate-pulse` is already inert under prefers-reduced-motion (globals.css), and the bars are
  * aria-hidden behind one sr-only line so a screen reader hears the state once instead of
@@ -458,7 +458,7 @@ function ChapterSkeleton({ label }: { label: string }) {
   return (
     <div
       aria-busy
-      className="mx-auto my-6 max-w-2xl rounded-xl border edge bg-paper px-6 py-12 shadow-paper sm:my-10 sm:px-14 sm:py-16 dark:bg-stone-950 dark:shadow-none"
+      className="mx-auto my-12 max-w-[66ch] px-6 sm:my-20"
     >
       <span className="sr-only">{label}</span>
       <div aria-hidden className="animate-pulse">
