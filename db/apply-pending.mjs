@@ -1,0 +1,124 @@
+// APPLY EVERY MIGRATION THE TARGET HAS NOT SEEN, IN NUMERIC ORDER.
+//
+// THE DEFECT THIS CLOSES. The `db-invariants` CI job resolves a database URL and runs the suite.
+// It never applies migrations. So a migration applied to prod and dev is simply absent on the CI
+// branch until a human remembers to apply it by hand — and nothing says so, because the failure
+// surfaces as ordinary test failures against a schema that looks wrong.
+//
+// Measured 2026-08-07: `main` had failed 12 consecutive runs, continuously since 2026-08-05 — the
+// day migration 104 (the Better Auth schema) landed. Four tests were failing with
+// `relation "auth_users" does not exist`. Three days of red, on a repo whose rule is "nothing
+// merges red", because the gate could not see the schema it was testing against.
+//
+// This is the same shape as the outage found the same evening (039 citing a stale comment about
+// grants): a step everyone assumed was happening, that nothing performed and nothing checked.
+//
+// WHY A NEW RUNNER RATHER THAN A LOOP OVER apply-migration.mjs. Deciding which files are pending
+// needs the ledger, which needs a connection — so the loop would need the query anyway. Doing it
+// in one place keeps "pending" defined once.
+//
+// SAFETY. Same target guard as apply-migration.mjs: refuses anything that is not localhost, a known
+// dev endpoint, or an endpoint declared BY EXACT ID in MIGRATE_TARGET_ENDPOINT. Production is
+// refused by `isAuditAllowedHost` regardless of what is declared, and this runner deliberately does
+// NOT offer apply-migration.mjs's MIGRATE_ALLOW_PROD escape hatch: applying an unknown set of
+// pending migrations unattended is exactly the operation that should never reach production.
+
+import { readFileSync, readdirSync } from 'node:fs';
+import path from 'node:path';
+import pg from 'pg';
+import { recordMigration } from './lib/record-migration.mjs';
+import { isAuditAllowedHost } from '../scripts/lib/target-guard.mjs';
+
+const DIR = path.join(import.meta.dirname, 'migrations');
+
+const url = process.env.DATABASE_URL;
+if (!url) {
+  console.error('✗ DATABASE_URL is required (the owner connection for the target).');
+  process.exit(1);
+}
+
+// No MIGRATE_ALLOW_PROD here, on purpose — see the header.
+let allowed = false;
+try {
+  allowed = isAuditAllowedHost(url, process.env.MIGRATE_TARGET_ENDPOINT);
+} catch {
+  allowed = false; // unparseable target is a refusal, not a pass
+}
+if (!allowed) {
+  console.error(
+    '✗ REFUSE: DATABASE_URL is not localhost, not a known dev endpoint, and not declared.\n' +
+      '  Declare the target by its exact endpoint id: MIGRATE_TARGET_ENDPOINT=ep-xxxx-yyyy-zzzz\n' +
+      '  This runner has no production escape hatch by design.',
+  );
+  process.exit(1);
+}
+
+// TLS: verified for remote targets, absent for local ones.
+//
+// NOT `rejectUnauthorized: false`. That is what apply-migration.mjs does and it is pre-deploy audit
+// finding 14 — arbitrary DDL as owner over an unauthenticated channel, while this repo's read-only
+// census tooling (`scripts/publish-flip.mjs`) correctly verifies. Copying the weaker pattern into a
+// new file would have made the finding harder to close, not easier.
+//
+// And localhost gets no SSL at all: a stock `initdb` server does not speak it, so the previous
+// unconditional `ssl` block made this runner unable to reach the one target class the guard
+// explicitly allows. Found by running it, not by reading it.
+const isLocal = /(?:^|@)(?:localhost|127\.0\.0\.1|\[::1\])[:/]/.test(url);
+const client = new pg.Client({
+  connectionString: url,
+  ssl: isLocal ? false : { rejectUnauthorized: true },
+});
+await client.connect();
+
+try {
+  // Numeric order, not lexicographic: `100_x.sql` must follow `099_x.sql`, and a plain sort puts it
+  // before `011_x.sql`.
+  const files = readdirSync(DIR)
+    .filter((f) => /^\d+_.*\.sql$/.test(f))
+    .sort((a, b) => Number(a.match(/^\d+/)[0]) - Number(b.match(/^\d+/)[0]));
+
+  const { rows } = await client.query(
+    `SELECT filename FROM schema_migrations`,
+  ).catch(() => ({ rows: null }));
+
+  if (rows === null) {
+    // No ledger on this target. recordMigration() creates it (032's DDL) on the first apply, but
+    // with no ledger we cannot know what is already applied — and replaying 001 onward against a
+    // populated database is destructive. Refuse loudly rather than guess.
+    console.error(
+      '✗ REFUSE: this target has no schema_migrations table, so "pending" cannot be computed.\n' +
+        '  Apply one migration with db/apply-migration.mjs first (it creates the ledger), or\n' +
+        '  seed the target from a snapshot that has one. Replaying from 001 is not safe here.',
+    );
+    process.exit(1);
+  }
+
+  const applied = new Set(rows.map((r) => r.filename));
+  const pending = files.filter((f) => !applied.has(f));
+
+  if (pending.length === 0) {
+    console.log(`✓ up to date — ${applied.size} migration(s) already recorded on this target`);
+    process.exit(0);
+  }
+
+  console.log(`▶ ${pending.length} pending: ${pending.join(', ')}`);
+  for (const f of pending) {
+    const full = path.join(DIR, f);
+    const text = readFileSync(full, 'utf-8');
+    try {
+      await client.query(text); // simple protocol: one implicit transaction per file
+      await recordMigration(client, full, text);
+      console.log(`  ✓ ${f}`);
+    } catch (e) {
+      // Stop at the first failure. Continuing would apply later migrations over a schema the
+      // failed one was supposed to establish, which turns one clear error into an unrecoverable
+      // mess.
+      console.error(`  ✗ ${f} failed: ${e.message}`);
+      console.error('  Stopped. Later migrations were NOT applied.');
+      process.exitCode = 1;
+      break;
+    }
+  }
+} finally {
+  await client.end();
+}

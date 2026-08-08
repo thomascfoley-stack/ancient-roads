@@ -157,6 +157,20 @@ jobs:
             echo "::error title=DEEPINFRA_API_KEY missing::section-vector-pairing cannot run — db-invariants must fail, not skip green."
             exit 1
           fi
+      # WITHOUT THIS STEP THE GATE CANNOT SEE THE SCHEMA IT TESTS. Added 2026-08-07 after `main`
+      # had failed 12 consecutive runs, continuously since 2026-08-05 — the day migration 104
+      # landed. Four tests were failing with `relation "auth_users" does not exist`: the migration
+      # was applied to prod and dev and never to this branch, and nothing in the job applied it or
+      # noticed. Three days red on a repo whose rule is "nothing merges red".
+      #
+      # The target is declared by exact endpoint id, the same reviewable statement SEED_TEST_ENDPOINT
+      # already makes below. apply-pending.mjs refuses production regardless of what is declared and
+      # has no MIGRATE_ALLOW_PROD escape hatch.
+      - name: apply pending migrations to the test branch
+        env:
+          MIGRATE_TARGET_ENDPOINT: ep-tiny-bonus-at3izo3y
+        run: node db/apply-pending.mjs
+
       - name: DB-backed invariants (real DB) — whole directory, no allowlist
         working-directory: web
         env:
@@ -173,6 +187,13 @@ jobs:
           DEEPINFRA_API_KEY: ${{ secrets.DEEPINFRA_API_KEY }}
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
           NEON_PROJECT: spring-heart-74819093
+          # clientIp() returns null for a synthetic Request, so publicReadThrottle collapses every
+          # caller in the suite into ONE bucket (`read:{route}:no-trusted-ip`) and the suite trips
+          # its own 120/min limit — 6 of the 13 failures on 2026-08-07 were `expected 429`. Raised
+          # here ONLY, so the reader tests exercise the route instead of the throttle. The throttle
+          # keeps its own dedicated coverage in web/test/invariants/api-hardening.test.ts, which
+          # sets its own limit and is unaffected by this.
+          PUBLIC_READ_LIMIT_PER_MIN: '100000'
           DB_INVARIANTS_SKIP_CEILING: '0'
           LOUD_SKIP_MANIFEST: ../loud-skip-manifest.json
           GITHUB_RUN_ID: ${{ github.run_id }}
