@@ -1,6 +1,73 @@
 # WORKLOG — Autonomous session 2026-07-08
 
-## 2026-08-08 (late evening) — app-wide visual redesign onto the Visual Redesign PRD
+## 2026-08-08 (night) — the redesign's browser visual pass: three defects found and fixed, all app-side
+
+**The handover's big outstanding item** (docs/VISUAL_REDESIGN_HANDOVER.md §6.1): nothing restyled
+had been SEEN. Walked in a real browser against the running dev server at 1280×800 AND 390×844,
+light AND dark: /read/psa/23 (drop cap, popover, grain, hover fills, hairlines), /home (devotional
++ era-treated Voices), /ask (composer, examples, error state), / (hero band, night band, footer —
+LOOKED AT ONLY, see below), /prayers + /plans signed-out states, mobile commentary sheet + menu
+sheet + bottom selection pill. Zero horizontal overflow measured everywhere
+(`scrollWidth == clientWidth`); sheets animate `fade-in 0.2s` with no transform (measured, not
+assumed); scrims exactly `stone-950/[0.32]`; grain `content: none` under `.reader-dark`.
+
+**Three real defects, all fixed styling-only (no DOM, no tests touched):**
+1. **Drop cap punched a blank line into the flow** (`verse-display.tsx`). The cap rode the first
+   verse's span as `inline-block` `::first-letter`, so the float was CONTAINED: any first verse
+   shorter than the cap (Psalm 23:1 exactly) left a one-line hole before verse 2. Rebuilt at the
+   flowing CONTAINER's `::first-letter` with the verse-1 number `<sup>` floated so the cap lands
+   on the text, not the digit — measured live: container-level first-letter grabs a giant gold
+   "1" otherwise. Two sub-gotchas, both measured: preflight's `sup { line-height: 0 }` collapses
+   a floated sup to a 0-height box that the ACCESSIBILITY TREE PRUNES (verse-1 button vanished;
+   `leading-none` restores it), and the mockup's cap `line-height 0.9` = 69.1px vs a 68.4px
+   2-line height, so the 0.7px overhang dragged a THIRD line into the indent — `leading-[0.88]`
+   makes it a clean two-line cap. Verse text nodes and anchoring offsets untouched.
+2. **Desktop selection popover rendered as an ellipse** (`selection-popover.tsx`). The PRD's
+   "pill" is the mockup's ONE-ROW toolbar; the desktop card stacks label/swatches/actions/copy
+   (168×131 signed-out) and `rounded-full` on that box is an egg that clips its own corners.
+   Dropped to square per the global radius-0 rule; the mobile one-row bar keeps its pill. The
+   dark-mode inversion (parchment card, dark border) verified live both ways.
+3. **Five focus borders could never paint** (the handover §3 gotcha 1 class, found by grep after
+   fixing the named one): omnibox, book-picker, study-panel, commentary-panel carried layered
+   `focus:border-*` / `focus-within:border-*` beside unlayered `.edge` — dead since birth;
+   prayer-journal only painted by escalating to `!`. One new unlayered `.edge-focus` rule in
+   globals.css (accent-600 light / accent-400 dark, per PRD §6), all five swapped onto it, the
+   `!` hack removed. Verified live on the omnibox: gold on focus, vellum on blur, both themes.
+
+**Instrument finding worth keeping (the "unearned RED" family, THE_LOOP §6):** the Browser pane's
+stale-renderer glitch (first seen 2026-07-16) does more than blank screenshots — with the pane
+hidden, the renderer's animation clock STOPS, so a `transition-colors` element pins its computed
+style at the transition's START value: `getComputedStyle` reported the old border color even
+against an INLINE `border-bottom-color: red`, which no cascade can produce. The tell is
+`el.getAnimations()` showing CSSTransitions frozen at `currentTime: 0`; the honest read is
+`finish()`ing them first (or measuring an element with no transition). A styling verdict taken
+from computed style on a transitioned property in a hidden pane is not a measurement.
+
+**Wall:** web vitest **705 passed / 0 failed** (105 files, 25 skipped DB legs); the 4 presentation
+suites named by the handover (verse-deep-link, verse-open-gesture, selection-popover-layout,
+bookmark-write-path) green; `tsc` clean; eslint 0 errors (20 pre-existing warnings);
+`next build` PASSED. Root suite 684 passed / 3 failed — the same 3 env-shaped pre-existing
+failures the afternoon session recorded (lockfile-ranges + two assert-ingest-env legs wanting a
+dev DATABASE_URL), none in files this session touched.
+
+### NOT DONE / UNVERIFIED
+- **`npm run audit` REFUSED at its env leg** — no DATABASE_URL in root .env.local (the week's
+  standing constraint). DB-free legs run individually as listed above; full audit still owed.
+- **Ask staggered reveal + amber stage checks NOT exercised** — /api/ask is sign-in-gated and
+  auth 500s in this tree (no auth env). Composer, focus outline, example rows, question header
+  and error state verified; the live reveal needs a signed-in session.
+- **Prayer save-dot, plans progress bars, library hairline rows NOT seen** — all behind auth/DB
+  this tree doesn't have. /library renders the (correctly restyled) error page instead.
+- **Marketing site untouched and unjudged, per owner mid-session: "leave the marketing site
+  alone entirely."** The landing/night-band/footer walk above was read-only; **the sage tokens +
+  `--shadow-card` deletion the handover queued was deliberately SKIPPED** — they are
+  marketing-associated tokens and stay as they are.
+- book-picker/study-panel/commentary-panel/prayer-journal `.edge-focus` swaps are rule-identical
+  to the verified omnibox but not individually exercised (picker's synthetic open didn't mount;
+  the rest are auth-gated).
+- The dev overlay's "1 Issue" badge is the dev-only React eval/CSP notice + the auth 500 —
+  environmental, not the redesign.
+
 
 **Source:** owner's `Ancient_Paths_Visual_Redesign_PRD.md` + six HTML mockups + screenshots
 (Desktop "App UX Redesign Guide"). "Candlelit scriptorium": parchment #FBF8F2, vellum hairlines,
