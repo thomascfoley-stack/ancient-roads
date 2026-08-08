@@ -1,6 +1,12 @@
 # Known security issues (tracked)
 
 ## SEC-1 — better-auth 1.4.18 vulnerabilities via `@neondatabase/auth` beta
+
+> **CLOSED 2026-08-05** by the direct cutover to self-hosted better-auth 1.6.26.
+> **Re-opening it was proposed 2026-08-07** (move back to Neon's rebuilt "Managed Better Auth").
+> Measured that day: `@neondatabase/auth@latest` is still `0.4.2-beta`, still pinning
+> `better-auth@1.4.18`. See [`AUTH_NEON_MANAGED_EVALUATION.md`](./AUTH_NEON_MANAGED_EVALUATION.md)
+> — including the standing rule: **do not migrate while Neon's managed version is below 1.6.11.**
 **Status: CLOSED 2026-08-05. The cutover is live on production.**
 Deployment `dpl_HSUsCqGCwWVPrQuG4bL1MBq3hJFg` from `e0cfd24`, aliased to `ancientpaths.app`.
 Migrations 100-104 applied to `ep-odd-fog` and recorded in `schema_migrations`. **Verified by

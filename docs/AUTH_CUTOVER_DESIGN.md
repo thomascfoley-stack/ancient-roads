@@ -1,5 +1,13 @@
 # Auth cutover design - Neon Auth → Better Auth (direct), clean-start
 
+> **2026-08-07: reversing this was proposed and is NOT recommended.** Neon rebuilt its auth product
+> as "Managed Better Auth" (auth data in your own database, branchable, RLS-compatible) — a genuine
+> improvement over the webhook-sync product this document left. But `@neondatabase/auth@latest` is
+> still `0.4.2-beta` pinning `better-auth@1.4.18`, the exact dependency SEC-1 is about. The
+> evaluation, the questions put to Neon, and a decision rule written before the answer are in
+> [`AUTH_NEON_MANAGED_EVALUATION.md`](./AUTH_NEON_MANAGED_EVALUATION.md). Do not act on this
+> document's §1 as though the landscape is unchanged — read that first.
+
 **Status: DRAFT, awaiting owner decision on §2. No code written.**
 Closes SEC-1. Prerequisite: [`AUTH_MIGRATION_SPIKE.md`](./AUTH_MIGRATION_SPIKE.md) (all four proofs
 GO, 2026-07-08, Better Auth 1.6.23) and [`SECURITY.md`](./SECURITY.md) SEC-1.
