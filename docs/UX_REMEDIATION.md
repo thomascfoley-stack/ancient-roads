@@ -204,6 +204,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 4 | `S2` | Polish sweep — 9 small fixes, one branch | `~` |
 | 5 | `PR1a` | Prayer journal — the space and the entity | `[x]` **BUILT AND DEV-VERIFIED 2026-08-08.** RLS proven two-account over `app_runtime`; carry-forward run against the live dev DB. Migration 107 **applied to production** 2026-08-08 (owner go; verified against the catalog, identical to dev). Signed-in browser walk NOT RUN by the agent — **the owner is running it**. |
 | 5? | `F1-fonts` | Font stack blocked by our own CSP — self-host via `next/font` | `-` **SPEC'D 2026-08-08, not started. WAVE ASSIGNMENT IS AN OPEN OWNER CALL** — filed as Wave 5, which puts it OUTSIDE the §10 definition of done, yet the owner called it "the highest visual-impact item remaining". Those two cannot both be right. |
+| 5 | `PR1c` | Prayer-surface polish (PR1a residue) | `x` **DONE 2026-08-08.** Dead `/channel/*` + `/study/*` rail links resolved to `/prayers`; `window.confirm` replaced with an in-page two-step. 4 seeds red. |
 | 5 | `PR1b` | Prayer journal — "From the tradition" rail (separable) | `-` |
 | 5 | `PR2` | Compare a note with the tradition | `-` |
 
@@ -1283,10 +1284,21 @@ UI for an unshipped feature left enabled rather than gated.
 
 **Exit test**
 
-- [ ] `BROWSER` A fresh account cannot create any object that leads to a placeholder page.
-- [ ] `AGENT` No orphaned channels or study partners remain in the sidebar for accounts that already created them; the hide-or-migrate decision is recorded in the Findings log and implemented.
-- [ ] `AGENT` The old Channels route either redirects or 404s per the recorded decision — it does not render a placeholder.
-- [ ] `BROWSER` The sidebar PRAYER JOURNAL section either shows the shipped `PR1a` journal, or is hidden. **No third state.**
+- [x] `BROWSER` A fresh account cannot create any object that leads to a placeholder page. — **CLOSED 2026-08-08 by the owner** on browser-extension verification.
+- [~] `AGENT` No orphaned channels or study partners remain in the sidebar for accounts that already created them; the hide-or-migrate decision is recorded in the Findings log and implemented. — **NOT FULLY MET. Reopened by the owner's extension pass**, which found rail entries (`MY SERMONS`, `BIBLE STUDIES`) in *existing* readers' `localStorage` still linking to `/channel/*`. The seeded sections were removed, but reader-created ones survive. Carried to block `PR1c` item 1 — this check closes when that does.
+- [x] `AGENT` The old Channels route either redirects or 404s per the recorded decision — it does not render a placeholder. — **CLOSED 2026-08-08 by the owner** on extension evidence, and the status settled by measurement: **`307 Temporary Redirect → /prayers`**.
+- [x] `BROWSER` The sidebar PRAYER JOURNAL section either shows the shipped `PR1a` journal, or is hidden. **No third state.** — **CLOSED 2026-08-08 by the owner.**
+
+> **How the 307 was settled, and why the obvious command could not do it.** `curl -I` against
+> **production** returns `307 → /gate?next=%2Fchannel%2Fabc123` — **that is the site-password gate,
+> not this route's redirect.** The control proves it: `/prayers`, which has no redirect of its own,
+> returns an identical `307 → /gate?next=%2Fprayers`. An unauthenticated `curl` cannot observe this
+> redirect at all, and closing the check on that response would have been an unearned green
+> measuring a different mechanism. Measured instead where no gate intercepts (local build):
+> `HTTP/1.1 307 Temporary Redirect`, `location: /prayers`. **307 is correct** — it is Next's
+> `redirect()` default, preserves the request method, and unlike a 301/308 is not permanently
+> cached, so retiring this route stays reversible. The owner's extension evidence was taken from an
+> authenticated session past the gate and saw the real behaviour.
 
 **Findings log**
 
@@ -2398,9 +2410,21 @@ faces. No CSP violation in console. The control ran too: `document.fonts.check('
 Font"')` returned **`true`**, confirming again that `check()` proves nothing and enumeration is the
 only honest probe.
 
-**Unticked and staying that way:** X3 (`BROWSER`, on the deployed build) and X5 (`HUMAN`, verify on
-a machine without the three fonts installed). The observations above were taken on a machine that
-*may* have these fonts locally — which is exactly why X5 exists and why no agent may close it.
+**X3 CLOSED 2026-08-08 by the owner**, on browser-extension verification of the deployed build:
+faces enumerated (not `check()`ed), all served from `'self'`, CSSOM clean. Recorded as the owner's
+verification, not the agent's — no agent ticked it.
+
+> **Wording correction that came with the closure, and it prevents a false alarm later.** The
+> stack is **EB Garamond = DISPLAY** (headings, inscriptional old-style) and **Literata = READING**
+> (scripture, commentary, answers), with Source Sans 3 for UI chrome. So **a reader page loading
+> ZERO EB Garamond faces is CORRECT, not a failure** — a long-form reading view legitimately has no
+> display type on it. Anyone auditing this later who expects all three families on every page will
+> "find" a regression that is the design working. Assert per-surface, or assert the union across
+> surfaces; never assert three families on an arbitrary page.
+
+**Still unticked:** X5 (`HUMAN`) — verify on a machine **without** these fonts installed. Every
+observation so far, agent and extension alike, was taken on machines that may have them locally,
+which is precisely the masking this block exists to defeat.
 
 **Owner ruling 2026-08-08:** self-host the stack via `next/font`. **No CSP widening.** Highest
 visual-impact item remaining.
@@ -2478,6 +2502,65 @@ comes with it.
 
 > X5 is the point of the block. Every prior check passed on a machine where the fonts were already
 > present. A verification that cannot fail is not a verification (`docs/THE_LOOP.md` §6).
+
+### `PR1c` — Prayer-surface polish (PR1a residue)
+
+**Wave:** 5 · **Severity:** P2 · **Depends on:** `PR1a`, `N4` · **Blocks:** — · **Status:** `[x]` **DONE 2026-08-08.** `AGENT` checks pass; no `BROWSER`/`HUMAN` check ticked.
+
+Two defects found by the owner's post-deploy verification of `PR1a`. Both small, one branch.
+
+**Item 1 — dead affordances rendered as live navigation.** `N4` removed the two *seeded* sidebar
+sections, but readers who had already made their own — `MY SERMONS`, `BIBLE STUDIES` — still hold
+them in `localStorage`, and their items still rendered as links. **Both destinations were dead:**
+`/channel/[id]` redirects to `/prayers` (N4), and `/study/[id]` is a `ComingSoon` placeholder.
+
+> **The `/study/[id]` half was NOT in the reported finding, and was fixed with it.** It is the
+> other branch of the same ternary (`sidebar.tsx`, one expression), pointing at the same kind of
+> placeholder this remediation exists to remove. Fixing only the reported half would have shipped
+> the identical fake door one line over, and the block's own exit check would have been false.
+> Recorded here rather than filed to §9 because it is the same line of code, not adjacent work.
+
+**Resolved, not made inert.** Both now go to `/prayers`, which is TRUE rather than convenient:
+`PR1a`'s carry-forward already migrated these items into the journal, so the journal genuinely
+contains what the reader is clicking. The `#` channel glyph went with the retired concept.
+
+**Item 2 — `window.confirm` in the delete path.** It froze the renderer 60+ seconds during
+verification and is impassable to automation and to assistive tech. *A modal that blocks the main
+thread is an outage with a button on it* — and behind this one is someone's own words.
+
+Replaced with an in-page two-step (`Delete` → `Delete this prayer?` with `Keep` / `Delete`),
+focusable, cancellable, `role="group"`, and cleared when a different prayer is opened so a pending
+confirmation cannot follow the reader onto another entry. **The confirmation was replaced, not
+removed** — deleting a prayer on one unguarded click would be worse than the dialog was.
+
+**Exit tests** — 4 seeds watched red, each on its own check.
+
+| # | Check | Kind | State |
+|---|---|---|---|
+| X1 | No rail item links to `/channel/[id]` | `AGENT` | pass |
+| X2 | No rail item links to `/study/[id]`, which is still a placeholder — with a precondition assert so the check cannot go vacuous if that route is ever deleted | `AGENT` | pass |
+| X3 | **A headless delete completes end to end without page-context patching** | `AGENT` | pass |
+| X4 | `Keep` cancels without deleting | `AGENT` | pass |
+
+> **X3 is the one that matters, and its value is in what it does NOT do.** jsdom's `window.confirm`
+> returns `undefined`, so the old path fails closed there and the tempting fix is
+> `vi.stubGlobal('confirm', () => true)`. **That asserts the opposite of the requirement:** it
+> proves the blocking dialog is still in the path and that only a patched environment gets past it.
+> The test therefore stubs *no* dialog and asserts the `DELETE` reached the API. Seeded
+> `window.confirm` back in — it went red without needing to know the dialog had returned.
+
+**Also fixed, because it was an ESLint ERROR in a file this block edits:** the signed-out sign-in
+control was an `<a>` (`@next/next/no-html-link-for-pages`), introduced with `PR1a`'s signed-out
+state and live on `main`. An anchor forces a full document reload on the way to sign-in. Now
+`next/link`.
+
+**No new dependency.** The headless test uses `fireEvent` rather than `@testing-library/user-event`,
+which is not a dependency here — and a new one needs its justification written first.
+
+**Observed, not ticked:** on the dev build the rendered rail contains **zero** `/channel/*` or
+`/study/*` hrefs and no horizontal overflow. Observation is not the check.
+
+---
 
 ### `PR1b` — Prayer journal: the "From the tradition" rail
 
@@ -2585,6 +2668,28 @@ revisit.
 
 Anything moved out of a block during execution lands here. Pre-seeded with items deliberately
 deferred at planning time.
+
+### Filed 2026-08-08 by the owner's post-deploy extension verification
+
+Recorded **verbatim** as filed. None investigated, none fixed — they are queue items, not findings
+this session closed.
+
+> post-deploy 503s in minute one (18/18 clean after — watch tomorrow); /home hydration blocks ~30s
+> on heavy devotional page — client bundle review; /api/prayers updates are POST-to-collection not
+> PATCH-on-resource — works, unusual, note for the API-style pass.
+
+Notes on disposition only, added without altering the text above:
+
+- **The 503s have a one-day clock on them.** "18/18 clean after" is the reassuring half; a
+  cold-start burst in minute one is the ordinary explanation and it is not the only one. If they
+  recur tomorrow *without* a deploy, the cause is not cold start and the item changes character.
+- **`/home` at ~30s is the largest live performance defect on the board** and is a client-bundle
+  question, not a retrieval one — so it is independent of the accuracy bar and can be worked
+  without an eval.
+- **The `/api/prayers` shape is mine** (`PR1a`): a single `POST` to the collection carrying
+  `kind: 'create' | 'update' | 'delete'` rather than `PATCH`/`DELETE` on `/api/prayers/[id]`. It
+  works and is tested; it is unusual, and it belongs in an API-style pass rather than a one-off
+  correction, because changing it in isolation would leave this the only route shaped that way.
 
 ### Filed 2026-08-08 — RATE LIMITER RE-WIRE: **STOPPED**, cannot be done without redesign
 

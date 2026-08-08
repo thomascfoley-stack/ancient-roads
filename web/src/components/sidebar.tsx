@@ -522,21 +522,25 @@ function StudySectionView({
       )}
       {section.items.length === 0 && !addingItem && <SectionEmptyState id={section.id} />}
       {section.items.map((item) => {
-        const href =
-          section.kind === 'channels' ? `/channel/${item.id}` : `/study/${item.id}`;
+        // PR1c item 1. These items belong to sections a reader created before `N4` retired the
+        // concept, and BOTH old destinations are dead: `/channel/[id]` redirects to `/prayers`,
+        // and `/study/[id]` is still a `ComingSoon` placeholder — the same fake door `N4` closed,
+        // one branch of this ternary over.
+        //
+        // They resolve to `/prayers` rather than being made inert, because that is TRUE and not
+        // merely convenient: `PR1a`'s first-launch carry-forward already migrated these items into
+        // the prayer journal, so the journal genuinely contains what the reader is clicking.
+        const href = '/prayers';
         return (
           <SidebarLink
             key={item.id}
             href={href}
             icon={
-              section.kind === 'channels' ? (
-                <span className="text-stone-500 dark:text-stone-400">#</span>
-              ) : (
-                <span
-                  className="inline-block h-2 w-2 rounded-full"
-                  style={{ backgroundColor: dotColor(item.id) }}
-                />
-              )
+              // The `#` glyph was the channel concept's; it is retired with it.
+              <span
+                className="inline-block h-2 w-2 rounded-full"
+                style={{ backgroundColor: dotColor(item.id) }}
+              />
             }
             label={item.name}
             active={pathname === href}

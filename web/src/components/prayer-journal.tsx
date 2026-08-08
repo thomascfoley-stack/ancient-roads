@@ -19,6 +19,9 @@
 // editing rather than reading.
 
 import { useEffect, useState } from 'react';
+// `Link`, not `<a>`: an anchor here forces a full document reload on the way to sign-in and was a
+// lint ERROR (@next/next/no-html-link-for-pages), introduced with the signed-out state in PR1a.
+import Link from 'next/link';
 import { formatVerseId } from '@bible/verse-id';
 import { verseHref } from '@/lib/verse-link';
 import { DISPLAY_LOCALE } from '@/lib/locale';
@@ -45,6 +48,7 @@ export function PrayerJournal({ initialVerseId = null }: { initialVerseId?: numb
   const [error, setError] = useState<string | null>(null);
   const [carried, setCarried] = useState(0);
   const [signedOut, setSignedOut] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const { data: session } = authClient.useSession();
 
   const load = async () => {
@@ -189,14 +193,40 @@ export function PrayerJournal({ initialVerseId = null }: { initialVerseId?: numb
         <p className="mt-6 text-xs text-stone-400 dark:text-stone-500">{when(open.created_at)}</p>
         {error && <p role="alert" className="mt-3 text-sm text-red-800 dark:text-red-200">{error}</p>}
         <div className="mt-5 flex items-center gap-4">
+          {/* PR1c item 2. This was `window.confirm`, which froze the renderer for 60+ seconds
+              during verification and is impassable to automation and to assistive tech — a modal
+              that blocks the main thread is an outage with a button on it.
+              The confirmation is REPLACED, not removed: deleting someone's prayer on one
+              unguarded click would be worse than the dialog was. Two steps, in-page, focusable,
+              and cancellable — and the destructive step is the one that has to be sought out. */}
           <button onClick={() => { setDraft(open.body); setEditing(true); }} className="inline-flex min-h-[44px] items-center text-sm text-stone-600 hover:text-accent-700 dark:text-stone-300">Edit</button>
-          <button
-            disabled={busy}
-            onClick={() => { if (window.confirm('Delete this prayer?')) void write({ kind: 'delete', id: open.id }, () => setOpen(null)); }}
-            className="inline-flex min-h-[44px] items-center text-sm text-stone-500 hover:text-red-800 disabled:opacity-40 dark:text-stone-400"
-          >
-            Delete
-          </button>
+          {confirmingDelete ? (
+            <span className="flex items-center gap-3" role="group" aria-label="Confirm delete">
+              <span className="font-serif text-sm text-stone-600 dark:text-stone-300">Delete this prayer?</span>
+              <button
+                autoFocus
+                onClick={() => setConfirmingDelete(false)}
+                className="inline-flex min-h-[44px] items-center text-sm text-stone-600 hover:text-accent-700 dark:text-stone-300"
+              >
+                Keep
+              </button>
+              <button
+                disabled={busy}
+                onClick={() => void write({ kind: 'delete', id: open.id }, () => { setConfirmingDelete(false); setOpen(null); })}
+                className="inline-flex min-h-[44px] items-center text-sm font-medium text-red-800 disabled:opacity-40 dark:text-red-300"
+              >
+                {busy ? 'Deleting…' : 'Delete'}
+              </button>
+            </span>
+          ) : (
+            <button
+              disabled={busy}
+              onClick={() => setConfirmingDelete(true)}
+              className="inline-flex min-h-[44px] items-center text-sm text-stone-500 hover:text-red-800 disabled:opacity-40 dark:text-stone-400"
+            >
+              Delete
+            </button>
+          )}
         </div>
       </div>
     );
@@ -221,12 +251,12 @@ export function PrayerJournal({ initialVerseId = null }: { initialVerseId?: numb
       )}
       {/* Signed out: an invitation, not an alarm and not a button that would fail on POST. */}
       {signedOut ? (
-        <a
+        <Link
           href="/auth/sign-in"
           className="mt-5 inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-medium text-stone-50 transition-colors ease-gentle hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
         >
           Sign in to keep a prayer journal
-        </a>
+        </Link>
       ) : (
         <button
           onClick={() => { setDraft(''); setComposing(true); }}
@@ -251,7 +281,7 @@ export function PrayerJournal({ initialVerseId = null }: { initialVerseId?: numb
           {prayers.map((p) => (
             <li key={p.id}>
               <button
-                onClick={() => { setOpen(p); setEditing(false); }}
+                onClick={() => { setOpen(p); setEditing(false); setConfirmingDelete(false); }}
                 className="block w-full rounded-xl bg-paper px-4 py-3 text-left shadow-paper transition-colors ease-gentle hover:bg-stone-100/70 dark:bg-stone-900/70 dark:hover:bg-stone-800"
               >
                 {p.verse_id !== null && (
