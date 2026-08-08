@@ -1,5 +1,56 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-07 — UX remediation `INSTR`: the plan write is a missing GRANT, not an auth fault
+
+Branch `fix/INSTR`. **Diff is docs only** — that is the block's own exit test. Live authenticated
+session against production, owner-authorised, owner-typed passwords, writes authorised in advance.
+Evidence: [`docs/evidence/instr-2026-08-07/README.md`](docs/evidence/instr-2026-08-07/README.md).
+
+**The sequencing question is answered: `500`, 5/5 → `L2` is INDEPENDENT of the auth migration.**
+The deck's auth-scope hypothesis is dead, and so is the 404 hypothesis `R0` raised — a control
+with an unknown plan UUID *also* returns 500, so `store.ts:300` is never reached; the query throws
+before it can return zero rows. A second control (`dayIndex: 999` → clean `400`) proves the arms
+are distinguishable rather than assuming it.
+
+**Root cause, from a log line that already existed and was already firing:**
+`permission denied for table plan_days`. Migration `032` (H15) narrowed the schema default to
+SELECT + INSERT — `ALTER DEFAULT PRIVILEGES … REVOKE UPDATE, DELETE ON TABLES FROM app_runtime` —
+and migration `039` then created **both** `plans` and `plan_days` while declining to grant
+anything, citing `016`'s "migration 001 grants full DML, so no new GRANT is needed". **039 > 032.
+The cited comment was true when 016 wrote it and false by the time 039 relied on it.** 032 existed
+precisely because "a human remembering a per-table REVOKE has already failed twice"; the very next
+table-creating migration failed in the mirror image, by citing a documented fact forward instead of
+re-reading the current state. Nothing checks that a migration's premise still holds.
+
+**A second defect neither audit found:** `Delete plan` is broken the same way —
+`permission denied for table plans`. Predicted from the migration reading, then confirmed live.
+Create and read work because INSERT and SELECT were never revoked, which is exactly why this hid.
+
+**Ask did not reproduce.** 2/2 attempts succeeded, with the recorder armed *before* submit rather
+than after — the mistake that retracted A7's X1. Both ended in a composed, attributed answer; the
+question was never lost, no unmount fired, zero console errors. What did show up is **latency:
+~104s and ~58s** against the block's stated 18s/45s, which undercuts `L1b`'s 15s threshold by 5×.
+
+### NOT DONE / UNVERIFIED
+
+- **`L2` is BLOCKED, not ready.** Its fix is a **production GRANT migration** — owner-gated
+  (`AGENTS.md`) and a section 0.4 stop condition. It is not the client-side block the spec assumes.
+  Status board updated to `!`.
+- **`INSTR`'s Ask `BROWSER` check cannot be marked.** No failure mode fired, so there is nothing to
+  record. Marked as having no answer rather than as a pass — a check that did not run is not green.
+- **The silent-reset mechanism remains unobserved and unexplained.** n=2 against the deck's n=3, on
+  a different day and account. Not a refutation.
+- **Ask findings are about `b4f2a96`, not HEAD.** `ask-client.tsx` differs by +81 lines and
+  `RetryButton` occurs 0× in the deployed build. Re-run after the next deploy.
+- **Production is left with an artifact I cannot remove.** Plan `40e1a8fb-4da5-4307-82d5-7c84f9111a03`
+  ("rom in 3 weeks") on the test account: the promised cleanup is impossible because `Delete plan`
+  is one of the two broken operations. It becomes deletable when the grant lands.
+- **`/api/health` returns `sha: null`**, so the deployed build does not identify itself. The
+  staleness claim rests on the deploy receipt plus a file diff, not on a live measurement.
+- **`npm run audit` NOT RUN** (no dev `DATABASE_URL`). No product code changed.
+- New, in neither audit and filed to the Backlog: **production CSP blocks the Google Fonts
+  stylesheet on every page load**, so the app renders in fallback faces.
+
 ## 2026-08-07 — UX remediation block `R0`: recon only, no product code
 
 `docs/UX_REMEDIATION.md` (owner-supplied, v1.3 — 19 blocks over 5 waves) was written from

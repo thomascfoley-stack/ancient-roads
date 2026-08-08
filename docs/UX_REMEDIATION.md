@@ -177,10 +177,10 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | Wave | Block | Title | Status |
 |---|---|---|---|
 | 0 | `R0` | Repo reconnaissance — fill in before any work | `x` |
-| 1 | `INSTR` | Instrument both loops before touching them | `-` |
+| 1 | `INSTR` | Instrument both loops before touching them | `x` |
 | 1 | `L1` | Ask — guarantee a terminal state, never lose the question | `-` |
 | 1 | `L1b` | Ask — set an expectation for the wait | `-` |
-| 1 | `L2` | Plan progress write must succeed | `-` |
+| 1 | `L2` | Plan progress write must succeed | `!` |
 | 1 | `L2c` | Human-readable plan names, correctly localised dates | `-` |
 | 2 | `N1` | Rename sweep — strings only, no route changes | `-` |
 | 2 | `N2` | Sidebar must reveal it has more in it | `-` |
@@ -452,7 +452,7 @@ return tomorrow. Currently breaks at the same step: `Mark as read` returns
 
 ### `INSTR` — Instrument both loops before touching them
 
-**Wave:** 1 · **Severity:** Prerequisite · **Depends on:** `R0` · **Blocks:** `L1`, `L2` (informs, does not gate) · **Status:** `[ ]`
+**Wave:** 1 · **Severity:** Prerequisite · **Depends on:** `R0` · **Blocks:** `L1`, `L2` (informs, does not gate) · **Status:** `[x]` **done 2026-08-07**
 
 **Observed**
 
@@ -481,11 +481,11 @@ N/A. This is the block that produces causes.
 
 **Exit test**
 
-- [ ] `AGENT` The failing HTTP status and response body for the plan progress write are pasted into the Findings log.
-- [ ] `BROWSER` For Ask, you can state which failure mode fired and at which of the three stages the request died.
-- [ ] `AGENT` Both failures are reproducible by a second person following steps written in the Findings log.
-- [ ] `AGENT` No user-visible change shipped in this block.
-- [ ] `AGENT` **The sequencing question below is answered in writing.**
+- [x] `AGENT` The failing HTTP status and response body for the plan progress write are pasted into the Findings log.
+- [ ] `BROWSER` For Ask, you can state which failure mode fired and at which of the three stages the request died. **CANNOT BE MARKED — 2/2 attempts SUCCEEDED, so no failure mode fired. Not a pass; the check has no answer to record.**
+- [x] `AGENT` Both failures are reproducible by a second person following steps written in the Findings log. **Plan write only** — steps in the evidence README §6. The Ask failure was not reproduced at all.
+- [x] `AGENT` No user-visible change shipped in this block. Diff is docs only.
+- [x] `AGENT` **The sequencing question below is answered in writing.** 500 → server fault → `L2` independent of the auth migration.
 
 > **This block decides an ordering question, so do not skip it.** The audit deck hypothesised
 > that the plan-write failure is an *auth-scope* fault. If that is true, an auth migration is
@@ -500,7 +500,82 @@ N/A. This is the block that produces causes.
 
 **Findings log**
 
-> _(write here — this is the primary deliverable of this block)_
+> **Completed 2026-08-07** on `fix/INSTR`. Full capture, controls and repro steps:
+> [`docs/evidence/instr-2026-08-07/README.md`](../evidence/instr-2026-08-07/README.md).
+> Live authenticated session on production; owner authorised the session and the writes and typed
+> both passwords. **Build under test `b4f2a96`** — 6 commits behind HEAD. The three plan files and
+> the ask stream route are byte-identical to HEAD, so the plan findings are exact; `ask-client.tsx`
+> is not, so the Ask findings are about the deployed build only.
+>
+> ### The sequencing question — ANSWERED: `500`, therefore `L2` is INDEPENDENT of the auth migration
+>
+> `POST /api/plans/<id>` `{"kind":"day","dayIndex":1,"completed":true}` → **`500 INTERNAL`, 5/5**.
+> The deck's auth-scope hypothesis is killed, and so is `R0`'s 404 hypothesis: a control with an
+> unknown plan UUID **also** returns 500 rather than 404, so `store.ts:300` is never reached — the
+> query throws before it can return zero rows. A second control (`dayIndex: 999`) returns a clean
+> `400 INVALID_REQUEST`, proving the arms are genuinely distinguishable rather than assumed to be.
+>
+> ### ⚠ STOP-AND-REPORT — the root cause is not what `L2` hypothesises, and the fix is not client-side
+>
+> Vercel runtime logs: **`plan day toggle error: permission denied for table plan_days`**. Not RLS,
+> not auth, not validation — a **missing `GRANT`**.
+>
+> `db/migrations/032_...:49` (finding H15) narrowed the schema default to SELECT + INSERT:
+> `ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE UPDATE, DELETE ON TABLES FROM app_runtime`.
+> `db/migrations/039_...:61-62` then created **both** `plans` and `plan_days` and declined to grant
+> anything, on the stated grounds that *"Migration 001's ALTER DEFAULT PRIVILEGES grants
+> app_runtime full DML … so no new GRANT is needed (016:33-38 records this)."* **039 > 032. That
+> comment was true when 016 wrote it and false by the time 039 cited it.** Both tables were born
+> without UPDATE or DELETE.
+>
+> `INSTR`'s "add four log lines" step was **not needed for this loop** — the `console.error` at
+> `route.ts:59` already existed and was already firing. Adding server logging would have required a
+> gated production deploy before it could be read.
+>
+> ### A second defect neither audit found: `Delete plan` is broken the same way
+>
+> `DELETE /api/plans/<id>` → **500**, `plan delete error: permission denied for table plans`.
+> Predicted from the migration reading, then confirmed. Create and read work because INSERT and
+> SELECT were never revoked. `plan_day_readings` (migration 042) is also post-032 and should be
+> assumed affected until measured.
+>
+> **Consequence for `L2`:** its minimal-change step 1 ("fix the endpoint") is a **database
+> permission migration against production**, which is an owner-gated operation (`AGENTS.md`) and a
+> section 0.4 stop condition. Step 2 (optimistic toggle) is cosmetic until that lands. `L2` should
+> not be worked as a client-side block.
+>
+> ### Production is left with one artifact that cannot be removed
+>
+> Plan `40e1a8fb-4da5-4307-82d5-7c84f9111a03`, `rom in 3 weeks`, on the test account. The cleanup
+> promised when the writes were authorised **cannot be honoured, because `Delete plan` is one of
+> the two broken operations.** It becomes deletable when the grant is fixed, and deleting it is the
+> natural first check that the fix works.
+>
+> ### Ask — the deck's failure did NOT reproduce
+>
+> **2/2 succeeded** against `b4f2a96`, with the recorder armed *before* submit (`window.onerror`,
+> `unhandledrejection`, wrapped `console.error`, and a `MutationObserver` watching for the turn list
+> emptying). Both ended in a composed, attributed answer. The question was never lost; no unmount
+> fired; zero console errors.
+>
+> **So neither documented failure mode fired, and the block's `BROWSER` check cannot be marked.**
+> This is not a refutation of the deck — different day, account and questions, n=2 against their
+> n=3 — and the silent-reset mechanism remains unobserved and unexplained.
+>
+> What did show up is **latency: ~104s and ~58s**, with `Refining the answer (attempt 2)…` visible
+> at 71s on the first. That materially undercuts `L1b`, whose premise is "~18s success, ~45s
+> failure" and whose remedy is one line after 15s — aimed at a wait less than a fifth of what was
+> measured. And production carries **no retry control at all** (`RetryButton` occurs 0× in
+> `b4f2a96`, 3× at HEAD), so `L1`'s step 4 is already written and merely undeployed.
+>
+> ### Captured in passing
+>
+> `L2b` confirmed live (builder opens at 40 reading days with `Create plan` disabled). `L2c` title
+> confirmed live (`"title":"rom in 3 weeks"`). `L2c` dates rendered correctly for `en-US`
+> (`Fri, Aug 7`), consistent with v1.1's client-locale correction; the `zh-CN` leg was not run.
+> **New, in neither audit:** production CSP blocks the Google Fonts stylesheet on every page load
+> (`style-src 'self' 'unsafe-inline'`), so EB Garamond, Literata and Source Sans 3 never load and
+> the app renders in fallback faces. Filed to section 9 — it is not a remediation finding.
 
 ---
 
@@ -604,7 +679,7 @@ That is the entire block.
 
 ### `L2` — Plan progress write must succeed
 
-**Wave:** 1 · **Severity:** P0 Critical · **Depends on:** `INSTR` · **Blocks:** — · **Status:** `[ ]`
+**Wave:** 1 · **Severity:** P0 Critical · **Depends on:** `INSTR` · **Blocks:** — · **Status:** `[!]` **BLOCKED — needs an owner-gated production GRANT migration; see INSTR**
 
 **Observed** — reported by the audit deck; not independently verified
 
@@ -1574,6 +1649,15 @@ Each row is a block whose "reuse the existing X" premise `R0` killed. The estima
 | Reader loading skeleton | `S2` old item 2 (struck) | The reader already has `ChapterSkeleton`, purpose-built to mirror `VerseDisplay`'s box. The Library "component" is a route-convention `loading.tsx`. | **Zero. Already done.** Mark the item done in the sweep with this note; doing it as written regresses layout shift. |
 | Work TOC section titles | `S2` item 7 | Item 8's own conditional resolves to "do not fake it": `work-toc.tsx:205-208` chunks one work into `Part N` slices whose headings are all one title plus `(i/n)`. No per-chunk titles exist in the data. | **Out of `S2` entirely.** This is a corpus/ingestion change (real section boundaries at ingest), owned by the ingestion pipeline and governed by the `quality-slice` skill. Not a UI fix at any size. |
 | `S2` old items 9, 10 and 11 (struck) | `S2` | **Missing from the document.** Heading says 11 fixes, status board says 13, table lists 10 (1-8, 12, 13). The v1.2 changelog only records adding 12-13, so these were not renumbered away. | **Unknown — owner input required.** `S2` cannot satisfy its own "nothing silently dropped" exit test until these are recovered or explicitly struck. |
+
+### Filed by `INSTR` — 2026-08-07
+
+| Item | Block | Reason |
+|---|---|---|
+| **Production CSP blocks the webfonts** | `INSTR`, in passing | Every page load logs `Loading the stylesheet 'https://fonts.googleapis.com/css2?family=EB+Garamond…' violates … "style-src 'self' 'unsafe-inline'"`. EB Garamond, Literata and Source Sans 3 never load in production; the app renders in fallback faces. **In neither audit.** Not a remediation finding — belongs to whoever owns the CSP, and the fix is a policy decision (allow the host, or self-host the fonts), not a UI change. |
+| **Audit the other post-032 tables for the same missing grant** | `INSTR` | `plan_day_readings` (migration 042) was also created after 032's `ALTER DEFAULT PRIVILEGES … REVOKE UPDATE, DELETE`. Every table created after 032 needs checking against what its code actually does, not against what its migration comment claims. |
+| **A check that a migration's cited premise still holds** | `INSTR` | 039 broke two features by citing 016's "no GRANT needed" comment, which 032 had already invalidated. Nothing detects a migration reasoning from a superseded fact. This is the watchlist's hand-maintained-expected-set class in a new shape and deserves one deliberate decision rather than a fifteenth instance. |
+| **`L1b`'s 15s threshold is aimed at the wrong number** | `INSTR` | Measured 104s and 58s against the block's stated "~18s success, ~45s failure". Re-derive the threshold from real timings before building the line, or it sets an expectation the product misses by 5×. |
 
 ### Pre-seeded at planning time
 
