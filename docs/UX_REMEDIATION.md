@@ -193,7 +193,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 3 | `T4` | Settings that follow the user; an account section | `-` |
 | 4 | `S1` | Landing page — show the product | `-` |
 | 4 | `S2` | Polish sweep — 9 small fixes, one branch | `~` |
-| 5 | `PR1a` | Prayer journal — the space and the entity | `-` |
+| 5 | `PR1a` | Prayer journal — the space and the entity | `-` ⚑ **DRAFTED, owner-review** |
 | 5 | `PR1b` | Prayer journal — "From the tradition" rail (separable) | `-` |
 | 5 | `PR2` | Compare a note with the tradition | `-` |
 
@@ -1895,7 +1895,98 @@ tool.
 
 **Findings log**
 
-> _(write here — including the T4 export-coupling decision)_
+> ## DRAFT 2026-08-08 — ⚑ **OWNER-REVIEW BEFORE EXECUTION.** Spec text only; nothing implemented.
+>
+> Drafted under the overnight brief. `N4` is blocked on this block, so its shape is now load-bearing
+> for Wave 2 as well as Wave 5.
+>
+> ### What `N4` hands over, and the trap in it
+>
+> `N4` retires Channels and this block inherits the space. **What it does NOT inherit is
+> persistence.** Measured (`R0`, re-confirmed): the Channels list lives in **`localStorage` only** —
+> `sidebar.tsx:111-122`, key `study-sections:v1:<userId>`; that file contains **no `fetch` at all**;
+> and `/api/channels` plus the `channels` table both exist and were **never called from it**. So
+> "re-frame the existing shell" describes the markup and nothing underneath it. **`PR1a` builds its
+> own persistence from zero.** Anyone estimating this block from the sidebar's appearance will be
+> wrong by the whole data layer.
+>
+> ### Persistence — Neon, and what migration 106 taught
+>
+> A `prayers` table, user-scoped, RLS default-deny keyed on `app.current_user_id` like every other
+> user table. Two things are not optional and both were paid for on 2026-08-07:
+>
+> 1. **State its GRANTs in its own migration.** `032` narrowed the schema default to SELECT+INSERT,
+>    so a new table is born unable to UPDATE or DELETE itself. `039` assumed otherwise and shipped
+>    two features that never worked for any user. A prayer must be editable and deletable, so the
+>    migration says so explicitly.
+> 2. **User ids come from Neon now** (`session.ts:21`), and `runAsUser` binds
+>    `app.current_user_id` to that value. The RLS policy is only as correct as that binding — assert
+>    it two-account, never infer it.
+>
+> ### The first-launch carry-forward (moved here from `N4` by owner ruling)
+>
+> Owner ruling: *"nothing user-created gets hidden or dropped."* Since the items are in each
+> reader's browser, the migration can only run **in the browser, once**:
+>
+> - On first load after this ships, read `study-sections:v1:<userId>`; for each item, create a prayer
+>   in Neon; then write a done-marker so it can never run twice.
+> - **Do not delete the localStorage key** in the same release. If the migration half-fails, the
+>   source is the only copy — and it is a copy nobody has a backup of. Delete it a release later,
+>   once the marker has been observed set in the wild.
+> - A reader who never returns keeps their items in localStorage indefinitely, which is the honest
+>   outcome. **This is a best-effort migration and must be described as one** — "nothing dropped"
+>   holds for anyone who comes back, and cannot hold for anyone who does not.
+>
+> ### C9 — ONE-WAY RETRIEVAL, the rule that makes this feature safe
+>
+> The prayer is the **query**, never the **corpus**. Retrieval reads *from* the library *to* the
+> user's content, never the reverse. This binds three routes, and §0.5 names the two people forget:
+>
+> 1. **Retrieval indexing** — no prayer text in any embedding, FTS index, or search corpus. Ever.
+> 2. **Error reporting** — an exception thrown inside the prayer editor must not carry prayer text
+>    in breadcrumbs, state snapshots, or a serialised request body. No error SDK is installed today
+>    (verified: zero analytics/error dependencies in `web/package.json`), so the requirement is
+>    forward-looking: **if one is ever added, the prayer surface is scrubbed before it ships.**
+> 3. **Analytics** — count and existence only. Never content, never excerpts, never length
+>    distributions fine-grained enough to fingerprint.
+>
+> ### No AI in the prayer space, and why it is structural rather than a preference
+>
+> No suggestions, completions, summaries or "insights". The product's stated position is that AI is
+> not the Holy Spirit; a product that says so cannot put a model in the prayer closet. **The absence
+> is the feature.** It is enforced by a test that the prayer module imports nothing from the AI
+> client — a code-review convention drifts, a failing import test does not.
+>
+> ### Exit tests — draft
+>
+> - `AGENT` **the prayer module's import graph contains no AI client.** Assert on the resolved
+>   imports, not on a grep for "openai" — a transitive import is the way this regresses.
+> - `AGENT` **no user content enters any index.** Assert the prayer write path issues no embedding
+>   call and touches no FTS/vector table; and that a prayer's text appears in no search result.
+> - `AGENT` a prayer is a **distinct entity**, not a note with a flag — assert `prayers` is its own
+>   table and that the notes list, passage search and the Ask corpus are all unaware of it.
+> - `AGENT` RLS holds two-account: account A cannot read, edit or delete B's prayer. Executed, not
+>   reasoned.
+> - `AGENT` the migration's GRANTs are stated and sufficient — a prayer can be edited and deleted by
+>   the app role. (The `106` lesson: prove it, do not assume the default.)
+> - `AGENT` the carry-forward runs **once** — running it twice creates no duplicates — and does not
+>   delete its source in this release.
+> - `AGENT` account export includes prayers; deletion removes them. **Verified against the
+>   database.** ⚑ Coupled to `T4`: whichever ships first must write export/delete against an
+>   *enumerable* set of user-owned entities so this registers into it rather than amending it.
+> - `BROWSER` **Pray** from John 1:1 opens a visually distinct space with the verse pinned; saving
+>   creates a prayer that survives a hard reload, reopens read-first, edits and deletes.
+>
+> ### Open questions for the owner, before execution
+>
+> 1. **Does `N4` wait for this, or ship a carry-forward-only release first?** `N4` currently cannot
+>    hide Channels without breaking "nothing dropped".
+> 2. **Sidebar label** — §2 locks `PRAYERS`. Confirm it survives contact with the actual feature.
+> 3. **Does a prayer belong to a verse, or stand alone?** The block implies verse-anchored
+>    (`Pray` from the verse panel); the journal implies a list that can outlive the verse. Both are
+>    buildable; they are different tables.
+> 4. **`S2` item 9's `Lectio` preset** is a soft dependency for the prayer space's typography, and
+>    item 9 is currently parked on a design decision.
 
 ---
 
