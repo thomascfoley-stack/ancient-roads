@@ -28,6 +28,25 @@ const button =
   'hover:bg-stone-800 disabled:opacity-60 dark:bg-stone-100 dark:text-stone-900 ' +
   'dark:hover:bg-stone-200';
 const quiet = 'text-sm text-stone-600 underline underline-offset-4 dark:text-stone-400';
+// Secondary weight against the primary submit above it: this is an alternative to the form, not
+// the form's action. Same geometry so the two read as one stack.
+const socialButton =
+  'flex w-full items-center justify-center gap-3 rounded-lg border border-stone-300 bg-white ' +
+  'px-4 py-2.5 text-base font-medium text-stone-800 transition hover:bg-stone-50 ' +
+  'disabled:opacity-60 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100 ' +
+  'dark:hover:bg-stone-900';
+
+/** Google's brand mark, inlined: the CSP here is `style-src 'self'` and blocks remote assets. */
+function GoogleMark() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+      <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62Z" />
+      <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18Z" />
+      <path fill="#FBBC05" d="M3.97 10.72a5.41 5.41 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33Z" />
+      <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.9 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58Z" />
+    </svg>
+  );
+}
 
 export function AuthForm({ path }: { path: AuthMode }) {
   const router = useRouter();
@@ -35,6 +54,34 @@ export function AuthForm({ path }: { path: AuthMode }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+
+  // GOOGLE, AND WHAT IT COSTS — stated once, here, where someone would remove it.
+  //
+  // ADR-109: enabling a social provider alongside email/password restores GHSA-g38m's
+  // precondition (attacker pre-registers the victim's address unverified; the victim's later
+  // Google sign-in auto-links onto it). Neon exposes no verified-email-before-link control -- the
+  // SDK types, the OAuth guide and the management API were all checked. The owner accepted that
+  // knowingly. This button is that decision made visible; it is not an oversight to be "fixed" by
+  // deleting it, nor a licence to add more providers.
+  //
+  // No try/finally reset of `busy` on the success path: signIn.social navigates the browser to
+  // Google, so nothing after it runs and leaving the button disabled is correct. Only the failure
+  // path re-enables it.
+  async function google() {
+    setError(null);
+    setBusy(true);
+    try {
+      const { error: err } = await authClient.signIn.social({
+        provider: 'google',
+        callbackURL: '/home',
+        errorCallbackURL: '/auth/sign-in',
+      });
+      if (err) throw new Error(err.message ?? 'Google sign-in could not be started.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Google sign-in could not be started.');
+      setBusy(false);
+    }
+  }
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -177,6 +224,22 @@ export function AuthForm({ path }: { path: AuthMode }) {
       <button type="submit" disabled={busy} className={`mt-6 ${button}`}>
         {busy ? 'Working...' : heading}
       </button>
+
+      {/* Only where an account is being entered or created. A password-reset flow has no social
+          equivalent -- Google accounts have no password here to reset. */}
+      {(path === 'sign-in' || path === 'sign-up') && (
+        <>
+          <div className="mt-6 flex items-center gap-3" aria-hidden="true">
+            <span className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
+            <span className="text-xs uppercase tracking-wide text-stone-500 dark:text-stone-400">or</span>
+            <span className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
+          </div>
+          <button type="button" onClick={google} disabled={busy} className={`mt-6 ${socialButton}`}>
+            <GoogleMark />
+            {path === 'sign-up' ? 'Sign up with Google' : 'Sign in with Google'}
+          </button>
+        </>
+      )}
 
       <div className="mt-5 flex flex-wrap justify-between gap-x-4 gap-y-2">
         {path === 'sign-in' && (

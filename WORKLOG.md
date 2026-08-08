@@ -1,5 +1,69 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-08 — Neon Auth LIVE, verified; the "broken UI" diagnosed; Google SSO added
+
+**Deployed and verified serving.** `117b64e` live on `ancientpaths.app`, deployment
+`dpl_2rsEPgzFAcGUQuvUDZFrTSb8CHfk`, receipt `deploy-117b64e-2026-08-08T06-03-08Z.txt` records
+`state: live` with the alias confirmed pointing at it. Blast radius checked against the previously
+live sha (`398a71c`): the ONLY functional changes are the four auth files; everything else in the
+range is docs.
+
+**One deploy attempt was refused first, correctly.** `web/next-env.d.ts` is tracked, and Next 16's
+build now writes an extra `import "./.next/types/root-params.d.ts"` into it — so `next build`
+dirtied the tree mid-run and deploy.sh's SECOND clean-tree check (the one that exists precisely
+because the first runs minutes earlier) blocked the upload. Committed the regenerated file, proved
+stability with a second build producing zero diff, then redeployed. Not auth-related; latent since
+the Next 16 upgrade.
+
+**Neon Auth wiring verified live, not assumed:** `GET /api/auth/get-session` on production returns
+`HTTP 200` with body `null` for a cookie-less browser — the route handler proxies to Neon and Neon
+correctly reports no session. A clean load renders the signed-out sidebar. `deploy.sh`'s env
+assertion also passed with the corrected variable list (`BETTER_AUTH_*` added, the fictional
+`NEON_AUTH_JWKS_URL` removed — it is not a field on the installed SDK and no code reads it).
+
+**Owner reported the app badly broken — it was not, and the diagnosis matters.** Symptoms: sign-out
+failing, plus dead hover, unresponsive buttons, and no text caret anywhere including the
+site-password field. Probed the live DOM: inputs are healthy (real `caret-color`, `pointerEvents:
+auto`, `topElementIsSelf: true` — nothing overlaying them). **The cause is a native `alert()`, which
+makes the whole page behind it inert.** [`sidebar.tsx:202`](web/src/components/sidebar.tsx:202)
+fires `alert('Sign out failed. You are still signed in.')` when `signOut()` errors — which it does
+for a browser holding a **pre-cutover Better Auth cookie** that Neon Auth does not recognise. So one
+stale cookie produced four apparent defects, three of them illusory.
+
+**Two REAL defects this exposed, both still OPEN (owner dismissed the fix prompt):**
+1. The sign-out trap: the alert's text is **false** (the reader is not signed in), and it leaves no
+   way out except clearing cookies manually. Correct behaviour is to clear local state and redirect
+   on failure. Affects anyone holding a pre-cutover cookie — realistically the two ADR-108 accounts.
+2. `alert()` as an error channel on a page-blocking modal is itself the hazard here; the failure
+   presented as a total UI breakage.
+
+**Google SSO added (this session's only new feature).** Owner asked for it on both forms after
+ADR-109 already ruled Google stays enabled. `signIn.social({provider:'google'})` confirmed present
+on the installed client before writing anything. Added to `auth-forms.tsx` for `sign-in`/`sign-up`
+only (a password-reset flow has no social equivalent), with an inlined Google mark because the CSP
+blocks remote assets. **Browser-verified per CLAUDE.md, not just typechecked**: renders correctly at
+desktop and 390px, no horizontal overflow (`scrollWidth == clientWidth == 390`), 46px touch target,
+`type="button"` so it cannot submit the form. Dev-server logs confirm clicking it issues
+`POST /api/auth/sign-in/social` and the route proxies correctly — it failed only against the
+deliberately-fake host used for local rendering.
+
+### NOT DONE / UNVERIFIED
+
+- **The Google flow has never reached Google.** Verified only as far as our proxy. Two owner-side
+  prerequisites are UNCHECKED and will silently break it: (a) `ancientpaths.app` must be in Neon's
+  **trusted domains** allowlist or the OAuth redirect is refused; (b) Google is on Neon's **shared
+  development keys**, which Neon's own production checklist says to replace — users will see Neon's
+  consent screen, not Ancient Paths.
+- **GHSA-g38m is now actively exercised, not merely accepted.** ADR-109 accepted the risk while no
+  button existed; this ships the button. The precondition (email/password + social, no
+  verified-email-before-link control) is now reachable by any visitor.
+- **RLS under Neon's user-id format: still unverified.** Needs a real signed-in session; no account
+  has been created under Neon Auth. Same for **rate limiting** on Neon's auth endpoints.
+- **`npm run audit` still refuses** (no dev `DATABASE_URL`). Ran instead: both typecheck configs
+  clean, and the auth invariant suites (20 tests) green.
+- Migration 104's `auth_*` tables, the Better Auth tests, and the `better-auth` package are all
+  UNTOUCHED — §10 has not run, so rollback remains `git revert` + redeploy.
+
 ## 2026-08-08 — Neon Auth cutover, §2 data measurement: STOP, real rows exist
 
 Owner confirmed the three §0 console/Vercel prerequisites are done (Enable Auth, Auth URL, both env
