@@ -203,6 +203,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 4 | `S1` | Landing page — show the product | `-` |
 | 4 | `S2` | Polish sweep — 9 small fixes, one branch | `~` |
 | 5 | `PR1a` | Prayer journal — the space and the entity | `[x]` **BUILT AND DEV-VERIFIED 2026-08-08.** RLS proven two-account over `app_runtime`; carry-forward run against the live dev DB. Migration 107 **applied to production** 2026-08-08 (owner go; verified against the catalog, identical to dev). Signed-in browser walk NOT RUN by the agent — **the owner is running it**. |
+| 5? | `F1-fonts` | Font stack blocked by our own CSP — self-host via `next/font` | `-` **SPEC'D 2026-08-08, not started. WAVE ASSIGNMENT IS AN OPEN OWNER CALL** — filed as Wave 5, which puts it OUTSIDE the §10 definition of done, yet the owner called it "the highest visual-impact item remaining". Those two cannot both be right. |
 | 5 | `PR1b` | Prayer journal — "From the tradition" rail (separable) | `-` |
 | 5 | `PR2` | Compare a note with the tradition | `-` |
 
@@ -220,7 +221,7 @@ it is. Re-measure before trusting; this was written 2026-08-08.
 | `N3c` | `x` | **RUN 2026-08-08: did not reproduce, and the mechanism is disproved** — a both-ends-bounded dead range is not a hydration abort. Unblocks `N3`. | ⚑ owner (strike `N3a`?) |
 | `N4` | `-` | **UNBLOCKED 2026-08-08** — `PR1a` shipped the destination and the carry-forward that discharges the "nothing user-created dropped" ruling. Route redirect still to do. | agent |
 | `T1` | `!` | Blocked: the metric is not instrumented and there is nowhere to count it. Deliberately deferred in §9. | ⚑ owner (schedule the prerequisite) |
-| `T2` | `-` | **RULED, not executed.** Sender fix → verification on. Runnable checklist staged below. | ⚑ owner (execute) |
+| `T2` | `~` | **STEP 2 DONE 2026-08-08, OUT OF ORDER.** Owner attested from the Neon console that `Verify at Sign-up` is ON (method: Verification code) — which closes GHSA-g38m's precondition, and is recorded in `SECURITY.md`. **But the ruling's step 1 — fix the sender — is not confirmed done, and the ruling says in terms: "Shipping in the other order converts a security fix into a signup outage."** Verification-on makes auth mail load-bearing for every new signup, and the last recorded sender state is Neon's shared `auth@mail.myneon.app`, already logged as a deliverability regression (C5). **Also still open, and it is measurable rather than arguable:** accounts already created unverified are either grandfathered or prompted — if grandfathered, the closure is partial rather than structural for exactly those accounts. `SECURITY.md` says count them; nobody has. | ⚑ owner (confirm sender; authorise the unverified-account count) |
 | `T3` | `-` | **DEVICE only**, and its step 1 appears already implemented — so the device pass is a diagnosis, not a fix. | ⚑ owner (hardware) |
 | `T4` | `-` | **HELD** on the owner seeing the `layout.tsx:82` first-paint flash. Now schedulable against the deployed build. | ⚑ owner (observe, then rule) |
 | `S1` | `-` | **Owner-blocked in substance** — three of four items are content only the owner can write. Page skeletons staged below. | ⚑ owner (supply content) |
