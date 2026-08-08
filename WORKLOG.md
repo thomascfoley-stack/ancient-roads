@@ -1,5 +1,58 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-08 (final sweep) — L1, L1b, T1 shipped; T3 code-complete; the real boundary named
+
+**`main` `636a07c` · production `af49032` · zero code commits between them.** Suite **104 files /
+694 tests** green in the deployed tree, byte-identical to `main`. Deploy verified by `vercel ls`
+(4m, ● Ready), not by the runner's own output.
+
+**Waves 1 and 2 are now materially closed** — 9 of 10 blocks, with only `N3` outstanding, and `N3`
+is blocked on `N3c` whose mechanism has been disproved twice.
+
+**`L1` — the hole was not an exception.** The `catch`, the retry and question-retention were
+already in `ask-client.tsx`. What was missing: **a stream ENDING without a terminal event.** The
+loop exits, `busy` clears, and the turn sits on `retrieving` forever — no answer, no error, no
+retry, and nothing throws so no `catch` fires. INSTR measured this endpoint at 58-104s, exactly
+where an intermediary abandons a stream.
+
+**`L1b` — the threshold was re-derived, not copied.** The block said ~15s, from a premise INSTR
+disproved (104s/58s/64s). At 15s the line fires on every request, so copy claiming an exception
+would describe the norm. **A message that is false whenever it appears is worse than no message.**
+Set to 90s — above the measured median and mean, below the observed max. **n=3, provisional.**
+
+**`T1` — the block's "already supported" claim was FALSE, and checking it was the whole value.**
+The reader parses `#v<n>` from the hash and only SCROLLS; no query params, no way to open the
+drawer from a URL. Extended the hash the effect already parses to `#v<n>:study`, reusing
+`openStudy`. A hash and not a query string deliberately: it never reaches the server, so no first
+client render can disagree with it — a `?v=` would reintroduce the hydration-mismatch shape that
+file spent an afternoon removing.
+
+### NOT DONE — and this is the boundary, not a backlog
+
+The instruction was to leave nothing undone. **Five things remain, and every one needs a person,
+not more agent time.** Naming them precisely is the honest end of this run:
+
+| | Why it is not mine |
+|---|---|
+| **`T2` step 1 — Resend sender** | A setting in the **Neon console**. No repo access reaches it. It is also the ruling's FIRST step, shipped second, so auth mail is load-bearing for every signup meanwhile |
+| **`T3` `DEVICE`** | `env(safe-area-inset-bottom)` is **0 in every desktop window**. Neither a test nor a resized browser can prove the notched case — the block says so itself. 11 inner scroll containers are listed as candidates; **which are affected IS the diagnosis**, and padding all 11 would be an unverifiable change to layouts that render correctly today |
+| **`T4`** | Needs an owner **schema ruling** (store-vs-migrate on `user_profiles`) and a production migration, plus account deletion. Held on the owner seeing the `layout.tsx:82` flash themselves |
+| **`S1`** | Three of four items are **content only the owner can write** — privacy, terms, contact, and what membership includes. Fabricating legal copy for a live product would be inventing commitments the owner has not made |
+| **HUMAN checks** | `F1-fonts` X5 (a machine **without** those fonts), signed-out `/prayers`, account-B RLS, §10's first-user observation. Each needs a second credential, a clean machine, or a person who has never seen the product |
+
+**Also still open and deliberately so:** the rate limiter (STOPPED with evidence — no plugin point
+exists on the hosted path), `N3`/`N3c`, and `S2` items 4 and 9.
+
+### Three test defects of my own, all caught by seeding, none by reading
+
+1. A retry assertion searched for `/try again|retry/i`; this product renders **"Ask again"**. It
+   failed for the wrong reason *and* made a third assertion pass **vacuously** — a query that can
+   never match is always null.
+2. A stubbed `TeacherResult` invented `{ answer, citations }` against a discriminated union that
+   has neither, so nothing rendered and the test failed for a reason unrelated to its subject.
+3. Adding `openStudy` to an effect's deps produced a React Compiler ESLint **error** because the
+   callback was defined below its use. Fixed by moving existing code, not by adding any.
+
 ## 2026-08-08 (close) — the week closed out: what shipped, what is parked, where it lives
 
 **`main` `3190f8d` · production `49b6d0a` · zero code commits between them.** Re-measured at close.
