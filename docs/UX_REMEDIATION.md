@@ -188,7 +188,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 2 | `N4` | Close the fake doors | `-` |
 | 2 | `L2b` | Plan builder must not open in an error state | `~` |
 | 3 | `T1` | First run — teach the one idea that differentiates | `!` |
-| 3 | `T2` | Sign-up basics + passive email verification | `-` |
+| 3 | `T2` | The unverified-signup trade-off, post-migration (P1) | `-` ⚑ |
 | 3 | `T3` | Mobile — tab bar must not cover scripture | `-` |
 | 3 | `T4` | Settings that follow the user; an account section | `-` |
 | 4 | `S1` | Landing page — show the product | `-` |
@@ -1332,101 +1332,83 @@ code cost of the three, least certain to help. Ship the first two, measure, then
 
 ---
 
-### `T2` — Sign-up basics and passive email verification
+### `T2` — The unverified-signup trade-off, post-migration
 
-**Wave:** 3 · **Severity:** **P1 High** (raised 2026-08-08 — was P2) · **Depends on:** — · **Blocks:** — · **Status:** `[ ]`
+**Wave:** 3 · **Severity:** **P1 High** · **Depends on:** — · **Blocks:** — · **Status:** `[ ]` ⚑ **owner decision inside**
 
-> **~~Mostly superseded (v1.1)~~ — REWRITTEN 2026-08-08, and it did not evaporate.** The migration
-> happened (Neon Auth, not Supabase; ADR-107) and Google SSO is live and verified. Two of the
-> block's asks are genuinely gone: OAuth users need no password field, so the show/hide toggle is
-> moot for them, and provider-verified emails need no banner.
->
-> **But the third ask inverted into a live security decision.** Console state, read 2026-08-08:
-> email sign-up is ON and **`Verify at Sign-up` is OFF**, while Google OAuth is live. That is
-> GHSA-g38m's full precondition assembled — an attacker registers an address they do not own,
-> unverified; the real owner later signs in with Google; the OAuth identity auto-links onto the
-> attacker's account. It was *structurally* closed under Better Auth because no OAuth existed. It
-> is now **actively exercised**, and Neon exposes no verified-email-before-link control (SDK types,
-> OAuth guide and management API all checked).
->
-> **So this block is no longer "P2, mostly moot". It carries an owner trade-off:** turning
-> `Verify at Sign-up` ON breaks the exploit precondition, at the cost of the property that stops a
-> mail outage locking out every account including the owner's. Neither is free. See WORKLOG
-> 2026-08-08 and `docs/SECURITY.md`.
->
-> **Also new, and this block's natural home:** auth mail is a REGRESSION. It now sends from Neon's
-> shared `auth@mail.myneon.app` rather than the project's Resend account with Ancient Paths
-> branding — worse recognition and deliverability on a security-critical message. Fixable in the
-> Neon console.
->
-> **Also note:** `T4`'s account-deletion requirement becomes entangled with Supabase user
-> management rather than your own records. Re-estimate `T4` once the migration lands.
+> **REWRITTEN 2026-08-08 by owner ruling.** The previous version was headed "mostly superseded — keep
+> this block only if the migration is cancelled." **The migration was not cancelled; it happened**
+> (to Neon, not Supabase — ADR-107), so by its own terms that block had struck itself. The
+> contradiction is struck rather than edited at the margins, because what survives is not what the
+> block was about.
 
-**Observed** — deck; outside the walkthrough's scope
+**Observed** — console state read 2026-08-08, and the code beneath it
 
-A 12-character minimum, clearly stated (good). No confirm-password field, no show/hide toggle,
-no email verification at any point. A mistyped address becomes a silently stranded account with
-no recovery path.
+Two of the three original asks are genuinely gone. OAuth users have no password field, so the
+show/hide toggle is moot for them; provider-verified emails need no banner. **The third inverted.**
 
-**Root cause**
+| Setting | State | Consequence |
+|---|---|---|
+| Email sign-up | **ON** | anyone can register any address |
+| `Verify at Sign-up` | **OFF** | …without owning it |
+| Google OAuth | **LIVE** | and the real owner's later Google sign-in auto-links onto that account |
 
-Verification was not built; password confirmation omitted.
+That is **GHSA-g38m's full precondition, assembled.** Under Better Auth it was closed
+*structurally* — no OAuth existed, so the exploit had no mechanism. It is now **actively
+exercised**, and Neon exposes no verified-email-before-link control (SDK types, OAuth guide and
+management API all checked, 2026-08-08).
+
+**Root cause** — not a missing feature; a setting whose two safe positions each cost something
+
+**The decision, which is the block** ⚑
+
+| Option | Closes g38m | Cost |
+|---|---|---|
+| `Verify at Sign-up` **ON** | yes — an unverified account cannot be linked onto | a mail outage locks out **every** account including the owner's, and auth mail is currently a regression (below) |
+| `Verify at Sign-up` **OFF** (today) | no | the account-takeover stays live and reachable |
+| Email sign-up **off**, OAuth only | yes — no unverified local account can exist | excludes anyone who will not use Google |
+
+**Neither of the first two is free, and the third is a product decision about who may sign up.**
+This block does not pick; it exists so the choice is made deliberately and recorded, rather than
+inherited from a console default nobody set.
+
+**Also in scope, and it makes option 1 worse than it looks**
+
+Auth mail is a **regression**. It now sends from Neon's shared `auth@mail.myneon.app` instead of the
+project's Resend account with Ancient Paths branding — worse recognition and worse deliverability on
+a security-critical message. **Verification-on depends on that mail arriving**, so fixing the sender
+is a prerequisite of option 1, not a nicety beside it. Fixable in the Neon console
+("Configure email provider").
 
 **Minimal change** — do not exceed
 
-1. A show/hide password toggle. One state variable, one input-type swap.
-2. Passive email verification: a dismissible banner after sign-up with a resend control —
-   **not** a wall blocking access.
-3. **Skip the confirm-password field.** Current practice favours show/hide over confirmation —
-   it solves the same typo problem with less friction and less code. Both is redundant.
+1. **Rule the trade-off** and record it in `docs/SECURITY.md` beside SEC-1. ⚑ owner.
+2. If option 1: fix the mail sender **first**, then turn verification on.
+3. Show/hide password toggle on the email path that remains — one state variable, one `type` swap,
+   `web/src/components/auth-forms.tsx`.
 
 **Do NOT**
 
-- **Do not block sign-in on unverified email.** That converts a recoverable annoyance into a
-  support ticket and a lost user.
-- Do not build full account recovery here. Verification is the prerequisite; recovery belongs
-  with `T4`.
+- Do not turn verification on before the mail sender is fixed. That converts a security improvement
+  into a lockout.
+- Do not add a confirm-password field. Show/hide solves the same typo with less friction; both is
+  redundant.
+- Do not treat this as shipped because OAuth works. Google working is what *created* the exposure.
 
 **Exit test**
 
-- [ ] `BROWSER` Signing up with a mistyped address produces a visible banner with a working resend.
-- [ ] `BROWSER` The show/hide toggle works on both sign-up and sign-in.
-- [ ] `BROWSER` An unverified user can still fully use the product.
+- [ ] ⚑ `OWNER` The trade-off is ruled and recorded in `docs/SECURITY.md` with its date and reason.
+- [ ] `AGENT` The chosen console state is asserted from the app where code can see it — and where it
+      cannot, the doc says so rather than implying a test covers it.
+- [ ] `BROWSER` The show/hide toggle works on sign-in and sign-up.
+- [ ] `BROWSER` If verification is on: a new account receives the mail, from the branded sender, and
+      can still reach the product before verifying.
 
 **Findings log**
 
-> ## RECON 2026-08-08 — docs only, no code, no test files.
->
-> **Two of the three asks are gone; the third inverted into a live security decision** (already
-> recorded above and in `docs/SECURITY.md`). Verified against the tree:
->
-> | Ask | Status |
-> |---|---|
-> | Show/hide password toggle | **Moot for OAuth users** — `auth-forms.tsx:74` calls `authClient.signIn.social`, and Google SSO is live and owner-verified. Still relevant for the email/password path, which remains. |
-> | Confirm-password field | **Already correctly skipped** — the block itself rules it out in favour of show/hide, and nothing added one. |
-> | Passive email verification banner | **INVERTED.** Console state read 2026-08-08: email sign-up ON, `Verify at Sign-up` **OFF**, Google OAuth live. That assembles GHSA-g38m's precondition. Not a banner question any more; an owner trade-off between the exploit and the no-lockout property. |
->
-> **Call sites, so a future session need not hunt.** All five auth actions go through one module,
-> `@/lib/auth/client`, and are called only from `web/src/components/auth-forms.tsx`:
-> `signIn.social` (`:74`), `signIn.email` (`:96`), `signUp.email` (`:110`),
-> `requestPasswordReset` (`:122`), `resetPassword` (`:135`). A show/hide toggle is one state
-> variable and one `type` swap in that single file.
->
-> **Contradiction in the block, flagged (L2b precedent):** its own header says "keep the block below
-> only if the migration is cancelled." The migration was **not** cancelled — it happened, to Neon
-> rather than Supabase — so by its own terms most of the block should be struck. But the security
-> inversion is new and does not belong to the migration, so the block cannot simply be deleted
-> either. **It needs re-writing around the one live question, not editing at the margins.** Deferred
-> to the owner; recon does not restructure blocks (brief, Part 2).
->
-> **Exit-test skeleton** (for whoever executes; not written as files):
-> - `AGENT` no social provider is configured beyond the one deliberately enabled — assert against
->   the client module, since under Neon this is a console toggle and code cannot see the console.
-> - `BROWSER` show/hide works on sign-in and sign-up.
-> - `BROWSER` an unverified user can still use the product.
-> - ⚑ `OWNER` the `Verify at Sign-up` trade-off is ruled and recorded in `SECURITY.md`.
-
----
+> Call sites for whoever executes: all five auth actions go through `@/lib/auth/client` and are
+> called only from `web/src/components/auth-forms.tsx` — `signIn.social` `:74`, `signIn.email` `:96`,
+> `signUp.email` `:110`, `requestPasswordReset` `:122`, `resetPassword` `:135`.
 
 ### `T3` — Mobile: tab bar must not cover scripture
 
@@ -1600,6 +1582,13 @@ transfer.
 > (`session.ts:21`). Any prefs row keyed on a user id inherits whatever id format Neon issues, and
 > `runAsUser` sets `app.current_user_id` from that same value — so a prefs table is only as correct
 > as that binding, which is worth asserting rather than assuming.
+>
+> ### ⚑ RULED 2026-08-08: HELD until the owner has seen the first-paint flash in the browser pass
+>
+> The store-vs-migrate choice is **deliberately not made yet.** Option B's real cost is the
+> `layout.tsx:82` flash — a server-held theme is correct one render *after* paint — and that is a
+> thing to judge with eyes, not from a description. `T4` stays `-` and this block does not start
+> until that observation exists. **A held decision, not a forgotten one.**
 >
 > ### Three options, costs measured — ⚑ the choice is the owner's
 >
@@ -1982,9 +1971,12 @@ tool.
 > 1. **Does `N4` wait for this, or ship a carry-forward-only release first?** `N4` currently cannot
 >    hide Channels without breaking "nothing dropped".
 > 2. **Sidebar label** — §2 locks `PRAYERS`. Confirm it survives contact with the actual feature.
-> 3. **Does a prayer belong to a verse, or stand alone?** The block implies verse-anchored
->    (`Pray` from the verse panel); the journal implies a list that can outlive the verse. Both are
->    buildable; they are different tables.
+> 3. ~~Does a prayer belong to a verse, or stand alone?~~ **RULED 2026-08-08: a prayer STANDS ALONE,
+>    with an OPTIONAL verse reference. ONE table.** So `verse_id` is nullable, the journal lists
+>    prayers whether or not they carry one, and a prayer outlives the verse that prompted it. Two
+>    consequences to hold on to while building: the `Pray` action from the verse panel *populates*
+>    that reference rather than requiring it, and deleting or re-versioning a passage must never
+>    cascade into a prayer — the reference is a pointer, not ownership.
 > 4. **`S2` item 9's `Lectio` preset** is a soft dependency for the prayer space's typography, and
 >    item 9 is currently parked on a design decision.
 
@@ -2134,7 +2126,7 @@ Each row is a block whose "reuse the existing X" premise `R0` killed. The estima
 
 | Item | Block | Reason |
 |---|---|---|
-| **Instrument drawer-open, and somewhere to count it** | `T1` | `T1`'s metric ("% of new accounts opening a verse drawer in their first session") has no event, no analytics pipeline, no session grouping and no aggregation — `logEvent` is one `console.log` into Vercel runtime logs that nothing consumes. `T1` is blocked on this: its own exit checks require the metric instrumented AND a pre-change baseline, and shipping first destroys the comparison. Scope is small (one event at the drawer-open call site) but the *aggregation* half is a real decision — an analytics vendor is a dependency, and §0.5's C9 constrains what may ever be sent. |
+| **Instrument drawer-open, and somewhere to count it** ⚑ **DEFERRED DELIBERATELY 2026-08-08** — owner ruling: parked here on purpose, not lost. `T1` stays `!` until it is picked up. | `T1` | `T1`'s metric ("% of new accounts opening a verse drawer in their first session") has no event, no analytics pipeline, no session grouping and no aggregation — `logEvent` is one `console.log` into Vercel runtime logs that nothing consumes. `T1` is blocked on this: its own exit checks require the metric instrumented AND a pre-change baseline, and shipping first destroys the comparison. Scope is small (one event at the drawer-open call site) but the *aggregation* half is a real decision — an analytics vendor is a dependency, and §0.5's C9 constrains what may ever be sent. |
 
 ### Pre-seeded at planning time
 
