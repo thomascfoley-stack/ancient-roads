@@ -1088,7 +1088,7 @@ Only now is there something worth teaching: a renamed, consistent, discoverable 
 
 ### `T1` — First run: teach the one idea that differentiates
 
-**Wave:** 3 · **Severity:** P1 High · **Depends on:** `N1`, `N3`, **auth migration** · **Blocks:** — · **Status:** `[ ]`
+**Wave:** 3 · **Severity:** P1 High · **Depends on:** `N1`, `N3` · **Blocks:** — · **Status:** `[ ]` — **auth dependency CLEARED 2026-08-08: the Neon Auth cutover is live.** The post-sign-up redirect is now one literal: `callbackURL: '/home'` at `web/src/components/auth-forms.tsx:76`. That is the line this block changes.
 
 > **Sequencing (v1.1).** If the auth migration to Supabase/OAuth is going ahead, it must land
 > **before** this block. `T1` changes the post-sign-up redirect; building it against the current
@@ -1146,14 +1146,30 @@ code cost of the three, least certain to help. Ship the first two, measure, then
 
 ### `T2` — Sign-up basics and passive email verification
 
-**Wave:** 3 · **Severity:** P2 Medium · **Depends on:** **auth migration** · **Blocks:** — · **Status:** `[ ]`
+**Wave:** 3 · **Severity:** **P1 High** (raised 2026-08-08 — was P2) · **Depends on:** — · **Blocks:** — · **Status:** `[ ]`
 
-> **Mostly superseded (v1.1).** If auth migrates to Supabase with Google/Microsoft OAuth, most
-> of this block evaporates: provider-verified emails delete the verification banner, and no
-> password field deletes the show/hide toggle. **What remains:** a magic-link option for users
-> who will not use OAuth, and the stranded-account recovery path. Fold those into the auth
-> migration rather than doing this work twice. Keep the block below only if the migration is
-> cancelled.
+> **~~Mostly superseded (v1.1)~~ — REWRITTEN 2026-08-08, and it did not evaporate.** The migration
+> happened (Neon Auth, not Supabase; ADR-107) and Google SSO is live and verified. Two of the
+> block's asks are genuinely gone: OAuth users need no password field, so the show/hide toggle is
+> moot for them, and provider-verified emails need no banner.
+>
+> **But the third ask inverted into a live security decision.** Console state, read 2026-08-08:
+> email sign-up is ON and **`Verify at Sign-up` is OFF**, while Google OAuth is live. That is
+> GHSA-g38m's full precondition assembled — an attacker registers an address they do not own,
+> unverified; the real owner later signs in with Google; the OAuth identity auto-links onto the
+> attacker's account. It was *structurally* closed under Better Auth because no OAuth existed. It
+> is now **actively exercised**, and Neon exposes no verified-email-before-link control (SDK types,
+> OAuth guide and management API all checked).
+>
+> **So this block is no longer "P2, mostly moot". It carries an owner trade-off:** turning
+> `Verify at Sign-up` ON breaks the exploit precondition, at the cost of the property that stops a
+> mail outage locking out every account including the owner's. Neither is free. See WORKLOG
+> 2026-08-08 and `docs/SECURITY.md`.
+>
+> **Also new, and this block's natural home:** auth mail is a REGRESSION. It now sends from Neon's
+> shared `auth@mail.myneon.app` rather than the project's Resend account with Ancient Paths
+> branding — worse recognition and deliverability on a security-critical message. Fixable in the
+> Neon console.
 >
 > **Also note:** `T4`'s account-deletion requirement becomes entangled with Supabase user
 > management rather than your own records. Re-estimate `T4` once the migration lands.
