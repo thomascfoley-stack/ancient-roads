@@ -197,13 +197,13 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 2 | `N4` | Close the fake doors | `x` **DONE 2026-08-08.** Channels → Prayer journal (links to shipped `PR1a`), Study Partners retired, `New section` removed, `/channel/[id]` redirects. 7 seeds red. `BROWSER` checks unticked. |
 | 2 | `L2b` | Plan builder must not open in an error state | `x` |
 | 3 | `T1` | First run — teach the one idea that differentiates | `!` |
-| 3 | `T2` | Verify-at-signup ON (both methods kept) — RULED, sender fix first | `-` |
+| 3 | `T2` | Verify-at-signup ON (both methods kept) — RULED, sender fix first | `~` **STEP 2 DONE 2026-08-08** (owner turned `Verify at Sign-up` ON; prod re-measured 1 account / 0 unverified, so g38m's closure is structural for the current population). **Step 1 — the Resend sender — is OUTSTANDING and was the ruling's FIRST step**: verification-on makes auth mail load-bearing for every signup, and it currently leaves Neon's shared `auth@mail.myneon.app`. Console work, owner-only. |
 | 3 | `T3` | Mobile — tab bar must not cover scripture | `-` |
 | 3 | `T4` | Settings that follow the user; an account section | `-` |
 | 4 | `S1` | Landing page — show the product | `-` |
 | 4 | `S2` | Polish sweep — 9 small fixes, one branch | `~` |
 | 5 | `PR1a` | Prayer journal — the space and the entity | `[x]` **BUILT AND DEV-VERIFIED 2026-08-08.** RLS proven two-account over `app_runtime`; carry-forward run against the live dev DB. Migration 107 **applied to production** 2026-08-08 (owner go; verified against the catalog, identical to dev). Signed-in browser walk NOT RUN by the agent — **the owner is running it**. |
-| 5? | `F1-fonts` | Font stack blocked by our own CSP — self-host via `next/font` | `-` **SPEC'D 2026-08-08, not started. WAVE ASSIGNMENT IS AN OPEN OWNER CALL** — filed as Wave 5, which puts it OUTSIDE the §10 definition of done, yet the owner called it "the highest visual-impact item remaining". Those two cannot both be right. |
+| 5? | `F1-fonts` | Font stack blocked by our own CSP — self-host via `next/font` | `x` **DONE AND LIVE 2026-08-08** (`1bb5c3c`, deployed in `8eb2bd3`). Self-hosted, CSP untouched. **X3 closed by the owner** on extension evidence; **X5 (`HUMAN`) open** — needs a machine without these fonts installed. |
 | 5 | `PR1c` | Prayer-surface polish (PR1a residue) | `x` **DONE 2026-08-08.** Dead `/channel/*` + `/study/*` rail links resolved to `/prayers`; `window.confirm` replaced with an in-page two-step. 4 seeds red. |
 | 5 | `PR1b` | Prayer journal — "From the tradition" rail (separable) | `-` |
 | 5 | `PR2` | Compare a note with the tradition | `-` |
@@ -2858,6 +2858,59 @@ Each row is a block whose "reuse the existing X" premise `R0` killed. The estima
 | Any group/cohort feature | `N4` | Channels and Study Partners are retired, not deferred. A future cohort feature is greenfield. |
 | Real locale system (beyond the `en-US` pin) | `L2c` | Only needed if localisation reaches the roadmap. The pin is correct while the product is English-only. |
 | Auth migration to Supabase / OAuth | — | Not a remediation item, but a dependency of `T1`/`T2` and a re-estimate trigger for `T4`. Sequence after `INSTR` answers the auth-scope question. |
+
+---
+
+## 9b. Week close-out — 2026-08-08
+
+**`main` `3190f8d` · production `49b6d0a` · no code commits between them.** Re-measured at close,
+not carried from a narrative.
+
+This section exists because the board tracks *blocks* and the useful question at close is different:
+what a reader can now do that they could not, what is deliberately parked, and where to look next.
+
+### Shipped and live this week
+
+| | What changed for a reader |
+|---|---|
+| `L2` / `L2c` / `L2b` | Reading plans **work**. `Mark as read` and `Delete plan` had never succeeded for any user — a `500` from a grant migration 039 assumed it had. Plans also stopped opening in an error state and got human-readable names and correct dates |
+| `N1` / `N2` | The naming lock applied to user-visible strings; the rail stopped hiding five destinations below an unmarked scroll — without swallowing focus (WCAG 2.4.7) |
+| `N4` / `PR1c` | The fake doors are shut. Channels and Study Partners are retired, `/channel/[id]` redirects rather than apologising, and no rail item points at a placeholder |
+| `PR1a` | **The prayer journal** — its own table with RLS, a Pray action from any verse, and a once-only carry-forward of what readers had already made |
+| `F1-fonts` | The typography actually loads. Three families were being blocked by the app's own CSP and had **never** rendered for anyone without them installed locally |
+| `C5` / `F2` | Auth moved to Neon (Google + email/password), `Verify at Sign-up` is on, and the dead Better Auth system is gone |
+| `S2` | 5 of 9 polish items |
+
+### Parked, with the reason — none of it is remediation any more
+
+| | Item | Why it waits |
+|---|---|---|
+| ⚑ | **Resend sender** (`T2` step 1) | Console work, owner-only. **It was the ruling's FIRST step and shipped second**: verification-on makes auth mail load-bearing for every signup while that mail leaves Neon's shared sender. Not urgent, but it is the one parked item with a live dependency under it |
+| `HUMAN` | X5 fonts · signed-out `/prayers` · account-B RLS | Each needs a person with a second credential, a clean machine, or a device. **No agent may close these**, and `PR1a`'s RLS is proven on dev against the identical migration — a strong inference, not a production measurement |
+| | `L1b` threshold · `N3c` hydration · `T3` · `T4` · `S1` | Slow-burn. `L1b`'s premise was **disproved** (written for ~18s/~45s; measured 104s/58s/64s) and its threshold must be re-derived before anything is built. `N3c`'s mechanism was disproved twice |
+| | Rate limiter | **STOPPED, not deferred.** A1-2's limiter is a Better Auth plugin adapter and the live path is Neon's hosted instance — no plugin point exists. Re-wiring is a different limiter and needs a design. **A1-2 is unmitigated on the live auth path** |
+
+### Where everything lives
+
+- **Status** → §1 board. **Reasons** → this section and §9. **History** → `WORKLOG.md`, newest first.
+- **Evidence** → `docs/evidence/`; deploy receipts under `deploys/`, `PR1a` under `pr1a/`.
+- **Security posture** → `docs/SECURITY.md`, including the GHSA-g38m ruling and the standing note
+  that its mitigation is a **Neon console toggle no test here can observe**.
+- **Two rules added this week** because the gate, not the rule, was what stood between a concurrent
+  session and production: one agent per working tree, in `AGENTS.md` and `CLAUDE.md`.
+
+### The three lessons worth carrying, all of them about checks rather than code
+
+1. **A check that cannot fail is worse than no check.** Three shipped green this week while proving
+   nothing: a font scan whose comment-stripper ate the `//` in `https://`; a fallback assertion
+   reading a stylesheet the cascade had overridden; and 7 tests certifying a rate limiter with zero
+   call sites. **Every one was found by seeding, never by reading.**
+2. **Measure the mechanism you name.** `curl -I` on `/channel/abc123` returns a 307 — from the site
+   password gate, not the redirect. The control (`/prayers`, no redirect of its own) returns the
+   same thing. Closing on that would have been an unearned green measuring something else.
+3. **A documented fact is not a current fact.** Migration 039 broke two features by citing a
+   comment `032` had invalidated; `SECURITY.md` still declared g38m closed "structurally" after
+   Google SSO removed the structure. Re-read state; do not cite it forward.
 
 ---
 

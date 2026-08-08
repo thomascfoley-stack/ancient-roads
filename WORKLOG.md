@@ -1,5 +1,68 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-08 (close) — the week closed out: what shipped, what is parked, where it lives
+
+**`main` `3190f8d` · production `49b6d0a` · zero code commits between them.** Re-measured at close.
+Working tree clean. Web suite **102 files / 685 tests** green in the tree that was deployed,
+verified byte-identical to `main`.
+
+Final act of the week: reconciling the board against reality and writing
+[§9b Week close-out](docs/UX_REMEDIATION.md) — which exists because the board tracks *blocks*, and
+the useful question at close is what a reader can now do that they could not.
+
+**Two board rows were stale and are corrected**, which is the small version of this week's
+recurring lesson: `F1-fonts` still read "SPEC'D, not started" after it shipped and deployed, and
+`T2`'s §1 row still read `-` after the owner turned `Verify at Sign-up` on — the gate table had been
+updated and the status board had not. **A board that disagrees with the tree is read as
+measurement**, which is precisely how `MASTER.md`'s own header went 57 commits stale.
+
+### What shipped
+
+Reading plans **work** — `Mark as read` and `Delete plan` had never once succeeded for any user.
+The fake doors are shut. The prayer journal exists, with RLS, a Pray action from any verse, and a
+carry-forward that runs once and keeps its source. The typography actually loads for the first time.
+Auth is on Neon with both sign-in methods and verification on. Blocks closed: `R0` `INSTR` `L2`
+`L2c` `L2b` `N1` `N2` `N4` `PR1a` `PR1c` `F1-fonts`, plus 5 of 9 `S2` items.
+
+### NOT DONE / UNVERIFIED — the honest close
+
+- **Resend sender (`T2` step 1) OUTSTANDING**, and it was the ruling's *first* step. Verification-on
+  makes auth mail load-bearing for every new signup while that mail leaves Neon's shared
+  `auth@mail.myneon.app`. Console work, owner-only, scheduled this week. **The one parked item with
+  a live dependency under it.**
+- **A1-2 is unmitigated on the live auth path.** Not deferred — STOPPED, with evidence: the limiter
+  is a Better Auth plugin adapter, the live path is Neon's hosted instance, and the SDK exposes no
+  plugin point (`rateLimit` 0, `customStorage` 0, `secondaryStorage` 0 across its type surface).
+  Re-wiring is a different limiter and needs a design, not an improvisation.
+- **Three `HUMAN` checks stay open and no agent may close them:** `F1-fonts` X5 (a machine *without*
+  those fonts), the signed-out `/prayers` state, and account-B RLS. `PR1a`'s RLS is proven
+  **two-account on dev** against the byte-identical migration — a strong inference about production,
+  not a measurement of it, and it is recorded that way.
+- **`npm run audit` NOT RUN all week** — it refuses without a dev `DATABASE_URL`. What ran instead:
+  web typecheck, lint, the full web suite, and `deploy.sh`'s gate chain.
+- **Slow-burn, correctly parked:** `L1b` (its premise was *disproved* — written for ~18s/~45s,
+  measured 104s/58s/64s; the threshold must be re-derived before anything is built), `N3c` (mechanism
+  disproved twice), `T3`, `T4`, `S1`, and §10's first-user observation.
+- **`docs/FEATURE_AUDIT.md`** — another session's work, preserved byte-identical (sha256
+  `dfb3455f5a912229…`) at the scratchpad path recorded in the earlier entry. **It is not in git**;
+  if it matters, it needs a durable home.
+
+### The three lessons, all about checks rather than code
+
+1. **A check that cannot fail is worse than no check.** Three shipped green this week while proving
+   nothing: a font scan whose comment-stripper ate the `//` in `https://`; a fallback assertion
+   reading a stylesheet the cascade had overridden; and 7 tests certifying a rate limiter with zero
+   call sites. **Every one was caught by seeding, none by reading.**
+2. **Measure the mechanism you name.** `curl -I` on `/channel/abc123` returns 307 — from the site
+   password gate, not the redirect. The control returns the same. That green would have been unearned.
+3. **A documented fact is not a current fact.** `039` broke two features citing a comment `032` had
+   invalidated; `SECURITY.md` declared g38m closed "structurally" after Google SSO removed the
+   structure. Re-read state; never cite it forward.
+
+The owner's read at close is **5.5/10 a week ago → an honest 8/10 tonight**. Recorded as their
+assessment, not a measured figure — there is no instrument in this repo that produces it, and this
+week's whole lesson is not to write down a number as though something measured it.
+
 ## 2026-08-08 (queue run) — F1-fonts + N4 built and merged; DEPLOY BLOCKED; rate limiter STOPPED
 
 **main `b72a8ee` · production `9729a1a` — THEY DO NOT MATCH, and the gap is the headline.**
