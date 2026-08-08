@@ -1,8 +1,9 @@
 'use client';
 
-import { createAuthClient } from 'better-auth/react';
+import { createAuthClient } from '@neondatabase/auth/next';
 
-// Points at this app's own /api/auth handler, not at a Neon-hosted service (SEC-1 cutover).
-// `basePath` must match `authOptions.basePath` in better-auth.ts; they are asserted equal by
-// web/test/invariants/better-auth-wiring.test.ts.
-export const authClient = createAuthClient({ basePath: '/api/auth' });
+// Neon Auth's client, defaulting to this app's own /api/auth/[...path] route (ADR-107/108) --
+// no baseURL/basePath option, unlike the Better Auth client it replaces. `signIn.email`,
+// `signUp.email`, `requestPasswordReset`, `resetPassword` all kept their option shapes; verified
+// against the installed package's types before this swap, per docs/AUTH_V2_IMPLEMENTATION.md §6.
+export const authClient = createAuthClient();

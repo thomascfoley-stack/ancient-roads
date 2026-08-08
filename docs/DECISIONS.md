@@ -1552,3 +1552,66 @@ and it makes A1-2's rate-limiter class Neon's problem rather than ours.
    cost disappears. Worth knowing either way.
 
 **Status:** RULED. Implementation not started.
+
+## ADR-108 — §2 data measurement: 2 real users accepted as clean-start loss (2026-08-08)
+
+**Context:** `AUTH_V2_IMPLEMENTATION.md` §2 requires measuring production before any cutover code,
+because a clean start silently orphans rows rather than erroring (no FK on `user_id`). Measured
+2026-08-08 via Neon Console SQL editor, owner-run: `notes` 2 rows/2 users, `highlights` 15/1,
+`plans` 3/2, `bookmarks` 2/1, `user_documents` 6/2. **Not zero, not a single test account** — the
+runbook's own bar for "clean start, no remap needed."
+
+**Decision:** Owner confirmed the 2 accounts are known (self + one tester) and elected to accept
+the loss rather than design an id-remap. Proceed as a clean start per ADR-002, extended here with
+the actual measured footprint rather than the "~0 accounts" ADR-002 assumed pre-launch.
+
+**Why:** The two accounts are known and small; an id-remap (old `auth_users.id` → new Neon id,
+joined on email, across 21 tables, in one transaction) is real design-and-build cost for data the
+owner does not need preserved. **Rejected:** building the remap — deferred as unnecessary given who
+the 2 users are, not because the runbook's STOP condition was wrong to fire.
+
+**Status:** RULED. `AUTH_V2_IMPLEMENTATION.md` §3 (install) may proceed.
+
+## ADR-109 — GHSA-g38m accepted open: Google OAuth stays live under Neon Auth, no linking lever exists (2026-08-08)
+
+**Context:** Mid-cutover (§7 of `AUTH_V2_IMPLEMENTATION.md`), owner reported Google OAuth is
+already an active provider in Neon Console → Auth → Configuration (shared/test keys). ADR-107
+already named this exact precondition: GHSA-g38m needs email/password AND social login both
+present, and called "no social providers" the *structural* closure specifically because "the
+config lever is not ours" under Neon.
+
+Owner's first instinct was to keep Google and fix account-linking in code (require the existing
+account's local email verified before an OAuth sign-in auto-links — the 1.6.11-equivalent fix).
+**Checked whether that lever exists before writing any code**, three independent ways:
+1. `@neondatabase/auth@0.4.2-beta`'s installed type defs — `NeonAuthConfig` is
+   `{baseUrl, cookies, logger, logLevel}` only.
+2. Neon's `setup-oauth` guide — sign-in auto-connects the provider account; no linking-policy
+   setting documented.
+3. Neon's management API schema (`updateNeonAuthEmailAndPasswordConfig`) — full field list is
+   `enabled`, `email_verification_method`, `require_email_verification`,
+   `auto_sign_in_after_verification`, `send_verification_email_on_sign_up/sign_in`,
+   `disable_sign_up`. No linking field, no password-length field, no revoke-on-reset field.
+
+This corroborates `docs/SECURITY.md`'s 2026-07-08 finding ("App-level mitigation: NOT POSSIBLE")
+against the current SDK version — nothing has changed on Neon's exposed surface since.
+
+**Decision:** Owner accepted the risk knowingly. Google OAuth stays enabled; the cutover proceeds
+with GHSA-g38m's precondition (email/password + social login, no verified-linking control) live
+the moment Neon Auth serves production. **SEC-1 is not merely re-opened by version (ADR-107) —
+the specific in-path account-takeover it names is unmitigated and active by configuration.**
+
+**Why:** No documented or typed lever to mitigate exists on the current Neon Auth surface; asking
+Neon support first, or disabling Google, were the two alternatives, and the owner chose to accept
+the exposure rather than pursue either. **Rejected:** disabling Google (would have structurally
+closed it, per ADR-107, but the owner wants Google sign-in available); asking Neon support first
+(would have delayed this session's cutover).
+
+**Consequence for other docs:** `docs/SECURITY.md` SEC-1 must be re-opened citing both ADR-107 and
+this ADR when Neon Auth actually goes live (runbook §10 item 4) — do not let it read CLOSED once
+production is serving Neon Auth with Google active. Two more open findings from the same API-schema
+read, independent of this decision: **no minimum-password-length field** exists in Neon's
+`email_and_password` config (the current 12-char minimum may not be enforceable at all under Neon
+Auth), and **no revoke-sessions-on-password-reset field** exists (default behavior unknown/unverified).
+
+**Status:** RULED. Proceeding with `AUTH_V2_IMPLEMENTATION.md` §7-onward. Revisit if Neon ever
+exposes a linking-policy or password-policy field.

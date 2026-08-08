@@ -1,19 +1,21 @@
-import { toNextJsHandler } from 'better-auth/next-js';
-import { getAuth } from '@/lib/auth/better-auth';
+import { getAuth } from '@/lib/auth/neon-auth';
 
-// Better Auth's own handler, mounted locally. Previously this proxied to a better-auth server
-// hosted by Neon, which is why GHSA-g38m could not be closed from here (docs/SECURITY.md SEC-1).
+// Neon Auth's own proxy handler, mounted locally (ADR-107/108). It forwards to the hosted
+// better-auth server at NEON_AUTH_BASE_URL -- see docs/AUTH_CUTOVER_V2_NEON.md for why that
+// reopens SEC-1.
 //
 // The handler is built per request rather than at module load for the same reason the auth
-// instance is lazy: `next build` collects page data for this route with no APP_DATABASE_URL in the
+// instance is lazy: `next build` collects page data for this route with no auth env in the
 // environment, and constructing eagerly is exactly how the previous wiring broke the build.
 
 export const runtime = 'nodejs';
 
-export function GET(req: Request): Promise<Response> {
-  return toNextJsHandler(getAuth()).GET(req);
+type Params = { params: Promise<{ path: string[] }> };
+
+export function GET(req: Request, ctx: Params): Promise<Response> {
+  return getAuth().handler().GET(req, ctx);
 }
 
-export function POST(req: Request): Promise<Response> {
-  return toNextJsHandler(getAuth()).POST(req);
+export function POST(req: Request, ctx: Params): Promise<Response> {
+  return getAuth().handler().POST(req, ctx);
 }

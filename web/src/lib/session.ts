@@ -1,15 +1,16 @@
-import { headers } from 'next/headers';
-import { getAuth } from './auth/better-auth';
+import { getAuth } from './auth/neon-auth';
 
-// Sessions now resolve against Better Auth running in THIS app rather than Neon's hosted service
-// (docs/AUTH_CUTOVER_DESIGN.md, SEC-1). Both functions keep their old signatures on purpose: 15
-// files call them, and a cutover that also changed the shape of `requireUser` would have mixed an
-// auth migration into a refactor of every route that consumes it.
+// Sessions now resolve against Neon Auth (ADR-107/108, docs/AUTH_CUTOVER_V2_NEON.md). Both
+// functions keep their old signatures on purpose: 18 files call them, and a cutover that also
+// changed the shape of `requireUser` would have mixed an auth migration into a refactor of every
+// route that consumes it.
 
 async function session() {
-  // `headers()` rather than a request object, because most callers are server components that
-  // never see one. Better Auth reads the session cookie off these.
-  return getAuth().api.getSession({ headers: await headers() });
+  // NOT `.api.getSession({ headers })` -- that was Better Auth's shape. Neon Auth's `getSession()`
+  // reads the request cookie itself (via next/headers under the hood) and returns `{ data }`,
+  // not the session directly.
+  const { data } = await getAuth().getSession();
+  return data;
 }
 
 export async function requireUser(): Promise<{ id: string; email: string }> {

@@ -7,6 +7,17 @@
 > Measured that day: `@neondatabase/auth@latest` is still `0.4.2-beta`, still pinning
 > `better-auth@1.4.18`. See [`AUTH_NEON_MANAGED_EVALUATION.md`](./AUTH_NEON_MANAGED_EVALUATION.md)
 > — including the standing rule: **do not migrate while Neon's managed version is below 1.6.11.**
+> **RE-OPENING IN PROGRESS 2026-08-08** (ADR-107, ADR-108, ADR-109) — cutover mid-implementation
+> on `fix/a1-security`, not yet deployed. **GHSA-g38m is not merely re-opened by version this
+> time: the in-path account-takeover it names is unmitigated and active by configuration**, because
+> Google OAuth is already enabled in the Neon Auth console (shared/test keys) alongside
+> email/password, and the owner accepted that risk knowingly (ADR-109) after three independent
+> checks (SDK types, OAuth setup guide, management API schema) found no account-linking lever
+> exposed anywhere on the current surface — corroborating the "NOT POSSIBLE" finding below.
+> Two more gaps found the same way: no minimum-password-length field and no
+> revoke-sessions-on-password-reset field exist in Neon's `email_and_password` config at all.
+> **Do not mark this CLOSED again once Neon Auth actually serves production** — update this block
+> instead, citing ADR-109.
 **Status: CLOSED 2026-08-05. The cutover is live on production.**
 Deployment `dpl_HSUsCqGCwWVPrQuG4bL1MBq3hJFg` from `e0cfd24`, aliased to `ancientpaths.app`.
 Migrations 100-104 applied to `ep-odd-fog` and recorded in `schema_migrations`. **Verified by

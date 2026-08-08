@@ -1,6 +1,63 @@
 # WORKLOG — Autonomous session 2026-07-08
 
-## 2026-08-07 — A1 attack-surface audit, and its two reproduced findings fixed
+## 2026-08-08 — Neon Auth cutover, §2 data measurement: STOP, real rows exist
+
+Owner confirmed the three §0 console/Vercel prerequisites are done (Enable Auth, Auth URL, both env
+vars set in Vercel production). Before touching any code, ran the §2 query from
+`docs/AUTH_V2_IMPLEMENTATION.md` against production (owner-run, via Neon Console SQL editor, 2026-08-08):
+
+| table | rows | distinct users |
+|---|---|---|
+| notes | 2 | 2 |
+| highlights | 15 | 1 |
+| plans | 3 | 2 |
+| bookmarks | 2 | 1 |
+| user_documents | 6 | 2 |
+
+**Not zero, and not a single test account** — 2 distinct users appear across `notes`/`plans`/
+`user_documents`. Per the runbook, this is the documented STOP: "Real rows → STOP and report. An
+id-remap... is a separate design, not a step in this runbook." Halted before §3 (install/code) and
+asked the owner. **Owner ruling (ADR-108): both accounts are known (self + one tester); accept the
+clean-start loss rather than design a remap.** Proceeding to §3.
+
+## 2026-08-08 — Neon Auth cutover §7: Google OAuth already live in console; no account-linking lever found
+
+While code-swapping §3-§6 (installed `@neondatabase/auth@0.4.2-beta`, wrote `neon-auth.ts`,
+swapped `session.ts`/route handler/client — all typecheck clean under both `tsconfig.json` and the
+stricter `tsconfig.test.json`), owner reported during the §7 no-regression check that **Google
+OAuth is already an active provider** in Neon Console → Auth → Configuration (shared/test keys).
+
+This is the exact precondition ADR-107 named: GHSA-g38m needs email/password AND social login
+both present, and "no social providers" is called the *structural* closure specifically because
+Neon gives us no code lever over it. Owner's first instinct was to keep Google and fix
+account-linking in code (require the existing account's email verified before an OAuth sign-in
+auto-links) — the 1.6.11-equivalent fix the design doc cites.
+
+**Checked whether that lever exists, three independent ways, before writing any code for it:**
+1. `@neondatabase/auth`'s own installed type defs (`next/server/index.d.mts`) — `NeonAuthConfig` is
+   `{baseUrl, cookies, logger, logLevel}` only. No account-linking field.
+2. Neon's `setup-oauth` guide — states sign-in auto-connects the provider account; no linking-policy
+   setting documented.
+3. Neon's management API reference for `updateNeonAuthEmailAndPasswordConfig` — full field list is
+   `enabled`, `email_verification_method`, `require_email_verification`,
+   `auto_sign_in_after_verification`, `send_verification_email_on_sign_up/sign_in`,
+   `disable_sign_up`. No password-length field, no revoke-on-reset field, no linking field, anywhere.
+
+**Conclusion: the account-linking lever ADR-107 said "is not ours" appears to genuinely not exist**
+on the current surface (SDK, guides, and API schema all agree). Two other §7 properties are now
+open findings from the same API schema read: **minimum password length has no configuration field**
+(Neon's `email_and_password` config has no length control at all — may not be enforceable under
+Neon Auth), and **revoke-sessions-on-password-reset has no configuration field** (unknown whether
+it happens by default). `require_email_verification` IS a real field and can be confirmed/set to
+match current `false` behavior.
+
+Reported back to owner rather than writing speculative account-linking code against a lever that
+doesn't appear to be there. **Owner ruling (ADR-109): accept the risk knowingly.** Google OAuth
+stays enabled; GHSA-g38m's precondition goes live, unmitigated, the moment Neon Auth serves
+production. Recorded in `docs/SECURITY.md` SEC-1 (re-opening-in-progress block) and ADR-109. The
+"no social providers" invariant test from §7/§8 is now moot for this cutover — skipping it rather
+than asserting a property the owner has deliberately decided not to hold. Proceeding to the
+remaining §7 items (RLS id-format, rate limiting) and §8 tests.
 
 Branch `fix/a1-security`. The lens that died mid-run in the first pre-deploy sweep, re-run as **two**
 agents (upload/parse, routes/authz) because the original exhausted itself covering both. Both
