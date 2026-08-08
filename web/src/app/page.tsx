@@ -62,14 +62,19 @@ export default function MarketingHome() {
             below the fold on a laptop viewport (owner call 2026-08-08); flex-1 still lets
             the image grow on tall screens. */}
         <div className="relative min-h-[42dvh] flex-1 sm:min-h-[36dvh]">
+          {/* "Misty Forest Track" by Mr Moss, CC BY 2.0 (credit in the footer). Its own
+              filename, not hero-forest.jpg reused: the image optimizer caches by URL, so
+              replacing bytes under the old name served the stale photo. */}
           <Image
-            src="/marketing/hero-forest.jpg"
-            alt="Misty pine forest at dawn, sunlight breaking through the trees"
+            src="/marketing/hero-track.jpg"
+            alt="Sunlight breaking through mist over a dirt track in a pine forest"
             fill
             priority
             sizes="100vw"
             quality={90}
-            className="object-cover object-center"
+            // 72% vertical: the track runs through the lower third of the frame, and a
+            // centered crop in the wide band cut it out entirely.
+            className="object-cover object-[50%_72%]"
           />
         </div>
 

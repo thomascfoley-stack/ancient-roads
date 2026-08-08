@@ -546,7 +546,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
             placeholder="Write a note on this verse…"
             aria-label="Note on this verse"
             rows={3}
-            className="w-full resize-y rounded-lg border edge bg-stone-50 px-3 py-2.5 font-sans text-sm text-stone-900 placeholder:text-stone-500 focus:border-accent-600 dark:bg-stone-950 dark:text-stone-100 dark:placeholder:text-stone-400 dark:focus:border-accent-400"
+            className="w-full resize-y rounded-lg border edge edge-focus bg-stone-50 px-3 py-2.5 font-sans text-sm text-stone-900 placeholder:text-stone-500 dark:bg-stone-950 dark:text-stone-100 dark:placeholder:text-stone-400"
           />
           <div className="mt-1.5 flex items-center gap-2">
             {/* PRD §6 primary CTA: 1px ink hairline, transparent, ink fill on hover. */}

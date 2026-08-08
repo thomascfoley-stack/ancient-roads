@@ -166,7 +166,7 @@ export function PrayerJournal({ initialVerseId = null }: { initialVerseId?: numb
              no visible chrome around the words themselves. The `!` on the focus border is
              load-bearing: `.edge` is unlayered (see globals.css) and otherwise swallows the
              layered focus utility, so the antique-gold focus border never painted. */
-          className="focus-quiet w-full resize-none border edge bg-stone-50 px-8 py-6 font-serif text-lg leading-[1.9] text-stone-900 outline-none placeholder:text-stone-500 focus:border-accent-600! dark:bg-stone-950 dark:text-stone-200 dark:placeholder:text-stone-400 dark:focus:border-accent-400!"
+          className="focus-quiet w-full resize-none border edge edge-focus bg-stone-50 px-8 py-6 font-serif text-lg leading-[1.9] text-stone-900 outline-none placeholder:text-stone-500 dark:bg-stone-950 dark:text-stone-200 dark:placeholder:text-stone-400"
           placeholder="…"
         />
         {error && <p role="alert" className="mt-3 text-sm text-red-800 dark:text-red-200">{error}</p>}

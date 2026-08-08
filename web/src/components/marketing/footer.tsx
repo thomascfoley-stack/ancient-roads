@@ -49,6 +49,17 @@ export function MarketingFooter() {
 
         <div className="mt-12 flex flex-col items-center justify-between gap-6 border-t edge pt-10 md:flex-row">
           <p className="text-micro uppercase tracking-[0.2em] text-stone-500">© 2026 Ancient Paths</p>
+          {/* CC BY 2.0 attribution — required by the hero photograph's license. */}
+          <p className="text-micro uppercase tracking-[0.2em] text-stone-500">
+            Photograph:{' '}
+            <a
+              href="https://www.flickr.com/photos/49734171@N00/32059178485"
+              rel="license noopener"
+              className="underline decoration-stone-500/40 underline-offset-2 transition-colors ease-gentle hover:text-stone-900"
+            >
+              &ldquo;Misty Forest Track&rdquo; by Mr Moss, CC BY 2.0
+            </a>
+          </p>
           <p className="text-micro uppercase tracking-[0.2em] text-stone-500">Crafted with reverence</p>
         </div>
       </div>
