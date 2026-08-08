@@ -245,6 +245,22 @@ html {
 .reader-dark.edge {
   border-color: var(--color-stone-800);
 }
+/* Focus companion to `.edge`. A LAYERED `focus:border-*` / `focus-within:border-*` utility can
+ * never paint on an element that also carries `.edge`: the rule above is unlayered, and
+ * unlayered normal declarations beat everything in @layer utilities regardless of specificity.
+ * Measured on the omnibox — its gold focus hairline never showed; the same dead class rode
+ * book-picker, study-panel and commentary-panel, and prayer-journal only painted by escalating
+ * to `!`. This is the one sanctioned focus BORDER (the app's default focus affordance stays the
+ * global :focus-visible outline): unlayered like `.edge`, declared after it, higher specificity,
+ * so it wins the same honest way `.edge` wins. `:focus-within` covers both the container case
+ * (the omnibox row around its input) and a focused input carrying the class itself. Antique
+ * gold per PRD §6 (inputs focus = 1px gold border): accent-600 light, accent-400 dark. */
+.edge-focus:focus-within {
+  border-color: var(--color-accent-600);
+}
+.reader-dark .edge-focus:focus-within {
+  border-color: var(--color-accent-400);
+}
 
 ::selection {
   background: color-mix(in oklab, var(--color-accent-300) 45%, transparent);

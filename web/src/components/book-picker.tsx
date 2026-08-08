@@ -91,7 +91,7 @@ export function BookPicker({
               onChange={(e) => setJump(e.target.value)}
               aria-label={`Jump to a chapter in ${selectedBook.name}, 1 to ${selectedBook.chapterCount}`}
               placeholder={`Jump to a chapter (1–${selectedBook.chapterCount})`}
-              className="mb-4 min-h-[44px] w-full border edge bg-paper px-4 font-sans text-base text-stone-900 outline-none placeholder:text-stone-400 focus:border-accent-600 focus-quiet dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus:border-accent-400"
+              className="mb-4 min-h-[44px] w-full border edge edge-focus bg-paper px-4 font-sans text-base text-stone-900 outline-none placeholder:text-stone-400 focus-quiet dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500"
             />
           )}
           <div className="grid grid-cols-6 gap-2">
