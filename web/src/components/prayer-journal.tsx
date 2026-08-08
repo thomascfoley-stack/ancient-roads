@@ -22,6 +22,8 @@ import { useEffect, useState } from 'react';
 import { formatVerseId } from '@bible/verse-id';
 import { verseHref } from '@/lib/verse-link';
 import { DISPLAY_LOCALE } from '@/lib/locale';
+import { authClient } from '@/lib/auth/client';
+import { runCarryForward } from '@/lib/prayer-carry-forward';
 
 interface Prayer {
   id: string;
@@ -41,18 +43,60 @@ export function PrayerJournal({ initialVerseId = null }: { initialVerseId?: numb
   const [composing, setComposing] = useState(initialVerseId !== null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [carried, setCarried] = useState(0);
+  const [signedOut, setSignedOut] = useState(false);
+  const { data: session } = authClient.useSession();
 
   const load = async () => {
     try {
       const res = await fetch('/api/prayers');
-      if (!res.ok) { setError('Your prayers could not be loaded. Please try again.'); return; }
+      // 401 is not a failure, it is a SIGNED-OUT READER, and the two must not look alike. The
+      // first browser pass showed a signed-out visitor a red "could not be loaded" alarm — the
+      // app reporting its own auth state as a fault, on the one page where alarming someone is
+      // most out of keeping with what the page is for.
+      if (res.status === 401) { setSignedOut(true); setPrayers([]); setError(null); return; }
+      if (!res.ok) { setError('Your prayers could not be loaded. Please try again.'); setPrayers([]); return; }
       setPrayers((await res.json()).prayers);
       setError(null);
     } catch {
+      // `setPrayers([])` matters as much as the message: without it the list stays null, so the
+      // "Loading…" branch renders BESIDE the error and the page says both at once, forever.
       setError('Your prayers could not be loaded. Please try again.');
+      setPrayers([]);
     }
   };
   useEffect(() => { void load(); }, []);
+
+  // FIRST-LAUNCH CARRY-FORWARD (N4's ruling, absorbed into PR1a).
+  //
+  // The sidebar's study objects live only in this browser's localStorage, so this is the only
+  // place the migration CAN happen. Runs once per reader, best-effort, and does NOT delete its
+  // source this release — the three constraints are enforced in `prayer-carry-forward.ts` and
+  // red-proofed in `prayer-carry-forward.test.ts`, not here.
+  //
+  // Keyed on the SIGNED-IN id only. The sidebar also writes a `guest` key when signed out, and
+  // carrying that forward would move one person's list into whichever account signs in next on a
+  // shared browser. A missed carry is recoverable — the source is still on disk — and that leak is
+  // not. Recorded as a known gap in the block rather than decided silently.
+  const userId = session?.user?.id;
+  useEffect(() => {
+    if (!userId || typeof window === 'undefined') return;
+    void (async () => {
+      const created = await runCarryForward(
+        userId,
+        async (body) => {
+          const res = await fetch('/api/prayers', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ kind: 'create', body, verseId: null }),
+          });
+          if (!res.ok) throw new Error('carry-forward post failed');
+        },
+        window.localStorage,
+      );
+      if (created > 0) { setCarried(created); void load(); }
+    })();
+  }, [userId]);
 
   // Every write reports its own failure rather than assuming success and re-reading — the shape
   // that made `Mark as read` look like it worked while the row never changed (INSTR, 2026-08-07).
@@ -166,15 +210,38 @@ export function PrayerJournal({ initialVerseId = null }: { initialVerseId?: numb
         Your own words, kept for you alone. Nothing here is searched, indexed, or read by anyone else.
       </p>
       {error && <p role="alert" className="mt-4 text-sm text-red-800 dark:text-red-200">{error}</p>}
-      <button
-        onClick={() => { setDraft(''); setComposing(true); }}
-        className="mt-5 inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-medium text-stone-50 transition-colors ease-gentle hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
-      >
-        Write a prayer
-      </button>
+      {/* The reader must be TOLD their study objects moved, not just find extra entries in a
+          journal they thought was empty. Stated once, plainly, and it says the originals are still
+          there — because they are: the carry-forward does not delete its source this release. */}
+      {carried > 0 && (
+        <p role="status" className="mt-4 rounded-lg bg-accent-700/10 px-3 py-2 text-sm text-ink-600 dark:bg-accent-500/15 dark:text-ink-300">
+          {carried === 1 ? 'One item from your study list has' : `${carried} items from your study list have`} been
+          brought into your prayer journal. Your study list is unchanged.
+        </p>
+      )}
+      {/* Signed out: an invitation, not an alarm and not a button that would fail on POST. */}
+      {signedOut ? (
+        <a
+          href="/auth/sign-in"
+          className="mt-5 inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-medium text-stone-50 transition-colors ease-gentle hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
+        >
+          Sign in to keep a prayer journal
+        </a>
+      ) : (
+        <button
+          onClick={() => { setDraft(''); setComposing(true); }}
+          className="mt-5 inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-medium text-stone-50 transition-colors ease-gentle hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
+        >
+          Write a prayer
+        </button>
+      )}
 
       {prayers === null ? (
         <p className="mt-8 text-sm text-stone-500 dark:text-stone-400">Loading…</p>
+      ) : signedOut ? (
+        <p className="mt-8 rounded-xl bg-paper px-4 py-3 font-serif text-sm text-stone-600 shadow-paper dark:bg-stone-900/70 dark:text-stone-300">
+          Your prayers are kept to your account, so they stay yours alone.
+        </p>
       ) : prayers.length === 0 ? (
         <p className="mt-8 rounded-xl bg-paper px-4 py-3 font-serif text-sm text-stone-600 shadow-paper dark:bg-stone-900/70 dark:text-stone-300">
           Nothing here yet. A prayer can begin from any verse, or from this page.
