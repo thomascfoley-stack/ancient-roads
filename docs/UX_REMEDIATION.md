@@ -1395,7 +1395,36 @@ Verification was not built; password confirmation omitted.
 
 **Findings log**
 
-> _(write here)_
+> ## RECON 2026-08-08 — docs only, no code, no test files.
+>
+> **Two of the three asks are gone; the third inverted into a live security decision** (already
+> recorded above and in `docs/SECURITY.md`). Verified against the tree:
+>
+> | Ask | Status |
+> |---|---|
+> | Show/hide password toggle | **Moot for OAuth users** — `auth-forms.tsx:74` calls `authClient.signIn.social`, and Google SSO is live and owner-verified. Still relevant for the email/password path, which remains. |
+> | Confirm-password field | **Already correctly skipped** — the block itself rules it out in favour of show/hide, and nothing added one. |
+> | Passive email verification banner | **INVERTED.** Console state read 2026-08-08: email sign-up ON, `Verify at Sign-up` **OFF**, Google OAuth live. That assembles GHSA-g38m's precondition. Not a banner question any more; an owner trade-off between the exploit and the no-lockout property. |
+>
+> **Call sites, so a future session need not hunt.** All five auth actions go through one module,
+> `@/lib/auth/client`, and are called only from `web/src/components/auth-forms.tsx`:
+> `signIn.social` (`:74`), `signIn.email` (`:96`), `signUp.email` (`:110`),
+> `requestPasswordReset` (`:122`), `resetPassword` (`:135`). A show/hide toggle is one state
+> variable and one `type` swap in that single file.
+>
+> **Contradiction in the block, flagged (L2b precedent):** its own header says "keep the block below
+> only if the migration is cancelled." The migration was **not** cancelled — it happened, to Neon
+> rather than Supabase — so by its own terms most of the block should be struck. But the security
+> inversion is new and does not belong to the migration, so the block cannot simply be deleted
+> either. **It needs re-writing around the one live question, not editing at the margins.** Deferred
+> to the owner; recon does not restructure blocks (brief, Part 2).
+>
+> **Exit-test skeleton** (for whoever executes; not written as files):
+> - `AGENT` no social provider is configured beyond the one deliberately enabled — assert against
+>   the client module, since under Neon this is a console toggle and code cannot see the console.
+> - `BROWSER` show/hide works on sign-in and sign-up.
+> - `BROWSER` an unverified user can still use the product.
+> - ⚑ `OWNER` the `Verify at Sign-up` trade-off is ruled and recorded in `SECURITY.md`.
 
 ---
 
@@ -1442,7 +1471,35 @@ inset.
 
 **Findings log**
 
-> _(write here — record which devices and OS versions were tested)_
+> ## RECON 2026-08-08 — docs only. **NOT RUN** (needs hardware; forbidden by the overnight brief).
+>
+> **The block's step 1 appears ALREADY IMPLEMENTED, which changes what this block is for.**
+> `web/src/components/app-shell.tsx:35` applies to the main scroll container:
+>
+> ```
+> pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0
+> ```
+>
+> That is verbatim the prescribed minimal change — tab-bar height plus the safe-area inset, dropped
+> at the `md` breakpoint where the bar disappears. The same idiom recurs correctly at
+> `read/[book]/[chapter]/page.tsx:401`, `work/[slug]/page.tsx:170`, `library/word-study/page.tsx:170`,
+> `work-toc.tsx:117` and `book-picker.tsx:59`.
+>
+> **So the deck's observation is either stale, or it is not a padding bug.** Three candidates, and
+> only a device can separate them: (a) the report predates this padding; (b) a specific page
+> establishes its own scroll container inside the shell's, so the shell's padding never applies to
+> it; (c) iOS Safari's dynamic toolbar changes the viewport after paint and `dvh`/`env()` resolve
+> against a stale value. **Do not "fix" the padding before knowing which** — adding more padding
+> against (b) or (c) would be motion that appears to work on a resized desktop and does nothing on
+> the device, which is the exact failure the block's own Do-NOT warns about.
+>
+> **Step 3 is void.** "Remove the duplicate `Search` tab" — `mobile-nav.tsx:44-57` defines four tabs
+> (Home, Bible, Ask, Library) and none is Search. A Search *button* renders beside them in the same
+> bar with the same treatment, which is why it reads as a tab; whether it duplicates Passage search
+> is a real question, but it is not a tab to remove. Step 2 (`AP` → `Ask`) shipped with `N1`.
+>
+> **What this block actually needs is a device pass, and its four exit checks are already `DEVICE`.**
+> Nothing here is agent-closable. Untouched, per the brief.
 
 ---
 
@@ -1519,7 +1576,50 @@ transfer.
 
 **Findings log**
 
-> _(write here)_
+> ## RECON 2026-08-08, RE-SCOPED POST-NEON — docs only, no code. **The store-vs-migrate call is the owner's and is NOT made here.**
+>
+> ### What actually exists now
+>
+> | Thing | State, measured |
+> |---|---|
+> | The three prefs | Still `localStorage` only. Theme + size at `lib/reading-prefs.ts:23-24` (`reader-theme`, `reader-size`), re-read by the anti-FOUC inline script at `layout.tsx:82`; translation at `settings-form.tsx` and again at `read/[book]/[chapter]/page.tsx`. **Unchanged by the auth cutover.** |
+> | `user_profiles` | **Still zero application references.** Declared in `USER_TABLE_SPEC` with a dormant `preferred_translation`; no code reads or writes it; prod held 0 rows at the last census. |
+> | Migration 104's `auth_*` tables | **Orphaned but not dropped.** The only surviving reference is `better-auth.ts:63`, which is now dead code — `session.ts` reads Neon's `getSession()` (`:12`). ADR-107 condition 1 deliberately keeps them until Neon Auth is proven, which it now is; retiring them is that ADR's step 10, not this block's. |
+> | A Neon-created table to hang prefs off | **None added.** No migration after `106` exists; Neon manages its own `neon_auth` schema, and nothing in this repo's migrations touches it. |
+> | GRANT posture | Unchanged and now well understood: `032` narrowed the default to SELECT+INSERT, so **any new table needs an explicit `UPDATE`/`DELETE` grant in its own migration** — the defect that cost two shipped features on 2026-08-07 (migration `106`). Whichever option below is chosen, if it creates or writes a table, it must state its grants. |
+>
+> ### What the cutover changed for this block — less than it looks
+>
+> The old v1.1 note said `T4`'s account-deletion becomes "entangled with Supabase user management".
+> Substitute Neon and the shape holds: **account deletion now spans two systems.** Deleting the
+> Neon-side identity is a Neon operation; deleting the 21 user-scoped tables keyed on that id is
+> ours. Neither alone is "delete my account", and the block's exit check says *verified against the
+> database, not the UI*.
+>
+> **A second consequence the block does not mention:** user ids come from Neon now
+> (`session.ts:21`). Any prefs row keyed on a user id inherits whatever id format Neon issues, and
+> `runAsUser` sets `app.current_user_id` from that same value — so a prefs table is only as correct
+> as that binding, which is worth asserting rather than assuming.
+>
+> ### Three options, costs measured — ⚑ the choice is the owner's
+>
+> | | Option | Cost | What it does not do |
+> |---|---|---|---|
+> | **A** | Wire the dormant `user_profiles.preferred_translation` only | ~30 lines, **no migration**, no new grants | Leaves theme and text size device-local. Half the finding, honestly labelled. |
+> | **B** | Add `theme` and `text_size` columns to `user_profiles` | One migration **plus explicit grants** (see above), **plus re-thinking `layout.tsx:82`** — the anti-FOUC script reads `localStorage` synchronously *before paint*, and a server-held preference cannot be read there without either a cookie mirror or accepting a flash | Closes the finding; introduces a first-paint problem the block never mentions. |
+> | **C** | Defer until account deletion/export is designed | Zero now | Leaves the "settings don't roam" complaint open, which both audits raised independently. |
+>
+> **The `layout.tsx:82` interaction is the part most likely to be missed** and belongs in whichever
+> option is chosen: syncing a theme to the account does not, by itself, make the theme correct on
+> first paint — it makes it correct one render later, which is a visible flash on every load.
+>
+> ### Exit-test skeleton (not written as files, per the brief)
+>
+> `AGENT` a pref set on one session is read on a fresh session for the same account ·
+> `AGENT` `Saved on this device` copy is removed where it stopped being true and kept where it is
+> still true · `AGENT` export produces a file containing the user's notes and highlights ·
+> `AGENT` deletion removes the account **and** its rows across all 21 user-scoped tables, verified
+> against the database · `BROWSER` no first-paint flash after the change.
 
 ---
 
@@ -1570,7 +1670,29 @@ The page was written to establish a position rather than to demonstrate a produc
 
 **Findings log**
 
-> _(write here)_
+> ## RECON 2026-08-08 — docs only, no code.
+>
+> **Verified against the tree:**
+>
+> | Item | Status |
+> |---|---|
+> | Footer with privacy, terms, contact, about | **`/privacy`, `/terms`, `/contact` do not exist as routes.** `/about` does (`app/about/page.tsx`). The landing page (`app/page.tsx`) contains **zero** matches for `<footer`, `Privacy` or `Terms`. So three of the four destinations must be *written*, not linked. |
+> | One captioned screenshot of the verse panel | Not present. **Blocked on an asset only the owner can produce** — and note it must be a screenshot of the panel *as it renders*, which is itself gated on the reader page rendering correctly (see `N3c`). |
+> | Expectation-setting: what membership includes, when doors open, cost | Not present. **Content, not code.** |
+> | Demote `Log in` relative to `Request access` | The only genuinely agent-doable item here — a class change on the landing page. |
+>
+> **Sequencing consequence the block does not state:** three of its four items are *content the
+> owner must supply* (privacy policy, terms, contact details, the membership/pricing sentences), and
+> a legal page cannot be drafted by an agent on the owner's behalf. So `S1` is **owner-blocked in
+> substance**, not merely in verification — unlike `T3`, where the work exists and only the proof is
+> missing.
+>
+> **Exit-test skeleton:** `AGENT` `/privacy`, `/terms`, `/contact` resolve and are linked from the
+> landing page · `AGENT` the landing page renders a `<footer>` · `BROWSER` a visitor can see what the
+> product looks like without an account · `HUMAN` waitlist conversion measured before and after.
+>
+> **Do not begin `S1` by demoting the login button.** That is the one thing an agent can do, and
+> doing it alone would mark motion on a block whose substance is entirely unstarted.
 
 ---
 
