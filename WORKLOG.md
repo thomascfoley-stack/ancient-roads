@@ -1,5 +1,54 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-08 (late evening) — app-wide visual redesign onto the Visual Redesign PRD
+
+**Source:** owner's `Ancient_Paths_Visual_Redesign_PRD.md` + six HTML mockups + screenshots
+(Desktop "App UX Redesign Guide"). "Candlelit scriptorium": parchment #FBF8F2, vellum hairlines,
+antique gold accent, EB Garamond / Literata / Source Sans 3, NO cards, NO shadows, NO rounded
+corners, NO gradients/blur, fade-only 200ms motion, era-accented commentary, AA floor.
+
+**Foundation (`web/src/app/globals.css`, hand-edited first so ten parallel scopes share it):**
+stone scale remapped to the PRD hexes keeping the old step pairings (50=parchment, 200=vellum
+hairline, 500=ink-wash, 800=night hairline, 900=ink, 950=night surface); accent scale re-hued
+oxblood → antique gold (600=#8A5A2B, 400=#C4975A dark gold) keeping ladder steps; new tokens
+`flame` (#C97B3A, rare emphasis only) and `era-early/medieval/reformation/modern`; ALL radius
+tokens → 0 (rounded-full survives for true pills: swatches, dots, avatar); ALL shadow tokens →
+render nothing; ease-gentle → PRD's cubic-bezier(0.4,0,0.2,1); `animate-slide-up` re-pointed to
+fade (no slides per PRD); thin scrollbar (6px, vellum/night thumb); paper grain via inline SVG
+turbulence data-URI at 2.5% opacity, light mode only (CSP img-src allows data:).
+
+**Ten scopes restyled by subagents, styling-only, tests untouched:** app shell/sidebar/nav
+(vellum rail, EB Garamond wordmark, text-only quiet links, PRD scrims), reader (bare 66ch
+column, 30px display title + hairline, CSS-only `::first-letter` drop cap in gold with onum —
+DOM untouched so the offset-anchoring engine is unaffected, gold onum verse numbers, dark-pill
+selection popover that inverts to parchment in dark mode), commentary/study/desk (era 3px left
+borders + · ◆ § — ornaments, vellum sheet surface, 62ch quotes), ask (amber stage checks,
+opacity-pulse ring replaces the banned spinner, staggered fade reveal, era voice cards),
+prayers (unstyled hairline list, the signature amber save-dot 150ms/2s/150ms), plans (hairline
+rows, 2px gold progress bar, hairline builder form), home/devotional (small-caps 0.3em date,
+120px rule, gold-bordered verse blockquote, hairline CTA), library (hairline catalog rows,
+tabular counts, word-study panel), marketing/landing (sage retired → parchment/ink/gold; hero
+scrims removed, type on parchment band; nav `onDark` prop deleted), auth/settings/error pages
+(hairline buttons/inputs, PRD scrims).
+
+**Wall:** `next build` PASSED (41 routes; 4 warnings pre-existing pdfjs/bible-index);
+`eslint` 0 errors (20 warnings all pre-existing); web vitest **694 passed / 0 failed**
+(104 files, 25 skipped DB legs). Per-file suites were run by each scope agent and green.
+
+### NOT DONE / UNVERIFIED
+- **`npm run audit` REFUSED at its env leg** — no dev DATABASE_URL in root .env.local (the
+  week's standing constraint). DB-free legs green as listed above; full audit still owed.
+- **No browser/visual verification** — drop-cap rendering, popover dark-mode inversion, grain,
+  and hover states are compile-checked but not seen. One visual pass on /read/psa/23, /ask,
+  /plans, /library in both themes is owed.
+- The commit `e171de8` swept the tree mid-session (parallel session); the last tranche of
+  library/desk edits is UNCOMMITTED on disk (13 files).
+- PRD open questions (§12) not resolved with owner: drop caps every chapter vs book openings
+  (shipped: every chapter opening), collapsible commentary (shipped: existing expand behavior),
+  prayer tags (shipped: chronological list, unchanged).
+- Sage tokens + `--shadow-card` remain declared in globals.css but are now unreferenced
+  (marketing restyled off them); removal is a follow-up sweep.
+
 ## 2026-08-08 (evening) — marketing site replaced from the owner's UX Pilot design (ADR-111), STAGED for owner review, NOT deployed
 
 **Branch `feat/marketing-site`** (from `fix/final-sweep` after committing that session's pending
