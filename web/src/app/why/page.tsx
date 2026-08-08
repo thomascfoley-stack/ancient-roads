@@ -43,10 +43,11 @@ export default function WhyPage() {
 
         <h2 className="mb-8 mt-20 font-display text-3xl text-stone-900 sm:text-4xl">The fallacy of the new</h2>
         <p className="mb-8">
-          We live in a culture that assumes the newest information is the most accurate. In technology,
-          this is often true. In theology, it is almost always false. The great minds of our faith did
-          not have the internet, but they had a depth of meditation and a proximity to the original
-          contexts that we have traded for convenience. Ancient Paths is a refusal of that trade.
+          We live in a culture that assumes new is good and the latest information is the most
+          accurate. In technology this is often accurate, however, in theology this line of thinking
+          is dangerous. The great minds of our faith didn&rsquo;t have the internet, they labored in
+          prayer and meditation to grasp the truths revealed to them. We have traded this labor for
+          convenience, Ancient Paths is the rejection of that trade.
         </p>
 
         <h2 className="mb-8 mt-20 font-display text-3xl text-stone-900 sm:text-4xl">Why not just ask AI?</h2>
@@ -55,14 +56,16 @@ export default function WhyPage() {
           witness. It did not live, suffer, or die for what it believes, because it believes nothing.
           So we refuse to let it teach. It will not tell you what a verse means, on purpose. The one
           job we give it is carrying you to the witnesses: finding, quoting, and citing the people who
-          did live and die for these words. AI designed to lead you to the Holy Spirit, not be the
-          Holy Spirit.
+          did live and die for these words. This is AI designed to lead you to the Holy Spirit, not be
+          the Holy Spirit.
         </p>
 
         {/* PRD verse blockquote: 3px antique-gold left border, small-caps citation. */}
         <div className="my-16 border-l-[3px] border-accent-600 pl-8 sm:my-20 sm:pl-10">
+          {/* VERBATIM Webster's Revision (rwebster, served in this corpus) — the owner asked
+              for "Holy Spirit" wording; Webster's PD revision reads exactly this. */}
           <blockquote className="font-serif text-2xl italic leading-snug text-stone-900 sm:text-3xl">
-            &ldquo;But the Comforter, which is the Holy Ghost&hellip; he shall teach you all things.&rdquo;
+            &ldquo;But the Comforter, who is the Holy Spirit&hellip; he shall teach you all things.&rdquo;
           </blockquote>
           <cite className="mt-6 block font-sans text-micro font-semibold not-italic uppercase tracking-[0.2em] text-stone-500">
             John 14:26
@@ -70,11 +73,11 @@ export default function WhyPage() {
         </div>
 
         <h2 className="mb-8 mt-20 font-display text-3xl italic text-stone-900 sm:text-4xl">
-          The path is not new, but it is forgotten.
+          The path is not new, it shouldn&rsquo;t be neglected.
         </h2>
         <p className="mb-8">
           To walk the ancient paths is to reject the hurry of the present. It is to sit with a single
-          verse for an hour, exploring its Greek roots, its historical context, and the way it has been
+          verse for an hour in prayer, exploring its Greek roots, its historical context, and the way it has been
           prayed over by generations before us. This is the labor of the faithful, and it is the labor
           we aim to support. We are not building a search engine: we are building a gateway to the
           historic Christian mind.
@@ -86,7 +89,7 @@ export default function WhyPage() {
           two-thousand-year-old conversation. You are hearing the same words that Augustine heard,
           that Calvin wrestled with, and that Wesley preached. It is the steady, quiet voice of the
           Church that has survived empires, schisms, and wars. It is a path that has already been
-          walked.
+          walked and we&rsquo;re inviting you into that same walk.
         </p>
 
         <div aria-hidden className="my-16 flex justify-center text-accent-600/40 sm:my-20">
