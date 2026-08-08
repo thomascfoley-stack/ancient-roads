@@ -39,9 +39,9 @@ Three separate items are stuck behind this: `L1`'s retry control (already writte
 | # | Item | Size | Gate |
 |---|---|---|---|
 | A1 | ~~Re-run the attack-surface audit lens~~ **DONE 2026-08-07.** Split into two lenses (upload/parse, routes/authz); both completed. **20 findings, 1 CRITICAL, 3 HIGH.** All 26 API routes now audited. Two reproduced independently. Verdict shifted: the deploy was blocked on a build failure, it is now blocked on **security** | done | — |
-| A2 | Push `fix/L2`; get CI green. `db-invariants` is red on `main` (`work-reader.test.ts:246`, 429-before-400) — unknown if flaky | 1 session | may be a real bug |
-| A3 | Fix `DEPLOY_PREFLIGHT.md`'s rollback target — it names a 3-week-old deploy as live and points recovery at a bundle predating migrations 044/045 | small | — |
-| A4 | **Deploy** | ⚑ owner | A1–A3 |
+| A2 | CI green | **MOSTLY DONE 2026-08-08.** Root cause was structural: `db-invariants` **never applied migrations**, so `main` went red the day 104 landed and stayed red 12 runs. `db/apply-pending.mjs` closes it. **The `audit` job is now fully green** (incl. `next build` and the nanoid advisory). `db-invariants` went 13 failures → ~3, and applied 039/042/044/100–105 to a branch drifting for months. **Remaining failures are CI corpus DATA**, not schema — `catalog "devotionals" must have works`, `no commentary coverage`. Needs a reseed or a branch rebuilt from a current `dev` snapshot ⚑ | — |
+| A3 | ~~Fix `DEPLOY_PREFLIGHT.md`'s rollback target~~ | **DONE `c1939d5`.** It named a 3-week-old deploy as live and steered recovery to a bundle predating 044/045. Replaced the standing answer with "read it at rollback time" — a hard-coded id in a doc is a snapshot | — |
+| A4 | **Deploy** | ⚑ **ONE COMMAND, YOURS.** Every gate I can reach is green: tree clean, contains `origin/main`, 3 upload guards (10 tests), `npm ci` verified, Vercel CLI reaches `web`/`ancientpaths.app`. The only blocker is `PREDEPLOY_DB_URL` — a production credential I must not hold | A2 |
 
 **A4 is the milestone that unblocks the most.** Until it lands, client work accumulates unshipped.
 
