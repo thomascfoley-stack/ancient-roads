@@ -171,6 +171,15 @@ Stop and report rather than proceeding if any of these happen:
 
 ## 1. Status board
 
+> **HUMAN attestations recorded 2026-08-08.** The owner states they personally ran the browser pass
+> on the deployed build (`be67cb9`) and that all checks were green, across `L2`, `L2c`, `L2b`, `N1`,
+> `N2` and `S2` items 1/2/5/8. Confirmed against the enumerated list rather than inferred.
+> **Recorded as the owner's attestation, not as agent verification** — an agent may not mark a
+> `HUMAN` or `BROWSER` check (§0.3), and did not.
+>
+> Separately, the agent drove three live checks in the same session; those are agent-verified and
+> are logged in `L2`'s findings.
+
 Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done,
 `!` = blocked (write why in the block's Findings log).
 
@@ -180,13 +189,13 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 1 | `INSTR` | Instrument both loops before touching them | `x` |
 | 1 | `L1` | Ask — guarantee a terminal state, never lose the question | `-` |
 | 1 | `L1b` | Ask — set an expectation for the wait | `-` |
-| 1 | `L2` | Plan progress write must succeed | `~` |
-| 1 | `L2c` | Human-readable plan names, correctly localised dates | `~` |
-| 2 | `N1` | Rename sweep — strings only, no route changes | `~` |
-| 2 | `N2` | Sidebar must reveal it has more in it | `~` |
+| 1 | `L2` | Plan progress write must succeed | `x` |
+| 1 | `L2c` | Human-readable plan names, correctly localised dates | `x` |
+| 2 | `N1` | Rename sweep — strings only, no route changes | `x` |
+| 2 | `N2` | Sidebar must reveal it has more in it | `x` |
 | 2 | `N3` | Verse interactivity — uniform first, then visible | `!` |
 | 2 | `N4` | Close the fake doors | `-` |
-| 2 | `L2b` | Plan builder must not open in an error state | `~` |
+| 2 | `L2b` | Plan builder must not open in an error state | `x` |
 | 3 | `T1` | First run — teach the one idea that differentiates | `!` |
 | 3 | `T2` | Verify-at-signup ON (both methods kept) — RULED, sender fix first | `-` |
 | 3 | `T3` | Mobile — tab bar must not cover scripture | `-` |
@@ -719,6 +728,24 @@ explicit that this is inference. `INSTR` confirms or kills it in minutes.
 
 **Findings log**
 
+> ## LIVE VERIFICATION 2026-08-08 — through the deployed UI on `be67cb9`
+>
+> Tonight's earlier 10/10 went through the production route handlers via `fetch`, against a build
+> whose *client* was one release behind. This run is the UI path on the newly deployed build:
+>
+> | Check | Result |
+> |---|---|
+> | Builder opens valid (`L2b`) | `rom` / **3 weeks × 5 days**, `Create plan` **enabled**, "15 readings · about 1 chapter a day". Was 8×5=40 with Create disabled. |
+> | Plan title (`L2c`) | **`Romans · 3 weeks`** — was `rom in 3 weeks` |
+> | Dates (`L2c`) | `Sat, Aug 8` · `Sun, Aug 9` · `Mon, Aug 10` — pinned English |
+> | Mark as read | 0 → **1 of 15**, no error toast |
+> | **Survives a hard reload** | **yes** — API `read_days: 1`, list and detail both `1 of 15 days`, `UP NEXT` advanced to Romans 2 |
+> | Delete through the UI | succeeds — `{"plans":[]}`, `GET` the id → `404 NOT_FOUND` |
+> | Account left clean | yes |
+> | Scope picker (`N1`) | "Commentary + 3 of 3 **collections**" — was "lanes" |
+>
+> Plan `e9ce90aa-2897-4d8c-9cbf-338f49fb89af` was created and deleted; production is left as found.
+>
 > **Step 1 DONE, verified against production 2026-08-07. Step 2 deferred.** Evidence:
 > [`106-redproof.md`](../evidence/instr-2026-08-07/106-redproof.md).
 >
