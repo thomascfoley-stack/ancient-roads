@@ -31,10 +31,11 @@ export function MarketingNav({ active }: { active?: MarketingPage }) {
           Ancient Paths
         </Link>
 
-        {/* Auth CTA: the PRD primary button — 1px ink hairline, instant fill on hover. */}
+        {/* Auth CTA: the mockup's pill (owner call 2026-08-08) — rounded-full, muted
+            hairline, letterspaced small caps; ink fill on hover. */}
         <Link
           href="/home"
-          className="inline-flex min-h-[44px] items-center justify-self-end border border-stone-900 px-5 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 sm:order-3"
+          className="inline-flex min-h-[44px] items-center justify-self-end rounded-full border border-stone-400 px-7 font-sans text-micro font-semibold uppercase tracking-[0.2em] text-stone-900 hover:border-stone-900 hover:bg-stone-900 hover:text-stone-50 sm:order-3"
         >
           Log in
         </Link>
