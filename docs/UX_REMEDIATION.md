@@ -202,7 +202,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 3 | `T4` | Settings that follow the user; an account section | `-` |
 | 4 | `S1` | Landing page — show the product | `-` |
 | 4 | `S2` | Polish sweep — 9 small fixes, one branch | `~` |
-| 5 | `PR1a` | Prayer journal — the space and the entity | `-` ⚑ **DRAFTED, owner-review** |
+| 5 | `PR1a` | Prayer journal — the space and the entity | `-` **DRAFTED; all open questions ruled 2026-08-08. Ready to build, gated only on `N4` sequencing (it waits for this).** |
 | 5 | `PR1b` | Prayer journal — "From the tradition" rail (separable) | `-` |
 | 5 | `PR2` | Compare a note with the tradition | `-` |
 
@@ -273,7 +273,7 @@ Applied in block `N1`. These are decided.
 | Ancient Paths (sidebar nav item) | **Ask** | Sidebar only. Product name unchanged. |
 | AP (mobile tab) | **Ask** | Mobile tab bar |
 | ... 3 of 3 lanes | **... 3 of 3 collections** | Ask scope picker |
-| CHANNELS | **PRAYERS** | Sidebar section. Repurposed as the prayer journal (`PR1a`). There is no longer a Channels concept in the product. |
+| CHANNELS | **PRAYER JOURNAL** | Sidebar section. Repurposed as the prayer journal (`PR1a`). **Amended 2026-08-08 by owner ruling** — was `PRAYERS`; names the artefact rather than the contents. There is no longer a Channels concept in the product. |
 | STUDY PARTNERS | *(removed)* | Hidden per `N4`. Any future cohort feature is greenfield, not a revival of this section. |
 | New section | *(removed)* | No referent once sections are gone. |
 
@@ -1188,7 +1188,7 @@ UI for an unshipped feature left enabled rather than gated.
 
 **Minimal change** — do not exceed
 
-1. **CHANNELS -> PRAYERS.** The section already implements exactly the shell the prayer journal
+1. **CHANNELS -> PRAYER JOURNAL** (label amended 2026-08-08; see §2). The section already implements exactly the shell the prayer journal
    needs: a sidebar list of named personal objects with a create control. `PR1a` puts a real
    feature behind it. **Until `PR1a` ships, the section is hidden** — not badged "Coming soon",
    because `PR1a` is scoped in this document and scheduled, so a badge would be a second fake
@@ -1223,7 +1223,7 @@ UI for an unshipped feature left enabled rather than gated.
 - [ ] `BROWSER` A fresh account cannot create any object that leads to a placeholder page.
 - [ ] `AGENT` No orphaned channels or study partners remain in the sidebar for accounts that already created them; the hide-or-migrate decision is recorded in the Findings log and implemented.
 - [ ] `AGENT` The old Channels route either redirects or 404s per the recorded decision — it does not render a placeholder.
-- [ ] `BROWSER` The sidebar PRAYERS section either shows the shipped `PR1a` journal, or is hidden. **No third state.**
+- [ ] `BROWSER` The sidebar PRAYER JOURNAL section either shows the shipped `PR1a` journal, or is hidden. **No third state.**
 
 **Findings log**
 
@@ -2047,7 +2047,7 @@ tool.
 
 1. A **Pray** action in the verse panel, alongside Highlight and Notes.
 2. **The prayer space:** the existing note-editor shell re-framed. Verse pinned at top, warmer
-   background from existing palette tokens, `Lectio` preset typography (`S2` item 9). At most
+   background from existing palette tokens, its own typography from existing CSS variables — **decoupled from `S2` item 9 by owner ruling 2026-08-08**. At most
    one prompt line, lectio-style: *"Read it again slowly. What is the text saying to you?"*
 3. **Save creates a prayer entity** — distinct from notes, per the data-model rule below.
 3b. **FIRST-LAUNCH CARRY-FORWARD (moved here from `N4`, owner ruling 2026-08-08).** The retired
@@ -2058,7 +2058,7 @@ tool.
    key **once**, create a prayer per item in Neon persistence, and mark it done so it cannot run
    twice. **Nothing user-created is hidden or dropped** — that is the binding half of the ruling.
    `N4` is blocked on this and cannot hide Channels until it exists.
-4. **The journal:** prayers listed in the repurposed sidebar PRAYERS section (`N4`) — ordered,
+4. **The journal:** prayers listed in the repurposed sidebar PRAYER JOURNAL section (`N4`) — ordered,
    reopenable read-first, editable, deletable.
 
 > **Data-model rule, binding from the first line of code.** Prayers are a distinct entity.
@@ -2089,7 +2089,7 @@ tool.
 **Exit test**
 
 - [ ] `BROWSER` From John 1:1, **Pray** opens a visually distinct space (background, typography) with the verse pinned.
-- [ ] `BROWSER` Saving creates a prayer that appears in the PRAYERS journal, survives a hard reload, reopens read-first, edits, and deletes.
+- [ ] `BROWSER` Saving creates a prayer that appears in the PRAYER JOURNAL, survives a hard reload, reopens read-first, edits, and deletes.
 - [ ] `AGENT` Prayers appear in no notes list, no passage search, and no AI retrieval corpus.
 - [ ] `AGENT` **An automated test asserts the prayer module imports nothing from the AI client.** A code-review check drifts; a failing test does not. This is cheap — write it.
 - [ ] `AGENT` Error-reporting scrubbing is in place for the prayer surface, verified by triggering a deliberate exception in the editor and confirming no prayer text reaches the reporting payload.
@@ -2181,17 +2181,29 @@ tool.
 >
 > ### Open questions for the owner, before execution
 >
-> 1. **Does `N4` wait for this, or ship a carry-forward-only release first?** `N4` currently cannot
->    hide Channels without breaking "nothing dropped".
-> 2. **Sidebar label** — §2 locks `PRAYERS`. Confirm it survives contact with the actual feature.
+> 1. ~~Does `N4` wait for this, or ship a carry-forward-only release first?~~ **RULED 2026-08-08:
+>    `N4` WAITS.** Channels stays visible until the journal exists; the two land together, so the
+>    section changes meaning in one step and no reader sees a gap. **Cost, accepted knowingly:** the
+>    fake door — the finding `N4` exists to close — stays open longer. In exchange the carry-forward
+>    can never half-fail into a state where the source is hidden and the destination is empty.
+> 2. ~~Sidebar label — §2 locks `PRAYERS`.~~ **RULED 2026-08-08: `PRAYER JOURNAL`.** ⚑ **This
+>    amends §2's naming lock**, which is otherwise not to be re-litigated — recorded here as the
+>    owner's amendment, with §2 updated to match so the two cannot drift. It names the artefact
+>    rather than the contents, matching how this block describes the feature.
 > 3. ~~Does a prayer belong to a verse, or stand alone?~~ **RULED 2026-08-08: a prayer STANDS ALONE,
 >    with an OPTIONAL verse reference. ONE table.** So `verse_id` is nullable, the journal lists
 >    prayers whether or not they carry one, and a prayer outlives the verse that prompted it. Two
 >    consequences to hold on to while building: the `Pray` action from the verse panel *populates*
 >    that reference rather than requiring it, and deleting or re-versioning a passage must never
 >    cascade into a prayer — the reference is a pointer, not ownership.
-> 4. **`S2` item 9's `Lectio` preset** is a soft dependency for the prayer space's typography, and
->    item 9 is currently parked on a design decision.
+> 4. ~~`S2` item 9's `Lectio` preset is a soft dependency…~~ **RULED 2026-08-08: DECOUPLED.**
+>    `PR1a` defines its own typography from existing CSS variables and does **not** wait for item 9.
+>    That removes a cross-wave dependency from the critical path — item 9 is parked on a design call
+>    *and* carries a `T4` dependency for where presets persist, so blocking on it would have chained
+>    `PR1a` behind two unresolved decisions. **Consequence to hold:** if item 9 later ships `Lectio`,
+>    there will be two definitions of that typography and they must be reconciled deliberately, not
+>    left to drift. The block's original note said "do not diverge them later without updating both"
+>    — that instruction now applies in reverse.
 
 ---
 
