@@ -1034,10 +1034,20 @@ UI for an unshipped feature left enabled rather than gated.
 2. **STUDY PARTNERS -> hidden**, per the original disposition. Any future cohort feature is
    greenfield, not a revival of this section.
 3. **`New section` -> removed.** It has no referent once sections are gone.
-4. **Channels route** -> redirect to the prayers journal, or remove with a redirect map.
-   **Decide and write down which.**
-5. **Existing channel objects** (e.g. `# Gospel of John study`) -> hide or migrate to prayers.
-   **Decide explicitly and write it down.**
+4. **Channels route** -> **RULED 2026-08-08: REDIRECT to the prayers surface, not 404.** A 404 on a
+   URL a reader was invited to create is a dead end they cannot act on; a redirect lands them where
+   the concept moved.
+5. **Existing channel objects** -> **RULED 2026-08-08: MIGRATE into the prayer journal as entries.
+   Nothing user-created is hidden or dropped.**
+   > ⚠ **This ruling collides with an `R0` finding and cannot be executed as stated yet.** The
+   > sidebar's Channels items are **`localStorage` only** — `sidebar.tsx:111-122`, key
+   > `study-sections:v1:<userId>`, and that file contains **no `fetch` at all**. `/api/channels` and
+   > the `channels` table exist and the sidebar never calls them. So there is nothing server-side to
+   > migrate, and a migration can only run **in the reader's browser, once, on next load**.
+   > Additionally the destination does not exist until `PR1a` ships. **Sequencing consequence:**
+   > `N4` cannot both hide Channels and honour "nothing dropped" until `PR1a` provides the journal —
+   > so either `N4` waits for `PR1a`, or it ships a client-side one-time carry-forward into
+   > localStorage that `PR1a` later imports. Owner call, and it is a new one this ruling surfaced.
 
 **Do NOT**
 
@@ -1079,8 +1089,15 @@ Weeks and days-per-week are fixed constants rather than derived from the selecte
 
 **Minimal change** — do not exceed
 
-1. Derive default weeks from the chosen book: `ceil(chapters / daysPerWeek)`, recomputed on
-   book change. One small function, one call site.
+1. ~~Derive default weeks from the chosen book: `ceil(chapters / daysPerWeek)`~~ **AMENDED
+   2026-08-08, owner-accepted — the original was arithmetically impossible.** The validation
+   (`expand.ts:130-134`) refuses when `chapters < weeks × daysPerWeek`. With `daysPerWeek` fixed at
+   5, any book with **fewer than 5 chapters** has no positive week count that satisfies it, because
+   `weeks >= 1` already demands 5 slots. That is **19 of 66 books**, so deriving weeks alone leaves
+   nearly a third of the picker in the error state this block exists to remove. Derive **both**
+   numbers (`defaultPlanShape`) — still one function, one call site, and it touches neither the
+   validation nor the preview. **The exit test caught this before any code shipped, which is the
+   process working as designed, not a failure of it.**
 2. Change nothing else in the builder.
 
 **Do NOT**
@@ -1193,7 +1210,7 @@ code cost of the three, least certain to help. Ship the first two, measure, then
 - [ ] `BROWSER` A brand-new account lands in the reader with the verse drawer already open.
 - [ ] `BROWSER` The orientation line appears once, dismisses in one click, never returns for that account.
 - [ ] `AGENT` The metric is instrumented: % of new accounts opening a verse drawer in their first session.
-- [ ] `AGENT` **The pre-change baseline for that metric was recorded before shipping.** Without it the measurement is worthless.
+- [ ] `AGENT` **The pre-change baseline for that metric was recorded before shipping.** Without it the measurement is worthless. **RULED 2026-08-08: yes, capture it first.** `T1` does not ship until the baseline exists — shipping first destroys the only comparison that makes the block's success legible.
 
 **Findings log**
 
