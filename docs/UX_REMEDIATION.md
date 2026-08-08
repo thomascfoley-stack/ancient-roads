@@ -171,6 +171,15 @@ Stop and report rather than proceeding if any of these happen:
 
 ## 1. Status board
 
+> **HUMAN attestations recorded 2026-08-08.** The owner states they personally ran the browser pass
+> on the deployed build (`be67cb9`) and that all checks were green, across `L2`, `L2c`, `L2b`, `N1`,
+> `N2` and `S2` items 1/2/5/8. Confirmed against the enumerated list rather than inferred.
+> **Recorded as the owner's attestation, not as agent verification** — an agent may not mark a
+> `HUMAN` or `BROWSER` check (§0.3), and did not.
+>
+> Separately, the agent drove three live checks in the same session; those are agent-verified and
+> are logged in `L2`'s findings.
+
 Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done,
 `!` = blocked (write why in the block's Findings log).
 
@@ -180,22 +189,44 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 1 | `INSTR` | Instrument both loops before touching them | `x` |
 | 1 | `L1` | Ask — guarantee a terminal state, never lose the question | `-` |
 | 1 | `L1b` | Ask — set an expectation for the wait | `-` |
-| 1 | `L2` | Plan progress write must succeed | `~` |
-| 1 | `L2c` | Human-readable plan names, correctly localised dates | `~` |
-| 2 | `N1` | Rename sweep — strings only, no route changes | `~` |
-| 2 | `N2` | Sidebar must reveal it has more in it | `~` |
+| 1 | `L2` | Plan progress write must succeed | `x` |
+| 1 | `L2c` | Human-readable plan names, correctly localised dates | `x` |
+| 2 | `N1` | Rename sweep — strings only, no route changes | `x` |
+| 2 | `N2` | Sidebar must reveal it has more in it | `x` |
 | 2 | `N3` | Verse interactivity — uniform first, then visible | `!` |
 | 2 | `N4` | Close the fake doors | `-` |
-| 2 | `L2b` | Plan builder must not open in an error state | `~` |
+| 2 | `L2b` | Plan builder must not open in an error state | `x` |
 | 3 | `T1` | First run — teach the one idea that differentiates | `!` |
 | 3 | `T2` | Verify-at-signup ON (both methods kept) — RULED, sender fix first | `-` |
 | 3 | `T3` | Mobile — tab bar must not cover scripture | `-` |
 | 3 | `T4` | Settings that follow the user; an account section | `-` |
 | 4 | `S1` | Landing page — show the product | `-` |
 | 4 | `S2` | Polish sweep — 9 small fixes, one branch | `~` |
-| 5 | `PR1a` | Prayer journal — the space and the entity | `-` ⚑ **DRAFTED, owner-review** |
+| 5 | `PR1a` | Prayer journal — the space and the entity | `[x]` **BUILT AND DEV-VERIFIED 2026-08-08.** RLS proven two-account over `app_runtime`; carry-forward run against the live dev DB. **Prod migration 107 awaits the owner's go.** Signed-in browser walk NOT RUN (no local Neon Auth creds). |
 | 5 | `PR1b` | Prayer journal — "From the tradition" rail (separable) | `-` |
 | 5 | `PR2` | Compare a note with the tradition | `-` |
+
+### Every open block, its gate, and who owns it
+
+**No block is ambiguous.** If it is not `x`, this table says what it is waiting for and whose move
+it is. Re-measure before trusting; this was written 2026-08-08.
+
+| Block | State | Gate — what it is actually waiting for | Owner of the next move |
+|---|---|---|---|
+| `L1` | `-` | The retry control shipped with `be67cb9`; what remains is the unhandled-throw guard, and `INSTR` never reproduced the failure it guards against (n=3 "did not reproduce"). **Arguably wants `N3c` first** — a throw that unmounts is the only mechanism left. | agent, after `N3c` |
+| `L1b` | `-` | **Its premise is disproved.** Written as "~18s success, ~45s failure"; measured 104s · 58s · 64s. The 15-second threshold must be re-derived from that series before anything is built. | ⚑ owner (pick the threshold) |
+| `L2` step 2 | `x` (step 1) | Optimistic toggle — now cosmetic, since the write succeeds. Ships with any later deploy. | agent, low priority |
+| `N3` | `!` | Blocked: `N3a`'s root cause has no mechanism in the source. Unblocks only via `N3c`. | blocked by `N3c` |
+| `N3c` | `x` | **RUN 2026-08-08: did not reproduce, and the mechanism is disproved** — a both-ends-bounded dead range is not a hydration abort. Unblocks `N3`. | ⚑ owner (strike `N3a`?) |
+| `N4` | `-` | **UNBLOCKED 2026-08-08** — `PR1a` shipped the destination and the carry-forward that discharges the "nothing user-created dropped" ruling. Route redirect still to do. | agent |
+| `T1` | `!` | Blocked: the metric is not instrumented and there is nowhere to count it. Deliberately deferred in §9. | ⚑ owner (schedule the prerequisite) |
+| `T2` | `-` | **RULED, not executed.** Sender fix → verification on. Runnable checklist staged below. | ⚑ owner (execute) |
+| `T3` | `-` | **DEVICE only**, and its step 1 appears already implemented — so the device pass is a diagnosis, not a fix. | ⚑ owner (hardware) |
+| `T4` | `-` | **HELD** on the owner seeing the `layout.tsx:82` first-paint flash. Now schedulable against the deployed build. | ⚑ owner (observe, then rule) |
+| `S1` | `-` | **Owner-blocked in substance** — three of four items are content only the owner can write. Page skeletons staged below. | ⚑ owner (supply content) |
+| `S2` | `~` | 5 of 9 closed. Item 4 parked (needs a rendered judgment), 6 closed as a measurement, 7 out to §9, 9 parked on a design decision. | ⚑ owner (item 9's interaction call) |
+| `PR1a` | `[x]` | Built and dev-verified 2026-08-08. Prod migration 107 staged, awaiting owner go. | ⚑ owner (prod 107) |
+| `PR1b`, `PR2` | `-` | Wave 5, gated behind `PR1a`. Not in the remediation's definition of done. | — |
 
 ### Dependency graph
 
@@ -242,7 +273,7 @@ Applied in block `N1`. These are decided.
 | Ancient Paths (sidebar nav item) | **Ask** | Sidebar only. Product name unchanged. |
 | AP (mobile tab) | **Ask** | Mobile tab bar |
 | ... 3 of 3 lanes | **... 3 of 3 collections** | Ask scope picker |
-| CHANNELS | **PRAYERS** | Sidebar section. Repurposed as the prayer journal (`PR1a`). There is no longer a Channels concept in the product. |
+| CHANNELS | **PRAYER JOURNAL** | Sidebar section. Repurposed as the prayer journal (`PR1a`). **Amended 2026-08-08 by owner ruling** — was `PRAYERS`; names the artefact rather than the contents. There is no longer a Channels concept in the product. |
 | STUDY PARTNERS | *(removed)* | Hidden per `N4`. Any future cohort feature is greenfield, not a revival of this section. |
 | New section | *(removed)* | No referent once sections are gone. |
 
@@ -719,6 +750,24 @@ explicit that this is inference. `INSTR` confirms or kills it in minutes.
 
 **Findings log**
 
+> ## LIVE VERIFICATION 2026-08-08 — through the deployed UI on `be67cb9`
+>
+> Tonight's earlier 10/10 went through the production route handlers via `fetch`, against a build
+> whose *client* was one release behind. This run is the UI path on the newly deployed build:
+>
+> | Check | Result |
+> |---|---|
+> | Builder opens valid (`L2b`) | `rom` / **3 weeks × 5 days**, `Create plan` **enabled**, "15 readings · about 1 chapter a day". Was 8×5=40 with Create disabled. |
+> | Plan title (`L2c`) | **`Romans · 3 weeks`** — was `rom in 3 weeks` |
+> | Dates (`L2c`) | `Sat, Aug 8` · `Sun, Aug 9` · `Mon, Aug 10` — pinned English |
+> | Mark as read | 0 → **1 of 15**, no error toast |
+> | **Survives a hard reload** | **yes** — API `read_days: 1`, list and detail both `1 of 15 days`, `UP NEXT` advanced to Romans 2 |
+> | Delete through the UI | succeeds — `{"plans":[]}`, `GET` the id → `404 NOT_FOUND` |
+> | Account left clean | yes |
+> | Scope picker (`N1`) | "Commentary + 3 of 3 **collections**" — was "lanes" |
+>
+> Plan `e9ce90aa-2897-4d8c-9cbf-338f49fb89af` was created and deleted; production is left as found.
+>
 > **Step 1 DONE, verified against production 2026-08-07. Step 2 deferred.** Evidence:
 > [`106-redproof.md`](../evidence/instr-2026-08-07/106-redproof.md).
 >
@@ -1069,6 +1118,107 @@ thrown *during* it.
 4. Write the cause into the Findings log. **Do not fix in this block** — `N3a` is where a fix lands,
    and only once there is something located to fix.
 
+### RESULT 2026-08-08 — ⚑ **DID NOT REPRODUCE, and the reported shape is not producible by the mechanism it was attributed to.**
+
+Run against the deployed build `be67cb9`, `/read/jhn/1`, hard document load.
+
+| Probe | Result |
+|---|---|
+| React #418 (or #423/#425) in the console | **none** |
+| Verse spans in the DOM | **51** (John 1 is 51 verses) |
+| Interactive handles | **51** — every verse, none missing |
+| Handles that respond (opened the panel) | **verses 3, 22, 23, 32, 45, 51 — all six** |
+
+So on this build: no hydration error, no truncation, and **no dead range.** The panel opens on
+verses either side of the reported boundary and at the end of a chapter twice as long as the deck's
+sample.
+
+### The finding that reframes this — the reported range is bounded at BOTH ends
+
+The deck reported *"verses 1–22 open the study panel; verses 23–32 render as plain text and ignore
+taps."* **A hydration abort cannot produce that.** React discards the remainder of the subtree at
+the throw, so everything after the throw point is dead — the dead range runs to the END of the
+chapter. John 1 has **51** verses; a range that stops at 32 and (implicitly) resumes is not what an
+abort looks like.
+
+That kills the mechanism this block was opened to investigate. Three candidates survive, and they
+are cheap to separate next time:
+
+1. **The observation was of a partial page** — the reader scrolled to ~32 and reported the boundary
+   of what they had loaded or looked at, not a boundary in behaviour.
+2. **It was real and is now fixed.** `be67cb9` is many commits past what the deck saw, and
+   `verse-display.tsx` changed materially in that window (`e196e4b`'s hint and handle work).
+3. **It is environment-specific** — a slower device, a different browser, or a mid-load interaction
+   that this pane does not reproduce.
+
+### What this does to `N3` and `L1`
+
+- **`N3a` should be struck, not merely blocked.** Its stated root cause has no mechanism in the
+  source (established 2026-08-08), and now its *symptom* does not reproduce on the shipped build
+  either. Two independent reasons. ⚑ Owner call: strike `N3a`, leaving `N3b` step 3 as the whole of
+  `N3`.
+- **`L1`'s remaining guard loses its motivation.** It exists to catch an unhandled throw that
+  unmounts the Ask turn. That reset has now failed to reproduce **four** times with a recorder armed
+  correctly, and this run finds no client-side throw on the reader page either. The guard is still
+  cheap and still correct defensive practice — but it should be built as defence, not as a fix for
+  an observed defect, and the block should say so.
+
+### NOT PROVEN, and worth stating plainly
+
+**This is one build, one browser, one chapter, in a desktop pane.** "Did not reproduce" is not "does
+not happen" — the deck's reviewer saw something, and three of this session's own findings began as
+reports that looked wrong and turned out to be real. What is *proven* is narrower and stronger: the
+**mechanism** is wrong. A both-ends-bounded dead range is not a hydration abort, whatever else it
+might be.
+
+### CSP note, unchanged and unrelated
+
+The console is not silent: every load still emits the Google Fonts CSP refusal (pre-deploy audit
+finding 7, already filed in §9). It is not a hydration error and does not affect this result — but
+it does mean "the console has errors on every reader load" remains true, which is what made A7b's
+report plausible in the first place.
+
+---
+
+### PROTOCOL — staged 2026-08-08. Start at step 1; no orientation needed.
+
+**What you are looking for.** React hydration walks the server-rendered tree and attaches handlers.
+If it throws partway, React discards the rest of that subtree — **every handler after the throw
+point is dead, every one before it works.** That is exactly "verses 1-22 live, 23-32 dead", with no
+per-verse mechanism required. `verse-display.tsx:185` is a single unconditional map, so the source
+cannot produce that pattern; only an abort can.
+
+**How #418 presents.** In production React errors are minified to a code and a link. #418 is
+"Hydration failed because the initial UI does not match what was rendered on the server." It is
+logged via `console.error` **during** hydration — which is why a console read taken *after*
+navigation sees nothing, and why A7's X1 check was retracted.
+
+**Steps.**
+
+1. **Arm before navigating.** In the pane, on any page: wrap `console.error`, add `window.onerror`
+   and `unhandledrejection` listeners, push into a global array. **Then** navigate to a reader page.
+   Arming after the load is the mistake that produced a false green once already.
+2. **Hard-load** `/read/jhn/1`. Not a client-side route change — hydration only happens on a real
+   document load.
+3. **Read the array.** Record whether #418 (or #423/#425, its siblings) fired, and the full text.
+4. **Locate the boundary.** Walk the verse handles: `document.querySelectorAll('[role="button"][aria-label*="read commentary"]')`.
+   Count them, then click one *early* (verse 3) and one *late* (verse 30) and see which opens the
+   panel. **The index where behaviour changes is the throw point.**
+5. **Distinguish the two candidates** — this is the step that decides the fix:
+   - **Hydration kill:** the handles all EXIST in the DOM (server-rendered) but the late ones do
+     not respond. Handler attachment stopped.
+   - **Never attached:** the late handles are absent from the DOM entirely. A render problem, not a
+     hydration one — and a different fix.
+6. **If #418 fired, find the mismatching node.** The dev build names it; production does not. Reproduce
+   locally against `next dev` with the same chapter to get the readable message.
+7. **Write the cause into this block. Do not fix here** — `N3a` is where a fix lands.
+
+**Prime suspects, from what this repo already knows.** A7b proved `layout.tsx:58`'s
+`suppressHydrationWarning` does **not** cover the two mismatches it found (`sidebar.tsx:115-134`
+Sign in/Sign out, `reader-header.tsx:68` WEB/KJV). Both are auth- or preference-dependent — server
+renders one thing, client another. `reader-header` is on the reader page, which makes it the first
+place to look.
+
 **Do NOT**
 
 - Do not edit `verse-display.tsx`. Owner ruling 2026-08-08: it has no mechanism to fix.
@@ -1100,7 +1250,7 @@ UI for an unshipped feature left enabled rather than gated.
 
 **Minimal change** — do not exceed
 
-1. **CHANNELS -> PRAYERS.** The section already implements exactly the shell the prayer journal
+1. **CHANNELS -> PRAYER JOURNAL** (label amended 2026-08-08; see §2). The section already implements exactly the shell the prayer journal
    needs: a sidebar list of named personal objects with a create control. `PR1a` puts a real
    feature behind it. **Until `PR1a` ships, the section is hidden** — not badged "Coming soon",
    because `PR1a` is scoped in this document and scheduled, so a badge would be a second fake
@@ -1135,7 +1285,7 @@ UI for an unshipped feature left enabled rather than gated.
 - [ ] `BROWSER` A fresh account cannot create any object that leads to a placeholder page.
 - [ ] `AGENT` No orphaned channels or study partners remain in the sidebar for accounts that already created them; the hide-or-migrate decision is recorded in the Findings log and implemented.
 - [ ] `AGENT` The old Channels route either redirects or 404s per the recorded decision — it does not render a placeholder.
-- [ ] `BROWSER` The sidebar PRAYERS section either shows the shipped `PR1a` journal, or is hidden. **No third state.**
+- [ ] `BROWSER` The sidebar PRAYER JOURNAL section either shows the shipped `PR1a` journal, or is hidden. **No third state.**
 
 **Findings log**
 
@@ -1431,6 +1581,44 @@ is a prerequisite of option 1, not a nicety beside it. Fixable in the Neon conso
 - [ ] `BROWSER` If verification is on: a new account receives the mail, from the branded sender, and
       can still reach the product before verifying.
 
+### ⚑ EXECUTION CHECKLIST — staged 2026-08-08, NOT executed. Runnable cold by a future session.
+
+Everything short of execution. Steps 1-3 are console work only the owner can do; 4-6 are checks
+that must happen **in this order**, because two of them can invalidate the plan.
+
+**BEFORE turning anything on — the two parked checks. Run these first; they can change the plan.**
+
+- [ ] **1. Count existing unverified accounts.** Verification-on governs *new* registrations only.
+      If accounts already exist unverified, g38m's precondition survives for exactly those and the
+      closure is **partial, not structural**. Do not assume the set is empty — the test account is
+      at least one. Read it from the Neon Auth console's user list, or from `neon_auth` in the
+      database (read-only). **Record the number.** If it is non-zero, decide: grandfather them (and
+      say so in `SECURITY.md`, because the closure is then partial) or prompt them to verify.
+- [ ] **2. Confirm a mail failure is a signup OUTAGE, not an owner LOCKOUT.** Expected: existing
+      accounts and live sessions are unaffected, so only *new* signups stall. Confirm against the
+      owner's own recovery path specifically — if the owner's account ever needs a password reset
+      while mail is broken, that is a lockout and this ruling needs revisiting.
+
+**Then execute, in this order — the order is the ruling.**
+
+- [ ] **3. Fix the sender.** Neon Console → project → Auth → **Configure email provider**. Today it
+      sends from the shared `auth@mail.myneon.app`; point it at the project's own Resend account so
+      mail arrives branded and deliverable. Verification-on makes this mail load-bearing for every
+      new account, so it comes **first**.
+- [ ] **4. Verify the sender works** before relying on it: trigger one password-reset to a real
+      inbox and confirm it arrives, from the right address, not in spam.
+- [ ] **5. Turn `Verify at Sign-up` ON.** Neon Console → Auth → Configuration.
+- [ ] **6. Prove it end to end:** sign up a fresh address → mail arrives → the account cannot be
+      used to auto-link a Google identity before verification → after verifying, both paths work.
+
+**Then record.**
+
+- [ ] **7. Update `docs/SECURITY.md`**: g38m closed by verification, the date, the unverified-account
+      count from step 1, and whether the closure is structural or partial.
+
+**Do NOT** turn verification on before step 4 passes. That converts a security fix into a signup
+outage, which is the one failure this sequencing exists to prevent.
+
 **Findings log**
 
 > Call sites for whoever executes: all five auth actions go through `@/lib/auth/client` and are
@@ -1610,7 +1798,15 @@ transfer.
 > `runAsUser` sets `app.current_user_id` from that same value — so a prefs table is only as correct
 > as that binding, which is worth asserting rather than assuming.
 >
-> ### ⚑ RULED 2026-08-08: HELD until the owner has seen the first-paint flash in the browser pass
+> ### ⚑ RULED 2026-08-08: HELD until the owner has seen the first-paint flash
+>
+> **The observation is now SCHEDULABLE against the deployed build.** `layout.tsx:82`'s behaviour is
+> live-visible on **every page load** of `be67cb9` — the inline script reads `localStorage`
+> synchronously before paint, so what you are looking for is present on any load, not something to
+> reproduce. **How to see it:** open the app with `reader-theme=dark` stored, then hard-reload and
+> watch the first frame. Today there is no flash *because* the script runs before paint — that is
+> the property option B would give up. Set the theme, reload, and judge whether losing that is
+> acceptable; then rule. Nothing else in `T4` starts first.
 >
 > The store-vs-migrate choice is **deliberately not made yet.** Option B's real cost is the
 > `layout.tsx:82` flash — a server-held theme is correct one render *after* paint — and that is a
@@ -1683,6 +1879,58 @@ The page was written to establish a position rather than to demonstrate a produc
 - [ ] `BROWSER` Privacy, terms and contact are reachable from the landing page.
 - [ ] `BROWSER` The page answers what it costs and when access opens.
 - [ ] `HUMAN` Waitlist conversion measured before and after — otherwise there is no way to know whether the screenshot earned its place.
+
+### PAGE SKELETONS — staged 2026-08-08. **Sections only, no copy.** ⚑ owner-blocked on review.
+
+Three routes do not exist (`/privacy`, `/terms`, `/contact`); `/about` does. These are the sections
+each page needs — **not the words.** An agent should not draft a privacy policy or terms of service:
+they are legal statements about what this business actually does, and getting them wrong is worse
+than not having them. What follows is the structure to fill.
+
+**Two things make these unusually easy to write honestly here**, and both should be said plainly on
+the page rather than buried: the corpus is public-domain or permissively-licensed by construction
+(`DATA_SOURCES.md`), and **the product never sends user content to a model as training data** — C9
+already forbids user content entering any retrieval corpus. Most products cannot say either.
+
+#### `/privacy`
+- What is collected: account email, and what the reader creates (notes, highlights, plans, uploads).
+- What is **not**: no analytics vendor, no tracking pixels, no ad networks — **true today and worth
+  stating, because it is a differentiator and a constraint** (see §9's T1 prerequisite: adding
+  analytics later means amending this page, deliberately).
+- Where it lives: Neon (Postgres), region; Vercel for hosting; Neon Auth for identity; DeepInfra for
+  embeddings — **and what is sent to each.** Uploaded documents are embedded; prayers and notes are
+  not (C9).
+- Third parties, named, with why each exists.
+- Retention, and what deletion actually removes — **must match what `T4`'s delete builds**, so these
+  two are written together or the page becomes a promise the code does not keep.
+- Reader rights: export, delete, correct. **Do not claim any of these before `T4` ships them.**
+- Contact for privacy questions.
+- Last-updated date.
+
+#### `/terms`
+- What the service is, in one paragraph: a concordance that quotes and attributes, **and never
+  interprets** — the product guarantee, stated as a term rather than only as marketing.
+- Account rules: eligibility, one person per account, responsibility for credentials.
+- Acceptable use, and what gets an account closed.
+- **Content ownership: the reader's notes, prayers and uploads are theirs.** State the licence
+  granted to operate the service, and keep it minimal — no "we may use your content to improve our
+  services", which would contradict C9 in a legally binding document.
+- The corpus: public domain / permissively licensed, quoted with attribution; modern translations
+  are absent for licensing reasons (the same stance `S2` item 1 now states in the picker).
+- Availability, and that this is a private preview: no uptime guarantee yet.
+- Liability, governing law, changes to terms.
+- Last-updated date.
+
+#### `/contact`
+- One reachable route — an address that a person reads.
+- What to use it for: access requests, privacy, bugs, licensing questions about a work.
+- Expected response time, stated honestly, including "this is a small project".
+- No form required; a mailto is sufficient and avoids collecting anything.
+
+#### Wiring, when the content exists
+- A `<footer>` on the landing page linking all four (`/about` already exists) — the landing page
+  currently has **zero** matches for `<footer>`, `Privacy` or `Terms`.
+- Same footer on the marketing surface only; the app shell has its own chrome.
 
 **Findings log**
 
@@ -1844,7 +2092,75 @@ error-reporting leak vector in particular, which no audit caught.
 
 ### `PR1a` — Prayer journal: the space and the entity
 
-**Wave:** 5 · **Severity:** P1 Product · **Depends on:** `N1`, `N4`, soft `S2`#9 · **Blocks:** `PR1b`, `PR2` · **Status:** `[ ]`
+**Wave:** 5 · **Severity:** P1 Product · **Depends on:** `N1`, `N4`, soft `S2`#9 · **Blocks:** `PR1b`, `PR2` · **Status:** `[x]` **BUILT AND DEV-VERIFIED 2026-08-08 — production migration awaits the owner's go.**
+
+#### Completion record — 2026-08-08
+
+**Shipped.** Migration `107_prayers.sql` (own table, RLS, grants stated not assumed — the 106
+lesson, with a self-verifying `DO $$` block that raises rather than reporting a broken migration
+applied); `lib/prayers.ts`; `POST/GET /api/prayers`; `components/prayer-journal.tsx`; `/prayers`;
+the **Pray action** in the study panel; and the **first-launch carry-forward** that discharges
+`N4`'s migration ruling.
+
+**Verified against the LIVE DEV DATABASE, not a mock.**
+
+| Check | Result |
+|---|---|
+| Migration 107 applied to dev | `✓ ledger 107_prayers.sql` · grants `SELECT,INSERT,UPDATE,DELETE` · 1 policy |
+| **RLS, two accounts, over `app_runtime`** (not owner) | B cannot read / update / delete A's prayer; A's text intact; A can edit and delete their own |
+| **Carry-forward through the real data layer** | 4 prayers written to dev and read back through RLS; second run created 0; source key intact; rows cleaned up |
+| Unit + invariant suites | 20 prayer tests + 5 rendered tests green; **12 seeded red-proofs watched fail**, each on its intended test only |
+| Browser, 390px and 1280px | `/prayers` renders, **no horizontal overflow at either width** |
+
+**The Pray action is an ACTION, not a fourth tab.** `commentaries`/`word`/`notes` are facets of a
+verse; prayer is something the reader *does* with it. A tab would file responding-to-the-text
+alongside studying it — the exact conflation this block exists to undo. It carries the verse as a
+reference the prayer space pre-fills and never requires.
+
+**The carry-forward's three constraints are enforced in code and red-proofed, not asserted.** Runs
+once (marker written BEFORE the first post, so a dead tab cannot re-run what landed); best-effort
+(a failing API returns 0 and the journal still opens); **does not delete its `localStorage` source
+this release** — which is what makes the once-only guard's "a miss beats a duplicate" choice safe
+rather than lossy. A duplicated prayer is someone's words twice with no way to tell which is real.
+
+> ### ⚠ LOAD-BEARING COUPLING — do not "clean up" `study-sections:v1:<userId>`
+>
+> **The once-only guard and the surviving source key are ONE decision, not two.** Read separately,
+> the leftover `localStorage` key looks like dead weight a later release should tidy away. It is
+> not. It is the reason the guard is allowed to be as strict as it is.
+>
+> The guard writes its marker BEFORE the first post and never retries a half-run, because after a
+> crash mid-loop we cannot tell which prayers landed, and a duplicate is worse than a miss —
+> someone's words twice, with no way for them to tell which is real. **That trade is only
+> acceptable while the source still exists**, because "a miss" then means "recoverable later",
+> not "gone".
+>
+> **Delete the key and the same unchanged code silently becomes data loss.** No test fails, no
+> type breaks, and the failure is invisible until someone notices prayers that were never carried.
+> `prayer-carry-forward.test.ts` guards the module against removing its own source, but it cannot
+> see a `removeItem` added anywhere else — `sidebar.tsx`, a migration script, a storage-cleanup
+> helper.
+>
+> **Before removing that key, a reconciliation pass must exist first**: read the source, compare
+> against prayers already carried, create only what is missing. Then the key can go. Not before.
+> The same warning sits at the key's definition in `sidebar.tsx`, which is where someone doing the
+> cleanup would actually be looking.
+
+**A defect the browser pass found in this block's own code, and fixed:** a signed-out visitor was
+shown a red *"Your prayers could not be loaded"* beside a permanent *"Loading…"* — the app
+reporting its own auth state as a fault, on the page least suited to alarming anyone. `load()` now
+treats 401 as a state (a sign-in invitation) and a real failure as an error, with both branches
+red-proofed. **This is the argument for the browser pass being a gate:** every test was green.
+
+**NOT RUN, and recorded as such:** a **signed-in browser walk** — local sign-in needs Neon Auth
+credentials (`NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`) that are not in this working tree, so
+`/api/auth/get-session` 500s locally. The signed-in states are covered by rendered jsdom tests and
+by the live-dev data-layer run, which is not the same thing as a walk and is not claimed to be.
+
+**Known gap, deliberately not decided here:** the sidebar also writes a `guest` key when signed
+out, and that data is **not** carried forward. Carrying it would move one person's list into
+whichever account signs in next on a shared browser. A missed carry is recoverable (the source is
+still on disk); that leak is not. Owner call if it should be revisited.
 
 **Observed**
 
@@ -1861,7 +2177,7 @@ tool.
 
 1. A **Pray** action in the verse panel, alongside Highlight and Notes.
 2. **The prayer space:** the existing note-editor shell re-framed. Verse pinned at top, warmer
-   background from existing palette tokens, `Lectio` preset typography (`S2` item 9). At most
+   background from existing palette tokens, its own typography from existing CSS variables — **decoupled from `S2` item 9 by owner ruling 2026-08-08**. At most
    one prompt line, lectio-style: *"Read it again slowly. What is the text saying to you?"*
 3. **Save creates a prayer entity** — distinct from notes, per the data-model rule below.
 3b. **FIRST-LAUNCH CARRY-FORWARD (moved here from `N4`, owner ruling 2026-08-08).** The retired
@@ -1872,7 +2188,7 @@ tool.
    key **once**, create a prayer per item in Neon persistence, and mark it done so it cannot run
    twice. **Nothing user-created is hidden or dropped** — that is the binding half of the ruling.
    `N4` is blocked on this and cannot hide Channels until it exists.
-4. **The journal:** prayers listed in the repurposed sidebar PRAYERS section (`N4`) — ordered,
+4. **The journal:** prayers listed in the repurposed sidebar PRAYER JOURNAL section (`N4`) — ordered,
    reopenable read-first, editable, deletable.
 
 > **Data-model rule, binding from the first line of code.** Prayers are a distinct entity.
@@ -1903,7 +2219,7 @@ tool.
 **Exit test**
 
 - [ ] `BROWSER` From John 1:1, **Pray** opens a visually distinct space (background, typography) with the verse pinned.
-- [ ] `BROWSER` Saving creates a prayer that appears in the PRAYERS journal, survives a hard reload, reopens read-first, edits, and deletes.
+- [ ] `BROWSER` Saving creates a prayer that appears in the PRAYER JOURNAL, survives a hard reload, reopens read-first, edits, and deletes.
 - [ ] `AGENT` Prayers appear in no notes list, no passage search, and no AI retrieval corpus.
 - [ ] `AGENT` **An automated test asserts the prayer module imports nothing from the AI client.** A code-review check drifts; a failing test does not. This is cheap — write it.
 - [ ] `AGENT` Error-reporting scrubbing is in place for the prayer surface, verified by triggering a deliberate exception in the editor and confirming no prayer text reaches the reporting payload.
@@ -1995,19 +2311,112 @@ tool.
 >
 > ### Open questions for the owner, before execution
 >
-> 1. **Does `N4` wait for this, or ship a carry-forward-only release first?** `N4` currently cannot
->    hide Channels without breaking "nothing dropped".
-> 2. **Sidebar label** — §2 locks `PRAYERS`. Confirm it survives contact with the actual feature.
+> 1. ~~Does `N4` wait for this, or ship a carry-forward-only release first?~~ **RULED 2026-08-08:
+>    `N4` WAITS.** Channels stays visible until the journal exists; the two land together, so the
+>    section changes meaning in one step and no reader sees a gap. **Cost, accepted knowingly:** the
+>    fake door — the finding `N4` exists to close — stays open longer. In exchange the carry-forward
+>    can never half-fail into a state where the source is hidden and the destination is empty.
+> 2. ~~Sidebar label — §2 locks `PRAYERS`.~~ **RULED 2026-08-08: `PRAYER JOURNAL`.** ⚑ **This
+>    amends §2's naming lock**, which is otherwise not to be re-litigated — recorded here as the
+>    owner's amendment, with §2 updated to match so the two cannot drift. It names the artefact
+>    rather than the contents, matching how this block describes the feature.
 > 3. ~~Does a prayer belong to a verse, or stand alone?~~ **RULED 2026-08-08: a prayer STANDS ALONE,
 >    with an OPTIONAL verse reference. ONE table.** So `verse_id` is nullable, the journal lists
 >    prayers whether or not they carry one, and a prayer outlives the verse that prompted it. Two
 >    consequences to hold on to while building: the `Pray` action from the verse panel *populates*
 >    that reference rather than requiring it, and deleting or re-versioning a passage must never
 >    cascade into a prayer — the reference is a pointer, not ownership.
-> 4. **`S2` item 9's `Lectio` preset** is a soft dependency for the prayer space's typography, and
->    item 9 is currently parked on a design decision.
+> 4. ~~`S2` item 9's `Lectio` preset is a soft dependency…~~ **RULED 2026-08-08: DECOUPLED.**
+>    `PR1a` defines its own typography from existing CSS variables and does **not** wait for item 9.
+>    That removes a cross-wave dependency from the critical path — item 9 is parked on a design call
+>    *and* carries a `T4` dependency for where presets persist, so blocking on it would have chained
+>    `PR1a` behind two unresolved decisions. **Consequence to hold:** if item 9 later ships `Lectio`,
+>    there will be two definitions of that typography and they must be reconciled deliberately, not
+>    left to drift. The block's original note said "do not diverge them later without updating both"
+>    — that instruction now applies in reverse.
 
 ---
+
+### `F1-fonts` — the font stack is blocked by our own CSP
+
+**Wave:** 5 · **Severity:** P1 Product · **Depends on:** — · **Blocks:** — · **Status:** `[ ]` **SPEC'D 2026-08-08, owner-ruled, not started**
+
+**Owner ruling 2026-08-08:** self-host the stack via `next/font`. **No CSP widening.** Highest
+visual-impact item remaining.
+
+**Observed**
+
+`web/src/app/layout.tsx:58,65` loads EB Garamond, Literata and Source Sans 3 from
+`https://fonts.googleapis.com/css2?...`. The production CSP header, read from
+`https://ancientpaths.app/`, is:
+
+```
+style-src 'self' 'unsafe-inline'; font-src 'self' data:
+```
+
+No `fonts.googleapis.com`, no `fonts.gstatic.com`. **The stylesheet request is blocked and not one
+of the three families is ever downloaded** — `[...document.fonts]` on a loaded page contains only
+the Next-served Geist faces. Every reader sees the CSS fallback chain (Georgia / Times) instead of
+the typography the product was designed in. On a concordance whose entire visual identity is
+typographic, this is the largest single visual defect in the app.
+
+**Why every audit so far has missed it, and why the next one would too**
+
+> **The defect is masked on exactly the machines that would find it.** `layout.tsx` declares
+> `font-family: "EB Garamond", Georgia, "Times New Roman", serif`. Designers and developers tend to
+> have EB Garamond and Literata **installed locally** — they were chosen by someone who had them —
+> so the browser satisfies the family from the system and the page looks correct. The CSP block is
+> silent in the rendered result. It appears only in the console, among the noise, on a page nobody
+> was auditing for fonts.
+>
+> **A plausible-looking probe agrees with the wrong answer.**
+> `document.fonts.check('16px "EB Garamond"')` returns `true` here — and it returns `true` for
+> `'16px "Zzz Not A Font"'` as well, because it answers "can text in this family be rendered",
+> which a fallback always satisfies. **Run the control before believing the probe.**
+>
+> The two checks that actually settle it, for whoever audits this next:
+> 1. `[...document.fonts].map(f => f.family)` — the faces genuinely loaded. Webfonts absent = blocked.
+> 2. The CSP header itself, read from production with `curl -sI`, not from `next.config.ts` — the
+>    shipped header is the one that matters.
+
+**Minimal change**
+
+`next/font/google` at build time. It downloads the faces, self-hosts them under `/_next`, and
+generates the `@font-face` CSS — so everything is `'self'` and the existing CSP passes untouched.
+This also removes a render-blocking third-party request from every page load and the FOUT that
+comes with it.
+
+1. `layout.tsx` — replace the `<link rel="preconnect">` / `<link rel="stylesheet">` pair with
+   `next/font/google` imports for EB Garamond, Literata and Source Sans 3, binding each to the CSS
+   variable the theme already uses.
+2. `globals.css` — point the existing `@theme` font variables at the generated families. **The
+   fallback chains stay**; self-hosting is not a reason to remove a safety net.
+3. Delete nothing else. The CSP is correct as it stands and is not to be touched — that is the
+   ruling.
+
+**Do NOT**
+
+- **Do NOT widen the CSP** to allow `fonts.googleapis.com` / `fonts.gstatic.com`. Ruled out: it
+  loosens a security header for a problem that self-hosting solves outright, and puts a
+  third-party request on the critical path of every page.
+- Do NOT change the typefaces, sizes, weights or the `@theme` variable names. This block makes the
+  chosen fonts actually load; it does not redesign anything.
+- Do NOT drop the CSS fallback chains.
+- Do NOT subset aggressively on a first pass — these are reading faces and the product renders
+  Greek and Hebrew elsewhere.
+
+**Exit checks**
+
+| # | Check | Kind |
+|---|---|---|
+| X1 | `grep -r "fonts.googleapis.com" web/src` returns nothing | `AGENT` |
+| X2 | An invariant test fails if any `fonts.googleapis.com` / `fonts.gstatic.com` URL reappears in `web/src` — **red-proofed by re-adding the link and watching it go red** | `AGENT` |
+| X3 | On the deployed page, `[...document.fonts].map(f => f.family)` **contains all three families**. This is the check the old probe could not make; assert on the loaded-face list, never on `document.fonts.check()` | `BROWSER` |
+| X4 | Console shows **no CSP violation** on load, and the production CSP header is **unchanged** from the value quoted above (`curl -sI`) | `BROWSER` |
+| X5 | Verified on a machine **without** the three fonts installed locally, or with them disabled — otherwise the check cannot fail, which is the whole reason this defect survived | `HUMAN` |
+
+> X5 is the point of the block. Every prior check passed on a machine where the fonts were already
+> present. A verification that cannot fail is not a verification (`docs/THE_LOOP.md` §6).
 
 ### `PR1b` — Prayer journal: the "From the tradition" rail
 
@@ -2115,6 +2524,44 @@ revisit.
 
 Anything moved out of a block during execution lands here. Pre-seeded with items deliberately
 deferred at planning time.
+
+### Filed 2026-08-08 by `PR1a`'s browser pass — two findings outside this block
+
+Both found while verifying `PR1a`, both **measured against production, not inferred**, and neither
+touched — reporting a finding is not licence to fix it in an unrelated branch.
+
+**F1 — PROMOTED 2026-08-08 to its own block, [`F1-fonts`](#f1-fonts--the-font-stack-is-blocked-by-our-own-csp). Summary retained here for the audit trail.**
+
+**The product's entire font stack is blocked by the product's own CSP. LIVE.**
+`layout.tsx:58,65` loads `https://fonts.googleapis.com/css2?...EB+Garamond...Literata...Source+Sans+3`.
+The production CSP header, read from `https://ancientpaths.app/`, is `style-src 'self'
+'unsafe-inline'` and `font-src 'self' data:` — no `fonts.googleapis.com`, no `fonts.gstatic.com`.
+The browser reports the stylesheet request **blocked**, and `[...document.fonts]` contains only the
+Next-served Geist faces: **not one of the three families is ever downloaded.** Readers see the
+CSS fallbacks (Georgia / Times) unless they happen to have the fonts installed locally, which is
+why this has been invisible on developer machines.
+
+> **A check that proved nothing, recorded because the near-miss is the lesson.**
+> `document.fonts.check('16px "EB Garamond"')` returned `true` and briefly read as "the font
+> loaded". The control settles it: `document.fonts.check('16px "Zzz Not A Font"')` **also** returns
+> `true`. The API answers "can text in this family be rendered", which a fallback always satisfies.
+> The load-bearing evidence is the empty face list and the explicit block message. **Run the
+> control before believing the probe.**
+
+**RULED 2026-08-08: self-host via `next/font`. No CSP widening.** See the block.
+
+**F2 — a stale auth gate is red at HEAD, and it now asserts the opposite of the shipped
+architecture.** `web/test/invariants/better-auth-wiring.test.ts` dates from the move *to* Better
+Auth and demands that `@neondatabase/auth` **not** be a dependency — but ADR-107/108 moved the app
+*back* to Neon Auth, so 2 of its 8 assertions fail. Verified pre-existing: red with this branch's
+changes stashed. Related dead weight from the same cutover: `src/lib/auth/better-auth.ts` is
+imported by **no production code** (only by this test), and `better-auth` is still in
+`web/package.json`. **Reassuring finding:** only one auth path is actually mounted —
+`api/auth/[...path]/route.ts` serves Neon Auth alone, so this is dead code, not a second live
+front door.
+
+Bylaw 3 says a check that cannot be made honest should be removed rather than padded, but deleting
+an auth guard written by another session is an owner-level call, so it is filed rather than taken.
 
 ### Filed by `R0` — false reuse claims, with revised estimates
 

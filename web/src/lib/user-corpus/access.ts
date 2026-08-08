@@ -23,9 +23,18 @@
 /**
  * The committed ceiling on multi-user upload.
  *
- * TRUE as of 2026-08-05: SEC-1 is closed. The Better Auth cutover is live on production
- * (docs/SECURITY.md), @neondatabase/auth is gone, and the seven better-auth advisories including
- * GHSA-g38m have left `pnpm.auditConfig.ignoreGhsas`. UPLOADER_DESIGN §4's condition 1 is met.
+ * TRUE as of 2026-08-08, on a premise that CHANGED since this comment was first written. The
+ * 2026-08-05 version said "the Better Auth cutover is live on production, @neondatabase/auth is
+ * gone" — ADR-107/108 then reversed exactly that: Neon Auth is the auth system and
+ * `@neondatabase/auth` is a dependency again. What still holds is the part this flag actually
+ * rests on: no advisory that docs/SECURITY.md adjudicates as in-path sits in
+ * `pnpm.auditConfig.ignoreGhsas` (GHSA-g38m is not in it), so UPLOADER_DESIGN §4's condition 1 is
+ * met. The mechanism survived the cutover; the stated reason did not, which is why it is corrected
+ * here rather than left to read as though it had been re-checked.
+ *
+ * GHSA-g38m itself is now closed by CONFIGURATION, not structure — `Verify at Sign-up` ON in the
+ * Neon console, per the ruling at the top of docs/SECURITY.md. Nothing in this repo can observe
+ * that toggle.
  *
  * This is still gated: `web/test/invariants/sec1-upload-gate.test.ts` (A7) turns RED the moment any
  * advisory SECURITY.md adjudicates as in-path reappears in the ignore list while this is true. So

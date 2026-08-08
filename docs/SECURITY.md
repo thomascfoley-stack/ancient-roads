@@ -81,12 +81,28 @@ in the `better-auth@1.4.18` that package pinned; none of them fires any more, an
 reports no un-ignored high/critical across 307 prod packages with only the two dev-tooling ids
 ignored. The seven better-auth GHSAs are out of `pnpm.auditConfig.ignoreGhsas`.
 
-**GHSA-g38m is closed STRUCTURALLY, not by configuration.** It requires an app to offer BOTH
-email/password AND social login: the attacker pre-registers the victim's address unverified, and
-the victim's later Google sign-in auto-links onto it. The cutover ships email/password only, so
-there is no OAuth callback and nothing to auto-link. That property cannot regress when someone sets
-a flag wrong; it can only regress if a social provider is added, which `web/src/lib/auth/better-auth.ts`
-says at the point where someone would add one.
+> **SUPERSEDED 2026-08-08 — read the ruling at the top of this file instead. Both claims below
+> were true when written and are now false, and the paragraph is kept rather than deleted because
+> it is the shape the reader must recognise: an assurance that survived the change that voided it.**
+>
+> It said g38m was closed STRUCTURALLY because "the cutover ships email/password only, so there is
+> no OAuth callback and nothing to auto-link" — and that this "cannot regress when someone sets a
+> flag wrong". **Google SSO went live on 2026-08-08** (C5; owner: keep both methods), so the app
+> now offers exactly the both-methods combination the advisory requires. The structural closure is
+> gone; the ruling at the top of this file replaces it with a *configuration* one — `Verify at
+> Sign-up` ON — which is precisely the "someone sets a flag wrong" failure mode this paragraph
+> claimed to be immune to.
+>
+> It also named its own guard: "which `web/src/lib/auth/better-auth.ts` says at the point where
+> someone would add one". **That file was deleted on 2026-08-08, and had been imported by no
+> production code since the Neon Auth cutover before that** — so the warning meant to fire when a
+> social provider was added sat in a module nothing loaded, and Google was added without it ever
+> being read. A guard that lives only in a comment in dead code is not a guard.
+>
+> **What nothing in this repo can check:** the surviving mitigation is a toggle in the Neon
+> console. No test, no gate, and no deploy check can observe it, so if it is off, every check here
+> stays green. That is an unverifiable precondition and it should be recorded as one rather than
+> assumed.
 
 **`--expect-red` is now EMPTY.** GHSA-qq9h-g4jm-xgf3 (ADR-038) was the one declared acceptable red
 and is also gone by version. `deps-audit` correctly FAILED on "declared id no longer observed"

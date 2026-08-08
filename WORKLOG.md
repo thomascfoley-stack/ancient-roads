@@ -1,5 +1,63 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-08 — PR1a complete: the Pray action, the carry-forward, and a live typography finding
+
+**Lane:** UX remediation, Wave 5 · **Branch:** `fix/PR1a` (pushed, 6 commits) · **Prod:** untouched
+
+`PR1a` is built and verified against the **live dev database**. Migration 107 is applied to dev and
+**staged for production, not applied** — bylaw 7, and `docs/evidence/pr1a/PROD-107-STAGED.md` is
+the go/no-go sheet.
+
+**Verified, and how.** RLS proven **two-account over `app_runtime`** — B cannot read, update or
+delete A's prayer; A can do all three to their own. Run as owner it would have passed vacuously,
+because `neondb_owner` bypasses RLS and the policy would never have been consulted. The
+carry-forward was then driven through the **real data layer against dev**: 4 prayers written and
+read back through RLS, second run created 0, source key intact, rows cleaned up.
+
+**Twelve seeded red-proofs watched fail**, each on its intended test and nothing else — seven on
+the carry-forward (carrying the seed sections, a bare `JSON.parse`, dropping the once-only guard,
+moving the marker after the loop, removing the outer catch, deleting the source, removing the
+bound), four on the rendered checks, one on C9's extension to the carry-forward's import graph.
+
+**The browser pass earned its place as a gate.** Every test was green when `/prayers` showed a
+signed-out visitor a red *"Your prayers could not be loaded"* beside a permanent *"Loading…"* — the
+app reporting its own auth state as a fault, on the page least suited to alarming anyone. Only
+looking at it found that. Fixed, and both branches (401 → invitation, 500 → still an error)
+red-proofed.
+
+**A near-miss worth keeping.** `document.fonts.check('16px "EB Garamond"')` returned `true` and
+briefly read as "the font loaded". The control settles it: `check()` returns `true` for a nonsense
+family too, because it answers "can this render", which a fallback always satisfies. **Run the
+control before believing the probe.**
+
+### NOT DONE / UNVERIFIED
+
+- **Production migration 107 — NOT APPLIED.** Staged, awaiting the owner's explicit go.
+- **Signed-in browser walk — NOT RUN.** Local sign-in needs `NEON_AUTH_BASE_URL` /
+  `NEON_AUTH_COOKIE_SECRET`, absent from this tree, so `/api/auth/get-session` 500s locally. The
+  signed-in states are covered by rendered jsdom tests and the live-dev data-layer run. That is
+  not a walk and is not claimed to be.
+- **`npm run audit` — NOT RUN.** Refuses without a dev `DATABASE_URL`. Ran instead: web typecheck
+  (clean), web lint (clean, one pre-existing `useRef` warning in `study-panel.tsx` at HEAD), and
+  the web suite — **99 files pass, 1 fails, and that failure is pre-existing** (see below).
+- **F1, filed not fixed — the product's whole font stack is dead in production.** `layout.tsx`
+  loads EB Garamond / Literata / Source Sans 3 from `fonts.googleapis.com`; the live CSP header on
+  `ancientpaths.app` is `style-src 'self' 'unsafe-inline'` / `font-src 'self' data:`. The request
+  is blocked and `document.fonts` holds only Next's Geist faces. Readers get Georgia/Times unless
+  they happen to have the fonts installed locally — which is why developer machines never showed
+  it. Remedy is a whole-product typography decision (self-host via `next/font` vs widen the CSP),
+  not a line in a prayer-journal diff.
+- **F2, filed not fixed — a stale auth gate is red at HEAD.**
+  `web/test/invariants/better-auth-wiring.test.ts` demands `@neondatabase/auth` **not** be a
+  dependency, which ADR-107/108 inverted; 2 of its 8 assertions fail. Confirmed pre-existing with
+  this branch stashed. `lib/auth/better-auth.ts` is imported by no production code and
+  `better-auth` remains in `package.json`. **Only one auth path is mounted** — dead code, not a
+  second live front door. Bylaw 3 says remove a check that cannot be made honest, but deleting
+  another session's auth guard is an owner call.
+- **The `guest` localStorage key is not carried forward** — deliberately. Carrying it would move
+  one person's list into whichever account signs in next on a shared browser. A missed carry is
+  recoverable (the source is still on disk); that leak is not.
+
 ## 2026-08-08 — Google SSO LIVE and working; the Neon Auth cutover is functionally complete
 
 `f197406` deployed and verified: alias `ancientpaths.app` serves `dpl_9sEyz51uegvYXbiGbNc4afMW61i7`,

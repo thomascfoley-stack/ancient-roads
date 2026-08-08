@@ -32,6 +32,7 @@ import {
 } from '@/lib/original';
 import { useAnnotationWrites } from '@/lib/use-annotation-writes';
 import { useSignedIn } from '@/lib/auth/use-signed-in';
+import { encodeVerseId } from '@bible/verse-id';
 
 /**
  * The server's answer, and therefore the client's FIRST answer too.
@@ -372,6 +373,7 @@ export default function ReaderPage() {
           lang={original?.lang ?? null}
           defaultTab={study.tab}
           focusWordIdx={study.focusWordIdx}
+          verseId={encodeVerseId({ book: book.bookNum, chapter: chapterNum, verse: study.verse })}
           annotation={{
             color: highlights.get(study.verse)?.at(-1)?.color ?? null,
             note: notes.get(study.verse) ?? '',

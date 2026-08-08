@@ -35,6 +35,7 @@ export function StudyPanel({
   annotation,
   defaultTab = 'commentaries',
   focusWordIdx,
+  verseId,
   onTabChange,
   onClose,
 }: {
@@ -47,6 +48,8 @@ export function StudyPanel({
   annotation: AnnotationControls;
   defaultTab?: StudyTab;
   focusWordIdx?: number;
+  /** Numeric verse id, for the Pray entry point. Optional so existing callers are unaffected. */
+  verseId?: number;
   onTabChange?: (tab: StudyTab) => void;
   onClose: () => void;
 }) {
@@ -143,6 +146,19 @@ export function StudyPanel({
           {tab === 'commentaries' && <CommentariesTab entries={entries} />}
           {tab === 'word' && <WordTab words={originalWords} lang={lang} focusIdx={focusWordIdx} />}
           {tab === 'notes' && <NotesTab annotation={annotation} />}
+          {/* PRAY — block PR1a. An ACTION, not a fourth tab: commentaries/word/notes are facets of
+              the verse, and prayer is something the reader does with it. Making it a tab would file
+              responding-to-the-text alongside studying it, which is the exact conflation the block
+              exists to undo. Carries the verse as a reference the prayer space PRE-FILLS and does
+              not require — a prayer stands alone (owner ruling 2026-08-08). */}
+          {annotation.signedIn && verseId !== undefined && (
+            <a
+              href={`/prayers?verse=${verseId}`}
+              className="mt-6 flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-accent-700/10 px-4 font-serif text-sm text-accent-800 transition-colors ease-gentle hover:bg-accent-700/15 dark:bg-accent-500/15 dark:text-accent-200 dark:hover:bg-accent-500/25"
+            >
+              Pray over this verse
+            </a>
+          )}
         </div>
 
  <div className="border-t edge px-5 py-3 text-center">
