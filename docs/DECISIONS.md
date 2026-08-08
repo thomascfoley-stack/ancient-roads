@@ -1512,3 +1512,43 @@ yet: expected daily ask volume, and the cost of one ask.
 
 **Status:** ACCEPTED, not fixed. A1-3 stays in the audit checklist as accepted-with-a-ruling rather
 than being ticked off.
+
+## ADR-107 — Leaving Better Auth for Neon Auth; SEC-1 is re-opened knowingly (2026-08-07)
+
+**Owner ruling, 2026-08-07, reaffirmed twice: "we're 100% leaving betterauth."** Supersedes the
+recommendation in [`AUTH_NEON_MANAGED_EVALUATION.md`](../AUTH_NEON_MANAGED_EVALUATION.md), which
+said wait. The evaluation's *facts* are not superseded and are restated here once, so the cost is
+recorded rather than rediscovered:
+
+- `@neondatabase/auth@latest` was measured on 2026-08-07 as **`0.4.2-beta`** — byte-identical to the
+  version removed on 2026-08-05 — hard-pinning **`better-auth@1.4.18`**.
+- That is the dependency **SEC-1** is rooted in: 15 advisories, patched at ≥1.6.11. The app runs
+  1.6.26 today.
+- **SEC-1 therefore re-opens.** `CLAUDE.md` names it as gating *public* launch. It was closed for
+  two days.
+- **GHSA-g38m stops being structurally closed.** It needs email/password *and* social login; the
+  2026-08-05 cutover shipped email/password-only precisely so the exploit had no mechanism. Under
+  Neon Auth, social login is a toggle and the config lever is not ours.
+- Every user id changes again.
+
+**What the owner gets for it:** auth data in our own Neon database, RLS-compatible, and — the real
+prize — **branching with the database**, which the webhook-sync product never did. That fits Lane B,
+and it makes A1-2's rate-limiter class Neon's problem rather than ours.
+
+### Binding conditions
+
+1. **Do not delete Better Auth's tests or migration 104 until Neon Auth is serving.** Better Auth is
+   what runs in production right now; removing its coverage during the swap is the window in which
+   an auth regression ships unseen. The four currently-failing auth tests fail because **migration
+   104 was never applied to the CI database**, not because Better Auth is broken — that is a CI gap
+   which will break Neon Auth's migrations identically if left.
+2. **`SECURITY.md` SEC-1 must be re-opened** when the cutover lands, with this ADR cited, so the
+   launch gate reflects reality.
+3. **Design doc before code** (`CLAUDE.md` value 2): this is production-affecting, changes every
+   user id, and reverses a two-day-old cutover. `AUTH_CUTOVER_DESIGN.md` is the template; the new
+   one supersedes it in the reverse direction.
+4. **Q1 from the evaluation still gets asked**, even though it no longer gates the decision: if
+   Neon's managed version is or becomes ≥1.6.11, SEC-1 closes by version and this ADR's headline
+   cost disappears. Worth knowing either way.
+
+**Status:** RULED. Implementation not started.
