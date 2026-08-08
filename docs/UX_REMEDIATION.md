@@ -1040,9 +1040,46 @@ on two thirds of a chapter.
 
 ---
 
+### `N3c` — Find the hydration abort (NEW, 2026-08-08)
+
+**Wave:** 2 · **Severity:** P1 High · **Depends on:** — · **Blocks:** `N3a` · **Status:** `[ ]` · **BROWSER**
+
+Opened by the owner after `N3a`'s hypothesis was disproved at source level. `verse-display.tsx:185`
+is a single unconditional map with no per-verse branch, so "verses 23-32 lost their handler" cannot
+be produced by that component. **A hydration abort partway through the tree can produce it exactly**
+— React stops hydrating at the throw, so every handler after that point is dead while everything
+before it works. "1-22 live, 23-32 dead" is what that looks like from the outside.
+
+A7b measured production throwing **React #418 on essentially every reader page load**, and its X1
+check was retracted precisely because a console read taken *after* navigation cannot see an error
+thrown *during* it.
+
+> **Same failure class as `INSTR`'s open Ask question.** The deck reported the Ask thread silently
+> resetting to its empty state; `INSTR` established the client has no reset path, so a reset means
+> an **unmount** — an error boundary catching a throw. Two reports, two surfaces, one shape: a
+> client-side throw killing a subtree. Investigate them together; a single root cause is likelier
+> than two coincidences.
+
+**Minimal change** — this block ships a DIAGNOSIS, not a fix
+
+1. Arm an error recorder **before** navigation (`window.onerror`, `unhandledrejection`, a wrapped
+   `console.error`), then hard-load a reader page. A read taken after the fact sees nothing.
+2. Capture the #418 payload and identify which node mismatches.
+3. Check whether the last-working verse index correlates with the throw point.
+4. Write the cause into the Findings log. **Do not fix in this block** — `N3a` is where a fix lands,
+   and only once there is something located to fix.
+
+**Do NOT**
+
+- Do not edit `verse-display.tsx`. Owner ruling 2026-08-08: it has no mechanism to fix.
+- Do not add `suppressHydrationWarning`. That hides the signal without closing the abort, and
+  `layout.tsx:58` already carries one that A7b proved does not cover these cases.
+
+---
+
 ### `N4` — Close one fake door, repurpose the other
 
-**Wave:** 2 · **Severity:** P1 High · **Depends on:** `R0`, `N1` · **Blocks:** `PR1a` · **Status:** `[ ]`
+**Wave:** 2 · **Severity:** P1 High · **Depends on:** `R0`, `N1`, **`PR1a`** · **Blocks:** — · **Status:** `[!]` **BLOCKED on `PR1a` (owner ruling 2026-08-08).** The ruling "migrate existing objects, nothing user-created dropped" cannot be honoured before the destination exists, and the objects are `localStorage`-only so there is nothing server-side to move. **The carry-forward spec moves into `PR1a` as a first-launch migration into Neon persistence** — see that block.
 
 > **Revised in v1.2.** The original finding is unchanged — UI for unshipped features was left
 > enabled. The *disposition* changed: Channels is not hidden, it is repurposed.
@@ -1649,6 +1686,14 @@ tool.
    background from existing palette tokens, `Lectio` preset typography (`S2` item 9). At most
    one prompt line, lectio-style: *"Read it again slowly. What is the text saying to you?"*
 3. **Save creates a prayer entity** — distinct from notes, per the data-model rule below.
+3b. **FIRST-LAUNCH CARRY-FORWARD (moved here from `N4`, owner ruling 2026-08-08).** The retired
+   Channels section stored its items in **`localStorage` only** — `sidebar.tsx:111-122`, key
+   `study-sections:v1:<userId>`; that file contains no `fetch`, and `/api/channels` plus the
+   `channels` table exist and were never called from it. So there is nothing server-side to migrate
+   and a server migration cannot reach them. On a reader's first load after this ships, read that
+   key **once**, create a prayer per item in Neon persistence, and mark it done so it cannot run
+   twice. **Nothing user-created is hidden or dropped** — that is the binding half of the ruling.
+   `N4` is blocked on this and cannot hide Channels until it exists.
 4. **The journal:** prayers listed in the repurposed sidebar PRAYERS section (`N4`) — ordered,
    reopenable read-first, editable, deletable.
 
