@@ -1,6 +1,37 @@
 # Staged for the owner: migration 107 → production
 
-**Status: NOT APPLIED TO PRODUCTION. Awaiting the owner's explicit go, per bylaw 7.**
+**Status: APPLIED TO PRODUCTION 2026-08-08, on the owner's explicit go (bylaw 7 satisfied).**
+
+Applied with `MIGRATE_ALLOW_PROD=1` against `ep-odd-fog` as `neondb_owner`. Ledger:
+`107_prayers.sql (neondb_owner, sha256 1dd512ec8cb6…)` — **the same hash as the dev application**,
+so the file that was verified on dev is byte-for-byte the file production received.
+
+Verified independently on production afterwards, by querying the catalog rather than trusting the
+runner's own success line:
+
+| | Production `ep-odd-fog` |
+|---|---|
+| grants to `app_runtime` | `DELETE,INSERT,SELECT,UPDATE` |
+| RLS enabled | `true` |
+| policy | `prayers_policy` → `user_id = current_setting('app.current_user_id', true)` |
+| columns | `id user_id body verse_id? created_at updated_at deleted_at?` |
+| indexes | `prayers_pkey`, `idx_prayers_user_created` |
+| rows | `0` |
+
+Identical to dev on every line.
+
+**The one check NOT re-run against production: the two-account RLS proof.** It requires the
+least-privilege `app_runtime` credential, and only the `neondb_owner` production URL is available
+on this machine. Running it as owner would have passed **vacuously** — `neondb_owner` bypasses RLS,
+so the policy would never be consulted and the check could not fail. The proof was executed on dev
+against the identical migration (same sha256). **That is a strong inference, not a measurement, and
+it is recorded as one.** Closing it needs either the prod `app_runtime` URL or two real accounts in
+the owner's live walk.
+
+---
+
+### Original staging note (pre-application)
+
 
 Everything below has been executed against **dev** (`ep-tiny-hat-atdgpisx`) and verified. Nothing
 here has touched `ep-odd-fog`.

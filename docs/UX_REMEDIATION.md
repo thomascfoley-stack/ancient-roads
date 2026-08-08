@@ -202,7 +202,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 3 | `T4` | Settings that follow the user; an account section | `-` |
 | 4 | `S1` | Landing page — show the product | `-` |
 | 4 | `S2` | Polish sweep — 9 small fixes, one branch | `~` |
-| 5 | `PR1a` | Prayer journal — the space and the entity | `[x]` **BUILT AND DEV-VERIFIED 2026-08-08.** RLS proven two-account over `app_runtime`; carry-forward run against the live dev DB. **Prod migration 107 awaits the owner's go.** Signed-in browser walk NOT RUN (no local Neon Auth creds). |
+| 5 | `PR1a` | Prayer journal — the space and the entity | `[x]` **BUILT AND DEV-VERIFIED 2026-08-08.** RLS proven two-account over `app_runtime`; carry-forward run against the live dev DB. Migration 107 **applied to production** 2026-08-08 (owner go; verified against the catalog, identical to dev). Signed-in browser walk NOT RUN by the agent — **the owner is running it**. |
 | 5 | `PR1b` | Prayer journal — "From the tradition" rail (separable) | `-` |
 | 5 | `PR2` | Compare a note with the tradition | `-` |
 
@@ -225,7 +225,7 @@ it is. Re-measure before trusting; this was written 2026-08-08.
 | `T4` | `-` | **HELD** on the owner seeing the `layout.tsx:82` first-paint flash. Now schedulable against the deployed build. | ⚑ owner (observe, then rule) |
 | `S1` | `-` | **Owner-blocked in substance** — three of four items are content only the owner can write. Page skeletons staged below. | ⚑ owner (supply content) |
 | `S2` | `~` | 5 of 9 closed. Item 4 parked (needs a rendered judgment), 6 closed as a measurement, 7 out to §9, 9 parked on a design decision. | ⚑ owner (item 9's interaction call) |
-| `PR1a` | `[x]` | Built and dev-verified 2026-08-08. Prod migration 107 staged, awaiting owner go. | ⚑ owner (prod 107) |
+| `PR1a` | `[x]` | Built, dev-verified, prod 107 applied 2026-08-08. Owner running the signed-in walk. | done |
 | `PR1b`, `PR2` | `-` | Wave 5, gated behind `PR1a`. Not in the remediation's definition of done. | — |
 
 ### Dependency graph
@@ -2092,7 +2092,7 @@ error-reporting leak vector in particular, which no audit caught.
 
 ### `PR1a` — Prayer journal: the space and the entity
 
-**Wave:** 5 · **Severity:** P1 Product · **Depends on:** `N1`, `N4`, soft `S2`#9 · **Blocks:** `PR1b`, `PR2` · **Status:** `[x]` **BUILT AND DEV-VERIFIED 2026-08-08 — production migration awaits the owner's go.**
+**Wave:** 5 · **Severity:** P1 Product · **Depends on:** `N1`, `N4`, soft `S2`#9 · **Blocks:** `PR1b`, `PR2` · **Status:** `[x]` **BUILT, DEV-VERIFIED, AND MIGRATION 107 APPLIED TO PRODUCTION 2026-08-08 on the owner's go.**
 
 #### Completion record — 2026-08-08
 
