@@ -246,15 +246,35 @@ file-count gap above**, and restoring a lost directory is still a download, not 
 they were not). Read read-only from the Vercel API, team `home-network-hardening`, project `web`;
 full table and provenance in [`RECOVERY.md`](RECOVERY.md) §2. All timestamps UTC.
 
-| deployment | sha | created (UTC) | what it is |
-|---|---|---|---|
-| `dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt` | `24677ba` | 2026-07-19 16:57:06Z | **currently promoted** - serves `ancientpaths.app` |
-| `dpl_FYQxxZ1rLN1wd4UeMwShhX12G5BM` | `24677ba` | 2026-07-18 22:32:21Z | same sha as live; promoting it changes no code |
-| `dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr` | `654f028` | 2026-07-17 01:32:56Z | **the real rollback target** |
+> ### ⚠ CORRECTED 2026-08-07 — THE TABLE BELOW WENT STALE AND POINTED RECOVERY AT A BROKEN TARGET
+>
+> Pre-deploy audit finding 4. This section named a 2026-07-19 deployment as "currently promoted",
+> and on that basis told the owner **not** to roll back to it. Both halves were wrong by 2026-08-07:
+>
+> | | deployment | sha | note |
+> |---|---|---|---|
+> | **LIVE NOW** | `dpl_DQhv71sbxjs5XjoNZfNDdtq31doS` | `b4f2a96` | deployed 2026-08-07 19:09Z; receipt `evidence/deploys/deploy-b4f2a96-2026-08-07T19-09-02Z.txt` records `state: live` with `alias_serves` matching |
+> | **ROLLBACK TARGET** | the deployment immediately preceding the current live one | — | **re-read it at rollback time; do not trust a table** |
+>
+> **`dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr` (`654f028`, 2026-07-17) MUST NOT be used as a rollback
+> target.** It predates migrations **044 and 045**, so it queries the
+> `idx_embeddings_vector_{legal,song_verse,sermon,theology}` indexes that MASTER's A9 row records as
+> **confirmed dropped in production**. Promoting it does not restore service; it replaces one
+> outage with a different one.
+>
+> **The standing instruction, because a hard-coded id is what failed here:** at rollback time, read
+> the current live deployment and its predecessor from the Vercel dashboard or the newest receipt in
+> `docs/evidence/deploys/`, and roll back to the predecessor **only if its sha postdates the newest
+> applied migration**. Any table of ids in a document is a snapshot, and this one was three weeks
+> stale while reading as current.
 
-`dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt` is not a phantom and is not the target: **it is what is live**, so
-promoting it is a no-op that reports success. Checklist item 7 is answered by this table. What
-follows is true of promoting `dpl_Ejzk…` or `dpl_FYQ…`.
+**Historical, as read 2026-08-01 — retained to show what went stale, NOT for use:**
+
+| deployment | sha | created (UTC) | what it was then |
+|---|---|---|---|
+| `dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt` | `24677ba` | 2026-07-19 16:57:06Z | promoted *at that time* |
+| `dpl_FYQxxZ1rLN1wd4UeMwShhX12G5BM` | `24677ba` | 2026-07-18 22:32:21Z | same sha as live then |
+| `dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr` | `654f028` | 2026-07-17 01:32:56Z | **do not use — predates migrations 044/045** |
 
 **Promoting it restores** the **pre-025 application code** of that date, and **the static corpus as
 it was on 2026-07-18** — the deployment is an immutable bundle including the uploaded working tree.
@@ -308,9 +328,11 @@ Everything below is free and reversible. Stop at the first ✗.
        that cannot pass items 2 and 3. Read §9 before running anything. ***
 [ ] 6  Accept what rollback does NOT restore (§5): pre-025 code on a post-031
        schema, re-opening G4, and a corpus that bypasses predeploy-gate.
-[x] 7  ANSWERED 2026-08-01 (§5). Live now: dpl_DwoWDhhZiLVLftKN9rcPiRU3v1qt
-       (24677ba, 2026-07-19). Rollback target: dpl_EjzknRQEpaUXBG3YfjLhe8tKtpSr
-       (654f028). Do NOT "roll back" to dpl_DwoW... - that is the live one.
+[ ] 7  RE-OPENED 2026-08-07 (audit finding 4): the 2026-08-01 answer went stale and
+       named a target that predates migrations 044/045. Live now is
+       dpl_DQhv71sbxjs5XjoNZfNDdtq31doS (b4f2a96). Do NOT use dpl_Ejzk... .
+       READ the current live deployment and its predecessor at rollback time; see
+       the correction box in §5. This item is answered per-deploy, never once.
 [ ] 8  A1 merged? Deploy A is gated behind it on the board.
 ```
 
