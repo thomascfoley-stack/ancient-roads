@@ -184,7 +184,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 1 | `L2c` | Human-readable plan names, correctly localised dates | `~` |
 | 2 | `N1` | Rename sweep — strings only, no route changes | `~` |
 | 2 | `N2` | Sidebar must reveal it has more in it | `~` |
-| 2 | `N3` | Verse interactivity — uniform first, then visible | `-` |
+| 2 | `N3` | Verse interactivity — uniform first, then visible | `!` |
 | 2 | `N4` | Close the fake doors | `-` |
 | 2 | `L2b` | Plan builder must not open in an error state | `~` |
 | 3 | `T1` | First run — teach the one idea that differentiates | `-` |
@@ -983,7 +983,19 @@ the verse-number element rather than the verse.
 **Order matters. `N3a` before `N3b`.** There is no point advertising an interaction that works
 on two thirds of a chapter.
 
-- **`N3a` hydration:** fix the handler gap so every verse in a chapter is interactive.
+- **`N3a` hydration:** ~~fix the handler gap so every verse in a chapter is interactive.~~
+  **⚑ BLOCKED 2026-08-08 — the hypothesis has no mechanism in the source, so there is nothing to
+  fix here.** `verse-display.tsx:185` is a single unconditional `data.verses.map(...)`, and the
+  handle it renders (`:253-263`) carries `role`, `tabIndex`, `aria-label`, `onClick` and `onKeyDown`
+  with **no branch on verse number, index or position**. There is no code path where verse 23
+  differs from verse 22, so "per-chapter hydration dropping handlers partway through" cannot be
+  produced by this component.
+  The deck's observation may still be real — but if it is, the cause is a **hydration abort partway
+  through the tree**, which would kill every handler after the throw and looks exactly like
+  "1-22 live, 23-32 dead". A7b found production throwing React #418 on essentially every reader
+  page load, which is a standing candidate. **That is a `BROWSER` investigation, not a source fix**,
+  and doing anything to this component first would be changing code to chase a defect nobody has
+  located.
 - **`N3b` affordance:**
   1. ~~`cursor: pointer` plus a hover colour on verse numbers. Two CSS declarations.~~
      **ALREADY SHIPPED** (`R0`): `verse-display.tsx:272` carries `cursor-pointer` and a hover
