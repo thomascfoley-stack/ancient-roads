@@ -16,6 +16,29 @@ import { useState, type FormEvent } from 'react';
 import { authClient } from '@/lib/auth/client';
 import type { AuthMode } from '@/lib/auth/paths';
 
+/**
+ * Where a brand-new reader lands — block `T1`.
+ *
+ * John 1 with the verse-1 study drawer already open.
+ *
+ * **The block assumed this deep link already existed. It did not** — the reader parses `#v<n>`
+ * from the hash and only SCROLLS; it has no query params and no way to open the drawer from a
+ * URL. Recorded in T1's Findings log. The hash was extended to `#v<n>:study`, reusing the effect
+ * and the `openStudy` callback that were already there, which is the smallest change that makes
+ * the block's premise true.
+ *
+ * A HASH, not a query string, and that is deliberate: the reader page reads it in an effect
+ * precisely because a hash is never sent to the server, so no first client render can disagree
+ * with it. A `?v=` would reintroduce the hydration-mismatch shape that file spent an afternoon
+ * removing.
+ *
+ * Google sign-in uses the same destination via `callbackURL`, so the two paths cannot drift.
+ *
+ * NOTE it is used for sign-UP only. Sending a returning reader here every time would override the
+ * place they chose to be, which is the opposite of the point.
+ */
+export const FIRST_RUN_DESTINATION = '/read/jhn/1#v1:study';
+
 const MIN_PASSWORD = 12;
 
 const field =
@@ -73,7 +96,7 @@ export function AuthForm({ path }: { path: AuthMode }) {
     try {
       const { error: err } = await authClient.signIn.social({
         provider: 'google',
-        callbackURL: '/home',
+        callbackURL: FIRST_RUN_DESTINATION,
         errorCallbackURL: '/auth/sign-in',
       });
       if (err) throw new Error(err.message ?? 'Google sign-in could not be started.');
@@ -113,7 +136,11 @@ export function AuthForm({ path }: { path: AuthMode }) {
           name: String(data.get('name') ?? '').trim() || email.split('@')[0],
         });
         if (err) throw new Error(err.message ?? 'That account could not be created.');
-        router.push('/home');
+        // T1 — a new reader's first screen is the PRODUCT, not a dashboard. `/home` shows a
+        // devotional feed that teaches nothing about what makes this app different; the verse
+        // drawer is the one idea that does. Sign-IN keeps `/home` deliberately: a returning
+        // reader has already met the idea and wants their own place.
+        router.push(FIRST_RUN_DESTINATION);
         router.refresh();
         return;
       }

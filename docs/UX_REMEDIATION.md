@@ -187,8 +187,8 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 |---|---|---|---|
 | 0 | `R0` | Repo reconnaissance — fill in before any work | `x` |
 | 1 | `INSTR` | Instrument both loops before touching them | `x` |
-| 1 | `L1` | Ask — guarantee a terminal state, never lose the question | `-` |
-| 1 | `L1b` | Ask — set an expectation for the wait | `-` |
+| 1 | `L1` | Ask — guarantee a terminal state, never lose the question | `x` **DONE 2026-08-08.** The catch/retry/question-retention were already there; the real hole was a stream ENDING without a terminal event — no throw, so no catch, and the turn hung forever. Guard added, seeded red. |
+| 1 | `L1b` | Ask — set an expectation for the wait | `x` **DONE 2026-08-08.** One line in the existing panel. **Threshold RE-DERIVED, not taken from the block**: its ~15s came from a premise INSTR disproved (measured 104s/58s/64s), so 15s would call every ordinary request "longer than usual". Set to 90s — above measured median and mean, below the observed max. **n=3, recorded as provisional.** |
 | 1 | `L2` | Plan progress write must succeed | `x` |
 | 1 | `L2c` | Human-readable plan names, correctly localised dates | `x` |
 | 2 | `N1` | Rename sweep — strings only, no route changes | `x` |
@@ -196,9 +196,9 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 2 | `N3` | Verse interactivity — uniform first, then visible | `!` |
 | 2 | `N4` | Close the fake doors | `x` **DONE 2026-08-08.** Channels → Prayer journal (links to shipped `PR1a`), Study Partners retired, `New section` removed, `/channel/[id]` redirects. 7 seeds red. `BROWSER` checks unticked. |
 | 2 | `L2b` | Plan builder must not open in an error state | `x` |
-| 3 | `T1` | First run — teach the one idea that differentiates | `!` |
+| 3 | `T1` | First run — teach the one idea that differentiates | `x` **DONE 2026-08-08** (items 1–2; item 3 was already deliberately out of v1). Sign-up now lands on John 1 with the drawer open. **The block's "already supported" claim was FALSE** — no query params, hash only scrolled. Hash extended to `#v<n>:study`, reusing the existing effect and `openStudy`. |
 | 3 | `T2` | Verify-at-signup ON (both methods kept) — RULED, sender fix first | `~` **STEP 2 DONE 2026-08-08** (owner turned `Verify at Sign-up` ON; prod re-measured 1 account / 0 unverified, so g38m's closure is structural for the current population). **Step 1 — the Resend sender — is OUTSTANDING and was the ruling's FIRST step**: verification-on makes auth mail load-bearing for every signup, and it currently leaves Neon's shared `auth@mail.myneon.app`. Console work, owner-only. |
-| 3 | `T3` | Mobile — tab bar must not cover scripture | `-` |
+| 3 | `T3` | Mobile — tab bar must not cover scripture | `~` **CODE COMPLETE, `DEVICE` OPEN.** The page-level fix is in `app-shell.tsx` and now has a regression guard. Its step 3 (duplicate Search tab) does not exist in this build — mobile-nav has 4 tabs and one search button. **`env(safe-area-inset-bottom)` is 0 in every desktop window, so no test here can prove the notched case.** 11 inner scroll containers are candidates for the device pass; deciding which are affected IS the diagnosis, and guessing would be an unverifiable change. |
 | 3 | `T4` | Settings that follow the user; an account section | `-` |
 | 4 | `S1` | Landing page — show the product | `-` |
 | 4 | `S2` | Polish sweep — 9 small fixes, one branch | `~` |
