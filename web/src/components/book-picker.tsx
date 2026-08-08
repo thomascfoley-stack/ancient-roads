@@ -21,6 +21,7 @@ export function BookPicker({
   onPick?: (book: Book, chapter: number) => void;
 }) {
   const [stage, setStage] = useState<'book' | 'chapter'>('book');
+  const [jump, setJump] = useState('');
   const [selectedBook, setSelectedBook] = useState<Book>(currentBook);
   const [sort, setSort] = useState<SortMode>('canonical');
   // Full-screen and, until now, inescapable by keyboard: no Escape handler, no backdrop
@@ -41,6 +42,10 @@ export function BookPicker({
       { length: selectedBook.chapterCount },
       (_, i) => i + 1,
     );
+    // Filter by prefix, not equality: typing "1" on Psalms should narrow toward 1, 1x, 1xx rather
+    // than jumping to chapter 1 and hiding 119. An out-of-range or non-numeric entry narrows to
+    // nothing, which is honest — the grid shows what matches.
+    const shownChapters = jump.trim() === '' ? chapters : chapters.filter((c) => String(c).startsWith(jump.trim()));
     const chapterCell = (c: number) =>
       `flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-colors ease-gentle ${
         selectedBook.slug === currentBook.slug && c === currentChapter
@@ -71,8 +76,25 @@ export function BookPicker({
               Close
             </button>
           </div>
+          {/* JUMP, DO NOT SCROLL — S2 item 5. Psalm 119 sat 150 taps down a scrolling grid. One
+              input filtering an array already in memory; no new state store, no new dependency.
+              Shown only where it earns its place: below ~24 chapters the grid is already one
+              glance, and an extra control would be noise on 44 of the 66 books. */}
+          {selectedBook.chapterCount > 24 && (
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={selectedBook.chapterCount}
+              value={jump}
+              onChange={(e) => setJump(e.target.value)}
+              aria-label={`Jump to a chapter in ${selectedBook.name}, 1 to ${selectedBook.chapterCount}`}
+              placeholder={`Jump to a chapter (1–${selectedBook.chapterCount})`}
+              className="mb-4 min-h-[44px] w-full rounded-xl bg-paper px-4 text-base text-stone-800 shadow-paper outline-none placeholder:text-stone-400 focus-quiet dark:bg-stone-800 dark:text-stone-100 dark:shadow-none dark:placeholder:text-stone-500"
+            />
+          )}
           <div className="grid grid-cols-6 gap-2">
-            {chapters.map((c) =>
+            {shownChapters.map((c) =>
               onPick ? (
                 <button key={c} onClick={() => onPick(selectedBook, c)} className={chapterCell(c)}>
                   {c}

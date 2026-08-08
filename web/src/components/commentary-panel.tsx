@@ -226,7 +226,7 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
           </span>
         )}
         {entry.tradition && (
-          <span className="rounded-full bg-stone-200/50 px-2 py-0.5 text-micro font-medium text-stone-500">
+          <span className="rounded-full bg-stone-200/50 px-2 py-0.5 text-micro font-medium text-stone-600 dark:bg-stone-700/50 dark:text-stone-300">
             {entry.tradition}
           </span>
         )}

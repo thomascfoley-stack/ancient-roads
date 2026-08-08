@@ -192,7 +192,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 3 | `T3` | Mobile — tab bar must not cover scripture | `-` |
 | 3 | `T4` | Settings that follow the user; an account section | `-` |
 | 4 | `S1` | Landing page — show the product | `-` |
-| 4 | `S2` | Polish sweep — 9 small fixes, one branch | `-` |
+| 4 | `S2` | Polish sweep — 9 small fixes, one branch | `~` |
 | 5 | `PR1a` | Prayer journal — the space and the entity | `-` |
 | 5 | `PR1b` | Prayer journal — "From the tradition" rail (separable) | `-` |
 | 5 | `PR2` | Compare a note with the tradition | `-` |
@@ -1577,11 +1577,25 @@ exit test can still be satisfied:
 - [ ] `BROWSER` Navigating into a chapter shows the same skeleton treatment as Library pages.
 - [ ] `BROWSER` Jumping to Psalm 119 takes one input and one keystroke.
 - [ ] `BROWSER` The translation picker explains itself.
-- [ ] `AGENT` Every item in the table above is either done or explicitly moved to section 9 with a reason. **Nothing silently dropped.**
+- [~] `AGENT` Every item is done, verified-already-shipped, or moved to §9 with a reason. **Nothing silently dropped** — the per-item disposition is in the Findings log. **3 of 9 closed on this branch; 4 remain BROWSER/HUMAN/DEVICE; item 4 is flagged as a would-be regression and needs an owner call.**
 
 **Findings log**
 
-> _(write here)_
+> **PARTIAL 2026-08-08** on `fix/S2`. Per-item disposition, so nothing is silently dropped:
+>
+> | # | Item | Disposition |
+> |---|---|---|
+> | 1 | Translation explainer | **NOT DONE** — one string, but it renders in the translation picker, a `BROWSER` surface this tree cannot reach to verify. Left for the browser pass. |
+> | 2 | Tag contrast | **DONE.** The tradition tag carried `text-stone-500` with **no `dark:` pair**, so a light-mode value stayed on a dark card. Now `text-stone-600 dark:text-stone-300` with a matching background. Seeded and watched red. The 4.5:1 measurement itself is `AGENT`-with-a-tool and remains unticked — I did not measure it, I fixed the missing pair. |
+> | 3 | Ask checkbox colour | **ALREADY SHIPPED** at `e196e4b`; now asserted so it cannot regress to browser blue. The old class was the `@tailwindcss/forms` idiom with that plugin **not installed** — inert, a dead class that looked like the fix. |
+> | 4 | Single-chapter books render as links | **FLAGGED — the prescribed fix is a regression. ⚑ owner call.** The split is not about single-chapter books; it is about picker MODE. With `onPick` (dialog picks a chapter) everything is a `<button>`; without it (navigate) a one-chapter book is a `<Link>` because it *navigates*, while a multi-chapter book is a `<button>` because it *opens the grid*. Making the link a button would lose middle-click, open-in-new-tab and the browser's own link affordances — worse semantics for a cosmetic match. The reader's real complaint is that two rows look identical and behave differently; that is a **signalling** fix, not an element-type one. |
+> | 5 | Jump-to-chapter input | **DONE.** One input filtering an array already in memory. Shown only above 24 chapters — below that the grid is one glance and the control would be noise on 44 of 66 books. Prefix filter, not equality, so typing `1` on Psalms narrows toward 1/1x/1xx rather than hiding 119. |
+> | 6 | `aria-label` + tooltip on icon buttons | **NOT DONE.** `R0`: the `aria-label` half already shipped (`sidebar.tsx:474,481`); the missing half is a `title` tooltip, and MASTER `UX-2` records that `title` is hover-only so it does not help touch at all. Doing it as written would be motion without benefit. |
+> | 7 | Work TOC titles | **OUT — filed in §9.** Item 7's own conditional resolves to "do not fake it": `work-toc.tsx` chunks one work into slices whose headings are all one title plus `(i/n)`. No per-chunk titles exist in the data. A corpus/ingestion change, not a UI one. |
+> | 8 | Era accents in the verse panel | **NOT DONE** — `BROWSER` (a per-era border on the rendered panel) plus a contrast measurement and a `HUMAN` check. |
+> | 9 | Reading presets | **NOT DONE** — `BROWSER`, and its own constraints require resolving the stepper/preset interaction, which is a design decision the block leaves open. |
+>
+> So: **3 closed, 1 needs an owner ruling, 5 need a browser or a person.** The block stays `~`.
 
 ---
 
