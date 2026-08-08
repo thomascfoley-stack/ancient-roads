@@ -94,8 +94,10 @@ today**, reachable by any signed-up account once the preview gate comes off:
 - ~~**A1-2 HIGH** — Better Auth's in-memory limiter~~ **FIXED 2026-08-07 (`3426186`)**, red-proofed
   under real concurrency (50 simultaneous → exactly 3 allowed, no lost updates). No migration
   needed; `api_rate_limit` already existed.
-- **A1-3 HIGH** — one attacker can exhaust the 2,000/day global ask ceiling and take `/ask` offline
-  for everyone. Holds even after A1-2 is fixed.
+- **A1-3 HIGH — ACCEPTED, not fixed (ADR-106).** Ceiling raised 2,000 → 5,000/day on 2026-08-07;
+  exhaustion now needs 50 accounts rather than 20. No fairness mechanism, no reserved headroom.
+  **Re-entry condition is the `SITE_PASSWORD` gate coming off** — that single config change turns
+  the attacker population from invitees into the internet.
 
 Also **A1-11**: the pdfjs "RCE fix" (`d589140`) is a version bump whose stated mechanism is not
 corroborated by its own before-state — `isEvalSupported`/`new Function` occur zero times in *both*
@@ -143,8 +145,8 @@ conversation about people and hardware, not about agent time.
 and do not wait for a ship.
 
 1. ~~**A1-1 + A1-5**~~ **DONE 2026-08-07** (`1ab40de`, `d6a1e22`), both red-proofed.
-2. ~~A1-2~~ **DONE** (`3426186`). **A1-3 remains** ⚑ — its remedy is a product decision (allowlist?
-   priority tier? per-IP floor?), not just code, and needs the owner.
+2. ~~A1-2~~ **DONE** (`3426186`). ~~A1-3~~ **ACCEPTED** (ADR-106, ceiling → 5,000/day) — revisit
+   before the password gate comes off.
 3. **A2 + A3 + A4** — CI green, rollback doc, deploy. Unblocks `L1`, `L2` step 2, UX-5.
 
 Then `L2c` + `L2b` + `N1` — three small, independent, high-visibility blocks that close Wave 1's

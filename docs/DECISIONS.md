@@ -1435,3 +1435,80 @@ were empirical; it is not, so the run would confirm arithmetic at the cost of an
 than the one that misfired: *the largest K that cannot exclude a gold verse, subject to precision
 ≥ bar.* "Smallest K clearing the bar" silently assumes recall falls monotonically with K, which is
 false wherever gold is defined by a longer n-gram than returns are.
+
+## ADR-106 — A1-3 (global ask ceiling): raised to 5,000/day and ACCEPTED until public launch (2026-08-07)
+
+**Owner ruling, 2026-08-07, in two parts.** First: *"just let it ride and we will put caps later."*
+Then, amended minutes later: *"make it 5k questions a day."* So the ceiling moves **2,000 → 5,000**
+(`web/src/lib/rate-limit.ts:30`) and the structural gap is still accepted, not closed. Both halves
+are recorded because the second changed the number without changing the reasoning, and a reader who
+sees only "5,000" should know it was a deliberate raise of a circuit breaker rather than a fix.
+
+**What 5,000 buys:** the exhaustion threshold moves from 20 accounts to **50** at their full
+100/day allowance. That is a constant-factor increase in the cost of the attack, on an attack whose
+cost A1-2's fix (`3426186`) had already raised. It does not introduce fairness, reserved headroom or
+any notion of who gets served when the ceiling trips — so A1-3 stands as written.
+
+**Precedence, which matters more than the number:** the value is a *default*. If
+`ASK_LIMIT_GLOBAL_PER_DAY` is already set in the Vercel environment, this change is inert there and
+the deployed ceiling stays whatever the variable says. It is not named in `deploy.sh`'s required-env
+list or in `DEPLOY_PREFLIGHT.md`, so its production value is currently unverified from this repo.
+**Check it in the dashboard; do not assume the code default is what production runs.**
+
+---
+
+**Original ruling, retained:** Recorded because an
+accepted risk that is not written down is indistinguishable, six weeks later, from a missed finding
+— and the pre-deploy audit that raised it is in the repo, so its disposition has to be too.
+
+### The finding
+
+Pre-deploy audit **A1-3** (HIGH):
+`web/src/lib/rate-limit.ts:30`, `LIMIT_GLOBAL_PER_DAY = 2_000` — a site-wide daily ceiling on
+`/api/ask` attempts. Per-user caps are 10/min and 100/day, so **20 accounts at their full daily
+allowance exhausts the site for everyone** until midnight UTC. `checkAskRateLimit` returns
+`limited: 'global'` to every caller, with no allowlist, priority tier or reserved headroom, so the
+product's core feature goes dark for real users.
+
+### Why accepting it is defensible *today*
+
+- The site sits behind `SITE_PASSWORD` (`web/src/middleware.ts:22`, fails closed). The attacker
+  population is people who already hold the preview password.
+- **A1-2 was fixed the same day** (`3426186`): Better Auth's limiter moved off an in-memory Map onto
+  `api_rate_limit`, so minting the 20 accounts is now rate-limited rather than free at fleet width.
+  That raises the cost of the attack; it does not prevent it.
+- The ceiling is env-tunable (`ASK_LIMIT_GLOBAL_PER_DAY`), so the immediate response to an incident
+  is a dashboard edit, not a deploy.
+- The mechanism is doing the job it was designed for. Its own comment: *"it is not a fairness
+  mechanism, it is the number above which something is wrong and a human should look."* A1-3 is the
+  observation that a circuit breaker is currently the only thing between one actor and everyone
+  else — which is a gap in the design, not a defect in the code.
+
+### Why this must be revisited BEFORE public launch, not on a date
+
+The whole basis above is the password gate. **Removing it changes the attacker population from
+"invitees" to "the internet" in a single config change**, and nothing in the code couples the two —
+so this ADR is the coupling. `CLAUDE.md` already gates public launch on SEC-1; this joins it.
+
+### Re-entry condition
+
+Revisit when **either** happens, whichever is first:
+
+1. The `SITE_PASSWORD` gate is removed or public signup opens, **or**
+2. `logEvent('rate_limit_hit', { cap: 'global' })` fires in production even once — that line already
+   exists (`rate-limit.ts:103`) and is the signal that the ceiling has been reached by real traffic
+   rather than theory.
+
+Note the asymmetry worth knowing now: **nothing is paged on that log line** (audit finding 17 — the
+whole of observability is one `console.log` into Vercel runtime logs). So condition 2 is only
+detectable if someone looks. That is itself a reason not to let this ride past launch.
+
+### Options when it is revisited, from the A1-3 write-up
+
+Reserved headroom for established accounts · a per-IP floor beneath the per-account cap · an
+explicit allowlist/priority tier (probably right for an invite list) · or simply a higher ceiling
+with per-account throttling doing the real work. Choosing needs two numbers this repo does not have
+yet: expected daily ask volume, and the cost of one ask.
+
+**Status:** ACCEPTED, not fixed. A1-3 stays in the audit checklist as accepted-with-a-ruling rather
+than being ticked off.

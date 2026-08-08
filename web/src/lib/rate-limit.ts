@@ -27,7 +27,15 @@ const LIMIT_PER_DAY = Number(process.env.ASK_LIMIT_PER_DAY ?? 100);
 // what one account can spend; they bound the BILL only if accounts are scarce, and registration
 // is open with no allowlist. This is the backstop that makes the worst case finite: it is not a
 // fairness mechanism, it is the number above which something is wrong and a human should look.
-const LIMIT_GLOBAL_PER_DAY = Number(process.env.ASK_LIMIT_GLOBAL_PER_DAY ?? 2_000);
+// RAISED 2,000 -> 5,000 by owner ruling, 2026-08-07 (ADR-106), after pre-deploy audit A1-3 showed
+// that 20 accounts at their full 100/day allowance exhausted the old ceiling for everyone. 5,000 is
+// 50 accounts' worth, which does not close A1-3 — it is a bigger circuit breaker, not a fairness
+// mechanism, and the ADR records that the real fix (reserved headroom / per-IP floor / priority
+// tier) is deferred to before public launch.
+//
+// NOTE ON PRECEDENCE: this default is inert if `ASK_LIMIT_GLOBAL_PER_DAY` is set in the deployment
+// environment. Raising the number in code does nothing on a host where the variable already exists.
+const LIMIT_GLOBAL_PER_DAY = Number(process.env.ASK_LIMIT_GLOBAL_PER_DAY ?? 5_000);
 /** The bucket key for the global cap. Not a user id — deliberately a constant. */
 const GLOBAL_BUCKET_USER = '__global__';
 

@@ -287,7 +287,7 @@ live on production today.
       3/60s on forget-password) bound one instance, not one attacker. **This repo built a DB-backed
       limiter (`api_rate_limit`) for `/api/gate` and `/api/ask` and left the highest-value endpoints
       on the library default.** With `requireEmailVerification: false`, fleet-width signup is free.
-- [ ] **A1-3. One attacker can take `/ask` offline for everyone.** `web/src/lib/rate-limit.ts:30,99-105`.
+- [~] **A1-3. ACCEPTED RISK — ADR-106.** Ceiling raised 2,000 → 5,000/day by owner ruling 2026-08-07; the structural gap is deferred to before public launch, not closed. One attacker can still take `/ask` offline for everyone, now at 50 accounts rather than 20. `web/src/lib/rate-limit.ts:30,99-105`.
       Per-user caps key on `user.id`, and accounts are free, unverified and (per A1-2) unthrottled;
       `ASK_LIMIT_GLOBAL_PER_DAY` (2,000) is the only surviving bound. ~20 accounts × 100 asks
       returns `limited: 'global'` for every real user until midnight UTC. No allowlist or priority
