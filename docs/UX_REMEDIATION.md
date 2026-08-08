@@ -186,7 +186,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 2 | `N2` | Sidebar must reveal it has more in it | `-` |
 | 2 | `N3` | Verse interactivity — uniform first, then visible | `-` |
 | 2 | `N4` | Close the fake doors | `-` |
-| 2 | `L2b` | Plan builder must not open in an error state | `-` |
+| 2 | `L2b` | Plan builder must not open in an error state | `~` |
 | 3 | `T1` | First run — teach the one idea that differentiates | `-` |
 | 3 | `T2` | Sign-up basics + passive email verification | `-` |
 | 3 | `T3` | Mobile — tab bar must not cover scripture | `-` |
@@ -1098,7 +1098,41 @@ Weeks and days-per-week are fixed constants rather than derived from the selecte
 
 **Findings log**
 
-> _(write here)_
+> **DONE 2026-08-08** on `fix/L2b`, with **one deviation from the block's literal text, flagged
+> rather than taken quietly.**
+>
+> **The block's minimal change cannot close the finding.** It says "derive default weeks:
+> `ceil(chapters / daysPerWeek)`". The real validation (`expand.ts:130-134`) refuses when
+> `chapters < weeks × daysPerWeek`, so with `daysPerWeek` fixed at 5, any book with **fewer than 5
+> chapters** has no positive week count that satisfies it — `weeks >= 1` already demands 5 slots.
+> That is **19 of 66 books** (Jude, Philemon, Obadiah, 2–3 John, Haggai, Titus, Joel, Nahum,
+> Habakkuk, Zephaniah, 2 Thess, Ruth, Jonah, Malachi, Philippians, Colossians, 2 Timothy, 2 Peter).
+> Deriving weeks alone leaves nearly a third of the picker opening in the error state the block
+> exists to remove. So `defaultPlanShape` derives **both** numbers. It is still one function and one
+> call site, and it touches neither the validation nor the preview.
+>
+> **A second judgement, made smaller than the block asked.** "Recomputed on book change" would
+> discard a reader's deliberate 8-weeks-at-3-days while they browse. `pickBook` re-derives **only
+> when the current shape would error**, so valid choices survive. Smaller in effect, same outcome.
+>
+> **`setBook` had a second caller.** The `<select>` still called it directly, bypassing the
+> derivation entirely. Found by grepping the caller set, not by assuming one — the same shape as the
+> `/read/john/1` alias defect in A7.
+>
+> **Two existing tests asserted the DEFECT.** `plans-builder-preview.test.tsx` proved the preview
+> refuses and Create is disabled by relying on the builder *opening* at 40 impossible slots. Their
+> subjects are exactly what this block's Do-NOT protects, so the fixtures now set the impossible
+> combination **deliberately** — which is verbatim what exit check 2 asks for — and the assertions
+> are unchanged. Two more had numbers baked from the old constants; updated, properties untouched.
+>
+> **NOT DONE — all three exit checks are `BROWSER`** (cycling a live selector, confirming the
+> preview arithmetic). They need a rendered page against a database this tree has no credentials
+> for. The block is `~`. The AGENT-verifiable core beneath them — the derivation across all 66 books
+> at 1/3/5/7 days a week — is `web/test/invariants/plan-builder-defaults.test.ts`, watched red first.
+>
+> **Filed, not fixed:** collection and topic modes inherit the book-derived schedule rather than
+> deriving their own (Paul's letters, 87 chapters, opens at the 15 slots carried from Romans). It
+> fits, so it is not an error state — but it is not derived either. Section 9.
 
 ---
 
@@ -1722,10 +1756,11 @@ Each row is a block whose "reuse the existing X" premise `R0` killed. The estima
 | **A check that a migration's cited premise still holds** | `INSTR` | 039 broke two features by citing 016's "no GRANT needed" comment, which 032 had already invalidated. Nothing detects a migration reasoning from a superseded fact. This is the watchlist's hand-maintained-expected-set class in a new shape and deserves one deliberate decision rather than a fifteenth instance. |
 | **`L1b`'s 15s threshold is aimed at the wrong number** | `INSTR` | Measured 104s and 58s against the block's stated "~18s success, ~45s failure". Re-derive the threshold from real timings before building the line, or it sets an expectation the product misses by 5×. |
 
-### Filed by `L2c` — 2026-08-08
+### Filed by `L2b`/`L2c` — 2026-08-08
 
 | Item | Block | Reason |
 |---|---|---|
+| Collection and topic modes do not derive their own schedule | `L2b` | They inherit whatever the book mode left. Paul's letters (87 chapters) opens at the 15 slots carried over from Romans — it *fits*, so no error state, but the number is arbitrary rather than proportionate. Out of L2b's "one function, one call site". |
 | **9 unpinned `toLocaleString` calls on numbers** | `L2c` | `n.toLocaleString()` renders `1.234` on a German browser and `1,234` here — the same reader-locale inconsistency as the dates, smaller blast radius. Across `word-study/page.tsx`, `work-toc.tsx` (×4 lines, 6 calls), `plan/store.ts`, `plural.ts` — six files, past §0.4's ~3-file stop condition, and `L2c`'s minimal change says "every other **date**-format call". Ratcheted at 9 by `date-locale-and-plan-title.test.ts` so a tenth goes red; it is bounded, not ignored. |
 | Real locale system (beyond the `en-US` pin) | `L2c` | Already listed below — `locale.ts` is now the single constant a real system would replace. |
 

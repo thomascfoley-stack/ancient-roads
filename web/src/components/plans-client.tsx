@@ -24,6 +24,8 @@ import { DEFAULT_TRANSLATION } from '@/lib/bible';
 import { storedTranslation, type PassageTarget } from '@/lib/verse-preview';
 import { count } from '@/lib/plural';
 import { DISPLAY_LOCALE } from '@/lib/locale';
+import { defaultPlanShape } from '@/lib/plan/defaults';
+import { BOOK_BY_SLUG } from '@/bible/books';
 
 interface PlanListRow {
   id: string;
@@ -243,14 +245,32 @@ type Mode = (typeof MODES)[number]['key'];
 function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
   const [mode, setMode] = useState<Mode>('book');
   const [book, setBook] = useState('rom');
+  // Re-derive when the reader picks another book. `pickBook` rather than raw `setBook` so the two
+  // numbers can never be left describing the previous book — which is how the error state returns.
+  const pickBook = (slug: string) => {
+    setBook(slug);
+    // RE-DERIVE ONLY IF THE CURRENT SHAPE WOULD ERROR. Recomputing unconditionally would prevent the
+    // error state but discard a reader's deliberate 8-weeks-at-3-days while they browse books,
+    // which is its own small betrayal. Keeping what they chose when it still fits is both gentler
+    // and a smaller change in effect.
+    const chapters = BOOK_BY_SLUG.get(slug)?.chapterCount ?? 0;
+    if (weeks * daysPerWeek > chapters) {
+      const shape = defaultPlanShape(slug, daysPerWeek);
+      setWeeks(shape.weeks);
+      setDaysPerWeek(shape.daysPerWeek);
+    }
+  };
   const [group, setGroup] = useState('pauline-epistles');
   const [topicQuery, setTopicQuery] = useState('');
   const [topicMatches, setTopicMatches] = useState<TopicMatch[] | null>(null);
   const [topicError, setTopicError] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
   const [pickedTopic, setPickedTopic] = useState<TopicMatch | null>(null);
-  const [weeks, setWeeks] = useState(8);
-  const [daysPerWeek, setDaysPerWeek] = useState(5);
+  // DERIVED, not constant — block L2b. `useState(8)` with `daysPerWeek` 5 meant the builder opened
+  // on Romans at 40 reading slots against 16 chapters, rendering its own validation error with
+  // `Create plan` disabled before the reader touched anything.
+  const [weeks, setWeeks] = useState(() => defaultPlanShape('rom').weeks);
+  const [daysPerWeek, setDaysPerWeek] = useState(() => defaultPlanShape('rom').daysPerWeek);
   const [startDate, setStartDate] = useState(todayLocalDate);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -382,7 +402,7 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
         {mode === 'book' && (
           <label className="flex flex-col gap-1 text-xs font-medium text-stone-500 dark:text-stone-400">
             Book
-            <select value={book} onChange={(e) => setBook(e.target.value)} className={FIELD}>
+            <select value={book} onChange={(e) => pickBook(e.target.value)} className={FIELD}>
               {BOOKS.map((b) => <option key={b.slug} value={b.slug}>{b.name}</option>)}
             </select>
           </label>
