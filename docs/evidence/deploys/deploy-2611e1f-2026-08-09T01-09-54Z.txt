@@ -1,0 +1,17 @@
+deployed_at_utc: 2026-08-09T01:09:54Z
+sha:             2611e1f7b4d22f3ee3f813218c3992a02f6e0f65
+branch:          feat/marketing-site
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@50.38.2
+url:             https://web-fe8v7n02k-home-network-hardening.vercel.app
+deployment_id:   dpl_5UeK4xkf2aBqE8poRHJnLDp7T7ws
+alias:           ancientpaths.app
+alias_serves:    dpl_5UeK4xkf2aBqE8poRHJnLDp7T7ws
+state:           live
+note:            deploy.sh's CLI died to EHOSTUNREACH after upload+build, but Vercel
+                 completed server-side and moved the alias itself. Verified manually:
+                 deployment Ready, --meta sha == HEAD (2611e1f), alias serves this id,
+                 https://ancientpaths.app/ returns 200. Fourth attempt after three
+                 EPIPE upload deaths on a dropping connection.
