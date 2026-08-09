@@ -1,0 +1,12 @@
+deployed_at_utc: 2026-08-09T00:23:05Z
+sha:             c67b4e91b1483af196d021277e67e68ca2b8c5db
+branch:          feat/marketing-site
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@50.38.2
+url:             (not parsed - see /var/folders/fq/79gh1x1j27z5n7kx60742kkh0000gn/T//vercel-deploy.6bhA89)
+deployment_id:   (not resolved)
+alias:           ancientpaths.app
+alias_serves:    (not resolved)
+state:           upload started, outcome unknown
