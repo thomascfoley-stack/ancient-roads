@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { MarketingNav } from '@/components/marketing/nav';
 import { MarketingFooter } from '@/components/marketing/footer';
@@ -46,8 +47,20 @@ export default function FeaturesPage() {
     <main className="bg-stone-50">
       <MarketingNav active="features" />
 
-      <header className="border-b edge px-5 pb-16 pt-16 sm:px-8 sm:pb-24 sm:pt-28">
-        <div className="mx-auto max-w-7xl">
+      {/* The photograph, faint, behind the title only — the same banded pattern as
+          Why (photo, gradient dissolve, solid parchment), applied site-wide for one
+          consistent language rather than a one-off on a single page. */}
+      <header className="relative overflow-hidden px-5 pb-16 pt-16 sm:px-8 sm:pb-24 sm:pt-28">
+        <Image
+          src="/marketing/hero-path.jpg"
+          alt=""
+          fill
+          sizes="100vw"
+          quality={75}
+          className="object-cover object-[38%_40%] opacity-[0.35]"
+        />
+        <div aria-hidden className="absolute inset-0 bg-linear-to-b from-stone-50/40 via-stone-50/70 to-stone-50" />
+        <div className="relative mx-auto max-w-7xl">
           <p className="mb-5 text-micro font-semibold uppercase tracking-[0.3em] text-stone-500">Features</p>
           <h1 className="font-display text-5xl tracking-[-0.01em] text-stone-900 sm:text-7xl lg:text-8xl">Tools for the labor</h1>
         </div>

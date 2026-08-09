@@ -55,13 +55,13 @@ export default function MarketingHome() {
     <main className="bg-stone-50">
       <MarketingNav active="home" />
 
-      {/* 1 — HERO. PRD §5: full-viewport warm imagery, NO scrim gradient; the type sits
-          on a parchment band at the bottom of the hero. */}
-      <section className="flex min-h-dvh flex-col">
-        {/* Image band min-height: 36dvh on desktop (was 54) — at 54 the headline started
-            below the fold on a laptop viewport (owner call 2026-08-08); flex-1 still lets
-            the image grow on tall screens. */}
-        <div className="relative min-h-[42dvh] flex-1 sm:min-h-[36dvh]">
+      {/* 1 — HERO. Full-viewport imagery dissolving into parchment via a gradient — the
+          same banded language as Why/Features, just taller and at full strength since
+          this photo IS the hero rather than a faint mood behind a title. */}
+      <section className="relative flex min-h-dvh flex-col">
+        {/* Image band min-height: 42dvh mobile / 44dvh desktop — tall enough that the
+            gradient dissolve below has room to read as a transition, not a hard crop. */}
+        <div className="relative min-h-[42dvh] flex-1 sm:min-h-[44dvh]">
           {/* iStock #1337429689 (credit: RnDmS), purchased/licensed by the owner directly —
               NOT CC, so no attribution line is required and none is given (unlike the prior
               two photos, an iStock standard license does not obligate a credit). Ancient
@@ -76,9 +76,13 @@ export default function MarketingHome() {
             quality={90}
             className="object-cover object-[38%_50%]"
           />
+          {/* The dissolve: the photo shows clean through the top 60%, then runs into
+              solid stone-50 over the bottom 40%, so the text band below picks up on
+              already-parchment ground with no seam. */}
+          <div aria-hidden className="absolute inset-0 bg-linear-to-b from-transparent from-60% to-stone-50" />
         </div>
 
-        <div className="border-t edge bg-stone-50">
+        <div className="relative bg-stone-50">
           <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-12">
             <p className="mb-5 text-micro font-semibold uppercase tracking-[0.3em] text-stone-500 sm:mb-6">
               For those who preach and study the Word
