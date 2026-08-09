@@ -1,0 +1,27 @@
+deployed_at_utc: 2026-08-09T01:11:00Z
+sha:             2611e1f7b4d22f3ee3f813218c3992a02f6e0f65
+branch:          feat/marketing-site
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@54.14.2
+deployment_id:   dpl_4SRFDzwh5HbKLrAXCu5UqpHTu4aw
+url:             https://web-lqugbwmk2-home-network-hardening.vercel.app
+alias:           ancientpaths.app
+alias_serves:    dpl_4SRFDzwh5HbKLrAXCu5UqpHTu4aw
+state:           LIVE — verified by deployment-id match (vercel inspect ancientpaths.app),
+                 not just an HTTP 200. deploy.sh's own CLI wrapper died 4 times in a row on
+                 client-side network errors (EPIPE / non-JSON 500 / EADDRNOTAVAIL) during the
+                 owner's brief connectivity drop; the underlying Vercel build kept running
+                 server-side through all of them and completed. Recovered by polling
+                 `vercel inspect <deployment-id>` directly to Ready, then confirming
+                 `vercel inspect ancientpaths.app` resolves to the same id — the same identity
+                 check deploy.sh performs, run by hand because the script's own process had
+                 already exited on the last CLI error.
+verified live:
+  /                          -> 200
+  /features                  -> 200
+  /why                       -> 200
+  /gate                      -> 200
+  /marketing/hero-path.jpg   -> 200
+  /commentaries/jhn/1.json   -> 307 (correctly still gated)
