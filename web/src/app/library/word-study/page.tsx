@@ -79,7 +79,7 @@ export default function WordStudyPage() {
         </p>
       </header>
 
- <div className="sticky top-0 z-20 -mx-4 mb-6 flex flex-wrap items-center gap-2 border-b edge bg-stone-50/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6 dark:bg-stone-950/95">
+ <div className="sticky top-0 z-20 -mx-4 mb-6 flex flex-wrap items-center gap-2 border-b edge bg-stone-50 px-4 py-3 sm:-mx-6 sm:px-6 dark:bg-stone-950">
         <div className="flex rounded-xl bg-stone-200/60 p-1 dark:bg-stone-800">
           {(['greek', 'hebrew'] as Lang[]).map((l) => (
             <button
@@ -87,7 +87,7 @@ export default function WordStudyPage() {
               onClick={() => setLang(l)}
               className={`min-h-[36px] rounded-lg px-4 text-sm font-medium capitalize transition-colors ease-gentle ${
                 lang === l
-                  ? 'bg-paper text-stone-800 shadow-paper dark:bg-stone-700 dark:text-stone-100'
+                  ? 'bg-paper text-stone-800 dark:bg-stone-700 dark:text-stone-100'
                   : 'text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200'
               }`}
             >
@@ -101,7 +101,9 @@ export default function WordStudyPage() {
           onChange={(e) => setQuery(e.target.value)}
           placeholder={lang === 'greek' ? 'agape, G26, love…' : 'shalom, H430, peace…'}
           aria-label={lang === 'greek' ? 'Search the Greek lexicon' : 'Search the Hebrew lexicon'}
-          className="min-h-[44px] min-w-0 flex-1 rounded-lg bg-paper px-3 text-base text-stone-800 shadow-paper outline-none transition-shadow duration-200 ease-gentle placeholder:text-stone-400 focus:shadow-float sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500 dark:shadow-none"
+          /* PRD §6 input: parchment surface, 1px hairline; focus is the global gold
+             :focus-visible ring (a focus:border-* utility would lose to the unlayered .edge). */
+          className="min-h-[44px] min-w-0 flex-1 border edge bg-transparent px-3 text-base text-stone-800 placeholder:text-stone-400 sm:min-h-0 sm:py-1.5 sm:text-sm dark:text-stone-100 dark:placeholder:text-stone-500"
         />
       </div>
 
@@ -118,18 +120,18 @@ export default function WordStudyPage() {
       ) : results.length === 0 ? (
         <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">No matches for &ldquo;{query}&rdquo;.</p>
       ) : (
-        <div className="space-y-2.5">
+        <div className="border-y edge">
           {results.map((hit) => (
             <button
               key={hit.strong}
               onClick={() => setSelected(hit)}
-              className="flex w-full flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl bg-paper px-4 py-3 text-left shadow-paper transition-colors ease-gentle hover:bg-accent-50/50 active:bg-accent-50/70 dark:bg-stone-800/60 dark:shadow-none dark:hover:bg-stone-800"
+              className="flex w-full flex-wrap items-baseline gap-x-3 gap-y-1 border-b edge px-1 py-3 text-left transition-colors ease-gentle last:border-b-0 hover:bg-accent-50/40 active:bg-accent-50/70 dark:hover:bg-accent-950/20"
             >
               <span dir={rtl ? 'rtl' : 'ltr'} lang={rtl ? 'he' : 'el'} className="font-scripture text-xl text-stone-900 dark:text-stone-100">
                 {hit.lemma}
               </span>
               <span className="text-sm text-stone-500 dark:text-stone-400">{hit.translit}</span>
-              <span className="rounded-full bg-stone-100 px-2 py-0.5 text-micro font-semibold text-stone-500 dark:bg-stone-700 dark:text-stone-400">
+              <span className="text-micro font-semibold tracking-wider text-stone-500 dark:text-stone-400">
                 {hit.strong}
               </span>
               <span className="w-full truncate text-sm text-stone-600 sm:w-auto sm:flex-1 dark:text-stone-300">{hit.def}</span>
@@ -159,7 +161,7 @@ function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: ()
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -167,7 +169,7 @@ function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: ()
       <div
         ref={dialog.ref}
         {...dialog.dialogProps}
-        className="flex max-h-[85dvh] w-full max-w-lg flex-col rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] shadow-deep animate-slide-up dark:bg-stone-900"
+        className="flex max-h-[85dvh] w-full max-w-lg flex-col rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] animate-slide-up dark:bg-stone-900"
         style={drag.style}
       >
         <div aria-hidden className="flex justify-center pt-2.5" {...drag.handleProps}>
@@ -175,16 +177,19 @@ function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: ()
         </div>
  <div className="flex items-start justify-between border-b edge px-5 pb-3 pt-1" {...drag.handleProps}>
           <div>
-            <p dir={rtl ? 'rtl' : 'ltr'} lang={rtl ? 'he' : 'el'} className="font-scripture text-3xl text-stone-900 dark:text-stone-100">
+            {/* PRD §5 Word Study: the word at 22px display size. Kept in the READING face
+                rather than EB Garamond — the lemma is Greek/Hebrew, and the display face
+                has no Hebrew glyphs, so it would silently fall back anyway. */}
+            <p dir={rtl ? 'rtl' : 'ltr'} lang={rtl ? 'he' : 'el'} className="font-scripture text-[22px] text-stone-900 dark:text-stone-100">
               {hit.lemma}
             </p>
-            <p className="mt-0.5 text-sm text-stone-500 dark:text-stone-400">
+            <p className="mt-0.5 text-xs italic text-stone-500 dark:text-stone-400">
               {hit.translit}
-              {hit.pron && <span className="text-stone-500 dark:text-stone-400"> · {hit.pron}</span>}
+              {hit.pron && <span className="not-italic text-stone-500 dark:text-stone-400"> · {hit.pron}</span>}
             </p>
           </div>
           <div className="flex items-center gap-1">
-            <span className="rounded-full bg-accent-100 px-2.5 py-1 text-xs font-semibold text-accent-800 dark:bg-accent-950/60 dark:text-accent-200">
+            <span className="bg-accent-100 px-2.5 py-1 text-xs font-semibold text-accent-800 dark:bg-accent-950/60 dark:text-accent-200">
               {hit.strong}
             </span>
             <button
@@ -198,8 +203,9 @@ function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: ()
             </button>
           </div>
         </div>
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-4 text-base leading-relaxed">
-          {hit.def && <Field label="Definition">{hit.def}</Field>}
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-4">
+          {/* PRD §5 Word Study: definition 18px Literata at 1.75; etymology/usage 14px ink-wash. */}
+          {hit.def && <Field label="Definition" large>{hit.def}</Field>}
           {hit.derivation && <Field label="Derivation">{hit.derivation}</Field>}
           {hit.kjv && <Field label="KJV usage"><span className="italic">{hit.kjv}</span></Field>}
         </div>
@@ -208,11 +214,11 @@ function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: ()
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, large }: { label: string; children: React.ReactNode; large?: boolean }) {
   return (
     <div>
       <p className="mb-1 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">{label}</p>
-      <p className="font-serif text-stone-700 dark:text-stone-300">{children}</p>
+      <p className={`font-serif ${large ? 'text-lg leading-[1.75] text-stone-900 dark:text-stone-100' : 'text-sm text-stone-500 dark:text-stone-400'}`}>{children}</p>
     </div>
   );
 }

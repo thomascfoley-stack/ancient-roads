@@ -109,12 +109,12 @@ function SearchResultCard({
   }
 
   return (
-    <article className="rounded-2xl bg-paper p-4 shadow-paper dark:bg-stone-800/60 dark:shadow-none">
+    <article className="border-t edge pt-4">
       <div className="mb-1 flex flex-wrap items-baseline gap-2">
         <span className="text-sm font-medium text-stone-800 dark:text-stone-100">{r.author}</span>
         {r.year != null && <span className="text-xs text-stone-500 dark:text-stone-400">{yearLabel(r.year)}</span>}
         {r.tradition && (
-          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-micro font-medium uppercase tracking-wide text-stone-500 dark:bg-stone-700 dark:text-stone-400">
+          <span className="bg-stone-100 px-2 py-0.5 text-micro font-medium uppercase tracking-wide text-stone-500 dark:bg-stone-700 dark:text-stone-400">
             {r.tradition}
           </span>
         )}
@@ -211,12 +211,12 @@ function RegisterBrowseSection({ title, note, groups }: { title: string; note: s
       <RegisterSectionHeading title={title} note={note} />
       <div className="space-y-8">
         {groups.map((g) => (
-          <article key={g.key} className="rounded-2xl bg-paper p-5 shadow-paper dark:bg-stone-800/60 dark:shadow-none">
+          <article key={g.key} className="border-t edge pt-5">
  <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b edge pb-3">
               <h3 className="font-scripture text-xl font-medium text-stone-800 dark:text-stone-100">{g.author}</h3>
               {g.year != null && <span className="text-xs text-stone-500 dark:text-stone-400">{yearLabel(g.year)}</span>}
               {registerChipLabel(g.register) && (
-                <span className="rounded-full bg-accent-700/10 px-2 py-0.5 text-micro font-medium text-accent-700 dark:text-accent-300">
+                <span className="bg-accent-700/10 px-2 py-0.5 text-micro font-medium text-accent-700 dark:text-accent-300">
                   {registerChipLabel(g.register)}
                 </span>
               )}
@@ -398,7 +398,7 @@ export default function PassageSearchPage() {
   return (
     <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6">
       <header className="mb-6">
-        <h1 className="font-scripture text-3xl font-medium text-stone-800 dark:text-stone-100">Passage search</h1>
+        <h1 className="font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100">Passage search</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-500 dark:text-stone-400">
           Search what others before you have said, or browse passage by passage.
           {manifest && manifest.length > 0 && (
@@ -418,7 +418,7 @@ export default function PassageSearchPage() {
           onChange={(e) => handleSearchInput(e.target.value)}
           placeholder="Search commentaries…"
           aria-label="Search commentaries"
-          className="w-full rounded-lg bg-paper py-3 pl-10 pr-12 text-base text-stone-800 shadow-paper outline-none transition-shadow duration-200 ease-gentle placeholder:text-stone-400 focus:shadow-float sm:py-2.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
+          className="w-full border edge bg-transparent py-3 pl-10 pr-12 text-base text-stone-800 placeholder:text-stone-400 sm:py-2.5 sm:text-sm dark:text-stone-100 dark:placeholder:text-stone-500"
         />
         {searchQuery && (
           <button
@@ -492,7 +492,7 @@ export default function PassageSearchPage() {
                   <button
                     onClick={() => setSearchPage((p) => p + 1)}
                     disabled={searchLoading}
-                    className="min-h-[44px] rounded-lg bg-paper px-6 text-sm font-medium text-stone-600 shadow-paper transition-[opacity,transform,box-shadow,background-color,border-color] duration-200 ease-gentle hover:text-accent-800 hover:shadow-float active:bg-stone-100 disabled:opacity-40 dark:bg-stone-800 dark:text-stone-300 dark:shadow-none"
+                    className="min-h-[44px] border border-stone-500 bg-transparent px-6 font-sans text-sm font-medium text-stone-600 transition-colors ease-gentle hover:bg-stone-500 hover:text-stone-50 disabled:opacity-40 dark:border-stone-400 dark:text-stone-300 dark:hover:bg-stone-400 dark:hover:text-stone-950"
                   >
                     {searchLoading ? 'Loading…' : `Load more (${searchResults.length} of ${searchTotal}${searchTotalCapped ? '+' : ''})`}
                   </button>
@@ -505,14 +505,14 @@ export default function PassageSearchPage() {
         /* ============ BROWSE MODE ============ */
         <>
           {/* Passage selector */}
- <div className="sticky top-0 z-20 -mx-5 mb-6 flex flex-wrap items-center gap-2 border-b edge bg-stone-50/95 px-5 py-3 backdrop-blur-sm dark:bg-stone-900/95 sm:-mx-6 sm:px-6">
+ <div className="sticky top-0 z-20 -mx-5 mb-6 flex flex-wrap items-center gap-2 border-b edge bg-stone-50 px-5 py-3 dark:bg-stone-950 sm:-mx-6 sm:px-6">
             <select
               value={bookSlug}
               onChange={(e) => {
                 setBookSlug(e.target.value);
                 setChapter(1);
               }}
-              className="min-h-[44px] max-w-full rounded-lg bg-paper px-3 text-base text-stone-800 shadow-paper outline-none sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:shadow-none"
+              className="min-h-[44px] max-w-full border edge bg-transparent px-3 text-base text-stone-800 sm:min-h-0 sm:py-1.5 sm:text-sm dark:text-stone-100"
             >
               <optgroup label="Old Testament">
                 {BOOKS.filter((b) => b.testament === 'OT').map((b) => (
@@ -529,7 +529,7 @@ export default function PassageSearchPage() {
             <select
               value={chapter}
               onChange={(e) => setChapter(Number(e.target.value))}
-              className="min-h-[44px] max-w-full rounded-lg bg-paper px-3 text-base text-stone-800 shadow-paper outline-none sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:shadow-none"
+              className="min-h-[44px] max-w-full border edge bg-transparent px-3 text-base text-stone-800 sm:min-h-0 sm:py-1.5 sm:text-sm dark:text-stone-100"
             >
               {Array.from({ length: book.chapterCount }, (_, i) => i + 1).map((c) => (
                 <option key={c} value={c}>
@@ -542,7 +542,7 @@ export default function PassageSearchPage() {
               <select
                 value={authorFilter}
                 onChange={(e) => setAuthorFilter(e.target.value)}
-                className="min-h-[44px] max-w-full rounded-lg bg-paper px-3 text-base text-stone-800 shadow-paper outline-none sm:min-h-0 sm:py-1.5 sm:text-sm dark:bg-stone-800 dark:text-stone-100 dark:shadow-none"
+                className="min-h-[44px] max-w-full border edge bg-transparent px-3 text-base text-stone-800 sm:min-h-0 sm:py-1.5 sm:text-sm dark:text-stone-100"
               >
                 <option value="all">All sources ({grouped.length})</option>
                 {grouped.map((g) => (
@@ -553,7 +553,7 @@ export default function PassageSearchPage() {
 
             <Link
               href={`/read/${bookSlug}/${chapter}`}
-              className="ml-auto inline-flex min-h-[44px] items-center rounded-lg bg-paper px-4 text-xs font-medium text-stone-600 shadow-paper hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700 dark:shadow-none"
+              className="ml-auto inline-flex min-h-[44px] items-center border edge px-4 text-xs font-medium text-stone-600 hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:text-stone-300 dark:hover:bg-stone-800"
             >
               Open in reader &rarr;
             </Link>
@@ -570,11 +570,11 @@ export default function PassageSearchPage() {
               {visible.length > 0 ? (
                 <div className="space-y-8">
                   {visible.map((g) => (
-                    <article key={g.author} className="rounded-2xl bg-paper p-5 shadow-paper dark:bg-stone-800/60 dark:shadow-none">
+                    <article key={g.author} className="border-t edge pt-5">
  <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b edge pb-3">
                         <h2 className="font-scripture text-xl font-medium text-stone-800 dark:text-stone-100">{g.author}</h2>
                         {g.year != null && <span className="text-xs text-stone-500 dark:text-stone-400">{yearLabel(g.year)}</span>}
-                        <span className="rounded-full bg-stone-100 px-2 py-0.5 text-micro font-medium uppercase tracking-wide text-stone-500 dark:bg-stone-700 dark:text-stone-400">
+                        <span className="bg-stone-100 px-2 py-0.5 text-micro font-medium uppercase tracking-wide text-stone-500 dark:bg-stone-700 dark:text-stone-400">
                           {g.tradition ?? eraLabel(g.year)}
                         </span>
                         <span className="ml-auto text-micro text-stone-500 dark:text-stone-400">{g.sourceTitle}</span>

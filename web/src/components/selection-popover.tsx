@@ -150,24 +150,28 @@ export function SelectionPopover({
         key={c.id}
         onClick={() => onHighlight(c.id)}
         aria-label={`Highlight ${c.id}`}
-        className={`h-7 w-7 shrink-0 rounded-full ${c.dot} ring-1 ring-white/20 transition-transform ease-gentle active:scale-90`}
+        // PRD §5: 28px circles with a 1px ink-wash border — the one place rounded-full stays.
+        className={`h-7 w-7 shrink-0 rounded-full border border-stone-500 ${c.dot}`}
       />
     ))
   ) : (
-    <Link href="/auth/sign-in" className="shrink-0 px-1 text-xs font-semibold text-accent-300">
+    <Link href="/auth/sign-in" className="shrink-0 px-1 text-xs font-semibold text-accent-300 dark:text-accent-700">
       Sign in to highlight
     </Link>
   );
 
-  const divider = <span className="mx-0.5 h-5 w-px shrink-0 bg-white/15" aria-hidden />;
+  const divider = <span className="mx-0.5 h-5 w-px shrink-0 bg-white/15 dark:bg-stone-900/20" aria-hidden />;
 
+  // The pill is night-surface in light mode and INVERTED to parchment in dark (PRD §8), so
+  // every control on it carries both palettes: stone-200→white text on the dark pill,
+  // stone-700→stone-900 on the parchment one.
   const actionButtons = (
     <>
       {onDefine && (
         <button
           onClick={onDefine}
           title="Greek or Hebrew behind this word"
-          className="shrink-0 rounded-full px-2 py-1 text-xs font-medium text-stone-200 hover:text-white"
+          className="shrink-0 rounded-full px-2 py-1 text-xs font-medium text-stone-200 hover:text-white dark:text-stone-700 dark:hover:text-stone-900"
         >
           Define
         </button>
@@ -176,7 +180,7 @@ export function SelectionPopover({
         <button
           onClick={onAddNote}
           title="Add note"
-          className="shrink-0 rounded-full px-2 py-1 text-xs font-medium text-stone-200 hover:text-white"
+          className="shrink-0 rounded-full px-2 py-1 text-xs font-medium text-stone-200 hover:text-white dark:text-stone-700 dark:hover:text-stone-900"
         >
           ✎ Note
         </button>
@@ -185,7 +189,7 @@ export function SelectionPopover({
         <button
           onClick={onBookmark}
           title="Bookmark"
-          className="shrink-0 rounded-full px-2 py-1 text-xs font-medium text-stone-200 hover:text-white"
+          className="shrink-0 rounded-full px-2 py-1 text-xs font-medium text-stone-200 hover:text-white dark:text-stone-700 dark:hover:text-stone-900"
         >
           Bookmark
         </button>
@@ -194,7 +198,7 @@ export function SelectionPopover({
         <button
           onClick={onAsk}
           title="Ask Ancient Paths about this"
-          className="shrink-0 rounded-full px-2 py-1 text-xs font-medium text-stone-200 hover:text-white"
+          className="shrink-0 rounded-full px-2 py-1 text-xs font-medium text-stone-200 hover:text-white dark:text-stone-700 dark:hover:text-stone-900"
         >
           Ask
         </button>
@@ -203,7 +207,7 @@ export function SelectionPopover({
         <button
           onClick={onOpenCommentaries}
           title="Commentaries on this verse"
-          className="shrink-0 rounded-full px-2 py-1 text-stone-200 hover:text-white"
+          className="shrink-0 rounded-full px-2 py-1 text-stone-200 hover:text-white dark:text-stone-700 dark:hover:text-stone-900"
         >
           &#10077;
         </button>
@@ -214,7 +218,7 @@ export function SelectionPopover({
   const copyChip = (mode: CopyMode, label: string) => (
     <button
       onClick={() => copy(mode)}
-      className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 text-micro font-medium text-stone-300 hover:border-white/30 hover:text-white"
+      className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 text-micro font-medium text-stone-300 hover:border-white/30 hover:text-white dark:border-stone-900/25 dark:text-stone-600 dark:hover:border-stone-900/40 dark:hover:text-stone-900"
     >
       {copied === mode ? 'Copied ✓' : label}
     </button>
@@ -231,8 +235,16 @@ export function SelectionPopover({
         style={pos ? { top: pos.top, left: pos.left } : { top: -9999, left: -9999, visibility: 'hidden' }}
         {...holdSelection}
       >
-        <div className="w-max max-w-[420px] rounded-xl bg-stone-900/95 px-3 py-2.5 shadow-deep ring-1 ring-white/10 dark:bg-stone-800">
-          <div className="px-1 pb-1.5 text-micro font-medium tracking-wide text-stone-500 dark:text-stone-400">{contextLabel}</div>
+        {/* PRD §5/§8: night surface, 1px night-hairline border, NO shadow, 150ms fade.
+            Dark mode inverts it to parchment with a dark border. NOT rounded-full: the PRD's
+            "pill" is the mockup's ONE-ROW toolbar (the mobile bar below keeps it); this desktop
+            card stacks label/swatches/actions/copy, and rounded-full on a multi-row box renders
+            an ellipse that clips its own corners (measured: 168x131 signed-out). Square corners
+            per the global radius-0 rule. */}
+        <div className="w-max max-w-[420px] animate-[fade-in_150ms_var(--ease-gentle)] border border-stone-800 bg-stone-950 px-4 py-2.5 dark:border-stone-900 dark:bg-stone-50">
+          {/* AA on both skins: ink-wash (stone-500) fails 4.5:1 at 11px on the dark pill, so
+              the label lightens to stone-400 there; on parchment in dark mode ink-wash passes. */}
+          <div className="px-1 pb-1.5 font-sans text-micro font-medium small-caps tracking-[0.08em] text-stone-400 dark:text-stone-500">{contextLabel}</div>
           {/* SWATCHES ON THEIR OWN ROW, WRAPPING. Ten colours (highlight-colors.ts) at 28px each
               plus gaps run ~350px — comfortably inside this card on their own, but every child
               here is `shrink-0` and the row never wrapped, so sharing a line with Note/Bookmark/
@@ -260,8 +272,8 @@ export function SelectionPopover({
         className="fixed inset-x-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-3 md:hidden"
         {...holdSelection}
       >
-        <div className="flex max-w-full items-center gap-2 overflow-x-auto rounded-full bg-stone-900/95 px-3 py-2 shadow-deep dark:bg-stone-800">
-          <span className="shrink-0 px-1 text-xs font-medium text-stone-300">{contextLabel}</span>
+        <div className="flex max-w-full animate-[fade-in_150ms_var(--ease-gentle)] items-center gap-2 overflow-x-auto rounded-full border border-stone-800 bg-stone-950 px-3 py-2 dark:border-stone-900 dark:bg-stone-50">
+          <span className="shrink-0 px-1 font-sans text-xs font-medium text-stone-300 dark:text-stone-600">{contextLabel}</span>
           {swatches}
           {divider}
           {actionButtons}

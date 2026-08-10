@@ -113,7 +113,7 @@ export default function WorkPage() {
         </p>
         <Link
           href="/library"
-          className="inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
+          className="inline-flex min-h-[44px] items-center border border-stone-900 px-5 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
         >
           Browse the library
         </Link>
@@ -173,7 +173,7 @@ export default function WorkPage() {
               setSeek({ ordinal: continueTarget.ordinal, scrollPct: continueTarget.scrollPct, nonce: Date.now() });
               setContinueTarget(null);
             }}
-            className="flex max-w-full items-center gap-2 rounded-full bg-stone-900/95 px-4 py-2 text-xs font-medium text-stone-100 shadow-deep dark:bg-stone-800"
+            className="flex max-w-full items-center gap-2 rounded-full bg-stone-900/95 px-4 py-2 text-xs font-medium text-stone-100 dark:bg-stone-800"
           >
             <span className="shrink-0 font-semibold text-accent-300">Continue</span>
             <span className="truncate">{continueHeading}</span>

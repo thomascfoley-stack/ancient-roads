@@ -6,11 +6,11 @@
 // What remains here is the popover: its open/close, its outside-click, its layout.
 
 import { useEffect, useRef, useState } from 'react';
-import { READING_SIZES, useReadingPrefs } from '@/lib/reading-prefs';
+import { READING_MEASURES, READING_SIZES, useReadingPrefs } from '@/lib/reading-prefs';
 
 export function ReaderSettings() {
   const [open, setOpen] = useState(false);
-  const { dark, sizeIdx, setDark, setSizeIdx } = useReadingPrefs();
+  const { dark, sizeIdx, measureIdx, setDark, setSizeIdx, setMeasureIdx } = useReadingPrefs();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,29 +24,30 @@ export function ReaderSettings() {
 
   const applyDark = setDark;
   const applySize = setSizeIdx;
+  const applyMeasure = setMeasureIdx;
 
   return (
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
         title="Reading settings"
-        className="min-h-[44px] rounded-lg bg-paper px-3 text-xs font-semibold text-stone-500 shadow-paper transition-colors ease-gentle hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+        className="min-h-[44px] border edge bg-paper px-3 text-xs font-semibold text-stone-500 transition-colors ease-gentle hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
       >
         Aa
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-56 rounded-xl bg-paper p-3 shadow-float ring-1 ring-stone-200 dark:bg-stone-800 dark:ring-stone-700">
+        <div className="absolute right-0 top-full mt-1 w-56 animate-[fade-in_150ms_var(--ease-gentle)] border edge bg-paper p-3 dark:bg-stone-900">
           <p className="mb-1.5 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Theme</p>
-          <div className="mb-3 flex rounded-lg bg-stone-100 p-0.5 dark:bg-stone-700">
+          <div className="mb-3 flex bg-stone-100 p-0.5 dark:bg-stone-700">
             <button
               onClick={() => applyDark(false)}
-              className={`min-h-[40px] flex-1 rounded-md py-1 text-sm font-medium transition-colors ease-gentle ${!dark ? 'bg-paper text-stone-800 shadow-paper' : 'text-stone-500 dark:text-stone-400'}`}
+              className={`min-h-[40px] flex-1 py-1 text-sm font-medium transition-colors ease-gentle ${!dark ? 'bg-paper text-stone-800' : 'text-stone-500 dark:text-stone-400'}`}
             >
               Light
             </button>
             <button
               onClick={() => applyDark(true)}
-              className={`min-h-[40px] flex-1 rounded-md py-1 text-sm font-medium transition-colors ease-gentle ${dark ? 'bg-stone-900 text-stone-100 shadow-paper' : 'text-stone-500 dark:text-stone-300'}`}
+              className={`min-h-[40px] flex-1 py-1 text-sm font-medium transition-colors ease-gentle ${dark ? 'bg-stone-900 text-stone-100' : 'text-stone-500 dark:text-stone-300'}`}
             >
               Dark
             </button>
@@ -67,6 +68,26 @@ export function ReaderSettings() {
               className="h-11 w-11 rounded-lg bg-stone-100 text-base text-stone-700 hover:bg-stone-200 active:bg-stone-300 disabled:opacity-40 dark:bg-stone-700 dark:text-stone-200"
             >
               A+
+            </button>
+          </div>
+          <p className="mb-1.5 mt-3 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Width</p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => applyMeasure(measureIdx - 1)}
+              disabled={measureIdx === 0}
+              aria-label="Narrower column"
+              className="h-11 w-11 rounded-lg bg-stone-100 text-sm text-stone-600 hover:bg-stone-200 active:bg-stone-300 disabled:opacity-40 dark:bg-stone-700 dark:text-stone-300"
+            >
+              ⇤
+            </button>
+            <div className="flex-1 text-center text-xs text-stone-500 dark:text-stone-400">{measureIdx + 1} / {READING_MEASURES.length}</div>
+            <button
+              onClick={() => applyMeasure(measureIdx + 1)}
+              disabled={measureIdx === READING_MEASURES.length - 1}
+              aria-label="Wider column"
+              className="h-11 w-11 rounded-lg bg-stone-100 text-base text-stone-700 hover:bg-stone-200 active:bg-stone-300 disabled:opacity-40 dark:bg-stone-700 dark:text-stone-200"
+            >
+              ⇥
             </button>
           </div>
         </div>

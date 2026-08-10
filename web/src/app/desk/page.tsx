@@ -73,22 +73,24 @@ function DeskInner() {
   if (panes.length === 0) {
     return (
       <div className="mx-auto w-full max-w-2xl px-5 py-16 text-center">
-        <h1 className="mb-3 font-scripture text-2xl text-stone-800 dark:text-stone-100">Your desk is empty</h1>
-        <p className="mb-6 text-sm leading-relaxed text-stone-600 dark:text-stone-400">
+        <h1 className="mb-3 font-display text-3xl font-medium tracking-[-0.01em] text-stone-900 dark:text-stone-100">Your desk is empty</h1>
+        <p className="mb-6 font-scripture text-base leading-relaxed text-stone-600 dark:text-stone-400">
           Open up to {MAX_PANES} things side by side: a chapter of Scripture, a commentary on it, and a
           sermon, hymn, poem or history beside them.
         </p>
         <div className="flex flex-wrap justify-center gap-2">
+          {/* PRD §6 CTAs: 1px hairline, transparent, fill on hover — primary in ink,
+              secondary in ink-wash. */}
           <button
             type="button"
             onClick={() => setPickingBible(true)}
-            className="min-h-[44px] rounded-lg bg-accent-700 px-5 py-2.5 text-sm font-semibold text-stone-50 hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
+            className="min-h-[44px] rounded-lg border border-stone-900 px-5 py-2.5 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
           >
             Open the Bible
           </button>
           <Link
             href="/library"
- className="min-h-[44px] rounded-lg border edge px-5 py-2.5 text-sm text-stone-600 hover:bg-accent-50/50 dark:text-stone-300 dark:hover:bg-accent-950/20"
+ className="inline-flex min-h-[44px] items-center rounded-lg border border-stone-500 px-5 py-2.5 font-sans text-sm font-semibold tracking-[0.02em] text-stone-600 hover:bg-stone-500 hover:text-stone-50 dark:border-stone-400 dark:text-stone-300 dark:hover:bg-stone-400 dark:hover:text-stone-900"
           >
             Browse the library
           </Link>
@@ -123,7 +125,7 @@ function DeskInner() {
             href={`/library?desk=${encodeURIComponent(panes.map(encodePane).join(','))}`}
             aria-label="Add a work from the library"
             title="Add a work from the library"
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-dashed border-stone-300 text-xl text-stone-500 dark:text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center border border-dashed border-stone-300 text-xl text-stone-500 dark:text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
           >
             +
           </Link>
@@ -132,7 +134,7 @@ function DeskInner() {
             onClick={() => setPickingBible(true)}
             aria-label="Add a Bible chapter"
             title="Add a Bible chapter"
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-dashed border-stone-300 text-stone-500 dark:text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center border border-dashed border-stone-300 text-stone-500 dark:text-stone-400 hover:border-accent-400 hover:text-accent-600 dark:border-stone-700 dark:hover:border-accent-500"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
               <path

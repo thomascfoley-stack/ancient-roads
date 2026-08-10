@@ -80,8 +80,9 @@ export function StudyPanel({
   }
 
   return (
+    // PRD §3 scrim: rgba(26,20,15,0.32) light / rgba(251,248,242,0.08) dark, NO blur.
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-stone-950/[0.32] animate-fade-in dark:bg-stone-50/[0.08]"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -89,7 +90,7 @@ export function StudyPanel({
       <div
         ref={dialog.ref}
         {...dialog.dialogProps}
-        className="flex max-h-[88dvh] w-full max-w-2xl flex-col rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] shadow-deep animate-slide-up dark:bg-stone-900"
+        className="flex max-h-[88dvh] w-full max-w-2xl flex-col rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] animate-slide-up dark:bg-stone-900"
         style={drag.style}
       >
         {/* Grab handle (drag down to dismiss) */}
@@ -118,15 +119,15 @@ export function StudyPanel({
         {/* Always-visible highlight row */}
         <HighlightRow annotation={annotation} />
 
-        {/* Tabs */}
+        {/* Tabs — PRD §4: 14px Source Sans, weight 600, tracking 0.02em. */}
  <div className="flex gap-1 border-b edge px-4">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => selectTab(t.id)}
-              className={`relative min-h-[44px] px-3.5 py-2.5 text-sm font-medium transition-colors ease-gentle ${
+              className={`relative min-h-[44px] px-3.5 py-2.5 font-sans text-sm font-semibold tracking-[0.02em] transition-colors ease-gentle ${
                 tab === t.id
-                  ? 'text-accent-700 dark:text-accent-300'
+                  ? 'text-accent-600 dark:text-accent-400'
                   : 'text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200'
               }`}
             >
@@ -135,7 +136,7 @@ export function StudyPanel({
                 <span className="ml-1 text-micro text-stone-500 dark:text-stone-400">{entries.length}</span>
               )}
               {tab === t.id && (
-                <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-accent-600 dark:bg-accent-400" />
+                <span className="absolute inset-x-2 -bottom-px h-0.5 bg-accent-600 dark:bg-accent-400" />
               )}
             </button>
           ))}
@@ -154,7 +155,7 @@ export function StudyPanel({
           {annotation.signedIn && verseId !== undefined && (
             <a
               href={`/prayers?verse=${verseId}`}
-              className="mt-6 flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-accent-700/10 px-4 font-serif text-sm text-accent-800 transition-colors ease-gentle hover:bg-accent-700/15 dark:bg-accent-500/15 dark:text-accent-200 dark:hover:bg-accent-500/25"
+              className="mt-6 flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-accent-600/50 px-4 font-serif text-sm text-accent-700 transition-colors ease-gentle hover:bg-accent-50/60 dark:border-accent-400/50 dark:text-accent-300 dark:hover:bg-accent-950/30"
             >
               Pray over this verse
             </a>
@@ -174,8 +175,8 @@ export function StudyPanel({
 function HighlightRow({ annotation }: { annotation: AnnotationControls }) {
   if (!annotation.signedIn) {
     return (
-      <div className="border-b border-stone-100 px-5 py-2.5 dark:border-stone-800">
-        <Link href="/auth/sign-in" className="inline-flex min-h-[44px] items-center text-xs font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300">
+      <div className="border-b edge px-5 py-2.5">
+        <Link href="/auth/sign-in" className="inline-flex min-h-[44px] items-center font-sans text-sm font-semibold text-accent-600 hover:underline dark:text-accent-400">
           Sign in to highlight and save notes to your account →
         </Link>
       </div>
@@ -237,7 +238,9 @@ function CommentariesTab({ entries }: { entries: CommentaryEntry[] }) {
                 {era}
               </p>
             )}
-            <div className="mb-2">
+            {/* Hairline rule above each voice (PRD §5); the era border + ornament live
+                in EntryCard itself. */}
+            <div className="mb-4 border-t edge pt-4">
               <EntryCard entry={entry} />
             </div>
           </div>
@@ -315,7 +318,7 @@ function WordRow({ word, lang, defaultOpen = false }: { word: OWord; lang: 'hebr
         <span className="text-xs text-stone-500 dark:text-stone-400">{word.tr}</span>
         {word.g && <span className="flex-1 truncate text-sm text-stone-600 dark:text-stone-500">{word.g}</span>}
         {word.s && (
-          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-micro font-semibold text-stone-500 dark:bg-stone-800 dark:text-stone-400">
+          <span className="bg-stone-100 px-2 py-0.5 text-micro font-semibold text-stone-500 dark:bg-stone-800 dark:text-stone-400">
             {word.s}
           </span>
         )}
@@ -358,7 +361,7 @@ function NotesTab({ annotation }: { annotation: AnnotationControls }) {
         <p className="mb-3 text-sm text-stone-500 dark:text-stone-400">Save notes to your account.</p>
         <Link
           href="/auth/sign-in"
-          className="inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 dark:bg-accent-500 dark:hover:bg-accent-400"
+          className="inline-flex min-h-[44px] items-center rounded-lg border border-stone-900 px-5 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
         >
           Sign in
         </Link>
@@ -383,19 +386,21 @@ function NotesTab({ annotation }: { annotation: AnnotationControls }) {
 
   return (
     <div className="px-5 py-4">
+      {/* PRD §6 input: parchment surface, 1px hairline, antique-gold focus, no shadow. */}
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="Write a note on this verse…"
         aria-label="Note on this verse"
         rows={6}
-        className="w-full resize-y rounded-lg bg-stone-100/80 px-3 py-2.5 text-base text-stone-800 outline-none placeholder:text-stone-500 dark:placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
+        className="w-full resize-y rounded-lg border edge edge-focus bg-stone-50 px-3 py-2.5 font-sans text-sm text-stone-900 placeholder:text-stone-500 dark:bg-stone-950 dark:text-stone-100 dark:placeholder:text-stone-400"
       />
       <div className="mt-2 flex items-center gap-2">
+        {/* PRD §6 primary CTA: 1px ink hairline, transparent, ink fill on hover. */}
         <button
           onClick={() => annotation.onSaveNote(text)}
           disabled={!text.trim()}
-          className="min-h-[44px] rounded-lg bg-accent-700 px-4 text-xs font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 disabled:opacity-40 dark:bg-accent-500 dark:hover:bg-accent-400"
+          className="min-h-[44px] rounded-lg border border-stone-900 px-4 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 disabled:opacity-40 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
         >
           Save note
         </button>

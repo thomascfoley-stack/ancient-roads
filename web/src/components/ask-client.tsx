@@ -68,10 +68,30 @@ function workHref(slug: string | undefined): string | null {
 function ResultLink({ href, children }: { href: string | null; children: React.ReactNode }) {
   if (!href) return <>{children}</>;
   return (
-    <Link href={href} className="group -mx-2.5 block rounded-lg px-2.5 py-1 transition-colors duration-150 ease-gentle hover:bg-stone-100/80 focus-quiet dark:hover:bg-stone-800/50">
+    <Link href={href} className="group -mx-2.5 block px-2.5 py-1 transition-colors duration-150 ease-gentle hover:bg-stone-100/80 focus-quiet dark:hover:bg-stone-800/50">
       {children}
     </Link>
   );
+}
+
+// Era accents (PRD §4): each voice card takes a 3px era-coloured left border and the
+// attribution carries that era's ornament in the same colour, keyed off the attribution's
+// year (Early –500, Medieval 501–1500, Reformation 1501–1700, Modern 1701–). `year` is
+// optional in the response schema, so a missing year falls back to the Modern neutral
+// rather than guessing an era from the free-text tradition string.
+const ERAS = {
+  early: { border: 'border-l-era-early', ornament: '·', ornamentClass: 'text-era-early' },
+  medieval: { border: 'border-l-era-medieval', ornament: '◆', ornamentClass: 'text-era-medieval' },
+  reformation: { border: 'border-l-era-reformation', ornament: '§', ornamentClass: 'text-era-reformation' },
+  modern: { border: 'border-l-era-modern', ornament: '—', ornamentClass: 'text-era-modern' },
+} as const;
+
+function eraOf(year?: number) {
+  if (year == null) return ERAS.modern;
+  if (year <= 500) return ERAS.early;
+  if (year <= 1500) return ERAS.medieval;
+  if (year <= 1700) return ERAS.reformation;
+  return ERAS.modern;
 }
 
 // Which register lanes to search, alongside the always-on commentary answer.
@@ -100,7 +120,7 @@ function LaneFilter({ lanes, onToggle }: { lanes: Record<LaneKey, boolean>; onTo
         <span aria-hidden="true" className={`transition-transform duration-150 ${open ? 'rotate-180' : ''}`}>▾</span>
       </button>
       {open && (
-        <ul className="mt-2 flex flex-col gap-1.5 rounded-xl bg-paper p-3 shadow-paper dark:bg-stone-800/60 dark:shadow-none">
+        <ul className="edge mt-2 flex flex-col gap-1.5 border bg-stone-50 p-3 dark:bg-stone-950">
           {LANE_OPTIONS.map((o) => (
             <li key={o.key}>
               <label className="flex min-h-[28px] items-center gap-2 text-sm text-stone-700 dark:text-stone-300">
@@ -274,15 +294,17 @@ export function AskClient() {
             <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">
               Ask about a verse, a phrase, or a question
             </p>
-            <ul className="divide-y divide-stone-200/70 border-y border-stone-200/70 dark:divide-stone-800 dark:border-stone-800">
+            {/* `.edge` hairlines, not a `divide-stone-200 dark:divide-stone-800` pair — the
+                pair's dark half loses the cascade (see THE EDGE in globals.css). */}
+            <ul className="edge border-t">
               {EXAMPLES.map((ex) => (
-                <li key={ex}>
+                <li key={ex} className="edge border-b">
                   <button
                     onClick={() => ask(ex)}
-                    className="group flex min-h-[56px] w-full items-center gap-3 py-3 text-left font-serif text-lg leading-snug text-stone-700 transition-colors ease-gentle hover:text-accent-800 dark:text-stone-300 dark:hover:text-accent-300"
+                    className="group flex min-h-[56px] w-full items-center gap-3 py-3 text-left font-serif text-lg leading-snug text-stone-500 transition-colors ease-gentle hover:text-accent-700 dark:text-stone-400 dark:hover:text-accent-300"
                   >
                     <span className="flex-1">{ex}</span>
-                    <span aria-hidden className="shrink-0 text-stone-500 transition-colors ease-gentle group-hover:text-accent-700 dark:text-stone-500 dark:group-hover:text-accent-300">&rarr;</span>
+                    <span aria-hidden className="shrink-0 transition-colors ease-gentle group-hover:text-accent-700 dark:group-hover:text-accent-300">&rarr;</span>
                   </button>
                 </li>
               ))}
@@ -303,8 +325,12 @@ export function AskClient() {
         <div ref={bottomRef} className="scroll-mb-48 md:scroll-mb-36" />
       </div>
 
+      {/* PRD §5 composer: parchment surface, one 1px vellum hairline, square corners, no
+          shadow. `.edge` owns the hairline and is unlayered, so a `focus-within:border-*`
+          utility could never override it — focus is shown with the PRD's antique-gold
+          outline (§10) instead of a border-colour swap. */}
       <form onSubmit={(e) => { e.preventDefault(); ask(question); }}
-        className="sticky bottom-[calc(3.75rem+env(safe-area-inset-bottom)+0.25rem)] mt-6 rounded-2xl bg-paper p-3 shadow-float transition-shadow duration-200 ease-gentle focus-within:shadow-deep md:bottom-3 dark:bg-stone-800">
+        className="edge sticky bottom-[calc(3.75rem+env(safe-area-inset-bottom)+0.25rem)] mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-accent-600 md:bottom-3 dark:bg-stone-950 dark:focus-within:outline-accent-400">
         <textarea
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
@@ -315,18 +341,21 @@ export function AskClient() {
             const el = e.currentTarget;
             setTimeout(() => el.scrollIntoView({ block: 'end', behavior: 'smooth' }), 300);
           }}
+          // PRD §5 Ask: the placeholder is 18px Literata italic in ink-wash gray.
           placeholder="Ask a question…"
           aria-label="Ask a question"
           rows={2}
           maxLength={500}
-          className="focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-base leading-relaxed text-stone-900 outline-none placeholder:text-stone-400 dark:text-stone-100 dark:placeholder:text-stone-500"
+          className="focus-quiet w-full resize-none bg-transparent px-1.5 pt-0.5 font-serif text-lg leading-relaxed text-stone-900 outline-none placeholder:italic placeholder:text-stone-500 dark:text-stone-100 dark:placeholder:text-stone-400"
         />
         <div className="mt-1 flex min-h-[44px] items-center justify-between px-1.5">
           <span className="text-xs text-stone-500 dark:text-stone-400">
             {busy ? 'Thinking…' : <span className="[@media(hover:none)]:hidden">↵ to send · ⇧↵ newline</span>}
           </span>
+          {/* The mockup's solid-ink Ask button; hover fills to antique gold (PRD §6). The
+              44px touch target holds at every size (no `sm:min-h-0`). */}
           <button type="submit" disabled={busy || !question.trim()}
-            className="min-h-[44px] rounded-lg bg-accent-700 px-6 text-sm font-semibold text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-800 active:bg-accent-900 disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0 sm:px-5 sm:py-1.5 dark:bg-accent-500 dark:hover:bg-accent-400">
+            className="min-h-[44px] bg-stone-900 px-6 text-sm font-semibold tracking-[0.02em] text-stone-50 transition-colors duration-200 ease-gentle hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-accent-400">
             Ask
           </button>
         </div>
@@ -338,13 +367,14 @@ export function AskClient() {
 function TurnView({ turn, onRetry, busy }: { turn: Turn; onRetry: () => void; busy: boolean }) {
   return (
     <div>
-      <div className="mb-4 flex justify-end">
-        <div className="max-w-[85%] rounded-2xl rounded-br-md bg-stone-200/80 px-4 py-2.5 font-serif text-base text-stone-900 dark:bg-stone-800 dark:text-stone-100">
-          {turn.question}
-        </div>
+      {/* The chat-style bubble is replaced with the mockup's editorial treatment: a
+          small-caps label over the question set in EB Garamond. */}
+      <div className="mb-6">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400">Question</p>
+        <p className="max-w-[62ch] font-display text-2xl leading-snug text-stone-900 dark:text-stone-100">{turn.question}</p>
       </div>
       {turn.stage === 'error' ? (
-        <div role="alert" className="rounded-xl border border-red-300/60 bg-red-50/60 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
+        <div role="alert" className="border border-red-300/60 bg-red-50/60 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
           {turn.error}
           {/* An error told the reader to "please try again" and gave them nothing to try it
               with — the question is already gone from the composer by then (`ask` clears it),
@@ -366,7 +396,7 @@ function RetryButton({ onRetry, busy, tone }: { onRetry: () => void; busy: boole
       type="button"
       onClick={onRetry}
       disabled={busy}
-      className={`mt-3 inline-flex min-h-[36px] items-center rounded-lg border px-3 text-xs font-semibold transition-colors ease-gentle disabled:cursor-not-allowed disabled:opacity-40 ${
+      className={`mt-3 inline-flex min-h-[44px] items-center border px-3 text-xs font-semibold transition-colors ease-gentle disabled:cursor-not-allowed disabled:opacity-40 ${
         tone === 'error'
           ? 'border-red-300/70 hover:bg-red-100/60 dark:border-red-900/70 dark:hover:bg-red-950/50'
           : 'border-accent-300/70 text-accent-900 hover:bg-accent-100/60 dark:border-accent-800 dark:text-accent-200 dark:hover:bg-accent-950/50'
@@ -380,43 +410,54 @@ function RetryButton({ onRetry, busy, tone }: { onRetry: () => void; busy: boole
 function Progress({ turn }: { turn: Turn }) {
   const rank = STAGE_RANK[turn.stage];
 
-  // L1b — one timer, one line, inside the panel that is already the progress indicator. No
-  // spinner, no percentage, no countdown (all three forbidden by the block). Threshold derived
-  // from measurement, not from the block's ~15s — see SLOW_ANSWER_NOTICE_MS.
+  // L1b — one timer, one line, inside the progress indicator itself. No spinner, no
+  // percentage, no countdown (all three forbidden by the block). Threshold derived from
+  // measurement, not from the block's ~15s — see SLOW_ANSWER_NOTICE_MS.
   const [slow, setSlow] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setSlow(true), SLOW_ANSWER_NOTICE_MS);
     return () => clearTimeout(t);
   }, []);
   const refining = turn.stage === 'composing' && turn.attempt > 0;
+
+  // PRD §5 progress steps: 1px hairline connectors between steps, centred under the 12px
+  // indicator column (hence ml-[6px]).
+  const connector = <div aria-hidden="true" className="edge ml-[6px] h-2.5 border-l" />;
+
   const step = (label: string, done: boolean, active: boolean) => (
-    <div className="flex items-center gap-2.5">
-      {done ? <span className="font-bold text-accent-700 dark:text-accent-300">✓</span>
-        : active ? <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-stone-400 border-t-transparent" />
-          : <span className="inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-300 dark:border-stone-600" />}
+    <div className="flex items-center gap-2.5 py-1.5">
+      {/* The completed check is candle-flame amber — one of flame's three sanctioned uses
+          (the Ask stage check). The ACTIVE step is an opacity-pulsing ring, not a spinner:
+          the PRD bans spinners outright and budgets motion as fade/pulse only. */}
+      {done ? <span className="flex h-3 w-3 items-center justify-center text-sm font-bold text-flame">✓</span>
+        : active ? <span className="inline-block h-3 w-3 animate-pulse rounded-full border-[1.5px] border-accent-500" />
+          : <span className="inline-block h-3 w-3 rounded-full border-[1.5px] border-stone-400" />}
       {/* Two tiers of text colour, not three. `done` and `pending` used to differ (stone-500/400
           vs stone-400/500), but that second pair measured 2.54:1 on light and 3.58:1 on dark —
           both under WCAG AA's 4.5:1 for normal text. The distinction is not lost: the icon
-          column above already says which tier a step is in, with a terracotta ✓, a spinner, or
+          column above already says which tier a step is in, with a flame ✓, a pulsing ring, or
           an empty ring — three different SHAPES, so the signal was never colour-only anyway. */}
-      <span className={active ? 'font-medium text-stone-700 dark:text-stone-200' : 'text-stone-500 dark:text-stone-400'}>{label}</span>
+      <span className={`text-sm ${active ? 'font-medium text-stone-700 dark:text-stone-200' : 'text-stone-500 dark:text-stone-400'}`}>{label}</span>
     </div>
   );
 
   return (
-    <div className="rounded-2xl bg-paper p-5 shadow-paper dark:bg-stone-800/60 dark:shadow-none">
-      <div className="flex flex-col gap-2.5">
+    <div className="py-2">
+      <div className="flex flex-col">
         {step('Searching the commentaries', rank >= 1, rank === 0)}
+        {connector}
         {rank >= 1 && (
-          <div className="flex items-center gap-2.5">
-            <span className="font-bold text-accent-700 dark:text-accent-300">✓</span>
-            <span className="text-stone-500 dark:text-stone-400">
+          <div className="flex items-center gap-2.5 py-1.5">
+            <span className="flex h-3 w-3 items-center justify-center text-sm font-bold text-flame">✓</span>
+            <span className="text-sm text-stone-500 dark:text-stone-400">
               Found <b className="text-stone-700 dark:text-stone-200">{count(turn.sources.length, 'voice')}</b> across{' '}
               <b className="text-stone-700 dark:text-stone-200">{turn.traditions} tradition{turn.traditions === 1 ? '' : 's'}</b>
             </span>
           </div>
         )}
+        {rank >= 1 && connector}
         {step(refining ? `Refining the answer (attempt ${turn.attempt + 1})…` : 'Composing a grounded answer', rank >= 3, turn.stage === 'composing')}
+        {connector}
         {step('Verifying every quote is word-for-word', rank >= 4, turn.stage === 'verifying')}
         {slow && (
           <p role="status" className="mt-1 font-serif text-sm leading-relaxed text-stone-500 dark:text-stone-400">
@@ -426,7 +467,7 @@ function Progress({ turn }: { turn: Turn }) {
       </div>
 
       {turn.sources.length > 0 && (
-        <div className="mt-4 rounded-xl bg-stone-100/90 p-3.5 dark:bg-stone-900/40">
+        <div className="edge mt-4 border-t pt-4">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">Reading these while I compose</p>
           <div className="flex animate-pulse flex-col gap-2">
             {turn.sources.slice(0, 3).map((s) => (
@@ -444,7 +485,7 @@ function Progress({ turn }: { turn: Turn }) {
 function Answer({ result, onRetry, busy }: { result: TeacherResult; onRetry: () => void; busy: boolean }) {
   if (result.kind === 'empty') {
     return (
-      <p className="rounded-xl bg-paper px-4 py-3 font-serif text-base text-stone-600 shadow-paper dark:bg-stone-800/60 dark:text-stone-300 dark:shadow-none">
+      <p className="max-w-[62ch] font-serif text-lg leading-relaxed text-stone-500 dark:text-stone-400">
         {result.reason}
       </p>
     );
@@ -456,32 +497,62 @@ function Answer({ result, onRetry, busy }: { result: TeacherResult; onRetry: () 
   const voices = blocks.filter((b): b is Extract<Block, { type: 'voice' }> => b.type === 'voice');
   const passages = blocks.find((b) => b.type === 'passages') as Extract<Block, { type: 'passages' }> | undefined;
 
+  // PRD §5 answer reveal: staggered fade-in, opacity only — framing first, each voice card
+  // 60ms after the last, then the register lanes, then the passage list.
+  const hasLanes = Boolean(result.sermons?.length || result.theology?.length || result.song_verse?.length);
+  const laneDelay = (voices.length + 1) * 60;
+  const passageDelay = laneDelay + (hasLanes ? 60 : 0);
+
   return (
     <div className="space-y-6">
-      {framing && <p className="font-serif text-base leading-relaxed text-stone-700 dark:text-stone-300">{framing.text}</p>}
+      {framing && (
+        <p className="edge animate-fade-in border-t pt-6 font-serif text-lg leading-relaxed text-stone-700 dark:text-stone-300">{framing.text}</p>
+      )}
       <div className="space-y-6">
-        {voices.map((v, i) => (
-          <ResultLink key={i} href={workHref(v.attribution.slug)}>
-            <figure className="border-l-[3px] border-accent-300/80 pl-5 dark:border-accent-800">
-              <blockquote className="break-words font-serif text-lg leading-[1.7] text-stone-900 dark:text-stone-100">“{v.quote}”</blockquote>
-              <figcaption className="mt-2.5 text-sm text-stone-500 dark:text-stone-400">
-                <span className="font-semibold text-stone-800 group-hover:text-accent-800 dark:text-stone-200 dark:group-hover:text-accent-300">{v.attribution.author}</span>, {v.attribution.work}
-                <span className="ml-2 rounded-full bg-stone-200/70 px-2.5 py-0.5 text-xs text-stone-600 dark:bg-stone-800 dark:text-stone-400">{v.attribution.tradition}</span>
-                {v.attribution.slug && <span className="ml-2 text-xs text-stone-400 opacity-0 transition-opacity group-hover:opacity-100 dark:text-stone-500">Open on desk →</span>}
-              </figcaption>
-              {v.summary && <p className="mt-1.5 text-sm text-stone-500 dark:text-stone-500">{v.summary}</p>}
-            </figure>
-          </ResultLink>
-        ))}
+        {voices.map((v, i) => {
+          const era = eraOf(v.attribution.year);
+          return (
+            <div key={i}>
+              {/* PRD: a 1px hairline rule above each voice card. It cannot be a border-t on the
+                  figure itself — `.edge` is unlayered and would repaint the 3px era rail too. */}
+              <div aria-hidden="true" className="edge mb-6 border-t" />
+              <ResultLink href={workHref(v.attribution.slug)}>
+                <figure
+                  className={`animate-fade-in border-l-[3px] pl-5 ${era.border}`}
+                  style={{ animationDelay: `${(i + 1) * 60}ms`, animationFillMode: 'backwards' }}
+                >
+                  {/* PRD §5: the quote is 17px Literata at 1.75 line-height, 62ch measure.
+                      17px sits between the type ladder's 16/18 steps, so it stays a literal. */}
+                  <blockquote className="max-w-[62ch] break-words font-serif text-[17px] leading-[1.75] text-stone-900 dark:text-stone-100">“{v.quote}”</blockquote>
+                  <figcaption className="small-caps mt-2.5 font-serif text-sm tracking-[0.05em] text-stone-500 dark:text-stone-400">
+                    <span className="font-semibold text-stone-800 group-hover:text-accent-800 dark:text-stone-200 dark:group-hover:text-accent-300">{v.attribution.author}</span>
+                    <span aria-hidden="true" className={`ml-1.5 text-xs ${era.ornamentClass}`}>{era.ornament}</span>
+                    {`, ${v.attribution.work}`}
+                    <span className="ml-2">{v.attribution.tradition}</span>
+                    {v.attribution.slug && <span className="ml-2 text-xs text-stone-400 opacity-0 transition-opacity group-hover:opacity-100 dark:text-stone-500">Open on desk →</span>}
+                  </figcaption>
+                  {v.summary && <p className="mt-1.5 text-sm text-stone-500 dark:text-stone-500">{v.summary}</p>}
+                </figure>
+              </ResultLink>
+            </div>
+          );
+        })}
       </div>
-      <Lanes result={result} />
+      {hasLanes && (
+        <div className="animate-fade-in" style={{ animationDelay: `${laneDelay}ms`, animationFillMode: 'backwards' }}>
+          <Lanes result={result} />
+        </div>
+      )}
       {passages && passages.items.length > 0 && (
-        <div className="pt-1">
-          <p className="mb-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">Passages</p>
-          <div className="flex flex-wrap gap-2">
+        <div className="animate-fade-in pt-1" style={{ animationDelay: `${passageDelay}ms`, animationFillMode: 'backwards' }}>
+          <p className="mb-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400">Passages</p>
+          {/* PRD passage rows also spec a 17px preview line, but the passages block carries
+              only verse-id ranges — no text — so the hairline-separated row is the 14px
+              antique-gold reference alone. */}
+          <div className="edge border-t">
             {passages.items.map((p, i) => (
               <Link key={i} href={verseHref(p.start)}
-                className="rounded-full bg-paper px-3.5 py-1.5 text-sm text-stone-700 shadow-paper transition-[opacity,transform,box-shadow,background-color,border-color] duration-200 ease-gentle hover:text-accent-800 hover:shadow-float dark:bg-stone-800 dark:text-stone-200 dark:shadow-none dark:hover:text-accent-300">
+                className="edge flex min-h-[44px] items-center border-b py-2.5 font-sans text-sm text-accent-600 transition-colors ease-gentle hover:text-accent-700 hover:underline dark:text-accent-400 dark:hover:text-accent-300">
                 {p.start === p.end ? formatVerseId(p.start) : `${formatVerseId(p.start)}–${formatVerseId(p.end).split(' ').pop()}`} →
               </Link>
             ))}
@@ -506,14 +577,17 @@ function LaneSection({ title, note, chunks }: { title: string; note: string; chu
       <div className="space-y-4">
         {chunks.map((c) => (
           <ResultLink key={c.sourceId} href={workHref(c.metadata.work)}>
-            <figure className="border-l-[3px] border-stone-300/70 pl-5 dark:border-stone-700">
+            {/* The neutral rail is a single stone-500 class, not a `stone-300 dark:stone-700`
+                pair — the pair's dark half loses the cascade (see THE EDGE in globals.css),
+                and 500 reads in both themes. */}
+            <figure className="border-l-[3px] border-l-stone-500 pl-5">
               <blockquote className="whitespace-pre-line break-words font-serif text-base leading-relaxed text-stone-700 dark:text-stone-300">
                 {c.content.length > 400 ? `${c.content.slice(0, 400)}…` : c.content}
               </blockquote>
               <figcaption className="mt-2 text-sm text-stone-500 dark:text-stone-400">
                 <span className="font-semibold text-stone-800 group-hover:text-accent-800 dark:text-stone-300 dark:group-hover:text-accent-300">{c.metadata.author}</span>
                 {c.metadata.sourceTitle ? `, ${c.metadata.sourceTitle}` : ''}
-                {c.metadata.paraphrase ? <span title="A metrical paraphrase, not the Scripture text itself." className="ml-2 rounded-full bg-accent-700/10 px-2 py-0.5 text-micro font-medium text-accent-700 dark:text-accent-300">paraphrase · not Scripture</span> : null}
+                {c.metadata.paraphrase ? <span title="A metrical paraphrase, not the Scripture text itself." className="ml-2 bg-accent-700/10 px-2 py-0.5 text-micro font-medium text-accent-700 dark:text-accent-300">paraphrase · not Scripture</span> : null}
                 {c.metadata.work && <span className="ml-2 text-xs text-stone-400 opacity-0 transition-opacity group-hover:opacity-100 dark:text-stone-500">Open on desk →</span>}
               </figcaption>
             </figure>
@@ -543,11 +617,11 @@ function Fallback({ retrieval, onRetry, busy }: { retrieval: Retrieved[]; onRetr
           saying it out loud turns an apparent failure into the guarantee working. The wording
           stays at the level of the product promise and does not surface raw verifier
           `violations`, which name internal checks and would read as a stack trace. */}
-      <div className="mb-5 rounded-xl bg-accent-50 px-4 py-3 shadow-paper dark:bg-accent-950/30 dark:shadow-none">
-        <p className="font-serif text-base text-accent-900 dark:text-accent-200">
+      <div className="edge mb-5 border p-4">
+        <p className="font-serif text-base text-stone-800 dark:text-stone-200">
           A grounded answer couldn’t be composed for this one. Here are the sources we found. Read them directly.
         </p>
-        <p className="mt-2 font-sans text-xs leading-relaxed text-accent-800/90 dark:text-accent-300/90">
+        <p className="mt-2 font-sans text-xs leading-relaxed text-stone-500 dark:text-stone-400">
           Every quote is checked word-for-word against the original before it is shown. This
           draft didn’t pass that check, so the sources are given to you unedited rather than an
           answer we can’t stand behind. Asking again often composes cleanly.
@@ -556,7 +630,7 @@ function Fallback({ retrieval, onRetry, busy }: { retrieval: Retrieved[]; onRetr
       </div>
       <div className="space-y-5">
         {retrieval.map((r) => (
-          <figure key={r.sourceId} className="border-l-[3px] border-stone-300/80 pl-5 dark:border-stone-700">
+          <figure key={r.sourceId} className="border-l-[3px] border-l-stone-500 pl-5">
             <blockquote className="font-serif text-base leading-relaxed text-stone-700 dark:text-stone-300">
               {r.content.length > 320 ? `${r.content.slice(0, 320)}…` : r.content}
             </blockquote>

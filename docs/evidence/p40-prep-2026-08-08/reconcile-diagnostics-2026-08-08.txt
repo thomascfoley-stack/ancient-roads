@@ -1,0 +1,14 @@
+
+
+## calvin-crosswire: served x sourceUrl domain
+[{"served":false,"domain":"biblehub.com","n":1125},{"served":false,"domain":"books.google.com","n":2},{"served":true,"domain":"crosswire.org","n":5088}]
+## wesley-crosswire: served x sourceUrl domain
+[{"served":false,"domain":"biblehub.com","n":1021},{"served":true,"domain":"crosswire.org","n":5254}]
+## orphan works: rows + author sample
+[{"work":"pnt-crosswire","n":288,"author_sample":"B.W. Johnson","domain_sample":"biblehub.com"},{"work":"scofield-crosswire","n":1215,"author_sample":"C.I. Scofield","domain_sample":"biblehub.com"},{"work":"poole-tcp","n":1308,"author_sample":"Matthew Poole","domain_sample":"biblehub.com"}]
+## spurgeon-talks-to-farmers: keyed embedding rows on prod
+[{"keyed_rows":0}]
+## spurgeon-talks-to-farmers: sections-model rows
+[{"sections":298}]
+## spurgeon-talks-to-farmers: sources row
+[{"slug":"spurgeon-talks-to-farmers","status":"published","source_type":"sermon","license":"Public Domain"}]

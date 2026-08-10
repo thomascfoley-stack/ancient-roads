@@ -371,8 +371,10 @@ export function SidebarNavContent({
         </div>
       </nav>
 
-      {/* Bottom: settings */}
- <div className="border-t edge px-2 py-2">
+      {/* Bottom: settings. NOT .edge: on the rail's vellum surface the edge hairline is
+          vellum-on-vellum (invisible), so internal rail rules use parchment on vellum,
+          the way the mockup's vellum commentary aside uses a white/20 rule. */}
+      <div className="border-t border-stone-50 px-2 py-2 dark:border-stone-800">
         <SidebarLink
           href="/settings"
           icon={<SettingsIcon />}
@@ -417,10 +419,10 @@ export function Sidebar() {
 
   if (collapsed) {
     return (
- <aside className="hidden w-12 flex-col items-center border-r edge bg-stone-100 py-3 md:flex dark:bg-stone-950">
+      <aside className="hidden w-12 flex-col items-center border-r edge bg-stone-200 py-3 md:flex dark:bg-stone-900">
         <button
           onClick={() => setCollapsed(false)}
-          className="rounded p-1 text-stone-500 hover:bg-stone-200 hover:text-stone-700"
+          className="p-1 text-stone-500 transition-colors ease-gentle hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
           aria-label="Expand sidebar"
         >
           <svg aria-hidden className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -432,15 +434,16 @@ export function Sidebar() {
   }
 
   return (
- <aside className="hidden w-64 flex-col border-r edge bg-stone-100 md:flex dark:bg-stone-950">
-      {/* Header */}
- <div className="flex items-center justify-between border-b edge px-4 py-3">
-        <Link href="/home" className="font-scripture text-base font-medium text-stone-800 dark:text-stone-100">
+    <aside className="hidden w-64 flex-col border-r edge bg-stone-200 md:flex dark:bg-stone-900">
+      {/* Header. Internal rail rule: parchment-on-vellum, not .edge (see the settings block). */}
+      <div className="flex items-center justify-between border-b border-stone-50 px-4 py-3 dark:border-stone-800">
+        {/* PRD §6: wordmark is EB Garamond 18px/500, ink. */}
+        <Link href="/home" className="font-display text-[18px] font-medium tracking-[-0.01em] text-stone-900 dark:text-stone-200">
           Ancient Paths
         </Link>
         <button
           onClick={() => setCollapsed(true)}
-          className="rounded p-1 text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+          className="p-1 text-stone-500 transition-colors ease-gentle hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
           aria-label="Collapse sidebar"
         >
           <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -492,14 +495,14 @@ function StudySectionView({
             <span className="flex items-center gap-0.5 opacity-100 transition-opacity ease-gentle [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100">
               <button
                 onClick={() => setRenaming(true)}
-                className="rounded p-1.5 text-stone-500 dark:text-stone-400 hover:bg-stone-200 hover:text-stone-600 active:bg-stone-200 dark:hover:bg-stone-800"
+                className="p-1.5 text-stone-500 transition-colors ease-gentle hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
                 aria-label={`Rename ${section.name}`}
               >
                 <PencilIcon />
               </button>
               <button
                 onClick={() => setAddingItem(true)}
-                className="rounded p-1.5 text-stone-500 dark:text-stone-400 hover:bg-stone-200 hover:text-stone-600 active:bg-stone-200 dark:hover:bg-stone-800"
+                className="p-1.5 text-stone-500 transition-colors ease-gentle hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
                 aria-label={`Add to ${section.name}`}
               >
                 <PlusIcon />
@@ -617,7 +620,10 @@ function InlineNameForm({
           if (e.key === 'Escape') onCancel();
         }}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-stone-300 bg-paper px-2 py-1.5 text-base text-stone-800 placeholder:text-stone-500 dark:placeholder:text-stone-400 outline-none focus:border-stone-500 sm:py-1 sm:text-sm dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100"
+        // PRD §6 input: parchment, 1px hairline, square. `.edge` carries the hairline (a
+        // focus:border-* utility would lose to it — .edge is unlayered), so focus is shown
+        // by the global gold focus-visible ring instead of a border colour flip.
+        className="w-full border edge bg-paper px-2 py-1.5 text-base text-stone-900 placeholder:text-stone-500 sm:py-1 sm:text-sm dark:bg-stone-950 dark:text-stone-200 dark:placeholder:text-stone-400"
         autoFocus
       />
     </form>
@@ -646,22 +652,31 @@ function SidebarLink({
   tier?: 'primary' | 'shelf';
 }) {
   return (
+    // PRD quiet-rail link (mockup top-nav treatment): no background fills, no radius —
+    // ink-wash text that darkens to ink on hover; the active row is ink with a 1px rule
+    // under the LABEL (the mockup's active-link border-b), not a filled row.
     <Link
       href={href}
       onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
-      className={`flex items-center gap-2.5 rounded-md px-2 transition-colors ease-gentle ${row} ${
+      className={`flex items-center gap-2.5 px-2 transition-colors ease-gentle ${row} ${
         tier === 'primary' ? 'text-sm font-medium' : 'text-sm'
       } ${
         active
-          ? 'bg-accent-700/10 font-medium text-accent-900 dark:bg-accent-400/15 dark:text-accent-100'
-          : tier === 'primary'
-            ? 'text-stone-800 hover:bg-stone-200/60 active:bg-stone-200/80 dark:text-stone-200 dark:hover:bg-stone-800'
-            : 'text-stone-600 hover:bg-stone-200/50 hover:text-stone-800 active:bg-stone-200/70 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200'
+          ? 'font-medium text-stone-900 dark:text-stone-200'
+          : 'text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200'
       }`}
     >
       <span className="flex w-4 items-center justify-center text-sm">{icon}</span>
-      <span className="flex-1 truncate">{label}</span>
+      {/* border-transparent reserves the rule's 1px in every state, so the active
+          underline appearing doesn't shift the row's baseline. */}
+      <span
+        className={`flex-1 truncate border-b pb-0.5 ${
+          active ? 'border-stone-900 dark:border-stone-200' : 'border-transparent'
+        }`}
+      >
+        {label}
+      </span>
     </Link>
   );
 }
@@ -680,7 +695,7 @@ function SidebarButton({
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-2.5 rounded-md px-2 text-sm text-stone-600 transition-colors ease-gentle hover:bg-stone-100 hover:text-stone-800 active:bg-stone-200/70 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200 ${row}`}
+      className={`flex w-full items-center gap-2.5 px-2 text-sm text-stone-500 transition-colors ease-gentle hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200 ${row}`}
     >
       <span className="flex w-4 items-center justify-center text-sm">{icon}</span>
       <span className="flex-1 truncate text-left">{label}</span>

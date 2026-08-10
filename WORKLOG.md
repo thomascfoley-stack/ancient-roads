@@ -1,5 +1,430 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-10 (morning) — doc hygiene slice: the record catches up to reality
+
+Twenty-minute owner-requested slice; docs-vs-reality check, every claim below verified against
+git log / deploy receipts / Vercel before writing:
+
+- **This entry fills the WORKLOG gap the sweep found** — the 08-08-late-night→08-09 deploy
+  sessions (hero iStock swap `2ad366d`, marketing polish `4172af1`, reader width `834fc8b`,
+  the five interrupted uploads, and the live landing at `2611e1f`) left commits and receipts
+  but no entries. Recorded retroactively in the entry directly below this one.
+- **MASTER.md C4** no longer reads "BLOCKED / DO NOT DEPLOY": deploys landed 2026-08-09
+  (receipt `deploy-2611e1f-2026-08-09T01-11-00Z.txt`, alias verified serving
+  `dpl_4SRFDzwh5HbKLrAXCu5UqpHTu4aw` from `2611e1f`). Its two residuals (db-invariants red on
+  `main`, DEPLOY_PREFLIGHT rollback bundle predating 044/045) are CARRIED, not closed — neither
+  was re-verified in this slice.
+- **UX_REMEDIATION_ROADMAP A4 deploy row** marked superseded (it pointed at a credential
+  blocker that no longer exists; `~/.neon_prod_url` is the documented path and was used).
+- **UX_REMEDIATION.md board vs "Every open block" table disagreement (L1, N4) FLAGGED inline,
+  not adjudicated** — resolving which table is right needs code re-verification this slice did
+  not budget; the note says the board appears newer. Dishonest closure would be worse than an
+  honest flag.
+
+**Still owed from the 08-10 sweep (owner holds the list):** full `npm run audit` (needs dev
+DATABASE_URL in root .env.local), auth-gated screens browser pass, owner decision batch
+(Resend sender, marketing expectation line, PRD §12, ADR-044, T4, calvin-crosswire), plus the
+longer-horizon items (P4.n backlog, E3 remedy, Ryle alignment, S1 copy).
+
+**08-10 prod read-only probe (owner go, "use this as is" — the pasted URL is `ep-odd-fog`,
+PRODUCTION):** the audit cannot take it — `isAuditAllowedHost` refuses `ep-odd-fog` before any
+declaration hatch, by design, and the suite seeds qa-* rows into its target (the 2026-07-28
+scar). What ran instead, READ ONLY: env-probe equivalent (role `neondb_owner`, Gill positive
+control 28,843, `served=true` 398,113 rows) and `check-test-residue` against prod via its
+cutover path — **prod is CLEAN of seeded test rows across 24 tables** (the class that once
+reached prod). The prod password was pasted into chat in plaintext; owner will rotate. Full
+audit still owed against a dev branch — any non-prod endpoint id works via
+`AUDIT_ALLOWED_ENDPOINT`, and `ep-tiny-hat` / `ep-holy-rice-*` are pre-allowed.
+
+## 2026-08-08 (late night, recorded 08-10) — deploys landed: reader width + hero swap + marketing polish LIVE
+
+Retroactive entry for the deploy sessions that left only receipts. Facts from git log and
+`docs/evidence/deploys/`:
+
+- **Shipped in `2611e1f`:** the reader column-width control (Aa popover ⇤/⇥ + /settings,
+  54–84ch, default 66ch — `834fc8b`); the owner's hero swap to the purchased iStock photo with
+  gate allowlist updated (`2ad366d`); the parallel session's marketing photo-language polish
+  (`4172af1`).
+- **The deploy took five attempts** — three EPIPE upload deaths and one EHOSTUNREACH on a
+  dropping connection; the final attempt's CLI died after upload+build but Vercel completed
+  server-side and moved the alias itself. Verified next morning by deployment-id match: alias
+  serves `dpl_4SRFDzwh5HbKLrAXCu5UqpHTu4aw` (created 01:07Z), `--meta sha` == `2611e1f`,
+  `https://ancientpaths.app/` 200. Receipts: `deploy-2611e1f-*.txt` (four files).
+- **Process notes:** `PREDEPLOY_DB_URL` came from `~/.neon_prod_url` per the documented path —
+  the roadmap's "a production credential I must not hold" blocker is obsolete. A concurrent
+  session's mid-flight `features/page.tsx` edit blocked one attempt via the clean-tree gate
+  working as designed; the owner ruled "leave the marketing site alone" and it was stashed.
+
+## 2026-08-08 (night, follow-up) — reader column width is now reader-adjustable
+
+**Owner request in session:** the centered 66ch reader column wastes space on wide desktop
+screens; the reader should be able to widen or narrow it. Built on the existing reading-prefs
+pattern rather than inventing a new one: `READING_MEASURES` (54/60/66/74/84ch, default 66ch =
+the PRD measure; wider steps are the owner's call, overriding PRD §3's 65–70ch guidance) in
+`lib/reading-prefs.ts`, stored as `reader-measure`, applied as `--reading-measure` by the same
+hook and the layout pre-hydration script. `.reading-measure` in globals.css resolves it;
+`verse-display.tsx` and the page's `ChapterSkeleton` (they mirror each other by comment
+contract) swapped `max-w-[66ch]` → `reading-measure`. Controls in BOTH surfaces that already
+offer theme/size: the reader header Aa popover (⇤/⇥, aria-labels) and /settings "Column width"
+section (Narrowest..Widest labels + a line saying Standard is the designed measure).
+
+**Wall:** eslint 0 errors on the 7 touched files; vitest settings-and-auth-routes +
+verse-deep-link + selection-popover-layout 22/22 green; `next build` PASSED.
+
+### NOT DONE / UNVERIFIED
+- Not seen in a browser — pattern-identical to the proven text-size control, but the ⇤/⇥
+  popover buttons and the 74/84ch widths deserve one look on /read/psa/23 at 1280px+.
+- The commentary sidebar layout at wide measures was not re-checked (reader column and sidebar
+  share the page at desktop widths).
+
+## 2026-08-08 (night) — the redesign's browser visual pass: three defects found and fixed, all app-side
+
+**The handover's big outstanding item** (docs/VISUAL_REDESIGN_HANDOVER.md §6.1): nothing restyled
+had been SEEN. Walked in a real browser against the running dev server at 1280×800 AND 390×844,
+light AND dark: /read/psa/23 (drop cap, popover, grain, hover fills, hairlines), /home (devotional
++ era-treated Voices), /ask (composer, examples, error state), / (hero band, night band, footer —
+LOOKED AT ONLY, see below), /prayers + /plans signed-out states, mobile commentary sheet + menu
+sheet + bottom selection pill. Zero horizontal overflow measured everywhere
+(`scrollWidth == clientWidth`); sheets animate `fade-in 0.2s` with no transform (measured, not
+assumed); scrims exactly `stone-950/[0.32]`; grain `content: none` under `.reader-dark`.
+
+**Three real defects, all fixed styling-only (no DOM, no tests touched):**
+1. **Drop cap punched a blank line into the flow** (`verse-display.tsx`). The cap rode the first
+   verse's span as `inline-block` `::first-letter`, so the float was CONTAINED: any first verse
+   shorter than the cap (Psalm 23:1 exactly) left a one-line hole before verse 2. Rebuilt at the
+   flowing CONTAINER's `::first-letter` with the verse-1 number `<sup>` floated so the cap lands
+   on the text, not the digit — measured live: container-level first-letter grabs a giant gold
+   "1" otherwise. Two sub-gotchas, both measured: preflight's `sup { line-height: 0 }` collapses
+   a floated sup to a 0-height box that the ACCESSIBILITY TREE PRUNES (verse-1 button vanished;
+   `leading-none` restores it), and the mockup's cap `line-height 0.9` = 69.1px vs a 68.4px
+   2-line height, so the 0.7px overhang dragged a THIRD line into the indent — `leading-[0.88]`
+   makes it a clean two-line cap. Verse text nodes and anchoring offsets untouched.
+2. **Desktop selection popover rendered as an ellipse** (`selection-popover.tsx`). The PRD's
+   "pill" is the mockup's ONE-ROW toolbar; the desktop card stacks label/swatches/actions/copy
+   (168×131 signed-out) and `rounded-full` on that box is an egg that clips its own corners.
+   Dropped to square per the global radius-0 rule; the mobile one-row bar keeps its pill. The
+   dark-mode inversion (parchment card, dark border) verified live both ways.
+3. **Five focus borders could never paint** (the handover §3 gotcha 1 class, found by grep after
+   fixing the named one): omnibox, book-picker, study-panel, commentary-panel carried layered
+   `focus:border-*` / `focus-within:border-*` beside unlayered `.edge` — dead since birth;
+   prayer-journal only painted by escalating to `!`. One new unlayered `.edge-focus` rule in
+   globals.css (accent-600 light / accent-400 dark, per PRD §6), all five swapped onto it, the
+   `!` hack removed. Verified live on the omnibox: gold on focus, vellum on blur, both themes.
+
+**Instrument finding worth keeping (the "unearned RED" family, THE_LOOP §6):** the Browser pane's
+stale-renderer glitch (first seen 2026-07-16) does more than blank screenshots — with the pane
+hidden, the renderer's animation clock STOPS, so a `transition-colors` element pins its computed
+style at the transition's START value: `getComputedStyle` reported the old border color even
+against an INLINE `border-bottom-color: red`, which no cascade can produce. The tell is
+`el.getAnimations()` showing CSSTransitions frozen at `currentTime: 0`; the honest read is
+`finish()`ing them first (or measuring an element with no transition). A styling verdict taken
+from computed style on a transitioned property in a hidden pane is not a measurement.
+
+**Wall:** web vitest **705 passed / 0 failed** (105 files, 25 skipped DB legs); the 4 presentation
+suites named by the handover (verse-deep-link, verse-open-gesture, selection-popover-layout,
+bookmark-write-path) green; `tsc` clean; eslint 0 errors (20 pre-existing warnings);
+`next build` PASSED. Root suite 684 passed / 3 failed — the same 3 env-shaped pre-existing
+failures the afternoon session recorded (lockfile-ranges + two assert-ingest-env legs wanting a
+dev DATABASE_URL), none in files this session touched.
+
+### NOT DONE / UNVERIFIED
+- **`npm run audit` REFUSED at its env leg** — no DATABASE_URL in root .env.local (the week's
+  standing constraint). DB-free legs run individually as listed above; full audit still owed.
+- **Ask staggered reveal + amber stage checks NOT exercised** — /api/ask is sign-in-gated and
+  auth 500s in this tree (no auth env). Composer, focus outline, example rows, question header
+  and error state verified; the live reveal needs a signed-in session.
+- **Prayer save-dot, plans progress bars, library hairline rows NOT seen** — all behind auth/DB
+  this tree doesn't have. /library renders the (correctly restyled) error page instead.
+- **Marketing site untouched and unjudged, per owner mid-session: "leave the marketing site
+  alone entirely."** The landing/night-band/footer walk above was read-only; **the sage tokens +
+  `--shadow-card` deletion the handover queued was deliberately SKIPPED** — they are
+  marketing-associated tokens and stay as they are.
+- book-picker/study-panel/commentary-panel/prayer-journal `.edge-focus` swaps are rule-identical
+  to the verified omnibox but not individually exercised (picker's synthetic open didn't mount;
+  the rest are auth-gated).
+- The dev overlay's "1 Issue" badge is the dev-only React eval/CSP notice + the auth 500 —
+  environmental, not the redesign.
+
+
+**Source:** owner's `Ancient_Paths_Visual_Redesign_PRD.md` + six HTML mockups + screenshots
+(Desktop "App UX Redesign Guide"). "Candlelit scriptorium": parchment #FBF8F2, vellum hairlines,
+antique gold accent, EB Garamond / Literata / Source Sans 3, NO cards, NO shadows, NO rounded
+corners, NO gradients/blur, fade-only 200ms motion, era-accented commentary, AA floor.
+
+**Foundation (`web/src/app/globals.css`, hand-edited first so ten parallel scopes share it):**
+stone scale remapped to the PRD hexes keeping the old step pairings (50=parchment, 200=vellum
+hairline, 500=ink-wash, 800=night hairline, 900=ink, 950=night surface); accent scale re-hued
+oxblood → antique gold (600=#8A5A2B, 400=#C4975A dark gold) keeping ladder steps; new tokens
+`flame` (#C97B3A, rare emphasis only) and `era-early/medieval/reformation/modern`; ALL radius
+tokens → 0 (rounded-full survives for true pills: swatches, dots, avatar); ALL shadow tokens →
+render nothing; ease-gentle → PRD's cubic-bezier(0.4,0,0.2,1); `animate-slide-up` re-pointed to
+fade (no slides per PRD); thin scrollbar (6px, vellum/night thumb); paper grain via inline SVG
+turbulence data-URI at 2.5% opacity, light mode only (CSP img-src allows data:).
+
+**Ten scopes restyled by subagents, styling-only, tests untouched:** app shell/sidebar/nav
+(vellum rail, EB Garamond wordmark, text-only quiet links, PRD scrims), reader (bare 66ch
+column, 30px display title + hairline, CSS-only `::first-letter` drop cap in gold with onum —
+DOM untouched so the offset-anchoring engine is unaffected, gold onum verse numbers, dark-pill
+selection popover that inverts to parchment in dark mode), commentary/study/desk (era 3px left
+borders + · ◆ § — ornaments, vellum sheet surface, 62ch quotes), ask (amber stage checks,
+opacity-pulse ring replaces the banned spinner, staggered fade reveal, era voice cards),
+prayers (unstyled hairline list, the signature amber save-dot 150ms/2s/150ms), plans (hairline
+rows, 2px gold progress bar, hairline builder form), home/devotional (small-caps 0.3em date,
+120px rule, gold-bordered verse blockquote, hairline CTA), library (hairline catalog rows,
+tabular counts, word-study panel), marketing/landing (sage retired → parchment/ink/gold; hero
+scrims removed, type on parchment band; nav `onDark` prop deleted), auth/settings/error pages
+(hairline buttons/inputs, PRD scrims).
+
+**Wall:** `next build` PASSED (41 routes; 4 warnings pre-existing pdfjs/bible-index);
+`eslint` 0 errors (20 warnings all pre-existing); web vitest **694 passed / 0 failed**
+(104 files, 25 skipped DB legs). Per-file suites were run by each scope agent and green.
+
+### NOT DONE / UNVERIFIED
+- **`npm run audit` REFUSED at its env leg** — no dev DATABASE_URL in root .env.local (the
+  week's standing constraint). DB-free legs green as listed above; full audit still owed.
+- **No browser/visual verification** — drop-cap rendering, popover dark-mode inversion, grain,
+  and hover states are compile-checked but not seen. One visual pass on /read/psa/23, /ask,
+  /plans, /library in both themes is owed.
+- The commit `e171de8` swept the tree mid-session (parallel session); the last tranche of
+  library/desk edits is UNCOMMITTED on disk (13 files).
+- PRD open questions (§12) not resolved with owner: drop caps every chapter vs book openings
+  (shipped: every chapter opening), collapsible commentary (shipped: existing expand behavior),
+  prayer tags (shipped: chronological list, unchanged).
+- Sage tokens + `--shadow-card` remain declared in globals.css but are now unreferenced
+  (marketing restyled off them); removal is a follow-up sweep.
+
+## 2026-08-08 (evening) — marketing site replaced from the owner's UX Pilot design (ADR-111), STAGED for owner review, NOT deployed
+
+**Branch `feat/marketing-site`** (from `fix/final-sweep` after committing that session's pending
+ingestion work at `c74d921` — its tree was clean before this began). Owner supplied a five-page
+UX Pilot mockup and ruled full replacement in session, including the hero S1 had guarded;
+recorded as **ADR-111**, S1 rows updated.
+
+**The truth pass ran BEFORE the copy** (POLISH_PLAN.md Phase 0), and it changed the page:
+- "Ten voices on this verse" (John 1:1) — TRUE, measured: exactly 10 distinct authors through
+  `isPublishedCommentaryEntry` over `web/public/commentaries/jhn/1.json` (Chrysostom, Augustine,
+  Clarke, Henry, Barnes, Wesley, Calvin, Aquinas/Catena, Hodge, Watts). Mockup kept.
+- The mockup's Chrysostom pull-quote was INVENTED. Replaced with a verbatim run from Homily IV
+  on John 1:1 in the served corpus: "…the Father was never without the Word, but He was always
+  God with God, yet Each in His proper Person."
+- Three "Answered by" rows named unserved works — Chrysostom's Paschal homily (not ingested),
+  "Wesley: Christ the Lord Is Risen Today" (no Charles Wesley hymnal served), Matthew Henry on
+  Rom 6:4 (no entry). Replaced with Calvin on Rom 6:4 (entry verified), Spurgeon MTP, Watts.
+- The mockup's "Beside the Tradition" feature (live suggestions beside a draft) DOES NOT EXIST;
+  Features §03 now describes the register lanes, which do (ask-client.tsx LANE_OPTIONS).
+- Why-page fixes: "AI cannot lead you to the Holy Spirit" contradicted the product tagline —
+  reworded; Luther (not in corpus) became Calvin.
+
+**Built:** `/` (hero "You aren't the first / to study or preach this text.", ask/answered cards,
+3-step band, dark conviction band, philosophy, verse panel, waitlist over the fog steps),
+`/features` (verse panel, interlinear, registers, prayer journal — all four SHIPPED features),
+`/why` (essay with drop cap), `/gate` restyled split-photo, auth backdrop swapped to the dusk
+forest, waitlist success = the designed "Request received" card inline. Shared
+`components/marketing/{nav,footer}.tsx`; sage tokens + `--shadow-card` in `globals.css`
+(marketing-only; app accent untouched). Four UX Pilot images self-hosted under
+`web/public/marketing/` (owner-approved download; 1024px JPEGs). Footer credit per owner:
+"Crafted with reverence" (Studio Sabas removed). Privacy/Terms links deliberately absent
+(S1 skeletons stand).
+
+**Wall:** `/features` + `/why` + the four images added to `gate.ts` PUBLIC_PATHS (exact-match)
+and `app-shell` CHROME_FREE; `middleware-gate.test.ts` extended and WATCHED RED with the gate.ts
+change stashed, green restored. Web suite 104 files green / 25 skipped (DB legs). `tsc` clean,
+eslint clean, **`next build` PASSED** — `/features`, `/why` static; `/gate` dynamic.
+
+**Browser (dev, both widths):** 1280×800 and 375×812 walked section by section — zero horizontal
+overflow (measured `scrollWidth == clientWidth`), all sections render, form exercised: POST fired,
+designed error state rendered (`role=alert`); success state rendered via a stubbed 200 (no dev
+DATABASE_URL in this tree, the week's standing constraint — `/api/waitlist` itself is unchanged
+and live in prod). Screenshots of hero/ask/verse-panel/doors/footer/gate captured. The Browser
+pane's stale-layer glitch (WORKLOG 2026-07-16) reappeared on scrolled captures; verified via DOM
+measurement + a translate trick, not by trusting blank screenshots.
+
+### NOT DONE / UNVERIFIED
+- ~~NOT DEPLOYED~~ **SUPERSEDED same evening: the owner pressed go.** Three deploys shipped
+  (d7a45f3, efa9756, and the final pass), each alias-identity-verified by deploy.sh; the PRD
+  restyle landed between review and deploy and re-skinned these pages (see the restyle entry
+  below and VISUAL_REDESIGN_HANDOVER.md). Hero became Proverbs 11:14 (KJV wording), the verse
+  panel became INTERACTIVE (ten clickable voices, every excerpt verbatim served corpus text,
+  pinned by test/marketing-verse-panel-sync.test.ts, red-proofed), and the owner's why-page
+  trades shipped with John 14:26 verbatim from rwebster. Deploy is ⚑.
+- `npm run audit` full run NOT RUN (no dev DATABASE_URL); DB-free legs green as listed above.
+- The hero/section images are 1024×1024 AI generations — soft on large/retina displays; a
+  higher-res regeneration is the fix (same class as the hero-road note in next.config.ts).
+- The waitlist success state was proven with a stubbed 200, not a real row (no dev DB).
+- The expectation line "The preview is free…" is agent-drafted copy AWAITING OWNER WORDING.
+- Real-device / notch checks not run; marketing pages are light-only by design (recorded in code).
+- OG/social cards not updated for the new brand (layout metadata unchanged); filed as follow-up.
+
+## 2026-08-08 (ingestion cleanup, afternoon) — "finish 1-7": everything driven to its executable limit
+
+Owner directive: finish the seven open ingestion items. Result: three closed outright, four
+driven to the one human act each requires (the gates are TTY-by-design; nothing was routed
+around). Evidence: `docs/evidence/p40-prep-2026-08-08/` (session-checks-afternoon.txt).
+Suite: **40 new red-proof tests green; full root suite 684 passed / 3 failed — the same 3
+pre-existing failures from this morning, none from this session's files.** tsc + eslint clean.
+
+**1 · P4.n catch-up — backlog DERIVED, runbook filed.** Read-only against both DBs:
+dev staged+published 831 − already-on-prod 132 − ineligible 30 = **669 works**
+(theology 464 · sermon 96 · commentary 91 · father 18), batch files at
+`docs/evidence/corpus-copy/p4n/*.json`, per-batch owner sequence at
+`docs/evidence/corpus-copy/p4n/RUNBOOK.md` (dry-copy → copy → flip → reconcile → census-diff).
+Derivation is re-runnable: `scripts/derive-p4n-backlog.mts`.
+
+**2 · Ryle archive slice — the calibrated proof HOLDS, and the first work is validated.**
+`scripts/archive-crosscopy-calibrate.mts` on real scans (committed, sha256'd in
+`data/raw/archive/CHECKSUMS.sha256`): same-edition pair 53–68% whole-text / 83% median
+section-aligned vs different-work 5.6–8.0% / 12.8% median (max 17.5%) — **SAME p10 40.7% >
+DIFF max 17.5%, a clean gap; threshold calibrated at 29.1%**. The old POC's failure was the
+byte-offset artifact the design doc suspected. The title-page guard then EARNED ITS SCAR:
+the identifier-named "vol 1" Google copy is John vol 2 — caught before calibrating Matthew
+against John. `src/ingest/adapter-archive-ryle.ts` (new profile; fail-closed bars, real-verse
+validation via the canonical `isStructurallyValidVerseId`, cross-copy validation at the
+calibrated threshold): **Ryle on Matthew — 85 sections across all 28 chapters, 90.6%
+cross-validated, median 86.2%** → `data/raw/archive/ryle-expository-matthew/*.jsonl` +
+report. One metric defect of my own, caught by the floor: min(both-directions) containment
+punishes the partner scan MERGING sections (46k-char twin → 13.2% reverse on a genuine match);
+FORK A asks a one-directional question, fixed with the diagnostic recorded. Per Fork B the
+adapter writes NO database rows — staging and the human-signed alignment pass are the next
+slice. 7 sectionizer red-proofs (incl. the `Ill`→III OCR heuristic the regex initially
+missed — caught by its own test).
+
+**3 · E3 re-measured.** The 2026-07-27 "deletion drops 580 verses below floor" fear is moot
+under `served`: **67,710 forbidden rows are served=false — they serve nothing today, so
+deleting them changes nothing that serves** (census baseline was measured with them already
+unserved; orphan works 0-served, verified). The live exposure is the OTHER subset: **4,174
+served forbidden rows = ADR-044's open owner call** (Chrysostom 2,515 + Augustine 1,659
+historicalchristian.faith), remedy gated on the held-out eval — whose missing-key blocker is
+stale (the key IS in `web/.env.local` now).
+
+**4 · The two small items are command-ready** (in the runbook): calvin-crosswire's 2 clean
+`books.google.com` rows (serve-or-quarantine, exact 2-row SQL + inverse — the flip refuses
+partial states by design); spurgeon-talks-to-farmers measured precisely: 298 sections + 298
+section_embeddings on PROD (Book-Reader served), zero flat `embeddings` on EITHER database —
+/ask sermon lane needs its 298 sections embedded into the flat store on dev, then the sermon
+batch carries it.
+
+**5 · The loop ran LIVE on dev** (`--dry`: 40-work queue enumerated; two live one-work runs):
+both breakers and the digest fire in production conditions — budget PAUSE at cap, digest
+emitted. **Both live works quarantined `parse: only 1-2 units — structure not recognized`** —
+two identical codes in two runs, one short of the consecutive-failure HALT, and the correct
+suspicion: the remaining CCEL queue has a systematic structure-recognition gap to investigate
+before any sweep (the breakers exist for exactly this).
+
+**6 · Historians — the "41 staged" claim is WRONG, measured.** Prod: 1 published
+(josephus-whiston, shelf-served) + 0 staged. Dev: 3 works, 1 with sections. The queue skips
+historians by design (write-contract head never built). So there is no shelf-publish backlog —
+the historian slice is the unbuilt head (migrations + one-Schaff pilot), not 41 works waiting
+on a ruling.
+
+**7 · The two "deliberately not built" items, revisited and built where honest.** embed-429
+now trips the budget PAUSE (deferred, never quarantined — the work is innocent; design §4's
+budget/rate breaker made literal; red-proofed). `.github/workflows/ingest-loop.yml`: weekly
+capped sweep (`--max-attempts=60 --max-hours=4 --staged-cap=30`, digest + run-log as
+artifacts, halt = red job), dev-only by construction, **owner action: two secrets**
+(`INGEST_DEV_DATABASE_URL`, `DEEPINFRA_API_KEY`) before it can run. Deeper auto-fixes
+(re-chunk/re-anchor) stay un-wired — they are content changes needing per-fix re-measurement
+harnesses, and shipping them without those is the open loop THE_LOOP forbids.
+
+## 2026-08-08 (ingestion cleanup) — P4.0 prepared to the owner's terminal; the loop's missing breakers and the post-flip instruments built
+
+**`fix/final-sweep`, tree clean at arrival.** Owner directive: execute the ingestion cleanup.
+Scope came from the gap analysis against `INGESTION_LOOP.md` and the A9 row: P4.0 (serve the
+published-but-unserved), the unbuilt P0.4/P0.5 instruments, and the four coded-but-absent
+circuit breakers. Evidence: `docs/evidence/p40-prep-2026-08-08/session-checks.txt`.
+
+**P4.0 IS DONE — it ran 2026-08-05, and an earlier draft of this entry said otherwise.**
+The flip executed at 06:26-06:27 UTC with `serve-89-2026-08-05.json`: **59,023 embedding rows
+-> served=true across all 89 slugs**, 0 status rows moved (a pure serve flip), gate held,
+snapshot at `work-order-v2-stage2/flip-pre-snapshot-2026-08-05T06-27-04-926Z.json`, run log
+beside it. The A9 board row ("Admission (P4.0) still OPEN") was stale by four days when I read
+it this morning, and I repeated its staleness here before finding the run log — the board's own
+warning, again. Two follow-ups happened after: 2026-08-06 the owner quarantined `calvin-calcom`
+and `augustine-confessions` back out (P0.1 aggregates: a TOC landing page and a thin duplicate;
+1,484 rows unserved, `evidence/register-cleanup/`), leaving **85 net served works** from the
+batch. Two slugs flipped with **no work-keyed rows** and need their own answers:
+`josephus-whiston` (expected — sections-model historian, shelf-served via the Book Reader) and
+`spurgeon-talks-to-farmers` (**a real residual gap** — the owner ruled "add it, so all sermons
+are live" on 08-02, but prod holds no work-keyed rows for it; either it was never copied
+dev->prod or its rows sit in the work-less flat cohort. Unresolved, needs a prod read).
+**Remaining:** nothing — verification RAN (owner go, 2026-08-08 evening). Results:
+
+- **`served-reconcile` (first live run, and it earned its existence):** 135 sources / 136 keyed
+  works. First pass found 5 "violations"; diagnosis showed the instrument, not the corpus, was
+  wrong about four of them — calvin-crosswire/wesley-crosswire's unserved remainders are
+  **biblehub-provenance rows that must STAY unserved** (the E3 deferred cleanup; serving them
+  is the licensing violation), and the three no-sources-row works (poole-tcp, pnt-crosswire,
+  scofield-crosswire; 2,811 rows, all biblehub, 0 served) are **inert E3 inventory**, not
+  ungoverned serving. The core now classifies unserved-by-provenance (fail-closed when the
+  split is absent) and red-proofs all of it (8 tests). Final prod result: **123 published works
+  fully served of everything legally servable; 1 E3-deferred (wesley-crosswire, 1,021 rows);
+  3 inert orphans; 2 published-keyless (see below); ONE real violation — `calvin-crosswire`
+  has 2 clean-provenance (`books.google.com`) rows unserved.** Serve-or-quarantine on those 2
+  rows is an owner-terminal write; flagged, not executed. Evidence:
+  `docs/evidence/p40-prep-2026-08-08/served-reconcile-prod-2026-08-08-final.txt`.
+- **`coverage-census` baseline (prod, written to
+  `docs/evidence/corpus-copy/coverage-baseline-2026-08-08.json`, 1,189 chapters):** 29,724 of
+  31,103 canon verses carry a served exegetical voice (**95.6%**); 23,981 carry ≥2 distinct
+  authors (**77.1%**); 0 served exegetical rows lack a verse key. This is the floor every P4.n
+  catch-up batch now diffs against.
+- **`spurgeon-talks-to-farmers` measured:** 298 sections in the 006 model (Book-Reader served,
+  sources row published/sermon/PD) and **zero work-keyed embeddings on prod** — it never got
+  sermon-lane rows. Serving it on /ask = a dev→prod embeddings copy + one-slug flip; small
+  Lane A follow-up, owner go. `josephus-whiston` keyless is expected (sections-model historian).
+
+**Archive.org forks RULED by the owner 2026-08-08 — ADR-110:** cross-copy containment (aligned
+sections, calibrated threshold) is the fresh-work text-match proof; fresh OCR works ship
+**staged only** until an alignment validation pass; Menno Simons **held** until a non-verse
+theology retrieval path exists. First buildable slice: Ryle on one Gospel from the 1857 scans,
+staged, with calibration evidence committed before anything is staged.
+
+The 89-slug payload had been fully pre-verified locally before the flip was found: all pass the
+slug regex, none are `serve:false` in HEAD or the working-tree manifest, all manifest-present,
+zero MUST_NOT_SERVE authors, zero `theology`/`fiction` types (the P0.1 hazard did not bite).
+
+**Built, each with red-proof tests watched fail (30 tests, all green; tsc + eslint clean):**
+
+- **`scripts/served-reconcile.mjs`** (order P0.5 — never built). The standing post-flip
+  instrument that replaces `verify-served-backfill` whose validity window ends at this flip by
+  its own header. Asserts: published ⇒ all work-keyed rows served; staged/quarantined/ingesting
+  ⇒ zero served; the work-less legacy cohort and the published-but-keyless author cohort are
+  their own lines, never folded in. Read-only; prod needs `RECONCILE_ALLOW_PROD=1` (bylaw 7).
+- **`scripts/coverage-census.mts`** (order P0.4 — never built). Per book/chapter: real verses,
+  verses with any served exegetical voice, verses with ≥2 distinct authors, over the canon from
+  `RAW_VERSE_COUNTS` (no phantom 999-sentinel verses). `--write-baseline` / `--baseline` diffs
+  enforce the pre-registered floor: no chapter that had ≥2-author coverage loses any.
+- **`src/ingest/loop-breakers.ts` + `loop-digest.ts`, wired into `adapter-loop.ts`** — the four
+  breakers the design names that the code lacked: staged-backlog PAUSE (run-scoped digest-batch
+  cap, default 30 — a global count is meaningless against ~800 already-staged dev works),
+  consecutive-failure HALT (3 identical codes), budget PAUSE (elapsed/attempts caps), and the
+  novel-fork stop made real: failures classify to decision-tree codes (`embed-429`, `fetch`,
+  `license`, `parse`); an unmapped code now lands `escalated`, not `quarantined`. Every run
+  emits `docs/evidence/ingest-runs/digest-<stamp>.{md,json}` — the publish digest and
+  escalation list the loop was always supposed to arrive with. Halt exits 1; pause exits 0.
+
+### NOT DONE / UNVERIFIED
+
+- **One real residual on prod:** `calvin-crosswire`'s 2 `books.google.com`-provenance rows are
+  unserved on a published work. Serve-or-quarantine is an owner-terminal write — flagged, not
+  executed. Everything else the reconcile names is classified, not open.
+- **`spurgeon-talks-to-farmers` has no sermon-lane rows on prod** (298 sections, 0 work-keyed
+  embeddings). Serving it on /ask needs a dev→prod embeddings copy + one-slug flip — owner go.
+- **`adapter-loop.ts` NOT EXECUTED** — no dev `DATABASE_URL` on this machine (root `.env.local`
+  has none), so the wired loop is typecheck/test-verified only. First live run should be
+  `--dry`, then a small `--only` batch.
+- **Archive.org lane is unblocked but not built** — ADR-110 ruled the forks; the Ryle slice
+  (calibrate, fetch, align, stage, validate) is its own slice, not started here.
+- **Scheduling deliberately NOT built.** Nothing in the design requires cron; its answer to
+  unattended safety is the breakers + resumability now coded. A scheduled runner would
+  auto-spend DeepInfra budget from CI secrets — an owner decision, filed here not guessed.
+- **Auto-decide auto-FIXES not wired** (re-chunk/re-anchor/re-embed per failure code). The
+  taxonomy and escalation path are coded; applying fixes autonomously without per-fix
+  re-measurement harnesses would be the open loop THE_LOOP forbids.
+- **3 root-suite failures, all PRE-EXISTING, none from this session's files:**
+  `target-guard` + `upload-root-lockfile` (no dev `DATABASE_URL` in root `.env.local`;
+  lockfile-range drift) and `user-data-invariant` (`prayers` table from migration 107 missing
+  from USER_TABLE_SPEC — Lane C's surface, likely in-flight). 674 passed / 3 failed.
+  `npm run audit` NOT RUN (refuses without a dev `DATABASE_URL`, as all week).
+
 ## 2026-08-08 (final sweep) — L1, L1b, T1 shipped; T3 code-complete; the real boundary named
 
 **`main` `636a07c` · production `af49032` · zero code commits between them.** Suite **104 files /

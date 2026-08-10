@@ -90,7 +90,7 @@ export function WorkSection({
           reader scrolling Matthew Henry saw unbroken prose with no indication of which verse
           they were on. `sectionLabel` falls through to the passage. */}
       {sectionHeading && (
-        <h2 className="mb-3 mt-10 font-scripture text-xl font-medium leading-snug text-stone-800 dark:text-stone-100">
+        <h2 className="mb-3 mt-10 font-display text-[22px] font-medium leading-snug tracking-tight text-stone-900 dark:text-stone-100">
           {sectionHeading}
         </h2>
       )}

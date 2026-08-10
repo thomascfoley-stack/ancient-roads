@@ -81,18 +81,20 @@ export function Omnibox() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[max(3rem,env(safe-area-inset-top))] sm:pt-[18vh]">
+      {/* PRD §3 scrim: rgba(26,20,15,0.32) light / rgba(251,248,242,0.08) dark, no blur. */}
       <div
-        className="absolute inset-0 bg-stone-950/30"
+        className="absolute inset-0 bg-stone-950/[0.32] dark:bg-stone-50/[0.08]"
         onClick={() => setOpen(false)}
       />
-      <div className="relative w-full max-w-lg rounded-2xl bg-paper shadow-deep animate-fade-in dark:bg-stone-900">
+      {/* PRD §6 modal: parchment surface, 1px hairline, no shadow, square corners. */}
+      <div className="relative w-full max-w-lg border edge bg-paper animate-fade-in dark:bg-stone-900">
         <form onSubmit={onSubmit}>
           {/* The input carries `focus-quiet`, which suppresses the global :focus-visible
               outline, and nothing replaced it: focus on the omnibox was completely
               invisible. Tabbing back from the result list showed no indicator at all.
               The rule for .focus-quiet is that the container shows focus instead, so the
               container now actually does. */}
- <div className="flex items-center border-b edge px-4 transition-colors ease-gentle focus-within:border-accent-500 dark:focus-within:border-accent-400">
+ <div className="flex items-center border-b edge edge-focus px-4 transition-colors ease-gentle">
             <svg
               className="h-4 w-4 shrink-0 text-stone-500 dark:text-stone-400"
               fill="none"

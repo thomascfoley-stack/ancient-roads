@@ -9,7 +9,7 @@ import { Omnibox } from './omnibox';
 // tier. The marketing landing (/) and the password gate (/gate) render full-bleed and
 // chrome-free — a stranger must not see the app's navigation, and the gate must not leak the
 // app's structure to someone who hasn't entered the password yet.
-const CHROME_FREE = new Set(['/', '/about', '/gate']);
+const CHROME_FREE = new Set(['/', '/about', '/features', '/why', '/gate']);
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -23,7 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           when focused. */}
       <a
         href="#main"
-        className="skip-link rounded-lg bg-accent-700 px-4 py-2 text-sm font-semibold text-stone-50 shadow-float dark:bg-accent-500"
+        className="skip-link bg-accent-700 px-4 py-2 text-sm font-semibold text-stone-50 dark:bg-accent-500 dark:text-stone-950"
       >
         Skip to content
       </a>
@@ -32,7 +32,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main
           id="main"
           tabIndex={-1}
-          className="flex-1 overflow-y-auto bg-stone-50 pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0 dark:bg-stone-900"
+          className="flex-1 overflow-y-auto bg-stone-50 pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0 dark:bg-stone-950"
         >
           {children}
         </main>

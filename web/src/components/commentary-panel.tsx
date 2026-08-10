@@ -115,10 +115,11 @@ export function ParaphraseChip() {
 
 // Shared header for a labeled register section (Sermons / Theology & confessions /
 // Hymns & sacred poetry) — the same treatment across reader and library.
+// PRD §4: section headings are 22px EB Garamond small-caps, tracking 0.08em.
 export function RegisterSectionHeading({ title, note }: { title: string; note: string }) {
   return (
     <>
-      <p className="pt-4 pb-1 text-micro font-bold uppercase tracking-widest text-stone-300 dark:text-stone-400">
+      <p className="pt-4 pb-1 font-display text-[22px] font-medium tracking-[0.08em] [font-variant:all-small-caps] text-stone-900 dark:text-stone-100">
         {title}
       </p>
       <p className="mb-2 text-micro italic text-stone-500 dark:text-stone-400">{note}</p>
@@ -133,31 +134,41 @@ export const THEOLOGY_NOTE = 'Systematic and confessional reflections on this pa
 export const SONG_VERSE_NOTE = 'Sung and poetic responses to this passage: not commentary, and (where marked) a metrical paraphrase, not the Scripture text itself.';
 
 /**
- * A left-border tint per era — S2 item 8.
+ * A left-border tint per era — S2 item 8, re-hued to the PRD's era accents (§4).
  *
  * Fifteen voices on one verse render as visually identical cards, so parsing "the fathers think X,
  * the Reformers think Y" means reading every name and year. The `era` bucket already exists and the
  * panel already groups by it; this makes the grouping visible at a glance.
  *
- * PALETTE TOKENS ONLY, no new hues — the block forbids them. The suggested mapping is deep
- * terracotta for the Early Church and olive for the Reformation; olive is not in this app's ladder,
- * so Reformation takes a lighter accent rather than importing a hue for one row.
+ * The hues are the PRD's own era tokens (era-early terracotta, era-medieval olive,
+ * era-reformation slate, era-modern ink-wash), declared in globals.css @theme. Per PRD §8 they do
+ * NOT flip in dark mode — they are dark enough to work on the night surface, so no dark: pair
+ * (which the border-color cascade eats anyway — see the .edge note in globals.css).
  *
  * COLOUR IS REDUNDANT HERE, NEVER THE SOLE ENCODING. The panel keeps its uppercase era heading and
  * every card keeps author, year and tradition. If anyone later proposes dropping the text headings
  * "because the colours do that now", the answer is no, and `s2-era-accent.test.ts` enforces it.
  */
 const ERA_ACCENT: Record<string, string> = {
-  'Early Church': 'border-l-accent-700 dark:border-l-accent-400',
-  'Medieval': 'border-l-accent-500 dark:border-l-accent-300',
-  'Reformation': 'border-l-accent-300 dark:border-l-accent-200',
-  'Modern': 'border-l-stone-400 dark:border-l-stone-500',
+  'Early Church': 'border-l-era-early',
+  'Medieval': 'border-l-era-medieval',
+  'Reformation': 'border-l-era-reformation',
+  'Modern': 'border-l-era-modern',
 };
 
-/** The tint for an era, or a neutral edge when the year is unknown. */
+/** The tint for an era, or a neutral edge when the year is unknown. A single translucent
+ *  ink-wash, so it reads on both parchment and night without a (cascade-losing) dark: pair. */
 export function eraAccent(era: string): string {
-  return ERA_ACCENT[era] ?? 'border-l-stone-300 dark:border-l-stone-600';
+  return ERA_ACCENT[era] ?? 'border-l-stone-500/40';
 }
+
+/** The PRD §4 attribution ornament per era, rendered after the author name in ink-wash. */
+const ERA_ORNAMENT: Record<string, string> = {
+  'Early Church': '·',
+  'Medieval': '◆',
+  'Reformation': '§',
+  'Modern': '—',
+};
 
 export function eraLabel(year: number | null): string {
   if (!year) return '';
@@ -241,11 +252,20 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
   const isLong = entry.text.length > 600;
   const displayText = isLong && !expanded ? entry.text.slice(0, 600).replace(/\s+\S*$/, '') + '...' : entry.text;
 
+  // PRD §5 commentary card: 3px era-coloured left border, NO box, NO shadow, NO rounding —
+  // separation comes from the border and a hairline rule above, which the PARENT list
+  // supplies (today-view and the panels each own their own rule). The era ornament rides
+  // the attribution line in ink-wash.
+  const era = eraLabel(entry.year);
+  const ornament = ERA_ORNAMENT[era];
+
   return (
-    <div className="rounded-xl bg-stone-100/80 px-4 py-3.5 dark:bg-stone-800/50">
+    <div className={`border-l-[3px] pl-4 ${eraAccent(era)}`}>
       <div className="flex items-baseline gap-2 mb-2 flex-wrap">
-        <span className="font-semibold text-stone-800 text-sm dark:text-stone-100">
+        {/* Attribution: 14px Literata small-caps, ink-wash, era ornament after the name (PRD §4/§5). */}
+        <span className="font-scripture text-sm tracking-[0.05em] [font-variant:all-small-caps] text-stone-500 dark:text-stone-400">
           {entry.author}
+          {ornament ? ` ${ornament}` : ''}
         </span>
         {entry.year && (
           <span className="text-xs text-stone-500 dark:text-stone-400">
@@ -269,16 +289,17 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
           stays flowing (deep-audit 2026-07-18: collapsing stanzas destroys the
           content of the register). */}
       <p
-        className={`font-scripture text-base leading-relaxed text-stone-600 dark:text-stone-500${
+        className={`font-scripture text-[17px] leading-[1.75] max-w-[62ch] text-stone-800 dark:text-stone-200${
           registerLane(entry) === 'exegetical' ? ' break-words' : ' whitespace-pre-line break-words'
         }`}
       >
         {displayText}
       </p>
       {isLong && (
+        // PRD §5: 12px Source Sans, uppercase, tracking 0.08em, antique gold.
         <button
           onClick={() => setExpanded(!expanded)}
-          className="mt-2 inline-flex min-h-[36px] items-center text-xs font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300"
+          className="mt-1 inline-flex min-h-[44px] items-center font-sans text-xs font-semibold uppercase tracking-[0.08em] text-accent-600 hover:underline dark:text-accent-400"
         >
           {expanded ? 'Show less' : 'Read more'}
         </button>
@@ -289,7 +310,7 @@ export function EntryCard({ entry }: { entry: CommentaryEntry }) {
         // ccel.org/gutenberg/crosswire surfaces a host as if it were the source
         // (GO_LIVE A5: "attribute to the author, never a host"). provenance
         // keeps the URL for the record; the UI shows the work title, plain.
-        <p className="mt-2 text-micro text-stone-500 dark:text-stone-400">
+        <p className="mt-1 text-micro text-stone-500 dark:text-stone-400">
           {entry.sourceTitle}
           {/* CC BY / CC BY-SA require attribution notice; PD needs none */}
           {entry.license && /^cc/i.test(entry.license) ? ` · ${entry.license}` : ''}
@@ -320,15 +341,20 @@ export function RegisterLaneSections({
     entries.length === 0 ? null : (
       <div>
         <RegisterSectionHeading title={title} note={note} />
-        <div className="space-y-2">
+        {/* Hairline rule above each voice (PRD §5); the era border lives in EntryCard.
+            Translucent ink-wash, not `edge`: this section renders on BOTH parchment and
+            the vellum commentary sheet, where the vellum-on-vellum edge would vanish. */}
+        <div className="space-y-4">
           {entries.slice(0, limit).map((e, i) => (
-            <EntryCard key={i} entry={e} />
+            <div key={i} className="border-t border-stone-500/25 pt-4">
+              <EntryCard entry={e} />
+            </div>
           ))}
         </div>
       </div>
     );
   return (
-    <div className="space-y-2">
+    <div className="space-y-6">
       {section('Sermons', SERMON_NOTE, sermon)}
       {section('Theology & confessions', THEOLOGY_NOTE, theology)}
       {section('Hymns & sacred poetry', SONG_VERSE_NOTE, songVerse)}
@@ -372,23 +398,25 @@ export function CommentaryPanel({
   let lastEra = '';
 
   return (
+    // PRD §3 scrim: rgba(26,20,15,0.32) light / rgba(251,248,242,0.08) dark, NO blur.
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-stone-950/[0.32] animate-fade-in dark:bg-stone-50/[0.08]"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
+      {/* PRD §5 commentary sidebar surface: deep vellum light, #2B2119 (stone-900) dark. */}
       <div
         ref={panelRef}
-        className="w-full max-w-2xl max-h-[85dvh] overflow-y-auto overscroll-contain rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] shadow-deep animate-slide-up dark:bg-stone-900"
+        className="w-full max-w-2xl max-h-[85dvh] overflow-y-auto overscroll-contain rounded-t-3xl bg-stone-200 pb-[env(safe-area-inset-bottom)] animate-slide-up dark:bg-stone-900"
       >
- <div className="sticky top-0 z-10 flex items-center justify-between border-b edge bg-paper/95 px-5 py-4 backdrop-blur-sm dark:bg-stone-900/95">
-          <h2 className="text-sm font-semibold text-stone-800 dark:text-stone-100">
+ <div className="sticky top-0 z-10 flex items-center justify-between border-b edge bg-stone-200 px-5 py-4 dark:bg-stone-900">
+          <h2 className="font-display text-sm tracking-[0.08em] [font-variant:all-small-caps] text-stone-800 dark:text-stone-100">
             Ancient Paths
           </h2>
           <button
             onClick={onClose}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-600 active:bg-stone-100 transition-colors ease-gentle"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-600 active:bg-stone-100 dark:hover:bg-stone-800 transition-colors ease-gentle"
             aria-label="Close"
           >
             <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -397,11 +425,11 @@ export function CommentaryPanel({
           </button>
         </div>
 
-        <div className="border-b border-stone-100 bg-stone-50/50 px-5 py-4 dark:border-stone-800 dark:bg-stone-800/40">
+        <div className="border-b border-stone-500/25 bg-stone-50/60 px-5 py-4 dark:bg-stone-950/50">
           <p className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-1.5">
             Verse {verseNum}
           </p>
-          <p className="font-scripture text-base leading-relaxed text-stone-700 italic dark:text-stone-500">
+          <p className="font-scripture text-base leading-relaxed text-stone-700 italic dark:text-stone-400">
             &ldquo;{verseText}&rdquo;
           </p>
         </div>
@@ -422,14 +450,15 @@ export function CommentaryPanel({
               return (
                 <div key={i}>
                   {showEra && (
-                    <p className="pt-4 pb-1.5 text-micro font-bold uppercase tracking-widest text-stone-500">
+                    <p className="pt-4 pb-1.5 text-micro font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">
                       {era}
                     </p>
                   )}
-                  {/* The tint rides a left border on the card's wrapper, so it needs no change to
-                      EntryCard and cannot disturb the card's own spacing. `pl-3` keeps the text off
-                      the rule. */}
-                  <div className={`mb-2 border-l-2 pl-3 ${eraAccent(era)}`}>
+                  {/* The era border + ornament live in EntryCard itself now (shared with
+                      today-view); the wrapper supplies the PRD §5 hairline rule above each
+                      voice. Translucent ink-wash because the vellum-on-vellum `edge` rule
+                      would be invisible on this sheet. */}
+                  <div className="mb-4 border-t border-stone-500/25 pt-4">
                     <EntryCard entry={entry} />
                   </div>
                 </div>
@@ -450,8 +479,8 @@ export function CommentaryPanel({
           </div>
         )}
 
-        <div className="border-t border-stone-100 px-5 py-5 text-center">
-          <p className="font-scripture text-sm text-stone-500 italic">
+        <div className="border-t border-stone-500/25 px-5 py-5 text-center">
+          <p className="font-scripture text-sm text-stone-500 italic dark:text-stone-400">
             Nevertheless, not as I will, but as you will. . . . Your will be done!
           </p>
         </div>
@@ -466,10 +495,10 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
 
   if (!annotation.signedIn) {
     return (
-      <div className="border-b border-stone-100 bg-white px-5 py-3 dark:border-stone-800 dark:bg-stone-900">
+      <div className="border-b border-stone-500/25 px-5 py-3">
         <Link
           href="/auth/sign-in"
-          className="inline-flex min-h-[44px] items-center text-xs font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300"
+          className="inline-flex min-h-[44px] items-center font-sans text-sm font-semibold text-accent-600 hover:underline dark:text-accent-400"
         >
           Sign in to highlight this verse and save notes to your account →
         </Link>
@@ -478,7 +507,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
   }
 
   return (
-    <div className="space-y-3 border-b border-stone-100 bg-white px-5 py-3 dark:border-stone-800 dark:bg-stone-900">
+    <div className="space-y-3 border-b border-stone-500/25 px-5 py-3">
       {/* Highlight colors */}
       <div className="flex items-center gap-2">
         <span className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
@@ -491,14 +520,14 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
               onClick={() => annotation.onSetHighlight(c.id)}
               aria-label={`Highlight ${c.id}`}
               className={`h-6 w-6 rounded-full ${c.dot} ring-2 transition-transform ease-gentle hover:scale-110 ${
-                annotation.color === c.id ? 'ring-stone-700' : 'ring-transparent'
+                annotation.color === c.id ? 'ring-stone-700 dark:ring-stone-200' : 'ring-transparent'
               }`}
             />
           ))}
           {annotation.color && (
             <button
               onClick={annotation.onClearHighlight}
-              className="ml-1 text-xs text-stone-500 dark:text-stone-400 hover:text-stone-600"
+              className="ml-1 min-h-[44px] px-1 text-xs text-stone-500 dark:text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
             >
               clear
             </button>
@@ -509,6 +538,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
       {/* Note */}
       {editingNote || annotation.note ? (
         <div>
+          {/* PRD §6 input: parchment surface, 1px hairline, antique-gold focus, no shadow. */}
           <textarea
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
@@ -516,16 +546,17 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
             placeholder="Write a note on this verse…"
             aria-label="Note on this verse"
             rows={3}
-            className="w-full resize-y rounded-lg bg-stone-100/80 px-3 py-2.5 text-base text-stone-800 outline-none placeholder:text-stone-500 dark:placeholder:text-stone-400 sm:text-sm dark:bg-stone-800 dark:text-stone-100"
+            className="w-full resize-y rounded-lg border edge edge-focus bg-stone-50 px-3 py-2.5 font-sans text-sm text-stone-900 placeholder:text-stone-500 dark:bg-stone-950 dark:text-stone-100 dark:placeholder:text-stone-400"
           />
           <div className="mt-1.5 flex items-center gap-2">
+            {/* PRD §6 primary CTA: 1px ink hairline, transparent, ink fill on hover. */}
             <button
               onClick={() => {
                 annotation.onSaveNote(noteText);
                 setEditingNote(false);
               }}
               disabled={!noteText.trim()}
-              className="min-h-[44px] rounded-lg bg-accent-700 px-4 text-xs font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 disabled:opacity-40 dark:bg-accent-500 dark:hover:bg-accent-400"
+              className="min-h-[44px] rounded-lg border border-stone-900 px-4 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 disabled:opacity-40 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
             >
               Save note
             </button>
@@ -546,7 +577,7 @@ function AnnotationBar({ annotation }: { annotation: AnnotationControls }) {
       ) : (
         <button
           onClick={() => setEditingNote(true)}
-          className="inline-flex min-h-[44px] items-center text-xs font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300"
+          className="inline-flex min-h-[44px] items-center font-sans text-sm font-semibold text-accent-600 hover:underline dark:text-accent-400"
         >
           + Add a note
         </button>

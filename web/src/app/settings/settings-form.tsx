@@ -13,14 +13,15 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { DEFAULT_TRANSLATION, TRANSLATIONS, type Translation } from '@/lib/bible';
-import { READING_SIZES, useReadingPrefs } from '@/lib/reading-prefs';
+import { READING_MEASURES, READING_SIZES, useReadingPrefs } from '@/lib/reading-prefs';
 
 const TRANSLATION_KEY = 'translation';
 
 const SIZE_LABELS = ['Small', 'Medium', 'Large', 'Larger', 'Largest'];
+const MEASURE_LABELS = ['Narrowest', 'Narrow', 'Standard', 'Wide', 'Widest'];
 
 export function SettingsForm() {
-  const { dark, sizeIdx, ready, setDark, setSizeIdx } = useReadingPrefs();
+  const { dark, sizeIdx, measureIdx, ready, setDark, setSizeIdx, setMeasureIdx } = useReadingPrefs();
   // The DEFAULT during the first client render, never localStorage — the reader page's translation
   // badge was a React #418 hydration error for exactly this reason until earlier today.
   const [translation, setTranslation] = useState<string>(DEFAULT_TRANSLATION);
@@ -36,23 +37,29 @@ export function SettingsForm() {
     localStorage.setItem(TRANSLATION_KEY, id);
   }
 
-  const row = 'rounded-xl bg-paper px-4 py-4 shadow-paper dark:bg-stone-800/60 dark:shadow-none';
-  const label = 'mb-2 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400';
+  // PRD §3: hairlines and whitespace over boxes. The settings rows were paper cards with a
+  // (now zeroed) shadow; they are hairline-separated sections instead.
+  const row = 'border-t edge pt-6';
+  // PRD §4 form labels: 12px (micro) Source Sans, weight 600, uppercase, ink-wash. The tracking
+  // steps up to the PRD's 0.08em.
+  const label = 'mb-2 text-micro font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400';
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <section className={row}>
         <p className={label}>Reading theme</p>
-        <div className="flex rounded-lg bg-stone-100 p-0.5 dark:bg-stone-700">
+        <div className="flex border edge">
           {([false, true] as const).map((v) => (
             <button
               key={String(v)}
               onClick={() => setDark(v)}
               aria-pressed={dark === v}
-              className={`min-h-[44px] flex-1 rounded-md text-sm font-medium transition-colors ease-gentle ${
+              className={`min-h-[44px] flex-1 text-sm font-semibold tracking-[0.02em] ${
+                v ? 'border-l edge ' : ''
+              }${
                 dark === v
-                  ? 'bg-paper text-stone-800 shadow-paper dark:bg-stone-900 dark:text-stone-100'
-                  : 'text-stone-500 dark:text-stone-300'
+                  ? 'bg-stone-900 text-stone-50 dark:bg-stone-200 dark:text-stone-900'
+                  : 'text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100'
               }`}
             >
               {v ? 'Dark' : 'Light'}
@@ -71,7 +78,7 @@ export function SettingsForm() {
             onClick={() => setSizeIdx(sizeIdx - 1)}
             disabled={sizeIdx === 0}
             aria-label="Smaller text"
-            className="h-11 w-11 rounded-lg bg-stone-100 text-sm text-stone-600 hover:bg-stone-200 disabled:opacity-40 dark:bg-stone-700 dark:text-stone-300"
+            className="h-11 w-11 border edge text-sm text-stone-600 hover:bg-stone-100 disabled:opacity-40 dark:text-stone-300 dark:hover:bg-stone-800"
           >
             A−
           </button>
@@ -82,11 +89,39 @@ export function SettingsForm() {
             onClick={() => setSizeIdx(sizeIdx + 1)}
             disabled={sizeIdx === READING_SIZES.length - 1}
             aria-label="Larger text"
-            className="h-11 w-11 rounded-lg bg-stone-100 text-base text-stone-700 hover:bg-stone-200 disabled:opacity-40 dark:bg-stone-700 dark:text-stone-200"
+            className="h-11 w-11 border edge text-base text-stone-700 hover:bg-stone-200 disabled:opacity-40 dark:text-stone-200 dark:hover:bg-stone-800"
           >
             A+
           </button>
         </div>
+      </section>
+
+      <section className={row}>
+        <p className={label}>Column width</p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setMeasureIdx(measureIdx - 1)}
+            disabled={measureIdx === 0}
+            aria-label="Narrower column"
+            className="h-11 w-11 border edge text-sm text-stone-600 hover:bg-stone-100 disabled:opacity-40 dark:text-stone-300 dark:hover:bg-stone-800"
+          >
+            ⇤
+          </button>
+          <div className="flex-1 text-center text-sm text-stone-600 dark:text-stone-300">
+            {ready ? (MEASURE_LABELS[measureIdx] ?? `${measureIdx + 1}`) : '·'}
+          </div>
+          <button
+            onClick={() => setMeasureIdx(measureIdx + 1)}
+            disabled={measureIdx === READING_MEASURES.length - 1}
+            aria-label="Wider column"
+            className="h-11 w-11 border edge text-base text-stone-700 hover:bg-stone-200 disabled:opacity-40 dark:text-stone-200 dark:hover:bg-stone-800"
+          >
+            ⇥
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
+          Standard is the designed 66-character measure; widen it to fill a large screen.
+        </p>
       </section>
 
       <section className={row}>
@@ -98,10 +133,10 @@ export function SettingsForm() {
               onClick={() => chooseTranslation(t.id)}
               aria-pressed={translation === t.id}
               title={t.name}
-              className={`min-h-[40px] rounded-lg px-4 text-sm font-medium transition-colors ease-gentle ${
+              className={`min-h-[44px] px-4 text-sm font-semibold tracking-[0.02em] ${
                 translation === t.id
-                  ? 'bg-accent-700 text-stone-50 dark:bg-accent-500'
-                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300'
+                  ? 'bg-accent-600 text-stone-50 dark:bg-accent-400 dark:text-stone-950'
+                  : 'border edge text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
               }`}
             >
               {t.abbr}
@@ -128,7 +163,7 @@ export function SettingsForm() {
         <p className={label}>Account</p>
         <Link
           href="/account/settings"
-          className="inline-flex min-h-[44px] items-center text-sm font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300"
+          className="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 underline-offset-4 hover:underline dark:text-accent-400"
         >
           Email and password →
         </Link>
@@ -138,7 +173,7 @@ export function SettingsForm() {
         <p className={label}>Your saved work</p>
         <Link
           href="/library/notes"
-          className="inline-flex min-h-[44px] items-center text-sm font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300"
+          className="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 underline-offset-4 hover:underline dark:text-accent-400"
         >
           Your highlights, notes and bookmarks →
         </Link>

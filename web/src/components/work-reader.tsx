@@ -367,7 +367,9 @@ export function WorkReader({
     <div ref={rootRef}>
       <WorkHeader ref={headerRef} source={source} onOpenToc={onOpenToc} />
 
- <div className="mx-auto my-6 max-w-2xl rounded-xl border edge bg-paper px-6 pb-24 pt-12 shadow-paper sm:my-10 sm:px-14 sm:pt-16 dark:bg-stone-950 dark:shadow-none">
+ {/* The reading column sits directly on the parchment page — PRD §3: hairlines and
+            whitespace carry separation, so the bordered "page card" (edge + shadow) is gone. */}
+ <div className="mx-auto my-6 max-w-2xl px-6 pb-24 pt-12 sm:my-10 sm:px-14 sm:pt-16">
         {sections.length === 0 && busy === 'initial' && (
           <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">Loading…</p>
         )}
@@ -376,7 +378,7 @@ export function WorkReader({
             <p className="mb-3 text-sm text-stone-500 dark:text-stone-400">Couldn&rsquo;t load this work.</p>
             <button
               onClick={() => loadInitial(initialOrdinal)}
-              className="min-h-[44px] rounded-lg bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
+              className="min-h-[44px] border border-stone-900 px-5 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
             >
               Try again
             </button>
@@ -388,7 +390,7 @@ export function WorkReader({
             <button
               onClick={handleLoadPrev}
               disabled={busy === 'prev'}
-              className="min-h-[44px] rounded-lg bg-paper px-4 text-xs font-semibold text-stone-500 shadow-paper transition-colors ease-gentle hover:bg-stone-100 active:bg-stone-200 disabled:opacity-40 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+              className="min-h-[44px] border edge bg-transparent px-4 font-sans text-xs font-semibold text-stone-500 transition-colors ease-gentle hover:bg-stone-100 active:bg-stone-200 disabled:opacity-40 dark:text-stone-300 dark:hover:bg-stone-800"
             >
               {busy === 'prev' ? 'Loading…' : '↑ Earlier in this work'}
             </button>
@@ -414,7 +416,7 @@ export function WorkReader({
             <p className="mb-2 text-sm text-stone-500 dark:text-stone-400">Couldn&rsquo;t load the next page.</p>
             <button
               onClick={() => loadNext()}
-              className="min-h-[44px] rounded-lg bg-paper px-4 text-xs font-semibold text-stone-500 shadow-paper hover:bg-stone-100 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+              className="min-h-[44px] border edge bg-transparent px-4 font-sans text-xs font-semibold text-stone-500 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
             >
               Try again
             </button>

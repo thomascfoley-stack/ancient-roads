@@ -1,0 +1,22 @@
+(node:18901) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+served-reconcile — target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (read-only)
+  works with keyed rows: 136; sources rows: 135
+  published & fully served:      122
+  unpublished & fully unserved:  9
+  published, NO keyed rows (legacy author cohort, unreachable by slug): 2 — spurgeon-talks-to-farmers, josephus-whiston
+  work-less legacy rows: 112815 (12432 served) — reported, not asserted
+
+[31mDIVERGENCE — 5 violation(s):[0m
+  published-not-fully-served: calvin-crosswire — 5088/6215 served
+  no-sources-row: poole-tcp — 0/1308 served, no sources row
+  published-not-fully-served: wesley-crosswire — 5254/6275 served
+  no-sources-row: pnt-crosswire — 0/288 served, no sources row
+  no-sources-row: scofield-crosswire — 0/1215 served, no sources row

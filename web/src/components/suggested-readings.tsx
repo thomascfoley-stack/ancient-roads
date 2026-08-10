@@ -93,16 +93,16 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
     .filter(([, rows]) => rows.length > 0);
 
   return (
-    <div className="mt-8 border-t border-stone-200 pt-6 dark:border-stone-700">
+    <div className="mt-8 border-t edge pt-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-display text-lg text-stone-700 dark:text-stone-200">
+        <h3 className="font-display text-[22px] font-medium tracking-[0.08em] text-stone-900 [font-variant:all-small-caps] dark:text-stone-100">
           {state && state.count > 0 ? `${state.count} suggested readings` : 'Suggested readings'}
         </h3>
         {docReady && !running && (
           <button
             type="button"
             onClick={() => setPicking((p) => !p)}
-            className="min-h-[44px] rounded-full px-3 text-[13px] font-semibold text-stone-600 hover:text-accent-800 dark:text-stone-300"
+            className="min-h-[44px] px-3 font-sans text-sm font-semibold text-accent-600 hover:underline dark:text-accent-400"
           >
             {picking ? 'Cancel' : 'Choose what to search'}
           </button>
@@ -118,7 +118,7 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
       {note && <p role="alert" className="mb-3 font-serif text-[14px] text-amber-800 dark:text-amber-300">{note}</p>}
 
       {picking && (
-        <div className="mb-4 rounded-xl bg-paper px-4 py-3 shadow-paper dark:bg-stone-800 dark:shadow-none">
+        <div className="mb-4 border edge bg-paper px-4 py-3 dark:bg-stone-900">
           <ul className="space-y-1.5">
             {READING_CATEGORIES.map((c) => (
               <li key={c.id}>
@@ -129,7 +129,7 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
                     onChange={(e) =>
                       setChosen((prev) => (e.target.checked ? [...prev, c.id] : prev.filter((x) => x !== c.id)))
                     }
-                    className="h-4 w-4 accent-accent-700"
+                    className="h-4 w-4 accent-accent-600"
                   />
                   {c.label}
                 </label>
@@ -144,7 +144,7 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
             type="button"
             disabled={busy}
             onClick={() => void run(chosen)}
-            className="mt-3 min-h-[44px] rounded-full bg-stone-900 px-4 text-[14px] font-medium text-paper disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
+            className="mt-3 min-h-[44px] border border-stone-900 px-6 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 disabled:opacity-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
           >
             {busy ? 'Starting…' : 'Search'}
           </button>
@@ -157,16 +157,17 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
             <span>{state?.step ? `Searching ${state.step.toLowerCase()}…` : 'Starting the search…'}</span>
             <span className="tabular-nums text-stone-500 dark:text-stone-400">{state?.progress ?? 0}%</span>
           </div>
+          {/* PRD progress bar: 2px vellum track, 2px antique-gold fill, square ends. */}
           <div
             role="progressbar"
             aria-valuenow={state?.progress ?? 0}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-label="Searching the library"
-            className="h-2 w-full overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700"
+            className="h-0.5 w-full bg-stone-200 dark:bg-stone-800"
           >
             <div
-              className="h-full rounded-full bg-accent-700 transition-[width] duration-700 ease-gentle"
+              className="h-full bg-accent-600 transition-[width] duration-700 ease-gentle dark:bg-accent-400"
               style={{ width: `${Math.max(2, state?.progress ?? 0)}%` }}
             />
           </div>
@@ -189,7 +190,7 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
               type="button"
               disabled={busy}
               onClick={() => void run(chosen.length ? chosen : state.categories)}
-              className="mt-3 min-h-[44px] rounded-full bg-stone-900 px-4 text-[14px] font-medium text-paper disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
+              className="mt-3 min-h-[44px] border border-stone-900 px-6 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 disabled:opacity-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
             >
               {busy ? 'Starting…' : 'Find suggested readings'}
             </button>

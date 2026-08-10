@@ -1,0 +1,9 @@
+
+
+coverage-census — target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (read-only)
+  exegetical pool: source_type IN (commentary, father) AND served
+  canon verses:            31103
+  with any voice:          29724 (95.6%)
+  with ≥2 distinct authors:23981 (77.1%)
+  served exegetical rows with NO verse key (not counted above): 0
+  baseline written: docs/evidence/corpus-copy/coverage-baseline-2026-08-08.json (1189 chapters)

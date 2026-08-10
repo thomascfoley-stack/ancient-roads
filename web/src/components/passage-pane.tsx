@@ -95,7 +95,7 @@ export function PassagePane({
   return (
     <section
       aria-label={`Passage: ${target.label}`}
-      className="flex max-h-[calc(100vh-2rem)] flex-col rounded-xl bg-paper shadow-paper dark:bg-stone-900/70"
+      className="flex max-h-[calc(100vh-2rem)] flex-col rounded-xl border edge bg-paper dark:bg-stone-900/70"
     >
  <div className="flex items-start justify-between gap-3 border-b edge px-4 py-3">
         <div className="min-w-0">
@@ -110,7 +110,7 @@ export function PassagePane({
         <button
           type="button"
           onClick={onClose}
-          className="-mr-1 shrink-0 rounded px-2 py-1 text-sm text-stone-500 transition-colors ease-gentle hover:text-accent-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:text-stone-400"
+          className="-mr-1 inline-flex min-h-[44px] shrink-0 items-center rounded px-2 text-sm text-stone-500 transition-colors ease-gentle hover:text-accent-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 dark:text-stone-400"
         >
           {/* The same control means different things by width: on a phone the pane REPLACED the
               plan, so the honest label is where it takes you back to. */}

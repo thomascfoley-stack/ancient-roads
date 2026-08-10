@@ -53,15 +53,17 @@ export default function About() {
       </div>
 
       <div className="mt-14 flex flex-wrap gap-3">
+        {/* PRD §6 buttons: primary = 1px ink hairline that fills ink on hover;
+            secondary = same shape in ink-wash gray. No shadows, no radius. */}
         <Link
           href="/"
-          className="inline-flex min-h-[48px] items-center rounded-lg bg-accent-700 px-6 text-base font-semibold text-stone-50 shadow-float transition-colors ease-gentle hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
+          className="inline-flex min-h-[48px] items-center border border-stone-900 px-6 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
         >
           Request early access
         </Link>
         <Link
           href="/home"
-          className="inline-flex min-h-[48px] items-center rounded-lg bg-paper px-6 text-base font-semibold text-stone-700 shadow-paper transition-colors ease-gentle hover:text-accent-800 dark:bg-stone-800 dark:text-stone-200"
+          className="inline-flex min-h-[48px] items-center border border-stone-500 px-6 font-sans text-sm font-semibold tracking-[0.02em] text-stone-600 hover:bg-stone-500 hover:text-stone-50 dark:border-stone-400 dark:text-stone-300 dark:hover:bg-stone-400 dark:hover:text-stone-950"
         >
           Log in
         </Link>

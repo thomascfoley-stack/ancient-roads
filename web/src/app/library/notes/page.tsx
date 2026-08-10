@@ -46,7 +46,7 @@ export default function MyLibraryPage() {
   return (
     <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6">
       <header className="mb-6">
-        <h1 className="font-scripture text-3xl font-medium text-stone-800 dark:text-stone-100">Saved</h1>
+        <h1 className="font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100">Saved</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-500 dark:text-stone-400">
           Every verse you have highlighted, bookmarked, or written a note on, in one place. Tap any
           reference to jump back to it in the reader.
@@ -62,7 +62,7 @@ export default function MyLibraryPage() {
           </p>
           <Link
             href="/auth/sign-in"
-            className="inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 dark:bg-accent-500 dark:hover:bg-accent-400"
+            className="inline-flex min-h-[44px] items-center border border-stone-900 px-5 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
           >
             Sign in
           </Link>
@@ -75,7 +75,7 @@ export default function MyLibraryPage() {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="inline-flex min-h-[44px] items-center rounded-lg bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 active:bg-accent-900 dark:bg-accent-500 dark:hover:bg-accent-400"
+            className="inline-flex min-h-[44px] items-center border border-stone-900 px-5 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
           >
             Try again
           </button>
@@ -103,7 +103,7 @@ export default function MyLibraryPage() {
                     <Link
                       key={b.id}
                       href={ref.href}
-                      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-paper px-4 text-sm font-medium text-accent-700 shadow-paper hover:text-accent-800 dark:bg-stone-800/60 dark:text-accent-300 dark:shadow-none"
+                      className="inline-flex min-h-[40px] items-center gap-1.5 border edge px-4 text-sm font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300"
                     >
                       <span aria-hidden>⚑</span>
                       {ref.label}
@@ -120,13 +120,13 @@ export default function MyLibraryPage() {
               <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
                 Notes ({notes.length})
               </h2>
-              <div className="space-y-2">
+              <div className="border-y edge">
                 {notes.map((n) => {
                   const ref = verseRef(n.verse_id);
                   return (
                     <div
                       key={n.id}
-                      className="rounded-xl bg-paper px-4 py-3 shadow-paper dark:bg-stone-800/60 dark:shadow-none"
+                      className="border-b edge px-1 py-3 last:border-b-0"
                     >
                       <Link href={ref.href} className="inline-flex min-h-[32px] items-center font-scripture text-sm font-medium text-accent-700 hover:text-accent-800 dark:text-accent-300">
                         {ref.label}
@@ -151,7 +151,7 @@ export default function MyLibraryPage() {
                     <Link
                       key={h.id}
                       href={ref.href}
-                      className="flex min-h-[44px] items-center gap-2 rounded-lg bg-paper px-4 text-sm text-stone-700 shadow-paper hover:bg-stone-100 active:bg-stone-200 dark:bg-stone-800/60 dark:text-stone-300 dark:shadow-none dark:hover:bg-stone-800"
+                      className="flex min-h-[44px] items-center gap-2 border edge px-4 text-sm text-stone-700 hover:bg-stone-100 active:bg-stone-200 dark:text-stone-300 dark:hover:bg-stone-800"
                     >
                       <span className={`h-3 w-3 rounded-full ${DOT[h.color] ?? 'bg-yellow-400'}`} />
                       {ref.label}

@@ -1,0 +1,25 @@
+# P4.0 prep + loop-instrument build — evidence 2026-08-08T21:09:16Z
+## serve-89 payload local gate verification
+slugs: 89; regex failures: none; serve:false blocked: none; missing from manifest: none; MUST_NOT_SERVE author hits: none
+
+## vitest: the three new red-proof suites
+ ✓ test/invariants/coverage-census.test.ts (7 tests) 2ms
+ ✓ test/invariants/loop-breakers.test.ts (17 tests) 3ms
+
+ Test Files  3 passed (3)
+      Tests  30 passed (30)
+   Start at  14:09:16
+   Duration  211ms (transform 52ms, setup 0ms, collect 59ms, tests 6ms, environment 0ms, prepare 123ms)
+
+
+## tsc --noEmit
+clean
+
+## eslint (changed/new files)
+clean
+
+## full root suite (failures pre-existing, none from this session's files)
+      Tests  3 failed | 674 passed (677)
+   Start at  14:09:19
+   Duration  7.10s (transform 1.01s, setup 0ms, collect 4.33s, tests 15.11s, environment 7ms, prepare 2.87s)
+

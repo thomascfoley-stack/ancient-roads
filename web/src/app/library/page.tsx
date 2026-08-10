@@ -55,23 +55,25 @@ export default async function LibraryHubPage({
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 pb-24 pt-8">
-      <h1 className="mb-6 font-scripture text-2xl text-stone-800 dark:text-stone-100">Library</h1>
+      <h1 className="mb-8 font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100">Library</h1>
 
       {mine && mine.reading.length > 0 && (
         <section className="mb-9">
           <h2 className="mb-3 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Continue reading</h2>
-          <ul className="space-y-2">
+          {/* Hairline-separated rows, no cards (PRD §5 Library): 17px Literata title,
+              11px Source Sans ink-wash author, progress right in tabular figures. */}
+          <ul className="border-y edge">
             {mine.reading.map((r) => (
-              <li key={r.sourceId}>
+              <li key={r.sourceId} className="border-b edge last:border-b-0">
                 <Link
                   href={`/work/${r.slug}#s${r.lastOrdinal}`}
- className="flex min-h-[44px] items-center justify-between gap-3 rounded-xl border edge px-4 py-3 hover:bg-accent-50/50 dark:hover:bg-accent-950/20"
+ className="group flex min-h-[44px] items-center justify-between gap-3 py-3 transition-colors ease-gentle hover:bg-accent-50/40 dark:hover:bg-accent-950/20"
                 >
                   <span className="min-w-0">
-                    <span className="block truncate font-scripture text-stone-800 dark:text-stone-100">{r.title}</span>
-                    <span className="block truncate text-xs text-stone-500 dark:text-stone-400">{r.author ?? 'Unattributed'}</span>
+                    <span className="block truncate font-scripture text-[17px] text-stone-900 group-hover:text-accent-800 dark:text-stone-100 dark:group-hover:text-accent-300">{r.title}</span>
+                    <span className="block truncate text-micro uppercase tracking-wider text-stone-500 dark:text-stone-400">{r.author ?? 'Unattributed'}</span>
                   </span>
-                  <span className="shrink-0 text-xs tabular-nums text-stone-500 dark:text-stone-400">
+                  <span className="shrink-0 text-micro tabular-nums text-stone-500 dark:text-stone-400">
                     {r.percent === null ? '' : `${Math.round(r.percent * 100)}%`}
                   </span>
                 </Link>
@@ -112,17 +114,19 @@ export default async function LibraryHubPage({
             list you scan. Full-width rows, the shelf name in the display face at a size that
             earns the word "library", the count aligned right where the eye can compare them,
             hairlines instead of six boxes. */}
-        <ul className="divide-y divide-stone-200/70 border-y border-stone-200/70 dark:divide-stone-800 dark:border-stone-800">
+        <ul className="border-y edge">
           {CATALOG_IDS.map((id) => (
-            <li key={id}>
+            <li key={id} className="border-b edge last:border-b-0">
               <Link
                 href={`/library/${id}${carry}`}
                 className="group flex min-h-[64px] items-baseline gap-4 px-1 py-4 transition-colors ease-gentle hover:bg-accent-50/40 dark:hover:bg-accent-950/20"
               >
-                <span className="font-display text-xl tracking-tight text-stone-900 group-hover:text-accent-800 dark:text-stone-100 dark:group-hover:text-accent-300">
+                {/* PRD §5: 22px EB Garamond shelf names; counts right-aligned in 11px
+                    Source Sans ink-wash tabular figures. */}
+                <span className="font-display text-[22px] tracking-tight text-stone-900 group-hover:text-accent-800 dark:text-stone-100 dark:group-hover:text-accent-300">
                   {CATALOGS[id].label}
                 </span>
-                <span className="ml-auto shrink-0 tabular-nums text-sm text-stone-500 dark:text-stone-400">
+                <span className="ml-auto shrink-0 text-micro tabular-nums text-stone-500 dark:text-stone-400">
                   {count(worksIn(id), 'item')}
                 </span>
               </Link>

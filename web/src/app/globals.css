@@ -37,48 +37,61 @@
   --font-serif: var(--font-serif-face), 'Literata', Georgia, 'Times New Roman', serif;
   --font-display: var(--font-display-face), 'EB Garamond', Georgia, 'Times New Roman', serif;
 
-  /* Warm remap of the stone scale — bone/parchment lights, ink/charcoal darks.
-     Each step keeps Tailwind's original lightness, so every existing
-     stone-on-stone contrast pairing in the app still meets the same WCAG ratio;
-     only the temperature changes. */
-  --color-stone-50: oklch(97.8% 0.008 88);
-  --color-stone-100: oklch(95.5% 0.013 86);
-  --color-stone-200: oklch(91.8% 0.016 84);
-  --color-stone-300: oklch(86.4% 0.018 80);
-  --color-stone-400: oklch(70.5% 0.02 74);
-  --color-stone-500: oklch(54.8% 0.022 68);
-  --color-stone-600: oklch(44.2% 0.022 62);
-  --color-stone-700: oklch(37.2% 0.02 58);
-  --color-stone-800: oklch(26.6% 0.015 52);
-  --color-stone-900: oklch(21.4% 0.012 48);
-  --color-stone-950: oklch(14.8% 0.008 46);
+  /* The PRD palette (Ancient_Paths_Visual_Redesign_PRD.md §4), mapped onto the stone
+     scale so every existing `stone-N` pairing keeps its role: 50 is the parchment page,
+     200 the vellum hairline, 500 the ink-wash muted text, 900 the ink body, 950 the
+     night surface. Contrast pairings keep the same steps as before, only the exact
+     hues changed to the PRD hexes. */
+  --color-stone-50: #fbf8f2; /* base parchment */
+  --color-stone-100: #f3eee3;
+  --color-stone-200: #e7ded0; /* deep vellum — hairlines, recessed surfaces */
+  --color-stone-300: #d9cfbd;
+  --color-stone-400: #b4a692;
+  --color-stone-500: #6b6156; /* ink-wash gray — muted body, metadata, small-caps labels */
+  --color-stone-600: #5b5247;
+  --color-stone-700: #494036;
+  --color-stone-800: #3a322a; /* night hairline (dark-mode borders) */
+  --color-stone-900: #2b2119; /* ink black — primary text */
+  --color-stone-950: #1a140f; /* night surface — dark-mode paper */
 
   /* Raised paper surface — warm near-white, never pure white. */
-  --color-paper: oklch(98.8% 0.006 92);
+  --color-paper: #fdfaf4;
 
-  /* The one classical accent: muted oxblood / terracotta. */
-  --color-accent-50: oklch(96.5% 0.012 35);
-  --color-accent-100: oklch(93% 0.024 33);
-  --color-accent-200: oklch(87% 0.042 32);
-  --color-accent-300: oklch(78% 0.062 31);
-  --color-accent-400: oklch(66% 0.085 30);
-  --color-accent-500: oklch(55% 0.1 29);
-  --color-accent-600: oklch(48% 0.105 28);
-  --color-accent-700: oklch(42% 0.1 27);
-  --color-accent-800: oklch(35% 0.085 26);
-  --color-accent-900: oklch(30% 0.07 25);
-  --color-accent-950: oklch(22% 0.05 25);
+  /* The classical accent is now ANTIQUE GOLD (#8A5A2B): verse numbers, era-adjacent
+     marks, focus rings, drop caps, progress fills, text links. The scale keeps the
+     oxblood ladder's lightness steps so every existing accent-N pairing still works;
+     accent-400 is the PRD's dark-mode gold (#C4975A), accent-600 the light-mode gold. */
+  --color-accent-50: #f7f0e6;
+  --color-accent-100: #f0e5d2;
+  --color-accent-200: #e3d0b2;
+  --color-accent-300: #d2b48a;
+  --color-accent-400: #c4975a;
+  --color-accent-500: #a87c40;
+  --color-accent-600: #8a5a2b;
+  --color-accent-700: #744a24;
+  --color-accent-800: #5d3c1e;
+  --color-accent-900: #4a3019;
+  --color-accent-950: #33210f;
 
-  /* Soft, diffuse elevation — layered paper instead of hairline borders. */
-  --shadow-paper:
-    0 1px 2px oklch(20% 0.015 50 / 0.05), 0 4px 16px -4px oklch(20% 0.015 50 / 0.08);
-  --shadow-float:
-    0 2px 4px oklch(20% 0.015 50 / 0.06), 0 12px 32px -8px oklch(20% 0.015 50 / 0.16);
-  --shadow-deep:
-    0 4px 8px oklch(14% 0.012 50 / 0.1), 0 24px 64px -16px oklch(14% 0.012 50 / 0.35);
+  /* Candle-flame amber — RARE emphasis only (selected-verse flash, Ask stage check,
+     prayer save confirmation). NEVER for buttons or links; those are antique gold. */
+  --color-flame: #c97b3a;
 
-  /* Gentle, decelerating motion. */
-  --ease-gentle: cubic-bezier(0.32, 0, 0.24, 1);
+  /* Era accent colors — 3px left borders and attribution ornaments on commentary. */
+  --color-era-early: #7a3b2e; /* Early Church (–500), ornament · */
+  --color-era-medieval: #6b5a3a; /* Medieval (501–1500), ornament ◆ */
+  --color-era-reformation: #4e5d6b; /* Reformation (1501–1700), ornament § */
+  --color-era-modern: #6b6156; /* Modern (1701–), ornament — */
+
+  /* NO SHADOWS. The PRD bans elevation outright — hairlines and whitespace carry
+     separation now. The tokens stay so `shadow-paper` et al. still compile, but they
+     render nothing. */
+  --shadow-paper: 0 0 0 0 rgb(0 0 0 / 0);
+  --shadow-float: 0 0 0 0 rgb(0 0 0 / 0);
+  --shadow-deep: 0 0 0 0 rgb(0 0 0 / 0);
+
+  /* The PRD's ease-gentle. */
+  --ease-gentle: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* THE RADIUS LADDER, OWNED HERE. See the rule below for what each step means.
    *
@@ -112,52 +125,40 @@
    * Ladder: 11 · 12 · 14 · 16 · 18 · 20 · 24 · 30 · 36 · 48 · 72 */
   --text-micro: 0.6875rem; /* 11px */
 
-  --radius-sm: 0.25rem;  /*  4px  highlight chips, inline marks */
-  --radius-md: 0.375rem; /*  6px  dense rows, sidebar nav items */
-  --radius-lg: 0.5rem;   /*  8px  CONTROLS: buttons, inputs, selects */
-  --radius-xl: 0.75rem;  /* 12px  SURFACES: cards, list rows, popovers */
-  --radius-2xl: 1rem;    /* 16px  large surfaces, the ask composer */
-  --radius-3xl: 1.5rem;  /* 24px  SHEETS: bottom sheets and modals */
+  /* The MARKETING accent — sage, from the 2026-08-08 UX Pilot redesign (#7D8570 base,
+   * #C5CCBD soft). Marketing surface only (/ /features /why /gate): the app's accent
+   * stays the oxblood above. Steps mirror the mockup's three uses: chip tint, soft
+   * fill, primary CTA, CTA hover, deep text-on-cream. */
+  --color-sage-100: oklch(93% 0.012 128);
+  --color-sage-300: oklch(83% 0.022 126);
+  --color-sage-500: oklch(60% 0.035 128);
+  --color-sage-600: oklch(53% 0.038 128);
+  --color-sage-700: oklch(46% 0.038 128);
+
+  /* The marketing card lift (mockup shadow-card): one soft, long-throw shadow for the
+   * white demo cards on cream. */
+  --shadow-card: 0 20px 60px -20px oklch(20% 0.01 50 / 0.12);
+
+  /* (The marketing "sheet" lift lives as an arbitrary shadow value in
+   * components/marketing/ground.tsx SHEET, not a token here: the PRD block above
+   * zeroes shadow tokens globally, and a token that renders nothing while looking
+   * load-bearing is this repo's own watchlist material.) */
+
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
 }
 
-/* RADIUS CARRIES HIERARCHY. It used to carry none: `rounded-full` was 49% of every
- * radius in the app, worn equally by a 48px call-to-action, a 10px metadata badge, a
- * 6px progress bar and a text input. When everything is a capsule, radius stops being
- * information and the whole surface reads soft and cheap.
+/* NO ROUNDED CORNERS. The PRD bans them outright: controls, inputs, popovers, sheets —
+ * everything is square. Every named step of the radius ladder is 0, so `rounded-lg`
+ * through `rounded-3xl` compile to nothing no matter where they still appear.
  *
- * The rule, smallest to largest:
- *   rounded-lg          controls        buttons, inputs, selects, segmented thumbs
- *   rounded-xl          surfaces        cards, list rows, popovers
- *   rounded-t-3xl       sheets          bottom sheets and modals
- *   rounded-full        TRUE PILLS ONLY status dots, progress bars, drag handles,
- *                                       circular icon buttons, and short badges whose
- *                                       shape IS the meaning
- *
- * The test for a pill: it has no tap target of its own. Anything carrying
- * `min-h-[NNpx]` is a control and takes `rounded-lg`.
- *
- * THE LADDER IS NOT TAILWIND'S, AND IT IS PARTLY COLLAPSED. This block first named
- * px values off Tailwind's defaults (lg=8, xl=12). Those are wrong here. MEASURED on
- * production (dpl_5fd221LJ, 2026-08-04), the app resolves:
- *
- *   rounded-md 14px · rounded-lg 16px · rounded-xl 20px · rounded-2xl 16px
- *
- * `@import '@neondatabase/auth/ui/tailwind'` above redefines the radius scale
- * shadcn-style off a `--radius` variable and wins, the same way it owns `.dark` (see
- * the note at the top of this file). Two consequences, both real:
- *   1. `rounded-lg` and `rounded-2xl` resolve to the SAME 16px. Two named steps, one
- *      corner, so a control and a large card are indistinguishable by radius.
- *   2. The control-to-surface step is 16 -> 20, much weaker than the 8 -> 12 the rule
- *      above was designed for.
- *
- * The direction still holds (a 44px control went from a 22px pill to 16px) but the
- * hierarchy is flatter than it reads here. The fix is to declare explicit `--radius-*`
- * tokens in the `@theme` block above so this app owns its own ladder instead of
- * inheriting the auth UI's. Deliberately NOT done in the design pass; parked with the
- * type-scale and icon work. See WORKLOG 2026-08-04.
- *
- * No px values are quoted in the rule above on purpose: a number in a comment that
- * nothing enforces is how this drifted in the first place.
+ * `rounded-full` is NOT on the ladder (Tailwind's own 9999px) and stays: it carries
+ * the true pills the PRD itself specifies — the 28px selection-popover swatches, the
+ * prayer-save dot, status dots, the avatar.
  */
 
 html { color-scheme: light; }
@@ -249,6 +250,22 @@ html {
 .reader-dark.edge {
   border-color: var(--color-stone-800);
 }
+/* Focus companion to `.edge`. A LAYERED `focus:border-*` / `focus-within:border-*` utility can
+ * never paint on an element that also carries `.edge`: the rule above is unlayered, and
+ * unlayered normal declarations beat everything in @layer utilities regardless of specificity.
+ * Measured on the omnibox — its gold focus hairline never showed; the same dead class rode
+ * book-picker, study-panel and commentary-panel, and prayer-journal only painted by escalating
+ * to `!`. This is the one sanctioned focus BORDER (the app's default focus affordance stays the
+ * global :focus-visible outline): unlayered like `.edge`, declared after it, higher specificity,
+ * so it wins the same honest way `.edge` wins. `:focus-within` covers both the container case
+ * (the omnibox row around its input) and a focused input carrying the class itself. Antique
+ * gold per PRD §6 (inputs focus = 1px gold border): accent-600 light, accent-400 dark. */
+.edge-focus:focus-within {
+  border-color: var(--color-accent-600);
+}
+.reader-dark .edge-focus:focus-within {
+  border-color: var(--color-accent-400);
+}
 
 ::selection {
   background: color-mix(in oklab, var(--color-accent-300) 45%, transparent);
@@ -271,6 +288,11 @@ html {
 /* Reader font-size control (set --reading-size on the reading container) */
 .reading-scale { font-size: var(--reading-size, 1.125rem); }
 
+/* Reader column-width control (set --reading-measure on <html>). 66ch is the PRD's
+   measure and the default; the wider steps are an owner request (2026-08-08) — see
+   READING_MEASURES in lib/reading-prefs.ts. */
+.reading-measure { max-width: var(--reading-measure, 66ch); }
+
 /* SCROLL FADE for a list whose container ends before the list does.
  *
  * The sidebar rail is the case this exists for. Its `<nav>` scrolls, but Settings sits
@@ -280,7 +302,7 @@ html {
  * My library, Word study, My Works — with nothing on screen saying so.
  *
  * A MASK, not a background gradient, deliberately. The same component renders in two hosts
- * with different surfaces (the rail is stone-100/stone-950, the mobile menu sheet is
+ * with different surfaces (the rail is stone-200/stone-900, the mobile menu sheet is
  * stone-50/stone-900), so a `to-transparent` gradient would have to know its host's
  * background and would silently mismatch the day either one changes. A mask fades the
  * CONTENT and is background-agnostic, so it is correct in both without being told where
@@ -307,22 +329,53 @@ html {
   padding-bottom: 2rem;
 }
 
-@keyframes slide-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
+/* NO SLIDES. The PRD's motion budget is fade-only: page turns, not route switches.
+ * `animate-slide-up` (bottom sheets, mobile menus) now fades like everything else;
+ * the class name stays so call sites do not churn. */
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
 .animate-slide-up {
-  animation: slide-up 0.3s var(--ease-gentle);
+  animation: fade-in 0.2s var(--ease-gentle);
 }
 
+/* PRD §7: ALL transitions are 200ms fade, ease-gentle. */
 .animate-fade-in {
-  animation: fade-in 0.25s var(--ease-gentle);
+  animation: fade-in 0.2s var(--ease-gentle);
+}
+
+/* PRD §6 scrollbar: thin, transparent track, vellum thumb (night hairline in dark). */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-stone-200);
+}
+.reader-dark ::-webkit-scrollbar-thumb {
+  background: var(--color-stone-800);
+}
+
+/* PRD §3 paper grain: a 2.5%-opacity fiber texture over the base parchment surface
+ * only — invisible at arm's length, OFF in dark mode. Inline SVG turbulence (a data
+ * URI, so the CSP's img-src 'self' data: passes; the mockup's external
+ * transparenttextures.com URL would be blocked by it). */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.reader-dark body::before {
+  content: none;
 }
 
 .font-scripture {

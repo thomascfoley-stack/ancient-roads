@@ -200,7 +200,7 @@ Update this as blocks complete. `-` = not started, `~` = in progress, `x` = done
 | 3 | `T2` | Verify-at-signup ON (both methods kept) — RULED, sender fix first | `~` **STEP 2 DONE 2026-08-08** (owner turned `Verify at Sign-up` ON; prod re-measured 1 account / 0 unverified, so g38m's closure is structural for the current population). **Step 1 — the Resend sender — is OUTSTANDING and was the ruling's FIRST step**: verification-on makes auth mail load-bearing for every signup, and it currently leaves Neon's shared `auth@mail.myneon.app`. Console work, owner-only. |
 | 3 | `T3` | Mobile — tab bar must not cover scripture | `~` **CODE COMPLETE, `DEVICE` OPEN.** The page-level fix is in `app-shell.tsx` and now has a regression guard. Its step 3 (duplicate Search tab) does not exist in this build — mobile-nav has 4 tabs and one search button. **`env(safe-area-inset-bottom)` is 0 in every desktop window, so no test here can prove the notched case.** 11 inner scroll containers are candidates for the device pass; deciding which are affected IS the diagnosis, and guessing would be an unverifiable change. |
 | 3 | `T4` | Settings that follow the user; an account section | `-` |
-| 4 | `S1` | Landing page — show the product | `-` |
+| 4 | `S1` | Landing page — show the product | `~` **SUPERSEDED IN PART by ADR-111 (2026-08-08):** the owner replaced the whole marketing surface from a UX Pilot design (`feat/marketing-site` — Home, `/features`, `/why`, gate, waitlist success state), which delivers the footer, the expectation-setting line, and a demoted Log in. Still open from S1's original scope: a real product screenshot (the redesign uses truth-passed demo cards, not captures), and Privacy/Terms (owner content, skeletons below). |
 | 4 | `S2` | Polish sweep — 9 small fixes, one branch | `~` |
 | 5 | `PR1a` | Prayer journal — the space and the entity | `[x]` **BUILT AND DEV-VERIFIED 2026-08-08.** RLS proven two-account over `app_runtime`; carry-forward run against the live dev DB. Migration 107 **applied to production** 2026-08-08 (owner go; verified against the catalog, identical to dev). Signed-in browser walk NOT RUN by the agent — **the owner is running it**. |
 | 5? | `F1-fonts` | Font stack blocked by our own CSP — self-host via `next/font` | `x` **DONE AND LIVE 2026-08-08** (`1bb5c3c`, deployed in `8eb2bd3`). Self-hosted, CSP untouched. **X3 closed by the owner** on extension evidence; **X5 (`HUMAN`) open** — needs a machine without these fonts installed. |
@@ -215,17 +215,17 @@ it is. Re-measure before trusting; this was written 2026-08-08.
 
 | Block | State | Gate — what it is actually waiting for | Owner of the next move |
 |---|---|---|---|
-| `L1` | `-` | The retry control shipped with `be67cb9`; what remains is the unhandled-throw guard, and `INSTR` never reproduced the failure it guards against (n=3 "did not reproduce"). **Arguably wants `N3c` first** — a throw that unmounts is the only mechanism left. | agent, after `N3c` |
+| `L1` | `x` | **CLOSED 2026-08-08; row corrected 2026-08-10 — this table was stale against the board above.** The guard that shipped covers the real hole INSTR isolated: a stream ENDING without a terminal event (no throw, so no catch) now lands in the failure state with a retry. Red-proofed by `test/components/ask-terminal-state.test.tsx` (4 tests, green in the web suite). | done |
 | `L1b` | `-` | **Its premise is disproved.** Written as "~18s success, ~45s failure"; measured 104s · 58s · 64s. The 15-second threshold must be re-derived from that series before anything is built. | ⚑ owner (pick the threshold) |
 | `L2` step 2 | `x` (step 1) | Optimistic toggle — now cosmetic, since the write succeeds. Ships with any later deploy. | agent, low priority |
 | `N3` | `!` | Blocked: `N3a`'s root cause has no mechanism in the source. Unblocks only via `N3c`. | blocked by `N3c` |
 | `N3c` | `x` | **RUN 2026-08-08: did not reproduce, and the mechanism is disproved** — a both-ends-bounded dead range is not a hydration abort. Unblocks `N3`. | ⚑ owner (strike `N3a`?) |
-| `N4` | `-` | **UNBLOCKED 2026-08-08** — `PR1a` shipped the destination and the carry-forward that discharges the "nothing user-created dropped" ruling. Route redirect still to do. | agent |
+| `N4` | `x` | **CLOSED 2026-08-08; row corrected 2026-08-10 — the redirect this table awaited shipped the same day.** `web/src/app/channel/[id]/page.tsx` is a thin redirect to `/prayers`; 7 seeds red-proofed per the board. `BROWSER` checks remain unticked — carried to the auth-gated browser pass. | done, browser pass owed |
 | `T1` | `!` | Blocked: the metric is not instrumented and there is nowhere to count it. Deliberately deferred in §9. | ⚑ owner (schedule the prerequisite) |
 | `T2` | `~` | **STEP 2 DONE 2026-08-08, OUT OF ORDER.** Owner attested from the Neon console that `Verify at Sign-up` is ON (method: Verification code) — which closes GHSA-g38m's precondition, and is recorded in `SECURITY.md`. **But the ruling's step 1 — fix the sender — is not confirmed done, and the ruling says in terms: "Shipping in the other order converts a security fix into a signup outage."** Verification-on makes auth mail load-bearing for every new signup, and the last recorded sender state is Neon's shared `auth@mail.myneon.app`, already logged as a deliverability regression (C5). **Also still open, and it is measurable rather than arguable:** accounts already created unverified are either grandfathered or prompted — if grandfathered, the closure is partial rather than structural for exactly those accounts. `SECURITY.md` says count them; nobody has. | ⚑ owner (confirm sender; authorise the unverified-account count) |
 | `T3` | `-` | **DEVICE only**, and its step 1 appears already implemented — so the device pass is a diagnosis, not a fix. | ⚑ owner (hardware) |
 | `T4` | `-` | **HELD** on the owner seeing the `layout.tsx:82` first-paint flash. Now schedulable against the deployed build. | ⚑ owner (observe, then rule) |
-| `S1` | `-` | **Owner-blocked in substance** — three of four items are content only the owner can write. Page skeletons staged below. | ⚑ owner (supply content) |
+| `S1` | `~` | **Largely superseded by ADR-111** (marketing replacement, 2026-08-08). Remaining: Privacy/Terms content (owner-only, skeletons below) and the real-screenshot question, which the redesign answers with verified demo cards instead. | ⚑ owner (legal content; review agent-drafted expectation line) |
 | `S2` | `~` | 5 of 9 closed. Item 4 parked (needs a rendered judgment), 6 closed as a measurement, 7 out to §9, 9 parked on a design decision. | ⚑ owner (item 9's interaction call) |
 | `PR1a` | `[x]` | Built, dev-verified, prod 107 applied 2026-08-08. Owner running the signed-in walk. | done |
 | `PR1b`, `PR2` | `-` | Wave 5, gated behind `PR1a`. Not in the remediation's definition of done. | — |
@@ -1922,6 +1922,12 @@ The page was written to establish a position rather than to demonstrate a produc
 - [ ] `HUMAN` Waitlist conversion measured before and after — otherwise there is no way to know whether the screenshot earned its place.
 
 ### PAGE SKELETONS — staged 2026-08-08. **Sections only, no copy.** ⚑ owner-blocked on review.
+
+> **Owner ruling 2026-08-08 (evening, in session):** a standard generic Terms of Service and
+> Privacy Policy WILL be drafted, with the corporate entity named per the owner ("Ancient Terms
+> as the Corp" — entity name to be confirmed when drafted), **deliberately deferred** — not part
+> of the marketing redesign (ADR-111). The skeletons below remain the structure to fill when
+> that work is scheduled.
 
 Three routes do not exist (`/privacy`, `/terms`, `/contact`); `/about` does. These are the sections
 each page needs — **not the words.** An agent should not draft a privacy policy or terms of service:

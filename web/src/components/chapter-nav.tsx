@@ -14,11 +14,13 @@ export function ChapterNav({
   const next = nextChapter(book, chapter);
 
   return (
- <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 border-t edge px-4 py-3">
+    <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 border-t edge px-4 py-3">
+      {/* PRD reader nav: hairline-bordered arrows, square; hover is the instant ink fill
+          (PRD §6/§7 — buttons fill immediately, so no transition here). */}
       {prev ? (
         <Link
           href={bookUrl(prev.book, prev.chapter)}
-          className="flex min-h-[48px] items-center rounded-xl px-4 text-sm font-medium text-stone-500 transition-colors ease-gentle hover:text-stone-800 active:bg-stone-100 dark:hover:text-stone-200 dark:active:bg-stone-800"
+          className="flex min-h-[48px] items-center border edge px-4 text-sm font-medium text-stone-500 hover:bg-stone-900 hover:text-stone-50 dark:text-stone-400 dark:hover:bg-stone-200 dark:hover:text-stone-950"
         >
           &larr;{' '}
           {prev.book.slug === book.slug
@@ -31,7 +33,7 @@ export function ChapterNav({
       {next ? (
         <Link
           href={bookUrl(next.book, next.chapter)}
-          className="flex min-h-[48px] items-center rounded-xl px-4 text-sm font-medium text-stone-500 transition-colors ease-gentle hover:text-stone-800 active:bg-stone-100 dark:hover:text-stone-200 dark:active:bg-stone-800"
+          className="flex min-h-[48px] items-center border edge px-4 text-sm font-medium text-stone-500 hover:bg-stone-900 hover:text-stone-50 dark:text-stone-400 dark:hover:bg-stone-200 dark:hover:text-stone-950"
         >
           {next.book.slug === book.slug
             ? `Chapter ${next.chapter}`

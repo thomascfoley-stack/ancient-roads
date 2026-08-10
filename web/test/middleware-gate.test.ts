@@ -34,7 +34,12 @@ describe('middleware allowlist — the marketing flip gate', () => {
   it('SERVES the public marketing tier unauthenticated (no redirect)', async () => {
     // hero-road.jpg is the marketing hero image: dev runs gate-free, so an asset missing
     // from the allowlist only breaks in PROD (it 307'd to /gate on the live site, 2026-07-16).
-    for (const p of ['/', '/about', '/api/waitlist', '/hero-road.jpg']) {
+    for (const p of [
+      '/', '/about', '/features', '/why', '/api/waitlist', '/hero-road.jpg',
+      // The 2026-08-08 redesign's photography — same lesson as hero-road.jpg above.
+      '/marketing/hero-path.jpg', '/marketing/hero-ground.jpg', '/marketing/steps-fog.jpg',
+      '/marketing/forest-dusk-1.jpg', '/marketing/forest-dusk-2.jpg',
+    ]) {
       expect(await gateOutcome(p), `${p} must be public`).toBeNull();
     }
   });

@@ -136,12 +136,15 @@ export function CatalogSearch({
           inputMode="search"
           placeholder={`Search ${label.toLowerCase()}…`}
           aria-label={`Search ${label}`}
-          /* text-base (16px) so iOS does not zoom the viewport on focus */
- className="min-h-[44px] flex-1 rounded-lg border edge bg-transparent px-4 text-base text-stone-800 placeholder:text-stone-500 dark:placeholder:text-stone-400 focus:border-accent-400 focus:outline-none dark:text-stone-100"
+          /* text-base (16px) so iOS does not zoom the viewport on focus.
+             No focus:outline-none — the global gold :focus-visible ring is the focus state
+             (a `focus:border-*` utility would lose to the unlayered .edge hairline anyway). */
+ className="min-h-[44px] flex-1 border edge bg-transparent px-4 text-base text-stone-800 placeholder:text-stone-500 dark:placeholder:text-stone-400 dark:text-stone-100"
         />
         <button
           type="submit"
-          className="min-h-[44px] shrink-0 rounded-lg bg-accent-700 px-5 text-sm font-semibold text-stone-50 hover:bg-accent-800 dark:bg-accent-500 dark:hover:bg-accent-400"
+          /* PRD §6 primary CTA: 1px ink hairline, transparent, fills to ink on hover. */
+          className="min-h-[44px] shrink-0 border border-stone-900 px-5 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
         >
           Search
         </button>
@@ -169,15 +172,15 @@ export function CatalogSearch({
               ? 'No matches.'
               : `${state.page.total}${state.page.totalCapped ? '+' : ''} match${state.page.total === 1 ? '' : 'es'}`}
           </p>
-          <ul className="space-y-2">
+          <ul className="border-y edge">
             {state.page.results.map((r) => (
-              <li key={`${r.slug}#${r.ordinal}`}>
+              <li key={`${r.slug}#${r.ordinal}`} className="border-b edge last:border-b-0">
                 <Link
                   href={`/work/${r.slug}#s${r.ordinal}`}
- className="block rounded-xl border edge px-4 py-3 hover:bg-accent-50/50 dark:hover:bg-accent-950/20"
+ className="group block py-4 transition-colors ease-gentle hover:bg-accent-50/40 dark:hover:bg-accent-950/20"
                 >
                   <span className="flex items-baseline justify-between gap-3">
-                    <span className="truncate font-scripture text-stone-800 dark:text-stone-100">{r.title}</span>
+                    <span className="truncate font-scripture text-[17px] text-stone-900 group-hover:text-accent-800 dark:text-stone-100 dark:group-hover:text-accent-300">{r.title}</span>
                     {/* the register label — the wall requires the reader can always tell what this is */}
                     <span className="shrink-0 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">{r.sourceType}</span>
                   </span>
@@ -211,7 +214,8 @@ export function CatalogSearch({
                 type="button"
                 onClick={loadMore}
                 disabled={loadingMore}
-                className="min-h-[44px] rounded-full bg-paper px-6 text-sm font-medium text-stone-600 shadow-paper transition-all duration-200 ease-gentle hover:text-accent-800 hover:shadow-float active:bg-stone-100 disabled:opacity-40 dark:bg-stone-800 dark:text-stone-300 dark:shadow-none"
+                /* PRD §6 secondary: ink-wash hairline + label, fills on hover. No shadow. */
+                className="min-h-[44px] border border-stone-500 bg-transparent px-6 font-sans text-sm font-medium text-stone-600 transition-colors ease-gentle hover:bg-stone-500 hover:text-stone-50 disabled:opacity-40 dark:border-stone-400 dark:text-stone-300 dark:hover:bg-stone-400 dark:hover:text-stone-950"
               >
                 {loadingMore
                   ? 'Loading…'
