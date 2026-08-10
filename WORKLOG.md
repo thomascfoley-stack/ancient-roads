@@ -26,6 +26,16 @@ DATABASE_URL in root .env.local), auth-gated screens browser pass, owner decisio
 (Resend sender, marketing expectation line, PRD §12, ADR-044, T4, calvin-crosswire), plus the
 longer-horizon items (P4.n backlog, E3 remedy, Ryle alignment, S1 copy).
 
+**08-10 prod read-only probe (owner go, "use this as is" — the pasted URL is `ep-odd-fog`,
+PRODUCTION):** the audit cannot take it — `isAuditAllowedHost` refuses `ep-odd-fog` before any
+declaration hatch, by design, and the suite seeds qa-* rows into its target (the 2026-07-28
+scar). What ran instead, READ ONLY: env-probe equivalent (role `neondb_owner`, Gill positive
+control 28,843, `served=true` 398,113 rows) and `check-test-residue` against prod via its
+cutover path — **prod is CLEAN of seeded test rows across 24 tables** (the class that once
+reached prod). The prod password was pasted into chat in plaintext; owner will rotate. Full
+audit still owed against a dev branch — any non-prod endpoint id works via
+`AUDIT_ALLOWED_ENDPOINT`, and `ep-tiny-hat` / `ep-holy-rice-*` are pre-allowed.
+
 ## 2026-08-08 (late night, recorded 08-10) — deploys landed: reader width + hero swap + marketing polish LIVE
 
 Retroactive entry for the deploy sessions that left only receipts. Facts from git log and
