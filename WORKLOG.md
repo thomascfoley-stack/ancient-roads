@@ -1,5 +1,50 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-10 (morning) — doc hygiene slice: the record catches up to reality
+
+Twenty-minute owner-requested slice; docs-vs-reality check, every claim below verified against
+git log / deploy receipts / Vercel before writing:
+
+- **This entry fills the WORKLOG gap the sweep found** — the 08-08-late-night→08-09 deploy
+  sessions (hero iStock swap `2ad366d`, marketing polish `4172af1`, reader width `834fc8b`,
+  the five interrupted uploads, and the live landing at `2611e1f`) left commits and receipts
+  but no entries. Recorded retroactively in the entry directly below this one.
+- **MASTER.md C4** no longer reads "BLOCKED / DO NOT DEPLOY": deploys landed 2026-08-09
+  (receipt `deploy-2611e1f-2026-08-09T01-11-00Z.txt`, alias verified serving
+  `dpl_4SRFDzwh5HbKLrAXCu5UqpHTu4aw` from `2611e1f`). Its two residuals (db-invariants red on
+  `main`, DEPLOY_PREFLIGHT rollback bundle predating 044/045) are CARRIED, not closed — neither
+  was re-verified in this slice.
+- **UX_REMEDIATION_ROADMAP A4 deploy row** marked superseded (it pointed at a credential
+  blocker that no longer exists; `~/.neon_prod_url` is the documented path and was used).
+- **UX_REMEDIATION.md board vs "Every open block" table disagreement (L1, N4) FLAGGED inline,
+  not adjudicated** — resolving which table is right needs code re-verification this slice did
+  not budget; the note says the board appears newer. Dishonest closure would be worse than an
+  honest flag.
+
+**Still owed from the 08-10 sweep (owner holds the list):** full `npm run audit` (needs dev
+DATABASE_URL in root .env.local), auth-gated screens browser pass, owner decision batch
+(Resend sender, marketing expectation line, PRD §12, ADR-044, T4, calvin-crosswire), plus the
+longer-horizon items (P4.n backlog, E3 remedy, Ryle alignment, S1 copy).
+
+## 2026-08-08 (late night, recorded 08-10) — deploys landed: reader width + hero swap + marketing polish LIVE
+
+Retroactive entry for the deploy sessions that left only receipts. Facts from git log and
+`docs/evidence/deploys/`:
+
+- **Shipped in `2611e1f`:** the reader column-width control (Aa popover ⇤/⇥ + /settings,
+  54–84ch, default 66ch — `834fc8b`); the owner's hero swap to the purchased iStock photo with
+  gate allowlist updated (`2ad366d`); the parallel session's marketing photo-language polish
+  (`4172af1`).
+- **The deploy took five attempts** — three EPIPE upload deaths and one EHOSTUNREACH on a
+  dropping connection; the final attempt's CLI died after upload+build but Vercel completed
+  server-side and moved the alias itself. Verified next morning by deployment-id match: alias
+  serves `dpl_4SRFDzwh5HbKLrAXCu5UqpHTu4aw` (created 01:07Z), `--meta sha` == `2611e1f`,
+  `https://ancientpaths.app/` 200. Receipts: `deploy-2611e1f-*.txt` (four files).
+- **Process notes:** `PREDEPLOY_DB_URL` came from `~/.neon_prod_url` per the documented path —
+  the roadmap's "a production credential I must not hold" blocker is obsolete. A concurrent
+  session's mid-flight `features/page.tsx` edit blocked one attempt via the clean-tree gate
+  working as designed; the owner ruled "leave the marketing site alone" and it was stashed.
+
 ## 2026-08-08 (night, follow-up) — reader column width is now reader-adjustable
 
 **Owner request in session:** the centered 66ch reader column wastes space on wide desktop
