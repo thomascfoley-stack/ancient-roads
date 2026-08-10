@@ -36,6 +36,15 @@ reached prod). The prod password was pasted into chat in plaintext; owner will r
 audit still owed against a dev branch — any non-prod endpoint id works via
 `AUDIT_ALLOWED_ENDPOINT`, and `ep-tiny-hat` / `ep-holy-rice-*` are pre-allowed.
 
+**08-10 STATE_OF_TRUTH re-measurements (same read-only prod session):** calvin-crosswire's 2
+clean `books.google.com` rows still unserved (owner-terminal, unchanged); spurgeon-talks-to-
+farmers still 298 sections / 0 embeddings (dev→prod copy still owed); Song of Solomon still
+zero served verse-keyed rows (hole OPEN; verseId-prefix probe, sng/song); prod user data
+measured (15 highlights, 5 prayers, 3 plans, 2 notes, 2 bookmarks — live usage, not wipe
+residue); **T2 grandfathered accounts COUNTED: 7 `auth_users`, all `emailVerified=false`, all
+created 08-05→08-07 (pre verify-on); 0 verified accounts observed yet** — row updated in
+UX_REMEDIATION.md.
+
 ## 2026-08-08 (late night, recorded 08-10) — deploys landed: reader width + hero swap + marketing polish LIVE
 
 Retroactive entry for the deploy sessions that left only receipts. Facts from git log and
