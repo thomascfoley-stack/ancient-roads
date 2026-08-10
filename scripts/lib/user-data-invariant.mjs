@@ -119,6 +119,14 @@ export const USER_TABLE_SPEC = {
     active: 'deleted_at IS NULL',
     body: ['body'],
   },
+  // Prayer journal (migration 107) — user_id rows, same deleted_at tombstone window as
+  // notes/highlights/bookmarks by the migration's own design.
+  prayers: {
+    anchor: ['verse_id', 'created_at'],
+    tombstone: 'deleted_at',
+    active: 'deleted_at IS NULL',
+    body: ['body'],
+  },
   // `chats` carries no tombstone and no anchor; is_archived is its visibility switch.
   chats: {
     anchor: [],

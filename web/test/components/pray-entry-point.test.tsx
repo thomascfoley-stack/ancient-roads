@@ -35,6 +35,7 @@ const annotation = (signedIn: boolean) => ({
   onSetHighlight: () => {},
   onClearHighlight: () => {},
   onSaveNote: () => {},
+  onDeleteNote: () => {},
 });
 
 const panelProps = {

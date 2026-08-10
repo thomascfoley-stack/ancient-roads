@@ -1,0 +1,12 @@
+deployed_at_utc: 2026-08-10T15:16:02Z
+sha:             b849d20392a6b5b6e737a8db7ab6b20e34f07a65
+branch:          feat/marketing-site
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@50.38.2
+url:             https://web-kotortcza-home-network-hardening.vercel.app
+deployment_id:   dpl_6xnvZr6GtqnNmMsm82MJqxmcB6Qn
+alias:           ancientpaths.app
+alias_serves:    dpl_6xnvZr6GtqnNmMsm82MJqxmcB6Qn
+state:           live
