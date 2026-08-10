@@ -1,0 +1,12 @@
+deployed_at_utc: 2026-08-10T15:42:02Z
+sha:             113d19345316c931c49703a788a2cb7a7b311416
+branch:          feat/marketing-site
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@50.38.2
+url:             https://web-g3ummzn6z-home-network-hardening.vercel.app
+deployment_id:   dpl_EKKCaEbkBifjtE8rDRviX7gX3msg
+alias:           ancientpaths.app
+alias_serves:    dpl_EKKCaEbkBifjtE8rDRviX7gX3msg
+state:           live
