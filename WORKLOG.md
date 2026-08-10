@@ -1,5 +1,32 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-10 — "photo as ground" shipped; PR #76 merged; main == production
+
+**The marketing site's final form** (owner direction, after reviewing a static-site
+exploration zip): the purchased photograph sits fixed and translucent behind every
+marketing surface, content floats over it on frosted parchment sheets (28px radii,
+layered shadows, backdrop blur, pill controls, 200ms motion), hero type directly on
+the land under a radial pool of parchment light. Two proven Chrome bugs burned on the
+way — -z-10 under the isolated main painting beneath the body background, then the
+fixed layer never repainting after next/image's async decode — cured architecturally:
+the ground is a plain CSS background-image on a pre-sized copy (hero-ground.jpg),
+all content at explicit positive z. Both documented in components/marketing/ground.tsx.
+
+**Deploys b849d20 (final), da43589, 2611e1f et al. all alias-identity-verified.** The
+owner's connectivity drop produced four consecutive client-side CLI failures mid-week
+(EPIPE / EADDRNOTAVAIL) while Vercel kept building server-side; recovered by polling
+the deployment id to Ready and confirming the alias resolves to it.
+
+**PR #76 MERGED to main at ba574d4 (owner order), by merge commit, Model trailers
+preserved.** main == production. The PR carried the marketing replacement AND the
+app-wide PRD restyle; the owner merged after reviewing the live site.
+
+### NOT DONE / UNVERIFIED
+- Real-device mobile pass (blur-over-fixed-background is the thing to eyeball).
+- Privacy/Terms remain absent by S1 ruling (owner-authored content; "Ancient Terms"
+  corp TOS/privacy drafting deliberately deferred by the owner, 2026-08-08).
+- The signed-in app under the PRD restyle: owner has the only eyes past the gate.
+
 ## 2026-08-10 (morning) — doc hygiene slice: the record catches up to reality
 
 Twenty-minute owner-requested slice; docs-vs-reality check, every claim below verified against
