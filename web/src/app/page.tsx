@@ -73,7 +73,7 @@ export default function MarketingHome() {
           </p>
           <p className="mx-auto mt-8 max-w-xl font-serif text-lg leading-relaxed text-stone-800 sm:text-xl">
             Ask any question, Ancient Paths answers only in the words of those who labored before us.
-            Trading AI for the voices of the church fathers.
+            AI designed to lead you to the Holy Spirit, not be the Holy Spirit.
           </p>
           <div className="mt-10">
             <a href="#ask" className={CTA}>
