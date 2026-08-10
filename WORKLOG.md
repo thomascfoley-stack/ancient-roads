@@ -1,5 +1,32 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-10 — "photo as ground" shipped; PR #76 merged; main == production
+
+**The marketing site's final form** (owner direction, after reviewing a static-site
+exploration zip): the purchased photograph sits fixed and translucent behind every
+marketing surface, content floats over it on frosted parchment sheets (28px radii,
+layered shadows, backdrop blur, pill controls, 200ms motion), hero type directly on
+the land under a radial pool of parchment light. Two proven Chrome bugs burned on the
+way — -z-10 under the isolated main painting beneath the body background, then the
+fixed layer never repainting after next/image's async decode — cured architecturally:
+the ground is a plain CSS background-image on a pre-sized copy (hero-ground.jpg),
+all content at explicit positive z. Both documented in components/marketing/ground.tsx.
+
+**Deploys b849d20 (final), da43589, 2611e1f et al. all alias-identity-verified.** The
+owner's connectivity drop produced four consecutive client-side CLI failures mid-week
+(EPIPE / EADDRNOTAVAIL) while Vercel kept building server-side; recovered by polling
+the deployment id to Ready and confirming the alias resolves to it.
+
+**PR #76 MERGED to main at ba574d4 (owner order), by merge commit, Model trailers
+preserved.** main == production. The PR carried the marketing replacement AND the
+app-wide PRD restyle; the owner merged after reviewing the live site.
+
+### NOT DONE / UNVERIFIED
+- Real-device mobile pass (blur-over-fixed-background is the thing to eyeball).
+- Privacy/Terms remain absent by S1 ruling (owner-authored content; "Ancient Terms"
+  corp TOS/privacy drafting deliberately deferred by the owner, 2026-08-08).
+- The signed-in app under the PRD restyle: owner has the only eyes past the gate.
+
 ## 2026-08-10 (morning) — doc hygiene slice: the record catches up to reality
 
 Twenty-minute owner-requested slice; docs-vs-reality check, every claim below verified against
@@ -35,6 +62,15 @@ cutover path — **prod is CLEAN of seeded test rows across 24 tables** (the cla
 reached prod). The prod password was pasted into chat in plaintext; owner will rotate. Full
 audit still owed against a dev branch — any non-prod endpoint id works via
 `AUDIT_ALLOWED_ENDPOINT`, and `ep-tiny-hat` / `ep-holy-rice-*` are pre-allowed.
+
+**08-10 STATE_OF_TRUTH re-measurements (same read-only prod session):** calvin-crosswire's 2
+clean `books.google.com` rows still unserved (owner-terminal, unchanged); spurgeon-talks-to-
+farmers still 298 sections / 0 embeddings (dev→prod copy still owed); Song of Solomon still
+zero served verse-keyed rows (hole OPEN; verseId-prefix probe, sng/song); prod user data
+measured (15 highlights, 5 prayers, 3 plans, 2 notes, 2 bookmarks — live usage, not wipe
+residue); **T2 grandfathered accounts COUNTED: 7 `auth_users`, all `emailVerified=false`, all
+created 08-05→08-07 (pre verify-on); 0 verified accounts observed yet** — row updated in
+UX_REMEDIATION.md.
 
 ## 2026-08-08 (late night, recorded 08-10) — deploys landed: reader width + hero swap + marketing polish LIVE
 
