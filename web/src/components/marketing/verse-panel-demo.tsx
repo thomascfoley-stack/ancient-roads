@@ -91,7 +91,9 @@ export function VersePanelDemo() {
   const [active, setActive] = useState(0);
   const voice = VERSE_PANEL_VOICES[active];
   return (
-    <div className="border-t edge pt-8 sm:pt-10">
+    // No frame of its own: the marketing pages set this inside a frosted sheet, which
+    // provides the surface and padding.
+    <div>
       <div className="mb-8">
         <p className="font-display text-2xl leading-snug text-stone-900 sm:text-3xl">
           In the beginning was the Word, and the Word was with God, and the Word was God.
@@ -111,10 +113,10 @@ export function VersePanelDemo() {
                 role="tab"
                 aria-selected={i === active}
                 onClick={() => setActive(i)}
-                className={`min-h-[40px] border px-4 text-micro uppercase tracking-widest ${
+                className={`min-h-[40px] rounded-full border px-4 text-micro uppercase tracking-widest transition-colors duration-200 ease-gentle ${
                   i === active
-                    ? 'border-accent-600 text-accent-600'
-                    : 'border-stone-200 text-stone-500 hover:border-stone-400 hover:text-stone-900'
+                    ? 'border-accent-600 bg-accent-600 text-stone-50'
+                    : 'border-stone-300/80 text-stone-500 hover:border-stone-500 hover:text-stone-900'
                 }`}
               >
                 {v.label}

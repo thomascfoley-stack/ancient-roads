@@ -42,7 +42,7 @@ export function WaitlistForm() {
 
   if (state === 'done') {
     return (
-      <div role="status" className="mx-auto max-w-md border edge px-8 py-8 text-center">
+      <div role="status" className="mx-auto max-w-md rounded-[1.75rem] border border-stone-200/70 bg-stone-50/80 px-8 py-8 text-center backdrop-blur-xl shadow-[0_1px_2px_rgba(43,33,25,0.05),0_8px_24px_-8px_rgba(43,33,25,0.10),0_32px_80px_-24px_rgba(43,33,25,0.16)]">
         <p className="text-micro font-semibold uppercase tracking-[0.3em] text-stone-500">Request received</p>
         <p className="mt-3 font-display text-2xl text-stone-900">Your name is on the list.</p>
         <p className="mt-3 font-serif text-base leading-relaxed text-stone-500">
@@ -73,13 +73,13 @@ export function WaitlistForm() {
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Your email address"
         autoComplete="email"
-        className="min-h-[52px] w-full flex-1 border border-stone-200 bg-transparent px-5 font-sans text-sm text-stone-900 outline-none placeholder:text-stone-500 focus:border-accent-600"
+        className="min-h-[52px] w-full flex-1 rounded-full border border-stone-300/80 bg-stone-50/70 px-6 font-sans text-sm text-stone-900 outline-none transition-[border-color,box-shadow] duration-200 ease-gentle placeholder:text-stone-500 focus:border-accent-600 focus:ring-2 focus:ring-accent-600/20"
       />
       {/* PRD §6 primary CTA: 1px ink hairline, instant ink fill on hover (no transition). */}
       <button
         type="submit"
         disabled={state === 'submitting'}
-        className="inline-flex min-h-[52px] w-full items-center justify-center whitespace-nowrap border border-stone-900 px-6 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 disabled:opacity-40 sm:w-auto"
+        className="inline-flex min-h-[52px] w-full items-center justify-center whitespace-nowrap rounded-full bg-stone-900 px-8 font-sans text-sm font-semibold tracking-[0.02em] text-stone-50 shadow-[0_1px_2px_rgba(43,33,25,0.05),0_8px_24px_-8px_rgba(43,33,25,0.10),0_32px_80px_-24px_rgba(43,33,25,0.16)] transition-[background-color,transform] duration-200 ease-gentle hover:bg-stone-800 active:scale-[0.99] disabled:opacity-40 sm:w-auto"
       >
         {state === 'submitting' ? 'Sending…' : 'Request access'}
       </button>

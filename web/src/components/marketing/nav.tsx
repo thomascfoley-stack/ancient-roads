@@ -4,10 +4,10 @@ import Link from 'next/link';
 // light-only: the marketing surface is a brand statement, not a reader surface, so it
 // does not carry dark: variants (the reader's .reader-dark class changes nothing here).
 //
-// PRD §6 navigation: 56px parchment bar with a 1px hairline bottom border, EB Garamond
-// wordmark left, 14px Source Sans links center (ink-wash, hover ink), hairline-bordered
-// auth CTA right. The old `onDark` transparent-over-hero variant is gone: the PRD hero
-// puts its type on a parchment band at the bottom, so the bar never sits over imagery.
+// 2026-08-08 "photo as ground" pass: a frosted translucent bar floating over the
+// ground photograph — soft blur, hairline only at the bottom edge of the glass, pill
+// CTA, smooth 200ms color transitions. A plain <nav>, not <header><nav>: each page's
+// own title section owns the single <header>/banner landmark.
 //
 // Server component; the active page is a prop rather than usePathname so these pages
 // stay fully static.
@@ -20,14 +20,10 @@ const LINKS: { key: MarketingPage; href: string; label: string }[] = [
 ];
 
 export function MarketingNav({ active }: { active?: MarketingPage }) {
-  // A plain <nav>, not <header><nav>: each page's own title section owns the single
-  // <header>/banner landmark (Features, Why) — a second top-level <header> here doubled
-  // it, which a screen reader announces as two "banner" regions on one page. The nav
-  // landmark alone carries the sticky/border/background styling just as well.
   return (
-    <nav className="sticky top-0 z-40 border-b edge bg-stone-50">
-      <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto] items-center px-5 py-2 sm:h-14 sm:grid-cols-[1fr_auto_1fr] sm:px-8 sm:py-0">
-        {/* Wordmark: left on all sizes (PRD §6); mobile wraps the links to a second row. */}
+    <nav className="sticky top-0 z-40 border-b border-stone-200/40 bg-stone-50/70 backdrop-blur-xl">
+      <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto] items-center px-5 py-2 sm:h-16 sm:grid-cols-[1fr_auto_1fr] sm:px-8 sm:py-0">
+        {/* Wordmark: left on all sizes; mobile wraps the links to a second row. */}
         <Link
           href="/"
           className="inline-flex min-h-[44px] items-center justify-self-start font-display text-lg font-medium tracking-[-0.01em] text-stone-900 sm:order-1"
@@ -35,11 +31,10 @@ export function MarketingNav({ active }: { active?: MarketingPage }) {
           Ancient Paths
         </Link>
 
-        {/* Auth CTA: the mockup's pill (owner call 2026-08-08) — rounded-full, muted
-            hairline, letterspaced small caps; ink fill on hover. */}
+        {/* Auth CTA: pill, ink fill on hover, gentle transition. */}
         <Link
           href="/home"
-          className="inline-flex min-h-[44px] items-center justify-self-end rounded-full border border-stone-400 px-7 font-sans text-micro font-semibold uppercase tracking-[0.2em] text-stone-900 hover:border-stone-900 hover:bg-stone-900 hover:text-stone-50 sm:order-3"
+          className="inline-flex min-h-[44px] items-center justify-self-end rounded-full border border-stone-400/70 px-7 font-sans text-micro font-semibold uppercase tracking-[0.2em] text-stone-900 transition-colors duration-200 ease-gentle hover:border-stone-900 hover:bg-stone-900 hover:text-stone-50 sm:order-3"
         >
           Log in
         </Link>
@@ -58,7 +53,7 @@ export function MarketingNav({ active }: { active?: MarketingPage }) {
               <Link
                 key={l.key}
                 href={l.href}
-                className="flex min-h-[44px] items-center font-sans text-sm text-stone-500 transition-colors duration-150 ease-gentle hover:text-stone-900"
+                className="flex min-h-[44px] items-center font-sans text-sm text-stone-500 transition-colors duration-200 ease-gentle hover:text-stone-900"
               >
                 {l.label}
               </Link>

@@ -1,10 +1,11 @@
-import Image from 'next/image';
 import Link from 'next/link';
+import { MarketingGround, SHEET } from '@/components/marketing/ground';
 
 export const metadata = { title: 'Private preview' };
 
-// Password prompt for the pre-launch gate (see middleware.ts). Restyled 2026-08-08 into
-// the marketing redesign's split layout (form beside the dusk forest, Psalm 119:105).
+// Password prompt for the pre-launch gate (see middleware.ts). 2026-08-08 "photo as
+// ground" pass: one frosted card centred on the photograph — the static-site
+// exploration's "card centred in the corridor of light", on the purchased image.
 // Still deliberately shallow: no app chrome and no app structure leak past the gate —
 // the only links out are the public marketing tier.
 export default async function GatePage({
@@ -15,83 +16,63 @@ export default async function GatePage({
   const { next, error } = await searchParams;
   const dest = next && next.startsWith('/') && !next.startsWith('//') ? next : '/home';
   return (
-    <main className="flex min-h-dvh bg-stone-50">
-      {/* Form column */}
-      <div className="flex w-full items-center justify-center px-5 py-16 lg:w-2/3">
-        <div className="w-full max-w-[380px] text-center">
-          <Link href="/" className="inline-flex min-h-[44px] items-center font-display text-2xl tracking-[-0.01em] text-stone-500">
-            Ancient Paths
+    <main className="relative isolate flex min-h-dvh items-center justify-center px-5 py-16">
+      <MarketingGround veil="light" />
+
+      <div className={`${SHEET} w-full max-w-[400px] px-8 py-12 text-center sm:px-10`}>
+        <Link href="/" className="inline-flex min-h-[44px] items-center font-display text-2xl tracking-[-0.01em] text-stone-500">
+          Ancient Paths
+        </Link>
+        <h1 className="mt-8 font-display text-4xl text-stone-900 sm:text-5xl">Walk in.</h1>
+        <p className="mt-4 font-serif text-lg italic leading-relaxed text-stone-500">
+          A private preview. Enter the password to walk in.
+        </p>
+
+        <form method="POST" action="/api/gate" className="mt-10 space-y-6 text-left">
+          <input type="hidden" name="next" value={dest} />
+          <div>
+            <label
+              htmlFor="gate-password"
+              className="mb-2 block font-sans text-xs font-semibold uppercase tracking-[0.08em] text-stone-500"
+            >
+              Password
+            </label>
+            <input
+              id="gate-password"
+              type="password"
+              name="password"
+              autoFocus
+              placeholder="••••••••"
+              className="min-h-[52px] w-full rounded-full border border-stone-300/80 bg-stone-50/70 px-6 font-sans text-sm text-stone-900 outline-none transition-[border-color,box-shadow] duration-200 ease-gentle placeholder:text-stone-400 focus:border-accent-600 focus:ring-2 focus:ring-accent-600/20"
+            />
+            {error && (
+              <p className="mt-3 font-serif text-sm italic text-accent-700">
+                That wasn&rsquo;t it. Try again.
+              </p>
+            )}
+          </div>
+          <button
+            type="submit"
+            className="min-h-[52px] w-full rounded-full bg-stone-900 font-sans text-sm font-semibold tracking-[0.02em] text-stone-50 shadow-[0_1px_2px_rgba(43,33,25,0.05),0_8px_24px_-8px_rgba(43,33,25,0.10),0_32px_80px_-24px_rgba(43,33,25,0.16)] transition-[background-color,transform] duration-200 ease-gentle hover:bg-stone-800 active:scale-[0.99]"
+          >
+            Enter
+          </button>
+        </form>
+
+        <p className="mt-8 text-micro uppercase tracking-[0.2em] text-stone-500">
+          No password?{' '}
+          <Link
+            href="/#doors"
+            className="inline-flex min-h-[44px] items-center font-semibold text-accent-600 transition-colors duration-200 ease-gentle hover:text-accent-700 hover:underline"
+          >
+            Request access
           </Link>
-          <h1 className="mt-10 font-display text-4xl text-stone-900 sm:text-5xl">Walk in.</h1>
-          <p className="mt-4 font-serif text-lg italic leading-relaxed text-stone-500">
-            A private preview. Enter the password to walk in.
-          </p>
+        </p>
 
-          <form method="POST" action="/api/gate" className="mt-10 space-y-7 text-left">
-            <input type="hidden" name="next" value={dest} />
-            <div>
-              <label
-                htmlFor="gate-password"
-                className="mb-2 block font-sans text-xs font-semibold uppercase tracking-[0.08em] text-stone-500"
-              >
-                Password
-              </label>
-              {/* PRD §6 input: parchment, 1px hairline, 14px Source Sans, antique-gold
-                  focus border, no shadow, no radius. */}
-              <input
-                id="gate-password"
-                type="password"
-                name="password"
-                autoFocus
-                placeholder="••••••••"
-                className="min-h-[52px] w-full border border-stone-200 bg-transparent px-5 font-sans text-sm text-stone-900 outline-none placeholder:text-stone-400 focus:border-accent-600"
-              />
-              {error && (
-                <p className="mt-3 font-serif text-sm italic text-accent-700">
-                  That wasn&rsquo;t it. Try again.
-                </p>
-              )}
-            </div>
-            {/* PRD §6 primary CTA: 1px ink hairline, instant ink fill on hover. */}
-            <button
-              type="submit"
-              className="min-h-[52px] w-full border border-stone-900 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50"
-            >
-              Enter
-            </button>
-          </form>
-
-          <p className="mt-8 text-micro uppercase tracking-[0.2em] text-stone-500">
-            No password?{' '}
-            <Link
-              href="/#doors"
-              className="inline-flex min-h-[44px] items-center font-semibold text-accent-600 hover:underline"
-            >
-              Request access
-            </Link>
-          </p>
-        </div>
-      </div>
-
-      {/* Photo column */}
-      <div className="relative hidden overflow-hidden lg:block lg:w-1/3">
-        <Image
-          src="/marketing/forest-dusk-1.jpg"
-          alt=""
-          aria-hidden
-          fill
-          sizes="(min-width: 1024px) 33vw, 0vw"
-          className="object-cover brightness-[0.55]"
-        />
-        <div aria-hidden className="absolute inset-0 bg-stone-950/30" />
-        <div className="absolute inset-x-10 bottom-16">
-          <p className="text-center font-serif text-xl italic leading-relaxed text-stone-50/85 sm:text-2xl">
-            &ldquo;Thy word is a lamp unto my feet, and a light unto my path.&rdquo;
-          </p>
-          <p className="mt-5 text-center text-micro uppercase tracking-[0.2em] text-stone-50/40">
-            Psalm 119:105
-          </p>
-        </div>
+        <p className="mt-10 border-t border-stone-200/70 pt-8 font-serif text-base italic leading-relaxed text-stone-500">
+          &ldquo;Thy word is a lamp unto my feet, and a light unto my path.&rdquo;
+        </p>
+        <p className="mt-2 text-micro uppercase tracking-[0.2em] text-stone-400">Psalm 119:105</p>
       </div>
     </main>
   );

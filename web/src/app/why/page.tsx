@@ -1,7 +1,7 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { MarketingNav } from '@/components/marketing/nav';
 import { MarketingFooter } from '@/components/marketing/footer';
+import { MarketingGround, SHEET } from '@/components/marketing/ground';
 
 // PUBLIC essay page (gate.ts isPublicPath, app-shell CHROME_FREE). Part of the
 // 2026-08-08 marketing redesign; see app/page.tsx for provenance.
@@ -21,34 +21,21 @@ export const metadata = {
 
 export default function WhyPage() {
   return (
-    <main className="bg-stone-50">
+    <main className="relative isolate">
+      <MarketingGround veil="light" />
       <MarketingNav active="why" />
 
-      {/* The hero photograph, faint, behind the header ONLY (owner call 2026-08-08) — the
-          same banded pattern as the Home hero (photo, then a hairline into solid
-          parchment), not a fixed sitewide backdrop with the essay floating over it as a
-          card. It scrolls away with the header, and a bottom gradient dissolves it into
-          the solid stone-50 the essay sits on, so there is never a hard edge and 18px
-          reading text is never on top of the photo. */}
-      <header className="relative overflow-hidden px-5 pb-16 pt-16 sm:px-8 sm:pb-24 sm:pt-28">
-        <Image
-          src="/marketing/hero-path.jpg"
-          alt=""
-          fill
-          sizes="100vw"
-          quality={75}
-          className="object-cover object-[38%_40%] opacity-[0.35]"
-        />
-        <div aria-hidden className="absolute inset-0 bg-linear-to-b from-stone-50/40 via-stone-50/70 to-stone-50" />
-        <div className="relative mx-auto max-w-4xl text-center">
-          <p className="mb-5 text-micro font-semibold uppercase tracking-[0.3em] text-stone-500">Why we exist</p>
+      <header className="px-5 pb-12 pt-16 text-center sm:px-8 sm:pb-16 sm:pt-28">
+        <div className="mx-auto max-w-4xl">
+          <p className="mb-5 text-micro font-semibold uppercase tracking-[0.3em] text-stone-700">Why we exist</p>
           <h1 className="font-display text-5xl leading-tight tracking-[-0.01em] text-stone-900 sm:text-7xl lg:text-8xl">
             Why we built this
           </h1>
         </div>
       </header>
 
-      <article className="mx-auto max-w-[66ch] px-5 pb-24 font-serif text-lg leading-[1.8] text-stone-700 sm:px-8 sm:pb-40">
+      <div className="px-5 pb-24 sm:px-8 sm:pb-32">
+      <article className={`${SHEET} mx-auto max-w-[76ch] px-6 py-14 font-serif text-lg leading-[1.8] text-stone-700 sm:px-16 sm:py-20`}>
         <p className="mb-12 first-letter:float-left first-letter:pr-3 first-letter:pt-1 first-letter:font-display first-letter:text-7xl first-letter:leading-[0.8] first-letter:text-accent-600">
           In an age defined by the immediate, the shallow, and the algorithmic, we found ourselves
           drifting further from the quiet waters of tradition. The modern world offers a thousand
@@ -120,12 +107,13 @@ export default function WhyPage() {
         <div className="mt-16 text-center sm:mt-20">
           <Link
             href="/#doors"
-            className="inline-flex min-h-[44px] items-center border border-stone-900 px-6 py-3 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50"
+            className="inline-flex min-h-[52px] items-center rounded-full bg-stone-900 px-9 font-sans text-sm font-semibold tracking-[0.02em] text-stone-50 shadow-[0_1px_2px_rgba(43,33,25,0.05),0_8px_24px_-8px_rgba(43,33,25,0.10),0_32px_80px_-24px_rgba(43,33,25,0.16)] transition-[background-color,transform] duration-200 ease-gentle hover:bg-stone-800 active:scale-[0.99]"
           >
             Request access
           </Link>
         </div>
       </article>
+      </div>
 
       <MarketingFooter />
     </main>

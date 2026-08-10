@@ -139,6 +139,11 @@
    * white demo cards on cream. */
   --shadow-card: 0 20px 60px -20px oklch(20% 0.01 50 / 0.12);
 
+  /* (The marketing "sheet" lift lives as an arbitrary shadow value in
+   * components/marketing/ground.tsx SHEET, not a token here: the PRD block above
+   * zeroes shadow tokens globally, and a token that renders nothing while looking
+   * load-bearing is this repo's own watchlist material.) */
+
   --radius-sm: 0;
   --radius-md: 0;
   --radius-lg: 0;
