@@ -47,6 +47,48 @@ failure — it is inventing one.
   `docs/SECURITY.md`, `package.json`, `scripts/audit.sh`, and untracked briefs). It was never
   touched. This hotfix was built, tested and deployed from a **separate worktree** off `origin/main`
   precisely so that tree could be left alone — which is the rule added yesterday, applied.
+## 2026-08-10 (afternoon) — the full audit runs again: dev branch reset, three reds fixed, three named
+
+**The week's blocker was a pointer, not a database.** `~/.neon_dev_url` existed all along
+(`ep-tiny-hat`, pre-allowed by the audit guard). But the dev branch was a pre-017 schema
+carrying 039-era data — 38 migrations "pending" with data conflicts (017's CHECK vs
+devotional/topical_index rows), unrepairable by replay. **Fix: Neon API branch reset** —
+`dev` (`br-cool-flower`) reset from `production` (`br-nameless-brook`), same `ep-tiny-hat`
+endpoint, old dev preserved as `dev-pre-reset-20260810`. Dev now mirrors prod exactly
+(user_documents 6, auth_users 7, prayers 5, served 398,113, ledger 51). Migration 011 (no
+--SPLIT-- markers, predates the convention) was applied statement-by-statement and
+ledger-recorded; the file itself untouched to preserve the prod checksum.
+
+**First full `npm run audit` of the week — three reds, all fixed and red-proofed:**
+1. `dc87099` removed better-auth from web/package.json but regenerated NEITHER lockfile —
+   the Vercel builder's `npm ci` would have refused the NEXT deploy. Both lockfiles regened;
+   upload-root-lockfile 6/6 green.
+2. Migration 107's `prayers` had no USER_TABLE_SPEC entry — added with its real shape
+   (tombstone deleted_at), watched red→green.
+3. pray-entry-point.test.tsx mock predated the required `onDeleteNote` prop — web/test tsc
+   clean, 5/5 green.
+(Committed by the parallel session in `ac22b07`'s tree sweep.)
+
+**Still red, with names (second full run, DB legs live):**
+- **deps — 8 high/critical GHSAs, all better-auth 1.4.18**, pinned by `@neondatabase/auth`
+  0.4.2-beta — the LIVE auth system (neon-auth.ts, client.ts import it). No newer release
+  exists. `package.json`'s ignore-note claims the opposite of reality ("@neondatabase/auth is
+  removed and better-auth 1.6.26 runs in-app" — false since F2). Owner/domain call: documented
+  ignoreGhsas with per-ID reachability (most are oidcProvider/mcp/organization/magic-link
+  plugins the app doesn't enable; g38m closed structurally by verify-at-signup), or the
+  SEC-1-sequel migration off the beta.
+- **qa DB legs — RLS violations** ("new row violates row-level security policy") on the
+  prod-cloned dev: the tests need the app_runtime-role connection for dev, which doesn't exist
+  in this tree's env. Same class as the carried "db-invariants red on main" (red since 08-05);
+  the CI branches (children of OLD dev) are equally drifted and want the same reset.
+- **root vitest: 686/687** — target-guard's register-label-embeddings case fails only in
+  full-suite order (passes 20/20 standalone): an env-leak test-isolation bug, small fix.
+
+### NOT DONE / UNVERIFIED
+- Full green audit: blocked on the deps decision (owner) + the qa RLS/role env work.
+- Neon console: prod password rotation STILL pending (pasted in chat 08-10); Resend sender.
+- The `ep-odd-fog password authentication failed` line in qa output — some test configs still
+  point at prod with stale credentials; not yet traced.
 
 ## 2026-08-10 — "photo as ground" shipped; PR #76 merged; main == production
 
