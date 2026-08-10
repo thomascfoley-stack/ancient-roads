@@ -19,7 +19,7 @@ export default async function GatePage({
     <main className="relative isolate flex min-h-dvh items-center justify-center px-5 py-16">
       <MarketingGround veil="light" />
 
-      <div className={`${SHEET} w-full max-w-[400px] px-8 py-12 text-center sm:px-10`}>
+      <div className={`${SHEET} relative z-10 w-full max-w-[400px] px-8 py-12 text-center sm:px-10`}>
         <Link href="/" className="inline-flex min-h-[44px] items-center font-display text-2xl tracking-[-0.01em] text-stone-500">
           Ancient Paths
         </Link>

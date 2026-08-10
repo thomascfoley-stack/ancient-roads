@@ -25,7 +25,7 @@ export default function WhyPage() {
       <MarketingGround veil="light" />
       <MarketingNav active="why" />
 
-      <header className="px-5 pb-12 pt-16 text-center sm:px-8 sm:pb-16 sm:pt-28">
+      <header className="relative z-10 px-5 pb-12 pt-16 text-center sm:px-8 sm:pb-16 sm:pt-28">
         <div className="mx-auto max-w-4xl">
           <p className="mb-5 text-micro font-semibold uppercase tracking-[0.3em] text-stone-700">Why we exist</p>
           <h1 className="font-display text-5xl leading-tight tracking-[-0.01em] text-stone-900 sm:text-7xl lg:text-8xl">
@@ -34,7 +34,7 @@ export default function WhyPage() {
         </div>
       </header>
 
-      <div className="px-5 pb-24 sm:px-8 sm:pb-32">
+      <div className="relative z-10 px-5 pb-24 sm:px-8 sm:pb-32">
       <article className={`${SHEET} mx-auto max-w-[76ch] px-6 py-14 font-serif text-lg leading-[1.8] text-stone-700 sm:px-16 sm:py-20`}>
         <p className="mb-12 first-letter:float-left first-letter:pr-3 first-letter:pt-1 first-letter:font-display first-letter:text-7xl first-letter:leading-[0.8] first-letter:text-accent-600">
           In an age defined by the immediate, the shallow, and the algorithmic, we found ourselves

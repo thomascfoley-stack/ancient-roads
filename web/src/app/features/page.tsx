@@ -48,7 +48,7 @@ export default function FeaturesPage() {
       <MarketingGround veil="light" />
       <MarketingNav active="features" />
 
-      <header className="px-5 pb-10 pt-16 sm:px-8 sm:pb-14 sm:pt-28">
+      <header className="relative z-10 px-5 pb-10 pt-16 sm:px-8 sm:pb-14 sm:pt-28">
         <div className="mx-auto max-w-7xl">
           <p className="mb-5 text-micro font-semibold uppercase tracking-[0.3em] text-stone-700">Features</p>
           <h1 className="font-display text-5xl tracking-[-0.01em] text-stone-900 sm:text-7xl lg:text-8xl">Tools for the labor</h1>
@@ -56,7 +56,7 @@ export default function FeaturesPage() {
       </header>
 
       {/* 01 — The Verse Panel. Demo blocks are type and hairlines, no cards (PRD §5). */}
-      <section className="px-5 py-10 sm:px-8 sm:py-16">
+      <section className="relative z-10 px-5 py-10 sm:px-8 sm:py-16">
         <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2 lg:gap-20">
           <div>
             <SectionNumber n="01" />
@@ -77,7 +77,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* 02 — The Interlinear */}
-      <section className="px-5 py-10 sm:px-8 sm:py-16">
+      <section className="relative z-10 px-5 py-10 sm:px-8 sm:py-16">
         <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2 lg:gap-20">
           <div className="lg:order-2">
             <SectionNumber n="02" />
@@ -110,7 +110,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* 03 — The Registers (replaces the mockup's unshipped "Beside the Tradition") */}
-      <section className="px-5 py-10 sm:px-8 sm:py-16">
+      <section className="relative z-10 px-5 py-10 sm:px-8 sm:py-16">
         <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2 lg:gap-20">
           <div>
             <SectionNumber n="03" />
@@ -144,7 +144,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* 04 — Prayer Journal */}
-      <section className="px-5 py-10 sm:px-8 sm:py-16">
+      <section className="relative z-10 px-5 py-10 sm:px-8 sm:py-16">
         <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2 lg:gap-20">
           <div className="lg:order-2">
             <SectionNumber n="04" />
@@ -181,7 +181,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* Closing */}
-      <section className="px-5 py-20 text-center sm:px-8 sm:py-32">
+      <section className="relative z-10 px-5 py-20 text-center sm:px-8 sm:py-32">
         <h2 className="mb-10 font-display text-4xl text-stone-900 sm:text-6xl">Begin your journey</h2>
         <Link
           href="/#doors"

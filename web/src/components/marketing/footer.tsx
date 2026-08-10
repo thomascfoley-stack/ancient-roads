@@ -6,7 +6,7 @@ import Link from 'next/link';
 // `#` links would be worse than shipping no column. Add the column when the routes exist.
 export function MarketingFooter() {
   return (
-    <footer className="border-t border-stone-200/40 bg-stone-50/70 px-5 py-16 backdrop-blur-xl sm:px-8 sm:py-24">
+    <footer className="relative z-10 border-t border-stone-200/40 bg-stone-50/70 px-5 py-16 backdrop-blur-xl sm:px-8 sm:py-24">
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-12 sm:mb-16 sm:grid-cols-2 sm:gap-20">
           <div>

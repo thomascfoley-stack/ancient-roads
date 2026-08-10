@@ -24,6 +24,7 @@ const PUBLIC_PATHS = new Set([
   // (owner-purchased, standard license, no credit required — see app/page.tsx). The
   // other three are AI-generated. Exact-match entries, same rule as above.
   '/marketing/hero-path.jpg',
+  '/marketing/hero-ground.jpg',
   '/marketing/steps-fog.jpg',
   '/marketing/forest-dusk-1.jpg',
   '/marketing/forest-dusk-2.jpg',

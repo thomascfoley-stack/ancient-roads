@@ -1,28 +1,26 @@
-import Image from 'next/image';
-
 // THE GROUND (2026-08-08 owner direction, after the static-site exploration): one
 // photograph — the purchased iStock hillside path — fixed behind every marketing
 // surface, showing through a translucent parchment veil, with the page's content
 // floating over it on frosted sheets. "The original image transparent in the
 // background with everything over it."
 //
-// `fixed inset-0` keeps the photograph still while the page scrolls past — the
-// content moves over the land, the land does not scroll away. The veil sets how
-// much photograph reads through; the hero areas use `veil="light"` so the image
-// carries the moment, dense reading surfaces sit on their own frosted sheets and
-// take `veil="strong"` pages.
+// A CSS background-image on purpose, NOT next/image. Two real bugs were burned here,
+// both proven live: (1) a -z-10 child inside the isolated <main> painted beneath the
+// body background in Chrome, and (2) with the fixed layer at z-0, Chrome composited
+// the layer before next/image's async decode finished and never repainted it — the
+// photograph stayed invisible on every first paint until any style poke invalidated
+// the layer. Background paints do not have the decode-invalidation problem. The asset
+// is a pre-sized 2560px q82 copy (hero-ground.jpg, ~825KB) so skipping the optimizer
+// costs little; hero-path.jpg remains the full-resolution source.
+//
+// `fixed inset-0 z-0` with all content at z-10+ (nav z-40): never a negative z.
 export function MarketingGround({ veil = 'light' }: { veil?: 'light' | 'strong' }) {
   return (
-    <div aria-hidden className="fixed inset-0 -z-10">
-      <Image
-        src="/marketing/hero-path.jpg"
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        quality={85}
-        className="object-cover object-[38%_55%]"
-      />
+    <div
+      aria-hidden
+      className="fixed inset-0 z-0 bg-cover bg-[position:38%_55%]"
+      style={{ backgroundImage: "url('/marketing/hero-ground.jpg')" }}
+    >
       <div
         className={`absolute inset-0 ${
           veil === 'light'

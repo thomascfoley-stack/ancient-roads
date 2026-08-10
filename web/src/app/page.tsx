@@ -50,7 +50,7 @@ export default function MarketingHome() {
 
       {/* 1 — HERO: type set directly on the photograph, nothing between the reader and
           the land but the light veil. */}
-      <section className="relative flex min-h-[88dvh] flex-col justify-center px-5 sm:px-8">
+      <section className="relative z-10 flex min-h-[88dvh] flex-col justify-center px-5 sm:px-8">
         {/* A soft radial pool of parchment light behind the hero type — legibility over
             the busy midfield of the photograph without a scrim edge anywhere. The rgba
             literal is stone-50 (#FBF8F2); Tailwind arbitrary gradients cannot read the
@@ -144,7 +144,7 @@ export default function MarketingHome() {
       </section>
 
       {/* 3 — HOW IT WORKS: one wide, low sheet. */}
-      <section className="px-5 py-8 sm:px-8 sm:py-12">
+      <section className="relative z-10 px-5 py-8 sm:px-8 sm:py-12">
         <div className={`${SHEET} mx-auto grid max-w-7xl gap-10 p-10 md:grid-cols-3 md:gap-0 sm:p-14`}>
           {STEPS.map((step, i) => (
             <div
@@ -161,7 +161,7 @@ export default function MarketingHome() {
       </section>
 
       {/* 4 — CONVICTION: the one dark sheet — night ink floating on the golden land. */}
-      <section className="px-5 py-16 sm:px-8 sm:py-24">
+      <section className="relative z-10 px-5 py-16 sm:px-8 sm:py-24">
         <div className="mx-auto max-w-5xl rounded-[1.75rem] bg-stone-950/95 px-6 py-20 text-center text-stone-100 backdrop-blur-xl shadow-[0_1px_2px_rgba(43,33,25,0.05),0_8px_24px_-8px_rgba(43,33,25,0.10),0_32px_80px_-24px_rgba(43,33,25,0.16)] sm:px-16 sm:py-28">
           <h2 className="mb-8 font-display text-4xl sm:mb-10 sm:text-6xl">
             Built to never interpret Scripture
@@ -181,7 +181,7 @@ export default function MarketingHome() {
       </section>
 
       {/* 5 — PHILOSOPHY: type straight on the ground — a breath between sheets. */}
-      <section className="px-5 py-16 sm:px-8 sm:py-28">
+      <section className="relative z-10 px-5 py-16 sm:px-8 sm:py-28">
         <div className="mx-auto max-w-5xl text-center">
           <p className="mb-7 text-micro font-semibold uppercase tracking-[0.3em] text-stone-700">Our philosophy</p>
           <h2 className="mb-9 font-display text-4xl leading-tight text-stone-900 sm:text-6xl">
@@ -196,7 +196,7 @@ export default function MarketingHome() {
       </section>
 
       {/* 6 — THE VERSE PANEL: copy on the ground, the interactive demo on its sheet. */}
-      <section className="px-5 py-8 sm:px-8 sm:py-12">
+      <section className="relative z-10 px-5 py-8 sm:px-8 sm:py-12">
         <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2 lg:gap-16">
           <div>
             <p className="mb-5 text-micro font-semibold uppercase tracking-[0.3em] text-stone-700">The verse panel</p>
