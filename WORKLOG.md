@@ -47,6 +47,81 @@ failure — it is inventing one.
   `docs/SECURITY.md`, `package.json`, `scripts/audit.sh`, and untracked briefs). It was never
   touched. This hotfix was built, tested and deployed from a **separate worktree** off `origin/main`
   precisely so that tree could be left alone — which is the rule added yesterday, applied.
+## 2026-08-10 (late) — qa leg GREEN end to end: four failure classes fixed and red-proofed
+
+Follows the afternoon entry. Full qa leg (`npm run qa`) green: 125/125 web files + the root
+rate-limit file. Full `npm run audit`: every leg green EXCEPT deps (the owner-ruling item
+from the afternoon entry, unchanged and still the only red).
+
+**1. register-end-to-end was stale test code, not bad data** (the afternoon diagnosis —
+"unit-ordinal backfill never reached ten works" — was WRONG; corrected by probing dev).
+Since `79494d4` (2026-08-02) the reader TOC is one row PER UNIT, so §B1's
+`units === toc.length` heuristic was a tautology firing on every well-grouped large work.
+Dev probe: john-gill 28,843 sections → 1,169 real units; spurgeon-sermons 118,371 → 3,540;
+owen-works 20,054 → 702. The check now measures the real property (units < raw sections —
+`rep.sections` was already in hand) with a declared `UNIT_PER_SECTION_WORKS` set
+(openbible-topics, schaff-dictionarybible, spurgeon-morning-evening, watts-psalmshymns —
+each with a stated content-shape reason). `topical_index` joined
+`REGISTERS_WITH_NO_CATALOG`: its surface is Plans topic matching
+(`web/src/lib/plan/topic-match.ts`, covered by plan-topic-flow.test.ts), same reasoning as
+lexicon→Word Study — giving it a shelf is the product decision the pin exists to force.
+`NO_PROSE_PHRASE_REGISTERS` skips checks 3–5 for topical_index only (bodies are
+verse-reference lists, median ~200 chars); the host-URL leak check was hoisted so it runs
+for every register unconditionally. Red-proof: removing one carve-out failed with exactly
+the intended message (watched), then restored.
+
+**2. The 429 cascade was the HOUR leg of the reused gate limiter.** `publicReadThrottle`
+passes a perMin override (120) to `checkGateRateLimit` but cannot override the hour leg
+(`GATE_LIMIT_PER_HOUR=60`). The full DB-backed suite shares `read:{bucket}:no-trusted-ip`
+buckets in the dev gate table; the hour bucket exhausts early and STAYS exhausted, so every
+public-route call 429s for the rest of the hour — including work-reader's expects-400
+malformed-params check and library-published-boundary's expects-404. Fix: both caps lifted
+in `web/vitest.config.ts` `test.env` (no production code touched; throttle wiring coverage
+is mock-based — api-hardening/catalog-filter-wiring — and limiter mechanics live in root
+test/rate-limit.test.ts, a separate vitest process).
+
+**3. licensing.test.ts judged served chunks against a frozen record.** Post-cutover,
+publish-means-serve is the standing contract (`scripts/served-reconcile.mjs`): the NPNF
+father volumes (schaff-npnf101/104/210/213) are published AND served, so father-type rows
+legitimately reach `retrieveCommentary` — but `PUBLISHED_WORKS` (the SERVED lists frozen at
+044's backfill) never learned them, so 'Schaff, Philip' read as non-published. Adding the
+slugs to SERVED_PROSE_WORKS would have forced an `idx_commentary_fts_legal` regeneration
+(the lockstep test) for a zero-row predicate. Instead `assertAllPublished` now consults the
+DB publish switch (`sources.status='published'`, positive-controlled non-empty) for
+work-keyed rows; the static predicate remains the only guard for the work-less legacy
+cohort (124,955 flat rows — Tyndale/CS Lewis/Origen). Green 6/6. Adjacent drift recorded
+for the owner: ~60 published+served works across registers are absent from the frozen
+SERVED lists (most covered by the author legs); `ryle-expository` (2,040 served commentary
+rows, clean 'J.C. Ryle' CCEL attribution, manifest tier 2 — the old "ryle/vincent
+mislabeling" removal was a different acquisition) and `spurgeon-comment` (71 rows) are the
+two commentary-type works the static record would still flag if their chunks surface.
+
+**4. unit-ordinal WELDs were a false authority, not corrupt data.** All five weld works
+entered the manifest 2026-08-02 (`ec63de4`, `231f698`) — two weeks AFTER migration 024 —
+so their unit_ordinal was written by the ingest pipeline, never by 024's backfill. The
+instrument's preservation/weld legs asked "does stored match 024 recompute?" of works 024
+never touched; 024's heading-island heuristic merges adjacent same-heading sections (two
+adjacent like-titled hymns → one "unit"), reading watts' stored 731 → computed 677 as a
+weld. Stored is internally consistent (NULL/dup/order/digest legs green for all five).
+Fix: declared `INGEST_AUTHORED_UNIT_WORKS` authority boundary in
+`scripts/lib/unit-ordinal-instrument.mjs` — the recompute legs skip only those five; every
+other leg unchanged; fail-closed default (a new ingest-authored work reds until declared).
+The instrument's own perturbation red-proofs still pass (15/15).
+
+### NOT DONE / UNVERIFIED
+- **deps leg: owner ruling** — 8 better-auth@1.4.18 GHSAs pinned by @neondatabase/auth
+  0.4.2-beta. Documented-accept with per-ID reachability (drafted in the afternoon entry)
+  vs migration off the beta. The ONLY red leg. Note `scripts/audit.sh:41-46`'s comment is
+  stale the same way `package.json:66` is — both claim the package is gone.
+- **Static-surface cutover remains filed separate work**: `isPublishedCommentaryEntry` and
+  `idx_commentary_fts_legal` still gate on the frozen SERVED lists in production; the
+  licensing TEST now measures the DB publish switch. The ryle-expository / spurgeon-comment
+  static-record gap above is part of that call.
+- Prod carries the same five ingest-authored works; the instrument change makes the next
+  prod-side measurement read them correctly — no data change needed or made.
+- The intermittent `[search/commentaries] connection to ep-odd-fog: password
+  authentication` line from earlier full runs did not recur this session; never traced.
+
 ## 2026-08-10 (afternoon) — the full audit runs again: dev branch reset, three reds fixed, three named
 
 **The week's blocker was a pointer, not a database.** `~/.neon_dev_url` existed all along

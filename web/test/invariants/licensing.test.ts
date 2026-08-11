@@ -30,6 +30,16 @@ function assertNoForbiddenAuthors(authors: string[], pathLabel: string): void {
   expect(hits, `${pathLabel} returned quarantined authors: ${hits.join(', ')}`).toEqual([]);
 }
 
+// The DB publish switch, fetched once by beforeAll. Post-044, "published" is
+// `sources.status='published'` and scripts/publish-flip.mjs writes `served` to match
+// (scripts/served-reconcile.mjs is the standing instrument of that contract). A served
+// chunk whose work is published in the DB is therefore licensed-reachable BY THE
+// OPERATIVE GATE, even when the static SERVED lists — frozen at 044's backfill — have
+// not caught up (they lag by design until the filed static-surface cutover; see the
+// ⚠ note in teacher/routing.ts). The 2026-08-10 red was exactly this lag: served,
+// published NPNF father volumes judged non-published by the frozen static record.
+let publishedSlugs = new Set<string>();
+
 function assertAllPublished(
   entries: Array<{ author: string; book: number; sourceUrl?: string | null; work?: string | null }>,
   pathLabel: string,
@@ -37,7 +47,14 @@ function assertAllPublished(
   // work MUST ride along: register works publish BY SLUG, and dropping it makes
   // every register author read as non-published (the gate-ingest L3 bug class,
   // A6 2026-07-17)
-  const bad = entries.filter((e) => !isPublishedCommentaryEntry({ author: e.author, book: e.book, sourceUrl: e.sourceUrl, work: e.work }));
+  const bad = entries.filter(
+    (e) =>
+      // The static predicate stays LOAD-BEARING for the work-less legacy flat-table
+      // cohort — 124,955 rows with no work key, Tyndale/CS Lewis/Origen among them —
+      // where it is the only guard. Work-keyed rows answer to the DB publish switch.
+      !isPublishedCommentaryEntry({ author: e.author, book: e.book, sourceUrl: e.sourceUrl, work: e.work }) &&
+      !(e.work && publishedSlugs.has(e.work)),
+  );
   expect(
     bad.map((e) => e.author),
     `${pathLabel} returned non-published authors: ${bad.map((e) => e.author).join(', ')}`,
@@ -75,6 +92,15 @@ describe.skipIf(SKIP)('Layer 1 — licensing invariant (behavioral)', () => {
     )) as { vec: string }[];
     const parsed = JSON.parse(row[0]!.vec) as number[];
     sampleVec = parsed;
+
+    // The DB publish switch (see publishedSlugs above). POSITIVE CONTROL: an empty set
+    // would make every work-keyed chunk read as non-published... or, worse, a blind
+    // probe folded into the static leg could read as coverage. Refuse both.
+    const pubRows = (await sql.query(
+      `SELECT slug FROM sources WHERE status = 'published'`,
+    )) as { slug: string }[];
+    publishedSlugs = new Set(pubRows.map((r) => r.slug));
+    expect(publishedSlugs.size, 'positive control: zero published works — the publish-switch probe is blind').toBeGreaterThan(0);
   }, 30_000);
 
   it('search path: Tyndale Study Notes is never returned', async () => {
