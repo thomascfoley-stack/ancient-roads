@@ -47,6 +47,63 @@ failure — it is inventing one.
   `docs/SECURITY.md`, `package.json`, `scripts/audit.sh`, and untracked briefs). It was never
   touched. This hotfix was built, tested and deployed from a **separate worktree** off `origin/main`
   precisely so that tree could be left alone — which is the rule added yesterday, applied.
+## 2026-08-11 (morning) — adversarial re-verification of the qa fixes; auth-stack truth; rulings page
+
+(Sits below the parallel Study Docs docs-lane entry, which is uncommitted and NOT this
+session's work — this session's commit stages only its own hunk of this file.)
+
+**Sync (WO-1):** origin/main gained only `cbddea8` (the PR #78 merge of this branch's
+already-pushed state), so main had not moved past yesterday's measurement. Rebase replayed
+the five unpushed commits clean (`342a3a4`…`02b1b42`). Full audit on the rebased tree:
+identical profile — every leg green EXCEPT deps. No leg changed colour.
+
+**Adversarial re-verification (WO-2) — four fixes attacked, all four HOLD:**
+1. **licensing DB-switch leg — NOT a tautology.** The check polices `embeddings.served` but
+   draws authority from `sources.status` — two columns joined only by publish-flip +
+   served-reconcile. Perturbations (all reverted): staged-work chunk → red
+   ("non-published authors: Schaff, Philip"); banned author behind a PUBLISHED work → red
+   ("quarantined authors: Origen of Alexandria"). Boundary stated plainly: forbidden
+   PROVENANCE behind a published work passes — that exposure is ADR-044's open owner call,
+   unchanged by the fix (this test never policed provenance).
+2. **INGEST_AUTHORED_UNIT_WORKS** — stand-in-client seeds: an exempted work carrying NULL +
+   duplicate (unit_ordinal, ordinal) + order break → all still caught; its stored≠computed
+   mismatch raises nothing; the SAME mismatch on john-gill raises WELD. New permanent test
+   block in `test/unit-ordinal-cohort.test.ts`, itself red-proofed twice (dead weld leg →
+   red; exemption swallowing the dup leg → red; both reverted).
+3. **vitest rate-limit env lift** — production-code perturbations: throttle call deleted
+   from `/api/work/[slug]` → api-hardening wiring check reds for exactly that route
+   (reverted); `checkGateRateLimit` forced always-allow → root threshold tests red ×2
+   (reverted). 13/13 green after.
+4. **register units-vs-sections** — milton-poetical-works PERTURBED IN DEV DATA
+   (unit_ordinal := ordinal, 903 rows, mapping backed up first): red with exactly "all 903
+   sections are their own reading unit", nothing else flagged. Restored from backup; md5
+   digest of (id, unit_ordinal, ordinal) identical pre/post (`e1224ff8…`); test green
+   again. No data change survives.
+
+**Auth-stack truth (WO-3), from evidence not documents:** production runs NEON AUTH
+(`@neondatabase/auth@0.4.2-beta` → Neon's HOSTED better-auth server; `NEON_AUTH_BASE_URL`/
+`JWKS_URL`/`COOKIE_SECRET` live in the Vercel prod env — read-only `vercel env ls`). The
+2026-08-05 direct 1.6.26 cutover was REVERSED (ADR-107/108, `dc87099`); `BETTER_AUTH_URL`/
+`SECRET` orphaned (zero code refs). The only better-auth in the tree is **1.4.18**,
+transitive; no newer `@neondatabase/auth` release exists (0.4.2-beta, 2026-06-08, latest).
+Zero affected-plugin references in `web/src` (oidcProvider/mcp/oauth-provider/organization/
+magicLink/emailOTP). Both stale notes corrected to this reality: `package.json`
+pnpm.auditConfig `"//"` and `scripts/audit.sh:41-46` (JSON + bash validated, deps-audit
+tests 9/9).
+
+**Rulings page (WO-4):** `docs/pm/RULINGS-2026-08-11.md` — the deps decision rebuilt on the
+real topology (per-GHSA reachability table; ignore-with-rationale vs migrate; falsifiable
+settling conditions) plus nine other owner-terminal items, one line each. Nothing on it
+implemented.
+
+### NOT DONE / UNVERIFIED
+- deps leg still red BY DESIGN — awaits the owner ruling on RULINGS-2026-08-11.md §1.
+- The parallel docs lane holds uncommitted state in this tree: the WORKLOG entry above this
+  one + `docs/STUDY_DOCS_DESIGN.md`, `docs/STUDY_DOCS_BUILD.md`,
+  `docs/pm/FABLE5_CORE_BRIEF.md`, `docs/pm/SWARM_PARALLEL_BRIEF.md` — not this session's,
+  not committed here.
+- Five commits remain unpushed (standing rule: no pushes).
+
 ## 2026-08-10 (late) — qa leg GREEN end to end: four failure classes fixed and red-proofed
 
 Follows the afternoon entry. Full qa leg (`npm run qa`) green: 125/125 web files + the root

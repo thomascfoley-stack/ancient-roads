@@ -217,3 +217,83 @@ describe('measurePublishedUnitOrdinal is just the published cohort', () => {
     expect(result.cohortWorks).toBe(3);
   });
 });
+
+// ─── 2026-08-11: the INGEST_AUTHORED_UNIT_WORKS exemption hides ONLY the recompute legs ───
+// The exemption (scripts/lib/unit-ordinal-instrument.mjs) stops asking "does stored match
+// the 024 recompute?" of works whose units the ingest pipeline wrote — because for them the
+// recompute is a false authority. The hazard an exemption always carries: that it mutes
+// MORE than the false authority. This block seeds an exempted work carrying BOTH the
+// excused shape (a stored≠computed grouping mismatch, the old false-WELD) AND the real
+// internal defects the instrument must never stop seeing (NULL, duplicate
+// (unit_ordinal, ordinal), order break) — plus a NON-exempted work carrying the same
+// grouping mismatch, which must still fail.
+describe('the ingest-authored exemption hides ONLY the recompute authority, never internal defects', () => {
+  const EXEMPT = 'watts-psalmshymns'; // in INGEST_AUTHORED_UNIT_WORKS
+  const NORMAL = 'john-gill';         // not exempted
+
+  function seededClient() {
+    return {
+      async query(sql: string, _params: unknown[] = []) {
+        if (/count\(\*\)::int AS n FROM sources/.test(sql)) return { rows: [{ n: 2 }] };
+        // NULL leg: one NULL unit_ordinal inside the cohort (in the exempted work's data).
+        if (/FILTER \(WHERE sec\.unit_ordinal IS NULL\)/.test(sql)) return { rows: [{ nulls: 1, total: 20 }] };
+        // Duplicate leg: a (unit_ordinal, ordinal) pair used twice — inside the EXEMPTED work.
+        if (/GROUP BY src\.slug, sec\.unit_ordinal, sec\.ordinal/.test(sql)) {
+          return { rows: [{ slug: EXEMPT, unit_ordinal: 5, ordinal: 9, n: 2 }] };
+        }
+        // Order leg: a (unit_ordinal, ordinal) regression — inside the EXEMPTED work.
+        if (/lag\(sec\.unit_ordinal\)/.test(sql)) {
+          return { rows: [{ slug: EXEMPT, prev_uo: 8, prev_ord: 3, unit_ordinal: 7, ordinal: 4 }] };
+        }
+        // Weld leg: BOTH works show stored > computed (the 2026-08-10 watts shape).
+        if (/stored_units/.test(sql)) {
+          return { rows: [
+            { slug: EXEMPT, stored_units: 731, computed_units: 677 },
+            { slug: NORMAL, stored_units: 1169, computed_units: 1100 },
+          ] };
+        }
+        // Preservation leg: the exempted work carries a grouping break (computed unit 248
+        // maps to stored 295 and 296 — the exact watts error from 2026-08-10); john-gill
+        // is faithful (stored == computed) so its weld error is the ONLY one it raises.
+        if (/sec\.id AS section_id/.test(sql)) {
+          return { rows: [
+            { slug: EXEMPT, section_id: 'a', stored: 295, computed: 248, ordinal: 1 },
+            { slug: EXEMPT, section_id: 'b', stored: 296, computed: 248, ordinal: 2 },
+            { slug: NORMAL, section_id: 'c', stored: 1, computed: 1, ordinal: 1 },
+          ] };
+        }
+        if (/md5\(string_agg/.test(sql)) {
+          return { rows: [
+            { slug: EXEMPT, digest: 'x', sections: 731, units: 731 },
+            { slug: NORMAL, digest: 'y', sections: 28843, units: 1169 },
+          ] };
+        }
+        return { rows: [] };
+      },
+    };
+  }
+
+  it('a genuinely mis-ordered unit inside an EXEMPTED work is still caught (NULL/dup/order legs)', async () => {
+    const r = await measureUnitOrdinalForCohort(seededClient(), { cohort: 'published' });
+    const all = r.errors.join('\n');
+    expect(all).toMatch(/1 section\(s\) have NULL unit_ordinal/);
+    expect(all).toContain(`duplicate (unit_ordinal, ordinal) within works: ${EXEMPT} u5/o9×2`);
+    expect(all).toContain(`(unit_ordinal, ordinal) order breaks in ${EXEMPT}`);
+    expect(r.ok).toBe(false);
+  });
+
+  it('the exempted work raises NO recompute error (the excused false authority)', async () => {
+    const r = await measureUnitOrdinalForCohort(seededClient(), { cohort: 'published' });
+    const all = r.errors.join('\n');
+    expect(all).not.toContain('computed unit 248'); // the watts grouping-break text from 2026-08-10
+    expect(all).not.toContain(`${EXEMPT}: WELD`);
+    expect(r.exemptedWorks).toContain(EXEMPT);
+  });
+
+  it('the SAME mismatch on a non-exempted work still fails — the exemption is narrow', async () => {
+    const r = await measureUnitOrdinalForCohort(seededClient(), { cohort: 'published' });
+    const all = r.errors.join('\n');
+    expect(all).toContain(`${NORMAL}: WELD`);
+    expect(all).toContain('stored_units=1169 -> computed_units=1100');
+  });
+});
