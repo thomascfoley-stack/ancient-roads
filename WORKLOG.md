@@ -47,6 +47,52 @@ failure — it is inventing one.
   `docs/SECURITY.md`, `package.json`, `scripts/audit.sh`, and untracked briefs). It was never
   touched. This hotfix was built, tested and deployed from a **separate worktree** off `origin/main`
   precisely so that tree could be left alone — which is the rule added yesterday, applied.
+## 2026-08-11 (midday) — deps ruling LANDED: AUDIT FULLY GREEN; orphaned auth env vars removed
+
+**`npm run audit` exit 0 — every gate green, deps included** (env, typecheck ×4, lint ×2,
+knip, deps, tests+coverage, qa, hygiene, deploy.sh harness, Gate B). The last red leg of
+the week closed.
+
+**deps ruling implemented (owner accept on `docs/pm/RULINGS-2026-08-11.md` §1), reshaped by
+the A7 gate the doc's plain "ignore all 8" did not see:**
+- 6 not-in-path ids into `pnpm.auditConfig.ignoreGhsas` (9h47, 86j7, 7w99, 392p, fmh4,
+  pw9m — provider-side plugins never enabled; SECURITY.md adjudication table updated, the
+  three "assess" rows settled to evidenced "no"s).
+- **g38m declared `--expect-red`, NOT ignored**: closed by Verify at Sign-up 2026-08-08,
+  but the closure is a Neon console toggle this repo cannot observe — and A7's in-path set
+  is exactly `{g38m}`, so ignoring it would arm the gate against MULTI_USER_UPLOADS or
+  empty its non-vacuity set. Exact-match semantics: a disappearance fails the leg, which is
+  what turns "toggle switched off" or "server patched" into a build event.
+- **qq9h stays accepted-red per ADR-038** (joins g38m in `--expect-red`): magic-link/OTP
+  not shipped (grep: no call in `web/src`) but the hosted server's method config is
+  unobservable — kept visible, not ignored.
+- SECURITY.md ledger rewritten to the landed reality; RULINGS doc §1 marked RULED+LANDED
+  with the A7 mechanism recorded.
+- Verified piecemeal: deps-audit standalone green (observed set matches the declaration
+  exactly; scanned better-auth 1.4.18), sec1-upload-gate 7/7 (still armed), deps tests 9/9.
+
+**Vercel cleanup:** `BETTER_AUTH_URL` + `BETTER_AUTH_SECRET` deleted from the production
+env (zero code references repo-wide, grep-verified; `vercel env ls production` confirms
+gone). The 2026-08-05 direct-cutover leftovers are out of the deployed surface.
+
+**The first post-accept audit went red on qa — a TORN READ, fixed:**
+unit-ordinal-instrument's published-cohort measurement raced
+library-published-boundary's `qa-published-boundary-*` fixture (seeded published, deleted
+in teardown, sibling worker): positive control counted 127, digest query saw 126. Dev
+probes confirmed no corpus defect (126 published works, none sectionless). The measurement
+now runs inside one REPEATABLE READ transaction (ROLLBACK after — nothing is written), so
+the cohort cannot move mid-measurement. tsc clean, instrument 15/15, full qa green
+(exit 0) under real parallel conditions; the wall above includes it.
+
+### NOT DONE / UNVERIFIED
+- The torn-read fix is verified green, not re-red-proven with an injected concurrent
+  writer — the race red was witnessed naturally; the consistency guarantee is Postgres
+  repeatable-read semantics.
+- topical_index stays pinned no-catalog (owner steer 2026-08-11: nothing designed around
+  Study Docs; the pin's falsifiable condition in RULINGS §2 stands).
+- Six commits now unpushed (standing rule: no pushes). The Study Docs lane's state remains
+  uncommitted in this tree — this commit stages only this session's files and this hunk.
+
 ## 2026-08-11 (morning) — adversarial re-verification of the qa fixes; auth-stack truth; rulings page
 
 (Sits below the parallel Study Docs docs-lane entry, which is uncommitted and NOT this

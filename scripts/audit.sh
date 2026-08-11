@@ -38,17 +38,24 @@ gate "typecheck — web/test tsc --noEmit"  bash -c "cd web && npx tsc --noEmit 
 gate "lint — eslint src/ test/"           $PNPM exec eslint src test
 gate "lint — web/ eslint"                    bash -c "cd web && npx eslint --quiet ."
 gate "unused — knip (files/exports/deps)" $PNPM exec knip
-# --expect-red is EMPTY. An earlier version of this comment said SEC-1 closed on 2026-08-05 by
-# removing @neondatabase/auth and running better-auth 1.6.26 in-app — that cutover was REVERSED
-# (ADR-107/108, verified from code + lockfiles + Vercel prod env 2026-08-11): production runs
-# Neon Auth (@neondatabase/auth@0.4.2-beta → Neon's HOSTED better-auth server), and the only
-# better-auth in the tree is the pinned 1.4.18. So the advisories rooted in 1.4.18 FIRE and this
-# leg stays RED until the owner rules — documented ignoreGhsas with per-ID reachability (the
-# vulnerable server code runs on Neon's hosted service, not in this bundle; no affected plugin
-# is enabled) vs migration off the beta. See docs/pm/RULINGS-2026-08-11.md and docs/SECURITY.md.
-# A disappearance is as much a gate failure as an addition, which is the point of declaring the
-# set rather than thresholding it.
-gate "deps — advisory bulk-endpoint (prod, high+ CVEs)" node scripts/deps-audit.mjs
+# --expect-red is an EXPLICIT, REVIEWABLE enumeration (work-order v2 Stage 1.4): the observed
+# un-ignored red set must match it exactly — an extra advisory OR a disappearance both fail
+# this leg, so "the server got patched" and "the toggle got switched off" are build events,
+# not silence. Declared 2026-08-11 by owner ruling (docs/pm/RULINGS-2026-08-11.md §1):
+#   GHSA-g38m-r43w-p2q7 — better-auth account takeover via OAuth auto-link to an unverified
+#     pre-registered email. CLOSED by Verify at Sign-up (owner ruling 2026-08-08,
+#     docs/SECURITY.md top section) — but the closure is a Neon console toggle this repo
+#     cannot observe, so it is DECLARED here, not ignored. The A7 sec1-upload-gate keeps it
+#     out of pnpm.auditConfig.ignoreGhsas by design.
+#   GHSA-qq9h-g4jm-xgf3 — magic-link/email-OTP pre-account hijack. Accepted-red per ADR-038;
+#     the app ships email/password + Google only, and the hosted server's method config is
+#     unobservable from this repo, so it stays visible rather than ignored.
+# The six not-in-path better-auth advisories (provider-side plugins never enabled — grep
+# `web/src` 2026-08-11) live in pnpm.auditConfig.ignoreGhsas with their adjudications in
+# docs/SECURITY.md. Reality check 2026-08-11: production runs Neon Auth
+# (@neondatabase/auth@0.4.2-beta → Neon's HOSTED better-auth server); the only better-auth
+# in the tree is 1.4.18, transitive; 0.4.2-beta is the latest release that exists.
+gate "deps — advisory bulk-endpoint (prod, high+ CVEs)" node scripts/deps-audit.mjs --expect-red GHSA-g38m-r43w-p2q7,GHSA-qq9h-g4jm-xgf3
 gate "tests + coverage — vitest"          $PNPM exec vitest run --coverage
 gate "qa — Layer 1 invariants + regressions" $PNPM run qa
 gate "hygiene — no test residue in dev (post-suite)" node scripts/check-test-residue.mjs
