@@ -335,8 +335,15 @@ if [ -z "$ENV_NAMES" ]; then
   exit 1
 fi
 MISSING=""
+# BETTER_AUTH_URL / BETTER_AUTH_SECRET REMOVED 2026-08-11, on this list's OWN instruction above:
+# "drop it once step 10 removes the package." The package is gone — `better-auth` no longer appears
+# in package.json or web/package.json (0 occurrences), `lib/auth/better-auth.ts` was deleted, and
+# NOTHING in web/src or src reads BETTER_AUTH_* (0 matches). Production itself is the fourth
+# witness: it has never had these two set, has NEON_AUTH_BASE_URL and NEON_AUTH_COOKIE_SECRET, and
+# is serving. A gate demanding variables that no code reads and production does not have is not
+# protecting a runtime failure — it is inventing one, and it blocked a hotfix for a live auth
+# outage. `neon-auth.ts` throws on either NEON_AUTH_* being absent, so that pair still fails closed.
 for v in APP_DATABASE_URL DATABASE_URL DEEPINFRA_API_KEY SITE_PASSWORD \
-         BETTER_AUTH_URL BETTER_AUTH_SECRET \
          NEON_AUTH_BASE_URL NEON_AUTH_COOKIE_SECRET; do
   printf '%s\n' "$ENV_NAMES" | grep -qx "$v" || MISSING="$MISSING $v"
 done
