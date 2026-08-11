@@ -9,13 +9,13 @@
 // initial-state flag — both already supported, since deep links to verses exist"). **It did not.**
 // The reader parses `#v<n>` from `window.location.hash` and only SCROLLS; there are no query
 // params on that route and no way to open the drawer from a URL. Recorded in T1's Findings log.
-// The hash was extended to `#v<n>:study`, reusing the effect and the `openStudy` callback already
-// in that file — the smallest change that makes the block's premise true.
+// The reader now honours `?firstrun=1`, read from `window.location.search` in the SAME effect
+// that already reads the hash — so hydration safety is unchanged (no `useSearchParams`, no
+// Suspense boundary, nothing evaluated during render).
 //
-// A hash rather than a query string is deliberate and load-bearing: the reader reads it in an
-// effect precisely because a hash is never sent to the server, so no first client render can
-// disagree with it. A `?v=` would reintroduce the hydration-mismatch shape that file spent an
-// afternoon removing.
+// **It was a hash first, and that took production auth down.** See the fragment test below: a
+// `callbackURL` is validated by Neon's HOSTED auth server, and a fragment is never transmitted, so
+// it can only ever be rejected. A query param is the only form that survives an OAuth round trip.
 //
 // ── T3 ─────────────────────────────────────────────────────────────────────────────────────────
 // The page-level scroll container must reserve the mobile tab bar's height plus the device's safe
@@ -39,7 +39,32 @@ describe('T1 — a new account lands in the reader, not on the dashboard', () =>
     const dest = /FIRST_RUN_DESTINATION = '([^']+)'/.exec(forms)?.[1];
     expect(dest, 'FIRST_RUN_DESTINATION is not declared').toBeTruthy();
     expect(dest, 'a new reader must land in the reader, not on the devotional feed').toMatch(/^\/read\//);
-    expect(dest, 'the drawer must be open — landing on the chapter alone teaches nothing').toMatch(/#v\d+:study$/);
+    expect(dest, 'the drawer must be open — landing on the chapter alone teaches nothing').toMatch(/firstrun=1/);
+  });
+
+  // ── THE CHECK THAT WAS MISSING, AND IT TOOK PRODUCTION AUTH DOWN ─────────────────────────────
+  // The first version of this block set FIRST_RUN_DESTINATION to `/read/jhn/1#v1:study`. That is
+  // fine for `router.push`, and it BREAKS OAuth: `callbackURL` is validated by Neon's HOSTED auth
+  // server, which refuses a fragment — "callbackURL must be an absolute URL or a safe relative
+  // path starting with /". The value DOES start with `/`, so the message points away from the
+  // real cause. The error rendered on the sign-in page and sign-in stopped working.
+  //
+  // Nothing in this repo could have caught it: the validator is remote, the type is `string`, and
+  // every local check passed. What CAN be checked is the property that makes it safe — a
+  // `callbackURL` must survive a server round trip, and a fragment never does. A fragment is by
+  // definition never transmitted, so putting one in a value the server must validate is always
+  // wrong, whatever this particular server happens to say.
+  //
+  // SEED: restore the `#v1:study` form -> RED.
+  it('the destination survives an OAuth round trip — no URL fragment', () => {
+    const forms = read('components/auth-forms.tsx');
+    const dest = /FIRST_RUN_DESTINATION = '([^']+)'/.exec(forms)?.[1] ?? '';
+    expect(
+      dest.includes('#'),
+      'a fragment is never sent to the server, so it cannot survive an OAuth callback — and ' +
+        "Neon's hosted validator rejects the whole value rather than ignoring it",
+    ).toBe(false);
+    expect(dest.startsWith('/'), 'callbackURL must be a safe relative path').toBe(true);
   });
 
   it('the email and Google paths share one destination, so they cannot drift', () => {
@@ -60,8 +85,8 @@ describe('T1 — a new account lands in the reader, not on the dashboard', () =>
   // and silently not open the drawer — the failure would be invisible from the URL alone.
   it('the reader can actually honour that URL', () => {
     const reader = read('app/read/[book]/[chapter]/page.tsx');
-    expect(reader, 'the hash parser does not accept the :study suffix').toMatch(/\^#v\\d\+\)\(:study\)\?\$|:study/);
-    expect(reader, 'nothing opens the drawer from the hash').toMatch(/if \(m\[2\]\) openStudy\(/);
+    expect(reader, 'the reader ignores ?firstrun=1, so the redirect would open no drawer').toMatch(/firstrun/);
+    expect(reader, 'nothing opens the drawer for a first run').toMatch(/openStudy\(1, 'commentaries'\)/);
   });
 });
 

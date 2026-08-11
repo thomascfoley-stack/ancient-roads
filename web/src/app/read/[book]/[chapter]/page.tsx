@@ -180,6 +180,13 @@ export default function ReaderPage() {
     // more, and there are no query params on this route. Extending the hash the effect already
     // parses is the smallest change that makes the claim true, and it reuses `openStudy` rather
     // than adding a second way to open the panel.
+    // `?firstrun=1` is the OAuth-safe form: a fragment never survives a `callbackURL` round trip
+    // and Neon's hosted auth server rejects one outright. Read from `window.location` in this
+    // effect rather than `useSearchParams`, which would need a Suspense boundary.
+    if (new URLSearchParams(window.location.search).get('firstrun') === '1') {
+      openStudy(1, 'commentaries');
+      return;
+    }
     const m = /^#v(\d+)(:study)?$/.exec(window.location.hash);
     if (!m) return;
     const verse = Number(m[1]);

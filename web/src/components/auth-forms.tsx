@@ -27,17 +27,27 @@ import type { AuthMode } from '@/lib/auth/paths';
  * and the `openStudy` callback that were already there, which is the smallest change that makes
  * the block's premise true.
  *
- * A HASH, not a query string, and that is deliberate: the reader page reads it in an effect
- * precisely because a hash is never sent to the server, so no first client render can disagree
- * with it. A `?v=` would reintroduce the hydration-mismatch shape that file spent an afternoon
- * removing.
+ * ── WHY A QUERY PARAM AND NOT A HASH — THIS BROKE PRODUCTION SIGN-IN ───────────────────────────
+ * The first version was `/read/jhn/1#v1:study`. It works for `router.push` (client-side), and it
+ * BREAKS OAuth: `callbackURL` is validated by Neon's HOSTED auth server, which rejects a fragment
+ * with *"callbackURL must be an absolute URL or a safe relative path starting with /"*. The value
+ * does start with `/`, so the message is misleading — the fragment is what it refuses. That error
+ * rendered on the sign-in page and took auth down.
+ *
+ * **The fragment was never sent to the server anyway** — that is the whole point of a hash — so a
+ * server-side validator can only ever see it as junk. A query param is the only form that
+ * survives an OAuth round trip.
+ *
+ * Hydration safety is preserved because the reader reads `window.location.search` in an EFFECT,
+ * exactly as it already reads the hash — not via `useSearchParams`, which would need a Suspense
+ * boundary and reintroduce the first-render disagreement that file spent an afternoon removing.
  *
  * Google sign-in uses the same destination via `callbackURL`, so the two paths cannot drift.
  *
  * NOTE it is used for sign-UP only. Sending a returning reader here every time would override the
  * place they chose to be, which is the opposite of the point.
  */
-export const FIRST_RUN_DESTINATION = '/read/jhn/1#v1:study';
+export const FIRST_RUN_DESTINATION = '/read/jhn/1?firstrun=1';
 
 const MIN_PASSWORD = 12;
 
