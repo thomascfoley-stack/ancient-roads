@@ -56,8 +56,26 @@ describe.skipIf(SKIP)('Plans routes (handler → store → dev DB, session mocke
   beforeAll(() => { expect(dbUrl).toBeTruthy(); });
 
   afterAll(async () => {
-    if (!createdId) return;
-    await deletePlanRoute(new NextRequest('http://localhost'), { params: Promise.resolve({ id: createdId }) });
+    // PREFIX SWEEP, not remembered-id cleanup (check-test-residue's rule: fix the teardown,
+    // sweep by prefix so interrupted runs are reaped too). The inline delete of the Pauline
+    // plan sits AFTER its assertions, so any failure there strands a plan; three audit runs
+    // 2026-08-10 each left their Romans plan behind exactly that way. Hard delete, each step
+    // independent, via the owner connection (app_runtime is correctly refused plans writes
+    // for other users; the mocked session only exists inside the route handlers).
+    const { seedOwnerUrl } = await import('../helpers/env');
+    const owner = seedOwnerUrl();
+    if (!owner) return;
+    const { default: pg } = await import('pg');
+    const c = new pg.Client({ connectionString: owner, ssl: { rejectUnauthorized: false } });
+    await c.connect();
+    try {
+      const stranded = `SELECT id FROM plans WHERE user_id LIKE 'qa-plan-routes-%'`;
+      // plan_day_readings cascades from plan_days (042's ON DELETE CASCADE).
+      await c.query(`DELETE FROM plan_days WHERE plan_id IN (${stranded})`).catch(() => {});
+      await c.query(`DELETE FROM plans WHERE user_id LIKE 'qa-plan-routes-%'`).catch(() => {});
+    } finally {
+      await c.end();
+    }
   }, 30_000);
 
   it('POST creates a Romans plan: 201, days persisted, dates arithmetic', async (ctx) => {
@@ -68,7 +86,9 @@ describe.skipIf(SKIP)('Plans routes (handler → store → dev DB, session mocke
     expect(res.status).toBe(201);
     const body = (await res.json()) as { plan: { id: string; title: string } };
     createdId = body.plan.id;
-    expect(body.plan.title).toBe('rom in 8 weeks');
+    // L2c (2026-08-08) changed the generated title from the raw-slug 'rom in 8 weeks' to the
+    // human-readable 'Romans · 8 weeks'; date-locale-and-plan-title.test.ts owns that format.
+    expect(body.plan.title).toBe('Romans · 8 weeks');
 
     const got = await getPlanRoute(new NextRequest('http://localhost'), { params: Promise.resolve({ id: createdId }) });
     expect(got.status).toBe(200);
@@ -118,7 +138,7 @@ describe.skipIf(SKIP)('Plans routes (handler → store → dev DB, session mocke
     }));
     expect(res.status).toBe(201);
     const body = (await res.json()) as { plan: { id: string; title: string } };
-    expect(body.plan.title).toBe("Paul's Epistles in 8 weeks");
+    expect(body.plan.title).toBe("Paul's Epistles · 8 weeks"); // L2c title format, as above
     const got = await getPlanRoute(new NextRequest('http://localhost'), { params: Promise.resolve({ id: body.plan.id }) });
     const detail = (await got.json()) as { days: Array<{ verse_start: number; verse_end: number }> };
     expect(detail.days).toHaveLength(24);
