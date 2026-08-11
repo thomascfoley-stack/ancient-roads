@@ -1,0 +1,37 @@
+
+
+before: {"status":"published","embeddings":6215,"served":5088}
+/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/pg@8.22.0/node_modules/pg/lib/client.js:652
+          Error.captureStackTrace(err)
+                ^
+
+error: canceling statement due to statement timeout
+    at /Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/pg@8.22.0/node_modules/pg/lib/client.js:652:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///Users/foley/Projects/ancient-roads-git/[eval1]:18:12 {
+  length: 109,
+  severity: 'ERROR',
+  code: '57014',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'postgres.c',
+  line: '3447',
+  routine: 'ProcessInterrupts'
+}
+
+Node.js v24.5.0
+
+
+status flipped (1 row), 0.1s
+unserved 5088 embeddings, 540.0s
+after: {"status":"staged","served":0}
+CALVIN-CROSSWIRE WITHDRAWN (dev)

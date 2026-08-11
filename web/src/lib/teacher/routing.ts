@@ -66,17 +66,18 @@ export const SERVED_PROSE_WORKS = [
 // The SERMON register lane (homiletical exposition — Spurgeon, Maclaren, the
 // Puritans). Retrieve-and-quote in its own pool + labeled payload; the reusable
 // sermon-search retrieval core. NEVER in the exegetical pool or its voice floor.
-// `spurgeon-talks-to-farmers` added 2026-08-02 by owner decision ("add it so all sermons are
-// live"). It was the ONLY clean, unquarantined sermon-type work in the manifest absent from this
-// list, and nothing recorded why — the A8 draft flagged the omission's intent as NOT ESTABLISHED.
-// Its non-authorial back matter is already suppressed (`suppress-nonauthorial-matter.ts`: ordinals
-// 299-300, "publisher's back-matter"), so it is curated, not raw.
+// `spurgeon-talks-to-farmers` was added 2026-08-02 by owner decision ("add it so all sermons are
+// live") and REMOVED 2026-08-11 by owner decision ("kill it — we will upload it later"): the work
+// was published with 298 sections but embeddings were never generated, so it was shelf-readable
+// and retrieval-invisible. It is now serve:false in the manifest (the re-upload will carry
+// vectors). Its non-authorial back matter suppression (ordinals 299-300) stays on record for
+// that re-ingest.
 // NOT added, and this is the one sermon that stays out: `whitefield-works` is `serve:false` in the
 // manifest for a QUALITY reason, not an oversight — Project Gutenberg vol 1 of 6, no clean sermon
 // boundaries. "All sermons live" does not reach it without revisiting that ruling.
 export const SERVED_SERMON_WORKS = [
   'spurgeon-sermons', 'maclaren-expositions', 'watson-works', 'flavel-works',
-  'edwards-works', 'wesley-sermons', 'spurgeon-talks-to-farmers',
+  'edwards-works', 'wesley-sermons',
 ] as const;
 // The THEOLOGY/CONFESSION register lane (systematic + confessional — topical
 // treatises, not verse-commentary). Same lane machinery, its own labeled payload.

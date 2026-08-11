@@ -42,12 +42,6 @@ function dotColor(id: string): string {
   return DOT_COLORS[h % DOT_COLORS.length];
 }
 
-function newId(): string {
-  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : Math.random().toString(36).slice(2);
-}
-
 /**
  * ⚠ DO NOT DELETE OR CLEAR THIS KEY. It is load-bearing for a feature in another file.
  *
@@ -272,15 +266,6 @@ export function SidebarNavContent({
             onRename={(name) =>
               save(sections.map((s) => (s.id === section.id ? { ...s, name } : s)))
             }
-            onAddItem={(name) =>
-              save(
-                sections.map((s) =>
-                  s.id === section.id
-                    ? { ...s, items: [...s.items, { id: newId(), name }] }
-                    : s,
-                ),
-              )
-            }
           />
         ))}
 
@@ -462,17 +447,14 @@ function StudySectionView({
   row,
   onNavigate,
   onRename,
-  onAddItem,
 }: {
   section: StudySection;
   pathname: string;
   row: string;
   onNavigate?: () => void;
   onRename: (name: string) => void;
-  onAddItem: (name: string) => void;
 }) {
   const [renaming, setRenaming] = useState(false);
-  const [addingItem, setAddingItem] = useState(false);
 
   return (
     <div className="group mt-4">
@@ -492,6 +474,11 @@ function StudySectionView({
             <span className="truncate text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
               {section.name}
             </span>
+            {/* 2026-08-11 (owner): the `+` created items that led NOWHERE — every item resolves
+                to /prayers, and only the PR1a-migrated legacy items genuinely live there.
+                Creating an inert name was a fake door (owner: "making new works under those
+                tabs do nothing"), so the affordance is removed until study spaces are built.
+                Rename stays: it edits what already exists. */}
             <span className="flex items-center gap-0.5 opacity-100 transition-opacity ease-gentle [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100">
               <button
                 onClick={() => setRenaming(true)}
@@ -500,30 +487,11 @@ function StudySectionView({
               >
                 <PencilIcon />
               </button>
-              <button
-                onClick={() => setAddingItem(true)}
-                className="p-1.5 text-stone-500 transition-colors ease-gentle hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
-                aria-label={`Add to ${section.name}`}
-              >
-                <PlusIcon />
-              </button>
             </span>
           </>
         )}
       </div>
-      {addingItem && (
-        <div className="mx-2 mb-1">
-          <InlineNameForm
-            placeholder="name"
-            onSubmit={(name) => {
-              onAddItem(name);
-              setAddingItem(false);
-            }}
-            onCancel={() => setAddingItem(false)}
-          />
-        </div>
-      )}
-      {section.items.length === 0 && !addingItem && <SectionEmptyState id={section.id} />}
+      {section.items.length === 0 && <SectionEmptyState id={section.id} />}
       {section.items.map((item) => {
         // PR1c item 1. These items belong to sections a reader created before `N4` retired the
         // concept, and BOTH old destinations are dead: `/channel/[id]` redirects to `/prayers`,
@@ -578,7 +546,7 @@ function SectionEmptyState({ id }: { id: string }) {
       ? 'Group study spaces — a class or cohort working through a passage together. Being built.'
       : id === 'partners'
         ? 'A space of your own for each sermon or class, with your notes kept together. Being built.'
-        : 'Empty. Use + on the heading to add to this section.';
+        : 'Empty. Study sections fill in when study spaces are built.';
   return (
     <p className="px-4 py-1 pb-2 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
       {copy}
@@ -700,14 +668,6 @@ function SidebarButton({
       <span className="flex w-4 items-center justify-center text-sm">{icon}</span>
       <span className="flex-1 truncate text-left">{label}</span>
     </button>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg aria-hidden className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-    </svg>
   );
 }
 

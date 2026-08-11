@@ -47,6 +47,60 @@ failure — it is inventing one.
   `docs/SECURITY.md`, `package.json`, `scripts/audit.sh`, and untracked briefs). It was never
   touched. This hotfix was built, tested and deployed from a **separate worktree** off `origin/main`
   precisely so that tree could be left alone — which is the rule added yesterday, applied.
+## 2026-08-11 (evening) — owner rulings executed on dev: two withdrawals, FTS migration 108, sidebar + prayer fixes, Song of Solomon plan
+
+Owner rulings, executed on dev (prod halves await the owner's go — see NOT DONE):
+
+- **spurgeon-talks-to-farmers KILLED** ("we will upload it later"): published → staged. It
+  was published 2026-08-02 with 298 sections and ZERO embeddings (never generated —
+  shelf-readable, retrieval-invisible). `serve:false` recorded in the manifest with the
+  ruling; removed from `SERVED_SERMON_WORKS` (comment trail kept for the re-upload,
+  including the ordinals 299-300 back-matter suppression).
+- **calvin-crosswire SHELVED** ("we will find it later"): published → staged + 5,088
+  embeddings unserved in ONE transaction. The unserve took 540s (5k wide-row rewrites
+  through the partial HNSW predicates); a first attempt hung past its statement budget on
+  a dead socket, was killed, and rerun with 600s — rowcounts asserted or rollback.
+  `serve:false` in the manifest. The 1,125 biblehub rows stay excluded-and-deferred; the 2
+  clean books.google rows die with the shelving. Calvin the VOICE is unaffected: 13,132
+  served calcom rows carry him as 'Calvin, John' (CCEL naming) — a different string from
+  crosswire's 'John Calvin'.
+- **Both guards fired on the follow-through, watched red first:** (1) fts-legal-index-sync:
+  037's index predicate named the shelved slug while `LEGAL_COMMENTARY_ENTRIES_PREDICATE`
+  no longer did — migration **108** rebuilds `idx_commentary_fts_legal` without it (zero
+  functional delta: 0 commentary_entries rows for the work; lockstep, not content),
+  applied to dev via `db/apply-migration-concurrent.mjs`, index VALID, ledger recorded.
+  (2) licensing presence: "MISSING: John Calvin" — crosswire was the pool's only
+  'John Calvin'-string commentary. The test now accepts the Calvin voice under either
+  attested pool string; a third string still fails. 'Calvin, John' was deliberately NOT
+  added to `PUBLISHED_WHOLE_BIBLE_AUTHORS` — the author leg would over-admit the
+  QUARANTINED base `calvin-calcom` work.
+- **served-reconcile after the withdrawals: green** ("nothing unpublished serves").
+- **Sidebar fake door closed** (owner: "making new works under those tabs do nothing"):
+  the `+` on study sections created inert names that ALL resolve to /prayers — true only
+  for the PR1a-migrated legacy items. `+` removed (rename stays), empty-state copy made
+  honest, `newId`/`PlusIcon` removed with it. tsc + eslint clean, component tests 11/11.
+- **Prayer compose widened** (owner: "writing wall too small, not expandable, use the real
+  estate"): `max-w-[66ch]` → `max-w-4xl` (COMPOSE only — the PRD's 66ch is a READING spec
+  and still binds list/read views), 50vh floor, `resize-none` → `resize-y`. PRD idiom
+  (parchment, hairline, gold focus) unchanged.
+- **Song of Solomon: the hole is CONTENT, not staleness** (measured: 5/117 verses in
+  `verse_coverage`; ~6 exegetically-anchored verses even after a rebuild; matthew-henry
+  and john-gill have ZERO Song content; clarke/jfb/keil only cross-references). Plan:
+  `docs/SONG_OF_SOLOMON_COVERAGE_PLAN.md` — acquire Gill's Exposition of the Song + JFB on
+  the Song (both already-admitted voices), ingest with anchors, embed (owner go on spend),
+  owner flip, rebuild verse_coverage, flip the pinned plans-routes expectation red-proofed.
+  Side-finding for the ingest lane: ryle-expository's 21 served rows keyed to the Song
+  contain non-Ryle content ("THE LORD'S GARDEN") — the old author-page contamination class.
+
+### NOT DONE / UNVERIFIED
+- **PROD halves await the owner** (per-occasion go or owner-run): the two withdrawals (same
+  receipted transactions) and migration 108. Dev evidence:
+  `docs/evidence/withdraw-spurgeonttf-calvinxc-2026-08-11-dev.log`.
+- Prayer compose + sidebar changes are NOT browser-verified (no browser in this
+  environment); class-level changes reviewed against the PRD and the owner's screenshots.
+- The plans-routes Song expectation flips only when the coverage plan lands (§2.1 awaits
+  the owner's second-voice pick — Gill + JFB recommended).
+
 ## 2026-08-11 (midday addendum) — the wall is green ON THE CURRENT HEAD
 
 The midday entry's "AUDIT FULLY GREEN" was measured at 07:35 — and 4 minutes later the

@@ -147,7 +147,11 @@ export function PrayerJournal({ initialVerseId = null }: { initialVerseId?: numb
   if (composing || (open && editing)) {
     const isNew = composing;
     return (
-      <div className="mx-auto max-w-[66ch] px-6 py-12 md:py-20">
+      // COMPOSE IS A WRITING SURFACE, NOT A READING COLUMN. The list and read-first views keep
+      // the PRD's 66ch measure (§5 Prayers); the compose view widened to max-w-4xl on owner
+      // feedback 2026-08-11 ("the writing wall is too small… use the real estate"). The PRD
+      // spec binds the reading surfaces, not the editor.
+      <div className="mx-auto max-w-4xl px-6 py-12 md:py-20">
         {initialVerseId !== null && isNew && (
           <p className="mb-4 font-scripture text-sm text-accent-600 dark:text-accent-400">
             {formatVerseId(initialVerseId)}
@@ -159,14 +163,16 @@ export function PrayerJournal({ initialVerseId = null }: { initialVerseId?: numb
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          rows={14}
+          rows={16}
           autoFocus
           aria-label="Your prayer"
           /* Parchment surface, one hairline, 18px Literata — the PRD's compose view (§5 Prayers),
              no visible chrome around the words themselves. The `!` on the focus border is
              load-bearing: `.edge` is unlayered (see globals.css) and otherwise swallows the
-             layered focus utility, so the antique-gold focus border never painted. */
-          className="focus-quiet w-full resize-none border edge edge-focus bg-stone-50 px-8 py-6 font-serif text-lg leading-[1.9] text-stone-900 outline-none placeholder:text-stone-500 dark:bg-stone-950 dark:text-stone-200 dark:placeholder:text-stone-400"
+             layered focus utility, so the antique-gold focus border never painted.
+             2026-08-11 (owner): the box was too small and NOT expandable (resize-none) — now a
+             50vh floor with vertical resize, same parchment idiom. */
+          className="focus-quiet min-h-[50vh] w-full resize-y border edge edge-focus bg-stone-50 px-8 py-6 font-serif text-lg leading-[1.9] text-stone-900 outline-none placeholder:text-stone-500 dark:bg-stone-950 dark:text-stone-200 dark:placeholder:text-stone-400"
           placeholder="…"
         />
         {error && <p role="alert" className="mt-3 text-sm text-red-800 dark:text-red-200">{error}</p>}

@@ -1416,7 +1416,9 @@
       "match_author": "John Calvin",
       "forbidden_provenance": "exclude",
       "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): 1,125 of 6,215 flat rows (18.1%) carry biblehub provenance; 5,088 CrossWire + 2 books.google rows are clean. The exclusion is strictly subtractive, counted on the sources row, and does not declare the work legitimate — the cleanup of the flat store stays the deferred b2 slice."
-    }
+    },
+    "serve": false,
+    "quarantine": "Owner ruling 2026-08-11: shelved — 'we will find it later'. The 1,125 biblehub rows stay excluded-and-deferred (b2 slice), the 2 clean books.google rows stay owner-terminal, and Calvin remains served by the calcom volumes. Withdrawn from published (status -> staged, 5,088 served rows unserved); re-shelving means deleting this block, not another flip."
   },
   {
     "id": "scofield-crosswire",
@@ -1567,7 +1569,9 @@
         "id": 42518,
         "decoder": "src/ingest/ingest-sermon.ts"
       }
-    }
+    },
+    "serve": false,
+    "quarantine": "Owner ruling 2026-08-11: 'kill it — we will upload it later'. Published 2026-08-02 with 298 sections but embeddings were never generated (0 vectors on dev+prod, measured 2026-08-11), so it sat on the shelf unreadable by any retrieval path. Withdrawn from published (status -> staged); re-upload means a fresh ingest WITH embeddings, then deleting this block."
   },
   {
     "id": "spurgeon-morning-evening",

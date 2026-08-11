@@ -163,11 +163,25 @@ describe.skipIf(SKIP)('Layer 1 — licensing invariant (behavioral)', () => {
        WHERE user_id IS NULL AND source_type = 'commentary' AND ${LEGAL_CORPUS_FILTER}`,
     )) as { author: string }[];
     const present = new Set(rows.map((r) => r.author));
-    const expected = [
-      'John Gill', 'Jamieson, Fausset & Brown', 'Adam Clarke', 'Matthew Henry',
-      'Albert Barnes', 'John Wesley', 'John Calvin', 'Augustine of Hippo', 'John Chrysostom',
+    // Each entry: the voice, then the ATTESTED pool string(s) that count as that voice.
+    // Calvin has two: the corpus carries the SAME person as 'John Calvin' (crosswire set,
+    // shelved 2026-08-11 by owner ruling) AND 'Calvin, John' (the CCEL calcom volumes —
+    // 36edbd9/ec63de4 — which are where the voice lives in the commentary pool today).
+    // Requiring one exact string was correct while exactly one naming existed; what this
+    // test guards is that the VOICE is present, and accepting only the shelved string
+    // would report a voice the pool still serves as missing. A THIRD string still fails.
+    const expected: Array<{ voice: string; as: readonly string[] }> = [
+      { voice: 'John Gill', as: ['John Gill'] },
+      { voice: 'Jamieson, Fausset & Brown', as: ['Jamieson, Fausset & Brown'] },
+      { voice: 'Adam Clarke', as: ['Adam Clarke'] },
+      { voice: 'Matthew Henry', as: ['Matthew Henry'] },
+      { voice: 'Albert Barnes', as: ['Albert Barnes'] },
+      { voice: 'John Wesley', as: ['John Wesley'] },
+      { voice: 'John Calvin', as: ['John Calvin', 'Calvin, John'] },
+      { voice: 'Augustine of Hippo', as: ['Augustine of Hippo'] },
+      { voice: 'John Chrysostom', as: ['John Chrysostom'] },
     ];
-    const missing = expected.filter((a) => !present.has(a));
+    const missing = expected.filter((e) => !e.as.some((a) => present.has(a))).map((e) => e.voice);
     expect(missing, `teacher must serve all 9 voices; MISSING: ${missing.join(', ')}`).toEqual([]);
   }, 30_000);
 
