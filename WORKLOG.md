@@ -90,6 +90,23 @@ ledger-recorded; the file itself untouched to preserve the prod checksum.
 - The `ep-odd-fog password authentication failed` line in qa output — some test configs still
   point at prod with stale credentials; not yet traced.
 
+**08-10 (evening) — qa leg: env causes solved, real findings surfaced.** The role mapping was
+the whole RLS story: `~/.neon_dev_url` IS the app_runtime URL, `~/.neon_dev_owner_url` the
+owner; the suites need `DATABASE_URL=owner + APP_DATABASE_URL=app_runtime` (a mistaken
+app_runtime password rotation mid-diagnosis was restored to the stored credential, verified).
+Root vitest 687/687 green once the stray DATABASE_URL_UNPOOLED export was dropped (it leaked
+into target-guard's spawned child). plans-routes teardown rewritten to prefix-sweep
+(check-test-residue watched red→green) and its title expectations updated to L2c's deliberate
+format. **What remains red in qa is mostly REAL, not broken tests:** `topical_index` is a
+published register with no catalog entry — the pinned no-catalog set `['lexicon']` needs an
+OWNER ruling (the test says so in terms); ten published works (john-gill, schaff-creeds,
+spurgeon-morning-evening, chrysostom-homilies, josephus-whiston, watts-psalmshymns,
+schaff-dictionarybible, milton-poetical-works, spurgeon-sermons, owen-works) have every
+section as its own reading unit — TOC is chunk artifacts; the unit-ordinal backfill never
+reached them (ingest-lane content debt, on prod data). Plus intermittent `NeonDbError: fetch
+failed` flakes on the owner's unstable connection, and one untraced ep-odd-fog password-auth
+line (intermittent, did not reproduce in isolation).
+
 ## 2026-08-10 — "photo as ground" shipped; PR #76 merged; main == production
 
 **The marketing site's final form** (owner direction, after reviewing a static-site
