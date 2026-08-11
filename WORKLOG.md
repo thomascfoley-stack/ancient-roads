@@ -1,5 +1,53 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-11 — HOTFIX: I broke sign-in, and the fix is live
+
+**`main` `f1c749f` == production `f1c749f`** (`dpl_CBNUQjrw77N2WqqGUYLtDdmuyVG2`, `vercel ls`: 4m,
+● Ready). Suite **105 files / 706 tests** green in the deployed tree.
+
+**What I broke.** `T1` set `FIRST_RUN_DESTINATION = '/read/jhn/1#v1:study'` and used it for BOTH
+`router.push` and the OAuth `callbackURL`. `router.push` handles a fragment fine. `callbackURL`
+does not — it is validated by Neon's **hosted** auth server, which rejected the whole value:
+*"callbackURL must be an absolute URL or a safe relative path starting with /"*. The value **does**
+start with `/`, so the message points away from the cause. The error rendered on the sign-in page
+and auth stopped working. Shipped in `af49032`; live until today.
+
+**The mistake is more basic than the API.** A fragment is *by definition* never transmitted to a
+server. Putting one in a value the server must validate is always wrong, whatever that server says
+about it. I chose the hash for hydration safety — correct reasoning for the reader page, applied to
+a value that has to survive a round trip.
+
+**Fix:** `?firstrun=1`. One destination for both paths so they still cannot drift; the reader reads
+`window.location.search` in the SAME effect that already reads the hash, so no `useSearchParams`,
+no Suspense boundary, nothing evaluated during render — the hydration property that motivated the
+hash is fully preserved. Regression test added and **seeded with the exact value that broke
+production**: a `callbackURL` must contain no fragment. Nothing local could have caught the
+original (remote validator, `string` type), but the property that makes it safe is checkable.
+
+**A stale gate blocked the hotfix and was discharged on its own stated condition.** `deploy.sh`
+required `BETTER_AUTH_URL` / `BETTER_AUTH_SECRET`, with a comment reading *"drop it once step 10
+removes the package."* Verified four ways rather than assumed: `better-auth` appears **0** times in
+either `package.json`; `lib/auth/better-auth.ts` was deleted (F2); **0** files read `BETTER_AUTH_*`;
+and production has **never had either variable set**, has both `NEON_AUTH_*` vars, and is serving.
+A gate demanding variables no code reads and production does not have is not protecting a runtime
+failure — it is inventing one.
+
+### NOT DONE / UNVERIFIED
+
+- **A real sign-in has NOT been performed.** The site-password gate means an unauthenticated
+  `curl` cannot reach `/auth/*` — a bundle scan of the live page measures the **gate**, not the
+  sign-in chunk, which is the same wrong-mechanism trap this week keeps producing. What IS proven:
+  the deployed sha contains `?firstrun=1` and no fragment in the constant, and `deploy.sh` verified
+  the alias serves this deployment. **The owner completing one sign-in is the check.**
+- **Two aborted deploy receipts** are committed and annotated (`874e45e`, and the earlier
+  `dda45df`). Both say "upload started, outcome unknown"; `vercel ls` proved neither shipped. Cause
+  both times: a ~1.1GB corpus upload run in the foreground under a tool timeout. **Second instance
+  in two days — this payload must be deployed detached.**
+- **The primary working tree is dirty with another session's uncommitted work** (`WORKLOG.md`,
+  `docs/SECURITY.md`, `package.json`, `scripts/audit.sh`, and untracked briefs). It was never
+  touched. This hotfix was built, tested and deployed from a **separate worktree** off `origin/main`
+  precisely so that tree could be left alone — which is the rule added yesterday, applied.
+
 ## 2026-08-10 — "photo as ground" shipped; PR #76 merged; main == production
 
 **The marketing site's final form** (owner direction, after reviewing a static-site
