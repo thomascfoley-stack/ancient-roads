@@ -1,0 +1,22 @@
+deployed_at_utc: 2026-08-11T15:02:47Z
+sha:             874e45e7576e85d68af053440b726ad484e13274
+branch:          hotfix/callback-url-fragment
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@50.38.2
+url:             (not parsed - see /var/folders/fq/79gh1x1j27z5n7kx60742kkh0000gn/T//vercel-deploy.5jjTRT)
+deployment_id:   (not resolved)
+alias:           ancientpaths.app
+alias_serves:    (not resolved)
+state:           upload started, outcome unknown
+
+--- ANNOTATED AFTER THE FACT ---
+outcome:      NO DEPLOYMENT CREATED. Receipt of an ABORTED attempt.
+cause:        run in the foreground under a 10-minute tool timeout; the shell was
+              killed mid-upload. The payload is ~1.1GB of corpus assets, which
+              takes longer than that to upload. Operator error, not a deploy fault.
+verified how: `vercel ls` immediately afterwards still showed the newest production
+              deployment at 23h old, i.e. unchanged.
+why kept:     "state: upload started, outcome unknown" is exactly the phrasing that
+              gets misread later as a success. Second instance of this in two days.
