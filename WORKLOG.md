@@ -47,6 +47,19 @@ failure — it is inventing one.
   `docs/SECURITY.md`, `package.json`, `scripts/audit.sh`, and untracked briefs). It was never
   touched. This hotfix was built, tested and deployed from a **separate worktree** off `origin/main`
   precisely so that tree could be left alone — which is the rule added yesterday, applied.
+## 2026-08-11 (midday addendum) — the wall is green ON THE CURRENT HEAD
+
+The midday entry's "AUDIT FULLY GREEN" was measured at 07:35 — and 4 minutes later the
+parallel lane committed `25aca5e` (sign-in hotfix: URL fragment cannot be a callbackURL;
+T1 regression, its own seeded test) onto this branch MID-RUN. That first wall was
+disclaimed. Two re-runs then failed qa on CONNECTION-LEVEL errors only (`read ECONNRESET`,
+`NeonDbError: fetch failed`, 5s timeouts, transaction-abort cascades — failing set varied
+per run; every implicated file green in isolation, 21/21), with the owner's link bouncing
+and the parallel session also running suites against the same dev endpoint. On a stable
+link: **`npm run audit` exit 0 on HEAD `7fd422b`** (which carries `25aca5e` below it) —
+every gate green, deps included. The midday entry's claim is hereby true for the current
+tree, not just the pre-hotfix one.
+
 ## 2026-08-11 (midday) — deps ruling LANDED: AUDIT FULLY GREEN; orphaned auth env vars removed
 
 **`npm run audit` exit 0 — every gate green, deps included** (env, typecheck ×4, lint ×2,
