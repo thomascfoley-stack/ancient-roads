@@ -47,6 +47,19 @@ failure — it is inventing one.
   `docs/SECURITY.md`, `package.json`, `scripts/audit.sh`, and untracked briefs). It was never
   touched. This hotfix was built, tested and deployed from a **separate worktree** off `origin/main`
   precisely so that tree could be left alone — which is the rule added yesterday, applied.
+## 2026-08-11 (evening addendum) — the PROD half is done
+
+Owner said "go" (per-occasion). All three prod writes executed against `ep-odd-fog` and
+verified, serially: spurgeon-talks-to-farmers published → staged (0.2s); calvin-crosswire
+published → staged + 5,088 embeddings unserved in one asserted transaction (608s — HNSW
+maintenance, as on dev); migration 108 applied via `db/apply-migration-concurrent.mjs`
+(`MIGRATE_ALLOW_PROD=1`) — index VALID and READY, ledger sha256 identical to dev's apply.
+Receipts: `docs/evidence/withdraw-spurgeonttf-calvinxc-2026-08-11-prod.log`. Final
+`served-reconcile` on prod: green — "nothing unpublished serves"; identical cohort profile
+to dev. **The evening entry's NOT-DONE prod item is closed.** Remaining from that entry:
+the plans-routes Song expectation (awaits the coverage plan) and the browser check of the
+sidebar/compose changes.
+
 ## 2026-08-11 (evening) — owner rulings executed on dev: two withdrawals, FTS migration 108, sidebar + prayer fixes, Song of Solomon plan
 
 Owner rulings, executed on dev (prod halves await the owner's go — see NOT DONE):
