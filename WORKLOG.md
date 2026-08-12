@@ -1,5 +1,92 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-12 — EMBEDDINGS_DESIGN.md: recon → design (docs only, no code)
+
+Claude cowork's pre-design recon (four vector planes, one model, the lockstep problem, six open
+questions, read at `02b1b42`, deliberately kept off-repo) converted into
+`docs/EMBEDDINGS_DESIGN.md` against `6fdc483`. Verified its load-bearing claims before adopting:
+P2 (`section_embeddings`) has no runtime readers (re-grepped — matches outside `src/ingest/` are
+all `user_section_embeddings`), `register-writer.ts:208` DELETEs from it and never INSERTs
+(decay confirmed), `user-corpus/model.ts` parity machinery exists (:51-68).
+
+**Settled one of the six questions from the tree** (recon §8.6): `hybrid_search()` is NOT dead —
+five eval/diagnostic scripts still call it (`eval-routing.mts:56`, `eval-retrieval.mts:88,92`,
+`eval-legal-corpus.mts:97`, `diagnose-legal-misses.mts:46`, `diagnose-pipeline.mts:65`) while
+the request path is pure vector + reranker. The eval harness measures a pipeline users don't
+hit — the exact trap `WORKORDER_PHASE_A.md:13` named. D6: port the harness to the live path;
+the function stays in schema (inert once caller-less, which also defuses the `db/migrate.mjs`
+CREATE-OR-REPLACE footgun).
+
+Rulings recommended: D1 P2 — populate in register-writer now (~15 lines, vector reuse, zero
+embed cost), reader ruling deferred to the semantic-search slice with coverage intact; D2 one
+model constant corpus-wide + sync invariant; D3 CHECK pin on `metadata->>'model'` (validation
+failure = the check working); D4 lexicon lane stays A8's; D5 provider `model` assertion adopted
+now (V4), Nebius failover recommended before next corpus-scale embed run. Slices V0–V4;
+invariants V-1…V-5 with red-proofs. No retrieval behaviour changes — no accuracy diagnostic
+implicated.
+
+**NOT DONE / UNVERIFIED:** owner rulings D1/D5 unmade; V0 aggregates not run (dev P2 counts,
+prod model-conformity — rides gate A5); all invariants unrun. STUDY_DOCS owner decisions
+(E1–E4, E7–E9) likewise still unruled from yesterday.
+
+**Later same day — EMBEDDINGS_DESIGN v2 after independent rebuttal (R-1…R-6).** Verified every
+anchor of the rebuttal before accepting; it was right on five of six rulings:
+- **R-1 (my worst error):** quoted `WORKORDER_PHASE_A.md:13`'s problem statement, missed the
+  **DONE (2026-07-11, e5677a0)** block beneath it — eval/prod base pool byte-identical, hybrid
+  is the A/B **control arm**, not a stale prod impersonation. D6 withdrawn except the
+  `db/migrate.mjs:18` stale-comment fix ("no callers" is false — six call sites). V3/V-4
+  deleted (the red-proof would have punished correct behaviour).
+- **R-2:** `register-writer.ts:236-258` embeds per **chunk**; `section_embeddings` wants one
+  vector per **section** — "~15 lines, zero embed cost" withdrawn. D1 re-put to the owner with
+  three priced options (partial/free, full/paid, aggregate+test-adjust).
+- **R-3:** pairing test inner-joins `section_embeddings` (:106) → vectorless works print as
+  "NOT COVERED (no section of sampleable length)" (:117-119) — true fact, false reason, in a
+  green test today. Became V3 (P2 truth pass, free coverage number + labelling fix).
+- **R-4:** D3's CHECK had four defects — NULL-permissive (my own 3VL trap), tautological vs.
+  the pipeline constant (model.ts:29-33), silently constraining user uploads (`store.ts:35`,
+  mixed table), ACCESS EXCLUSIVE scan. Amended: `IS NOT NULL AND`, scoped `user_id IS NOT NULL
+  OR …`, `NOT VALID` + `VALIDATE` two-step, honest claim (catches non-pipeline writers).
+- **R-5:** literal count is **52** (grepped), not ~12; constant re-homed into the existing
+  `user-corpus/model.ts` across the workspace boundary; V-2 restated as one un-derived literal
+  + derivations.
+- **R-6:** provider-response `model` assertion promoted to **V1** (embed + rerank + dims).
+- **Governance:** recon committed to `docs/pm/EMBEDDINGS_RECON_2026_08_11.md` (bylaw 1); v1's
+  bylaw-4 inversion corrected (authorship disqualifies independent review, doesn't confer it);
+  lane/branch hygiene flagged (Lane A design filed on feat/marketing-site; untracked docs block
+  deploy.sh).
+Also noted for the record: Gemini's "Executive Design Review" of STUDY_DOCS (no repo access)
+was an echo of the earlier cowork review — zero new findings, reviewing stale v1, four
+prescriptions that regress v2 (BIGINT FK vs UUID, blunt purge, trigger with grants landmine,
+pseudo-SQL fence). No action taken from it.
+
+**NOT DONE / UNVERIFIED (updated):** D1 (re-priced), D5b, D7 unruled; V3's truth pass not run;
+I-1…I-5 unrun; design docs (STUDY v2, EMBEDDINGS v2) unapproved. The tree is dirty with docs
+work on feat/marketing-site — do not attempt deploy.sh from this state.
+
+**Owner rulings 2026-08-12 (evening):** E1 RULED — user-facing name is **"My Studies"** (§7.1
+updated). E4 RULED — retention forever. E9 RULED — homes stay, plus owner amendment filed for
+later: a **My Library** umbrella (master view over notes/highlights/prayers/sermons/studies),
+expandable sidebar grouping "as they scale," organizing capability designed in a later build.
+E7 — owner confirmed Google-Docs-style autosave (already in design); picker-default half
+pending. E3/E8 explained, recommendations stand, awaiting confirm. D5b recommendation accepted
+provisionally ("don't want to replace it in 9–12 months" — failover *is* that option). D7
+explained, default scope-off pending confirm. D1 needs no ruling until V3's number exists.
+
+**Owner rulings 2026-08-12 (final, decision-complete):** D7 RULED — keep model optionality open;
+owner's stated principle: **no model lock-in** (future moves between Qwen/Kimi/Fable/locally
+trained must never require a rebuild; model-specific binding is unaffordable tech debt). E7
+RULED — always auto-save, never ask: editing a study saves to that study automatically every
+time; the clipping affordance defaults to the last-used study (one tap). **All owner decisions
+in both designs are now closed** (D1 deliberately awaits V3's number). Remaining: owner's
+"approved" on the two designs, and committing the docs off feat/marketing-site.
+
+**APPROVED 2026-08-12:** owner approved both designs; status headers flipped in
+`docs/STUDY_DOCS_DESIGN.md` and `docs/EMBEDDINGS_DESIGN.md`. Next engineering actions:
+Fable P1 build (`docs/pm/FABLE5_CORE_BRIEF.md` — Neon migration first), embeddings V1
+(provider drift guard). Docs still uncommitted on feat/marketing-site — awaiting owner's
+explicit go for the git commit.
+
+
 ## 2026-08-12 (Kimi, second sitting) — JFB consolidation: old `jfb` RETIRED in favor of `jamieson-jfb`
 
 Owner ruling: "agreed do this" (the consolidation flagged in the entry below). Password
