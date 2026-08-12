@@ -90,6 +90,103 @@ Run from the repo root, in order:
   remote's unique commits are all pre-rebase twins of local ones).
 - The visual prayer/sidebar fixes from 2026-08-11 remain not browser-verified (unchanged).
 
+## 2026-08-12 — Prayer compose redesign: the writing surface is the screen (owner mockup)
+
+Shipped on branch `feat/marketing-site` (owner: "ship it", 2026-08-12). The deploy also carries
+this branch's 11 commits ahead of origin/main — the other lane's owner-ruled corpus work whose
+prod DB half already landed ("Prod half done" → "dev+prod"); the web deploy is its missing half,
+so shipping the branch is completing it, not pre-empting it. The other session's four untracked
+design docs were stash-parked for the clean-tree gate and restored after.
+
+Owner direction, with a mockup (`~/Downloads/journal-redesign-mockup_1.html`) and the complaint
+in screenshots: the compose view was a narrow, fixed-height, gold-outlined box using ~25% of the
+pane, centred on neither axis. All six points of the mockup implemented:
+
+- **THE BOX** — gone. No border, no parchment panel. Focus is a 2px gold rule on the left edge
+  only (`focus-within:border-accent-600/400`); `focus-quiet` keeps the global outline off.
+- **WIDTH** — ~80ch (`max-w-[80ch]`), actually centred (`mx-auto`), `7vw` gutters.
+- **HEIGHT** — the textarea auto-grows with content over a 44vh floor; `overflow-hidden` +
+  height-from-`scrollHeight` on every change. The page scrolls; the editor never does.
+- **SIDEBAR** — while composing, the 256px sidebar drops to a 58px icon rail; re-expands on
+  hover or ⌘\, collapses on pointer-leave. Signal is a body data-attribute + window event in the
+  new `web/src/lib/prayer-writing-mode.ts` (not context — the sidebar lives in the root layout,
+  above the page). The rail's seven destinations are a deliberate subset, commented as such.
+- **SAVING** — Save / Cancel are gone. Debounced (900ms) autosave: first save CREATEs, later
+  saves UPDATE the returned id; an empty draft is NEVER written (autosave must neither create an
+  empty prayer nor delete one by erasure); leaving the view flushes the pending draft, including
+  an unmount flush with `keepalive` that waits out an in-flight create so it updates rather than
+  duplicates. Confirmation is a quiet `Saved h:mm` + flame tick beside a word count; the list's
+  candle-dot (PRD §5) still marks the entry on return.
+- **TARGET** — the whole pane is `cursor-text` and focuses the editor on click; the
+  `← All prayers` back link stop-propagates and flushes before leaving.
+
+**Verification.** `npm run audit` PASSED (all gates). New tests:
+`web/test/components/prayer-autosave.test.tsx` (no Save/Cancel present; typing autosaves
+create→update on the returned id; editing updates, never creates; empty draft never written) and
+`web/test/components/sidebar-writing-rail.test.tsx` (rail swap, hover expand/collapse, ⌘\
+toggle, restore on exit) — **three seeds watched RED**: dropped `scheduleSave()` from onChange
+(2 tests fail), id not remembered after create (the create-once test fails), rail branch disabled
+(all 3 rail tests fail). Real-time debounce, no fake timers — the timer/fetch ordering is the
+machinery under test. Existing prayer/sidebar suites green (11 files, 56 tests).
+
+**Browser (real Chrome, CDP, `scripts/capture-evidence.mjs`)** — evidence in
+`docs/evidence/prayer-compose-2026-08-12/`: compose at 1280x800 (rail visible, gold rule, gold
+italic prompt, no box) and 390x844 mobile (no horizontal overflow), plus the normal journal page
+at 1280x800 (full sidebar unaffected). Compose was rendered through a TEMPORARY dev-harness page
+(`/dev-compose-preview`, the `initialVerseId` path — the same state `?verse=` produces),
+**deleted after capture**.
+
+### Same session, second tranche — the reading measure itself (owner: "all of the reading… 20–25%… janky")
+
+The compose fix surfaced the general case: every reading surface sat at the PRD's 66ch (~20–25%
+of a wide window). The widening mechanism ALREADY existed — `READING_MEASURES` +
+`.reading-measure` (added 2026-08-08) — but the default stayed 66ch and half the surfaces never
+joined the system. Changes:
+
+- `lib/reading-prefs.ts`: ladder now `54/60/66/74/84/96/110ch`, **default 84ch**. The old steps
+  STAY in the ladder — the pref resolves by value, so no stored choice becomes unresolvable.
+- `globals.css`: `.reading-measure` fallback 66ch → 84ch.
+- **Joined the shared measure** (were hardcoded `max-w-2xl`/`66ch`, drifting from the Bible
+  reader the moment width became a preference): `work-reader.tsx` (library book reader),
+  `desk-pane.tsx`, `today-view.tsx`, and the chrome rows that must track the column —
+  `chapter-nav.tsx`, `work-header.tsx`, the read page's annotation banner and attribution line.
+- `prayer-journal.tsx`: the journal list and read-first views 66ch → 80ch, matching the compose
+  column (reading back a prayer and writing one are the same surface at two moments).
+- Left alone deliberately: `/ask` (a conversation, not a reading column), the interlinear, the
+  marketing pages, and `plans-client.tsx` (its width comment documents its own layout logic).
+
+Verification: web `tsc` + eslint clean (3 warnings, all pre-existing at HEAD — checked against
+the committed file, not assumed); component suites green; **browser, real Chrome**: `/read/jhn/1`
+at 1280x800 (84ch column, centred, header/nav aligned to it) and 390x844 (no overflow), journal
+at 1280x800 — `docs/evidence/prayer-compose-2026-08-12/reader-*`, `journal-80ch-desktop-*`.
+A stale `.next/dev/types` referencing the deleted harness broke `tsc` once; generated cache,
+deleted, not a code fault. `npm run audit` re-run after this tranche.
+
+### NOT DONE / UNVERIFIED
+
+- **The signed-in browser walk is NOT RUN** — this tree has no `NEON_AUTH_*`/`DATABASE_URL` in
+  `web/.env.local`, so `/api/prayers` 401s locally (the same gap PR1a recorded). The autosave
+  round-trip against the real API, and the hover/⌘\ feel of the rail, need the owner's browser.
+- The "1 issue" badge in the screenshots is the pre-existing dev-only gap
+  (`NEON_AUTH_BASE_URL is not set` → `/api/auth/get-session` 500), not this change.
+- **Edit-with-autosave means no cancel-of-edit**: changing an existing prayer saves as you type,
+  so backing out no longer restores the prior text. This is the mockup's explicit ruling
+  ("Save / Cancel → autosave… Nothing can be lost"), stated here because it removes an undo.
+- The unmount flush's keepalive POST is best-effort by construction (the view is gone; nobody to
+  report to) — a lost final edit is still possible if the network is down at that moment.
+- **The work-reader's virtualization at the wider measure is UNVERIFIED in a browser** — the
+  library book reader needs the DB (absent locally), so only the Bible reader and journal were
+  walked at the new width. Height estimates are measured at runtime, so the expectation is
+  benign, but it is an expectation.
+- **84ch on a very wide window is still a centered column with margins** — the owner's "a lot
+  more" is answered by the default plus 96/110ch steps in the Aa control; whether the default
+  should be wider still is an owner call after living with it.
+- **One audit run failed the vitest leg, then the identical tree passed** (exit 0, all gates).
+  The failing log was truncated by my own `tail` pipe, so the failing test was not captured;
+  the repo already files this gate as non-deterministic (DeepInfra 429 in
+  `section-vector-pairing`, MASTER.md watchlist). Recorded here because a red waved through
+  without a cause is how real reds get missed — if it recurs, capture the test name.
+
 ## 2026-08-11 — HOTFIX: I broke sign-in, and the fix is live
 
 **`main` `f1c749f` == production `f1c749f`** (`dpl_CBNUQjrw77N2WqqGUYLtDdmuyVG2`, `vercel ls`: 4m,
@@ -137,6 +234,89 @@ failure — it is inventing one.
   `docs/SECURITY.md`, `package.json`, `scripts/audit.sh`, and untracked briefs). It was never
   touched. This hotfix was built, tested and deployed from a **separate worktree** off `origin/main`
   precisely so that tree could be left alone — which is the rule added yesterday, applied.
+## 2026-08-11 — Study Docs design v2 + build file + agent briefs (docs only, no code)
+
+Session arc: (1) read-only audit of `docs/ASK_HISTORY_DESIGN.md` — every MEASURED claim
+verified against the tree (all held; the S0.1 ledger/tree gap confirmed and found broader
+than stated). (2) Compared against Claude cowork's independent audit of the same doc —
+theirs was stronger (it opened `docs/evidence/` and STATE_OF_TRUTH; F-1 closed S0.1 from
+committed census evidence; F-4's `source_id`-keyed servability fix adopted). (3) Owner
+shaped the product: independent turns locked (no conversational memory, LLM rewrite
+deferred/never); two areas — Research History (capture) vs Studies (curation); topic view
+grouped by register; Save-to-study verb on every surface; delete + bookmark (pin).
+(4) Drafted `docs/STUDY_DOCS_DESIGN.md`. (5) Claude cowork reviewed it; I verified its
+four severe claims against the tree before accepting (all reproduce):
+- **S-A** `sections.source_id` is BIGINT→sources; no `section_id` on `embeddings` anywhere
+  (grep-verified). Clipping writes now carry whichever key their surface owns; dual-key
+  schema; old T0 join-measurement closed negatively.
+- **S-B** new tables postdate 032 → born SELECT+INSERT; schema now carries GRANTs + 106's
+  self-verifying `DO $$` tail (I had discussed F-9 and still missed it — noted).
+- **S-C** group-after-truncate would make empty register groups lie; now one capped query
+  per register group via the engine's existing `catalogs` fence.
+- **S-D** `runAsUser` takes a static array → clipping write is a single atomic
+  `INSERT…SELECT` with the licensing gate and H2 belt inside the statement.
+Also incorporated: S-E (append-only `study_block_revisions`), S-F/S-13 (visible save
+failure), S-G (full CHECK set), S-H (soft-delete cascades tombstone), S-I (base-62 text
+position keys, `position, id` tiebreaker, unique index), S-J (composite `btree_gin`
+(user_id, tsv)), S-K (tombstone as data state + `cleared_at`; refinement: keys survive
+purge so re-instatement can re-snapshot), S-L (whole-body write cap), S-M, S-N (red-proofs
+rewritten executable), P-1 (topic view merged into one search surface; E5 resolved),
+P-2 (markdown export in T1), P-3 (default save target = last-used study), P-4 (turn
+grammar constraints — clarified nesting is intra-turn only).
+Pushback given: S-K reversibility refinement; P-4 misread of the collapse model (accepted
+its mitigations anyway). Everything else accepted outright.
+
+**Files written (all new or rewritten, docs only):**
+- `docs/STUDY_DOCS_DESIGN.md` — v2, full revision with review changelog in the header.
+- `docs/STUDY_DOCS_BUILD.md` — execution contract: non-negotiables, P0–P3 phases, task
+  table, gates, standing risks.
+- `docs/pm/FABLE5_CORE_BRIEF.md` — P1 core-build brief (migration, data layer, routes,
+  clipping engine, servability module, revisions, export).
+- `docs/pm/SWARM_PARALLEL_BRIEF.md` — P2 swarm brief (W1–W6 file-disjoint streams:
+  invariants, UI, route tests, QA).
+
+**NOT DONE / UNVERIFIED:**
+- No code exists; nothing was built or tested this session. The design's invariants
+  (S-1…S-14) have never been run, red or green.
+
+**Late addition (same session):** owner added the composition future — sermons/papers written
+in-app with an "LLM context finder," export to Google Docs later; think-now-build-later.
+Verified the pipe is plumbed: `user_integrations` (db/schema.sql:197-210) + the Composio
+wrapper (`web/src/lib/composio.ts`) already exist at zero rows. Design doc gained §12
+(finder = retrieval entering only through the §6.3 clipping write, zero schema change;
+origin is structural — machine text never shares a block kind with user writing; drafter,
+if ever, is its own faithfulness-gated slice), E8 in §9 (recommend finder-first), and a
+§6.5 pointer. No schema change resulted — that was the point of checking now.
+
+**Later addition (same session):** owner organized the full product map — uploads stay live,
+sermon builder is Studies, search and chats each have their home. Found SERMON_SEARCH_DESIGN.md
+(user corpus: upload → parse → chunk → anchor → embed → search; Slice 1 built on lane-b dev:
+migrations 100/102 + `/api/user-corpus/{documents,upload,search}` with fused semantic+FTS,
+keyword mode, verse-anchor scan; prod status unverified by this session). STUDY_DOCS_DESIGN
+§4.2 redrawn as four areas + library (Research History / Library / Studies / My Works), §7.1
+sidebar gained MY WORKS, §7.3 search groups gained "Your works" via the existing endpoint.
+Boundaries stated: user-corpus clippings = later third key type (`user_section_id`), no
+licensing tombstone needed (user's own text); `/ask` user-voices integration is
+SERMON_SEARCH_DESIGN Slice 4, owned there.
+
+**Final addition (same session):** owner ruled My Works is a personal LIBRARY, not a file
+system — works with title/type/status, no folders — and that prayers, notes, and sermons must
+all be searchable in the one box with the library. Measured: sidebar label is "My uploads" →
+`/library/uploads`, but the page already titles itself "My Works"
+(`library/uploads/[id]/page.tsx:3`) and its comments say the route stays; prayers.body
+(107:33) and notes.body are plain text. Doc updated: §4.2 (My Works reframed; prayers/notes
+keep their homes — E9), §7.1 (label supersedes "My uploads", route unchanged), §7.3 (groups
+now Your studies / Your works / Your prayers / Your notes / library registers), §6.4
+(personal-search pattern: generated tsv + composite GIN per domain, one scoped query each,
+never blended). E9 added to §9.
+- P0 recon measurements are still numbers-on-paper (needs owner-approved read-only prod
+  session, rides gate A5).
+- Owner decisions E1–E4, E7 in STUDY_DOCS_DESIGN.md §9 are unruled.
+- The companion doc (ASK_HISTORY_DESIGN.md) has NOT been revised to incorporate its two
+  audits — only referenced. That revision is still owed.
+- These docs themselves are unverified claims by this repo's standard until their
+  invariants are watched go red.
+
 ## 2026-08-11 (evening addendum) — the PROD half is done
 
 Owner said "go" (per-occasion). All three prod writes executed against `ep-odd-fog` and

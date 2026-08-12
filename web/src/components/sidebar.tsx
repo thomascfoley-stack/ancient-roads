@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { authClient } from '@/lib/auth/client';
+import { isPrayerWriting, PRAYER_WRITING_EVENT } from '@/lib/prayer-writing-mode';
 import { CATALOGS, CATALOG_IDS, type CatalogId } from '@/lib/catalog-defs';
 
 // --- user-defined study sections (parent/child). Stored locally per user
@@ -398,9 +399,72 @@ const CATALOG_ICON: Partial<Record<CatalogId, React.ReactNode>> = {
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  // WRITING MODE (owner direction 2026-08-12, journal-redesign mockup): while the prayer compose
+  // view owns the screen, the 256px sidebar drops to a 58px icon rail — the journal area is the
+  // screen, not a widget on it. The rail re-expands on hover or ⌘\, and collapses again when the
+  // pointer leaves. The signal comes from `lib/prayer-writing-mode.ts`.
+  const [writing, setWriting] = useState(false);
+  const [railOpen, setRailOpen] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setWriting(isPrayerWriting());
+    sync();
+    window.addEventListener(PRAYER_WRITING_EVENT, sync);
+    return () => window.removeEventListener(PRAYER_WRITING_EVENT, sync);
+  }, []);
+
+  useEffect(() => {
+    if (!writing) { setRailOpen(false); return; }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey && e.key === '\\') { e.preventDefault(); setRailOpen((v) => !v); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [writing]);
 
   // The pre-launch password gate stands alone — no app chrome around it.
   if (pathname === '/gate') return null;
+
+  if (writing && !railOpen) {
+    // A DELIBERATE SUBSET, not a mirror of the full nav: while writing, the rail offers the few
+    // places a reader might actually leave for. Adding a destination here is a design decision,
+    // not a sync task — do not derive this from the catalog list.
+    const railLinks = [
+      { href: '/home', label: 'Home', icon: <HomeIcon /> },
+      { href: '/read/jhn/1', label: 'Bible', icon: <BookIcon /> },
+      { href: '/ask', label: 'Ancient Paths', icon: <AskIcon /> },
+      { href: '/plans', label: 'Reading plans', icon: <CalendarIcon /> },
+      { href: '/prayers', label: 'My prayers', icon: <PrayerIcon /> },
+      { href: '/library', label: 'All items', icon: <BookStackIcon /> },
+      { href: '/settings', label: 'Settings', icon: <SettingsIcon /> },
+    ];
+    return (
+      <aside
+        aria-label="Navigation"
+        onMouseEnter={() => setRailOpen(true)}
+        className="hidden w-[58px] flex-col items-center gap-1 border-r edge bg-stone-200 py-4 md:flex dark:bg-stone-900"
+      >
+        {railLinks.map((l) => {
+          const active = l.href === '/home' ? pathname === '/home' : pathname.startsWith(l.href);
+          return (
+            <Link
+              key={l.href}
+              href={l.href}
+              aria-label={l.label}
+              title={l.label}
+              className={`flex h-9 w-9 items-center justify-center transition-colors ease-gentle ${
+                active
+                  ? 'text-stone-900 dark:text-stone-200'
+                  : 'text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200'
+              }`}
+            >
+              {l.icon}
+            </Link>
+          );
+        })}
+      </aside>
+    );
+  }
 
   if (collapsed) {
     return (
@@ -419,7 +483,12 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="hidden w-64 flex-col border-r edge bg-stone-200 md:flex dark:bg-stone-900">
+    <aside
+      // In writing mode this expanded state is the rail's hover/⌘\ overlay: leaving it puts the
+      // rail back. Outside writing mode there is no rail, so there is nothing to restore.
+      onMouseLeave={writing ? () => setRailOpen(false) : undefined}
+      className="hidden w-64 flex-col border-r edge bg-stone-200 md:flex dark:bg-stone-900"
+    >
       {/* Header. Internal rail rule: parchment-on-vellum, not .edge (see the settings block). */}
       <div className="flex items-center justify-between border-b border-stone-50 px-4 py-3 dark:border-stone-800">
         {/* PRD §6: wordmark is EB Garamond 18px/500, ink. */}

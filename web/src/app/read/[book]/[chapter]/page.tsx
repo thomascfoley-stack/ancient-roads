@@ -301,7 +301,7 @@ export default function ReaderPage() {
       {signedIn && annotationsFailed && (
         <div
           role="status"
-          className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 pt-3 text-xs text-amber-800 sm:px-6 dark:text-amber-300"
+          className="reading-measure mx-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 pt-3 text-xs text-amber-800 sm:px-6 dark:text-amber-300"
         >
           <span>Your highlights and notes couldn&rsquo;t be loaded. Nothing was lost. This page just isn&rsquo;t showing them.</span>
           <button
@@ -349,7 +349,7 @@ export default function ReaderPage() {
         <ChapterSkeleton label={`Loading ${book.name} ${chapterNum}`} />
       )}
       {translationAttribution(translation.id) ? (
-        <p className="mx-auto max-w-2xl px-6 pb-8 text-center text-xs text-stone-500 dark:text-stone-400">
+        <p className="reading-measure mx-auto px-6 pb-8 text-center text-xs text-stone-500 dark:text-stone-400">
           {translationAttribution(translation.id)}
         </p>
       ) : null}

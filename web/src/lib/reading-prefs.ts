@@ -20,11 +20,14 @@ import { useCallback, useEffect, useState } from 'react';
 export const READING_SIZES = ['1rem', '1.125rem', '1.25rem', '1.4rem', '1.6rem'] as const;
 export const DEFAULT_SIZE_IDX = 1;
 
-/** The five reading-column widths. 66ch is the PRD's measure (§3: 65–70 characters) and
- *  stays the default; the wider steps exist by owner request (2026-08-08) because the
- *  centered column leaves large empty margins on wide desktop screens. */
-export const READING_MEASURES = ['54ch', '60ch', '66ch', '74ch', '84ch'] as const;
-export const DEFAULT_MEASURE_IDX = 2;
+/** The reading-column widths, narrowest to widest. The default is 84ch (owner direction
+ *  2026-08-12: at 66ch the text occupied ~20–25% of a wide desktop window — "it needs to be
+ *  taking up a lot more to be useful"). 66ch was the PRD's measure (§3: 65–70 characters);
+ *  the PRD's reading surfaces are overridden by that ruling, and the old steps STAY in the
+ *  ladder so a stored preference never becomes unresolvable. The wider steps exist by the
+ *  same ruling. */
+export const READING_MEASURES = ['54ch', '60ch', '66ch', '74ch', '84ch', '96ch', '110ch'] as const;
+export const DEFAULT_MEASURE_IDX = 4;
 
 export const THEME_KEY = 'reader-theme';
 export const SIZE_KEY = 'reader-size';

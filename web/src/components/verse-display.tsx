@@ -183,8 +183,8 @@ export function VerseDisplay({
     // PRD §5: a bare reading column on the parchment page — no card chrome. Separation
     // comes from the one hairline under the title and whitespace (5rem margins desktop, 3rem
     // mobile). Width is the reader's: `.reading-measure` resolves --reading-measure, default
-    // 66ch (lib/reading-prefs.ts). ChapterSkeleton in the page MIRRORS this container; change
-    // one, change both.
+    // 84ch (lib/reading-prefs.ts; owner direction 2026-08-12). ChapterSkeleton in the page
+    // MIRRORS this container; change one, change both.
     <div ref={rootRef} className="reading-measure mx-auto my-12 px-6 sm:my-20">
       <h1 className="mb-4 font-display text-[30px] font-medium leading-[1.2] tracking-[-0.01em] text-stone-900 dark:text-stone-100">
         {bookName} {data.chapter}

@@ -98,10 +98,12 @@ function PaneFrame({
           `lg:flex-row`, so a single open pane filled the viewport: roughly 200 characters
           a line at 1920px, against about 74 in the main reader. The same corpus paragraph
           was the most comfortable text in the app in one place and the least in another.
-          `max-w-2xl` matches what verse-display and work-reader already use, and
-          `mx-auto` keeps it centred when the pane is wider than the column. */}
+          It follows the reader's measure (`.reading-measure`, default 84ch — owner direction
+          2026-08-12; was a hardcoded max-w-2xl, which drifted from the Bible reader the
+          moment its width became a preference), and `mx-auto` keeps it centred when the
+          pane is wider than the column. */}
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">
-        <div className="mx-auto w-full max-w-2xl">{children}</div>
+        <div className="reading-measure mx-auto w-full">{children}</div>
       </div>
     </section>
   );

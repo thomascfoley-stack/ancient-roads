@@ -44,9 +44,11 @@ export function TodayView() {
   // NB: a plain <div>, not <main> — the app-shell already provides the <main> landmark and the
   // scroll container (with bottom-nav padding); nesting a second <main> is invalid HTML.
   return (
-    // One quiet centered column at the reading measure — no card chrome (PRD §3/§5:
-    // hairlines and whitespace carry separation; the parchment page IS the surface).
-    <div className="mx-auto my-12 w-full max-w-[66ch] px-6 sm:my-20">
+    // One quiet centered column at the reader's measure — no card chrome (PRD §3/§5:
+    // hairlines and whitespace carry separation; the parchment page IS the surface). Was a
+    // hardcoded 66ch; it follows `.reading-measure` now (owner direction 2026-08-12), the
+    // same control as every other reading surface.
+    <div className="reading-measure mx-auto my-12 w-full px-6 sm:my-20">
       {state.status === 'loading' && (
         <p className="mt-24 text-center font-scripture text-lg italic text-stone-500 dark:text-stone-400">
           Opening today&rsquo;s page&hellip;
