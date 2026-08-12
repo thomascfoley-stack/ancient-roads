@@ -170,9 +170,13 @@ describe.skipIf(SKIP)('Layer 1 — licensing invariant (behavioral)', () => {
     // Requiring one exact string was correct while exactly one naming existed; what this
     // test guards is that the VOICE is present, and accepting only the shelved string
     // would report a voice the pool still serves as missing. A THIRD string still fails.
+    // JFB moved string 2026-08-12 (owner ruling: consolidate old `jfb` into jamieson-jfb):
+    // the legacy 'Jamieson, Fausset & Brown' rows (helloao, no Song) were unserved and the
+    // voice now serves as 'Jamieson, Robert' (CCEL, full range anchors). The retirement
+    // guard below pins the old string OUT — a re-serve without a conscious edit goes red.
     const expected: Array<{ voice: string; as: readonly string[] }> = [
       { voice: 'John Gill', as: ['John Gill'] },
-      { voice: 'Jamieson, Fausset & Brown', as: ['Jamieson, Fausset & Brown'] },
+      { voice: 'Jamieson (JFB)', as: ['Jamieson, Robert'] },
       { voice: 'Adam Clarke', as: ['Adam Clarke'] },
       { voice: 'Matthew Henry', as: ['Matthew Henry'] },
       { voice: 'Albert Barnes', as: ['Albert Barnes'] },
@@ -183,6 +187,10 @@ describe.skipIf(SKIP)('Layer 1 — licensing invariant (behavioral)', () => {
     ];
     const missing = expected.filter((e) => !e.as.some((a) => present.has(a))).map((e) => e.voice);
     expect(missing, `teacher must serve all 9 voices; MISSING: ${missing.join(', ')}`).toEqual([]);
+    // RETIREMENT GUARD (2026-08-12 consolidation): the old string stays OUT of the pool.
+    // Red witnessed inverted: pre-unserve the pool DID carry it (the 9-voice presence run
+    // failed on its absence only after the unserve — same mechanism, both directions).
+    expect(present.has('Jamieson, Fausset & Brown'), 'old jfb string must stay unserved').toBe(false);
   }, 30_000);
 
   it('teacher retrieveCommentary: no quarantined author in returned chunks', async () => {

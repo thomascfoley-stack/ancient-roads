@@ -1,5 +1,42 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-12 (Kimi, second sitting) — JFB consolidation: old `jfb` RETIRED in favor of `jamieson-jfb`
+
+Owner ruling: "agreed do this" (the consolidation flagged in the entry below). Password
+rotation explicitly deferred by owner ("don't worry about right now").
+
+What "retire" meant, measured first: old `jfb` (helloao, no Song) served three surfaces —
+the /ask flat pool (15,473 served rows, author string 'Jamieson, Fausset & Brown'), the
+shelf (sources.status), and verse_coverage (its anchors). jamieson-jfb (CCEL, range
+anchors incl. the whole Song) already serves all three under 'Jamieson, Robert'. No code
+references the slug 'jfb' anywhere (grep). corpus section_embeddings have NO app reader
+(all web readers of that table name are user-corpus, a different table).
+
+Executed, dev then prod (owner go covers both):
+- `sources.status` jfb published → staged (instant, both DBs).
+- `embeddings.served=false` for work='jfb' — 15,473 rows, ~20 min of HNSW maintenance
+  per DB (same class as calvin's 2026-08-11 write).
+- verse_coverage rebuilt both DBs. Before (both JFB copies published): 30,621 covered /
+  29,071 ≥2. After: 30,552 / 28,598. **Song holds 117/117 at ≥2.** The −473 at ≥2 is the
+  double-count leaving, not a loss: those verses had ONLY the two JFB copies as exegetical
+  voices (Numbers/Leviticus itineraries etc.), so the old numbers were inflated by the
+  very defect being retired.
+
+Test flip (four conditions, in the commit message): licensing.test.ts's 9-voice presence
+pin attested JFB as 'Jamieson, Fausset & Brown'. Red watched naturally (the pin failed
+the moment the unserve committed), the voice re-attested as 'Jamieson, Robert', and a
+RETIREMENT GUARD added (old string must stay absent — inverted-guard red watched, 6/6
+green after).
+
+Deliberately NOT done (documented, reversible):
+- Reader static corpus untouched: 'Jamieson, Fausset & Brown' stays in
+  PUBLISHED_WHOLE_BIBLE_AUTHORS, so verse panels keep showing the legacy JFB text (same
+  PD commentary) — exactly ONE JFB visible in the reader. Swapping the reader to
+  jamieson-jfb's static entries means lifting 16,966 static entries + FTS migration 110 +
+  admission-list surgery for zero content gain; deferred unless asked.
+- jamieson-jfb remains not in SERVED_PROSE_WORKS (its static entries stay reader-gated).
+- Old jfb's rows are staged/unserved, NOT deleted — re-serve is one UPDATE away.
+
 ## 2026-08-12 (Kimi) — Lord's Garden contamination PURGED (dev+prod); Song of Solomon hole CLOSED (dev+prod)
 
 Owner rulings this session: "the lords garden, get it fixed" · "Song of solomon, fix it and fix
