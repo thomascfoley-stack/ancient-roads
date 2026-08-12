@@ -92,11 +92,18 @@ Run from the repo root, in order:
 
 ## 2026-08-12 — Prayer compose redesign: the writing surface is the screen (owner mockup)
 
-Shipped on branch `feat/marketing-site` (owner: "ship it", 2026-08-12). The deploy also carries
-this branch's 11 commits ahead of origin/main — the other lane's owner-ruled corpus work whose
-prod DB half already landed ("Prod half done" → "dev+prod"); the web deploy is its missing half,
-so shipping the branch is completing it, not pre-empting it. The other session's four untracked
-design docs were stash-parked for the clean-tree gate and restored after.
+Shipped on branch `feat/marketing-site` (owner: "ship it", 2026-08-12). **LIVE: deploy `4019186`,
+`dpl_5JDMH1GaT2XWoiBhftPQSmrqdEfu` serving ancientpaths.app, alias verified by deployment-id match
+(receipt `docs/evidence/deploys/deploy-4019186-2026-08-12T03-41-11Z.txt`).** Two gate refusals on
+the way, both the gates working: PREDEPLOY_DB_URL unset (the served-column preflight is
+fail-closed), then the corpusHash ratchet — the other lane's `gill-song` ingest had never
+regenerated the manifest; diffed against `corpus-manifest-d62f2e7`, the ONLY changed work was
+Gill, John 260 → 276 entries, exactly the recorded owner ruling, so the manifest was regenerated
+and committed (`4019186`). The deploy also carries this branch's 11 commits ahead of origin/main —
+the other lane's owner-ruled corpus work whose prod DB half already landed ("Prod half done" →
+"dev+prod"); the web deploy is its missing half, so shipping the branch is completing it, not
+pre-empting it. The other session's four untracked design docs were stash-parked for the
+clean-tree gate and restored after.
 
 Owner direction, with a mockup (`~/Downloads/journal-redesign-mockup_1.html`) and the complaint
 in screenshots: the compose view was a narrow, fixed-height, gold-outlined box using ~25% of the
