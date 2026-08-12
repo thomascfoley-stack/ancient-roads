@@ -8,6 +8,25 @@ record it and work around it — do not edit P1 files (integration fixes belong 
 Specification: `docs/STUDY_DOCS_DESIGN.md` v2 (§7 UI/UX, §8 invariants). Execution contract:
 `docs/STUDY_DOCS_BUILD.md` §3 P2.
 
+## Environment — DB-backed suites (read before running any test)
+
+Measured the hard way, 2026-08-12 (two red verification runs): the DB-backed suites loud-skip
+or fail without the right env, and the obvious guess is wrong.
+
+- **`APP_DATABASE_URL`** = the **app_runtime** dev URL. This is root `.env.local`'s
+  `DATABASE_URL` — it connects as `app_runtime` (verified via `current_user`), dev endpoint
+  `ep-tiny-hat`.
+- **`DATABASE_URL`** = the dev-**owner** URL, from `~/.neon_dev_owner_url`. The owner-seeding
+  suites (annotations, published-boundary, plan-topic-flow, …) INSERT into corpus tables and
+  fail with `permission denied` under the runtime role. Fable's P1 report said "the owner URL
+  comes from root `.env.local`" — it does not; that file's URL is the runtime role.
+- Both must point at dev. The helpers (`web/test/helpers/env.ts`) **refuse prod loudly**.
+- Never print either value. Export via file reads, not echo.
+- The 45-check harness invocation: `cd web && DATABASE_URL=<runtime> OWNER_URL=<owner>
+  npx tsx ../docs/evidence/study-docs-p1/handtest-harness.mts` (note the inversion: the harness
+  names its runtime URL `DATABASE_URL`).
+
+
 ## Stream map — file-disjoint by construction
 
 | Stream | Owns (create) | Must not touch |
