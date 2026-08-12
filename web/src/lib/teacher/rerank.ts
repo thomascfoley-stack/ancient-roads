@@ -3,6 +3,13 @@ import { RERANK_MODEL } from './routing';
 
 const BASE_URL = `https://api.deepinfra.com/v1/inference/${RERANK_MODEL}`;
 
+// PROVIDER-DRIFT GAP, documented (EMBEDDINGS_DESIGN v2 D5): this endpoint's response is
+// { scores: number[] } — it carries NO self-reported model field (docs.deepinfra.com/apis/
+// reranker, checked 2026-08-12), so the response-side model assertion the embed/compose paths
+// have is not implementable here. The model travels only in the request URL. If DeepInfra ever
+// forwards a deprecated reranker under the requested name, nothing at this layer can see it;
+// the residual guard is the eval harness's measured numbers moving.
+
 function apiKey(): string {
   const k = process.env.DEEPINFRA_API_KEY;
   if (!k) throw new Error('DEEPINFRA_API_KEY is not set');

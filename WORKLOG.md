@@ -1,5 +1,32 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-12 (evening) — EMBEDDINGS V1 provider drift guard BUILT (Kimi session, owner: "you take it")
+
+Branch `feat/embeddings-v1-provider-guard` (off feat/study-docs-p1). Red-proof order: tests
+written first, watched RED against unguarded code (4+4 failing guard cases), then the guards.
+
+- `src/retrieval/embedder.ts` — response `model` assertion (missing or mismatched → throw,
+  NOT retried: it cannot heal) + per-vector dims assertion naming the cause.
+- `web/src/lib/teacher/deepinfra.ts` — same assertion on `embedQuery` (request path) and on
+  `compose` — compose included because this hazard already bit there (the Qwen3.6 auto-forward
+  incident documented at :9-11); scope extension beyond the design's "embed + rerank", recorded.
+- `web/src/lib/user-corpus/embed.ts` — same assertion on the batch path (dims already existed).
+- `web/src/lib/teacher/rerank.ts` — **gap documented, not guarded**: the rerank response is
+  `{ scores: number[] }` with no self-reported model (provider docs, checked 2026-08-12), so no
+  response-side assertion is implementable. EMBEDDINGS_DESIGN I-2 amended to match reality.
+- **Live smoke against the real provider** (both endpoints, existing key): embed and compose
+  echo the exact requested model string and 1024 dims — strict equality carries no
+  false-positive risk on the live ask path.
+- Gates: root vitest 701/701; web qa 920 passed / 0 failed (correct env recipe); tsc clean;
+  eslint clean on touched files.
+- Design doc updated: D5 marked BUILT, I-1/I-2 amended (compose in, rerank exempt-and-documented).
+
+**NOT DONE / UNVERIFIED:** not independently verified (bylaw 4 — a fresh session should re-run
+the two guard suites and read the diffs); V2 (migrate.mjs comment), V3 (P2 truth pass), V4
+(model pin migration), V5 (constant consolidation) all remain; D5b provider abstraction ruled
+but unbuilt. Uncommitted at this writing — awaiting owner go.
+
+
 ## 2026-08-12 (late) — T0 recon folded into the design docs (Kimi session)
 
 Fable's prod-apply session (eecad7c) produced T0 numbers that changed two design docs:

@@ -54,8 +54,11 @@ export function createDeepInfraEmbedder(opts: {
             throw new Error(`Embedding request failed: ${res.status} ${body}`);
           }
 
-          const json = (await res.json()) as { data: { index: number; embedding: number[] }[] };
-          return parseResponse(json, texts.length);
+          const json = (await res.json()) as {
+            model?: string;
+            data: { index: number; embedding: number[] }[];
+          };
+          return parseResponse(json, texts.length, model);
         } catch (e) {
           lastErr = e as Error;
           const name = (e as Error).name;
@@ -70,10 +73,31 @@ export function createDeepInfraEmbedder(opts: {
   };
 }
 
-function parseResponse(json: { data: { index: number; embedding: number[] }[] }, expected: number): number[][] {
+function parseResponse(
+  json: { model?: string; data: { index: number; embedding: number[] }[] },
+  expected: number,
+  requestedModel: string,
+): number[][] {
+  // Provider-drift guard (EMBEDDINGS_DESIGN v2 D5 / I-1): DeepInfra has silently forwarded a
+  // requested model to a substitute before (the Qwen3.6 compose incident, deepinfra.ts:9-11).
+  // A wrong-model vector is 1024-dim too (Jina v3) — it would insert, join, and score cleanly.
+  // The response's self-reported model is the only value the pipeline did not write; a missing
+  // or mismatched one fails fast and is NOT retried (it cannot heal).
+  if (json.model !== requestedModel) {
+    throw new Error(
+      `Embedding model mismatch: requested ${requestedModel}, provider returned ${json.model ?? 'none'}`,
+    );
+  }
   const ordered = [...json.data].sort((a, b) => a.index - b.index);
   if (ordered.length !== expected) {
     throw new Error(`Embedding count mismatch: got ${ordered.length}, expected ${expected}`);
+  }
+  for (const d of ordered) {
+    // A wrong width fails at insert with a message about the vector(1024) column rather than
+    // the model. Fail here, where the cause is visible (same rule as user-corpus/embed.ts).
+    if (d.embedding.length !== DIMS) {
+      throw new Error(`Embedding dims mismatch: got ${d.embedding.length}, expected ${DIMS}`);
+    }
   }
   return ordered.map((d) => d.embedding);
 }

@@ -56,7 +56,15 @@ async function embedBatch(texts: string[], key: string): Promise<number[][]> {
         await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
         continue;
       }
-      const json = (await res.json()) as { data?: { embedding: number[] }[] };
+      const json = (await res.json()) as { model?: string; data?: { embedding: number[] }[] };
+      // Provider-drift guard (EMBEDDINGS_DESIGN v2 D5 / I-1): a forwarded model returns vectors
+      // that store and score cleanly — the response's self-reported model is the only value the
+      // pipeline did not write. Missing or mismatched fails fast; it cannot heal on retry.
+      if (json.model !== EMBEDDING_API_MODEL) {
+        throw new EmbeddingUnavailable(
+          `embed model mismatch: requested ${EMBEDDING_API_MODEL}, provider returned ${json.model ?? 'none'}`,
+        );
+      }
       const vectors = json.data?.map((d) => d.embedding);
       if (!vectors || vectors.length !== texts.length) {
         throw new EmbeddingUnavailable(`embed returned ${vectors?.length ?? 0} vectors for ${texts.length} inputs`);

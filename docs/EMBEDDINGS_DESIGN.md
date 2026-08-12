@@ -122,15 +122,20 @@ ALTER TABLE embeddings VALIDATE CONSTRAINT embeddings_model_pinned;  -- SHARE UP
 ### D4 — `lexicon` served by nothing
 Stays with A8 (owner). Unchanged; the review accepted this scoping.
 
-### D5 — Provider drift guard: **promoted to V1**
-Assert the response `model` equals the pin, fail fast — on **both** the embed and rerank paths —
-plus assert **dimension** on the corpus writer the way `user-corpus/embed.ts:67` already does on
-the user plane. This is the only guard in the design that compares against something the
-pipeline did not write; it closes recon §5.1 #6 (provider silently forwarding a substituted
-model); it has no dependencies. **D5b is RULED (2026-08-12), strengthened:** not just failover —
-a provider **abstraction** that lets the owner switch providers easily as the market moves
-(owner expects to swap on a fast cadence; "not building on one provider"). Failover is the
-minimum, portability is the goal; in place before the next corpus-scale embed run.
+### D5 — Provider drift guard: **promoted to V1** — **BUILT 2026-08-12**
+Assert the response `model` equals the pin, fail fast. **Built on every path whose response
+self-reports a model**: the corpus embedder (`src/retrieval/embedder.ts`), the request-path
+embedder and the composer (`web/src/lib/teacher/deepinfra.ts` — compose included because this
+hazard already bit there, the Qwen3.6 auto-forward incident recorded at `:9-11`), and the
+user-corpus batch embedder (`user-corpus/embed.ts`), plus dimension assertions on both embed
+writers. **The rerank path is a documented gap:** `/v1/inference/{model}`'s response is
+`{ scores: number[] }` with no model field (provider docs, checked 2026-08-12) — no
+response-side assertion is implementable; the gap is recorded in `rerank.ts` and the residual
+guard is the eval harness's measured numbers. Live smoke against the real provider confirmed
+both endpoints echo the exact requested model string (no false-positive risk). Red-proofed:
+`test/embedder-model-guard.test.ts` (5) + `web/test/embed-model-guard.test.ts` (7) went red
+against unguarded code, green after. D5b (provider abstraction for switchability) remains ruled
+and unbuilt — separate slice.
 
 ### D6 — Withdrawn, except one line (v1 was wrong)
 No harness port, no V-4 red-proof — the A/B control stays. **The whole of D6: fix
@@ -162,8 +167,8 @@ diagnostic and `interpretation_bait` pass.
 
 | # | Invariant | Red-proof |
 |---|---|---|
-| I-1 | The embedder fails fast when the provider response `model` ≠ the pin | stub the provider returning a forwarded model id → red |
-| I-2 | The reranker fails fast likewise; the corpus writer drops non-1024-dim responses | stub each → red |
+| I-1 | The embedder fails fast when the provider response `model` ≠ the pin (all three embed paths: corpus ingest, request-path query, user-corpus batch) | stub the provider returning a forwarded model id → red (shipped: `test/embedder-model-guard.test.ts`, watched red 2026-08-12) |
+| I-2 | The **composer** fails fast on a forwarded model (the path that already bit); both embed writers drop non-1024-dim responses. The **reranker is exempt** — its response carries no model field (provider docs, 2026-08-12); gap documented in `rerank.ts` | stub each → red (shipped: `web/test/embed-model-guard.test.ts`, watched red 2026-08-12) |
 | I-3 | A vectorless published work is reported **as vectorless** by the pairing check — never merged into "no section of sampleable length" | seed a fixture work with sections and no vectors; assert the two labels report separately → red |
 | I-4 | No row lands in `embeddings` (platform-scoped) with a missing **or** wrong model | INSERT with a wrong literal → red; INSERT with the key **absent** (NULL) → red — both halves |
 | I-5 | One un-derived model literal on the corpus plane; every other spelling is derived from it (`replace(/^[^/]+\//, '')`, not typed) | hand-type either spelling in a second module → red (shape: `legal-hnsw-index-sync.test.ts`) |
