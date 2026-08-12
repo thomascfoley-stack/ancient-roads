@@ -653,7 +653,7 @@
   {
     "id": "ryle-expository",
     "slug": "ryle-expository",
-    "title": "Expository Thoughts on the Gospels",
+    "title": "Expository Thoughts on Matthew",
     "author": "J.C. Ryle",
     "author_died": 1900,
     "year_written": 1856,
@@ -663,12 +663,14 @@
     "license": "Public Domain",
     "tier": 2,
     "provenance": {
-      "url": "https://www.ccel.org/ccel/ryle",
-      "edition": "Ryle, Expository Thoughts (CCEL)",
+      "url": "https://www.ccel.org/ccel/ryle/matthew",
+      "edition": "Ryle, Expository Thoughts on Matthew (CCEL)",
       "year": 1856,
       "acquire": {
         "adapter": "ccel",
-        "ccel_author": "ryle",
+        "ccel_ids": [
+          "ryle/matthew"
+        ],
         "strip_markup": true
       }
     }
@@ -17992,6 +17994,7 @@
         "ccel_ids": [
           "gill/song"
         ],
+        "primary_book": "sng",
         "strip_markup": true
       }
     }

@@ -62,6 +62,14 @@ export const SERVED_SONG_VERSE_TYPES = ['hymn', 'poetry'] as const;
 // fathers exegetical; route sermons + theology to labeled lanes.
 export const SERVED_PROSE_WORKS = [
   'keil-delitzsch', 'catena-aurea', 'chrysostom-homilies', 'augustine-homilies',
+  // 2026-08-12, owner ruling ("Song of Solomon, fix it"): Gill's verse-by-verse
+  // Exposition of the Song — ingested with on-book heading anchors (adapter
+  // primary_book), it closes the Song's second-voice hole in the READER.
+  // jamieson-jfb is deliberately NOT here: its DB anchors feed the coverage gate,
+  // but serving it would double-count JFB against 'Jamieson, Fausset & Brown'
+  // (already served author-level) on 65 books — a two-voices-one-text inflation.
+  // Consolidating old `jfb` into `jamieson-jfb` is an owner/ingest-lane call.
+  'gill-song',
 ] as const;
 // The SERMON register lane (homiletical exposition — Spurgeon, Maclaren, the
 // Puritans). Retrieve-and-quote in its own pool + labeled payload; the reusable

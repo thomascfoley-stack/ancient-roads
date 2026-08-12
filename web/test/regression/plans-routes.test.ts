@@ -2,10 +2,13 @@
 // mocked at the requireUser seam — the one layer a credential-less machine
 // cannot exercise in a browser. Everything below the cookie is REAL here.
 //
-// The Song of Solomon case is STUDY_PLANS_DESIGN §6's whole justification:
-// the corpus has a KNOWN zero-coverage hole there (GO_LIVE_STATUS; CLAUDE.md
-// records v4 sampling no SoS), so the builder must refuse it — before this
-// feature, nothing would have.
+// The Song of Solomon case was STUDY_PLANS_DESIGN §6's whole justification:
+// the corpus had a KNOWN zero-coverage hole there, so the builder had to
+// refuse it. 2026-08-12: owner-ordered ingest closed the hole (gill-song +
+// jamieson-jfb; docs/SONG_OF_SOLOMON_COVERAGE_PLAN.md — 117/117 verses at ≥2
+// admitted exegetical authors). The Song case now pins ACCEPTANCE; the refusal
+// pin moved to a range with no exegetical coverage (Numbers 7, measured 0
+// verses at ≥2 authors on the 2026-08-12 verse_coverage rebuild).
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
@@ -118,17 +121,44 @@ describe.skipIf(SKIP)('Plans routes (handler → store → dev DB, session mocke
     expect(list.plans.find((p) => p.id === createdId)!.read_days).toBe(1);
   }, 30_000);
 
-  it('REFUSES Song of Solomon — the known zero-coverage hole, stated honestly', async (ctx) => {
+  it('ACCEPTS Song of Songs — the 2026-08-12 ingest closed the known zero-coverage hole', async (ctx) => {
     if (!(await corpusPresent())) return ctx.skip();
-    // SEED: drop checkScopeCoverage from createPlan and this returns 201 —
-    // a confident dated schedule over passages the corpus cannot support.
+    // Was: the refusal pin ("REFUSES Song of Solomon — the known zero-coverage
+    // hole"). Red watched 2026-08-12: with gill-song + jamieson-jfb published and
+    // verse_coverage rebuilt, the old expectation failed on a real accept.
+    // DETECTION PRESERVED: if the Song's ≥2-author coverage disappears (works
+    // unpublished, coverage rebuilt away), checkScopeCoverage refuses and the
+    // 201 below goes RED.
     const res = await createPlanRoute(jsonReq({
       spec: { scope: { kind: 'book', book: 'sng' }, weeks: 2, daysPerWeek: 4, startDate: '2026-08-03' },
     }));
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as { refused?: boolean; reason?: string };
-    expect(body.refused).toBe(true);
-    expect(body.reason).toMatch(/coverage/i);
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { plan: { id: string; title: string } };
+    expect(body.plan.title).toBe('Song of Songs · 2 weeks');
+    const got = await getPlanRoute(new NextRequest('http://localhost'), { params: Promise.resolve({ id: body.plan.id }) });
+    const detail = (await got.json()) as { days: Array<{ verse_start: number; verse_end: number }> };
+    expect(detail.days).toHaveLength(8);
+    expect(Math.floor(detail.days[0]!.verse_start / 1_000_000)).toBe(22);
+    expect(Math.floor(detail.days[7]!.verse_end / 1_000_000)).toBe(22);
+    await deletePlanRoute(new NextRequest('http://localhost'), { params: Promise.resolve({ id: body.plan.id }) });
+  }, 30_000);
+
+  it('coverage gate at the store seam: a bare verse range refuses, a covered one passes', async (ctx) => {
+    if (!(await corpusPresent())) return ctx.skip();
+    // The refusal pin, moved off the Song 2026-08-12 and off the ROUTE: day
+    // expansion rounds scopes to whole chapters, and the 2026-08-12 rebuild left
+    // every canonical chapter with at least one ≥2-author verse, so no route
+    // scope can refuse today. The gate is pinned here instead, over real
+    // verse_coverage: Numbers 7:57-83 is the longest stretch with ZERO ≥2-author
+    // verses (measured 2026-08-12); the chapter around it passes. If ingest
+    // covers the stretch, this goes RED and the pin moves — the Song pin's own
+    // discipline. SEED: drop the EXISTS clause and the first call returns null.
+    const { checkScopeCoverage } = await import('@/lib/plan/store');
+    const bare = await checkScopeCoverage([{ verseStart: 4007057, verseEnd: 4007083 }]);
+    expect(bare?.refused).toBe(true);
+    expect(bare?.reason).toMatch(/coverage/i);
+    const covered = await checkScopeCoverage([{ verseStart: 4007001, verseEnd: 4007999 }]);
+    expect(covered).toBeNull();
   }, 30_000);
 
   it('creates a Pauline-epistles collection plan spanning book boundaries (ADR-048)', async (ctx) => {

@@ -1,5 +1,95 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-12 (Kimi) — Lord's Garden contamination PURGED (dev+prod); Song of Solomon coverage hole CLOSED (dev; prod awaits owner flip)
+
+Owner rulings this session: "the lords garden, get it fixed" · "Song of solomon, fix it and fix
+the deepinfra embedding don't care about the cost" · "Push branc / deploy". DeepInfra spend
+explicitly approved. Prod writes under these rulings: the ryle decontamination (same pattern as
+the 2026-08-11 withdrawals). The corpus-copy + publish-flip for the Song's prod half sit behind
+their TTY owner gates BY DESIGN — commands handed to the owner (below).
+
+### ryle-expository decontamination (the "Lord's Garden" report)
+
+- Root cause: `ryle-expository` was ingested from Ryle's whole CCEL AUTHOR PAGE
+  (`ccel_author: "ryle"`), slurping three works into one source: Matthew (legit), all of
+  *Holiness* (exact duplicate of `ryle-holiness`), and all of *Upper Room* — whose ch. XV is
+  "THE LORD'S GARDEN". The plan doc's "non-Ryle content" was wrong about authorship (it IS
+  Ryle) but right about contamination: wrong work, wrong slug, anchored to Song 4:12 + 42 other
+  stray verses across 24 books.
+- Deleted on BOTH dev and prod (identical counts, zero user data anywhere): 44 sections
+  (ordinals 94–137), 43 stray section_anchors, and — the actually user-visible half — **1,481
+  served flat `embeddings` rows** (`commentary:ryle-expository:94..137.*`; 761 Holiness
+  duplicates, 720 Upper Room). Verified before delete: Holiness is independently served under
+  its own slug (761 rows), so nothing unique was lost. ryle-expository is now 93 sections /
+  93 anchors, all Matthew, honestly retitled "Expository Thoughts on Matthew".
+- Recurrence prevention: manifest acquire switched `ccel_author` → `ccel_ids: ["ryle/matthew"]`.
+  Five `ccel_author` entries remain (owen/watson/flavel/edwards/vincent) — there the author-page
+  slurp is the DECLARED intent ("*-works" collections); flagged, not relitigated. Latent
+  duplicate flagged to ingest lane: tier-3 `ryle-matthew` points at the same CCEL id.
+- Receipt: `docs/evidence/ryle-expository-decontamination-2026-08-12.log`.
+- *Upper Room* is restorable anytime via the existing `ryle-upper-room` manifest entry.
+
+### Song of Solomon — coverage hole closed (dev); prod half staged behind the owner gates
+
+- Root cause of the hole: helloao (the whole-Bible commentary source API) 404s Song of Songs
+  for ALL five whole-Bible commentaries (jfb, john-gill, matthew-henry, adam-clarke,
+  keil-delitzsch — curl-verified). Nothing to patch; acquisition was the only route.
+- Ingested via the CCEL adapter (both pre-declared in the manifest, tier 3, PD):
+  `gill-song` (Gill's Exposition of the Book of Solomon's Song; 123 sections, 1,942 flat
+  embeddings) and `jamieson-jfb` (full JFB; 1,258 sections, 9,878 embeddings).
+- TWO ADAPTER BUGS FIXED (both red-proofed in `test/ccel-primary-book-anchor.test.ts`, 6/6;
+  red watched on pre-patch code, 4 failures, incl. against the FINAL test file):
+  1. First-scripRef anchoring put 105 of gill-song's 107 anchors on CROSS-REFERENCES all over
+     the canon. New: `acquire.primary_book` (manifest, `"sng"`) anchors by the work's own unit
+     headings ("Chapter 1 Verse 1"); a scripRef anchor is kept only when it lands ON the
+     declared book. gill-song re-ingested: **123/123 anchors on the Song**.
+  2. Range osisRefs (`Bible:Song.1.1-Song.1.17`) matched only the first 3 parts → every JFB
+     Song chapter anchored to verse 1 only. unitAnchor now expands ranges (passage fallback
+     kept). jamieson-jfb re-ingested: 8 chapter ranges = all 117 verses.
+- `adeney-expositorsonglament` (Expositor's Bible Song volume) was also ingested, but its
+  survey-level units anchor to junk (cross-refs, phantom ids). Pulled back to **staged** —
+  content fine, anchors not; needs a survey-style anchor pass before any publish.
+- `verse_coverage` rebuilt on dev: **Song 117/117 verses covered, ALL at ≥2 admitted
+  exegetical authors** (was 5 covered, 1 at ≥2). Corpus-wide: 30,621/31,103 verses covered,
+  29,071 at ≥2.
+- plans-routes pin FLIPPED (red watched first: the old "REFUSES Song" test failed on a real
+  201). The Song case now pins ACCEPTANCE (201, 8 days, all book 22). The refusal pin moved to
+  the store seam (`checkScopeCoverage` over Numbers 7:57-83, the longest zero-≥2-author
+  stretch) because day expansion rounds to whole chapters and every chapter now has coverage —
+  the route level can no longer express a refusal. Gate perturbation red-proofed (forced
+  `covered = days.length` → exactly that test went red; reverted; 8/8 green).
+- READER serving: `gill-song` added to SERVED_PROSE_WORKS (routing.ts); FTS lockstep migration
+  **109** applied on dev (zero-window _v9 rebuild; zero commentary_entries rows — lockstep only,
+  watched the sync guard red first, green after). `jamieson-jfb` deliberately NOT served-listed:
+  old `jfb` already serves 15,473 flat rows author-level ('Jamieson, Fausset & Brown'), and
+  serving jamieson-jfb too would double-count one text as two voices corpus-wide. Consolidation
+  (retire old jfb in favour of the better-anchored jamieson-jfb) is owner/ingest-lane — flagged.
+- **AUDIT PASSED — all gates green** on the full change set (incl. the parallel lane's
+  in-flight prayer-compose files, which did not break it).
+
+### PROD HALF — owner-terminal (TTY gates by design; nothing was written to prod for the Song)
+
+Run from the repo root, in order:
+
+1. `COPY_ALLOW=1 COPY_EXPECT_HOST=ep-odd-fog-atnykudm CORPUS_COPY_SOURCE_URL="$(cat ~/.neon_dev_owner_url)" CORPUS_COPY_DEST_URL="$(cat ~/.neon_prod_url)" node scripts/corpus-copy.mjs --slugs=docs/evidence/song-of-solomon-2026-08-12/flip-slugs.json --evidence=docs/evidence/song-of-solomon-2026-08-12` (lands STAGED)
+2. `PUBLISH_ALLOW=1 PUBLISH_EXPECT_HOST=ep-odd-fog-atnykudm CUTOVER_DATABASE_URL="$(cat ~/.neon_prod_url)" node scripts/publish-flip.mjs --slugs=docs/evidence/song-of-solomon-2026-08-12/flip-slugs.json --evidence=docs/evidence/song-of-solomon-2026-08-12` (type `publish`)
+3. Then I run: prod `verse_coverage` rebuild (COVERAGE_ALLOW_PROD=1) + migration 109 on prod.
+   Optional dev serve-flip (local /ask gets Gill/JFB): same flip command with
+   `PUBLISH_EXPECT_HOST=ep-tiny-hat-atdgpisx`, `CUTOVER_DATABASE_URL="$(cat ~/.neon_dev_owner_url)"`,
+   and `--serve-published` (dev works are already status-published from the adapter path).
+
+### NOT DONE / UNVERIFIED
+
+- Prod has NO Song content yet (steps above are the owner's; corpus-copy dry-run green).
+- jamieson-jfb published-but-unserved-listed: feeds coverage + shelf, invisible to /ask —
+  deliberate, documented, reversible; consolidation call pending (above).
+- adeney-expositorsonglament staged with junk anchors (survey-style anchor fix not written).
+- Push + deploy BLOCKED at time of writing: the parallel lane's prayer-compose work is
+  uncommitted in this tree (rule-3 stop reported to owner); deploy.sh gates on a clean tree.
+  Branch also needs force-with-lease (yesterday's rebase rewrote already-pushed commits; the
+  remote's unique commits are all pre-rebase twins of local ones).
+- The visual prayer/sidebar fixes from 2026-08-11 remain not browser-verified (unchanged).
+
 ## 2026-08-11 — HOTFIX: I broke sign-in, and the fix is live
 
 **`main` `f1c749f` == production `f1c749f`** (`dpl_CBNUQjrw77N2WqqGUYLtDdmuyVG2`, `vercel ls`: 4m,
