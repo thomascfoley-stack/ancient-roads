@@ -54,7 +54,10 @@ finding, now fixed).
 - **Numbers, labelled by database:** dev `embeddings` ≈1.07M rows, dev `section_embeddings`
   ≈362,948 (RECORDED in `model.ts:17-18`, dev-backed). Prod is far smaller (flat rows 190,635
   at 2026-07-23; `served=true` 398,113 at the 2026-08-10 probe — the served set grows with
-  licensing adjudication; any undated count is wrong within a week).
+  licensing adjudication; any undated count is wrong within a week). **Prod model conformity
+  confirmed 2026-08-12 (T0-d, Fable prod read): all 569,845 corpus rows carry
+  `BAAI/bge-large-en-v1.5` exactly** — V4's `VALIDATE CONSTRAINT` will validate; note the stored
+  value is the API-id string, not the short slug, so the pin constant must be the long form.
 
 ---
 

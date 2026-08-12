@@ -106,12 +106,33 @@ built for: `catalog`/`catalogs` register filters, whose own comment says they we
 of the split-screen UI that will drive it."* **One capped query per register group, in parallel**
 (§7.3).
 
-### 2.6 Register corpus gap on production
+### 2.6 Register corpus on production — SUPERSEDED 2026-08-12
 
-MEASURED (committed evidence, `docs/evidence/a2-prod-readonly-2026-08-01/census.txt` A2.1;
+~~MEASURED (committed evidence, `docs/evidence/a2-prod-readonly-2026-08-01/census.txt` A2.1;
 WORKLOG:4594/:5725): prod holds 7 sources, all `commentary`; register works have never been
-ingested to prod. Non-commentary groups on prod render empty **truthfully** until register ingest
-lands. No browser pass may expect otherwise.
+ingested to prod.~~
+
+**T0-b recon, 2026-08-12 (Fable prod read, `docs/evidence/study-docs-p1/`):** prod now holds
+**125 published works across 11 source types** — commentary 26, hymn 32, devotional 15,
+poetry 13, lexicon 10, confession 9, father 7, sermon 6, theology 3, topical_index 3,
+historian 1 (register ingest landed between the census and the apply session; the count was
+corrected 2026-08-12 after independent re-count of the raw log — Fable's prose said 10).
+Note: `historian` has zero served `embeddings` rows — published but served by nothing, the
+lexicon/A8 pattern. Register groups on prod are expected to have real content; the P2 browser
+pass should expect populated groups.
+
+**T0-a, same session:** ask-surface `source_id` resolvability is **unmeasurable** — no stored
+surfaced lists exist on prod because ask-history persistence has not shipped. The ~41%
+resolver-ceiling estimate remains the only number until it does.
+
+**T0-c, same session — closed positive for today's corpus, with a stated residual:** zero
+`sections` rows carry forbidden provenance; every work whose `embeddings` rows do is either
+staged (the status gate refuses clippings) or clean-sourced on the sections side. **Residual:**
+the write gate treats `source_url IS NULL` as clean — zero exposure today, but it re-opens if a
+future ingest writes NULL-url sections for a provenance-held work. Also re-measured: ADR-044's
+known served-dirty rows stand at **4,174** (open owner call A9, unchanged) — the clipping write
+and servability re-check refuse those rows regardless of `served`, so Study Docs carries no
+exposure to that hole.
 
 ### 2.7 Existing placeholders
 

@@ -222,7 +222,9 @@ apply).
 
 T0 recon rode the session (read-only, `t0-recon-prod-2026-08-12.log`): **T0-a unmeasurable** — 0
 assistant messages with stored surfaced lists (ask-history persistence not shipped); **T0-b**
-census: 125 published works across 10 registers (the §2.6 "7 works, all commentary" note in
+census: 125 published works across 11 source types (corrected from 10 after independent re-count
+of the raw log, 2026-08-12; `historian` ×1 is the eleventh and has no served embeddings rows —
+the §2.6 "7 works, all commentary" note in
 STUDY_DOCS_DESIGN is superseded); **T0-c closed positive for today's corpus** — 0 sections rows
 carry forbidden provenance, and every work whose embeddings rows do is either staged (status gate
 refuses clippings) or clean-sourced on the sections side (wesley-crosswire, 5,254 sections all

@@ -1,5 +1,30 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-12 (late) — T0 recon folded into the design docs (Kimi session)
+
+Fable's prod-apply session (eecad7c) produced T0 numbers that changed two design docs:
+- **STUDY_DOCS §2.6 superseded:** prod is now **125 published works across 10 registers**
+  (register ingest landed since the 2026-08-01 census) — register groups on prod should have
+  real content; the "honestly empty" expectation is gone. T0-a unmeasurable (no stored surfaced
+  lists until ask-history ships). T0-c closed positive with one recorded residual (write gate
+  treats `source_url IS NULL` as clean — zero exposure today). ADR-044 served-dirty rows
+  re-measured at 4,174 (owner call A9 stays open; Study Docs is not exposed — the write gate
+  and re-check refuse those rows regardless of `served`).
+- **EMBEDDINGS_DESIGN:** T0-d confirms prod pin conformity — all 569,845 corpus rows carry
+  `BAAI/bge-large-en-v1.5` (API-id long form; V4's pin constant must be the long form).
+
+Both edits committed-pending on feat/study-docs-p1 with this entry.
+
+**Register-count correction (PM audit, same evening):** Claude cowork's PM pass re-counted the
+raw T0-b log instead of trusting the prose — 125 published works is right, but the log shows
+**11 distinct source types**, not 10 (historian ×1 was dropped from Fable's summary; the
+miscount was consistent across Fable's report, this WORKLOG, and STATE_OF_TRUTH §2g — a
+consistent miscount, exactly the class the loop exists to catch). Corrected in
+STUDY_DOCS_DESIGN §2.6 and STATE_OF_TRUTH §2g, with the historian-has-no-served-rows note
+(the lexicon/A8 pattern). PM's prod-state caveat stands: paper trail verified, live DB not
+independently re-queried by them.
+
+
 ## 2026-08-12 (prod) — Migration 110 applied to ep-odd-fog; T0 recon recorded (Fable session)
 
 **Owner go: given in session 2026-08-12, scoped to this migration only** (recorded here per
