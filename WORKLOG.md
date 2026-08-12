@@ -1,6 +1,91 @@
 # WORKLOG — Autonomous session 2026-07-08
 
-## 2026-08-12 — EMBEDDINGS_DESIGN.md: recon → design (docs only, no code)
+## 2026-08-12 — Study Docs P1 core BUILT (Fable 5 brief): 110 + data layer + routes + clipping engine + servability + export + purge
+
+Branch `feat/study-docs-p1` off `docs/designs-2026-08`; tasks 1.1–1.8 of `STUDY_DOCS_BUILD.md`
+per `docs/pm/FABLE5_CORE_BRIEF.md`, against design §6/§8. **`npm run audit` GREEN end-to-end**
+(typecheck ×4 · lint ×2 · knip · deps `--expect-red` exact · root vitest · full web qa incl. the
+new suites · residue sweep now covering 28 tables · deploy-sh harness · Gate B). Evidence:
+`docs/evidence/study-docs-p1/` (grant red-proof · mutation red-proof + correction · 45/45
+hand-test log · the committed harness itself).
+
+**The migration is `110_studies.sql`, not the design's 108** — 108/109 were taken by the FTS
+serve/unserve pair; the brief's "confirm next free number" instruction was the reason. Applied
+to dev (`ep-tiny-hat`, ledger row, sha256 `5f32cbc1…`); the self-verifying DO tail was watched
+RED six ways (revoked UPDATE/INSERT, granted DELETE/UPDATE-on-revisions, RLS off, policy
+dropped — each seeded in a rolled-back transaction, each raising its exact message) and grants
+verified byte-exact after.
+
+**Tree-wins deviations from the design's SQL sketches, each deliberate:**
+1. **The section clipping leg carries the forbidden-provenance belt IN the write.** Design §6.3's
+   sketch gates on `status='published'` alone; the tree's serving predicate for sections
+   (search-sections.ts, deep-audit H6) carries status AND provenance, and a clipping write IS a
+   serve of the text. Write gate now equals serve gate; T0-c (P0 recon, unrun) loses its sting.
+2. **Route verbs are PATCH/DELETE per the build file's task 1.3**, diverging from the repo's
+   POST-with-kind idiom (plans/annotations/prayers) — the build contract names the verbs and the
+   P2 swarm codes against them; recorded in the route header.
+3. **`USER_TABLE_SPEC` gained the three tables** (not in the brief's file list): the enforced
+   enumerator test went RED naming exactly `studies, study_blocks, study_block_revisions`, and
+   classifying them (G1-digested AUTHORED content; `tsv` excluded as derived; `position` an
+   anchor) turned it green. Watched red→green; absent-on-prod is the library's existing `ABSENT`
+   lifecycle (plans/prayers precedent).
+
+**Ask-leg addressing:** blocks store `source_id` only (per design §6.1 — no source_type column),
+so the embeddings lookups derive `source_type` from the key's own prefix
+(`split_part(source_id, ':', 1)`) to ride the `(source_type, source_id, chunk_index)` unique
+index — MEASURED 0/570,350 corpus rows violate the equality on dev, and a violating row fails
+to MATCH (closed), never serves. Without a chunkIndex the lowest served chunk is snapshotted,
+deterministically (the surfaced list does not expose chunk identity today — companion T0-a).
+
+**A real defect caught by this build's own loop:** the naive midpoint-toward-infinity append
+grew position keys ~1 char per 6 appends (167 chars/1000, measured by the new test); fixed with
+a single-digit-increment append path (<40 chars/1000 asserted), and `'…0'` keys are refused at
+the boundary (as an upper bound such a key has NO key strictly before it).
+
+**Verified by execution (all logs committed):** 45/45 hand-test checks through the REAL data
+layer under `app_runtime` — cross-tenant reads/writes refused on all three tables; order under
+append/insert/move; revisions holding both outgoing bodies; byte-exact section + embedding
+snapshots with server-written attribution; staged work AND unserved embedding refused
+`not_servable`; whole-work append 3/3 units (bett-methhymns) and `work_too_large` past the cap
+(adam-clarke); the full Flow D round-trip (purge dry-run proven ROLLED BACK, execute
+tombstoning the data state, rehydrate restoring byte-exact); soft-delete cascade proven by
+owner truth-read; teardown to 0 residue. Route contract 8/8 (401 only when signed out;
+404-never-401 foreign ids; S-1 quote/attribution → 400 on POST and PATCH; 409 NOT_SERVABLE
+distinct from 404). Pure modules 15/15 with mutation red-proofs — including an honest
+correction in the log: the first "reverted, green" claim was FALSE (`git checkout` cannot
+restore an untracked file; both mutations were still live), caught by reading the numbers,
+reverted by re-edit, re-proven.
+
+**Accepted, stated plainly:** `studies.updated_at` bumps in the same transaction as every block
+op INCLUDING a clipping insert that refuses (0 rows) — a failed save can cosmetically re-order
+the recents list; making the bump conditional needs read-then-write in one transaction, which
+`runAsUser`'s static-array shape forbids. Cosmetic, documented here rather than silently.
+
+**NOT DONE / UNVERIFIED:**
+- **Bylaw 4 — fixer ≠ verifier: NOTHING above is independently verified.** Every claim rests on
+  this builder's own runs. P3's fresh session re-executes the red-proofs and the harness
+  (committed for exactly that purpose) before any of this is trusted or shipped.
+- **S-1…S-14 are NOT built** — P2 swarm's by the brief. My suites pin the route contract and
+  pure helpers; they are not the invariant suite and do not claim its coverage.
+- **RLS under Neon's REAL user-id format stays UNPROVEN** (C5 carried): the harness's `qa-` ids
+  exercise the mechanism, not the format. Belts remain load-bearing; S-4 (two real accounts)
+  is P2/P3's.
+- **The forbidden-provenance SECTION refusal was NOT RUN** — dev has no published
+  biblehub-provenance section to refuse (stated in the harness log). The predicate is in the
+  write SQL and servability, and the belt case is unit-tested; the live corpus shape wasn't
+  exercisable here. Same for a served-but-dirty embeddings row (none exists on dev, correctly).
+- **No UI, nothing browser-verified** — P1 has no browser surface by scope; the browser DoD
+  applies to P2's pages, not here. No prod contact of any kind this session.
+- **GIN `fastupdate=off` is chosen and recorded, NOT measured under autosave load** (build §5
+  says measure — needs P2's real editor traffic).
+- **Whole-unit grammar assumption:** whole-work blocks group by
+  `COALESCE(unit_ordinal, -ordinal)` — the same unit key search-sections dedupes by; if the
+  reading-unit grammar ever diverges from that, the aggregation inherits it.
+- `EXPORT_MAX_BLOCKS` (2,000) throw-past-ceiling is asserted in code, untested at scale.
+
+**Next:** P2 (swarm brief) builds UI + S-1…S-14 against these routes; P3 independently
+re-verifies everything red-first, then `deploy.sh` — migration 110 reaches prod only through
+that owner-gated path.
 
 Claude cowork's pre-design recon (four vector planes, one model, the lockstep problem, six open
 questions, read at `02b1b42`, deliberately kept off-repo) converted into
