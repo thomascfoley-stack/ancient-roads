@@ -1,4 +1,88 @@
-# WORKLOG — Autonomous session 2026-07-08
+# WORKLOG — Autonomous session 2026-08-12
+
+## 2026-08-12 (prod) — Migration 110 applied to ep-odd-fog; T0 recon recorded (Fable session)
+
+**Owner go: given in session 2026-08-12, scoped to this migration only** (recorded here per
+bylaw 1 — the order also authorized the read-only pre-flight and T0 recon riding the session;
+deploy explicitly excluded and NOT run). Premise verified against the tree before any prod
+connection: the independent P1 verification EXISTS — the Kimi entry below, found uncommitted on
+`feat/study-docs-p1` exactly as it says ("commit with the owner's go"); it is committed with
+this entry.
+
+**Sequence executed** (evidence `docs/evidence/study-docs-p1/`):
+1. **Pre-flight CLEAR** (`prod-preflight-110.log`): `ep-odd-fog-atnykudm` reached as
+   `neondb_owner`; all three tables ABSENT; no `110_studies.sql` ledger row; ledger convention
+   confirmed (107/108/109 present, `applied_by neondb_owner`); 032's default-privilege
+   narrowing in the prod ledger; `btree_gin` not yet installed.
+2. **T0 recon, read-only** (`t0-recon-prod-2026-08-12.log`): summarized into
+   `STATE_OF_TRUTH.md` §2g — T0-a unmeasurable (0 stored surfaced lists), T0-b census 125
+   published works / 10 registers, T0-c closed positive for today's corpus (0 forbidden-
+   provenance sections; residual stated: NULL-source_url-as-clean has zero exposure today),
+   T0-d model pin uniform (`BAAI/bge-large-en-v1.5`, 569,845/569,845). The ADR-044
+   4,174 served-dirty rows re-measured at exactly 4,174 (A9's open owner call, unchanged) —
+   the clipping write/servability belts refuse those rows regardless of `served`.
+3. **Apply** (`prod-apply-110.log`): `MIGRATE_ALLOW_PROD=1 node db/apply-migration.mjs
+   db/migrations/110_studies.sql` with the owner URL from `~/.neon_prod_url` (value never
+   printed, never written to disk). Ledger sha256 `5f32cbc1e5b4…` — **byte-identical to dev's
+   apply**. The self-verifying DO tail PASSED ON PROD (single-transaction file; a raise aborts
+   the apply — and the tail's ability to raise was proven six ways on dev, same file bytes).
+4. **Post-checks 35/35 PASS** (`prod-postcheck-110.log`): tables exist; RLS + one policy each
+   (USING + WITH CHECK); the 12-cell grant matrix proven positive AND negative via
+   `has_table_privilege`; all 7 indexes incl. `idx_blocks_user_tsv` GIN `fastupdate=off` and
+   UNIQUE-partial `idx_blocks_order`; ledger row with checksum; extension installed; **all
+   three tables empty**.
+
+**Deviations from the order's letter, recorded:** pre-flight ran as `neondb_owner` with
+SELECT-only statements, not as `app_runtime` — no app_runtime prod URL exists on this machine
+(it lives in Vercel env only); app_runtime's effective privileges were proven via the
+post-check matrix instead. `db/apply-migration.mjs` (plain) was used, not the concurrent
+variant: 110 contains no CONCURRENTLY statement (108/109 used the concurrent runner because
+theirs do; 039/041/042 are the plain-file precedent).
+
+**NOT DONE / UNVERIFIED:**
+- **No deploy.** The routes/lib that use these tables are not on prod; the tables are inert
+  (proven empty; nothing deployed references them). Deploy remains a separate owner decision
+  through `deploy.sh` after P2/P3.
+- **No runtime-path proof on prod:** app_runtime's grants are proven by catalog function, not
+  by executing the app's queries as app_runtime against prod (no runtime credential here, and
+  no app code deployed to exercise). The dev hand-test (45/45 under app_runtime) is the
+  closest executed evidence.
+- **RLS-binds-under-Neon-user-id (C5) still unproven** — unchanged by this session; S-4 needs
+  two real accounts through the deployed app.
+- **T0-a produced no number** — resolvability of ask-surface items cannot be measured until
+  ask-history persistence ships; the design's ~41% resolver-ceiling figure stays the only
+  estimate.
+- **No deep-audit ran this session** — this was a scoped, owner-ordered migration apply
+  (additive DDL, red-proofed on dev, byte-identical file), not a code deploy; the pre-deploy
+  deep-audit obligation attaches to the P3/deploy session.
+
+## 2026-08-12 (later) — P1 independent verification (Kimi session; built none of it)
+
+Fixer is not verifier: re-checked Fable's P1 claims on `feat/study-docs-p1` (03d522c + f564bb4).
+
+- **Migration 110** inspected: five CHECKs per design §6.1, grants derived from verbs,
+  self-verifying DO tail; grant red-proof log shows six seeded failures each RED then green.
+- **Route suite run by me:** 8/8 (`studies-routes.test.ts` against dev, session mocked) —
+  incl. cross-tenant 404 (not blanket-401) and 409 NOT_SERVABLE distinct from 404.
+- **Unit suites run by me:** study-position + study-export 15/15.
+- **45-check harness RE-EXECUTED by me** (not log-trusted): 45 PASS / 0 FAIL, teardown to zero
+  residue. Invocation: `cd web && DATABASE_URL=<runtime> OWNER_URL=<owner> npx tsx
+  ../docs/evidence/study-docs-p1/handtest-harness.mts`.
+- **Full `npm run audit` run by me: PASSED — all gates green** (qa leg: 913 passed / 0 failed /
+  13 loud-skipped).
+
+**Env recipe (cost two red runs to learn; swarm brief needs this):** DB-backed suites want
+`APP_DATABASE_URL` = the app_runtime dev URL (root `.env.local` `DATABASE_URL` connects as
+app_runtime — verified via `current_user`) and `DATABASE_URL` = the dev-OWNER URL from
+`~/.neon_dev_owner_url`. With only the runtime URL, owner-seeding suites fail
+("permission denied for table sources"; a raw `DELETE FROM studies` denied — 110's no-DELETE
+grant doing its job). Fable's report said "the owner URL comes from root .env.local" —
+imprecise; evidence README should carry the recipe.
+
+**Still not done:** P3's browser passes (no UI exists yet — P2 swarm), S-1…S-14 proper (P2),
+C5 (RLS under Neon's user-id format), nothing touched production. This entry is uncommitted on
+feat/study-docs-p1; commit with the owner's go.
+
 
 ## 2026-08-12 — Study Docs P1 core BUILT (Fable 5 brief): 110 + data layer + routes + clipping engine + servability + export + purge
 

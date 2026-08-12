@@ -1,0 +1,20 @@
+target endpoint: ep-odd-fog-atnykudm
+
+
+connected as: neondb_owner · db: neondb
+table studies: ABSENT (expected)
+table study_blocks: ABSENT (expected)
+table study_block_revisions: ABSENT (expected)
+ledger table: schema_migrations
+ledger row for 110_studies.sql: none (expected)
+most recent ledger rows:
+  109_fts_legal_serve_gill_song.sql  Wed Aug 12 2026 00:00:00 GMT-0700 (Pacific Daylight Time)  neondb_owner
+  108_fts_legal_unserve_talks_to_farmers.sql  Tue Aug 11 2026 00:00:00 GMT-0700 (Pacific Daylight Time)  neondb_owner
+  107_prayers.sql  Sat Aug 08 2026 00:00:00 GMT-0700 (Pacific Daylight Time)  neondb_owner
+  106_plan_write_grants.sql  Sat Aug 08 2026 00:00:00 GMT-0700 (Pacific Daylight Time)  neondb_owner
+  105_suggested_readings.sql  Thu Aug 06 2026 00:00:00 GMT-0700 (Pacific Daylight Time)  neondb_owner
+  104_better_auth_schema.sql  Wed Aug 05 2026 00:00:00 GMT-0700 (Pacific Daylight Time)  neondb_owner
+032 (default-privilege narrowing) in ledger: yes
+btree_gin extension: not installed (110 creates it)
+
+PRE-FLIGHT: CLEAR — ep-odd-fog reached, tables absent, ledger has no 110 row.

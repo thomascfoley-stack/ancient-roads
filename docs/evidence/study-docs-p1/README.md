@@ -1,7 +1,15 @@
 # Study Docs P1 — build evidence (Fable 5 core, `docs/pm/FABLE5_CORE_BRIEF.md`)
 
 Branch `feat/study-docs-p1`. Dev target `ep-tiny-hat` (verified by `db/describe-target.mjs`
-before anything ran: ledger through 109, no studies tables). Production untouched.
+before anything ran: ledger through 109, no studies tables). Production untouched during the
+BUILD; the 2026-08-12 owner-ordered apply session is documented at the bottom.
+
+**Env recipe for the DB-backed suites** (from the independent-verification session; the build
+report's "owner URL comes from root .env.local" was imprecise): `APP_DATABASE_URL` = the
+app_runtime dev URL (root `.env.local` `DATABASE_URL` — connects as app_runtime) and
+`DATABASE_URL` = the dev-OWNER URL (`~/.neon_dev_owner_url`, or root `.env.local`
+`DATABASE_URL_UNPOOLED`, both `neondb_owner`). Owner-seeding suites fail with only the runtime
+URL — "permission denied for table sources" is the tell.
 
 ## 110-grant-redproof.log — the migration's DO block, watched RED
 
@@ -71,6 +79,29 @@ UNAUTHENTICATED only when signed out; 400 on malformed ids before any DB work; *
 (unknown kind/op, double keys, missing anchors); **409 NOT_SERVABLE distinct from 404** on a
 staged section. Permanent suite (loud-skip without a DB URL, the house pattern); P2's S-suite
 goes deeper, this pins the contract.
+
+## PRODUCTION apply session (2026-08-12, owner go in session, this migration only)
+
+- **prod-preflight-110.log** — read-only: `ep-odd-fog-atnykudm` reached (endpoint id derived by
+  `scripts/lib/target-guard.mjs`, URL never printed), connected as `neondb_owner` (no
+  app_runtime prod URL exists on this machine — divergence from the order's letter, recorded;
+  every statement SELECT/to_regclass), three tables ABSENT, no 110 ledger row, 032 narrowing in
+  the ledger, `btree_gin` absent.
+- **t0-recon-prod-2026-08-12.log** — the design §10 T0 aggregates (read-only, no corpus text
+  printed). Headlines: T0-a unmeasurable (0 stored surfaced lists); T0-b 125 published works /
+  10 registers; T0-c 0 forbidden-provenance sections — closed positive for today's corpus, with
+  the NULL-source_url residual stated; ADR-044's served-dirty rows re-measured at exactly 4,174
+  (A9's open owner call — the clipping/servability belts refuse them regardless); T0-d
+  `BAAI/bge-large-en-v1.5` on 569,845/569,845 corpus rows. Summarized in `STATE_OF_TRUTH.md` §2g.
+- **prod-apply-110.log** — `MIGRATE_ALLOW_PROD=1 node db/apply-migration.mjs
+  db/migrations/110_studies.sql`; ledger sha256 `5f32cbc1e5b4…` (byte-identical to dev's row);
+  DO tail passed on prod inside the single apply transaction.
+- **prod-postcheck-110.log** — 35/35 PASS: tables, RLS + policies, the 12-cell
+  `has_table_privilege` matrix (positive AND negative), 7 indexes incl. the GIN
+  `fastupdate=off` and UNIQUE-partial order index, ledger row with checksum, extension,
+  all three tables EMPTY (nothing but DDL happened).
+
+No deploy was run; the tables are inert until P2/P3 ship code through `deploy.sh`.
 
 ## Classification: the three new tables entered USER_TABLE_SPEC
 

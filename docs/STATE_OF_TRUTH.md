@@ -205,6 +205,37 @@ this work. Full table: `docs/evidence/a2-prod-readonly-2026-08-01/serving-census
 > into the filter". Historical docs that say "9 authors" pre-date the work-leg expansion and are left
 > as point-in-time record. Re-measured after today's suppressions, which did not change this set.
 
+### 2g. Study Docs schema on prod (2026-08-12) — migration 110 applied, tables inert
+
+**PRODUCTION, 2026-08-12 (owner go in session, this migration only; evidence
+`docs/evidence/study-docs-p1/prod-{preflight,apply,postcheck}-110.log`):** migration
+**110_studies.sql applied and ledger-recorded** (sha256 `5f32cbc1e5b4…` — byte-identical to the
+dev apply). `studies`/`study_blocks`/`study_block_revisions` exist with RLS + one policy each;
+grant matrix proven by `has_table_privilege` positive AND negative (studies/blocks:
+SELECT,INSERT,UPDATE and NOT DELETE; revisions: SELECT,INSERT and NOT UPDATE/DELETE — append-only
+by grant); all seven indexes present incl. `idx_blocks_user_tsv` GIN(user_id, tsv)
+`fastupdate=off` and the UNIQUE partial `idx_blocks_order`; `btree_gin` installed; **all three
+tables empty** — no serving path references them until a deploy ships the P1 routes (deploy is a
+separate owner decision; nothing was deployed). The migration's self-verifying DO tail passed on
+prod inside the apply transaction (single-transaction file: a raise would have aborted the whole
+apply).
+
+T0 recon rode the session (read-only, `t0-recon-prod-2026-08-12.log`): **T0-a unmeasurable** — 0
+assistant messages with stored surfaced lists (ask-history persistence not shipped); **T0-b**
+census: 125 published works across 10 registers (the §2.6 "7 works, all commentary" note in
+STUDY_DOCS_DESIGN is superseded); **T0-c closed positive for today's corpus** — 0 sections rows
+carry forbidden provenance, and every work whose embeddings rows do is either staged (status gate
+refuses clippings) or clean-sourced on the sections side (wesley-crosswire, 5,254 sections all
+with non-forbidden source_url). Residual, stated: sections `source_url IS NULL` is treated as
+clean by the write gate — zero exposure today (the only NULL-url sections under a dirty-embeddings
+work are barnes-notes, staged), but a future ingest writing NULL-url sections for a
+provenance-held work would re-open it. The known ADR-044 4,174 served-dirty embeddings rows
+(A9 open owner call) were independently re-measured at exactly 4,174 — the Study Docs clipping
+write and servability re-check REFUSE those rows regardless of `served` (provenance belt in the
+statement). **T0-d:** all 569,845 corpus embeddings rows carry `metadata->>'model'` =
+`BAAI/bge-large-en-v1.5` exactly (EMBEDDINGS_DESIGN V4 input; note it is the API-id form, not
+the short `bge-large-en-v1.5` slug — B2's which-string lesson applies to any comparison).
+
 ### 2f. Study plans + topical-index corpus (2026-08-02/03)
 
 **PRODUCTION, 2026-08-03 (owner go, evidence `docs/evidence/plans-prod-2026-08-03/`):**

@@ -1,0 +1,48 @@
+T0 recon · target ep-odd-fog-atnykudm · 2026-08-12T22:25:06.609Z
+
+
+
+== T0-a · ask-surface source_id resolvability (recent assistant messages) ==
+assistant messages with a non-empty sources array: 0
+T0-a: UNMEASURABLE on prod today — no stored surfaced lists exist (ask-history persistence is the companion design, not yet shipped).
+
+== T0-b · register census (sources by source_type × status) ==
+  commentary   published    26
+  commentary   quarantined  1
+  commentary   staged       3
+  confession   published    9
+  confession   quarantined  1
+  devotional   published    15
+  father       published    7
+  father       staged       1
+  historian    published    1
+  hymn         published    32
+  lexicon      published    10
+  lexicon      staged       5
+  poetry       published    13
+  sermon       published    6
+  sermon       staged       1
+  theology     published    3
+  topical_index published    3
+served embeddings rows by source_type: sermon:162507 commentary:112101 theology:28726 lexicon:23657 father:23642 topical_index:13082 hymn:6887 confession:6615 devotional:6589 poetry:4085
+
+== T0-c · sections-side provenance linkage ==
+sections: total=395249 · with source_url=12769
+embeddings rows with forbidden provenance (metadata->>'sourceUrl'): 
+  (no work key)            rows=65627 served=4174  ← SERVED-DIRTY, INVESTIGATE
+  poole-tcp                rows=1308 served=0
+  barnes-notes             rows=1300 served=0
+  scofield-crosswire       rows=1215 served=0
+  calvin-crosswire         rows=1125 served=0
+  wesley-crosswire         rows=1021 served=0
+  pnt-crosswire            rows=288 served=0
+sections rows with forbidden provenance (s.source_url): none
+sections url-state for works with dirty embeddings rows (the T0-c hole check):
+  barnes-notes             status=staged sections=1300 with NULL source_url=1300
+  calvin-crosswire         status=staged sections=5090 with NULL source_url=0
+  wesley-crosswire         status=published sections=5254 with NULL source_url=0
+
+== T0-d · embeddings.metadata->>model distribution (corpus rows) ==
+  BAAI/bge-large-en-v1.5       rows=569845 served=387891
+
+T0 recon complete (read-only; no writes issued).
