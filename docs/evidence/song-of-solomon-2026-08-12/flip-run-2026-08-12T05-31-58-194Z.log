@@ -1,0 +1,24 @@
+serve:false  10 standing ruling(s) (HEAD 10, tree 10)
+publish-flip — target ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech (credentials redacted)
+direction    staged -> published
+slugs        2 from docs/evidence/song-of-solomon-2026-08-12/flip-slugs.json
+adjudicated  docs/SONG_OF_SOLOMON_COVERAGE_PLAN.md
+! (node:8705) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+role         neondb_owner (asserted at the server)
+
+Type publish to PUBLISH to ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech: publish
+snapshot     docs/evidence/song-of-solomon-2026-08-12/flip-pre-snapshot-2026-08-12T05-32-01-159Z.json (138 rows + served state for 2 slug(s), written before COMMIT)
+serve-published  2 already-published slug(s) will be SERVED (status unchanged)
+eligible     0 of 2 are 'staged' (2 already 'published')
+served       11820 embedding row(s) -> served=true across 2 slug(s)
+
+OK — gate held. 0 status row(s) staged -> published; 11820 embedding row(s) -> served=true.
+Reverse with: node scripts/publish-flip.mjs --slugs=docs/evidence/song-of-solomon-2026-08-12/flip-slugs.json --reverse --snapshot=docs/evidence/song-of-solomon-2026-08-12/flip-pre-snapshot-2026-08-12T05-32-01-159Z.json

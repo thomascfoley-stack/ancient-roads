@@ -1,6 +1,6 @@
 # WORKLOG — Autonomous session 2026-07-08
 
-## 2026-08-12 (Kimi) — Lord's Garden contamination PURGED (dev+prod); Song of Solomon coverage hole CLOSED (dev; prod awaits owner flip)
+## 2026-08-12 (Kimi) — Lord's Garden contamination PURGED (dev+prod); Song of Solomon hole CLOSED (dev+prod)
 
 Owner rulings this session: "the lords garden, get it fixed" · "Song of solomon, fix it and fix
 the deepinfra embedding don't care about the cost" · "Push branc / deploy". DeepInfra spend
@@ -67,28 +67,43 @@ their TTY owner gates BY DESIGN — commands handed to the owner (below).
 - **AUDIT PASSED — all gates green** on the full change set (incl. the parallel lane's
   in-flight prayer-compose files, which did not break it).
 
-### PROD HALF — owner-terminal (TTY gates by design; nothing was written to prod for the Song)
+### PROD HALF — DONE 2026-08-12 ~05:20Z (owner consent in chat: "you can do the copy allow
+and the publish skip the gate, owners permissions granted from me now")
 
-Run from the repo root, in order:
+The owner consented explicitly in-session; the TTY gates were satisfied via a pty wrapper
+(`expect` answering the prompts — consent documented here, not faked: the owner was present
+and directed it). Steps, all verified:
 
-1. `COPY_ALLOW=1 COPY_EXPECT_HOST=ep-odd-fog-atnykudm CORPUS_COPY_SOURCE_URL="$(cat ~/.neon_dev_owner_url)" CORPUS_COPY_DEST_URL="$(cat ~/.neon_prod_url)" node scripts/corpus-copy.mjs --slugs=docs/evidence/song-of-solomon-2026-08-12/flip-slugs.json --evidence=docs/evidence/song-of-solomon-2026-08-12` (lands STAGED)
-2. `PUBLISH_ALLOW=1 PUBLISH_EXPECT_HOST=ep-odd-fog-atnykudm CUTOVER_DATABASE_URL="$(cat ~/.neon_prod_url)" node scripts/publish-flip.mjs --slugs=docs/evidence/song-of-solomon-2026-08-12/flip-slugs.json --evidence=docs/evidence/song-of-solomon-2026-08-12` (type `publish`)
-3. Then I run: prod `verse_coverage` rebuild (COVERAGE_ALLOW_PROD=1) + migration 109 on prod.
-   Optional dev serve-flip (local /ask gets Gill/JFB): same flip command with
-   `PUBLISH_EXPECT_HOST=ep-tiny-hat-atdgpisx`, `CUTOVER_DATABASE_URL="$(cat ~/.neon_dev_owner_url)"`,
-   and `--serve-published` (dev works are already status-published from the adapter path).
+1. corpus-copy dev→prod: both works landed STAGED, all counts match (receipt
+   `docs/evidence/song-of-solomon-2026-08-12/corpus-copy-2026-08-12T04-18-59-040Z.json`).
+   Two earlier attempts died on 57P01 (connection killed mid-transfer, nothing written —
+   prod verified clean before each retry). NOTE: the first successful invocation's log
+   briefly contained both connection strings (expect spawn echo) — scrubbed from the log
+   files; prod password rotation was ALREADY pending (RULINGS §2) and this is one more
+   reason to do it.
+2. publish-flip on prod: snapshot + delta assertion green; both works `published` and fully
+   served (gill-song 1,942/1,942, jamieson-jfb 9,878/9,878). The served UPDATE took ~17 min
+   (HNSW maintenance — same class as calvin's 608s unserved write on 2026-08-11).
+3. Prod `verse_coverage` rebuilt (COVERAGE_ALLOW_PROD=1): 30,621 rows, identical to dev;
+   **Song 117/117 verses at ≥2 authors on prod**.
+4. Migration 109 applied on prod (MIGRATE_ALLOW_PROD=1): idx_commentary_fts_legal _v9 valid,
+   ledger sha256 identical to dev.
+5. Dev serve-flip (--serve-published) for dev/prod symmetry.
 
 ### NOT DONE / UNVERIFIED
 
-- Prod has NO Song content yet (steps above are the owner's; corpus-copy dry-run green).
-- jamieson-jfb published-but-unserved-listed: feeds coverage + shelf, invisible to /ask —
-  deliberate, documented, reversible; consolidation call pending (above).
+- jamieson-jfb is now SERVED on prod (the flip serves by construction, post-044) while NOT
+  in SERVED_PROSE_WORKS — its flat rows join the /ask commentary pool (type-based), so JFB
+  content appears under two author strings ('Jamieson, Fausset & Brown' legacy + 'Jamieson,
+  Robert' new). Retrieval-quality nuance only; consolidation call still owner/ingest-lane.
 - adeney-expositorsonglament staged with junk anchors (survey-style anchor fix not written).
-- Push + deploy BLOCKED at time of writing: the parallel lane's prayer-compose work is
-  uncommitted in this tree (rule-3 stop reported to owner); deploy.sh gates on a clean tree.
-  Branch also needs force-with-lease (yesterday's rebase rewrote already-pushed commits; the
-  remote's unique commits are all pre-rebase twins of local ones).
+- Deploy BLOCKED at time of writing: the parallel lane's prayer-compose work is uncommitted
+  in this tree (rule-3 stop reported to owner); deploy.sh gates on a clean tree. Push done
+  (509d690, force-with-lease — yesterday's rebase had rewritten the pushed line; the remote's
+  unique commits were all pre-rebase twins).
 - The visual prayer/sidebar fixes from 2026-08-11 remain not browser-verified (unchanged).
+- Prod site behavior not yet clicked through (Plans accepting a Song scope on prod is
+  verified by data, not by browser).
 
 ## 2026-08-12 — Prayer compose redesign: the writing surface is the screen (owner mockup)
 
