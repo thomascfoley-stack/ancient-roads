@@ -26,6 +26,28 @@ the two guard suites and read the diffs); V2 (migrate.mjs comment), V3 (P2 truth
 (model pin migration), V5 (constant consolidation) all remain; D5b provider abstraction ruled
 but unbuilt. Uncommitted at this writing — awaiting owner go.
 
+## 2026-08-12 (night) — EMBEDDINGS V2 + V3 done; Fable's mechanism note; P2 swarm wave 1 launched
+
+**Fable's mechanism note, for the record:** the "10 registers" slip came from summarizing off the
+served-rows-by-type line (10 entries) instead of the census table (11) — the two artifacts differ
+by exactly the published-but-unserved work (historian), which made the error self-consistent and
+invisible to its author. THE_LOOP rule 1 (name the artifact before you trust a number) in
+miniature; the catch surfaced real information (historian = current published-with-no-lane
+instance, matching A9's unbuilt slice).
+
+**V2 (migrate.mjs comment):** done — the "no callers" claim corrected; footgun documented as live.
+
+**V3 (P2 truth pass, dev):** pairing test's NOT COVERED list separated by cause — **91 of 125
+published works on dev are vectorless; ZERO were unsampleable** (the old label was wrong for
+every entry). By type: commentary 21/26, confession 8/9, devotional 15/15, father 4/7, hymn
+27/32, lexicon 10/10, poetry 3/13, topical_index 3/3; historian/sermon/theology fully covered.
+The check now reports the two causes separately (I-3, watched: pre-fix label captured in-session).
+D1 input: a P2 backfill is 91 works; the multi-chunk fraction for new ingests is still
+unmeasured. V4 (model pin) and V5 (constant consolidation) remain.
+
+**P2 swarm:** wave 1 (W1 invariants-data, W2 invariants-licensing) launched per
+docs/pm/SWARM_PARALLEL_BRIEF.md merge order — tests define correctness before UI streams.
+
 
 ## 2026-08-12 (late) — T0 recon folded into the design docs (Kimi session)
 

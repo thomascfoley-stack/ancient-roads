@@ -108,15 +108,34 @@ describe.skipIf(SKIP)('§B0 class 2 — every section body matches its own store
        ORDER BY s.slug, sec.ordinal`) as unknown as Sample[];
 
     // NO SILENT CAPS: a published work with no section in the sampleable range is NOT covered,
-    // and that has to be visible rather than read as "all clear".
+    // and that has to be visible rather than read as "all clear". CAUSES REPORTED SEPARATELY
+    // (2026-08-12, EMBEDDINGS_DESIGN V3 / I-3): the JOIN above drops VECTORLESS works silently,
+    // and until this fix they printed under "no section of sampleable length" — a true fact
+    // with a false reason. Measured the day this was fixed: all 91 uncovered works on dev were
+    // vectorless, zero were unsampleable. The two causes must never merge again.
     const covered = new Set(samples.map((s) => s.slug));
     const publishedWorks = (await sql`
       SELECT s.slug FROM sources s
        WHERE s.status = 'published' AND EXISTS (SELECT 1 FROM sections x WHERE x.source_id = s.id)
        ORDER BY s.slug`) as { slug: string }[];
     const uncovered = publishedWorks.map((w) => w.slug).filter((s) => !covered.has(s));
+    const vectorlessRows = (uncovered.length
+      ? await sql`
+        SELECT DISTINCT s.slug FROM sources s
+         WHERE s.slug = ANY(${uncovered})
+           AND NOT EXISTS (SELECT 1 FROM sections sec
+                            JOIN section_embeddings se ON se.section_id = sec.id
+                           WHERE sec.source_id = s.id)`
+      : []) as { slug: string }[];
+    const vectorless = new Set(vectorlessRows.map((r) => r.slug));
+    const unsampleable = uncovered.filter((s) => !vectorless.has(s));
     console.log(`§B0 class 2 — pairing probed on ${samples.length}/${publishedWorks.length} published works` +
-      (uncovered.length ? `; NOT COVERED (no section of sampleable length): ${uncovered.join(', ')}` : '; all covered'));
+      (uncovered.length
+        ? `; NOT COVERED: ${uncovered.length} — vectorless (no section_embeddings): ${vectorless.size}` +
+          (vectorless.size ? ` [${[...vectorless].join(', ')}]` : '') +
+          `; no section of sampleable length: ${unsampleable.length}` +
+          (unsampleable.length ? ` [${unsampleable.join(', ')}]` : '')
+        : '; all covered'));
 
     // POSITIVE CONTROL on the sampling itself: no samples means every assertion below is
     // vacuous, which is the failure mode this whole file exists to close.

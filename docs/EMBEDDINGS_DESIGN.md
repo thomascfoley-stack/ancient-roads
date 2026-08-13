@@ -149,11 +149,18 @@ own small slice.
 
 - **V1 — provider drift guard.** Response `model` assertion on embed + rerank; dims assertion on
   the corpus writer. I-1, I-2.
-- **V2 — `db/migrate.mjs:18` comment fix.** One line. No invariant; the diff is the proof.
-- **V3 — the P2 truth pass.** Run `section-vector-pairing.test.ts` on dev; read the `NOT
-  COVERED` list; one `count(*)` per name separates "no short sections" from "no vectors" — that
-  **is** the P2 coverage number, free. Then **fix the check's labelling** so the two causes can
-  never merge again (report `vectorless` separately from `unsampleable`). I-3. Output prices D1.
+- **V2 — `db/migrate.mjs:18` comment fix. DONE 2026-08-12.** The comment now records that
+  `hybrid_search` has six call sites in five eval/diagnostic scripts (the A/B control arm), so
+  the `CREATE OR REPLACE` revert footgun is documented as live, not dormant.
+- **V3 — the P2 truth pass. DONE 2026-08-12 (dev).** `section-vector-pairing.test.ts` run on
+  dev; the `NOT COVERED` list separated by cause with one `count(*)` per name — and the label
+  was wrong for **every** entry: **91 of 125 published works on dev have zero
+  `section_embeddings`; zero were "unsampleable."** By type (vectorless/total): commentary
+  21/26, confession 8/9, devotional 15/15, father 4/7, hymn 27/32, lexicon 10/10, poetry 3/13,
+  topical_index 3/3; historian 0/1, sermon 0/6, theology 0/3. The check now reports
+  `vectorless` and `no section of sampleable length` separately (watched: pre-fix output
+  printed all 91 under the wrong label). **D1 input:** a P2 backfill is 91 works, not a
+  handful — the multi-chunk fraction for new ingests is still unmeasured.
 - **V4 — the model pin, amended** (D3 as above). I-4.
 - **V5 — constant consolidation, re-homed** (D2 across the workspace boundary). I-5.
 
@@ -169,7 +176,7 @@ diagnostic and `interpretation_bait` pass.
 |---|---|---|
 | I-1 | The embedder fails fast when the provider response `model` ≠ the pin (all three embed paths: corpus ingest, request-path query, user-corpus batch) | stub the provider returning a forwarded model id → red (shipped: `test/embedder-model-guard.test.ts`, watched red 2026-08-12) |
 | I-2 | The **composer** fails fast on a forwarded model (the path that already bit); both embed writers drop non-1024-dim responses. The **reranker is exempt** — its response carries no model field (provider docs, 2026-08-12); gap documented in `rerank.ts` | stub each → red (shipped: `web/test/embed-model-guard.test.ts`, watched red 2026-08-12) |
-| I-3 | A vectorless published work is reported **as vectorless** by the pairing check — never merged into "no section of sampleable length" | seed a fixture work with sections and no vectors; assert the two labels report separately → red |
+| I-3 | A vectorless published work is reported **as vectorless** by the pairing check — never merged into "no section of sampleable length" | seed a fixture work with sections and no vectors; assert the two labels report separately → red (shipped 2026-08-12; watched: pre-fix output printed all 91 dev vectorless works under the wrong label) |
 | I-4 | No row lands in `embeddings` (platform-scoped) with a missing **or** wrong model | INSERT with a wrong literal → red; INSERT with the key **absent** (NULL) → red — both halves |
 | I-5 | One un-derived model literal on the corpus plane; every other spelling is derived from it (`replace(/^[^/]+\//, '')`, not typed) | hand-type either spelling in a second module → red (shape: `legal-hnsw-index-sync.test.ts`) |
 
