@@ -10187,3 +10187,12 @@ reverted to the fast baseline — prod unchanged; v3 stands at topical H2 75 / e
 desktop in an authenticated session is WAIVED by the owner ("override… I grant permission").
 P3's browser pass did not happen; the UI is verified at the build/test/SSR-markup level only.
 Deploy approved in the same instruction.
+
+**DEPLOYED 2026-08-12 (late; receipt 2026-08-13T01:25:46Z):** deploy.sh live to
+ancientpaths.app — dpl_7mdzS56dsNZ1RrLWtA7PKDMywUXe serving cc41726 (verified the alias serves
+this deploy). Ships: Study Docs product surface (P1+P2: /studies, /studies/[id], feed, export,
+Save-to-study, MY STUDIES sidebar, merged /search), embeddings V1 provider drift guard, V2/V3.
+Two gate blocks en route, both the system working: PREDEPLOY_DB_URL preflight (would have
+500'd /ask without it) and the next-env.d.ts mid-build churn (committed the build-generated
+path). Owner waived the P2 browser-pass clause (recorded above). Receipt:
+docs/evidence/deploys/deploy-cc41726-2026-08-13T01-25-46Z.txt.
