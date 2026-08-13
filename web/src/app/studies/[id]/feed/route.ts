@@ -56,6 +56,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
         ordinal: b.ordinal,
         quote: b.quote,
         attribution: b.attribution,
+        trim_start: b.trim_start,
+        trim_end: b.trim_end,
         renderState: blockRenderState(b, resolution),
       })),
       nextAfterPosition,

@@ -78,6 +78,10 @@ export interface StudyBlock {
   quote: string | null;
   attribution: { author?: string; work_title?: string; reference?: string } | null;
   cleared_at: string | null;
+  /** Trim offsets into `quote` (migration 111, "trim not edit") — a VIEW over the server's
+   *  bytes, never edited text. Display derives through lib/clipping-display.ts everywhere. */
+  trim_start: number | null;
+  trim_end: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -275,13 +279,13 @@ export async function listBlocks(
   const [rows] = await runAsUser(userId, (sql) => [
     opts.afterPosition !== undefined
       ? sql`SELECT id, study_id, position, kind, body, source_id, section_id, work_slug, ordinal,
-                   quote, attribution, cleared_at, created_at, updated_at
+                   quote, attribution, cleared_at, trim_start, trim_end, created_at, updated_at
             FROM study_blocks
             WHERE study_id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL
               AND position > ${opts.afterPosition}
             ORDER BY position, id LIMIT ${limit}`
       : sql`SELECT id, study_id, position, kind, body, source_id, section_id, work_slug, ordinal,
-                   quote, attribution, cleared_at, created_at, updated_at
+                   quote, attribution, cleared_at, trim_start, trim_end, created_at, updated_at
             FROM study_blocks
             WHERE study_id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL
             ORDER BY position, id LIMIT ${limit}`,
@@ -302,13 +306,13 @@ export async function getStudyWithBlocks(
         WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL`,
     opts.afterPosition !== undefined
       ? sql`SELECT id, study_id, position, kind, body, source_id, section_id, work_slug, ordinal,
-                   quote, attribution, cleared_at, created_at, updated_at
+                   quote, attribution, cleared_at, trim_start, trim_end, created_at, updated_at
             FROM study_blocks
             WHERE study_id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL
               AND position > ${opts.afterPosition}
             ORDER BY position, id LIMIT ${limit}`
       : sql`SELECT id, study_id, position, kind, body, source_id, section_id, work_slug, ordinal,
-                   quote, attribution, cleared_at, created_at, updated_at
+                   quote, attribution, cleared_at, trim_start, trim_end, created_at, updated_at
             FROM study_blocks
             WHERE study_id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL
             ORDER BY position, id LIMIT ${limit}`,
@@ -399,7 +403,7 @@ export async function insertTextBlock(
             SELECT ${studyId}, ${userId}, ${position}, 'text', ${body}
             WHERE EXISTS (SELECT 1 FROM studies WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL)
             RETURNING id, study_id, position, kind, body, source_id, section_id, work_slug, ordinal,
-                      quote, attribution, cleared_at, created_at, updated_at`,
+                      quote, attribution, cleared_at, trim_start, trim_end, created_at, updated_at`,
         sql`UPDATE studies SET updated_at = now()
             WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL`,
       ]);
@@ -467,6 +471,36 @@ export async function moveBlock(
   return { ok: false, reason: 'position_conflict' };
 }
 
+/**
+ * The `trim` op (migration 111): store or clear the kept range of a clipping's quote. The
+ * offsets validate against length(quote) INSIDE the statement — the server's own bytes are
+ * the bound, so a client cannot store a range the snapshot cannot satisfy. `null` clears.
+ * Only live clippings WITH a quote are trimmable (a tombstone has nothing to view).
+ */
+export async function trimBlock(
+  userId: string,
+  studyId: string,
+  blockId: string,
+  trim: { start: number; end: number } | null,
+): Promise<boolean> {
+  const start = trim?.start ?? null;
+  const end = trim?.end ?? null;
+  const [rows] = await runAsUser(userId, (sql) => [
+    sql`UPDATE study_blocks SET
+          trim_start = ${start}::int,
+          trim_end = ${end}::int,
+          updated_at = now()
+        WHERE id = ${blockId} AND study_id = ${studyId} AND user_id = ${userId}
+          AND kind = 'clipping' AND deleted_at IS NULL AND quote IS NOT NULL
+          AND (${trim === null}::boolean
+               OR (${start ?? 0}::int >= 0 AND ${end ?? 0}::int <= length(quote) AND ${end ?? 0}::int > ${start ?? 0}::int))
+        RETURNING id`,
+    sql`UPDATE studies SET updated_at = now()
+        WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL`,
+  ]);
+  return (rows as unknown[]).length > 0;
+}
+
 export async function softDeleteBlock(userId: string, studyId: string, blockId: string): Promise<boolean> {
   const [rows] = await runAsUser(userId, (sql) => [
     sql`UPDATE study_blocks SET deleted_at = now()
@@ -514,7 +548,7 @@ export async function insertClippingFromSection(
                      WHERE lower(s.source_url) LIKE '%' || d || '%'))
               AND EXISTS (SELECT 1 FROM studies st WHERE st.id = ${studyId} AND st.user_id = ${userId} AND st.deleted_at IS NULL)
             RETURNING id, study_id, position, kind, body, source_id, section_id, work_slug, ordinal,
-                      quote, attribution, cleared_at, created_at, updated_at`,
+                      quote, attribution, cleared_at, trim_start, trim_end, created_at, updated_at`,
         sql`UPDATE studies SET updated_at = now()
             WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL`,
       ]);
@@ -571,7 +605,7 @@ export async function insertClippingFromEmbedding(
             ORDER BY e.chunk_index
             LIMIT 1
             RETURNING id, study_id, position, kind, body, source_id, section_id, work_slug, ordinal,
-                      quote, attribution, cleared_at, created_at, updated_at`,
+                      quote, attribution, cleared_at, trim_start, trim_end, created_at, updated_at`,
         sql`UPDATE studies SET updated_at = now()
             WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL`,
       ]);

@@ -26,6 +26,8 @@ const FIXTURE_BLOCKS: EditorBlock[] = [
     ordinal: null,
     quote: null,
     attribution: null,
+    trim_start: null,
+    trim_end: null,
     renderState: 'text',
   },
   {
@@ -38,6 +40,8 @@ const FIXTURE_BLOCKS: EditorBlock[] = [
     quote:
       'And Jesus himself began to be about thirty\nyears of age… an age at which the priests,\nunder the law, who were typical of Christ,\nentered on their work, Num 4:23.\n\nThe word, "began", is left out in the\nSyriac and Persic versions.',
     attribution: { author: 'John Gill', work_title: 'Exposition of the Bible', reference: 'Luke 3:23' },
+    trim_start: null,
+    trim_end: null,
     renderState: 'clipping',
   },
   {
@@ -49,7 +53,22 @@ const FIXTURE_BLOCKS: EditorBlock[] = [
     ordinal: null,
     quote: null,
     attribution: null,
+    trim_start: null,
+    trim_end: null,
     renderState: 'text',
+  },
+  {
+    id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+    position: 'Xk',
+    kind: 'clipping',
+    body: null,
+    work_slug: 'matthew-henry',
+    ordinal: 12,
+    quote: 'He was baptized when he was entering upon the thirtieth year of his age, and the Spirit descended.',
+    attribution: { author: 'Matthew Henry', work_title: 'Commentary on the Whole Bible', reference: 'Luke 3' },
+    trim_start: 0,
+    trim_end: 62,
+    renderState: 'clipping',
   },
   {
     id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
@@ -60,6 +79,8 @@ const FIXTURE_BLOCKS: EditorBlock[] = [
     ordinal: 7,
     quote: null,
     attribution: { author: 'John Chrysostom', work_title: 'Homilies on Matthew', reference: 'Homily 10' },
+    trim_start: null,
+    trim_end: null,
     renderState: 'tombstone',
   },
 ];

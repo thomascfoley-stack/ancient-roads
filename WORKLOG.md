@@ -1,5 +1,40 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-13 — Clipping TRIM built (owner ruling: "trim not edit select part and collapse behind")
+
+Branch `feat/study-clipping-trim` off `feat/study-editor-v2-1`. The verbose-clipping ask,
+resolved without ever letting edited words wear an author's name:
+
+- **Migration 111** (`111_study_block_trim.sql`): `trim_start`/`trim_end INT` on `study_blocks`,
+  three CHECKs (pair, order, clipping-only), NO new grants — and the tail re-verifies the 110
+  posture rather than citing it (the 032/039 lesson). **Applied to dev** (ledger sha
+  `1fd392012eed…`), tail red-proofed via rolled-back seeds (dropped constraint → RED, dropped
+  column → RED, clean → GREEN; `docs/evidence/study-docs-p1/111-trim-redproof.log`).
+  **NOT on prod** — and the sequencing is load-bearing: this branch's code SELECTs the new
+  columns, so 111 must be owner-applied to `ep-odd-fog` BEFORE this code deploys or every
+  study read 500s. Stated in the PR too.
+- **One display rule** (`lib/clipping-display.ts`, client-safe, dependency-free): the kept
+  range with an ellipsis at each cut edge; consumed by the editor, the .md export, the .docx
+  model, and the print view — never re-derived. FAIL-SAFE by design (distinct from the
+  licensing fail-CLOSED and the comment says why): invalid offsets — reversed, past the end,
+  offsets that outlived a purge/re-hydration — fall back to the FULL quote.
+- **The op**: `trimBlock` validates offsets against `length(quote)` INSIDE the UPDATE — the
+  server's own bytes are the bound; PATCH `op:'trim' {start,end}` / `{clear:true}` (offsets
+  only, never text; the S-1 guard still precedes it).
+- **The UI**: Trim on any clipping → the quote renders RAW as one text node (byte-true
+  selection offsets; the paragraph display would lie) → select → Keep selection → ellipsed
+  excerpt; Untrim restores. Lexicon popover suppressed during trim mode.
+- **Verified**: 65 unit/component tests green (display rule incl. all fail-safe shapes; export
+  parity; op sends offsets never text; Untrim clears). Hand-test harness extended and re-run
+  against dev: **50/50** — range stored, out-of-range REFUSED by the in-statement bound,
+  cross-tenant trim refused, clear round-trips, zero residue
+  (`handtest-run-trim.log`). Browser walk via the dev harness: trimmed fixture renders the
+  excerpt with the cut text absent from the DOM entirely; trim mode's raw quote confirmed a
+  single text node; full audit PASSED.
+
+**NOT DONE / UNVERIFIED:** 111 not on prod (owner go required — blocks deploy of this branch);
+highlighter (same offsets substrate) awaits its own ruling and migration; fixer ≠ verifier.
+
 ## 2026-08-13 — Editor v2.1: the owner's annotated-screenshot pass (Fable session)
 
 Branch `feat/study-editor-v2-1` off the merged `feat/study-docs-p2`. The owner marked up a live

@@ -1,0 +1,84 @@
+
+
+NOTE  fixtures: cleanSection=631786 staged=1 forbidden=none servedEmb=sermon:spurgeon-sermons:2675.4 unservedEmb=commentary:jhn:1:1-1:Origen of Alexandria  (as quoted by Aquinas, AD 1274) smallWork=bett-methhymns(3) hugeWork=adam-clarke
+PASS  createStudy returns the row
+PASS  H1: B cannot read A’s study
+PASS  H1: A reads A’s study
+PASS  H1: A’s list holds A’s study only
+PASS  H2: B cannot rename A’s study
+PASS  H2: B cannot delete A’s study
+PASS  pin sets pinned_at
+PASS  unpin clears pinned_at
+PASS  blocks read in (position, id) order: First, Second, Third
+PASS  insert-before lands first
+PASS  move re-orders: Zeroth, Third, First, Second
+PASS  update_text returns true for the owner
+PASS  update_text again (second revision)
+PASS  revisions hold BOTH outgoing bodies, in order
+PASS  H2: B cannot insert a block into A’s study
+PASS  H2: B cannot edit A’s block
+PASS  H2: B cannot move A’s block
+PASS  H2: B cannot delete A’s block
+PASS  A’s block text is untouched after B’s attempts
+PASS  clipping snapshots the EXACT section body server-side
+PASS  clipping attribution is server-written (author + work_title present)
+PASS  nonexistent section → source_not_found
+PASS  STAGED work’s section → not_servable (licensing gate in the write)
+NOTE  no published biblehub-provenance section on dev; provenance-refusal case NOT RUN
+PASS  H2: B cannot clip into A’s study
+PASS  trim: a range inside the quote is stored
+PASS  trim: a range past the quote is REFUSED by the in-statement bound
+PASS  H2: B cannot trim A’s clipping
+PASS  trim: clear restores the full view
+PASS  trim: cleared offsets are NULL in the row
+PASS  ask clipping snapshots the lowest served chunk’s exact bytes
+PASS  ask clipping carries source_id, no section_id
+PASS  UNSERVED embedding → not_servable
+PASS  nonexistent embedding → source_not_found
+PASS  countWorkUnits matches the fixture census
+PASS  whole-work append inserts one block per reading unit
+PASS  every whole-work block is an attributed clipping with a quote
+PASS  whole-work over 500 units → work_too_large
+PASS  nonexistent work → work_not_found
+PASS  servability: the clean section leg resolves
+PASS  servability: the served source leg resolves
+PASS  servability: did not fail closed on a healthy read
+PASS  belt: a clipping whose key does not resolve renders as tombstone
+PASS  export contains the study title and the snapshotted quote (blockquoted)
+
+
+  purge│ connected as neondb_owner · mode=purge · DRY-RUN (rolled back)
+  purge│ 
+  purge│ purge quotes (tombstone data state; keys and attribution kept): 1 block(s)
+  purge│   9f9a7cc7-5460-47be-9fb6-0656b674f777  slug=baxter-saints-rest  source_id=—  section_id=631786
+  purge│ 
+  purge│ DRY-RUN: rolled back. 1 block(s) would be tombstoned; re-run with --execute to apply.
+PASS  purge DRY-RUN rolled back (quote still present)
+
+
+  purge│ connected as neondb_owner · mode=purge · EXECUTE
+  purge│ 
+  purge│ purge quotes (tombstone data state; keys and attribution kept): 1 block(s)
+  purge│   9f9a7cc7-5460-47be-9fb6-0656b674f777  slug=baxter-saints-rest  source_id=—  section_id=631786
+  purge│ 
+  purge│ COMMITTED: 1 block(s) tombstoned.
+PASS  purge EXECUTE tombstones the data state (quote NULL, cleared_at set, attribution kept)
+PASS  purged block renders as tombstone (data state)
+
+
+  purge│ connected as neondb_owner · mode=rehydrate · EXECUTE
+  purge│ 
+  purge│ rehydrate section-keyed clippings (published + provenance-clean only): 1 block(s)
+  purge│   9f9a7cc7-5460-47be-9fb6-0656b674f777  slug=baxter-saints-rest  source_id=—  section_id=631786
+  purge│ 
+  purge│ rehydrate source-keyed clippings (served, lowest clean chunk): 0 block(s)
+  purge│ 
+  purge│ COMMITTED: 1 block(s) rehydrated.
+PASS  rehydrate restores the quote from the live corpus and clears cleared_at
+PASS  softDeleteStudy returns true for the owner
+PASS  deleted study is gone from the owner’s reads
+PASS  EVERY block was tombstoned in the same transaction (owner truth-read)
+
+teardown: 2 stud(ies) hard-deleted (blocks/revisions cascade); residue rows: 0
+
+ALL CHECKS PASSED

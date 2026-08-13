@@ -54,6 +54,8 @@ function stubApi() {
             ordinal: ROW.ordinal,
             quote: 'She had heard what God had done, and she believed.',
             attribution: { author: ROW.author, work_title: ROW.title, reference: ROW.heading },
+            trim_start: null,
+            trim_end: null,
           },
         }),
         { status: 201 },
