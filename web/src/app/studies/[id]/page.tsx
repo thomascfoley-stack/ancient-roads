@@ -53,11 +53,13 @@ export default async function StudyDocPage({ params }: { params: Promise<{ id: s
     found.blocks.length >= BLOCKS_PAGE_LIMIT ? found.blocks[found.blocks.length - 1]!.position : null;
 
   return (
-    <div className="px-0 py-12 md:py-20">
-      <div className="mx-auto max-w-[80ch] px-6">
+    <div className="px-0 py-12 md:py-16">
+      {/* v2: the editor owns a wide two-pane canvas (doc + library); the back link shares its
+          gutter instead of the old centered 80ch column. */}
+      <div className="mx-auto max-w-[1360px] px-6">
         <Link
           href="/studies"
-          className="mb-8 inline-flex min-h-[44px] items-center font-sans text-sm text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
+          className="mb-6 inline-flex min-h-[44px] items-center font-sans text-sm text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
         >
           ← All studies
         </Link>

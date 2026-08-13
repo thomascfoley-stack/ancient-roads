@@ -12,11 +12,13 @@
 //   3. S-10 — A TOMBSTONE KEEPS ATTRIBUTION AND DROPS QUOTE AND LINK: the tombstone fixture
 //      carries a resolvable work_slug/ordinal ON PURPOSE, so a render path that adds an
 //      Open-in-work link to tombstones goes RED here.
-//   4. "+ Text" BETWEEN BLOCKS creates once (POST with the placement captured at insert time)
+//   4. THE INSERT POINT (v2) creates once (POST with the placement captured at insert time)
 //      and UPDATEs on the returned id ever after — a keystroke burst must not file duplicates.
-//   5. Title inline edit and the pin toggle PATCH the study route; the export trigger is a plain
-//      anchor to the server-side export route (the licensing re-check on export stays
-//      server-side).
+//   5. Title inline edit and the pin toggle PATCH the study route; the export menu's three
+//      formats are plain anchors to the server-side export route (the licensing re-check on
+//      export stays server-side for every format).
+//   6. MOVE (v2) PATCHes op:'move' anchored on the nearest saved neighbor and adopts the
+//      server's fractional position; the ghost composer creates an END block with no anchor.
 //
 // The debounce is REAL TIME here on purpose (the prayer-autosave suite's rule): fake timers
 // would also fake the ordering between the timer, the fetch promise, and the pending-save
@@ -108,6 +110,10 @@ function stubApi(opts: { failPatches?: boolean } = {}) {
         return new Response(JSON.stringify({ error: { code: 'INTERNAL', message: 'x' } }), { status: 500 });
       }
       if (method === 'PATCH' && url.endsWith('/blocks')) {
+        // op:'move' answers with the fresh fractional key the editor must adopt (S-14).
+        if (body.op === 'move') {
+          return new Response(JSON.stringify({ ok: true, position: 'Vk' }), { status: 200 });
+        }
         return new Response(JSON.stringify({ ok: true }), { status: 200 });
       }
       if (method === 'PATCH') {
@@ -155,7 +161,10 @@ describe('StudyEditor — autosave and save state', () => {
     // SEED: on a failed write, set the state back to 'clean' (or discard the buffer) -> RED:
     // no failure is ever visible, which is precisely the silent-loss mode S-13 forbids.
     const retry = await screen.findByRole('button', { name: 'Retry' }, { timeout: 3000 });
-    expect(screen.getByText(/Save failed/)).toBeTruthy();
+    // v2 shows the failure TWICE on purpose: loud on the failing block (the S-13 alert with its
+    // Retry) and quietly in the header status, so an off-screen failure still has a signal.
+    expect(screen.getByRole('alert').textContent).toContain('Save failed');
+    expect(screen.getByText('Save failed below')).toBeTruthy();
     // The buffer is never discarded: the textarea still holds exactly what was typed.
     expect(box.value).toBe('the spies went out by another way');
 
@@ -202,16 +211,17 @@ describe('StudyEditor — clippings and tombstones', () => {
   });
 });
 
-describe('StudyEditor — + Text between blocks', () => {
+describe('StudyEditor — the insert point (v2)', () => {
   it('inserts between blocks, creates once with the captured placement, then updates on the returned id', async () => {
     const calls = stubApi();
     render(
       <StudyEditor study={STUDY} initialBlocks={[TEXT1, CLIP]} initialNextAfterPosition={null} tombstoneNotice={NOTICE} />,
     );
 
-    // Three affordances: above the first block, between the two, below the last. The middle one
-    // inserts between TEXT1 and CLIP, so the placement anchor is TEXT1's id.
-    fireEvent.click(screen.getAllByRole('button', { name: '+ Text' })[1]!);
+    // One quiet insert point per gap; the middle one (position 2) sits between TEXT1 and CLIP,
+    // so expanding it and choosing Write captures TEXT1's id as the placement anchor.
+    fireEvent.click(screen.getByRole('button', { name: 'Insert at position 2' }));
+    fireEvent.click(screen.getByRole('button', { name: '+ Write' }));
 
     const box = screen.getByLabelText('Text block 2');
     fireEvent.change(box, { target: { value: 'my own words' } });
@@ -265,8 +275,74 @@ describe('StudyEditor — title, pin, export', () => {
     );
     expect((await screen.findByRole('button', { name: 'Pinned' })).getAttribute('aria-pressed')).toBe('true');
 
-    // The export trigger is a plain anchor — the serialization and its licensing re-check run
-    // server-side in the export route, never in the browser.
-    expect(screen.getByRole('link', { name: 'Export' }).getAttribute('href')).toBe(`/studies/${STUDY.id}/export`);
+    // The export menu asks the format (owner 2026-08-12); every option is a plain anchor — the
+    // serialization and its licensing re-check run server-side in the export route for ALL
+    // formats, never in the browser.
+    expect(screen.getByRole('link', { name: 'Word (.docx)' }).getAttribute('href')).toBe(
+      `/studies/${STUDY.id}/export?format=docx`,
+    );
+    expect(screen.getByRole('link', { name: 'PDF (print)' }).getAttribute('href')).toBe(
+      `/studies/${STUDY.id}/export?format=pdf`,
+    );
+    expect(screen.getByRole('link', { name: 'Markdown' }).getAttribute('href')).toBe(
+      `/studies/${STUDY.id}/export?format=md`,
+    );
+  });
+});
+
+describe('StudyEditor — movement and the trailing composer (v2)', () => {
+  it('moves a block up via op:move anchored on the saved neighbor, and adopts the returned position', async () => {
+    const calls = stubApi();
+    render(
+      <StudyEditor study={STUDY} initialBlocks={[TEXT1, CLIP]} initialNextAfterPosition={null} tombstoneNotice={NOTICE} />,
+    );
+
+    // CLIP is block 2; moving it up anchors BEFORE its saved neighbor TEXT1.
+    fireEvent.click(screen.getByRole('button', { name: 'Move block 2 up' }));
+    await waitFor(
+      () => expect(calls.some((c) => c.method === 'PATCH' && c.body.op === 'move')).toBe(true),
+      { timeout: 3000 },
+    );
+    // SEED: anchor on afterBlockId (or on the moving block itself) -> RED here.
+    expect(calls.find((c) => c.body.op === 'move')!.body).toMatchObject({
+      op: 'move',
+      blockId: CLIP.id,
+      beforeBlockId: TEXT1.id,
+    });
+
+    // The quote now precedes the text block in document order — the reorder is visible, not
+    // just requested. SEED: skip the local reorder after a 200 -> RED.
+    await waitFor(() => {
+      const quote = screen.getByText(CLIP.quote!);
+      const box = screen.getByLabelText(/Text block/);
+      expect(quote.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+  });
+
+  it('the ghost composer creates an END block (no anchor) seeded with the first keystrokes', async () => {
+    const calls = stubApi();
+    // The doc ends in a clipping, so the trailing composer must be present (keep typing after
+    // the commentary — the owner's stated flow).
+    render(<StudyEditor study={STUDY} initialBlocks={[CLIP]} initialNextAfterPosition={null} tombstoneNotice={NOTICE} />);
+
+    const ghost = screen.getByLabelText('Keep writing at the end of the document');
+    fireEvent.change(ghost, { target: { value: 'A' } });
+
+    // The keystroke became a real block seeded with the text, caret carried forward.
+    const created = screen.getByLabelText('Text block 2') as HTMLTextAreaElement;
+    expect(created.value).toBe('A');
+    fireEvent.change(created, { target: { value: 'And this is my sermon.' } });
+
+    await waitFor(
+      () => expect(calls.some((c) => c.method === 'POST' && c.body.kind === 'text')).toBe(true),
+      { timeout: 3000 },
+    );
+    const create = calls.find((c) => c.method === 'POST')!;
+    // SEED: send an anchor from the ghost (afterBlockId of the last block) -> RED: an end append
+    // must let the SERVER place it at the true document end, unloaded pages included.
+    expect(create.body.kind).toBe('text');
+    expect('afterBlockId' in create.body).toBe(false);
+    expect('beforeBlockId' in create.body).toBe(false);
+    expect(calls.filter((c) => c.method === 'POST'), 'a second create — duplicates').toHaveLength(1);
   });
 });
