@@ -1,0 +1,25 @@
+{
+  "ts": "2026-08-13T04-24-09-937Z",
+  "env": "dev",
+  "slug": "barnes-notes",
+  "apply": false,
+  "permitted": {
+    "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=Barnes",
+    "edition": "Barnes' New Testament Notes (CrossWire SWORD module Barnes, ThML, v1.1)",
+    "moduleJsonl": "data/raw/sword/barnes.jsonl",
+    "entries": 7431
+  },
+  "sections": 1300,
+  "sectionVerdicts": {
+    "match": 0,
+    "truncated": 2,
+    "differ": 369,
+    "no-source": 929
+  },
+  "chapterVerdicts": {
+    "match": 0,
+    "truncated": 2,
+    "differ": 258,
+    "no-source": 929
+  }
+}

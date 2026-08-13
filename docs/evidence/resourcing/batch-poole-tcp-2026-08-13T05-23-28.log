@@ -1,0 +1,18 @@
+=== batch ingest: poole-tcp (decision #5, dev-only, staged) ===
+--- license verified BEFORE parse in batch-poole-tcp-fetch-*.log: CC0 1.0 Universal verbatim in both TEI headers (A55363 + A55368) ---
+--- parse: 14,025 + 10,079 = 24,104 canon-validated entries (drop 0.24%/0.11%, under the 1% fail-closed bar) ---
+manifest: poole-tcp — "Annotations upon the Holy Bible" (Matthew Poole, 1685) license=Public Domain
+named edition: Annotations upon the Holy Bible, London 1685 (Vol I, A55363, Gen–Isa) + 1685–96 continuation (Vol II, A55368, Jer–Rev, completed posthumously by other divines) — EEBO-TCP Phase I keyboarded transcription
+decoded entries: 24104
+
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+
+  → poole-tcp: 24104 section(s), 24104 anchor(s) on the shelf
+writeRegisterWork: 29468 flat embeddings, 24104 static reader entries
+section_embeddings copied from flat chunk-0 vectors ($0, corpus convention): 24103
+sections with no flat counterpart — embedding via API (first ≤1200 chars, the flat-store convention): 1
+section_embeddings written via API fallback: 1
+── census ──
+{ slug: 'poole-tcp', status: 'staged', license: 'Public Domain' }
+{ sections: 24104, section_embeddings: 24104, anchors: 24104 }
+{ flat_embeddings: 29468 }

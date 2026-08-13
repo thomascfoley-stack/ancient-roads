@@ -1,0 +1,10 @@
+fetch: https://crosswire.org/ftpmirror/pub/sword/packages/rawzip/PNT.zip
+fetched 871345 bytes
+conf: [pnt] ModDrv=zCom CompressType=ZIP SourceType=ThML
+conf: Description=The People's New Testament
+conf: DistributionLicense=Public Domain
+conf: Version=1.1 SwordVersionDate=2001-11-28
+license gate: PASS (allowed set: Public Domain | CC BY | CC BY-SA)
+testament coverage: nt
+⚠ module does NOT span both testaments (has: nt) — sections outside it will be NO-SOURCE
+decoded: 6067 per-verse entries across 26 books → data/raw/sword/pnt.jsonl

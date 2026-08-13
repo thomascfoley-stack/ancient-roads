@@ -1,0 +1,43 @@
+=== Phase 3 batch (decision #5) — final dev census 2026-08-13T06:31:37.796Z ===
+{
+  slug: 'barnes-crosswire-nt',
+  status: 'staged',
+  license: 'Public Domain',
+  sections: 7431,
+  section_embeddings: 7431,
+  anchors: 7431,
+  flat_embeddings: 17490,
+  prov_url: 'https://crosswire.org/sword/modules/ModInfo.jsp?modName=Barn'
+}
+{
+  slug: 'pnt-crosswire',
+  status: 'staged',
+  license: 'Public Domain',
+  sections: 6067,
+  section_embeddings: 6067,
+  anchors: 6067,
+  flat_embeddings: 6197,
+  prov_url: 'https://crosswire.org/sword/modules/ModInfo.jsp?modName=PNT'
+}
+{
+  slug: 'poole-tcp',
+  status: 'staged',
+  license: 'Public Domain',
+  sections: 24104,
+  section_embeddings: 24104,
+  anchors: 24104,
+  flat_embeddings: 29468,
+  prov_url: 'https://github.com/textcreationpartnership/A55363'
+}
+{
+  slug: 'scofield-crosswire',
+  status: 'staged',
+  license: 'Public Domain',
+  sections: 3207,
+  section_embeddings: 3207,
+  anchors: 3207,
+  flat_embeddings: 3392,
+  prov_url: 'https://crosswire.org/sword/modules/ModInfo.jsp?modName=Scof'
+}
+served=true flat rows across the four works (must be 0): 0
+barnes-notes (must be untouched: staged, 1300): { status: 'staged', sections: 1300 }

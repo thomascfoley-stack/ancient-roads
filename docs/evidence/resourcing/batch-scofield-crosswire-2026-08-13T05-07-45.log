@@ -1,0 +1,19 @@
+=== batch ingest: scofield-crosswire (decision #5, dev-only, staged) ===
+--- license verified BEFORE decode in batch-scofield-crosswire-fetch-*.log: conf [scofield] ModDrv=zCom CompressType=ZIP SourceType=OSIS Version=2.1 DistributionLicense=Public Domain ---
+manifest: scofield-crosswire — "Scofield Reference Notes (1917)" (C.I. Scofield, 1917) license=Public Domain
+named edition: Scofield Reference Notes 1917 Edition (CrossWire SWORD module Scofield, OSIS, KJV v11n) — pre-1929 US PD
+decoded entries: 3207
+
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+
+  → scofield-crosswire: 3207 section(s), 3207 anchor(s) on the shelf
+writeRegisterWork: 3392 flat embeddings, 3207 static reader entries
+section_embeddings copied from flat chunk-0 vectors ($0, corpus convention): 3207
+── census ──
+{
+  slug: 'scofield-crosswire',
+  status: 'staged',
+  license: 'Public Domain'
+}
+{ sections: 3207, section_embeddings: 3207, anchors: 3207 }
+{ flat_embeddings: 3392 }

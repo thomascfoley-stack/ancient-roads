@@ -1,0 +1,98 @@
+{
+  "threshold": 0.98,
+  "redOk": false,
+  "controlsOk": true,
+  "results": [
+    {
+      "name": "control:identical",
+      "expect": "match",
+      "got": "match",
+      "exact": true,
+      "jaccard": 1,
+      "containment": 1,
+      "shingleContainment": 1,
+      "shingleGuardFired": false,
+      "pass": true
+    },
+    {
+      "name": "control:typography-only",
+      "expect": "match",
+      "got": "match",
+      "exact": true,
+      "jaccard": 1,
+      "containment": 1,
+      "shingleContainment": 1,
+      "shingleGuardFired": false,
+      "pass": true
+    },
+    {
+      "name": "control:truncated-copy",
+      "expect": [
+        "match",
+        "truncated"
+      ],
+      "got": "truncated",
+      "exact": false,
+      "jaccard": 0.2404,
+      "containment": 1,
+      "shingleContainment": 1,
+      "shingleGuardFired": false,
+      "pass": true
+    },
+    {
+      "name": "RED:drop-every-12th-word",
+      "expect": "differ",
+      "got": "differ",
+      "exact": false,
+      "jaccard": 0.9327,
+      "containment": 1,
+      "shingleContainment": 0.7437,
+      "shingleGuardFired": true,
+      "pass": true
+    },
+    {
+      "name": "RED:substitute-every-9th-word",
+      "expect": "differ",
+      "got": "differ",
+      "exact": false,
+      "jaccard": 0.8857,
+      "containment": 0.9894,
+      "shingleContainment": 0.5607,
+      "shingleGuardFired": true,
+      "pass": true
+    },
+    {
+      "name": "RED:paragraph-shuffle",
+      "expect": "differ",
+      "got": "match",
+      "exact": false,
+      "jaccard": 1,
+      "containment": 1,
+      "shingleContainment": 0.986,
+      "shingleGuardFired": false,
+      "pass": false
+    },
+    {
+      "name": "RED:different-edition",
+      "expect": "differ",
+      "got": "differ",
+      "exact": false,
+      "jaccard": 0.1477,
+      "containment": 0.3284,
+      "shingleContainment": 0,
+      "shingleGuardFired": false,
+      "pass": true
+    },
+    {
+      "name": "RED:empty-permitted",
+      "expect": "differ",
+      "got": "differ",
+      "exact": false,
+      "jaccard": 0,
+      "containment": 0,
+      "shingleContainment": 0,
+      "shingleGuardFired": false,
+      "pass": true
+    }
+  ]
+}

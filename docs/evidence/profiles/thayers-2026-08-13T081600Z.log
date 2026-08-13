@@ -1,0 +1,176 @@
+thayers-lexicon un-quarantine — structured re-source, dev-staged ingest (2026-08-13T081600Z)
+worktree: ancient-roads-corpus @ feat/corpus-backlog · agent scope: Phase 4 thayers profile
+DEV ONLY. No prod connection was made. No secrets appear in this log.
+
+=== 1. SOURCE CHOSEN ===
+EveryPromiseBible/Every-Promise-Thayers (GitHub) — 'The complete text of Thayer's Greek-English
+Lexicon of the New Testament (1889), keyed to Strong's numbers', 5,521 entries G1–G5624,
+real polytonic Unicode Greek.
+URL:    https://github.com/EveryPromiseBible/Every-Promise-Thayers
+pinned: commit a31ff38c40a681ef1029dcc51eb7e7ee3f2ea409 (2026-08-04, HEAD of main at fetch time)
+archive: data/raw/github/thayers/thayers-a31ff38c.tar.gz
+  sha256(tar.gz) = 51f1d10cbea808020ea1edd65b20e67bb22380d93158e0317013856de6f6a5a3
+  per-file checksums: data/raw/github/thayers/SHA256SUMS (34 files incl. LICENSE/NOTICE/README)
+
+Rejected alternatives:
+  - CrossWire SWORD: no 'Thayer' module exists in the main rawzip listing (463 zips checked
+    2026-08-13) nor beta; only Strong's-dictionary modules (StrongsGreek et al.) — not Thayer.
+  - biblehub.com Thayer pages: FORBIDDEN provenance (ADR-008) regardless of PD text.
+  - nigelmsipa/thayers-greek-lexicon-dataset: NO license statement → fails closed.
+  - aranggitoar/aist-lexicons: GPL-2.0 → not in the allowed set.
+
+=== 2. LICENSE VERIFICATION (the geneva-notes lesson: explicit grant BEFORE ingest) ===
+Verified in the pinned archive itself:
+  - LICENSE: CC0 1.0 Universal public-domain dedication (full legalcode text, first line:
+    'Creative Commons Legal Code / CC0 1.0 Universal'). Covers any compilation/formatting/
+    markup rights in the digitization.
+  - NOTICE: 'PUBLIC DOMAIN ... The underlying lexicon (Thayer, 1889) and the Strong's
+    numbering (Strong, 1890) are ... in the public domain worldwide. This edition is a
+    faithful digital reproduction ... dedicated to the public domain under CC0 1.0.'
+  - Underlying work PD by age: Thayer d. 1901; corrected edition 1889 (manifest already
+    asserts license='Public Domain', author_died=1901, year_written=1889).
+  - ADR-008 forbidden-domain predicate run on the provenance hosts:
+      github.com/EveryPromiseBible/Every-Promise-Thayers -> not forbidden
+      everypromisebible.com                              -> not forbidden
+  Caveat recorded: the NOTICE says the edition was 'decoded from a community digitization'
+  without naming it. Accepted because (a) the 1889 text is PD regardless of digitizer,
+  (b) the repo owner's CC0 dedication covers their compilation/markup rights, (c) neither
+  host is a forbidden aggregator. Text-level artifacts of the classic digitization survive
+  (fused words like 'Latinin-', inline 'STRONGS NT 2942a:' markers) — content, kept verbatim.
+
+=== 3. ADAPTER (additive): src/ingest/adapter-thayers.ts ===
+thayers-lexicon → 5521 entries (5521 Strong-keyed, 0 without Strong's mapping [counted, keyed thayer:], 14 cross-reference stubs [kept, counted], 45 markup-repaired headwords, 0 unrepaired junk headwords [kept verbatim, counted], 100.0% Greek headwords) → data/raw/github/thayers/thayers.jsonl
+  stub: G2036 ἔπω
+  stub: G2249 ἡμεῖς
+  key format: 'G<strong> <headword>' (adapter-bdb convention; one Strong's id per entry,
+  measured unique G1..G5624). Buckets COUNTED, never silent: noStrong (thayer:* keys),
+  cross-reference stubs (<20 chars, kept), markup-repaired headwords, unrepaired junk.
+  FAIL CLOSED: entry floor 5000, unique numeric Strong's ids, >=95% Greek-script headwords,
+  duplicate keys, empty bodies.
+
+=== 4. ACCEPTANCE (src/ingest/thayers-acceptance.mts — run POST-ingest, exit 0) ===
+A6 2026-07-17 archive.org OCR baseline: 50.2% fuzzy / 6.2% strict headword recognizability,
+0% Greek script, systemic across 3 scans. The measurement below re-runs the A6 method
+VERBATIM (measureHeadwords + pinned openscriptures Strong's Greek vocabulary, imported from
+adapter-archive.ts) against the parsed headwords of the structured edition.
+
+== parse ==
+parsed: 5521 entries | Strong-keyed 5521 | no-strong 0 | stubs 14 | repaired headwords 45 | unrepaired junk 0 | Greek headwords 5521 (100.0%)
+
+== entry-count census (basis: edition README + measured `### ` heading count = 5,521) ==
+  PASS  entry count — 5521 vs 5,521 expected
+  PASS  jsonl row count matches parse — 5521 rows in data/raw/github/thayers/thayers.jsonl
+
+== headword recognizability — A6 2026-07-17 method, re-run ==
+  structured edition: 99.2% fuzzy / 99.0% strict, 5521/5521 headwords in Greek script (100.0%)
+  A6 archive.org OCR: 50.2% fuzzy / 6.2% strict, 0% Greek script (3 scans, keys unrecoverable)
+    matched: Ἀαρών ↔ Ἀαρών (d=0)
+    matched: Ἀβαδδών ↔ Ἀβαδδών (d=0)
+    matched: ἀβαρής ↔ ἀβαρής (d=0)
+    matched: Ἀββᾶ ↔ Ἀββᾶ (d=0)
+    matched: Ἄβελ ↔ Ἄβελ (d=0)
+    unmatched: Α
+    unmatched: ἄν
+    unmatched: ἄρα (2)
+    unmatched: γέ
+    unmatched: γῆ
+    unmatched: δέ
+    unmatched: δή
+    unmatched: ἔα
+    unmatched: εἰ
+    unmatched: εἶ
+  PASS  recognizability ≥ pre-registered 70% bar — 99.2%
+  PASS  Greek script present (OCR failure was 0%) — 100.0%
+
+== sampled entries (Greek intact) ==
+  G25 ἀγαπάω
+    ἀγαπάω, (ῶ; (imperfect ἠγάπων); future ἀγαπήσω; 1 aorist ἠγάπησα; perfect active (1 person plural ἠγαπήκαμεν, 1Jn 4:10 WH text), participle ἠγαπηκῶς (2Ti 4:8); passive (present ἀγα
+  G3056 λόγος
+    λόγος, λόγου, ὁ (λέγω) (from Homer down), the Sept. especially for דָּבָר, also for אֹמֶר and מִלָּה; properly, a collecting, collection (see λέγω) — and that, as well of those thi
+  G26 ἀγάπη
+    ἀγάπη, (ης, ἡ, a purely Biblical and ecclesiastical word (for Wyttenbach, following Reiske's conjecture, long ago restored ἀγαπήσων in place of ἀγάπης, ὧν in Plutarch, sympos. quae
+  G2424 Ἰησοῦς
+    Ἰησοῦς, Ἰησοῦ, dative Ἰησοῦ, accusative Ἰησοῦν, vocative Ἰησοῦ (Winer's Grammar, § 10, 1), ὁ, Jesus (יְהושֻׁעַ and according to a later form, יֵשׁוּעַ, Syriac 9wSy [], i. e. whose 
+
+== Strong's keying spot checks ==
+  PASS  G25 → ἀγαπάω — G25 ἀγαπάω
+  PASS  G26 → ἀγάπη — G26 ἀγάπη
+  PASS  G3056 → λόγος — G3056 λόγος
+  PASS  G2424 → Ἰησοῦς — G2424 Ἰησοῦς
+  PASS  G846 → αὐτός — G846 αὐτός
+  PASS  G1 → Α — G1 Α
+
+== negative control + red-proofs (synthetic fixtures through parseThayers) ==
+  PASS  no-Strong's entry counted, not dropped — noStrong=1, total=5001
+  PASS  no-Strong's entry keyed thayer:* (not mis-keyed) — thayer:01-fixture.md:5001 orphanword
+  PASS  RED-PROOF: entry floor trips on a 2-entry dir — parseThayers threw the entry-floor error
+  PASS  RED-PROOF: Greek bar trips on 0%-Greek headwords (OCR mode) — parseThayers threw the Greek-bar error
+
+ALL ACCEPTANCE CHECKS PASS
+
+Note on the residual 0.8% unmatched: 1–2-letter particles (Α, ἄν, γέ, γῆ, δέ, δή, εἰ …) whose
+confusion skeleton is <3 chars are skipped BY THE A6 MEASURE ITSELF (skel.length >= 3 guard),
+plus phrase headwords (εἰ δὲ μή(γε)) with no single Strong's lemma — a property of the
+measurement, not of the keys. Strict (distance-0) rate is 99.0% regardless.
+
+=== 5. DEV INGEST (staged) ===
+Path: adapter JSONL -> src/ingest/reference-register-bridge.ts --slug=thayers-lexicon
+  (writeRegisterWork: transactional shelf delete behind assertReingestable, deleteWork flat
+   wipe, sources row, flat embeddings, sections; publish=false HARD-STAGED).
+Target guard: NEON_BRANCH=dev + host ep-tiny-hat-* (dev-only-target.mjs asserted before run).
+Role note: root .env.local DATABASE_URL is the app_runtime role (read-only on sources — the
+first attempt failed closed with 'permission denied for table sources'); the ingest ran as
+neondb_owner via DATABASE_URL_UNPOOLED, same dev endpoint.
+Interrupted first run (3,136 flat rows, 0 sections, status='ingesting') was cleaned by the
+ESTABLISHED RE-INGEST IDIOM — the bridge's own replacement pass — no ad-hoc deletes:
+  bridge output: '↻ thayers-lexicon: replaced prior ingest (3136 rows, 0 static entries)'
+  bridge output: '→ thayers-lexicon: 5507 section(s), 0 anchor(s) on the shelf'
+  bridge output: 'thayers-lexicon: 5507 reference entries → 7570 embedded, STAGED (never served)'
+Sections = 5,507 = 5,521 entries − 14 sub-20-char cross-reference stubs skipped by the
+bridge's own junk-fragment floor (reference-register-bridge.ts:29); the 14 stubs are listed
+in §3's adapter output and remain in the JSONL.
+Flat rows = 7,570 = exact chunkWhole(1200) count over 5,507 sections (pre-computed and
+matched 1:1 against the write).
+
+Section vectors (D1(b) corpus convention — a section's vector IS its flat chunk-0 vector):
+  npx tsx scripts/resourcing/batch-ingest.mts --env=dev --slug=thayers-lexicon --vectors-only
+  output: 'section_embeddings copied from flat chunk-0 vectors ($0, corpus convention): 5507'
+
+=== 6. POST-INGEST DEV CENSUS (measured 2026-08-13T08:17:13Z) ===
+{"slug":"thayers-lexicon","status":"staged","source_type":"lexicon","license":"Public Domain"}
+{"sections":5507,"section_embeddings":5507,"anchors":0}
+{"flat_embeddings":7570}
+{"greek_headings":5507}
+shelf spot: ordinal 25 · G25 ἀγαπάω
+shelf spot: ordinal 685 · G687 ἄρα (2)
+shelf spot: ordinal 3047 · G3056 λόγος
+
+sections == section_embeddings (5,507, 1:1) · anchors 0 by design (topic-keyed reference work)
+entry-count basis: edition README declares 5,521 entries G1–G5624; measured 5,521 '### '
+headings across book/*.md; adapter parsed 5,521; JSONL 5,521 rows; shelf 5,507 (+14 stubs).
+
+=== 7. COVERAGE GATE (check-corpus-coverage --target=sections, dev, read-only) ===
+thayers-lexicon appears NOWHERE in the per-source missing list — its sections contribute 0
+to the gap. The gate as a whole is RED (10,255 missing across 30 slugs) — all of it
+pre-existing or other in-flight agents' works (openbible-topics 6,711; jamieson-jfb 1,258;
+herrick/whitefield/donne Phase 4 runs mid-flight; …). None is thayers.
+
+=== 8. JUDGMENT CALLS (all counted in the adapter summary, none silent) ===
+  - 45 junk headings repaired FROM MARKUP: 44× '### -' filler entries (Strong's numbers that
+    are inflected forms/phrases subsumed under other entries in print) took their Greek lemma
+    from the body's '- Original:' line (NFD→NFC normalized); 1× '### STRONGS' (G687) took
+    'ἄρα (2)' from the body's 'STRONGS NT 687:' marker.
+  - 96 entries carry the dataset's '- Original/- Transliteration/- Phonetic/- Definition'
+    Strong's-style filler bodies instead of Thayer prose (the digitization's gaps). Kept
+    verbatim — they are the edition's content for those numbers; flagging here for the
+    owner's serving decision.
+  - 14 cross-reference stubs (<20 chars, 'see X') kept in the JSONL with Strong's keys;
+    the bridge's fragment floor excludes them from the shelf (counted, not silent).
+  - 0 entries without a Strong's mapping (noStrong path red-proven on a synthetic fixture).
+  - G1508 'έἰ μή' keeps the edition's (misplaced-tonos) form — faithful to source bytes.
+
+=== 9. NOT DONE / OUT OF SCOPE ===
+  - ingest/sources.config.json still carries the quarantine note + archive.org acquire block;
+    updating it (new provenance, un-quarantine) is a manifest edit — owner's/orchestrator's call.
+  - PROD: untouched. corpus-copy + publish flip are owner-gated steps.
+  - The work is STAGED: served=false, no routing.ts entry, nothing retrieves it.

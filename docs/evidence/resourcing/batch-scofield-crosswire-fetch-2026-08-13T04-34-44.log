@@ -1,0 +1,9 @@
+fetch: https://crosswire.org/ftpmirror/pub/sword/packages/rawzip/Scofield.zip
+fetched 487890 bytes
+conf: [scofield] ModDrv=zCom CompressType=ZIP SourceType=OSIS
+conf: Description=Scofield Reference Notes, 1917 Edition
+conf: DistributionLicense=Public Domain
+conf: Version=2.1 SwordVersionDate=2023-01-18
+license gate: PASS (allowed set: Public Domain | CC BY | CC BY-SA)
+testament coverage: ot, nt
+decoded: 3207 per-verse entries across 65 books → data/raw/sword/scofield.jsonl

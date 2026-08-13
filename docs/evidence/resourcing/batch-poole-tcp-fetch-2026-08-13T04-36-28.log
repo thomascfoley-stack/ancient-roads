@@ -1,0 +1,18 @@
+=== batch fetch: poole-tcp (decision #5) — EEBO-TCP Phase I keyboarded transcription ===
+source: github.com/textcreationpartnership/A55363 (Vol I, Gen-Isa, 1685) + A55368 (Vol II, Jer-Rev, 1685-96)
+fetched: https://raw.githubusercontent.com/textcreationpartnership/{id}/master/{id}.xml
+  data/raw/poole/A55363.xml 16464179 bytes
+  data/raw/poole/A55368.xml 17124322 bytes
+--- license verification (BEFORE parse; poole-tcp.ts re-gates at its mouth) ---
+[A55363 TEI header <availability>]
+<availability> <p>This keyboarded and encoded edition of the work described above is co-owned by the institutions providing financial support to the Early English Books Online Text Creation Partnership. This Phase I text is available for reuse, according to the terms of <ref target="https://creativecommons.org/publicdomain/zero/1.0/">Creative Commons 0 1.0 Universal</ref>. The text can be copied, modified, distributed and performed, even for commercial purposes, all without asking permission.</p> </availability>
+[A55368 TEI header <availability>]
+<availability> <p>This keyboarded and encoded edition of the work described above is co-owned by the institutions providing financial support to the Early English Books Online Text Creation Partnership. This Phase I text is available for reuse, according to the terms of <ref target="https://creativecommons.org/publicdomain/zero/1.0/">Creative Commons 0 1.0 Universal</ref>. The text can be copied, modified, distributed and performed, even for commercial purposes, all without asking permission.</p> </availability>
+license gate: PASS (CC0 1.0 Universal, verbatim in both TEI headers — an explicit grant, stronger than PD-by-age)
+--- parse (src/ingest/poole-tcp.ts, canon-validated, fail-closed >1% misaligned) ---
+  ISAIAH (book 23): 66 chapters (0 inferred from verse-reset), 1202 verse entries
+canon validation: 14025 clean · 16 out-of-canon · 18 duplicate verseIds (dropped 0.24%)
+TOTAL: 14025 entries → data/raw/poole/poole-vol1.jsonl (2282 entries carry ⟨…⟩ lacunae, 16.3%)
+  THE REVELATION OF ST. JOHN THE DIVINE (book 66): 22 chapters (1 inferred from verse-reset), 393 verse entries
+canon validation: 10079 clean · 1 out-of-canon · 10 duplicate verseIds (dropped 0.11%)
+TOTAL: 10079 entries → data/raw/poole/poole-vol2.jsonl (3353 entries carry ⟨…⟩ lacunae, 33.3%)

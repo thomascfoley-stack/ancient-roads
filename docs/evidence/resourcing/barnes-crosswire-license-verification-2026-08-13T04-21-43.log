@@ -1,0 +1,11 @@
+fetch: https://crosswire.org/ftpmirror/pub/sword/packages/rawzip/Barnes.zip
+fetched 5812827 bytes
+conf: [barnes] ModDrv=zCom CompressType=ZIP SourceType=ThML
+conf: Description=Barnes' New Testament Notes
+conf: DistributionLicense=Public Domain
+conf: Version=1.1 SwordVersionDate=2002-01-01
+license gate: PASS (allowed set: Public Domain | CC BY | CC BY-SA)
+testament coverage: nt
+⚠ module does NOT span both testaments (has: nt) — sections outside it will be NO-SOURCE
+decoded: 7431 per-verse entries across 27 books → data/raw/sword/barnes.jsonl
+verse-label alignment: 6791/6797 agree ⚠ INVESTIGATE

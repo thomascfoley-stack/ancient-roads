@@ -1,0 +1,35 @@
+=== batch ingest: barnes-crosswire-nt — RESUME after 300s harness timeout (idempotent; 04:40:02) ===
+--- license re-verified this run (see batch-barnes-crosswire-nt-2026-08-13T04-5*.log step 1): conf DistributionLicense=Public Domain ---
+manifest: barnes-crosswire-nt — "Barnes' New Testament Notes" (Albert Barnes, 1834) license=Public Domain
+named edition: Barnes' New Testament Notes (CrossWire SWORD module Barnes, ThML)
+decoded entries: 7431
+(node:86296) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ↻ barnes-crosswire-nt: replaced prior ingest (6848 rows, 0 static entries)
+  → barnes-crosswire-nt: 7431 section(s), 7431 anchor(s) on the shelf
+writeRegisterWork: 17490 flat embeddings, 7431 static reader entries
+sections lacking a bge-large-en-v1.5 vector: 7431
+could not embed a 13076-char section after retries
+manifest: barnes-crosswire-nt — "Barnes' New Testament Notes" (Albert Barnes, 1834) license=Public Domain
+named edition: Barnes' New Testament Notes (CrossWire SWORD module Barnes, ThML)
+--vectors-only: skipping writeRegisterWork (flat store + shelf already written); running the section-vector pass + census
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+
+section_embeddings copied from flat chunk-0 vectors ($0, corpus convention): 7431
+── census ──
+{
+  slug: 'barnes-crosswire-nt',
+  status: 'staged',
+  license: 'Public Domain'
+}
+{ sections: 7431, section_embeddings: 7431, anchors: 7431 }
+{ flat_embeddings: 17490 }

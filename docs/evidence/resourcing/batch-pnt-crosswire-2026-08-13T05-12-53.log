@@ -1,0 +1,15 @@
+=== batch ingest: pnt-crosswire (decision #5, dev-only, staged) ===
+--- license verified BEFORE decode in batch-pnt-crosswire-fetch-*.log: conf [pnt] ModDrv=zCom CompressType=ZIP SourceType=ThML Version=1.1 DistributionLicense=Public Domain ---
+manifest: pnt-crosswire — "The People's New Testament" (B.W. Johnson, 1891) license=Public Domain
+named edition: The People's New Testament (CrossWire SWORD module PNT, ThML)
+decoded entries: 6067
+
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+
+  → pnt-crosswire: 6067 section(s), 6067 anchor(s) on the shelf
+writeRegisterWork: 6197 flat embeddings, 6067 static reader entries
+section_embeddings copied from flat chunk-0 vectors ($0, corpus convention): 6067
+── census ──
+{ slug: 'pnt-crosswire', status: 'staged', license: 'Public Domain' }
+{ sections: 6067, section_embeddings: 6067, anchors: 6067 }
+{ flat_embeddings: 6197 }

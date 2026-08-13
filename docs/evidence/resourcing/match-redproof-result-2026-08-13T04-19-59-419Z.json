@@ -1,0 +1,106 @@
+{
+  "threshold": 0.98,
+  "redOk": true,
+  "controlsOk": true,
+  "results": [
+    {
+      "name": "control:identical",
+      "expect": "match",
+      "got": "match",
+      "exact": true,
+      "jaccard": 1,
+      "containment": 1,
+      "shingleContainment": 1,
+      "orderContainment": 1,
+      "guardFired": null,
+      "pass": true
+    },
+    {
+      "name": "control:typography-only",
+      "expect": "match",
+      "got": "match",
+      "exact": true,
+      "jaccard": 1,
+      "containment": 1,
+      "shingleContainment": 1,
+      "orderContainment": 1,
+      "guardFired": null,
+      "pass": true
+    },
+    {
+      "name": "control:truncated-copy",
+      "expect": [
+        "match",
+        "truncated"
+      ],
+      "got": "truncated",
+      "exact": false,
+      "jaccard": 0.2404,
+      "containment": 1,
+      "shingleContainment": 1,
+      "orderContainment": 1,
+      "guardFired": null,
+      "pass": true
+    },
+    {
+      "name": "RED:drop-every-12th-word",
+      "expect": "differ",
+      "got": "differ",
+      "exact": false,
+      "jaccard": 0.9327,
+      "containment": 1,
+      "shingleContainment": 0.7437,
+      "orderContainment": null,
+      "guardFired": "shingle",
+      "pass": true
+    },
+    {
+      "name": "RED:substitute-every-9th-word",
+      "expect": "differ",
+      "got": "differ",
+      "exact": false,
+      "jaccard": 0.8857,
+      "containment": 0.9894,
+      "shingleContainment": 0.5607,
+      "orderContainment": null,
+      "guardFired": "shingle",
+      "pass": true
+    },
+    {
+      "name": "RED:paragraph-shuffle",
+      "expect": "differ",
+      "got": "differ",
+      "exact": false,
+      "jaccard": 1,
+      "containment": 1,
+      "shingleContainment": 0.986,
+      "orderContainment": 0.5,
+      "guardFired": "order",
+      "pass": true
+    },
+    {
+      "name": "RED:different-edition",
+      "expect": "differ",
+      "got": "differ",
+      "exact": false,
+      "jaccard": 0.1477,
+      "containment": 0.3284,
+      "shingleContainment": null,
+      "orderContainment": null,
+      "guardFired": null,
+      "pass": true
+    },
+    {
+      "name": "RED:empty-permitted",
+      "expect": "differ",
+      "got": "differ",
+      "exact": false,
+      "jaccard": 0,
+      "containment": 0,
+      "shingleContainment": null,
+      "orderContainment": null,
+      "guardFired": null,
+      "pass": true
+    }
+  ]
+}
