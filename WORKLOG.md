@@ -70,6 +70,20 @@ spec.
 - Fixer ≠ verifier: I built v2; these claims await independent eyes before "shipped" is said.
 - `npm run audit` running at this writing; result recorded in the commit that lands this entry.
 
+**AUDIT PASSED (all gates) and DEPLOYED 2026-08-13T02:36Z** (owner: "and deploy"; PR #79 merged
+by the owner at `f3fad8a`): editor v2 live on ancientpaths.app —
+`dpl_685JHWNwm5xP4v7qf9DmJYRxkcTp` serving `7101eb3`, alias verified serving this deploy by
+deploy.sh itself ([receipt](docs/evidence/deploys/deploy-7101eb3-2026-08-13T02-30-48Z.txt)).
+The deploy shipped the local tree at `7101eb3`, byte-identical to the merged branch content.
+Owner confirmed on their own look that the v1 layout problem is gone. **Process note, per the
+watchlist's spirit:** the first attempt to land this receipt committed onto the PRE-merge base —
+`git pull --ff-only | tail -1` masked a "no tracking information" failure (a pipeline's exit
+code is its LAST command's), and the bare `git push` failed silently the same way; caught
+because the working tree visibly reverted to v1, repaired by reset → ff-merge → recommit. A
+masked exit code is the shell's version of an unearned green. Still open from the v2 NOT-DONE
+list: visible-pane pixel pass at 390px, drag-and-drop + duplicate-to-study (dependency call),
+the §12 paragraph finder.
+
 ## 2026-08-12 (night) — P2 swarm COMPLETE: Study Docs product surface built, all gates green
 
 Six streams, three waves, one tree (feat/study-docs-p2), file-disjoint per
