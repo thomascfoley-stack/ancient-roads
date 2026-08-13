@@ -418,9 +418,12 @@ describe('the pre-connect serve gates refuse without touching any database', () 
   };
 
   it('a manifest serve:false ruling STOPs a forward flip before any connection', () => {
-    // whitefield-works carries the standing quality ruling in ingest/sources.config.json. If
-    // that entry is ever un-ruled, this test goes red and the ruling change gets reviewed here.
-    const r = flip(['whitefield-works']);
+    // thayers-lexicon carries a standing serve:false ruling in ingest/sources.config.json
+    // (lexicons served by nothing, pending the D4/A8 owner call). whitefield-works was the
+    // fixture here until 2026-08-13, when its quality quarantine was resolved and it flipped
+    // serve:true — exactly the review moment this test was built to force. If thayers-lexicon
+    // is ever un-ruled, this test goes red and the ruling change gets reviewed here.
+    const r = flip(['thayers-lexicon']);
     expect(r.code).toBe(2);
     expect(r.err).toMatch(/serve:false in the manifest/);
     expect(r.err).not.toMatch(/could not connect/);
@@ -429,7 +432,7 @@ describe('the pre-connect serve gates refuse without touching any database', () 
   it('the ruling gate does NOT block a withdrawal (M7): --reverse proceeds past it', () => {
     // Reverse requires a snapshot; the point here is only that the serve:false STOP is skipped
     // on reverse — the run must die LATER, on the missing snapshot, not on the ruling.
-    const r = flip(['whitefield-works'], ['--reverse']);
+    const r = flip(['thayers-lexicon'], ['--reverse']);
     expect(r.code).toBe(2);
     expect(r.err).toMatch(/--reverse requires --snapshot/);
     expect(r.err).not.toMatch(/serve:false in the manifest/);

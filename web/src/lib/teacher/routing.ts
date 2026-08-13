@@ -44,17 +44,31 @@ export const SERVED_SONG_VERSE_TYPES = ['hymn', 'poetry'] as const;
 
 // Auto-publish tier (Gate B verified-PD/CC-BY; owner-authorized). Deliberately
 // EXCLUDED and staged instead: origen-commentary (standing MUST_NOT_SERVE
-// 'Origen' ruling — escalated, owner reconciles), thayers-lexicon (OCR tier),
-// the three historians (no read path AT THE TIME — the historian lane was ruled
-// 2026-08-13, corpus-backlog decision 6; see SERVED_HISTORIAN_WORKS), and the
-// v2 staged commentaries
-// (poole-tcp/scofield/pnt — the parked LEGAL_CORPUS_FILTER collision call).
+// 'Origen' ruling — escalated, owner reconciles), thayers-lexicon (D4:
+// lexicons are served by NOTHING — no lane exists, open A8 owner call. The
+// archive.org OCR defect that first staged it is FIXED: re-sourced 2026-08-13
+// to the CC0 structured TEI-grade edition, 99%+ headword recognizability,
+// evidence docs/evidence/profiles/thayers-2026-08-13T081600Z.log; it stays
+// staged for the serving-path reason, not the quality one), and the two
+// unpublished historians (the historian lane itself was ruled 2026-08-13,
+// corpus-backlog decision 6; see SERVED_HISTORIAN_WORKS).
+// The v2 staged commentaries (poole-tcp/scofield-crosswire/pnt-crosswire,
+// plus barnes-crosswire-nt) are NO LONGER excluded: the parked
+// LEGAL_CORPUS_FILTER collision call was UNPARKED by corpus-backlog decision 5
+// (2026-08-13) — all four re-ingested from their named editions, each license
+// verified before decode (docs/evidence/resourcing/batch-summary-2026-08-13.md).
+// The collision the parking protected against is gone with its mechanism:
+// admission is row-level (`served`) since migration 044, not author-string
+// legs, and the biblehub flat rows that shared those author strings no longer
+// exist on dev (measured 2026-08-13: zero no-work rows under 'Matthew Poole'/
+// 'C.I. Scofield'/'B.W. Johnson'; new rows carry clean named-edition
+// provenance, served=false until the flip).
 // ONLY works that are ingested (or in tonight's gated queue) AND clean. A slug
 // here is the publish switch — a work that was never ingested, or is
 // quarantined, must NOT be pre-authorized (A6 2026-07-17: the full 46-work list
 // made one-line publishes of quarantined/never-verified works invisible).
 // Removed pending follow-ups: spurgeon-treasury (CCEL = page scans), ryle/
-// vincent (author-page mislabeling), isbe/eastons/smiths/naves/bdb/thayers
+// vincent (author-page mislabeling), isbe/eastons/smiths/naves/bdb
 // (zLD/RawLD + structured-data decoders not built).
 // EXEGETICAL pool (the /ask ≥2-voices commentary pool) = verse-anchored
 // commentary + fathers ONLY. Sermons and systematic-theology are DISTINCT
@@ -64,6 +78,9 @@ export const SERVED_SONG_VERSE_TYPES = ['hymn', 'poetry'] as const;
 // fathers exegetical; route sermons + theology to labeled lanes.
 export const SERVED_PROSE_WORKS = [
   'keil-delitzsch', 'catena-aurea', 'chrysostom-homilies', 'augustine-homilies',
+  // The v2 staged commentaries, unparked 2026-08-13 (corpus-backlog decision 5 —
+  // re-ingested from the named editions, license verified before decode).
+  'barnes-crosswire-nt', 'scofield-crosswire', 'pnt-crosswire', 'poole-tcp',
 ] as const;
 // The SERMON register lane (homiletical exposition — Spurgeon, Maclaren, the
 // Puritans). Retrieve-and-quote in its own pool + labeled payload; the reusable
@@ -72,12 +89,14 @@ export const SERVED_PROSE_WORKS = [
 // ruling 2026-08-13: published with 298 sections but embeddings were never generated (0
 // vectors), so no retrieval path could read it. "Kill it — we will upload it later"; re-adding
 // is a fresh ingest WITH embeddings, not a re-listing here. Its manifest block is deleted.
-// NOT added, and this is the one sermon that stays out: `whitefield-works` is `serve:false` in the
-// manifest for a QUALITY reason, not an oversight — Project Gutenberg vol 1 of 6, no clean sermon
-// boundaries. "All sermons live" does not reach it without revisiting that ruling.
+// `whitefield-works` is IN as of 2026-08-13: the quality ruling that kept it out
+// (PG vol 1 of 6, no clean sermon boundaries) is FIXED by the volume-parameterized
+// profile (src/ingest/profile-whitefield-works.ts) — 59/59 sermons segmented from
+// vols 5-6, vols 1-4 letters/tracts excluded, evidence
+// docs/evidence/profiles/whitefield-2026-08-13T04-26-42Z.log.
 export const SERVED_SERMON_WORKS = [
   'spurgeon-sermons', 'maclaren-expositions', 'watson-works', 'flavel-works',
-  'edwards-works', 'wesley-sermons',
+  'edwards-works', 'wesley-sermons', 'whitefield-works',
 ] as const;
 // The THEOLOGY/CONFESSION register lane (systematic + confessional — topical
 // treatises, not verse-commentary). Same lane machinery, its own labeled payload.
@@ -96,14 +115,18 @@ export const SERVED_THEOLOGY_WORKS = [
 export const SERVED_HISTORIAN_WORKS = [
   'josephus-whiston',
 ] as const;
-// whitefield-works quarantined 2026-07-18 (PG vol 1/6, no clean sermon boundaries)
+// whitefield-works quarantined 2026-07-18 (PG vol 1/6, no clean sermon boundaries) —
+// RESOLVED 2026-08-13, see SERVED_SERMON_WORKS.
 // herbert-temple/montgomery-sacred-poems/rossetti-verses RECOVERED 2026-07-17
 // (archive.org Cassell 1887 / CCEL title-div fallback / PG title-line splitter).
 // bramley-carols TERMINALLY EXCLUDED 2026-08-13 (owner ruling): no clean-text source exists —
 // all sources are engraved-music editions, 27-31% OCR garbage (A6 2026-07-17). Its manifest
 // block is deleted; the exclusion is recorded in ACQUISITION_MANIFEST.md §4d.
-// Still quarantined: donne-divine-poems/herrick-noble-numbers (A6: whole
-// secular volumes under sacred titles — need section-scoped profiles).
+// donne-divine-poems/herrick-noble-numbers quarantined 2026-07-17 (A6: whole secular
+// volumes under sacred titles) — RESOLVED 2026-08-13 by the section-scoped gutenberg
+// profiles (adapter-gutenberg.ts PROFILES; dry-run harness gutenberg-scoped-dryrun.ts),
+// which isolate the sacred sections and drop the secular ones, counted and sampled;
+// evidence docs/evidence/profiles/donne-herrick-20260813T043613Z.log.
 export const SERVED_SONG_VERSE_WORKS = [
   'olney-hymns', 'scottish-psalter-1650', 'neale-eastern-hymns',
   'watts-hymns', 'watts-psalms',
@@ -111,6 +134,7 @@ export const SERVED_SONG_VERSE_WORKS = [
   'rossetti-verses',
   'traherne-poems', 'milton-poetical-works', 'hopkins-poems',
   'tennyson-in-memoriam', 'dante-divine-comedy', 'wheatley-poems',
+  'donne-divine-poems', 'herrick-noble-numbers',
 ] as const;
 
 const sqlStrList = (xs: readonly string[]) => xs.map((s) => `'${s.replace(/'/g, "''")}'`).join(',');

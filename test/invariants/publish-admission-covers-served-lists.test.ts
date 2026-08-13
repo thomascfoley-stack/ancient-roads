@@ -87,10 +87,12 @@ describe('ALL_SERVED_WORKS covers every served work list', () => {
     expect(new Set(ALL_SERVED_WORKS).size, 'a slug appears in two served lists').toBe(ALL_SERVED_WORKS.length);
   });
 
-  it('the 15 song/verse works are admitted — the exact regression, stated as itself', () => {
+  it('the 17 song/verse works are admitted — the exact regression, stated as itself', () => {
     // Not redundant with the derived case above: that one goes green if someone deletes the list.
-    // This one says the works themselves are admitted, and 15 is the count the config carries.
-    expect(SERVED_SONG_VERSE_WORKS.length).toBe(15);
+    // This one says the works themselves are admitted. The count was 15 (the regression's own
+    // number) until 2026-08-13, when the corpus-backlog flip-prep added donne-divine-poems and
+    // herrick-noble-numbers (scoped-section profiles resolved their quarantine).
+    expect(SERVED_SONG_VERSE_WORKS.length).toBe(17);
     for (const slug of SERVED_SONG_VERSE_WORKS) {
       expect(admitted.has(slug), `${slug} is served by SONG_VERSE_CORPUS_FILTER but not admitted`).toBe(true);
     }

@@ -328,17 +328,19 @@
     "license": "Public Domain",
     "tier": 2,
     "provenance": {
-      "url": "https://archive.org/details/greekenglishlexi00grimuoft",
-      "edition": "Thayer's Greek-English Lexicon (Grimm-Wilke), 1889",
+      "url": "https://github.com/EveryPromiseBible/Every-Promise-Thayers",
+      "edition": "Thayer's Greek-English Lexicon (1889), Strong's-keyed structured edition — EveryPromiseBible/Every-Promise-Thayers, pinned commit a31ff38c40a681ef1029dcc51eb7e7ee3f2ea409 (archive data/raw/github/thayers/thayers-a31ff38c.tar.gz, SHA256SUMS)",
       "year": 1889,
+      "license_ref": "CC0 1.0 Universal — LICENSE + NOTICE verbatim in the pinned archive, verified 2026-08-13 before parse; underlying lexicon PD (Thayer d. 1901)",
       "acquire": {
-        "adapter": "archive",
-        "identifier": "greekenglishlexi00grimuoft",
-        "note": "TEI-XML edition preferred if available; else OCR"
+        "adapter": "thayers",
+        "repo": "EveryPromiseBible/Every-Promise-Thayers",
+        "commit": "a31ff38c40a681ef1029dcc51eb7e7ee3f2ea409",
+        "note": "Replaces the archive.org OCR source (greekenglishlexi00grimuoft) whose 50.2% fuzzy / 6.2% strict headword recognizability caused the 2026-07-17 quarantine. The structured edition is Strong's-keyed by construction: 5,521 entries G1-G5624, 100% Greek-script headwords (src/ingest/adapter-thayers.ts; acceptance src/ingest/thayers-acceptance.mts; evidence docs/evidence/profiles/thayers-2026-08-13T081600Z.log)"
       }
     },
     "serve": false,
-    "quarantine": "A6 run 2026-07-17: archive.org OCR headword recognizability 50.2% fuzzy / 6.2% strict, 0% Greek script (Latin-script OCR) — systemic across 3 scans, keys unrecoverable. Path forward: TEI-XML/structured Thayer keyed by Strong's, or Greek re-OCR. NOT a parser problem."
+    "note": "STAGED, serve:false — no longer a quality hold (the OCR quarantine is resolved by the structured re-source, 2026-08-13): lexicons are served by NOTHING (no lane exists), so this stays staged pending the D4/A8 lexicon-serving owner call."
   },
   {
     "id": "bdb-lexicon",
@@ -1088,8 +1090,8 @@
         "ebook_id": 48688
       }
     },
-    "serve": false,
-    "quarantine": "A6 2026-07-17: gutenberg profile served the WHOLE secular volume (Hesperides / Grierson vol I) under the sacred title; needs a section-scoped profile before re-serve"
+    "serve": true,
+    "resolution": "2026-08-13: quarantine resolved by the section-scoped gutenberg profile (adapter-gutenberg PROFILES) — isolates the Divine Poems from the secular Grierson vol I, dropped sections counted and sampled (gutenberg-scoped-dryrun.ts); evidence docs/evidence/profiles/donne-herrick-20260813T043613Z.log"
   },
   {
     "id": "herrick-noble-numbers",
@@ -1114,8 +1116,8 @@
         "ebook_id": 22421
       }
     },
-    "serve": false,
-    "quarantine": "A6 2026-07-17: gutenberg profile served the WHOLE secular volume (Hesperides / Grierson vol I) under the sacred title; needs a section-scoped profile before re-serve"
+    "serve": true,
+    "resolution": "2026-08-13: quarantine resolved by the section-scoped gutenberg profile (adapter-gutenberg PROFILES) — isolates His Noble Numbers from the secular Hesperides, dropped sections counted and sampled (gutenberg-scoped-dryrun.ts); evidence docs/evidence/profiles/donne-herrick-20260813T043613Z.log"
   },
   {
     "id": "traherne-poems",
@@ -1300,11 +1302,12 @@
       "year": 1771,
       "acquire": {
         "adapter": "gutenberg",
-        "ebook_id": 68976
+        "ebook_id": 68976,
+        "ebook_ids": [68976, 71140, 73012, 73267, 77034, 77041],
+        "note": "2026-08-13: the six 1771 Dilly volumes (vols 1-6). The volume-parameterized profile (src/ingest/profile-whitefield-works.ts) resolved the quality quarantine — 59/59 sermons segmented from vols 5-6 (#77034/#77041), vols 1-4 letters/tracts excluded; evidence docs/evidence/profiles/whitefield-2026-08-13T04-26-42Z.log"
       }
     },
-    "serve": false,
-    "quarantine": "A6 run 2026-07-18: PG 68976 is only Vol 1 of 6 and mixes letters/sermons/tracts with no clean sermon-boundary markers — needs a multi-volume sermon-segmentation profile. Follow-up."
+    "serve": true
   },
   {
     "id": "barnes-crosswire-nt",
@@ -1329,9 +1332,7 @@
       }
     },
     "backfill": {
-      "match_author": "Barnes' Notes",
-      "forbidden_provenance": "skip",
-      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,300 flat rows under this author are biblehub's, not the CrossWire module this entry names — and the author string is shared with the QUARANTINED barnes-notes entry, so slicing here would relabel quarantined content into a non-quarantined slug. Nothing is written until the owner rules: re-ingest from the named CrossWire edition, or quarantine this entry too."
+      "resolved": "2026-08-13 (corpus-backlog decision 5): re-ingested from the named edition; license verified before decode; see docs/evidence/resourcing/batch-summary-2026-08-13.md. The slice-era match_author/forbidden_provenance=\"skip\" policy is retired — sections came from the named-edition ingest, not from slicing flat rows (the biblehub flat rows under this author string are gone)."
     }
   },
   {
@@ -1385,9 +1386,7 @@
       }
     },
     "backfill": {
-      "match_author": "C.I. Scofield",
-      "forbidden_provenance": "skip",
-      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,215 flat rows are biblehub's — the CrossWire edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named edition, or quarantine this entry."
+      "resolved": "2026-08-13 (corpus-backlog decision 5): re-ingested from the named edition; license verified before decode; see docs/evidence/resourcing/batch-summary-2026-08-13.md. The slice-era match_author/forbidden_provenance=\"skip\" policy is retired — sections came from the named-edition ingest, not from slicing flat rows (the biblehub flat rows under this author string are gone)."
     }
   },
   {
@@ -1413,9 +1412,7 @@
       }
     },
     "backfill": {
-      "match_author": "B.W. Johnson",
-      "forbidden_provenance": "skip",
-      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 288 flat rows are biblehub's — the CrossWire edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named edition, or quarantine this entry."
+      "resolved": "2026-08-13 (corpus-backlog decision 5): re-ingested from the named edition; license verified before decode; see docs/evidence/resourcing/batch-summary-2026-08-13.md. The slice-era match_author/forbidden_provenance=\"skip\" policy is retired — sections came from the named-edition ingest, not from slicing flat rows (the biblehub flat rows under this author string are gone)."
     }
   },
   {
@@ -1462,9 +1459,7 @@
       "quality_note": "TCP Phase I vs damaged microfilm: ~7 illegibility gaps/1000 words preserved as ⟨…⟩ lacunae (16% of Vol I entries, 33% of Vol II entries carry at least one); Lev 11 annotations lost to a damaged chapter head; canon validation drops <0.25% miskeyed entries"
     },
     "backfill": {
-      "match_author": "Matthew Poole",
-      "forbidden_provenance": "skip",
-      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): ALL 1,308 flat rows are biblehub's — the TCP edition this entry names was never actually ingested, so there is nothing clean to slice. Nothing is written until the owner rules: re-ingest from the named TCP transcription, or quarantine this entry."
+      "resolved": "2026-08-13 (corpus-backlog decision 5): re-ingested from the named edition; license verified before decode; see docs/evidence/resourcing/batch-summary-2026-08-13.md. The slice-era match_author/forbidden_provenance=\"skip\" policy is retired — sections came from the named-edition ingest, not from slicing flat rows (the biblehub flat rows under this author string are gone)."
     }
   },
   {

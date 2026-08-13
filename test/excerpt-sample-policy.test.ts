@@ -28,18 +28,27 @@ describe('manifest fixtures the eligibility assertions depend on', () => {
   // reason it returns ineligible for one flagged `skip`. So if these ids were ever
   // renamed or dropped from ingest/sources.config.json, "expected skip to be ineligible"
   // would keep passing while testing nothing at all. Pin the fixture, not just the verdict.
+  //
+  // THE LIVE skip FIXTURE IS GONE (2026-08-13, corpus-backlog flip-prep): barnes-crosswire-nt
+  // carried the last `forbidden_provenance:"skip"` marker, retired when the named-edition
+  // re-ingest landed (decision 5). wesley-crosswire's `exclude` is now the only live
+  // forbidden_provenance policy, so it is the pinned real-manifest fixture; the skip-policy
+  // behaviour below is exercised on a synthetic entry shaped exactly like the retired one.
   const manifest = loadManifestById();
 
-  it('barnes-crosswire-nt is present and is the forbidden_provenance=skip case', () => {
-    const entry = manifest.get('barnes-crosswire-nt');
-    expect(entry, 'manifest entry vanished — the skip assertion would pass vacuously').toBeDefined();
-    expect(entry?.backfill?.forbidden_provenance).toBe('skip');
+  it('wesley-crosswire is present and still declares forbidden_provenance=exclude', () => {
+    const entry = manifest.get('wesley-crosswire');
+    expect(entry, 'manifest entry vanished — the exclusion assertion would pass vacuously').toBeDefined();
+    expect(entry?.backfill?.forbidden_provenance).toBe('exclude');
+    expect(entry?.quarantine ?? '').toBe('');
   });
 
-  it('wesley-crosswire is present and is not itself forbidden-domain or quarantined', () => {
-    const entry = manifest.get('wesley-crosswire');
-    expect(entry, 'manifest entry vanished — the laundering assertion would pass vacuously').toBeDefined();
-    expect(entry?.quarantine ?? '').toBe('');
+  it('barnes-crosswire-nt is present and its skip marker is RETIRED, not silently kept', () => {
+    // Pins the flip-prep close-out itself: if the marker comes back, the re-ingest resolution
+    // was reverted and the excerpt policy must say so here, not drift.
+    const entry = manifest.get('barnes-crosswire-nt');
+    expect(entry, 'manifest entry vanished').toBeDefined();
+    expect(entry?.backfill?.forbidden_provenance).toBeUndefined();
   });
 });
 
@@ -47,9 +56,12 @@ describe('excerptEligibility', () => {
   const manifest = loadManifestById();
 
   it('a forbidden_provenance=skip work is ineligible FOR THAT REASON', () => {
+    // Synthetic entry in the exact shape of the retired barnes-crosswire-nt marker — no live
+    // manifest entry carries `skip` after the 2026-08-13 close-outs, and the flag-reading
+    // branch must stay exercised anyway (a policy nobody tests is a policy that rots).
     const verdict = excerptEligibility(
       { slug: 'barnes-crosswire-nt', source_type: 'commentary', status: 'published' },
-      manifest.get('barnes-crosswire-nt'),
+      { id: 'barnes-crosswire-nt', backfill: { forbidden_provenance: 'skip' } },
       0,
     );
     expect(verdict.eligible).toBe(false);

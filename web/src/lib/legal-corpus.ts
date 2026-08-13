@@ -121,8 +121,12 @@ export const LEGAL_COMMENTARY_ENTRIES_PREDICATE = `((author IN (${sqlList(PUBLIS
 // entries from the auto-published clean tier carry a `work` slug; membership here
 // is the reader-side publish switch (mirrors SERVED_*_WORKS in teacher/routing.ts
 // — now DERIVED from those constants; one edit updates every surface). Deliberately absent: origen-commentary
-// (MUST_NOT_SERVE conflict, escalated), thayers-lexicon (OCR tier), historians
-// (no read path), poole-tcp/scofield/pnt (the parked owner call).
+// (MUST_NOT_SERVE conflict, escalated), thayers-lexicon (served by nothing — D4
+// lexicon call, staged past its fixed OCR defect), the two unpublished historians.
+// poole-tcp/scofield-crosswire/pnt-crosswire/barnes-crosswire-nt are PRESENT as of
+// 2026-08-13: the parked owner call was ruled (corpus-backlog decision 5) and the
+// named-edition re-ingests landed; whitefield-works and donne/herrick are in via
+// SERVED_LANE_WORKS / SERVED_SONG_VERSE_WORKS the same day.
 export const PUBLISHED_WORKS = new Set<string>(REGISTER_SERVED_SLUGS);
 
 /** In-memory per-entry check for static JSON entries (reader). Book-aware;

@@ -21,12 +21,18 @@
 // That is the point — this pins something that is TRUE and unprotected, rather than reporting a bug.
 //
 // `serve: false` deliberately conflates two different reasons — quarantined for quality/licensing
-// (donne-divine-poems/herrick-noble-numbers: secular volumes under sacred titles;
-// whitefield-works: no clean sermon boundaries) and staged
-// because no read path exists yet (the three historians, thayers-lexicon). The flag cannot tell
-// them apart and this test does not try to: BOTH reasons mean "not served", and a served list
-// naming either one is wrong. If a historian is later meant to serve, the manifest entry is what
-// changes, and it changes deliberately.
+// and staged because no read path exists yet (the two unpublished historians, thayers-lexicon).
+// The flag cannot tell them apart and this test does not try to: BOTH reasons mean "not served",
+// and a served list naming either one is wrong. If a withheld work is later meant to serve, the
+// manifest entry is what changes, and it changes deliberately.
+//
+// RESOLVED OUT OF THE WITHHELD SET 2026-08-13 (corpus-backlog flip-prep): the three
+// quality/licensing quarantines this floor used to pin — whitefield-works (volume-parameterized
+// profile), donne-divine-poems + herrick-noble-numbers (section-scoped profiles) — are fixed and
+// serve:true now; the RED this file showed between the routing edit and the manifest close-out is
+// recorded in docs/evidence/flip-prep/redproof-*.log. bramley-carols was terminally excluded the
+// same day (block deleted). thayers-lexicon stays serve:false — for the D4 reason now (lexicons
+// are served by nothing), its OCR defect fixed by the structured re-source.
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -57,19 +63,27 @@ describe('the manifest and the served lists are both really there', () => {
     expect(MANIFEST.length).toBeGreaterThan(40);
     expect(ALL_SERVED_WORKS.length).toBeGreaterThan(20);
     expect(WITHHELD.length, 'no serve:false entry found — the flag was renamed or the parse broke').toBeGreaterThan(0);
-    // The three quality/licensing quarantines named in the A8 draft's STOP list and still in the
-    // manifest (bramley-carols was the fourth — terminally excluded 2026-08-13, block deleted).
-    // If a rename or a manifest edit removes one, that is a decision someone must have made on
-    // purpose.
-    for (const slug of ['whitefield-works', 'donne-divine-poems', 'herrick-noble-numbers']) {
+    // The standing serve:false rulings. thayers-lexicon is the floor's named pin: withheld for
+    // the D4 reason (lexicons served by nothing), its entry kept in the manifest on purpose.
+    // The three quality quarantines that used to be pinned here (whitefield-works,
+    // donne-divine-poems, herrick-noble-numbers) were RESOLVED 2026-08-13 and are serve:true —
+    // if a rename or a manifest edit removes thayers-lexicon's ruling, that is a decision
+    // someone must have made on purpose.
+    for (const slug of ['thayers-lexicon']) {
       expect(WITHHELD, `${slug} is no longer serve:false in the manifest`).toContain(slug);
+    }
+    // The resolved three must STAY out of the withheld set — a regression that re-withholds a
+    // work already listed in SERVED_*_WORKS is exactly the breach the cases below catch, but
+    // this names the flip-prep state change so it reads as deliberate here too.
+    for (const slug of ['whitefield-works', 'donne-divine-poems', 'herrick-noble-numbers']) {
+      expect(WITHHELD, `${slug} is serve:false again — re-quarantining a served work is a ruling, not an edit`).not.toContain(slug);
     }
   });
 });
 
 describe('no withheld work reaches a served list', () => {
-  // SEED: add 'whitefield-works' to SERVED_SERMON_WORKS, or 'donne-divine-poems' to
-  // SERVED_SONG_VERSE_WORKS -> RED, naming the slug and the list it entered through.
+  // SEED: add 'thayers-lexicon' to SERVED_PROSE_WORKS, or flip any served slug back to
+  // serve:false in the manifest -> RED, naming the slug and the list it entered through.
   it.each(Object.keys(SERVED_WORK_LISTS))('%s names no serve:false work', (listName) => {
     const list = SERVED_WORK_LISTS[listName as keyof typeof SERVED_WORK_LISTS];
     const breach = list.filter((slug) => BY_SLUG.get(slug)?.serve === false);

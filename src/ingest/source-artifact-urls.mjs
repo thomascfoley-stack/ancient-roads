@@ -194,10 +194,27 @@ export function artifactSourcesFor(entry) {
         reason: 'topical-index adapter needs either `module` (a CrossWire module name) or `dump` (a literal artifact URL).',
       };
     }
+    case 'thayers': {
+      // The adapter parses the WHOLE repo (book/*.md + LICENSE/NOTICE), not one file, so the
+      // archivable artifact is the pinned-commit tarball — exactly what data/raw/github/thayers/
+      // already holds (thayers-a31ff38c.tar.gz + per-file SHA256SUMS). Derivable like
+      // `topical-index`, and for the same reason: the manifest records where the bytes came from.
+      if (!acq.repo || !acq.commit) {
+        return {
+          ok: false,
+          kind: 'thayers',
+          reason:
+            'thayers adapter pins no repo/commit. A branch reference moves, so an archive taken ' +
+            'against it cannot prove which bytes it stored. Pin `commit` in the manifest first.',
+        };
+      }
+      const tar = `https://github.com/${acq.repo}/archive/${acq.commit}.tar.gz`;
+      return { ok: true, kind: 'thayers', artifacts: [artifact(`thayers-${acq.commit.slice(0, 8)}.tar.gz`, tar)] };
+    }
     default:
       return { ok: false, kind: String(acq.adapter), reason: `unknown acquire adapter "${acq.adapter}"` };
   }
 }
 
 /** Every adapter kind `artifactSourcesFor` can derive URLs for. Used by the coverage test. */
-export const DERIVABLE_ADAPTERS = ['ccel', 'gutenberg', 'archive', 'github', 'topical-index'];
+export const DERIVABLE_ADAPTERS = ['ccel', 'gutenberg', 'archive', 'github', 'topical-index', 'thayers'];

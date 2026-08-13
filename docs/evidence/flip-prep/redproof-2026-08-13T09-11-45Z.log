@@ -1,0 +1,92 @@
+FLIP-PREP red-proof — 2026-08-13T09-11-45Z — worktree ancient-roads-corpus @ feat/corpus-backlog
+State: routing.ts served lists extended (7 works added); ingest/sources.config.json NOT yet closed out; migration 113 NOT yet built.
+
+=== RED 1/2: test/invariants/served-lists-respect-the-manifest.test.ts (served slugs still carry serve:false in the manifest) ===
++ ]
+
+ ❯ test/invariants/served-lists-respect-the-manifest.test.ts:81:7
+     79|         'A served work is admitted, an admitted+staged work reaches th…
+     80|         'work is published — so this is quarantined content one flip a…
+     81|     ).toEqual([]);
+       |       ^
+     82|   });
+     83| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  test/invariants/served-lists-respect-the-manifest.test.ts > no withheld work reaches a served list > the derived union is clean too, not just each list separately
+AssertionError: withheld work(s) in ALL_SERVED_WORKS: whitefield-works, donne-divine-poems, herrick-noble-numbers: expected [ 'whitefield-works', …(2) ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   "whitefield-works",
++   "donne-divine-poems",
++   "herrick-noble-numbers",
++ ]
+
+ ❯ test/invariants/served-lists-respect-the-manifest.test.ts:87:82
+     85|     // Belt and braces: the per-list cases go green if a list is delet…
+     86|     const breach = ALL_SERVED_WORKS.filter((slug) => BY_SLUG.get(slug)…
+     87|     expect(breach, `withheld work(s) in ALL_SERVED_WORKS: ${breach.joi…
+       |                                                                                  ^
+     88|   });
+     89| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 5 passed (8)
+   Start at  02:11:45
+   Duration  230ms (transform 24ms, setup 0ms, collect 23ms, tests 5ms, environment 0ms, prepare 36ms)
+
+
+=== RED 2/2: web/test/invariants/fts-legal-index-sync.test.ts (index predicate drifted from the extended constant; rebuild migration pending) ===
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-corpus/web
+
+ ❯ test/invariants/fts-legal-index-sync.test.ts (1 test | 1 failed) 9ms
+   × §6 — partial legal FTS index predicate stays in sync with the query predicate > the newest idx_commentary_fts_legal migration matches LEGAL_COMMENTARY_ENTRIES_PREDICATE 9ms
+     → 108_fts_legal_unserve_talks_to_farmers.sql index predicate drifted from LEGAL_COMMENTARY_ENTRIES_PREDICATE — add a rebuild migration (the planner will silently stop using the partial index).: expected '((authorIN(\'JohnGill\',\'Jamieson,Fa…' to be '((authorIN(\'JohnGill\',\'Jamieson,Fa…' // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/invariants/fts-legal-index-sync.test.ts > §6 — partial legal FTS index predicate stays in sync with the query predicate > the newest idx_commentary_fts_legal migration matches LEGAL_COMMENTARY_ENTRIES_PREDICATE
+AssertionError: 108_fts_legal_unserve_talks_to_farmers.sql index predicate drifted from LEGAL_COMMENTARY_ENTRIES_PREDICATE — add a rebuild migration (the planner will silently stop using the partial index).: expected '((authorIN(\'JohnGill\',\'Jamieson,Fa…' to be '((authorIN(\'JohnGill\',\'Jamieson,Fa…' // Object.is equality
+
+Expected: "((authorIN('JohnGill','Jamieson,Fausset&Brown','AdamClarke','MatthewHenry','Barnes''Notes','AlbertBarnes','JohnWesley','JohnCalvin')OR(author='JohnChrysostom'ANDbookIN(40,43,44))OR(author='AugustineofHippo'ANDbookIN(19,43))ORworkIN('keil-delitzsch','catena-aurea','chrysostom-homilies','augustine-homilies','barnes-crosswire-nt','scofield-crosswire','pnt-crosswire','poole-tcp','olney-hymns','scottish-psalter-1650','neale-eastern-hymns','watts-hymns','watts-psalms','keble-christian-year','herbert-temple','montgomery-sacred-poems','rossetti-verses','traherne-poems','milton-poetical-works','hopkins-poems','tennyson-in-memoriam','dante-divine-comedy','wheatley-poems','donne-divine-poems','herrick-noble-numbers','spurgeon-sermons','maclaren-expositions','watson-works','flavel-works','edwards-works','wesley-sermons','whitefield-works','owen-works','hodge-systematic','calvin-institutes','schaff-creeds'))AND(source_urlISNULLOR(source_urlNOTILIKE'%biblehub.com%'ANDsource_urlNOTILIKE'%studylight.org%'ANDsource_urlNOTILIKE'%historicalchristian.faith%')))"
+Received: "((authorIN('JohnGill','Jamieson,Fausset&Brown','AdamClarke','MatthewHenry','Barnes''Notes','AlbertBarnes','JohnWesley','JohnCalvin')OR(author='JohnChrysostom'ANDbookIN(40,43,44))OR(author='AugustineofHippo'ANDbookIN(19,43))ORworkIN('keil-delitzsch','catena-aurea','chrysostom-homilies','augustine-homilies','olney-hymns','scottish-psalter-1650','neale-eastern-hymns','watts-hymns','watts-psalms','keble-christian-year','herbert-temple','montgomery-sacred-poems','rossetti-verses','traherne-poems','milton-poetical-works','hopkins-poems','tennyson-in-memoriam','dante-divine-comedy','wheatley-poems','spurgeon-sermons','maclaren-expositions','watson-works','flavel-works','edwards-works','wesley-sermons','owen-works','hodge-systematic','calvin-institutes','schaff-creeds'))AND(source_urlISNULLOR(source_urlNOTILIKE'%biblehub.com%'ANDsource_urlNOTILIKE'%studylight.org%'ANDsource_urlNOTILIKE'%historicalchristian.faith%')))"
+
+ ❯ test/invariants/fts-legal-index-sync.test.ts:61:7
+     59|       `${newest} index predicate drifted from LEGAL_COMMENTARY_ENTRIES…
+     60|         `add a rebuild migration (the planner will silently stop using…
+     61|     ).toBe(constantPredicate);
+       |       ^
+     62|   });
+     63| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  02:11:46
+   Duration  184ms (transform 24ms, setup 0ms, collect 21ms, tests 9ms, environment 0ms, prepare 32ms)
+
+
+=== GREEN after config close-outs + migration 113 (2026-08-13T09-21-37Z) ===
+--- root guards ---
+
+ Test Files  7 passed (7)
+      Tests  118 passed (118)
+   Start at  02:21:37
+   Duration  3.72s (transform 165ms, setup 0ms, collect 329ms, tests 3.94s, environment 1ms, prepare 290ms)
+
+--- web guards ---
+
+ Test Files  3 passed (3)
+      Tests  18 passed (18)
+   Start at  02:21:41
+   Duration  185ms (transform 34ms, setup 0ms, collect 54ms, tests 22ms, environment 0ms, prepare 93ms)
+

@@ -122,8 +122,8 @@ if (!slugs.every((s) => typeof s === 'string' && /^[a-z0-9][a-z0-9-]*$/.test(s))
 
 // ── the manifest serve:false gate (forward only; a withdrawal is never blocked, M7) ─────────
 // 2026-08-03 audit: the flip became the serving switch without inheriting any serving gate.
-// Quarantine rulings live in the manifest as `serve:false` (whitefield-works is the standing
-// example — a QUALITY ruling, not an oversight), and before 044 they were enforced by the slug
+// Quarantine rulings live in the manifest as `serve:false` (thayers-lexicon is the standing
+// example — staged because lexicons are served by nothing, pending the D4/A8 owner call), and before 044 they were enforced by the slug
 // simply never being added to a routing list. That wall is gone; this is its replacement.
 // Checked BEFORE any connection: it is pure repo state, and the answer cannot change mid-run.
 if (!reverse) {
