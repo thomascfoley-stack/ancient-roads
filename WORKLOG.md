@@ -1,5 +1,98 @@
 # WORKLOG — Autonomous session 2026-07-08
 
+## 2026-08-13 — Corpus-backlog programme executed end-to-end (Kimi session, `feat/corpus-backlog`, worktree `../ancient-roads-corpus`)
+
+Owner directive "ok run it all now" adopted the nine recommendations on
+`docs/pm/orders/2026-08-13-corpus-backlog-decisions.md` (rulings block appended, `2ddefa9`).
+All prod writes below ran under that directive, each with census → snapshot → apply →
+post-check. Evidence under `docs/evidence/{phase1-kills,phase6a,phase6b,resourcing,profiles,historian-lane,embeddings-backfill,flip-prep,corpus-backlog}`.
+
+**Phase 1 — kills (`0e004fd`).** calvin-crosswire + spurgeon-talks-to-farmers +
+bramley-carols blocks deleted from the manifest (912 entries remain); bramley recorded in
+ACQUISITION_MANIFEST §4d. DB: spurgeon fully deleted dev+prod (source + 298 sections + 19
+anchors + 298 section_embeddings; zero user-data dependents — the runner REFUSES if any
+exist); calvin's 2 clean books.google rows deleted both envs. Snapshots + exact-inverse SQL
+committed. Red-proof: re-adding a killed slug to a served list turns
+served-lists-respect-the-manifest RED (watched). Correction worth keeping: the config note's
+"0 vectors" meant flat work-keyed embeddings — section_embeddings existed (298) and were
+deleted with the rest.
+
+**Phase 6a/6b — forbidden provenance serves nowhere (`8086afe`).** 6a: 67,710 forbidden
+served=false rows DELETED dev+prod (biblehub 15,707 + historicalchristian.faith 52,003);
+pre-stated tripwire asserted exactly 67,710 on prod before any write; post-delete census delta
+ZERO on every serving number; dev/prod snapshots sha256-identical. NO INVERSE by design
+(README in evidence). 6b: the 4,174 ADR-044 rows (Chrysostom 2,515 + Augustine 1,659)
+flipped served→false dev+prod; pools moved by exactly the flipped counts (Chrysostom
+11,427→8,912, Augustine 6,718→5,059 — both voices remain served clean); exact inverse = flip
+the snapshotted ids back. **6b eval discharged ADR-044's gate (`e960505`):** frozen v4 re-run
+post-flip — no gated category newly fails (proper-noun 60 = the frozen July baseline, an
+ADR-028 accepted beta limitation; one-query deltas at these n are noise).
+
+**Phase 2 — 91 vectorless works → 0, dev AND prod (`7326b1f`).** 21,930 sections embedded per
+env (~$0.19 each). Two measured API facts now recorded in the runner's header: DeepInfra
+REJECTS >512-token inputs with a 400 (no server-side truncation — a whole-Agent-run burned
+retrying them) and its reported token count saturates at 513. D1(b) client-side truncation
+(≤1800 chars); 237 dense-reference/Latin sections needed a stepped-cap top-up. Pairing
+invariant fixed and green: sampleability 1700→1200 chars (dense text 400s below 1700 — the
+new population crashed the test) and the discrimination control now walks past
+textually-duplicate neighbours (Schaff volumes reprint front matter verbatim; NFKD-folded
+Jaccard). 94/125 probed; 31 works have no section under 1200 chars and are structurally
+outside the pairing probe — reported by name, not waved through.
+
+**Phase 3 — re-sourcing (`3444e2d`).** Match-test built and red-proofed sound across three
+runs (paragraph-shuffle + half-swap corruptions caught by order-sensitive guards). Pilot
+finding that reshaped the batch: stored barnes-notes text is genuine Barnes but truncated
+(~7% kept on Matt 1) and modernized, so $0 provenance-repair barely applied and fresh
+re-ingest was the path. Batch: barnes-crosswire-nt 7,431 / scofield 3,207 / pnt 6,067 /
+poole-tcp 24,104 sections, all license-verified BEFORE decode (three CrossWire PD .conf
+lines; poole's TCP TEI headers carry CC0 1.0 verbatim), staged on dev with full vectors +
+anchors (~$0.16).
+
+**Phase 4 — profiles (`e701f83`, `b6742c5`, `3444e2d`).** donne (41 sections) + herrick (270)
+via a new scoped-section Gutenberg profile (line-anchored markers; negative controls: 551 +
+999 secular blocks dropped and named). whitefield: the A6 premise was wrong — vol 1 has ZERO
+sermons (497 letters); all 59 live in vols 5-6; volume-parameterized profile over all six
+volumes, 59/59 with anchors. thayers: re-sourced from a structured CC0 edition (OCR path
+dead, not retried) — 5,507 sections, 99.2%/99.0% headword recognizability vs A6's
+50.2%/6.2%, 100% Strong-keyed; stays serve:false/staged pending the D4/A8 lexicon call.
+
+**Phase 5 — historian lane (`836105c`, `c548cf1`).** SERVED_HISTORIAN_WORKS +
+HISTORIAN_CORPUS_FILTER + retrieveHistorianLane; red-proofed (witness row visible only while
+served; exegetical wall holds). josephus embedded on dev (6,492 flat rows, served=0).
+Migration 112 (embeddings CHECK allows historian) + 114 (idx_embeddings_served_historian)
+applied dev+prod; 113 (FTS rebuild for the seven new SERVED entries) applied dev+prod.
+**Collision found and fixed:** my 108 (historian CHECK) collided with Fable's
+108_fts_legal_unserve_talks_to_farmers — ledger is filename-keyed so no corruption; my file
+renumbered to 112 and the dev ledger row renamed. Fable's 108 (the spurgeon FTS lockstep my
+Phase 1 kill demanded) was cherry-picked byte-identical and applied dev+prod.
+
+**Flip-prep (`170e232`).** Seven works admitted via SERVED_*_WORKS additions (four
+commentaries → PROSE, whitefield → SERMON, donne/herrick → SONG_VERSE); manifest close-outs;
+red-proof watched RED then GREEN; full sweeps 689 root + 706 web green; Gate B license check
+PASSED.
+
+**REMAINING — owner-terminal only (the TTY gates are doing their job):** corpus-copy of the 8
+works and the publish/serve flips require a person at a terminal (`ownerGate`: "a piped
+answer is not consent"). Exact commands: `docs/evidence/corpus-backlog/OWNER_FLIP_RUNBOOK.md`.
+Everything else is done.
+
+**NOT DONE / UNVERIFIED:**
+- **Independent verification running at this writing** (fresh agent, re-executes every
+  headline claim read-only); its verdict lands separately. Until then, per bylaw 4, the above
+  is the builders' account.
+- **Owner calls open:** TCR ingest (PD evidence filed — `docs/evidence/tcr-pd-verification-2026-08-13.md`;
+  one-line nod requested; CCE page-check residual stated); barnes-notes' 929 quarantined OT
+  sections (NO CrossWire source exists; delete or hold); calvin-crosswire's 5,088 clean
+  inert flat rows (served=false; sweep or keep); thayers publish (D4 lexicon-serving call);
+  the /ask "History" checkbox enable (flip-time UI line).
+- **Deploy not run** — the lane/routing code ships with the next `./deploy.sh` after merge.
+- Phase 7b (acquisition waves) deliberately parked until this programme lands.
+- The register-writer P2 decay (deletes section_embeddings on re-ingest, never re-inserts)
+  is still live — every future register re-ingest re-opens the gap Phase 2 closed. Filed,
+  not fixed.
+- `npm run audit` not run tree-wide this session (suites run individually: 689 root + 706
+  web + invariants green; Gate B passed). The full audit belongs to the merge commit.
+
 ## 2026-08-11 — HOTFIX: I broke sign-in, and the fix is live
 
 **`main` `f1c749f` == production `f1c749f`** (`dpl_CBNUQjrw77N2WqqGUYLtDdmuyVG2`, `vercel ls`: 4m,
