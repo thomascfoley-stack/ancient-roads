@@ -1,0 +1,39 @@
+target: dev (ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech) · mode: DRY-RUN · model: BAAI/bge-large-en-v1.5 (stored slug 'bge-large-en-v1.5')
+D1(b) note: ONE vector per section. DeepInfra REJECTS over-window inputs with a 400 (it does not
+truncate — measured on dev 2026-08-13), so D1(b)'s accepted truncation is done client-side:
+embed input is the body's leading ≤1800 chars (EMBED_MAX, the bound ingest itself sends per chunk).
+
+works discovered (published, have sections, ZERO section_embeddings): 27
+  commentary/calvin-calcom03: sections=21 lacking_vectors=21 est_tokens=177,891
+  commentary/calvin-calcom07: sections=24 lacking_vectors=24 est_tokens=139,820
+  commentary/calvin-calcom14: sections=16 lacking_vectors=16 est_tokens=214,899
+  commentary/calvin-calcom15: sections=16 lacking_vectors=16 est_tokens=265,236
+  commentary/calvin-calcom16: sections=18 lacking_vectors=18 est_tokens=233,022
+  commentary/calvin-calcom17: sections=9 lacking_vectors=9 est_tokens=232,870
+  commentary/calvin-calcom18: sections=10 lacking_vectors=10 est_tokens=223,336
+  commentary/calvin-calcom19: sections=10 lacking_vectors=10 est_tokens=225,889
+  commentary/calvin-calcom20: sections=18 lacking_vectors=18 est_tokens=333,086
+  commentary/calvin-calcom21: sections=10 lacking_vectors=10 est_tokens=264,644
+  commentary/calvin-calcom26: sections=14 lacking_vectors=14 est_tokens=257,947
+  commentary/gill-song: sections=123 lacking_vectors=123 est_tokens=451,575
+  commentary/jamieson-jfb: sections=1258 lacking_vectors=1258 est_tokens=2,570,324
+  commentary/ryle-expository: sections=93 lacking_vectors=93 est_tokens=146,174
+  commentary/spurgeon-comment: sections=3 lacking_vectors=3 est_tokens=18,785
+  confession/tolstoy-confession: sections=17 lacking_vectors=17 est_tokens=35,323
+  devotional/baxter-saints-rest: sections=16 lacking_vectors=16 est_tokens=149,829
+  devotional/daily-light: sections=732 lacking_vectors=732 est_tokens=193,933
+  devotional/jowett-mattermost: sections=35 lacking_vectors=35 est_tokens=77,335
+  devotional/ryle-holiness: sections=21 lacking_vectors=21 est_tokens=209,993
+  devotional/scougal-life-of-god: sections=3 lacking_vectors=3 est_tokens=31,479
+  devotional/spurgeon-faiths-checkbook: sections=12 lacking_vectors=12 est_tokens=117,384
+  hymn/bett-methhymns: sections=3 lacking_vectors=3 est_tokens=27,202
+  hymn/manning-wesleyhymns: sections=6 lacking_vectors=6 est_tokens=56,585
+  lexicon/smith-w-bibledict: sections=25 lacking_vectors=25 est_tokens=647,656
+  topical_index/openbible-topics: sections=6711 lacking_vectors=6711 est_tokens=320,525
+  topical_index/torreys-topical-textbook: sections=628 lacking_vectors=628 est_tokens=228,243
+
+works by type: commentary=15, confession=1, devotional=6, hymn=2, lexicon=1, topical_index=2
+totals: works=27 sections=9852 lacking_vectors=9852 chars=31403924 est_tokens=7,850,981
+published works with sections but zero section_embeddings (BEFORE): 27
+
+DRY-RUN — estimated spend 7,850,981 tokens (~$0.079 at $0.01/M). Re-run with --apply to embed.

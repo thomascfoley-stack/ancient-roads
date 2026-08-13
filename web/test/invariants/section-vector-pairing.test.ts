@@ -97,14 +97,19 @@ describe.skipIf(SKIP)('§B0 class 2 — every section body matches its own store
     // representative was a different work. A mispair is per-work — it is what a bad re-slice of
     // ONE work produces — so the sample has to be per-work or it is not coverage.
     // Bodies are bounded so the embedder input is identical to what ingest embedded (no
-    // 1800-char truncation) and a correct pairing scores ~1.0 rather than merely "high".
+    // truncation) and a correct pairing scores ~1.0 rather than merely "high".
+    // The upper bound is 1200, not a char-estimate of the 512-token window: dense reference
+    // text (verse-index lines, Latin with diacritics) tokenizes past 512 below ~1,700 chars —
+    // measured 2026-08-13, when the 91-work backfill made such sections samplable and the API
+    // 400'd mid-run ("You passed 513 input tokens"). 1200 is the bound ingest itself sends per
+    // chunk (EMBED_MAX). The NOT COVERED list below keeps the cost of that bound visible.
     const samples = (await sql`
       SELECT DISTINCT ON (s.slug)
              s.slug, s.source_type AS "sourceType", sec.ordinal, sec.body, se.embedding
         FROM sections sec
         JOIN sources s ON s.id = sec.source_id
         JOIN section_embeddings se ON se.section_id = sec.id
-       WHERE s.status = 'published' AND length(sec.body) BETWEEN 300 AND 1700
+       WHERE s.status = 'published' AND length(sec.body) BETWEEN 300 AND 1200
        ORDER BY s.slug, sec.ordinal`) as unknown as Sample[];
 
     // NO SILENT CAPS: a published work with no section in the sampleable range is NOT covered,
@@ -159,7 +164,34 @@ describe.skipIf(SKIP)('§B0 class 2 — every section body matches its own store
       // Discrimination control, in the SAME run: the stored vector of a DIFFERENT section must
       // score materially lower against this body. Without it, an embedder that returned a
       // constant vector — or a cosine that always returned 1 — would read as a pass.
-      const other = samples[(i + 1) % samples.length]!;
+      //
+      // The control must be TEXTUALLY distinct, not just a different row. Samples are ordered by
+      // slug, so the naive next-sample control is often the adjacent VOLUME of the same
+      // multi-volume work — and multi-volume works reprint front matter verbatim (measured
+      // 2026-08-13: schaff-encyc01#4 vs 02#3 vs 09#3 are the same "SYSTEM OF TRANSLITERATION"
+      // page at 623-627 chars; cos 1.0000 to the "neighbour" is the embedder being RIGHT).
+      // Identical text cannot be discriminated by any vector; walk forward to the first
+      // textually distinct sample. If none exists the leg is vacuous for this pair — said
+      // loudly, not passed silently.
+      const normTokens = (t: string) => new Set(
+        // NFKD + strip combining marks first: the duplicate front matter differs by precomposed
+        // vs combining diacritics (ḥ vs ḥ) and layout punctuation, which defeats a naive token
+        // Jaccard (measured 2026-08-13: schaff-encyc09#3 slipped a 0.9 threshold at ~0.8 while
+        // being the same page). Fold to plain alphanumeric tokens before comparing.
+        t.normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().split(' '),
+      );
+      const jaccard = (a: Set<string>, b: Set<string>) => {
+        let inter = 0;
+        for (const tok of a) if (b.has(tok)) inter++;
+        return inter / (a.size + b.size - inter || 1);
+      };
+      const sTokens = normTokens(s.body);
+      let other = samples[(i + 1) % samples.length]!;
+      let hop = 0;
+      while (hop < samples.length - 1 && jaccard(sTokens, normTokens(other.body)) >= 0.9) {
+        hop++;
+        other = samples[(i + 1 + hop) % samples.length]!;
+      }
       const otherScore = cosine(parseVector(other.embedding), fresh);
 
       const where = `${s.sourceType}/${s.slug}#${s.ordinal}`;
@@ -167,7 +199,7 @@ describe.skipIf(SKIP)('§B0 class 2 — every section body matches its own store
       if (self < floor) {
         failures.push(`${where}: body vs its OWN stored vector cos=${self.toFixed(4)} < ${floor} — this section's text and its embedding are not the same passage`);
       }
-      if (samples.length > 1 && self < otherScore + MARGIN) {
+      if (samples.length > 1 && hop < samples.length - 1 && self < otherScore + MARGIN) {
         failures.push(`${where}: cos to own vector ${self.toFixed(4)} is not clear of cos to ${other.slug}#${other.ordinal} ${otherScore.toFixed(4)} — the probe is not discriminating`);
       }
     }

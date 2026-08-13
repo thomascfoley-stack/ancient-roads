@@ -1,0 +1,102 @@
+target: dev (ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech) · mode: DRY-RUN · model: BAAI/bge-large-en-v1.5 (stored slug 'bge-large-en-v1.5')
+D1(b) note: ONE vector per section; bodies longer than the model's 512-token window are
+API-truncated by DeepInfra — accepted under EMBEDDINGS_DESIGN D1 option (b), owner directive 2026-08-13.
+
+works discovered (published, have sections, ZERO section_embeddings): 91
+  commentary/calvin-calcom03: sections=21 lacking_vectors=21 est_tokens=177,891
+  commentary/calvin-calcom07: sections=24 lacking_vectors=24 est_tokens=139,820
+  commentary/calvin-calcom08: sections=220 lacking_vectors=220 est_tokens=325,063
+  commentary/calvin-calcom09: sections=155 lacking_vectors=155 est_tokens=231,357
+  commentary/calvin-calcom10: sections=144 lacking_vectors=144 est_tokens=233,525
+  commentary/calvin-calcom14: sections=16 lacking_vectors=16 est_tokens=214,899
+  commentary/calvin-calcom15: sections=16 lacking_vectors=16 est_tokens=265,236
+  commentary/calvin-calcom16: sections=18 lacking_vectors=18 est_tokens=233,022
+  commentary/calvin-calcom17: sections=9 lacking_vectors=9 est_tokens=232,870
+  commentary/calvin-calcom18: sections=10 lacking_vectors=10 est_tokens=223,336
+  commentary/calvin-calcom19: sections=10 lacking_vectors=10 est_tokens=225,889
+  commentary/calvin-calcom20: sections=18 lacking_vectors=18 est_tokens=333,086
+  commentary/calvin-calcom21: sections=10 lacking_vectors=10 est_tokens=264,644
+  commentary/calvin-calcom23: sections=16 lacking_vectors=16 est_tokens=28,672
+  commentary/calvin-calcom24: sections=24 lacking_vectors=24 est_tokens=35,707
+  commentary/calvin-calcom25: sections=20 lacking_vectors=20 est_tokens=30,574
+  commentary/calvin-calcom26: sections=14 lacking_vectors=14 est_tokens=257,947
+  commentary/gill-song: sections=123 lacking_vectors=123 est_tokens=451,575
+  commentary/jamieson-jfb: sections=1258 lacking_vectors=1258 est_tokens=2,570,324
+  commentary/ryle-expository: sections=93 lacking_vectors=93 est_tokens=146,174
+  commentary/spurgeon-comment: sections=3 lacking_vectors=3 est_tokens=18,785
+  confession/augustine-confess: sections=276 lacking_vectors=276 est_tokens=151,467
+  confession/chesterton-preexistence: sections=6 lacking_vectors=6 est_tokens=6,309
+  confession/luther-largecatechism: sections=26 lacking_vectors=26 est_tokens=62,769
+  confession/luther-smallcat: sections=6 lacking_vectors=6 est_tokens=3,895
+  confession/melanchthon-apology: sections=37 lacking_vectors=37 est_tokens=156,566
+  confession/owen-catechisms: sections=31 lacking_vectors=31 est_tokens=10,753
+  confession/tolstoy-confession: sections=17 lacking_vectors=17 est_tokens=35,323
+  confession/ursinus-catechism: sections=5 lacking_vectors=5 est_tokens=5,053
+  devotional/baxter-saints-rest: sections=16 lacking_vectors=16 est_tokens=149,829
+  devotional/calvin-prayer: sections=52 lacking_vectors=52 est_tokens=41,758
+  devotional/daily-light: sections=732 lacking_vectors=732 est_tokens=193,933
+  devotional/guyon-prayer: sections=24 lacking_vectors=24 est_tokens=24,735
+  devotional/habermann-dailyprayers: sections=30 lacking_vectors=30 est_tokens=8,899
+  devotional/jowett-mattermost: sections=35 lacking_vectors=35 est_tokens=77,335
+  devotional/kempis-imitation: sections=114 lacking_vectors=114 est_tokens=78,266
+  devotional/lawrence-practice-presence: sections=19 lacking_vectors=19 est_tokens=14,910
+  devotional/meyer-homily2: sections=241 lacking_vectors=241 est_tokens=101,603
+  devotional/rutherford-letters: sections=73 lacking_vectors=73 est_tokens=56,373
+  devotional/ryle-holiness: sections=21 lacking_vectors=21 est_tokens=209,993
+  devotional/scougal-life-of-god: sections=3 lacking_vectors=3 est_tokens=31,479
+  devotional/spurgeon-faiths-checkbook: sections=12 lacking_vectors=12 est_tokens=117,384
+  devotional/spurgeon-morning-evening: sections=744 lacking_vectors=744 est_tokens=354,452
+  devotional/taylor-holy-living: sections=159 lacking_vectors=159 est_tokens=185,220
+  father/schaff-npnf101: sections=281 lacking_vectors=281 est_tokens=185,386
+  father/schaff-npnf104: sections=585 lacking_vectors=585 est_tokens=443,930
+  father/schaff-npnf210: sections=349 lacking_vectors=349 est_tokens=503,393
+  father/schaff-npnf213: sections=88 lacking_vectors=88 est_tokens=108,070
+  hymn/aaberg-hymnsdenmark: sections=29 lacking_vectors=29 est_tokens=79,744
+  hymn/bett-methhymns: sections=3 lacking_vectors=3 est_tokens=27,202
+  hymn/bevan-tersteegen: sections=91 lacking_vectors=91 est_tokens=26,263
+  hymn/bevan-tersteegen2: sections=75 lacking_vectors=75 est_tokens=25,780
+  hymn/borthwick-hll: sections=78 lacking_vectors=78 est_tokens=28,888
+  hymn/brownlie-aposthymns: sections=88 lacking_vectors=88 est_tokens=21,298
+  hymn/brownlie-earlyhymns: sections=99 lacking_vectors=99 est_tokens=20,386
+  hymn/brownlie-easternhymns: sections=45 lacking_vectors=45 est_tokens=7,395
+  hymn/brownlie-greekhymns: sections=47 lacking_vectors=47 est_tokens=8,578
+  hymn/brownlie-hymnseast: sections=53 lacking_vectors=53 est_tokens=10,618
+  hymn/brownlie-hymnsmorning: sections=80 lacking_vectors=80 est_tokens=17,080
+  hymn/brownlie-hyndbrow: sections=24 lacking_vectors=24 est_tokens=9,088
+  hymn/brownlie-officehymns: sections=51 lacking_vectors=51 est_tokens=10,082
+  hymn/brownlie-russianhymns: sections=128 lacking_vectors=128 est_tokens=24,134
+  hymn/chatfield-greeksongs: sections=31 lacking_vectors=31 est_tokens=24,527
+  hymn/crosby-indianhymnal: sections=49 lacking_vectors=49 est_tokens=8,955
+  hymn/hewitt-gerhardt: sections=221 lacking_vectors=221 est_tokens=85,312
+  hymn/longfellow-s-bookhymns: sections=599 lacking_vectors=599 est_tokens=95,510
+  hymn/manning-wesleyhymns: sections=6 lacking_vectors=6 est_tokens=56,585
+  hymn/morris-welshhymns: sections=63 lacking_vectors=63 est_tokens=9,738
+  hymn/nutter-hymnwriters: sections=311 lacking_vectors=311 est_tokens=75,513
+  hymn/pilcher-passionhymns: sections=32 lacking_vectors=32 est_tokens=6,757
+  hymn/prudentius-cathimerinon: sections=30 lacking_vectors=30 est_tokens=45,960
+  hymn/reeves-hymnlit: sections=11 lacking_vectors=11 est_tokens=107,689
+  hymn/waring-hymns: sections=32 lacking_vectors=32 est_tokens=12,832
+  hymn/watts-psalmshymns: sections=731 lacking_vectors=731 est_tokens=185,788
+  hymn/winkworth-hyndwink: sections=218 lacking_vectors=218 est_tokens=42,113
+  lexicon/easton-ebd2: sections=26 lacking_vectors=26 est_tokens=589,610
+  lexicon/hitchcock-bible-names: sections=23 lacking_vectors=23 est_tokens=20,965
+  lexicon/schaff-dictionarybible: sections=29 lacking_vectors=29 est_tokens=782,470
+  lexicon/schaff-encyc01: sections=9 lacking_vectors=9 est_tokens=821,284
+  lexicon/schaff-encyc02: sections=9 lacking_vectors=9 est_tokens=814,480
+  lexicon/schaff-encyc09: sections=9 lacking_vectors=9 est_tokens=820,208
+  lexicon/schaff-encyc13: sections=27 lacking_vectors=27 est_tokens=167,428
+  lexicon/schaff-encyc13a: sections=27 lacking_vectors=27 est_tokens=225,667
+  lexicon/smith-w-bibledict: sections=25 lacking_vectors=25 est_tokens=647,656
+  lexicon/wace-biodict: sections=27 lacking_vectors=27 est_tokens=1,652,633
+  poetry/hort-james1909: sections=5 lacking_vectors=5 est_tokens=96,431
+  poetry/stowe-religiouspoems: sections=31 lacking_vectors=31 est_tokens=12,724
+  poetry/therese-poems: sections=45 lacking_vectors=45 est_tokens=38,809
+  topical_index/naves-topical-bible: sections=4870 lacking_vectors=4870 est_tokens=340,634
+  topical_index/openbible-topics: sections=6711 lacking_vectors=6711 est_tokens=320,525
+  topical_index/torreys-topical-textbook: sections=628 lacking_vectors=628 est_tokens=228,243
+
+works by type: commentary=21, confession=8, devotional=15, father=4, hymn=27, lexicon=10, poetry=3, topical_index=3
+totals: works=91 sections=21930 lacking_vectors=21930 chars=74452192 est_tokens=18,613,048
+published works with sections but zero section_embeddings (BEFORE): 91
+
+DRY-RUN — estimated spend 18,613,048 tokens (~$0.186 at $0.01/M). Re-run with --apply to embed.

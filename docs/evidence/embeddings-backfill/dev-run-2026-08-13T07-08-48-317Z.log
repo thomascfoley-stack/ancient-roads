@@ -1,0 +1,21 @@
+target: dev (ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech) · mode: DRY-RUN · model: BAAI/bge-large-en-v1.5 (stored slug 'bge-large-en-v1.5')
+D1(b) note: ONE vector per section. DeepInfra REJECTS over-window inputs with a 400 (it does not
+truncate — measured on dev 2026-08-13), so D1(b)'s accepted truncation is done client-side:
+embed input is the body's leading ≤1800 chars (EMBED_MAX, the bound ingest itself sends per chunk).
+Sections still over-window at 1800 chars (dense non-English text tokenizes >512 tokens) are
+shrunk adaptively per-section from the API's reported token count until they fit; each is logged.
+
+works discovered (published, have sections, ZERO section_embeddings): 7
+  commentary/calvin-calcom15: sections=16 lacking_vectors=16 est_tokens=265,236
+  commentary/calvin-calcom16: sections=18 lacking_vectors=18 est_tokens=233,022
+  commentary/gill-song: sections=123 lacking_vectors=123 est_tokens=451,575
+  commentary/jamieson-jfb: sections=1258 lacking_vectors=1258 est_tokens=2,570,324
+  devotional/daily-light: sections=732 lacking_vectors=732 est_tokens=193,933
+  topical_index/openbible-topics: sections=6711 lacking_vectors=6711 est_tokens=320,525
+  topical_index/torreys-topical-textbook: sections=628 lacking_vectors=628 est_tokens=228,243
+
+works by type: commentary=4, devotional=1, topical_index=2
+totals: works=7 sections=9486 lacking_vectors=9486 chars=17051429 est_tokens=4,262,857
+published works with sections but zero section_embeddings (BEFORE): 7
+
+DRY-RUN — estimated spend 4,262,857 tokens (~$0.043 at $0.01/M). Re-run with --apply to embed.
