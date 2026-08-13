@@ -1,6 +1,6 @@
 # Corpus backlog — the nine rulings that unblock everything
 
-**Written 2026-08-13.** Companion to the corpus-backlog plan (v2). This sheet batches every
+**Written 2026-08-13. RULED 2026-08-13 — see the rulings block at the bottom.** Companion to the corpus-backlog plan (v2). This sheet batches every
 pending owner call in the ingestion/corpus backlog so each is ruled once, in one place, with
 the measured evidence attached. Per bylaw 1, a ruling recorded here exists; a ruling given in
 a chat window does not.
@@ -178,3 +178,27 @@ eval then chooses between (b) and (c) with evidence instead of anxiety.
 Independent of this sheet: Phase 2 (91-work embeddings backfill) needs no ruling and can
 start immediately; Phase 4 (donne/herrick, whitefield, thayers profiles) is build work with
 acceptance tests already specified in the plan.
+
+---
+
+## Rulings — 2026-08-13
+
+Owner directive in session, verbatim: **"ok run it all now"** — adopting every recommendation
+on this sheet. Recorded here per bylaw 1:
+
+| # | Ruling |
+|---|---|
+| 1 | **Yes** — delete the calvin-crosswire block; the 2 clean books.google rows quarantine with it |
+| 2 | **Yes** — delete spurgeon-talks-to-farmers now (staged source + 298 sections, dev and prod); re-upload later is a fresh ingest |
+| 3 | **Yes** — bramley-carols terminal exclusion; recorded in ACQUISITION_MANIFEST §4d |
+| 4 | **(b)** — re-source geneva-notes from a licensed PD edition; terminal exclusion (c) if none surfaces |
+| 5 | **Re-ingest all four** (barnes-crosswire-nt, scofield-crosswire, pnt-crosswire, poole-tcp) from their named editions, each `.conf`/license verified BEFORE ingest |
+| 6 | **(a)** — build the historian lane |
+| 7 | **Yes** — TCR PD verification authorised (Stanford renewal database, then copyright office if ambiguous) |
+| 8 | **Yes** — E3 bulk deletion of the 67,710 unserved forbidden rows, no re-sourcing wait (Phase 6a) |
+| 9 | **(a)** — unserved-and-hold the 4,174 ADR-044 rows now; the held-out eval decides delete-vs-re-source |
+
+Execution per the plan (v2): each production or database step still runs as its own ⚑
+occasion with snapshot and exact inverse, evidence under `docs/evidence/`, and the 6a
+post-delete census must match the 2026-08-08 baseline with **expected delta zero on every
+serving number** — a non-zero delta is a STOP.
