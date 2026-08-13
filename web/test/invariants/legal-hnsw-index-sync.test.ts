@@ -31,6 +31,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   EXEGETICAL_TYPE_SQL,
+  HISTORIAN_CORPUS_FILTER,
   LEGAL_CORPUS_FILTER,
   SERMON_CORPUS_FILTER,
   SONG_VERSE_CORPUS_FILTER,
@@ -91,6 +92,8 @@ const SERVING_INDEXES = [
   'idx_embeddings_served_song_verse',
   'idx_embeddings_served_sermon',
   'idx_embeddings_served_theology',
+  // Added with the historian lane (2026-08-13, corpus-backlog #6) and its index (migration 114).
+  'idx_embeddings_served_historian',
 ] as const;
 
 describe('§7 — partial HNSW index predicates stay in lockstep with the retrieval filters', () => {
@@ -118,6 +121,7 @@ describe('§7 — partial HNSW index predicates stay in lockstep with the retrie
     { index: 'idx_embeddings_served_song_verse', conjuncts: [SONG_VERSE_CORPUS_FILTER, SONG_VERSE_TYPE_SQL] },
     { index: 'idx_embeddings_served_sermon', conjuncts: [SERMON_CORPUS_FILTER] },
     { index: 'idx_embeddings_served_theology', conjuncts: [THEOLOGY_CORPUS_FILTER] },
+    { index: 'idx_embeddings_served_historian', conjuncts: [HISTORIAN_CORPUS_FILTER] },
   ];
 
   for (const { index, conjuncts } of LOCKSTEP) {

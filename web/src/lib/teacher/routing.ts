@@ -231,13 +231,9 @@ export const ALL_SERVED_WORKS: readonly string[] = Object.values(SERVED_WORK_LIS
 export const EXEGETICAL_TYPE_SQL = `source_type IN ('commentary','father')`;
 export const SERMON_CORPUS_FILTER = `(served AND source_type = 'sermon')`;
 export const THEOLOGY_CORPUS_FILTER = `(served AND source_type IN ('theology','confession'))`;
-// The historian lane's filter (2026-08-13, corpus-backlog #6). KNOWN GAP, deliberate for now:
-// unlike the three filters above it has NO byte-matched partial HNSW index yet — 044 predates
-// the ruling. The lane still resolves correctly (the filter is row-selection, fail-soft at
-// LIMIT 3), but before the owner serve-flip ships to prod, an `idx_embeddings_served_historian`
-// partial index on exactly this predicate + a legal-hnsw-index-sync LOCKSTEP entry should be
-// added, or the lane pool query post-filters the full-table HNSW graph (the migration-009
-// mechanism, blunted by the lane's small LIMIT but real).
+// The historian lane's filter (2026-08-13, corpus-backlog #6). Its byte-matched partial HNSW
+// index is idx_embeddings_served_historian (migration 114, built the same day — the gap this
+// comment previously recorded is closed), guarded by a legal-hnsw-index-sync LOCKSTEP entry.
 export const HISTORIAN_CORPUS_FILTER = `(served AND source_type = 'historian')`;
 
 // Exegetical-surface exclusion for commentary_entries (the FTS search). Excludes
