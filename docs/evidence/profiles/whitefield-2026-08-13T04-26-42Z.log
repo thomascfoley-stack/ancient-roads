@@ -1,0 +1,571 @@
+# whitefield-works segmentation — dry-run + dev staged ingest evidence
+# run: 2026-08-13T04-26-42Z (UTC), worktree ancient-roads-corpus, branch feat/corpus-backlog
+# command: npx tsx src/ingest/ingest-whitefield-works.ts  (dry-run, no DB)
+
+=== whitefield-works segmentation dry-run ===
+volumes scanned: #68976 (vol 1), #71140 (vol 2), #73012 (vol 3), #73267 (vol 4), #77034 (vol 5), #77041 (vol 6)
+
+── vol 1 (PG #68976): 0 sermons | EXCLUDED non-sermons: 497 letters
+── vol 2 (PG #71140): 0 sermons | EXCLUDED non-sermons: 467 letters
+── vol 3 (PG #73012): 0 sermons | EXCLUDED non-sermons: 499 letters
+── vol 4 (PG #73267): 0 sermons | EXCLUDED non-sermons: 0 letters, 43 tracts (index entries)
+     tract excluded: ANSWER to the Bishop of London’s Last Pastoral Letter.
+     tract excluded: A Letter to the Religious Societies of England.
+     tract excluded: A Letter to the Inhabitants of Maryland, Virginia, North and South-Carolina.
+     tract excluded: A Letter to some Church-Members of the Presbyterian Persuasion, in Answer to certain Scruples la
+     tract excluded: A Letter to the Rev. Mr. John Wesley: In Answer to his Sermon, entitled, Free-Grace.
+     tract excluded: A Vindication and Confirmation of the Remarkable Work of GOD in New-England. Being some Remarks 
+     tract excluded: A brief Account of the Occasion, Process, and Issue, of a late Trial at the Assize held at Glouc
+     tract excluded: An Answer to the First Part of an Anonymous Pamphlet, entitled, “Observations upon the Conduct a
+── vol 5 (PG #77034): 31 sermons | EXCLUDED non-sermons: 0 letters
+── vol 6 (PG #77041): 28 sermons | EXCLUDED non-sermons: 0 letters
+
+CONTENTS-page expected list: 59 entries (vol 5: I–XXXI, vol 6: XXXII–LIX)
+  expected: SERMON I. The Seed of the Woman, and the Seed of the Serpent.
+  expected: SERMON II. Walking with God.
+  expected: SERMON III. Abraham’s offering up his Son Isaac.
+  expected: SERMON IV. The great Duty of Family-Religion.
+  expected: SERMON V. Christ the best Husband: or, an earnest Invitation
+  expected: SERMON VI. Britain’s Mercies, and Britain’s Duty. Preached at
+  expected: SERMON VII. Thankfulness for Mercies received, a necessary
+  expected: SERMON VIII. The Necessity and Benefits of Religious Society.
+  expected: SERMON IX. The Folly and Danger of not being righteous enough.
+  expected: SERMON X. A Preservative against unsettled Notions, and want
+  expected: SERMON XI. The Benefits of an early Piety. Preached at Bow
+  expected: SERMON XII. Christ the Believer’s Husband.
+  expected: SERMON XIII. The Potter and the Clay.
+  expected: SERMON XIV. The Lord our Righteousness.
+  expected: SERMON XV. The Righteousness of Christ an everlasting
+  expected: SERMON XVI. The Observation of the Birth of Christ, the Duty
+  expected: SERMON XVII. The Temptation of Christ.
+  expected: SERMON XVIII. The Heinous Sin of profane Cursing and Swearing.
+  expected: SERMON XIX. Christ the Support of the Tempted.
+  expected: SERMON XX. Worldly Business no Plea for the Neglect of Religion.
+  expected: SERMON XXI. Christ the only Rest for the Weary and Heavy Laden.
+  expected: SERMON XXII. The Folly and Danger of parting with Christ for
+  expected: SERMON XXIII. Marks of a True Conversion.
+  expected: SERMON XXIV. What think ye of Christ?
+  expected: SERMON XXV. The wise and foolish Virgins.
+  expected: SERMON XXVI. The Eternity of Hell-Torments.
+  expected: SERMON XXVII. Blind Bartimeus.
+  expected: SERMON XXVIII. Directions how to hear Sermons.
+  expected: SERMON XXIX. The Extent and Reasonableness of Self-Denial.
+  expected: SERMON XXX. Christ’s Transfiguration.
+  expected: SERMON XXXI. The Care of the Soul urged as the one thing
+  expected: SERMON XXXII. A Penitent Heart, the best New Year’s Gift.
+  expected: SERMON XXXIII. The Gospel Supper.
+  expected: SERMON XXXIV. The Pharisee and Publican.
+  expected: SERMON XXXV. The Conversion of Zaccheus.
+  expected: SERMON XXXVI. The Marriage of Cana.
+  expected: SERMON XXXVII. The Duty of searching the Scriptures.
+  expected: SERMON XXXVIII. The Indwelling of the Spirit, the common
+  expected: SERMON XXXIX. The Resurrection of Lazarus.
+  expected: SERMON XL. The Holy Spirit convincing the World of Sin,
+  expected: SERMON XLI. Saul’s Conversion.
+  expected: SERMON XLII. Marks of having received the Holy Ghost.
+  expected: SERMON XLIII. The Almost Christian.
+  expected: SERMON XLIV. Christ, the Believer’s Wisdom, Righteousness,
+  expected: SERMON XLV. The Knowledge of Jesus Christ the best Knowledge.
+  expected: SERMON XLVI. Of Justification by Christ.
+  expected: SERMON XLVII. The great Duty of Charity recommended.
+  expected: SERMON XLVIII. Satan’s Devices.
+  expected: SERMON XLIX. On Regeneration.
+  expected: SERMON L. Christians, Temples of the living God.
+  expected: SERMON LI. Christ the only Preservative against a Reprobate
+  expected: SERMON LII. The heinous Sin of Drunkenness.
+  expected: SERMON LIII. The Power of Christ’s Resurrection.
+  expected: SERMON LIV. Intercession every Christian’s Duty.
+  expected: SERMON LV. Persecution every Christian’s Lot.
+  expected: SERMON LVI. An Exhortation to the People of God not to be
+  expected: SERMON LVII. Preached before the Governor and Council, and the
+  expected: SERMON LVIII. Peter’s Denial of his LORD.
+  expected: SERMON LIX. The true Way of beholding the LAMB of GOD.
+
+detected sermons: 59 (expected 59)
+  [vol 5] SERMON I. The Seed of the Woman, and the Seed of the Serpent. — Genesis 3:15 (raw: "GENESIS iii. 15.") body=40147 chars anchor=1003015-1003015
+  [vol 5] SERMON II. Walking with GOD. — Genesis 5:24 (raw: "GENESIS v. 24.") body=38228 chars anchor=1005024-1005024
+  [vol 5] SERMON III. Abraham’s offering up his Son Isaac. — Genesis 22:12 (raw: "GENESIS xxii. 12.") body=30971 chars anchor=1022012-1022012
+  [vol 5] SERMON IV. The great Duty of Family-Religion. — Joshua 24:15 (raw: "JOSHUA xxiv. 15.") body=28587 chars anchor=6024015-6024015
+  [vol 5] SERMON V. CHRIST the best Husband: Or an earnest Invitation to Young Women to come and see CHRIST. — Psalm 45:10-11 (raw: "PSALM xlv. 10, 11.") body=29733 chars anchor=19045010-19045011
+  [vol 5] SERMON VI. Britain’s Mercies, and Britain’s Duty. — Psalm 105:45 (raw: "PSALM cv. 45.") body=32419 chars anchor=19105045-19105045
+  [vol 5] SERMON VII. Thankfulness for Mercies received, a necessary Duty. — Psalm 107:30-31 (raw: "PSALM, cvii. 30, 31.") body=27506 chars anchor=19107030-19107031
+  [vol 5] SERMON VIII. The Necessity and Benefits of Religious Society. — Ecclesiastes 4:9-12 (raw: "ECCLESIASTES iv. 9, 10, 11, 12.") body=33705 chars anchor=21004009-21004012
+  [vol 5] SERMON IX. The Folly and Danger of being not righteous enough. — Ecclesiastes 7:16 (raw: "ECCLESIASTES vii. 16.") body=39488 chars anchor=21007016-21007016
+  [vol 5] SERMON X. A Preservative against unsettled Notions, and want of Principles, in regard to Righteousness and Christian Perfection. — Ecclesiastes 7:16 (raw: "ECCLESIASTES vii. 16.") body=38462 chars anchor=21007016-21007016
+  [vol 5] SERMON XI. The Benefits of an Early Piety. — Ecclesiastes 12:1 (raw: "ECCLESIASTES xii. I.") body=23884 chars anchor=21012001-21012001
+  [vol 5] SERMON XII. CHRIST the Believer’s Husband. — Isaiah 54:5 (raw: "ISAIAH liv. 5.") body=59458 chars anchor=23054005-23054005
+  [vol 5] SERMON XIII. The Potter and the Clay. — Jeremiah 18:1-6 (raw: "JEREMIAH xviii. 1‒6.") body=41773 chars anchor=24018001-24018006
+  [vol 5] SERMON XIV. The LORD our Righteousness. — Jeremiah 23:6 (raw: "JEREMIAH xxiii. 6.") body=41114 chars anchor=24023006-24023006
+  [vol 5] SERMON XV. The Righteousness of CHRIST, an everlasting Righteousness. — Daniel 9:24 (raw: "DANIEL ix. 24.") body=34833 chars anchor=27009024-27009024
+  [vol 5] SERMON XVI. The Observation of the Birth of CHRIST, the Duty of all Christians; or the true Way of keeping Christmas. — Matthew 1:21 (raw: "MATTHEW i. 21.") body=21643 chars anchor=40001021-40001021
+  [vol 5] SERMON XVII. The Temptation of CHRIST. — Matthew 4:1-11 (raw: "MATTHEW iv. 1‒11.") body=32042 chars anchor=40004001-40004011
+  [vol 5] SERMON XVIII. The Heinous Sin of Profane Cursing and Swearing. — Matthew 5:34 (raw: "MATTHEW v. 34.") body=24259 chars anchor=40005034-40005034
+  [vol 5] SERMON XIX. CHRIST the Support of the Tempted. — Matthew 6:13 (raw: "MATTHEW vi. 13.") body=24335 chars anchor=40006013-40006013
+  [vol 5] SERMON XX. Worldly business no Plea for the Neglect of Religion. — Matthew 8:22 (raw: "MATTHEW viii. 22.") body=18653 chars anchor=40008022-40008022
+  [vol 5] SERMON XXI. CHRIST the only Rest for the Weary and Heavy-Laden. — Matthew 11:28 (raw: "MATTHEW xi. 28.") body=22249 chars anchor=40011028-40011028
+  [vol 5] SERMON XXII. The Folly and Danger of parting with CHRIST for the Pleasures and Profits of Life. — Matthew 8:23 (raw: "MATTHEW viii. 23, to the End.") [open range: anchored first verse] body=36022 chars anchor=40008023-40008023
+  [vol 5] SERMON XXIII. Marks of a true Conversion. — Matthew 18:3 (raw: "MATTHEW xviii. 3.") body=38732 chars anchor=40018003-40018003
+  [vol 5] SERMON XXIV. What think ye of CHRIST? — Matthew 22:42 (raw: "MATTHEW xxii. 42.") body=44509 chars anchor=40022042-40022042
+  [vol 5] SERMON XXV. The wise and foolish Virgins. — Matthew 25:13 (raw: "MATTHEW xxv. 13.") body=43003 chars anchor=40025013-40025013
+  [vol 5] SERMON XXVI. The Eternity of Hell-Torments. — Matthew 25:46 (raw: "MATTHEW xxv. 46.") body=24410 chars anchor=40025046-40025046
+  [vol 5] SERMON XXVII. Blind Bartimeus. — Mark 10:52 (raw: "MARK x. 52.") body=31623 chars anchor=41010052-41010052
+  [vol 5] SERMON XXVIII. Directions how to hear Sermons. — Luke 8:18 (raw: "LUKE viii. 18.") body=19214 chars anchor=42008018-42008018
+  [vol 5] SERMON XXIX. The Extent and Reasonableness of Self-Denial. — Luke 9:23 (raw: "LUKE ix. 23.") body=25316 chars anchor=42009023-42009023
+  [vol 5] SERMON XXX. CHRIST’s Transfiguration. — Luke 9:28-36 (raw: "LUKE ix. 28‒36.") body=35628 chars anchor=42009028-42009036
+  [vol 5] SERMON XXXI. The Care of the Soul urged as the one thing needful. — Luke 10:42 (raw: "LUKE x. 42.") body=42245 chars anchor=42010042-42010042
+  [vol 6] SERMON XXXII. A Penitent Heart, the best New Year’s Gift. — Luke 13:3 (raw: "LUKE xiii. 3.") body=36443 chars anchor=42013003-42013003
+  [vol 6] SERMON XXXIII. The Gospel Supper. — Luke 14:22-24 (raw: "LUKE xiv. 22, 23, 24.") body=34641 chars anchor=42014022-42014024
+  [vol 6] SERMON XXXIV. The Pharisee and Publican. — Luke 18:14 (raw: "LUKE xviii. 14.") body=29068 chars anchor=42018014-42018014
+  [vol 6] SERMON XXXV. The Conversion of Zaccheus. — Luke 19:9-10 (raw: "LUKE xix. 9, 10.") body=32663 chars anchor=42019009-42019010
+  [vol 6] SERMON XXXVI. The Marriage of Cana. — John 2:11 (raw: "JOHN ii. 11.") body=33774 chars anchor=43002011-43002011
+  [vol 6] SERMON XXXVII. The Duty of searching the Scriptures. — John 5:39 (raw: "JOHN v. 39.") body=20544 chars anchor=43005039-43005039
+  [vol 6] SERMON XXXVIII. The Indwelling of the Spirit, the common Privilege of all Believers. — John 7:37-39 (raw: "JOHN vii. 37, 38, 39.") body=29796 chars anchor=43007037-43007039
+  [vol 6] SERMON XXXIX. The Resurrection of Lazarus. — John 11:43-44 (raw: "JOHN xi. 43, 44.") body=54172 chars anchor=43011043-43011044
+  [vol 6] SERMON XL. The Holy Spirit convincing the World of Sin, Righteousness, and Judgment. — John 16:8 (raw: "JOHN xvi. 8.") body=33616 chars anchor=43016008-43016008
+  [vol 6] SERMON XLI. Saul’s Conversion. — Acts 9:22 (raw: "ACTS ix. 22.") body=39110 chars anchor=44009022-44009022
+  [vol 6] SERMON XLII. Marks of having received the Holy Ghost. — Acts 19:2 (raw: "ACTS xix. 2.") body=26523 chars anchor=44019002-44019002
+  [vol 6] SERMON XLIII. The Almost Christian. — Acts 26:28 (raw: "ACTS xxvi. 28.") body=27012 chars anchor=44026028-44026028
+  [vol 6] SERMON XLIV. CHRIST the Believer’s Wisdom, Righteousness, Sanctification, and Redemption. — 1 Corinthians 1:30 (raw: "1 CORINTHIANS i. 30.") body=35121 chars anchor=46001030-46001030
+  [vol 6] SERMON XLV. The Knowledge of JESUS CHRIST the best Knowledge. — 1 Corinthians 2:2 (raw: "1 CORINTHIANS ii. 2.") body=19378 chars anchor=46002002-46002002
+  [vol 6] SERMON XLVI. Of Justification by CHRIST. — 1 Corinthians 6:11 (raw: "1 CORINTHIANS vi. 11.") body=23811 chars anchor=46006011-46006011
+  [vol 6] SERMON XLVII. The great Duty of Charity recommended. — 1 Corinthians 13:8 (raw: "1 CORINTHIANS xiii. 8.") body=24933 chars anchor=46013008-46013008
+  [vol 6] SERMON XLVIII. Satan’s Devices. — 2 Corinthians 2:11 (raw: "2 CORINTHIANS ii. 11.") body=28130 chars anchor=47002011-47002011
+  [vol 6] SERMON XLIX. On Regeneration. — 2 Corinthians 5:17 (raw: "2 CORINTHIANS v. 17.") body=28691 chars anchor=47005017-47005017
+  [vol 6] SERMON L. Christians, Temples of the living GOD. — 2 Corinthians 6:16 (raw: "2 CORINTHIANS vi. 16.") body=27677 chars anchor=47006016-47006016
+  [vol 6] SERMON LI. CHRIST the only Preservative against a Reprobate Spirit. — 2 Corinthians 13:5 (raw: "2 CORINTHIANS xiii. 5.") body=27405 chars anchor=47013005-47013005
+  [vol 6] SERMON LII. The heinous Sin of Drunkenness. — Ephesians 5:18 (raw: "EPHESIANS v. 18.") body=25140 chars anchor=49005018-49005018
+  [vol 6] SERMON LIII. The Power of CHRIST’s Resurrection. — Philippians 3:10 (raw: "PHILIPPIANS iii. 10.") body=21923 chars anchor=50003010-50003010
+  [vol 6] SERMON LIV. Intercession every Christian’s Duty. — 1 Thessalonians 5:25 (raw: "1 THESSALONIANS v. 25.") body=23680 chars anchor=52005025-52005025
+  [vol 6] SERMON LV. Persecution every Christian’s Lot. — 2 Timothy 3:12 (raw: "2 TIMOTHY iii. 12.") body=31934 chars anchor=55003012-55003012
+  [vol 6] SERMON LVI. An Exhortation to the People of GOD not to be discouraged in their Way, by the Scoffs and Contempt of wicked Men. — Hebrews 4:9 (raw: "HEBREWS iv. 9.") body=11257 chars anchor=58004009-58004009
+  [vol 6] SERMON LVII. Preached before the Governor, and Council, and the House of Assembly, in, Georgia, on January 28, 1770. — Zechariah 4:10 (raw: "ZECHARIAH iv. 10.") body=38436 chars anchor=38004010-38004010
+  [vol 6] SERMON LVIII. Peter’s Denial of his LORD. — Matthew 26:75 (raw: "MATTHEW xxvi. 75.¹") body=36168 chars anchor=40026075-40026075
+  [vol 6] SERMON LIX. The true Way of beholding the LAMB of GOD. — John 1:35-36 (raw: "JOHN i. 35, 36.") body=39846 chars anchor=43001035-43001036
+
+boundary sample SERMON I. "The Seed of the Woman, and the Seed of the Serpent." (40147 chars):
+  first: _And I will put Enmity between thee and the Woman, and between
+  2nd:   thy Seed and her Seed; it shall bruise thy Head, and thou
+  last-1:power, might, majesty, and dominion, now and for evermore.
+  last:  _Amen._
+boundary sample SERMON XXII. "The Folly and Danger of parting with CHRIST for the Pleasures and Profits of Life." (36022 chars):
+  first: _And when he was entered into a ship, his disciples followed him.
+  2nd:   And behold, there arose a great tempest in the sea, insomuch
+  last-1:that we then may be presented faultless before the presence of his
+  last:  glory with exceeding joy, GOD of his infinite mercy grant, &c.
+boundary sample SERMON XXVI. "The Eternity of Hell-Torments." (24410 chars):
+  first: To the INHABITANTS of SAVANNAH in GEORGIA.
+  2nd:   _My dear Friends_,
+  last-1:Ghost, three Persons and one eternal GOD, be ascribed, as is most due,
+  last:  all honour, power, might, majesty, and dominion, now and for evermore.
+boundary sample SERMON XXXI. "The Care of the Soul urged as the one thing needful." (42245 chars):
+  first: _But one thing is needful._
+  2nd:   IT was the amiable character of our blessed Redeemer, that “he went
+  last-1:and to your everlasting joy.
+  last:  Which GOD of his infinite mercy grant, &c.
+boundary sample SERMON LIX. "The true Way of beholding the LAMB of GOD." (39846 chars):
+  first: _Again, the next Day after, John stood, and two of his Disciples;
+  2nd:   and looking upon Jesus as he walked, he saith, Behold the LAMB
+  last-1:hereafter! I am persuaded all that love the LORD JESUS in sincerity,
+  last:  will say, _Amen!_ Even so, LORD JESUS! _Amen!_ and _Amen!_
+bleed check: 0 sermon bodies contain a neighbour heading or volume-end marker (clean)
+
+dry-run only — no database write (pass --write to stage on DEV)
+=== whitefield-works segmentation dry-run ===
+volumes scanned: #68976 (vol 1), #71140 (vol 2), #73012 (vol 3), #73267 (vol 4), #77034 (vol 5), #77041 (vol 6)
+
+── vol 1 (PG #68976): 0 sermons | EXCLUDED non-sermons: 497 letters
+── vol 2 (PG #71140): 0 sermons | EXCLUDED non-sermons: 467 letters
+── vol 3 (PG #73012): 0 sermons | EXCLUDED non-sermons: 499 letters
+── vol 4 (PG #73267): 0 sermons | EXCLUDED non-sermons: 0 letters, 43 tracts (index entries)
+     tract excluded: ANSWER to the Bishop of London’s Last Pastoral Letter.
+     tract excluded: A Letter to the Religious Societies of England.
+     tract excluded: A Letter to the Inhabitants of Maryland, Virginia, North and South-Carolina.
+     tract excluded: A Letter to some Church-Members of the Presbyterian Persuasion, in Answer to certain Scruples la
+     tract excluded: A Letter to the Rev. Mr. John Wesley: In Answer to his Sermon, entitled, Free-Grace.
+     tract excluded: A Vindication and Confirmation of the Remarkable Work of GOD in New-England. Being some Remarks 
+     tract excluded: A brief Account of the Occasion, Process, and Issue, of a late Trial at the Assize held at Glouc
+     tract excluded: An Answer to the First Part of an Anonymous Pamphlet, entitled, “Observations upon the Conduct a
+── vol 5 (PG #77034): 31 sermons | EXCLUDED non-sermons: 0 letters
+── vol 6 (PG #77041): 28 sermons | EXCLUDED non-sermons: 0 letters
+
+CONTENTS-page expected list: 59 entries (vol 5: I–XXXI, vol 6: XXXII–LIX)
+  expected: SERMON I. The Seed of the Woman, and the Seed of the Serpent.
+  expected: SERMON II. Walking with God.
+  expected: SERMON III. Abraham’s offering up his Son Isaac.
+  expected: SERMON IV. The great Duty of Family-Religion.
+  expected: SERMON V. Christ the best Husband: or, an earnest Invitation
+  expected: SERMON VI. Britain’s Mercies, and Britain’s Duty. Preached at
+  expected: SERMON VII. Thankfulness for Mercies received, a necessary
+  expected: SERMON VIII. The Necessity and Benefits of Religious Society.
+  expected: SERMON IX. The Folly and Danger of not being righteous enough.
+  expected: SERMON X. A Preservative against unsettled Notions, and want
+  expected: SERMON XI. The Benefits of an early Piety. Preached at Bow
+  expected: SERMON XII. Christ the Believer’s Husband.
+  expected: SERMON XIII. The Potter and the Clay.
+  expected: SERMON XIV. The Lord our Righteousness.
+  expected: SERMON XV. The Righteousness of Christ an everlasting
+  expected: SERMON XVI. The Observation of the Birth of Christ, the Duty
+  expected: SERMON XVII. The Temptation of Christ.
+  expected: SERMON XVIII. The Heinous Sin of profane Cursing and Swearing.
+  expected: SERMON XIX. Christ the Support of the Tempted.
+  expected: SERMON XX. Worldly Business no Plea for the Neglect of Religion.
+  expected: SERMON XXI. Christ the only Rest for the Weary and Heavy Laden.
+  expected: SERMON XXII. The Folly and Danger of parting with Christ for
+  expected: SERMON XXIII. Marks of a True Conversion.
+  expected: SERMON XXIV. What think ye of Christ?
+  expected: SERMON XXV. The wise and foolish Virgins.
+  expected: SERMON XXVI. The Eternity of Hell-Torments.
+  expected: SERMON XXVII. Blind Bartimeus.
+  expected: SERMON XXVIII. Directions how to hear Sermons.
+  expected: SERMON XXIX. The Extent and Reasonableness of Self-Denial.
+  expected: SERMON XXX. Christ’s Transfiguration.
+  expected: SERMON XXXI. The Care of the Soul urged as the one thing
+  expected: SERMON XXXII. A Penitent Heart, the best New Year’s Gift.
+  expected: SERMON XXXIII. The Gospel Supper.
+  expected: SERMON XXXIV. The Pharisee and Publican.
+  expected: SERMON XXXV. The Conversion of Zaccheus.
+  expected: SERMON XXXVI. The Marriage of Cana.
+  expected: SERMON XXXVII. The Duty of searching the Scriptures.
+  expected: SERMON XXXVIII. The Indwelling of the Spirit, the common
+  expected: SERMON XXXIX. The Resurrection of Lazarus.
+  expected: SERMON XL. The Holy Spirit convincing the World of Sin,
+  expected: SERMON XLI. Saul’s Conversion.
+  expected: SERMON XLII. Marks of having received the Holy Ghost.
+  expected: SERMON XLIII. The Almost Christian.
+  expected: SERMON XLIV. Christ, the Believer’s Wisdom, Righteousness,
+  expected: SERMON XLV. The Knowledge of Jesus Christ the best Knowledge.
+  expected: SERMON XLVI. Of Justification by Christ.
+  expected: SERMON XLVII. The great Duty of Charity recommended.
+  expected: SERMON XLVIII. Satan’s Devices.
+  expected: SERMON XLIX. On Regeneration.
+  expected: SERMON L. Christians, Temples of the living God.
+  expected: SERMON LI. Christ the only Preservative against a Reprobate
+  expected: SERMON LII. The heinous Sin of Drunkenness.
+  expected: SERMON LIII. The Power of Christ’s Resurrection.
+  expected: SERMON LIV. Intercession every Christian’s Duty.
+  expected: SERMON LV. Persecution every Christian’s Lot.
+  expected: SERMON LVI. An Exhortation to the People of God not to be
+  expected: SERMON LVII. Preached before the Governor and Council, and the
+  expected: SERMON LVIII. Peter’s Denial of his LORD.
+  expected: SERMON LIX. The true Way of beholding the LAMB of GOD.
+
+detected sermons: 59 (expected 59)
+  [vol 5] SERMON I. The Seed of the Woman, and the Seed of the Serpent. — Genesis 3:15 (raw: "GENESIS iii. 15.") body=40147 chars anchor=1003015-1003015
+  [vol 5] SERMON II. Walking with GOD. — Genesis 5:24 (raw: "GENESIS v. 24.") body=38228 chars anchor=1005024-1005024
+  [vol 5] SERMON III. Abraham’s offering up his Son Isaac. — Genesis 22:12 (raw: "GENESIS xxii. 12.") body=30971 chars anchor=1022012-1022012
+  [vol 5] SERMON IV. The great Duty of Family-Religion. — Joshua 24:15 (raw: "JOSHUA xxiv. 15.") body=28587 chars anchor=6024015-6024015
+  [vol 5] SERMON V. CHRIST the best Husband: Or an earnest Invitation to Young Women to come and see CHRIST. — Psalm 45:10-11 (raw: "PSALM xlv. 10, 11.") body=29733 chars anchor=19045010-19045011
+  [vol 5] SERMON VI. Britain’s Mercies, and Britain’s Duty. — Psalm 105:45 (raw: "PSALM cv. 45.") body=32419 chars anchor=19105045-19105045
+  [vol 5] SERMON VII. Thankfulness for Mercies received, a necessary Duty. — Psalm 107:30-31 (raw: "PSALM, cvii. 30, 31.") body=27506 chars anchor=19107030-19107031
+  [vol 5] SERMON VIII. The Necessity and Benefits of Religious Society. — Ecclesiastes 4:9-12 (raw: "ECCLESIASTES iv. 9, 10, 11, 12.") body=33705 chars anchor=21004009-21004012
+  [vol 5] SERMON IX. The Folly and Danger of being not righteous enough. — Ecclesiastes 7:16 (raw: "ECCLESIASTES vii. 16.") body=39488 chars anchor=21007016-21007016
+  [vol 5] SERMON X. A Preservative against unsettled Notions, and want of Principles, in regard to Righteousness and Christian Perfection. — Ecclesiastes 7:16 (raw: "ECCLESIASTES vii. 16.") body=38462 chars anchor=21007016-21007016
+  [vol 5] SERMON XI. The Benefits of an Early Piety. — Ecclesiastes 12:1 (raw: "ECCLESIASTES xii. I.") body=23884 chars anchor=21012001-21012001
+  [vol 5] SERMON XII. CHRIST the Believer’s Husband. — Isaiah 54:5 (raw: "ISAIAH liv. 5.") body=59458 chars anchor=23054005-23054005
+  [vol 5] SERMON XIII. The Potter and the Clay. — Jeremiah 18:1-6 (raw: "JEREMIAH xviii. 1‒6.") body=41773 chars anchor=24018001-24018006
+  [vol 5] SERMON XIV. The LORD our Righteousness. — Jeremiah 23:6 (raw: "JEREMIAH xxiii. 6.") body=41114 chars anchor=24023006-24023006
+  [vol 5] SERMON XV. The Righteousness of CHRIST, an everlasting Righteousness. — Daniel 9:24 (raw: "DANIEL ix. 24.") body=34833 chars anchor=27009024-27009024
+  [vol 5] SERMON XVI. The Observation of the Birth of CHRIST, the Duty of all Christians; or the true Way of keeping Christmas. — Matthew 1:21 (raw: "MATTHEW i. 21.") body=21643 chars anchor=40001021-40001021
+  [vol 5] SERMON XVII. The Temptation of CHRIST. — Matthew 4:1-11 (raw: "MATTHEW iv. 1‒11.") body=32042 chars anchor=40004001-40004011
+  [vol 5] SERMON XVIII. The Heinous Sin of Profane Cursing and Swearing. — Matthew 5:34 (raw: "MATTHEW v. 34.") body=24259 chars anchor=40005034-40005034
+  [vol 5] SERMON XIX. CHRIST the Support of the Tempted. — Matthew 6:13 (raw: "MATTHEW vi. 13.") body=24335 chars anchor=40006013-40006013
+  [vol 5] SERMON XX. Worldly business no Plea for the Neglect of Religion. — Matthew 8:22 (raw: "MATTHEW viii. 22.") body=18653 chars anchor=40008022-40008022
+  [vol 5] SERMON XXI. CHRIST the only Rest for the Weary and Heavy-Laden. — Matthew 11:28 (raw: "MATTHEW xi. 28.") body=22249 chars anchor=40011028-40011028
+  [vol 5] SERMON XXII. The Folly and Danger of parting with CHRIST for the Pleasures and Profits of Life. — Matthew 8:23 (raw: "MATTHEW viii. 23, to the End.") [open range: anchored first verse] body=36022 chars anchor=40008023-40008023
+  [vol 5] SERMON XXIII. Marks of a true Conversion. — Matthew 18:3 (raw: "MATTHEW xviii. 3.") body=38732 chars anchor=40018003-40018003
+  [vol 5] SERMON XXIV. What think ye of CHRIST? — Matthew 22:42 (raw: "MATTHEW xxii. 42.") body=44509 chars anchor=40022042-40022042
+  [vol 5] SERMON XXV. The wise and foolish Virgins. — Matthew 25:13 (raw: "MATTHEW xxv. 13.") body=43003 chars anchor=40025013-40025013
+  [vol 5] SERMON XXVI. The Eternity of Hell-Torments. — Matthew 25:46 (raw: "MATTHEW xxv. 46.") body=24410 chars anchor=40025046-40025046
+  [vol 5] SERMON XXVII. Blind Bartimeus. — Mark 10:52 (raw: "MARK x. 52.") body=31623 chars anchor=41010052-41010052
+  [vol 5] SERMON XXVIII. Directions how to hear Sermons. — Luke 8:18 (raw: "LUKE viii. 18.") body=19214 chars anchor=42008018-42008018
+  [vol 5] SERMON XXIX. The Extent and Reasonableness of Self-Denial. — Luke 9:23 (raw: "LUKE ix. 23.") body=25316 chars anchor=42009023-42009023
+  [vol 5] SERMON XXX. CHRIST’s Transfiguration. — Luke 9:28-36 (raw: "LUKE ix. 28‒36.") body=35628 chars anchor=42009028-42009036
+  [vol 5] SERMON XXXI. The Care of the Soul urged as the one thing needful. — Luke 10:42 (raw: "LUKE x. 42.") body=42245 chars anchor=42010042-42010042
+  [vol 6] SERMON XXXII. A Penitent Heart, the best New Year’s Gift. — Luke 13:3 (raw: "LUKE xiii. 3.") body=36443 chars anchor=42013003-42013003
+  [vol 6] SERMON XXXIII. The Gospel Supper. — Luke 14:22-24 (raw: "LUKE xiv. 22, 23, 24.") body=34641 chars anchor=42014022-42014024
+  [vol 6] SERMON XXXIV. The Pharisee and Publican. — Luke 18:14 (raw: "LUKE xviii. 14.") body=29068 chars anchor=42018014-42018014
+  [vol 6] SERMON XXXV. The Conversion of Zaccheus. — Luke 19:9-10 (raw: "LUKE xix. 9, 10.") body=32663 chars anchor=42019009-42019010
+  [vol 6] SERMON XXXVI. The Marriage of Cana. — John 2:11 (raw: "JOHN ii. 11.") body=33774 chars anchor=43002011-43002011
+  [vol 6] SERMON XXXVII. The Duty of searching the Scriptures. — John 5:39 (raw: "JOHN v. 39.") body=20544 chars anchor=43005039-43005039
+  [vol 6] SERMON XXXVIII. The Indwelling of the Spirit, the common Privilege of all Believers. — John 7:37-39 (raw: "JOHN vii. 37, 38, 39.") body=29796 chars anchor=43007037-43007039
+  [vol 6] SERMON XXXIX. The Resurrection of Lazarus. — John 11:43-44 (raw: "JOHN xi. 43, 44.") body=54172 chars anchor=43011043-43011044
+  [vol 6] SERMON XL. The Holy Spirit convincing the World of Sin, Righteousness, and Judgment. — John 16:8 (raw: "JOHN xvi. 8.") body=33616 chars anchor=43016008-43016008
+  [vol 6] SERMON XLI. Saul’s Conversion. — Acts 9:22 (raw: "ACTS ix. 22.") body=39110 chars anchor=44009022-44009022
+  [vol 6] SERMON XLII. Marks of having received the Holy Ghost. — Acts 19:2 (raw: "ACTS xix. 2.") body=26523 chars anchor=44019002-44019002
+  [vol 6] SERMON XLIII. The Almost Christian. — Acts 26:28 (raw: "ACTS xxvi. 28.") body=27012 chars anchor=44026028-44026028
+  [vol 6] SERMON XLIV. CHRIST the Believer’s Wisdom, Righteousness, Sanctification, and Redemption. — 1 Corinthians 1:30 (raw: "1 CORINTHIANS i. 30.") body=35121 chars anchor=46001030-46001030
+  [vol 6] SERMON XLV. The Knowledge of JESUS CHRIST the best Knowledge. — 1 Corinthians 2:2 (raw: "1 CORINTHIANS ii. 2.") body=19378 chars anchor=46002002-46002002
+  [vol 6] SERMON XLVI. Of Justification by CHRIST. — 1 Corinthians 6:11 (raw: "1 CORINTHIANS vi. 11.") body=23811 chars anchor=46006011-46006011
+  [vol 6] SERMON XLVII. The great Duty of Charity recommended. — 1 Corinthians 13:8 (raw: "1 CORINTHIANS xiii. 8.") body=24933 chars anchor=46013008-46013008
+  [vol 6] SERMON XLVIII. Satan’s Devices. — 2 Corinthians 2:11 (raw: "2 CORINTHIANS ii. 11.") body=28130 chars anchor=47002011-47002011
+  [vol 6] SERMON XLIX. On Regeneration. — 2 Corinthians 5:17 (raw: "2 CORINTHIANS v. 17.") body=28691 chars anchor=47005017-47005017
+  [vol 6] SERMON L. Christians, Temples of the living GOD. — 2 Corinthians 6:16 (raw: "2 CORINTHIANS vi. 16.") body=27677 chars anchor=47006016-47006016
+  [vol 6] SERMON LI. CHRIST the only Preservative against a Reprobate Spirit. — 2 Corinthians 13:5 (raw: "2 CORINTHIANS xiii. 5.") body=27405 chars anchor=47013005-47013005
+  [vol 6] SERMON LII. The heinous Sin of Drunkenness. — Ephesians 5:18 (raw: "EPHESIANS v. 18.") body=25140 chars anchor=49005018-49005018
+  [vol 6] SERMON LIII. The Power of CHRIST’s Resurrection. — Philippians 3:10 (raw: "PHILIPPIANS iii. 10.") body=21923 chars anchor=50003010-50003010
+  [vol 6] SERMON LIV. Intercession every Christian’s Duty. — 1 Thessalonians 5:25 (raw: "1 THESSALONIANS v. 25.") body=23680 chars anchor=52005025-52005025
+  [vol 6] SERMON LV. Persecution every Christian’s Lot. — 2 Timothy 3:12 (raw: "2 TIMOTHY iii. 12.") body=31934 chars anchor=55003012-55003012
+  [vol 6] SERMON LVI. An Exhortation to the People of GOD not to be discouraged in their Way, by the Scoffs and Contempt of wicked Men. — Hebrews 4:9 (raw: "HEBREWS iv. 9.") body=11257 chars anchor=58004009-58004009
+  [vol 6] SERMON LVII. Preached before the Governor, and Council, and the House of Assembly, in, Georgia, on January 28, 1770. — Zechariah 4:10 (raw: "ZECHARIAH iv. 10.") body=38436 chars anchor=38004010-38004010
+  [vol 6] SERMON LVIII. Peter’s Denial of his LORD. — Matthew 26:75 (raw: "MATTHEW xxvi. 75.¹") body=36168 chars anchor=40026075-40026075
+  [vol 6] SERMON LIX. The true Way of beholding the LAMB of GOD. — John 1:35-36 (raw: "JOHN i. 35, 36.") body=39846 chars anchor=43001035-43001036
+
+boundary sample SERMON I. "The Seed of the Woman, and the Seed of the Serpent." (40147 chars):
+  first: _And I will put Enmity between thee and the Woman, and between
+  2nd:   thy Seed and her Seed; it shall bruise thy Head, and thou
+  last-1:power, might, majesty, and dominion, now and for evermore.
+  last:  _Amen._
+boundary sample SERMON XXII. "The Folly and Danger of parting with CHRIST for the Pleasures and Profits of Life." (36022 chars):
+  first: _And when he was entered into a ship, his disciples followed him.
+  2nd:   And behold, there arose a great tempest in the sea, insomuch
+  last-1:that we then may be presented faultless before the presence of his
+  last:  glory with exceeding joy, GOD of his infinite mercy grant, &c.
+boundary sample SERMON XXVI. "The Eternity of Hell-Torments." (24410 chars):
+  first: To the INHABITANTS of SAVANNAH in GEORGIA.
+  2nd:   _My dear Friends_,
+  last-1:Ghost, three Persons and one eternal GOD, be ascribed, as is most due,
+  last:  all honour, power, might, majesty, and dominion, now and for evermore.
+boundary sample SERMON XXXI. "The Care of the Soul urged as the one thing needful." (42245 chars):
+  first: _But one thing is needful._
+  2nd:   IT was the amiable character of our blessed Redeemer, that “he went
+  last-1:and to your everlasting joy.
+  last:  Which GOD of his infinite mercy grant, &c.
+boundary sample SERMON LIX. "The true Way of beholding the LAMB of GOD." (39846 chars):
+  first: _Again, the next Day after, John stood, and two of his Disciples;
+  2nd:   and looking upon Jesus as he walked, he saith, Behold the LAMB
+  last-1:hereafter! I am persuaded all that love the LORD JESUS in sincerity,
+  last:  will say, _Amen!_ Even so, LORD JESUS! _Amen!_ and _Amen!_
+bleed check: 0 sermon bodies contain a neighbour heading or volume-end marker (clean)
+(node:75015) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+permission denied for table sources
+=== whitefield-works segmentation dry-run ===
+volumes scanned: #68976 (vol 1), #71140 (vol 2), #73012 (vol 3), #73267 (vol 4), #77034 (vol 5), #77041 (vol 6)
+
+── vol 1 (PG #68976): 0 sermons | EXCLUDED non-sermons: 497 letters
+── vol 2 (PG #71140): 0 sermons | EXCLUDED non-sermons: 467 letters
+── vol 3 (PG #73012): 0 sermons | EXCLUDED non-sermons: 499 letters
+── vol 4 (PG #73267): 0 sermons | EXCLUDED non-sermons: 0 letters, 43 tracts (index entries)
+     tract excluded: ANSWER to the Bishop of London’s Last Pastoral Letter.
+     tract excluded: A Letter to the Religious Societies of England.
+     tract excluded: A Letter to the Inhabitants of Maryland, Virginia, North and South-Carolina.
+     tract excluded: A Letter to some Church-Members of the Presbyterian Persuasion, in Answer to certain Scruples la
+     tract excluded: A Letter to the Rev. Mr. John Wesley: In Answer to his Sermon, entitled, Free-Grace.
+     tract excluded: A Vindication and Confirmation of the Remarkable Work of GOD in New-England. Being some Remarks 
+     tract excluded: A brief Account of the Occasion, Process, and Issue, of a late Trial at the Assize held at Glouc
+     tract excluded: An Answer to the First Part of an Anonymous Pamphlet, entitled, “Observations upon the Conduct a
+── vol 5 (PG #77034): 31 sermons | EXCLUDED non-sermons: 0 letters
+── vol 6 (PG #77041): 28 sermons | EXCLUDED non-sermons: 0 letters
+
+CONTENTS-page expected list: 59 entries (vol 5: I–XXXI, vol 6: XXXII–LIX)
+  expected: SERMON I. The Seed of the Woman, and the Seed of the Serpent.
+  expected: SERMON II. Walking with God.
+  expected: SERMON III. Abraham’s offering up his Son Isaac.
+  expected: SERMON IV. The great Duty of Family-Religion.
+  expected: SERMON V. Christ the best Husband: or, an earnest Invitation
+  expected: SERMON VI. Britain’s Mercies, and Britain’s Duty. Preached at
+  expected: SERMON VII. Thankfulness for Mercies received, a necessary
+  expected: SERMON VIII. The Necessity and Benefits of Religious Society.
+  expected: SERMON IX. The Folly and Danger of not being righteous enough.
+  expected: SERMON X. A Preservative against unsettled Notions, and want
+  expected: SERMON XI. The Benefits of an early Piety. Preached at Bow
+  expected: SERMON XII. Christ the Believer’s Husband.
+  expected: SERMON XIII. The Potter and the Clay.
+  expected: SERMON XIV. The Lord our Righteousness.
+  expected: SERMON XV. The Righteousness of Christ an everlasting
+  expected: SERMON XVI. The Observation of the Birth of Christ, the Duty
+  expected: SERMON XVII. The Temptation of Christ.
+  expected: SERMON XVIII. The Heinous Sin of profane Cursing and Swearing.
+  expected: SERMON XIX. Christ the Support of the Tempted.
+  expected: SERMON XX. Worldly Business no Plea for the Neglect of Religion.
+  expected: SERMON XXI. Christ the only Rest for the Weary and Heavy Laden.
+  expected: SERMON XXII. The Folly and Danger of parting with Christ for
+  expected: SERMON XXIII. Marks of a True Conversion.
+  expected: SERMON XXIV. What think ye of Christ?
+  expected: SERMON XXV. The wise and foolish Virgins.
+  expected: SERMON XXVI. The Eternity of Hell-Torments.
+  expected: SERMON XXVII. Blind Bartimeus.
+  expected: SERMON XXVIII. Directions how to hear Sermons.
+  expected: SERMON XXIX. The Extent and Reasonableness of Self-Denial.
+  expected: SERMON XXX. Christ’s Transfiguration.
+  expected: SERMON XXXI. The Care of the Soul urged as the one thing
+  expected: SERMON XXXII. A Penitent Heart, the best New Year’s Gift.
+  expected: SERMON XXXIII. The Gospel Supper.
+  expected: SERMON XXXIV. The Pharisee and Publican.
+  expected: SERMON XXXV. The Conversion of Zaccheus.
+  expected: SERMON XXXVI. The Marriage of Cana.
+  expected: SERMON XXXVII. The Duty of searching the Scriptures.
+  expected: SERMON XXXVIII. The Indwelling of the Spirit, the common
+  expected: SERMON XXXIX. The Resurrection of Lazarus.
+  expected: SERMON XL. The Holy Spirit convincing the World of Sin,
+  expected: SERMON XLI. Saul’s Conversion.
+  expected: SERMON XLII. Marks of having received the Holy Ghost.
+  expected: SERMON XLIII. The Almost Christian.
+  expected: SERMON XLIV. Christ, the Believer’s Wisdom, Righteousness,
+  expected: SERMON XLV. The Knowledge of Jesus Christ the best Knowledge.
+  expected: SERMON XLVI. Of Justification by Christ.
+  expected: SERMON XLVII. The great Duty of Charity recommended.
+  expected: SERMON XLVIII. Satan’s Devices.
+  expected: SERMON XLIX. On Regeneration.
+  expected: SERMON L. Christians, Temples of the living God.
+  expected: SERMON LI. Christ the only Preservative against a Reprobate
+  expected: SERMON LII. The heinous Sin of Drunkenness.
+  expected: SERMON LIII. The Power of Christ’s Resurrection.
+  expected: SERMON LIV. Intercession every Christian’s Duty.
+  expected: SERMON LV. Persecution every Christian’s Lot.
+  expected: SERMON LVI. An Exhortation to the People of God not to be
+  expected: SERMON LVII. Preached before the Governor and Council, and the
+  expected: SERMON LVIII. Peter’s Denial of his LORD.
+  expected: SERMON LIX. The true Way of beholding the LAMB of GOD.
+
+detected sermons: 59 (expected 59)
+  [vol 5] SERMON I. The Seed of the Woman, and the Seed of the Serpent. — Genesis 3:15 (raw: "GENESIS iii. 15.") body=40147 chars anchor=1003015-1003015
+  [vol 5] SERMON II. Walking with GOD. — Genesis 5:24 (raw: "GENESIS v. 24.") body=38228 chars anchor=1005024-1005024
+  [vol 5] SERMON III. Abraham’s offering up his Son Isaac. — Genesis 22:12 (raw: "GENESIS xxii. 12.") body=30971 chars anchor=1022012-1022012
+  [vol 5] SERMON IV. The great Duty of Family-Religion. — Joshua 24:15 (raw: "JOSHUA xxiv. 15.") body=28587 chars anchor=6024015-6024015
+  [vol 5] SERMON V. CHRIST the best Husband: Or an earnest Invitation to Young Women to come and see CHRIST. — Psalm 45:10-11 (raw: "PSALM xlv. 10, 11.") body=29733 chars anchor=19045010-19045011
+  [vol 5] SERMON VI. Britain’s Mercies, and Britain’s Duty. — Psalm 105:45 (raw: "PSALM cv. 45.") body=32419 chars anchor=19105045-19105045
+  [vol 5] SERMON VII. Thankfulness for Mercies received, a necessary Duty. — Psalm 107:30-31 (raw: "PSALM, cvii. 30, 31.") body=27506 chars anchor=19107030-19107031
+  [vol 5] SERMON VIII. The Necessity and Benefits of Religious Society. — Ecclesiastes 4:9-12 (raw: "ECCLESIASTES iv. 9, 10, 11, 12.") body=33705 chars anchor=21004009-21004012
+  [vol 5] SERMON IX. The Folly and Danger of being not righteous enough. — Ecclesiastes 7:16 (raw: "ECCLESIASTES vii. 16.") body=39488 chars anchor=21007016-21007016
+  [vol 5] SERMON X. A Preservative against unsettled Notions, and want of Principles, in regard to Righteousness and Christian Perfection. — Ecclesiastes 7:16 (raw: "ECCLESIASTES vii. 16.") body=38462 chars anchor=21007016-21007016
+  [vol 5] SERMON XI. The Benefits of an Early Piety. — Ecclesiastes 12:1 (raw: "ECCLESIASTES xii. I.") body=23884 chars anchor=21012001-21012001
+  [vol 5] SERMON XII. CHRIST the Believer’s Husband. — Isaiah 54:5 (raw: "ISAIAH liv. 5.") body=59458 chars anchor=23054005-23054005
+  [vol 5] SERMON XIII. The Potter and the Clay. — Jeremiah 18:1-6 (raw: "JEREMIAH xviii. 1‒6.") body=41773 chars anchor=24018001-24018006
+  [vol 5] SERMON XIV. The LORD our Righteousness. — Jeremiah 23:6 (raw: "JEREMIAH xxiii. 6.") body=41114 chars anchor=24023006-24023006
+  [vol 5] SERMON XV. The Righteousness of CHRIST, an everlasting Righteousness. — Daniel 9:24 (raw: "DANIEL ix. 24.") body=34833 chars anchor=27009024-27009024
+  [vol 5] SERMON XVI. The Observation of the Birth of CHRIST, the Duty of all Christians; or the true Way of keeping Christmas. — Matthew 1:21 (raw: "MATTHEW i. 21.") body=21643 chars anchor=40001021-40001021
+  [vol 5] SERMON XVII. The Temptation of CHRIST. — Matthew 4:1-11 (raw: "MATTHEW iv. 1‒11.") body=32042 chars anchor=40004001-40004011
+  [vol 5] SERMON XVIII. The Heinous Sin of Profane Cursing and Swearing. — Matthew 5:34 (raw: "MATTHEW v. 34.") body=24259 chars anchor=40005034-40005034
+  [vol 5] SERMON XIX. CHRIST the Support of the Tempted. — Matthew 6:13 (raw: "MATTHEW vi. 13.") body=24335 chars anchor=40006013-40006013
+  [vol 5] SERMON XX. Worldly business no Plea for the Neglect of Religion. — Matthew 8:22 (raw: "MATTHEW viii. 22.") body=18653 chars anchor=40008022-40008022
+  [vol 5] SERMON XXI. CHRIST the only Rest for the Weary and Heavy-Laden. — Matthew 11:28 (raw: "MATTHEW xi. 28.") body=22249 chars anchor=40011028-40011028
+  [vol 5] SERMON XXII. The Folly and Danger of parting with CHRIST for the Pleasures and Profits of Life. — Matthew 8:23 (raw: "MATTHEW viii. 23, to the End.") [open range: anchored first verse] body=36022 chars anchor=40008023-40008023
+  [vol 5] SERMON XXIII. Marks of a true Conversion. — Matthew 18:3 (raw: "MATTHEW xviii. 3.") body=38732 chars anchor=40018003-40018003
+  [vol 5] SERMON XXIV. What think ye of CHRIST? — Matthew 22:42 (raw: "MATTHEW xxii. 42.") body=44509 chars anchor=40022042-40022042
+  [vol 5] SERMON XXV. The wise and foolish Virgins. — Matthew 25:13 (raw: "MATTHEW xxv. 13.") body=43003 chars anchor=40025013-40025013
+  [vol 5] SERMON XXVI. The Eternity of Hell-Torments. — Matthew 25:46 (raw: "MATTHEW xxv. 46.") body=24410 chars anchor=40025046-40025046
+  [vol 5] SERMON XXVII. Blind Bartimeus. — Mark 10:52 (raw: "MARK x. 52.") body=31623 chars anchor=41010052-41010052
+  [vol 5] SERMON XXVIII. Directions how to hear Sermons. — Luke 8:18 (raw: "LUKE viii. 18.") body=19214 chars anchor=42008018-42008018
+  [vol 5] SERMON XXIX. The Extent and Reasonableness of Self-Denial. — Luke 9:23 (raw: "LUKE ix. 23.") body=25316 chars anchor=42009023-42009023
+  [vol 5] SERMON XXX. CHRIST’s Transfiguration. — Luke 9:28-36 (raw: "LUKE ix. 28‒36.") body=35628 chars anchor=42009028-42009036
+  [vol 5] SERMON XXXI. The Care of the Soul urged as the one thing needful. — Luke 10:42 (raw: "LUKE x. 42.") body=42245 chars anchor=42010042-42010042
+  [vol 6] SERMON XXXII. A Penitent Heart, the best New Year’s Gift. — Luke 13:3 (raw: "LUKE xiii. 3.") body=36443 chars anchor=42013003-42013003
+  [vol 6] SERMON XXXIII. The Gospel Supper. — Luke 14:22-24 (raw: "LUKE xiv. 22, 23, 24.") body=34641 chars anchor=42014022-42014024
+  [vol 6] SERMON XXXIV. The Pharisee and Publican. — Luke 18:14 (raw: "LUKE xviii. 14.") body=29068 chars anchor=42018014-42018014
+  [vol 6] SERMON XXXV. The Conversion of Zaccheus. — Luke 19:9-10 (raw: "LUKE xix. 9, 10.") body=32663 chars anchor=42019009-42019010
+  [vol 6] SERMON XXXVI. The Marriage of Cana. — John 2:11 (raw: "JOHN ii. 11.") body=33774 chars anchor=43002011-43002011
+  [vol 6] SERMON XXXVII. The Duty of searching the Scriptures. — John 5:39 (raw: "JOHN v. 39.") body=20544 chars anchor=43005039-43005039
+  [vol 6] SERMON XXXVIII. The Indwelling of the Spirit, the common Privilege of all Believers. — John 7:37-39 (raw: "JOHN vii. 37, 38, 39.") body=29796 chars anchor=43007037-43007039
+  [vol 6] SERMON XXXIX. The Resurrection of Lazarus. — John 11:43-44 (raw: "JOHN xi. 43, 44.") body=54172 chars anchor=43011043-43011044
+  [vol 6] SERMON XL. The Holy Spirit convincing the World of Sin, Righteousness, and Judgment. — John 16:8 (raw: "JOHN xvi. 8.") body=33616 chars anchor=43016008-43016008
+  [vol 6] SERMON XLI. Saul’s Conversion. — Acts 9:22 (raw: "ACTS ix. 22.") body=39110 chars anchor=44009022-44009022
+  [vol 6] SERMON XLII. Marks of having received the Holy Ghost. — Acts 19:2 (raw: "ACTS xix. 2.") body=26523 chars anchor=44019002-44019002
+  [vol 6] SERMON XLIII. The Almost Christian. — Acts 26:28 (raw: "ACTS xxvi. 28.") body=27012 chars anchor=44026028-44026028
+  [vol 6] SERMON XLIV. CHRIST the Believer’s Wisdom, Righteousness, Sanctification, and Redemption. — 1 Corinthians 1:30 (raw: "1 CORINTHIANS i. 30.") body=35121 chars anchor=46001030-46001030
+  [vol 6] SERMON XLV. The Knowledge of JESUS CHRIST the best Knowledge. — 1 Corinthians 2:2 (raw: "1 CORINTHIANS ii. 2.") body=19378 chars anchor=46002002-46002002
+  [vol 6] SERMON XLVI. Of Justification by CHRIST. — 1 Corinthians 6:11 (raw: "1 CORINTHIANS vi. 11.") body=23811 chars anchor=46006011-46006011
+  [vol 6] SERMON XLVII. The great Duty of Charity recommended. — 1 Corinthians 13:8 (raw: "1 CORINTHIANS xiii. 8.") body=24933 chars anchor=46013008-46013008
+  [vol 6] SERMON XLVIII. Satan’s Devices. — 2 Corinthians 2:11 (raw: "2 CORINTHIANS ii. 11.") body=28130 chars anchor=47002011-47002011
+  [vol 6] SERMON XLIX. On Regeneration. — 2 Corinthians 5:17 (raw: "2 CORINTHIANS v. 17.") body=28691 chars anchor=47005017-47005017
+  [vol 6] SERMON L. Christians, Temples of the living GOD. — 2 Corinthians 6:16 (raw: "2 CORINTHIANS vi. 16.") body=27677 chars anchor=47006016-47006016
+  [vol 6] SERMON LI. CHRIST the only Preservative against a Reprobate Spirit. — 2 Corinthians 13:5 (raw: "2 CORINTHIANS xiii. 5.") body=27405 chars anchor=47013005-47013005
+  [vol 6] SERMON LII. The heinous Sin of Drunkenness. — Ephesians 5:18 (raw: "EPHESIANS v. 18.") body=25140 chars anchor=49005018-49005018
+  [vol 6] SERMON LIII. The Power of CHRIST’s Resurrection. — Philippians 3:10 (raw: "PHILIPPIANS iii. 10.") body=21923 chars anchor=50003010-50003010
+  [vol 6] SERMON LIV. Intercession every Christian’s Duty. — 1 Thessalonians 5:25 (raw: "1 THESSALONIANS v. 25.") body=23680 chars anchor=52005025-52005025
+  [vol 6] SERMON LV. Persecution every Christian’s Lot. — 2 Timothy 3:12 (raw: "2 TIMOTHY iii. 12.") body=31934 chars anchor=55003012-55003012
+  [vol 6] SERMON LVI. An Exhortation to the People of GOD not to be discouraged in their Way, by the Scoffs and Contempt of wicked Men. — Hebrews 4:9 (raw: "HEBREWS iv. 9.") body=11257 chars anchor=58004009-58004009
+  [vol 6] SERMON LVII. Preached before the Governor, and Council, and the House of Assembly, in, Georgia, on January 28, 1770. — Zechariah 4:10 (raw: "ZECHARIAH iv. 10.") body=38436 chars anchor=38004010-38004010
+  [vol 6] SERMON LVIII. Peter’s Denial of his LORD. — Matthew 26:75 (raw: "MATTHEW xxvi. 75.¹") body=36168 chars anchor=40026075-40026075
+  [vol 6] SERMON LIX. The true Way of beholding the LAMB of GOD. — John 1:35-36 (raw: "JOHN i. 35, 36.") body=39846 chars anchor=43001035-43001036
+
+boundary sample SERMON I. "The Seed of the Woman, and the Seed of the Serpent." (40147 chars):
+  first: _And I will put Enmity between thee and the Woman, and between
+  2nd:   thy Seed and her Seed; it shall bruise thy Head, and thou
+  last-1:power, might, majesty, and dominion, now and for evermore.
+  last:  _Amen._
+boundary sample SERMON XXII. "The Folly and Danger of parting with CHRIST for the Pleasures and Profits of Life." (36022 chars):
+  first: _And when he was entered into a ship, his disciples followed him.
+  2nd:   And behold, there arose a great tempest in the sea, insomuch
+  last-1:that we then may be presented faultless before the presence of his
+  last:  glory with exceeding joy, GOD of his infinite mercy grant, &c.
+boundary sample SERMON XXVI. "The Eternity of Hell-Torments." (24410 chars):
+  first: To the INHABITANTS of SAVANNAH in GEORGIA.
+  2nd:   _My dear Friends_,
+  last-1:Ghost, three Persons and one eternal GOD, be ascribed, as is most due,
+  last:  all honour, power, might, majesty, and dominion, now and for evermore.
+boundary sample SERMON XXXI. "The Care of the Soul urged as the one thing needful." (42245 chars):
+  first: _But one thing is needful._
+  2nd:   IT was the amiable character of our blessed Redeemer, that “he went
+  last-1:and to your everlasting joy.
+  last:  Which GOD of his infinite mercy grant, &c.
+boundary sample SERMON LIX. "The true Way of beholding the LAMB of GOD." (39846 chars):
+  first: _Again, the next Day after, John stood, and two of his Disciples;
+  2nd:   and looking upon Jesus as he walked, he saith, Behold the LAMB
+  last-1:hereafter! I am persuaded all that love the LORD JESUS in sincerity,
+  last:  will say, _Amen!_ Even so, LORD JESUS! _Amen!_ and _Amen!_
+bleed check: 0 sermon bodies contain a neighbour heading or volume-end marker (clean)
+(node:75424) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+## addendum: negative-control named examples + fail-closed red-proofs
+
+Non-sermon units detected and excluded (none emitted as sections):
+- vol 1: 497 letters, e.g. "LETTER I. — To Mr. G. H.", "LETTER CCXL. — To Mr. G―――― C――――.", "LETTER CCCCXCVII. — To Lady Jane H―――― C――――."
+- vol 2: 467 letters (numbering continues CCCCXCVIII…), vol 3: 499 letters
+- vol 3 also carries the journal-piece "ACCOUNT of the ORPHAN-HOUSE in GEORGIA" (with its own PREFACE) — excluded
+- vol 4: 43 INDEX-TO-THE-TRACTS entries excluded (8 named above), incl. the epigraph-bearing
+  polemic "A Letter to the Rev. Mr. John Wesley: In Answer to his Sermon, entitled, Free-Grace"
+  (GALATIANS ii. 11 motto) — a tract WITH a scripture epigraph that must NOT segment as a sermon, and does not
+- vols 1–4 sermon-heading count: 0 (the detector finds SERMON <ROMAN>. standalone headings only in vols 5–6)
+
+Fail-closed red-proofs (scripts/redproof-whitefield-segment.mts, run 2026-08-13T04-26-42Z):
+sane vol 5: 31 sermons (expect 31)
+red-proof 1 OK (threw): vol 5 SERMON XXVI: no parseable stated ref after the title block — structure not recognized
+red-proof 2: boundary destroyed -> 30 sermons (31 expected; 30 = the unit vanished and the sequence assertion fails closed)
+  → whitefield-works: 59 section(s), 59 anchor(s) on the shelf
+writeRegisterWork: embedded=1810 staticEntries=59
+census whitefield-works: status=staged sections=59 section_anchors=59 flat_embeddings=1810
+
+## dev ingest result (2026-08-13T04-26-42Z)
+command: npx tsx src/ingest/ingest-whitefield-works.ts --write (DEV only, DATABASE_URL_UNPOOLED from root .env.local; pooled URL has no table grants)
+pre-ingest census: no sources row for whitefield-works on dev (nothing prior to replace)
+path: register-writer.writeRegisterWork — BEGIN, assertReingestable (FOR UPDATE), delete-prior, write, stamp staged (manifest serve:false)
+  → whitefield-works: 59 section(s), 59 anchor(s) on the shelf
+writeRegisterWork: embedded=1810 staticEntries=59
+census whitefield-works: status=staged sections=59 section_anchors=59 flat_embeddings=1810
+static reader corpus: 59 verse-anchored entries written under web/public/commentaries/ (gitignored, rebuilt artifacts)
+
+## post-ingest verification (re-measured 2026-08-13T04-47-34Z UTC, independent re-read of dev)
+sources.status = staged
+sections = 59 | section_anchors = 59 | section_embeddings = 0 | flat embeddings = 1810
+sections without anchor = 0 | distinct ordinals = 59 | stored-body bleed rows = 0
+spot-checks (first/last stored lines):
+  ordinal 1  "The Seed of the Woman, and the Seed of the Serpent. — Genesis 3:15" (40147 chars)
+    first: _And I will put Enmity between thee and the Woman, and between
+    last:  _Amen._
+  ordinal 26 "The Eternity of Hell-Torments. — Matthew 25:46" (24410 chars)
+    first: To the INHABITANTS of SAVANNAH in GEORGIA.
+    last:  all honour, power, might, majesty, and dominion, now and for evermore.
+  ordinal 59 "The true Way of beholding the LAMB of GOD. — John 1:35-36" (39846 chars)
+    first: _Again, the next Day after, John stood, and two of his Disciples;
+    last:  will say, _Amen!_ Even so, LORD JESUS! _Amen!_ and _Amen!_
+
+NOTE: section_embeddings = 0 is the known register-writer decay (it deletes section_embeddings
+in the shelf delete and never re-inserts; embeddings live in the flat store). The 91-work
+section-embeddings backfill covers PUBLISHED works only — whitefield-works needs its
+section_embeddings generated AT PUBLISH TIME.
