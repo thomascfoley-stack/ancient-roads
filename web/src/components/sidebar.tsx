@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { authClient } from '@/lib/auth/client';
 import { isPrayerWriting, PRAYER_WRITING_EVENT } from '@/lib/prayer-writing-mode';
 import { CATALOGS, CATALOG_IDS, type CatalogId } from '@/lib/catalog-defs';
+import { orderStudiesForNav, type StudySummary } from '@/components/save-to-study';
 
 // --- user-defined study sections (parent/child). Stored locally per user
 // while the real feature (saved work, conversation) is still coming soon;
@@ -236,6 +237,26 @@ export function SidebarNavContent({
             />
           )}
         </div>
+
+        {/* RESEARCH HISTORY (design §7.1; the companion ASK_HISTORY design's surface):
+            pinned threads first, then recents, "All research". NOT BUILT — ask-history
+            persistence is the companion design's slice, not this stream's (P2/W4 builds
+            MY STUDIES below). This placeholder exists only to fix the §7.1 section order —
+            RESEARCH HISTORY, MY STUDIES, PRAYER JOURNAL — so the section lands HERE,
+            above My studies, when it ships. */}
+
+        {/* MY STUDIES (design §7.1; the user-facing name per owner ruling E1, 2026-08-12):
+            pinned studies first, then updated_at recents, then "All studies". This is the
+            rail's first FETCH-BACKED section — everything above is static links or
+            localStorage seeds — so it renders only for a signed-in reader (a signed-out
+            visitor HAS no studies; showing the section would be an empty shelf or, worse,
+            an error line reporting the app's own auth state as a fault — the prayer-journal
+            lesson). Loading and failure are stated honestly and quietly, and "All studies"
+            stays reachable in every state. The writing-mode rail above is deliberately NOT
+            updated: its comment makes any addition there its own design decision. */}
+        {mounted && session?.user && (
+          <MyStudies pathname={pathname} row={row} onNavigate={onNavigate} />
+        )}
 
         {/* PRAYER JOURNAL — N4's repurposing of CHANNELS, pointing at the shipped PR1a surface.
             The block allows exactly two states for this section, the real journal or nothing, and
@@ -507,6 +528,94 @@ export function Sidebar() {
       </div>
       <SidebarNavContent />
     </aside>
+  );
+}
+
+/** How many studies the rail lists before "All studies" takes over (design §7.1 says
+ *  pinned-then-recents, not a count; the cap is the rail's real estate, not a data rule). */
+const MY_STUDIES_NAV_CAP = 5;
+
+/**
+ * MY STUDIES (design §7.1) — the sidebar's first fetch-backed section. Pinned studies first,
+ * then `updated_at` recents (orderStudiesForNav, shared with the save-to-study picker so the
+ * two surfaces never disagree about the order), capped, with "All studies" always reachable.
+ * Fetches once per mount of the nav content; a 401 mid-session (sign-out raced the fetch) is
+ * an empty list, not an error — the prayer-journal lesson about auth state vs. faults.
+ */
+function MyStudies({
+  pathname,
+  row,
+  onNavigate,
+}: {
+  pathname: string;
+  row: string;
+  onNavigate?: () => void;
+}) {
+  const [studies, setStudies] = useState<StudySummary[] | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      try {
+        const res = await fetch('/api/studies');
+        if (!live) return;
+        if (res.status === 401) { setStudies([]); return; }
+        if (!res.ok) { setError(true); setStudies([]); return; }
+        const data = (await res.json()) as { studies?: StudySummary[] };
+        setStudies(Array.isArray(data.studies) ? data.studies : []);
+      } catch {
+        if (live) { setError(true); setStudies([]); }
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  return (
+    <div className="mt-4">
+      <div className="mb-1 px-4">
+        <span className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+          My studies
+        </span>
+      </div>
+      {studies === null ? (
+        <p className="px-4 py-1 text-xs text-stone-500 dark:text-stone-400">Loading…</p>
+      ) : (
+        <>
+          {error && (
+            <p className="px-4 py-1 text-xs text-stone-500 dark:text-stone-400">
+              Your studies could not be loaded.
+            </p>
+          )}
+          {orderStudiesForNav(studies, MY_STUDIES_NAV_CAP).map((s) => (
+            <SidebarLink
+              key={s.id}
+              href={`/studies/${s.id}`}
+              icon={
+                <span
+                  className="inline-block h-2 w-2 rounded-full"
+                  style={{ backgroundColor: dotColor(s.id) }}
+                />
+              }
+              label={s.title}
+              active={pathname === `/studies/${s.id}`}
+              row={row}
+              onNavigate={onNavigate}
+            />
+          ))}
+          <SidebarLink
+            href="/studies"
+            icon={<BookStackIcon />}
+            label="All studies"
+            active={pathname === '/studies'}
+            row={row}
+            onNavigate={onNavigate}
+          />
+        </>
+      )}
+    </div>
   );
 }
 

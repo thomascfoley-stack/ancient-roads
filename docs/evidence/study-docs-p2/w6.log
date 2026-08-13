@@ -1,0 +1,65 @@
+W6 — studies-surface-routes red-proofs + green run
+===================================================
+Suite: web/test/regression/studies-surface-routes.test.ts (10 cases)
+Subject routes: web/src/app/studies/[id]/feed/route.ts, web/src/app/studies/[id]/export/route.ts
+Method (THE_LOOP rule 4): transient implementation mutation -> watch the case go RED -> restore
+from a byte copy -> `diff` proves the tree identical -> final GREEN run.
+Env per swarm brief: APP_DATABASE_URL=runtime dev URL (root .env.local DATABASE_URL),
+DATABASE_URL=owner dev URL (~/.neon_dev_owner_url). Values never printed.
+
+RED-PROOF R1 (feed: renderState present per block)
+  mutation: feed/route.ts — dropped `renderState: blockRenderState(b, resolution)` from the payload
+  result: 3 failed / 7 passed — all three feed renderState cases RED:
+    × feed: paginates with renderState present on EVERY block, in document order
+    × feed: live clipping renders with its quote; staging the source tombstones it (the belt, per page)
+    × feed: a tombstoned clipping (Flow D purge shape) carries NO quote and NO link field
+  export cases stayed green (mutation scoped to feed) — the failures are attributable.
+RED-PROOF R2 (feed: the servability re-check is load-bearing on every page)
+  mutation: feed/route.ts — renderState hardcoded to kind ('clipping'/'text'), blockRenderState bypassed
+  result: 2 failed / 8 passed — exactly the two tombstone cases RED:
+    × feed: live clipping renders with its quote; staging the source tombstones it (the belt, per page)
+    × feed: a tombstoned clipping (Flow D purge shape) carries NO quote and NO link field
+  the pagination/renderState-presence case stayed green (a label was still emitted) — attribution clean.
+RED-PROOF R3 (export: 404 for a foreign study)
+  mutation: export/route.ts — removed the `if (!study) return 404 NOT_FOUND` guard
+  result: 1 failed / 9 passed — RED:
+    × export: 404 NOT_FOUND (never 401, never an empty file) for a study the caller does not own
+    (route fell through to a 500; the case pins the accurate code, not just "an error")
+RED-PROOF R4 (export: 422 EXPORT_TOO_LARGE past the ceiling)
+  mutation: export/route.ts — removed the EXPORT_MAX_BLOCKS -> 422 catch mapping (fell through to 500)
+  result: 1 failed / 9 passed — RED:
+    × export: 422 EXPORT_TOO_LARGE past EXPORT_MAX_BLOCKS — never a silently truncated file
+  (fixture: owner-seeded EXPORT_MAX_BLOCKS+1 live blocks in one INSERT...SELECT generate_series)
+RED-PROOF R5 (export: it is a markdown DOWNLOAD, not just a 200)
+  mutation: export/route.ts — content-type text/markdown -> text/plain
+  result: 1 failed / 9 passed — RED:
+    × export: a markdown download — headers, title, text verbatim, live clipping quoted + attributed
+RED-PROOF R6 (export: the re-check runs on the route, not only inside the pure serializer)
+  mutation: export/route.ts — resolveServability(blocks) replaced by a fabricated all-servable resolution
+  result: 1 failed / 9 passed — RED:
+    × export: a tombstone renders attribution + the notice — no quote bytes, no link (S-10 on the wire)
+    (the withdrawn section's bytes landed in the file; the case caught it)
+
+FINAL GREEN RUN (after all restores, diff-verified byte-identical):
+ ✓ test/regression/studies-surface-routes.test.ts (10 tests) 6553ms
+   ✓ Studies surface routes (feed + export, handler → lib → dev DB, session mocked) > feed: paginates with renderState present on EVERY block, in document order 1118ms
+   ✓ Studies surface routes (feed + export, handler → lib → dev DB, session mocked) > feed: live clipping renders with its quote; staging the source tombstones it (the belt, per page) 766ms
+   ✓ Studies surface routes (feed + export, handler → lib → dev DB, session mocked) > feed: a tombstoned clipping (Flow D purge shape) carries NO quote and NO link field 522ms
+   ✓ Studies surface routes (feed + export, handler → lib → dev DB, session mocked) > export: a markdown download — headers, title, text verbatim, live clipping quoted + attributed 707ms
+   ✓ Studies surface routes (feed + export, handler → lib → dev DB, session mocked) > export: a tombstone renders attribution + the notice — no quote bytes, no link (S-10 on the wire) 694ms
+   ✓ Studies surface routes (feed + export, handler → lib → dev DB, session mocked) > export: 422 EXPORT_TOO_LARGE past EXPORT_MAX_BLOCKS — never a silently truncated file 1460ms
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+
+FULL QA (2026-08-13, env per swarm brief — APP_DATABASE_URL=runtime dev, DATABASE_URL=owner dev):
+  web npx vitest run        : 142 files passed / 5 skipped (loud-skips: artifact+provider kinds),
+                              1001 tests passed / 13 skipped. exit 0.
+  root npx vitest run       : 64 files passed, 701 tests passed. exit 0.
+  npm run typecheck         : clean (no output).
+  cd web && npx eslint .    : 0 errors, 19 warnings — all pre-existing in files this stream
+                              did not touch (none in studies-surface-routes.test.ts).
+  studies-bounds (known-red watch): 5/5 green (F-W1-1 cursor fix confirmed landed).
+  npm run audit             : ALL 10 GATES GREEN, exit 0 — full output in w6-audit.log.
+    (The qa leg shows 1000 passed / 14 skipped: section-vector-pairing's single test flipped
+     pass -> provider loud-skip, DeepInfra timeout, between the two runs. External flake,
+     kind=provider, declared loudly by design; not attributable to any wave file.)

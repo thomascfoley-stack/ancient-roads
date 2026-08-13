@@ -1,0 +1,105 @@
+=== S-14 RED RUN: two temporary mutations to lib/studies.ts ===
+M1 listBlocks/getStudyWithBlocks ORDER BY flipped to (position DESC, id DESC);
+M2 insertTextBlock 23505 retry removed (catch rethrows).
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git/web
+
+(node:2297) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ test/invariants/studies-order.test.ts (6 tests | 4 failed) 3571ms
+   × S-14 studies order > two blocks at the SAME computed midpoint resolve deterministically — no silent reorder 399ms
+     → duplicate key value violates unique constraint "idx_blocks_order"
+   × S-14 studies order > read order is (position, id), NOT insertion order 367ms
+     → order broke: (W, 9ac412d6-88b9-4d27-998c-a26bf765116e) then (VV, 8491f89b-d6af-4713-b148-3ba3a3972d15): expected false to be true // Object.is equality
+   × S-14 studies order > order is STABLE across renders — two paged reads and the doc read agree exactly 293ms
+     → order broke: (W, 9ac412d6-88b9-4d27-998c-a26bf765116e) then (VV, 8491f89b-d6af-4713-b148-3ba3a3972d15): expected false to be true // Object.is equality
+   × S-14 studies order > control: order follows the STORED position — an owner-side move is reflected in the next read 923ms
+     → the moved block must sort first on the very next read: expected '9ac412d6-88b9-4d27-998c-a26bf765116e' to be 'c234a39b-60d1-4726-ab29-70f74c0d80af' // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/invariants/studies-order.test.ts > S-14 studies order > two blocks at the SAME computed midpoint resolve deterministically — no silent reorder
+NeonDbError: duplicate key value violates unique constraint "idx_blocks_order"
+ ❯ execute ../node_modules/.pnpm/@neondatabase+serverless@1.1.0/node_modules/@neondatabase/serverless/index.mjs:1298:10
+ ❯ Module.runAsUser src/lib/db.ts:116:19
+    114| ): Promise<unknown[][]> {
+    115|   const sql = getDb();
+    116|   const results = await sql.transaction([
+       |                   ^
+    117|     sql`select set_config('app.current_user_id', ${userId}, true)`,
+    118|     ...build(sql),
+ ❯ Module.insertTextBlock src/lib/studies.ts:393:22
+ ❯ test/invariants/studies-order.test.ts:107:21
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  test/invariants/studies-order.test.ts > S-14 studies order > read order is (position, id), NOT insertion order
+AssertionError: order broke: (W, 9ac412d6-88b9-4d27-998c-a26bf765116e) then (VV, 8491f89b-d6af-4713-b148-3ba3a3972d15): expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ expectTotalOrder test/invariants/studies-order.test.ts:57:102
+     55|     const ordered =
+     56|       prev.position < cur.position || (prev.position === cur.position …
+     57|     expect(ordered, `order broke: (${prev.position}, ${prev.id}) then …
+       |                                                                                                      ^
+     58|   }
+     59| }
+ ❯ test/invariants/studies-order.test.ts:130:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  test/invariants/studies-order.test.ts > S-14 studies order > order is STABLE across renders — two paged reads and the doc read agree exactly
+AssertionError: order broke: (W, 9ac412d6-88b9-4d27-998c-a26bf765116e) then (VV, 8491f89b-d6af-4713-b148-3ba3a3972d15): expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ expectTotalOrder test/invariants/studies-order.test.ts:57:102
+     55|     const ordered =
+     56|       prev.position < cur.position || (prev.position === cur.position …
+     57|     expect(ordered, `order broke: (${prev.position}, ${prev.id}) then …
+       |                                                                                                      ^
+     58|   }
+     59| }
+ ❯ test/invariants/studies-order.test.ts:145:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  test/invariants/studies-order.test.ts > S-14 studies order > control: order follows the STORED position — an owner-side move is reflected in the next read
+AssertionError: the moved block must sort first on the very next read: expected '9ac412d6-88b9-4d27-998c-a26bf765116e' to be 'c234a39b-60d1-4726-ab29-70f74c0d80af' // Object.is equality
+
+Expected: "c234a39b-60d1-4726-ab29-70f74c0d80af"
+Received: "9ac412d6-88b9-4d27-998c-a26bf765116e"
+
+ ❯ test/invariants/studies-order.test.ts:175:85
+    173|       await c.query('UPDATE study_blocks SET position = $1 WHERE id = …
+    174|       const after = await listBlocks(USER, study);
+    175|       expect(after[0]!.id, 'the moved block must sort first on the ver…
+       |                                                                                     ^
+    176|       expectTotalOrder(after);
+    177|     } finally {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 2 passed (6)
+   Start at  17:25:16
+   Duration  3.79s (transform 33ms, setup 0ms, collect 43ms, tests 3.57s, environment 0ms, prepare 35ms)
+
+=== vitest exit: 1 ===

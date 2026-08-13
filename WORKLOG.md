@@ -1,5 +1,54 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-12 (night) — P2 swarm COMPLETE: Study Docs product surface built, all gates green
+
+Six streams, three waves, one tree (feat/study-docs-p2), file-disjoint per
+docs/pm/SWARM_PARALLEL_BRIEF.md. Every invariant red-proofed with logs under
+docs/evidence/study-docs-p2/.
+
+**Wave 1 (invariants):** W1 data (grants S-11 derived-from-code — the UX_REMEDIATION §9 check
+finally built; tenancy S-4 with positive half; bounds S-7; order S-14 — 4 suites, 19 tests) and
+W2 licensing (provenance S-1 incl. all five table CHECKs probed; tombstone S-2/S-3/S-10;
+register groups S-5/S-6/S-12 — 3 suites, 13 tests). **C5 MEASURED POSITIVE on dev** (W1 run B:
+belts removed, RLS still isolated both directions — RLS binds under Neon's GUC-set TEXT user-id,
+on these three tables, on dev). W1 found one real P1 bug: **F-W1-1 lossy updated_at cursor**
+(driver Date truncates to millis; tuple comparison drops same-millisecond rows) — fixed by
+coordinator (`updated_at::text` in listStudies), bounds suite watched going 4/5 → 5/5.
+
+**Wave 2 (UI):** W3 My Studies list + doc editor (debounced autosave with visible
+Saving/Saved/Failed-Retry, never-discard buffer, E7; tombstones via the shared blockRenderState,
+S-10; export; two P1-gap workaround routes: [id]/feed with server-computed renderState,
+[id]/export). W4 Save-to-study affordance (default target = last-used, one tap, E7; picker as
+second tap; wired onto ask-client voices/lanes/fallback with minimal diff) + MY STUDIES sidebar
+section (first fetch-backed section; PRAYER JOURNAL untouched; RESEARCH HISTORY placeholder
+comment only). W5 merged search surface (/search: per-group capped queries through the catalog
+fence — S-12 holds; include-personal checkbox default OFF, E8; URL-state for q/collapse/paging;
+per-group error isolation; live-verified on dev with real corpus rows).
+
+**Wave 3 (W6 gate):** surface-route suite (feed + export, 10 tests, 6 red-proofs incl. a real
+422 beyond EXPORT_MAX_BLOCKS and tombstone export carrying no quote bytes and no link). Full
+gates: web 142 files / **1001 tests green**; root 701/701; typecheck clean; eslint 0 errors;
+**npm run audit — all 10 gates green, exit 0** (log: docs/evidence/study-docs-p2/w6-audit.log).
+Zero cross-stream regressions.
+
+**Recorded for P3 (integration + independent verification):**
+- F-W6-1: belt-case tombstones (source staged AFTER save, purge not yet run) still ship quote
+  bytes in JSON — render denial is client-side convention. Purged (data-state) tombstones are
+  clean. Tightening: render paths should null the quote when the re-check tombstones.
+- F-W6-2: cosmetic — limit-less final feed page returns a spurious nextAfterPosition.
+- F-W3-1: listStudies is recency-only; pinned-first is a page-level workaround — belongs in the
+  data layer. F-W3-2/F-W3-3: feed + export routes are workarounds; fold into P1 routes or bless.
+- W4 gap: voice blocks carry no saveable key (selectVoices indices are prompt-local) — client
+  resolves to source_id fail-closed; delete the resolver if the stream ever exposes real keys.
+- W5 deviations: lexicons group re-asserts the engine's properties outside the fence (taxonomy
+  excludes lexicon from CatalogId — owner-visible decision); prayers/notes use ILIKE until the
+  §6.4 tsv migrations; works group count is a hasMore probe; /search has NO nav entry point yet
+  (sidebar wiring is P3).
+- Block move/reorder NOT implemented (design names the move op) — P3 decision.
+- NOT DONE: browser passes at 390px/desktop in an authenticated session (the /gate password —
+  N4 lesson); P3 independent re-execution of all red-proofs; nothing deployed.
+
+
 ## 2026-08-12 (evening) — EMBEDDINGS V1 provider drift guard BUILT (Kimi session, owner: "you take it")
 
 Branch `feat/embeddings-v1-provider-guard` (off feat/study-docs-p1). Red-proof order: tests

@@ -6,6 +6,7 @@ import { formatVerseId } from '@bible/verse-id';
 import { verseHref } from '@/lib/verse-link';
 import { count } from '@/lib/plural';
 import { deskHref, withPane } from '@/lib/desk';
+import { SaveToStudy, resolveVoiceSourceId } from '@/components/save-to-study';
 
 // --- shapes mirrored from the server (client only renders; server verifier is truth) ---
 interface Attribution { author: string; work: string; slug?: string; tradition: string; year?: number }
@@ -382,7 +383,7 @@ function TurnView({ turn, onRetry, busy }: { turn: Turn; onRetry: () => void; bu
           <RetryButton onRetry={onRetry} busy={busy} tone="error" />
         </div>
       ) : turn.stage === 'done' && turn.result ? (
-        <Answer result={turn.result} onRetry={onRetry} busy={busy} />
+        <Answer result={turn.result} onRetry={onRetry} busy={busy} contextTitle={turn.question} />
       ) : (
         <Progress turn={turn} />
       )}
@@ -482,7 +483,7 @@ function Progress({ turn }: { turn: Turn }) {
   );
 }
 
-function Answer({ result, onRetry, busy }: { result: TeacherResult; onRetry: () => void; busy: boolean }) {
+function Answer({ result, onRetry, busy, contextTitle }: { result: TeacherResult; onRetry: () => void; busy: boolean; contextTitle?: string }) {
   if (result.kind === 'empty') {
     return (
       <p className="max-w-[62ch] font-serif text-lg leading-relaxed text-stone-500 dark:text-stone-400">
@@ -490,7 +491,7 @@ function Answer({ result, onRetry, busy }: { result: TeacherResult; onRetry: () 
       </p>
     );
   }
-  if (result.kind === 'fallback') return <><Fallback retrieval={result.retrieval} onRetry={onRetry} busy={busy} /><Lanes result={result} /></>;
+  if (result.kind === 'fallback') return <><Fallback retrieval={result.retrieval} onRetry={onRetry} busy={busy} contextTitle={contextTitle} /><Lanes result={result} contextTitle={contextTitle} /></>;
 
   const blocks = result.response.blocks;
   const framing = blocks.find((b) => b.type === 'framing') as Extract<Block, { type: 'framing' }> | undefined;
@@ -511,6 +512,12 @@ function Answer({ result, onRetry, busy }: { result: TeacherResult; onRetry: () 
       <div className="space-y-6">
         {voices.map((v, i) => {
           const era = eraOf(v.attribution.year);
+          // Save to study (design §7.5, R3). A voice block's section_id is PROMPT-LOCAL (an
+          // index into the composer's re-sorted voice subset), never a corpus key, so the
+          // saveable source_id is resolved against this turn's retrieval rows. An
+          // unresolvable voice renders NO affordance rather than guessing — a guess would
+          // save the wrong passage's bytes (see save-to-study.tsx).
+          const saveSourceId = resolveVoiceSourceId(result.retrieval, v);
           return (
             <div key={i}>
               {/* PRD: a 1px hairline rule above each voice card. It cannot be a border-t on the
@@ -534,13 +541,18 @@ function Answer({ result, onRetry, busy }: { result: TeacherResult; onRetry: () 
                   {v.summary && <p className="mt-1.5 text-sm text-stone-500 dark:text-stone-500">{v.summary}</p>}
                 </figure>
               </ResultLink>
+              {/* The affordance sits OUTSIDE the ResultLink — a button inside an anchor is
+                  invalid HTML — aligned with the card text (link px-2.5 + figure pl-5). */}
+              {saveSourceId && (
+                <SaveToStudy className="ml-[30px]" clip={{ sourceId: saveSourceId }} contextTitle={contextTitle} />
+              )}
             </div>
           );
         })}
       </div>
       {hasLanes && (
         <div className="animate-fade-in" style={{ animationDelay: `${laneDelay}ms`, animationFillMode: 'backwards' }}>
-          <Lanes result={result} />
+          <Lanes result={result} contextTitle={contextTitle} />
         </div>
       )}
       {passages && passages.items.length > 0 && (
@@ -568,7 +580,7 @@ function Answer({ result, onRetry, busy }: { result: TeacherResult; onRetry: () 
 // never part of the composed answer (sermon-lane slice 2026-07-18). Attribution
 // is author + work only — never a host URL. A paraphrase-tagged item (metrical
 // psalter) is marked as such, never presented as Scripture.
-function LaneSection({ title, note, chunks }: { title: string; note: string; chunks?: LaneChunk[] }) {
+function LaneSection({ title, note, chunks, contextTitle }: { title: string; note: string; chunks?: LaneChunk[]; contextTitle?: string }) {
   if (!chunks || chunks.length === 0) return null;
   return (
     <div className="pt-2">
@@ -576,39 +588,45 @@ function LaneSection({ title, note, chunks }: { title: string; note: string; chu
       <p className="mb-3 text-sm italic text-stone-500 dark:text-stone-400">{note}</p>
       <div className="space-y-4">
         {chunks.map((c) => (
-          <ResultLink key={c.sourceId} href={workHref(c.metadata.work)}>
-            {/* The neutral rail is a single stone-500 class, not a `stone-300 dark:stone-700`
-                pair — the pair's dark half loses the cascade (see THE EDGE in globals.css),
-                and 500 reads in both themes. */}
-            <figure className="border-l-[3px] border-l-stone-500 pl-5">
-              <blockquote className="whitespace-pre-line break-words font-serif text-base leading-relaxed text-stone-700 dark:text-stone-300">
-                {c.content.length > 400 ? `${c.content.slice(0, 400)}…` : c.content}
-              </blockquote>
-              <figcaption className="mt-2 text-sm text-stone-500 dark:text-stone-400">
-                <span className="font-semibold text-stone-800 group-hover:text-accent-800 dark:text-stone-300 dark:group-hover:text-accent-300">{c.metadata.author}</span>
-                {c.metadata.sourceTitle ? `, ${c.metadata.sourceTitle}` : ''}
-                {c.metadata.paraphrase ? <span title="A metrical paraphrase, not the Scripture text itself." className="ml-2 bg-accent-700/10 px-2 py-0.5 text-micro font-medium text-accent-700 dark:text-accent-300">paraphrase · not Scripture</span> : null}
-                {c.metadata.work && <span className="ml-2 text-xs text-stone-400 opacity-0 transition-opacity group-hover:opacity-100 dark:text-stone-500">Open on desk →</span>}
-              </figcaption>
-            </figure>
-          </ResultLink>
+          <div key={c.sourceId}>
+            <ResultLink href={workHref(c.metadata.work)}>
+              {/* The neutral rail is a single stone-500 class, not a `stone-300 dark:stone-700`
+                  pair — the pair's dark half loses the cascade (see THE EDGE in globals.css),
+                  and 500 reads in both themes. */}
+              <figure className="border-l-[3px] border-l-stone-500 pl-5">
+                <blockquote className="whitespace-pre-line break-words font-serif text-base leading-relaxed text-stone-700 dark:text-stone-300">
+                  {c.content.length > 400 ? `${c.content.slice(0, 400)}…` : c.content}
+                </blockquote>
+                <figcaption className="mt-2 text-sm text-stone-500 dark:text-stone-400">
+                  <span className="font-semibold text-stone-800 group-hover:text-accent-800 dark:text-stone-300 dark:group-hover:text-accent-300">{c.metadata.author}</span>
+                  {c.metadata.sourceTitle ? `, ${c.metadata.sourceTitle}` : ''}
+                  {c.metadata.paraphrase ? <span title="A metrical paraphrase, not the Scripture text itself." className="ml-2 bg-accent-700/10 px-2 py-0.5 text-micro font-medium text-accent-700 dark:text-accent-300">paraphrase · not Scripture</span> : null}
+                  {c.metadata.work && <span className="ml-2 text-xs text-stone-400 opacity-0 transition-opacity group-hover:opacity-100 dark:text-stone-500">Open on desk →</span>}
+                </figcaption>
+              </figure>
+            </ResultLink>
+            {/* Save to study (design §7.5, R3) — lane chunks carry their corpus sourceId
+                directly, so no resolution step is needed here. Outside the ResultLink, as
+                with the voice cards above. */}
+            <SaveToStudy className="ml-[30px]" clip={{ sourceId: c.sourceId }} contextTitle={contextTitle} />
+          </div>
         ))}
       </div>
     </div>
   );
 }
 
-function Lanes({ result }: { result: Extract<TeacherResult, { kind: 'composed' | 'fallback' }> }) {
+function Lanes({ result, contextTitle }: { result: Extract<TeacherResult, { kind: 'composed' | 'fallback' }>; contextTitle?: string }) {
   return (
     <>
-      <LaneSection title="Sermons on this theme" note="Preached expositions, not commentary. Read them in full for the argument." chunks={result.sermons} />
-      <LaneSection title="Theology & confessions" note="Systematic and confessional reflections on this theme." chunks={result.theology} />
-      <LaneSection title="Hymns & sacred poetry" note="Sung and poetic responses, and (where marked) a metrical paraphrase, not the Scripture text itself." chunks={result.song_verse} />
+      <LaneSection title="Sermons on this theme" note="Preached expositions, not commentary. Read them in full for the argument." chunks={result.sermons} contextTitle={contextTitle} />
+      <LaneSection title="Theology & confessions" note="Systematic and confessional reflections on this theme." chunks={result.theology} contextTitle={contextTitle} />
+      <LaneSection title="Hymns & sacred poetry" note="Sung and poetic responses, and (where marked) a metrical paraphrase, not the Scripture text itself." chunks={result.song_verse} contextTitle={contextTitle} />
     </>
   );
 }
 
-function Fallback({ retrieval, onRetry, busy }: { retrieval: Retrieved[]; onRetry: () => void; busy: boolean }) {
+function Fallback({ retrieval, onRetry, busy, contextTitle }: { retrieval: Retrieved[]; onRetry: () => void; busy: boolean; contextTitle?: string }) {
   return (
     <div>
       {/* WHY, and a way forward. This block used to be one apologetic sentence and a dead end:
@@ -630,15 +648,20 @@ function Fallback({ retrieval, onRetry, busy }: { retrieval: Retrieved[]; onRetr
       </div>
       <div className="space-y-5">
         {retrieval.map((r) => (
-          <figure key={r.sourceId} className="border-l-[3px] border-l-stone-500 pl-5">
-            <blockquote className="font-serif text-base leading-relaxed text-stone-700 dark:text-stone-300">
-              {r.content.length > 320 ? `${r.content.slice(0, 320)}…` : r.content}
-            </blockquote>
-            <figcaption className="mt-2 text-sm text-stone-500 dark:text-stone-400">
-              <span className="font-semibold text-stone-800 dark:text-stone-300">{r.metadata.author}</span>, {r.metadata.sourceTitle}
-              {r.metadata.tradition ? ` · ${r.metadata.tradition}` : ''}
-            </figcaption>
-          </figure>
+          <div key={r.sourceId}>
+            <figure className="border-l-[3px] border-l-stone-500 pl-5">
+              <blockquote className="font-serif text-base leading-relaxed text-stone-700 dark:text-stone-300">
+                {r.content.length > 320 ? `${r.content.slice(0, 320)}…` : r.content}
+              </blockquote>
+              <figcaption className="mt-2 text-sm text-stone-500 dark:text-stone-400">
+                <span className="font-semibold text-stone-800 dark:text-stone-300">{r.metadata.author}</span>, {r.metadata.sourceTitle}
+                {r.metadata.tradition ? ` · ${r.metadata.tradition}` : ''}
+              </figcaption>
+            </figure>
+            {/* Save to study here too — R3 is "one verb on EVERY surfaced item", and the
+                fallback's unedited source list is a surfaced list. sourceId is direct. */}
+            <SaveToStudy className="ml-5" clip={{ sourceId: r.sourceId }} contextTitle={contextTitle} />
+          </div>
         ))}
       </div>
     </div>

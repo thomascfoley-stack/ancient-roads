@@ -1,0 +1,13 @@
+=== GREEN RUN: studies-grants (restored, unmutated lib/studies.ts; sha256 5d2298b1… verified pre-run) ===
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git/web
+
+ ✓ test/invariants/studies-grants.test.ts (2 tests) 285ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  17:25:56
+   Duration  493ms (transform 22ms, setup 0ms, collect 28ms, tests 285ms, environment 0ms, prepare 30ms)
+
+=== vitest exit: 0 ===
