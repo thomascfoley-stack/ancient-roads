@@ -46,7 +46,7 @@ jobs:
         run: npx tsx src/ingest/adapter-loop.ts --max-attempts=60 --max-hours=4 --staged-cap=30
       - name: upload digest + run-log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ingest-run-${{ github.run_id }}
           path: |
