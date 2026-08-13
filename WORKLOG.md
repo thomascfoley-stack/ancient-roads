@@ -10182,3 +10182,8 @@ bypasses the passage cap; interpretive). Confirms queue #3 §6.
 **Not done (measured, parked, NOT shipped):** the Phase A retrieval fix. Epistle→85 = a partial legal HNSW
 index (fast high-`ef` recall, measured on a fresh v4); topical→85 = a feature, not a knob. Retrieval code was
 reverted to the fast baseline — prod unchanged; v3 stands at topical H2 75 / epistle 84.
+
+**Owner waiver 2026-08-12:** the P2 exit clause requiring browser verification at 390px and
+desktop in an authenticated session is WAIVED by the owner ("override… I grant permission").
+P3's browser pass did not happen; the UI is verified at the build/test/SSR-markup level only.
+Deploy approved in the same instruction.
