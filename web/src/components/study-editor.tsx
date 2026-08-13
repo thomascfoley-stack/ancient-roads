@@ -214,6 +214,17 @@ export function StudyEditor({
   const [everSaved, setEverSaved] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelFocusToken, setPanelFocusToken] = useState(0);
+  // Owner annotations 2026-08-13: the library rail shrinks/enlarges by dragging its divider and
+  // collapses entirely (the doc takes the width). Pure layout preference — client-only
+  // localStorage, the S-9 rule: no render path DEPENDS on it, defaults are always valid.
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [panelWidth, setPanelWidth] = useState(336);
+  const [lookup, setLookup] = useState<{ token: number; q: string } | null>(null);
+  const [selPopover, setSelPopover] = useState<{ text: string; x: number; y: number } | null>(null);
+  const docColumnRef = useRef<HTMLDivElement | null>(null);
+  const panelWidthRef = useRef(336);
+  const dragStart = useRef<{ x: number; w: number } | null>(null);
+  const lookupCounter = useRef(0);
   const localCounter = useRef(0);
   const bufs = useRef(new Map<string, TextBuf>());
   const placements = useRef(new Map<string, Placement>());
@@ -223,6 +234,75 @@ export function StudyEditor({
   // The title's last-saved value: an empty title is never written (the route 400s it), so a
   // cleared field falls back to this on blur rather than erasing the study's name.
   const savedTitle = useRef(study.title);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('study-editor:panel');
+      if (!raw) return;
+      const pref = JSON.parse(raw) as { width?: unknown; collapsed?: unknown };
+      if (typeof pref.width === 'number' && Number.isFinite(pref.width)) {
+        const w = Math.min(560, Math.max(280, pref.width));
+        setPanelWidth(w);
+        panelWidthRef.current = w;
+      }
+      if (pref.collapsed === true) setPanelCollapsed(true);
+    } catch {
+      // A layout preference only; the defaults are always valid.
+    }
+  }, []);
+  const persistPanel = (width: number, collapsed: boolean) => {
+    try {
+      localStorage.setItem('study-editor:panel', JSON.stringify({ width, collapsed }));
+    } catch {
+      // Best-effort; losing the preference costs one drag.
+    }
+  };
+
+  const onDividerPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragStart.current = { x: e.clientX, w: panelWidthRef.current };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onDividerPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragStart.current) return;
+    const w = Math.min(560, Math.max(280, dragStart.current.w + (dragStart.current.x - e.clientX)));
+    panelWidthRef.current = w;
+    setPanelWidth(w);
+  };
+  const onDividerPointerUp = () => {
+    if (!dragStart.current) return;
+    dragStart.current = null;
+    persistPanel(panelWidthRef.current, panelCollapsed);
+  };
+  const setCollapsed = (collapsed: boolean) => {
+    setPanelCollapsed(collapsed);
+    persistPanel(panelWidthRef.current, collapsed);
+  };
+
+  // Select a word or phrase anywhere in the doc → a one-tap "Search lexicons" lookup (the
+  // owner's Greek/Hebrew-dictionary ask, v1: the lexicon REGISTER is the dictionary, searched
+  // through the same fenced engine as everything else in the panel).
+  const onDocMouseUp = () => {
+    const sel = window.getSelection();
+    const text = sel?.toString().trim() ?? '';
+    if (!sel || sel.rangeCount === 0 || text.length < 2 || text.length > 60 || text.includes('\n')) {
+      setSelPopover(null);
+      return;
+    }
+    const container = docColumnRef.current;
+    if (!container || !container.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+      setSelPopover(null);
+      return;
+    }
+    const r = sel.getRangeAt(0).getBoundingClientRect();
+    const c = container.getBoundingClientRect();
+    setSelPopover({ text, x: r.left - c.left + r.width / 2, y: r.top - c.top });
+  };
+  const runLexiconLookup = (term: string) => {
+    setLookup({ token: ++lookupCounter.current, q: term });
+    setPanelOpen(true);
+    setCollapsed(false);
+    setSelPopover(null);
+  };
 
   const setSave = (key: string, state: SaveState) =>
     setSaveStates((cur) => ({ ...cur, [key]: state }));
@@ -518,14 +598,21 @@ export function StudyEditor({
           </button>
         </span>
       ) : (
+        // A labeled pill, not a bare hairline — "hard to see, make it cleaner for the
+        // non-discerning eye" (owner annotation 2026-08-13). Still quiet; never five buttons.
         <button
           type="button"
           onClick={() => setExpandedInsert(index)}
           aria-label={`Insert at position ${index + 1}`}
-          className="flex min-h-[24px] w-full items-center justify-center opacity-25 transition-opacity ease-gentle hover:opacity-100 focus-visible:opacity-100"
+          className="flex min-h-[28px] w-full items-center justify-center opacity-60 transition-opacity ease-gentle hover:opacity-100 focus-visible:opacity-100"
         >
           <span aria-hidden="true" className="h-px w-16 bg-stone-300 dark:bg-stone-600" />
-          <span aria-hidden="true" className="mx-2 font-sans text-sm leading-none text-stone-400 dark:text-stone-500">+</span>
+          <span
+            aria-hidden="true"
+            className="mx-3 inline-flex items-center rounded-full border edge px-3 py-0.5 font-sans text-[11px] small-caps tracking-[0.08em] text-stone-500 dark:text-stone-400"
+          >
+            + Insert
+          </span>
           <span aria-hidden="true" className="h-px w-16 bg-stone-300 dark:bg-stone-600" />
         </button>
       )}
@@ -592,8 +679,32 @@ export function StudyEditor({
 
   return (
     <div className="mx-auto max-w-[1360px] px-6 pb-16">
-      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:gap-14">
-        <div className="mx-auto w-full max-w-[75ch] lg:mx-0">
+      {/* Desktop: doc · drag divider · library rail. The columns are inline style because the
+          widths are the user's (drag-resize + collapse); below lg the div is block flow and the
+          style is inert. */}
+      <div
+        className="lg:grid"
+        style={{
+          gridTemplateColumns: panelCollapsed
+            ? 'minmax(0,1fr) 0px 2.75rem'
+            : `minmax(0,1fr) 14px ${panelWidth}px`,
+        }}
+      >
+        <div
+          ref={docColumnRef}
+          onMouseUp={onDocMouseUp}
+          className="relative mx-auto w-full max-w-[75ch] lg:mx-0 lg:pr-6"
+        >
+          {selPopover && (
+            <button
+              type="button"
+              onClick={() => runLexiconLookup(selPopover.text)}
+              style={{ left: selPopover.x, top: selPopover.y - 40 }}
+              className="absolute z-20 -translate-x-1/2 rounded-full border edge bg-white px-3 py-1 font-sans text-xs text-stone-700 shadow-sm hover:text-accent-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:text-accent-300"
+            >
+              Search lexicons
+            </button>
+          )}
           {/* Title: inline edit, saved on blur/Enter — auto-save always, never ask (E7). */}
           <input
             value={title}
@@ -697,8 +808,16 @@ export function StudyEditor({
                   </div>
                 ) : block.renderState === 'clipping' ? (
                   <figure className="border-l-2 border-stone-300 py-1 pl-4 dark:border-stone-700">
-                    <blockquote className="whitespace-pre-wrap font-serif leading-[1.9] text-stone-800 dark:text-stone-300">
-                      {block.quote}
+                    {/* DISPLAY normalization only (owner annotation: "wonky spacing"): the
+                        corpus carries hard line-breaks from ingest, and pre-wrap rendered them
+                        as ragged two-word lines. Blank lines stay paragraph breaks; single
+                        newlines flow. The STORED bytes and the .md export are untouched. */}
+                    <blockquote className="font-serif leading-[1.9] text-stone-800 dark:text-stone-300">
+                      {(block.quote ?? '').split(/\n{2,}/).map((para, pi) => (
+                        <p key={pi} className={pi > 0 ? 'mt-4' : undefined}>
+                          {para.replace(/\s+/g, ' ').trim()}
+                        </p>
+                      ))}
                     </blockquote>
                     <figcaption className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
                       <AttributionLine attribution={block.attribution} />
@@ -769,13 +888,65 @@ export function StudyEditor({
           </div>
         </div>
 
+        {/* The drag divider (desktop, panel open): pointer-drag or arrow keys resize the rail;
+            the preference persists per the S-9 client-only rule. */}
+        {!panelCollapsed ? (
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize the library panel (drag, or arrow keys)"
+            tabIndex={0}
+            onPointerDown={onDividerPointerDown}
+            onPointerMove={onDividerPointerMove}
+            onPointerUp={onDividerPointerUp}
+            onKeyDown={(e) => {
+              if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+              e.preventDefault();
+              const w = Math.min(560, Math.max(280, panelWidthRef.current + (e.key === 'ArrowLeft' ? 24 : -24)));
+              panelWidthRef.current = w;
+              setPanelWidth(w);
+              persistPanel(w, panelCollapsed);
+            }}
+            className="group hidden cursor-col-resize items-stretch justify-center lg:flex"
+          >
+            <span aria-hidden="true" className="w-px bg-stone-200 transition-colors group-hover:bg-accent-400 group-focus-visible:bg-accent-400 dark:bg-stone-700" />
+          </div>
+        ) : (
+          <div aria-hidden="true" className="hidden lg:block" />
+        )}
+
         <div className={`${panelOpen ? 'block' : 'hidden'} mt-12 border-t edge pt-8 lg:mt-0 lg:block lg:border-t-0 lg:pt-0`}>
-          <div className="lg:sticky lg:top-8 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto lg:pl-2">
+          {/* Desktop collapse (owner annotation): the rail folds to a reopen tab and the doc
+              takes the width. Mobile keeps its own Library toggle; this is lg-only chrome. */}
+          {panelCollapsed && (
+            <div className="hidden justify-end lg:flex">
+              <button
+                type="button"
+                onClick={() => setCollapsed(false)}
+                aria-label="Open the library panel"
+                className="sticky top-8 inline-flex min-h-[44px] items-center rounded border edge px-2 font-sans text-[11px] small-caps tracking-[0.08em] text-stone-500 [writing-mode:vertical-rl] hover:text-accent-600 dark:text-stone-400 dark:hover:text-accent-400"
+              >
+                Library
+              </button>
+            </div>
+          )}
+          <div className={`${panelCollapsed ? 'lg:hidden' : ''} lg:sticky lg:top-8 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto lg:pl-4`}>
+            <div className="hidden justify-end lg:flex">
+              <button
+                type="button"
+                onClick={() => setCollapsed(true)}
+                aria-label="Collapse the library panel"
+                className="-mb-6 inline-flex min-h-[32px] items-center font-sans text-[11px] small-caps tracking-[0.08em] text-stone-400 hover:text-stone-700 dark:text-stone-500 dark:hover:text-stone-300"
+              >
+                Hide ⟩
+              </button>
+            </div>
             <StudyLibraryPanel
               studyId={study.id}
               takePlacement={takePlacement}
               onAdded={onClippingAdded}
               focusToken={panelFocusToken}
+              lookup={lookup}
             />
           </div>
         </div>

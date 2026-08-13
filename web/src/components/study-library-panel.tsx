@@ -36,6 +36,7 @@ export function StudyLibraryPanel({
   takePlacement,
   onAdded,
   focusToken,
+  lookup,
 }: {
   studyId: string;
   /** The editor's pending insertion anchor, consumed per add (it advances there). */
@@ -43,6 +44,10 @@ export function StudyLibraryPanel({
   onAdded: (block: EditorBlock) => void;
   /** Increments when the editor's "From library" is chosen — focuses the search box. */
   focusToken: number;
+  /** A selection lookup from the doc ("Search lexicons" on selected text): sets the query and
+   *  jumps the active register to Lexicons — the dictionary IS the lexicon register, searched
+   *  through the same fenced engine as everything else here. */
+  lookup?: { token: number; q: string } | null;
 }) {
   const [q, setQ] = useState('');
   const [group, setGroup] = useState<CorpusGroupId>('commentaries');
@@ -59,6 +64,14 @@ export function StudyLibraryPanel({
   useEffect(() => {
     if (focusToken > 0) inputRef.current?.focus();
   }, [focusToken]);
+
+  useEffect(() => {
+    if (!lookup || lookup.token === 0) return;
+    setQ(lookup.q);
+    setGroup('lexicons');
+    inputRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- token is the trigger; q rides it
+  }, [lookup?.token]);
 
   useEffect(() => {
     const query = q.trim();
