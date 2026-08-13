@@ -25,9 +25,45 @@ interface Profile {
   sacred?: { start?: RegExp; end?: RegExp };
   // split the sacred region into units; default = blank-line-separated blocks
   splitUnits?: (region: string) => string[];
+  // section-scoped selection for a MIXED sacred/secular volume (below) —
+  // takes precedence over sacred/splitUnits when present
+  sections?: ScopedSpec;
   // pull a title/heading from a unit (first non-empty line by default)
   register: 'hymn' | 'poetry';
   paraphrase?: boolean;
+}
+
+// ── section-scoped selection (mixed sacred/secular volumes) ──
+// Twice on 2026-07-17 (A6) a whole-volume parse served SECULAR poems under a
+// sacred title: Grierson's Donne vol I as "Divine Poems", Pollard's Hesperides
+// & Noble Numbers as "Noble Numbers". The sacred{start,end} markers could not
+// say "the section of the book with this name": they match anywhere in the
+// body, so a title-page or preface mention can satisfy them, and they say
+// nothing about what the region must CONTAIN. A mixed volume therefore
+// declares its own contents instead:
+//   - scope markers match as WHOLE LINES only, so a mid-sentence preface
+//     mention ("his sacred poems or _Noble Numbers_") can never satisfy them;
+//   - the work's own section list is walked IN ORDER and every declared
+//     section must be found — a missing one ABORTS the ingest (structure
+//     drift) rather than silently widening the scope;
+//   - numbered works (Pollard's Noble Numbers) declare the expected number
+//     sequence, including any gap in the edition's own numeration.
+export interface ScopedSection {
+  match: RegExp; // the section's heading line, matched against single lines
+  marker?: boolean; // a group heading ("HOLY SONNETS.") — a boundary, not a section
+  children?: {
+    // numbered sub-poems under one heading (Donne's Holy Sonnets I.–XIX.);
+    // group 1 of pattern captures the numeral
+    pattern: RegExp;
+    heading: (numeral: string, firstLine: string) => string;
+  };
+}
+export interface ScopedSpec {
+  scope: { start: RegExp; end?: RegExp; endNext?: RegExp }; // endNext: first non-blank line after the end line must also match (disambiguates a bare "POEMS" heading)
+  contents?: ScopedSection[]; // explicit ordered contents (Grierson's Donne)
+  numbered?: { pattern: RegExp; first: number; last: number; expectMissing?: number[] }; // numbered poems (Pollard's Noble Numbers)
+  stripApparatus?: boolean; // drop bracketed […] editorial-note blocks inside units (Grierson's critical apparatus is not poem text)
+  epigraphs?: false; // the edition prints NO Scripture epigraphs for these poems — any epigraphAnchor hit is a false positive from 17th-c. spelling (Donne's "To the Lady Magdalen Herbert" anchored Isaiah 5:1-999)
 }
 
 // ── romanised Scripture epigraph → verse anchor ──
@@ -106,9 +142,67 @@ export const PROFILES: Record<string, Profile> = {
     sacred: { start: /\nMORNING\.?\n|\nDEDICATION\.?\n/, end: /\*\*\* END OF/ },
     register: 'poetry',
   },
-  'donne-divine-poems': { register: 'poetry' },
+  'donne-divine-poems': {
+    // Grierson 1912 vol I (PG #48688) mixes Songs and Sonnets, Elegies,
+    // Satyres and prose with the Divine Poems. Scope: the "DIVINE POEMS."
+    // part-heading (whole line; the ToC's indented, period-less "  DIVINE
+    // POEMS" cannot match) to "ELEGIES UPON THE AUTHOR" (commendatory verse
+    // by OTHER hands — not Donne's divine poems). Contents are the volume's
+    // own list for the section: the two dedication poems, La Corona's seven
+    // linked sonnets, the nineteen Holy Sonnets (children of the italic
+    // sub-heading), and the twelve later divine poems, in Grierson's order.
+    sections: {
+      scope: { start: /^DIVINE POEMS\.$/, end: /^ELEGIES UPON THE AUTHOR$/ },
+      stripApparatus: true,
+      epigraphs: false,
+      contents: [
+        { match: /^To _E\._ of _D\._ with six holy Sonnets/ },
+        { match: /^_To the Lady Magdalen Herbert: of St\. Mary Magdalen\._$/ },
+        { match: /^HOLY SONNETS\.$/, marker: true },
+        { match: /^_La Corona\._$/ },
+        { match: /^ANNVNCIATION\.$/ },
+        { match: /^NATIVITIE\.$/ },
+        { match: /^TEMPLE\.$/ },
+        { match: /^CRVCIFYING\.$/ },
+        { match: /^RESVRRECTION\.$/ },
+        { match: /^ASCENTION\.$/ },
+        {
+          match: /^_Holy Sonnets\._$/,
+          children: {
+            pattern: /^([IVX]+)\.$/,
+            heading: (num, first) => `${num}. ${first}`,
+          },
+        },
+        { match: /^_The Crosse\._$/ },
+        { match: /^_Resurrection, imperfect\._$/ },
+        { match: /^_The Annuntiation and Passion\._$/ },
+        { match: /^_Goodfriday_, 1613\. _Riding Westward\._$/ },
+        { match: /^THE LITANIE\.$/ },
+        { match: /^_Vpon the translation of the Psalmes by Sir_ Philip Sydney,$/ },
+        { match: /^_Ode: Of our Sense of Sinne\._$/ },
+        { match: /^_To M\^\{r\}_ Tilman _after he had taken orders\._$/ },
+        { match: /^_A Hymne to Christ, at the Authors last going into Germany\._$/ },
+        { match: /^_The Lamentations of Ieremy, for the most part according to$/ },
+        { match: /^_Hymne to God my God, in my sicknesse\._$/ },
+        { match: /^_A Hymne to God the Father:_$/ },
+        { match: /^_To Christ\._$/ },
+      ],
+    },
+    register: 'poetry',
+  },
   'herrick-noble-numbers': {
-    sacred: { start: /NOBLE NUMBERS|HIS NOBLE NUMBERS/, end: /\*\*\* END OF/ },
+    // Pollard 1891 (PG #22421) prints BOTH of Herrick's 1648 volumes: the
+    // secular Hesperides (poems 1-1130 across vols I-II of this edition) and
+    // the sacred Noble Numbers. The 2026-07-17 run's start marker matched a
+    // title-page/preface mention and swept Hesperides in. Scope: the whole
+    // line " HIS NOBLE NUMBERS:" (the part-title where the poems begin) to
+    // the appendix "POEMS / NOT INCLUDED IN _HESPERIDES_." Units are the
+    // edition's own numbered poems 1-271; 268 is skipped in Pollard's
+    // numeration (the number is absent from the book, not a dropped poem).
+    sections: {
+      scope: { start: /^ HIS NOBLE NUMBERS:$/, end: /^POEMS$/, endNext: /^NOT INCLUDED IN _HESPERIDES_\.$/ },
+      numbered: { pattern: /^(\d{1,3})\. (.+)$/, first: 1, last: 271, expectMissing: [268] },
+    },
     register: 'poetry',
   },
   // Dobell's 1903 ed. appends "THE POEMS OF WILLIAM STRODE" (a DIFFERENT poet)
@@ -200,7 +294,156 @@ function isGutMatter(heading: string | undefined, body: string): boolean {
   return (!!heading && GUT_MATTER_HEADING.test(heading)) || GUT_MATTER_BODY.test(`${heading ?? ''}\n${body}`.slice(0, 400));
 }
 
+const TITLE_TERMINATOR = /[.:]_?$/; // ".", "._", ":", ":_" — a Grierson title's closing mark
+function cleanHeading(line: string): string {
+  return line.replace(/_/g, '').replace(/\s+/g, ' ').trim();
+}
+// Drop Grierson's bracketed critical-apparatus blocks ("    [La Corona.
+// _1633-69_ …]"), which can span several lines; a block opens with '[' and
+// closes at the first line ending in ']'.
+function stripApparatusLines(lines: string[]): string[] {
+  const out: string[] = [];
+  let inNote = false;
+  for (const l of lines) {
+    const t = l.trim();
+    if (inNote) { if (t.endsWith(']')) inNote = false; continue; }
+    if (t.startsWith('[')) { if (!t.endsWith(']')) inNote = true; continue; }
+    out.push(l);
+  }
+  return out;
+}
+
+export interface ScopedResult {
+  sections: RegisterSection[];
+  scopeStart: number; // char offset of the scope start line in the stripped body
+  scopeEnd: number; // char offset of the scope end line (or body length)
+  filtered: Array<{ heading: string; reason: string }>; // declared units dropped by the shared filters — inspectable, never silent
+}
+
+export function scopedSections(body: string, spec: ScopedSpec): ScopedResult {
+  const lines = body.split('\n');
+  const offsets: number[] = [];
+  {
+    let pos = 0;
+    for (const l of lines) { offsets.push(pos); pos += l.length + 1; }
+  }
+  let startLine = -1;
+  for (let i = 0; i < lines.length; i++) if (spec.scope.start.test(lines[i]!)) { startLine = i; break; }
+  if (startLine < 0) throw new Error(`FAIL CLOSED: scope start ${spec.scope.start} not found as a whole line`);
+  let endLine = lines.length;
+  if (spec.scope.end) {
+    for (let i = startLine + 1; i < lines.length; i++) {
+      if (!spec.scope.end.test(lines[i]!)) continue;
+      if (spec.scope.endNext) {
+        const nxt = lines.slice(i + 1).find((l) => l.trim() !== '');
+        if (!nxt || !spec.scope.endNext.test(nxt)) continue;
+      }
+      endLine = i;
+      break;
+    }
+    if (endLine === lines.length) throw new Error(`FAIL CLOSED: scope end ${spec.scope.end} not found after the start line`);
+  }
+  const scopeLines = lines.slice(startLine + 1, endLine);
+
+  const filtered: ScopedResult['filtered'] = [];
+  // Shared finish: heading off the first line(s), apparatus stripped, the same
+  // matter/length filters and epigraph anchor as the legacy path. A declared
+  // unit that fails a filter is REPORTED, not silently dropped.
+  const finish = (heading: string | undefined, unitLines: string[], out: RegisterSection[]): void => {
+    const kept = (spec.stripApparatus ? stripApparatusLines(unitLines) : unitLines)
+      .map((l) => l.trim()).filter(Boolean);
+    const bodyText = kept.join('\n').trim();
+    if (isGutMatter(heading, bodyText)) { filtered.push({ heading: heading ?? '(none)', reason: 'front/back matter' }); return; }
+    if (bodyText.length < 40) { filtered.push({ heading: heading ?? '(none)', reason: `body ${bodyText.length} chars (<40)` }); return; }
+    const anchor = spec.epigraphs === false ? null : epigraphAnchor(`${heading ?? ''}\n${bodyText}`);
+    out.push({ heading, body: bodyText, anchors: anchor ? [anchor] : undefined });
+  };
+
+  const sections: RegisterSection[] = [];
+  if (spec.contents) {
+    // Walk the declared contents IN ORDER; each entry's heading line must be
+    // found at or after the previous one. A miss is structure drift — abort.
+    const bounds: Array<{ line: number; entry: ScopedSection }> = [];
+    let cursor = 0;
+    for (const entry of spec.contents) {
+      let at = -1;
+      for (let i = cursor; i < scopeLines.length; i++) {
+        if (entry.match.test(scopeLines[i]!)) { at = i; break; }
+      }
+      if (at < 0) throw new Error(`FAIL CLOSED: declared section ${entry.match} not found in scope — structure drift`);
+      bounds.push({ line: at, entry });
+      cursor = at + 1;
+    }
+    for (let b = 0; b < bounds.length; b++) {
+      const { line, entry } = bounds[b]!;
+      const next = b + 1 < bounds.length ? bounds[b + 1]!.line : scopeLines.length;
+      if (entry.marker) continue;
+      // Multi-line titles: a heading line without a closing mark continues on
+      // the following flush line(s) ("_Vpon the translation of the Psalmes by
+      // Sir_ Philip Sydney," / "_and the Countesse of Pembroke his Sister._").
+      const headLines = [scopeLines[line]!];
+      while (!TITLE_TERMINATOR.test(headLines[headLines.length - 1]!.trim()) && headLines.length <= 2) {
+        const nxt = scopeLines[line + headLines.length];
+        if (nxt === undefined || !nxt.trim() || nxt.trim().length > 75) break;
+        headLines.push(nxt);
+      }
+      const inner = scopeLines.slice(line + headLines.length, next);
+      if (entry.children) {
+        // Numbered sub-poems under one heading: split at each numeral line;
+        // text before the first numeral (rare) stays under the parent title.
+        const kids: Array<{ num: string; line: number }> = [];
+        for (let i = 0; i < inner.length; i++) {
+          const m = inner[i]!.match(entry.children.pattern);
+          if (m) kids.push({ num: m[1]!, line: i });
+        }
+        if (kids.length === 0) throw new Error(`FAIL CLOSED: no children (${entry.children.pattern}) under ${entry.match}`);
+        const pre = inner.slice(0, kids[0]!.line).join('\n').trim();
+        if (pre.length >= 40) finish(cleanHeading(scopeLines[line]!), inner.slice(0, kids[0]!.line), sections);
+        for (let k = 0; k < kids.length; k++) {
+          const kLines = inner.slice(kids[k]!.line + 1, k + 1 < kids.length ? kids[k + 1]!.line : inner.length);
+          const firstIdx = kLines.findIndex((l) => l.trim());
+          const firstLine = cleanHeading(firstIdx >= 0 ? kLines[firstIdx]! : '');
+          // The heading folds in the first verse line ("XIV. Batter my
+          // heart…"), so the body starts AFTER it — heading\nbody composes
+          // the whole sonnet, same convention as the legacy path (a
+          // duplicated first line was the A6 defect).
+          finish(entry.children.heading(kids[k]!.num, firstLine), kLines.filter((_, i) => i !== firstIdx), sections);
+        }
+      } else {
+        finish(cleanHeading(headLines.join(' ')), inner, sections);
+      }
+    }
+  } else if (spec.numbered) {
+    const { pattern, first, last, expectMissing = [] } = spec.numbered;
+    const units: Array<{ num: number; title: string; line: number }> = [];
+    for (let i = 0; i < scopeLines.length; i++) {
+      const m = scopeLines[i]!.match(pattern);
+      if (m) units.push({ num: Number(m[1]), title: m[2]!, line: i });
+    }
+    // The edition's own numeration is the contents list: the found sequence
+    // must equal first..last with exactly the declared gaps — no more, no less.
+    const seen = new Set(units.map((u) => u.num));
+    const missing: number[] = [];
+    for (let n = first; n <= last; n++) if (!seen.has(n)) missing.push(n);
+    const extra = units.filter((u) => u.num < first || u.num > last).map((u) => u.num);
+    const dupes = [...seen].filter((n) => units.filter((u) => u.num === n).length > 1);
+    const unexpected = missing.filter((n) => !expectMissing.includes(n));
+    const unaccounted = expectMissing.filter((n) => seen.has(n));
+    if (unexpected.length || extra.length || dupes.length || unaccounted.length) {
+      throw new Error(`FAIL CLOSED: numbered sequence drift — missing ${JSON.stringify(unexpected)}, extra ${JSON.stringify(extra)}, dupes ${JSON.stringify(dupes)}, declared-gap-but-present ${JSON.stringify(unaccounted)}`);
+    }
+    for (let u = 0; u < units.length; u++) {
+      const kLines = scopeLines.slice(units[u]!.line + 1, u + 1 < units.length ? units[u + 1]!.line : scopeLines.length);
+      finish(`${units[u]!.num}. ${cleanHeading(units[u]!.title)}`, kLines, sections);
+    }
+  } else {
+    throw new Error('FAIL CLOSED: scoped spec declares neither contents nor numbered units');
+  }
+  return { sections, scopeStart: offsets[startLine]!, scopeEnd: endLine < lines.length ? offsets[endLine]! : body.length, filtered };
+}
+
 export function buildSections(body: string, profile: Profile): RegisterSection[] {
+  if (profile.sections) return scopedSections(body, profile.sections).sections;
   let region = body;
   if (profile.sacred?.start) {
     const m = region.match(profile.sacred.start);

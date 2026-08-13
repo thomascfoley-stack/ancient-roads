@@ -1,0 +1,480 @@
+# donne-divine-poems / herrick-noble-numbers — section-scoped gutenberg profiles
+# corpus-backlog Phase 4 (un-quarantine of the two 2026-07-17 A6 whole-volume failures)
+# captured: 20260813T043613Z (UTC) — branch feat/corpus-backlog, worktree ancient-roads-corpus
+# dev branch only (host ep-tiny-hat, NEON_BRANCH=dev); no prod connection; nothing committed
+
+##### 1. DRY RUN — donne-divine-poems (kept list + negative control + ToC proof)
+==============================================================================
+SCOPED PROFILE DRY RUN — donne-divine-poems (Gutenberg #48688) — nothing written
+scope: chars 674342..776710 of 979340 (kept 102368, dropped 876972)
+==============================================================================
+
+── KEPT SECTIONS (41) ──
+    1  To E. of D. with six holy Sonnets.                                   677 chars
+    2  To the Lady Magdalen Herbert: of St. Mary Magdalen.                  655 chars
+    3  La Corona.                                                           675 chars
+    4  ANNVNCIATION.                                                        700 chars
+    5  NATIVITIE.                                                           673 chars
+    6  TEMPLE.                                                              673 chars
+    7  CRVCIFYING.                                                          652 chars
+    8  RESVRRECTION.                                                        682 chars
+    9  ASCENTION.                                                           699 chars
+   10  I. Thou hast made me, And shall thy worke decay?                     621 chars
+   11  II. As due by many titles I resigne                                  644 chars
+   12  III. O might those sighes and teares returne againe                  648 chars
+   13  IV. Oh my blacke Soule! now thou art summoned                        637 chars
+   14  V. I am a little world made cunningly                                637 chars
+   15  VI. This is my playes last scene, here heavens appoint               661 chars
+   16  VII. At the round earths imagin'd corners, blow                      644 chars
+   17  VIII. If faithfull soules be alike glorifi'd                         591 chars
+   18  IX. If poysonous mineralls, and if that tree,                        613 chars
+   19  X. Death be not proud, though some have called thee                  681 chars
+   20  XI. Spit in my face you Jewes, and pierce my side,                   620 chars
+   21  XII. Why are wee by all creatures waited on?                         621 chars
+   22  XIII. What if this present were the worlds last night?               628 chars
+   23  XIV. Batter my heart, three person'd God; for, you                   647 chars
+   24  XV. Wilt thou love God, as he thee! then digest,                     635 chars
+   25  XVI. Father, part of his double interest                             619 chars
+   26  XVII. Since she whom I lov'd hath payd her last debt                 631 chars
+   27  XVIII. Show me deare Christ, thy spouse, so bright and clear.        634 chars
+   28  XIX. Oh, to vex me, contraryes meet in one:                          595 chars
+   29  The Crosse.                                                         3153 chars
+   30  Resurrection, imperfect.                                            1093 chars
+   31  The Annuntiation and Passion.                                       2264 chars
+   32  Goodfriday, 1613. Riding Westward.                                  2072 chars
+   33  THE LITANIE.                                                       11570 chars
+   34  Vpon the translation of the Psalmes by Sir Philip Sydney, and th    2771 chars
+   35  Ode: Of our Sense of Sinne.                                          882 chars
+   36  To M^{r} Tilman after he had taken orders.                          2634 chars
+   37  A Hymne to Christ, at the Authors last going into Germany.          1458 chars
+   38  The Lamentations of Ieremy, for the most part according to Treme   19381 chars
+   39  Hymne to God my God, in my sicknesse.                               1575 chars
+   40  A Hymne to God the Father:                                           819 chars
+   41  To Christ.                                                           833 chars
+
+── DROPPED (negative control) ──
+  dropped blocks (old whole-volume split, >120 chars): 551
+  sample of the dropped (first line of block):
+     - THE POEMS OF JOHN DONNE
+     - The present edition of Donne's poems grew out of my work as a teacher.
+     - The typography of the edition of 1633 has been closely followed, in
+     - SOURCE                                                             PAGE
+     - SONGS AND SONETS
+     - - - indicates italic script; + + indicates Old English script;
+     - Page 7: 'seelily', from Middle English, via Old English, Old
+     - Page 65: 'A Ieat Ring Sent.' Ieat = Jeat, probably jet,
+  secular probes (must be in dropped, absent from kept):
+     ✓ "The good-morrow" — dropped:true kept:false
+     ✓ "The Sunne Rising" — dropped:true kept:false
+     ✓ "The Flea" — dropped:true kept:false
+     ✓ "Going to Bed" — dropped:true kept:false
+     ✓ "The Anagram" — dropped:true kept:false
+
+── CONTENTS PROOF (positive control) ──
+  expected from the volume's ToC: 41 poems
+  matched: 41/41
+  ✓ every ToC-expected Divine Poem appears in the kept sections
+
+✓ ALL CHECKS PASSED — donne-divine-poems
+
+##### 2. DRY RUN — herrick-noble-numbers (kept list + negative control + numeration proof)
+==============================================================================
+SCOPED PROFILE DRY RUN — herrick-noble-numbers (Gutenberg #22421) — nothing written
+scope: chars 539272..622703 of 825527 (kept 83431, dropped 742096)
+==============================================================================
+
+── KEPT SECTIONS (270) ──
+    1  1. HIS CONFESSION.                                                   261 chars
+    2  2. HIS PRAYER FOR ABSOLUTION.                                        341 chars
+    3  3. TO FIND GOD.                                                      586 chars
+    4  4. WHAT GOD IS.                                                       79 chars
+    5  5. UPON GOD.                                                          51 chars
+    6  6. MERCY AND LOVE.                                                   168 chars
+    7  7. GOD'S ANGER WITHOUT AFFECTION.                                    155 chars
+    8  8. GOD NOT TO BE COMPREHENDED.                                        78 chars
+    9  9. GOD'S PART.                                                        88 chars
+   10  10. AFFLICTION.                                                      180 chars
+   11  11. THREE FATAL SISTERS.                                              89 chars
+   12  12. SILENCE.                                                          88 chars
+   13  13. MIRTH.                                                            81 chars
+   14  14. LOADING AND UNLOADING.                                            89 chars
+   15  15. GOD'S MERCY.                                                     267 chars
+   16  16. PRAYERS MUST HAVE POISE.                                          99 chars
+   17  17. TO GOD: AN ANTHEM SUNG IN THE CHAPEL AT WHITEHALL BEFORE THE     488 chars
+   18  18. UPON GOD.                                                         71 chars
+   19  19. CALLING AND CORRECTING.                                           75 chars
+   20  20. NO ESCAPING THE SCOURGING.                                        90 chars
+   21  21. THE ROD.                                                          93 chars
+   22  22. GOD HAS A TWOFOLD PART.                                          181 chars
+   23  23. GOD IS ONE.                                                       60 chars
+   24  24. PERSECUTIONS PROFITABLE.                                         160 chars
+   25  25. TO GOD.                                                          379 chars
+   26  26. WHIPS.                                                            82 chars
+   27  27. GOD'S PROVIDENCE.                                                178 chars
+   28  28. TEMPTATION.                                                       62 chars
+   29  29. HIS EJACULATION TO GOD.                                          338 chars
+   30  30. GOD'S GIFTS NOT SOON GRANTED.                                    165 chars
+   31  31. PERSECUTIONS PURIFY.                                             177 chars
+   32  32. PARDON.                                                           85 chars
+   33  33. AN ODE OF THE BIRTH OF OUR SAVIOUR.                              868 chars
+   34  34. LIP-LABOUR.                                                      161 chars
+   35  35. THE HEART.                                                        90 chars
+   36  36. EARRINGS.                                                        124 chars
+   37  37. SIN SEEN.                                                         80 chars
+   38  38. UPON TIME.                                                       376 chars
+   39  39. HIS PETITION.                                                    263 chars
+   40  40. TO GOD.                                                          110 chars
+   41  41. HIS LITANY TO THE HOLY SPIRIT.                                  1433 chars
+   42  42. THANKSGIVING.                                                     70 chars
+   43  43. COCK-CROW.                                                       238 chars
+   44  44. ALL THINGS RUN WELL FOR THE RIGHTEOUS.                           167 chars
+   45  45. PAIN ENDS IN PLEASURE.                                            87 chars
+   46  46. TO GOD.                                                          308 chars
+   47  47. A THANKSGIVING TO GOD FOR HIS HOUSE.                            1603 chars
+   48  48. TO GOD.                                                          360 chars
+   49  49. ANOTHER TO GOD.                                                  193 chars
+   50  50. NONE TRULY HAPPY HERE.                                           138 chars
+   51  51. TO HIS EVER-LOVING GOD.                                          615 chars
+   52  52. ANOTHER.                                                         180 chars
+   53  53. TO DEATH.                                                        404 chars
+   54  54. NEUTRALITY LOATHSOME.                                            159 chars
+   55  55. WELCOME WHAT COMES.                                               85 chars
+   56  56. TO HIS ANGRY GOD.                                                524 chars
+   57  57. PATIENCE: OR, COMFORTS IN CROSSES.                               136 chars
+   58  58. ETERNITY.                                                        257 chars
+   59  59. TO HIS SAVIOUR, A CHILD: A PRESENT BY A CHILD.                   634 chars
+   60  60. THE NEW-YEAR'S GIFT.                                             223 chars
+   61  61. TO GOD.                                                           84 chars
+   62  62. GOD AND THE KING.                                                 87 chars
+   63  63. GOD'S MIRTH: MAN'S MOURNING.                                      99 chars
+   64  64. HONOURS ARE HINDRANCES.                                          196 chars
+   65  65. THE PARASCEVE, OR PREPARATION.                                   430 chars
+   66  66. TO GOD.                                                          290 chars
+   67  67. A WILL TO BE WORKING.                                            170 chars
+   68  68. CHRIST'S PART.                                                   186 chars
+   69  69. RICHES AND POVERTY.                                              182 chars
+   70  70. SOBRIETY IN SEARCH.                                               81 chars
+   71  71. ALMS.                                                            170 chars
+   72  72. TO HIS CONSCIENCE.                                               680 chars
+   73  73. TO HIS SAVIOUR.                                                  163 chars
+   74  74. TO GOD.                                                          203 chars
+   75  75. HIS DREAM.                                                       364 chars
+   76  76. GOD'S BOUNTY.                                                     69 chars
+   77  77. TO HIS SWEET SAVIOUR.                                            655 chars
+   78  78. HIS CREED.                                                       524 chars
+   79  79. TEMPTATIONS.                                                      88 chars
+   80  80. THE LAMP.                                                         80 chars
+   81  81. SORROWS.                                                          82 chars
+   82  82. PENITENCY.                                                        80 chars
+   83  83. THE DIRGE OF JEPHTHAH'S DAUGHTER: SUNG BY THE VIRGINS.          2653 chars
+   84  84. TO GOD: ON HIS SICKNESS.                                         285 chars
+   85  85. SINS LOATHED, AND YET LOVED.                                     101 chars
+   86  86. SIN.                                                              93 chars
+   87  87. UPON GOD.                                                        162 chars
+   88  88. FAITH.                                                            91 chars
+   89  89. HUMILITY.                                                        162 chars
+   90  90. TEARS.                                                           131 chars
+   91  91. SIN AND STRIFE.                                                   83 chars
+   92  92. AN ODE, OR PSALM TO GOD.                                         361 chars
+   93  93. GRACES FOR CHILDREN.                                             294 chars
+   94  94. GOD TO BE FIRST SERVED.                                           81 chars
+   95  95. ANOTHER GRACE FOR A CHILD.                                       190 chars
+   96  96. A CHRISTMAS CAROL SUNG TO THE KING IN THE PRESENCE AT WHITEH    1326 chars
+   97  97. THE NEW-YEAR'S GIFT: OR, CIRCUMCISION'S SONG. SUNG TO THE KI    1176 chars
+   98  98. ANOTHER NEW-YEAR'S GIFT: OR, SONG FOR THE CIRCUMCISION.         1141 chars
+   99  99. GOD'S PARDON.                                                     88 chars
+  100  100. SIN.                                                             83 chars
+  101  101. EVIL.                                                            78 chars
+  102  102. THE STAR-SONG: A CAROL TO THE KING SUNG AT WHITEHALL.           970 chars
+  103  103. TO GOD.                                                         454 chars
+  104  104. TO HIS DEAR GOD.                                                441 chars
+  105  105. TO GOD: HIS GOOD WILL.                                          358 chars
+  106  106. ON HEAVEN.                                                      326 chars
+  107  107. THE SUM AND THE SATISFACTION.                                   572 chars
+  108  108. GOOD MEN AFFLICTED MOST.                                        522 chars
+  109  109. GOOD CHRISTIANS                                                  85 chars
+  110  110. THE WILL THE CAUSE OF WOE.                                       84 chars
+  111  111. TO HEAVEN.                                                      172 chars
+  112  112. THE RECOMPENSE.                                                 167 chars
+  113  113. TO GOD.                                                         427 chars
+  114  114. TO GOD.                                                         268 chars
+  115  115. HIS WISH TO GOD.                                                541 chars
+  116  116. SATAN.                                                          174 chars
+  117  117. HELL.                                                            79 chars
+  118  118. THE WAY.                                                        265 chars
+  119  119. GREAT GRIEF, GREAT GLORY.                                        92 chars
+  120  120. HELL.                                                            91 chars
+  121  121. THE BELLMAN.                                                    431 chars
+  122  122. THE GOODNESS OF HIS GOD.                                        333 chars
+  123  123. THE WIDOWS' TEARS: OR, DIRGE OF DORCAS.                        2968 chars
+  124  124. TO GOD IN TIME OF PLUNDERING.                                   212 chars
+  125  125. TO HIS SAVIOUR. THE NEW-YEAR'S GIFT.                            247 chars
+  126  126. DOOMSDAY.                                                        98 chars
+  127  127. THE POOR'S PORTION.                                             283 chars
+  128  128. THE WHITE ISLAND: OR, PLACE OF THE BLEST.                       609 chars
+  129  129. TO CHRIST.                                                      281 chars
+  130  130. TO GOD.                                                         126 chars
+  131  131. FREE WELCOME.                                                    77 chars
+  132  132. GOD'S GRACE.                                                     86 chars
+  133  133. COMING TO CHRIST.                                                69 chars
+  134  134. CORRECTION.                                                      81 chars
+  135  135. GOD'S BOUNTY.                                                    83 chars
+  136  136. KNOWLEDGE.                                                       57 chars
+  137  137. SALUTATION.                                                     357 chars
+  138  138. LASCIVIOUSNESS.                                                  53 chars
+  139  139. TEARS.                                                           93 chars
+  140  140. GOD'S BLESSING.                                                  76 chars
+  141  141. GOD, AND LORD.                                                   85 chars
+  142  142. THE JUDGMENT-DAY.                                               154 chars
+  143  143. ANGELS.                                                         146 chars
+  144  144. LONG LIFE.                                                       66 chars
+  145  145. TEARS.                                                           72 chars
+  146  146. MANNA.                                                           80 chars
+  147  147. REVERENCE.                                                      165 chars
+  148  148. MERCY.                                                           67 chars
+  149  149. WAGES.                                                           62 chars
+  150  150. TEMPTATION.                                                     153 chars
+  151  151. GOD'S HANDS.                                                     97 chars
+  152  152. LABOUR.                                                          63 chars
+  153  153. MORA SPONSI, THE STAY OF THE BRIDEGROOM.                         70 chars
+  154  154. ROARING.                                                         81 chars
+  155  155. THE EUCHARIST.                                                   93 chars
+  156  156. SIN SEVERELY PUNISHED.                                           89 chars
+  157  157. MONTES SCRIPTURARUM: THE MOUNTS OF THE SCRIPTURES.              168 chars
+  158  158. PRAYER.                                                         290 chars
+  159  159. CHRIST'S SADNESS.                                                87 chars
+  160  160. GOD HEARS US.                                                    83 chars
+  161  161. GOD.                                                            131 chars
+  162  162. CLOUDS.                                                          80 chars
+  163  163. COMFORTS IN CONTENTIONS.                                         68 chars
+  164  164. HEAVEN.                                                          65 chars
+  165  165. GOD.                                                             81 chars
+  166  166. HIS POWER.                                                       76 chars
+  167  167. CHRIST'S WORDS ON THE CROSS: MY GOD, MY GOD.                    188 chars
+  168  168. JEHOVAH.                                                         56 chars
+  169  169. CONFUSION OF FACE.                                               86 chars
+  170  170. ANOTHER.                                                         74 chars
+  171  171. BEGGARS.                                                         86 chars
+  172  172. GOOD AND BAD.                                                    91 chars
+  173  173. SIN.                                                             82 chars
+  174  174. MARTHA, MARTHA.                                                  76 chars
+  175  175. YOUTH AND AGE.                                                   80 chars
+  176  176. GOD'S POWER.                                                     75 chars
+  177  177. PARADISE.                                                        93 chars
+  178  178. OBSERVATION.                                                    166 chars
+  179  179. THE ASS.                                                        148 chars
+  180  180. OBSERVATION.                                                    498 chars
+  181  181. TAPERS.                                                         215 chars
+  182  182. CHRIST'S BIRTH.                                                  81 chars
+  183  183. THE VIRGIN MARY.                                                 83 chars
+  184  184. ANOTHER.                                                        176 chars
+  185  185. GOD.                                                             69 chars
+  186  186. ANOTHER OF GOD.                                                 160 chars
+  187  187. ANOTHER.                                                         79 chars
+  188  188. GOD'S PRESENCE.                                                 156 chars
+  189  189. GOD'S DWELLING.                                                 172 chars
+  190  190. THE VIRGIN MARY.                                                156 chars
+  191  191. TO GOD.                                                         227 chars
+  192  192. UPON WOMAN AND MARY.                                            173 chars
+  193  193. NORTH AND SOUTH.                                                185 chars
+  194  194. SABBATHS.                                                       163 chars
+  195  195. THE FAST, OR LENT.                                               78 chars
+  196  196. SIN.                                                            168 chars
+  197  197. GOD.                                                             82 chars
+  198  198. THIS, AND THE NEXT WORLD.                                        89 chars
+  199  199. EASE.                                                            77 chars
+  200  200. BEGINNINGS AND ENDINGS.                                         151 chars
+  201  201. TEMPORAL GOODS.                                                 269 chars
+  202  202. HELL FIRE.                                                       89 chars
+  203  203. ABEL'S BLOOD.                                                   126 chars
+  204  204. ANOTHER.                                                        123 chars
+  205  205. A POSITION IN THE HEBREW DIVINITY.                               85 chars
+  206  206. PENITENCE.                                                      132 chars
+  207  207. GOD'S PRESENCE.                                                 194 chars
+  208  208. THE RESURRECTION POSSIBLE AND PROBABLE.                         262 chars
+  209  209. CHRIST'S SUFFERING.                                              87 chars
+  210  210. SINNERS.                                                        165 chars
+  211  211. TEMPTATIONS.                                                     74 chars
+  212  212. PITY AND PUNISHMENT.                                             86 chars
+  213  213. GOD'S PRICE AND MAN'S PRICE.                                     96 chars
+  214  214. CHRIST'S ACTION.                                                236 chars
+  215  215. PREDESTINATION.                                                  72 chars
+  216  216. ANOTHER.                                                        175 chars
+  217  217. SIN.                                                             81 chars
+  218  218. ANOTHER.                                                         83 chars
+  219  219. ANOTHER.                                                        158 chars
+  220  220. PRESCIENCE.                                                      97 chars
+  221  221. CHRIST.                                                          80 chars
+  222  222. CHRIST'S INCARNATION.                                           173 chars
+  223  223. HEAVEN.                                                          77 chars
+  224  224. GOD'S KEYS                                                      182 chars
+  225  225. SIN.                                                             66 chars
+  226  226. ALMS.                                                            84 chars
+  227  227. HELL FIRE.                                                      168 chars
+  228  228. TO KEEP A TRUE LENT.                                            470 chars
+  229  229. NO TIME IN ETERNITY.                                             86 chars
+  230  230. HIS MEDITATION UPON DEATH.                                     1540 chars
+  231  231. CLOTHES FOR CONTINUANCE.                                        157 chars
+  232  232. TO GOD.                                                         563 chars
+  233  233. THE SOUL.                                                       141 chars
+  234  234. THE JUDGMENT-DAY.                                                86 chars
+  235  235. SUFFERINGS.                                                      78 chars
+  236  236. PAIN AND PLEASURE.                                              173 chars
+  237  237. GOD'S PRESENCE.                                                  77 chars
+  238  238. ANOTHER.                                                         66 chars
+  239  239. THE POOR MAN'S PART.                                            133 chars
+  240  240. THE RIGHT HAND.                                                  80 chars
+  241  241. THE STAFF AND ROD.                                              173 chars
+  242  242. GOD SPARING IN SCOURGING.                                        89 chars
+  243  243. CONFESSION.                                                     181 chars
+  244  244. GOD'S DESCENT.                                                  159 chars
+  245  245. NO COMING TO GOD WITHOUT CHRIST.                                206 chars
+  246  246. ANOTHER TO GOD.                                                 229 chars
+  247  247. THE RESURRECTION.                                                81 chars
+  248  248. CO-HEIRS.                                                       168 chars
+  249  249. THE NUMBER OF TWO.                                              320 chars
+  250  250. HARDENING OF HEARTS.                                             71 chars
+  251  251. THE ROSE.                                                       186 chars
+  252  252. GOD'S TIME MUST END OUR TROUBLE.                                161 chars
+  253  253. BAPTISM.                                                         73 chars
+  254  254. GOLD AND FRANKINCENSE.                                           73 chars
+  255  255. TO GOD.                                                         162 chars
+  256  256. THE CHEWING THE CUD.                                            187 chars
+  257  257. CHRIST'S TWOFOLD COMING.                                        175 chars
+  258  258. TO GOD, HIS GIFT.                                               215 chars
+  259  259. GOD'S ANGER.                                                    168 chars
+  260  260. GOD'S COMMANDS.                                                  80 chars
+  261  261. TO GOD.                                                         259 chars
+  262  262. TO GOD.                                                         153 chars
+  263  263. GOOD FRIDAY: REX TRAGICUS; OR, CHRIST GOING TO HIS CROSS.      1729 chars
+  264  264. HIS WORDS TO CHRIST GOING TO THE CROSS.                         159 chars
+  265  265. ANOTHER TO HIS SAVIOUR.                                         341 chars
+  266  266. HIS SAVIOUR'S WORDS GOING TO THE CROSS.                         525 chars
+  267  267. HIS ANTHEM TO CHRIST ON THE CROSS.                             1591 chars
+  268  269. TO HIS SAVIOUR'S SEPULCHRE: HIS DEVOTION.                       889 chars
+  269  270. HIS OFFERING, WITH THE REST, AT THE SEPULCHRE.                  190 chars
+  270  271. HIS COMING TO THE SEPULCHRE.                                    432 chars
+
+── DROPPED (negative control) ──
+  dropped numbered poems (Hesperides + appendix, this edition's numeration): 999
+  sample of the dropped:
+     - THE ARGUMENT OF HIS BOOK.
+     - TO HIS MUSE.
+     - TO HIS BOOK.
+     - ANOTHER.
+     - UPON FAUNUS.
+     - THE QUINTELL.
+     - UPON PENNY.
+  secular probes (must be in dropped, absent from kept):
+     ✓ "THE ARGUMENT OF HIS BOOK" — dropped:true kept:false
+     ✓ "TO DIANEME" — dropped:true kept:false
+     ✓ "CHERRY-RIPE" — dropped:true kept:false
+     ✓ "UPON JULIA" — dropped:true kept:false
+     ✓ "DELIGHT IN DISORDER" — dropped:true kept:false
+
+── CONTENTS PROOF (positive control) ──
+  This edition prints no Noble Numbers table of contents (verified: no
+  CONTENTS section for the Noble Numbers part of PG #22421), so the
+  contents proof is the edition's own poem numeration, enforced by the
+  profile itself: numbers 1..271, Pollard skips 268 (absent from the
+  book — a numeration gap, not a dropped poem). The engine ABORTS on
+  any other gap, dupe, or out-of-range number; it did not abort.
+  ✓ 270 numbered poems kept, sequence 1..271 minus [268] verified
+
+✓ ALL CHECKS PASSED — herrick-noble-numbers
+
+##### 3. RED-PROOF a — the A6 failure reproduced, then fixed (Donne)
+OLD whole-volume parse: 657 sections
+  probe "The good-morrow" served under the sacred title: true
+  probe "The Sunne Rising" served under the sacred title: true
+  probe "The Flea" served under the sacred title: true
+  probe "Going to Bed" served under the sacred title: true
+NEW scoped parse: 41 sections
+  probe "The good-morrow" in kept: false
+  probe "The Sunne Rising" in kept: false
+  probe "The Flea" in kept: false
+  probe "Going to Bed" in kept: false
+
+##### 4. RED-PROOF b — a wrong scope FAILS CLOSED (Herrick, start at the secular vol I heading)
+✓ broken scope aborted: FAIL CLOSED: numbered sequence drift — missing [], extra [274,275,276,278,279,280,281,282,283,284,285,286,287,288,289,29…
+
+##### 5. DEV CENSUS BEFORE re-ingest (queried 2026-08-13 ~04:30 UTC via --census)
+donne-divine-poems: no sources row — dev held nothing; the 2026-07-17 whole-volume rows were not on dev
+herrick-noble-numbers: no sources row
+
+##### 6. RE-INGEST (existing path: adapter-gutenberg.ts -> register-writer.writeRegisterWork;
+        publish=false from manifest serve:false => status='staged'; assertReingestable passed;
+        Donne re-run once after suppressing a spurious epigraph anchor — Grierson prints no
+        Scripture epigraphs for these poems, so the profile now declares epigraphs:false)
+$ npx tsx src/ingest/adapter-gutenberg.ts --slug=herrick-noble-numbers
+  → herrick-noble-numbers: 270 section(s), 0 anchor(s) on the shelf
+  herrick-noble-numbers: 270 sections, 0 verse-anchored, 282 embedded
+$ npx tsx src/ingest/adapter-gutenberg.ts --slug=donne-divine-poems
+  ↻ donne-divine-poems: replaced prior ingest (78 rows, 1 static entries)
+  → donne-divine-poems: 41 section(s), 0 anchor(s) on the shelf
+  donne-divine-poems: 41 sections, 0 verse-anchored, 78 embedded
+
+##### 7. DEV CENSUS AFTER re-ingest
+db host: ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech (credentials redacted), branch=dev
+donne-divine-poems: status=staged sections=41 flat_embeddings=78 section_anchors=0
+  secular-heading scan over 41 sections: ✓ zero secular headings
+     § To E. of D. with six holy Sonnets.
+     § To the Lady Magdalen Herbert: of St. Mary Magdalen.
+     § La Corona.
+     § ANNVNCIATION.
+     § NATIVITIE.
+     § TEMPLE.
+     § CRVCIFYING.
+     § RESVRRECTION.
+     § ASCENTION.
+     § I. Thou hast made me, And shall thy worke decay?
+     § II. As due by many titles I resigne
+     § III. O might those sighes and teares returne againe
+     § IV. Oh my blacke Soule! now thou art summoned
+     § V. I am a little world made cunningly
+     § VI. This is my playes last scene, here heavens appoint
+     § VII. At the round earths imagin'd corners, blow
+     § VIII. If faithfull soules be alike glorifi'd
+     § IX. If poysonous mineralls, and if that tree,
+     § X. Death be not proud, though some have called thee
+     § XI. Spit in my face you Jewes, and pierce my side,
+     § XII. Why are wee by all creatures waited on?
+     § XIII. What if this present were the worlds last night?
+     § XIV. Batter my heart, three person'd God; for, you
+     § XV. Wilt thou love God, as he thee! then digest,
+     § XVI. Father, part of his double interest
+     § XVII. Since she whom I lov'd hath payd her last debt
+     § XVIII. Show me deare Christ, thy spouse, so bright and clear.
+     § XIX. Oh, to vex me, contraryes meet in one:
+     § The Crosse.
+     § Resurrection, imperfect.
+     § The Annuntiation and Passion.
+     § Goodfriday, 1613. Riding Westward.
+     § THE LITANIE.
+     § Vpon the translation of the Psalmes by Sir Philip Sydney, and the Counte
+     § Ode: Of our Sense of Sinne.
+     § To M^{r} Tilman after he had taken orders.
+     § A Hymne to Christ, at the Authors last going into Germany.
+     § The Lamentations of Ieremy, for the most part according to Tremelius.
+     § Hymne to God my God, in my sicknesse.
+     § A Hymne to God the Father:
+     § To Christ.
+herrick-noble-numbers: status=staged sections=270 flat_embeddings=282 section_anchors=0
+  secular-heading scan over 270 sections: ✓ zero secular headings
+     § 1. HIS CONFESSION.
+     § 2. HIS PRAYER FOR ABSOLUTION.
+     § 3. TO FIND GOD.
+     § … (264 more) …
+     § 269. TO HIS SAVIOUR'S SEPULCHRE: HIS DEVOTION.
+     § 270. HIS OFFERING, WITH THE REST, AT THE SEPULCHRE.
+     § 271. HIS COMING TO THE SEPULCHRE.
+
+##### 8. REPO CHECKS
+npx tsc --noEmit: exit 0 (whole project)
+npx vitest run test/content-sanity.test.ts test/corpus-manifest.test.ts: 30/30 passed
+npm run audit: RED, NOT from this change — (a) deps lane: 8 pre-existing better-auth
+  GHSA advisories (no dependency touched here); (b) qa lane: vitest failures confined to
+  web/test + web/src teacher-lane files modified by OTHER in-flight agents on this shared
+  branch (historian-lane / ask-outcome / coverage-floor / marketing-verse-panel), plus
+  DB-endpoint allow-list guards and vacuous-corpus guards needing a served corpus.
+  No failing test references the gutenberg adapter or these two works.
