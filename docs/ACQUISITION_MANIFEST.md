@@ -131,6 +131,9 @@ Beyond the patristic corpus (§2c) + **John of Damascus** (NPNF2 v9, Salmond 189
 - **Philokalia / Palamas / Symeon (English)** — EXCLUDE (no PD English exists).
 - **Any post-1930 translation of a PD author** — EXCLUDE. Record translator+year; verify ≤1929.
 
+Text-quality exclusions (not copyright — no clean text exists to ingest):
+- **Bramley & Stainer, _Christmas Carols New and Old_ (1871)** — EXCLUDE, terminal (owner ruling 2026-08-13). A6 run 2026-07-17 measured every copy: CCEL serves an HTML landing page with no ThML, and all 5 archive.org copies are engraved-music editions at 27–31% OCR-garbage lines (guardrail is >5%), engraved titles unrecoverable. Not a parser problem — there is nothing to parse; do not re-attempt.
+
 ## 5. Historians / Historical Background  (`source_type='historian'`)
 
 Rich enough to launch as a full sub-category. Two clusters: **biblical/Jewish background** (the "times, context, culture") and **church history**. Center of gravity is clean, chapter-addressable text (CCEL / Gutenberg / sacred-texts), not OCR.

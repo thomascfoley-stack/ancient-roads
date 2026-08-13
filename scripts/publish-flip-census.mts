@@ -113,7 +113,7 @@ try {
   // owner ruling ordered. Under list-admission the rule STOPped the thing the ruling required,
   // and no re-reading of either resolved it, because the rule had one category where the product
   // has two. A work with sections is shelf-reachable once published; that is a serving surface,
-  // so it is admission. `spurgeon-talks-to-farmers` (298 sections, 0 flat) is the same shape.
+  // so it is admission.
   const LANE_FILTERS = [
     LEGAL_CORPUS_FILTER,
     SONG_VERSE_CORPUS_FILTER,

@@ -71,7 +71,9 @@ const TARGETS: Target[] = [
   // ── publisher's catalogue / price lists, stamped with the poet's name.
   { slug: 'tennyson-in-memoriam', ordinals: [1, 5], expect: 5, why: "bookseller's catalogue" },
   { slug: 'traherne-poems', ordinals: [413, 417], expect: 5, why: "publisher's catalogue" },
-  { slug: 'spurgeon-talks-to-farmers', ordinals: [299, 300], expect: 2, why: "publisher's back-matter" },
+  // spurgeon-talks-to-farmers (ordinals 299-300, publisher's back-matter) was suppressed here and
+  // the entry removed 2026-08-13: the work itself was killed by owner ruling (never embedded;
+  // re-upload later is a fresh ingest, which must re-verify its own back matter).
 ];
 
 function localEnv(name: string): string | undefined {

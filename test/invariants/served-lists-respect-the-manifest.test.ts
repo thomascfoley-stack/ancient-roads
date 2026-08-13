@@ -21,7 +21,8 @@
 // That is the point — this pins something that is TRUE and unprotected, rather than reporting a bug.
 //
 // `serve: false` deliberately conflates two different reasons — quarantined for quality/licensing
-// (bramley-carols: 27-31% OCR garbage; whitefield-works: no clean sermon boundaries) and staged
+// (donne-divine-poems/herrick-noble-numbers: secular volumes under sacred titles;
+// whitefield-works: no clean sermon boundaries) and staged
 // because no read path exists yet (the three historians, thayers-lexicon). The flag cannot tell
 // them apart and this test does not try to: BOTH reasons mean "not served", and a served list
 // naming either one is wrong. If a historian is later meant to serve, the manifest entry is what
@@ -56,16 +57,18 @@ describe('the manifest and the served lists are both really there', () => {
     expect(MANIFEST.length).toBeGreaterThan(40);
     expect(ALL_SERVED_WORKS.length).toBeGreaterThan(20);
     expect(WITHHELD.length, 'no serve:false entry found — the flag was renamed or the parse broke').toBeGreaterThan(0);
-    // The four quality/licensing quarantines named in the A8 draft's STOP list. If a rename or a
-    // manifest edit removes one, that is a decision someone must have made on purpose.
-    for (const slug of ['whitefield-works', 'bramley-carols', 'donne-divine-poems', 'herrick-noble-numbers']) {
+    // The three quality/licensing quarantines named in the A8 draft's STOP list and still in the
+    // manifest (bramley-carols was the fourth — terminally excluded 2026-08-13, block deleted).
+    // If a rename or a manifest edit removes one, that is a decision someone must have made on
+    // purpose.
+    for (const slug of ['whitefield-works', 'donne-divine-poems', 'herrick-noble-numbers']) {
       expect(WITHHELD, `${slug} is no longer serve:false in the manifest`).toContain(slug);
     }
   });
 });
 
 describe('no withheld work reaches a served list', () => {
-  // SEED: add 'whitefield-works' to SERVED_SERMON_WORKS, or 'bramley-carols' to
+  // SEED: add 'whitefield-works' to SERVED_SERMON_WORKS, or 'donne-divine-poems' to
   // SERVED_SONG_VERSE_WORKS -> RED, naming the slug and the list it entered through.
   it.each(Object.keys(SERVED_WORK_LISTS))('%s names no serve:false work', (listName) => {
     const list = SERVED_WORK_LISTS[listName as keyof typeof SERVED_WORK_LISTS];

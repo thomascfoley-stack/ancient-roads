@@ -66,17 +66,16 @@ export const SERVED_PROSE_WORKS = [
 // The SERMON register lane (homiletical exposition — Spurgeon, Maclaren, the
 // Puritans). Retrieve-and-quote in its own pool + labeled payload; the reusable
 // sermon-search retrieval core. NEVER in the exegetical pool or its voice floor.
-// `spurgeon-talks-to-farmers` added 2026-08-02 by owner decision ("add it so all sermons are
-// live"). It was the ONLY clean, unquarantined sermon-type work in the manifest absent from this
-// list, and nothing recorded why — the A8 draft flagged the omission's intent as NOT ESTABLISHED.
-// Its non-authorial back matter is already suppressed (`suppress-nonauthorial-matter.ts`: ordinals
-// 299-300, "publisher's back-matter"), so it is curated, not raw.
+// `spurgeon-talks-to-farmers` was added 2026-08-02 ("all sermons live") and KILLED by owner
+// ruling 2026-08-13: published with 298 sections but embeddings were never generated (0
+// vectors), so no retrieval path could read it. "Kill it — we will upload it later"; re-adding
+// is a fresh ingest WITH embeddings, not a re-listing here. Its manifest block is deleted.
 // NOT added, and this is the one sermon that stays out: `whitefield-works` is `serve:false` in the
 // manifest for a QUALITY reason, not an oversight — Project Gutenberg vol 1 of 6, no clean sermon
 // boundaries. "All sermons live" does not reach it without revisiting that ruling.
 export const SERVED_SERMON_WORKS = [
   'spurgeon-sermons', 'maclaren-expositions', 'watson-works', 'flavel-works',
-  'edwards-works', 'wesley-sermons', 'spurgeon-talks-to-farmers',
+  'edwards-works', 'wesley-sermons',
 ] as const;
 // The THEOLOGY/CONFESSION register lane (systematic + confessional — topical
 // treatises, not verse-commentary). Same lane machinery, its own labeled payload.
@@ -86,8 +85,10 @@ export const SERVED_THEOLOGY_WORKS = [
 // whitefield-works quarantined 2026-07-18 (PG vol 1/6, no clean sermon boundaries)
 // herbert-temple/montgomery-sacred-poems/rossetti-verses RECOVERED 2026-07-17
 // (archive.org Cassell 1887 / CCEL title-div fallback / PG title-line splitter).
-// Still quarantined: bramley-carols (all sources are engraved-music editions,
-// 27-31% OCR garbage), donne-divine-poems/herrick-noble-numbers (A6: whole
+// bramley-carols TERMINALLY EXCLUDED 2026-08-13 (owner ruling): no clean-text source exists —
+// all sources are engraved-music editions, 27-31% OCR garbage (A6 2026-07-17). Its manifest
+// block is deleted; the exclusion is recorded in ACQUISITION_MANIFEST.md §4d.
+// Still quarantined: donne-divine-poems/herrick-noble-numbers (A6: whole
 // secular volumes under sacred titles — need section-scoped profiles).
 export const SERVED_SONG_VERSE_WORKS = [
   'olney-hymns', 'scottish-psalter-1650', 'neale-eastern-hymns',

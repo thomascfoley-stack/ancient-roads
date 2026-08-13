@@ -33,7 +33,7 @@ const WRITE = process.argv.includes('--write');
 const BATCHES = [
   { name: 'hymns', types: ['hymn'], note: 'first — the most isolated register' },
   { name: 'poetry', types: ['poetry'], note: 'same lane as hymns, same partial index' },
-  { name: 'sermons', types: ['sermon'], note: 'includes spurgeon-talks-to-farmers, added 2026-08-02' },
+  { name: 'sermons', types: ['sermon'], note: 'the sermon register lane' },
   { name: 'theology', types: ['theology', 'confession'], note: 'the systematic/confessional lane' },
   { name: 'fathers', types: ['father'], note: 'exegetical pool — shares the /ask voice floor' },
   { name: 'historians', types: ['historian'], note: 'shelf + Book Reader only; no retrieval lane exists' },

@@ -269,7 +269,7 @@ describe('a partial census says so, and cannot be mistaken for a full one', () =
 // every lane. `josephus-whiston` is exactly that (4,112 sections, 439 anchors, 0 flat rows), and
 // the owner ruling ORDERS it published to the historian register for the Book Reader. Under the
 // old one-surface rule the census STOPped the thing the ruling required, and no re-reading of
-// either resolved it. `spurgeon-talks-to-farmers` (298 sections, 0 flat) is the same shape.
+// either resolved it.
 //
 // The rule still has to bite, though: publishing a work that NEITHER surface serves is still the
 // flip's worst outcome, and that is the case this file exists to keep red.

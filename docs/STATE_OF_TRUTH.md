@@ -131,6 +131,13 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 
 ### 2d. Prod `sources.status` — published count (2026-08-01, gate A2)
 
+> **CORRECTION (2026-08-13):** this 2026-08-01 table is a historical snapshot. Since then:
+> `calvin-crosswire` was shelved by owner ruling 2026-08-11 (status → staged) and its manifest
+> block + 2 clean `books.google.com` flat rows were DELETED 2026-08-13 (corpus-backlog decision
+> #1; evidence `docs/evidence/phase1-kills/`); `spurgeon-talks-to-farmers` (never in this table —
+> published at A8, withdrawn 2026-08-11) was fully deleted 2026-08-13 (decision #2). The live
+> published count is no longer derivable from this table — re-measure before quoting it.
+
 > **Measured read-only 2026-08-01T05:03:53Z on `ep-odd-fog-atnykudm` as `app_runtime`**, under the
 > owner's ⚑ go for gate A2. **This is tool output**, not a hand transcription: evidence at
 > `docs/evidence/a2-prod-readonly-2026-08-01/census.txt`, order at

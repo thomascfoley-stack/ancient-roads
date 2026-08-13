@@ -941,34 +941,6 @@
     }
   },
   {
-    "id": "bramley-carols",
-    "slug": "bramley-carols",
-    "title": "Christmas Carols New and Old",
-    "author": "H.R. Bramley & John Stainer",
-    "author_died": 1917,
-    "year_written": 1871,
-    "source_type": "hymn",
-    "tradition": "anglican",
-    "era": "modern",
-    "license": "Public Domain",
-    "tier": 2,
-    "text_only": true,
-    "provenance": {
-      "url": "https://www.ccel.org/ccel/bramley/carols",
-      "edition": "Christmas Carols New and Old, 1871 (CCEL) — text only, skip tunes",
-      "year": 1871,
-      "acquire": {
-        "adapter": "ccel",
-        "ccel_ids": [
-          "bramley/carols"
-        ],
-        "strip_markup": true
-      }
-    },
-    "serve": false,
-    "quarantine": "A6 run 2026-07-17: no clean-text source — CCEL serves HTML landing (no ThML); all 5 archive.org copies are engraved-music editions, 27-31% OCR-garbage lines (>5% guardrail), engraved titles unrecoverable"
-  },
-  {
     "id": "herbert-temple",
     "slug": "herbert-temple",
     "title": "The Temple: Sacred Poems and Private Ejaculations",
@@ -1391,34 +1363,6 @@
     }
   },
   {
-    "id": "calvin-crosswire",
-    "slug": "calvin-crosswire",
-    "title": "Calvin's Commentaries",
-    "author": "John Calvin",
-    "author_died": 1564,
-    "year_written": 1555,
-    "source_type": "commentary",
-    "tradition": "reformed",
-    "era": "reformation",
-    "license": "Public Domain",
-    "provenance": {
-      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=CalvinCommentaries",
-      "edition": "Calvin's Collected Commentaries (CrossWire SWORD module CalvinCommentaries, OSIS, KJV v11n)",
-      "year": 1555,
-      "license_ref": "module .conf DistributionLicense=Public Domain, verified 2026-07-16",
-      "rebuild": {
-        "source": "crosswire-sword",
-        "module": "CalvinCommentaries",
-        "decoder": "src/ingest/sword-zverse.ts"
-      }
-    },
-    "backfill": {
-      "match_author": "John Calvin",
-      "forbidden_provenance": "exclude",
-      "forbidden_provenance_reason": "Measured 2026-07-28 on a fresh prod fork (SECTION_PROVENANCE_DESIGN §2): 1,125 of 6,215 flat rows (18.1%) carry biblehub provenance; 5,088 CrossWire + 2 books.google rows are clean. The exclusion is strictly subtractive, counted on the sources row, and does not declare the work legitimate — the cleanup of the flat store stays the deferred b2 slice."
-    }
-  },
-  {
     "id": "scofield-crosswire",
     "slug": "scofield-crosswire",
     "title": "Scofield Reference Notes (1917)",
@@ -1543,29 +1487,6 @@
         "source": "crosswire-sword",
         "module": "Josephus",
         "decoder": "src/ingest/sword-genbook.ts"
-      }
-    }
-  },
-  {
-    "id": "spurgeon-talks-to-farmers",
-    "slug": "spurgeon-talks-to-farmers",
-    "title": "Talks to Farmers",
-    "author": "C. H. Spurgeon",
-    "author_died": 1892,
-    "year_written": 1882,
-    "source_type": "sermon",
-    "tradition": "baptist",
-    "era": "modern",
-    "license": "Public Domain",
-    "provenance": {
-      "url": "https://www.gutenberg.org/ebooks/42518",
-      "edition": "Talks to Farmers (Farm Sermons), C. H. Spurgeon — Project Gutenberg #42518 plain text",
-      "year": 1882,
-      "license_ref": "Project Gutenberg — US public domain (author d. 1892, pre-1929 work), verified 2026-07-16",
-      "rebuild": {
-        "source": "gutenberg",
-        "id": 42518,
-        "decoder": "src/ingest/ingest-sermon.ts"
       }
     }
   },
