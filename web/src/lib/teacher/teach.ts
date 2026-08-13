@@ -3,7 +3,7 @@ import type { TeacherResponse } from '@/contract/types';
 import type { Violation } from '@/verifier/types';
 import { verifyV1 } from '@/verifier/v1';
 import { embedQuery, compose } from './deepinfra';
-import { retrieveCommentary, retrieveSongVerse, retrieveSermonLane, retrieveTheologyLane, type RetrievedChunk, type SongVerseChunk, type RegisterLaneChunk } from './retrieve';
+import { retrieveCommentary, retrieveSongVerse, retrieveSermonLane, retrieveTheologyLane, retrieveHistorianLane, type RetrievedChunk, type SongVerseChunk, type RegisterLaneChunk } from './retrieve';
 import { hasPassageCoverage } from './routing';
 import { resolveIntent } from '../../bible/pericopes';
 import { formatVerseId } from '../../bible/verse-id';
@@ -25,9 +25,9 @@ export {
   PIPELINE_RESERVE_MS,
 } from './teach-budget';
 
-// Register-lane payloads (song_verse, sermons, theology) ride alongside the
+// Register-lane payloads (song_verse, sermons, theology, historians) ride alongside the
 // exegetical answer — labeled, retrieve-and-quote, never composed/floored.
-type LanePayloads = { song_verse?: SongVerseChunk[]; sermons?: RegisterLaneChunk[]; theology?: RegisterLaneChunk[] };
+type LanePayloads = { song_verse?: SongVerseChunk[]; sermons?: RegisterLaneChunk[]; theology?: RegisterLaneChunk[]; historians?: RegisterLaneChunk[] };
 export type TeacherResult =
   | ({ kind: 'composed'; response: TeacherResponse; retrieval: RetrievedChunk[] } & LanePayloads)
   | ({ kind: 'fallback'; retrieval: RetrievedChunk[]; violations: Violation[] } & LanePayloads)
@@ -96,7 +96,7 @@ function deadlineExceeded(startedAt: number, maxDurationMs: number): boolean {
 // retrieval below is NOT gated by this — it's the always-on core answer, never
 // filtered). Each flag defaults to true; a lane set to false is skipped outright
 // (never fetched), not fetched-then-hidden.
-export type LaneFlags = { songVerse?: boolean; sermons?: boolean; theology?: boolean };
+export type LaneFlags = { songVerse?: boolean; sermons?: boolean; theology?: boolean; historians?: boolean };
 
 export async function teach(
   query: string,
@@ -122,14 +122,18 @@ export async function teach(
   const songVersePromise = lanes.songVerse === false ? Promise.resolve([]) : retrieveSongVerse(queryVec, ranges);
   const sermonPromise = lanes.sermons === false ? Promise.resolve([]) : retrieveSermonLane(queryVec, ranges);
   const theologyPromise = lanes.theology === false ? Promise.resolve([]) : retrieveTheologyLane(queryVec, ranges);
+  // The historian lane fires by default like the others; until the owner serve-flip
+  // lands on historian rows it returns [] and no `historians` payload is attached.
+  const historianPromise = lanes.historians === false ? Promise.resolve([]) : retrieveHistorianLane(queryVec, ranges);
   const retrieval = await retrieveCommentary(queryVec, RETRIEVE_K, { query });
-  const [songVerse, sermons, theology] = await Promise.all([songVersePromise, sermonPromise, theologyPromise]);
+  const [songVerse, sermons, theology, historians] = await Promise.all([songVersePromise, sermonPromise, theologyPromise, historianPromise]);
   const withRegister = <T extends TeacherResult>(r: T): T => {
     if (r.kind === 'empty') return r;
     let out = r;
     if (songVerse.length > 0) out = { ...out, song_verse: songVerse };
     if (sermons.length > 0) out = { ...out, sermons };
     if (theology.length > 0) out = { ...out, theology };
+    if (historians.length > 0) out = { ...out, historians };
     return out;
   };
   if (retrieval.length === 0) {

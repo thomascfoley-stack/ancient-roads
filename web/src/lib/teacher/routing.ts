@@ -45,7 +45,9 @@ export const SERVED_SONG_VERSE_TYPES = ['hymn', 'poetry'] as const;
 // Auto-publish tier (Gate B verified-PD/CC-BY; owner-authorized). Deliberately
 // EXCLUDED and staged instead: origen-commentary (standing MUST_NOT_SERVE
 // 'Origen' ruling — escalated, owner reconciles), thayers-lexicon (OCR tier),
-// the three historians (no read path), and the v2 staged commentaries
+// the three historians (no read path AT THE TIME — the historian lane was ruled
+// 2026-08-13, corpus-backlog decision 6; see SERVED_HISTORIAN_WORKS), and the
+// v2 staged commentaries
 // (poole-tcp/scofield/pnt — the parked LEGAL_CORPUS_FILTER collision call).
 // ONLY works that are ingested (or in tonight's gated queue) AND clean. A slug
 // here is the publish switch — a work that was never ingested, or is
@@ -82,6 +84,18 @@ export const SERVED_SERMON_WORKS = [
 export const SERVED_THEOLOGY_WORKS = [
   'owen-works', 'hodge-systematic', 'calvin-institutes', 'schaff-creeds',
 ] as const;
+// The HISTORIAN register lane (narrative church/Jewish history — Josephus today; the
+// acquisition manifest's §5 tiers plan more, which is why the ruling builds a lane
+// rather than a one-off). RULED 2026-08-13 (corpus-backlog decision 6, option (a)
+// "build it"): until then historians were served-as-shelf (catalog + Book Reader)
+// and unserved-as-retrieval, an open owner decision recorded at SERVED_WORK_LISTS
+// below. Same lane machinery as sermon/theology — own pool, labeled payload, NEVER
+// in the exegetical pool or its voice floor. josephus-whiston alone: the one
+// published historian (4,112 sections); the other manifest historians are
+// serve:false or uningested and must NOT be pre-authorized here.
+export const SERVED_HISTORIAN_WORKS = [
+  'josephus-whiston',
+] as const;
 // whitefield-works quarantined 2026-07-18 (PG vol 1/6, no clean sermon boundaries)
 // herbert-temple/montgomery-sacred-poems/rossetti-verses RECOVERED 2026-07-17
 // (archive.org Cassell 1887 / CCEL title-div fallback / PG title-line splitter).
@@ -107,6 +121,15 @@ export const SONG_VERSE_TYPE_SQL = `source_type IN (${sqlStrList(SERVED_SONG_VER
 // SERVED_LANE_WORKS = every work routed to a lane (never exegetical). Used by the
 // register wall + FTS exclusion so a lane work can never re-enter the /ask
 // exegetical pool or the FTS commentary search.
+// The HISTORIAN lane is NOT in this union, deliberately: this list feeds
+// legal-corpus.ts REGISTER_SERVED_SLUGS → LEGAL_COMMENTARY_ENTRIES_PREDICATE, whose
+// byte-identity with the idx_commentary_fts_legal partial index is guarded by
+// fts-legal-index-sync.test.ts. Adding josephus-whiston there would force an FTS
+// index REBUILD migration over a table where historian works have zero rows, today
+// and by design (historians are never verse-commentary entries). The historian wall
+// is instead EXEGETICAL_FTS_EXCLUSION's own third leg below, plus the structural one
+// that needs no list at all: EXEGETICAL_TYPE_SQL admits source_type
+// 'commentary'/'father' only, so no historian row can ever enter the vector pool.
 export const SERVED_LANE_WORKS = [...SERVED_SERMON_WORKS, ...SERVED_THEOLOGY_WORKS] as const;
 
 // EVERY work list that decides retrieval serving, named once. This exists because the publish
@@ -124,14 +147,17 @@ export const SERVED_LANE_WORKS = [...SERVED_SERMON_WORKS, ...SERVED_THEOLOGY_WOR
 // enforced by test/invariants/publish-admission-covers-served-lists.test.ts, which derives the
 // list set from this file's own source rather than from a second hand-typed copy.
 //
-// NOT a serving predicate and deliberately absent: `historian`. Historians have a catalog shelf
-// and a Book Reader path (catalog-defs.ts, published-gated) but NO retrieval lane, so they are
-// served-as-shelf and unserved-as-retrieval. That distinction is an open owner decision, not
-// something to paper over by inventing a list here — see the A8 decision list.
+// The historian record, UPDATED 2026-08-13 (corpus-backlog decision 6, RULED "build it"):
+// historians were served-as-shelf (catalog-defs.ts, published-gated Book Reader) and
+// unserved-as-retrieval, and this record called that an open owner decision. The ruling
+// builds the lane: SERVED_HISTORIAN_WORKS above is a serving predicate exactly like the
+// sermon/theology lists, wired in below, and the serve flip itself stays owner-gated
+// (scripts/publish-flip.mjs writes `served`; nothing here flips it).
 export const SERVED_WORK_LISTS = {
   prose: SERVED_PROSE_WORKS,
   sermon: SERVED_SERMON_WORKS,
   theology: SERVED_THEOLOGY_WORKS,
+  historian: SERVED_HISTORIAN_WORKS,
   songVerse: SERVED_SONG_VERSE_WORKS,
 } as const;
 
@@ -168,6 +194,7 @@ export const ALL_SERVED_WORKS: readonly string[] = Object.values(SERVED_WORK_LIS
 //   commentary, father    -> the composed exegetical pool (counts toward the ≥2-voices floor)
 //   sermon                -> the sermon lane      (retrieve-and-quote, labeled, never composed)
 //   theology, confession  -> the theology lane    (ditto)
+//   historian             -> the historian lane   (ditto; ruled 2026-08-13, corpus-backlog #6)
 //   hymn, poetry          -> the song/verse lane  (ditto, never counted toward the floor)
 //   lexicon               -> served by nothing; no lane exists (open A8 decision, not an oversight)
 // Each conjunct below is byte-matched by a partial HNSW index predicate in migration 044
@@ -180,15 +207,26 @@ export const ALL_SERVED_WORKS: readonly string[] = Object.values(SERVED_WORK_LIS
 export const EXEGETICAL_TYPE_SQL = `source_type IN ('commentary','father')`;
 export const SERMON_CORPUS_FILTER = `(served AND source_type = 'sermon')`;
 export const THEOLOGY_CORPUS_FILTER = `(served AND source_type IN ('theology','confession'))`;
+// The historian lane's filter (2026-08-13, corpus-backlog #6). KNOWN GAP, deliberate for now:
+// unlike the three filters above it has NO byte-matched partial HNSW index yet — 044 predates
+// the ruling. The lane still resolves correctly (the filter is row-selection, fail-soft at
+// LIMIT 3), but before the owner serve-flip ships to prod, an `idx_embeddings_served_historian`
+// partial index on exactly this predicate + a legal-hnsw-index-sync LOCKSTEP entry should be
+// added, or the lane pool query post-filters the full-table HNSW graph (the migration-009
+// mechanism, blunted by the lane's small LIMIT but real).
+export const HISTORIAN_CORPUS_FILTER = `(served AND source_type = 'historian')`;
 
 // Exegetical-surface exclusion for commentary_entries (the FTS search). Excludes
-// song/verse AND lane (sermon/theology/confession) rows TWO ways so neither a
+// song/verse AND lane (sermon/theology/confession/historian) rows TWO ways so neither a
 // NULL/missing register column NOR a slug rename/NULL work can fail the wall
 // open (A6 line-by-line 2026-07-17; sermon lane 2026-07-18; deep-audit
 // 2026-07-18 closed the sermon/theology register leg — before that, lane rows
-// were excluded by slug enumeration ONLY). Legacy commentary rows (register
-// NULL, work NULL) still pass.
-export const EXEGETICAL_FTS_EXCLUSION = `(register IS NULL OR register NOT IN ('hymn','poetry','sermon','theology','confession')) AND (work IS NULL OR work NOT IN (${sqlStrList([...SERVED_SONG_VERSE_WORKS, ...SERVED_LANE_WORKS])}))`;
+// were excluded by slug enumeration ONLY). The historian legs (2026-08-13,
+// corpus-backlog #6) are this predicate's OWN third list leg — historian is NOT in
+// SERVED_LANE_WORKS (see its comment: that union feeds the FTS INDEX predicate, whose
+// byte-identity guard would demand an index rebuild over zero historian rows).
+// Legacy commentary rows (register NULL, work NULL) still pass.
+export const EXEGETICAL_FTS_EXCLUSION = `(register IS NULL OR register NOT IN ('hymn','poetry','sermon','theology','confession','historian')) AND (work IS NULL OR work NOT IN (${sqlStrList([...SERVED_SONG_VERSE_WORKS, ...SERVED_LANE_WORKS, ...SERVED_HISTORIAN_WORKS])}))`;
 
 // AUTHOR COUNT, settled (dev-measured 2026-07-20, positive control fires): this filter names 9
 // author STRINGS below but ADMITS 11 distinct authors — the final `work IN (SERVED_PROSE_WORKS)`

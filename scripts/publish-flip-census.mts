@@ -43,6 +43,7 @@ import {
   SONG_VERSE_CORPUS_FILTER,
   SERMON_CORPUS_FILTER,
   THEOLOGY_CORPUS_FILTER,
+  HISTORIAN_CORPUS_FILTER,
 } from '../web/src/lib/teacher/routing';
 import { isMustNotServeAuthor } from '../web/src/lib/legal-corpus';
 
@@ -119,6 +120,9 @@ try {
     SONG_VERSE_CORPUS_FILTER,
     SERMON_CORPUS_FILTER,
     THEOLOGY_CORPUS_FILTER,
+    // Historian lane (2026-08-13, corpus-backlog #6): with it here the census measures
+    // josephus-whiston as lane-admitted once served rows exist, not just shelf-admitted.
+    HISTORIAN_CORPUS_FILTER,
   ].map((f) => `(${f})`).join(' OR ');
   const measured = (await c.query<{ slug: string; lane: boolean; shelf: boolean }>(
     `SELECT s.slug,

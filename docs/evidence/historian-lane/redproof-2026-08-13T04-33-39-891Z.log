@@ -1,0 +1,15 @@
+historian lane red-proof · 2026-08-13T04:33:40.810Z · host ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech (dev)
+query: "the siege of Jerusalem and the burning of the temple" · witness row: historian:josephus-whiston:10.1 (verseId 3019016)
+lane SQL (shipped laneOnRangeSql + HISTORIAN_CORPUS_FILTER):
+WITH inrange AS MATERIALIZED ( SELECT source_id, content, metadata, embedding FROM embeddings WHERE user_id IS NULL AND (served AND source_type = 'historian') AND ((metadata->>'verseId')::int BETWEEN 3019016 AND 3019016) ) SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata FROM inrange ORDER BY embedding <=> $1::vector LIMIT 3
+
+PRE  (all historian rows served=false): lane returned 0 row(s)
+  PASS — lane empty while every historian row is served=false
+IN-TX (witness served=true): lane returned 1 row(s): historian:josephus-whiston:10.1
+  PASS — flipped row appears in the lane ONLY while served
+WALL (same tx): exegetical pool predicate over the same verse returned 2 row(s)
+  FAIL — served historian row is STILL walled out of the exegetical pool (source_type leg)
+POST (rolled back): lane returned 0 row(s)
+  PASS — lane empty again after ROLLBACK — nothing persisted
+
+RED-PROOF FAIL (1 check(s)) — do NOT treat the lane as verified.

@@ -25,12 +25,14 @@ function parseLaneFlags(raw: unknown): LaneFlags {
   if (typeof r.songVerse === 'boolean') flags.songVerse = r.songVerse;
   if (typeof r.sermons === 'boolean') flags.sermons = r.sermons;
   if (typeof r.theology === 'boolean') flags.theology = r.theology;
+  if (typeof r.historians === 'boolean') flags.historians = r.historians;
   return flags;
 }
 
 // POST /api/ask/stream { question, lanes? } → newline-delimited JSON (NDJSON)
 // stream of TeacherEvents (retrieving → retrieved → composing → verifying →
-// done). `lanes` optionally toggles the Sermons/Theology/Hymns register lanes
+// done). `lanes` optionally toggles the Sermons/Theology/Hymns/Historians register
+// lanes
 // (each defaults to included when omitted or malformed) — it never filters the
 // exegetical commentary voices, which are always-on. The verifier runs
 // server-side inside teach() before any `done` event, so the client never

@@ -57,6 +57,7 @@ vi.mock('@/lib/teacher/retrieve', () => ({
   retrieveSongVerse: vi.fn(async () => []),
   retrieveSermonLane: vi.fn(async () => []),
   retrieveTheologyLane: vi.fn(async () => []),
+  retrieveHistorianLane: vi.fn(async () => []),
 }));
 
 // The canonical KJV name now resolves to a high-confidence floor (Song of Songs 2) via

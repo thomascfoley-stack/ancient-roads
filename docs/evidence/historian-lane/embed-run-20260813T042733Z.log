@@ -1,0 +1,16 @@
+target: dev (ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech) · mode: APPLY · model: BAAI/bge-large-en-v1.5 · chunk budget: 1200 chars
+
+
+sections: 4112 · chunks: 6492 (junk fragments dropped: 2)
+already present: 0 · to embed: 6492 · est 1,211,529 tokens (~$0.0121)
+  progress: 640/6492 elapsed=103s
+  progress: 1280/6492 elapsed=139s
+  progress: 1920/6492 elapsed=174s
+  progress: 2560/6492 elapsed=194s
+  progress: 3200/6492 elapsed=217s
+  progress: 3840/6492 elapsed=241s
+  progress: 4480/6492 elapsed=276s
+  progress: 5120/6492 elapsed=299s
+  progress: 5760/6492 elapsed=321s
+  progress: 6400/6492 elapsed=345s
+DONE in 349s · flat rows for josephus-whiston: 6492 (anchored: 493) · served=true: 0

@@ -43,6 +43,7 @@ vi.mock('@/lib/teacher/retrieve', () => ({
   retrieveSongVerse: vi.fn().mockResolvedValue([]),
   retrieveSermonLane: vi.fn().mockResolvedValue([]),
   retrieveTheologyLane: vi.fn().mockResolvedValue([]),
+  retrieveHistorianLane: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('@/lib/teacher/routing', () => ({

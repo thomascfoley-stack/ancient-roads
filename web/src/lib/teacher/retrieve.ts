@@ -2,7 +2,7 @@ import { getDb } from '../db';
 import { rerank } from './rerank';
 import { resolveIntent } from '../../bible/pericopes';
 import type { VerseRange } from '../../bible/ref-parse';
-import { RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse, legalBasePool, LEGAL_CORPUS_FILTER, chapterKeysOf, diversityBackfillSql, insertBackfill, BACKFILL_TOP_CHAPTERS, songVerseOnRangeSql, songVersePoolSql, SONG_VERSE_LIMIT, laneOnRangeSql, lanePoolSql, LANE_LIMIT, SERMON_CORPUS_FILTER, THEOLOGY_CORPUS_FILTER } from './routing';
+import { RERANK_DOC_CHARS, injectionSql, mergeById, floorOnRange, selectDiverse, legalBasePool, LEGAL_CORPUS_FILTER, chapterKeysOf, diversityBackfillSql, insertBackfill, BACKFILL_TOP_CHAPTERS, songVerseOnRangeSql, songVersePoolSql, SONG_VERSE_LIMIT, laneOnRangeSql, lanePoolSql, LANE_LIMIT, SERMON_CORPUS_FILTER, THEOLOGY_CORPUS_FILTER, HISTORIAN_CORPUS_FILTER } from './routing';
 
 // A retrieved commentary chunk, fully hydrated (attribution + content on the row).
 export interface RetrievedChunk {
@@ -90,7 +90,7 @@ export async function retrieveSongVerse(
 }
 
 // ── the REUSABLE prose-register LANE (sermon-lane slice 2026-07-18) ──
-// A prose register (sermon, theology) retrieved in its OWN pool + labeled payload.
+// A prose register (sermon, theology, historian) retrieved in its OWN pool + labeled payload.
 // Retrieve-and-quote — never fed to the composer, never counted toward the
 // exegetical ≥2-voices floor. Verse-anchored items first (a sermon ON this
 // passage), semantic fill behind. This is the reusable sermon-search core; a
@@ -98,7 +98,7 @@ export async function retrieveSongVerse(
 // input). Fail-soft: the lane is additive and must never break the exegetical answer.
 export interface RegisterLaneChunk extends RetrievedChunk {
   metadata: RetrievedChunk['metadata'] & { work: string; register?: string };
-  lane: string; // 'sermon' | 'theology'
+  lane: string; // 'sermon' | 'theology' | 'historian'
 }
 
 export async function retrieveRegisterLane(
@@ -135,6 +135,11 @@ export const retrieveSermonLane = (queryVec: number[], ranges: readonly VerseRan
   retrieveRegisterLane('sermon', SERMON_CORPUS_FILTER, queryVec, ranges, limit);
 export const retrieveTheologyLane = (queryVec: number[], ranges: readonly VerseRange[], limit = LANE_LIMIT) =>
   retrieveRegisterLane('theology', THEOLOGY_CORPUS_FILTER, queryVec, ranges, limit);
+// Historian lane (ruled 2026-08-13, corpus-backlog #6): same reusable machinery. Serves
+// nothing until the owner-gated `served` flip lands on historian rows — every row the
+// filter could match is served=false until then, so this returns [] by construction.
+export const retrieveHistorianLane = (queryVec: number[], ranges: readonly VerseRange[], limit = LANE_LIMIT) =>
+  retrieveRegisterLane('historian', HISTORIAN_CORPUS_FILTER, queryVec, ranges, limit);
 
 export async function retrieveCommentary(
   queryVec: number[],
