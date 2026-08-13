@@ -69,6 +69,19 @@ describe('studyExportModel', () => {
     expect(JSON.stringify(studyExportModel({ title: 'R' }, [clipping()], failed))).not.toContain('Jericho');
   });
 
+  it('a TRIMMED clipping exports the kept range with ellipses — the same rule as the editor', () => {
+    const c = clipping();
+    const quote = c.quote!;
+    const start = quote.indexOf('None went out');
+    const nodes = studyExportModel({ title: 'R' }, [{ ...c, trim_start: start, trim_end: quote.length }], resolved(['101']));
+    const quoteNodes = nodes.filter((n) => n.type === 'quote');
+    expect(quoteNodes.length).toBeGreaterThan(0);
+    expect(quoteNodes[0]!.text.startsWith('…')).toBe(true);
+    expect(JSON.stringify(quoteNodes)).not.toContain('Jericho'); // the cut part is gone
+    // Attribution still rides the excerpt — an excerpt is still a quotation.
+    expect(nodes.some((n) => n.type === 'attribution')).toBe(true);
+  });
+
   it('is deterministic: same inputs, same nodes', () => {
     const blocks = [textBlock('a'), clipping()];
     const r = resolved(['101']);

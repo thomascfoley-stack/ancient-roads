@@ -29,6 +29,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { StudyLibraryPanel } from './study-library-panel';
+import { clippingDisplay } from '@/lib/clipping-display';
 
 /** The block shape the editor renders — StudyBlock minus the server-only fields, plus the
  *  server-computed render state (see the header: licensing arrives decided, not derivable). */
@@ -41,6 +42,9 @@ export interface EditorBlock {
   ordinal: number | null;
   quote: string | null;
   attribution: { author?: string; work_title?: string; reference?: string } | null;
+  /** Trim offsets into `quote` (111, "trim not edit"): a view over the server's bytes. */
+  trim_start: number | null;
+  trim_end: number | null;
   renderState: 'text' | 'clipping' | 'tombstone';
 }
 
@@ -201,7 +205,11 @@ export function StudyEditor({
 }) {
   const [blocks, setBlocks] = useState<EditorBlock[]>(initialBlocks);
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
-  const [blockErrors, setBlockErrors] = useState<Record<string, 'remove' | 'move'>>({});
+  const [blockErrors, setBlockErrors] = useState<Record<string, 'remove' | 'move' | 'trim'>>({});
+  /** The clipping currently in trim mode: its quote renders RAW (byte-for-byte) so selection
+   *  offsets index the stored string exactly (the paragraph display reflows whitespace). */
+  const [trimming, setTrimming] = useState<string | null>(null);
+  const trimSourceRef = useRef<HTMLQuoteElement | null>(null);
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
   const [expandedInsert, setExpandedInsert] = useState<number | null>(null);
   const [nextAfter, setNextAfter] = useState<string | null>(initialNextAfterPosition);
@@ -281,7 +289,57 @@ export function StudyEditor({
   // Select a word or phrase anywhere in the doc → a one-tap "Search lexicons" lookup (the
   // owner's Greek/Hebrew-dictionary ask, v1: the lexicon REGISTER is the dictionary, searched
   // through the same fenced engine as everything else in the panel).
+  // The trim handlers ("trim not edit", 111): read the user's selection AGAINST THE RAW quote
+  // node (single text node, byte-true), send offsets, adopt the server's answer locally.
+  const applyTrim = async (block: EditorBlock) => {
+    const container = trimSourceRef.current;
+    const sel = window.getSelection();
+    if (!container || !sel || sel.rangeCount === 0 || sel.isCollapsed) {
+      setBlockError(block.id, 'trim');
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    const node = container.firstChild;
+    if (!node || range.startContainer !== node || range.endContainer !== node) {
+      setBlockError(block.id, 'trim');
+      return;
+    }
+    const start = Math.min(range.startOffset, range.endOffset);
+    const end = Math.max(range.startOffset, range.endOffset);
+    if (end <= start) { setBlockError(block.id, 'trim'); return; }
+    try {
+      const res = await fetch(`/api/studies/${study.id}/blocks`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ op: 'trim', blockId: block.id, start, end }),
+      });
+      if (!res.ok) { setBlockError(block.id, 'trim'); return; }
+      setBlocks((cur) => cur.map((b) => (b.id === block.id ? { ...b, trim_start: start, trim_end: end } : b)));
+      setBlockError(block.id, undefined);
+      setTrimming(null);
+      sel.removeAllRanges();
+    } catch {
+      setBlockError(block.id, 'trim');
+    }
+  };
+  const clearTrim = async (block: EditorBlock) => {
+    try {
+      const res = await fetch(`/api/studies/${study.id}/blocks`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ op: 'trim', blockId: block.id, clear: true }),
+      });
+      if (!res.ok) { setBlockError(block.id, 'trim'); return; }
+      setBlocks((cur) => cur.map((b) => (b.id === block.id ? { ...b, trim_start: null, trim_end: null } : b)));
+      setBlockError(block.id, undefined);
+    } catch {
+      setBlockError(block.id, 'trim');
+    }
+  };
+
   const onDocMouseUp = () => {
+    // Trim mode owns the selection; the lexicon popover stays out of its way.
+    if (trimming !== null) return;
     const sel = window.getSelection();
     const text = sel?.toString().trim() ?? '';
     if (!sel || sel.rangeCount === 0 || text.length < 2 || text.length > 60 || text.includes('\n')) {
@@ -306,7 +364,7 @@ export function StudyEditor({
 
   const setSave = (key: string, state: SaveState) =>
     setSaveStates((cur) => ({ ...cur, [key]: state }));
-  const setBlockError = (id: string, kind: 'remove' | 'move' | undefined) =>
+  const setBlockError = (id: string, kind: 'remove' | 'move' | 'trim' | undefined) =>
     setBlockErrors((cur) => {
       const next = { ...cur };
       if (kind === undefined) delete next[id];
@@ -405,6 +463,8 @@ export function StudyEditor({
       ordinal: null,
       quote: null,
       attribution: null,
+      trim_start: null,
+      trim_end: null,
       renderState: 'text',
     };
     setConfirmingRemove(null);
@@ -644,6 +704,26 @@ export function StudyEditor({
             ↓
           </button>
         )}
+        {block.renderState === 'clipping' && trimming !== block.id && (
+          <button
+            type="button"
+            onClick={() => { setTrimming(block.id); setBlockError(block.id, undefined); }}
+            aria-label={`Trim block ${i + 1}`}
+            className="inline-flex min-h-[44px] items-center hover:text-stone-700 dark:hover:text-stone-300"
+          >
+            Trim
+          </button>
+        )}
+        {block.renderState === 'clipping' && block.trim_start !== null && (
+          <button
+            type="button"
+            onClick={() => void clearTrim(block)}
+            aria-label={`Untrim block ${i + 1}`}
+            className="inline-flex min-h-[44px] items-center hover:text-stone-700 dark:hover:text-stone-300"
+          >
+            Untrim
+          </button>
+        )}
         {confirmingRemove === block.id ? (
           <span className="flex items-center gap-4 text-stone-500 dark:text-stone-400" role="group" aria-label="Confirm remove">
             <span className="font-serif text-sm">Remove this block?</span>
@@ -808,17 +888,51 @@ export function StudyEditor({
                   </div>
                 ) : block.renderState === 'clipping' ? (
                   <figure className="border-l-2 border-stone-300 py-1 pl-4 dark:border-stone-700">
-                    {/* DISPLAY normalization only (owner annotation: "wonky spacing"): the
-                        corpus carries hard line-breaks from ingest, and pre-wrap rendered them
-                        as ragged two-word lines. Blank lines stay paragraph breaks; single
-                        newlines flow. The STORED bytes and the .md export are untouched. */}
-                    <blockquote className="font-serif leading-[1.9] text-stone-800 dark:text-stone-300">
-                      {(block.quote ?? '').split(/\n{2,}/).map((para, pi) => (
-                        <p key={pi} className={pi > 0 ? 'mt-4' : undefined}>
-                          {para.replace(/\s+/g, ' ').trim()}
+                    {trimming === block.id ? (
+                      <>
+                        {/* TRIM MODE ("trim not edit", 111): the quote renders RAW — one text
+                            node, byte-for-byte — so the selection's offsets index the stored
+                            string exactly. The paragraph display below reflows whitespace and
+                            would lie about offsets. */}
+                        <p className="mb-2 font-sans text-xs small-caps tracking-[0.08em] text-accent-700 dark:text-accent-300">
+                          Select the text to keep
                         </p>
-                      ))}
-                    </blockquote>
+                        <blockquote
+                          ref={trimSourceRef}
+                          className="whitespace-pre-wrap font-serif leading-[1.9] text-stone-800 dark:text-stone-300"
+                        >
+                          {block.quote}
+                        </blockquote>
+                        <div className="mt-2 flex items-center gap-4 font-sans text-xs small-caps tracking-[0.08em]">
+                          <button
+                            type="button"
+                            onClick={() => void applyTrim(block)}
+                            className="inline-flex min-h-[44px] items-center font-medium text-accent-700 hover:underline dark:text-accent-300"
+                          >
+                            Keep selection
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setTrimming(null); setBlockError(block.id, undefined); }}
+                            className="inline-flex min-h-[44px] items-center text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      /* DISPLAY derivation, one rule for every surface (clipping-display):
+                         trim collapses the cuts behind ellipses; paragraph reflow fixes the
+                         corpus's ragged ingest line-breaks. STORED bytes and exports carry
+                         the same rule, never a second one. */
+                      <blockquote className="font-serif leading-[1.9] text-stone-800 dark:text-stone-300">
+                        {clippingDisplay(block).text.split(/\n{2,}/).map((para, pi) => (
+                          <p key={pi} className={pi > 0 ? 'mt-4' : undefined}>
+                            {para.replace(/\s+/g, ' ').trim()}
+                          </p>
+                        ))}
+                      </blockquote>
+                    )}
                     <figcaption className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
                       <AttributionLine attribution={block.attribution} />
                       {block.work_slug && block.ordinal !== null && (
@@ -851,6 +965,11 @@ export function StudyEditor({
                 {blockErrors[block.id] === 'move' && (
                   <p role="alert" className="text-right text-sm text-red-800 dark:text-red-200">
                     The block could not be moved. Try again.
+                  </p>
+                )}
+                {blockErrors[block.id] === 'trim' && (
+                  <p role="alert" className="text-right text-sm text-red-800 dark:text-red-200">
+                    Select some of the quote to keep, then try again.
                   </p>
                 )}
                 {insertPoint(i + 1, { afterBlockId: block.id })}

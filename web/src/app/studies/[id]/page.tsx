@@ -47,6 +47,8 @@ export default async function StudyDocPage({ params }: { params: Promise<{ id: s
     ordinal: b.ordinal,
     quote: b.quote,
     attribution: b.attribution,
+    trim_start: b.trim_start,
+    trim_end: b.trim_end,
     renderState: blockRenderState(b, resolution),
   }));
   const nextAfterPosition =

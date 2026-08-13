@@ -1,6 +1,6 @@
 # Re-sourcing Plan — replace forbidden/restricted provenance before scale-up
 
-**Status: PLAN ONLY — awaiting owner approval. No re-sourcing code until approved.**
+**Status: scope APPROVED 2026-07-10 (full provenance cleanup before any publish) — see §7 "Findings from vetting", which supersedes this header's original "awaiting approval" line. Per-work owner rulings on execution still apply.**
 Gates the scale-up of the `sources`/`sections` migration to the other ~400 works (Track 1 of the 2026-07-10 directive). Executes the ADR-008 / CLAUDE.md aggregator rail. Sizes the footprint from the live corpus, picks a permitted source per work, and defines the **text-match test** that decides *keep the vector ($0)* vs *re-embed*.
 
 ## 1. Footprint (measured from Neon, 2026-07-10)

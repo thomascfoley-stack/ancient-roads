@@ -4,6 +4,7 @@ import {
   type ServabilityKeyed,
   type ServabilityResolution,
 } from './servability';
+import { clippingDisplay } from './clipping-display';
 
 // Study → markdown (design Flow E; build task 1.7). "Durable body of work" includes taking it
 // with you — the export ships with the first slice, and its serialization is the seam the §12
@@ -22,6 +23,9 @@ export interface ExportBlock extends ServabilityKeyed {
   body: string | null;
   quote: string | null;
   attribution: { author?: string; work_title?: string; reference?: string } | null;
+  /** Trim offsets (111): exports show the same excerpt the editor shows, ellipses included. */
+  trim_start?: number | null;
+  trim_end?: number | null;
 }
 
 function attributionLine(attribution: ExportBlock['attribution']): string {
@@ -57,7 +61,9 @@ export function exportStudyMarkdown(
     if (state === 'text') {
       parts.push((block.body ?? '').trim());
     } else if (state === 'clipping') {
-      parts.push(`${blockquote((block.quote ?? '').trim())}\n>\n> ${attributionLine(block.attribution)}`);
+      // The ONE trim rule (clipping-display): the export carries the same excerpt the editor
+      // shows — never a range of its own devising.
+      parts.push(`${blockquote(clippingDisplay(block).text.trim())}\n>\n> ${attributionLine(block.attribution)}`);
     } else {
       parts.push(`> ${attributionLine(block.attribution)} — ${TOMBSTONE_NOTICE}`);
     }
