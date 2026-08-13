@@ -1,5 +1,45 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-13 — Editor v2.1: the owner's annotated-screenshot pass (Fable session)
+
+Branch `feat/study-editor-v2-1` off the merged `feat/study-docs-p2`. The owner marked up a live
+screenshot; every annotation ingested and either built or proposed:
+
+**Built (each verified in the live browser via the dev harness — DOM-proven this time):**
+- **Panel shrink/enlarge + full collapse** — a drag divider (pointer + arrow keys, 280–560px)
+  and a Hide control that folds the rail to a vertical reopen tab, the doc taking the width.
+  Layout preference in localStorage (S-9 client-only: no render path depends on it). Verified:
+  grid `1fr 14px 336px` ↔ `1fr 0px 2.75rem`, persistence round-trip.
+- **Insert point visibility** — the bare hairline became a labeled "+ Insert" pill at higher
+  contrast ("hard to see for the non-discerning eye"). Same one-per-gap discipline.
+- **"Wonky left spacing"** — diagnosed as the corpus's own hard line-breaks under
+  `whitespace-pre-wrap` (ragged two-word lines). Clippings now render as real paragraphs
+  (blank line = break, single newline = flow) — DISPLAY normalization only; stored bytes and
+  the .md export untouched. Verified: 2 paragraphs, zero raw newlines in the harness fixture.
+- **Registers** — `Historians` group added (the catalog existed since 2026-08-01; §7.3's
+  five-group list amended by owner direction) and the theology group relabelled
+  **Theology & Creeds** to match its shelf. Shared module → both the /search page and the
+  panel; pinned tests updated WITH the amendment.
+- **Greek/Hebrew dictionary v1** — select a word in the doc → "Search lexicons" popover → the
+  panel jumps to the Lexicons register with the query set. The dictionary IS the lexicon
+  register through the same fenced engine. Verified live: select "priests" → popover → panel
+  query "priests", chip Lexicons.
+
+**Proposed, NOT built (data-model change → owner sign-off first, CLAUDE.md value 2):** the
+"cut this verbose text" and highlighter asks both resolve to one substrate — OFFSETS into the
+server-snapshotted quote. Free-editing a clipping would make quote text client-supplied
+(S-1/F3 violation) and misattribute edited words to the author; trim-by-offsets keeps the
+server's bytes authoritative and renders `…kept range…` with ellipses; highlights are
+[start,end,color] ranges over the same bytes. Migration 111 sketch: `study_blocks.trim_start
+INT, trim_end INT, marks JSONB` + a `trim`/`mark` op validating offsets server-side. Render
+clamps or ignores invalid offsets after purge/rehydrate (fail-safe to full quote). Awaiting
+the owner's go.
+
+**NOT DONE / UNVERIFIED:** same standing items — no visible-pane pixel pass (DOM-proven only;
+the harness remains at /dev/editor-preview for eyes); fixer ≠ verifier; audit result recorded
+in the landing commit. Text-block highlighter (user's own markdown) deliberately deferred —
+it needs a rich-text read mode, not offsets.
+
 ## 2026-08-12 (late night) — Study editor v2 BUILT (Fable session; owner mockup approved, "build it")
 
 Branch `feat/study-editor-v2` off `feat/study-docs-p2`. The owner's first browser pass of the

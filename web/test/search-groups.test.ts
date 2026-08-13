@@ -25,19 +25,19 @@ import {
 //   M1 PERSONAL_GROUPS reversed + default includePersonal flipped to true → order/E8 tests red;
 //   M2 offset clamp removed + collapsed id filter dropped → parsing tests red.
 
-describe('§7.3 group model', () => {
+describe('§7.3 group model (as amended 2026-08-13: Historians added, theology label = its shelf name)', () => {
   it('lists the groups in the design’s order: personal first, then the library by register', () => {
     expect(PERSONAL_GROUPS.map((g) => g.id)).toEqual(['studies', 'works', 'prayers', 'notes']);
-    expect(CORPUS_GROUPS.map((g) => g.id)).toEqual(['commentaries', 'sermons', 'hymns-poetry', 'theology', 'lexicons']);
+    expect(CORPUS_GROUPS.map((g) => g.id)).toEqual(['commentaries', 'sermons', 'hymns-poetry', 'historians', 'theology', 'lexicons']);
     expect(SEARCH_GROUP_IDS).toEqual([
       'studies', 'works', 'prayers', 'notes',
-      'commentaries', 'sermons', 'hymns-poetry', 'theology', 'lexicons',
+      'commentaries', 'sermons', 'hymns-poetry', 'historians', 'theology', 'lexicons',
     ]);
   });
 
   it('carries the design’s labels', () => {
     expect(PERSONAL_GROUPS.map((g) => g.label)).toEqual(['Your studies', 'Your works', 'Your prayers', 'Your notes']);
-    expect(CORPUS_GROUPS.map((g) => g.label)).toEqual(['Commentaries', 'Sermons', 'Hymns & Poetry', 'Theology', 'Lexicons']);
+    expect(CORPUS_GROUPS.map((g) => g.label)).toEqual(['Commentaries', 'Sermons', 'Hymns & Poetry', 'Historians', 'Theology & Creeds', 'Lexicons']);
   });
 
   it('fences every corpus group through a catalog — except lexicons, pinned as its own register query', () => {

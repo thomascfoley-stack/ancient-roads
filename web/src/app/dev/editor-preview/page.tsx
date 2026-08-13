@@ -36,7 +36,7 @@ const FIXTURE_BLOCKS: EditorBlock[] = [
     work_slug: 'john-gill',
     ordinal: 42,
     quote:
-      'And Jesus himself began to be about thirty years of age… an age at which the priests, under the law, who were typical of Christ, entered on their work, Num 4:23.\n\nThe word, "began", is left out in the Syriac and Persic versions.',
+      'And Jesus himself began to be about thirty\nyears of age… an age at which the priests,\nunder the law, who were typical of Christ,\nentered on their work, Num 4:23.\n\nThe word, "began", is left out in the\nSyriac and Persic versions.',
     attribution: { author: 'John Gill', work_title: 'Exposition of the Bible', reference: 'Luke 3:23' },
     renderState: 'clipping',
   },
