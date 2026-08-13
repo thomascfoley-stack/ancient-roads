@@ -1,5 +1,75 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-12 (late night) — Study editor v2 BUILT (Fable session; owner mockup approved, "build it")
+
+Branch `feat/study-editor-v2` off `feat/study-docs-p2`. The owner's first browser pass of the
+shipped v1 found what the waived browser checks were always going to miss: cramped 40%-width
+layout, five always-on "+ Text" buttons, no way to move blocks, no in-page library, `.md`-only
+export ("no one uses .mds except AI clones and AI itself"). v2 per the approved mockup:
+
+- **Layout:** two-pane canvas — the doc keeps its ~75ch reading measure, the reclaimed space
+  becomes a sticky **library panel** (`study-library-panel.tsx`): register chips, debounced
+  search through a new auth-walled endpoint (`/api/studies/library-search`) that wraps the
+  EXISTING fenced engine (searchSections' catalog option + the lexicon sibling — F4, no new
+  retrieval) and resolves `sectionId` via the UNIQUE (source_id, ordinal) key. "Add to study" =
+  the same server-snapshotting clipping POST as every surface; raw corpus text never enters the
+  buffer. **Design §7.4's "never from an in-editor corpus fetch" is amended by the owner's
+  direction** — the property it protected holds structurally (recorded in the route header).
+- **Insertion:** the five buttons became one quiet hairline per gap that expands on tap to
+  "+ Write / + From library" (44px hit targets kept — hover-only affordances don't exist on
+  touch), plus a **trailing ghost composer** ("Keep writing…") whenever the doc doesn't already
+  end in an editable block — typing's first keystroke becomes a real end-appended block with
+  the caret carried forward.
+- **Movement:** every saved block gets quiet always-visible ↑/↓ (+ the existing Remove confirm),
+  wired to P1's `op:'move'` anchored on the nearest SAVED neighbor, adopting the server's
+  fractional key; boundary and local-draft cases disabled. Load-more now merges by
+  (position, id) — S-14's order applied client-side — so end-appends with unloaded pages
+  self-correct.
+- **Saved status:** consolidated to one header status (Saving…/Saved); the FAILURE state stays
+  per-block and loud AND gets a header echo ("Save failed below") for off-screen blocks — S-13
+  strengthened, not traded.
+- **Export asks the format** (owner requirement): Word (.docx — `docx@9` dependency, surfaced
+  and approved with the requirement), PDF (the same export model rendered as a print view that
+  opens the browser's dialog — no PDF engine dependency, tradeoff recorded), Markdown kept as
+  plumbing. ALL formats run the same bounded read + fail-closed servability re-check
+  server-side; the .docx has a pure tested model layer (`study-export-docx.ts`) so a licensing
+  bug has exactly one place to live, where the tests are.
+
+**Tests:** 31 green in the editor's suites — updated component contracts (insert point, export
+menu, header status) preserving every property (S-13's failure leg asserts BOTH surfaces now),
+plus new move/ghost cases, a library-panel contract suite (Add sends a REFERENCE, never
+quote/attribution — S-1's client half), and the .docx model suite (data-state tombstone, belt
+case, fail-closed, determinism, zip smoke).
+
+**The browser pass — run this time, and it caught a real class.** New dev-only harness
+`web/src/app/dev/editor-preview/page.tsx` (production-404, fixture blocks, no auth/DB — exists
+because Neon Auth env is Vercel-only and that wall has now blocked three sessions' browser
+checks). Verified in the live browser: two-pane desktop layout at SSR paint, DOM-complete
+structure (boundary-aware move controls; tombstone linkless; export menu carrying all three
+format hrefs; ghost present; five chips), insert-point expand → Write → focused block, and the
+full S-13 walk against the REAL network (signed-out saves genuinely fail → header + block alert
++ buffer intact to the character). **Found live:** the textarea autosize freezes a 5,450px
+height when the page mounts in a HIDDEN renderer (0-width layout, measured `visibilityState:
+'hidden'`, `document 0×0`); fixed with a width-guarded ResizeObserver refit. The fix is
+UNPROVABLE in this environment — proven by probe that RO callbacks never deliver while hidden
+(`roFired: 0` on a body-resize probe) — and the pathology itself cannot occur in a visible
+browser; the fix covers the mount-hidden→become-visible transition where RO delivery resumes by
+spec.
+
+**NOT DONE / UNVERIFIED:**
+- **No visible-pane pixel pass at 390px/desktop** — the Browser pane stayed hidden (host-side),
+  so frames were stale and layout metrics 0. The dev server is left running with the harness at
+  `/dev/editor-preview` for the owner's own look. DOM structure, computed hrefs, and live
+  interaction proofs stand; pixel aesthetics await eyes.
+- **The library add-flow end-to-end against the real corpus** — the panel's search hits the real
+  endpoint signed-out in dev (401 → panel error state, seen). The full search→add→render loop is
+  jsdom-proven with mocked fetch + P1's route/lib suites cover the write; an authenticated live
+  pass belongs to the deployed environment.
+- Drag-and-drop deferred (arrows shipped; dnd-kit is a dependency decision not yet taken).
+  Markdown SYNTAX is not interpreted in the .docx (plain paragraphs — stated in the module).
+- Fixer ≠ verifier: I built v2; these claims await independent eyes before "shipped" is said.
+- `npm run audit` running at this writing; result recorded in the commit that lands this entry.
+
 ## 2026-08-12 (night) — P2 swarm COMPLETE: Study Docs product surface built, all gates green
 
 Six streams, three waves, one tree (feat/study-docs-p2), file-disjoint per
