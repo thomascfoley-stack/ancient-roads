@@ -33,12 +33,28 @@ export type TeacherResult =
   | ({ kind: 'fallback'; retrieval: RetrievedChunk[]; violations: Violation[] } & LanePayloads)
   | { kind: 'empty'; reason: string };
 
+/** Per-stage wall-clock, ms (plan 2026-08-13 B1). compose/verify are PER-ATTEMPT arrays so
+ *  retries are visible, not averaged away. Two Date.now() calls per stage — nothing else rides
+ *  the request path. */
+export type StageTimings = {
+  embed: number;
+  retrieve: number;
+  /** Extra wait for the register lanes AFTER commentary retrieval resolved (they overlap). */
+  lanes: number;
+  compose: number[];
+  verify: number[];
+  total: number;
+};
+
 /** Observability fields for ask_outcome — no question text, no secrets. */
 export type TeachMeta = {
   attempts: number;
   firstCheck?: string;
   voices: number;
   traditions: number;
+  stageMs?: StageTimings;
+  /** First request served by this instance — cold starts explain tail latency honestly. */
+  coldStart?: boolean;
 };
 
 export type TeachRun = { result: TeacherResult; meta: TeachMeta };
@@ -98,6 +114,10 @@ function deadlineExceeded(startedAt: number, maxDurationMs: number): boolean {
 // (never fetched), not fetched-then-hidden.
 export type LaneFlags = { songVerse?: boolean; sermons?: boolean; theology?: boolean };
 
+// Cold-start visibility (B1): the first request on a fresh serverless instance pays module
+// init + connection warmup; the flag lets the measurement run separate that tail honestly.
+const instance = { served: 0 };
+
 export async function teach(
   query: string,
   opts: { onEvent?: (e: TeacherEvent) => void; maxDurationMs?: number; lanes?: LaneFlags } = {},
@@ -109,21 +129,30 @@ export async function teach(
   const lanes = opts.lanes ?? {};
   let attempts = 0;
   let firstCheck: string | undefined;
+  const stageMs: StageTimings = { embed: 0, retrieve: 0, lanes: 0, compose: [], verify: [], total: 0 };
+  const coldStart = instance.served++ === 0;
 
-  const finish = (result: TeacherResult, meta: Omit<TeachMeta, 'attempts' | 'firstCheck'>): TeachRun => {
+  const finish = (result: TeacherResult, meta: Omit<TeachMeta, 'attempts' | 'firstCheck' | 'stageMs' | 'coldStart'>): TeachRun => {
     emit({ stage: 'done', result });
-    return { result, meta: { attempts, firstCheck, ...meta } };
+    stageMs.total = Date.now() - startedAt;
+    return { result, meta: { attempts, firstCheck, ...meta, stageMs, coldStart } };
   };
 
   emit({ stage: 'retrieving' });
+  let stageStart = Date.now();
   const queryVec = await embedQuery(query);
+  stageMs.embed = Date.now() - stageStart;
   const intent = resolveIntent(query);
   const ranges = intent.inject;
   const songVersePromise = lanes.songVerse === false ? Promise.resolve([]) : retrieveSongVerse(queryVec, ranges);
   const sermonPromise = lanes.sermons === false ? Promise.resolve([]) : retrieveSermonLane(queryVec, ranges);
   const theologyPromise = lanes.theology === false ? Promise.resolve([]) : retrieveTheologyLane(queryVec, ranges);
+  stageStart = Date.now();
   const retrieval = await retrieveCommentary(queryVec, RETRIEVE_K, { query });
+  stageMs.retrieve = Date.now() - stageStart;
+  stageStart = Date.now();
   const [songVerse, sermons, theology] = await Promise.all([songVersePromise, sermonPromise, theologyPromise]);
+  stageMs.lanes = Date.now() - stageStart;
   const withRegister = <T extends TeacherResult>(r: T): T => {
     if (r.kind === 'empty') return r;
     let out = r;
@@ -198,9 +227,12 @@ export async function teach(
 
     attempts++;
     let raw: string;
+    const composeStart = Date.now();
     try {
       raw = await compose(systemPrompt, prompt, { timeoutMs: composeMs });
+      stageMs.compose.push(Date.now() - composeStart);
     } catch (e) {
+      stageMs.compose.push(Date.now() - composeStart);
       lastViolations = [{ check: 'llm_error', message: (e as Error).message }];
       if (!firstCheck) firstCheck = firstViolationCheck(lastViolations);
       continue;
@@ -216,7 +248,9 @@ export async function teach(
     }
 
     emit({ stage: 'verifying', attempt });
+    const verifyStart = Date.now();
     const result = await verifyV1(parsed, corpusLookup, retrievalContext);
+    stageMs.verify.push(Date.now() - verifyStart);
     if (result.ok) {
       return finish(withRegister({ kind: 'composed', response: parsed as TeacherResponse, retrieval }), metaBase);
     }

@@ -109,6 +109,28 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
+  // CORPUS CDN (docs/CORPUS_CDN_DESIGN.md §4.2). When CORPUS_CDN_BASE is set, the static corpus
+  // paths are edge-rewritten to the public Blob store; unset, the local public/ files serve as
+  // they always did (dev needs no network; rollback is unsetting the env var and redeploying).
+  // beforeFiles so the rewrite wins even while the files are still in the bundle (step A5 of
+  // the rollout, where both exist and the CDN takes precedence). The /gate middleware runs
+  // BEFORE rewrites, so the site password still fronts these paths; the raw Blob URLs are
+  // public, which is stated and acceptable — every byte here is Gate-B-verified PD/permissive
+  // text, and the gates run on the local copies these were synced from.
+  async rewrites() {
+    const base = process.env.CORPUS_CDN_BASE;
+    if (!base) return { beforeFiles: [], afterFiles: [], fallback: [] };
+    const origin = base.replace(/\/+$/, '');
+    return {
+      beforeFiles: ['bible', 'commentaries', 'original'].map((root) => ({
+        source: `/${root}/:path*`,
+        destination: `${origin}/${root}/:path*`,
+      })),
+      afterFiles: [],
+      fallback: [],
+    };
+  },
 };
 
 export default nextConfig;
