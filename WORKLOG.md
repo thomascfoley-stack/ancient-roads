@@ -32,7 +32,12 @@ programme) both forked from `6cbbbd6` and **both edited the serving lists**. Mer
 `feat/corpus-cdn` (`4984a41`, fixes at `f65d205`). Three checks went red on the merge; all three
 were real, and each was watched red on this tree before it was fixed:
 
-1. **`gill-song` has been out of the production FTS index since 2026-08-14.** Migration 113
+1. **`gill-song` is out of the FTS index wherever 113 was applied — INFERRED FOR PROD, NOT
+   MEASURED.** The reasoning is from committed artifacts: 113's SQL text carries no `gill-song`,
+   and the 2026-08-13 WORKLOG records 113 "applied dev+prod". I could not check production —
+   a prod connection needs the owner's go, every time (bylaw 7) — so the prod half of this is the
+   builders' account plus arithmetic, not an observation. On **dev** it was measured directly
+   (index predicate read back from `pg_index` before and after). Migration 113
    rebuilt `idx_commentary_fts_legal` from the corpus-backlog branch's `routing.ts`, which never
    carried `gill-song` — added on the other branch 2026-08-12 (`509d690`, owner ruling "Song of
    Solomon, fix it", migration 109, deployed and serving since). Neither branch was wrong on its
@@ -93,7 +98,9 @@ Evidence: `docs/evidence/ask-latency/B2-measurement-2026-08-15-devlocal.md`.
 ### NOT DONE / UNVERIFIED — and two of these are owner gates
 
 - **⚑ OWNER: migration 115 on prod, BEFORE or WITH the next deploy of this branch.** This is the
-  one item with a live hazard: prod's index is 113-era, and this branch's query predicate
+  one item with a live hazard: prod's index is 113-era **if the 2026-08-13 WORKLOG's "applied
+  dev+prod" is accurate — verify it with a `pg_index` read at the terminal before deciding**, and
+  this branch's query predicate
   includes `gill-song`. A query predicate BROADER than the partial-index predicate means Postgres
   **cannot use that index at all** — the exegetical FTS surface would fall to sequential scans.
   Deploying this branch without 115 trades a small correctness gap for a large latency one.
