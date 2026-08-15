@@ -20,7 +20,9 @@ export type ObsEvent =
   | 'waitlist_signup'
   | 'error';
 
-export type ObsFields = Record<string, string | number | boolean>;
+// number[] admitted for the B1 stage timings (ask_outcome composeMs/verifyMs — per-attempt
+// arrays; retries must stay visible, not averaged away). JSON.stringify handles them natively.
+export type ObsFields = Record<string, string | number | boolean | number[]>;
 
 export function logEvent(evt: ObsEvent, fields: ObsFields = {}): void {
   let line: string;
