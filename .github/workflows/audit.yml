@@ -177,10 +177,17 @@ jobs:
 
       # timeout-minutes, because this step wedged CI for 35 minutes on 2026-08-08 (CONCURRENTLY in
       # an implicit transaction) with no output and no failure. An unbounded migration step is a way
-      # for one bad file to block every future run; 10 minutes is far above any legitimate apply
-      # here and far below "nobody notices".
+      # for one bad file to block every future run.
+      #
+      # 10 -> 30 on 2026-08-15. The old comment's premise — "10 minutes is far above any legitimate
+      # apply here" — was true when written and went stale when 113/114/115 landed: three GIN
+      # rebuilds over 162k commentary entries plus an HNSW build over ~580k embedding rows, all
+      # legitimately pending on this test branch. Run 31910463039 timed out at 10:00 doing exactly
+      # that work (the CONCURRENTLY wedge it was written against is separately handled —
+      # apply-pending.mjs splits those statements outside transactions; see its :185 comment).
+      # This is the watchlist's instance-fifteen shape: a cited premise nothing re-checks.
       - name: apply pending migrations to the test branch
-        timeout-minutes: 10
+        timeout-minutes: 30
         env:
           MIGRATE_TARGET_ENDPOINT: ep-tiny-bonus-at3izo3y
           # DERIVED, not guessed — db/describe-target.mjs read the branch on 2026-08-08 and reported
