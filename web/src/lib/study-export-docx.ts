@@ -5,6 +5,7 @@ import {
   type ServabilityResolution,
 } from './servability';
 import type { ExportBlock } from './study-export';
+import { clippingDisplay } from './clipping-display';
 
 // Study → Word (.docx) — editor v2, owner requirement 2026-08-12 ("export as a Microsoft Word
 // document or PDF … we cannot export a .md file"). Same contract as the markdown serializer:
@@ -55,7 +56,9 @@ export function studyExportModel(
     if (state === 'text') {
       for (const p of paragraphsOf(block.body ?? '')) nodes.push({ type: 'body', text: p });
     } else if (state === 'clipping') {
-      for (const p of paragraphsOf(block.quote ?? '')) nodes.push({ type: 'quote', text: p });
+      // The ONE trim rule (clipping-display) — the .docx and the print view (which renders
+      // this model) show exactly the excerpt every other surface shows.
+      for (const p of paragraphsOf(clippingDisplay(block).text)) nodes.push({ type: 'quote', text: p });
       nodes.push({ type: 'attribution', text: attributionText(block.attribution) });
     } else {
       nodes.push({ type: 'attribution', text: attributionText(block.attribution) });

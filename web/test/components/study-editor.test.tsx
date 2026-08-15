@@ -44,6 +44,8 @@ const TEXT1: EditorBlock = {
   ordinal: null,
   quote: null,
   attribution: null,
+  trim_start: null,
+  trim_end: null,
   renderState: 'text',
 };
 
@@ -56,6 +58,8 @@ const CLIP: EditorBlock = {
   ordinal: 5,
   quote: 'She had heard what God had done, and she believed.',
   attribution: { author: 'Matthew Henry', work_title: 'Commentary on the Whole Bible', reference: 'Joshua 2' },
+  trim_start: null,
+  trim_end: null,
   renderState: 'clipping',
 };
 
@@ -70,6 +74,8 @@ const TOMB: EditorBlock = {
   ordinal: 7,
   quote: null,
   attribution: { author: 'John Chrysostom', work_title: 'Homilies on Hebrews', reference: 'Homily 3' },
+  trim_start: null,
+  trim_end: null,
   renderState: 'tombstone',
 };
 
@@ -101,6 +107,8 @@ function stubApi(opts: { failPatches?: boolean } = {}) {
               ordinal: null,
               quote: null,
               attribution: null,
+              trim_start: null,
+              trim_end: null,
             },
           }),
           { status: 201 },
@@ -317,6 +325,41 @@ describe('StudyEditor — movement and the trailing composer (v2)', () => {
       const box = screen.getByLabelText(/Text block/);
       expect(quote.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
+  });
+
+  it('trim mode sends OFFSETS (never text) via op:trim, and Untrim clears them', async () => {
+    const calls = stubApi();
+    render(<StudyEditor study={STUDY} initialBlocks={[CLIP]} initialNextAfterPosition={null} tombstoneNotice={NOTICE} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Trim block 1' }));
+    // Trim mode renders the RAW quote in one node so selection offsets index the stored bytes.
+    const raw = screen.getByText(CLIP.quote!);
+    const textNode = raw.firstChild as Text;
+    const range = document.createRange();
+    range.setStart(textNode, 4);
+    range.setEnd(textNode, 25);
+    const sel = window.getSelection()!;
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Keep selection' }));
+    await waitFor(
+      () => expect(calls.some((c) => c.method === 'PATCH' && c.body.op === 'trim')).toBe(true),
+      { timeout: 3000 },
+    );
+    const trim = calls.find((c) => c.body.op === 'trim')!;
+    // SEED: send the selected STRING instead of offsets -> RED here (and 400 in the real app;
+    // the trim carries no text by construction).
+    expect(trim.body).toMatchObject({ op: 'trim', blockId: CLIP.id, start: 4, end: 25 });
+    expect('quote' in trim.body).toBe(false);
+
+    // The display now shows the excerpt with ellipses; Untrim clears via the same op.
+    expect(await screen.findByText(/…/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Untrim block 1' }));
+    await waitFor(
+      () => expect(calls.some((c) => c.method === 'PATCH' && c.body.clear === true)).toBe(true),
+      { timeout: 3000 },
+    );
   });
 
   it('the ghost composer creates an END block (no anchor) seeded with the first keystrokes', async () => {

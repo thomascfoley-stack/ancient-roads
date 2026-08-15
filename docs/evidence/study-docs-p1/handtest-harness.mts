@@ -31,6 +31,7 @@ import {
   moveBlock,
   softDeleteBlock,
   softDeleteStudy,
+  trimBlock,
   updateStudy,
   updateTextBlock,
   countWorkUnits,
@@ -174,6 +175,23 @@ try {
   } else note('no published biblehub-provenance section on dev; provenance-refusal case NOT RUN');
   const foreignStudyClip = await insertClippingFromSection(B, sA.id, { sectionId: Number(cleanSection.id) });
   check('H2: B cannot clip into A’s study', !foreignStudyClip.ok && foreignStudyClip.reason === 'study_not_found');
+
+  // ── trim (migration 111, "trim not edit"): offsets validated against the server's own bytes ─
+  if (clip.ok) {
+    const quoteLen = clip.block.quote!.length;
+    check('trim: a range inside the quote is stored', await trimBlock(A, sA.id, clip.block.id, { start: 0, end: Math.min(20, quoteLen) }));
+    check(
+      'trim: a range past the quote is REFUSED by the in-statement bound',
+      (await trimBlock(A, sA.id, clip.block.id, { start: 0, end: quoteLen + 50 })) === false,
+    );
+    check('H2: B cannot trim A’s clipping', (await trimBlock(B, sA.id, clip.block.id, { start: 0, end: 5 })) === false);
+    check('trim: clear restores the full view', await trimBlock(A, sA.id, clip.block.id, null));
+    const [trimRows] = await runAsUser(A, (q) => [
+      q`SELECT trim_start, trim_end FROM study_blocks WHERE id = ${clip.block.id} AND user_id = ${A}`,
+    ]);
+    const t = (trimRows as { trim_start: number | null; trim_end: number | null }[])[0]!;
+    check('trim: cleared offsets are NULL in the row', t.trim_start === null && t.trim_end === null);
+  }
 
   // ── clippings: ask leg (embeddings) ─────────────────────────────────────────────────────────
   const askClip = await insertClippingFromEmbedding(A, sA.id, { sourceId: servedEmb.source_id, reference: 'from ask' });

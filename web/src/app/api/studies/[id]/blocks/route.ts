@@ -9,6 +9,7 @@ import {
   listBlocks,
   moveBlock,
   softDeleteBlock,
+  trimBlock,
   updateTextBlock,
   BLOCKS_PAGE_MAX,
   CLIP_REFERENCE_MAX,
@@ -229,8 +230,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   }
 
   const op = body.op;
-  if (op !== 'update_text' && op !== 'move') {
-    return apiError('INVALID_REQUEST', { message: "op must be 'update_text' or 'move'" });
+  if (op !== 'update_text' && op !== 'move' && op !== 'trim') {
+    return apiError('INVALID_REQUEST', { message: "op must be 'update_text', 'move', or 'trim'" });
   }
   if (typeof body.blockId !== 'string' || !UUID_RE.test(body.blockId)) {
     return apiError('INVALID_REQUEST', { message: 'blockId must be a UUID' });
@@ -246,6 +247,27 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       }
       const ok = await updateTextBlock(user.id, id, blockId, text);
       if (!ok) return err('NOT_FOUND', 'No such text block.', 404);
+      return NextResponse.json({ ok: true });
+    }
+
+    if (op === 'trim') {
+      // "Trim, not edit" (111): the client sends OFFSETS into the server's own snapshot, or
+      // clear:true — never text. The data layer re-validates against length(quote) in-statement.
+      if (body.clear === true) {
+        const ok = await trimBlock(user.id, id, blockId, null);
+        if (!ok) return err('NOT_FOUND', 'No such clipping.', 404);
+        return NextResponse.json({ ok: true });
+      }
+      const start = Number(body.start);
+      const end = Number(body.end);
+      if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end <= start) {
+        return apiError('INVALID_REQUEST', { message: 'trim needs integers 0 <= start < end (or clear: true)' });
+      }
+      const ok = await trimBlock(user.id, id, blockId, { start, end });
+      // 0 rows = not owned, not a clipping, purged, or offsets past the quote — the write's
+      // own bound refused. 404 keeps ownership indistinguishable; the offsets case is a 400
+      // the client can distinguish by retrying with clear.
+      if (!ok) return err('NOT_FOUND', 'No such clipping, or the range does not fit its quote.', 404);
       return NextResponse.json({ ok: true });
     }
 
