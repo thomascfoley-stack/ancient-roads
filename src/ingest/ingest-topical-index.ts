@@ -17,10 +17,12 @@
 // checks PUBLISHED rows only, so a staged self-contained ingest is inside
 // the rules; publishing without the manifest entry is not.
 //
-// Thompson Chain (TCR) is deliberately ABSENT: its PD basis is CrossWire's
-// own unverified 1934-non-renewal claim and Kirkbride actively publishes the
-// work. Decoded under data/raw/topical for the record; not ingested until
-// the claim is independently verified (fail closed on licensing).
+// Thompson Chain (TCR) was held out until its 1934-non-renewal claim was
+// independently verified: docs/evidence/tcr-pd-verification-2026-08-13.md
+// (registration A72501, no renewal in Stanford's database, claimant-diligent
+// corroboration; owner confirmed 2026-08-14). Ingested 2026-08-15 from the
+// same archived raw (tcr.jsonl re-decoded from the checksum-verified TCR.zip
+// and found byte-identical before ingest).
 //
 // FAIL CLOSED: any scan failure outside a work's pinned KNOWN_BAD list —
 // exact tokens, source-edition misprints, counted — fails the whole work,
@@ -210,6 +212,19 @@ const WORKS: WorkDef[] = [
       license: 'Public Domain',
       url: 'https://crosswire.org/sword/modules/ModInfo.jsp?modName=Torrey',
       edition: 'CrossWire SWORD module Torrey 1.3 (RawLD/ThML); sha256 of Torrey.zip in data/raw/topical/CHECKSUMS.sha256',
+    },
+  },
+  {
+    slug: 'thompson-chain-reference',
+    parse: () => parseLdWork('data/raw/topical/tcr.jsonl'),
+    floor: 1650, // measured at decode 2026-08-15: 1,650 entries, 27,335 refs, 0 scan failures
+    knownBad: [],
+    meta: {
+      title: 'Thompson Chain-Reference Topics', author: 'Frank Charles Thompson', authorDied: 1940, year: 1934,
+      sourceType: 'topical_index', register: 'prose', tradition: 'reference', era: 'modern',
+      license: 'Public Domain',
+      url: 'https://crosswire.org/sword/modules/ModInfo.jsp?modName=TCR',
+      edition: 'CrossWire SWORD module TCR 1.1 (RawLD/ThML, DistributionLicense=Public Domain); 1934 ed. (reg. A72501) non-renewal verified in docs/evidence/tcr-pd-verification-2026-08-13.md; sha256 of TCR.zip in data/raw/topical/CHECKSUMS.sha256',
     },
   },
   {

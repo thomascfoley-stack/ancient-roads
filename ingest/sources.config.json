@@ -1,27 +1,5 @@
 [
   {
-    "id": "barnes-notes",
-    "slug": "barnes-notes",
-    "title": "Barnes' Notes on the Bible",
-    "author": "Albert Barnes",
-    "author_died": 1870,
-    "year_written": 1834,
-    "source_type": "commentary",
-    "tradition": "reformed",
-    "era": "modern",
-    "license": "Public Domain",
-    "provenance": {
-      "url": "https://biblehub.com/commentaries/barnes/",
-      "edition": "Barnes' Notes on the Bible (Albert Barnes)",
-      "year": 1834,
-      "retrieved_via": "biblehub aggregator — text is public domain (Barnes d. 1870); re-source from CrossWire/PD per ADR-008 before wide rollout"
-    },
-    "quarantine": "biblehub provenance (ADR-008 forbidden aggregator) — held until re-sourced from a permitted PD source per docs/RESOURCING_PLAN.md; text is PD so re-sourcing should be a $0 provenance-repair (existing vectors kept if the permitted text matches)",
-    "backfill": {
-      "match_author": "Barnes' Notes"
-    }
-  },
-  {
     "id": "john-gill",
     "slug": "john-gill",
     "title": "John Gill's Exposition of the Bible",
@@ -1303,7 +1281,14 @@
       "acquire": {
         "adapter": "gutenberg",
         "ebook_id": 68976,
-        "ebook_ids": [68976, 71140, 73012, 73267, 77034, 77041],
+        "ebook_ids": [
+          68976,
+          71140,
+          73012,
+          73267,
+          77034,
+          77041
+        ],
         "note": "2026-08-13: the six 1771 Dilly volumes (vols 1-6). The volume-parameterized profile (src/ingest/profile-whitefield-works.ts) resolved the quality quarantine — 59/59 sermons segmented from vols 5-6 (#77034/#77041), vols 1-4 letters/tracts excluded; evidence docs/evidence/profiles/whitefield-2026-08-13T04-26-42Z.log"
       }
     },
@@ -24486,6 +24471,30 @@
       "acquire": {
         "adapter": "topical-index",
         "module": "Torrey",
+        "decoder": "src/ingest/sword-ld.ts"
+      }
+    }
+  },
+  {
+    "id": "thompson-chain-reference",
+    "slug": "thompson-chain-reference",
+    "title": "Thompson Chain-Reference Topics",
+    "author": "Frank Charles Thompson",
+    "author_died": 1940,
+    "year_written": 1934,
+    "source_type": "topical_index",
+    "tradition": "reference",
+    "era": "modern",
+    "license": "Public Domain",
+    "tier": 2,
+    "provenance": {
+      "url": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=TCR",
+      "edition": "CrossWire SWORD module TCR 1.1 (RawLD/ThML, DistributionLicense=Public Domain); sha256 in data/raw/topical/CHECKSUMS.sha256",
+      "year": 1934,
+      "pd_basis": "1934 ed. (US registration A72501) not renewed — verified 2026-08-13, license record docs/evidence/tcr-pd-verification-2026-08-13.md (Stanford renewal DB: no renewal for A72501; claimant renewed the 1929 ed. but not this one); owner confirmed 2026-08-14",
+      "acquire": {
+        "adapter": "topical-index",
+        "module": "TCR",
         "decoder": "src/ingest/sword-ld.ts"
       }
     }

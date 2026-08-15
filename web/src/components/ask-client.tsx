@@ -95,13 +95,15 @@ function eraOf(year?: number) {
 }
 
 // Which register lanes to search, alongside the always-on commentary answer.
-// History has no retrieval lane yet (historian works are shelf-only) — shown
-// disabled rather than omitted, so the full category list is visible.
-type LaneKey = 'sermons' | 'theology' | 'songVerse';
+// History became a real lane 2026-08-14 (corpus-backlog #6: SERVED_HISTORIAN_WORKS +
+// retrieveHistorianLane + the josephus serve-flip) — it joined LANE_OPTIONS then, and the
+// disabled "(coming soon)" placeholder below was removed.
+type LaneKey = 'sermons' | 'theology' | 'songVerse' | 'historians';
 const LANE_OPTIONS: { key: LaneKey; label: string }[] = [
   { key: 'sermons', label: 'Sermons' },
   { key: 'theology', label: 'Theology & Confessions' },
   { key: 'songVerse', label: 'Hymns & Sacred Poetry' },
+  { key: 'historians', label: 'History' },
 ];
 
 function LaneFilter({ lanes, onToggle }: { lanes: Record<LaneKey, boolean>; onToggle: (key: LaneKey, value: boolean) => void }) {
@@ -140,12 +142,6 @@ function LaneFilter({ lanes, onToggle }: { lanes: Record<LaneKey, boolean>; onTo
               </label>
             </li>
           ))}
-          <li>
-            <label title="Historical works aren't searchable here yet." className="flex min-h-[28px] items-center gap-2 text-sm text-stone-400 dark:text-stone-600">
-              <input type="checkbox" checked={false} disabled className="h-4 w-4 rounded border-stone-300 dark:border-stone-700" />
-              History <span className="text-xs italic">(coming soon)</span>
-            </label>
-          </li>
         </ul>
       )}
     </div>
@@ -173,7 +169,7 @@ export function AskClient() {
   const [question, setQuestion] = useState('');
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
-  const [lanes, setLanes] = useState<Record<LaneKey, boolean>>({ sermons: true, theology: true, songVerse: true });
+  const [lanes, setLanes] = useState<Record<LaneKey, boolean>>({ sermons: true, theology: true, songVerse: true, historians: true });
   const nextId = useRef(1);
   const bottomRef = useRef<HTMLDivElement>(null);
 
