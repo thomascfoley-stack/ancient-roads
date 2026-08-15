@@ -1,5 +1,55 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-15 (late) — josephus-whiston served on dev; dev `served-reconcile` GREEN; Step 2 NOT re-run
+
+Owner: "get step 2 done, get the josephus on dev". **One of those was already done and re-running
+it would have destroyed a rollback path** — see below. The other is done and verified.
+
+**Step 2 was NOT re-run, deliberately.** It completed against production earlier today
+(receipts: `corpus-backlog/publish-flip-forward-2026-08-14.log` — 7 works staged→published,
+58,717 rows served; `serve-josephus-2026-08-14.log` — 6,492 rows served, 0 status rows moved).
+The concrete harm of a second run is not redundancy, it is **losing the reverse**:
+`publish-flip --reverse` un-serves exactly the works whose snapshot records `servedBefore = 0`
+rows served. Re-running the forward serve now would write a NEW snapshot recording those rows as
+ALREADY served, so a later `--reverse` against it would un-serve **nothing** — silently voiding
+the rollback for the original production flip. The runbook now carries a DO NOT RE-RUN banner.
+
+**josephus-whiston served on DEV — 6,492 rows, dev now level with prod.** Production had the
+historian serve; dev did not, which is the whole reason `served-reconcile` had been reading red
+all evening. Preconditions measured before the write: published · `source_type='historian'` ·
+in `SERVED_HISTORIAN_WORKS` · 6,492 rows all `served=false` · single `crosswire.org` provenance
+(no forbidden domain) · migration 114's `idx_embeddings_served_historian` present · **no other
+historian rows exist**, so nothing could ride along. Written as one asserted transaction under
+`neondb_owner` with a host gate refusing anything but `ep-tiny-hat`, a snapshot written before
+COMMIT, and `rowCount === expected` or ROLLBACK. Evidence:
+[`serve-josephus-dev-2026-08-15.log`](evidence/serve-josephus-dev-2026-08-15.log) + its
+pre-snapshot. Exact inverse is in the log and is valid **only** because `servedBefore` was 0.
+
+**Verified through the shipped predicate, not the count** — `retrieveRegisterLane` swallows its
+own errors (`catch { return [] }`), so calling the lane and seeing results proves less than it
+appears to:
+
+1. `HISTORIAN_CORPUS_FILTER` byte-for-byte from `routing.ts` now matches **6,492** rows.
+2. `EXPLAIN` on the lane's ORDER-BY shape: **`Index Scan using idx_embeddings_served_historian`**
+   — migration 114's partial index is genuinely in the plan, not a lookalike or a seq scan.
+3. Real rows return (`historian:josephus-whiston:2475.2`, `…:3637.3` — Josephus on Vitellius).
+4. **The exegetical wall holds:** 0 josephus rows reachable via `EXEGETICAL_TYPE_SQL`, 0 rows in
+   `commentary_entries`. The historian lane is additive and contained, as designed.
+
+**`served-reconcile` on dev: GREEN** — "every published work serves all of its clean-provenance
+rows; nothing unpublished serves." 125 published & fully served, 0 violations, down from the 1
+that stood all evening.
+
+### NOT DONE / UNVERIFIED
+
+- **Dev only.** Production was not connected by this session; prod already had this serve.
+- **The Song coverage/retrieval mismatch stands** (117/117 vs 12/117 — `song-coverage-vs-retrieval-2026-08-15.md`).
+  Serving josephus does not touch it.
+- **The production password is still unrotated** and still in git history. The owner said to set
+  it aside for now; it is not fixed, only deferred.
+- `npm run audit` not re-run after this entry — the change is a DB row update plus docs; the last
+  full wall passed on this HEAD (18 gates).
+
 ## 2026-08-15 (late) — The P4.n runbook points at an emptied database; the Song's coverage number is not a retrieval number
 
 Read-only session against dev (`ep-tiny-hat`, pooled and direct, agreeing). **Production was
