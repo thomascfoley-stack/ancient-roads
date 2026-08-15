@@ -33,6 +33,7 @@
 // owner; this moves bytes out of the serving path on the owner's instruction and destroys none of
 // them, so the ruling stays reversible.
 
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -162,7 +163,39 @@ function filterRun(apply: boolean): void {
   if (apply) {
     console.log(`\nMoved to ${QUARANTINE_ROOT}/ (outside the upload root). Restore: --restore`);
     console.log('NEXT: pnpm exec tsx src/ingest/build-commentary-manifest.ts  — the manifest still lists them.');
+    syncCdnOrRefuse('quarantine');
   }
+}
+
+// THE CDN WELD (docs/CORPUS_CDN_DESIGN.md §4.4 — the design's most important sentence). When
+// the corpus serves from the Blob CDN, editing the local files is only HALF a quarantine: the
+// CDN copy keeps serving the old bytes until the sync propagates the change, and an
+// half-finished quarantine that REPORTS finished is licensing failing open. So: if a CDN sync
+// manifest exists (CDN mode is live), an --apply/--restore run must either run the scoped sync
+// right now, or exit NONZERO stating the quarantine is incomplete. Pre-CDN (no manifest),
+// nothing serves from the store and there is nothing to weld.
+function syncCdnOrRefuse(what: 'quarantine' | 'restore'): void {
+  const manifest = 'docs/evidence/corpus-cdn/sync-manifest.json';
+  if (!existsSync(manifest)) return; // CDN not live; local files are the only serving copies
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    console.error(
+      `\n✗ ${what.toUpperCase()} IS NOT COMPLETE. The corpus serves from the CDN (a sync manifest ` +
+        'exists) and the CDN still carries the OLD files. Set BLOB_READ_WRITE_TOKEN and re-run, or ' +
+        'run: node scripts/corpus-blob-sync.mjs --prefix commentaries/ --execute',
+    );
+    process.exit(1);
+  }
+  console.log('\nCDN weld: propagating to the Blob store (scoped sync)…');
+  const result = spawnSync(
+    process.execPath,
+    ['scripts/corpus-blob-sync.mjs', '--prefix', 'commentaries/', '--execute'],
+    { stdio: 'inherit' },
+  );
+  if (result.status !== 0) {
+    console.error(`\n✗ ${what.toUpperCase()} IS NOT COMPLETE: the CDN sync failed; the store still serves the old files.`);
+    process.exit(1);
+  }
+  console.log('✓ CDN in step with the local corpus.');
 }
 
 function restoreRun(apply: boolean): void {
@@ -196,7 +229,10 @@ function restoreRun(apply: boolean): void {
     writeAtomic(servedFile, { ...doc, entries: all });
   }
   console.log(`${apply ? 'restored' : 'would restore'} ${restored.toLocaleString()} entries into ${SERVED_ROOT}`);
-  if (apply) console.log('The served tree now ships quarantined content again. Re-run without --restore before deploying.');
+  if (apply) {
+    console.log('The served tree now ships quarantined content again. Re-run without --restore before deploying.');
+    syncCdnOrRefuse('restore');
+  }
 }
 
 const argv = process.argv.slice(2);

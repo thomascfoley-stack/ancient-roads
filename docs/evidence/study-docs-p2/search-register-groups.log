@@ -1,0 +1,58 @@
+# RED-PROOF + GREEN — search-register-groups.test.ts (S-5, S-6, S-12)
+
+Suite: web/test/invariants/search-register-groups.test.ts
+Invariants: S-5 (every search row carries its register label; no register presented as exegesis),
+S-6 (staged/quarantined works never surface), S-12 (an empty register group is its own query's
+zero, never a truncation artefact) — STUDY_DOCS_DESIGN §8.
+Env: APP_DATABASE_URL=app_runtime dev (ep-tiny-hat), DATABASE_URL=neondb_owner dev
+(~/.neon_dev_owner_url). Roles verified via current_user before any run.
+Fixtures (owner-seeded, prefix `qa-reggrp-`, swept in afterAll): a published HYMN with the group
+token once; a published COMMENTARY with the token 40× (outranks the hymn globally — asserted as
+the S-12 precondition); a STAGED hymn and a QUARANTINED commentary with their own unique tokens.
+All licenses 'Public Domain' so even leaked residue cannot fail Gate B.
+
+The suite tests at the engine layer (lib/search-sections.ts with the catalog fence) — the layer
+the W5 merged surface is required to fan out per group (design §2.5/§7.3). The page itself is
+W5's file and did not exist when this suite was written; the contract it must honour is pinned
+here.
+
+## RED run (a) — S-12 against the anti-pattern (2026-08-13)
+
+The S-12 case first ran written against the FORBIDDEN grouping strategy (review S-C): register
+groups as a partition of ONE globally-ranked page at limit=1.
+
+    × S-12 (RED VARIANT — anti-pattern under test)
+    → the hymn group must show its own row: expected [] to include 'qa-reggrp-hymn-…'
+    Tests  1 failed | 2 passed (3)
+
+The truncated global page hid the hymn exactly as designed — the empty "group" was a truncation
+artefact. The case was then rewritten to assert the per-group query (hymn group at limit=1 shows
+its row; commentary group likewise), with the global truncation kept as the loud precondition.
+
+## RED run (b) — S-5: the label column removed from the engine
+
+Break: `s.source_type AS "sourceType"` deleted from the page SELECT in lib/search-sections.ts.
+
+    × S-5 … → group "commentaries" row "qa-reggrp-comm-…" has no register label: expected false to be true
+    Tests  1 failed | 2 passed (3)
+
+## RED run (c) — S-6: the published predicate removed from the engine
+
+Break: `AND s.status = 'published'` deleted from the shared WHERE in lib/search-sections.ts.
+
+    × S-6 … → a staged work must not surface in cross-corpus: expected [ { …(10) } ] to deeply equal []
+    Tests  1 failed | 2 passed (3)
+
+(The S-6 precondition — owner-side proof that the seeded rows EXIST with the token and the
+staged/quarantined status — passed in every run, so the red above is the predicate's absence
+surfacing a real withdrawn row, not a fixture gap.)
+
+## GREEN run — all breaks reverted
+
+`git diff` empty for web/src/lib/search-sections.ts after reverts (byte-identical).
+
+    Test Files  1 passed (1)
+    Tests  3 passed (3)
+    Duration  ~7s
+
+Re-runnable: `cd web && APP_DATABASE_URL=<runtime dev> DATABASE_URL=<owner dev> npx vitest run test/invariants/search-register-groups.test.ts`.

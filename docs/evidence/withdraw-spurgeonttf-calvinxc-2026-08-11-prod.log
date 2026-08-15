@@ -1,0 +1,12 @@
+
+
+role: neondb_owner (asserted at server)
+--- spurgeon-talks-to-farmers
+before: {"status":"published","served":0}
+wrote: status staged (1), unserved 0 in 0.2s
+after: {"status":"staged","served":0}
+--- calvin-crosswire
+before: {"status":"published","served":5088}
+wrote: status staged (1), unserved 5088 in 608.4s
+after: {"status":"staged","served":0}
+PROD WITHDRAWAL COMPLETE

@@ -1,0 +1,29 @@
+extracted DO block from db/migrations/110_studies.sql (3036 chars)
+
+
+connected as neondb_owner
+
+seed: REVOKE UPDATE ON studies FROM app_runtime
+  -> RED as expected: 110 FAILED: app_runtime lacks UPDATE on studies — rename/pin/soft-delete would 500
+
+seed: REVOKE INSERT ON study_block_revisions FROM app_runtime
+  -> RED as expected: 110 FAILED: app_runtime lacks INSERT on study_block_revisions — the undo substrate would 500
+
+seed: GRANT DELETE ON study_blocks TO app_runtime
+  -> RED as expected: 110 FAILED: app_runtime has DELETE on study_blocks; soft-delete only
+
+seed: GRANT UPDATE ON study_block_revisions TO app_runtime
+  -> RED as expected: 110 FAILED: revisions must be append-only (UPDATE present)
+
+seed: ALTER TABLE studies DISABLE ROW LEVEL SECURITY
+  -> RED as expected: 110 FAILED: RLS not enabled on all three studies tables
+
+seed: DROP POLICY study_blocks_policy ON study_blocks
+  -> RED as expected: 110 FAILED: missing RLS policy on a studies table
+
+final run against the applied (unseeded) state: GREEN, as it should be
+
+app_runtime grants after red-proof (must match the migration exactly):
+  studies: INSERT,SELECT,UPDATE
+  study_block_revisions: INSERT,SELECT
+  study_blocks: INSERT,SELECT,UPDATE

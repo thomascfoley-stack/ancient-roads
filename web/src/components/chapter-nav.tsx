@@ -14,7 +14,9 @@ export function ChapterNav({
   const next = nextChapter(book, chapter);
 
   return (
-    <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 border-t edge px-4 py-3">
+    // The nav spans the READING MEASURE, not a fixed width: a max-w-2xl row under an 84ch
+    // chapter sits visibly inset from the text it serves (owner direction 2026-08-12).
+    <div className="reading-measure mx-auto flex items-center justify-between gap-3 border-t edge px-4 py-3">
       {/* PRD reader nav: hairline-bordered arrows, square; hover is the instant ink fill
           (PRD §6/§7 — buttons fill immediately, so no transition here). */}
       {prev ? (

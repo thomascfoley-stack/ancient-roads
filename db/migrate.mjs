@@ -14,8 +14,12 @@ if (!DATABASE_URL) {
 // node db/migrate.mjs` applied all of db/schema.sql to whatever it pointed at. Against a
 // post-031 production database most statements error harmlessly, but
 // `CREATE OR REPLACE FUNCTION hybrid_search` SUCCEEDS and silently reverts migration 004 —
-// back to websearch_to_tsquery with no source_type filter. That was survivable only because
-// hybrid_search currently has no callers, which is luck, not a design.
+// back to websearch_to_tsquery with no source_type filter. CORRECTED 2026-08-12 (EMBEDDINGS_DESIGN
+// v2 D6): the earlier claim that "hybrid_search currently has no callers" was FALSE — it has six
+// call sites in five eval/diagnostic scripts under web/src/scripts/ (it is the control arm of the
+// retrieval A/B, not dead code; WORKORDER_PHASE_A §0 closed the prod divergence at e5677a0). So
+// this footgun is LIVE, not dormant: reverting 004 would silently change what the harness's control
+// arm measures.
 //
 // Migrations against a real target go through db/apply-migration.mjs, which has always had
 // its own override. This runner is for bootstrapping a dev or local database from schema.sql.

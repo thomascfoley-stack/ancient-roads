@@ -1,0 +1,48 @@
+=== FINAL RUN: studies-bounds — 4 green; the studies-list cursor case is RED BY FINDING (F-W1-1,
+millisecond-truncated cursor drops rows at the page seam — P1 core defect, P3 fix; brief rule 4) ===
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git/web
+
+(node:3817) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ test/invariants/studies-bounds.test.ts (5 tests | 1 failed) 4042ms
+   × S-7 studies bounds > studies list: row cap holds past the page size, and the cursor paginates with no overlap or gap 196ms
+     → the cursor must reach every study — a seam that drops rows is not pagination (F-W1-1): expected 50 to be 61 // Object.is equality
+   ✓ S-7 studies bounds > blocks read: row cap holds past BLOCKS_PAGE_MAX, and position-cursor pages tile the document 538ms
+   ✓ S-7 studies bounds > a soft-deleted study contributes NOTHING: not to the list, the doc read, the block read, or search 1890ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/invariants/studies-bounds.test.ts > S-7 studies bounds > studies list: row cap holds past the page size, and the cursor paginates with no overlap or gap
+AssertionError: the cursor must reach every study — a seam that drops rows is not pagination (F-W1-1): expected 50 to be 61 // Object.is equality
+
+- Expected
++ Received
+
+- 61
++ 50
+
+ ❯ test/invariants/studies-bounds.test.ts:133:7
+    131|       page1.length + page2.length,
+    132|       'the cursor must reach every study — a seam that drops rows is n…
+    133|     ).toBe(N_STUDIES + 1);
+       |       ^
+    134| 
+    135|     // The cursor key is (updated_at, id) DESC — assert the pair is a …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 passed (5)
+   Start at  17:29:26
+   Duration  4.30s (transform 37ms, setup 0ms, collect 50ms, tests 4.04s, environment 0ms, prepare 32ms)
+
+=== vitest exit: 1 ===

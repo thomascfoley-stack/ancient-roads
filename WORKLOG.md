@@ -1,4 +1,713 @@
-# WORKLOG — Autonomous session 2026-07-08
+# WORKLOG — Autonomous session 2026-08-12
+
+## 2026-08-12 (late night) — Study editor v2 BUILT (Fable session; owner mockup approved, "build it")
+
+Branch `feat/study-editor-v2` off `feat/study-docs-p2`. The owner's first browser pass of the
+shipped v1 found what the waived browser checks were always going to miss: cramped 40%-width
+layout, five always-on "+ Text" buttons, no way to move blocks, no in-page library, `.md`-only
+export ("no one uses .mds except AI clones and AI itself"). v2 per the approved mockup:
+
+- **Layout:** two-pane canvas — the doc keeps its ~75ch reading measure, the reclaimed space
+  becomes a sticky **library panel** (`study-library-panel.tsx`): register chips, debounced
+  search through a new auth-walled endpoint (`/api/studies/library-search`) that wraps the
+  EXISTING fenced engine (searchSections' catalog option + the lexicon sibling — F4, no new
+  retrieval) and resolves `sectionId` via the UNIQUE (source_id, ordinal) key. "Add to study" =
+  the same server-snapshotting clipping POST as every surface; raw corpus text never enters the
+  buffer. **Design §7.4's "never from an in-editor corpus fetch" is amended by the owner's
+  direction** — the property it protected holds structurally (recorded in the route header).
+- **Insertion:** the five buttons became one quiet hairline per gap that expands on tap to
+  "+ Write / + From library" (44px hit targets kept — hover-only affordances don't exist on
+  touch), plus a **trailing ghost composer** ("Keep writing…") whenever the doc doesn't already
+  end in an editable block — typing's first keystroke becomes a real end-appended block with
+  the caret carried forward.
+- **Movement:** every saved block gets quiet always-visible ↑/↓ (+ the existing Remove confirm),
+  wired to P1's `op:'move'` anchored on the nearest SAVED neighbor, adopting the server's
+  fractional key; boundary and local-draft cases disabled. Load-more now merges by
+  (position, id) — S-14's order applied client-side — so end-appends with unloaded pages
+  self-correct.
+- **Saved status:** consolidated to one header status (Saving…/Saved); the FAILURE state stays
+  per-block and loud AND gets a header echo ("Save failed below") for off-screen blocks — S-13
+  strengthened, not traded.
+- **Export asks the format** (owner requirement): Word (.docx — `docx@9` dependency, surfaced
+  and approved with the requirement), PDF (the same export model rendered as a print view that
+  opens the browser's dialog — no PDF engine dependency, tradeoff recorded), Markdown kept as
+  plumbing. ALL formats run the same bounded read + fail-closed servability re-check
+  server-side; the .docx has a pure tested model layer (`study-export-docx.ts`) so a licensing
+  bug has exactly one place to live, where the tests are.
+
+**Tests:** 31 green in the editor's suites — updated component contracts (insert point, export
+menu, header status) preserving every property (S-13's failure leg asserts BOTH surfaces now),
+plus new move/ghost cases, a library-panel contract suite (Add sends a REFERENCE, never
+quote/attribution — S-1's client half), and the .docx model suite (data-state tombstone, belt
+case, fail-closed, determinism, zip smoke).
+
+**The browser pass — run this time, and it caught a real class.** New dev-only harness
+`web/src/app/dev/editor-preview/page.tsx` (production-404, fixture blocks, no auth/DB — exists
+because Neon Auth env is Vercel-only and that wall has now blocked three sessions' browser
+checks). Verified in the live browser: two-pane desktop layout at SSR paint, DOM-complete
+structure (boundary-aware move controls; tombstone linkless; export menu carrying all three
+format hrefs; ghost present; five chips), insert-point expand → Write → focused block, and the
+full S-13 walk against the REAL network (signed-out saves genuinely fail → header + block alert
++ buffer intact to the character). **Found live:** the textarea autosize freezes a 5,450px
+height when the page mounts in a HIDDEN renderer (0-width layout, measured `visibilityState:
+'hidden'`, `document 0×0`); fixed with a width-guarded ResizeObserver refit. The fix is
+UNPROVABLE in this environment — proven by probe that RO callbacks never deliver while hidden
+(`roFired: 0` on a body-resize probe) — and the pathology itself cannot occur in a visible
+browser; the fix covers the mount-hidden→become-visible transition where RO delivery resumes by
+spec.
+
+**NOT DONE / UNVERIFIED:**
+- **No visible-pane pixel pass at 390px/desktop** — the Browser pane stayed hidden (host-side),
+  so frames were stale and layout metrics 0. The dev server is left running with the harness at
+  `/dev/editor-preview` for the owner's own look. DOM structure, computed hrefs, and live
+  interaction proofs stand; pixel aesthetics await eyes.
+- **The library add-flow end-to-end against the real corpus** — the panel's search hits the real
+  endpoint signed-out in dev (401 → panel error state, seen). The full search→add→render loop is
+  jsdom-proven with mocked fetch + P1's route/lib suites cover the write; an authenticated live
+  pass belongs to the deployed environment.
+- Drag-and-drop deferred (arrows shipped; dnd-kit is a dependency decision not yet taken).
+  Markdown SYNTAX is not interpreted in the .docx (plain paragraphs — stated in the module).
+- Fixer ≠ verifier: I built v2; these claims await independent eyes before "shipped" is said.
+- `npm run audit` running at this writing; result recorded in the commit that lands this entry.
+
+**AUDIT PASSED (all gates) and DEPLOYED 2026-08-13T02:36Z** (owner: "and deploy"; PR #79 merged
+by the owner at `f3fad8a`): editor v2 live on ancientpaths.app —
+`dpl_685JHWNwm5xP4v7qf9DmJYRxkcTp` serving `7101eb3`, alias verified serving this deploy by
+deploy.sh itself ([receipt](docs/evidence/deploys/deploy-7101eb3-2026-08-13T02-30-48Z.txt)).
+The deploy shipped the local tree at `7101eb3`, byte-identical to the merged branch content.
+Owner confirmed on their own look that the v1 layout problem is gone. **Process note, per the
+watchlist's spirit:** the first attempt to land this receipt committed onto the PRE-merge base —
+`git pull --ff-only | tail -1` masked a "no tracking information" failure (a pipeline's exit
+code is its LAST command's), and the bare `git push` failed silently the same way; caught
+because the working tree visibly reverted to v1, repaired by reset → ff-merge → recommit. A
+masked exit code is the shell's version of an unearned green. Still open from the v2 NOT-DONE
+list: visible-pane pixel pass at 390px, drag-and-drop + duplicate-to-study (dependency call),
+the §12 paragraph finder.
+
+## 2026-08-12 (night) — P2 swarm COMPLETE: Study Docs product surface built, all gates green
+
+Six streams, three waves, one tree (feat/study-docs-p2), file-disjoint per
+docs/pm/SWARM_PARALLEL_BRIEF.md. Every invariant red-proofed with logs under
+docs/evidence/study-docs-p2/.
+
+**Wave 1 (invariants):** W1 data (grants S-11 derived-from-code — the UX_REMEDIATION §9 check
+finally built; tenancy S-4 with positive half; bounds S-7; order S-14 — 4 suites, 19 tests) and
+W2 licensing (provenance S-1 incl. all five table CHECKs probed; tombstone S-2/S-3/S-10;
+register groups S-5/S-6/S-12 — 3 suites, 13 tests). **C5 MEASURED POSITIVE on dev** (W1 run B:
+belts removed, RLS still isolated both directions — RLS binds under Neon's GUC-set TEXT user-id,
+on these three tables, on dev). W1 found one real P1 bug: **F-W1-1 lossy updated_at cursor**
+(driver Date truncates to millis; tuple comparison drops same-millisecond rows) — fixed by
+coordinator (`updated_at::text` in listStudies), bounds suite watched going 4/5 → 5/5.
+
+**Wave 2 (UI):** W3 My Studies list + doc editor (debounced autosave with visible
+Saving/Saved/Failed-Retry, never-discard buffer, E7; tombstones via the shared blockRenderState,
+S-10; export; two P1-gap workaround routes: [id]/feed with server-computed renderState,
+[id]/export). W4 Save-to-study affordance (default target = last-used, one tap, E7; picker as
+second tap; wired onto ask-client voices/lanes/fallback with minimal diff) + MY STUDIES sidebar
+section (first fetch-backed section; PRAYER JOURNAL untouched; RESEARCH HISTORY placeholder
+comment only). W5 merged search surface (/search: per-group capped queries through the catalog
+fence — S-12 holds; include-personal checkbox default OFF, E8; URL-state for q/collapse/paging;
+per-group error isolation; live-verified on dev with real corpus rows).
+
+**Wave 3 (W6 gate):** surface-route suite (feed + export, 10 tests, 6 red-proofs incl. a real
+422 beyond EXPORT_MAX_BLOCKS and tombstone export carrying no quote bytes and no link). Full
+gates: web 142 files / **1001 tests green**; root 701/701; typecheck clean; eslint 0 errors;
+**npm run audit — all 10 gates green, exit 0** (log: docs/evidence/study-docs-p2/w6-audit.log).
+Zero cross-stream regressions.
+
+**Recorded for P3 (integration + independent verification):**
+- F-W6-1: belt-case tombstones (source staged AFTER save, purge not yet run) still ship quote
+  bytes in JSON — render denial is client-side convention. Purged (data-state) tombstones are
+  clean. Tightening: render paths should null the quote when the re-check tombstones.
+- F-W6-2: cosmetic — limit-less final feed page returns a spurious nextAfterPosition.
+- F-W3-1: listStudies is recency-only; pinned-first is a page-level workaround — belongs in the
+  data layer. F-W3-2/F-W3-3: feed + export routes are workarounds; fold into P1 routes or bless.
+- W4 gap: voice blocks carry no saveable key (selectVoices indices are prompt-local) — client
+  resolves to source_id fail-closed; delete the resolver if the stream ever exposes real keys.
+- W5 deviations: lexicons group re-asserts the engine's properties outside the fence (taxonomy
+  excludes lexicon from CatalogId — owner-visible decision); prayers/notes use ILIKE until the
+  §6.4 tsv migrations; works group count is a hasMore probe; /search has NO nav entry point yet
+  (sidebar wiring is P3).
+- Block move/reorder NOT implemented (design names the move op) — P3 decision.
+- NOT DONE: browser passes at 390px/desktop in an authenticated session (the /gate password —
+  N4 lesson); P3 independent re-execution of all red-proofs; nothing deployed.
+
+
+## 2026-08-12 (evening) — EMBEDDINGS V1 provider drift guard BUILT (Kimi session, owner: "you take it")
+
+Branch `feat/embeddings-v1-provider-guard` (off feat/study-docs-p1). Red-proof order: tests
+written first, watched RED against unguarded code (4+4 failing guard cases), then the guards.
+
+- `src/retrieval/embedder.ts` — response `model` assertion (missing or mismatched → throw,
+  NOT retried: it cannot heal) + per-vector dims assertion naming the cause.
+- `web/src/lib/teacher/deepinfra.ts` — same assertion on `embedQuery` (request path) and on
+  `compose` — compose included because this hazard already bit there (the Qwen3.6 auto-forward
+  incident documented at :9-11); scope extension beyond the design's "embed + rerank", recorded.
+- `web/src/lib/user-corpus/embed.ts` — same assertion on the batch path (dims already existed).
+- `web/src/lib/teacher/rerank.ts` — **gap documented, not guarded**: the rerank response is
+  `{ scores: number[] }` with no self-reported model (provider docs, checked 2026-08-12), so no
+  response-side assertion is implementable. EMBEDDINGS_DESIGN I-2 amended to match reality.
+- **Live smoke against the real provider** (both endpoints, existing key): embed and compose
+  echo the exact requested model string and 1024 dims — strict equality carries no
+  false-positive risk on the live ask path.
+- Gates: root vitest 701/701; web qa 920 passed / 0 failed (correct env recipe); tsc clean;
+  eslint clean on touched files.
+- Design doc updated: D5 marked BUILT, I-1/I-2 amended (compose in, rerank exempt-and-documented).
+
+**NOT DONE / UNVERIFIED:** not independently verified (bylaw 4 — a fresh session should re-run
+the two guard suites and read the diffs); V2 (migrate.mjs comment), V3 (P2 truth pass), V4
+(model pin migration), V5 (constant consolidation) all remain; D5b provider abstraction ruled
+but unbuilt. Uncommitted at this writing — awaiting owner go.
+
+## 2026-08-12 (night) — EMBEDDINGS V2 + V3 done; Fable's mechanism note; P2 swarm wave 1 launched
+
+**Fable's mechanism note, for the record:** the "10 registers" slip came from summarizing off the
+served-rows-by-type line (10 entries) instead of the census table (11) — the two artifacts differ
+by exactly the published-but-unserved work (historian), which made the error self-consistent and
+invisible to its author. THE_LOOP rule 1 (name the artifact before you trust a number) in
+miniature; the catch surfaced real information (historian = current published-with-no-lane
+instance, matching A9's unbuilt slice).
+
+**V2 (migrate.mjs comment):** done — the "no callers" claim corrected; footgun documented as live.
+
+**V3 (P2 truth pass, dev):** pairing test's NOT COVERED list separated by cause — **91 of 125
+published works on dev are vectorless; ZERO were unsampleable** (the old label was wrong for
+every entry). By type: commentary 21/26, confession 8/9, devotional 15/15, father 4/7, hymn
+27/32, lexicon 10/10, poetry 3/13, topical_index 3/3; historian/sermon/theology fully covered.
+The check now reports the two causes separately (I-3, watched: pre-fix label captured in-session).
+D1 input: a P2 backfill is 91 works; the multi-chunk fraction for new ingests is still
+unmeasured. V4 (model pin) and V5 (constant consolidation) remain.
+
+**P2 swarm:** wave 1 (W1 invariants-data, W2 invariants-licensing) launched per
+docs/pm/SWARM_PARALLEL_BRIEF.md merge order — tests define correctness before UI streams.
+
+
+## 2026-08-12 (late) — T0 recon folded into the design docs (Kimi session)
+
+Fable's prod-apply session (eecad7c) produced T0 numbers that changed two design docs:
+- **STUDY_DOCS §2.6 superseded:** prod is now **125 published works across 10 registers**
+  (register ingest landed since the 2026-08-01 census) — register groups on prod should have
+  real content; the "honestly empty" expectation is gone. T0-a unmeasurable (no stored surfaced
+  lists until ask-history ships). T0-c closed positive with one recorded residual (write gate
+  treats `source_url IS NULL` as clean — zero exposure today). ADR-044 served-dirty rows
+  re-measured at 4,174 (owner call A9 stays open; Study Docs is not exposed — the write gate
+  and re-check refuse those rows regardless of `served`).
+- **EMBEDDINGS_DESIGN:** T0-d confirms prod pin conformity — all 569,845 corpus rows carry
+  `BAAI/bge-large-en-v1.5` (API-id long form; V4's pin constant must be the long form).
+
+Both edits committed-pending on feat/study-docs-p1 with this entry.
+
+**Register-count correction (PM audit, same evening):** Claude cowork's PM pass re-counted the
+raw T0-b log instead of trusting the prose — 125 published works is right, but the log shows
+**11 distinct source types**, not 10 (historian ×1 was dropped from Fable's summary; the
+miscount was consistent across Fable's report, this WORKLOG, and STATE_OF_TRUTH §2g — a
+consistent miscount, exactly the class the loop exists to catch). Corrected in
+STUDY_DOCS_DESIGN §2.6 and STATE_OF_TRUTH §2g, with the historian-has-no-served-rows note
+(the lexicon/A8 pattern). PM's prod-state caveat stands: paper trail verified, live DB not
+independently re-queried by them.
+
+
+## 2026-08-12 (prod) — Migration 110 applied to ep-odd-fog; T0 recon recorded (Fable session)
+
+**Owner go: given in session 2026-08-12, scoped to this migration only** (recorded here per
+bylaw 1 — the order also authorized the read-only pre-flight and T0 recon riding the session;
+deploy explicitly excluded and NOT run). Premise verified against the tree before any prod
+connection: the independent P1 verification EXISTS — the Kimi entry below, found uncommitted on
+`feat/study-docs-p1` exactly as it says ("commit with the owner's go"); it is committed with
+this entry.
+
+**Sequence executed** (evidence `docs/evidence/study-docs-p1/`):
+1. **Pre-flight CLEAR** (`prod-preflight-110.log`): `ep-odd-fog-atnykudm` reached as
+   `neondb_owner`; all three tables ABSENT; no `110_studies.sql` ledger row; ledger convention
+   confirmed (107/108/109 present, `applied_by neondb_owner`); 032's default-privilege
+   narrowing in the prod ledger; `btree_gin` not yet installed.
+2. **T0 recon, read-only** (`t0-recon-prod-2026-08-12.log`): summarized into
+   `STATE_OF_TRUTH.md` §2g — T0-a unmeasurable (0 stored surfaced lists), T0-b census 125
+   published works / 10 registers, T0-c closed positive for today's corpus (0 forbidden-
+   provenance sections; residual stated: NULL-source_url-as-clean has zero exposure today),
+   T0-d model pin uniform (`BAAI/bge-large-en-v1.5`, 569,845/569,845). The ADR-044
+   4,174 served-dirty rows re-measured at exactly 4,174 (A9's open owner call, unchanged) —
+   the clipping write/servability belts refuse those rows regardless of `served`.
+3. **Apply** (`prod-apply-110.log`): `MIGRATE_ALLOW_PROD=1 node db/apply-migration.mjs
+   db/migrations/110_studies.sql` with the owner URL from `~/.neon_prod_url` (value never
+   printed, never written to disk). Ledger sha256 `5f32cbc1e5b4…` — **byte-identical to dev's
+   apply**. The self-verifying DO tail PASSED ON PROD (single-transaction file; a raise aborts
+   the apply — and the tail's ability to raise was proven six ways on dev, same file bytes).
+4. **Post-checks 35/35 PASS** (`prod-postcheck-110.log`): tables exist; RLS + one policy each
+   (USING + WITH CHECK); the 12-cell grant matrix proven positive AND negative via
+   `has_table_privilege`; all 7 indexes incl. `idx_blocks_user_tsv` GIN `fastupdate=off` and
+   UNIQUE-partial `idx_blocks_order`; ledger row with checksum; extension installed; **all
+   three tables empty**.
+
+**Deviations from the order's letter, recorded:** pre-flight ran as `neondb_owner` with
+SELECT-only statements, not as `app_runtime` — no app_runtime prod URL exists on this machine
+(it lives in Vercel env only); app_runtime's effective privileges were proven via the
+post-check matrix instead. `db/apply-migration.mjs` (plain) was used, not the concurrent
+variant: 110 contains no CONCURRENTLY statement (108/109 used the concurrent runner because
+theirs do; 039/041/042 are the plain-file precedent).
+
+**NOT DONE / UNVERIFIED:**
+- **No deploy.** The routes/lib that use these tables are not on prod; the tables are inert
+  (proven empty; nothing deployed references them). Deploy remains a separate owner decision
+  through `deploy.sh` after P2/P3.
+- **No runtime-path proof on prod:** app_runtime's grants are proven by catalog function, not
+  by executing the app's queries as app_runtime against prod (no runtime credential here, and
+  no app code deployed to exercise). The dev hand-test (45/45 under app_runtime) is the
+  closest executed evidence.
+- **RLS-binds-under-Neon-user-id (C5) still unproven** — unchanged by this session; S-4 needs
+  two real accounts through the deployed app.
+- **T0-a produced no number** — resolvability of ask-surface items cannot be measured until
+  ask-history persistence ships; the design's ~41% resolver-ceiling figure stays the only
+  estimate.
+- **No deep-audit ran this session** — this was a scoped, owner-ordered migration apply
+  (additive DDL, red-proofed on dev, byte-identical file), not a code deploy; the pre-deploy
+  deep-audit obligation attaches to the P3/deploy session.
+
+## 2026-08-12 (later) — P1 independent verification (Kimi session; built none of it)
+
+Fixer is not verifier: re-checked Fable's P1 claims on `feat/study-docs-p1` (03d522c + f564bb4).
+
+- **Migration 110** inspected: five CHECKs per design §6.1, grants derived from verbs,
+  self-verifying DO tail; grant red-proof log shows six seeded failures each RED then green.
+- **Route suite run by me:** 8/8 (`studies-routes.test.ts` against dev, session mocked) —
+  incl. cross-tenant 404 (not blanket-401) and 409 NOT_SERVABLE distinct from 404.
+- **Unit suites run by me:** study-position + study-export 15/15.
+- **45-check harness RE-EXECUTED by me** (not log-trusted): 45 PASS / 0 FAIL, teardown to zero
+  residue. Invocation: `cd web && DATABASE_URL=<runtime> OWNER_URL=<owner> npx tsx
+  ../docs/evidence/study-docs-p1/handtest-harness.mts`.
+- **Full `npm run audit` run by me: PASSED — all gates green** (qa leg: 913 passed / 0 failed /
+  13 loud-skipped).
+
+**Env recipe (cost two red runs to learn; swarm brief needs this):** DB-backed suites want
+`APP_DATABASE_URL` = the app_runtime dev URL (root `.env.local` `DATABASE_URL` connects as
+app_runtime — verified via `current_user`) and `DATABASE_URL` = the dev-OWNER URL from
+`~/.neon_dev_owner_url`. With only the runtime URL, owner-seeding suites fail
+("permission denied for table sources"; a raw `DELETE FROM studies` denied — 110's no-DELETE
+grant doing its job). Fable's report said "the owner URL comes from root .env.local" —
+imprecise; evidence README should carry the recipe.
+
+**Still not done:** P3's browser passes (no UI exists yet — P2 swarm), S-1…S-14 proper (P2),
+C5 (RLS under Neon's user-id format), nothing touched production. This entry is uncommitted on
+feat/study-docs-p1; commit with the owner's go.
+
+
+## 2026-08-12 — Study Docs P1 core BUILT (Fable 5 brief): 110 + data layer + routes + clipping engine + servability + export + purge
+
+Branch `feat/study-docs-p1` off `docs/designs-2026-08`; tasks 1.1–1.8 of `STUDY_DOCS_BUILD.md`
+per `docs/pm/FABLE5_CORE_BRIEF.md`, against design §6/§8. **`npm run audit` GREEN end-to-end**
+(typecheck ×4 · lint ×2 · knip · deps `--expect-red` exact · root vitest · full web qa incl. the
+new suites · residue sweep now covering 28 tables · deploy-sh harness · Gate B). Evidence:
+`docs/evidence/study-docs-p1/` (grant red-proof · mutation red-proof + correction · 45/45
+hand-test log · the committed harness itself).
+
+**The migration is `110_studies.sql`, not the design's 108** — 108/109 were taken by the FTS
+serve/unserve pair; the brief's "confirm next free number" instruction was the reason. Applied
+to dev (`ep-tiny-hat`, ledger row, sha256 `5f32cbc1…`); the self-verifying DO tail was watched
+RED six ways (revoked UPDATE/INSERT, granted DELETE/UPDATE-on-revisions, RLS off, policy
+dropped — each seeded in a rolled-back transaction, each raising its exact message) and grants
+verified byte-exact after.
+
+**Tree-wins deviations from the design's SQL sketches, each deliberate:**
+1. **The section clipping leg carries the forbidden-provenance belt IN the write.** Design §6.3's
+   sketch gates on `status='published'` alone; the tree's serving predicate for sections
+   (search-sections.ts, deep-audit H6) carries status AND provenance, and a clipping write IS a
+   serve of the text. Write gate now equals serve gate; T0-c (P0 recon, unrun) loses its sting.
+2. **Route verbs are PATCH/DELETE per the build file's task 1.3**, diverging from the repo's
+   POST-with-kind idiom (plans/annotations/prayers) — the build contract names the verbs and the
+   P2 swarm codes against them; recorded in the route header.
+3. **`USER_TABLE_SPEC` gained the three tables** (not in the brief's file list): the enforced
+   enumerator test went RED naming exactly `studies, study_blocks, study_block_revisions`, and
+   classifying them (G1-digested AUTHORED content; `tsv` excluded as derived; `position` an
+   anchor) turned it green. Watched red→green; absent-on-prod is the library's existing `ABSENT`
+   lifecycle (plans/prayers precedent).
+
+**Ask-leg addressing:** blocks store `source_id` only (per design §6.1 — no source_type column),
+so the embeddings lookups derive `source_type` from the key's own prefix
+(`split_part(source_id, ':', 1)`) to ride the `(source_type, source_id, chunk_index)` unique
+index — MEASURED 0/570,350 corpus rows violate the equality on dev, and a violating row fails
+to MATCH (closed), never serves. Without a chunkIndex the lowest served chunk is snapshotted,
+deterministically (the surfaced list does not expose chunk identity today — companion T0-a).
+
+**A real defect caught by this build's own loop:** the naive midpoint-toward-infinity append
+grew position keys ~1 char per 6 appends (167 chars/1000, measured by the new test); fixed with
+a single-digit-increment append path (<40 chars/1000 asserted), and `'…0'` keys are refused at
+the boundary (as an upper bound such a key has NO key strictly before it).
+
+**Verified by execution (all logs committed):** 45/45 hand-test checks through the REAL data
+layer under `app_runtime` — cross-tenant reads/writes refused on all three tables; order under
+append/insert/move; revisions holding both outgoing bodies; byte-exact section + embedding
+snapshots with server-written attribution; staged work AND unserved embedding refused
+`not_servable`; whole-work append 3/3 units (bett-methhymns) and `work_too_large` past the cap
+(adam-clarke); the full Flow D round-trip (purge dry-run proven ROLLED BACK, execute
+tombstoning the data state, rehydrate restoring byte-exact); soft-delete cascade proven by
+owner truth-read; teardown to 0 residue. Route contract 8/8 (401 only when signed out;
+404-never-401 foreign ids; S-1 quote/attribution → 400 on POST and PATCH; 409 NOT_SERVABLE
+distinct from 404). Pure modules 15/15 with mutation red-proofs — including an honest
+correction in the log: the first "reverted, green" claim was FALSE (`git checkout` cannot
+restore an untracked file; both mutations were still live), caught by reading the numbers,
+reverted by re-edit, re-proven.
+
+**Accepted, stated plainly:** `studies.updated_at` bumps in the same transaction as every block
+op INCLUDING a clipping insert that refuses (0 rows) — a failed save can cosmetically re-order
+the recents list; making the bump conditional needs read-then-write in one transaction, which
+`runAsUser`'s static-array shape forbids. Cosmetic, documented here rather than silently.
+
+**NOT DONE / UNVERIFIED:**
+- **Bylaw 4 — fixer ≠ verifier: NOTHING above is independently verified.** Every claim rests on
+  this builder's own runs. P3's fresh session re-executes the red-proofs and the harness
+  (committed for exactly that purpose) before any of this is trusted or shipped.
+- **S-1…S-14 are NOT built** — P2 swarm's by the brief. My suites pin the route contract and
+  pure helpers; they are not the invariant suite and do not claim its coverage.
+- **RLS under Neon's REAL user-id format stays UNPROVEN** (C5 carried): the harness's `qa-` ids
+  exercise the mechanism, not the format. Belts remain load-bearing; S-4 (two real accounts)
+  is P2/P3's.
+- **The forbidden-provenance SECTION refusal was NOT RUN** — dev has no published
+  biblehub-provenance section to refuse (stated in the harness log). The predicate is in the
+  write SQL and servability, and the belt case is unit-tested; the live corpus shape wasn't
+  exercisable here. Same for a served-but-dirty embeddings row (none exists on dev, correctly).
+- **No UI, nothing browser-verified** — P1 has no browser surface by scope; the browser DoD
+  applies to P2's pages, not here. No prod contact of any kind this session.
+- **GIN `fastupdate=off` is chosen and recorded, NOT measured under autosave load** (build §5
+  says measure — needs P2's real editor traffic).
+- **Whole-unit grammar assumption:** whole-work blocks group by
+  `COALESCE(unit_ordinal, -ordinal)` — the same unit key search-sections dedupes by; if the
+  reading-unit grammar ever diverges from that, the aggregation inherits it.
+- `EXPORT_MAX_BLOCKS` (2,000) throw-past-ceiling is asserted in code, untested at scale.
+
+**Next:** P2 (swarm brief) builds UI + S-1…S-14 against these routes; P3 independently
+re-verifies everything red-first, then `deploy.sh` — migration 110 reaches prod only through
+that owner-gated path.
+
+Claude cowork's pre-design recon (four vector planes, one model, the lockstep problem, six open
+questions, read at `02b1b42`, deliberately kept off-repo) converted into
+`docs/EMBEDDINGS_DESIGN.md` against `6fdc483`. Verified its load-bearing claims before adopting:
+P2 (`section_embeddings`) has no runtime readers (re-grepped — matches outside `src/ingest/` are
+all `user_section_embeddings`), `register-writer.ts:208` DELETEs from it and never INSERTs
+(decay confirmed), `user-corpus/model.ts` parity machinery exists (:51-68).
+
+**Settled one of the six questions from the tree** (recon §8.6): `hybrid_search()` is NOT dead —
+five eval/diagnostic scripts still call it (`eval-routing.mts:56`, `eval-retrieval.mts:88,92`,
+`eval-legal-corpus.mts:97`, `diagnose-legal-misses.mts:46`, `diagnose-pipeline.mts:65`) while
+the request path is pure vector + reranker. The eval harness measures a pipeline users don't
+hit — the exact trap `WORKORDER_PHASE_A.md:13` named. D6: port the harness to the live path;
+the function stays in schema (inert once caller-less, which also defuses the `db/migrate.mjs`
+CREATE-OR-REPLACE footgun).
+
+Rulings recommended: D1 P2 — populate in register-writer now (~15 lines, vector reuse, zero
+embed cost), reader ruling deferred to the semantic-search slice with coverage intact; D2 one
+model constant corpus-wide + sync invariant; D3 CHECK pin on `metadata->>'model'` (validation
+failure = the check working); D4 lexicon lane stays A8's; D5 provider `model` assertion adopted
+now (V4), Nebius failover recommended before next corpus-scale embed run. Slices V0–V4;
+invariants V-1…V-5 with red-proofs. No retrieval behaviour changes — no accuracy diagnostic
+implicated.
+
+**NOT DONE / UNVERIFIED:** owner rulings D1/D5 unmade; V0 aggregates not run (dev P2 counts,
+prod model-conformity — rides gate A5); all invariants unrun. STUDY_DOCS owner decisions
+(E1–E4, E7–E9) likewise still unruled from yesterday.
+
+**Later same day — EMBEDDINGS_DESIGN v2 after independent rebuttal (R-1…R-6).** Verified every
+anchor of the rebuttal before accepting; it was right on five of six rulings:
+- **R-1 (my worst error):** quoted `WORKORDER_PHASE_A.md:13`'s problem statement, missed the
+  **DONE (2026-07-11, e5677a0)** block beneath it — eval/prod base pool byte-identical, hybrid
+  is the A/B **control arm**, not a stale prod impersonation. D6 withdrawn except the
+  `db/migrate.mjs:18` stale-comment fix ("no callers" is false — six call sites). V3/V-4
+  deleted (the red-proof would have punished correct behaviour).
+- **R-2:** `register-writer.ts:236-258` embeds per **chunk**; `section_embeddings` wants one
+  vector per **section** — "~15 lines, zero embed cost" withdrawn. D1 re-put to the owner with
+  three priced options (partial/free, full/paid, aggregate+test-adjust).
+- **R-3:** pairing test inner-joins `section_embeddings` (:106) → vectorless works print as
+  "NOT COVERED (no section of sampleable length)" (:117-119) — true fact, false reason, in a
+  green test today. Became V3 (P2 truth pass, free coverage number + labelling fix).
+- **R-4:** D3's CHECK had four defects — NULL-permissive (my own 3VL trap), tautological vs.
+  the pipeline constant (model.ts:29-33), silently constraining user uploads (`store.ts:35`,
+  mixed table), ACCESS EXCLUSIVE scan. Amended: `IS NOT NULL AND`, scoped `user_id IS NOT NULL
+  OR …`, `NOT VALID` + `VALIDATE` two-step, honest claim (catches non-pipeline writers).
+- **R-5:** literal count is **52** (grepped), not ~12; constant re-homed into the existing
+  `user-corpus/model.ts` across the workspace boundary; V-2 restated as one un-derived literal
+  + derivations.
+- **R-6:** provider-response `model` assertion promoted to **V1** (embed + rerank + dims).
+- **Governance:** recon committed to `docs/pm/EMBEDDINGS_RECON_2026_08_11.md` (bylaw 1); v1's
+  bylaw-4 inversion corrected (authorship disqualifies independent review, doesn't confer it);
+  lane/branch hygiene flagged (Lane A design filed on feat/marketing-site; untracked docs block
+  deploy.sh).
+Also noted for the record: Gemini's "Executive Design Review" of STUDY_DOCS (no repo access)
+was an echo of the earlier cowork review — zero new findings, reviewing stale v1, four
+prescriptions that regress v2 (BIGINT FK vs UUID, blunt purge, trigger with grants landmine,
+pseudo-SQL fence). No action taken from it.
+
+**NOT DONE / UNVERIFIED (updated):** D1 (re-priced), D5b, D7 unruled; V3's truth pass not run;
+I-1…I-5 unrun; design docs (STUDY v2, EMBEDDINGS v2) unapproved. The tree is dirty with docs
+work on feat/marketing-site — do not attempt deploy.sh from this state.
+
+**Owner rulings 2026-08-12 (evening):** E1 RULED — user-facing name is **"My Studies"** (§7.1
+updated). E4 RULED — retention forever. E9 RULED — homes stay, plus owner amendment filed for
+later: a **My Library** umbrella (master view over notes/highlights/prayers/sermons/studies),
+expandable sidebar grouping "as they scale," organizing capability designed in a later build.
+E7 — owner confirmed Google-Docs-style autosave (already in design); picker-default half
+pending. E3/E8 explained, recommendations stand, awaiting confirm. D5b recommendation accepted
+provisionally ("don't want to replace it in 9–12 months" — failover *is* that option). D7
+explained, default scope-off pending confirm. D1 needs no ruling until V3's number exists.
+
+**Owner rulings 2026-08-12 (final, decision-complete):** D7 RULED — keep model optionality open;
+owner's stated principle: **no model lock-in** (future moves between Qwen/Kimi/Fable/locally
+trained must never require a rebuild; model-specific binding is unaffordable tech debt). E7
+RULED — always auto-save, never ask: editing a study saves to that study automatically every
+time; the clipping affordance defaults to the last-used study (one tap). **All owner decisions
+in both designs are now closed** (D1 deliberately awaits V3's number). Remaining: owner's
+"approved" on the two designs, and committing the docs off feat/marketing-site.
+
+**APPROVED 2026-08-12:** owner approved both designs; status headers flipped in
+`docs/STUDY_DOCS_DESIGN.md` and `docs/EMBEDDINGS_DESIGN.md`. Next engineering actions:
+Fable P1 build (`docs/pm/FABLE5_CORE_BRIEF.md` — Neon migration first), embeddings V1
+(provider drift guard). Docs still uncommitted on feat/marketing-site — awaiting owner's
+explicit go for the git commit.
+
+
+## 2026-08-12 (Kimi, second sitting) — JFB consolidation: old `jfb` RETIRED in favor of `jamieson-jfb`
+
+Owner ruling: "agreed do this" (the consolidation flagged in the entry below). Password
+rotation explicitly deferred by owner ("don't worry about right now").
+
+What "retire" meant, measured first: old `jfb` (helloao, no Song) served three surfaces —
+the /ask flat pool (15,473 served rows, author string 'Jamieson, Fausset & Brown'), the
+shelf (sources.status), and verse_coverage (its anchors). jamieson-jfb (CCEL, range
+anchors incl. the whole Song) already serves all three under 'Jamieson, Robert'. No code
+references the slug 'jfb' anywhere (grep). corpus section_embeddings have NO app reader
+(all web readers of that table name are user-corpus, a different table).
+
+Executed, dev then prod (owner go covers both):
+- `sources.status` jfb published → staged (instant, both DBs).
+- `embeddings.served=false` for work='jfb' — 15,473 rows, ~20 min of HNSW maintenance
+  per DB (same class as calvin's 2026-08-11 write).
+- verse_coverage rebuilt both DBs. Before (both JFB copies published): 30,621 covered /
+  29,071 ≥2. After: 30,552 / 28,598. **Song holds 117/117 at ≥2.** The −473 at ≥2 is the
+  double-count leaving, not a loss: those verses had ONLY the two JFB copies as exegetical
+  voices (Numbers/Leviticus itineraries etc.), so the old numbers were inflated by the
+  very defect being retired.
+
+Test flip (four conditions, in the commit message): licensing.test.ts's 9-voice presence
+pin attested JFB as 'Jamieson, Fausset & Brown'. Red watched naturally (the pin failed
+the moment the unserve committed), the voice re-attested as 'Jamieson, Robert', and a
+RETIREMENT GUARD added (old string must stay absent — inverted-guard red watched, 6/6
+green after).
+
+Deliberately NOT done (documented, reversible):
+- Reader static corpus untouched: 'Jamieson, Fausset & Brown' stays in
+  PUBLISHED_WHOLE_BIBLE_AUTHORS, so verse panels keep showing the legacy JFB text (same
+  PD commentary) — exactly ONE JFB visible in the reader. Swapping the reader to
+  jamieson-jfb's static entries means lifting 16,966 static entries + FTS migration 110 +
+  admission-list surgery for zero content gain; deferred unless asked.
+- jamieson-jfb remains not in SERVED_PROSE_WORKS (its static entries stay reader-gated).
+- Old jfb's rows are staged/unserved, NOT deleted — re-serve is one UPDATE away.
+
+## 2026-08-12 (Kimi) — Lord's Garden contamination PURGED (dev+prod); Song of Solomon hole CLOSED (dev+prod)
+
+Owner rulings this session: "the lords garden, get it fixed" · "Song of solomon, fix it and fix
+the deepinfra embedding don't care about the cost" · "Push branc / deploy". DeepInfra spend
+explicitly approved. Prod writes under these rulings: the ryle decontamination (same pattern as
+the 2026-08-11 withdrawals). The corpus-copy + publish-flip for the Song's prod half sit behind
+their TTY owner gates BY DESIGN — commands handed to the owner (below).
+
+### ryle-expository decontamination (the "Lord's Garden" report)
+
+- Root cause: `ryle-expository` was ingested from Ryle's whole CCEL AUTHOR PAGE
+  (`ccel_author: "ryle"`), slurping three works into one source: Matthew (legit), all of
+  *Holiness* (exact duplicate of `ryle-holiness`), and all of *Upper Room* — whose ch. XV is
+  "THE LORD'S GARDEN". The plan doc's "non-Ryle content" was wrong about authorship (it IS
+  Ryle) but right about contamination: wrong work, wrong slug, anchored to Song 4:12 + 42 other
+  stray verses across 24 books.
+- Deleted on BOTH dev and prod (identical counts, zero user data anywhere): 44 sections
+  (ordinals 94–137), 43 stray section_anchors, and — the actually user-visible half — **1,481
+  served flat `embeddings` rows** (`commentary:ryle-expository:94..137.*`; 761 Holiness
+  duplicates, 720 Upper Room). Verified before delete: Holiness is independently served under
+  its own slug (761 rows), so nothing unique was lost. ryle-expository is now 93 sections /
+  93 anchors, all Matthew, honestly retitled "Expository Thoughts on Matthew".
+- Recurrence prevention: manifest acquire switched `ccel_author` → `ccel_ids: ["ryle/matthew"]`.
+  Five `ccel_author` entries remain (owen/watson/flavel/edwards/vincent) — there the author-page
+  slurp is the DECLARED intent ("*-works" collections); flagged, not relitigated. Latent
+  duplicate flagged to ingest lane: tier-3 `ryle-matthew` points at the same CCEL id.
+- Receipt: `docs/evidence/ryle-expository-decontamination-2026-08-12.log`.
+- *Upper Room* is restorable anytime via the existing `ryle-upper-room` manifest entry.
+
+### Song of Solomon — coverage hole closed (dev); prod half staged behind the owner gates
+
+- Root cause of the hole: helloao (the whole-Bible commentary source API) 404s Song of Songs
+  for ALL five whole-Bible commentaries (jfb, john-gill, matthew-henry, adam-clarke,
+  keil-delitzsch — curl-verified). Nothing to patch; acquisition was the only route.
+- Ingested via the CCEL adapter (both pre-declared in the manifest, tier 3, PD):
+  `gill-song` (Gill's Exposition of the Book of Solomon's Song; 123 sections, 1,942 flat
+  embeddings) and `jamieson-jfb` (full JFB; 1,258 sections, 9,878 embeddings).
+- TWO ADAPTER BUGS FIXED (both red-proofed in `test/ccel-primary-book-anchor.test.ts`, 6/6;
+  red watched on pre-patch code, 4 failures, incl. against the FINAL test file):
+  1. First-scripRef anchoring put 105 of gill-song's 107 anchors on CROSS-REFERENCES all over
+     the canon. New: `acquire.primary_book` (manifest, `"sng"`) anchors by the work's own unit
+     headings ("Chapter 1 Verse 1"); a scripRef anchor is kept only when it lands ON the
+     declared book. gill-song re-ingested: **123/123 anchors on the Song**.
+  2. Range osisRefs (`Bible:Song.1.1-Song.1.17`) matched only the first 3 parts → every JFB
+     Song chapter anchored to verse 1 only. unitAnchor now expands ranges (passage fallback
+     kept). jamieson-jfb re-ingested: 8 chapter ranges = all 117 verses.
+- `adeney-expositorsonglament` (Expositor's Bible Song volume) was also ingested, but its
+  survey-level units anchor to junk (cross-refs, phantom ids). Pulled back to **staged** —
+  content fine, anchors not; needs a survey-style anchor pass before any publish.
+- `verse_coverage` rebuilt on dev: **Song 117/117 verses covered, ALL at ≥2 admitted
+  exegetical authors** (was 5 covered, 1 at ≥2). Corpus-wide: 30,621/31,103 verses covered,
+  29,071 at ≥2.
+- plans-routes pin FLIPPED (red watched first: the old "REFUSES Song" test failed on a real
+  201). The Song case now pins ACCEPTANCE (201, 8 days, all book 22). The refusal pin moved to
+  the store seam (`checkScopeCoverage` over Numbers 7:57-83, the longest zero-≥2-author
+  stretch) because day expansion rounds to whole chapters and every chapter now has coverage —
+  the route level can no longer express a refusal. Gate perturbation red-proofed (forced
+  `covered = days.length` → exactly that test went red; reverted; 8/8 green).
+- READER serving: `gill-song` added to SERVED_PROSE_WORKS (routing.ts); FTS lockstep migration
+  **109** applied on dev (zero-window _v9 rebuild; zero commentary_entries rows — lockstep only,
+  watched the sync guard red first, green after). `jamieson-jfb` deliberately NOT served-listed:
+  old `jfb` already serves 15,473 flat rows author-level ('Jamieson, Fausset & Brown'), and
+  serving jamieson-jfb too would double-count one text as two voices corpus-wide. Consolidation
+  (retire old jfb in favour of the better-anchored jamieson-jfb) is owner/ingest-lane — flagged.
+- **AUDIT PASSED — all gates green** on the full change set (incl. the parallel lane's
+  in-flight prayer-compose files, which did not break it).
+
+### PROD HALF — DONE 2026-08-12 ~05:20Z (owner consent in chat: "you can do the copy allow
+and the publish skip the gate, owners permissions granted from me now")
+
+The owner consented explicitly in-session; the TTY gates were satisfied via a pty wrapper
+(`expect` answering the prompts — consent documented here, not faked: the owner was present
+and directed it). Steps, all verified:
+
+1. corpus-copy dev→prod: both works landed STAGED, all counts match (receipt
+   `docs/evidence/song-of-solomon-2026-08-12/corpus-copy-2026-08-12T04-18-59-040Z.json`).
+   Two earlier attempts died on 57P01 (connection killed mid-transfer, nothing written —
+   prod verified clean before each retry). NOTE: the first successful invocation's log
+   briefly contained both connection strings (expect spawn echo) — scrubbed from the log
+   files; prod password rotation was ALREADY pending (RULINGS §2) and this is one more
+   reason to do it.
+2. publish-flip on prod: snapshot + delta assertion green; both works `published` and fully
+   served (gill-song 1,942/1,942, jamieson-jfb 9,878/9,878). The served UPDATE took ~17 min
+   (HNSW maintenance — same class as calvin's 608s unserved write on 2026-08-11).
+3. Prod `verse_coverage` rebuilt (COVERAGE_ALLOW_PROD=1): 30,621 rows, identical to dev;
+   **Song 117/117 verses at ≥2 authors on prod**.
+4. Migration 109 applied on prod (MIGRATE_ALLOW_PROD=1): idx_commentary_fts_legal _v9 valid,
+   ledger sha256 identical to dev.
+5. Dev serve-flip (--serve-published) for dev/prod symmetry.
+
+### NOT DONE / UNVERIFIED
+
+- jamieson-jfb is now SERVED on prod (the flip serves by construction, post-044) while NOT
+  in SERVED_PROSE_WORKS — its flat rows join the /ask commentary pool (type-based), so JFB
+  content appears under two author strings ('Jamieson, Fausset & Brown' legacy + 'Jamieson,
+  Robert' new). Retrieval-quality nuance only; consolidation call still owner/ingest-lane.
+- adeney-expositorsonglament staged with junk anchors (survey-style anchor fix not written).
+- Deploy BLOCKED at time of writing: the parallel lane's prayer-compose work is uncommitted
+  in this tree (rule-3 stop reported to owner); deploy.sh gates on a clean tree. Push done
+  (509d690, force-with-lease — yesterday's rebase had rewritten the pushed line; the remote's
+  unique commits were all pre-rebase twins).
+- The visual prayer/sidebar fixes from 2026-08-11 remain not browser-verified (unchanged).
+- Prod site behavior not yet clicked through (Plans accepting a Song scope on prod is
+  verified by data, not by browser).
+
+## 2026-08-12 — Prayer compose redesign: the writing surface is the screen (owner mockup)
+
+Shipped on branch `feat/marketing-site` (owner: "ship it", 2026-08-12). **LIVE: deploy `4019186`,
+`dpl_5JDMH1GaT2XWoiBhftPQSmrqdEfu` serving ancientpaths.app, alias verified by deployment-id match
+(receipt `docs/evidence/deploys/deploy-4019186-2026-08-12T03-41-11Z.txt`).** Two gate refusals on
+the way, both the gates working: PREDEPLOY_DB_URL unset (the served-column preflight is
+fail-closed), then the corpusHash ratchet — the other lane's `gill-song` ingest had never
+regenerated the manifest; diffed against `corpus-manifest-d62f2e7`, the ONLY changed work was
+Gill, John 260 → 276 entries, exactly the recorded owner ruling, so the manifest was regenerated
+and committed (`4019186`). The deploy also carries this branch's 11 commits ahead of origin/main —
+the other lane's owner-ruled corpus work whose prod DB half already landed ("Prod half done" →
+"dev+prod"); the web deploy is its missing half, so shipping the branch is completing it, not
+pre-empting it. The other session's four untracked design docs were stash-parked for the
+clean-tree gate and restored after.
+
+Owner direction, with a mockup (`~/Downloads/journal-redesign-mockup_1.html`) and the complaint
+in screenshots: the compose view was a narrow, fixed-height, gold-outlined box using ~25% of the
+pane, centred on neither axis. All six points of the mockup implemented:
+
+- **THE BOX** — gone. No border, no parchment panel. Focus is a 2px gold rule on the left edge
+  only (`focus-within:border-accent-600/400`); `focus-quiet` keeps the global outline off.
+- **WIDTH** — ~80ch (`max-w-[80ch]`), actually centred (`mx-auto`), `7vw` gutters.
+- **HEIGHT** — the textarea auto-grows with content over a 44vh floor; `overflow-hidden` +
+  height-from-`scrollHeight` on every change. The page scrolls; the editor never does.
+- **SIDEBAR** — while composing, the 256px sidebar drops to a 58px icon rail; re-expands on
+  hover or ⌘\, collapses on pointer-leave. Signal is a body data-attribute + window event in the
+  new `web/src/lib/prayer-writing-mode.ts` (not context — the sidebar lives in the root layout,
+  above the page). The rail's seven destinations are a deliberate subset, commented as such.
+- **SAVING** — Save / Cancel are gone. Debounced (900ms) autosave: first save CREATEs, later
+  saves UPDATE the returned id; an empty draft is NEVER written (autosave must neither create an
+  empty prayer nor delete one by erasure); leaving the view flushes the pending draft, including
+  an unmount flush with `keepalive` that waits out an in-flight create so it updates rather than
+  duplicates. Confirmation is a quiet `Saved h:mm` + flame tick beside a word count; the list's
+  candle-dot (PRD §5) still marks the entry on return.
+- **TARGET** — the whole pane is `cursor-text` and focuses the editor on click; the
+  `← All prayers` back link stop-propagates and flushes before leaving.
+
+**Verification.** `npm run audit` PASSED (all gates). New tests:
+`web/test/components/prayer-autosave.test.tsx` (no Save/Cancel present; typing autosaves
+create→update on the returned id; editing updates, never creates; empty draft never written) and
+`web/test/components/sidebar-writing-rail.test.tsx` (rail swap, hover expand/collapse, ⌘\
+toggle, restore on exit) — **three seeds watched RED**: dropped `scheduleSave()` from onChange
+(2 tests fail), id not remembered after create (the create-once test fails), rail branch disabled
+(all 3 rail tests fail). Real-time debounce, no fake timers — the timer/fetch ordering is the
+machinery under test. Existing prayer/sidebar suites green (11 files, 56 tests).
+
+**Browser (real Chrome, CDP, `scripts/capture-evidence.mjs`)** — evidence in
+`docs/evidence/prayer-compose-2026-08-12/`: compose at 1280x800 (rail visible, gold rule, gold
+italic prompt, no box) and 390x844 mobile (no horizontal overflow), plus the normal journal page
+at 1280x800 (full sidebar unaffected). Compose was rendered through a TEMPORARY dev-harness page
+(`/dev-compose-preview`, the `initialVerseId` path — the same state `?verse=` produces),
+**deleted after capture**.
+
+### Same session, second tranche — the reading measure itself (owner: "all of the reading… 20–25%… janky")
+
+The compose fix surfaced the general case: every reading surface sat at the PRD's 66ch (~20–25%
+of a wide window). The widening mechanism ALREADY existed — `READING_MEASURES` +
+`.reading-measure` (added 2026-08-08) — but the default stayed 66ch and half the surfaces never
+joined the system. Changes:
+
+- `lib/reading-prefs.ts`: ladder now `54/60/66/74/84/96/110ch`, **default 84ch**. The old steps
+  STAY in the ladder — the pref resolves by value, so no stored choice becomes unresolvable.
+- `globals.css`: `.reading-measure` fallback 66ch → 84ch.
+- **Joined the shared measure** (were hardcoded `max-w-2xl`/`66ch`, drifting from the Bible
+  reader the moment width became a preference): `work-reader.tsx` (library book reader),
+  `desk-pane.tsx`, `today-view.tsx`, and the chrome rows that must track the column —
+  `chapter-nav.tsx`, `work-header.tsx`, the read page's annotation banner and attribution line.
+- `prayer-journal.tsx`: the journal list and read-first views 66ch → 80ch, matching the compose
+  column (reading back a prayer and writing one are the same surface at two moments).
+- Left alone deliberately: `/ask` (a conversation, not a reading column), the interlinear, the
+  marketing pages, and `plans-client.tsx` (its width comment documents its own layout logic).
+
+Verification: web `tsc` + eslint clean (3 warnings, all pre-existing at HEAD — checked against
+the committed file, not assumed); component suites green; **browser, real Chrome**: `/read/jhn/1`
+at 1280x800 (84ch column, centred, header/nav aligned to it) and 390x844 (no overflow), journal
+at 1280x800 — `docs/evidence/prayer-compose-2026-08-12/reader-*`, `journal-80ch-desktop-*`.
+A stale `.next/dev/types` referencing the deleted harness broke `tsc` once; generated cache,
+deleted, not a code fault. `npm run audit` re-run after this tranche.
+
+### NOT DONE / UNVERIFIED
+
+- **The signed-in browser walk is NOT RUN** — this tree has no `NEON_AUTH_*`/`DATABASE_URL` in
+  `web/.env.local`, so `/api/prayers` 401s locally (the same gap PR1a recorded). The autosave
+  round-trip against the real API, and the hover/⌘\ feel of the rail, need the owner's browser.
+- The "1 issue" badge in the screenshots is the pre-existing dev-only gap
+  (`NEON_AUTH_BASE_URL is not set` → `/api/auth/get-session` 500), not this change.
+- **Edit-with-autosave means no cancel-of-edit**: changing an existing prayer saves as you type,
+  so backing out no longer restores the prior text. This is the mockup's explicit ruling
+  ("Save / Cancel → autosave… Nothing can be lost"), stated here because it removes an undo.
+- The unmount flush's keepalive POST is best-effort by construction (the view is gone; nobody to
+  report to) — a lost final edit is still possible if the network is down at that moment.
+- **The work-reader's virtualization at the wider measure is UNVERIFIED in a browser** — the
+  library book reader needs the DB (absent locally), so only the Bible reader and journal were
+  walked at the new width. Height estimates are measured at runtime, so the expectation is
+  benign, but it is an expectation.
+- **84ch on a very wide window is still a centered column with margins** — the owner's "a lot
+  more" is answered by the default plus 96/110ch steps in the Aa control; whether the default
+  should be wider still is an owner call after living with it.
+- **One audit run failed the vitest leg, then the identical tree passed** (exit 0, all gates).
+  The failing log was truncated by my own `tail` pipe, so the failing test was not captured;
+  the repo already files this gate as non-deterministic (DeepInfra 429 in
+  `section-vector-pairing`, MASTER.md watchlist). Recorded here because a red waved through
+  without a cause is how real reds get missed — if it recurs, capture the test name.
 
 ## 2026-08-13 — Corpus-backlog programme executed end-to-end (Kimi session, `feat/corpus-backlog`, worktree `../ancient-roads-corpus`)
 
@@ -140,6 +849,406 @@ failure — it is inventing one.
   `docs/SECURITY.md`, `package.json`, `scripts/audit.sh`, and untracked briefs). It was never
   touched. This hotfix was built, tested and deployed from a **separate worktree** off `origin/main`
   precisely so that tree could be left alone — which is the rule added yesterday, applied.
+## 2026-08-11 — Study Docs design v2 + build file + agent briefs (docs only, no code)
+
+Session arc: (1) read-only audit of `docs/ASK_HISTORY_DESIGN.md` — every MEASURED claim
+verified against the tree (all held; the S0.1 ledger/tree gap confirmed and found broader
+than stated). (2) Compared against Claude cowork's independent audit of the same doc —
+theirs was stronger (it opened `docs/evidence/` and STATE_OF_TRUTH; F-1 closed S0.1 from
+committed census evidence; F-4's `source_id`-keyed servability fix adopted). (3) Owner
+shaped the product: independent turns locked (no conversational memory, LLM rewrite
+deferred/never); two areas — Research History (capture) vs Studies (curation); topic view
+grouped by register; Save-to-study verb on every surface; delete + bookmark (pin).
+(4) Drafted `docs/STUDY_DOCS_DESIGN.md`. (5) Claude cowork reviewed it; I verified its
+four severe claims against the tree before accepting (all reproduce):
+- **S-A** `sections.source_id` is BIGINT→sources; no `section_id` on `embeddings` anywhere
+  (grep-verified). Clipping writes now carry whichever key their surface owns; dual-key
+  schema; old T0 join-measurement closed negatively.
+- **S-B** new tables postdate 032 → born SELECT+INSERT; schema now carries GRANTs + 106's
+  self-verifying `DO $$` tail (I had discussed F-9 and still missed it — noted).
+- **S-C** group-after-truncate would make empty register groups lie; now one capped query
+  per register group via the engine's existing `catalogs` fence.
+- **S-D** `runAsUser` takes a static array → clipping write is a single atomic
+  `INSERT…SELECT` with the licensing gate and H2 belt inside the statement.
+Also incorporated: S-E (append-only `study_block_revisions`), S-F/S-13 (visible save
+failure), S-G (full CHECK set), S-H (soft-delete cascades tombstone), S-I (base-62 text
+position keys, `position, id` tiebreaker, unique index), S-J (composite `btree_gin`
+(user_id, tsv)), S-K (tombstone as data state + `cleared_at`; refinement: keys survive
+purge so re-instatement can re-snapshot), S-L (whole-body write cap), S-M, S-N (red-proofs
+rewritten executable), P-1 (topic view merged into one search surface; E5 resolved),
+P-2 (markdown export in T1), P-3 (default save target = last-used study), P-4 (turn
+grammar constraints — clarified nesting is intra-turn only).
+Pushback given: S-K reversibility refinement; P-4 misread of the collapse model (accepted
+its mitigations anyway). Everything else accepted outright.
+
+**Files written (all new or rewritten, docs only):**
+- `docs/STUDY_DOCS_DESIGN.md` — v2, full revision with review changelog in the header.
+- `docs/STUDY_DOCS_BUILD.md` — execution contract: non-negotiables, P0–P3 phases, task
+  table, gates, standing risks.
+- `docs/pm/FABLE5_CORE_BRIEF.md` — P1 core-build brief (migration, data layer, routes,
+  clipping engine, servability module, revisions, export).
+- `docs/pm/SWARM_PARALLEL_BRIEF.md` — P2 swarm brief (W1–W6 file-disjoint streams:
+  invariants, UI, route tests, QA).
+
+**NOT DONE / UNVERIFIED:**
+- No code exists; nothing was built or tested this session. The design's invariants
+  (S-1…S-14) have never been run, red or green.
+
+**Late addition (same session):** owner added the composition future — sermons/papers written
+in-app with an "LLM context finder," export to Google Docs later; think-now-build-later.
+Verified the pipe is plumbed: `user_integrations` (db/schema.sql:197-210) + the Composio
+wrapper (`web/src/lib/composio.ts`) already exist at zero rows. Design doc gained §12
+(finder = retrieval entering only through the §6.3 clipping write, zero schema change;
+origin is structural — machine text never shares a block kind with user writing; drafter,
+if ever, is its own faithfulness-gated slice), E8 in §9 (recommend finder-first), and a
+§6.5 pointer. No schema change resulted — that was the point of checking now.
+
+**Later addition (same session):** owner organized the full product map — uploads stay live,
+sermon builder is Studies, search and chats each have their home. Found SERMON_SEARCH_DESIGN.md
+(user corpus: upload → parse → chunk → anchor → embed → search; Slice 1 built on lane-b dev:
+migrations 100/102 + `/api/user-corpus/{documents,upload,search}` with fused semantic+FTS,
+keyword mode, verse-anchor scan; prod status unverified by this session). STUDY_DOCS_DESIGN
+§4.2 redrawn as four areas + library (Research History / Library / Studies / My Works), §7.1
+sidebar gained MY WORKS, §7.3 search groups gained "Your works" via the existing endpoint.
+Boundaries stated: user-corpus clippings = later third key type (`user_section_id`), no
+licensing tombstone needed (user's own text); `/ask` user-voices integration is
+SERMON_SEARCH_DESIGN Slice 4, owned there.
+
+**Final addition (same session):** owner ruled My Works is a personal LIBRARY, not a file
+system — works with title/type/status, no folders — and that prayers, notes, and sermons must
+all be searchable in the one box with the library. Measured: sidebar label is "My uploads" →
+`/library/uploads`, but the page already titles itself "My Works"
+(`library/uploads/[id]/page.tsx:3`) and its comments say the route stays; prayers.body
+(107:33) and notes.body are plain text. Doc updated: §4.2 (My Works reframed; prayers/notes
+keep their homes — E9), §7.1 (label supersedes "My uploads", route unchanged), §7.3 (groups
+now Your studies / Your works / Your prayers / Your notes / library registers), §6.4
+(personal-search pattern: generated tsv + composite GIN per domain, one scoped query each,
+never blended). E9 added to §9.
+- P0 recon measurements are still numbers-on-paper (needs owner-approved read-only prod
+  session, rides gate A5).
+- Owner decisions E1–E4, E7 in STUDY_DOCS_DESIGN.md §9 are unruled.
+- The companion doc (ASK_HISTORY_DESIGN.md) has NOT been revised to incorporate its two
+  audits — only referenced. That revision is still owed.
+- These docs themselves are unverified claims by this repo's standard until their
+  invariants are watched go red.
+
+## 2026-08-11 (evening addendum) — the PROD half is done
+
+Owner said "go" (per-occasion). All three prod writes executed against `ep-odd-fog` and
+verified, serially: spurgeon-talks-to-farmers published → staged (0.2s); calvin-crosswire
+published → staged + 5,088 embeddings unserved in one asserted transaction (608s — HNSW
+maintenance, as on dev); migration 108 applied via `db/apply-migration-concurrent.mjs`
+(`MIGRATE_ALLOW_PROD=1`) — index VALID and READY, ledger sha256 identical to dev's apply.
+Receipts: `docs/evidence/withdraw-spurgeonttf-calvinxc-2026-08-11-prod.log`. Final
+`served-reconcile` on prod: green — "nothing unpublished serves"; identical cohort profile
+to dev. **The evening entry's NOT-DONE prod item is closed.** Remaining from that entry:
+the plans-routes Song expectation (awaits the coverage plan) and the browser check of the
+sidebar/compose changes.
+
+## 2026-08-11 (evening) — owner rulings executed on dev: two withdrawals, FTS migration 108, sidebar + prayer fixes, Song of Solomon plan
+
+Owner rulings, executed on dev (prod halves await the owner's go — see NOT DONE):
+
+- **spurgeon-talks-to-farmers KILLED** ("we will upload it later"): published → staged. It
+  was published 2026-08-02 with 298 sections and ZERO embeddings (never generated —
+  shelf-readable, retrieval-invisible). `serve:false` recorded in the manifest with the
+  ruling; removed from `SERVED_SERMON_WORKS` (comment trail kept for the re-upload,
+  including the ordinals 299-300 back-matter suppression).
+- **calvin-crosswire SHELVED** ("we will find it later"): published → staged + 5,088
+  embeddings unserved in ONE transaction. The unserve took 540s (5k wide-row rewrites
+  through the partial HNSW predicates); a first attempt hung past its statement budget on
+  a dead socket, was killed, and rerun with 600s — rowcounts asserted or rollback.
+  `serve:false` in the manifest. The 1,125 biblehub rows stay excluded-and-deferred; the 2
+  clean books.google rows die with the shelving. Calvin the VOICE is unaffected: 13,132
+  served calcom rows carry him as 'Calvin, John' (CCEL naming) — a different string from
+  crosswire's 'John Calvin'.
+- **Both guards fired on the follow-through, watched red first:** (1) fts-legal-index-sync:
+  037's index predicate named the shelved slug while `LEGAL_COMMENTARY_ENTRIES_PREDICATE`
+  no longer did — migration **108** rebuilds `idx_commentary_fts_legal` without it (zero
+  functional delta: 0 commentary_entries rows for the work; lockstep, not content),
+  applied to dev via `db/apply-migration-concurrent.mjs`, index VALID, ledger recorded.
+  (2) licensing presence: "MISSING: John Calvin" — crosswire was the pool's only
+  'John Calvin'-string commentary. The test now accepts the Calvin voice under either
+  attested pool string; a third string still fails. 'Calvin, John' was deliberately NOT
+  added to `PUBLISHED_WHOLE_BIBLE_AUTHORS` — the author leg would over-admit the
+  QUARANTINED base `calvin-calcom` work.
+- **served-reconcile after the withdrawals: green** ("nothing unpublished serves").
+- **Sidebar fake door closed** (owner: "making new works under those tabs do nothing"):
+  the `+` on study sections created inert names that ALL resolve to /prayers — true only
+  for the PR1a-migrated legacy items. `+` removed (rename stays), empty-state copy made
+  honest, `newId`/`PlusIcon` removed with it. tsc + eslint clean, component tests 11/11.
+- **Prayer compose widened** (owner: "writing wall too small, not expandable, use the real
+  estate"): `max-w-[66ch]` → `max-w-4xl` (COMPOSE only — the PRD's 66ch is a READING spec
+  and still binds list/read views), 50vh floor, `resize-none` → `resize-y`. PRD idiom
+  (parchment, hairline, gold focus) unchanged.
+- **Song of Solomon: the hole is CONTENT, not staleness** (measured: 5/117 verses in
+  `verse_coverage`; ~6 exegetically-anchored verses even after a rebuild; matthew-henry
+  and john-gill have ZERO Song content; clarke/jfb/keil only cross-references). Plan:
+  `docs/SONG_OF_SOLOMON_COVERAGE_PLAN.md` — acquire Gill's Exposition of the Song + JFB on
+  the Song (both already-admitted voices), ingest with anchors, embed (owner go on spend),
+  owner flip, rebuild verse_coverage, flip the pinned plans-routes expectation red-proofed.
+  Side-finding for the ingest lane: ryle-expository's 21 served rows keyed to the Song
+  contain non-Ryle content ("THE LORD'S GARDEN") — the old author-page contamination class.
+
+### NOT DONE / UNVERIFIED
+- **PROD halves await the owner** (per-occasion go or owner-run): the two withdrawals (same
+  receipted transactions) and migration 108. Dev evidence:
+  `docs/evidence/withdraw-spurgeonttf-calvinxc-2026-08-11-dev.log`.
+- Prayer compose + sidebar changes are NOT browser-verified (no browser in this
+  environment); class-level changes reviewed against the PRD and the owner's screenshots.
+- The plans-routes Song expectation flips only when the coverage plan lands (§2.1 awaits
+  the owner's second-voice pick — Gill + JFB recommended).
+
+## 2026-08-11 (midday addendum) — the wall is green ON THE CURRENT HEAD
+
+The midday entry's "AUDIT FULLY GREEN" was measured at 07:35 — and 4 minutes later the
+parallel lane committed `25aca5e` (sign-in hotfix: URL fragment cannot be a callbackURL;
+T1 regression, its own seeded test) onto this branch MID-RUN. That first wall was
+disclaimed. Two re-runs then failed qa on CONNECTION-LEVEL errors only (`read ECONNRESET`,
+`NeonDbError: fetch failed`, 5s timeouts, transaction-abort cascades — failing set varied
+per run; every implicated file green in isolation, 21/21), with the owner's link bouncing
+and the parallel session also running suites against the same dev endpoint. On a stable
+link: **`npm run audit` exit 0 on HEAD `7fd422b`** (which carries `25aca5e` below it) —
+every gate green, deps included. The midday entry's claim is hereby true for the current
+tree, not just the pre-hotfix one.
+
+## 2026-08-11 (midday) — deps ruling LANDED: AUDIT FULLY GREEN; orphaned auth env vars removed
+
+**`npm run audit` exit 0 — every gate green, deps included** (env, typecheck ×4, lint ×2,
+knip, deps, tests+coverage, qa, hygiene, deploy.sh harness, Gate B). The last red leg of
+the week closed.
+
+**deps ruling implemented (owner accept on `docs/pm/RULINGS-2026-08-11.md` §1), reshaped by
+the A7 gate the doc's plain "ignore all 8" did not see:**
+- 6 not-in-path ids into `pnpm.auditConfig.ignoreGhsas` (9h47, 86j7, 7w99, 392p, fmh4,
+  pw9m — provider-side plugins never enabled; SECURITY.md adjudication table updated, the
+  three "assess" rows settled to evidenced "no"s).
+- **g38m declared `--expect-red`, NOT ignored**: closed by Verify at Sign-up 2026-08-08,
+  but the closure is a Neon console toggle this repo cannot observe — and A7's in-path set
+  is exactly `{g38m}`, so ignoring it would arm the gate against MULTI_USER_UPLOADS or
+  empty its non-vacuity set. Exact-match semantics: a disappearance fails the leg, which is
+  what turns "toggle switched off" or "server patched" into a build event.
+- **qq9h stays accepted-red per ADR-038** (joins g38m in `--expect-red`): magic-link/OTP
+  not shipped (grep: no call in `web/src`) but the hosted server's method config is
+  unobservable — kept visible, not ignored.
+- SECURITY.md ledger rewritten to the landed reality; RULINGS doc §1 marked RULED+LANDED
+  with the A7 mechanism recorded.
+- Verified piecemeal: deps-audit standalone green (observed set matches the declaration
+  exactly; scanned better-auth 1.4.18), sec1-upload-gate 7/7 (still armed), deps tests 9/9.
+
+**Vercel cleanup:** `BETTER_AUTH_URL` + `BETTER_AUTH_SECRET` deleted from the production
+env (zero code references repo-wide, grep-verified; `vercel env ls production` confirms
+gone). The 2026-08-05 direct-cutover leftovers are out of the deployed surface.
+
+**The first post-accept audit went red on qa — a TORN READ, fixed:**
+unit-ordinal-instrument's published-cohort measurement raced
+library-published-boundary's `qa-published-boundary-*` fixture (seeded published, deleted
+in teardown, sibling worker): positive control counted 127, digest query saw 126. Dev
+probes confirmed no corpus defect (126 published works, none sectionless). The measurement
+now runs inside one REPEATABLE READ transaction (ROLLBACK after — nothing is written), so
+the cohort cannot move mid-measurement. tsc clean, instrument 15/15, full qa green
+(exit 0) under real parallel conditions; the wall above includes it.
+
+### NOT DONE / UNVERIFIED
+- The torn-read fix is verified green, not re-red-proven with an injected concurrent
+  writer — the race red was witnessed naturally; the consistency guarantee is Postgres
+  repeatable-read semantics.
+- topical_index stays pinned no-catalog (owner steer 2026-08-11: nothing designed around
+  Study Docs; the pin's falsifiable condition in RULINGS §2 stands).
+- Six commits now unpushed (standing rule: no pushes). The Study Docs lane's state remains
+  uncommitted in this tree — this commit stages only this session's files and this hunk.
+
+## 2026-08-11 (morning) — adversarial re-verification of the qa fixes; auth-stack truth; rulings page
+
+(Sits below the parallel Study Docs docs-lane entry, which is uncommitted and NOT this
+session's work — this session's commit stages only its own hunk of this file.)
+
+**Sync (WO-1):** origin/main gained only `cbddea8` (the PR #78 merge of this branch's
+already-pushed state), so main had not moved past yesterday's measurement. Rebase replayed
+the five unpushed commits clean (`342a3a4`…`02b1b42`). Full audit on the rebased tree:
+identical profile — every leg green EXCEPT deps. No leg changed colour.
+
+**Adversarial re-verification (WO-2) — four fixes attacked, all four HOLD:**
+1. **licensing DB-switch leg — NOT a tautology.** The check polices `embeddings.served` but
+   draws authority from `sources.status` — two columns joined only by publish-flip +
+   served-reconcile. Perturbations (all reverted): staged-work chunk → red
+   ("non-published authors: Schaff, Philip"); banned author behind a PUBLISHED work → red
+   ("quarantined authors: Origen of Alexandria"). Boundary stated plainly: forbidden
+   PROVENANCE behind a published work passes — that exposure is ADR-044's open owner call,
+   unchanged by the fix (this test never policed provenance).
+2. **INGEST_AUTHORED_UNIT_WORKS** — stand-in-client seeds: an exempted work carrying NULL +
+   duplicate (unit_ordinal, ordinal) + order break → all still caught; its stored≠computed
+   mismatch raises nothing; the SAME mismatch on john-gill raises WELD. New permanent test
+   block in `test/unit-ordinal-cohort.test.ts`, itself red-proofed twice (dead weld leg →
+   red; exemption swallowing the dup leg → red; both reverted).
+3. **vitest rate-limit env lift** — production-code perturbations: throttle call deleted
+   from `/api/work/[slug]` → api-hardening wiring check reds for exactly that route
+   (reverted); `checkGateRateLimit` forced always-allow → root threshold tests red ×2
+   (reverted). 13/13 green after.
+4. **register units-vs-sections** — milton-poetical-works PERTURBED IN DEV DATA
+   (unit_ordinal := ordinal, 903 rows, mapping backed up first): red with exactly "all 903
+   sections are their own reading unit", nothing else flagged. Restored from backup; md5
+   digest of (id, unit_ordinal, ordinal) identical pre/post (`e1224ff8…`); test green
+   again. No data change survives.
+
+**Auth-stack truth (WO-3), from evidence not documents:** production runs NEON AUTH
+(`@neondatabase/auth@0.4.2-beta` → Neon's HOSTED better-auth server; `NEON_AUTH_BASE_URL`/
+`JWKS_URL`/`COOKIE_SECRET` live in the Vercel prod env — read-only `vercel env ls`). The
+2026-08-05 direct 1.6.26 cutover was REVERSED (ADR-107/108, `dc87099`); `BETTER_AUTH_URL`/
+`SECRET` orphaned (zero code refs). The only better-auth in the tree is **1.4.18**,
+transitive; no newer `@neondatabase/auth` release exists (0.4.2-beta, 2026-06-08, latest).
+Zero affected-plugin references in `web/src` (oidcProvider/mcp/oauth-provider/organization/
+magicLink/emailOTP). Both stale notes corrected to this reality: `package.json`
+pnpm.auditConfig `"//"` and `scripts/audit.sh:41-46` (JSON + bash validated, deps-audit
+tests 9/9).
+
+**Rulings page (WO-4):** `docs/pm/RULINGS-2026-08-11.md` — the deps decision rebuilt on the
+real topology (per-GHSA reachability table; ignore-with-rationale vs migrate; falsifiable
+settling conditions) plus nine other owner-terminal items, one line each. Nothing on it
+implemented.
+
+### NOT DONE / UNVERIFIED
+- deps leg still red BY DESIGN — awaits the owner ruling on RULINGS-2026-08-11.md §1.
+- The parallel docs lane holds uncommitted state in this tree: the WORKLOG entry above this
+  one + `docs/STUDY_DOCS_DESIGN.md`, `docs/STUDY_DOCS_BUILD.md`,
+  `docs/pm/FABLE5_CORE_BRIEF.md`, `docs/pm/SWARM_PARALLEL_BRIEF.md` — not this session's,
+  not committed here.
+- Five commits remain unpushed (standing rule: no pushes).
+
+## 2026-08-10 (late) — qa leg GREEN end to end: four failure classes fixed and red-proofed
+
+Follows the afternoon entry. Full qa leg (`npm run qa`) green: 125/125 web files + the root
+rate-limit file. Full `npm run audit`: every leg green EXCEPT deps (the owner-ruling item
+from the afternoon entry, unchanged and still the only red).
+
+**1. register-end-to-end was stale test code, not bad data** (the afternoon diagnosis —
+"unit-ordinal backfill never reached ten works" — was WRONG; corrected by probing dev).
+Since `79494d4` (2026-08-02) the reader TOC is one row PER UNIT, so §B1's
+`units === toc.length` heuristic was a tautology firing on every well-grouped large work.
+Dev probe: john-gill 28,843 sections → 1,169 real units; spurgeon-sermons 118,371 → 3,540;
+owen-works 20,054 → 702. The check now measures the real property (units < raw sections —
+`rep.sections` was already in hand) with a declared `UNIT_PER_SECTION_WORKS` set
+(openbible-topics, schaff-dictionarybible, spurgeon-morning-evening, watts-psalmshymns —
+each with a stated content-shape reason). `topical_index` joined
+`REGISTERS_WITH_NO_CATALOG`: its surface is Plans topic matching
+(`web/src/lib/plan/topic-match.ts`, covered by plan-topic-flow.test.ts), same reasoning as
+lexicon→Word Study — giving it a shelf is the product decision the pin exists to force.
+`NO_PROSE_PHRASE_REGISTERS` skips checks 3–5 for topical_index only (bodies are
+verse-reference lists, median ~200 chars); the host-URL leak check was hoisted so it runs
+for every register unconditionally. Red-proof: removing one carve-out failed with exactly
+the intended message (watched), then restored.
+
+**2. The 429 cascade was the HOUR leg of the reused gate limiter.** `publicReadThrottle`
+passes a perMin override (120) to `checkGateRateLimit` but cannot override the hour leg
+(`GATE_LIMIT_PER_HOUR=60`). The full DB-backed suite shares `read:{bucket}:no-trusted-ip`
+buckets in the dev gate table; the hour bucket exhausts early and STAYS exhausted, so every
+public-route call 429s for the rest of the hour — including work-reader's expects-400
+malformed-params check and library-published-boundary's expects-404. Fix: both caps lifted
+in `web/vitest.config.ts` `test.env` (no production code touched; throttle wiring coverage
+is mock-based — api-hardening/catalog-filter-wiring — and limiter mechanics live in root
+test/rate-limit.test.ts, a separate vitest process).
+
+**3. licensing.test.ts judged served chunks against a frozen record.** Post-cutover,
+publish-means-serve is the standing contract (`scripts/served-reconcile.mjs`): the NPNF
+father volumes (schaff-npnf101/104/210/213) are published AND served, so father-type rows
+legitimately reach `retrieveCommentary` — but `PUBLISHED_WORKS` (the SERVED lists frozen at
+044's backfill) never learned them, so 'Schaff, Philip' read as non-published. Adding the
+slugs to SERVED_PROSE_WORKS would have forced an `idx_commentary_fts_legal` regeneration
+(the lockstep test) for a zero-row predicate. Instead `assertAllPublished` now consults the
+DB publish switch (`sources.status='published'`, positive-controlled non-empty) for
+work-keyed rows; the static predicate remains the only guard for the work-less legacy
+cohort (124,955 flat rows — Tyndale/CS Lewis/Origen). Green 6/6. Adjacent drift recorded
+for the owner: ~60 published+served works across registers are absent from the frozen
+SERVED lists (most covered by the author legs); `ryle-expository` (2,040 served commentary
+rows, clean 'J.C. Ryle' CCEL attribution, manifest tier 2 — the old "ryle/vincent
+mislabeling" removal was a different acquisition) and `spurgeon-comment` (71 rows) are the
+two commentary-type works the static record would still flag if their chunks surface.
+
+**4. unit-ordinal WELDs were a false authority, not corrupt data.** All five weld works
+entered the manifest 2026-08-02 (`ec63de4`, `231f698`) — two weeks AFTER migration 024 —
+so their unit_ordinal was written by the ingest pipeline, never by 024's backfill. The
+instrument's preservation/weld legs asked "does stored match 024 recompute?" of works 024
+never touched; 024's heading-island heuristic merges adjacent same-heading sections (two
+adjacent like-titled hymns → one "unit"), reading watts' stored 731 → computed 677 as a
+weld. Stored is internally consistent (NULL/dup/order/digest legs green for all five).
+Fix: declared `INGEST_AUTHORED_UNIT_WORKS` authority boundary in
+`scripts/lib/unit-ordinal-instrument.mjs` — the recompute legs skip only those five; every
+other leg unchanged; fail-closed default (a new ingest-authored work reds until declared).
+The instrument's own perturbation red-proofs still pass (15/15).
+
+### NOT DONE / UNVERIFIED
+- **deps leg: owner ruling** — 8 better-auth@1.4.18 GHSAs pinned by @neondatabase/auth
+  0.4.2-beta. Documented-accept with per-ID reachability (drafted in the afternoon entry)
+  vs migration off the beta. The ONLY red leg. Note `scripts/audit.sh:41-46`'s comment is
+  stale the same way `package.json:66` is — both claim the package is gone.
+- **Static-surface cutover remains filed separate work**: `isPublishedCommentaryEntry` and
+  `idx_commentary_fts_legal` still gate on the frozen SERVED lists in production; the
+  licensing TEST now measures the DB publish switch. The ryle-expository / spurgeon-comment
+  static-record gap above is part of that call.
+- Prod carries the same five ingest-authored works; the instrument change makes the next
+  prod-side measurement read them correctly — no data change needed or made.
+- The intermittent `[search/commentaries] connection to ep-odd-fog: password
+  authentication` line from earlier full runs did not recur this session; never traced.
+
+## 2026-08-10 (afternoon) — the full audit runs again: dev branch reset, three reds fixed, three named
+
+**The week's blocker was a pointer, not a database.** `~/.neon_dev_url` existed all along
+(`ep-tiny-hat`, pre-allowed by the audit guard). But the dev branch was a pre-017 schema
+carrying 039-era data — 38 migrations "pending" with data conflicts (017's CHECK vs
+devotional/topical_index rows), unrepairable by replay. **Fix: Neon API branch reset** —
+`dev` (`br-cool-flower`) reset from `production` (`br-nameless-brook`), same `ep-tiny-hat`
+endpoint, old dev preserved as `dev-pre-reset-20260810`. Dev now mirrors prod exactly
+(user_documents 6, auth_users 7, prayers 5, served 398,113, ledger 51). Migration 011 (no
+--SPLIT-- markers, predates the convention) was applied statement-by-statement and
+ledger-recorded; the file itself untouched to preserve the prod checksum.
+
+**First full `npm run audit` of the week — three reds, all fixed and red-proofed:**
+1. `dc87099` removed better-auth from web/package.json but regenerated NEITHER lockfile —
+   the Vercel builder's `npm ci` would have refused the NEXT deploy. Both lockfiles regened;
+   upload-root-lockfile 6/6 green.
+2. Migration 107's `prayers` had no USER_TABLE_SPEC entry — added with its real shape
+   (tombstone deleted_at), watched red→green.
+3. pray-entry-point.test.tsx mock predated the required `onDeleteNote` prop — web/test tsc
+   clean, 5/5 green.
+(Committed by the parallel session in `ac22b07`'s tree sweep.)
+
+**Still red, with names (second full run, DB legs live):**
+- **deps — 8 high/critical GHSAs, all better-auth 1.4.18**, pinned by `@neondatabase/auth`
+  0.4.2-beta — the LIVE auth system (neon-auth.ts, client.ts import it). No newer release
+  exists. `package.json`'s ignore-note claims the opposite of reality ("@neondatabase/auth is
+  removed and better-auth 1.6.26 runs in-app" — false since F2). Owner/domain call: documented
+  ignoreGhsas with per-ID reachability (most are oidcProvider/mcp/organization/magic-link
+  plugins the app doesn't enable; g38m closed structurally by verify-at-signup), or the
+  SEC-1-sequel migration off the beta.
+- **qa DB legs — RLS violations** ("new row violates row-level security policy") on the
+  prod-cloned dev: the tests need the app_runtime-role connection for dev, which doesn't exist
+  in this tree's env. Same class as the carried "db-invariants red on main" (red since 08-05);
+  the CI branches (children of OLD dev) are equally drifted and want the same reset.
+- **root vitest: 686/687** — target-guard's register-label-embeddings case fails only in
+  full-suite order (passes 20/20 standalone): an env-leak test-isolation bug, small fix.
+
+### NOT DONE / UNVERIFIED
+- Full green audit: blocked on the deps decision (owner) + the qa RLS/role env work.
+- Neon console: prod password rotation STILL pending (pasted in chat 08-10); Resend sender.
+- The `ep-odd-fog password authentication failed` line in qa output — some test configs still
+  point at prod with stale credentials; not yet traced.
+
+**08-10 (evening) — qa leg: env causes solved, real findings surfaced.** The role mapping was
+the whole RLS story: `~/.neon_dev_url` IS the app_runtime URL, `~/.neon_dev_owner_url` the
+owner; the suites need `DATABASE_URL=owner + APP_DATABASE_URL=app_runtime` (a mistaken
+app_runtime password rotation mid-diagnosis was restored to the stored credential, verified).
+Root vitest 687/687 green once the stray DATABASE_URL_UNPOOLED export was dropped (it leaked
+into target-guard's spawned child). plans-routes teardown rewritten to prefix-sweep
+(check-test-residue watched red→green) and its title expectations updated to L2c's deliberate
+format. **What remains red in qa is mostly REAL, not broken tests:** `topical_index` is a
+published register with no catalog entry — the pinned no-catalog set `['lexicon']` needs an
+OWNER ruling (the test says so in terms); ten published works (john-gill, schaff-creeds,
+spurgeon-morning-evening, chrysostom-homilies, josephus-whiston, watts-psalmshymns,
+schaff-dictionarybible, milton-poetical-works, spurgeon-sermons, owen-works) have every
+section as its own reading unit — TOC is chunk artifacts; the unit-ordinal backfill never
+reached them (ingest-lane content debt, on prod data). Plus intermittent `NeonDbError: fetch
+failed` flakes on the owner's unstable connection, and one untraced ep-odd-fog password-auth
+line (intermittent, did not reproduce in isolation).
 
 ## 2026-08-10 — "photo as ground" shipped; PR #76 merged; main == production
 
@@ -9317,3 +10426,17 @@ not build from this note without a design doc.
 **NOT DONE:** post-flip state verified by self-measurement (counts above are exact against
 prod); no fresh independent verifier pass over the 2026-08-14 close-outs. The 4-hour window's
 remaining items are all closed.
+=======
+**Owner waiver 2026-08-12:** the P2 exit clause requiring browser verification at 390px and
+desktop in an authenticated session is WAIVED by the owner ("override… I grant permission").
+P3's browser pass did not happen; the UI is verified at the build/test/SSR-markup level only.
+Deploy approved in the same instruction.
+
+**DEPLOYED 2026-08-12 (late; receipt 2026-08-13T01:25:46Z):** deploy.sh live to
+ancientpaths.app — dpl_7mdzS56dsNZ1RrLWtA7PKDMywUXe serving cc41726 (verified the alias serves
+this deploy). Ships: Study Docs product surface (P1+P2: /studies, /studies/[id], feed, export,
+Save-to-study, MY STUDIES sidebar, merged /search), embeddings V1 provider drift guard, V2/V3.
+Two gate blocks en route, both the system working: PREDEPLOY_DB_URL preflight (would have
+500'd /ask without it) and the next-env.d.ts mid-build churn (committed the build-generated
+path). Owner waived the P2 browser-pass clause (recorded above). Receipt:
+docs/evidence/deploys/deploy-cc41726-2026-08-13T01-25-46Z.txt.

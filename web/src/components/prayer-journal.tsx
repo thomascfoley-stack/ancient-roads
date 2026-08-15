@@ -18,7 +18,7 @@
 // the common act; changing it is the rare one, and a cursor blinking in your own words invites
 // editing rather than reading.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 // `Link`, not `<a>`: an anchor here forces a full document reload on the way to sign-in and was a
 // lint ERROR (@next/next/no-html-link-for-pages), introduced with the signed-out state in PR1a.
 import Link from 'next/link';
@@ -27,6 +27,7 @@ import { verseHref } from '@/lib/verse-link';
 import { DISPLAY_LOCALE } from '@/lib/locale';
 import { authClient } from '@/lib/auth/client';
 import { runCarryForward } from '@/lib/prayer-carry-forward';
+import { setPrayerWriting } from '@/lib/prayer-writing-mode';
 
 interface Prayer {
   id: string;
@@ -143,63 +144,189 @@ export function PrayerJournal({ initialVerseId = null }: { initialVerseId?: numb
 
   const when = (iso: string) => new Date(iso).toLocaleDateString(DISPLAY_LOCALE, { day: 'numeric', month: 'long', year: 'numeric' });
 
+  // ── AUTOSAVE (owner direction 2026-08-12, journal-redesign mockup) ────────────────────────────
+  // Save / Cancel is gone from the compose view: the draft saves itself, and the whole
+  // confirmation is a quiet timestamp with the flame tick. NOTHING CAN BE LOST is the point of
+  // the design, and it shapes the three rules below:
+  //   1. An EMPTY draft is never written. Autosave must not create an empty prayer, and it must
+  //      NEVER delete one — erasing an existing prayer's text and clicking away is not
+  //      consenting to its deletion. The last non-empty saved body stands.
+  //   2. The first save CREATEs, every later save UPDATEs the returned id — otherwise each
+  //      keystroke burst would file a new prayer.
+  //   3. Leaving the view FLUSHES the pending draft, whether by the back link or by unmount on
+  //      client-side navigation — the debounce must never be the thing that ate the last
+  //      sentence.
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const editorRef = useRef<HTMLTextAreaElement | null>(null);
+  const draftRef = useRef(draft);
+  const savedIdRef = useRef<string | null>(null);
+  const lastSavedRef = useRef('');
+  const inFlightRef = useRef(false);
+  const pendingRef = useRef(false);
+  const inFlightPromiseRef = useRef<Promise<void> | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => { draftRef.current = draft; }, [draft]);
+
+  // Plain functions, not useCallback: they are called from event handlers and the unmount
+  // flush, never from an effect's dependency list, and the compiler's memoization rule rejects
+  // the self-reference in the pending-save retry.
+  const saveDraft = async (): Promise<void> => {
+    const body = draftRef.current;
+    if (!body.trim() || body === lastSavedRef.current) return;
+    if (inFlightRef.current) { pendingRef.current = true; return; }
+    inFlightRef.current = true;
+    const run = (async () => {
+      try {
+        const id = savedIdRef.current;
+        const res = await fetch('/api/prayers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(id ? { kind: 'update', id, body } : { kind: 'create', body, verseId: initialVerseId }),
+        });
+        if (!res.ok) { setError('That change could not be saved. Please try again.'); return; }
+        if (!id) {
+          // A create that comes back without its new id cannot be updated later — the next save
+          // would CREATE AGAIN and file the same words twice. Treat it as not-saved and let the
+          // next pass retry the create.
+          const created = (await res.json().catch(() => undefined)) as { prayer?: Prayer } | undefined;
+          if (!created?.prayer?.id) { setError('That change could not be saved. Please try again.'); return; }
+          savedIdRef.current = created.prayer.id;
+        }
+        lastSavedRef.current = body;
+        setError(null);
+        setSavedAt(new Date());
+      } catch {
+        setError('That change could not be saved. Please try again.');
+      } finally {
+        inFlightRef.current = false;
+        if (pendingRef.current) { pendingRef.current = false; void saveDraft(); }
+      }
+    })();
+    inFlightPromiseRef.current = run;
+    await run;
+  };
+
+  const scheduleSave = () => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => { void saveDraft(); }, 900);
+  };
+
+  // THE COMPOSE VIEW IS THE SCREEN, NOT A WIDGET ON IT. While it is open the sidebar drops to a
+  // 58px icon rail (it re-expands on hover or ⌘\) — the signal lives in
+  // `lib/prayer-writing-mode.ts`, and the comment there says why it is not context.
+  const writing = composing || (open !== null && editing);
+  useEffect(() => {
+    if (!writing) return;
+    setPrayerWriting(true);
+    return () => {
+      setPrayerWriting(false);
+      // UNMOUNT FLUSH. Client-side navigation unmounts this view with the debounce possibly
+      // still pending, and the last paragraph is exactly what "nothing can be lost" exists for.
+      // Wait out any in-flight save so a not-yet-returned create is updated rather than
+      // duplicated; `keepalive` lets the request outlive the page that made it.
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      void (inFlightPromiseRef.current ?? Promise.resolve()).then(() => {
+        const body = draftRef.current;
+        if (!body.trim() || body === lastSavedRef.current) return;
+        const id = savedIdRef.current;
+        void fetch('/api/prayers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(id ? { kind: 'update', id, body } : { kind: 'create', body, verseId: initialVerseId }),
+          keepalive: true,
+        }).catch(() => {
+          // Deliberately unreported: the view is gone, so there is nobody to tell. The failure
+          // mode is a lost final edit — the same failure mode as NOT flushing, so this is
+          // strictly better, never worse.
+        });
+      });
+    };
+  }, [writing, initialVerseId]);
+
+  // THE PAGE SCROLLS, THE EDITOR NEVER DOES. A fixed-height box with its own scrollbar is the
+  // "1998 form field" the redesign removes: the textarea is always exactly as tall as its
+  // content (over a 44vh floor), so a long prayer grows the PAGE.
+  useEffect(() => {
+    const el = editorRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [draft, writing]);
+
+  const leaveCompose = async () => {
+    if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
+    await saveDraft();
+    const id = savedIdRef.current;
+    setComposing(false); setEditing(false); setOpen(null); setDraft('');
+    // The flame dot beside the entry in the list stays the save confirmation (PRD §5); autosave
+    // moves the moment it marks from "Save was clicked" to "the writing was kept".
+    if (id) { setJustSaved(id); void load(); }
+  };
+
   // ── the prayer space ──────────────────────────────────────────────────────────────────────────
+  // COMPOSE IS THE SCREEN, NOT A WIDGET ON IT (owner direction 2026-08-12, journal-redesign
+  // mockup). The old compose was a narrow, fixed-height, gold-OUTLINED box centred on neither
+  // axis — about a quarter of the pane with dead space on both sides ("this writing wall is just
+  // too small… why is this eating up 25% of the real-estate?"). The redesign, in its own terms:
+  //   THE BOX  gone. No border, no parchment panel, no ring. Focus is a 2px gold rule on the
+  //            left edge only — the one place the accent appears while writing.
+  //   WIDTH    ~80ch, actually centred (mx-auto on the column, not one-sided padding).
+  //   HEIGHT   grows with the prayer, forever — the page scrolls, the editor never does.
+  //   SIDEBAR  drops to a 58px icon rail while writing (the writing-mode effect above).
+  //   SAVING   autosave with a quiet timestamp; Save / Cancel are gone (AUTOSAVE above).
+  //   TARGET   the whole pane is clickable; the click lands in the editor.
   if (composing || (open && editing)) {
     const isNew = composing;
+    const words = draft.trim() === '' ? 0 : draft.trim().split(/\s+/).length;
     return (
-      <div className="mx-auto max-w-[66ch] px-6 py-12 md:py-20">
-        {initialVerseId !== null && isNew && (
-          <p className="mb-4 font-scripture text-sm text-accent-600 dark:text-accent-400">
-            {formatVerseId(initialVerseId)}
-          </p>
-        )}
-        {/* At most one prompt line, lectio-style. Not a form, not a template, not a prompt library —
-            all three are explicitly out of v1. */}
-        <p className="mb-6 font-serif text-base italic leading-relaxed text-stone-500 dark:text-stone-400">{PROMPT}</p>
-        <textarea
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          rows={14}
-          autoFocus
-          aria-label="Your prayer"
-          /* Parchment surface, one hairline, 18px Literata — the PRD's compose view (§5 Prayers),
-             no visible chrome around the words themselves. The `!` on the focus border is
-             load-bearing: `.edge` is unlayered (see globals.css) and otherwise swallows the
-             layered focus utility, so the antique-gold focus border never painted. */
-          className="focus-quiet w-full resize-none border edge edge-focus bg-stone-50 px-8 py-6 font-serif text-lg leading-[1.9] text-stone-900 outline-none placeholder:text-stone-500 dark:bg-stone-950 dark:text-stone-200 dark:placeholder:text-stone-400"
-          placeholder="…"
-        />
-        {error && <p role="alert" className="mt-3 text-sm text-red-800 dark:text-red-200">{error}</p>}
-        <div className="mt-6 flex items-center gap-6">
+      <div
+        className="flex min-h-full cursor-text flex-col px-6 pb-8 pt-12 sm:px-[7vw] md:pt-16"
+        onClick={() => editorRef.current?.focus()}
+      >
+        <div className="mx-auto flex w-full max-w-[80ch] flex-1 flex-col">
           <button
             type="button"
-            disabled={busy || !draft.trim()}
-            onClick={() =>
-              void write(
-                isNew ? { kind: 'create', body: draft, verseId: initialVerseId }
-                      : { kind: 'update', id: open!.id, body: draft },
-                (data) => {
-                  setComposing(false); setEditing(false); setOpen(null); setDraft('');
-                  const id = isNew ? data?.prayer?.id : open?.id;
-                  if (id) setJustSaved(id);
-                },
-              )
-            }
-            /* The PRD §6 primary CTA: a 1px ink hairline, transparent fill, square corners, and
-               the hover fill is instant (no transition). `border-current` rather than a
-               light/dark border pair — that pair loses the cascade to the light rule in this
-               app (the reason `.edge` exists); currentColor flips with the text instead. */
-            className="inline-flex min-h-[44px] items-center border border-current bg-transparent px-6 py-3 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 disabled:opacity-40 dark:text-stone-200 dark:hover:bg-stone-200 dark:hover:text-stone-950"
+            onClick={(e) => { e.stopPropagation(); void leaveCompose(); }}
+            className="mb-10 inline-flex min-h-[44px] items-center self-start font-sans text-sm text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
           >
-            {busy ? 'Saving…' : 'Save'}
+            ← All prayers
           </button>
-          <button
-            type="button"
-            onClick={() => { setComposing(false); setEditing(false); setDraft(''); }}
-            className="inline-flex min-h-[44px] items-center font-sans text-sm text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
-          >
-            Cancel
-          </button>
+          {initialVerseId !== null && isNew && (
+            <p className="mb-4 font-scripture text-sm text-accent-600 dark:text-accent-400">
+              {formatVerseId(initialVerseId)}
+            </p>
+          )}
+          {/* At most one prompt line, lectio-style. Not a form, not a template, not a prompt
+              library — all three are explicitly out of v1. */}
+          <p className="mb-8 font-serif text-lg italic leading-relaxed text-accent-600 dark:text-accent-400">{PROMPT}</p>
+          {/* The gold rule IS the focus state — there is no border anywhere else to change. */}
+          <div className="border-l-2 border-transparent pl-6 transition-colors ease-gentle focus-within:border-accent-600 dark:focus-within:border-accent-400">
+            <textarea
+              ref={editorRef}
+              value={draft}
+              onChange={(e) => { setDraft(e.target.value); scheduleSave(); }}
+              autoFocus
+              aria-label="Your prayer"
+              rows={1}
+              className="focus-quiet min-h-[44vh] w-full resize-none overflow-hidden border-0 bg-transparent font-serif text-lg leading-[1.75] text-stone-900 outline-none placeholder:text-stone-500 dark:text-stone-200 dark:placeholder:text-stone-400"
+              placeholder="…"
+            />
+          </div>
+          {error && <p role="alert" className="mt-4 pl-6 text-sm text-red-800 dark:text-red-200">{error}</p>}
+        </div>
+        {/* The whole save confirmation: a word count, and the flame tick with a timestamp once
+            the draft has landed. No toast, no banner, no modal — the list's save-dot restraint
+            (PRD §5), applied to the moment of writing itself. */}
+        <div className="mx-auto mt-10 flex w-full max-w-[80ch] items-center justify-between font-sans text-xs tracking-[0.03em] text-stone-400 dark:text-stone-500">
+          <span>{words === 0 ? '' : `${words} ${words === 1 ? 'word' : 'words'}`}</span>
+          <span className="flex items-center gap-2">
+            {savedAt && (
+              <>
+                <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-flame" />
+                Saved {savedAt.toLocaleTimeString(DISPLAY_LOCALE, { hour: 'numeric', minute: '2-digit' })}
+              </>
+            )}
+          </span>
         </div>
       </div>
     );
@@ -208,7 +335,9 @@ export function PrayerJournal({ initialVerseId = null }: { initialVerseId?: numb
   // ── one prayer, read-first ────────────────────────────────────────────────────────────────────
   if (open) {
     return (
-      <div className="mx-auto max-w-[66ch] px-6 py-12 md:py-20">
+      // The same 80ch column as the compose view — reading back a prayer and writing one are
+      // the same surface at two moments, and a width jump between them reads as a bug.
+      <div className="mx-auto max-w-[80ch] px-6 py-12 md:py-20">
         <button onClick={() => setOpen(null)} className="mb-8 inline-flex min-h-[44px] items-center font-sans text-sm font-semibold text-accent-600 hover:underline dark:text-accent-400">
           ← All prayers
         </button>
@@ -227,7 +356,12 @@ export function PrayerJournal({ initialVerseId = null }: { initialVerseId?: numb
               The confirmation is REPLACED, not removed: deleting someone's prayer on one
               unguarded click would be worse than the dialog was. Two steps, in-page, focusable,
               and cancellable — and the destructive step is the one that has to be sought out. */}
-          <button onClick={() => { setDraft(open.body); setEditing(true); }} className="inline-flex min-h-[44px] items-center font-sans text-sm text-stone-500 hover:text-accent-600 dark:text-stone-400 dark:hover:text-accent-400">Edit</button>
+          <button onClick={() => {
+            // Autosave starts from the prayer AS SAVED: the id is already known, and the
+            // unchanged body is not a change, so opening the editor saves nothing by itself.
+            savedIdRef.current = open.id; lastSavedRef.current = open.body; setSavedAt(null);
+            setDraft(open.body); setEditing(true);
+          }} className="inline-flex min-h-[44px] items-center font-sans text-sm text-stone-500 hover:text-accent-600 dark:text-stone-400 dark:hover:text-accent-400">Edit</button>
           {confirmingDelete ? (
             <span className="flex items-center gap-4" role="group" aria-label="Confirm delete">
               <span className="font-serif text-sm text-stone-600 dark:text-stone-300">Delete this prayer?</span>
@@ -261,10 +395,12 @@ export function PrayerJournal({ initialVerseId = null }: { initialVerseId?: numb
   }
 
   // ── the journal ───────────────────────────────────────────────────────────────────────────────
-  // The most restrained screen in the app (PRD §5): a single 66ch column, no card chrome, no
-  // action bars — dates and first lines separated by single vellum hairlines.
+  // The most restrained screen in the app (PRD §5): a single column, no card chrome, no
+  // action bars — dates and first lines separated by single vellum hairlines. The column is
+  // 80ch, matching the compose and read-first views (owner direction 2026-08-12; the PRD's
+  // 66ch left the text at ~20–25% of a wide window).
   return (
-    <div className="mx-auto max-w-[66ch] px-6 py-12 md:py-20">
+    <div className="mx-auto max-w-[80ch] px-6 py-12 md:py-20">
       <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
         <div>
           <h1 className="font-display text-3xl font-medium tracking-[-0.01em] text-stone-900 dark:text-stone-200">Prayer journal</h1>
@@ -282,7 +418,7 @@ export function PrayerJournal({ initialVerseId = null }: { initialVerseId?: numb
           </Link>
         ) : (
           <button
-            onClick={() => { setDraft(''); setComposing(true); }}
+            onClick={() => { savedIdRef.current = null; lastSavedRef.current = ''; setSavedAt(null); setDraft(''); setComposing(true); }}
             className="inline-flex min-h-[44px] items-center font-sans text-xs font-semibold small-caps tracking-[0.08em] text-accent-600 hover:underline dark:text-accent-400"
           >
             Write a prayer

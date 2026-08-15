@@ -268,7 +268,20 @@ describe.skipIf(PUBLISHED_SKIP)('unit_ordinal instrument — published works + d
   });
 
   it('passes NULL/order/recompute/digest checks on all published works', async () => {
-    const result = await measurePublishedUnitOrdinal(client);
+    // ONE SNAPSHOT for the whole measurement. The published cohort can MOVE mid-measurement:
+    // library-published-boundary.test.ts seeds a published qa-* work in a sibling worker and
+    // deletes it in teardown, so the positive control (127 works) and the digest query (126)
+    // read different cohorts — a torn read, not a corpus defect (2026-08-11 full-qa red).
+    // REPEATABLE READ pins every leg to the same snapshot, which is the only state in which
+    // `digests.length === publishedWorks` is meaningful. ROLLBACK: this measurement writes
+    // nothing; there is no COMMIT to get wrong.
+    await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
+    let result: Awaited<ReturnType<typeof measurePublishedUnitOrdinal>>;
+    try {
+      result = await measurePublishedUnitOrdinal(client);
+    } finally {
+      await client.query('ROLLBACK');
+    }
     expect(result.errors, result.errors.join('\n')).toEqual([]);
     expect(result.ok).toBe(true);
     expect(result.digests.length).toBe(result.publishedWorks);

@@ -368,8 +368,11 @@ export function WorkReader({
       <WorkHeader ref={headerRef} source={source} onOpenToc={onOpenToc} />
 
  {/* The reading column sits directly on the parchment page — PRD §3: hairlines and
-            whitespace carry separation, so the bordered "page card" (edge + shadow) is gone. */}
- <div className="mx-auto my-6 max-w-2xl px-6 pb-24 pt-12 sm:my-10 sm:px-14 sm:pt-16">
+            whitespace carry separation, so the bordered "page card" (edge + shadow) is gone.
+            Width is the reader's measure (`.reading-measure`, default 84ch — owner direction
+            2026-08-12), the SAME control the Bible reader follows; this was a hardcoded
+            max-w-2xl, so the library read at one width and Scripture at another. */}
+ <div className="reading-measure mx-auto my-6 px-6 pb-24 pt-12 sm:my-10 sm:px-14 sm:pt-16">
         {sections.length === 0 && busy === 'initial' && (
           <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">Loading…</p>
         )}

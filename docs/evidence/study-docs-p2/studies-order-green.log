@@ -1,0 +1,25 @@
+=== GREEN RUN: studies-order (restored, unmutated lib/studies.ts; sha256 5d2298b1… verified pre-run) ===
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git/web
+
+(node:2875) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/invariants/studies-order.test.ts (6 tests) 5125ms
+   ✓ S-14 studies order > two blocks at the SAME computed midpoint resolve deterministically — no silent reorder 995ms
+   ✓ S-14 studies order > read order is (position, id), NOT insertion order 363ms
+   ✓ S-14 studies order > control: order follows the STORED position — an owner-side move is reflected in the next read 882ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  17:26:06
+   Duration  5.34s (transform 33ms, setup 0ms, collect 41ms, tests 5.12s, environment 0ms, prepare 30ms)
+
+=== vitest exit: 0 ===

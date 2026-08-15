@@ -25,7 +25,7 @@ import { GET as getSearchWorks } from '@/app/api/search/works/route';
 import { CATALOGS, type CatalogId } from '@/lib/catalog';
 import { listCatalogWorks } from '@/lib/catalog';
 import { getDb } from '@/lib/db';
-import type { WorkSectionsPage, WorkTocRow } from '@/lib/work';
+import type { WorkSectionsPage, WorkTocUnit } from '@/lib/work';
 import { runtimeDbUrl } from '../helpers/env';
 import { announceSkip } from '../helpers/loud-skip';
 
@@ -47,8 +47,42 @@ const dbUrl = runtimeDbUrl();
  *  commentary, and it still cannot fill an exegetical voice slot. This guard is what turns each
  *  such change into an explicit decision instead of a silent widening: adding a catalog makes
  *  this assertion RED in CI, exactly as the comment above intends. Removing a register from this
- *  list must always cost someone a red build. */
-const REGISTERS_WITH_NO_CATALOG = ['lexicon'] as const;
+ *  list must always cost someone a red build.
+ *
+ *  `topical_index` (openbible-topics) joined this set on 2026-08-10, same reasoning as
+ *  `lexicon`: it already has its OWN surface — Plans topic matching (lib/plan/topic-match.ts,
+ *  /api/plans/topics, covered by test/regression/plan-topic-flow.test.ts) — and its sections
+ *  are verse-reference lists, not reader prose. Giving it a catalog shelf would be a product
+ *  decision, exactly the kind this pin exists to force into the open. */
+const REGISTERS_WITH_NO_CATALOG = ['lexicon', 'topical_index'] as const;
+
+/** Works whose reading unit legitimately IS the section — the content's own shape, not a
+ *  chunking artifact. The §B1 TOC check below measures GROUPING (a work must have fewer
+ *  reading units than raw sections); these works are exempt, each for a stated reason:
+ *    - openbible-topics: a topical index — each section is ONE topic, a verse-reference
+ *      list (median ~200 chars); the topic is the indivisible unit.
+ *    - schaff-dictionarybible: a Bible dictionary ingested as 29 letter-ranges; the range
+ *      is the unit as published, and its reader surface is Word Study, not the Book Reader.
+ *    - spurgeon-morning-evening: one COMPLETE dated devotional per section (own heading,
+ *      median ~1.9k chars) — the day is the unit.
+ *    - watts-psalmshymns: one complete hymn/psalm per section, each with its own title.
+ *  Keyed by slug: representatives are discovered, but content shape is a per-work fact.
+ *  A work NOT in this set whose units equal its raw section count fails below — that is
+ *  the chunk-artifact shape migration 024 exists to prevent. Adding a work here is the
+ *  same kind of declared decision as the no-catalog pin above. */
+const UNIT_PER_SECTION_WORKS = new Set([
+  'openbible-topics',
+  'schaff-dictionarybible',
+  'spurgeon-morning-evening',
+  'watts-psalmshymns',
+]);
+
+/** Registers whose sections carry no reader prose, so the quoted-phrase probe (checks 3–5)
+ *  has nothing to draw from: topical_index bodies are verse-reference lists ("Exodus 20:1–
+ *  Exodus 20:26; Galatians 5:14; …"), median ~200 chars. The register's search surface is
+ *  Plans topic matching, covered by plan-topic-flow.test.ts. Checks 1–2 (catalog, reader
+ *  TOC) and the host-URL leak check still run for these registers. */
+const NO_PROSE_PHRASE_REGISTERS = new Set(['topical_index']);
 
 function catalogFor(sourceType: string): CatalogId | null {
   for (const c of Object.values(CATALOGS)) if (c.types.includes(sourceType)) return c.id;
@@ -163,15 +197,29 @@ describe.skipIf(SKIP)('§B1 per-register end-to-end (real route handlers, real D
       // ── 2. BOOK READER: opens, and the TOC groups into REAL units ─────────────
       const workRes = await callWork(rep.slug);
       if (workRes.status !== 200) { note(`reader route returned ${workRes.status}`); continue; }
-      const workBody = (await workRes.json()) as { source: Record<string, unknown>; toc: WorkTocRow[] };
+      const workBody = (await workRes.json()) as { source: Record<string, unknown>; toc: WorkTocUnit[] };
       const toc = workBody.toc;
       if (toc.length === 0) note('TOC is empty');
       const nullUnits = toc.filter((r) => typeof r.unitOrdinal !== 'number').length;
       if (nullUnits > 0) note(`${nullUnits}/${toc.length} TOC rows have no unitOrdinal — the reader would list one "unit" per retrieval chunk`);
       const units = new Set(toc.map((r) => r.unitOrdinal)).size;
-      // A unit per section means unit_ordinal is carrying no grouping at all — the exact
-      // chunk-artifact shape 024 exists to prevent.
-      if (toc.length > 20 && units === toc.length) note(`every one of ${toc.length} sections is its own reading unit — TOC is chunk artifacts, not units`);
+      // The measured property: unit_ordinal must actually GROUP — fewer reading units than
+      // raw sections — unless the work is declared unit-per-section (UNIT_PER_SECTION_WORKS).
+      // The pre-2026-08-10 line compared `units` to `toc.length`, but 79494d4 (2026-08-02)
+      // made the TOC one row PER UNIT, which turned that into a tautology firing on every
+      // well-grouped large work: john-gill's 28,843 sections group into 1,169 real units
+      // and the old line still flagged "every one of 1169 sections".
+      if (rep.sections > 20 && units === rep.sections && !UNIT_PER_SECTION_WORKS.has(rep.slug)) {
+        note(`all ${rep.sections} sections are their own reading unit — unit_ordinal carries no grouping (chunk artifacts); if the section IS the unit for this work, declare it in UNIT_PER_SECTION_WORKS`);
+      }
+      if (/https?:\/\//.test(JSON.stringify(workBody.source))) note('reader source payload leaks a host URL');
+
+      // No-prose registers stop here: catalog, TOC and the URL-leak check above have run;
+      // the quoted-phrase probe has nothing to draw from (NO_PROSE_PHRASE_REGISTERS).
+      if (NO_PROSE_PHRASE_REGISTERS.has(rep.sourceType)) {
+        log.push(`  ${rep.sourceType.padEnd(11)} ${rep.slug.padEnd(24)} sections=${String(rep.sections).padStart(6)} units=${units} catalog=${cat ?? '(none)'} phrase-probe=n/a (no-prose register)`);
+        continue;
+      }
 
       // ── 3+4. SEARCH finds it, deduped, and the hit LANDS ON THE PASSAGE ───────
       const picked = await distinctivePhrase(rep.slug);
@@ -221,7 +269,6 @@ describe.skipIf(SKIP)('§B1 per-register end-to-end (real route handlers, real D
         if (!hit.title?.trim()) note('search hit carries no work title');
         if (/https?:\/\//.test(JSON.stringify(hit))) note('search hit leaks a host URL');
       }
-      if (/https?:\/\//.test(JSON.stringify(workBody.source))) note('reader source payload leaks a host URL');
 
       log.push(`  ${rep.sourceType.padEnd(11)} ${rep.slug.padEnd(24)} sections=${String(rep.sections).padStart(6)} units=${units} catalog=${cat ?? '(none)'}`);
     }

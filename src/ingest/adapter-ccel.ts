@@ -15,6 +15,7 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { parseRef } from '../bible/ref-parse.js';
+import { BOOKS } from '../bible/books.js';
 // The id-range expansion moved to source-artifact-urls.mjs so the ARCHIVER expands it identically.
 // Two copies of "which documents make up this work" is how an archive preserves 62 of 63 and
 // reports success.
@@ -72,18 +73,25 @@ function thmlText(frag: string): string {
 }
 
 // The first scripRef in a unit → verse anchor. Prefer osisRef (Bible:Gen.3.9),
-// fall back to the passage attr / element text through parseRef.
+// fall back to the passage attr / element text through parseRef. An osisRef may
+// be a RANGE (Bible:Song.1.1-Song.1.17): the old 3-part match took "Song.1.1"
+// and anchored a 17-verse unit to its first verse (jamieson-jfb, measured
+// 2026-08-12 — every Song chapter unit anchored to verse 1 only).
 function unitAnchor(unitXml: string): { verseIdStart: number; verseIdEnd: number } | null {
   const m = unitXml.match(/<scripRef\b[^>]*>/i);
   if (!m) return null;
   const tag = m[0];
-  const osis = tag.match(/osisRef="(?:Bible:)?([A-Za-z0-9]+)\.(\d+)\.(\d+)/i);
+  const osis = tag.match(/osisRef="(?:Bible:)?([A-Za-z0-9]+)\.(\d+)\.(\d+)(?:-(?:Bible:)?[A-Za-z0-9]+\.(\d+)\.(\d+))?/i);
   const passage = tag.match(/passage="([^"]+)"/i);
-  const ref = osis ? `${osis[1]} ${osis[2]}:${osis[3]}` : passage?.[1];
-  if (!ref) return null;
-  const o = parseRef(ref.toLowerCase().replace(/^([1-3])\s*/, '$1 '));
-  const r = o.ok ? o.ref.ranges[0] : undefined;
-  return r ? { verseIdStart: r.start, verseIdEnd: r.end } : null;
+  const candidates: string[] = [];
+  if (osis) candidates.push(osis[5] ? `${osis[1]} ${osis[2]}:${osis[3]}-${osis[4]}:${osis[5]}` : `${osis[1]} ${osis[2]}:${osis[3]}`);
+  if (passage) candidates.push(passage[1]!);
+  for (const ref of candidates) {
+    const o = parseRef(ref.toLowerCase().replace(/^([1-3])\s*/, '$1 '));
+    const r = o.ok ? o.ref.ranges[0] : undefined;
+    if (r) return { verseIdStart: r.start, verseIdEnd: r.end };
+  }
+  return null;
 }
 
 // A "Psalm 23: …" or "Psalm XXIII" style title (metrical psalters, the Treasury
@@ -101,6 +109,29 @@ function titleAnchor(heading?: string): { verseIdStart: number; verseIdEnd: numb
   const ps = /^\d+$/.test(raw) ? Number(raw) : romanVal(raw);
   if (!ps || ps < 1 || ps > 150) return null;
   return { verseIdStart: 19_000_000 + ps * 1000 + 1, verseIdEnd: 19_000_000 + ps * 1000 + 999 };
+}
+
+// A work with a DECLARED primary book (acquire.primary_book, e.g. gill-song → 'sng')
+// anchors by the work's OWN unit headings — "Chapter 1 Verse 1" — because a
+// single-book commentary's first scripRef is usually a CROSS-REFERENCE, not the
+// text under exposition (measured on gill-song 2026-08-12: 105 of 107 first-
+// scripRef anchors landed off-book — Psalms, John, 1 Kings — a false-attribution
+// sweep across the whole canon). Heading anchors win; a scripRef anchor is kept
+// only when it lands ON the declared book; anything else is honestly unanchored.
+function primaryBookAnchor(heading: string | undefined, bookNum: number): { verseIdStart: number; verseIdEnd: number } | null {
+  const m = heading?.match(/\bChapter\s+(\d{1,3})(?:\s+Verses?\s+(\d{1,3})(?:\s*[-–]\s*(\d{1,3}))?)?/i);
+  if (!m) return null;
+  const ch = Number(m[1]);
+  if (!ch || ch > 999) return null;
+  const base = bookNum * 1_000_000 + ch * 1000;
+  if (m[2] == null) return { verseIdStart: base + 1, verseIdEnd: base + 999 }; // chapter unit: sentinel end, same pattern as titleAnchor
+  const v = Number(m[2]);
+  const vEnd = m[3] != null ? Number(m[3]) : v;
+  if (!v || vEnd < v) return null;
+  return { verseIdStart: base + v, verseIdEnd: base + vEnd };
+}
+function onDeclaredBook(a: { verseIdStart: number; verseIdEnd: number } | null, bookNum: number): typeof a {
+  return a && Math.floor(a.verseIdStart / 1_000_000) === bookNum ? a : null;
 }
 
 // Pick the div selector (type= OR class=) that yields the most units — CCEL works
@@ -135,7 +166,7 @@ const MATTER_RE = /^(title pages?|preface|introduction|index(es)? (of|to)|indexe
 // work to the section the manifest actually claims (e.g. scottish-psalter-1650
 // → ^Psalm — the CCEL file appends the 1781 Translations & Paraphrases, which
 // must not ride under the 1650 Psalter's attribution).
-export function buildCcelSections(xml: string, headingFilter?: string): RegisterSection[] {
+export function buildCcelSections(xml: string, headingFilter?: string, primaryBook?: number): RegisterSection[] {
   const sel = chooseUnitSelector(xml);
   if (!sel) return [];
   const out: RegisterSection[] = [];
@@ -162,7 +193,9 @@ export function buildCcelSections(xml: string, headingFilter?: string): Register
     const titleAttr = openTag.match(/\btitle="([^"]*)"/i)?.[1];
     const headTag = inner.match(/<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/i)?.[1];
     const heading = (titleAttr || (headTag ? thmlText(headTag) : undefined) || '').replace(/\s+/g, ' ').trim() || undefined;
-    const anchor = unitAnchor(inner) ?? titleAnchor(heading);
+    const anchor = primaryBook
+      ? primaryBookAnchor(heading, primaryBook) ?? onDeclaredBook(unitAnchor(inner), primaryBook)
+      : unitAnchor(inner) ?? titleAnchor(heading);
     const body = thmlText(inner);
     if (body.length < 40) continue; // skip empty/structural shells
     if (heading && MATTER_RE.test(heading)) continue; // front/back matter, any path
@@ -212,12 +245,17 @@ export async function acquireCcel(entry: Record<string, unknown>, opts: { write:
   // distinction). Guard: if >50% of enumerated volumes are empty, the parser
   // itself is suspect → fail.
   const enumerated = !acq.ccel_ids && !acq.ccel_id_pattern && !!acq.ccel_author;
+  // Declared primary book (acquire.primary_book, a bible slug like 'sng') switches
+  // anchoring to the work's own headings — see primaryBookAnchor above.
+  const pbSlug = (acq as { primary_book?: string }).primary_book;
+  const primaryBook = pbSlug ? BOOKS.findIndex((b) => b.slug === pbSlug) + 1 : undefined;
+  if (pbSlug && !primaryBook) return { slug: entry.slug as string, units: 0, anchored: 0, embedded: 0, skipped: true, reason: `unknown primary_book slug: ${pbSlug}` };
   const allSections: RegisterSection[] = [];
   const emptyIds: string[] = [];
   for (const id of ids) {
     const xml = await fetchCcelXml(id);
     if (!xml) { if (enumerated) { emptyIds.push(`${id}(no-thml)`); continue; } return { slug: entry.slug as string, units: 0, anchored: 0, embedded: 0, skipped: true, reason: `fetch failed / not ThML: ${id}` }; }
-    const secs = buildCcelSections(xml, (acq as { heading_filter?: string }).heading_filter);
+    const secs = buildCcelSections(xml, (acq as { heading_filter?: string }).heading_filter, primaryBook || undefined);
     if (secs.length === 0) emptyIds.push(id);
     allSections.push(...secs);
   }

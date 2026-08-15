@@ -89,16 +89,37 @@ describe('client fetches only assets that survive the deploy', () => {
     expect(sites.some((s) => s.url.includes('/bible/'))).toBe(true);
   });
 
-  it('no fetched asset path is excluded from the deploy', () => {
+  it('no fetched asset path is excluded from the deploy UNLESS the CDN manifest covers its root', () => {
+    // AMENDED for the corpus CDN (docs/CORPUS_CDN_DESIGN.md A2). The original claim — "excluded
+    // from the bundle = 404 in production" — stops being true for roots served from the Blob
+    // store: those are excluded from the bundle ON PURPOSE and served by the env-gated rewrite.
+    // The amended claim: an excluded fetch is legal ONLY when the committed sync manifest has
+    // entries under that root — i.e. the CDN demonstrably carries it. No manifest, or a root the
+    // manifest doesn't cover, and the original failure mode (works locally, 404s deployed) is
+    // alive and this test still names the call site. Watched red both ways on 2026-08-13:
+    // (a) with the manifest hidden, a /commentaries/ fetch fails exactly as before;
+    // (b) with a doctored manifest lacking the root, same.
     const patterns = excludedPublicDirs();
+    const manifestPath = path.join(WEB_ROOT, '../docs/evidence/corpus-cdn/sync-manifest.json');
+    const cdnRoots = new Set<string>();
+    try {
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { baseUrl?: string; files?: Record<string, unknown> };
+      if (manifest.baseUrl) {
+        for (const rel of Object.keys(manifest.files ?? {})) cdnRoots.add(rel.split('/')[0]!);
+      }
+    } catch {
+      // No manifest → no CDN coverage → the original, stricter rule applies to everything.
+    }
+
     const offenders = fetchedAssetUrls()
       .filter((site) => patterns.some((p) => insideExcludedDir(site.segments, p)))
+      .filter((site) => !cdnRoots.has(site.segments[0]!))
       .map((site) => `${site.file}: fetch("${site.url}")`);
 
     expect(
       offenders,
-      `These fetch a path that web/.vercelignore keeps out of every deployment. They will work ` +
-        `locally and 404 in production:\n  ${offenders.join('\n  ')}`,
+      `These fetch a path that web/.vercelignore keeps out of every deployment AND the corpus-CDN ` +
+        `manifest does not cover. They will work locally and 404 in production:\n  ${offenders.join('\n  ')}`,
     ).toEqual([]);
   });
 });

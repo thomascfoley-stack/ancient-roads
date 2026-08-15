@@ -398,3 +398,43 @@ if (!existsSync(COMMENTARIES_DIR)) {
     }
   }
 }
+
+// ── Corpus CDN freshness (docs/CORPUS_CDN_DESIGN.md A2; plan 2026-08-13) ────────────────────────
+// When the corpus serves from the Blob CDN (a sync manifest exists), the local corpus and the
+// manifest must agree BEFORE a deploy: a stale manifest means the legs above certified files the
+// CDN is not serving — or, the licensing case, a quarantine moved files the CDN still carries.
+// Deploy: HARD-FAIL. Commit: warning, the same split as every corpus leg. No manifest = CDN not
+// live = nothing to check (pre-CDN behavior is untouched).
+{
+  const manifestFile = 'docs/evidence/corpus-cdn/sync-manifest.json';
+  if (existsSync(manifestFile)) {
+    console.log('\n=== Pre-deploy gate: corpus CDN manifest freshness ===');
+    const { walkDisk, DEFAULT_ROOTS } = (await import('./corpus-blob-sync.mjs')) as {
+      walkDisk: (base: string, roots: string[]) => Map<string, { sha256: string }>;
+      DEFAULT_ROOTS: string[];
+    };
+    const manifest = JSON.parse(readFileSync(manifestFile, 'utf8')) as {
+      files?: Record<string, { sha256: string }>;
+    };
+    const files = manifest.files ?? {};
+    const disk = walkDisk('web/public', DEFAULT_ROOTS);
+    let stale = 0;
+    let orphaned = 0;
+    for (const [rel, meta] of disk) {
+      const m = files[rel];
+      if (!m || m.sha256 !== meta.sha256) stale++;
+    }
+    for (const rel of Object.keys(files)) {
+      if (!disk.has(rel)) orphaned++;
+    }
+    if (stale + orphaned > 0) {
+      gateFail(
+        `corpus CDN manifest is out of step with web/public: ${stale} changed/unsynced file(s), ` +
+          `${orphaned} manifest entr(ies) with no disk file (an unsynced quarantine keeps serving ` +
+          `from the CDN — licensing fails open). Run: node scripts/corpus-blob-sync.mjs --execute`,
+      );
+    } else {
+      console.log(`  \x1b[32m✓ CDN manifest in step with web/public (${disk.size} files).\x1b[0m`);
+    }
+  }
+}

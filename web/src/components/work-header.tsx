@@ -26,7 +26,9 @@ export function WorkHeader({
          below is the whole separation from the text. */
  className="sticky top-0 z-40 border-b edge bg-stone-50 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] dark:bg-stone-950"
     >
-      <div className="mx-auto flex max-w-2xl items-center gap-2 px-3 sm:px-4">
+      {/* The header row spans the reading measure so it tracks the text column below it
+          (was max-w-2xl, left behind when the column became the reader's preference). */}
+      <div className="reading-measure mx-auto flex items-center gap-2 px-3 sm:px-4">
         <button
           onClick={onOpenToc}
           title="Table of contents"

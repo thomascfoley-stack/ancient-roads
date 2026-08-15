@@ -81,6 +81,14 @@ export const SERVED_PROSE_WORKS = [
   // The v2 staged commentaries, unparked 2026-08-13 (corpus-backlog decision 5 —
   // re-ingested from the named editions, license verified before decode).
   'barnes-crosswire-nt', 'scofield-crosswire', 'pnt-crosswire', 'poole-tcp',
+  // 2026-08-12, owner ruling ("Song of Solomon, fix it"): Gill's verse-by-verse
+  // Exposition of the Song — ingested with on-book heading anchors (adapter
+  // primary_book), it closes the Song's second-voice hole in the READER.
+  // jamieson-jfb is deliberately NOT here: its DB anchors feed the coverage gate,
+  // but serving it would double-count JFB against 'Jamieson, Fausset & Brown'
+  // (already served author-level) on 65 books — a two-voices-one-text inflation.
+  // Consolidating old `jfb` into `jamieson-jfb` is an owner/ingest-lane call.
+  'gill-song',
 ] as const;
 // The SERMON register lane (homiletical exposition — Spurgeon, Maclaren, the
 // Puritans). Retrieve-and-quote in its own pool + labeled payload; the reusable

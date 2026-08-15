@@ -30,6 +30,16 @@ function assertNoForbiddenAuthors(authors: string[], pathLabel: string): void {
   expect(hits, `${pathLabel} returned quarantined authors: ${hits.join(', ')}`).toEqual([]);
 }
 
+// The DB publish switch, fetched once by beforeAll. Post-044, "published" is
+// `sources.status='published'` and scripts/publish-flip.mjs writes `served` to match
+// (scripts/served-reconcile.mjs is the standing instrument of that contract). A served
+// chunk whose work is published in the DB is therefore licensed-reachable BY THE
+// OPERATIVE GATE, even when the static SERVED lists — frozen at 044's backfill — have
+// not caught up (they lag by design until the filed static-surface cutover; see the
+// ⚠ note in teacher/routing.ts). The 2026-08-10 red was exactly this lag: served,
+// published NPNF father volumes judged non-published by the frozen static record.
+let publishedSlugs = new Set<string>();
+
 function assertAllPublished(
   entries: Array<{ author: string; book: number; sourceUrl?: string | null; work?: string | null }>,
   pathLabel: string,
@@ -37,7 +47,14 @@ function assertAllPublished(
   // work MUST ride along: register works publish BY SLUG, and dropping it makes
   // every register author read as non-published (the gate-ingest L3 bug class,
   // A6 2026-07-17)
-  const bad = entries.filter((e) => !isPublishedCommentaryEntry({ author: e.author, book: e.book, sourceUrl: e.sourceUrl, work: e.work }));
+  const bad = entries.filter(
+    (e) =>
+      // The static predicate stays LOAD-BEARING for the work-less legacy flat-table
+      // cohort — 124,955 rows with no work key, Tyndale/CS Lewis/Origen among them —
+      // where it is the only guard. Work-keyed rows answer to the DB publish switch.
+      !isPublishedCommentaryEntry({ author: e.author, book: e.book, sourceUrl: e.sourceUrl, work: e.work }) &&
+      !(e.work && publishedSlugs.has(e.work)),
+  );
   expect(
     bad.map((e) => e.author),
     `${pathLabel} returned non-published authors: ${bad.map((e) => e.author).join(', ')}`,
@@ -75,6 +92,15 @@ describe.skipIf(SKIP)('Layer 1 — licensing invariant (behavioral)', () => {
     )) as { vec: string }[];
     const parsed = JSON.parse(row[0]!.vec) as number[];
     sampleVec = parsed;
+
+    // The DB publish switch (see publishedSlugs above). POSITIVE CONTROL: an empty set
+    // would make every work-keyed chunk read as non-published... or, worse, a blind
+    // probe folded into the static leg could read as coverage. Refuse both.
+    const pubRows = (await sql.query(
+      `SELECT slug FROM sources WHERE status = 'published'`,
+    )) as { slug: string }[];
+    publishedSlugs = new Set(pubRows.map((r) => r.slug));
+    expect(publishedSlugs.size, 'positive control: zero published works — the publish-switch probe is blind').toBeGreaterThan(0);
   }, 30_000);
 
   it('search path: Tyndale Study Notes is never returned', async () => {
@@ -137,12 +163,34 @@ describe.skipIf(SKIP)('Layer 1 — licensing invariant (behavioral)', () => {
        WHERE user_id IS NULL AND source_type = 'commentary' AND ${LEGAL_CORPUS_FILTER}`,
     )) as { author: string }[];
     const present = new Set(rows.map((r) => r.author));
-    const expected = [
-      'John Gill', 'Jamieson, Fausset & Brown', 'Adam Clarke', 'Matthew Henry',
-      'Albert Barnes', 'John Wesley', 'John Calvin', 'Augustine of Hippo', 'John Chrysostom',
+    // Each entry: the voice, then the ATTESTED pool string(s) that count as that voice.
+    // Calvin has two: the corpus carries the SAME person as 'John Calvin' (crosswire set,
+    // shelved 2026-08-11 by owner ruling) AND 'Calvin, John' (the CCEL calcom volumes —
+    // 36edbd9/ec63de4 — which are where the voice lives in the commentary pool today).
+    // Requiring one exact string was correct while exactly one naming existed; what this
+    // test guards is that the VOICE is present, and accepting only the shelved string
+    // would report a voice the pool still serves as missing. A THIRD string still fails.
+    // JFB moved string 2026-08-12 (owner ruling: consolidate old `jfb` into jamieson-jfb):
+    // the legacy 'Jamieson, Fausset & Brown' rows (helloao, no Song) were unserved and the
+    // voice now serves as 'Jamieson, Robert' (CCEL, full range anchors). The retirement
+    // guard below pins the old string OUT — a re-serve without a conscious edit goes red.
+    const expected: Array<{ voice: string; as: readonly string[] }> = [
+      { voice: 'John Gill', as: ['John Gill'] },
+      { voice: 'Jamieson (JFB)', as: ['Jamieson, Robert'] },
+      { voice: 'Adam Clarke', as: ['Adam Clarke'] },
+      { voice: 'Matthew Henry', as: ['Matthew Henry'] },
+      { voice: 'Albert Barnes', as: ['Albert Barnes'] },
+      { voice: 'John Wesley', as: ['John Wesley'] },
+      { voice: 'John Calvin', as: ['John Calvin', 'Calvin, John'] },
+      { voice: 'Augustine of Hippo', as: ['Augustine of Hippo'] },
+      { voice: 'John Chrysostom', as: ['John Chrysostom'] },
     ];
-    const missing = expected.filter((a) => !present.has(a));
+    const missing = expected.filter((e) => !e.as.some((a) => present.has(a))).map((e) => e.voice);
     expect(missing, `teacher must serve all 9 voices; MISSING: ${missing.join(', ')}`).toEqual([]);
+    // RETIREMENT GUARD (2026-08-12 consolidation): the old string stays OUT of the pool.
+    // Red witnessed inverted: pre-unserve the pool DID carry it (the 9-voice presence run
+    // failed on its absence only after the unserve — same mechanism, both directions).
+    expect(present.has('Jamieson, Fausset & Brown'), 'old jfb string must stay unserved').toBe(false);
   }, 30_000);
 
   it('teacher retrieveCommentary: no quarantined author in returned chunks', async () => {

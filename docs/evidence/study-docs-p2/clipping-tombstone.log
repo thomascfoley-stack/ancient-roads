@@ -1,0 +1,50 @@
+# RED-PROOF + GREEN — clipping-tombstone.test.ts (S-2, S-3, S-10)
+
+Suite: web/test/invariants/clipping-tombstone.test.ts
+Invariants: S-2 (unservable clipping renders as tombstone), S-3 (re-check covers both row shapes
+and fails closed), S-10 (tombstone keeps attribution, drops quote and link) — STUDY_DOCS_DESIGN §8.
+Env: APP_DATABASE_URL=app_runtime dev (ep-tiny-hat), DATABASE_URL=neondb_owner dev
+(~/.neon_dev_owner_url). Roles verified via current_user before any run.
+Fixtures: a published QA commentary work + one section; a synthetic SERVED embedding row
+(`commentary:zzqatomb…`, provenance-clean metadata); two clippings saved through the REAL write
+path (`insertClippingFromSection` / `insertClippingFromEmbedding`). All prefix-swept in afterAll.
+
+## RED run (a) — render rule ignores the resolution (2026-08-13)
+
+Break: `blockRenderState` in web/src/lib/servability.ts mutated to return `'clipping'`
+unconditionally (resolution discarded). Nothing else touched.
+
+Result — RED on exactly the tombstone assertions:
+
+    × S-2 reader leg …  → staged source ⇒ tombstone render: expected 'clipping' to be 'tombstone'
+    × S-2 ask leg …     → unserved row ⇒ tombstone render: expected 'clipping' to be 'tombstone'
+    × S-3 FAILS CLOSED … → expected 'clipping' to be 'tombstone'
+    × S-3 leg independence … → source leg silent ⇒ tombstone: expected 'clipping' to be 'tombstone'
+    Tests  4 failed | 2 passed (6)
+
+The two passes (baseline-live and data-state purge shape) are the correct survivors — neither
+depends on the resolution path that was broken.
+
+## RED run (b) — the fail-closed catch rethrows
+
+Break: the `catch` in `resolveServability` mutated to `throw e` instead of `return EMPTY`.
+
+Result — RED on exactly the fail-closed case:
+
+    × S-3: the re-check FAILS CLOSED … → NeonDbError: invalid input syntax for type bigint: "not-a-bigint"
+    Tests  1 failed | 5 passed (6)
+
+The error escaping to the caller IS the red: without the fail-closed catch, a broken check path
+crashes the render instead of tombstoning. (The poisoned fixture — a `section_id` of
+`'not-a-bigint'` — forces a real Postgres cast error; no mocks anywhere in the suite.)
+
+## GREEN run — both mutations reverted
+
+`git diff --stat -- web/src/` empty after the reverts (servability.ts byte-identical, including
+its comments — one revert initially drifted a comment word and was corrected before the run).
+
+    Test Files  1 passed (1)
+    Tests  6 passed (6)
+    Duration  ~4s
+
+Re-runnable: `cd web && APP_DATABASE_URL=<runtime dev> DATABASE_URL=<owner dev> npx vitest run test/invariants/clipping-tombstone.test.ts`.
