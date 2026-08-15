@@ -13,6 +13,24 @@ node_modules
 .env.local
 .env*.local
 
+# CORPUS CDN payoff (docs/CORPUS_CDN_DESIGN.md §4.4/A6, plan 2026-08-13). The static corpus now
+# ships from Vercel Blob (see next.config.ts rewrites, gated on CORPUS_CDN_BASE) rather than the
+# deploy bundle — proven live 2026-08-15: 24,992 files synced, parity checked (200 sampled fetches
+# hash-verified), the flip deployed and a real content file confirmed served through the app at
+# https://ancientpaths.app/commentaries/1ch/1.json. The predeploy gate still reads these directories
+# from LOCAL DISK for its licensing/identity checks (Gate B, corpus-identity legs, the freshness leg
+# added by this project) — .vercelignore only controls what `vercel --prod` UPLOADS, so those checks
+# are unaffected. Rollback: delete these three lines (and unset CORPUS_CDN_BASE) to return to
+# shipping the corpus in the bundle, byte for byte as before this project.
+#
+# This SUPERSEDES the old per-chapter-Bible-only exclusion below (which existed only to stay under
+# Vercel's 15,000-file CLI limit) — the whole corpus leaves the bundle now, so that narrower carve-out
+# is redundant but left in place as a no-op belt-and-suspenders in case CORPUS_CDN_BASE is ever unset
+# without also reverting this block.
+public/bible/
+public/commentaries/
+public/original/
+
 # Per-CHAPTER Bible JSON: superseded by per-book files at public/bible/<t>/<book>.json.
 # Excluded so the deploy stays under Vercel's 15,000-file CLI limit. The per-book
 # .json files (two levels deep) and all commentaries are still uploaded.
