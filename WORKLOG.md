@@ -1,5 +1,51 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-15 (late) — The Song coverage/retrieval "gap" is RETRACTED; the residue is 1.9% and it is a keying granularity, not a hole
+
+Owner: "fix the songs coverage vs retrieval". Ran it as a `quality-slice`. **Step 0 killed the
+finding before any fix was built**, which is the whole point of that step.
+
+**What I had claimed (twice, including in a committed evidence file): `verse_coverage` reads
+117/117 Song verses at ≥2 authors while retrieval delivers ≥2 on 12/117.** Both halves were
+**per-verse** counts, and **neither mechanism operates per verse**:
+
+- `checkScopeCoverage` ([`plan/store.ts:46`](../web/src/lib/plan/store.ts)) asks
+  `EXISTS(… author_count>=2 AND verse_id BETWEEN d.vs AND d.ve)` per **reading-day range**, and
+  refuses only when `covered*2 < days.length` — fewer than **half** the days. It never required
+  per-verse ≥2.
+- `injectionSql` matches `(metadata->>'verseId')::int BETWEEN r.start AND r.end` — per
+  **requested passage range**.
+
+**Re-measured apples-to-apples, per Song chapter: 8 of 8 carry ≥2 distinct SERVED authors**
+(Gill + Jamieson, plus Schaff on four), and coverage agrees on all eight. **The two models do not
+disagree at the granularity either one uses. There was nothing to fix.**
+
+**The real residue, failure-coded and sized:** 6 Song verses (4:14, 6:6, 6:7, 6:9, 7:6, 7:12) are
+credited by coverage but have zero verse-keyed served row — canon-wide, **541 of 28,598** ≥2-author
+verses, **1.9%**. **Not `no-content`:** both anchors over Song 4:14 are chapter-scoped
+(`gill-song` 22004001–22004999, `jamieson-jfb` 22004001–22004016), so the sections genuinely cover
+it. It is a **keying granularity** — a chapter-anchored section yields rows carrying one
+representative `verseId`, and a verse-scoped query for 4:14 asks for `[22004014, 22004014]`.
+Consequence, no wider than the evidence: a query naming exactly one of those verses gets nothing
+from the **injection** path; the base semantic pool has no `verseId` predicate and is unaffected.
+
+**Deliberately NOT fixed.** Closing the 1.9% means matching injection through `section_anchors`
+ranges, or re-keying embeddings per verse at ingest — either is a **retrieval change**, which per
+`CLAUDE.md` needs a design doc, pre-registered per-category bars, a fresh held-out vN and owner
+approval. Filed with its size attached so the call has a number. Evidence file rewritten:
+[`song-coverage-vs-retrieval-2026-08-15.md`](evidence/song-coverage-vs-retrieval-2026-08-15.md).
+
+### NOT DONE / UNVERIFIED
+
+- **No code and no database change** — this slice ended in a retraction plus a sized backlog item.
+- **What the base pool actually returns for a single-verse Song query was not measured.** The claim
+  is only that it carries no `verseId` predicate; it is not a claim that it returns Gill.
+- Dev only; production not read.
+- **This is the second measurement error I filed in the repo tonight** (the first: reading a
+  mid-flight `served-reconcile` as a defect). Both were caught by re-measuring against the shipped
+  predicate rather than by review. The pattern is mine to watch: a number taken at one granularity
+  or one moment, then quoted as if it described the mechanism.
+
 ## 2026-08-15 (late) — josephus-whiston served on dev; dev `served-reconcile` GREEN; Step 2 NOT re-run
 
 Owner: "get step 2 done, get the josephus on dev". **One of those was already done and re-running
