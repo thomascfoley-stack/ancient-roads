@@ -1,0 +1,553 @@
+[
+  {
+    "n": 1,
+    "q": "What does John 3:16 mean?",
+    "category": "verse-ref",
+    "kind": "composed",
+    "coldStart": true,
+    "totalMs": 11536,
+    "embed": 360,
+    "retrieve": 4964,
+    "lanes": 0,
+    "compose": [
+      6200
+    ],
+    "verify": [
+      5
+    ],
+    "attempts": 1,
+    "voices": 5,
+    "traditions": 5
+  },
+  {
+    "n": 2,
+    "q": "Explain Romans 8:28",
+    "category": "verse-ref",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 11593,
+    "embed": 160,
+    "retrieve": 3058,
+    "lanes": 0,
+    "compose": [
+      4108,
+      4260
+    ],
+    "verify": [
+      1,
+      2
+    ],
+    "attempts": 2,
+    "voices": 5,
+    "traditions": 5,
+    "firstCheck": "schema"
+  },
+  {
+    "n": 3,
+    "q": "What is said about Psalm 23:1?",
+    "category": "verse-ref",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 8611,
+    "embed": 192,
+    "retrieve": 3743,
+    "lanes": 0,
+    "compose": [
+      4673
+    ],
+    "verify": [
+      0
+    ],
+    "attempts": 1,
+    "voices": 5,
+    "traditions": 4
+  },
+  {
+    "n": 4,
+    "q": "Commentary on Genesis 1:1",
+    "category": "verse-ref",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 6749,
+    "embed": 144,
+    "retrieve": 2619,
+    "lanes": 0,
+    "compose": [
+      3983
+    ],
+    "verify": [
+      0
+    ],
+    "attempts": 1,
+    "voices": 5,
+    "traditions": 5
+  },
+  {
+    "n": 5,
+    "q": "What does Ephesians 2:8-9 teach?",
+    "category": "verse-ref",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 10491,
+    "embed": 211,
+    "retrieve": 2800,
+    "lanes": 0,
+    "compose": [
+      3769,
+      3709
+    ],
+    "verify": [
+      0,
+      0
+    ],
+    "attempts": 2,
+    "voices": 5,
+    "traditions": 5,
+    "firstCheck": "passages_grounded"
+  },
+  {
+    "n": 6,
+    "q": "Explain Matthew 5:3",
+    "category": "verse-ref",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 7707,
+    "embed": 143,
+    "retrieve": 3280,
+    "lanes": 0,
+    "compose": [
+      4282
+    ],
+    "verify": [
+      0
+    ],
+    "attempts": 1,
+    "voices": 5,
+    "traditions": 4
+  },
+  {
+    "n": 7,
+    "q": "What is the meaning of Isaiah 53:5?",
+    "category": "verse-ref",
+    "kind": "fallback",
+    "coldStart": false,
+    "totalMs": 20556,
+    "embed": 183,
+    "retrieve": 3522,
+    "lanes": 0,
+    "compose": [
+      5045,
+      7304,
+      4496
+    ],
+    "verify": [
+      1,
+      1,
+      1
+    ],
+    "attempts": 3,
+    "voices": 5,
+    "traditions": 4,
+    "firstCheck": "diversity_voices"
+  },
+  {
+    "n": 8,
+    "q": "What is justification by faith?",
+    "category": "topical",
+    "kind": "fallback",
+    "coldStart": false,
+    "totalMs": 14940,
+    "embed": 202,
+    "retrieve": 2239,
+    "lanes": 1,
+    "compose": [
+      4691,
+      3825,
+      3974
+    ],
+    "verify": [
+      0,
+      1,
+      1
+    ],
+    "attempts": 3,
+    "voices": 5,
+    "traditions": 2,
+    "firstCheck": "quote_verbatim"
+  },
+  {
+    "n": 9,
+    "q": "What does Scripture teach about prayer?",
+    "category": "topical",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 12452,
+    "embed": 327,
+    "retrieve": 2380,
+    "lanes": 0,
+    "compose": [
+      4954,
+      4787
+    ],
+    "verify": [
+      1,
+      1
+    ],
+    "attempts": 2,
+    "voices": 5,
+    "traditions": 4,
+    "firstCheck": "quote_verbatim"
+  },
+  {
+    "n": 10,
+    "q": "What is the doctrine of the atonement?",
+    "category": "topical",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 7906,
+    "embed": 157,
+    "retrieve": 2334,
+    "lanes": 0,
+    "compose": [
+      5412
+    ],
+    "verify": [
+      1
+    ],
+    "attempts": 1,
+    "voices": 5,
+    "traditions": 3
+  },
+  {
+    "n": 11,
+    "q": "What does the Bible say about grace?",
+    "category": "topical",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 8704,
+    "embed": 166,
+    "retrieve": 2892,
+    "lanes": 0,
+    "compose": [
+      5644
+    ],
+    "verify": [
+      1
+    ],
+    "attempts": 1,
+    "voices": 5,
+    "traditions": 4
+  },
+  {
+    "n": 12,
+    "q": "What is sanctification?",
+    "category": "topical",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 16017,
+    "embed": 227,
+    "retrieve": 2890,
+    "lanes": 0,
+    "compose": [
+      4867,
+      4433,
+      3595
+    ],
+    "verify": [
+      0,
+      0,
+      1
+    ],
+    "attempts": 3,
+    "voices": 5,
+    "traditions": 4,
+    "firstCheck": "quote_verbatim"
+  },
+  {
+    "n": 13,
+    "q": "What does Scripture teach about suffering?",
+    "category": "topical",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 7623,
+    "embed": 177,
+    "retrieve": 2354,
+    "lanes": 0,
+    "compose": [
+      5088
+    ],
+    "verify": [
+      1
+    ],
+    "attempts": 1,
+    "voices": 5,
+    "traditions": 5
+  },
+  {
+    "n": 14,
+    "q": "What happens in the Sermon on the Mount?",
+    "category": "pericope",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 17199,
+    "embed": 147,
+    "retrieve": 2798,
+    "lanes": 0,
+    "compose": [
+      9285,
+      4964
+    ],
+    "verify": [
+      1,
+      1
+    ],
+    "attempts": 2,
+    "voices": 5,
+    "traditions": 3,
+    "firstCheck": "passages_grounded"
+  },
+  {
+    "n": 15,
+    "q": "Explain the parable of the prodigal son",
+    "category": "pericope",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 8107,
+    "embed": 184,
+    "retrieve": 2986,
+    "lanes": 0,
+    "compose": [
+      4935
+    ],
+    "verify": [
+      1
+    ],
+    "attempts": 1,
+    "voices": 5,
+    "traditions": 5
+  },
+  {
+    "n": 16,
+    "q": "What happens at the raising of Lazarus?",
+    "category": "pericope",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 7865,
+    "embed": 188,
+    "retrieve": 3367,
+    "lanes": 1,
+    "compose": [
+      4306
+    ],
+    "verify": [
+      0
+    ],
+    "attempts": 1,
+    "voices": 5,
+    "traditions": 5
+  },
+  {
+    "n": 17,
+    "q": "What happens in the transfiguration?",
+    "category": "pericope",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 7840,
+    "embed": 179,
+    "retrieve": 2686,
+    "lanes": 0,
+    "compose": [
+      4973
+    ],
+    "verify": [
+      1
+    ],
+    "attempts": 1,
+    "voices": 5,
+    "traditions": 4
+  },
+  {
+    "n": 18,
+    "q": "Explain the parable of the sower",
+    "category": "pericope",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 13580,
+    "embed": 172,
+    "retrieve": 2197,
+    "lanes": 0,
+    "compose": [
+      5134,
+      6072
+    ],
+    "verify": [
+      1,
+      0
+    ],
+    "attempts": 2,
+    "voices": 5,
+    "traditions": 4,
+    "firstCheck": "passages_grounded"
+  },
+  {
+    "n": 19,
+    "q": "Who was Josephus?",
+    "category": "proper-noun",
+    "kind": "fallback",
+    "coldStart": false,
+    "totalMs": 25908,
+    "embed": 207,
+    "retrieve": 2843,
+    "lanes": 0,
+    "compose": [
+      10978,
+      7488,
+      4382
+    ],
+    "verify": [
+      1,
+      0,
+      1
+    ],
+    "attempts": 3,
+    "voices": 5,
+    "traditions": 3,
+    "firstCheck": "quote_verbatim"
+  },
+  {
+    "n": 20,
+    "q": "Who was Melchizedek?",
+    "category": "proper-noun",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 6953,
+    "embed": 205,
+    "retrieve": 2053,
+    "lanes": 0,
+    "compose": [
+      4692
+    ],
+    "verify": [
+      0
+    ],
+    "attempts": 1,
+    "voices": 5,
+    "traditions": 3
+  },
+  {
+    "n": 21,
+    "q": "What is the Song of Solomon about?",
+    "category": "topical-song",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 6935,
+    "embed": 155,
+    "retrieve": 2212,
+    "lanes": 0,
+    "compose": [
+      4567
+    ],
+    "verify": [
+      0
+    ],
+    "attempts": 1,
+    "voices": 5,
+    "traditions": 3
+  },
+  {
+    "n": 22,
+    "q": "What does Song of Solomon 4:14 mean?",
+    "category": "verse-ref-song",
+    "kind": "fallback",
+    "coldStart": false,
+    "totalMs": 12477,
+    "embed": 208,
+    "retrieve": 2463,
+    "lanes": 0,
+    "compose": [
+      3406,
+      2864,
+      3532
+    ],
+    "verify": [
+      0,
+      0,
+      0
+    ],
+    "attempts": 3,
+    "voices": 5,
+    "traditions": 5,
+    "firstCheck": "schema"
+  },
+  {
+    "n": 23,
+    "q": "What does Hebrews 11 teach about faith?",
+    "category": "epistle",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 10292,
+    "embed": 197,
+    "retrieve": 1976,
+    "lanes": 0,
+    "compose": [
+      3891,
+      4226
+    ],
+    "verify": [
+      0,
+      1
+    ],
+    "attempts": 2,
+    "voices": 5,
+    "traditions": 5,
+    "firstCheck": "schema"
+  },
+  {
+    "n": 24,
+    "q": "What is the argument of Romans 5?",
+    "category": "epistle",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 11368,
+    "embed": 172,
+    "retrieve": 2552,
+    "lanes": 0,
+    "compose": [
+      4486,
+      4155
+    ],
+    "verify": [
+      1,
+      1
+    ],
+    "attempts": 2,
+    "voices": 5,
+    "traditions": 5,
+    "firstCheck": "passages_grounded"
+  },
+  {
+    "n": 25,
+    "q": "What does Galatians teach about the law?",
+    "category": "epistle",
+    "kind": "composed",
+    "coldStart": false,
+    "totalMs": 16178,
+    "embed": 164,
+    "retrieve": 1852,
+    "lanes": 0,
+    "compose": [
+      6171,
+      3890,
+      4096
+    ],
+    "verify": [
+      0,
+      0,
+      1
+    ],
+    "attempts": 3,
+    "voices": 5,
+    "traditions": 5,
+    "firstCheck": "quote_verbatim"
+  }
+]
