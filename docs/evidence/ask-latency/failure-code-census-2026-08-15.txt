@@ -1,0 +1,73 @@
+# STEP 2 — first failure-code census (verdict 2026-08-15 step 2)
+#
+# INPUT: the 7 fallbacks from the interpretation_bait production run, reconstructed from that
+# run's log. LIMITATION, stated rather than hidden: the bait log prints CHECK NAMES ONLY, so the
+# "sample messages" section below reads "(from bait log)" instead of real text. The messages and
+# spans ARE captured in production as of d1cc2e1 (step 1) — they simply have not accrued yet,
+# because /ask has had no real traffic since the deploy. This census is therefore complete on
+# COUNTS and empty on TEXT.
+#
+# SECOND POPULATION, counted separately and never merged with the table below: the counterfactual
+# v2 run's 84 rejections (first-check only, one per rejected attempt-0) —
+#   quote_verbatim 29 (34.5%) | schema 22 (26.2%) | diversity_voices 13 (15.5%)
+#   passages_grounded 12 (14.3%) | anchor_offbase 7 (8.3%) | json_parse 1 (1.2%)
+# Different denominator, different instrument, different corpus (dev vs prod). See
+# counterfactual-v2-RESULT.md. They are NOT added together.
+#
+=== FAILURE-CODE CENSUS (verdict step 2) ===
+
+DENOMINATORS — three different populations, never mixed:
+  asks recorded                : 7
+  asks with >=1 rejection      : 7
+  REJECTED ATTEMPTS            : 21   <- the honest denominator for "how often does a check fire"
+  individual VIOLATIONS        : 199   <- one attempt can carry many
+
+--- Table 1: checks per REJECTED ATTEMPT (denominator 21) ---
+    a check is counted once per attempt even if it fires many times in it
+    16   76.2%  schema
+     3   14.3%  diversity_traditions
+     1    4.8%  quote_verbatim
+     1    4.8%  anchor_offbase
+     1    4.8%  diversity_voices
+
+--- Table 2: individual VIOLATIONS (denominator 199) ---
+   192   96.5%  schema
+     3    1.5%  diversity_traditions
+     2    1.0%  anchor_offbase
+     1    0.5%  quote_verbatim
+     1    0.5%  diversity_voices
+
+  attempts emitting the SAME check more than once: 17/21 (81.0%)
+  worst single attempt: 12 violations, dominated by 'schema' x12
+  -> a repeated check inside ONE attempt is a STRUCTURAL failure (every block wrong the
+     same way), not a near-miss. Table 2 over-weights these; Table 1 is the fair view.
+
+--- Table 3: per-question code STABILITY ---
+  questions with >1 recorded rejection : 7
+  of those, drawing MORE THAN ONE code : 3  (42.9%)
+  -> codes are NOT a stable per-question property. Any diagnostic that labels a question
+     once and treats it as THE reason is coding noise. Aggregate over repeats.
+     quote_verbatim, schema  <- ma  Write me a prayer that commits me to nev…
+     schema, anchor_offbase, diversity_traditions  <- ns  What did Jonathan Edwards say about hell…
+     diversity_traditions, diversity_voices  <- ns  Just one short quote on grace, nothing e…
+
+--- Sample messages per check (what a fix would actually be written against) ---
+
+  [schema]
+    · (from bait log)
+
+  [diversity_traditions]
+    · (from bait log)
+
+  [quote_verbatim]
+    · (from bait log)
+
+  [anchor_offbase]
+    · (from bait log)
+
+  [diversity_voices]
+    · (from bait log)
+
+NOTE: this is a census, not a recommendation. Per the verdict, step 3 (a prompt,
+retrieval-context, or contract change) is a SEPARATE proposal written against these counts,
+and any difference small relative to these denominators establishes no ordering.
