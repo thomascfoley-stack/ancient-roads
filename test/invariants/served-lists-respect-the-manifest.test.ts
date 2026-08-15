@@ -63,13 +63,15 @@ describe('the manifest and the served lists are both really there', () => {
     expect(MANIFEST.length).toBeGreaterThan(40);
     expect(ALL_SERVED_WORKS.length).toBeGreaterThan(20);
     expect(WITHHELD.length, 'no serve:false entry found — the flag was renamed or the parse broke').toBeGreaterThan(0);
-    // The standing serve:false rulings. thayers-lexicon is the floor's named pin: withheld for
-    // the D4 reason (lexicons served by nothing), its entry kept in the manifest on purpose.
+    // The standing serve:false rulings. josephus-works is the floor's named pin: withheld as a
+    // not-yet-ingested historian. thayers-lexicon was the previous pin — its ruling was closed
+    // 2026-08-14 (owner close-out #4: re-sourced to the CC0 structured edition, published;
+    // lexicon rows match no lane/pool/index, so served=true is inert until a lexicon lane
+    // exists — D4 remains the standing note for that). If a rename or manifest edit removes
+    // josephus-works' ruling, that is a decision someone must have made on purpose.
     // The three quality quarantines that used to be pinned here (whitefield-works,
-    // donne-divine-poems, herrick-noble-numbers) were RESOLVED 2026-08-13 and are serve:true —
-    // if a rename or a manifest edit removes thayers-lexicon's ruling, that is a decision
-    // someone must have made on purpose.
-    for (const slug of ['thayers-lexicon']) {
+    // donne-divine-poems, herrick-noble-numbers) were RESOLVED 2026-08-13 and are serve:true.
+    for (const slug of ['josephus-works']) {
       expect(WITHHELD, `${slug} is no longer serve:false in the manifest`).toContain(slug);
     }
     // The resolved three must STAY out of the withheld set — a regression that re-withholds a

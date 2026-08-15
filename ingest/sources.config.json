@@ -317,8 +317,8 @@
         "note": "Replaces the archive.org OCR source (greekenglishlexi00grimuoft) whose 50.2% fuzzy / 6.2% strict headword recognizability caused the 2026-07-17 quarantine. The structured edition is Strong's-keyed by construction: 5,521 entries G1-G5624, 100% Greek-script headwords (src/ingest/adapter-thayers.ts; acceptance src/ingest/thayers-acceptance.mts; evidence docs/evidence/profiles/thayers-2026-08-13T081600Z.log)"
       }
     },
-    "serve": false,
-    "note": "STAGED, serve:false — no longer a quality hold (the OCR quarantine is resolved by the structured re-source, 2026-08-13): lexicons are served by NOTHING (no lane exists), so this stays staged pending the D4/A8 lexicon-serving owner call."
+    "serve": true,
+    "note": "STAGED, serve:false — no longer a quality hold (the OCR quarantine is resolved by the structured re-source, 2026-08-13): lexicons are served by NOTHING (no lane exists), so this stays staged pending the D4/A8 lexicon-serving owner call. serve:true 2026-08-14 — owner close-out #4 (publish thayers). Lexicon rows match no lane/pool/index (all type-scoped); served=true is inert on every current surface. The D4 \"lexicons served by nothing\" call remains the standing note for a future lexicon lane."
   },
   {
     "id": "bdb-lexicon",
