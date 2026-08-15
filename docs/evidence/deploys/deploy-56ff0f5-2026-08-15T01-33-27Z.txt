@@ -1,0 +1,12 @@
+deployed_at_utc: 2026-08-15T01:38:19Z
+sha:             56ff0f500f8148fb60fd124eb255e2980c131cf8
+branch:          feat/corpus-backlog
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@50.38.2
+url:             https://web-myr27ne9o-home-network-hardening.vercel.app
+deployment_id:   dpl_HCDmjZR3y8p4MhZoVafp3nAxUvLe
+alias:           ancientpaths.app
+alias_serves:    dpl_HCDmjZR3y8p4MhZoVafp3nAxUvLe
+state:           live
