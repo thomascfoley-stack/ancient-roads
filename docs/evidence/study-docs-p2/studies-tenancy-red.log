@@ -1,0 +1,103 @@
+=== S-4 RED RUN A: runtime connection is the dev OWNER role (BYPASSRLS) — RLS inert ===
+Expectation: belt-removed controls (raw SQL as B) go RED; belted cases stay GREEN (belts alone isolate).
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git/web
+
+stderr | test/invariants/studies-tenancy.test.ts > S-4 studies tenancy (two accounts over app_runtime; belt + RLS) > RLS backstop: with NO app.current_user_id set, app_runtime sees zero of A’s rows
+⚠ NOT RUN (visibly): runtime role is neondb_owner, not app_runtime — backstop not measurable here.
+
+(node:1175) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ test/invariants/studies-tenancy.test.ts (6 tests | 2 failed) 3802ms
+   ✓ S-4 studies tenancy (two accounts over app_runtime; belt + RLS) > POSITIVE: user A sees A’s own study, blocks, and edit through every read path 346ms
+   ✓ S-4 studies tenancy (two accounts over app_runtime; belt + RLS) > B cannot READ A’s study through any data-layer read path 340ms
+   ✓ S-4 studies tenancy (two accounts over app_runtime; belt + RLS) > B cannot WRITE A’s study or blocks through any data-layer op 937ms
+   × S-4 studies tenancy (two accounts over app_runtime; belt + RLS) > BELT-REMOVED control: raw SQL as B (no user_id filter) is stopped by RLS alone 105ms
+     → RLS must hide A’s study row from B: expected [ Array(1) ] to have a length of +0 but got 1
+   × S-4 studies tenancy (two accounts over app_runtime; belt + RLS) > BELT-REMOVED control: unbelted WRITES as B are stopped by RLS alone 84ms
+     → RLS must make B’s unbelted UPDATE match zero rows: expected [ Array(1) ] to have a length of +0 but got 1
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/invariants/studies-tenancy.test.ts > S-4 studies tenancy (two accounts over app_runtime; belt + RLS) > BELT-REMOVED control: raw SQL as B (no user_id filter) is stopped by RLS alone
+AssertionError: RLS must hide A’s study row from B: expected [ Array(1) ] to have a length of +0 but got 1
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ test/invariants/studies-tenancy.test.ts:152:59
+    150|       sql`SELECT id FROM study_block_revisions WHERE block_id = ${aBlo…
+    151|     ]);
+    152|     expect(studies, 'RLS must hide A’s study row from B').toHaveLength…
+       |                                                           ^
+    153|     expect(blocks, 'RLS must hide A’s block rows from B').toHaveLength…
+    154|     expect(revs, 'RLS must hide A’s revision rows from B').toHaveLengt…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/invariants/studies-tenancy.test.ts > S-4 studies tenancy (two accounts over app_runtime; belt + RLS) > BELT-REMOVED control: unbelted WRITES as B are stopped by RLS alone
+AssertionError: RLS must make B’s unbelted UPDATE match zero rows: expected [ Array(1) ] to have a length of +0 but got 1
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ test/invariants/studies-tenancy.test.ts:166:74
+    164|       sql`UPDATE studies SET title = 'rls-pwned' WHERE id = ${aStudy} …
+    165|     ]);
+    166|     expect(updated, 'RLS must make B’s unbelted UPDATE match zero rows…
+       |                                                                          ^
+    167|     expect((await getStudy(userA, aStudy))?.title, 'A’s title must sur…
+    168| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 4 passed (6)
+   Start at  17:22:22
+   Duration  4.05s (transform 33ms, setup 0ms, collect 42ms, tests 3.80s, environment 0ms, prepare 26ms)
+
+=== vitest exit: 1 ===
+
+=== S-4 RUN B (belt-removed control, proves RLS separately — the C5 measurement) ===
+studies.ts temporarily mutated: user_id belt REMOVED from getStudy and updateStudy.
+Run under app_runtime. If RLS binds under Neon's user-id format, the suite stays GREEN
+(B still cannot read/rename A's study, because only RLS is stopping B now). Any RED here
+means RLS does NOT bind and C5 breaks bad.
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git/web
+
+(node:1387) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/invariants/studies-tenancy.test.ts (6 tests) 5418ms
+   ✓ S-4 studies tenancy (two accounts over app_runtime; belt + RLS) > POSITIVE: user A sees A’s own study, blocks, and edit through every read path 847ms
+   ✓ S-4 studies tenancy (two accounts over app_runtime; belt + RLS) > B cannot READ A’s study through any data-layer read path 447ms
+   ✓ S-4 studies tenancy (two accounts over app_runtime; belt + RLS) > B cannot WRITE A’s study or blocks through any data-layer op 979ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  17:23:04
+   Duration  5.71s (transform 40ms, setup 0ms, collect 43ms, tests 5.42s, environment 0ms, prepare 37ms)
+
+=== vitest exit: 0 ===

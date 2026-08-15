@@ -25,6 +25,7 @@ export default tseslint.config(
         process: 'readonly',
         Buffer: 'readonly',
         fetch: 'readonly',
+        setTimeout: 'readonly',
         structuredClone: 'readonly',
       },
     },

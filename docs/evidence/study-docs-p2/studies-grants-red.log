@@ -1,0 +1,38 @@
+=== S-11 RED RUN: studies.ts carries an op issuing DELETE FROM study_blocks (a verb 110 withholds) ===
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git/web
+
+ ❯ test/invariants/studies-grants.test.ts (2 tests | 1 failed) 319ms
+   × S-11 — every SQL verb lib/studies.ts issues on the studies tables is granted > every derived verb is granted to app_runtime on the live DB 318ms
+     → lib/studies.ts issues verbs app_runtime lacks (the 039/106 outage shape): DELETE ON study_blocks: expected [ 'DELETE ON study_blocks' ] to deeply equal []
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/invariants/studies-grants.test.ts > S-11 — every SQL verb lib/studies.ts issues on the studies tables is granted > every derived verb is granted to app_runtime on the live DB
+AssertionError: lib/studies.ts issues verbs app_runtime lacks (the 039/106 outage shape): DELETE ON study_blocks: expected [ 'DELETE ON study_blocks' ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   "DELETE ON study_blocks",
++ ]
+
+ ❯ test/invariants/studies-grants.test.ts:102:7
+    100|       missing,
+    101|       `lib/studies.ts issues verbs app_runtime lacks (the 039/106 outa…
+    102|     ).toEqual([]);
+       |       ^
+    103|   });
+    104| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  17:22:00
+   Duration  572ms (transform 30ms, setup 0ms, collect 26ms, tests 319ms, environment 0ms, prepare 41ms)
+
+=== vitest exit: 1 ===

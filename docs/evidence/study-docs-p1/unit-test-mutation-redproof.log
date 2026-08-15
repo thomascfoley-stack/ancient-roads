@@ -1,0 +1,35 @@
+=== MUTATION 1: studies.ts append path returns charAt(dA) instead of charAt(dA+1) — expect position tests RED ===
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  test/study-position.test.ts > positionBetween > returns a key strictly between its bounds
+ FAIL  test/study-position.test.ts > positionBetween > never emits a key ending in the minimum digit
+ FAIL  test/study-position.test.ts > positionBetween > stays ordered under a long append chain without pathological growth
+error: pathspec 'web/src/lib/studies.ts' did not match any file(s) known to git
+
+=== MUTATION 2: study-export.ts ignores the shared render rule (every clipping treated live) — expect export tests RED ===
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  test/study-export.test.ts > exportStudyMarkdown > renders a DATA-STATE tombstone (purged quote) as attribution + notice, no quote
+ FAIL  test/study-export.test.ts > exportStudyMarkdown > applies the BELT: a stored quote whose key is no longer servable exports as a tombstone
+ FAIL  test/study-export.test.ts > exportStudyMarkdown > fails closed: a failedClosed resolution tombstones every keyed clipping
+      Tests  3 failed | 4 passed (7)
+error: pathspec 'web/src/lib/study-export.ts' did not match any file(s) known to git
+
+=== REVERTED — both files back to committed-intent state; re-run both suites GREEN ===
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  8 failed | 7 passed (15)
+?? web/src/lib/servability.ts
+?? web/src/lib/studies.ts
+?? web/src/lib/study-export.ts
+
+=== CORRECTION (same session) — the reversion above did NOT happen ===
+`git checkout --` cannot restore an UNTRACKED file ("pathspec did not match"), and both
+modules were untracked at mutation time — so the final "REVERTED … GREEN" run above actually
+ran with BOTH mutations still live (8 failed / 7 passed: mutation-1's 5 position failures +
+mutation-2's 3 export failures, with overlap in the belt tests). The header lied; the numbers
+did not. Both mutated lines were then restored by explicit edit (charAt(dA + 1) in
+studies.ts; blockRenderState(block, resolution) in study-export.ts) and both suites re-run:
+
+ Test Files  2 passed (2) · Tests  15 passed (15)
+
+Red-proof standing, corrected: mutation 1 RED (5 failures), mutation 2 RED (3 failures),
+restored state GREEN (15/15). Lesson recorded for the P2/P3 sessions: revert seeded
+mutations in UNTRACKED files by re-edit, never by `git checkout`.

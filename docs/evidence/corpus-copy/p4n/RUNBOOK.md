@@ -1,5 +1,57 @@
 # P4.n catch-up runbook — 669 works, dev → prod, in four gated batches
 
+> ## STOP — the source below is EMPTY. Corrected 2026-08-15, measured.
+>
+> Every command in this runbook reads `~/.neon_dev_owner_url` (`ep-tiny-hat`). **The
+> 2026-08-10 branch reset — `dev` (`br-cool-flower`) reset from `production`, "dev now
+> mirrors prod exactly" (WORKLOG 2026-08-10 afternoon) — destroyed the payload this
+> runbook copies.** Measured 2026-08-15 against live dev:
+>
+> - backlog slugs present on `ep-tiny-hat`: **3 of 669**
+> - dev `sources`: 126 published · 10 staged · 2 quarantined (the derivation read 831)
+>
+> Run step 1 unchanged and it copies nothing, after an owner-gated terminal session.
+> **The "all four registers DRY-RUN CLEAN 2026-08-08" line below is void** — it was
+> measured against a database that no longer holds the works.
+>
+> **The corpus survives, intact and connectable**, on the pre-reset dev's child branch
+> `lane-b-uploader` (`br-fancy-block` / `ep-snowy-bird-atmdsv3g`, credential already at
+> `~/.neon_lane_b_url` / `~/.neon_lane_b_owner_url`). Measured there 2026-08-15:
+> **669/669 works · 46,645 sections · 551,851 flat embeddings**, all `served=false`,
+> 109 exegetical works 100% verse-keyed, **0 works acquired in CCEL author-page mode**
+> (so the `ryle-expository` contamination class does not reach this batch).
+> `corpus-copy.mjs`'s only source-side guard is "SRC is not production", so lane-b is an
+> accepted source. The fix is one variable:
+>
+> ```bash
+> export CORPUS_COPY_SOURCE_URL=$(cat ~/.neon_lane_b_owner_url)   # NOT ~/.neon_dev_owner_url
+> ```
+>
+> `dev-pre-reset-20260810` (`br-divine-cell`, 30.88 GB) also survives but has **no compute
+> endpoint** — using it means creating one, which is a Neon write and an owner call.
+>
+> **The four dry-runs HAVE been re-executed against lane-b — 4/4 clean, 2026-08-15**
+> ([evidence](dry-run-against-lane-b-2026-08-15.md)); no destination was contacted. Still
+> exclude the three slugs re-ingested onto the post-reset dev by the 2026-08-12 Song work,
+> which lane-b holds in their pre-fix form: `gill-song`, `jamieson-jfb`,
+> `adeney-expositorsonglament`.
+>
+> **And re-derive the backlog before copying.** The 669 was computed by subtracting a
+> 2026-08-08 prod read, and prod has moved since (the 2026-08-11 withdrawals, the
+> 2026-08-13/14 corpus-backlog copies). `scripts/derive-p4n-backlog.mts` takes `DEV_URL` /
+> `PROD_URL` — point `DEV_URL` at lane-b. The prod read is owner-gated (bylaw 7) and was
+> NOT taken on 2026-08-15, so the 669 stands unverified against today's production.
+>
+> Two further cautions, measured, before the flips:
+> - all 669 carry `metadata.register='prose'` — so **both legs** of
+>   `EXEGETICAL_FTS_EXCLUSION` are inert for this batch. Harmless only while nothing
+>   populates `commentary_entries` (today: 371,406 rows, `work` NULL on every one, and the
+>   table is not in `corpus-copy`'s `COPIED_TABLES`). Fix that and this together, or it
+>   fails open.
+> - the 109 commentary+father works are a **retrieval change** — the held-out eval fires
+>   (a pre-registered vN, not a re-run of frozen v4). theology + sermon are separate pools
+>   and can go first.
+
 Derived 2026-08-08, read-only against live dev (ep-tiny-hat) and prod (ep-odd-fog):
 dev `staged`+`published` (831) − already-on-prod (132) − ineligible (30, each with a
 recorded reason) = **669 works**: theology 464 · sermon 96 · commentary 91 · father 18.

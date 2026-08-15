@@ -1,0 +1,1000 @@
+
+> theology-study-app@0.1.0 audit
+> bash scripts/audit.sh
+
+
+[1m▶ env — audit allow-list (shell + ingest env)[0m
+shell:  DATABASE_URL / APP_DATABASE_URL / DATABASE_URL_UNPOOLED on allow-list (or unset)
+host:   ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech
+branch: dev
+(node:20643) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+role:   neondb_owner
+positive control (Gill on dev): 28843
+OK: root .env.local -> allowed owner, probe fires. Safe for population.
+[32m✓ env — audit allow-list (shell + ingest env)[0m
+
+[1m▶ typecheck — tsc --noEmit (strict)[0m
+[32m✓ typecheck — tsc --noEmit (strict)[0m
+
+[1m▶ typecheck — cutover gate (scripts/)[0m
+[32m✓ typecheck — cutover gate (scripts/)[0m
+
+[1m▶ typecheck — web/ tsc --noEmit[0m
+[32m✓ typecheck — web/ tsc --noEmit[0m
+
+[1m▶ typecheck — web/test tsc --noEmit[0m
+[32m✓ typecheck — web/test tsc --noEmit[0m
+
+[1m▶ lint — eslint src/ test/[0m
+
+/Users/foley/Projects/ancient-roads-git/src/ingest/ingest-biblehub.ts
+  145:67  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  153:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  171:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  171:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/foley/Projects/ancient-roads-git/src/ingest/ingest-scrollmapper-bibles.ts
+  98:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/foley/Projects/ancient-roads-git/src/ingest/ingest-strongs.ts
+  44:3  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-implied-eval')
+
+/Users/foley/Projects/ancient-roads-git/test/evals.test.ts
+  11:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  17:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/foley/Projects/ancient-roads-git/test/verifier.test.ts
+   17:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   24:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   31:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   46:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   53:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   60:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   67:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   74:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   81:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   88:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  102:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  113:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  121:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  131:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  138:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  145:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  159:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  166:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  175:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  182:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  189:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  196:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  203:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  247:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  275:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 35 problems (0 errors, 35 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+
+[32m✓ lint — eslint src/ test/[0m
+
+[1m▶ lint — web/ eslint[0m
+[32m✓ lint — web/ eslint[0m
+
+[1m▶ unused — knip (files/exports/deps)[0m
+Configuration hints (3)
+[src/ingest/*.ts, …]    knip.json  Remove, or move unused top-level entry to one of "workspaces"  
+[src/**/*.ts, …]        knip.json  Remove, or move unused top-level project to one of "workspaces"
+src/evals/run.ts        knip.json  Remove redundant entry pattern                                 
+[32m✓ unused — knip (files/exports/deps)[0m
+
+[1m▶ deps — advisory bulk-endpoint (prod, high+ CVEs)[0m
+(node:20825) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+deps-audit scanned package versions (expect-red / ignore carriers):
+  scanned better-auth: 1.4.18
+✓ deps-audit: observed red set matches --expect-red exactly (2 GHSA(s): GHSA-g38m-r43w-p2q7, GHSA-qq9h-g4jm-xgf3).
+[32m✓ deps — advisory bulk-endpoint (prod, high+ CVEs)[0m
+
+[1m▶ tests + coverage — vitest[0m
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git
+      Coverage enabled with v8
+
+ ✓ test/resource-textmatch-calibration.test.ts (9 tests) 7ms
+ ✓ test/unit-ordinal-cohort.test.ts (21 tests) 9ms
+ ✓ test/ref-parse.test.ts (43 tests) 10ms
+ ✓ test/corpus-manifest.test.ts (23 tests) 56ms
+file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:121
+    throw new Error(`REFUSING: ${host} is production or dev — this script corrupts its target`);
+          ^
+
+Error: REFUSING: ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech.invalid is production or dev — this script corrupts its target
+    at assertThrowawayTarget (file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:121:11)
+    at file:///Users/foley/Projects/ancient-roads-git/scripts/cutover-gate-redproof.mjs:33:14
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:121
+    throw new Error(`REFUSING: ${host} is production or dev — this script corrupts its target`);
+          ^
+
+Error: REFUSING: ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech.invalid is production or dev — this script corrupts its target
+    at assertThrowawayTarget (file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:121:11)
+    at file:///Users/foley/Projects/ancient-roads-git/scripts/cutover-gate-redproof.mjs:33:14
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+ ✓ test/verifier.test.ts (31 tests) 8ms
+file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:103
+    throw new Error(
+          ^
+
+Error: STOP: label target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech.invalid is not the declared endpoint (CUTOVER_EXPECT_HOST=neon.tech). It must name the endpoint id exactly.
+    at assertCutoverTarget (file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:103:11)
+    at assertTarget (file:///Users/foley/Projects/ancient-roads-git/scripts/register-label-embeddings.mjs:30:3)
+    at file:///Users/foley/Projects/ancient-roads-git/scripts/register-label-embeddings.mjs:43:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+ ✓ test/ask-max-duration-literal.test.ts (5 tests) 4ms
+ ✓ test/routing-orchestration.test.ts (21 tests) 5ms
+ ✓ test/invariants/upload-root-lockfile.test.ts (6 tests) 10ms
+ ✓ test/normalize-contract.test.ts (12 tests) 5ms
+file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:103
+    throw new Error(
+          ^
+
+Error: STOP: slice target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech.invalid is not the declared endpoint (CUTOVER_EXPECT_HOST=neon.tech). It must name the endpoint id exactly.
+    at assertCutoverTarget (file:///Users/foley/Projects/ancient-roads-git/scripts/lib/target-guard.mjs:103:11)
+    at file:///Users/foley/Projects/ancient-roads-git/scripts/cutover-e4-slice-all.mjs:26:14
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+FAIL: shell DATABASE_URL points at ep-odd-fog-atnykudm — not on the audit allow-list (dev endpoints, localhost, or AUDIT_ALLOWED_ENDPOINT / SEED_TEST_ENDPOINT by exact id). Unset it before npm run audit — qa/vitest inherit shell env.
+FAIL: shell DATABASE_URL points at ep-fresh-fork-at000000 — not on the audit allow-list (dev endpoints, localhost, or AUDIT_ALLOWED_ENDPOINT / SEED_TEST_ENDPOINT by exact id). Unset it before npm run audit — qa/vitest inherit shell env.
+ ✓ test/front-matter-detector.test.ts (30 tests) 16ms
+ ✓ test/excerpt-sample-policy.test.ts (13 tests) 4ms
+ ✓ test/invariants/dev-only-target.test.ts (15 tests) 36ms
+ ✓ test/passages-anchor-grounding.test.ts (10 tests) 11ms
+ ✓ test/publish-flip-census.test.ts (25 tests) 715ms
+   ✓ the runner imports the serving predicates rather than restating them > refuses production outright — DRIVEN, not grepped 706ms
+stdout | test/rate-limit.test.ts > checkAskRateLimit > allows exactly at the per-minute cap (10), blocks the 11th
+{"evt":"rate_limit_hit","ts":"2026-08-13T01:14:53.955Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > blocks over the per-day cap (100)
+{"evt":"rate_limit_hit","ts":"2026-08-13T01:14:53.955Z","userId":"u1","cap":"day","count":101,"limit":100}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > FAILS CLOSED (denies) when the limiter DB call throws — this is the SPEND path
+{"evt":"rate_limit_fail_closed","ts":"2026-08-13T01:14:53.955Z","userId":"u1","error":"db down"}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > a ZERO-ROW return is denied, not a TypeError swallowed into an allow
+{"evt":"rate_limit_fail_closed","ts":"2026-08-13T01:14:53.956Z","userId":"u1","error":"rate-limit bump returned no row for bucket ask:min"}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > the GLOBAL daily ceiling denies once all users together exceed it
+{"evt":"rate_limit_hit","ts":"2026-08-13T01:14:53.956Z","userId":"u1","cap":"global","count":99999,"limit":5000}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > H4: a minute-refused request does NOT touch the day bucket
+{"evt":"rate_limit_hit","ts":"2026-08-13T01:14:53.956Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks the 11th attempt in a minute (default cap 10)
+{"evt":"gate_rate_limit_hit","ts":"2026-08-13T01:14:53.956Z","ip":"1.2.3.4","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks a slow drip over the hourly cap (default 60)
+{"evt":"gate_rate_limit_hit","ts":"2026-08-13T01:14:53.956Z","ip":"1.2.3.4","cap":"hour","count":61,"limit":60}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > FAILS OPEN (allows) when the limiter DB call throws — password still required by the caller
+{"evt":"rate_limit_fail_open","ts":"2026-08-13T01:14:53.956Z","userId":"gate:1.2.3.4","error":"db down"}
+
+ ✓ test/rate-limit.test.ts (13 tests) 5ms
+ ✓ test/invariants/ci-claims-match-reality.test.ts (4 tests) 9ms
+ ✓ test/license-manifest.test.ts (20 tests) 18ms
+ ✓ test/invariants/source-archive-coverage.test.ts (14 tests) 46ms
+ ✓ test/invariants/served-backfill-frozen-sync.test.ts (4 tests) 3ms
+ ✓ test/teacher.test.ts (6 tests) 10ms
+ ✓ test/invariants/publish-admission-covers-served-lists.test.ts (11 tests) 10ms
+ ✓ test/invariants/explicit-citation.test.ts (21 tests) 6ms
+ ✓ test/prod-path-no-transpiler.test.ts (5 tests) 50ms
+ ✓ test/unit-ordinal-instrument-preflight.test.ts (10 tests) 5ms
+ ✓ test/served-assets-count.test.ts (9 tests) 35ms
+ ✓ test/invariants/loop-breakers.test.ts (18 tests) 6ms
+ ✓ test/invariants/served-lists-respect-the-manifest.test.ts (7 tests) 7ms
+ ✓ test/invariants/user-data-invariant.test.ts (6 tests) 7ms
+ ✓ test/topical-refs.test.ts (11 tests) 10ms
+ ✓ test/invariants/archive-record-merge.test.ts (7 tests) 10ms
+ ✓ test/invariants/served-corpus-authors.test.ts (7 tests) 7ms
+ ✓ test/ccel-primary-book-anchor.test.ts (6 tests) 6ms
+(node:21036) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/invariants/target-guard.test.ts (20 tests) 1814ms
+   ✓ the shipped scripts refuse an uppercase production URL > assert-ingest-env-dev.mjs passes with a clean shell (no DB vars) 1335ms
+ ✓ test/invariants/g10-verdict-agreement.test.ts (2 tests) 6ms
+ ✓ test/passages-grounding.test.ts (4 tests) 4ms
+ ✓ test/invariants/reingest-guard-wiring.test.ts (7 tests) 25ms
+ ✓ test/invariants/web-upload-root.test.ts (2 tests) 42ms
+ ✓ test/invariants/manifest-provenance.test.ts (3 tests) 2ms
+ ✓ test/invariants/g10-baseline-floor.test.ts (3 tests) 3ms
+ ✓ test/normalize.test.ts (12 tests) 4ms
+ ✓ test/resource-textmatch.test.ts (7 tests) 4ms
+ ✓ test/verse-coverage-core.test.ts (6 tests) 20ms
+/Users/foley/Projects/ancient-roads-git/src/ingest/quarantine-served-corpus.ts:115
+    throw new Error(`No chapter files under ${SERVED_ROOT}. Refusing: an empty scan is not a pass.`);
+          ^
+
+
+Error: No chapter files under web/public/commentaries. Refusing: an empty scan is not a pass.
+    at filterRun (/Users/foley/Projects/ancient-roads-git/src/ingest/quarantine-served-corpus.ts:115:11)
+    at <anonymous> (/Users/foley/Projects/ancient-roads-git/src/ingest/quarantine-served-corpus.ts:205:6)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:669:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.5.0
+ ✓ test/invariants/served-reconcile.test.ts (8 tests) 20ms
+ ✓ test/invariants/coverage-census.test.ts (7 tests) 5ms
+ ✓ test/invariants/vercel-json.test.ts (2 tests) 3ms
+ ✓ test/reference-intent.test.ts (8 tests) 7ms
+ ✓ test/gate-decision.test.ts (7 tests) 2ms
+ ✓ test/invariants/book-slug-alias-wiring.test.ts (5 tests) 2ms
+ ✓ test/embedder-model-guard.test.ts (5 tests) 24ms
+ ✓ test/heldout-frozen-hash.test.ts (2 tests) 17ms
+ ✓ test/web-core-sync.test.ts (9 tests) 7ms
+ ✓ test/api-error.test.ts (6 tests) 5ms
+ ✓ test/invariants/adapter-archive-ryle.test.ts (7 tests) 6ms
+ ✓ test/deps-audit-core.test.ts (5 tests) 2ms
+ ✓ test/content-sanity.test.ts (7 tests) 8ms
+ ✓ test/deps-audit-expect-red.test.ts (4 tests) 4ms
+ ✓ test/observability.test.ts (2 tests) 3ms
+ ✓ test/verse-id.test.ts (5 tests) 9ms
+ ✓ test/invariants/neon-branch-guard.test.ts (4 tests) 5ms
+ ✓ test/bible-sync.test.ts (9 tests) 4ms
+ ✓ test/evals.test.ts (5 tests) 7ms
+ ✓ test/invariants/quarantine-served-corpus.test.ts (9 tests) 2579ms
+   ✓ filter > is idempotent — a second run removes nothing 347ms
+   ✓ filter > MERGES into an existing quarantine file instead of clobbering it 376ms
+   ✓ restore > round-trips: filter then restore reproduces the original entries 375ms
+   ✓ restore > does not duplicate entries when restored twice 514ms
+ ✓ test/publish-flip-toolchain.test.ts (34 tests) 5789ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > adjudicates the REAL production census — the positive control 709ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > refuses a host that is not production, however it is dressed up 2325ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > refuses a PUBLISHED cohort — that would mean the flip already ran 310ms
+   ✓ the A3 adjudicator refuses a census it must not adjudicate > a published work in NO served list still STOPS — the fix did not just admit everything 328ms
+ ✓ test/invariants/uncited-shingle-parity.test.ts (42 tests) 6704ms
+   ✓ verse-level parity over the real KJV index > returns the same verse set as the frozen matcher at K=1: a verbatim quote 1638ms
+   ✓ verse-level parity over the real KJV index > returns the same verse set as the frozen matcher at K=1: a quote inside prose 547ms
+   ✓ verse-level parity over the real KJV index > returns the same verse set as the frozen matcher at K=1: prose quoting nothing 511ms
+   ✓ verse-level parity over the real KJV index > returns the same verse set as the frozen matcher at K=1: multiple quotes 516ms
+   ✓ verse-level parity over the real KJV index > agrees at every K on the trade curve, not only at the frozen K=1 2505ms
+   ✓ verse-level parity over the real KJV index > agrees ON the distinctiveness boundary, where a verse has EXACTLY minVerseShingles 480ms
+   ✓ verse-level parity over the real KJV index > agrees one BELOW the boundary too — the floor excludes, it does not merely include 478ms
+
+ Test Files  64 passed (64)
+      Tests  701 passed (701)
+   Start at  18:14:52
+   Duration  8.66s (transform 930ms, setup 0ms, collect 4.57s, tests 18.28s, environment 14ms, prepare 4.10s)
+
+ % Coverage report from v8
+
+=============================== Coverage summary ===============================
+Statements   : 20.03% ( 1791/8939 )
+Branches     : 80.28% ( 623/776 )
+Functions    : 50% ( 106/212 )
+Lines        : 20.03% ( 1791/8939 )
+================================================================================
+[32m✓ tests + coverage — vitest[0m
+
+[1m▶ qa — Layer 1 invariants + regressions[0m
+
+> theology-study-app@0.1.0 qa /Users/foley/Projects/ancient-roads-git
+> vitest run --config web/vitest.config.ts && vitest run test/rate-limit.test.ts
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git/web
+
+(node:21996) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21993) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21991) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21995) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stderr | test/invariants/clipping-tombstone.test.ts > S-2/S-3/S-10 — the servability re-check and the tombstone > S-3: the re-check FAILS CLOSED — make the lookup throw, every keyed clipping tombstones
+servability re-check failed (rendering tombstones): invalid input syntax for type bigint: "not-a-bigint"
+
+ ✓ test/invariants/clipping-tombstone.test.ts (6 tests) 3671ms
+   ✓ S-2/S-3/S-10 — the servability re-check and the tombstone > BASELINE (precondition): while servable, BOTH clippings resolve and render as clippings 359ms
+   ✓ S-2/S-3/S-10 — the servability re-check and the tombstone > S-2 reader leg: staging the work tombstones the section-keyed clipping — attribution kept, quote not rendered 357ms
+   ✓ S-2/S-3/S-10 — the servability re-check and the tombstone > S-2 ask leg: unserving the embedding row tombstones the source_id-keyed clipping 351ms
+(node:22020) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/invariants/library-published-boundary.test.ts (9 tests) 4986ms
+   ✓ Phase 4 §A — a shelved work that is later staged/quarantined disappears from every surface > BASELINE: while published, the work IS shelved, IS in continue-reading, and the reader serves it 780ms
+   ✓ Phase 4 §A — a shelved work that is later staged/quarantined disappears from every surface > BASELINE: while published, the work IS in its catalog and IS findable by search 576ms
+   ✓ Phase 4 §A — a shelved work that is later staged/quarantined disappears from every surface > QUARANTINED: catalog and search stay clean, and an in-work search finds nothing 447ms
+   ✓ Phase 4 §A — a shelved work that is later staged/quarantined disappears from every surface > QUARANTINED: same, and the reader route 404s — no surface links to a withdrawn work 538ms
+ ✓ test/invariants/work-reader.test.ts (7 tests) 7033ms
+   ✓ Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > 404s a staged source on BOTH routes (published-only boundary) 2352ms
+   ✓ Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > TOC: source whitelist, no bodies, (unitOrdinal, ordinal) reading order, never a host URL 438ms
+   ✓ Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > sections: keyset pages are ascending, non-overlapping, cursor-driven 699ms
+   ✓ Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > sections: the default limit applies when limit is absent 355ms
+   ✓ Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > sections: limit=100000 is clamped — NEVER an unbounded response 365ms
+   ✓ Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > sections: walking nextAfter to the end reconstructs the whole work; the cursor ends null 1799ms
+   ✓ Book Reader API — /api/work/[slug] + /sections (executed against the real DB) > sections: malformed params are a 400, never a 500 1023ms
+(node:22039) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/regression/studies-surface-routes.test.ts (10 tests) 7179ms
+   ✓ Studies surface routes (feed + export, handler → lib → dev DB, session mocked) > feed: paginates with renderState present on EVERY block, in document order 1187ms
+   ✓ Studies surface routes (feed + export, handler → lib → dev DB, session mocked) > feed: live clipping renders with its quote; staging the source tombstones it (the belt, per page) 842ms
+   ✓ Studies surface routes (feed + export, handler → lib → dev DB, session mocked) > feed: a tombstoned clipping (Flow D purge shape) carries NO quote and NO link field 564ms
+   ✓ Studies surface routes (feed + export, handler → lib → dev DB, session mocked) > export: a markdown download — headers, title, text verbatim, live clipping quoted + attributed 797ms
+   ✓ Studies surface routes (feed + export, handler → lib → dev DB, session mocked) > export: a tombstone renders attribution + the notice — no quote bytes, no link (S-10 on the wire) 732ms
+   ✓ Studies surface routes (feed + export, handler → lib → dev DB, session mocked) > export: 422 EXPORT_TOO_LARGE past EXPORT_MAX_BLOCKS — never a silently truncated file 1691ms
+ ✓ test/invariants/clipping-provenance.test.ts (4 tests) 3429ms
+   ✓ S-1 — the server is the only writer of clipping quote/attribution > the TABLE refuses the smuggled/malformed shapes too — migration 110 CHECKs, probed as owner (23514) 1498ms
+(node:22041) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:22043) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/invariants/studies-bounds.test.ts (5 tests) 4107ms
+   ✓ S-7 studies bounds > blocks read: row cap holds past BLOCKS_PAGE_MAX, and position-cursor pages tile the document 533ms
+   ✓ S-7 studies bounds > a soft-deleted study contributes NOTHING: not to the list, the doc read, the block read, or search 1990ms
+ ✓ test/catalog-filter-wiring.test.ts (21 tests) 6ms
+ ✓ test/user-corpus/search.test.ts (17 tests) 11702ms
+   ✓ the three searches > semantic > is EXACT brute force — equals a reference cosine computed here (SLICE_1_DATA_MODEL test 2) 370ms
+   ✓ the three searches > semantic > scopes to one document when asked — same function, optional filter 303ms
+   ✓ the three searches > keyword > does not throw on punctuation that would break to_tsquery 387ms
+ ✓ test/user-corpus/anchor.test.ts (19 tests) 11ms
+ ✓ test/invariants/annotations-polymorphic.test.ts (12 tests) 5689ms
+   ✓ MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index > allows MANY section notes on the same (user, section) — verse-only unique index 513ms
+   ✓ MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index > still enforces ONE active VERSE note per (user, verse) — a second raw insert violates the unique index 330ms
+   ✓ MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index > upsertNote NEW predicate (…AND target_kind='verse') upserts in place; OLD predicate no longer matches an arbiter index 688ms
+   ✓ MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index > highlights: accepts a valid section span (hash pinned), rejects all three corrupt shapes 996ms
+   ✓ MIG-A polymorphic annotations — anchor XOR CHECK + verse-only unique index > rejects a target_kind outside the whitelist on notes, highlights and bookmarks 713ms
+stdout | test/invariants/section-vector-pairing.test.ts > §B0 class 2 — every section body matches its own stored vector > re-embedding the body reproduces the stored vector, and discriminates against a neighbour
+§B0 class 2 — pairing probed on 34/127 published works; NOT COVERED: 93 — vectorless (no section_embeddings): 93 [aaberg-hymnsdenmark, augustine-confess, baxter-saints-rest, bett-methhymns, bevan-tersteegen, bevan-tersteegen2, borthwick-hll, brownlie-aposthymns, brownlie-earlyhymns, brownlie-easternhymns, brownlie-greekhymns, brownlie-hymnseast, brownlie-hymnsmorning, brownlie-hyndbrow, brownlie-officehymns, brownlie-russianhymns, calvin-calcom03, calvin-calcom07, calvin-calcom08, calvin-calcom09, calvin-calcom10, calvin-calcom14, calvin-calcom15, calvin-calcom16, calvin-calcom17, calvin-calcom18, calvin-calcom19, calvin-calcom20, calvin-calcom21, calvin-calcom23, calvin-calcom24, calvin-calcom25, calvin-calcom26, calvin-prayer, chatfield-greeksongs, chesterton-preexistence, crosby-indianhymnal, daily-light, easton-ebd2, gill-song, guyon-prayer, habermann-dailyprayers, hewitt-gerhardt, hitchcock-bible-names, hort-james1909, jamieson-jfb, jowett-mattermost, kempis-imitation, lawrence-practice-presence, longfellow-s-bookhymns, luther-largecatechism, luther-smallcat, manning-wesleyhymns, melanchthon-apology, meyer-homily2, morris-welshhymns, naves-topical-bible, nutter-hymnwriters, openbible-topics, owen-catechisms, pilcher-passionhymns, prudentius-cathimerinon, qa-reggrp-comm-1786583709613, qa-reggrp-hymn-1786583709613, reeves-hymnlit, rutherford-letters, ryle-expository, ryle-holiness, schaff-dictionarybible, schaff-encyc01, schaff-encyc02, schaff-encyc09, schaff-encyc13, schaff-encyc13a, schaff-npnf101, schaff-npnf104, schaff-npnf210, schaff-npnf213, scougal-life-of-god, smith-w-bibledict, spurgeon-comment, spurgeon-faiths-checkbook, spurgeon-morning-evening, stowe-religiouspoems, taylor-holy-living, therese-poems, tolstoy-confession, torreys-topical-textbook, ursinus-catechism, wace-biodict, waring-hymns, watts-psalmshymns, winkworth-hyndwink]; no section of sampleable length: 0
+
+(node:22076) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/invariants/licensing.test.ts (6 tests) 14046ms
+   ✓ Layer 1 — licensing invariant (behavioral) > teacher legal SQL pool: no quarantined author in top candidates 4902ms
+   ✓ Layer 1 — licensing invariant (behavioral) > teacher LEGAL_CORPUS_FILTER admits ALL 9 served voices (presence) 1973ms
+   ✓ Layer 1 — licensing invariant (behavioral) > teacher retrieveCommentary: no quarantined author in returned chunks 2677ms
+   ✓ Layer 1 — static reader forbidden-provenance ratchet > forbidden-provenance count may only decrease (or must be zero) 3030ms
+(node:22086) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/invariants/search-register-groups.test.ts (3 tests) 7028ms
+   ✓ S-5/S-6/S-12 — the register groups: labelled, fenced, honestly empty > S-5: every register-group row is register-LABELLED, and a hit is filed ONLY under its own register 1212ms
+   ✓ S-5/S-6/S-12 — the register groups: labelled, fenced, honestly empty > S-6: staged/quarantined works never surface — cross-corpus, per-group, or pooled 3979ms
+ ✓ test/regression/plans-routes.test.ts (8 tests) 2834ms
+   ✓ Plans routes (handler → store → dev DB, session mocked) > POST creates a Romans plan: 201, days persisted, dates arithmetic 715ms
+   ✓ Plans routes (handler → store → dev DB, session mocked) > ACCEPTS Song of Songs — the 2026-08-12 ingest closed the known zero-coverage hole 370ms
+   ✓ Plans routes (handler → store → dev DB, session mocked) > creates a Pauline-epistles collection plan spanning book boundaries (ADR-048) 365ms
+ ✓ test/invariants/legal-hnsw-index-sync.test.ts (9 tests) 21ms
+stderr | test/user-corpus/routes.test.ts > the user-corpus routes > upload > accepts a real document as 201 and indexes it through the drain
+[user-corpus] could not schedule the drain; document stays queued: `after` was called outside a request scope. Read more: https://nextjs.org/docs/messages/next-dynamic-api-wrong-context
+
+(node:22104) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:22092) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/invariants/studies-tenancy.test.ts (6 tests) 4231ms
+   ✓ S-4 studies tenancy (two accounts over app_runtime; belt + RLS) > POSITIVE: user A sees A’s own study, blocks, and edit through every read path 352ms
+   ✓ S-4 studies tenancy (two accounts over app_runtime; belt + RLS) > B cannot READ A’s study through any data-layer read path 357ms
+   ✓ S-4 studies tenancy (two accounts over app_runtime; belt + RLS) > B cannot WRITE A’s study or blocks through any data-layer op 1002ms
+(node:22115) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/user-corpus/routes.test.ts (14 tests) 3398ms
+   ✓ the user-corpus routes > upload > accepts a real document as 201 and indexes it through the drain 2098ms
+   ✓ the user-corpus routes > search > answers a text query from the indexed rows 372ms
+(node:22117) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/user-corpus/pipeline-to-ready.test.ts (4 tests) 4186ms
+   ✓ a document goes in and comes out searchable > reaches ready, with sections, vectors and anchors all written 2128ms
+   ✓ a document goes in and comes out searchable > re-indexing is idempotent — a retry replaces rather than duplicates 1419ms
+ ✓ test/invariants/sections-unit-ordinal.test.ts (2 tests) 2817ms
+(node:22125) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/user-corpus/queue-never-drops.test.ts (9 tests) 8558ms
+   ✓ the queue never silently drops a document > a document whose bytes were never stored FAILS with a reason, rather than being skipped 721ms
+   ✓ the queue never silently drops a document > skips a row another worker holds, instead of blocking on it 1671ms
+   ✓ the queue never silently drops a document > processes every document exactly once across repeated drains 1467ms
+   ✓ the queue never silently drops a document > an exhausted document is RETIRED, not left invisible in parsing 664ms
+   ✓ the queue never silently drops a document > a stale claim from a dead worker is reclaimed rather than stranded 870ms
+   ✓ the queue never silently drops a document > a FRESH claim is left alone — the reclaim is by age, not by status 661ms
+   ✓ the queue never silently drops a document > one user's drain never touches another user's queue 1001ms
+   ✓ the queue never silently drops a document > reapExhausted reports nothing to do when there is nothing to do 562ms
+(node:22120) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ↓ test/user-corpus/blob-round-trip.test.ts (4 tests | 4 skipped)
+stderr | test/user-corpus/blob-round-trip.test.ts
+⚠ SKIPPED (visibly): blob round-trip needs BLOB_READ_WRITE_TOKEN (web/.env.local or env) and APP_DATABASE_URL. The @vercel/blob network hop is UNPROVEN when this does not run.
+
+stdout | test/invariants/register-end-to-end.test.ts > §B1 per-register end-to-end (real route handlers, real DB) > runs the five reader checks for every published register
+
+§B1 per-register end-to-end — 11 register(s):
+  commentary  john-gill                sections= 28843 units=1169 catalog=commentaries
+  confession  schaff-creeds            sections=  4852 units=223 catalog=theology
+  devotional  spurgeon-morning-evening sections=   744 units=744 catalog=devotionals
+  father      chrysostom-homilies      sections=  8840 units=377 catalog=commentaries
+  historian   josephus-whiston         sections=  4112 units=2687 catalog=historians
+  hymn        watts-psalmshymns        sections=   731 units=731 catalog=hymns-poetry
+  lexicon     schaff-dictionarybible   sections=    29 units=29 catalog=(none)
+  poetry      milton-poetical-works    sections=   903 units=95 catalog=hymns-poetry
+  sermon      spurgeon-sermons         sections=118371 units=3540 catalog=sermons
+  theology    owen-works               sections= 20054 units=702 catalog=theology
+  topical_index openbible-topics         sections=  6711 units=6711 catalog=(none) phrase-probe=n/a (no-prose register)
+
+ ✓ test/invariants/register-end-to-end.test.ts (2 tests) 21446ms
+   ✓ §B1 per-register end-to-end (real route handlers, real DB) > every published register has a representative work, and the no-catalog set is exactly as declared 542ms
+   ✓ §B1 per-register end-to-end (real route handlers, real DB) > runs the five reader checks for every published register 20904ms
+ ✓ test/user-corpus/parse-docx.test.ts (11 tests) 171ms
+ ✓ test/invariants/annotation-tables.test.ts (8 tests) 4764ms
+   ✓ MIG-B..E — bookmarks, library_items, reading_progress, tags > bookmarks: accepts verse and section anchors, REJECTS a both-anchor row 605ms
+   ✓ MIG-B..E — bookmarks, library_items, reading_progress, tags > bookmarks: only ONE active bookmark per target (toggle semantics) 348ms
+   ✓ MIG-B..E — bookmarks, library_items, reading_progress, tags > library_items: shelf whitelist, and a work sits on exactly ONE shelf per user 601ms
+   ✓ MIG-B..E — bookmarks, library_items, reading_progress, tags > reading_progress: one cursor per (user, work); upsert overwrites it 411ms
+   ✓ MIG-B..E — bookmarks, library_items, reading_progress, tags > reading_progress: percent bounded 0..1 and last_ordinal >= 1 508ms
+   ✓ MIG-B..E — bookmarks, library_items, reading_progress, tags > tags: per-user unique names, non-empty 587ms
+   ✓ MIG-B..E — bookmarks, library_items, reading_progress, tags > annotation_tags: target_type whitelist and no duplicate links 832ms
+ ✓ test/invariants/work-toc-browse.test.ts (15 tests) 3ms
+ ✓ test/user-corpus/chunk.test.ts (16 tests) 4ms
+ ↓ test/user-corpus/real-files-end-to-end.test.ts (4 tests | 4 skipped)
+stderr | test/user-corpus/real-files-end-to-end.test.ts
+⚠ SKIPPED (visibly): real-file end-to-end needs APP_DATABASE_URL plus REALFILE_DOCX_DIR / REALFILE_PDF_DIR / REALFILE_SCAN_DIR.
+
+ ✓ test/invariants/commentary-entries-provenance.test.ts (4 tests) 1728ms
+ ✓ test/invariants/fonts-self-hosted.test.ts (5 tests) 33ms
+ ✓ test/invariants/prayer-carry-forward.test.ts (11 tests) 3ms
+ ✓ test/invariants/studies-order.test.ts (6 tests) 3788ms
+   ✓ S-14 studies order > two blocks at the SAME computed midpoint resolve deterministically — no silent reorder 823ms
+   ✓ S-14 studies order > read order is (position, id), NOT insertion order 361ms
+   ✓ S-14 studies order > control: order follows the STORED position — an owner-side move is reflected in the next read 868ms
+ ↓ test/user-corpus/scanned-threshold-calibration.test.ts (1 test | 1 skipped)
+stderr | test/user-corpus/scanned-threshold-calibration.test.ts
+⚠ SKIPPED (visibly): scanned-threshold calibration needs CALIBRATION_TEXT_DIR and CALIBRATION_SCAN_DIR. The committed measurement is in docs/evidence/lane-b-slice1/.
+
+stderr | test/invariants/api-hardening.test.ts > /api/search/commentaries validates every number — H9 > a DB fault returns the stable envelope, not a raw 500 — and leaks nothing
+[search/commentaries] connection to ep-odd-fog failed: password authentication
+
+ ✓ test/invariants/api-hardening.test.ts (13 tests) 9ms
+ ✓ test/invariants/health-corpus-identity.test.ts (12 tests) 27ms
+ ✓ test/desk-panes.test.ts (37 tests) 4ms
+ ✓ test/invariants/today.test.ts (7 tests) 4ms
+ ✓ test/search-groups.test.ts (16 tests) 3ms
+ ✓ test/invariants/t1-t3-first-run.test.ts (6 tests) 2ms
+ ✓ test/invariants/voice-floor-authors.test.ts (8 tests) 2ms
+ ✓ test/user-corpus/sniff-and-judge.test.ts (15 tests) 3ms
+ ✓ test/original/match-english-word.test.ts (13 tests) 3ms
+ ✓ test/invariants/prayers-c9.test.ts (6 tests) 2ms
+ ✓ test/invariants/gate-leg-inventory.test.ts (10 tests) 4ms
+ ✓ test/plan-canonical-groups.test.ts (9 tests) 3ms
+ ✓ test/invariants/section-label.test.ts (12 tests) 2ms
+(node:22129) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/invariants/studies-grants.test.ts (2 tests) 274ms
+ ✓ test/user-corpus/model-parity.test.ts (10 tests) 3ms
+ ✓ test/invariants/sec1-upload-gate.test.ts (7 tests) 2ms
+ ✓ test/invariants/date-locale-and-plan-title.test.ts (6 tests) 16ms
+ ✓ test/invariants/annotation-exact-substring.test.ts (5 tests) 1174ms
+   ✓ §P1 the exact substring survives the persistence round-trip (RLS) > span_start/span_end read back slice the verse to the EXACT selected substring 572ms
+ ✓ test/invariants/migration-zero-window.test.ts (8 tests) 2ms
+ ✓ test/invariants/naming-lock.test.ts (9 tests) 3ms
+ ✓ test/regression/studies-routes.test.ts (8 tests) 3150ms
+   ✓ Studies routes (handler → lib → dev DB, session mocked) > 404 NOT_FOUND (never 401) for a well-formed id the caller does not own 612ms
+   ✓ Studies routes (handler → lib → dev DB, session mocked) > golden path: create → rename/pin → text block → list in order → delete block → delete study 1104ms
+   ✓ Studies routes (handler → lib → dev DB, session mocked) > licensing refusal is 409 NOT_SERVABLE, distinct from 404 601ms
+ ✓ test/invariants/annotation-rls-tenancy.test.ts (6 tests) 2678ms
+   ✓ Phase 3 annotation tables — two-account RLS tenancy (executed) > with NO app.current_user_id set, the tables return zero rows (fail-closed backstop) 717ms
+ ✓ test/invariants/highlight-range.test.ts (11 tests) 4ms
+ ✓ test/plan-expand.test.ts (10 tests) 4ms
+ ✓ test/invariants/seed-owner-url.test.ts (8 tests) 2ms
+ ✓ test/invariants/pr1c-prayer-surface.test.ts (5 tests) 2ms
+ ✓ test/ask-outcome-discriminator.test.ts (6 tests) 8ms
+ ✓ test/user-corpus/pdf-dom-globals.test.ts (11 tests) 396ms
+   ✓ the PDF globals do not depend on the optional native canvas > loads the real pdfjs module with our matrix already in place 394ms
+ ✓ test/invariants/provider-availability.test.ts (8 tests) 3ms
+ ✓ test/invariants/fetched-assets-actually-ship.test.ts (3 tests) 15ms
+ ✓ test/invariants/n4-fake-doors.test.ts (7 tests) 3ms
+ ✓ test/user-corpus/scanned-pdf-real-path.test.ts (2 tests) 194ms
+ ✓ test/verse-span.test.ts (11 tests) 3ms
+ ✓ test/invariants/translation-licensing.test.ts (6 tests) 5ms
+ ✓ test/invariants/docx-extract-redos.test.ts (5 tests) 5ms
+ ✓ test/study-export.test.ts (7 tests) 2ms
+ ✓ test/invariants/coverage-floor.test.ts (3 tests) 45ms
+ ↓ test/invariants/neon-auth-live.test.ts (3 tests | 3 skipped)
+stderr | test/invariants/neon-auth-live.test.ts
+
+⚠  NOT RUN — neon-auth-live DID NOT RUN — missing NEON_AUTH_BASE_URL and NEON_AUTH_COOKIE_SECRET. It covers: Neon Auth can create and authenticate a user against the real hosted service. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/invariants/unit-ordinal-instrument.test.ts (15 tests) 25501ms
+   ✓ unit_ordinal instrument — published works + digest > passes NULL/order/recompute/digest checks on all published works 21772ms
+ ✓ test/teach-budget.test.ts (6 tests) 2ms
+ ✓ test/invariants/fts-legal-index-sync.test.ts (1 test) 6ms
+ ✓ test/study-position.test.ts (8 tests) 16ms
+ ✓ test/regression/plan-topic-flow.test.ts (5 tests) 10751ms
+   ✓ Topic plan end-to-end (owner-seeded fixture, real handlers, real DB) > creates a plan from the pointer: verified title, labeled readings in order 817ms
+   ✓ Topic plan end-to-end (owner-seeded fixture, real handlers, real DB) > a stale/staged pointer refuses with a reason, never 500 1570ms
+   ✓ Topic plan end-to-end (owner-seeded fixture, real handlers, real DB) > deleting the plan cascades the readings away 768ms
+ ✓ test/user-corpus/plain-excerpt.test.ts (8 tests) 3ms
+ ✓ test/invariants/s2-era-accent.test.ts (4 tests) 4ms
+ ✓ test/invariants/published-authors.test.ts (6 tests) 3ms
+ ✓ test/invariants/tradition-gap-wiring.test.ts (6 tests) 2ms
+ ✓ test/invariants/sec1-route-guard.test.ts (12 tests) 3ms
+ ✓ test/invariants/persist-write-retry.test.ts (7 tests) 5ms
+ ✓ test/invariants/gate-next-redirect.test.ts (3 tests) 2ms
+ ✓ test/invariants/wallet.test.ts (2 tests) 4ms
+ ✓ test/invariants/plan-builder-defaults.test.ts (6 tests) 4ms
+ ✓ test/regression/bait-route-production-gate.test.ts (5 tests) 13ms
+ ✓ test/invariants/scroll-fade-focus.test.ts (3 tests) 1ms
+ ✓ test/invariants/highlight-palette.test.ts (5 tests) 2ms
+ ✓ test/middleware-gate.test.ts (3 tests) 4ms
+ ✓ test/invariants/gate-ugc-blindness.test.ts (3 tests) 5ms
+ ✓ test/embed-model-guard.test.ts (7 tests) 5ms
+ ✓ test/teach-lane-flags.test.ts (3 tests) 2ms
+ ✓ test/regression/get-messages-filters-by-user-id.test.ts (2 tests) 5ms
+ ✓ test/invariants/neon-auth-wiring.test.ts (5 tests) 3ms
+ ✓ test/teach-fallback-deadline.test.ts (1 test) 3ms
+ ✓ test/invariants/auth-route-table.test.ts (4 tests) 2ms
+ ✓ test/invariants/s2-polish.test.ts (3 tests) 1ms
+ ✓ test/invariants/popover-position.test.ts (6 tests) 1ms
+ ✓ test/marketing-verse-panel-sync.test.ts (11 tests) 4ms
+ ✓ test/invariants/prayers-route.test.ts (4 tests) 2ms
+ ✓ test/plan-topical-expand.test.ts (5 tests) 2ms
+ ✓ test/invariants/highlight-tenancy.test.ts (3 tests) 972ms
+ ✓ test/invariants/neon-auth-config.test.ts (3 tests) 133ms
+ ✓ test/invariants/plan-tenancy.test.ts (6 tests) 1640ms
+   ✓ Plans tenancy invariant (two-account, executed) > positive control: user A reads, toggles, and still owns the plan 379ms
+ ✓ test/regression/add-message-rejects-foreign-channel.test.ts (2 tests) 2ms
+ ✓ test/invariants/s2-translation-explainer.test.ts (2 tests) 1ms
+ ✓ test/invariants/work-toc-grouping.test.ts (3 tests) 2ms
+ ✓ test/invariants/bible-translation-gate.test.ts (4 tests) 4ms
+ ✓ test/invariants/copy-format.test.ts (6 tests) 1ms
+ ↓ test/invariants/protected-branches-exist.test.ts (1 test | 1 skipped)
+stderr | test/invariants/protected-branches-exist.test.ts
+
+⚠  NOT RUN — protected-branches-exist DID NOT RUN — missing NEON_API_KEY (Neon branch inventory). It covers: every registered rollback branch id still exists in Neon. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/invariants/snippet-sanitize.test.ts (4 tests) 1ms
+ ✓ test/plan-reading-label.test.ts (4 tests) 1ms
+ ✓ test/lexicon-404-degrade.test.ts (3 tests) 2ms
+ ✓ test/invariants/tenancy.test.ts (3 tests) 891ms
+stderr | test/invariants/loud-skip.test.ts > loud-skip: secrets fail closed, artifacts loud-skip > REQUIRE_SECRETS=1 + missing artifact only returns skip (no throw)
+
+⚠  NOT RUN — §3 verse-key distribution DID NOT RUN — missing web/public/commentaries (gitignored static corpus). It covers: verse-key collapse. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/invariants/loud-skip.test.ts (2 tests) 2ms
+stderr | test/db-boot-assert.test.ts > assertAppRuntimeRole — a boot canary, not a single point of total failure > does NOT brick the app when the DB is unreachable (retries, then serves)
+[boot] assertAppRuntimeRole: could not reach the DB to verify the runtime role after 4 attempts; serving anyway (per-request RLS still binds). Last error: fetch failed: other side closed
+
+ ✓ test/db-boot-assert.test.ts (4 tests) 1704ms
+   ✓ assertAppRuntimeRole — a boot canary, not a single point of total failure > does NOT brick the app when the DB is unreachable (retries, then serves) 1703ms
+ ✓ test/save-to-study.test.tsx (18 tests) 158ms
+ ✓ test/verse-ref-preview.test.tsx (11 tests) 164ms
+(node:21992) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/invariants/search-sections.test.ts (6 tests) 4699ms
+   ✓ searchSections — deduped to reading units, and capped > collapses many chunks of one reading unit into ONE result 716ms
+   ✓ searchSections — deduped to reading units, and capped > caps the page size no matter what the caller asks for 2209ms
+   ✓ searchSections — deduped to reading units, and capped > caps the reported count instead of scanning every match 1358ms
+ ✓ test/catalog-url-facets.test.tsx (11 tests) 243ms
+ ✓ test/invariants/annotation-write-failure.test.tsx (8 tests) 23ms
+ ✓ test/invariants/settings-and-auth-routes.test.tsx (12 tests) 60ms
+ ✓ test/catalog-search-sends-filter.test.tsx (7 tests) 153ms
+ ✓ test/invariants/verse-keys.test.ts (2 tests) 6513ms
+   ✓ §3 verse-key distribution (live gate; announces NOT RUN when the gitignored corpus is absent, e.g. CI) > no author (≥200 entries) has >20% of entries keyed verse_start=verse_end=chapter 3794ms
+   ✓ §3 verse-key distribution (live gate; announces NOT RUN when the gitignored corpus is absent, e.g. CI) > no SERVED (published) entry carries a biblehub.com / studylight.org sourceUrl 2718ms
+ ✓ test/invariants/work-toc-bounded.test.tsx (7 tests) 244ms
+ ✓ test/components/study-editor.test.tsx (5 tests) 2097ms
+   ✓ StudyEditor — autosave and save state > typing in a text block saves by itself (update_text on the block id) and shows Saved 529ms
+   ✓ StudyEditor — autosave and save state > S-13: a failed write shows Save failed — Retry, keeps the buffer, and Retry resends it 517ms
+   ✓ StudyEditor — + Text between blocks > inserts between blocks, creates once with the captured placement, then updates on the returned id 1027ms
+ ✓ test/invariants/bookmark-write-path.test.tsx (7 tests) 37ms
+ ✓ test/sidebar-catalog-nav.test.tsx (6 tests) 82ms
+ ✓ test/invariants/work-reader-paging.test.tsx (6 tests) 24ms
+ ✓ test/components/ask-terminal-state.test.tsx (4 tests) 146ms
+ ✓ test/invariants/work-section-lineation.test.tsx (6 tests) 19ms
+ ✓ test/invariants/selection-popover-layout.test.tsx (4 tests) 32ms
+ ✓ test/plans-builder-preview.test.tsx (5 tests) 180ms
+ ✓ test/invariants/signed-in-derivation.test.tsx (5 tests) 15ms
+ ✓ test/invariants/search-result-attribution.test.tsx (5 tests) 57ms
+ ✓ test/invariants/drag-handle-swallows-clicks.test.tsx (4 tests) 33ms
+ ✓ test/invariants/register-wall-surfaces.test.ts (6 tests) 9568ms
+   ✓ register wall — the NEW catalog + search surfaces > every catalog returns ONLY its declared types (fence holds against real data) 1365ms
+   ✓ register wall — the NEW catalog + search surfaces > no catalog surfaces lane/other content that exists in the corpus 950ms
+   ✓ register wall — the NEW catalog + search surfaces > catalog-scoped SEARCH honours the same fence 5307ms
+   ✓ register wall — the NEW catalog + search surfaces > EVERY cross-corpus search result is register-LABELLED (the caller can honour the wall) 1773ms
+ ✓ test/invariants/ask-passage-link.test.tsx (1 test) 58ms
+ ✓ test/invariants/verse-open-gesture.test.tsx (3 tests) 26ms
+ ✓ test/components/prayer-delete-headless.test.tsx (2 tests) 151ms
+ ✓ test/components/pray-entry-point.test.tsx (5 tests) 114ms
+ ✓ test/invariants/verse-deep-link.test.tsx (6 tests) 28ms
+ ✓ test/invariants/work-reader-ui.test.tsx (4 tests) 22ms
+ ✓ test/invariants/omnibox-verse-anchor.test.tsx (4 tests) 24ms
+ ✓ test/components/sidebar-writing-rail.test.tsx (3 tests) 117ms
+ ✓ test/invariants/g1-measure-executable.test.ts (28 tests) 7462ms
+   ✓ G1 digest SQL is executable for every classified table > measureSql(annotation_tags) runs against the real schema 609ms
+ ✓ test/components/prayer-autosave.test.tsx (3 tests) 5554ms
+   ✓ Prayer compose redesign — autosave > has NO Save and NO Cancel, and typing saves by itself: create once, then update 1916ms
+   ✓ Prayer compose redesign — autosave > editing an existing prayer autosaves an UPDATE on its id and never creates 2123ms
+   ✓ Prayer compose redesign — autosave > an empty draft is never written 1515ms
+ ✓ test/user-corpus/tradition-gap.test.ts (11 tests) 39621ms
+   ✓ the tradition-gap join > returns corpus voices on the passages the document engages 8287ms
+   ✓ the tradition-gap join > THE INJECTED PREDICATE IS ACTUALLY APPLIED — this is ADR-104s load-bearing assertion 7790ms
+   ✓ the tradition-gap join > a voice is an AUTHOR, not an entry 2797ms
+   ✓ the tradition-gap join > the LIMIT counts VOICES, not anchor×entry pairs 3453ms
+   ✓ the tradition-gap join > never returns the user’s own words — the trust boundary (§7) 3686ms
+   ✓ the tradition-gap join > returns nothing for a document that anchors nothing 1255ms
+   ✓ the tradition-gap join > A2 — a user-owned row seeded INTO the corpus table never surfaces 6863ms
+   ✓ the tradition-gap join > bounds its own output 2724ms
+stderr | test/invariants/section-vector-pairing.test.ts > §B0 class 2 — every section body matches its own stored vector > re-embedding the body reproduces the stored vector, and discriminates against a neighbour
+
+⚠  NOT RUN — §B0 class 2 — section/vector pairing (provider failed mid-run) DID NOT RUN — missing DeepInfra embeddings (The operation was aborted due to timeout). It covers: the remaining published sections in this run. A green suite without it is not evidence that any of those hold.
+
+
+ ✓ test/invariants/section-vector-pairing.test.ts (1 test | 1 skipped) 45550ms
+
+ Test Files  142 passed | 5 skipped (147)
+      Tests  1000 passed | 14 skipped (1014)
+   Start at  18:15:01
+   Duration  51.03s (transform 1.61s, setup 0ms, collect 6.34s, tests 299.92s, environment 8.83s, prepare 4.25s)
+
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > allows exactly at the per-minute cap (10), blocks the 11th
+{"evt":"rate_limit_hit","ts":"2026-08-13T01:15:53.380Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > blocks over the per-day cap (100)
+{"evt":"rate_limit_hit","ts":"2026-08-13T01:15:53.381Z","userId":"u1","cap":"day","count":101,"limit":100}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > FAILS CLOSED (denies) when the limiter DB call throws — this is the SPEND path
+{"evt":"rate_limit_fail_closed","ts":"2026-08-13T01:15:53.381Z","userId":"u1","error":"db down"}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > a ZERO-ROW return is denied, not a TypeError swallowed into an allow
+{"evt":"rate_limit_fail_closed","ts":"2026-08-13T01:15:53.381Z","userId":"u1","error":"rate-limit bump returned no row for bucket ask:min"}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > the GLOBAL daily ceiling denies once all users together exceed it
+{"evt":"rate_limit_hit","ts":"2026-08-13T01:15:53.381Z","userId":"u1","cap":"global","count":99999,"limit":5000}
+
+stdout | test/rate-limit.test.ts > checkAskRateLimit > H4: a minute-refused request does NOT touch the day bucket
+{"evt":"rate_limit_hit","ts":"2026-08-13T01:15:53.381Z","userId":"u1","cap":"min","count":11,"limit":10}
+
+ ✓ test/rate-limit.test.ts (13 tests) 3ms
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks the 11th attempt in a minute (default cap 10)
+{"evt":"gate_rate_limit_hit","ts":"2026-08-13T01:15:53.381Z","ip":"1.2.3.4","cap":"min","count":11,"limit":10}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > blocks a slow drip over the hourly cap (default 60)
+{"evt":"gate_rate_limit_hit","ts":"2026-08-13T01:15:53.381Z","ip":"1.2.3.4","cap":"hour","count":61,"limit":60}
+
+stdout | test/rate-limit.test.ts > checkGateRateLimit > FAILS OPEN (allows) when the limiter DB call throws — password still required by the caller
+{"evt":"rate_limit_fail_open","ts":"2026-08-13T01:15:53.382Z","userId":"gate:1.2.3.4","error":"db down"}
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  18:15:53
+   Duration  184ms (transform 26ms, setup 0ms, collect 27ms, tests 3ms, environment 0ms, prepare 36ms)
+
+[32m✓ qa — Layer 1 invariants + regressions[0m
+
+[1m▶ hygiene — no test residue in dev (post-suite)[0m
+(node:22552) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ dev is clean — no seeded residue in 28 table(s) (1 table(s) absent on this target: waitlist (no owner column by design)).
+[32m✓ hygiene — no test residue in dev (post-suite)[0m
+
+[1m▶ deploy.sh — gate harness (bash)[0m
+
+=== deploy.sh gate tests — script under test: /Users/foley/Projects/ancient-roads-git/deploy.sh ===
+
+  [32mPASS[0m dirty-tree-blocked — exit 1
+  [32mPASS[0m dirty-tree-blocked — says: working tree is dirty
+  [32mPASS[0m dirty-tree-blocked — no receipt (correct — nothing was uploaded)
+  [32mPASS[0m behind-origin-main-blocked — exit 1
+  [32mPASS[0m behind-origin-main-blocked — says: DEPLOY BLOCKED
+  [32mPASS[0m behind-origin-main-blocked — says: other lane's shipped work
+  [32mPASS[0m behind-origin-main-blocked — no receipt (correct — nothing was uploaded)
+  [32mPASS[0m origin-main-unresolvable-named-honestly — exit 1
+  [32mPASS[0m origin-main-unresolvable-named-honestly — says: does not resolve
+  [32mPASS[0m origin-main-unresolvable-named-honestly — silent on: has  commit(s)
+  [32mPASS[0m whoami-failure-prints-its-stop — exit 1
+  [32mPASS[0m whoami-failure-prints-its-stop — says: vercel whoami
+  [32mPASS[0m whoami-failure-prints-its-stop — no receipt (correct — nothing was uploaded)
+  [32mPASS[0m env-ls-failure-distinct-from-missing — exit 1
+  [32mPASS[0m env-ls-failure-distinct-from-missing — says: could not read production environment
+  [32mPASS[0m env-ls-failure-distinct-from-missing — silent on: missing required environment variable
+  [32mPASS[0m env-table-unparseable-refuses-to-blame-the-project — exit 1
+  [32mPASS[0m env-table-unparseable-refuses-to-blame-the-project — says: no parseable variable names
+  [32mPASS[0m env-table-unparseable-refuses-to-blame-the-project — silent on: missing required environment variable
+  [32mPASS[0m missing-env-var-named — exit 1
+  [32mPASS[0m missing-env-var-named — says: missing required environment variable(s): SITE_PASSWORD
+  [32mPASS[0m project-absent-from-org-blocked — exit 1
+  [32mPASS[0m project-absent-from-org-blocked — says: does not mention 'web'
+  [32mPASS[0m project-absent-from-org-blocked — no receipt (correct — nothing was uploaded)
+  [32mPASS[0m project-named-webhooks-is-not-the-target — exit 1
+  [32mPASS[0m project-named-webhooks-is-not-the-target — says: does not mention 'web'
+  [32mPASS[0m licensing-gate-failure-stops-deploy — exit 1
+  [32mPASS[0m licensing-gate-failure-stops-deploy — no receipt (correct — nothing was uploaded)
+  [32mPASS[0m tree-changed-during-build-blocked — exit 1
+  [32mPASS[0m tree-changed-during-build-blocked — says: changed during the build
+  [32mPASS[0m tree-changed-during-build-blocked — no receipt (correct — nothing was uploaded)
+  [32mPASS[0m no-url-in-log-still-writes-a-receipt — exit 2
+  [32mPASS[0m no-url-in-log-still-writes-a-receipt — receipt records: state:           unverified
+  [32mPASS[0m no-url-in-log-still-writes-a-receipt — says: UNVERIFIED
+  [32mPASS[0m deploy-log-path-is-unique — silent on: XXXXXX
+  [32mPASS[0m failed-upload-receipt-is-labelled — exit 1 (non-zero)
+  [32mPASS[0m failed-upload-receipt-is-labelled — receipt records: outcome unknown
+  [32mPASS[0m failed-upload-receipt-is-labelled — silent on: Done —
+  [32mPASS[0m alias-mismatch-is-a-failure — exit 3
+  [32mPASS[0m alias-mismatch-is-a-failure — says: THE DEPLOY DID NOT TAKE
+  [32mPASS[0m alias-mismatch-is-a-failure — receipt records: state:           mismatch
+  [32mPASS[0m alias-mismatch-is-a-failure — silent on: Done —
+  [32mPASS[0m inspect-unavailable-is-unverified — exit 2
+  [32mPASS[0m inspect-unavailable-is-unverified — says: does NOT mean the deploy failed
+  [32mPASS[0m inspect-unavailable-is-unverified — receipt records: state:           unverified
+  [32mPASS[0m inspect-unavailable-is-unverified — silent on: Done —
+  [32mPASS[0m happy-path-verified-live — exit 0
+  [32mPASS[0m happy-path-verified-live — says: is served by dpl_SAME999
+  [32mPASS[0m happy-path-verified-live — says: Done —
+  [32mPASS[0m happy-path-verified-live — receipt records: state:           live
+  [32mPASS[0m happy-path-verified-live — receipt records: dpl_SAME999
+  [32mPASS[0m happy-path-verified-live — CLI received: --meta sha=c49dcad53cfbe788d7d37a2f6ec65839d84d1ded
+  [32mPASS[0m happy-path-verified-live — CLI received: vercel@
+  [32mPASS[0m happy-path-verified-live — every vercel call ran from web/
+  [32mPASS[0m runs-from-a-subdirectory — exit 0
+  [32mPASS[0m runs-from-a-subdirectory — receipt records: state:           live
+  [32mPASS[0m receipt-filename-is-not-just-the-sha — receipt name is timestamped: deploy-63f8c7b-2026-08-13T01-16-04Z.txt
+
+=== 57 passed, 0 failed ===
+all deploy.sh gates hold
+[32m✓ deploy.sh — gate harness (bash)[0m
+
+[1m▶ data — Gate B license (fail-closed)[0m
+======================================================================
+GATE B — LICENSE (fail closed)
+======================================================================
+Manifest: ingest/sources.config.json (915 source entries)
+(node:24093) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Published sources (DB): checked (0 violation(s)).
+
+✓ GATE B PASSED: no license/provenance violations.
+[32m✓ data — Gate B license (fail-closed)[0m
+
+[1m▶ coverage gaps (informational)[0m
+Files with ZERO coverage (64):
+  src/bible/verse-counts.ts
+  src/evals/run.ts
+  src/ingest/adapter-bdb.ts
+  src/ingest/adapter-gutenberg.ts
+  src/ingest/adapter-helloao.ts
+  src/ingest/adapter-loop.ts
+  src/ingest/b2-remove-forbidden-provenance.ts
+  src/ingest/build-commentary-manifest.ts
+  src/ingest/build-concordance.ts
+  src/ingest/check-corpus-coverage.ts
+  src/ingest/check-licenses.ts
+  src/ingest/clean-crossref-authors.ts
+  src/ingest/consolidate-bibles.ts
+  src/ingest/embed-full-corpus.ts
+  src/ingest/gate-ingest.ts
+  src/ingest/helloao-source.ts
+  src/ingest/historian-contract-backfill.ts
+  src/ingest/ingest-api.ts
+  src/ingest/ingest-biblehub.ts
+  src/ingest/ingest-commentaries.ts
+  src/ingest/ingest-commentary-api.ts
+  src/ingest/ingest-commentary-fts.ts
+  src/ingest/ingest-embeddings.ts
+  src/ingest/ingest-harness.ts
+  src/ingest/ingest-original.ts
+  src/ingest/ingest-scrollmapper-bibles.ts
+  src/ingest/ingest-sermon.ts
+  src/ingest/ingest-strongs.ts
+  src/ingest/ingest-topical-index.ts
+  src/ingest/ingest-web.ts
+  src/ingest/insert-static-author.ts
+  src/ingest/measure-embedding-gap.ts
+  src/ingest/merge-commentaries.ts
+  src/ingest/migrate-sections-slice.ts
+  src/ingest/newadvent-crawl.ts
+  src/ingest/newadvent-source.ts
+  src/ingest/parity-probe-sections.ts
+  src/ingest/poole-tcp.ts
+  src/ingest/quarantine-served-corpus.ts
+  src/ingest/rebuild-register-indexes.ts
+  src/ingest/reference-register-bridge.ts
+  src/ingest/regen-crosswire-static.ts
+  src/ingest/reingest-guard.ts
+  src/ingest/repair-tennyson-traherne-flat.ts
+  src/ingest/repoint-sections-work.ts
+  src/ingest/resource-classify-patristic.ts
+  src/ingest/resource-classify-topn.ts
+  src/ingest/resource-match-probe.ts
+  src/ingest/resource-probe-patristic.ts
+  src/ingest/resource-repair-helloao.ts
+  src/ingest/suppress-chrysostom-prolegomena.ts
+  src/ingest/suppress-nonauthorial-matter.ts
+  src/ingest/sword-genbook.ts
+  src/ingest/sword-ld.ts
+  src/ingest/sword-register-bridge.ts
+  src/ingest/sword-zverse.ts
+  src/ingest/usfm.ts
+  src/ingest/verse-key-gate.ts
+  src/ingest/versification-gate.ts
+  src/retrieval/ingest.ts
+  src/retrieval/store.ts
+  src/retrieval/sources/commentary.ts
+  src/teacher/llm.ts
+  src/teacher/run.ts
+
+════════════════════════════════════
+[32mAUDIT PASSED — all gates green[0m
+audit-exit=0

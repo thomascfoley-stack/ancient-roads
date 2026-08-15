@@ -198,6 +198,31 @@ export const USER_TABLE_SPEC = {
     active: 'true',
     body: ['title', 'file_type', 'storage_key', 'size_bytes', 'mime_type', 'is_purchased', 'metadata'],
   },
+  // ── Study Docs (migration 110) — AUTHORED user content, exactly what G1 exists to protect ──
+  // A study doc is the user's own writing plus server-snapshotted clippings; blocks-as-rows
+  // (STUDY_DOCS_DESIGN.md F1). All three digested: a cutover must not rewrite, reassign or
+  // erase them. `tsv` is generated and excluded (a derived column, and hashing it would double-
+  // count body/quote); `position` is an anchor — reordering someone's study is corruption.
+  studies: {
+    anchor: ['created_at'],
+    tombstone: 'deleted_at',
+    active: 'deleted_at IS NULL',
+    body: ['title', 'pinned_at', 'updated_at'],
+  },
+  study_blocks: {
+    anchor: ['study_id', 'position', 'kind', 'section_id', 'source_id', 'ordinal'],
+    tombstone: 'deleted_at',
+    active: 'deleted_at IS NULL',
+    body: ['body', 'quote', 'attribution', 'work_slug', 'cleared_at', 'updated_at'],
+  },
+  // Append-only undo substrate (110: INSERT+SELECT only for app_runtime). No tombstone by
+  // design — a revision is never deleted, so every row is live.
+  study_block_revisions: {
+    anchor: ['block_id', 'replaced_at'],
+    tombstone: null,
+    active: 'true',
+    body: ['body'],
+  },
   user_integrations: {
     anchor: ['provider', 'composio_account_id', 'created_at'],
     tombstone: null,

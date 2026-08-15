@@ -1,0 +1,71 @@
+# ryle-expository decontamination — 2026-08-12
+
+Owner ruling 2026-08-12: "the lords garden, get it fixed" (taken as explicit go for both dev
+and prod — the contamination was served user-facing on prod; a dev-only fix fixes nothing).
+
+## Root cause (measured, dev == prod mirror)
+
+`sources.id=87` (`ryle-expository`, "Expository Thoughts on the Gospels") was acquired with
+the CCEL adapter in **author-page mode** (`ccel_author: "ryle"` in ingest/sources.config.json),
+which slurped every work on Ryle's CCEL author page into one source row:
+
+- ordinals 1–93: Expository Thoughts on **Matthew** (the intended work)
+- ordinals 94–114: *Holiness* chapters I–XXI — **exact duplicate** of source 88
+  (`ryle-holiness`, 21 sections, same headings)
+- ordinals 115–137: *Upper Room: Being a Few Truths for the Times* chapters I–XXI + 2 notes
+  (ch. XV = "THE LORD'S GARDEN" — the reported contamination; it IS Ryle, but the wrong work
+  under the wrong source, anchored to Song 4:12 and 42 other stray verses across 24 books)
+
+## Pre-delete safety counts (dev AND prod, both zero)
+
+bookmarks 0, highlights 0, notes 0, library_items 0, reading_progress 0,
+section_history_anchors 0, section_embeddings 0, topical_entries 0 on sections ordinal>=94.
+section_anchors: 43 (all stray; deleted).
+
+## Applied (single transaction each, dev then prod, identical results)
+
+```sql
+DELETE FROM section_anchors WHERE section_id IN
+  (SELECT id FROM sections WHERE source_id=87 AND ordinal>=94);          -- DELETE 43
+DELETE FROM sections WHERE source_id=87 AND ordinal>=94;                 -- DELETE 44
+UPDATE sources SET title='Expository Thoughts on Matthew' WHERE id=87;   -- UPDATE 1
+```
+
+Post-check both DBs: 93 sections, 93 anchors, 1 distinct book (40 = Matthew). Title retitled
+to the honest "Expository Thoughts on Matthew" (no code or test pins the old title — grep-verified).
+
+## Recurrence prevention
+
+- `ingest/sources.config.json` ryle-expository: `ccel_author: "ryle"` → `ccel_ids: ["ryle/matthew"]`,
+  provenance url/edition updated to match. A re-ingest can no longer pull the author page.
+- Latent, flagged to ingest lane (NOT fixed today): five other manifest entries still use
+  author-page mode (`owen`, `watson`, `flavel`, `edwards`, `vincent`) — there it is the
+  declared intent ("*-works" collections), but any future single-work entry must not use
+  `ccel_author`. Also `ryle-matthew` (tier 3, never ingested) now points at the same CCEL id
+  as ryle-expository — a latent duplicate for the ingest lane to resolve.
+- *Upper Room* is restorable anytime via the existing `ryle-upper-room` manifest entry
+  (tier 3, never ingested) through the standard loop.
+
+## Flat-store half (found during Song recon, same day)
+
+The contamination ALSO lived in the served flat `embeddings` store: 1,481 served rows keyed
+`commentary:ryle-expository:94..137.*` (761 = Holiness duplicates, 720 = Upper Room incl. the
+21 `130.*` "Lord's Garden" rows the plan doc flagged). Deleting the sections alone would have
+left the served rows live. Verified before delete: Holiness is independently served under its
+own slug (`:ryle-holiness:` = 761 served rows, both DBs), so the duplicates carry nothing
+unique; Upper Room's only copy goes away until properly ingested via `ryle-upper-room`.
+
+```sql
+DELETE FROM embeddings
+WHERE source_id LIKE 'commentary:ryle-expository:%'
+  AND substring(source_id from 'commentary:ryle-expository:(\d+)\.')::int >= 94;  -- DELETE 1481
+```
+
+Post-check both DBs: 559 served rows remain under ryle-expository (ordinals 1–93, Matthew).
+No FKs reference `embeddings` (pg_constraint check), so the delete is orphan-free.
+
+## Verification
+
+- Dev + prod post-checks above (in transaction output).
+- verse_coverage rebuild deferred to the Song of Solomon job (same session) — one rebuild
+  covers both changes; the table is a derived rollup, never hand-edited.

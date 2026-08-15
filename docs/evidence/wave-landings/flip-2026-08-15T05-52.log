@@ -1,4 +1,4 @@
-spawn env PUBLISH_ALLOW=1 PUBLISH_EXPECT_HOST=ep-odd-fog-atnykudm CUTOVER_DATABASE_URL=postgresql://neondb_owner:npg_XqFvRTh3Mo1O@ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require node scripts/publish-flip.mjs --slugs=docs/evidence/wave-landings/flip-slugs-2026-08-15T05-52.json
+spawn env PUBLISH_ALLOW=1 PUBLISH_EXPECT_HOST=ep-odd-fog-atnykudm CUTOVER_DATABASE_URL=postgresql://neondb_owner:REDACTED-ROTATE-THIS@ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require node scripts/publish-flip.mjs --slugs=docs/evidence/wave-landings/flip-slugs-2026-08-15T05-52.json
 serve:false  6 standing ruling(s) (HEAD 3, tree 6; DIVERGENT: kempis-imitation-benham, julian-revelations, bernard-song-sermons — the union blocks)
 publish-flip — target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (credentials redacted)
 direction    staged -> published

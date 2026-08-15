@@ -1,0 +1,64 @@
+{
+  "source": "ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech",
+  "destination": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "declaredEndpoint": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "slugs": [
+    "gill-song",
+    "jamieson-jfb"
+  ],
+  "before": {
+    "gill-song": {
+      "sources": 1,
+      "sections": 123,
+      "anchors": 123,
+      "section_embeddings": 0,
+      "topical_entries": 0,
+      "flat_embeddings": 1942
+    },
+    "jamieson-jfb": {
+      "sources": 1,
+      "sections": 1258,
+      "anchors": 1191,
+      "section_embeddings": 0,
+      "topical_entries": 0,
+      "flat_embeddings": 9878
+    }
+  },
+  "destBefore": {
+    "gill-song": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    },
+    "jamieson-jfb": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "destAfter": {
+    "gill-song": {
+      "sources": 1,
+      "sections": 123,
+      "anchors": 123,
+      "section_embeddings": 0,
+      "topical_entries": 0,
+      "flat_embeddings": 1942
+    },
+    "jamieson-jfb": {
+      "sources": 1,
+      "sections": 1258,
+      "anchors": 1191,
+      "section_embeddings": 0,
+      "topical_entries": 0,
+      "flat_embeddings": 9878
+    }
+  },
+  "mismatch": 0
+}

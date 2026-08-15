@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { authClient } from '@/lib/auth/client';
+import { isPrayerWriting, PRAYER_WRITING_EVENT } from '@/lib/prayer-writing-mode';
 import { CATALOGS, CATALOG_IDS, type CatalogId } from '@/lib/catalog-defs';
+import { orderStudiesForNav, type StudySummary } from '@/components/save-to-study';
 
 // --- user-defined study sections (parent/child). Stored locally per user
 // while the real feature (saved work, conversation) is still coming soon;
@@ -40,12 +42,6 @@ function dotColor(id: string): string {
   let h = 0;
   for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   return DOT_COLORS[h % DOT_COLORS.length];
-}
-
-function newId(): string {
-  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : Math.random().toString(36).slice(2);
 }
 
 /**
@@ -242,6 +238,26 @@ export function SidebarNavContent({
           )}
         </div>
 
+        {/* RESEARCH HISTORY (design §7.1; the companion ASK_HISTORY design's surface):
+            pinned threads first, then recents, "All research". NOT BUILT — ask-history
+            persistence is the companion design's slice, not this stream's (P2/W4 builds
+            MY STUDIES below). This placeholder exists only to fix the §7.1 section order —
+            RESEARCH HISTORY, MY STUDIES, PRAYER JOURNAL — so the section lands HERE,
+            above My studies, when it ships. */}
+
+        {/* MY STUDIES (design §7.1; the user-facing name per owner ruling E1, 2026-08-12):
+            pinned studies first, then updated_at recents, then "All studies". This is the
+            rail's first FETCH-BACKED section — everything above is static links or
+            localStorage seeds — so it renders only for a signed-in reader (a signed-out
+            visitor HAS no studies; showing the section would be an empty shelf or, worse,
+            an error line reporting the app's own auth state as a fault — the prayer-journal
+            lesson). Loading and failure are stated honestly and quietly, and "All studies"
+            stays reachable in every state. The writing-mode rail above is deliberately NOT
+            updated: its comment makes any addition there its own design decision. */}
+        {mounted && session?.user && (
+          <MyStudies pathname={pathname} row={row} onNavigate={onNavigate} />
+        )}
+
         {/* PRAYER JOURNAL — N4's repurposing of CHANNELS, pointing at the shipped PR1a surface.
             The block allows exactly two states for this section, the real journal or nothing, and
             says so in terms: "No third state." */}
@@ -271,15 +287,6 @@ export function SidebarNavContent({
             onNavigate={onNavigate}
             onRename={(name) =>
               save(sections.map((s) => (s.id === section.id ? { ...s, name } : s)))
-            }
-            onAddItem={(name) =>
-              save(
-                sections.map((s) =>
-                  s.id === section.id
-                    ? { ...s, items: [...s.items, { id: newId(), name }] }
-                    : s,
-                ),
-              )
             }
           />
         ))}
@@ -413,9 +420,72 @@ const CATALOG_ICON: Partial<Record<CatalogId, React.ReactNode>> = {
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  // WRITING MODE (owner direction 2026-08-12, journal-redesign mockup): while the prayer compose
+  // view owns the screen, the 256px sidebar drops to a 58px icon rail — the journal area is the
+  // screen, not a widget on it. The rail re-expands on hover or ⌘\, and collapses again when the
+  // pointer leaves. The signal comes from `lib/prayer-writing-mode.ts`.
+  const [writing, setWriting] = useState(false);
+  const [railOpen, setRailOpen] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setWriting(isPrayerWriting());
+    sync();
+    window.addEventListener(PRAYER_WRITING_EVENT, sync);
+    return () => window.removeEventListener(PRAYER_WRITING_EVENT, sync);
+  }, []);
+
+  useEffect(() => {
+    if (!writing) { setRailOpen(false); return; }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey && e.key === '\\') { e.preventDefault(); setRailOpen((v) => !v); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [writing]);
 
   // The pre-launch password gate stands alone — no app chrome around it.
   if (pathname === '/gate') return null;
+
+  if (writing && !railOpen) {
+    // A DELIBERATE SUBSET, not a mirror of the full nav: while writing, the rail offers the few
+    // places a reader might actually leave for. Adding a destination here is a design decision,
+    // not a sync task — do not derive this from the catalog list.
+    const railLinks = [
+      { href: '/home', label: 'Home', icon: <HomeIcon /> },
+      { href: '/read/jhn/1', label: 'Bible', icon: <BookIcon /> },
+      { href: '/ask', label: 'Ancient Paths', icon: <AskIcon /> },
+      { href: '/plans', label: 'Reading plans', icon: <CalendarIcon /> },
+      { href: '/prayers', label: 'My prayers', icon: <PrayerIcon /> },
+      { href: '/library', label: 'All items', icon: <BookStackIcon /> },
+      { href: '/settings', label: 'Settings', icon: <SettingsIcon /> },
+    ];
+    return (
+      <aside
+        aria-label="Navigation"
+        onMouseEnter={() => setRailOpen(true)}
+        className="hidden w-[58px] flex-col items-center gap-1 border-r edge bg-stone-200 py-4 md:flex dark:bg-stone-900"
+      >
+        {railLinks.map((l) => {
+          const active = l.href === '/home' ? pathname === '/home' : pathname.startsWith(l.href);
+          return (
+            <Link
+              key={l.href}
+              href={l.href}
+              aria-label={l.label}
+              title={l.label}
+              className={`flex h-9 w-9 items-center justify-center transition-colors ease-gentle ${
+                active
+                  ? 'text-stone-900 dark:text-stone-200'
+                  : 'text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200'
+              }`}
+            >
+              {l.icon}
+            </Link>
+          );
+        })}
+      </aside>
+    );
+  }
 
   if (collapsed) {
     return (
@@ -434,7 +504,12 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="hidden w-64 flex-col border-r edge bg-stone-200 md:flex dark:bg-stone-900">
+    <aside
+      // In writing mode this expanded state is the rail's hover/⌘\ overlay: leaving it puts the
+      // rail back. Outside writing mode there is no rail, so there is nothing to restore.
+      onMouseLeave={writing ? () => setRailOpen(false) : undefined}
+      className="hidden w-64 flex-col border-r edge bg-stone-200 md:flex dark:bg-stone-900"
+    >
       {/* Header. Internal rail rule: parchment-on-vellum, not .edge (see the settings block). */}
       <div className="flex items-center justify-between border-b border-stone-50 px-4 py-3 dark:border-stone-800">
         {/* PRD §6: wordmark is EB Garamond 18px/500, ink. */}
@@ -456,23 +531,108 @@ export function Sidebar() {
   );
 }
 
+/** How many studies the rail lists before "All studies" takes over (design §7.1 says
+ *  pinned-then-recents, not a count; the cap is the rail's real estate, not a data rule). */
+const MY_STUDIES_NAV_CAP = 5;
+
+/**
+ * MY STUDIES (design §7.1) — the sidebar's first fetch-backed section. Pinned studies first,
+ * then `updated_at` recents (orderStudiesForNav, shared with the save-to-study picker so the
+ * two surfaces never disagree about the order), capped, with "All studies" always reachable.
+ * Fetches once per mount of the nav content; a 401 mid-session (sign-out raced the fetch) is
+ * an empty list, not an error — the prayer-journal lesson about auth state vs. faults.
+ */
+function MyStudies({
+  pathname,
+  row,
+  onNavigate,
+}: {
+  pathname: string;
+  row: string;
+  onNavigate?: () => void;
+}) {
+  const [studies, setStudies] = useState<StudySummary[] | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      try {
+        const res = await fetch('/api/studies');
+        if (!live) return;
+        if (res.status === 401) { setStudies([]); return; }
+        if (!res.ok) { setError(true); setStudies([]); return; }
+        const data = (await res.json()) as { studies?: StudySummary[] };
+        setStudies(Array.isArray(data.studies) ? data.studies : []);
+      } catch {
+        if (live) { setError(true); setStudies([]); }
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  return (
+    <div className="mt-4">
+      <div className="mb-1 px-4">
+        <span className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+          My studies
+        </span>
+      </div>
+      {studies === null ? (
+        <p className="px-4 py-1 text-xs text-stone-500 dark:text-stone-400">Loading…</p>
+      ) : (
+        <>
+          {error && (
+            <p className="px-4 py-1 text-xs text-stone-500 dark:text-stone-400">
+              Your studies could not be loaded.
+            </p>
+          )}
+          {orderStudiesForNav(studies, MY_STUDIES_NAV_CAP).map((s) => (
+            <SidebarLink
+              key={s.id}
+              href={`/studies/${s.id}`}
+              icon={
+                <span
+                  className="inline-block h-2 w-2 rounded-full"
+                  style={{ backgroundColor: dotColor(s.id) }}
+                />
+              }
+              label={s.title}
+              active={pathname === `/studies/${s.id}`}
+              row={row}
+              onNavigate={onNavigate}
+            />
+          ))}
+          <SidebarLink
+            href="/studies"
+            icon={<BookStackIcon />}
+            label="All studies"
+            active={pathname === '/studies'}
+            row={row}
+            onNavigate={onNavigate}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
 function StudySectionView({
   section,
   pathname,
   row,
   onNavigate,
   onRename,
-  onAddItem,
 }: {
   section: StudySection;
   pathname: string;
   row: string;
   onNavigate?: () => void;
   onRename: (name: string) => void;
-  onAddItem: (name: string) => void;
 }) {
   const [renaming, setRenaming] = useState(false);
-  const [addingItem, setAddingItem] = useState(false);
 
   return (
     <div className="group mt-4">
@@ -492,6 +652,11 @@ function StudySectionView({
             <span className="truncate text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
               {section.name}
             </span>
+            {/* 2026-08-11 (owner): the `+` created items that led NOWHERE — every item resolves
+                to /prayers, and only the PR1a-migrated legacy items genuinely live there.
+                Creating an inert name was a fake door (owner: "making new works under those
+                tabs do nothing"), so the affordance is removed until study spaces are built.
+                Rename stays: it edits what already exists. */}
             <span className="flex items-center gap-0.5 opacity-100 transition-opacity ease-gentle [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100">
               <button
                 onClick={() => setRenaming(true)}
@@ -500,30 +665,11 @@ function StudySectionView({
               >
                 <PencilIcon />
               </button>
-              <button
-                onClick={() => setAddingItem(true)}
-                className="p-1.5 text-stone-500 transition-colors ease-gentle hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
-                aria-label={`Add to ${section.name}`}
-              >
-                <PlusIcon />
-              </button>
             </span>
           </>
         )}
       </div>
-      {addingItem && (
-        <div className="mx-2 mb-1">
-          <InlineNameForm
-            placeholder="name"
-            onSubmit={(name) => {
-              onAddItem(name);
-              setAddingItem(false);
-            }}
-            onCancel={() => setAddingItem(false)}
-          />
-        </div>
-      )}
-      {section.items.length === 0 && !addingItem && <SectionEmptyState id={section.id} />}
+      {section.items.length === 0 && <SectionEmptyState id={section.id} />}
       {section.items.map((item) => {
         // PR1c item 1. These items belong to sections a reader created before `N4` retired the
         // concept, and BOTH old destinations are dead: `/channel/[id]` redirects to `/prayers`,
@@ -578,7 +724,7 @@ function SectionEmptyState({ id }: { id: string }) {
       ? 'Group study spaces — a class or cohort working through a passage together. Being built.'
       : id === 'partners'
         ? 'A space of your own for each sermon or class, with your notes kept together. Being built.'
-        : 'Empty. Use + on the heading to add to this section.';
+        : 'Empty. Study sections fill in when study spaces are built.';
   return (
     <p className="px-4 py-1 pb-2 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
       {copy}
@@ -700,14 +846,6 @@ function SidebarButton({
       <span className="flex w-4 items-center justify-center text-sm">{icon}</span>
       <span className="flex-1 truncate text-left">{label}</span>
     </button>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg aria-hidden className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-    </svg>
   );
 }
 

@@ -1,0 +1,206 @@
+# RED-PROOF + GREEN — W5 merged search surface unit suite
+
+Suite: web/test/search-groups.test.ts (16 tests)
+Covers: the pure core of the §7.3 merged search surface — group order and labels, the
+catalog-fence mapping (lexicons pinned as its own register query), URL-state parsing/building
+(query, E8 include-personal default-OFF, group collapse, per-group paging offsets with clamps),
+and the ILIKE/excerpt text helpers. The per-group query fan-out itself (S-12) is pinned against
+the real engine by web/test/invariants/search-register-groups.test.ts (W2, separately logged).
+
+## RED RUN (watched fail first)
+
+Four simultaneous mutations to web/src/lib/search-groups.ts:
+  M1a PERSONAL_GROUPS reversed (design order violated)
+  M1b include-personal defaulted ON (E8 "explicit" violated)
+  M2a offset clamp [0, SEARCH_MAX_OFFSET] removed (the search-sections.ts `?offset=1e21` scar)
+  M2b collapsed-id filter dropped (unknown ids admitted into URLs)
+
+Command: cd web && npx vitest run test/search-groups.test.ts   → exit 1, 6 failed | 10 passed
+
+Failing tests:
+  - §7.3 group model > order (M1a)
+  - parseSearchState > defaults to include-personal OFF (M1b)
+  - parseSearchState > only personal=1 counts (M1b)
+  - parseSearchState > offsets clamped (M2a)
+  - parseSearchState > unknown collapsed ids dropped (M2b)
+  - buildSearchHref > round-trips (M2a/M2b: mutated state no longer round-trips)
+
+Full runner output below, verbatim (tail trimmed of the Vite CJS deprecation warning only).
+
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git/web
+
+ ❯ test/search-groups.test.ts (16 tests | 6 failed) 7ms
+   × §7.3 group model > lists the groups in the design’s order: personal first, then the library by register 4ms
+     → expected [ 'notes', 'prayers', 'works', …(1) ] to deeply equal [ 'studies', 'works', 'prayers', …(1) ]
+   × §7.3 group model > carries the design’s labels 0ms
+     → expected [ 'Your notes', 'Your prayers', …(2) ] to deeply equal [ 'Your studies', 'Your works', …(2) ]
+   × parseSearchState > parses an empty URL to the default state (include-personal OFF — E8 is explicit opt-in) 1ms
+     → expected { q: '', includePersonal: true, …(2) } to deeply equal { q: '', includePersonal: false, …(2) }
+   × parseSearchState > reads q and the E8 checkbox; only personal=1 counts 0ms
+     → expected true to be false // Object.is equality
+   × parseSearchState > parses per-group offsets, clamped to [0, SEARCH_MAX_OFFSET]; garbage is page one, never a 500 1ms
+     → expected { sermons: -5 } to deeply equal { sermons: +0 }
+   × parseSearchState > keeps only known collapsed ids, deduped, in canonical group order (stable URLs) 0ms
+     → expected [ 'nope', 'studies', 'theology' ] to deeply equal [ 'studies', 'theology' ]
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/search-groups.test.ts > §7.3 group model > lists the groups in the design’s order: personal first, then the library by register
+AssertionError: expected [ 'notes', 'prayers', 'works', …(1) ] to deeply equal [ 'studies', 'works', 'prayers', …(1) ]
+
+- Expected
++ Received
+
+  Array [
+-   "studies",
+-   "works",
+-   "prayers",
+    "notes",
++   "prayers",
++   "works",
++   "studies",
+  ]
+
+ ❯ test/search-groups.test.ts:30:46
+     28| describe('§7.3 group model', () => {
+     29|   it('lists the groups in the design’s order: personal first, then the…
+     30|     expect(PERSONAL_GROUPS.map((g) => g.id)).toEqual(['studies', 'work…
+       |                                              ^
+     31|     expect(CORPUS_GROUPS.map((g) => g.id)).toEqual(['commentaries', 's…
+     32|     expect(SEARCH_GROUP_IDS).toEqual([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  test/search-groups.test.ts > §7.3 group model > carries the design’s labels
+AssertionError: expected [ 'Your notes', 'Your prayers', …(2) ] to deeply equal [ 'Your studies', 'Your works', …(2) ]
+
+- Expected
++ Received
+
+  Array [
+-   "Your studies",
+-   "Your works",
+-   "Your prayers",
+    "Your notes",
++   "Your prayers",
++   "Your works",
++   "Your studies",
+  ]
+
+ ❯ test/search-groups.test.ts:39:49
+     37| 
+     38|   it('carries the design’s labels', () => {
+     39|     expect(PERSONAL_GROUPS.map((g) => g.label)).toEqual(['Your studies…
+       |                                                 ^
+     40|     expect(CORPUS_GROUPS.map((g) => g.label)).toEqual(['Commentaries',…
+     41|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  test/search-groups.test.ts > parseSearchState > parses an empty URL to the default state (include-personal OFF — E8 is explicit opt-in)
+AssertionError: expected { q: '', includePersonal: true, …(2) } to deeply equal { q: '', includePersonal: false, …(2) }
+
+- Expected
++ Received
+
+  Object {
+    "collapsed": Array [],
+-   "includePersonal": false,
++   "includePersonal": true,
+    "offsets": Object {},
+    "q": "",
+  }
+
+ ❯ test/search-groups.test.ts:58:34
+     56| describe('parseSearchState', () => {
+     57|   it('parses an empty URL to the default state (include-personal OFF —…
+     58|     expect(parseSearchState({})).toEqual(EMPTY_SEARCH_STATE);
+       |                                  ^
+     59|     expect(parseSearchState({}).includePersonal).toBe(false);
+     60|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  test/search-groups.test.ts > parseSearchState > reads q and the E8 checkbox; only personal=1 counts
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ test/search-groups.test.ts:65:68
+     63|     expect(parseSearchState({ q: 'rahab' }).q).toBe('rahab');
+     64|     expect(parseSearchState({ q: 'rahab', personal: '1' }).includePers…
+     65|     expect(parseSearchState({ personal: 'true' }).includePersonal).toB…
+       |                                                                    ^
+     66|     expect(parseSearchState({ personal: '0' }).includePersonal).toBe(f…
+     67|     expect(parseSearchState({ personal: ['1', '0'] }).includePersonal)…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  test/search-groups.test.ts > parseSearchState > parses per-group offsets, clamped to [0, SEARCH_MAX_OFFSET]; garbage is page one, never a 500
+AssertionError: expected { sermons: -5 } to deeply equal { sermons: +0 }
+
+- Expected
++ Received
+
+  Object {
+-   "sermons": 0,
++   "sermons": -5,
+  }
+
+ ❯ test/search-groups.test.ts:72:61
+     70|   it('parses per-group offsets, clamped to [0, SEARCH_MAX_OFFSET]; gar…
+     71|     expect(parseSearchState({ off_sermons: '10' }).offsets).toEqual({ …
+     72|     expect(parseSearchState({ off_sermons: '-5' }).offsets).toEqual({ …
+       |                                                             ^
+     73|     expect(parseSearchState({ off_sermons: 'abc' }).offsets).toEqual({…
+     74|     expect(parseSearchState({ off_sermons: '1e21' }).offsets).toEqual(…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  test/search-groups.test.ts > parseSearchState > keeps only known collapsed ids, deduped, in canonical group order (stable URLs)
+AssertionError: expected [ 'nope', 'studies', 'theology' ] to deeply equal [ 'studies', 'theology' ]
+
+- Expected
++ Received
+
+  Array [
++   "nope",
+    "studies",
+    "theology",
+  ]
+
+ ❯ test/search-groups.test.ts:83:88
+     81| 
+     82|   it('keeps only known collapsed ids, deduped, in canonical group orde…
+     83|     expect(parseSearchState({ collapsed: 'theology,studies,nope,studie…
+       |                                                                                        ^
+     84|     expect(parseSearchState({ collapsed: '' }).collapsed).toEqual([]);
+     85|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+ Test Files  1 failed (1)
+      Tests  6 failed | 10 passed (16)
+   Start at  17:48:47
+   Duration  205ms (transform 18ms, setup 0ms, collect 16ms, tests 7ms, environment 0ms, prepare 28ms)
+
+
+## GREEN RUN (mutations reverted, file restored byte-identical via cp of the pre-mutation copy)
+
+Command: cd web && npx vitest run test/search-groups.test.ts   → exit 0, 16 passed
+
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git/web
+
+ ✓ test/search-groups.test.ts (16 tests) 3ms
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  17:48:48
+   Duration  181ms (transform 22ms, setup 0ms, collect 17ms, tests 3ms, environment 0ms, prepare 31ms)
+

@@ -1,0 +1,58 @@
+# RED-PROOF + GREEN — clipping-provenance.test.ts (S-1)
+
+Suite: web/test/invariants/clipping-provenance.test.ts
+Invariant: S-1 (docs/STUDY_DOCS_DESIGN.md §8) — the server is the only writer of clipping
+quote/attribution; client-supplied quote/attribution is rejected 400; the table CHECKs back it.
+Env: APP_DATABASE_URL=app_runtime dev (ep-tiny-hat), DATABASE_URL=neondb_owner dev
+(~/.neon_dev_owner_url). Roles verified via current_user before any run.
+
+## RED run 1 — route guard removed (2026-08-13)
+
+Break: deleted the S-1 guard block (`if ('quote' in body || 'attribution' in body) → 400`) from
+POST in web/src/app/api/studies/[id]/blocks/route.ts. Nothing else touched.
+
+Result: suite RED, exactly on the S-1 case:
+
+    FAIL  ... > S-1: client-supplied quote or attribution is 400 INVALID_REQUEST on POST — and NOTHING is written
+    AssertionError: expected 201 to be 400        (the smuggled-quote POST was ACCEPTED and written)
+    Tests  2 failed | 2 passed (4)
+
+(The second failure in the same run was an authoring bug the red run surfaced, not the seeded
+defect: the CHECK-probe control row reused position 'V', already taken by the golden-path
+clipping → 23505 idx_blocks_order. Fixed by moving the control row to position 'a'. A check run
+that catches its own fixture's collision is doing its job.)
+
+## RED run 2 — each table CHECK dropped in a rolled-back transaction
+
+One-off script (not shipped; reproducible from this description), as owner. Constraint names on
+dev (`SELECT conname FROM pg_constraint WHERE conrelid='study_blocks'::regclass AND contype='c'
+ORDER BY oid`): `study_blocks_kind_check` (the named kind CHECK), then `study_blocks_check` …
+`study_blocks_check4` = the five §6.1 CHECKs IN DEFINITION ORDER (check=CHECK 1, check1=CHECK 2,
+check2=CHECK 3, check3=CHECK 4, check4=CHECK 5 — verified empirically; a first pass that forgot
+the kind CHECK mis-mapped the drops and was caught by the script's own UNEXPECTED branch).
+
+Per shape: `BEGIN; ALTER TABLE study_blocks DROP CONSTRAINT <conname>; <violating INSERT>; ROLLBACK`.
+
+    RED  CHECK 1 (text block, no body):           ADMITTED with study_blocks_check dropped
+    RED  CHECK 2 (clipping that is nothing):      ADMITTED with study_blocks_check1 dropped
+    RED  CHECK 3 (text block + smuggled fields):  ADMITTED with check1+check2 dropped — the row
+                                                  violates CHECK 2 as well (quote present on a
+                                                  non-clipping), so both had to drop; the intact
+                                                  table refuses it either way
+    RED  CHECK 4 (clipping, no key):              ADMITTED with study_blocks_check3 dropped
+    RED  CHECK 5 (clipping, no attribution):      ADMITTED with study_blocks_check4 dropped
+    intact table: all five → 23514 (OK ×5)
+
+Every transaction rolled back and the fixture study was deleted — no state left behind.
+
+## GREEN run — guard restored, control position fixed
+
+Route guard reverted byte-identical (verified: git diff empty for the route after revert);
+control row position 'V' → 'a'.
+
+    Test Files  1 passed (1)
+    Tests  4 passed (4)
+    Duration  ~4s
+
+Final green output is reproduced in the W2 stream report (and re-runnable any time:
+`cd web && APP_DATABASE_URL=<runtime dev> DATABASE_URL=<owner dev> npx vitest run test/invariants/clipping-provenance.test.ts`).

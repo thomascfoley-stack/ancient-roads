@@ -4,6 +4,10 @@ import type pg from 'pg';
 export declare const MIGRATION_024: string;
 export declare const MIGRATION_023: string;
 
+/** Works whose unit_ordinal authority is the ingest pipeline, not 024's backfill —
+ *  the recompute legs (preservation, weld) skip these; NULL/dup/order/digest still run. */
+export declare const INGEST_AUTHORED_UNIT_WORKS: Set<string>;
+
 export declare function sourceStatusCohorts(migrationPath?: string): string[];
 export declare function assertCohort(cohort: string | undefined, migrationPath?: string): string;
 
@@ -52,6 +56,8 @@ export interface CohortMeasurement {
   uniformOffsets: Array<{ slug: string; offset: number; sections: number }>;
   weldRows: Array<{ slug: string; stored_units: number; computed_units: number }>;
   welds: Array<{ slug: string; stored_units: number; computed_units: number }>;
+  /** Ingest-authored works skipped by the recompute legs (INGEST_AUTHORED_UNIT_WORKS), present in this cohort. */
+  exemptedWorks: string[];
 }
 
 export declare function measureUnitOrdinalForCohort(

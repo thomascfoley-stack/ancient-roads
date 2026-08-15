@@ -1,0 +1,61 @@
+=== W3 red-proof log — study-docs P2, study doc page UI ===
+suite: web/test/components/study-editor.test.tsx (vitest, jsdom, real timers)
+
+=== RED RUN 1 — seed A (S-13): failed update_text sets save state back to clean (failure invisible) ===
+$ npx vitest run --config vitest.config.ts test/components/study-editor.test.tsx
+   ✓ StudyEditor — autosave and save state > typing in a text block saves by itself (update_text on the block id) and shows Saved 541ms
+   × StudyEditor — autosave and save state > S-13: a failed write shows Save failed — Retry, keeps the buffer, and Retry resends it 3017ms
+   ✓ StudyEditor — + Text between blocks > inserts between blocks, creates once with the captured placement, then updates on the returned id 1037ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  test/components/study-editor.test.tsx > StudyEditor — autosave and save state > S-13: a failed write shows Save failed — Retry, keeps the buffer, and Retry resends it
+      Tests  1 failed | 4 passed (5)
+
+=== RED RUN 2 — seed B (S-10): tombstone branch renders an Open-in-work link ===
+$ npx vitest run --config vitest.config.ts test/components/study-editor.test.tsx
+   ✓ StudyEditor — autosave and save state > typing in a text block saves by itself (update_text on the block id) and shows Saved 527ms
+   ✓ StudyEditor — autosave and save state > S-13: a failed write shows Save failed — Retry, keeps the buffer, and Retry resends it 513ms
+   × StudyEditor — clippings and tombstones > a clipping renders attribution + quote + Open-in-work; a tombstone drops quote AND link (S-10) 9ms
+   ✓ StudyEditor — + Text between blocks > inserts between blocks, creates once with the captured placement, then updates on the returned id 1015ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  test/components/study-editor.test.tsx > StudyEditor — clippings and tombstones > a clipping renders attribution + quote + Open-in-work; a tombstone drops quote AND link (S-10)
+      Tests  1 failed | 4 passed (5)
+
+=== RED RUN 3 — seed C (E7): onChange never schedules the debounced save ===
+$ npx vitest run --config vitest.config.ts test/components/study-editor.test.tsx
+   × StudyEditor — autosave and save state > typing in a text block saves by itself (update_text on the block id) and shows Saved 3033ms
+   × StudyEditor — autosave and save state > S-13: a failed write shows Save failed — Retry, keeps the buffer, and Retry resends it 3010ms
+   × StudyEditor — + Text between blocks > inserts between blocks, creates once with the captured placement, then updates on the returned id 3025ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  test/components/study-editor.test.tsx > StudyEditor — autosave and save state > typing in a text block saves by itself (update_text on the block id) and shows Saved
+ FAIL  test/components/study-editor.test.tsx > StudyEditor — autosave and save state > S-13: a failed write shows Save failed — Retry, keeps the buffer, and Retry resends it
+ FAIL  test/components/study-editor.test.tsx > StudyEditor — + Text between blocks > inserts between blocks, creates once with the captured placement, then updates on the returned id
+      Tests  3 failed | 2 passed (5)
+
+=== GREEN RUN — seeds reverted, implementation as shipped ===
+$ npx vitest run --config vitest.config.ts test/components/study-editor.test.tsx
+ ✓ test/components/study-editor.test.tsx (5 tests) 2101ms
+   ✓ StudyEditor — autosave and save state > typing in a text block saves by itself (update_text on the block id) and shows Saved 537ms
+   ✓ StudyEditor — autosave and save state > S-13: a failed write shows Save failed — Retry, keeps the buffer, and Retry resends it 516ms
+   ✓ StudyEditor — + Text between blocks > inserts between blocks, creates once with the captured placement, then updates on the returned id 1022ms
+      Tests  5 passed (5)
+
+=== DEV-DB RENDER-PATH VERIFICATION (ep-tiny-hat, app_runtime role) ===
+$ npx tsx /tmp/w3-verify.mts  (script exercises the exact server calls the W3 pages/routes make;
+   synthetic user w3-render-check; study soft-deleted at the end)
+PASS  clipping inserted from published section
+PASS  getStudyWithBlocks returns study + 3 blocks
+PASS  blocks are in insertion order (position, id)
+PASS  resolution did not fail closed on a healthy check
+PASS  render states: text, clipping, text
+PASS  unknown section id renders tombstone (fail closed)
+PASS  purged quote renders tombstone (data state)
+PASS  export starts with the title heading
+PASS  export carries the text block verbatim
+PASS  export renders the clipping as a blockquote with attribution
+PASS  listStudies returns the study
+PASS  updated_at round-trips as TEXT (cursor-safe), not a Date
+PASS  pinned_at is set after pin
+PASS  before-cursor page is a strict subset (no overlap)
+PASS  updateTextBlock succeeds
+PASS  softDeleteStudy cleanup
+PASS  deleted study no longer reads

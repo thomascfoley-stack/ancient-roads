@@ -1,0 +1,40 @@
+post-checks · target ep-odd-fog-atnykudm · 2026-08-12T22:26:52.455Z
+
+
+PASS  table studies exists
+PASS  table study_blocks exists
+PASS  table study_block_revisions exists
+PASS  RLS enabled on studies
+PASS  RLS enabled on study_block_revisions
+PASS  RLS enabled on study_blocks
+PASS  RLS rows found for all three tables
+PASS  policy studies_policy on studies (USING + WITH CHECK)
+PASS  policy study_block_revisions_policy on study_block_revisions (USING + WITH CHECK)
+PASS  policy study_blocks_policy on study_blocks (USING + WITH CHECK)
+PASS  exactly one policy per table
+PASS  app_runtime SELECT on studies = true
+PASS  app_runtime INSERT on studies = true
+PASS  app_runtime UPDATE on studies = true
+PASS  app_runtime DELETE on studies = false
+PASS  app_runtime SELECT on study_blocks = true
+PASS  app_runtime INSERT on study_blocks = true
+PASS  app_runtime UPDATE on study_blocks = true
+PASS  app_runtime DELETE on study_blocks = false
+PASS  app_runtime SELECT on study_block_revisions = true
+PASS  app_runtime INSERT on study_block_revisions = true
+PASS  app_runtime UPDATE on study_block_revisions = false
+PASS  app_runtime DELETE on study_block_revisions = false
+PASS  index idx_studies_user present
+PASS  index idx_blocks_order present
+PASS  index idx_blocks_study present
+PASS  index idx_blocks_source present
+PASS  index idx_blocks_section present
+PASS  index idx_blocks_user_tsv present
+PASS  index idx_revisions_block present
+PASS  idx_blocks_user_tsv is GIN(user_id, tsv) WITH fastupdate=off
+PASS  idx_blocks_order is UNIQUE partial
+PASS  ledger row for 110_studies.sql present (with checksum)
+PASS  btree_gin extension installed
+PASS  all three tables are empty (nothing but DDL happened)
+
+POST-CHECKS: ALL PASS

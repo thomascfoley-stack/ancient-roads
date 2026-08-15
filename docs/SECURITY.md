@@ -197,12 +197,13 @@ Moving off `@neondatabase/auth` is therefore an **urgent** blocker, not a later 
 | GHSA | Sev | In our path? | Notes |
 |---|---|---|---|
 | **GHSA-g38m-r43w-p2q7** | HIGH | **YES — real** | Account takeover: attacker pre-registers victim's email via `/sign-up/email` (unverified); victim's later Google/GitHub login auto-links to the attacker's account. Hits apps with both email/password *and* social login = us. |
-| GHSA-86j7-9j95-vpqj | HIGH | assess | Stored XSS in auth-server origin — determine if reachable in our render path. |
-| GHSA-9h47-pqcx-hjr4 | HIGH | assess | Insecure cryptographic defaults — determine if it affects our session/token config. |
-| GHSA-392p-2q2v-4372 | HIGH | assess | OAuth refresh-token rotation fork — depends on refresh usage. |
+| GHSA-86j7-9j95-vpqj | HIGH | no | Stored XSS via `javascript:` redirect_uri — **oidc-provider and mcp provider plugins only**; not enabled (grep `web/src` 2026-08-11: zero references). Assessed, was "assess". |
+| GHSA-9h47-pqcx-hjr4 | HIGH | no | Insecure crypto defaults in **oidcProvider** (alg=none, plain PKCE) — provider plugin, not enabled. Assessed, was "assess". |
+| GHSA-392p-2q2v-4372 | HIGH | no | OAuth refresh-token rotation fork — better-auth acting as OAuth **provider**; not enabled (social sign-in tokens are the upstream provider's, not better-auth-issued). Assessed, was "assess". |
 | GHSA-pw9m-5jxm-xr6h | CRIT | no | `oidcProvider`/`mcp` **provider** plugins only; we don't run better-auth as a provider. |
 | GHSA-7w99-5wm4-3g79 | HIGH | no | `@better-auth/oauth-provider` — provider, not enabled. |
 | GHSA-fmh4-wcc4-5jm3 | HIGH | no | organization-invitation plugin — not enabled. |
+| GHSA-qq9h-g4jm-xgf3 | HIGH | no — method not shipped | Magic-link/email-OTP pre-account hijack; the app ships email/password + Google only (grep `web/src` 2026-08-11: no magicLink/emailOTP call). Kept VISIBLE via `--expect-red` (ADR-038): the hosted server's method config is unobservable from this repo. |
 | GHSA-wxw3-q3m9-c3jr | MOD | no | OAuth state CSRF — requires `state:"cookie"` + `pkce:false`; we use the defaults. |
 | GHSA-5xrq / GHSA-fx2h / esbuild / postcss / vite | CRIT/HIGH/MOD | no | dev/build tooling (vitest UI, vite dev-server); never executed in the prod runtime. |
 
@@ -248,23 +249,29 @@ disappearance from the declared set both fail the gate. This replaces the old ra
 
 | GHSA | Root | In ignoreGhsas? | Status | Closes when |
 |---|---|---|---|---|
-| GHSA-g38m-r43w-p2q7 | better-auth account takeover | yes (CI grouping) | OPEN — SEC-1 launch blocker | SEC-1 / auth migration |
-| GHSA-86j7-9j95-vpqj | better-auth XSS | yes | assess | SEC-1 |
-| GHSA-9h47-pqcx-hjr4 | better-auth crypto defaults | yes | assess | SEC-1 |
-| GHSA-392p-2q2v-4372 | better-auth OAuth refresh | yes | assess | SEC-1 |
+| GHSA-g38m-r43w-p2q7 | better-auth account takeover | **no — A7 keeps it out by design** | **CLOSED by Verify at Sign-up (2026-08-08 ruling, top section); declared `--expect-red` 2026-08-11** | Neon confirms hosted server ≥1.6.11, or migration off the beta |
+| GHSA-86j7-9j95-vpqj | better-auth XSS | yes | ignored — not in path (2026-08-11) | n/a (revisit if a provider plugin is ever enabled) |
+| GHSA-9h47-pqcx-hjr4 | better-auth crypto defaults | yes | ignored — not in path (2026-08-11) | n/a (same) |
+| GHSA-392p-2q2v-4372 | better-auth OAuth refresh | yes | ignored — not in path (2026-08-11) | n/a (same) |
 | GHSA-pw9m-5jxm-xr6h | oauth provider plugin | yes | not in path | n/a |
 | GHSA-7w99-5wm4-3g79 | oauth provider | yes | not in path | n/a |
 | GHSA-fmh4-wcc4-5jm3 | org invitation plugin | yes | not enabled | n/a |
 | GHSA-5xrq-8626-4rwp | vitest/vite dev tooling | yes | dev-only | n/a |
 | GHSA-fx2h-pf6j-xcff | vitest/vite dev tooling | yes | dev-only | n/a |
-| **GHSA-qq9h-g4jm-xgf3** | better-auth magic-link hijack | **no** | **accepted-red (ADR-038)** | SEC-1 |
+| **GHSA-qq9h-g4jm-xgf3** | better-auth magic-link hijack | **no** | **accepted-red (ADR-038)** — method not shipped; hosted method config unobservable, so it stays declared, not ignored | Neon confirms hosted server ≥1.6.22, or migration off the beta |
 | esbuild / postcss / vite (remaining) | dev/build | yes | dev-only | n/a |
 
-**Declared `--expect-red` at Stage 1 exit:** `GHSA-qq9h-g4jm-xgf3` only.
+**Declared `--expect-red` (2026-08-11, owner ruling on docs/pm/RULINGS-2026-08-11.md §1):**
+`GHSA-g38m-r43w-p2q7` (closed by Verify at Sign-up 2026-08-08 — the closure is a Neon
+console toggle this repo cannot observe, so it is DECLARED, not ignored) and
+`GHSA-qq9h-g4jm-xgf3` (ADR-038 accepted-red). A disappearance of either fails the gate, by
+design — that is what turns "the toggle got switched off" or "the server got patched" into
+a build event instead of silence.
 
-The 9 better-auth + dev-tooling GHSAs in `ignoreGhsas` unblock CI on the unfixable transitive
+The 8 better-auth + dev-tooling GHSAs in `ignoreGhsas` unblock CI on the unfixable transitive
 set; that **does not accept SEC-1 risk.** Remove each GHSA from the ignore list the moment its
-dependency fix lands.
+dependency fix lands — and the moment any OAuth-provider / mcp / organization / magic-link
+plugin is enabled anywhere in this product, every "not in path" adjudication above is void.
 
 ### Resolved framework/tooling CVEs (2026-07-24) — FIXED, not ignored
 Six HIGH advisories (unrelated to the SEC-1 better-auth cluster) were CVE-disclosure drift

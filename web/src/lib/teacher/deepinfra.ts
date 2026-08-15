@@ -32,7 +32,15 @@ export async function embedQuery(text: string): Promise<number[]> {
     signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error(`Embedding request failed: ${res.status} ${await res.text()}`);
-  const json = (await res.json()) as { data: { embedding: number[] }[] };
+  const json = (await res.json()) as { model?: string; data: { embedding: number[] }[] };
+  // Provider-drift guard (EMBEDDINGS_DESIGN v2 D5 / I-1): fail fast if the provider served a
+  // different model than requested — a wrong-model query vector scores against the corpus
+  // cleanly and returns plausible garbage.
+  if (json.model !== EMBED_MODEL) {
+    throw new Error(
+      `Embedding model mismatch: requested ${EMBED_MODEL}, provider returned ${json.model ?? 'none'}`,
+    );
+  }
   const vec = json.data[0]?.embedding;
   if (!vec || vec.length !== 1024) {
     throw new Error(`Expected a 1024-dim embedding, got ${vec?.length ?? 'none'}`);
@@ -67,7 +75,17 @@ export async function compose(
     signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) throw new Error(`Compose request failed: ${res.status} ${await res.text()}`);
-  const json = (await res.json()) as { choices: { message: { content: string } }[] };
+  const json = (await res.json()) as {
+    model?: string;
+    choices: { message: { content: string } }[];
+  };
+  // Provider-drift guard: this exact hazard already bit here — see the COMPOSE_MODEL comment
+  // above. A forwarded composer must fail loudly, not compose slowly with the wrong model.
+  if (json.model !== COMPOSE_MODEL) {
+    throw new Error(
+      `Compose model mismatch: requested ${COMPOSE_MODEL}, provider returned ${json.model ?? 'none'}`,
+    );
+  }
   let content = json.choices[0]?.message?.content ?? '';
   content = content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
   content = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/, '').trim();

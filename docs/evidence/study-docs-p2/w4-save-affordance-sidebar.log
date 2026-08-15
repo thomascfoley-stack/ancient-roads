@@ -1,0 +1,32 @@
+  4  |  const __vi_import_1__ = await import('@testing-library/react')
+  5  |  const __vi_import_2__ = await import('@/components/save-to-study')
+     |                                       ^
+  6  |  const __vi_import_3__ = await import('@/components/sidebar')
+  7  |  
+ ❯ TransformPluginContext._formatError ../node_modules/.pnpm/vite@5.4.21_@types+node@22.20.0_lightningcss@1.32.0/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41
+ ❯ TransformPluginContext.error ../node_modules/.pnpm/vite@5.4.21_@types+node@22.20.0_lightningcss@1.32.0/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16
+ ❯ normalizeUrl ../node_modules/.pnpm/vite@5.4.21_@types+node@22.20.0_lightningcss@1.32.0/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23
+ ❯ ../node_modules/.pnpm/vite@5.4.21_@types+node@22.20.0_lightningcss@1.32.0/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+ ❯ TransformPluginContext.transform ../node_modules/.pnpm/vite@5.4.21_@types+node@22.20.0_lightningcss@1.32.0/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7
+ ❯ PluginContainer.transform ../node_modules/.pnpm/vite@5.4.21_@types+node@22.20.0_lightningcss@1.32.0/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18
+ ❯ loadAndTransform ../node_modules/.pnpm/vite@5.4.21_@types+node@22.20.0_lightningcss@1.32.0/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  17:42:09
+   Duration  687ms (transform 10ms, setup 0ms, collect 0ms, tests 0ms, environment 466ms, prepare 34ms)
+
+=== RED-PROOF 1 (mutation: orderStudiesForNav pinned partition removed) ===
+4 failed | 14 passed — ordering tests in all three describe blocks go red
+
+=== RED-PROOF 2 (mutation: ambiguous attribution returns a guess instead of null) ===
+1 failed | 17 passed — "resolves to NOTHING when ... attribution is ambiguous" goes red
+
+=== RED-PROOF 3 (mutation: stored last-target ignored, picker always opens — E7 broken) ===
+2 failed | 16 passed — "one tap" and "404 clears the default" go red
+
+=== FINAL GREEN (restored implementation, 2026-08-13) ===
+test/save-to-study.test.tsx: 18 passed
+test/sidebar-catalog-nav.test.tsx (pre-existing sibling): 6 passed

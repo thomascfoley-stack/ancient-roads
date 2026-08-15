@@ -21,6 +21,34 @@ export const MIGRATION_024 = path.join(ROOT, 'db/migrations/024_sections_unit_or
 export const MIGRATION_023 = path.join(ROOT, 'db/migrations/023_sources_status_ingesting.sql');
 
 /**
+ * THE AUTHORITY BOUNDARY OF THE RECOMPUTE LEGS (2026-08-10).
+ *
+ * The preservation and weld legs below ask one question: "does stored unit_ordinal preserve
+ * what migration 024's backfill computes?" For works 024 actually backfilled that is the
+ * right question — 024 wrote their units. But works ingested AFTER 024 (the 2026-08-02 CCEL
+ * wave onward) had unit_ordinal written BY THE INGEST PIPELINE at section-insert time; 024's
+ * need selector (NULL-only) never touched them. For those works the recompute is a FALSE
+ * authority: 024's heading-island heuristic merges adjacent same-heading sections (two hymns
+ * titled "Psalm 1" side by side become one "unit"), while the ingest wrote the correct
+ * one-unit-per-piece grouping. Measured on dev 2026-08-10: watts-psalmshymns stored 731
+ * units vs computed 677, naves-topical-bible 4,870 vs 4,868 — the "WELD" verdict was the
+ * heuristic failing, not the data. Their stored groupings are internally consistent: the
+ * NULL/duplicate/order/digest legs below still run for them, unchanged.
+ *
+ * The set is DECLARED, not detected: a work is added when its ingest is known to author
+ * units. The fail-closed direction is the default — a new ingest-authored work NOT in this
+ * set goes red here until someone declares it, which is the red-build cost of the decision.
+ * A stale entry (work not in the measured cohort) is a no-op, never a silent pass.
+ */
+export const INGEST_AUTHORED_UNIT_WORKS = new Set([
+  'watts-psalmshymns',     // CCEL wave 2026-08-02; one hymn per section, adjacent duplicate headings
+  'aaberg-hymnsdenmark',   // CCEL wave 2026-08-02
+  'brownlie-easternhymns', // CCEL wave 2026-08-02
+  'longfellow-s-bookhymns',// CCEL wave 2026-08-02
+  'naves-topical-bible',   // topical bridge 2026-08-02 (231f698); one topic per section
+]);
+
+/**
  * The status cohorts a source may be in, READ OUT OF the migration that defines the CHECK
  * constraint — never retyped here. Same discipline as backfillSqlFromMigration: if the set
  * of statuses changes, this list changes with it, and a cohort the database would reject is
@@ -359,7 +387,11 @@ export async function measureUnitOrdinalForCohort(client, { cohort, backfillSql 
 
   const uniformOffsets = [];
   const mismatches = [];
+  const exemptedWorks = [];
   for (const [slug, rows] of bySlug) {
+    // Ingest-authored units: the 024 recompute is not this work's authority — see
+    // INGEST_AUTHORED_UNIT_WORKS. Its NULL/dup/order/digest legs above and below still ran.
+    if (INGEST_AUTHORED_UNIT_WORKS.has(slug)) { exemptedWorks.push(slug); continue; }
     const analysis = analyzeUnitOrdinalPreservation(rows);
     if (!analysis.ok) {
       for (const e of analysis.errors) {
@@ -377,7 +409,9 @@ export async function measureUnitOrdinalForCohort(client, { cohort, backfillSql 
   // is invoked by hand and gated by nobody. See cohortWeldSql on why this refines the grouping
   // break rather than detecting anything it misses.
   const weldRows = (await client.query(cohortWeldSql(sql), [cohort])).rows;
-  const welds = weldRows.filter(isWeld);
+  // Same authority boundary as the preservation leg: an ingest-authored work whose stored
+  // units outnumber the 024 recompute is the heuristic merging headings, not a weld.
+  const welds = weldRows.filter((w) => isWeld(w) && !INGEST_AUTHORED_UNIT_WORKS.has(w.slug));
   for (const w of welds) {
     errors.push(
       `cohort '${cohort}': ${w.slug}: WELD — recomputation MERGES units ` +
@@ -404,6 +438,7 @@ export async function measureUnitOrdinalForCohort(client, { cohort, backfillSql 
     uniformOffsets,
     weldRows,
     welds,
+    exemptedWorks,
   };
 }
 

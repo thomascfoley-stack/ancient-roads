@@ -1,0 +1,25 @@
+=== GREEN RUN: studies-tenancy (restored, unmutated lib/studies.ts; sha256 5d2298b1… verified pre-run) ===
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /Users/foley/Projects/ancient-roads-git/web
+
+(node:2582) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/invariants/studies-tenancy.test.ts (6 tests) 4171ms
+   ✓ S-4 studies tenancy (two accounts over app_runtime; belt + RLS) > POSITIVE: user A sees A’s own study, blocks, and edit through every read path 351ms
+   ✓ S-4 studies tenancy (two accounts over app_runtime; belt + RLS) > B cannot READ A’s study through any data-layer read path 349ms
+   ✓ S-4 studies tenancy (two accounts over app_runtime; belt + RLS) > B cannot WRITE A’s study or blocks through any data-layer op 972ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  17:25:57
+   Duration  4.40s (transform 32ms, setup 0ms, collect 41ms, tests 4.17s, environment 0ms, prepare 28ms)
+
+=== vitest exit: 0 ===
