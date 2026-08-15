@@ -2,6 +2,17 @@
 // Drives the REAL teach() — embed → retrieve → lanes → compose → verify → retry — against the
 // dev database and the live providers, and prints one row per ask with the B1 stage timings.
 // Cold start is measured by the module-level counter inside teach.ts (first ask in a process).
+//
+// Run (from web/, and note BOTH env files — the DB url is the repo root's, the provider key is
+// web's — and that .env.local quotes its values, so strip the quotes):
+//   NODE_OPTIONS=--conditions=react-server npx tsx src/scripts/measure-ask-stages.mts
+// The condition flag is required: teach.ts imports `server-only`, which throws outside Next
+// unless the react-server export condition is on.
+//
+// WHAT THIS DOES NOT MEASURE: production. This runs one long-lived local process against the
+// dev database; production is serverless over a much larger corpus, and the only prod datapoint
+// this repo carries (C2, 2026-08-07) is an order of magnitude slower. Label any result from
+// this harness with the environment it ran in.
 import { teach } from '@/lib/teacher/teach';
 
 type Row = {
