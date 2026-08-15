@@ -1,0 +1,30 @@
+# Local Neo4j for the PM/docs graph (scripts/pm-graph). No product data, no prod credentials,
+# no network exposure beyond localhost — this graph only ever holds derived structure from
+# docs/**/*.md, WORKLOG.md, AGENTS.md and CLAUDE.md, which are already tracked in this repo.
+#
+# Start:  npm run pm-graph:up
+# Stop:   npm run pm-graph:down
+# Browser UI (after `up`): http://localhost:7474 — user `neo4j`, password from NEO4J_PASSWORD
+#   (falls back to the placeholder below; override in your shell, never commit a real one here
+#   since this file IS committed).
+services:
+  neo4j:
+    image: neo4j:5-community
+    container_name: pm-graph-neo4j
+    ports:
+      - '7474:7474' # browser UI + HTTP
+      - '7687:7687' # bolt (what ingest.mts and cypher-shell connect to)
+    environment:
+      NEO4J_AUTH: 'neo4j/${NEO4J_PASSWORD:-pmgraph-local-dev}'
+      NEO4J_PLUGINS: '[]'
+      NEO4J_dbms_security_procedures_unrestricted: ''
+    volumes:
+      - pm_graph_data:/data
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '-', 'http://localhost:7474']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  pm_graph_data:

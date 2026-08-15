@@ -27,6 +27,10 @@ rediscovering them. Do not duplicate their content here - go read them.
 - **docs/DECISIONS.md** - ADRs. Owner rulings are recorded here; do not relitigate them, and do
   not make owner-level calls (content quarantine, prod deletion, deploy timing) yourself.
 - **docs/evidence/** - logs proving what ran. Evidence or it did not happen.
+- **scripts/pm-graph/** - optional Neo4j graph over this PM/docs corpus (gates, ADRs, WORKLOG
+  entries, citations, correction signals), for querying instead of grep-and-scroll. Derived and
+  disposable, never a source of truth over the docs themselves. `scripts/pm-graph/README.md` has
+  the schema and example queries; `npm run pm-graph:up && npm run pm-graph:ingest` builds it.
 
 ## Task-specific entry points
 
