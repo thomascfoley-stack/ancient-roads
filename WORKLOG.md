@@ -45,9 +45,43 @@ and the current verdict is 1 violation, `josephus-whiston`, which is unrelated. 
 number and read it as a defect. The `jfb`/`jamieson-jfb` double-count `routing.ts:69-72` warns
 about did NOT occur — `jfb` is `staged` with 0 served rows, so only one JFB text serves.
 
+**4 · SECURITY — the production password is committed in plaintext in SIX tracked evidence
+logs, and they are pushed.** Found while reading the corpus-backlog flip receipts. The flip
+tool redacts its OWN output (`target … (credentials redacted)`), but the wrapper that spawned
+it echoed the full `CUTOVER_DATABASE_URL` as line 1 of each capture, password included:
+`corpus-backlog/{serve-josephus,publish-flip-forward,publish-flip-tcr,publish-flip-thayers,
+corpus-copy-run}-2026-08-14.log` and `wave-landings/flip-2026-08-15T05-52.log`. **All six
+working copies are now redacted to `REDACTED-ROTATE-THIS`; zero plaintext credentials remain
+in the tree.** That stops propagation and is NOT the fix — **the value is in git history and
+on the remote, so it must be ROTATED in the Neon console.** Treat it as disclosed. Note the
+2026-08-10 entry already recorded "the prod password was pasted into chat in plaintext; owner
+will rotate" — if that rotation happened, this is the second exposure of the new value; if it
+did not, this is the same secret exposed a second way. Either way the standing rule
+(`CLAUDE.md`: never log, never print, never write a production connection string to disk) was
+broken by a capture wrapper nothing checks. **A `grep -rl 'npg_'` in the pre-commit hook would
+have caught all six**; filed, not built.
+
+**5 · Corpus-backlog Step 2 was already DONE, on production, hours before I looked.** Verified
+from receipts, not by re-running: the 7-work forward flip (**58,717 rows served**, `eligible
+7 of 7 are 'staged'`) and the josephus serve (**6,492 rows served**, 0 status rows moved), both
+gate-held with snapshots and stated reverses. Step 1 completed too — its copy log ends mid-run
+after two works, but the flip's own census read 7 of 7 present and staged, which is the better
+witness. The runbook now carries a **DO NOT RE-RUN** banner with the receipts, because it still
+read as pending and re-running it would have been a duplicate production write.
+
+**This also resolves the dev `served-reconcile` red for good:** those flips were
+production-only, so `josephus-whiston — 6492 unserved` on `ep-tiny-hat` is **dev lagging prod**,
+not an open task. Everything I wrote about it earlier tonight — including the corrected version
+— was reasoning about a gap that exists on dev alone.
+
 ### NOT DONE / UNVERIFIED
 
 - **Nothing was applied to any database.** Both findings are documentation.
+- **ROTATE THE PRODUCTION PASSWORD.** Redacting the working copies does not remove it from git
+  history or from the remote. Owner action, console-only.
+- **Production was never read**, so Step 2's completion rests on its own receipts (which state
+  row counts and gate outcomes) rather than a post-flip prod census. `served-reconcile` against
+  prod under `RECONCILE_ALLOW_PROD=1` is the confirming check, and needs an owner go.
 - **Production is unmeasured.** Every number above is dev; dev and prod are not assumed equal,
   and the P4.n prod side was not read.
 - **`josephus-whiston` is the one open `served-reconcile` violation** (6,492 clean-provenance

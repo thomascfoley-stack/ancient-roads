@@ -30,12 +30,36 @@ thayers-lexicon is deliberately NOT in the file: `serve:false` (the corpus-copy 
 serve:false slugs — quarantine is law) and lexicons are served-by-nothing pending the D4/A8
 owner call.
 
-## Step 2 — publish + serve flips (7 works + josephus serve)
+## Step 2 — publish + serve flips (7 works + josephus serve) — **DONE 2026-08-15. DO NOT RE-RUN.**
+
+> Both commands executed against production, gate answered at the terminal, receipts beside
+> this file. Verified 2026-08-15 by reading those receipts, not by re-running:
+>
+> - **`publish-flip-forward-2026-08-14.log`** (01:56 UTC) — `eligible 7 of 7 are 'staged'`,
+>   **7 status rows staged → published, 58,717 embedding rows → served=true**, gate held.
+>   Snapshot `flip-pre-snapshot-2026-08-15T00-56-38-089Z.json` (143 rows, before COMMIT).
+> - **`serve-josephus-2026-08-14.log`** (01:20) — `--serve-published`, **0 status rows moved,
+>   6,492 embedding rows → served=true**, gate held. Snapshot
+>   `flip-pre-snapshot-2026-08-15T01-20-05-043Z.json`. Each log states its own exact reverse.
+>
+> **Step 1 also completed**, even though `corpus-copy-run-2026-08-14.log` ends mid-run after
+> two works — the flip's own census is the better witness and it read **7 of 7 present and
+> `staged` on prod**. The partial log is a truncated capture, not a partial copy.
+>
+> **DEV STILL LAGS PROD on both.** These flips were production-only, so `served-reconcile`
+> against `ep-tiny-hat` reports `josephus-whiston — 6492 clean-provenance row(s) unserved`.
+> That red is **dev lagging prod**, not an outstanding task, and re-running Step 2 to "fix"
+> it would be a second production write for a dev-side gap. If dev should match, serve it
+> on dev — do not point this runbook at dev.
+
+<details><summary>The commands, for the record (already executed)</summary>
 
 ```bash
 node scripts/publish-flip.mjs --slugs=docs/evidence/corpus-backlog/flip-slugs-2026-08-13.json
 node scripts/publish-flip.mjs --slugs=docs/evidence/corpus-backlog/flip-slugs-2026-08-13.json --serve-published
 ```
+
+</details>
 
 (flip-slugs JSON lists exactly: barnes-crosswire-nt, scofield-crosswire, pnt-crosswire,
 poole-tcp, whitefield-works, donne-divine-poems, herrick-noble-numbers. josephus-whiston is

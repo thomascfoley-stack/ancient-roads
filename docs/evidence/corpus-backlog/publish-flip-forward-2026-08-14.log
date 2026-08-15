@@ -1,4 +1,4 @@
-spawn env PUBLISH_ALLOW=1 PUBLISH_EXPECT_HOST=ep-odd-fog-atnykudm CUTOVER_DATABASE_URL=postgresql://neondb_owner:npg_XqFvRTh3Mo1O@ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require node scripts/publish-flip.mjs --slugs=docs/evidence/corpus-backlog/flip-slugs-2026-08-13.json
+spawn env PUBLISH_ALLOW=1 PUBLISH_EXPECT_HOST=ep-odd-fog-atnykudm CUTOVER_DATABASE_URL=postgresql://neondb_owner:REDACTED-ROTATE-THIS@ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require node scripts/publish-flip.mjs --slugs=docs/evidence/corpus-backlog/flip-slugs-2026-08-13.json
 serve:false  4 standing ruling(s) (HEAD 4, tree 4)
 publish-flip — target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (credentials redacted)
 direction    staged -> published
