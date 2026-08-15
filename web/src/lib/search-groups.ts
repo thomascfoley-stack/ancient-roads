@@ -24,7 +24,13 @@ import type { CatalogId } from './catalog-defs';
 // ── the groups ──────────────────────────────────────────────────────────────────────────────
 
 export type PersonalGroupId = 'studies' | 'works' | 'prayers' | 'notes';
-export type CorpusGroupId = 'commentaries' | 'sermons' | 'hymns-poetry' | 'theology' | 'lexicons';
+export type CorpusGroupId =
+  | 'commentaries'
+  | 'sermons'
+  | 'hymns-poetry'
+  | 'historians'
+  | 'theology'
+  | 'lexicons';
 export type SearchGroupId = PersonalGroupId | CorpusGroupId;
 
 export interface PersonalGroupDef {
@@ -54,9 +60,11 @@ export const CORPUS_GROUPS: readonly CorpusGroupDef[] = [
   { id: 'commentaries', label: 'Commentaries', via: 'catalog', catalog: 'commentaries' },
   { id: 'sermons', label: 'Sermons', via: 'catalog', catalog: 'sermons' },
   { id: 'hymns-poetry', label: 'Hymns & Poetry', via: 'catalog', catalog: 'hymns-poetry' },
-  // The design names the group "Theology"; the catalog it fences to is labelled
-  // "Theology & Creeds" on its own shelf. The group's label follows the design.
-  { id: 'theology', label: 'Theology', via: 'catalog', catalog: 'theology' },
+  // Historians added + the theology label aligned to its shelf name — owner direction
+  // 2026-08-13 (the editor-v2 annotation pass), amending §7.3's original five-group list.
+  // The historians catalog itself dates to the 2026-08-01 owner decision in catalog-defs.
+  { id: 'historians', label: 'Historians', via: 'catalog', catalog: 'historians' },
+  { id: 'theology', label: 'Theology & Creeds', via: 'catalog', catalog: 'theology' },
   { id: 'lexicons', label: 'Lexicons', via: 'lexicon-register' },
 ];
 

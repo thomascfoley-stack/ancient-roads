@@ -29,6 +29,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { StudyLibraryPanel } from './study-library-panel';
+import { clippingDisplay } from '@/lib/clipping-display';
 
 /** The block shape the editor renders — StudyBlock minus the server-only fields, plus the
  *  server-computed render state (see the header: licensing arrives decided, not derivable). */
@@ -41,6 +42,9 @@ export interface EditorBlock {
   ordinal: number | null;
   quote: string | null;
   attribution: { author?: string; work_title?: string; reference?: string } | null;
+  /** Trim offsets into `quote` (111, "trim not edit"): a view over the server's bytes. */
+  trim_start: number | null;
+  trim_end: number | null;
   renderState: 'text' | 'clipping' | 'tombstone';
 }
 
@@ -201,7 +205,11 @@ export function StudyEditor({
 }) {
   const [blocks, setBlocks] = useState<EditorBlock[]>(initialBlocks);
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
-  const [blockErrors, setBlockErrors] = useState<Record<string, 'remove' | 'move'>>({});
+  const [blockErrors, setBlockErrors] = useState<Record<string, 'remove' | 'move' | 'trim'>>({});
+  /** The clipping currently in trim mode: its quote renders RAW (byte-for-byte) so selection
+   *  offsets index the stored string exactly (the paragraph display reflows whitespace). */
+  const [trimming, setTrimming] = useState<string | null>(null);
+  const trimSourceRef = useRef<HTMLQuoteElement | null>(null);
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
   const [expandedInsert, setExpandedInsert] = useState<number | null>(null);
   const [nextAfter, setNextAfter] = useState<string | null>(initialNextAfterPosition);
@@ -214,6 +222,17 @@ export function StudyEditor({
   const [everSaved, setEverSaved] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelFocusToken, setPanelFocusToken] = useState(0);
+  // Owner annotations 2026-08-13: the library rail shrinks/enlarges by dragging its divider and
+  // collapses entirely (the doc takes the width). Pure layout preference — client-only
+  // localStorage, the S-9 rule: no render path DEPENDS on it, defaults are always valid.
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [panelWidth, setPanelWidth] = useState(336);
+  const [lookup, setLookup] = useState<{ token: number; q: string } | null>(null);
+  const [selPopover, setSelPopover] = useState<{ text: string; x: number; y: number } | null>(null);
+  const docColumnRef = useRef<HTMLDivElement | null>(null);
+  const panelWidthRef = useRef(336);
+  const dragStart = useRef<{ x: number; w: number } | null>(null);
+  const lookupCounter = useRef(0);
   const localCounter = useRef(0);
   const bufs = useRef(new Map<string, TextBuf>());
   const placements = useRef(new Map<string, Placement>());
@@ -224,9 +243,128 @@ export function StudyEditor({
   // cleared field falls back to this on blur rather than erasing the study's name.
   const savedTitle = useRef(study.title);
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('study-editor:panel');
+      if (!raw) return;
+      const pref = JSON.parse(raw) as { width?: unknown; collapsed?: unknown };
+      if (typeof pref.width === 'number' && Number.isFinite(pref.width)) {
+        const w = Math.min(560, Math.max(280, pref.width));
+        setPanelWidth(w);
+        panelWidthRef.current = w;
+      }
+      if (pref.collapsed === true) setPanelCollapsed(true);
+    } catch {
+      // A layout preference only; the defaults are always valid.
+    }
+  }, []);
+  const persistPanel = (width: number, collapsed: boolean) => {
+    try {
+      localStorage.setItem('study-editor:panel', JSON.stringify({ width, collapsed }));
+    } catch {
+      // Best-effort; losing the preference costs one drag.
+    }
+  };
+
+  const onDividerPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragStart.current = { x: e.clientX, w: panelWidthRef.current };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onDividerPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragStart.current) return;
+    const w = Math.min(560, Math.max(280, dragStart.current.w + (dragStart.current.x - e.clientX)));
+    panelWidthRef.current = w;
+    setPanelWidth(w);
+  };
+  const onDividerPointerUp = () => {
+    if (!dragStart.current) return;
+    dragStart.current = null;
+    persistPanel(panelWidthRef.current, panelCollapsed);
+  };
+  const setCollapsed = (collapsed: boolean) => {
+    setPanelCollapsed(collapsed);
+    persistPanel(panelWidthRef.current, collapsed);
+  };
+
+  // Select a word or phrase anywhere in the doc → a one-tap "Search lexicons" lookup (the
+  // owner's Greek/Hebrew-dictionary ask, v1: the lexicon REGISTER is the dictionary, searched
+  // through the same fenced engine as everything else in the panel).
+  // The trim handlers ("trim not edit", 111): read the user's selection AGAINST THE RAW quote
+  // node (single text node, byte-true), send offsets, adopt the server's answer locally.
+  const applyTrim = async (block: EditorBlock) => {
+    const container = trimSourceRef.current;
+    const sel = window.getSelection();
+    if (!container || !sel || sel.rangeCount === 0 || sel.isCollapsed) {
+      setBlockError(block.id, 'trim');
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    const node = container.firstChild;
+    if (!node || range.startContainer !== node || range.endContainer !== node) {
+      setBlockError(block.id, 'trim');
+      return;
+    }
+    const start = Math.min(range.startOffset, range.endOffset);
+    const end = Math.max(range.startOffset, range.endOffset);
+    if (end <= start) { setBlockError(block.id, 'trim'); return; }
+    try {
+      const res = await fetch(`/api/studies/${study.id}/blocks`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ op: 'trim', blockId: block.id, start, end }),
+      });
+      if (!res.ok) { setBlockError(block.id, 'trim'); return; }
+      setBlocks((cur) => cur.map((b) => (b.id === block.id ? { ...b, trim_start: start, trim_end: end } : b)));
+      setBlockError(block.id, undefined);
+      setTrimming(null);
+      sel.removeAllRanges();
+    } catch {
+      setBlockError(block.id, 'trim');
+    }
+  };
+  const clearTrim = async (block: EditorBlock) => {
+    try {
+      const res = await fetch(`/api/studies/${study.id}/blocks`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ op: 'trim', blockId: block.id, clear: true }),
+      });
+      if (!res.ok) { setBlockError(block.id, 'trim'); return; }
+      setBlocks((cur) => cur.map((b) => (b.id === block.id ? { ...b, trim_start: null, trim_end: null } : b)));
+      setBlockError(block.id, undefined);
+    } catch {
+      setBlockError(block.id, 'trim');
+    }
+  };
+
+  const onDocMouseUp = () => {
+    // Trim mode owns the selection; the lexicon popover stays out of its way.
+    if (trimming !== null) return;
+    const sel = window.getSelection();
+    const text = sel?.toString().trim() ?? '';
+    if (!sel || sel.rangeCount === 0 || text.length < 2 || text.length > 60 || text.includes('\n')) {
+      setSelPopover(null);
+      return;
+    }
+    const container = docColumnRef.current;
+    if (!container || !container.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+      setSelPopover(null);
+      return;
+    }
+    const r = sel.getRangeAt(0).getBoundingClientRect();
+    const c = container.getBoundingClientRect();
+    setSelPopover({ text, x: r.left - c.left + r.width / 2, y: r.top - c.top });
+  };
+  const runLexiconLookup = (term: string) => {
+    setLookup({ token: ++lookupCounter.current, q: term });
+    setPanelOpen(true);
+    setCollapsed(false);
+    setSelPopover(null);
+  };
+
   const setSave = (key: string, state: SaveState) =>
     setSaveStates((cur) => ({ ...cur, [key]: state }));
-  const setBlockError = (id: string, kind: 'remove' | 'move' | undefined) =>
+  const setBlockError = (id: string, kind: 'remove' | 'move' | 'trim' | undefined) =>
     setBlockErrors((cur) => {
       const next = { ...cur };
       if (kind === undefined) delete next[id];
@@ -325,6 +463,8 @@ export function StudyEditor({
       ordinal: null,
       quote: null,
       attribution: null,
+      trim_start: null,
+      trim_end: null,
       renderState: 'text',
     };
     setConfirmingRemove(null);
@@ -518,14 +658,21 @@ export function StudyEditor({
           </button>
         </span>
       ) : (
+        // A labeled pill, not a bare hairline — "hard to see, make it cleaner for the
+        // non-discerning eye" (owner annotation 2026-08-13). Still quiet; never five buttons.
         <button
           type="button"
           onClick={() => setExpandedInsert(index)}
           aria-label={`Insert at position ${index + 1}`}
-          className="flex min-h-[24px] w-full items-center justify-center opacity-25 transition-opacity ease-gentle hover:opacity-100 focus-visible:opacity-100"
+          className="flex min-h-[28px] w-full items-center justify-center opacity-60 transition-opacity ease-gentle hover:opacity-100 focus-visible:opacity-100"
         >
           <span aria-hidden="true" className="h-px w-16 bg-stone-300 dark:bg-stone-600" />
-          <span aria-hidden="true" className="mx-2 font-sans text-sm leading-none text-stone-400 dark:text-stone-500">+</span>
+          <span
+            aria-hidden="true"
+            className="mx-3 inline-flex items-center rounded-full border edge px-3 py-0.5 font-sans text-[11px] small-caps tracking-[0.08em] text-stone-500 dark:text-stone-400"
+          >
+            + Insert
+          </span>
           <span aria-hidden="true" className="h-px w-16 bg-stone-300 dark:bg-stone-600" />
         </button>
       )}
@@ -555,6 +702,26 @@ export function StudyEditor({
             className="inline-flex min-h-[44px] items-center hover:text-stone-700 dark:hover:text-stone-300"
           >
             ↓
+          </button>
+        )}
+        {block.renderState === 'clipping' && trimming !== block.id && (
+          <button
+            type="button"
+            onClick={() => { setTrimming(block.id); setBlockError(block.id, undefined); }}
+            aria-label={`Trim block ${i + 1}`}
+            className="inline-flex min-h-[44px] items-center hover:text-stone-700 dark:hover:text-stone-300"
+          >
+            Trim
+          </button>
+        )}
+        {block.renderState === 'clipping' && block.trim_start !== null && (
+          <button
+            type="button"
+            onClick={() => void clearTrim(block)}
+            aria-label={`Untrim block ${i + 1}`}
+            className="inline-flex min-h-[44px] items-center hover:text-stone-700 dark:hover:text-stone-300"
+          >
+            Untrim
           </button>
         )}
         {confirmingRemove === block.id ? (
@@ -592,8 +759,32 @@ export function StudyEditor({
 
   return (
     <div className="mx-auto max-w-[1360px] px-6 pb-16">
-      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:gap-14">
-        <div className="mx-auto w-full max-w-[75ch] lg:mx-0">
+      {/* Desktop: doc · drag divider · library rail. The columns are inline style because the
+          widths are the user's (drag-resize + collapse); below lg the div is block flow and the
+          style is inert. */}
+      <div
+        className="lg:grid"
+        style={{
+          gridTemplateColumns: panelCollapsed
+            ? 'minmax(0,1fr) 0px 2.75rem'
+            : `minmax(0,1fr) 14px ${panelWidth}px`,
+        }}
+      >
+        <div
+          ref={docColumnRef}
+          onMouseUp={onDocMouseUp}
+          className="relative mx-auto w-full max-w-[75ch] lg:mx-0 lg:pr-6"
+        >
+          {selPopover && (
+            <button
+              type="button"
+              onClick={() => runLexiconLookup(selPopover.text)}
+              style={{ left: selPopover.x, top: selPopover.y - 40 }}
+              className="absolute z-20 -translate-x-1/2 rounded-full border edge bg-white px-3 py-1 font-sans text-xs text-stone-700 shadow-sm hover:text-accent-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:text-accent-300"
+            >
+              Search lexicons
+            </button>
+          )}
           {/* Title: inline edit, saved on blur/Enter — auto-save always, never ask (E7). */}
           <input
             value={title}
@@ -697,9 +888,51 @@ export function StudyEditor({
                   </div>
                 ) : block.renderState === 'clipping' ? (
                   <figure className="border-l-2 border-stone-300 py-1 pl-4 dark:border-stone-700">
-                    <blockquote className="whitespace-pre-wrap font-serif leading-[1.9] text-stone-800 dark:text-stone-300">
-                      {block.quote}
-                    </blockquote>
+                    {trimming === block.id ? (
+                      <>
+                        {/* TRIM MODE ("trim not edit", 111): the quote renders RAW — one text
+                            node, byte-for-byte — so the selection's offsets index the stored
+                            string exactly. The paragraph display below reflows whitespace and
+                            would lie about offsets. */}
+                        <p className="mb-2 font-sans text-xs small-caps tracking-[0.08em] text-accent-700 dark:text-accent-300">
+                          Select the text to keep
+                        </p>
+                        <blockquote
+                          ref={trimSourceRef}
+                          className="whitespace-pre-wrap font-serif leading-[1.9] text-stone-800 dark:text-stone-300"
+                        >
+                          {block.quote}
+                        </blockquote>
+                        <div className="mt-2 flex items-center gap-4 font-sans text-xs small-caps tracking-[0.08em]">
+                          <button
+                            type="button"
+                            onClick={() => void applyTrim(block)}
+                            className="inline-flex min-h-[44px] items-center font-medium text-accent-700 hover:underline dark:text-accent-300"
+                          >
+                            Keep selection
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setTrimming(null); setBlockError(block.id, undefined); }}
+                            className="inline-flex min-h-[44px] items-center text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      /* DISPLAY derivation, one rule for every surface (clipping-display):
+                         trim collapses the cuts behind ellipses; paragraph reflow fixes the
+                         corpus's ragged ingest line-breaks. STORED bytes and exports carry
+                         the same rule, never a second one. */
+                      <blockquote className="font-serif leading-[1.9] text-stone-800 dark:text-stone-300">
+                        {clippingDisplay(block).text.split(/\n{2,}/).map((para, pi) => (
+                          <p key={pi} className={pi > 0 ? 'mt-4' : undefined}>
+                            {para.replace(/\s+/g, ' ').trim()}
+                          </p>
+                        ))}
+                      </blockquote>
+                    )}
                     <figcaption className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
                       <AttributionLine attribution={block.attribution} />
                       {block.work_slug && block.ordinal !== null && (
@@ -732,6 +965,11 @@ export function StudyEditor({
                 {blockErrors[block.id] === 'move' && (
                   <p role="alert" className="text-right text-sm text-red-800 dark:text-red-200">
                     The block could not be moved. Try again.
+                  </p>
+                )}
+                {blockErrors[block.id] === 'trim' && (
+                  <p role="alert" className="text-right text-sm text-red-800 dark:text-red-200">
+                    Select some of the quote to keep, then try again.
                   </p>
                 )}
                 {insertPoint(i + 1, { afterBlockId: block.id })}
@@ -769,13 +1007,65 @@ export function StudyEditor({
           </div>
         </div>
 
+        {/* The drag divider (desktop, panel open): pointer-drag or arrow keys resize the rail;
+            the preference persists per the S-9 client-only rule. */}
+        {!panelCollapsed ? (
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize the library panel (drag, or arrow keys)"
+            tabIndex={0}
+            onPointerDown={onDividerPointerDown}
+            onPointerMove={onDividerPointerMove}
+            onPointerUp={onDividerPointerUp}
+            onKeyDown={(e) => {
+              if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+              e.preventDefault();
+              const w = Math.min(560, Math.max(280, panelWidthRef.current + (e.key === 'ArrowLeft' ? 24 : -24)));
+              panelWidthRef.current = w;
+              setPanelWidth(w);
+              persistPanel(w, panelCollapsed);
+            }}
+            className="group hidden cursor-col-resize items-stretch justify-center lg:flex"
+          >
+            <span aria-hidden="true" className="w-px bg-stone-200 transition-colors group-hover:bg-accent-400 group-focus-visible:bg-accent-400 dark:bg-stone-700" />
+          </div>
+        ) : (
+          <div aria-hidden="true" className="hidden lg:block" />
+        )}
+
         <div className={`${panelOpen ? 'block' : 'hidden'} mt-12 border-t edge pt-8 lg:mt-0 lg:block lg:border-t-0 lg:pt-0`}>
-          <div className="lg:sticky lg:top-8 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto lg:pl-2">
+          {/* Desktop collapse (owner annotation): the rail folds to a reopen tab and the doc
+              takes the width. Mobile keeps its own Library toggle; this is lg-only chrome. */}
+          {panelCollapsed && (
+            <div className="hidden justify-end lg:flex">
+              <button
+                type="button"
+                onClick={() => setCollapsed(false)}
+                aria-label="Open the library panel"
+                className="sticky top-8 inline-flex min-h-[44px] items-center rounded border edge px-2 font-sans text-[11px] small-caps tracking-[0.08em] text-stone-500 [writing-mode:vertical-rl] hover:text-accent-600 dark:text-stone-400 dark:hover:text-accent-400"
+              >
+                Library
+              </button>
+            </div>
+          )}
+          <div className={`${panelCollapsed ? 'lg:hidden' : ''} lg:sticky lg:top-8 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto lg:pl-4`}>
+            <div className="hidden justify-end lg:flex">
+              <button
+                type="button"
+                onClick={() => setCollapsed(true)}
+                aria-label="Collapse the library panel"
+                className="-mb-6 inline-flex min-h-[32px] items-center font-sans text-[11px] small-caps tracking-[0.08em] text-stone-400 hover:text-stone-700 dark:text-stone-500 dark:hover:text-stone-300"
+              >
+                Hide ⟩
+              </button>
+            </div>
             <StudyLibraryPanel
               studyId={study.id}
               takePlacement={takePlacement}
               onAdded={onClippingAdded}
               focusToken={panelFocusToken}
+              lookup={lookup}
             />
           </div>
         </div>

@@ -325,6 +325,80 @@ Evidence: `docs/evidence/ask-latency/B2-measurement-2026-08-15-devlocal.md`.
 - `.env.local`'s `BLOB_READ_WRITE_TOKEN` is **quoted**, and a naive `cut -d= -f2-` carries the
   quotes into the value — which is how the first sync attempt burned a cycle failing auth against
   a token that was fine. Strip quotes when reading env files by hand.
+## 2026-08-13 — Clipping TRIM built (owner ruling: "trim not edit select part and collapse behind")
+
+Branch `feat/study-clipping-trim` off `feat/study-editor-v2-1`. The verbose-clipping ask,
+resolved without ever letting edited words wear an author's name:
+
+- **Migration 111** (`111_study_block_trim.sql`): `trim_start`/`trim_end INT` on `study_blocks`,
+  three CHECKs (pair, order, clipping-only), NO new grants — and the tail re-verifies the 110
+  posture rather than citing it (the 032/039 lesson). **Applied to dev** (ledger sha
+  `1fd392012eed…`), tail red-proofed via rolled-back seeds (dropped constraint → RED, dropped
+  column → RED, clean → GREEN; `docs/evidence/study-docs-p1/111-trim-redproof.log`).
+  **NOT on prod** — and the sequencing is load-bearing: this branch's code SELECTs the new
+  columns, so 111 must be owner-applied to `ep-odd-fog` BEFORE this code deploys or every
+  study read 500s. Stated in the PR too.
+- **One display rule** (`lib/clipping-display.ts`, client-safe, dependency-free): the kept
+  range with an ellipsis at each cut edge; consumed by the editor, the .md export, the .docx
+  model, and the print view — never re-derived. FAIL-SAFE by design (distinct from the
+  licensing fail-CLOSED and the comment says why): invalid offsets — reversed, past the end,
+  offsets that outlived a purge/re-hydration — fall back to the FULL quote.
+- **The op**: `trimBlock` validates offsets against `length(quote)` INSIDE the UPDATE — the
+  server's own bytes are the bound; PATCH `op:'trim' {start,end}` / `{clear:true}` (offsets
+  only, never text; the S-1 guard still precedes it).
+- **The UI**: Trim on any clipping → the quote renders RAW as one text node (byte-true
+  selection offsets; the paragraph display would lie) → select → Keep selection → ellipsed
+  excerpt; Untrim restores. Lexicon popover suppressed during trim mode.
+- **Verified**: 65 unit/component tests green (display rule incl. all fail-safe shapes; export
+  parity; op sends offsets never text; Untrim clears). Hand-test harness extended and re-run
+  against dev: **50/50** — range stored, out-of-range REFUSED by the in-statement bound,
+  cross-tenant trim refused, clear round-trips, zero residue
+  (`handtest-run-trim.log`). Browser walk via the dev harness: trimmed fixture renders the
+  excerpt with the cut text absent from the DOM entirely; trim mode's raw quote confirmed a
+  single text node; full audit PASSED.
+
+**NOT DONE / UNVERIFIED:** 111 not on prod (owner go required — blocks deploy of this branch);
+highlighter (same offsets substrate) awaits its own ruling and migration; fixer ≠ verifier.
+
+## 2026-08-13 — Editor v2.1: the owner's annotated-screenshot pass (Fable session)
+
+Branch `feat/study-editor-v2-1` off the merged `feat/study-docs-p2`. The owner marked up a live
+screenshot; every annotation ingested and either built or proposed:
+
+**Built (each verified in the live browser via the dev harness — DOM-proven this time):**
+- **Panel shrink/enlarge + full collapse** — a drag divider (pointer + arrow keys, 280–560px)
+  and a Hide control that folds the rail to a vertical reopen tab, the doc taking the width.
+  Layout preference in localStorage (S-9 client-only: no render path depends on it). Verified:
+  grid `1fr 14px 336px` ↔ `1fr 0px 2.75rem`, persistence round-trip.
+- **Insert point visibility** — the bare hairline became a labeled "+ Insert" pill at higher
+  contrast ("hard to see for the non-discerning eye"). Same one-per-gap discipline.
+- **"Wonky left spacing"** — diagnosed as the corpus's own hard line-breaks under
+  `whitespace-pre-wrap` (ragged two-word lines). Clippings now render as real paragraphs
+  (blank line = break, single newline = flow) — DISPLAY normalization only; stored bytes and
+  the .md export untouched. Verified: 2 paragraphs, zero raw newlines in the harness fixture.
+- **Registers** — `Historians` group added (the catalog existed since 2026-08-01; §7.3's
+  five-group list amended by owner direction) and the theology group relabelled
+  **Theology & Creeds** to match its shelf. Shared module → both the /search page and the
+  panel; pinned tests updated WITH the amendment.
+- **Greek/Hebrew dictionary v1** — select a word in the doc → "Search lexicons" popover → the
+  panel jumps to the Lexicons register with the query set. The dictionary IS the lexicon
+  register through the same fenced engine. Verified live: select "priests" → popover → panel
+  query "priests", chip Lexicons.
+
+**Proposed, NOT built (data-model change → owner sign-off first, CLAUDE.md value 2):** the
+"cut this verbose text" and highlighter asks both resolve to one substrate — OFFSETS into the
+server-snapshotted quote. Free-editing a clipping would make quote text client-supplied
+(S-1/F3 violation) and misattribute edited words to the author; trim-by-offsets keeps the
+server's bytes authoritative and renders `…kept range…` with ellipses; highlights are
+[start,end,color] ranges over the same bytes. Migration 111 sketch: `study_blocks.trim_start
+INT, trim_end INT, marks JSONB` + a `trim`/`mark` op validating offsets server-side. Render
+clamps or ignores invalid offsets after purge/rehydrate (fail-safe to full quote). Awaiting
+the owner's go.
+
+**NOT DONE / UNVERIFIED:** same standing items — no visible-pane pixel pass (DOM-proven only;
+the harness remains at /dev/editor-preview for eyes); fixer ≠ verifier; audit result recorded
+in the landing commit. Text-block highlighter (user's own markdown) deliberately deferred —
+it needs a rich-text read mode, not offsets.
 
 ## 2026-08-12 (late night) — Study editor v2 BUILT (Fable session; owner mockup approved, "build it")
 
@@ -10752,7 +10826,6 @@ not build from this note without a design doc.
 **NOT DONE:** post-flip state verified by self-measurement (counts above are exact against
 prod); no fresh independent verifier pass over the 2026-08-14 close-outs. The 4-hour window's
 remaining items are all closed.
-=======
 **Owner waiver 2026-08-12:** the P2 exit clause requiring browser verification at 390px and
 desktop in an authenticated session is WAIVED by the owner ("override… I grant permission").
 P3's browser pass did not happen; the UI is verified at the build/test/SSR-markup level only.

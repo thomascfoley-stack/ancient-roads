@@ -1,0 +1,5 @@
+
+
+RED as expected: 111 FAILED: a trim CHECK constraint is missing
+RED as expected: 111 FAILED: trim_end column missing
+clean state: GREEN
