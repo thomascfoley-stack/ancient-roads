@@ -30,9 +30,17 @@
 > `dev-pre-reset-20260810` (`br-divine-cell`, 30.88 GB) also survives but has **no compute
 > endpoint** — using it means creating one, which is a Neon write and an owner call.
 >
-> **Re-run all four dry-runs against lane-b before any copy.** Then exclude the three
-> slugs that were re-ingested onto the post-reset dev and would be overwritten by lane-b's
-> older copies: `gill-song`, `jamieson-jfb`, `adeney-expositorsonglament`.
+> **The four dry-runs HAVE been re-executed against lane-b — 4/4 clean, 2026-08-15**
+> ([evidence](dry-run-against-lane-b-2026-08-15.md)); no destination was contacted. Still
+> exclude the three slugs re-ingested onto the post-reset dev by the 2026-08-12 Song work,
+> which lane-b holds in their pre-fix form: `gill-song`, `jamieson-jfb`,
+> `adeney-expositorsonglament`.
+>
+> **And re-derive the backlog before copying.** The 669 was computed by subtracting a
+> 2026-08-08 prod read, and prod has moved since (the 2026-08-11 withdrawals, the
+> 2026-08-13/14 corpus-backlog copies). `scripts/derive-p4n-backlog.mts` takes `DEV_URL` /
+> `PROD_URL` — point `DEV_URL` at lane-b. The prod read is owner-gated (bylaw 7) and was
+> NOT taken on 2026-08-15, so the 669 stands unverified against today's production.
 >
 > Two further cautions, measured, before the flips:
 > - all 669 carry `metadata.register='prose'` — so **both legs** of

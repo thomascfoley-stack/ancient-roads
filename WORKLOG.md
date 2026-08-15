@@ -51,9 +51,26 @@ about did NOT occur — `jfb` is `staged` with 0 served rows, so only one JFB te
 - **Production is unmeasured.** Every number above is dev; dev and prod are not assumed equal,
   and the P4.n prod side was not read.
 - **`josephus-whiston` is the one open `served-reconcile` violation** (6,492 clean-provenance
-  rows unserved on a published work). Deliberately NOT resolved: `routing.ts:130-134` records
-  the historian shelf-vs-retrieval split as an **open owner decision**, and serving or
-  unpublishing it is that decision, not a cleanup.
+  rows unserved on a published work). Not resolved, and **the reason I first gave here was
+  wrong**: I wrote that `routing.ts` records historians as having no retrieval lane, citing
+  lines 130-134 and calling it an open owner decision. That is the OTHER branch's `routing.ts`.
+  On `feat/corpus-cdn` the historian lane **exists and admits this exact work** —
+  `HISTORIAN_CORPUS_FILTER` (`served AND source_type='historian'`), `SERVED_HISTORIAN_WORKS =
+  ['josephus-whiston']`, its byte-matched partial index in migration 114, all shipped 2026-08-13
+  (Phase 5). So the rows are not unservable; they are **staged for a serve flip that is already
+  written up** — `docs/evidence/corpus-backlog/OWNER_FLIP_RUNBOOK.md` Step 2, with its slug file
+  at `serve-slugs-josephus-2026-08-14.json`, and 114's own header records "all served=false at
+  apply time" as the intended state. Pending an owner TTY run, not undecided. **Left untouched
+  for the right reason this time.**
+
+  How the error happened, because it is the more useful half: I read `routing.ts` early in the
+  session while the tree was on a different branch, and reused that reading after the tree moved.
+  It was caught only because the fix I started building for it derived its expected set FROM
+  `routing.ts` instead of hand-typing it, and the derivation disagreed — surfacing
+  `HISTORIAN_CORPUS_FILTER`. Had I hand-typed the set, I would have shipped a "shelf-only types"
+  exemption that **masked a real serving gap**, and it would have been incomplete at the commit
+  that introduced it: the failure-mode watchlist's signature defect, artefact 1, one more time.
+  The derivation discipline is what caught it; nothing else would have.
 - **The lane-b payload was verified by row counts and provenance shape, not by reading text.**
   "0 author-page acquisitions" bounds the `ryle-expository` class specifically; it is not a
   content audit of 669 works.
