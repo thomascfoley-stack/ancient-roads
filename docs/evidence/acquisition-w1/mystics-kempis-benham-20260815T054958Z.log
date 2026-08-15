@@ -1,0 +1,145 @@
+==============================================================================
+W1 MYSTICS DRY RUN — kempis-imitation-benham — nothing written
+manifest: "The Imitation of Christ (Benham translation)" · serve=false · Thomas à Kempis, The Imitation of Christ, trans. William Benham, 1874 (Gutenberg #1653)
+==============================================================================
+── EDITION (translation trap, manifest §4) ──
+  declared translation_year: 1874 (≤1929: ✓)
+  translator: ✓ "Translator: William Benham"
+  verifyEdition: PASS
+
+── KEPT SECTIONS (114; ToC-derived expectation 114) ──
+    1  THE FIRST BOOK, Chapter I — Of the imitation of Christ, and of contempt     2366 chars
+    2  THE FIRST BOOK, Chapter II — Of thinking humbly of oneself                  2159 chars
+    3  THE FIRST BOOK, Chapter III — Of the knowledge of truth                     4136 chars
+    4  THE FIRST BOOK, Chapter IV — Of prudence in action                           993 chars
+    5  THE FIRST BOOK, Chapter V — Of the reading of Holy Scriptures               1135 chars
+    6  THE FIRST BOOK, Chapter VI — Of inordinate affections                       1108 chars
+    7  THE FIRST BOOK, Chapter VII — Of fleeing from vain hope and pride           1490 chars
+    8  THE FIRST BOOK, Chapter VIII — Of the danger of too much familiarity         876 chars
+    9  THE FIRST BOOK, Chapter IX — Of Obedience and Subjection                    1383 chars
+   10  THE FIRST BOOK, Chapter X — Of the danger of superfluity of words           1262 chars
+   11  THE FIRST BOOK, Chapter XI — Of seeking peace of mind and of spiritual p    2912 chars
+   12  THE FIRST BOOK, Chapter XII — Of the uses of adversity                      1064 chars
+   13  THE FIRST BOOK, Chapter XIII — Of resisting temptation                      4364 chars
+   14  THE FIRST BOOK, Chapter XIV — On avoiding rash judgment                     1398 chars
+   15  THE FIRST BOOK, Chapter XV — Of works of charity                            1298 chars
+   16  THE FIRST BOOK, Chapter XVI — Of bearing with the faults of others          1958 chars
+   17  THE FIRST BOOK, Chapter XVII — Of a Religious life                          1131 chars
+   18  THE FIRST BOOK, Chapter XVIII — Of the example of the holy fathers          3277 chars
+   19  THE FIRST BOOK, Chapter XIX — Of the exercises of a religious man           4303 chars
+   20  THE FIRST BOOK, Chapter XX — Of the love of solitude and silence            4948 chars
+   21  THE FIRST BOOK, Chapter XXI — Of compunction of heart                       3164 chars
+   22  THE FIRST BOOK, Chapter XXII — On the contemplation of human misery         4424 chars
+   23  THE FIRST BOOK, Chapter XXIII — Of meditation upon death                    5103 chars
+   24  THE FIRST BOOK, Chapter XXIV — Of the judgment and punishment of the wic    5229 chars
+   25  THE FIRST BOOK, Chapter XXV — Of the zealous amendment of our whole life    6273 chars
+   26  THE SECOND BOOK, Chapter I — Of the inward life                             5103 chars
+   27  THE SECOND BOOK, Chapter II — Of lowly submission                           1292 chars
+   28  THE SECOND BOOK, Chapter III — Of the good, peaceable man                   2100 chars
+   29  THE SECOND BOOK, Chapter IV — Of a pure mind and simple intention           1509 chars
+   30  THE SECOND BOOK, Chapter V — Of self-esteem                                 1848 chars
+   31  THE SECOND BOOK, Chapter VI — Of the joy of a good conscience               2471 chars
+   32  THE SECOND BOOK, Chapter VII — Of loving Jesus above all things             1728 chars
+   33  THE SECOND BOOK, Chapter VIII — Of the intimate love of Jesus               3196 chars
+   34  THE SECOND BOOK, Chapter IX — Of the lack of all comfort                    4956 chars
+   35  THE SECOND BOOK, Chapter X — Of gratitude for the Grace of God              3511 chars
+   36  THE SECOND BOOK, Chapter XI — Of the fewness of those who love the Cross    2738 chars
+   37  THE SECOND BOOK, Chapter XII — Of the royal way of the Holy Cross           9362 chars
+   38  THE THIRD BOOK, Chapter I — Of the inward voice of Christ to the faithfu    1418 chars
+   39  THE THIRD BOOK, Chapter II — What the truth saith inwardly without noise    1920 chars
+   40  THE THIRD BOOK, Chapter III — How all the words of God are to be heard w    3840 chars
+   41  THE THIRD BOOK, Chapter IV — How we must walk in truth and humility befo    2804 chars
+   42  THE THIRD BOOK, Chapter V — Of the wonderful power of the Divine Love       4503 chars
+   43  THE THIRD BOOK, Chapter VI — Of the proving of the true lover               3391 chars
+   44  THE THIRD BOOK, Chapter VII — Of hiding our grace under the guard of hum    4064 chars
+   45  THE THIRD BOOK, Chapter VIII — Of a low estimation of self in the sight     1788 chars
+   46  THE THIRD BOOK, Chapter IX — That all things are to be referred to God,     1723 chars
+   47  THE THIRD BOOK, Chapter X — That it is sweet to despise the world and to    3344 chars
+   48  THE THIRD BOOK, Chapter XI — That the desires of the heart are to be exa    1791 chars
+   49  THE THIRD BOOK, Chapter XII — Of the inward growth of patience, and of t    2819 chars
+   50  THE THIRD BOOK, Chapter XIII — Of the obedience of one in lowly subjecti    2089 chars
+   51  THE THIRD BOOK, Chapter XIV — Of meditation upon the hidden judgments of    2159 chars
+   52  THE THIRD BOOK, Chapter XV — How we must stand and speak, in everything     2378 chars
+   53  THE THIRD BOOK, Chapter XVI — That true solace is to be sought in God al    1782 chars
+   54  THE THIRD BOOK, Chapter XVII — That all care is to be cast upon God         1342 chars
+   55  THE THIRD BOOK, Chapter XVIII — That temporal miseries are to be borne p    2017 chars
+   56  THE THIRD BOOK, Chapter XIX — Of bearing injuries, and who shall be appr    2580 chars
+   57  THE THIRD BOOK, Chapter XX — Of confession of our infirmity and of the m    2943 chars
+   58  THE THIRD BOOK, Chapter XXI — That we must rest in God above all goods a    4365 chars
+   59  THE THIRD BOOK, Chapter XXII — Of the recollection of God’s manifold ben    3320 chars
+   60  THE THIRD BOOK, Chapter XXIII — Of four things which bring great peace      3184 chars
+   61  THE THIRD BOOK, Chapter XXIV — Of avoiding of curious inquiry into the l    1185 chars
+   62  THE THIRD BOOK, Chapter XXV — Wherein firm peace of heart and true profi    2355 chars
+   63  THE THIRD BOOK, Chapter XXVI — Of the exaltation of a free spirit, which    2054 chars
+   64  THE THIRD BOOK, Chapter XXVII — That personal love greatly hindereth fro    2816 chars
+   65  THE THIRD BOOK, Chapter XXVIII — Against the tongues of detractors           796 chars
+   66  THE THIRD BOOK, Chapter XXIX — How when tribulation cometh we must call     1372 chars
+   67  THE THIRD BOOK, Chapter XXX — Of seeking divine help, and the confidence    3948 chars
+   68  THE THIRD BOOK, Chapter XXXI — Of the neglect of every creature, that th    3187 chars
+   69  THE THIRD BOOK, Chapter XXXII — Of self-denial and the casting away all     2079 chars
+   70  THE THIRD BOOK, Chapter XXXIII — Of instability of the heart, and of dir    1417 chars
+   71  THE THIRD BOOK, Chapter XXXIV — That to him who loveth God is sweet abov    2609 chars
+   72  THE THIRD BOOK, Chapter XXXV — That there is no security against temptat    2248 chars
+   73  THE THIRD BOOK, Chapter XXXVI — Against vain judgments of men               1837 chars
+   74  THE THIRD BOOK, Chapter XXXVII — Of pure and entire resignation of self,    2108 chars
+   75  THE THIRD BOOK, Chapter XXXVIII — Of a good government in external thing    1658 chars
+   76  THE THIRD BOOK, Chapter XXXIX — That man must not be immersed in busines    1034 chars
+   77  THE THIRD BOOK, Chapter XL — That man hath no good in himself, and nothi    2944 chars
+   78  THE THIRD BOOK, Chapter XLI — Of contempt of all temporal honour             900 chars
+   79  THE THIRD BOOK, Chapter XLII — That our peace is not to be placed in men    1601 chars
+   80  THE THIRD BOOK, Chapter XLIII — Against vain and worldly knowledge          2396 chars
+   81  THE THIRD BOOK, Chapter XLIV — Of not troubling ourselves about outward     1010 chars
+   82  THE THIRD BOOK, Chapter XLV — That we must not believe everyone, and tha    3815 chars
+   83  THE THIRD BOOK, Chapter XLVI — Of having confidence in God when evil wor    3611 chars
+   84  THE THIRD BOOK, Chapter XLVII — That all troubles are to be endured for     2313 chars
+   85  THE THIRD BOOK, Chapter XLVIII — Of the day of eternity and of the strai    4441 chars
+   86  THE THIRD BOOK, Chapter XLIX — Of the desire after eternal life, and how    5467 chars
+   87  THE THIRD BOOK, Chapter L — How a desolate man ought to commit himself i    5167 chars
+   88  THE THIRD BOOK, Chapter LI — That we must give ourselves to humble works    1309 chars
+   89  THE THIRD BOOK, Chapter LII — That a man ought not to reckon himself wor    2767 chars
+   90  THE THIRD BOOK, Chapter LIII — That the Grace of God doth not join itsel    2509 chars
+   91  THE THIRD BOOK, Chapter LIV — Of the diverse motions of Nature and of Gr    5813 chars
+   92  THE THIRD BOOK, Chapter LV — Of the corruption of Nature and the efficac    4181 chars
+   93  THE THIRD BOOK, Chapter LVI — That we ought to deny ourselves, and to im    2993 chars
+   94  THE THIRD BOOK, Chapter LVII — That a man must not be too much cast down    2322 chars
+   95  THE THIRD BOOK, Chapter LVIII — Of deeper matters, and God’s hidden judg    6555 chars
+   96  THE THIRD BOOK, Chapter LIX — That all hope and trust is to be fixed in     2826 chars
+   97  THE FOURTH BOOK, Chapter I — With how great reverence Christ must be rec    8080 chars
+   98  THE FOURTH BOOK, Chapter II — That the greatness and charity of God is s    4257 chars
+   99  THE FOURTH BOOK, Chapter III — That it is profitable to Communicate ofte    3622 chars
+  100  THE FOURTH BOOK, Chapter IV — That many good gifts are bestowed upon tho    4462 chars
+  101  THE FOURTH BOOK, Chapter V — Of the dignity of this Sacrament, and of th    2380 chars
+  102  THE FOURTH BOOK, Chapter VI — An inquiry concerning preparation for Comm     656 chars
+  103  THE FOURTH BOOK, Chapter VII — Of the examination of conscience, and pur    3288 chars
+  104  THE FOURTH BOOK, Chapter VIII — Of the oblation of Christ upon the cross    1621 chars
+  105  THE FOURTH BOOK, Chapter IX — That we ought to offer ourselves and all t    3425 chars
+  106  THE FOURTH BOOK, Chapter X — That Holy Communion is not lightly to be om    4792 chars
+  107  THE FOURTH BOOK, Chapter XI — That the Body and Blood of Christ and the     5793 chars
+  108  THE FOURTH BOOK, Chapter XII — That he who is about to Communicate with     3032 chars
+  109  THE FOURTH BOOK, Chapter XIII — That the devout soul ought with the whol    2593 chars
+  110  THE FOURTH BOOK, Chapter XIV — Of the fervent desire of certain devout p    2086 chars
+  111  THE FOURTH BOOK, Chapter XV — That the grace of devotion is acquired by     2658 chars
+  112  THE FOURTH BOOK, Chapter XVI — That we ought to lay open our necessities    1698 chars
+  113  THE FOURTH BOOK, Chapter XVII — Of fervent love and vehement desire of r    3514 chars
+  114  THE FOURTH BOOK, Chapter XVIII — That a man should not be a curious sear    2824 chars
+
+── DROPPED (negative control) ──
+  dropped region: 10112 chars (front + back matter)
+  ✓ "INTRODUCTORY NOTE" — dropped:true kept:false
+  ✓ "The treatise “Of the Imitation of Christ” appears" — dropped:true kept:false
+
+── BOUNDARY SAMPLES ──
+  ┌ THE FIRST BOOK, Chapter I — Of the imitation of Christ, and of contempt of the world and all its vanities
+  │ head: _He that followeth me shall not walk in darkness_,(1) saith the Lord. These are the words of Christ; and they teach us how far we must imitate His life and char
+  └ tail: ir own fleshly lusts, defile the conscience, and destroy the grace of God. (1) John viii. 12. (2) Revelations ii. 17. (3) Ecclesiastes i. 8.
+  ┌ THE FIRST BOOK, Chapter II — Of thinking humbly of oneself
+  │ head: There is naturally in every man a desire to know, but what profiteth knowledge without the fear of God? Better of a surety is a lowly peasant who serveth God, t
+  └ tail: n he, for thou knowest not how long thou shalt keep thine integrity. All of us are weak and frail; hold thou no man more frail than thyself.
+  ┌ THE FOURTH BOOK, Chapter XVII — Of fervent love and vehement desire of receiving Christ
+  │ head: The Voice of the Disciple With the deepest devotion and fervent love, with all affection and fervour of heart, I long to receive Thee, O Lord, even as many Sain
+  └ tail:  refreshed from Thy holy, heavenly table, let them vouchsafe to be mindful of me, for I am poor and needy. (1) Luke i. 38. (2) John iii. 29.
+  ┌ THE FOURTH BOOK, Chapter XVIII — That a man should not be a curious searcher of the Sacrament, but a humble imitator of Christ, submitting h
+  │ head: The Voice of the Beloved Thou must take heed of curious and useless searching into this most profound Sacrament, if thou wilt not be plunged into the abyss of d
+  └ tail: t they might easily be comprehended by human reason, they should no longer be called wonderful or unspeakable. (1) Proverbs xxv. 27 (Vulg.).
+
+✓ ALL CHECKS PASSED — kempis-imitation-benham

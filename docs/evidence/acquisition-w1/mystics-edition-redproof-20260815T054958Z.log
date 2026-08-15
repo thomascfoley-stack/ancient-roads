@@ -1,0 +1,6 @@
+# RED-PROOF (edition-verification cluster gate) — 20260815T054958Z
+RED-PROOF: edition verification must refuse wrong-edition records
+  ✓ wrong-edition record (Benham profile, Julian text): refused — FAIL CLOSED: kempis-imitation-benham — translator /Translated by Rev\. William Benham|Translator:\s+William Benham/i not found in the fetched text — wrong edition, refusing
+  ✓ declared translation_year 1950 (>1929): refused — FAIL CLOSED: kempis-imitation-benham — declared translation year 1950 > 1929 (copyrighted translation; manifest §4)
+  ✓ no translation_year declared (unknown edition): refused — FAIL CLOSED: kempis-imitation-benham — no acquire.translation_year declared; an unknown edition is not ingested (manifest §4)
+✓ RED-PROOF PASSED — all three wrong-edition shapes refused

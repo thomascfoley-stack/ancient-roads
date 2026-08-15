@@ -99,13 +99,23 @@ describe('the CCEL id expansion is the adapter\'s, not a second copy', () => {
 
 describe('the legal gates bind at acquisition, not only downstream', () => {
   it('every forbidden-provenance work in the manifest is detected as such', () => {
-    // The archiver refuses on this predicate. If the manifest ever stops carrying a forbidden
-    // entry the assertion below would pass vacuously, so the count is asserted too.
     const forbidden = ENTRIES.filter((e) => forbiddenProvenanceDomain(String(e.provenance?.url ?? '')));
-    expect(forbidden.length, 'no forbidden-provenance entry found — the predicate or the manifest changed').toBeGreaterThan(0);
     for (const e of forbidden) {
       expect(forbiddenProvenanceDomain(String(e.provenance?.url))).toBeTruthy();
     }
+    // Anti-vacuity, post-2026-08-15: the corpus-backlog programme deleted or re-sourced every
+    // forbidden entry, so the real manifest carries ZERO — the goal state, but it leaves nothing
+    // to detect. The predicate proves itself against SYNTHETIC entries instead (the pattern
+    // excerpt-sample-policy adopted when its live fixtures ran out): a biblehub URL must be
+    // detected, a clean URL must not be.
+    expect(
+      forbiddenProvenanceDomain('https://biblehub.com/commentaries/example/'),
+      'synthetic biblehub entry not detected — the forbidden-provenance predicate is broken',
+    ).toBe('biblehub.com');
+    expect(
+      forbiddenProvenanceDomain('https://crosswire.org/sword/example'),
+      'synthetic clean entry detected as forbidden — the predicate over-fires',
+    ).toBeNull();
   });
 
   it('the archiver checks provenance BEFORE deriving any URL', () => {

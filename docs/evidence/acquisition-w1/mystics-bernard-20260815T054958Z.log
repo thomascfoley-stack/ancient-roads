@@ -1,0 +1,123 @@
+==============================================================================
+W1 MYSTICS DRY RUN — bernard-song-sermons — nothing written
+manifest: "Sermons on the Song of Songs (Cantica Canticorum, 86 sermons)" · serve=false · Life and Works of Saint Bernard, vol. IV: Cantica Canticorum — Eighty-Six Sermons on the Song of Solomon, trans. Samuel J. Eales, John Hodges, London, 1896 (archive.org LifeAndWorksOfSaintBernardV4)
+==============================================================================
+── EDITION (translation trap, manifest §4) ──
+  declared translation_year: 1896 (≤1929: ✓)
+  translator: ✓ "SAMUEL J. EALES, M.A., D.C.L.,"
+  marker 1: ✓ "JOHN HODGES, Bedford Street, Strand, LONDON."
+  marker 2: ✓ "' Sermons on the Canticles.' In this Bible, the Cantica Canticorum"
+  marker 3: ✓ "1896."
+  verifyEdition: PASS
+
+── OCR GUARDRAIL ── garbage-line rate 0.05% (13/25821) vs bar 5%
+
+── KEPT SECTIONS (86; ToC-derived expectation 86) ──
+    1  Sermon I — On the title of the book: The Song of Songs, which is Solomon   15148 chars
+    2  Sermon II — OF THE INCARNATION OF CHRIST, WHICH WAS ANNOUNCED BY THE PAT   15145 chars
+    3  Sermon III — WHAT IT IS TO KISS THE FEET, THE HAND, AND THE LIPS OF THE    12826 chars
+    4  Sermon IV — The threefold progress of the soul, arising from the kiss of    6325 chars
+    5  Sermon V — OF THE FOUR ORDERS OF SPIRITS—NAMELY, THE SPIRIT OF GOD, OF T   15847 chars
+    6  Sermon VI — OF THE SUPREME AND INFINITE SPIRIT, WHO IS GOD ; AND OF THE    12784 chars
+    7  Sermon VII — OF THE ARDENT LOVE OF THE SOUL FOR GOD ; AND OF THE CARE AN   17538 chars
+    8  Sermon VIII — THAT THE KISS OF GOD IS THE HOLY SPIRIT                      15162 chars
+    9  Sermon IX — Of the breasts of the Bridegroom: of which the one is patien   16812 chars
+   10  Sermon X — OF THE THREE SPIRITUAL PERFUMES — NAMELY, PENITENCE, DEVOTION   17400 chars
+   11  Sermon XI — OF TWO PRINCIPAL FACTS IN THE REDEMPTION OF THE HUMAN RACE;    15327 chars
+   12  Sermon XII — OF THE PERFUME OF PIETY, WHICH IS THE MOST EXCELLENT OF ALL   24765 chars
+   13  Sermon XIII — That praise and glory is always to be rendered unto God, f   19161 chars
+   14  Sermon XIV — OF THE CHURCH OF FAITHFUL CHRISTIANS, AND OF THE SYNAGOGUE    18207 chars
+   15  Sermon XV — In what manner the Name of Jesus is a salutary medicine to f   19925 chars
+   16  Sermon XVI — OF CONTRITION OF HEART, AND OF THE THREE KINDS OF TRUE        26889 chars
+   17  Sermon XVII — THAT IT IS NEEDFUL TO OBSERVE WITH CARE THE APPROACH AND T   15167 chars
+   18  Sermon XVIII — OF THE TWO OPERATIONS OF THE HOLY SPIRIT, OF WHICH THE ON   14991 chars
+   19  Sermon XIX — OF THE NATURE, MANNER, AND PROPERTIES OF THE ANGELICAL LOVE   15941 chars
+   20  Sermon XX — Of the three ways in which we love God (Cant. i. 3)            19221 chars
+   21  Sermon XXI — IN WHAT MANNER THE BRIDE, THAT IS, THE CHURCH, ASKS THAT SH   22816 chars
+   22  Sermon XXII — OF THE FOUR PERFUMES OF THE BRIDEGROOM, AND OF THE FOUR CA   22959 chars
+   23  Sermon XXIII — OF THREE WAYS OF CONTEMPLATING GOD, REPRESENTED UNDER THE   40597 chars
+   24  Sermon XXIV — PRINCIPALLY AGAINST THE DETESTABLE VICE OF DETRACTION : AN   20076 chars
+   25  Sermon XXV — THAT THE BRIDE, NAMELY, THE CHURCH, IS BLACK, YET COMELY.     16439 chars
+   26  Sermon XXVI — ST. BERNARD LAMENTS THE DEATH OF HIS BROTHER GERARD.         37874 chars
+   27  Sermon XXVII — OF THE ADORNMENT OF THE BRIDE: AND IN WHAT SENSE THE HOLY   31203 chars
+   28  Sermon XXVIII — OF THE BLACKNESS, YET BEAUTY, OF THE BRIDE: AND IN WHAT    30846 chars
+   29  Sermon XXIX — OF THE COMPLAINT OF THE CHURCH AGAINST HER PERSECUTORS; TH   19850 chars
+   30  Sermon XXX — THE FAITHFUL PEOPLE, OR THE SOULS OF THE ELECT 1 93           25305 chars
+   31  Sermon XXXI — THE EXCELLENCY OF THE VISION OF GOD. HOW AT THE PRESENT TI   20883 chars
+   32  Sermon XXXII — CHRIST COMMUNICATES HIMSELF TO THE HOLY SOUL AS BRIDEGROO   22496 chars
+   33  Sermon XXXIII — THOSE THINGS WHICH A DEVOUT SOUL OUGHT TO SEEK 215         31667 chars
+   34  Sermon XXXIV — OF HUMILITY AND OF PATIENCE.                                 8586 chars
+   35  Sermon XXXV — OF THE SHARP REPROOF WHICH THE BRIDEGROOM GIVES TO THE BRI   18360 chars
+   36  Sermon XXXVI — THE KNOWLEDGE OF LITERATURE IS GOOD FOR OUR INSTRUCTION,    15953 chars
+   37  Sermon XXXVII — OF THE TWO KINDS OF KNOWLEDGE AND THE TWO KINDS OF IGNOR   14905 chars
+   38  Sermon XXXVIII — HOW FROM IGNORANCE OF GOD COMES DESPAIR: AND HOW THE BR   10647 chars
+   39  Sermon XXXIX — OF THE CHARIOTS OF PHARAOH, THAT IS, THE DEVIL ; AND OF T   15853 chars
+   40  Sermon XL — WHAT IS MEANT BY THE FACE OF THE SOUL ; WHAT CONSTITUTES ITS   11146 chars
+   41  Sermon XLI — Of the great consolation which the Bride feels from the con    7770 chars
+   42  Sermon XLII — OF TWO KINDS OF HUMILITY : THE ONE BORN OF TRUTH, THE OTHE   22376 chars
+   43  Sermon XLIII — HOW MEDITATION ON THE SUFFERINGS AND THE PASSION OF JESUS   13179 chars
+   44  Sermon XLIV — CORRECTION OUGHT TO BE ADAPTED TO THE CHARACTER OF OFFENDE   14426 chars
+   45  Sermon XLV — OF THE TWOFOLD BEAUTY OF THE SOUL: HOW THE SOUL SPEAKS TO G   19397 chars
+   46  Sermon XLVI — Of the state and composition of the whole Church. Also of    16151 chars
+   47  Sermon XLVII — OF THE THREEFOLD FLOWER [OF HOLINESS], NAMELY, OF VIRGINI   15654 chars
+   48  Sermon XLVIII — OF THE PRAISES WHICH THE BRIDE AND THE BRIDEGROOM ADDRES   18247 chars
+   49  Sermon XLIX — How charity is regulated by discretion, so that all the me   15496 chars
+   50  Sermon L — TWO KINDS OF CHARITY                                            16302 chars
+   51  Sermon LI — HOW THE BRIDE MAKES PETITION THAT THE FRUITS OF GOOD WORKS A   18670 chars
+   52  Sermon LII — OF THAT ECSTASY WHICH IS CALLED CONTEMPLATION, IN WHICH THE   14864 chars
+   53  Sermon LIII — BY 'MOUNTAINS' AND c HILLS ' ARE SIGNIFIED THE HEAVENLY SP   17760 chars
+   54  Sermon LIV — Another interpretation; in which by mountains are signified   24855 chars
+   55  Sermon LV — How it is possible, through a true penitence, to escape the     8926 chars
+   56  Sermon LVI — That sins and vices are as walls, interposing between God a   12325 chars
+   57  Sermon LVII — THAT THE VISITATIONS OF THE LORD ARE TO BE CAREFULLY AND R   21495 chars
+   58  Sermon LVIII — HOW THE BRIDEGROOM BIDS THE BRIDE, THAT IS TO SAY, THOSE    23588 chars
+   59  Sermon LIX — OF THE GROANS OF THE SOUL,. WHICH SIGHS FOR ITS HEAVENLY FA   19443 chars
+   60  Sermon LX — Of the incredulity of the Jews; and of their slaying Christ,   15654 chars
+   61  Sermon LXI — HOW THE CHURCH FINDS THE RICHES OF DIVINE MERCY IN THE HOLL   15670 chars
+   62  Sermon LXII — WHAT IS MEANT BY THE ABIDING OF THE FAITHFUL SOUL IN THE C   21195 chars
+   63  Sermon LXIII — THAT A MAN WHO IS PIOUS AND WISE OUGHT TO CULTIVATE CARE-   14743 chars
+   64  Sermon LXIV — OF THE TEMPTATIONS OF MORE MATURE MONKS ) BY WHAT FOXES TH   31448 chars
+   65  Sermon LXV — OF SECRET HERETICS, WHOSE PERVERSE DOCTRINES AND STUDIED CA   17773 chars
+   66  Sermon LXVI — CONCERNING THE ERRORS OF HERETICS WITH RESPECT TO MARRIAGE   31374 chars
+   67  Sermon LXVII — THE WONDERFUL EXPRESSION OF THE LOVE OF THE BRIDE 409       21444 chars
+   68  Sermon LXVIII — HOW CHRIST THE BRIDEGROOM INCLINES UNTO AND GIVES ATTENT   15206 chars
+   69  Sermon LXIX — ALL THAT LIFTS ITSELF UP AGAINST THE KNOWLEDGE AND SERVICE   17772 chars
+   70  Sermon LXX — WHY THE BRIDEGROOM IS CALLED BELOVED; AND OF THE TRUTH, THE   18203 chars
+   71  Sermon LXXI — OF SPIRITUAL LILIES, THAT IS, GOOD WORKS, OF WHICH THE FRA   28718 chars
+   72  Sermon LXXII — The meaning of the words “The day breaks and the shadows    22169 chars
+   73  Sermon LXXIII — HOW CHRIST SHALL COME TO JUDGE IN HUMAN FORM, THAT HE MA   17026 chars
+   74  Sermon LXXIV — OF THE VISITATIONS OF THE BRIDEGROOM, THE WORD, TO THE HO   23396 chars
+   75  Sermon LXXV — God is to be sought in due time, place, and manner. That n   18250 chars
+   76  Sermon LXXVI — OF THE GLORY OF THE BRIDEGROOM, IN WHICH HE SITS AT THE R   19900 chars
+   77  Sermon LXXVII — Concerning the bad pastors of the Church. Also how the B   13751 chars
+   78  Sermon LXXVIII — THAT THE BRIDE, THAT IS TO SAY, THE CHURCH OF THE ELECT   14835 chars
+   79  Sermon LXXIX — Of the strong and indissoluble love wherewith the soul ho   11723 chars
+   80  Sermon LXXX — AN ACUTE AND PROFOUND ARGUMENT RESPECTING THE IMAGE OR WOR   18832 chars
+   81  Sermon LXXXI — OF THE SIMILARITY AND LIKENESS OF THE SOUL TO THE WORD, I   23664 chars
+   82  Sermon LXXXII — HOW THE SOUL, WHILE STILL REMAINING LIKE UNTO GOD, LOSES   18738 chars
+   83  Sermon LXXXIII — OF THE MANNER IN WHICH THE SOUL, HOWEVER CORRUPTED IT M   13472 chars
+   84  Sermon LXXXIV — THAT THE SOUL, SEEKING GOP, IS ANTICIPATED BY HIM ; AND    12016 chars
+   85  Sermon LXXXV — OF THE SEVEN NEEDS OF THE SOUL, ON ACCOUNT OF WHICH IT SE   29769 chars
+   86  Sermon LXXXVI — OF THE CAUTION AND MODESTY BECOMING TO THE SOUL IN SEEKI    9407 chars
+
+── DROPPED (negative control) ──
+  dropped region: 113441 chars (front + back matter)
+  ✓ "INTRODUCTORY ESSAY" — dropped:true kept:false
+  ✓ "EIGHTY SIX SERMONS ON THE SONG OF SOLOMON" — dropped:true kept:false
+  ✓ "Samuel J. Eales." — dropped:true kept:false
+
+── BOUNDARY SAMPLES ──
+  ┌ Sermon I — On the title of the book: The Song of Songs, which is Solomon’s
+  │ head: on the title of the book : * the song of songs, which is Solomon's/ O you, brethren, it is needful to speak of other truths than to those persons who are of the
+  └ tail: me of God what we had entered upon with respect to the opening verse, since the sermon of to-day has furnished the explication of the title.
+  ┌ Sermon II — OF THE INCARNATION OF CHRIST, WHICH WAS ANNOUNCED BY THE PATRIARCHS AND PROPHETS, AND ARDENTLY EXPECTED BY THEM.
+  │ head: * Let Him kiss me with the kisses of His mouth.1 — Cant. i. I. THINK very often of the deep earnestness and ardour with which the ancient Fathers desired the pr
+  └ tail: diator between God and men, the Man Christ Jesus, who with the Father and the Holy Spirit liveth and reigneth, God, for ever and ever. Amen.
+  ┌ Sermon LXXXV — OF THE SEVEN NEEDS OF THE SOUL, ON ACCOUNT OF WHICH IT SEEKS THE WORD. WHEN THE SOUL IS ONCE REFORMED, IT DRAWS NEAR TO CONTE
+  │ head: 1 By night upon my bed I sought Him whom mv soul loveth.1— Cant. iii. i. OR what cause does she thus &eek ? That has been already stated, and it would be superf
+  └ tail: asure of Him who is the Father of the Word, the Bridegroom of the soul, Jesus Christ our Lord, who is above all, God blessed for ever. Amen.
+  ┌ Sermon LXXXVI — OF THE CAUTION AND MODESTY BECOMING TO THE SOUL IN SEEKING THE WORD, AND OF THE PRAISE OF MODESTY.
+  │ head: I BELIEVE that nothing more will be expected of me upon the subject of the soul's reasons for seeking the Word, for I have already sufficiently stated them. Com
+  └ tail:  and then 'similiter prceventus morte' died, about a.d. 1200, at least his name cannot be traced in the records any farther than that date.]
+
+✓ ALL CHECKS PASSED — bernard-song-sermons

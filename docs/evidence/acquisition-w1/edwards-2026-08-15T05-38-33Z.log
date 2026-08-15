@@ -1,0 +1,180 @@
+ACQUISITION WAVE 1 — Jonathan Edwards sermons gap-fill
+Date: 2026-08-15 (run ~04:50–05:45 UTC) · Branch: feat/corpus-backlog · Target: DEV only (ep-tiny-hat)
+Manifest row: docs/ACQUISITION_MANIFEST.md §3 "Jonathan Edwards | Worcester/Hickman 19th-c. eds
+(Gutenberg/archive.org) | txt | ~100+ | AVOID: Yale WJE — copyrighted + ToS"
+
+═══════════════════════════════════════════════════════════════════════════════
+1. CURRENT COVERAGE MEASUREMENT (dev DB, source id 25 = edwards-works, published)
+═══════════════════════════════════════════════════════════════════════════════
+Measured via owner role (DATABASE_URL_UNPOOLED, never printed), read-only queries.
+
+- edwards-works: 16,968 sections, 17,528,747 chars, 627 distinct headings.
+- Composition (from distinct-heading census):
+  * Treatises, each present TWICE (standalone CCEL ingest + Works Vol 1 re-ingest):
+    Freedom of the Will; Religious Affections; plus (vol 1) Dissertation on the End
+    for Which God Created the World; Nature of True Virtue; Original Sin; Narrative
+    of Surprising Conversions; Thoughts on the Revival; Qualifications for Communion;
+    Misrepresentations Corrected; History of the Work of Redemption; Distinguishing
+    Marks; Humble Attempt; Life & Diary of Brainerd; Misc. Observations; Remarks on
+    Theological Controversies; Types of the Messiah; Notes on the Bible.
+  * Sermons: CCEL "sermons" collection (~19 distinct: Sinners in the Hands of an
+    Angry God, A Divine and Supernatural Light, Christ's Agony, God's Sovereignty,
+    God Glorified in Man's Dependence, True Saints, Importance and Advantage of a
+    Thorough Knowledge, The Excellency of Christ, Wicked Men Useful, Vain Self
+    Flatteries, Future Punishment of the Wicked, Hypocrites Deficient in the Duty of
+    Prayer, Justice of God in the Damnation of Sinners, Christian Knowledge, Manner
+    of Salvation, Safety Fulness and Sweet Refreshment, Pardon for the Greatest
+    Sinners, Pressing Into the Kingdom, Many Mansions); A Farewell Sermon; Five
+    Discourses (Justification by Faith alone, Ruth, +3 dup); Five Sermons on
+    Different Occasions (Church's Marriage, God's Awful Judgment, True Grace, +2 dup);
+    the Sermon I–XV run (Unreasonableness of Indetermination, Unbelievers Contemn,
+    Folly of Looking Back ×2, Warnings of Scripture, Eternity of Hell Torments,
+    Peace Which Christ Gives, Perpetuity and Change of the Sabbath ×3, +dups);
+    Seven Sermons on Important Subjects (Men Naturally God's Enemies, Wisdom of God
+    Displayed, Christian Knowledge, Christian Charity, Christian Cautions, A Warning
+    to Professors, The Final Judgment); named sermons (Sinners in Zion, End of the
+    Wicked, Christ Exalted, Self-Flatteries, Theft and Injustice, Temptation and
+    Deliverance, Preciousness of Time, Procrastination, Christian Pilgrim, Man's
+    Natural Blindness); and the closing SERMON I–XVII block (Natural Men in a
+    dreadful Condition … Sorrows of the Bereaved).
+  * Distinct Edwards sermon titles after cross-edition dedup: ~62.
+  (Also present: one Pemberton ordination sermon — non-Edwards, rides along in the
+  Brainerd volume; pre-existing, not touched by this task.)
+
+═══════════════════════════════════════════════════════════════════════════════
+2. GAP VERDICT: REAL GAP
+═══════════════════════════════════════════════════════════════════════════════
+Manifest expectation "~100+ sermons" vs ~62 distinct in corpus. The cleanest
+named absence: "Charity and Its Fruits" — the 16-lecture series on 1 Corinthians 13
+(preached 1738, first published 1852). Probe on dev: sections body ILIKE
+'%sum of all virtue%' against source 25 → 0 hits. Ingest as a NEW staged work;
+published edwards-works NOT mutated (post-run census confirms 16,968 sections,
+unchanged).
+
+═══════════════════════════════════════════════════════════════════════════════
+3. EDITION VERIFICATION (BEFORE ingest — recorded from the scan's own title page)
+═══════════════════════════════════════════════════════════════════════════════
+  Work:      Charity and Its Fruits; or, Christian Love as Manifested in the Heart
+             and Life — Jonathan Edwards (d. 1758)
+  Editor:    Tryon Edwards ("Edited from the original manuscripts, with an
+             introduction, by Tryon Edwards")
+  Publisher: Robert Carter & Brothers, 265 Broadway, New York
+  Year:      1852 (entered 1851 per copyright page) — ≤1929 ✓ PUBLIC DOMAIN
+  Source:    archive.org identifier charityitsfruits00edw (Library of Congress
+             scan), _djvu.txt derivative, 787,747 chars; cached at
+             data/raw/archive/edwards-charity/charityitsfruits00edw_djvu.txt
+  HARD AVOID honored: Yale "Works of Jonathan Edwards" (WJE) NOT used anywhere.
+  Monergism's 2023 e-book (copyrighted wrapper) explicitly avoided per manifest.
+Edition check is enforced in code (profile-edwards-charity.ts EDITION_MARKERS:
+CHARITY AND ITS FRUITS / JONATHAN EDW / TRYON EDWARDS / ROBERT CARTER / 1852 in
+the front matter) and fails closed on any other record.
+
+═══════════════════════════════════════════════════════════════════════════════
+4. TOOLING
+═══════════════════════════════════════════════════════════════════════════════
+- src/ingest/profile-edwards-charity.ts (new): pure segmentation profile.
+  * body bounds: first post-CONTENTS lecture-I heading with a stated ref within 40
+    lines, to "THE END." (publisher catalog excluded by construction)
+  * OCR-tolerant LECTURE heading (edit distance ≤2: catches LECTUKE X, LECTUEE XV)
+  * strict numeral sequence I–XVI; stated ref parsed per lecture and REQUIRED to
+    equal the pre-registered CONTENTS expectation; lecture XVI's ref line was
+    dropped by the OCR → asserted by quote content ("Charity never faileth …
+    done away" = 1 Cor 13:8–10)
+  * page-chrome strip (all-caps recurring lines / page-numbered heads), with the
+    8-line title window after each heading protected (lecture V's title is
+    chrome-shaped because the running heads repeat it)
+  * line-wrap hyphenation repair; OCR double-space collapse; logged title fixes
+    (LOYE→LOVE, MOKE→MORE, CHARITT→CHARITY, CHAEITY→CHARITY, AST→AN, LITE→LIFE,
+    OK LOVE→OR LOVE, wrap hyphens, lecture XIV restored from CONTENTS wording +
+    surviving body fragment)
+  * garbage rate 301/14618 = 2.06% (bar 5%)
+- src/ingest/ingest-edwards-charity.ts (new): dry-run report (default, no DB),
+  --census, --write via register-writer.writeRegisterWork (BEGIN →
+  assertReingestable → delete prior → write → stamp). Owner role via
+  DATABASE_URL_UNPOOLED remapped into DATABASE_URL (pooler role got
+  "permission denied for table sources" on the first attempt — no rows written
+  by that attempt; register-writer died before its INSERT).
+- ingest/sources.config.json: NEW entry edwards-charity-fruits (source_type
+  sermon, tier 2, license Public Domain, provenance with edition + identifier;
+  NO serve flag ⇒ staged). edwards-works entry untouched.
+
+═══════════════════════════════════════════════════════════════════════════════
+5. DRY-RUN REPORT (segmentation, full)
+═══════════════════════════════════════════════════════════════════════════════
+=== edwards-charity-fruits segmentation dry-run ===
+source: archive.org charityitsfruits00edw (_djvu.txt, 787747 chars)
+OCR garbage rate: 301/14618 = 2.06% (bar 5%)
+page chrome stripped: 476 lines
+POSITIVE CONTROL: 16 lectures expected per the edition's own CONTENTS page (I–XVI,
+strict sequence — enforced inside the profile, which throws otherwise)
+detected lectures: 16
+  I.    Charity, Or Love The Sum Of All Virtue — 1 Cor 13:1–3 (42,121 ch) [fix LOYE→LOVE]
+  II.   Charity More Excellent Than The Extraordinary Gifts Of The Spirit — 13:1–2 (40,809) [MOKE→MORE; EXTRAOR-DINARY join]
+  III.  The Greatest Performances Or Sufferings In Vain Without Charity — 13:3 (26,117) [CHARITT→CHARITY]
+  IV.   Charity Disposes Us Meekly To Bear The Injuries Received From Others — 13:4 (50,622) [CHAEITY→CHARITY]
+  V.    Charity Disposes Us To Do Good — 13:4 (25,860)
+  VI.   Charity Inconsistent With An Envious Spirit — 13:4 (28,423)
+  VII.  The Spirit Of Charity Is An Humble Spirit — 13:4–5 (48,370)
+  VIII. The Spirit Of Charity The Opposite Of A Selfish Spirit — 13:5 (49,671)
+  IX.   The Spirit Of Charity The Opposite Of An Angry Or Wrathful Spirit — 13:5 (29,527) [AST→AN]
+  X.    The Spirit Of Charity The Opposite Of A Censorious Spirit — 13:5 (25,060)
+  XI.   All True Grace In The Heart Tends To Holy Practice In The Life — 13:6 (52,849) [LITE→LIFE]
+  XII.  Charity Or A Christian Spirit Willing To Undergo All Sufferings In The Way Of Duty — 13:7 (28,442) [wrap hyphen]
+  XIII. All The Graces Of Christianity Connected — 13:7 (27,887)
+  XIV.  Charity, Or True Grace, Not To Be Overthrown By Opposition — 13:7 (30,686) [title restored from CONTENTS + body fragment]
+  XV.   The Holy Spirit Forever To Be Communicated To The Saints, In The Grace Of Charity, Or Divine Love — 13:8 (31,350)
+  XVI.  Heaven, A World Of Charity, Or Love — 13:8–10 (80,123) [ref by quote content; OK→OR]
+negative control — Tryon Edwards's Introduction (editorial matter): EXCLUDED (clean)
+negative control — Carter & Brothers publisher catalog: EXCLUDED (clean)
+negative control — title-page / imprint: EXCLUDED (clean)
+boundary sample LECTURE I first:  "In these words we observe — First, that something is spoken of as of special importance, and as peculiarly essential in Christians, which the Apostle calls char…"
+boundary sample LECTURE I last:   "…as is answerable to snch a spirit, that yon may not love only "in word and tongue, bnt in deed and in truth.""
+boundary sample LECTURE VIII first: "Having- shown the nature of charity in respect to the good of others, in the two particulars that it is kind to them, and envies not their enjoyments and blessi…"
+boundary sample LECTURE VIII last:  "…ur fathers, whatever the cause be, let us strive to overcome it, that we may grow in the grace of an unselfish spirit, and thus glorify God, and do good to men."
+boundary sample LECTURE XVI first: "From the first of these verses, I have already drawn the doctrine, that that great fruit of the Spirit in which the Holy Ghost shall not only for a season, but…"
+boundary sample LECTURE XVI last:  "…the Lamb which is in the midst of the throne, shall feed them, and lead them to fountains of living waters, and God shall wipe away all tears from their eyes !"
+bleed check: 0 lecture bodies contain a neighbour heading or THE END (clean)
+
+Red-proof note: the profile's fail-closed checks were watched go RED on real
+divergences during development (wrong body start → ToC tail entries; stated-ref
+regex vs "1 Corinthians" no-period variant; torn lecture-XIV heading; chrome rule
+eating lecture V's title). Each fix was verified against the scan, then the run
+went green.
+
+═══════════════════════════════════════════════════════════════════════════════
+6. WRITE + ACCEPTANCE (dev, 2026-08-15 ~05:40 UTC)
+═══════════════════════════════════════════════════════════════════════════════
+writeRegisterWork: embedded=567 staticEntries=16
+  → edwards-charity-fruits: 16 section(s), 16 anchor(s) on the shelf
+census: status=staged sections=16 section_anchors=16 flat_embeddings=567
+
+Post-write acceptance (fresh read-only queries on dev):
+- sources row: id=407, slug=edwards-charity-fruits, status=staged (NOT published),
+  source_type=sermon, license=Public Domain, year_written=1852.
+- 16 sections, ordinals 1–16, headings "Lecture <ROMAN>. <Title> — 1 Corinthians
+  13:<range>"; sizes 25,060–80,123 ch.
+- expected-vs-kept: 16 expected (edition's own CONTENTS, I–XVI strict) = 16 kept.
+- 16 section_anchors, range 46013001–46013010 (1 Cor 13:1 .. 13:10) — all stated
+  texts anchored, all inside 1 Corinthians 13.
+- negative controls AT THE DB: 0 sections matching Introduction / publisher
+  catalog / imprint patterns (New London, Conn | PUBLISHED BY | ABERCROMBIE |
+  Act of Congress | committed his thoughts).
+- 3 boundary samples re-read FROM THE DB (ordinals 1, 8, 16) — first/last 110
+  chars match the dry-run samples above.
+- flat embeddings: 567 rows, max content 1,200 chars (REGISTER_EMBED_MAX — under
+  the DeepInfra 512-token ceiling; embedOne stepped fallback available, no 400s).
+- edwards-works (id 25, published): 16,968 sections — UNCHANGED.
+
+Checks run on the repo side:
+- npx tsc --noEmit: clean (exit 0).
+- eslint on the two new files: clean.
+- vitest test/invariants/manifest-provenance.test.ts +
+  served-lists-respect-the-manifest.test.ts: 11/11 pass.
+- PREEXISTING RED (not caused by this change; at HEAD the manifest already has
+  zero forbidden-domain provenance URLs):
+  test/invariants/source-archive-coverage.test.ts › "every forbidden-provenance
+  work in the manifest is detected as such" — expected >0, found 0.
+
+NOT DONE / NOT ATTEMPTED: no prod writes, no publish flip (owner's gate), no
+commit. npm run audit not run (full-tree gate; this session's scope was the
+ingest path; the targeted checks above all pass except the noted preexisting red).
