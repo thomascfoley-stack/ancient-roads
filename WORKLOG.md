@@ -1,5 +1,67 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-15 (late) — The P4.n runbook points at an emptied database; the Song's coverage number is not a retrieval number
+
+Read-only session against dev (`ep-tiny-hat`, pooled and direct, agreeing). **Production was
+never connected** (bylaw 7 — the owner was asleep, and a "go" given for dev is not a prod go).
+**No database write was made by this session.** Two findings, both measured, plus one
+correction of my own earlier reading.
+
+**1 · `docs/evidence/corpus-copy/p4n/RUNBOOK.md` copies from a branch that no longer holds the
+payload.** The 2026-08-10 dev reset (`br-cool-flower` reset from `production`) destroyed the
+831-work staged corpus the P4.n backlog was derived from on 2026-08-08. Measured today:
+**3 of 669 backlog slugs survive on `ep-tiny-hat`**; dev is 126 published · 10 staged · 2
+quarantined. Run the runbook unchanged and an owner-gated terminal session copies nothing, and
+the "all four registers DRY-RUN CLEAN" line in it is void — it was measured against data that
+is gone. **The corpus is intact on `lane-b-uploader` (`ep-snowy-bird`, credential already on
+disk): 669/669 works · 46,645 sections · 551,851 flat embeddings**, and `corpus-copy.mjs`'s
+only source guard is "not production", so lane-b is accepted. One variable. A STOP block with
+the measured numbers, the three slugs to exclude (`gill-song`, `jamieson-jfb`,
+`adeney-expositorsonglament` — re-ingested onto the post-reset dev and would be overwritten by
+lane-b's older copies) and two pre-flip cautions is now at the top of the runbook.
+
+Payload risk assessed while there, and it is better than the `ryle-expository` scare suggested:
+**0 of 669 were acquired in CCEL author-page mode** (all single-work `ccel_ids`), the 109
+commentary+father works are **100% verse-keyed** with correct `source_type`, 105/109 carry
+`section_anchors`, and every row arrives `served=false` so `publish-flip` remains the gate.
+
+**2 · The Song reads 117/117 on the coverage gate and 12/117 on the retrieval path.**
+`verse_coverage` admits on `sources.status='published'` and sweeps `section_anchors`, whose
+`verse_id_start..verse_id_end` RANGE credits every verse it spans; retrieval admits on
+`embeddings.served` and keys each row to ONE `verseId`. `jamieson-jfb` has 8 anchors spanning
+the whole book and **8 verse-keyed rows** — coverage credits 117, `/ask` can produce 8.
+Gill carries the real fix: **111 of 117 verses now have a served verse-keyed voice**, against
+26 rows of Schaff-quoting-in-passing before. The hole is genuinely closed; the `>=2 voices`
+floor is met on **twelve** verses, not all of them. Nothing here says the plans-routes flip was
+wrong — Plans is a reading surface and `gill-song` is readable across the book. It says the
+number must not be restated as an `/ask` claim. Full record:
+`docs/evidence/song-coverage-vs-retrieval-2026-08-15.md`.
+
+**3 · Correction to my own reading, recorded because it is the more useful half.** Earlier this
+session I ran `served-reconcile` and reported **2 violations** — `gill-song` 0/1942 and
+`jamieson-jfb` 0/9878 served — and characterised the Song fix as not closed. That measurement
+was real but was taken **mid-flight**: the serve step completed between that run and the next,
+and the current verdict is 1 violation, `josephus-whiston`, which is unrelated. I had a stale
+number and read it as a defect. The `jfb`/`jamieson-jfb` double-count `routing.ts:69-72` warns
+about did NOT occur — `jfb` is `staged` with 0 served rows, so only one JFB text serves.
+
+### NOT DONE / UNVERIFIED
+
+- **Nothing was applied to any database.** Both findings are documentation.
+- **Production is unmeasured.** Every number above is dev; dev and prod are not assumed equal,
+  and the P4.n prod side was not read.
+- **`josephus-whiston` is the one open `served-reconcile` violation** (6,492 clean-provenance
+  rows unserved on a published work). Deliberately NOT resolved: `routing.ts:130-134` records
+  the historian shelf-vs-retrieval split as an **open owner decision**, and serving or
+  unpublishing it is that decision, not a cleanup.
+- **The lane-b payload was verified by row counts and provenance shape, not by reading text.**
+  "0 author-page acquisitions" bounds the `ryle-expository` class specifically; it is not a
+  content audit of 669 works.
+- `commentary_entries` remains unwritten by the ingest pipeline and absent from
+  `corpus-copy`'s `COPIED_TABLES` — so nothing copied by P4.n will reach passage search. Filed
+  in the runbook, not fixed.
+- Not pushed.
+
 ## 2026-08-15 (overnight) — Took over Kimi's dead ingestion run; merged the two forks; CDN cutover STOPPED on a private Blob store
 
 Owner handed off at ~00:30 PT: Kimi's session died mid-run on a **provider quota** (Kimi-K3
