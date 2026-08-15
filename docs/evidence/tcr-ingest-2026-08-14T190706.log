@@ -1,0 +1,39 @@
+thompson-chain-reference: 1650 sections (1630 anchored), 27335 refs, 0 scan failure(s) [0 pinned]
+(node:48438) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ↻ thompson-chain-reference: replaced prior ingest (832 rows, 0 static entries)
+  → thompson-chain-reference: 1650 section(s), 1630 anchor(s) on the shelf
+  → thompson-chain-reference: 1843 flat rows embedded
+  → thompson-chain-reference: 27335 topical entries, 24363 additional anchors
+
+
+== CENSUS (dev, slug=thompson-chain-reference) ==
+sources rows        : [{"status":"staged","source_type":"topical_index","license":"Public Domain"}]
+sections            : 1650
+section_anchors     : 25993
+topical_entries     : 27335
+flat embeddings     : 1843
+flat served=true    : 0
+flat zero-dim/bad   : 0
+embedding model     : ["BAAI/bge-large-en-v1.5"]
+
+== SPOT-CHECK: 5 known TCR chains, stored rows vs raw archive ==
+AARON: stored=26 expected=26 MATCH
+  first refs: book2 4:14 | book2 5:20 | book2 6:20
+ABARIM, MOUNT: stored=3 expected=3 MATCH
+  first refs: book4 27:12 | book4 33:48 | book5 32:49
+ABED-NEGO: stored=6 expected=6 MATCH
+  first refs: book27 1:7 | book27 2:17 | book27 2:49
+KEILAH: stored=3 expected=3 MATCH
+  first refs: book6 15:44 | book9 23:1 | book16 3:17
+ZORAH: stored=5 expected=5 MATCH
+  first refs: book6 19:41 | book7 13:2 | book7 16:31
+
+SPOT-CHECK OK — all 5 chains match the archive byte-for-byte in refs

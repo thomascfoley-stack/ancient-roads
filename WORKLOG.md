@@ -9289,3 +9289,31 @@ the tool: a progress heartbeat would have prevented two unnecessary kill-and-ret
 - /ask live check for the new works + historian lane pending the deploy (routing code not yet
   deployed — the served rows answer only once the lane ships).
 - Deploy + merge pending at this writing.
+
+## 2026-08-14 (close-out) — owner close-outs landed; TCR published; search design note filed
+
+**Owner close-outs (the six, all done):** (1) TCR — ingested on dev from the archived raw
+(checksum-verified, byte-identical re-decode; license gate red-proofed by breaking it and
+watching it fail), copied to prod via the disk-staged path extended for `topical_entries`,
+published + served (1,650 sections / 27,335 topical / 1,843 flat served; snapshot
+flip-pre-snapshot-2026-08-15T02-43-09, reverse command in
+`docs/evidence/corpus-backlog/publish-flip-tcr-2026-08-14.log`). (2) barnes-notes and
+(3) calvin-crosswire residuals deleted dev+prod (snapshots gzipped — full bodies+vectors
+exceed GitHub's 100MB push limit; learned when a push was rejected mid-close-out and the
+history was rewritten locally before re-push). (4) thayers published (the flip tool refused
+serve:false: "Publishing now MEANS serving" — manifest flipped to serve:true with the
+inertness reasoning recorded, floor pin moved to josephus-works). (5) History checkbox live
+(deploy 897bd3f, receipt 32ea135). (6) /ask live verification: historian lane probed on prod
+— `EXPLAIN` shows `Index Scan using idx_embeddings_served_historian` over 6,492 served rows;
+the browser click-through needs the owner's signed-in session (401 UNAUTHENTICATED behind
+the site gate is correct behaviour).
+
+**FILED FOR LATER (owner, 2026-08-14):** search quality design pass — "What is the definition
+of Hebrews?" / "What is Hebrews 12 about?" surface commentary about the Hebrew LANGUAGE, not
+the book. Book-name vs common-word disambiguation needs design (query-time book detection
+before retrieval, or an explicit passage channel). DESIGN ONLY, and only after delivery — do
+not build from this note without a design doc.
+
+**NOT DONE:** post-flip state verified by self-measurement (counts above are exact against
+prod); no fresh independent verifier pass over the 2026-08-14 close-outs. The 4-hour window's
+remaining items are all closed.

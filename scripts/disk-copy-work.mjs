@@ -67,6 +67,13 @@ async function dump() {
     section_embeddings: [`SELECT se.* FROM section_embeddings se JOIN sections s ON s.id=se.section_id WHERE s.source_id=$1 ORDER BY se.section_id`, [sourceId], new Set()],
     embeddings: [`SELECT * FROM embeddings WHERE user_id IS NULL AND metadata->>'work'=$1`, [SLUG], gen.embeddings],
   };
+  // topical_index works carry topical_entries keyed by section_id (039) — include them when
+  // the work has any (TCR: 27,335). Same remap-on-load treatment as section_anchors.
+  const topicalProbe = await c.query(
+    `SELECT count(*)::int AS n FROM topical_entries te JOIN sections s ON s.id=te.section_id WHERE s.source_id=$1`, [sourceId]);
+  if (topicalProbe.rows[0].n > 0) {
+    queries.topical_entries = [`SELECT te.* FROM topical_entries te JOIN sections s ON s.id=te.section_id WHERE s.source_id=$1 ORDER BY te.section_id, te.ordinal`, [sourceId], new Set(['id'])];
+  }
   for (const [table, [sql, params, genCols]] of Object.entries(queries)) {
     const { rows } = await c.query(sql, params);
     const out = createWriteStream(`${DIR}/${table}.jsonl.gz`);
@@ -136,7 +143,7 @@ async function load() {
       console.log(`sections: ${idMap.size} inserted (batched)`);
     }
 
-    for (const table of ['section_anchors', 'section_embeddings']) {
+    for (const table of ['section_anchors', 'section_embeddings', 'topical_entries']) {
       let n = 0;
       const file = `${DIR}/${table}.jsonl.gz`;
       if (!existsSync(file)) continue;
@@ -198,6 +205,7 @@ async function load() {
     const chk = await dest.query(
       `SELECT (SELECT count(*)::int FROM sections WHERE source_id=$1) sec,
               (SELECT count(*)::int FROM section_embeddings se JOIN sections s ON s.id=se.section_id WHERE s.source_id=$1) svecs,
+              (SELECT count(*)::int FROM topical_entries te JOIN sections s ON s.id=te.section_id WHERE s.source_id=$1) topical,
               (SELECT count(*)::int FROM embeddings WHERE user_id IS NULL AND metadata->>'work'=$2) flat`,
       [destSourceId, SLUG]);
     console.log(`post-insert census: ${JSON.stringify(chk.rows[0])}`);
