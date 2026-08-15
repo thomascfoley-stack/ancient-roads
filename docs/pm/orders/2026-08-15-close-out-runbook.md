@@ -8,9 +8,30 @@ fix, its red-proof, and its exit check. Items are independent; order below is de
 
 ---
 
-## Item 1 — `manton-manton01`: publish blocked by a unit-ordinal "weld" that is actually correct data
+## Item 1 — `manton-manton01`: publish blocked by a unit-ordinal "weld"
 
-### The verified root cause
+### CORRECTED 2026-08-15, after the section below was written and acted on
+
+This section originally diagnosed the weld as benign (two sermons legitimately sharing one
+heading) and proposed relaxing the shared instrument to allow it. **That diagnosis was wrong**,
+caught before the instrument was touched: unit 7's body opens *"Give us this day our daily
+bread… We are now come to the second sort of petitions…"* — a different petition of the Lord's
+Prayer than its heading claims. Checked against the cached source XML
+(`data/raw/ccel/manton_manton01.xml`): **CCEL's own ThML markup carries the stale title on that
+div** — a transcription error in the public-domain source, not an adapter bug, not a corrupted
+ingest. Fixed by correcting the one wrong `sections.heading` value to match its own body
+("Give us this day our daily bread.") — verified against the source's own document order, which
+lists the "daily bread" petition immediately after "Thy will be done" is repeated. **The shared
+instrument (`scripts/lib/unit-ordinal-instrument.mjs`) was NOT modified** and needed no red-proof
+matrix; it passed on the corrected data at full strength. `manton-manton01` published on dev.
+
+**The lesson, stated because it nearly went the other way:** the instrument's WELD warning was
+right to stop publication, and the first read of that warning was a rationalization, not a
+diagnosis — matching a heading is weaker evidence than reading the body it's attached to. Relaxing
+a verification instrument to accommodate an unread assumption is exactly the failure this repo's
+watchlist exists to catch. The original (superseded) analysis is kept below for the record.
+
+### SUPERSEDED — the original (wrong) root cause
 
 Manton preached **two consecutive sermons on the same clause** of the Lord's Prayer. Measured on dev:
 
@@ -36,9 +57,10 @@ key (heading alone) cannot express "two units with the same title."** This is th
 a consecutive-duplicate-heading scan across all 26 newly ingested works found exactly one pair,
 in this work.
 
-### The fix — refine the instrument's comparison, not the data
+### The fix that was NOT applied (superseded — see the correction above)
 
-**Do NOT touch the data.** Change the recompute comparison from *equality* to *refinement*:
+The section below is preserved for the record; it was never implemented. **Do NOT touch the
+data.** Change the recompute comparison from *equality* to *refinement*:
 
 - Heading-derived units are a **lower bound** on boundaries, not an exact reconstruction.
 - **ALLOWED:** one computed unit maps to MULTIPLE stored units (a split at a duplicate heading —
