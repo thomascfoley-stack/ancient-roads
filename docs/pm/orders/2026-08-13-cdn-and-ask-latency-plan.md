@@ -22,6 +22,25 @@ not merge.
 
 ---
 
+## STATUS 2026-08-15 (overnight run) — built and audited; stopped on two owner gates
+
+A1–A4 and B1–B3 are **done, merged and audited green** on `feat/corpus-cdn` (`f65d205`).
+Two gates are the owner's, and neither is optional:
+
+| ⚑ | Gate | Why it is the owner's |
+|---|---|---|
+| **G-a** | A read-write token for the **new** public Blob store `ancient-paths-corpus` (`store_mBP8qokd9O4O9qNZ`) — dashboard → Storage → Tokens, **or** connect it to project `web` with a **non-default env prefix** | A5's premise was wrong: the existing store is **private**, and it is the same store holding Lane B's private `user-corpus/` user uploads. Making it public would expose them. A separate public store was created instead (unconnected, so the live `BLOB_READ_WRITE_TOKEN` was not touched) — but connecting a second store is exactly what can overwrite that variable, and Lane B's uploads depend on it |
+| **G-b** | Migration **115** on prod, before or with this branch's deploy: `MIGRATE_ALLOW_PROD=1 node db/apply-migration-concurrent.mjs db/migrations/115_fts_legal_rejoin_gill_song.sql` | Bylaw 7. And a live hazard: prod's index is 113-era while this branch's query predicate includes `gill-song`. A query predicate BROADER than a partial index's predicate means Postgres **cannot use that index at all** |
+
+With G-a in hand the rest of Phase 1 runs unattended (sync → parity → `CORPUS_CDN_BASE` →
+deploy → `.vercelignore` → deploy). With G-b, the deploy also unblocks the **production** B2 run.
+
+**B2 ran dev-local and both pre-registered rules came back UNTRIGGERED, so B4 built nothing** —
+compose+verify 50.4% (bar 60%), retrieve p50 4.2s (bar 15s). That measurement does not speak for
+production (~104s at C2); see `docs/evidence/ask-latency/B2-measurement-2026-08-15-devlocal.md`.
+
+---
+
 ## Phase 1 — Corpus CDN (design: `docs/CORPUS_CDN_DESIGN.md`, approved by the owner's "go")
 
 ### A1. Sync script `scripts/corpus-blob-sync.mjs`

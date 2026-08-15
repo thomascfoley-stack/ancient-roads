@@ -1,5 +1,115 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-15 (overnight) — Took over Kimi's dead ingestion run; merged the two forks; CDN cutover STOPPED on a private Blob store
+
+Owner handed off at ~00:30 PT: Kimi's session died mid-run on a **provider quota** (Kimi-K3
+billing, `403 provider.auth_error`), not on context, and the owner went to bed with "are you able
+to pinpoint where we are and take over... if so just do it".
+
+### Phase 0 — where Kimi's run actually stopped (measured, read-only)
+
+**The run is stopped, not paused, and nothing is half-written.** Kimi's session death took its
+ingest subagents with it; no ingestion process survives (`ps` shows only the Kimi desktop app).
+The dev database is **frozen at exactly the numbers Kimi last polled** — flat `embeddings` =
+**580,939**, unchanged, which is what makes this a clean handoff rather than a repair job.
+
+Landed before it died (dev, all `staged`, all with vectors): `bernard-song-sermons` 86 sections /
+86 section_embeddings, `julian-revelations` 86/86, `kempis-imitation-benham` 114/114 — the
+mystics batch, its ingest logs committed at `20f37f9` with negative controls passing.
+`edwards-charity-fruits` is published on prod (567 rows served) from the same run.
+
+**Never staged, and these are the gap:** `luther-church`, `brooks`, `manton`, `bunyan`, `pascal`,
+`ignatius`. Kimi's last transcript guessed its agents were "finishing their final reports" — the
+DB says otherwise: those works have no rows at all. **I did not resume the ingestion.** It is
+Kimi's lane with its own runbook, the state is durable and restartable from
+`ingest/sources.config.json`, and inventing that scope overnight is how slop happens. It resumes
+when the quota does. **No work was published or served** — that gate is the owner's, always.
+
+### The merge nobody had done — two forks, both growing the serving lists
+
+`worktree-corpus-cdn-build` (my CDN + timers work) and `origin/main` (Kimi's corpus-backlog
+programme) both forked from `6cbbbd6` and **both edited the serving lists**. Merged onto
+`feat/corpus-cdn` (`4984a41`, fixes at `f65d205`). Three checks went red on the merge; all three
+were real, and each was watched red on this tree before it was fixed:
+
+1. **`gill-song` has been out of the production FTS index since 2026-08-14.** Migration 113
+   rebuilt `idx_commentary_fts_legal` from the corpus-backlog branch's `routing.ts`, which never
+   carried `gill-song` — added on the other branch 2026-08-12 (`509d690`, owner ruling "Song of
+   Solomon, fix it", migration 109, deployed and serving since). Neither branch was wrong on its
+   own; the union is what exposed it. **Migration 115** rebuilds the index with the predicate
+   PRINTED from the constant (the 108 discipline), zero-window per 037/113. Applied to **dev
+   only** (ledger `sha256 1840d90f0d00…`; index confirmed `valid=true` with `gill-song` in the
+   live predicate).
+2. **`publish-flip-toolchain`'s serve:false fixture was `thayers-lexicon`** — published by owner
+   close-out #4 on 2026-08-14. This is the **third** time this test has gone red because the
+   ruling it pins moved (whitefield-works → thayers-lexicon → now `josephus-works`), which is the
+   test working exactly as designed. Moved to `josephus-works` because it is also the floor's
+   named pin, so a future un-ruling breaks two guards together.
+3. **`ObsFields` was `Record<string, string|number|boolean>`** and the B1 timings log per-attempt
+   compose/verify ARRAYS. Widened to admit `number[]` rather than flattening the retries away.
+
+Manifest conflicts resolved by **slug-set diff against the merge base**, not by eye: 912 entries,
+no kill resurrected (`calvin-crosswire`, `spurgeon-talks-to-farmers` stay deleted), nothing lost
+from either side. `npm run audit` **GREEN** on the merge with dev credentials.
+
+### Phase 1 — corpus CDN: STOPPED, and the stop is the finding
+
+The design assumed a public Blob store. **The store is private — and it is the same store holding
+Lane B's `user-corpus/` private user uploads.** Flipping it public would expose users' uploaded
+documents. That is not a call an agent makes at 1am, and it is not a call anyone should make at
+all: the corpus and private uploads belong in **separate** stores.
+
+So I created the separate one — `ancient-paths-corpus` (`store_mBP8qokd9O4O9qNZ`, **public**,
+iad1, base `mbp8qokd9o4o9qnz.public.blob.vercel-storage.com`) — and deliberately did **not**
+connect it to the `web` project, because connecting a second store is what risks clobbering the
+production `BLOB_READ_WRITE_TOKEN` that Lane B depends on. Verified after creation: the project's
+blob env vars are byte-for-byte the same three, still bound to `store_j73b…`.
+
+**That leaves the sync without a write credential for the new store, and that is the blocker.**
+The CLI does not print store tokens; the project's OIDC token is scoped to connected stores only
+(tested: `Access denied`). This needs the owner, and it is a two-minute dashboard action.
+
+Everything else in Phase 1 is built, merged and audited: `corpus-blob-sync.mjs` (hash-skip +
+deletion propagation), the parity checker, the quarantine weld, the env-gated rewrites, the
+predeploy freshness leg. Dry run plans **24,992 uploads / 0 deletes** correctly.
+
+### Phase 2 — B2 measured, and BOTH pre-registered rules came back untriggered
+
+Ran the real `teach()` loop 10× (4 verse-ref / 3 topical / 3 pericope) against dev + live
+providers: **p50 9.1s** — retrieve 47.8%, compose 50.3%, verify ~0%, embed 1.8%, lanes 0ms
+(fully overlapped). 10/10 composed; the verifier passed every one.
+
+- Rule 1 (compose+verify ≥60% → stream sources, cap retries): **50.4%, does not fire.**
+- Rule 2 (retrieve p50 ≥15s → skip rerank for verse-ref): **4.2s, does not fire.**
+
+**Per the plan's closed menu, nothing was built.** Two things to carry: cold start put **18.2s**
+into retrieve on ask 1 against a 4.2s p50 for the rest, and one ask needed three compose attempts
+(18.6s) — the tail is cold starts and retries, not steady-state work.
+
+**This is dev-local and says nothing about production**, where C2 measured ~104s/~58s on
+2026-08-07. The gap is unexplained; the prod run is what tests the cold-start hypothesis.
+Evidence: `docs/evidence/ask-latency/B2-measurement-2026-08-15-devlocal.md`.
+
+### NOT DONE / UNVERIFIED — and two of these are owner gates
+
+- **⚑ OWNER: migration 115 on prod, BEFORE or WITH the next deploy of this branch.** This is the
+  one item with a live hazard: prod's index is 113-era, and this branch's query predicate
+  includes `gill-song`. A query predicate BROADER than the partial-index predicate means Postgres
+  **cannot use that index at all** — the exegetical FTS surface would fall to sequential scans.
+  Deploying this branch without 115 trades a small correctness gap for a large latency one.
+  `MIGRATE_ALLOW_PROD=1 node db/apply-migration-concurrent.mjs db/migrations/115_fts_legal_rejoin_gill_song.sql`
+- **⚑ OWNER: a read-write token for `ancient-paths-corpus`** (Vercel dashboard → Storage →
+  ancient-paths-corpus → Tokens), or connect it to the `web` project **with a non-default env
+  prefix** so `BLOB_READ_WRITE_TOKEN` is not overwritten. With that in hand the rest of Phase 1
+  is unattended: sync → parity → `CORPUS_CDN_BASE` → deploy → `.vercelignore` → deploy.
+- **No deploy ran this session** — it is gated on 115 above, so the timers are not live and the
+  production B2 measurement has not happened.
+- **Ingestion not resumed** (Kimi's lane, quota-blocked). Six works never staged, named above.
+- The corpus CDN store is empty (0 files) and costs nothing while it sits.
+- `.env.local`'s `BLOB_READ_WRITE_TOKEN` is **quoted**, and a naive `cut -d= -f2-` carries the
+  quotes into the value — which is how the first sync attempt burned a cycle failing auth against
+  a token that was fine. Strip quotes when reading env files by hand.
+
 ## 2026-08-12 (late night) — Study editor v2 BUILT (Fable session; owner mockup approved, "build it")
 
 Branch `feat/study-editor-v2` off `feat/study-docs-p2`. The owner's first browser pass of the
