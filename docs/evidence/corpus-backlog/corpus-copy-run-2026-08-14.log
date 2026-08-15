@@ -1,0 +1,37 @@
+spawn env COPY_ALLOW=1 COPY_EXPECT_HOST=ep-odd-fog-atnykudm CORPUS_COPY_SOURCE_URL=postgresql://neondb_owner:mhONGj_8OwYa8XTmliGcOlwfSxoMl3z3W6CqUw7ovTE@ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require CORPUS_COPY_DEST_URL=postgresql://neondb_owner:npg_XqFvRTh3Mo1O@ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require node scripts/corpus-copy.mjs --slugs=docs/evidence/corpus-backlog/copy-slugs-2026-08-13.json --evidence=docs/evidence/corpus-backlog
+(node:80872) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+corpus-copy — source ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech → ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech
+7 work(s): barnes-crosswire-nt, scofield-crosswire, pnt-crosswire, poole-tcp, whitefield-works, donne-divine-poems, herrick-noble-numbers
+
+SOURCE census (dev)
+  barnes-crosswire-nt          sources=1 sections=   7431 anchors=   7431 vectors=   7431 topical=      0 flat=  17490
+  scofield-crosswire           sources=1 sections=   3207 anchors=   3207 vectors=   3207 topical=      0 flat=   3392
+  pnt-crosswire                sources=1 sections=   6067 anchors=   6067 vectors=   6067 topical=      0 flat=   6197
+  poole-tcp                    sources=1 sections=  24104 anchors=  24104 vectors=  24104 topical=      0 flat=  29468
+  whitefield-works             sources=1 sections=     59 anchors=     59 vectors=     59 topical=      0 flat=   1810
+  donne-divine-poems           sources=1 sections=     41 anchors=      0 vectors=     41 topical=      0 flat=     78
+  herrick-noble-numbers        sources=1 sections=    270 anchors=      0 vectors=    270 topical=      0 flat=    282
+
+DESTINATION census, BEFORE
+  barnes-crosswire-nt          sources=0 sections=      0 anchors=      0 vectors=      0 topical=      0 flat=      0
+  scofield-crosswire           sources=0 sections=      0 anchors=      0 vectors=      0 topical=      0 flat=      0
+  pnt-crosswire                sources=0 sections=      0 anchors=      0 vectors=      0 topical=      0 flat=      0
+  poole-tcp                    sources=0 sections=      0 anchors=      0 vectors=      0 topical=      0 flat=      0
+  whitefield-works             sources=0 sections=      0 anchors=      0 vectors=      0 topical=      0 flat=      0
+  donne-divine-poems           sources=0 sections=      0 anchors=      0 vectors=      0 topical=      0 flat=      0
+  herrick-noble-numbers        sources=0 sections=      0 anchors=      0 vectors=      0 topical=      0 flat=      0
+
+About to copy 7 work(s) into ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech).
+They will land as status='staged' and will NOT be published by this tool.
+
+Type 'copy' to proceed: copy
+  copied barnes-crosswire-nt: 7431 section(s), 7431 vector(s), 17490 flat row(s)
+  copied scofield-crosswire: 3207 section(s), 3207 vector(s), 3392 flat row(s)

@@ -1,0 +1,39 @@
+{
+  "source": "ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech",
+  "destination": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "declaredEndpoint": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "slugs": [
+    "barnes-crosswire-nt"
+  ],
+  "before": {
+    "barnes-crosswire-nt": {
+      "sources": 1,
+      "sections": 7431,
+      "anchors": 7431,
+      "section_embeddings": 7431,
+      "topical_entries": 0,
+      "flat_embeddings": 17490
+    }
+  },
+  "destBefore": {
+    "barnes-crosswire-nt": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "destAfter": {
+    "barnes-crosswire-nt": {
+      "sources": 1,
+      "sections": 7431,
+      "anchors": 7431,
+      "section_embeddings": 7431,
+      "topical_entries": 0,
+      "flat_embeddings": 17490
+    }
+  },
+  "mismatch": 0
+}
