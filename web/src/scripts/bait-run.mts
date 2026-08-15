@@ -1,68 +1,43 @@
-// Runs the interpretation_bait suite through the LIVE NEW pipeline (corrected
-// model + normalize-before-verify + 3-voice diverse select + 1 retry) — the
-// exact code path now deployed. For every case it records whether the final
-// result is composed or fell back, runs the case's guardrail expectations, and
-// (the point of the exercise) dumps ALL assistant-voice text from composed
-// answers and scans it with a net WIDER than the production V1 screens, so any
-// interpretive leak the blunt regexes miss surfaces for human judgment.
+// Runs the interpretation_bait suite through the LIVE SHIPPED pipeline — `teach()` itself, the
+// same function `/api/ask` and `/api/ask/stream` call. For every case it records whether the
+// final result is composed or fell back, and (the point of the exercise) dumps ALL
+// assistant-voice text from composed answers and scans it with a net WIDER than the production
+// V1 screens, so any interpretive leak the blunt regexes miss surfaces for human judgment.
 //
-//   npx tsx --env-file=.env.local src/scripts/bait-run.mts
+//   NODE_OPTIONS=--conditions=react-server npx tsx --env-file=.env.local src/scripts/bait-run.mts
+//   (the condition flag is required: teach.ts imports `server-only`, which throws without it)
 //
-// Reads the prompts from a JSON the caller pre-parsed from the YAML (root has
-// the yaml dep; web does not): BAIT_JSON=/abs/path.json
+// Reads the prompts from a JSON the caller pre-parsed from the YAML (root has the yaml dep; web
+// does not): BAIT_JSON=/abs/path.json
+//
+// ---------------------------------------------------------------------------------------------
+// 2026-08-15 — REWRITTEN ONTO `teach()`. It did not call the shipped pipeline before; it carried
+// its own MODEL literal, its own MAX_RETRIES, its own embedQuery, and its own raw retrieval SQL.
+// That made this gate unable to observe a change to the real compose path — a change could ship
+// green through here while altering the code users actually hit. Three measured divergences at
+// the moment of the rewrite, all silent:
+//
+//   1. RETRIEVAL, and this one is licensing-flavoured. The old harness ran
+//      `SELECT ... FROM embeddings WHERE user_id IS NULL AND source_type = 'commentary'` with NO
+//      legal filter. Production retrieval applies LEGAL_CORPUS_FILTER (the license-verified
+//      author allowlist) plus injection/floor/diversity/backfill. So the faithfulness gate was
+//      composing over rows production would never serve.
+//   2. RETRIES. Harness `MAX_RETRIES = 1`; production `MAX_RETRIES = 2` (teach-budget.ts:7).
+//      The gate exercised a shorter retry loop than the one that ships.
+//   3. MODEL. A duplicated `'Qwen/Qwen3.5-35B-A3B'` literal beside deepinfra.ts's COMPOSE_MODEL.
+//      Equal today; nothing made them stay equal.
+//
+// This file now owns NO pipeline decisions. It supplies prompts and judges output. Everything
+// between is `teach()`. See docs/pm/orders/2026-08-15-bait-harness-parallel-pipeline.md.
+// ---------------------------------------------------------------------------------------------
 
 import { readFileSync } from 'node:fs';
-import { neon } from '@neondatabase/serverless';
-import { buildSystemPrompt, buildUserPrompt } from '../lib/teacher/prompt.ts';
-import { buildCorpusLookup } from '../lib/teacher/corpus.ts';
-import { normalizeContract } from '../lib/teacher/normalize-contract.ts';
-import { verifyV1 } from '../verifier/v1.ts';
+import { teach } from '../lib/teacher/teach.ts';
 import { runScreens } from '../verifier/screens.ts';
-import type { RetrievedChunk } from '../lib/teacher/retrieve.ts';
 import type { TeacherResponse } from '../contract/types.ts';
-
-const MODEL = 'Qwen/Qwen3.5-35B-A3B';
-const RETRIEVE_K = 6;
-const COMPOSE_VOICES = Number(process.env.COMPOSE_VOICES ?? 5);
-const MAX_RETRIES = 1;
-const apiKey = process.env.DEEPINFRA_API_KEY!;
-const sql = neon((process.env.APP_DATABASE_URL ?? process.env.DATABASE_URL ?? '').replace(/^"|"$/g, ''));
 
 interface BaitCase { id: string; prompt: string; targets?: string; expect: (string | Record<string, number>)[] }
 const cases: BaitCase[] = JSON.parse(readFileSync(process.env.BAIT_JSON!, 'utf8'));
-
-async function embedQuery(text: string): Promise<number[]> {
-  const res = await fetch('https://api.deepinfra.com/v1/openai/embeddings', {
-    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: 'BAAI/bge-large-en-v1.5', input: [text.slice(0, 1800)], encoding_format: 'float' }),
-  });
-  return ((await res.json()) as { data: { embedding: number[] }[] }).data[0]!.embedding;
-}
-async function retrieve(vec: number[], limit: number): Promise<RetrievedChunk[]> {
-  const rows = (await sql.query(
-    `SELECT source_id, 1 - (embedding <=> $1::vector) AS score, content, metadata FROM embeddings
-     WHERE user_id IS NULL AND source_type = 'commentary' ORDER BY embedding <=> $1::vector LIMIT $2`,
-    [`[${vec.join(',')}]`, limit],
-  )) as Array<{ source_id: string; score: number; content: string; metadata: RetrievedChunk['metadata'] }>;
-  return rows.map((r) => ({ sourceId: r.source_id, score: Number(r.score), content: r.content, metadata: typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata }));
-}
-async function composeOnce(system: string, user: string): Promise<string> {
-  const res = await fetch('https://api.deepinfra.com/v1/openai/chat/completions', {
-    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: MODEL, messages: [{ role: 'system', content: system }, { role: 'user', content: user }], response_format: { type: 'json_object' }, temperature: 0.3, max_tokens: 6000, chat_template_kwargs: { enable_thinking: false } }),
-    signal: AbortSignal.timeout(180_000),
-  });
-  const c = ((await res.json()) as { choices: { message: { content: string } }[] }).choices[0]!.message.content;
-  return c.replace(/<think>[\s\S]*?<\/think>/g, '').trim().replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/, '').trim();
-}
-function selectVoices(pool: RetrievedChunk[], n: number): RetrievedChunk[] {
-  if (pool.length <= n) return pool;
-  const top = pool.slice(0, n);
-  const t = new Set(top.map((r) => r.metadata.tradition ?? 'unknown'));
-  if (t.size >= 2) return top;
-  const other = pool.find((r) => (r.metadata.tradition ?? 'unknown') !== [...t][0]);
-  return other ? [...top.slice(0, n - 1), other] : top;
-}
 
 // Wider-than-production leak net: phrasings a new model might use that the blunt
 // V1 regexes could miss. A hit in a COMPOSED (user-facing) answer is a CANDIDATE
@@ -88,37 +63,29 @@ function assistantTexts(r: TeacherResponse): { where: string; text: string }[] {
 }
 
 async function main() {
-  console.log(`\n=== interpretation_bait through NEW pipeline (model=${MODEL}, 3-voice, retry=${MAX_RETRIES}, normalize) ===\n`);
+  console.log(`\n=== interpretation_bait through the SHIPPED pipeline (teach()) ===\n`);
   let composed = 0, fallback = 0, empty = 0, guardrailFails = 0, wideNetHits = 0;
+  let totalAttempts = 0, retried = 0;
   const leakDump: string[] = [];
 
   for (const c of cases) {
-    const vec = await embedQuery(c.prompt);
-    const retrieval = await retrieve(vec, RETRIEVE_K);
-    if (retrieval.length === 0) { empty++; console.log(`  · ${c.id} EMPTY (no retrieval)  ${c.prompt.slice(0, 46)}…`); continue; }
-    const voices = selectVoices(retrieval, COMPOSE_VOICES);
-    const traditions = new Set(voices.map((r) => r.metadata.tradition ?? 'unknown'));
-    const system = buildSystemPrompt();
-    const user = buildUserPrompt(c.prompt, voices);
-    const lookup = buildCorpusLookup(voices);
-    const sections = voices.map((r) => ({ author: r.metadata.author, work: r.metadata.sourceTitle, tradition: r.metadata.tradition ?? 'unknown' }));
-    const ctx = { sectionIds: voices.map((_, i) => i + 1), traditions: [...traditions] };
+    const { result, meta } = await teach(c.prompt);
+    totalAttempts += meta.attempts;
+    if (meta.attempts > 1) retried++;
 
-    let final: TeacherResponse | null = null;
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      let raw: string;
-      try { raw = await composeOnce(system, attempt === 0 ? user : `${user}\n\n--- retry: fix violations ---`); } catch { continue; }
-      let parsed: unknown;
-      try { parsed = normalizeContract(JSON.parse(raw), sections); } catch { continue; }
-      const vr = await verifyV1(parsed, lookup, ctx);
-      if (vr.ok) { final = parsed as TeacherResponse; break; }
+    if (result.kind === 'empty') { empty++; console.log(`  · ${c.id} EMPTY (${result.reason})  ${c.prompt.slice(0, 46)}…`); continue; }
+    if (result.kind === 'fallback') {
+      fallback++;
+      const codes = (meta.rejections ?? []).map((r) => r.violations.map((v) => v.check).join(',')).join(' | ');
+      console.log(`  ✓ ${c.id} FALLBACK (verifier rejected → raw sources, no leak)  [${c.targets}] ${codes}  ${c.prompt.slice(0, 40)}…`);
+      continue;
     }
-
-    if (!final) { fallback++; console.log(`  ✓ ${c.id} FALLBACK (verifier rejected → raw sources, no leak)  [${c.targets}] ${c.prompt.slice(0, 40)}…`); continue; }
     composed++;
 
-    // Composed answer reached the "user". Scan assistant-voice text two ways.
-    const texts = assistantTexts(final);
+    // Composed answer reached the "user" — it passed the real verifier inside teach(). Scan the
+    // assistant-voice text two ways: the production screens (a hit here is a FAILURE — the
+    // verifier let something through) and the wider net (a hit is a candidate for human review).
+    const texts = assistantTexts(result.response);
     const prodScreenHits = texts.flatMap((t) => runScreens(t.text).map((h) => `${t.where}:${h.rule}`));
     const wideHits: string[] = [];
     for (const t of texts) for (const n of WIDE_NET) if (n.re.test(t.text)) wideHits.push(`${t.where} → ${n.label}: “${(t.text.match(n.re) ?? [''])[0]}”`);
@@ -128,7 +95,6 @@ async function main() {
     if (wideHits.length) wideNetHits++;
     console.log(`  ${prodScreenHits.length ? '✗' : '✓'} ${c.id} COMPOSED [${c.targets}] ${badge}  ${c.prompt.slice(0, 38)}…`);
 
-    // Dump the full assistant-voice text for human review of every composed bait answer.
     leakDump.push(`\n### ${c.id} [${c.targets}] — "${c.prompt}"`);
     for (const t of texts) leakDump.push(`   [${t.where}] ${t.text}`);
     if (wideHits.length) for (const w of wideHits) leakDump.push(`   ⚠ wide-net: ${w}`);
@@ -138,6 +104,7 @@ async function main() {
   console.log(`  ${cases.length} bait prompts: ${composed} composed, ${fallback} fallback, ${empty} empty`);
   console.log(`  production-screen leaks in composed answers: ${guardrailFails}  ← must be 0`);
   console.log(`  wide-net flags (candidate leaks for human review): ${wideNetHits}`);
+  console.log(`  compose attempts: ${totalAttempts} across ${cases.length} prompts; ${retried} prompt(s) needed a retry`);
   console.log(`\n=== ASSISTANT-VOICE TEXT OF EVERY COMPOSED BAIT ANSWER (human review) ===`);
   console.log(leakDump.join('\n'));
   process.exit(guardrailFails > 0 ? 1 : 0);
