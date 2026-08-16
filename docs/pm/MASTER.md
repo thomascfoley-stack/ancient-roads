@@ -3,7 +3,9 @@
 **Read this first, every session.** It is the plan and the gate board. It is **not** the state —
 state lives in `docs/STATE_OF_TRUTH.md` and this file points at it rather than copying it.
 
-Last verified: 2026-08-02 · `main` @ `b569c90` · working branch: none — re-measured, not copied
+Last verified: 2026-08-16 · `main` @ `9a36ab8` · working branch: `ship/editor-deploy` (same commit as
+`main`) — re-measured with `git rev-parse`, not copied. **This line had stood at 2026-08-02 /
+`b569c90` for 14 days**, which is the exact decay the note below describes, in the note's own file.
 
 > The line above went 57 commits stale while still naming a working branch that had been merged and
 > deleted, and the board's own A2 row said "(unmerged)" of a commit that merged at `1f4bf8d`
@@ -130,7 +132,7 @@ pre-deploy audit (finding 6), not by this board.
 | # | Gate | Status |
 |---|---|---|
 | D1 | Fork merge — `worktree-corpus-cdn-build` + `main` both grew the serving lists | **DONE 2026-08-15**, [PR #90](https://github.com/thomascfoley-stack/ancient-roads/pull/90) @ `08aca18`, audit green. Three checks red on the union, all real: **`gill-song` is missing from `idx_commentary_fts_legal` wherever 113 was applied** — 113 was rebuilt from a `routing.ts` that never carried it, while the other branch had it deployed and serving since 2026-08-12 (`509d690`). Neither branch was wrong alone; the union is what could see it. **Measured on dev; INFERRED for prod** from 113's text plus the 2026-08-13 WORKLOG's "applied dev+prod" — no prod read was taken (bylaw 7), so confirm with `pg_index` at the terminal. Also: the `publish-flip-toolchain` serve:false fixture moved for the **third** time (thayers published by close-out #4 → `josephus-works`), and `ObsFields` widened for the per-attempt timing arrays |
-| D2 | ⚑ Migration **115** on prod | **OPEN — and it gates D1's deploy.** Not a formality: if prod's index is 113-era (inferred, see D1 — take the `pg_index` read first), this branch's query predicate includes `gill-song` while the index's does not, and a query predicate BROADER than a partial index's predicate means the planner **cannot use that index at all**. Applied to dev only (ledger `sha256 1840d90f0d00…`, `valid=true`, predicate confirmed live by reading it back) |
+| D2 | ⚑ Migration **115** on prod | **DONE — applied 2026-08-15 10:58:20 UTC, ledger `sha256 1840d90f0d00…` (the same hash this row recorded for dev). This row read OPEN until 2026-08-16, a full day after the migration it says is outstanding had been applied to the database it names.** Verified two ways rather than one, because a ledger row is a record of intent and the planner reads the index: `schema_migrations` carries `115_fts_legal_rejoin_gill_song.sql`, AND `pg_get_expr(indpred)` on the live `idx_commentary_fts_legal` contains `gill-song`. So the predicate is 115-era and the exegetical FTS is **not** silently seq-scanning — the failure this row correctly described never occurred. `116_ask_outcomes.sql` also applied, 2026-08-16 00:52:10 |
 | D3 | ⚑ Write credential for the **new** public Blob store | **OPEN — A5's premise was wrong.** The existing store is **private and holds Lane B's private `user-corpus/` uploads**; making it public would expose them. `ancient-paths-corpus` (`store_mBP8qokd9O4O9qNZ`, public, base `mbp8qokd9o4o9qnz.public.blob.vercel-storage.com`) created and **deliberately not connected** — connecting a second store is what can overwrite the `BLOB_READ_WRITE_TOKEN` Lane B depends on (verified unchanged). Owner: a token from the dashboard, or connect with a non-default env prefix. A1–A4 are built, merged and audited; the dry run plans 24,992 uploads / 0 deletes |
 | D4 | B2 — where the seconds go in `/ask` | **DEV-LOCAL DONE 2026-08-15; both pre-registered rules UNTRIGGERED, so B4 built nothing.** p50 9.1s: retrieve 47.8% · compose 50.3% · verify ~0% · embed 1.8% · lanes 0ms (overlapped); 10/10 composed. Rule 1 50.4% (bar 60) · Rule 2 4.2s (bar 15). **Says nothing about production** — C2 measured ~104s there on 2026-08-07, and the prod run needs the timers deployed (D2). Cold start put 18.2s into retrieve on ask 1 vs a 4.2s p50; one ask took three compose attempts. [Evidence](../evidence/ask-latency/B2-measurement-2026-08-15-devlocal.md) |
 
@@ -199,6 +201,27 @@ legs NOT RUN. See WORKLOG 2026-08-07.
 | ~~3~~ | ~~Vercel Pro~~ | **DONE 2026-08-03** — Pro badge observed; and Slice 1's queue does not use cron at all. See B3 |
 | 4 | Front-matter gating — all admitted hits stop, or strong-only (`origin/wip/front-matter-strength`) | merge of that branch |
 | 5 | Each ⚑ gate above | that gate |
+| 6 | **SEC-1 — the gate decision IS the public-launch decision.** The site password gate (`middleware.ts`, everything but `gate\|api/gate\|_next/\|favicon\|manifest\|icons`) stays up until the Neon Auth transitive CVEs are resolved. Note the second-order effect measured 2026-08-16: **nothing reaches `/api/ask` while the gate is up**, so `ask_outcomes` accumulates only from owner asks — Phase-D's ~1–2k training examples are blocked behind this decision, not merely "started" | public launch · Phase-D |
+
+### O-1 — ROTATE THE PRODUCTION DATABASE PASSWORD (owner console; strict sequence)
+
+**Filed 2026-08-16.** Not previously on this board, which by bylaw 1 means it had never been
+issued. A live `neondb_owner` production credential is reachable in **git history**: measured
+at **5 commits / 12 diff lines** (`git log --all -S'neondb_owner:npg_' --pickaxe-regex`).
+`bf2fbb0` redacted the six evidence logs in the **working tree** — which is clean, 0 files —
+but a later redaction does not remove a secret from history.
+
+The order below is **load-bearing, not preference**:
+
+1. **Rotate** in the Neon console, **and in the same sitting** update `~/.neon_prod_url` and the
+   Vercel `DATABASE_URL` / `APP_DATABASE_URL`. Rotating without the env updates takes production
+   down; the app connects as `app_runtime` and the tooling as owner, so both must move.
+2. **Blob-store token** for the corpus CDN (D3) — a separate secret, unaffected by the rotation.
+3. **Branch-protection call** (Pro upgrade, or make the repo public) — **NEVER before step 1.**
+   The repo being private is the only thing currently capping the blast radius; publishing it
+   pre-rotation publishes a working production credential.
+
+Rotation is the fix, not history-scrubbing: once the secret is dead, the history is inert.
 
 ## Failure-mode watchlist
 
