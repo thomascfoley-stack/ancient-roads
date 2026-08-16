@@ -2809,6 +2809,20 @@ front door.
 Bylaw 3 says a check that cannot be made honest should be removed rather than padded, but deleting
 an auth guard written by another session is an owner-level call, so it is filed rather than taken.
 
+> **CLOSED 2026-08-08** (owner ruling, bylaw 3) in `dc87099`; re-confirmed at HEAD 2026-08-15 on the
+> owner's "fix F2" directive — the deletion is already complete and nothing remained to take down.
+> `better-auth-wiring.test.ts`, `better-auth-live.test.ts`, `better-auth-schema.test.ts`,
+> `auth-rate-limit-storage.test.ts`, `signup-survives-mail-outage.test.ts` and
+> `src/lib/auth/better-auth.ts` are all deleted, and `better-auth` appears in neither manifest. The
+> four live `AUTH_PATHS` checks inside the wiring test — which guarded a production 500 and had
+> nothing to do with which auth system is mounted — were preserved in
+> `web/test/invariants/auth-route-table.test.ts` and re-red-proofed there, and the Neon replacements
+> (`neon-auth-wiring/config/live.test.ts`) cover the rest. The `better-auth@1.4.18` still in the
+> lockfile is transitive under `@neondatabase/auth@0.4.2-beta` and was ruled on separately
+> (`docs/pm/RULINGS-2026-08-11.md` §1). `src/lib/auth/rate-limit-storage.ts` survives deliberately:
+> the same commit found A1-2's limiter is wired into nothing on the live path, and its fate is an
+> owner call, not a side effect of this cleanup.
+
 ### Filed by `R0` — false reuse claims, with revised estimates
 
 Each row is a block whose "reuse the existing X" premise `R0` killed. The estimate is the
