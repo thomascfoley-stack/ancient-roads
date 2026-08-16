@@ -238,12 +238,13 @@ export function SidebarNavContent({
           )}
         </div>
 
-        {/* RESEARCH HISTORY (design §7.1; the companion ASK_HISTORY design's surface):
-            pinned threads first, then recents, "All research". NOT BUILT — ask-history
-            persistence is the companion design's slice, not this stream's (P2/W4 builds
-            MY STUDIES below). This placeholder exists only to fix the §7.1 section order —
-            RESEARCH HISTORY, MY STUDIES, PRAYER JOURNAL — so the section lands HERE,
-            above My studies, when it ships. */}
+        {/* RESEARCH HISTORY (ASK_HISTORY_DESIGN §4.6, built 2026-08-16): recent threads,
+            then /ask as "All research". Fetch-backed and signed-in only, for the same
+            reason as MY STUDIES below — a signed-out visitor has no history, and an empty
+            shelf or an auth-error line would be worse than nothing. */}
+        {mounted && session?.user && (
+          <ResearchHistory pathname={pathname} row={row} onNavigate={onNavigate} />
+        )}
 
         {/* MY STUDIES (design §7.1; the user-facing name per owner ruling E1, 2026-08-12):
             pinned studies first, then updated_at recents, then "All studies". This is the
@@ -613,6 +614,82 @@ function MyStudies({
             row={row}
             onNavigate={onNavigate}
           />
+        </>
+      )}
+    </div>
+  );
+}
+
+const RESEARCH_NAV_CAP = 5;
+
+// RESEARCH HISTORY (ASK_HISTORY_DESIGN §4.6). Mirrors MyStudies deliberately: fetch once,
+// three honest states (loading / failed / list), never an error line for a signed-out reader
+// (the caller already gates on session). Threads link to /ask/{id} — the durable URL that
+// makes back-from-the-reader work by construction (§4.3).
+function ResearchHistory({
+  pathname,
+  row,
+  onNavigate,
+}: {
+  pathname: string;
+  row: string;
+  onNavigate?: () => void;
+}) {
+  const [threads, setThreads] = useState<{ id: string; title: string }[] | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/research?limit=${RESEARCH_NAV_CAP}`);
+        if (!live) return;
+        if (res.status === 401) { setThreads([]); return; }
+        if (!res.ok) { setError(true); setThreads([]); return; }
+        const data = (await res.json()) as { threads?: { id: string; title: string }[] };
+        setThreads(Array.isArray(data.threads) ? data.threads : []);
+      } catch {
+        if (live) { setError(true); setThreads([]); }
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  // No threads yet and no error → render nothing. The section earns its place with content;
+  // an empty "Research history" header over zero rows is a shelf with a label and no books.
+  if (threads !== null && threads.length === 0 && !error) return null;
+
+  return (
+    <div className="mt-4">
+      <div className="mb-1 px-4">
+        <span className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+          Research history
+        </span>
+      </div>
+      {threads === null ? (
+        <p className="px-4 py-1 text-xs text-stone-500 dark:text-stone-400">Loading…</p>
+      ) : (
+        <>
+          {error && (
+            <p className="px-4 py-1 text-xs text-stone-500 dark:text-stone-400">
+              Your research could not be loaded.
+            </p>
+          )}
+          {threads.slice(0, RESEARCH_NAV_CAP).map((t) => (
+            <SidebarLink
+              key={t.id}
+              href={`/ask/${t.id}`}
+              icon={
+                <span className="inline-block h-2 w-2 rounded-full bg-accent-600 dark:bg-accent-400" />
+              }
+              label={t.title}
+              active={pathname === `/ask/${t.id}`}
+              row={row}
+              onNavigate={onNavigate}
+            />
+          ))}
         </>
       )}
     </div>

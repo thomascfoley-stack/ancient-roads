@@ -6,6 +6,7 @@ import { logEvent } from '@/lib/observability';
 import { teach, type TeacherEvent, type LaneFlags } from '@/lib/teacher/teach';
 import { logAskOutcome } from '@/lib/ask-outcome-log';
 import { scheduleAskOutcome } from '@/lib/ask-outcomes';
+import { createThreadWithQuestion, appendQuestion, appendAnswer, isThreadId, type StoredAnswer } from '@/lib/research';
 
 export const runtime = 'nodejs';
 // MUST be a literal: Next 16 statically analyses route segment config and rejects a
@@ -72,14 +73,45 @@ export async function POST(req: NextRequest) {
   if (!question) return apiError('INVALID_REQUEST', { message: 'A question is required.' });
   if (question.length > 500) return apiError('INVALID_REQUEST', { message: 'That question is too long (max 500 characters).' });
   const lanes = parseLaneFlags(body.lanes);
+  // Optional: append to an existing thread. Anything that is not a well-formed uuid is treated
+  // as absent (a new thread), never an error — the transcript is an aid, not a gate.
+  const requestedThreadId = isThreadId((body as { threadId?: unknown }).threadId)
+    ? ((body as { threadId: string }).threadId)
+    : null;
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const write = (e: TeacherEvent | { stage: 'error'; message: string }) => {
+      const write = (e: TeacherEvent | { stage: 'error'; message: string } | { stage: 'thread'; threadId: string } | { stage: 'saved'; ok: boolean }) => {
         controller.enqueue(encoder.encode(JSON.stringify(e) + '\n'));
       };
       const startedAt = Date.now();
+
+      // ── Research history, S1 (design §4.1) ─────────────────────────────────────────────
+      // The QUESTION row is written BEFORE teach() runs (I-2): a question that crashes the
+      // pipeline is exactly the one the reader wants back. Every persistence step is
+      // fail-open — history must never break an ask — and the failure is REPORTED (the §4.6 saved signal's
+      // `saved` signal), never silent. The assistant row is written only here, server-side,
+      // from the object teach() returned (I-1).
+      let threadId: string | null = null;
+      let qid: string | null = null;
+      try {
+        if (requestedThreadId) {
+          qid = await appendQuestion(user.id, requestedThreadId, question); // H2 belt: throws if not owned
+          threadId = requestedThreadId;
+        } else {
+          // One statement, one transaction (I1-L2): the thread and its first question cannot
+          // orphan each other.
+          const created = await createThreadWithQuestion(user.id, question);
+          threadId = created.threadId;
+          qid = created.qid;
+        }
+        write({ stage: 'thread', threadId });
+      } catch (e) {
+        threadId = null; // the ask proceeds; the turn will report saved:false
+        logEvent('error', { where: 'api/ask/stream.thread', message: (e as Error).message });
+      }
+
       try {
         const { result, meta } = await teach(question, { onEvent: write, lanes });
         const latencyMs = Date.now() - startedAt;
@@ -87,6 +119,26 @@ export async function POST(req: NextRequest) {
         // One durable row per completed ask (migration 116, Phase-D substrate). Off the
         // stream's critical path and fail-open — a logging failure never breaks an ask.
         scheduleAskOutcome({ userId: user.id, query: question, lanes, result, meta, latencyMs });
+
+        let saved = false;
+        if (threadId) {
+          try {
+            const stored: StoredAnswer = {
+              v: 1,
+              result,
+              lanes: lanes as Record<string, boolean>,
+              attempts: meta.attempts,
+              latencyMs,
+              askedAt: new Date(startedAt).toISOString(),
+              ...(qid ? { qid } : {}),
+            };
+            await appendAnswer(user.id, threadId, stored);
+            saved = true;
+          } catch (e) {
+            logEvent('error', { where: 'api/ask/stream.save', message: (e as Error).message });
+          }
+        }
+        write({ stage: 'saved', ok: saved });
       } catch (e) {
         console.error('teacher stream error:', (e as Error).message);
         logEvent('error', { where: 'api/ask/stream', message: (e as Error).message });

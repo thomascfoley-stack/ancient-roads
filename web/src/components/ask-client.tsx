@@ -6,6 +6,7 @@ import { formatVerseId } from '@bible/verse-id';
 import { verseHref } from '@/lib/verse-link';
 import { count } from '@/lib/plural';
 import { deskHref, withPane } from '@/lib/desk';
+import { DISPLAY_LOCALE } from '@/lib/locale';
 import { SaveToStudy, resolveVoiceSourceId } from '@/components/save-to-study';
 
 // --- shapes mirrored from the server (client only renders; server verifier is truth) ---
@@ -21,7 +22,7 @@ interface Retrieved { sourceId: string; score: number; content: string; metadata
 // Register-lane chunk (song/verse, sermon, theology) — verbatim corpus text
 // surfaced in its OWN labeled section, never blended into the exegetical voices.
 interface LaneChunk { sourceId: string; content: string; metadata: { author: string; sourceTitle: string; work?: string; register?: string; paraphrase?: boolean } }
-interface Lanes { song_verse?: LaneChunk[]; sermons?: LaneChunk[]; theology?: LaneChunk[] }
+interface Lanes { song_verse?: LaneChunk[]; sermons?: LaneChunk[]; theology?: LaneChunk[]; historians?: LaneChunk[] }
 type TeacherResult =
   | ({ kind: 'composed'; response: { blocks: Block[] }; retrieval: Retrieved[] } & Lanes)
   | ({ kind: 'fallback'; retrieval: Retrieved[]; violations: { check: string; message: string }[] } & Lanes)
@@ -35,7 +36,12 @@ type StreamEvent =
   | { stage: 'verifying'; attempt: number }
   | { stage: 'rejected'; attempt: number }
   | { stage: 'done'; result: TeacherResult }
-  | { stage: 'error'; message: string };
+  | { stage: 'error'; message: string }
+  // Research history (design §4.3): `thread` arrives BEFORE teach() output and carries the
+  // durable URL; `saved` arrives after persistence and is the §4.6 saved signal (NOT design I-8, which is turn immutability — unenforced, logged NOT DONE) — false renders as
+  // "not saved" on the turn, never silently.
+  | { stage: 'thread'; threadId: string }
+  | { stage: 'saved'; ok: boolean };
 
 interface Turn {
   id: number;
@@ -46,6 +52,19 @@ interface Turn {
   traditions: number;
   result?: TeacherResult;
   error?: string;
+  /** Stored turns only: when this was asked (renders the "historical record" stamp). */
+  askedAt?: string;
+  /** Live turns: the §4.6 saved signal. undefined = still pending / not applicable. */
+  saved?: boolean;
+  /** Stored turns: sourceIds whose embeddings row is no longer served (per-row §4.4 check,
+   *  resolveServability — fails closed). These render attribution, never the quote. */
+  withdrawnIds?: string[];
+}
+
+/** What /ask/[id] passes down: stored turns already in their terminal state. */
+export interface InitialThread {
+  id: string;
+  turns: { question: string; askedAt: string; result: TeacherResult | null; withdrawnIds: string[] }[];
 }
 
 const EXAMPLES = [
@@ -166,12 +185,22 @@ function LaneFilter({ lanes, onToggle }: { lanes: Record<LaneKey, boolean>; onTo
  */
 export const SLOW_ANSWER_NOTICE_MS = 90_000;
 
-export function AskClient() {
+export function AskClient({ initialThread }: { initialThread?: InitialThread } = {}) {
   const [question, setQuestion] = useState('');
-  const [turns, setTurns] = useState<Turn[]>([]);
+  const [turns, setTurns] = useState<Turn[]>(() =>
+    (initialThread?.turns ?? []).map((t, i) =>
+      t.result
+        ? { id: -(i + 1), question: t.question, stage: 'done' as Stage, attempt: 0, sources: [], traditions: 0, result: t.result, askedAt: t.askedAt, withdrawnIds: t.withdrawnIds }
+        : { id: -(i + 1), question: t.question, stage: 'error' as Stage, attempt: 0, sources: [], traditions: 0, error: 'This ask never finished. Ask it again below.', askedAt: t.askedAt },
+    ),
+  );
   const [busy, setBusy] = useState(false);
   const [lanes, setLanes] = useState<Record<LaneKey, boolean>>({ sermons: true, theology: true, songVerse: true, historians: true });
   const nextId = useRef(1);
+  // The thread this session appends to. Seeded by /ask/[id]; set by the first `thread` event on
+  // /ask — where the URL is then swapped with replaceState (§4.3: a fresh ask must not leave an
+  // empty /ask between the reader and their result on back).
+  const threadIdRef = useRef<string | null>(initialThread?.id ?? null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [turns]);
@@ -199,7 +228,7 @@ export function AskClient() {
       const res = await fetch('/api/ask/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q, lanes }),
+        body: JSON.stringify({ question: q, lanes, ...(threadIdRef.current ? { threadId: threadIdRef.current } : {}) }),
       });
       if (res.status === 401) { patch(id, { stage: 'error', error: 'Please sign in to explore the paths.' }); return; }
       if (!res.ok || !res.body) { patch(id, { stage: 'error', error: 'Something went wrong. Please try again.' }); return; }
@@ -224,6 +253,14 @@ export function AskClient() {
             case 'verifying': patch(id, { stage: 'verifying', attempt: ev.attempt }); break;
             case 'rejected': patch(id, { stage: 'rejected', attempt: ev.attempt }); break;
             case 'done': patch(id, { stage: 'done', result: ev.result }); break;
+            case 'thread':
+              if (!threadIdRef.current) {
+                threadIdRef.current = ev.threadId;
+                // replaceState, not push: back from a result must not land on an empty /ask.
+                window.history.replaceState(null, '', `/ask/${ev.threadId}`);
+              }
+              break;
+            case 'saved': patch(id, { saved: ev.ok }); break;
             case 'error': patch(id, { stage: 'error', error: ev.message }); break;
             default: patch(id, { stage: 'retrieving' });
           }
@@ -369,6 +406,19 @@ function TurnView({ turn, onRetry, busy }: { turn: Turn; onRetry: () => void; bu
       <div className="mb-6">
         <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400">Question</p>
         <p className="max-w-[62ch] font-display text-2xl leading-snug text-stone-900 dark:text-stone-100">{turn.question}</p>
+        {/* A stored turn is a TRANSCRIPT (§4.5): dated, historical, never "the answer, now".
+            A live turn whose save failed says so (§4.6 saved signal) — silence would turn "I lost my
+            question" into "I lost it and believed I hadn't". */}
+        {turn.askedAt && (
+          <p className="mt-1 font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500">
+            Asked {new Date(turn.askedAt).toLocaleDateString(DISPLAY_LOCALE, { day: 'numeric', month: 'short', year: 'numeric' })} · historical record
+          </p>
+        )}
+        {turn.saved === false && (
+          <p className="mt-1 font-sans text-xs tracking-wide text-amber-700 dark:text-amber-400">
+            This turn wasn’t saved to your research history. The answer below is complete.
+          </p>
+        )}
       </div>
       {turn.stage === 'error' ? (
         <div role="alert" className="border border-red-300/60 bg-red-50/60 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
@@ -379,7 +429,7 @@ function TurnView({ turn, onRetry, busy }: { turn: Turn; onRetry: () => void; bu
           <RetryButton onRetry={onRetry} busy={busy} tone="error" />
         </div>
       ) : turn.stage === 'done' && turn.result ? (
-        <Answer result={turn.result} onRetry={onRetry} busy={busy} contextTitle={turn.question} />
+        <Answer result={turn.result} onRetry={onRetry} busy={busy} contextTitle={turn.question} withdrawnIds={turn.withdrawnIds} />
       ) : (
         <Progress turn={turn} />
       )}
@@ -479,7 +529,107 @@ function Progress({ turn }: { turn: Turn }) {
   );
 }
 
-function Answer({ result, onRetry, busy, contextTitle }: { result: TeacherResult; onRetry: () => void; busy: boolean; contextTitle?: string }) {
+// ── The Show filter (design §4.7, owner-ruled variant A, 2026-08-16) ──────────────────────
+// Display-only. One chip per register that returned results, with its count; unchecking hides
+// that register's rows INSTANTLY and rechecking restores them — nothing re-runs, nothing is
+// fetched. "only" isolates one register; "Show all" appears while anything is hidden. State is
+// per-turn and ephemeral (component state, never persisted): a reopened thread starts complete.
+type ShowKey = 'commentary' | 'sermons' | 'theology' | 'songVerse' | 'historians';
+const SHOW_LABELS: Record<ShowKey, string> = {
+  commentary: 'Commentary',
+  sermons: 'Sermons',
+  theology: 'Theology & Confessions',
+  songVerse: 'Hymns & Poetry',
+  historians: 'History',
+};
+
+function ShowFilter({ entries, hidden, onToggle, onOnly, onAll }: {
+  entries: { key: ShowKey; n: number }[];
+  hidden: Set<ShowKey>;
+  onToggle: (k: ShowKey) => void;
+  onOnly: (k: ShowKey) => void;
+  onAll: () => void;
+}) {
+  return (
+    <div className="edge border-t pt-3">
+      <div className="mb-2 flex items-baseline justify-between">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">Show</p>
+        {hidden.size > 0 && (
+          <button type="button" onClick={onAll} className="text-xs font-medium text-accent-600 hover:underline dark:text-accent-400">
+            Show all
+          </button>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {entries.map(({ key, n }) => {
+          const on = !hidden.has(key);
+          return (
+            <span key={key} className={`inline-flex items-stretch border text-xs transition-colors ease-gentle ${on ? 'border-accent-600/50 bg-accent-600/10 text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200' : 'border-stone-300 text-stone-500 dark:border-stone-700 dark:text-stone-400'}`}>
+              <button type="button" aria-pressed={on} onClick={() => onToggle(key)} className="flex min-h-[32px] items-center gap-1.5 px-2.5">
+                <span aria-hidden className="text-[10px]">{on ? '✓' : '○'}</span>
+                {SHOW_LABELS[key]} <span className="opacity-70">{n}</span>
+              </button>
+              <button type="button" onClick={() => onOnly(key)} title={`Show only ${SHOW_LABELS[key]}`}
+                className="edge border-l px-1.5 text-[10px] uppercase tracking-wide text-stone-400 hover:text-accent-700 dark:hover:text-accent-300">
+                only
+              </button>
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function useShowFilter(entries: { key: ShowKey; n: number }[]) {
+  const [hidden, setHidden] = useState<Set<ShowKey>>(new Set());
+  const onToggle = useCallback((k: ShowKey) => {
+    setHidden((prev) => { const next = new Set(prev); if (next.has(k)) next.delete(k); else next.add(k); return next; });
+  }, []);
+  const onOnly = useCallback((k: ShowKey) => {
+    setHidden(new Set(entries.filter((e) => e.key !== k).map((e) => e.key)));
+  }, [entries]);
+  const onAll = useCallback(() => setHidden(new Set()), []);
+  return { hidden, onToggle, onOnly, onAll };
+}
+
+// §4.4 corpus drift: a stored turn whose work has left the served corpus keeps its ATTRIBUTION
+// and loses its QUOTE. The reader sees what was cited and that it is gone — never stale text
+// re-rendered as though it still served.
+function Tombstone({ author, work }: { author: string; work?: string }) {
+  return (
+    <figure className="border-l-[3px] border-l-stone-400 pl-5 opacity-80 dark:border-l-stone-600">
+      <p className="font-serif text-base italic leading-relaxed text-stone-500 dark:text-stone-400">
+        This source is no longer part of the served corpus. The quote is not shown.
+      </p>
+      <figcaption className="mt-2 text-sm text-stone-500 dark:text-stone-400">
+        <span className="font-semibold text-stone-700 dark:text-stone-300">{author}</span>
+        {work ? `, ${work}` : ''}
+        <span className="ml-2 bg-stone-200 px-2 py-0.5 text-micro font-medium uppercase tracking-wide text-stone-600 dark:bg-stone-800 dark:text-stone-400">withdrawn</span>
+      </figcaption>
+    </figure>
+  );
+}
+
+function Answer({ result, onRetry, busy, contextTitle, withdrawnIds }: { result: TeacherResult; onRetry: () => void; busy: boolean; contextTitle?: string; withdrawnIds?: string[] }) {
+  // Hooks before any early return (rules-of-hooks): entries are derived from the result shape.
+  const entries: { key: ShowKey; n: number }[] = [];
+  if (result.kind === 'composed') {
+    const n = result.response.blocks.filter((b) => b.type === 'voice').length;
+    if (n > 0) entries.push({ key: 'commentary', n });
+  } else if (result.kind === 'fallback') {
+    if (result.retrieval.length > 0) entries.push({ key: 'commentary', n: result.retrieval.length });
+  }
+  if (result.kind !== 'empty') {
+    if (result.sermons?.length) entries.push({ key: 'sermons', n: result.sermons.length });
+    if (result.theology?.length) entries.push({ key: 'theology', n: result.theology.length });
+    if (result.song_verse?.length) entries.push({ key: 'songVerse', n: result.song_verse.length });
+    if (result.historians?.length) entries.push({ key: 'historians', n: result.historians.length });
+  }
+  const { hidden, onToggle, onOnly, onAll } = useShowFilter(entries);
+  const show = (k: ShowKey) => !hidden.has(k);
+  const gone = new Set(withdrawnIds ?? []);
+
   if (result.kind === 'empty') {
     return (
       <p className="max-w-[62ch] font-serif text-lg leading-relaxed text-stone-500 dark:text-stone-400">
@@ -487,7 +637,18 @@ function Answer({ result, onRetry, busy, contextTitle }: { result: TeacherResult
       </p>
     );
   }
-  if (result.kind === 'fallback') return <><Fallback retrieval={result.retrieval} onRetry={onRetry} busy={busy} contextTitle={contextTitle} /><Lanes result={result} contextTitle={contextTitle} /></>;
+  if (result.kind === 'fallback') {
+    return (
+      <div className="space-y-6">
+        <ShowFilter entries={entries} hidden={hidden} onToggle={onToggle} onOnly={onOnly} onAll={onAll} />
+        {show('commentary') && <Fallback retrieval={result.retrieval} onRetry={onRetry} busy={busy} contextTitle={contextTitle} gone={gone} />}
+        <Lanes result={result} contextTitle={contextTitle} show={show} gone={gone} />
+        {entries.length > 0 && entries.every((e) => hidden.has(e.key)) && (
+          <p className="py-4 text-center font-sans text-sm text-stone-500 dark:text-stone-400">Everything is hidden. Check a register above.</p>
+        )}
+      </div>
+    );
+  }
 
   const blocks = result.response.blocks;
   const framing = blocks.find((b) => b.type === 'framing') as Extract<Block, { type: 'framing' }> | undefined;
@@ -496,18 +657,34 @@ function Answer({ result, onRetry, busy, contextTitle }: { result: TeacherResult
 
   // PRD §5 answer reveal: staggered fade-in, opacity only — framing first, each voice card
   // 60ms after the last, then the register lanes, then the passage list.
-  const hasLanes = Boolean(result.sermons?.length || result.theology?.length || result.song_verse?.length);
+  const hasLanes = Boolean(result.sermons?.length || result.theology?.length || result.song_verse?.length || result.historians?.length);
   const laneDelay = (voices.length + 1) * 60;
   const passageDelay = laneDelay + (hasLanes ? 60 : 0);
 
   return (
     <div className="space-y-6">
-      {framing && (
+      {framing && show('commentary') && (
         <p className="edge animate-fade-in border-t pt-6 font-serif text-lg leading-relaxed text-stone-700 dark:text-stone-300">{framing.text}</p>
       )}
-      <div className="space-y-6">
+      <ShowFilter entries={entries} hidden={hidden} onToggle={onToggle} onOnly={onOnly} onAll={onAll} />
+      {entries.length > 0 && entries.every((e) => hidden.has(e.key)) && (
+        <p className="py-4 text-center font-sans text-sm text-stone-500 dark:text-stone-400">Everything is hidden. Check a register above.</p>
+      )}
+      {show('commentary') && <div className="space-y-6">
         {voices.map((v, i) => {
           const era = eraOf(v.attribution.year);
+          // §4.4: withdrawn ROW → attribution stays, quote goes. A voice is tombstoned when
+          // the retrieval row it was composed from is no longer served (per-row check). An
+          // unresolvable voice cannot be checked — an accepted, findings-logged residue.
+          const voiceSid = resolveVoiceSourceId(result.retrieval, v);
+          if (voiceSid && gone.has(voiceSid)) {
+            return (
+              <div key={i}>
+                <div aria-hidden="true" className="edge mb-6 border-t" />
+                <Tombstone author={v.attribution.author} work={v.attribution.work} />
+              </div>
+            );
+          }
           // Save to study (design §7.5, R3). A voice block's section_id is PROMPT-LOCAL (an
           // index into the composer's re-sorted voice subset), never a corpus key, so the
           // saveable source_id is resolved against this turn's retrieval rows. An
@@ -545,13 +722,13 @@ function Answer({ result, onRetry, busy, contextTitle }: { result: TeacherResult
             </div>
           );
         })}
-      </div>
+      </div>}
       {hasLanes && (
         <div className="animate-fade-in" style={{ animationDelay: `${laneDelay}ms`, animationFillMode: 'backwards' }}>
-          <Lanes result={result} contextTitle={contextTitle} />
+          <Lanes result={result} contextTitle={contextTitle} show={show} gone={gone} />
         </div>
       )}
-      {passages && passages.items.length > 0 && (
+      {passages && passages.items.length > 0 && show('commentary') && (
         <div className="animate-fade-in pt-1" style={{ animationDelay: `${passageDelay}ms`, animationFillMode: 'backwards' }}>
           <p className="mb-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400">Passages</p>
           {/* PRD passage rows also spec a 17px preview line, but the passages block carries
@@ -576,7 +753,7 @@ function Answer({ result, onRetry, busy, contextTitle }: { result: TeacherResult
 // never part of the composed answer (sermon-lane slice 2026-07-18). Attribution
 // is author + work only — never a host URL. A paraphrase-tagged item (metrical
 // psalter) is marked as such, never presented as Scripture.
-function LaneSection({ title, note, chunks, contextTitle }: { title: string; note: string; chunks?: LaneChunk[]; contextTitle?: string }) {
+function LaneSection({ title, note, chunks, contextTitle, gone }: { title: string; note: string; chunks?: LaneChunk[]; contextTitle?: string; gone?: Set<string> }) {
   if (!chunks || chunks.length === 0) return null;
   return (
     <div className="pt-2">
@@ -584,6 +761,9 @@ function LaneSection({ title, note, chunks, contextTitle }: { title: string; not
       <p className="mb-3 text-sm italic text-stone-500 dark:text-stone-400">{note}</p>
       <div className="space-y-4">
         {chunks.map((c) => (
+          gone?.has(c.sourceId) ? (
+            <Tombstone key={c.sourceId} author={c.metadata.author} work={c.metadata.sourceTitle} />
+          ) : (
           <div key={c.sourceId}>
             <ResultLink href={workHref(c.metadata.work)}>
               {/* The neutral rail is a single stone-500 class, not a `stone-300 dark:stone-700`
@@ -606,23 +786,26 @@ function LaneSection({ title, note, chunks, contextTitle }: { title: string; not
                 with the voice cards above. */}
             <SaveToStudy className="ml-[30px]" clip={{ sourceId: c.sourceId }} contextTitle={contextTitle} />
           </div>
+          )
         ))}
       </div>
     </div>
   );
 }
 
-function Lanes({ result, contextTitle }: { result: Extract<TeacherResult, { kind: 'composed' | 'fallback' }>; contextTitle?: string }) {
+function Lanes({ result, contextTitle, show, gone }: { result: Extract<TeacherResult, { kind: 'composed' | 'fallback' }>; contextTitle?: string; show?: (k: ShowKey) => boolean; gone?: Set<string> }) {
+  const vis = show ?? (() => true);
   return (
     <>
-      <LaneSection title="Sermons on this theme" note="Preached expositions, not commentary. Read them in full for the argument." chunks={result.sermons} contextTitle={contextTitle} />
-      <LaneSection title="Theology & confessions" note="Systematic and confessional reflections on this theme." chunks={result.theology} contextTitle={contextTitle} />
-      <LaneSection title="Hymns & sacred poetry" note="Sung and poetic responses, and (where marked) a metrical paraphrase, not the Scripture text itself." chunks={result.song_verse} contextTitle={contextTitle} />
+      {vis('sermons') && <LaneSection title="Sermons on this theme" note="Preached expositions, not commentary. Read them in full for the argument." chunks={result.sermons} contextTitle={contextTitle} gone={gone} />}
+      {vis('theology') && <LaneSection title="Theology & confessions" note="Systematic and confessional reflections on this theme." chunks={result.theology} contextTitle={contextTitle} gone={gone} />}
+      {vis('songVerse') && <LaneSection title="Hymns & sacred poetry" note="Sung and poetic responses, and (where marked) a metrical paraphrase, not the Scripture text itself." chunks={result.song_verse} contextTitle={contextTitle} gone={gone} />}
+      {vis('historians') && <LaneSection title="Historical background" note="Narrative history for context — never doctrine, never part of the composed answer." chunks={result.historians} contextTitle={contextTitle} gone={gone} />}
     </>
   );
 }
 
-function Fallback({ retrieval, onRetry, busy, contextTitle }: { retrieval: Retrieved[]; onRetry: () => void; busy: boolean; contextTitle?: string }) {
+function Fallback({ retrieval, onRetry, busy, contextTitle, gone }: { retrieval: Retrieved[]; onRetry: () => void; busy: boolean; contextTitle?: string; gone?: Set<string> }) {
   return (
     <div>
       {/* WHY, and a way forward. This block used to be one apologetic sentence and a dead end:
@@ -644,6 +827,9 @@ function Fallback({ retrieval, onRetry, busy, contextTitle }: { retrieval: Retri
       </div>
       <div className="space-y-5">
         {retrieval.map((r) => (
+          gone?.has(r.sourceId) ? (
+            <Tombstone key={r.sourceId} author={r.metadata.author} work={r.metadata.sourceTitle} />
+          ) : (
           <div key={r.sourceId}>
             <figure className="border-l-[3px] border-l-stone-500 pl-5">
               <blockquote className="font-serif text-base leading-relaxed text-stone-700 dark:text-stone-300">
@@ -658,6 +844,7 @@ function Fallback({ retrieval, onRetry, busy, contextTitle }: { retrieval: Retri
                 fallback's unedited source list is a surfaced list. sourceId is direct. */}
             <SaveToStudy className="ml-5" clip={{ sourceId: r.sourceId }} contextTitle={contextTitle} />
           </div>
+          )
         ))}
       </div>
     </div>

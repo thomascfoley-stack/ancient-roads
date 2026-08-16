@@ -309,7 +309,9 @@ describe('sidebar MY STUDIES (design §7.1)', () => {
   it('a failed fetch is an honest quiet line, with the "All studies" link still reachable', async () => {
     stubFetch({ 'GET /api/studies': jsonResponse(500, { error: { code: 'INTERNAL', message: 'x' } }) });
     const { container } = render(<SidebarNavContent />);
-    await screen.findByText(/could not be loaded|couldn't be loaded/i);
+    // Scoped to the STUDIES line: the rail now has a second fetch-backed section
+    // (RESEARCH HISTORY, 2026-08-16) whose own honest error line matches the loose regex.
+    await screen.findByText(/studies could not be loaded|studies couldn't be loaded/i);
     expect(container.querySelector('a[href="/studies"]')).toBeTruthy();
   });
 });

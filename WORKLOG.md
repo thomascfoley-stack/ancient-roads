@@ -1,5 +1,75 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-16 (build) — Research History shipped: /ask threads persist, reopen at a URL, filter by register
+
+**Owner-directed build** ("build it and ship it to prod"), against the approved
+[ASK_HISTORY_DESIGN.md](docs/ASK_HISTORY_DESIGN.md) (§4.1 chats+messages APPROVED, §4.7 Show
+filter variant A RULED, every ask always fresh RULED).
+
+**S0 measured on prod before code** (owner go): `chats`/`messages`/`channels`/`chat_memories`
+all exist; `app_runtime` holds full DML on chats+messages; one ALL RLS policy each
+(`chats_policy`/`messages_policy`). The S0.2 fear (032 narrowed grants) did not materialise.
+D2 resolved: reuse.
+
+**Built (S1+S2+§4.7+tombstones):**
+- `web/src/lib/research.ts` — thread store on chats/messages (persona `ask`), H1/H2 belts
+  mirrored from `chat.ts`, bounded reads, `publishedOf()` for §4.4 drift.
+- `api/ask/stream/route.ts` — question row written BEFORE `teach()` (I-2), `{stage:'thread'}`
+  emitted first, assistant row written server-side from the teach() return (I-1),
+  `{stage:'saved', ok}` last (I-8). All persistence fail-open; an ask never breaks on history.
+- `GET /api/research` + `GET /api/research/[id]` — read-only by design; 404 for absent and
+  not-owned alike.
+- `/ask/[id]` — server page: stored turns + withdrawn-work tombstones (attribution stays,
+  quote goes), mounts the same `AskClient` for follow-ups. One renderer, no drift.
+- `ask-client.tsx` — thread/saved events, `replaceState` to `/ask/{id}` (back never lands on
+  an empty /ask), stored-turn "historical record" stamps, unsaved notice, the §4.7 Show
+  filter (chips with counts only for registers that returned rows, instant hide/unhide,
+  "only", "Show all", ephemeral state), Tombstone, and the historians lane section (was typed
+  but never rendered).
+- `sidebar.tsx` — RESEARCH HISTORY section in the reserved slot; signed-in only; renders
+  nothing when empty.
+
+**Verified:**
+- 16 new tests green: 5 static invariants (I-1 read-only, I-1b single write site derived not
+  hand-listed, I-2 order, §4.5 no-content-lookup, teacher-imports-nothing-user-scoped),
+  5 DB-backed tenancy tests EXECUTED against dev as real `app_runtime`, 6 jsdom interaction
+  tests on the filter/tombstones.
+- **Seven red-proofs, each watched fail**: POST seeded into the research route; content-lookup
+  seeded into the store; appendQuestion moved below teach(); sermons visibility inverted;
+  tombstone branch removed; and the tenancy belt removed — which stayed GREEN under
+  app_runtime because **RLS itself blocked the cross-tenant read: the chats/messages policies
+  are now proven by execution under Neon ids** (the C5 unknown, answered for these tables).
+  The H1 belt is defense-in-depth for the owner-fallback path, per chat.ts's own rationale.
+- Browser: /ask renders at 375px and desktop, no horizontal overflow, no new console errors.
+- Full `npm run audit` — first run FAILED on MIG-A: my own doing, not the code. I had added
+  `DATABASE_URL` (dev app_runtime) to `web/.env.local` for the dev server, and
+  `seedOwnerUrl()` reads exactly that var from exactly that file, so the seeding suite
+  connected as app_runtime and hit RLS on raw inserts. Fixed by using `APP_DATABASE_URL`
+  for the dev server (runtime prefers it; the seeding suite never reads it). Re-run pending
+  at entry time.
+
+### NOT DONE / UNVERIFIED
+- **Signed-in end-to-end walk is production-only** — Neon Auth secrets exist only in Vercel
+  (same ceiling 02 hit). The live walk (ask → thread URL → reopen → follow-up) happens on
+  prod post-deploy, behind the site gate.
+- **S3 deep links not built** — gated on the S0.3 resolver-coverage measurement (D5: do not
+  decide before the number exists). Clicks land at work level (today's behavior).
+- **S4 rename/delete not built** — deferred, named here so it is a decision not an omission.
+- Two inspector agents reported: 5 HIGH / 9 MEDIUM / 9 LOW + 3 UX deviations, ALL documented
+  BEFORE fixing (owner directive) in
+  [build-findings-2026-08-16.md](docs/evidence/research-history/build-findings-2026-08-16.md),
+  every fix logged there with its proof. Standouts: fallback turns never tombstoned (the §4.4
+  licensing case — fixed, red-proofed); servability moved to per-row embeddings.served via the
+  shared resolveServability, fail-closed; answer pairing by qid; the unconsumed /api/research/[id]
+  bypass route DELETED (bylaw 3); every static guard hardened against its PROVEN evasion and
+  re-proved red.
+- **I-8 (stored-turn immutability) is NOT enforced** — app_runtime holds UPDATE on messages, no
+  trigger, no belt. Follow-up, not this slice. The saved signal is §4.6, not I-8 (mislabels fixed).
+- **The owner-fallback tenancy path (DATABASE_URL owner, BYPASSRLS) is exercised by no test in
+  the tree** — the H1/H2 belts are its only enforcement and only RLS-masked runs exist. Follow-up.
+- **Owner directive appended post-build**: an exhaustive ~50-test pass over the feature;
+  document every failure and UX discrepancy FIRST, then fix. Tracked as task #31.
+
 ## 2026-08-16 (latest) — O-1 pre-flight: a SECOND live credential, and the credential guard is now a gate. Rotation deferred to January by owner decision
 
 **The rotation did not happen and that is a ruling, not a miss.** Owner, 2026-08-16: *"leave #1
