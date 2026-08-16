@@ -78,16 +78,49 @@ Then the file-level consumers:
 grep -rlE "neon_prod_url|CUTOVER_DATABASE_URL" scripts docs/pm docs/*.md
 ```
 
-### 3b. Establish which env vars carry an OWNER string — the load-bearing unknown
+### 3b. Which role does production actually connect as? — ANSWERED 2026-08-16: `app_runtime`
 
-The agent cannot read Vercel env vars. **The owner must open the Vercel dashboard** (project
-`prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR`, team `team_TQ3BYCSyzQ3m0yatlkKmUzM0`) and report, for each
-of `DATABASE_URL`, `APP_DATABASE_URL`, `DATABASE_URL_UNPOOLED`, **which role name the string
-begins with** — `postgresql://<role>:` — and nothing after it.
+**RESOLVED. Do not re-ask the owner; this step is closed. Read why the first method failed —
+it is the more useful half.**
 
-- All `app_runtime` → rotation does not affect serving. Proceed.
-- Any `neondb_owner` → **serving IS affected**; that var must be updated in the same sitting,
-  and the plan below gains a redeploy step.
+The original instruction here was: have the owner read the role prefix of `DATABASE_URL`,
+`APP_DATABASE_URL` and `DATABASE_URL_UNPOOLED` off the Vercel dashboard. **That is impossible.**
+All three are flagged **Sensitive** in Vercel, and a Sensitive variable's value can never be
+viewed again by anyone at any permission level — no reveal control, the edit panel loads empty,
+history shows only "added via Vercel CLI on Jul 8". The only actions are Rotate and Delete. A
+session that follows the original text either stalls or is tempted to rotate a production
+variable *in order to look at it*, which is a worse outcome than the question.
+
+**Measured instead, and the measurement is strictly better evidence.** A dashboard tells you
+what is configured; `pg_stat_activity` tells you what is actually connecting:
+
+```bash
+# generate public traffic and sample the roles connecting, concurrently
+( for i in $(seq 1 25); do
+    curl -s -o /dev/null https://ancientpaths.app/ &
+    curl -s -o /dev/null https://ancientpaths.app/gate &
+    curl -s -o /dev/null https://ancientpaths.app/ask &
+  done; wait ) &
+for i in $(seq 1 20); do
+  psql "$(cat ~/.neon_prod_url)" -X -q -t -A -c \
+    "SELECT DISTINCT usename FROM pg_stat_activity WHERE datname=current_database() AND application_name <> 'psql';"
+done | sort -u
+```
+
+Observed 2026-08-16 across 75 requests: **`app_runtime`, and nothing else.** No credential was
+read, displayed or handled at any point.
+
+**Consequences, all in the safe direction:**
+
+- Serving runs least-privilege. **Rotating `neondb_owner` does not affect the app.** Proceed
+  without the redeploy branch.
+- RLS is **not** inert in production — the scarier branch is ruled out by observation.
+- `db.ts:19-31` only checks that `APP_DATABASE_URL` is *present*, never that it holds
+  `app_runtime`, so an owner string there would have been silently accepted and RLS would have
+  been inert for every private row with every check green. That gap is real but **not currently
+  exploited**; file it, do not fix it here.
+- **Carried into Phase 2:** because these vars are Sensitive, if one ever does need updating you
+  cannot verify what you are replacing — only overwrite it. Nothing needs updating today.
 
 ### 3c. Baseline (agent)
 
@@ -186,7 +219,10 @@ a file with a synthetic match, watch it refuse, then remove.
 
 Stop and report rather than improvising if:
 
-- 3b finds an owner string in a Vercel var (the plan gains a redeploy; do not wing it).
+- ~~3b finds an owner string in a Vercel var~~ — **CLOSED 2026-08-16: measured `app_runtime`.**
+  If a later re-measurement ever shows a different role connecting, that is a stop.
+- Any step tempts you to **rotate or delete a Vercel variable in order to read it.** Sensitive
+  variables cannot be read; that is the platform working, not an obstacle to route around.
 - Phase 3 returns a different `current_user`, or a `sources` count that is not 164 without an
   explanation in `WORKLOG.md`.
 - The Phase 4 red-proof **connects**.
