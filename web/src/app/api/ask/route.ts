@@ -5,6 +5,7 @@ import { apiError } from '@/lib/api-error';
 import { logEvent } from '@/lib/observability';
 import { teach } from '@/lib/teacher/teach';
 import { logAskOutcome } from '@/lib/ask-outcome-log';
+import { scheduleAskOutcome } from '@/lib/ask-outcomes';
 
 export const runtime = 'nodejs';
 // MUST be a literal: Next 16 statically analyses route segment config and rejects a
@@ -60,7 +61,11 @@ export async function POST(req: NextRequest) {
   const startedAt = Date.now();
   try {
     const { result, meta } = await teach(question);
-    logAskOutcome(result.kind, Date.now() - startedAt, meta);
+    const latencyMs = Date.now() - startedAt;
+    logAskOutcome(result.kind, latencyMs, meta);
+    // Same durable write as the stream route (migration 116) — off the request path,
+    // fail-open: a logging failure never breaks an ask.
+    scheduleAskOutcome({ userId: user.id, query: question, lanes: {}, result, meta, latencyMs });
     return NextResponse.json(result);
   } catch (e) {
     console.error('teacher pipeline error:', (e as Error).message);

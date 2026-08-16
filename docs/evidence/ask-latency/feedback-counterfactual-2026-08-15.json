@@ -1,0 +1,134 @@
+[
+  {
+    "q": "Explain Romans 8:28",
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": false,
+      "check": "diversity_voices"
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Ephesians 2:8-9 teach?",
+    "firstCheck": "passages_grounded",
+    "armA": {
+      "recovered": false,
+      "check": "passages_grounded"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "passages_grounded"
+    }
+  },
+  {
+    "q": "What is the meaning of Isaiah 53:5?",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is justification by faith?",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about prayer?",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about suffering?",
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "schema"
+    }
+  },
+  {
+    "q": "What happens in the Sermon on the Mount?",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain the parable of the sower",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Who was Josephus?",
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "What does Song of Solomon 4:14 mean?",
+    "firstCheck": "anchor_offbase",
+    "armA": {
+      "recovered": false,
+      "check": "schema"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "anchor_offbase"
+    }
+  },
+  {
+    "q": "What does Hebrews 11 teach about faith?",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is the argument of Romans 5?",
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "What does Galatians teach about the law?",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  }
+]

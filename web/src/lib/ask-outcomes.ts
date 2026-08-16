@@ -1,0 +1,145 @@
+import 'server-only';
+import { after } from 'next/server';
+import { getDb, runAsUser } from '@/lib/db';
+import { logEvent } from '@/lib/observability';
+import type { LaneFlags, TeachMeta, TeacherResult } from '@/lib/teacher/teach';
+import type { RetrievedChunk } from '@/lib/teacher/retrieve';
+
+// ── ask_outcomes — one row per completed /ask (migration 116; Phase-D enabler, owner
+// directive 2026-08-15) ─────────────────────────────────────────────────────────────────
+// Phase-D (verifier-V2 + stance classifiers via LoRA fine-tuning, docs/ARCHITECTURE.md) is
+// gated on ~1-2k logged examples and nothing persisted them: logAskOutcome's only sink is a
+// stdout line. This module is the durable sink. It runs OFF the request path (after(),
+// fire-and-forget fallback below) and FAILS OPEN: a logging failure must never break an ask,
+// so recordAskOutcome swallows its own errors into one caught log line.
+//
+// The row stores what was SURFACED as references (source id, work slug, verse window, lane) —
+// never corpus text: this is a training-signal index, not a corpus copy, and text keeps
+// living in exactly one place. The question text IS stored (the column exists for it): it is
+// route-bounded to ≤500 chars and is the input half of the training pair. That is a DB column
+// decision, NOT a licence to log it — observability.ts's no-question-text contract stands.
+
+export type AskOutcomeInput = {
+  /** NULL for an anonymous ask — the column is nullable for exactly this. */
+  userId: string | null;
+  query: string;
+  /** Lane toggles as requested (absent keys = defaulted to included). */
+  lanes: LaneFlags;
+  result: TeacherResult;
+  meta: TeachMeta;
+  latencyMs: number;
+};
+
+/** One surfaced item, by reference only. `lane` is 'commentary' for the exegetical core. */
+type RetrievedRef = {
+  source: string;
+  work: string | null;
+  verse: number;
+  verse_end: number;
+  lane: string;
+};
+
+type AskOutcomeRow = {
+  user_id: string | null;
+  query: string;
+  lanes: LaneFlags;
+  retrieved: RetrievedRef[];
+  attempts: number;
+  verdict: TeacherResult['kind'];
+  failures: unknown[];
+  latency_ms: number;
+  stage_ms: TeachMeta['stageMs'] | null;
+};
+
+function refsOf(chunks: RetrievedChunk[], lane: string): RetrievedRef[] {
+  return chunks.map((c) => ({
+    source: c.sourceId,
+    work: c.metadata.work ?? null,
+    verse: c.metadata.verseId,
+    verse_end: c.metadata.verseEnd,
+    lane,
+  }));
+}
+
+/** Pure row builder — exported for the write-path tests. Never throws on a shaped result. */
+export function buildAskOutcomeRow(input: AskOutcomeInput): AskOutcomeRow {
+  const { result, meta } = input;
+  const retrieved: RetrievedRef[] =
+    result.kind === 'empty'
+      ? []
+      : [
+          ...refsOf(result.retrieval, 'commentary'),
+          ...refsOf(result.song_verse ?? [], 'song_verse'),
+          ...refsOf(result.sermons ?? [], 'sermon'),
+          ...refsOf(result.theology ?? [], 'theology'),
+          ...refsOf(result.historians ?? [], 'historian'),
+        ];
+  // `empty` never entered the compose loop, so there are no rejections to persist — the
+  // reason string is its failure record (bounded at the route: the two reasons teach.ts
+  // emits are short fixed strings; sliced anyway against a future free-text one).
+  const failures =
+    result.kind === 'empty'
+      ? [{ check: 'empty', message: result.reason.slice(0, 300) }]
+      : (meta.rejections ?? []);
+  return {
+    user_id: input.userId,
+    query: input.query,
+    lanes: input.lanes,
+    retrieved,
+    attempts: meta.attempts,
+    verdict: result.kind,
+    failures,
+    latency_ms: Math.max(0, Math.round(input.latencyMs)),
+    stage_ms: meta.stageMs ?? null,
+  };
+}
+
+async function insertAskOutcome(row: AskOutcomeRow): Promise<void> {
+  const lanes = JSON.stringify(row.lanes);
+  const retrieved = JSON.stringify(row.retrieved);
+  const failures = JSON.stringify(row.failures);
+  const stageMs = row.stage_ms === null ? null : JSON.stringify(row.stage_ms);
+  // No RETURNING (RLS INSERT-only policy: the conflict-arbiter/RETURNING row-visibility
+  // requirement that broke waitlist's ON CONFLICT applies here too — see 034 and the
+  // waitlist route's comment). Plain INSERT, JSONB via explicit casts (chat.ts pattern).
+  const statement = (sql: ReturnType<typeof getDb>) =>
+    sql`INSERT INTO ask_outcomes (user_id, query, lanes, retrieved, attempts, verdict, failures, latency_ms, stage_ms)
+        VALUES (${row.user_id}, ${row.query}, ${lanes}::jsonb, ${retrieved}::jsonb,
+                ${row.attempts}, ${row.verdict}, ${failures}::jsonb, ${row.latency_ms}, ${stageMs}::jsonb)`;
+  if (row.user_id !== null) {
+    // User-scoped table ⇒ the write goes through runAsUser (db.ts rule), so the GUC is set
+    // LOCAL and the policy's user_id branch binds.
+    await runAsUser(row.user_id, (sql) => [statement(sql)]);
+  } else {
+    await statement(getDb());
+  }
+}
+
+/**
+ * Persists one ask outcome. NEVER rejects — the whole point is that a logging failure
+ * (migration not applied yet, pooler hiccup, permission drift) cannot break an ask; it
+ * costs one caught error line instead.
+ */
+export async function recordAskOutcome(input: AskOutcomeInput): Promise<void> {
+  try {
+    await insertAskOutcome(buildAskOutcomeRow(input));
+  } catch (e) {
+    const message = String((e as Error)?.message ?? e).slice(0, 300);
+    console.error('[ask_outcomes] persist failed:', message);
+    logEvent('error', { where: 'ask_outcomes.persist', message });
+  }
+}
+
+/**
+ * Schedules the write after the response completes (the codebase's after() pattern —
+ * user-corpus readings/upload). after() throws outside a request scope (the upload route's
+ * lesson: the stream route's continuation may already be detached), so the fallback is a
+ * plain fire-and-forget promise — recordAskOutcome never rejects, so nothing here can throw.
+ */
+export function scheduleAskOutcome(input: AskOutcomeInput): void {
+  try {
+    after(() => recordAskOutcome(input));
+  } catch {
+    void recordAskOutcome(input);
+  }
+}

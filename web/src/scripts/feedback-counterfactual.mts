@@ -12,8 +12,13 @@
 // `--- PREVIOUS ATTEMPT REJECTED ---` block exactly as teach.ts:263-265 does, arm B appends
 // nothing. Same question, same retrieval, same seed conditions, both arms in the same process.
 //
+// v2 (2026-08-15): REPETITIONS + paired analysis. v1 ran one rep per question, got 6 usable
+// pairs, and established nothing. Sample size, decision rules and the "null means undetermined,
+// not disproven" caveat are PRE-REGISTERED in
+// docs/evidence/ask-latency/counterfactual-v2-PRE-REGISTRATION.md — read it before the numbers.
+//
 // Run (from web/), dev DB:
-//   NODE_OPTIONS=--conditions=react-server npx tsx src/scripts/feedback-counterfactual.mts
+//   NODE_OPTIONS=--conditions=react-server REPS=15 npx tsx src/scripts/feedback-counterfactual.mts
 import { embedQuery, compose } from '@/lib/teacher/deepinfra';
 import { retrieveCommentary } from '@/lib/teacher/retrieve';
 import { buildCorpusLookup } from '@/lib/teacher/corpus';
@@ -63,12 +68,20 @@ async function runOnce(systemPrompt: string, prompt: string, lookup: Awaited<Ret
   return res.ok ? { ok: true as const, violations: [] as Violation[] } : { ok: false as const, violations: res.violations };
 }
 
-const rows: { q: string; firstCheck?: string; armA: ArmResult; armB: ArmResult }[] = [];
+const REPS = Number(process.env.REPS ?? 15);
+const CONCURRENCY = Number(process.env.CONCURRENCY ?? 4);
+const rows: { q: string; rep: number; firstCheck?: string; armA: ArmResult; armB: ArmResult }[] = [];
 
-for (const [i, q] of QUESTIONS.entries()) {
+// One unit of work = one (question, repetition). Bounded concurrency keeps ~375 compose calls
+// inside a sane wall clock without hammering the provider.
+const units: { q: string; rep: number }[] = [];
+for (const q of QUESTIONS) for (let rep = 0; rep < REPS; rep++) units.push({ q, rep });
+
+let done = 0;
+async function runUnit({ q, rep }: { q: string; rep: number }) {
   const vec = await embedQuery(q);
   const retrieval = await retrieveCommentary(vec, RETRIEVE_K, { query: q });
-  if (retrieval.length === 0) { console.log(`${i + 1} SKIP (no retrieval) ${q}`); continue; }
+  if (retrieval.length === 0) { return; }
 
   const voices = retrieval.slice(0, COMPOSE_VOICES);
   const systemPrompt = buildSystemPrompt();
@@ -84,9 +97,8 @@ for (const [i, q] of QUESTIONS.entries()) {
   // to the comparison (it never needed a retry this time) and is reported as such.
   const a0 = await runOnce(systemPrompt, userPrompt, lookup, ctx, attributions);
   if (a0.ok) {
-    console.log(`${String(i + 1).padStart(2)} attempt0-passed  ${q}`);
-    rows.push({ q, armA: { recovered: true }, armB: { recovered: true } });
-    continue;
+    rows.push({ q, rep, armA: { recovered: true }, armB: { recovered: true } });
+    return;
   }
   const firstCheck = a0.violations[0]?.check;
 
@@ -96,26 +108,77 @@ for (const [i, q] of QUESTIONS.entries()) {
   const armB = await runOnce(systemPrompt, userPrompt, lookup, ctx, attributions);
 
   rows.push({
-    q, firstCheck,
+    q, rep, firstCheck,
     armA: { recovered: armA.ok, check: armA.violations[0]?.check },
     armB: { recovered: armB.ok, check: armB.violations[0]?.check },
   });
-  console.log(
-    `${String(i + 1).padStart(2)} rejected(${firstCheck}) → informed=${armA.ok ? 'RECOVERED' : 'failed(' + armA.violations[0]?.check + ')'} · uninformed=${armB.ok ? 'RECOVERED' : 'failed(' + armB.violations[0]?.check + ')'}  ${q}`,
-  );
 }
+
+// Bounded-concurrency pool over the units.
+const queue = [...units];
+await Promise.all(
+  Array.from({ length: CONCURRENCY }, async () => {
+    for (;;) {
+      const u = queue.shift();
+      if (!u) return;
+      try { await runUnit(u); } catch (e) { console.error(`unit failed (${u.q} rep${u.rep}):`, (e as Error).message); }
+      if (++done % 20 === 0) console.log(`  …${done}/${units.length} units done`);
+    }
+  }),
+);
 
 const contested = rows.filter((r) => r.firstCheck !== undefined);
 const aRec = contested.filter((r) => r.armA.recovered).length;
 const bRec = contested.filter((r) => r.armB.recovered).length;
 
-console.log('\n=== COUNTERFACTUAL (verdict 2026-08-15 §4) ===');
-console.log(`questions where attempt 0 was rejected (the comparison set): ${contested.length}`);
-console.log(`  informed retry (feedback appended)  recovered: ${aRec}/${contested.length}`);
+// PAIRED analysis (pre-registration: McNemar on discordant pairs). Both arms share the SAME
+// attempt-0 rejection, so concordant pairs carry no information about the difference — only the
+// pairs where exactly one arm recovered do.
+const bOnly = contested.filter((r) => !r.armA.recovered && r.armB.recovered).length;
+const aOnly = contested.filter((r) => r.armA.recovered && !r.armB.recovered).length;
+const discordant = aOnly + bOnly;
+
+// Exact two-sided binomial p over the discordant pairs (McNemar exact), computed inline so this
+// pulls in no dependency.
+function binomP(k: number, n: number): number {
+  if (n === 0) return 1;
+  let total = 0;
+  const half = Math.pow(0.5, n);
+  for (let i = 0; i <= k; i++) {
+    let c = 1;
+    for (let j = 0; j < i; j++) c = (c * (n - j)) / (j + 1);
+    total += c;
+  }
+  return Math.min(1, 2 * total * half);
+}
+const pval = binomP(Math.min(aOnly, bOnly), discordant);
+
+console.log('\n=== COUNTERFACTUAL v2 (verdict 2026-08-15 4) ===');
+console.log(`units run: ${rows.length} (${QUESTIONS.length} questions x ${REPS} reps)`);
+console.log(`attempt-0 REJECTED (the usable pairs): ${contested.length}`);
+console.log(`attempt-0 passed outright (no comparison possible): ${rows.length - contested.length}`);
+console.log(`\n  informed retry (feedback appended)  recovered: ${aRec}/${contested.length}`);
 console.log(`  uninformed re-roll (no feedback)    recovered: ${bRec}/${contested.length}`);
-console.log(`\nattempt0 passed outright (excluded from comparison): ${rows.length - contested.length}`);
-console.log('\nREAD THIS BEFORE CONCLUDING: n is tiny and compose is stochastic. A difference of one');
-console.log('or two here is noise, not a finding. This run can only support a strong claim if the');
-console.log('gap is large; otherwise it says "not distinguishable at this n", which is itself the');
-console.log('answer to whether 9/13 licensed the doc\'s claim that feedback "is doing real work".');
+console.log(`\nPAIRED (McNemar exact):`);
+console.log(`  informed-only recoveries : ${aOnly}`);
+console.log(`  uninformed-only          : ${bOnly}`);
+console.log(`  discordant pairs         : ${discordant}`);
+console.log(`  exact two-sided p        : ${pval.toFixed(4)}  ${pval < 0.05 ? '<- SIGNIFICANT at 0.05' : '(not significant)'}`);
+console.log(`\nPRE-REGISTERED READING: significant + informed ahead -> the doc's rejection of a blind`);
+console.log(`parallel race is CONFIRMED. Significant + uninformed ahead -> feedback is harmful and`);
+console.log(`the race becomes preferred. NULL -> undetermined at large-effect power; a moderate or`);
+console.log(`small effect is NOT excluded, and no step-2 design may cite either arm as support.`);
+
+const byQ = new Map<string, Set<string>>();
+for (const r of contested) {
+  if (!byQ.has(r.q)) byQ.set(r.q, new Set());
+  byQ.get(r.q)!.add(r.firstCheck!);
+}
+const unstable = [...byQ.entries()].filter(([, codes]) => codes.size > 1);
+console.log(`\nFAILURE-CODE STABILITY: ${unstable.length}/${byQ.size} questions drew MORE THAN ONE first-check across reps.`);
+for (const [q, codes] of unstable) console.log(`  ${[...codes].join(', ')}  <- ${q}`);
+console.log(`(If non-zero, step 2 MUST aggregate counts over repeated asks, never one code per question.)`);
+
+const codeCounts = contested.reduce<Record<string, number>>((acc, r) => { acc[r.firstCheck!] = (acc[r.firstCheck!] ?? 0) + 1; return acc; }, {});
+console.log(`\nfirst-check counts over ALL ${contested.length} rejections: ${JSON.stringify(codeCounts)}`);
 console.log(`\nJSON ${JSON.stringify(rows)}`);

@@ -1,5 +1,183 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-16 (later) — The three mystics are LIVE on prod; Bernard on the sermon lane; v3 run and recorded
+
+**Executed, not just written.** Steps A–C of the runbook ran; B was owner-executed at the
+terminal, the rest from this session.
+
+| slug | status | lane | served rows |
+|---|---|---|---|
+| `bernard-song-sermons` | published | **sermon** | 1515 |
+| `julian-revelations` | published | theology | 334 |
+| `kempis-imitation-benham` | published | theology | 349 |
+
+- **B (serve flip, owner-executed):** 3 status rows `staged -> published`, 2198 embedding rows
+  `served=true`, gate held. The serve:false gate read "HEAD 3, tree 3" with NO divergence —
+  yesterday's attempt from the corpus worktree read "tree 6, DIVERGENT" and blocked all three.
+  **That gate is directory-sensitive**; it must be run from `ancient-roads-git`. Snapshot
+  committed (`c774fd6`).
+- **A2/A4 (retype):** `bernard-song-sermons` `theology -> sermon` on dev (1515 rows) and prod
+  (1515 rows), each with a per-row pre-COMMIT snapshot. Verified with the SHIPPED lane
+  predicates, not a lookalike: bernard 1515 in the sermon lane / 0 theology, julian 334 and
+  kempis-benham 349 in the theology lane, and **all three contribute 0 rows to the exegetical
+  pool** — so they cannot dilute the composed >=2-voices floor. That is the structural check;
+  the eval below is the empirical one.
+- **C (v3 held-out, prod):** verse-ref 100/100 (n=40) · pericope 80/93 (15) · epistle 68/92
+  (25) · topical 40/75 (20) · proper-noun 80/90 (10) · **controls clean 10/10, hijacks=0**, no
+  no-content failures in any category.
+  [log](docs/evidence/heldout/v3-prod-after-mystics-2026-08-16.log)
+
+**What the v3 number does and does not say.** It is NOT a controlled before/after. CLAUDE.md's
+v3 baseline (95/95 · 87/100 · 68/80 · 45/75 · 60/90) was measured on **dev on 2026-07-18**;
+this ran on **prod**, whose corpus has grown by hundreds of works since. So the deltas
+(pericope -7, topical -5 HIT@1; proper-noun +20, epistle +12 HIT@2, verse-ref +5) are
+**cross-environment and cross-corpus**, not attributable to this change. At these n a 7-point
+pericope move is ONE case (12/15 vs 13/15) and the 5-point topical move is ONE (8/20 vs 9/20).
+Reading them as a regression would be over-reading noise; reading them as an improvement would
+be worse. The load-bearing signals are the ones that would actually indicate harm from adding
+lane voices — **controls clean with hijacks=0**, and 0 exegetical-pool rows — and both are good.
+
+### `ask_outcomes` — the 0 rows is NOT a defect, and the RLS leg has now been run
+
+The count stayed 0 after an ask was attempted, which made it a real signal rather than the
+earlier ambiguity. Diagnosed rather than assumed: **no `/api/ask` or `/api/ask/stream` request
+reached production at all.** The 12h path breakdown on the live deployment is `/` 29, `/gate`
+28, robots/sitemap and WordPress bot probes — nothing else; 6h status codes are 16x200, 6x307,
+3x304 with **zero 4xx/5xx** and no `[ask_outcomes] persist failed` line. `middleware.ts` gates
+everything but `gate|api/gate|_next/|favicon|manifest|icons`, and `/api/ask/route.ts:25` also
+calls `requireUser()`. Measured live: `GET /ask` -> `307 -> /gate?next=%2Fask`. So persistence
+is **untested, not broken**.
+
+**The audit's NOT RUN tenancy leg was then executed** as the real `app_runtime` role, five
+cases, all inside `BEGIN … ROLLBACK` — both databases re-read at 0 rows after, nothing written
+([proof](docs/evidence/ask-outcomes-rls-proof-2026-08-16.md)):
+
+| # | case | observed |
+|---|---|---|
+| 1 | `user_id` = `app.current_user_id` | `INSERT 0 1` |
+| 2 | `user_id` NULL, binding set | `INSERT 0 1` |
+| 3 | a DIFFERENT user's id | **REFUSED** — RLS violation |
+| 4 | binding never set, non-null `user_id` | **REFUSED** |
+| 5 | binding never set, `user_id` NULL | `INSERT 0 1` |
+
+Run on dev because prod's `neondb_owner` **cannot** `SET ROLE app_runtime` ("permission denied
+to set role") and owner bypasses RLS anyway (`relforcerowsecurity=f`); the policy text was
+confirmed byte-identical on both first. Cases 3 and 4 are red-proofs — the policy fires.
+
+**And it corrects a standing assumption.** MASTER.md C5 records an RLS misbinding as *silent*
+because "matches nothing" reads as "no data". For WRITES that is false, and case 4 proves it: an
+unbound `app.current_user_id` makes a non-null-`user_id` INSERT **refused**, not silently
+stored as NULL — and `recordAskOutcome` catches it and logs `[ask_outcomes] persist failed`. So
+a live misbinding yields a LOG LINE, not silence. If a signed-in ask leaves the table empty and
+no such line appears, the cause is upstream of the database.
+
+### NOT DONE / UNVERIFIED
+
+- **`ask_outcomes` end-to-end still unproven.** Two things need one real gated, signed-in ask:
+  whether `after()` fires in the deployed Vercel runtime, and whether Neon Auth's user-id
+  FORMAT binds to `app.current_user_id` live (C5). Both are now observable rather than silent,
+  per the proof above.
+- **The two Imitations are still unreconciled, and my stated cost was WRONG.** I recorded that
+  retiring `kempis-imitation` (CCEL) "costs no serving surface" because `devotional` is in no
+  served type list. Measured on prod: it is **published with 114 sections and 333 SERVED rows**.
+  `served` is a column, and reachability depends on each path pinning a type — most do, but the
+  Lane B tradition-gap routes (`/api/user-corpus/documents/[id]/related` and `/voices`) use
+  `corpusPredicate(LEGAL_CORPUS_FILTER)`, and `LEGAL_CORPUS_FILTER` is bare `(served)`;
+  `corpusPredicate` is only an injection validator and adds no type conjunct. The licensing
+  argument for retiring it stands; the claim that it was free does not.
+- **A runbook step that would have failed the owner.** Step C as first written
+  (`npx tsx --env-file=.env.local … eval-heldout.mts --v3`) has no database URL —
+  `web/.env.local` carries only `DEEPINFRA_API_KEY`. Corrected in the runbook.
+
+**Correction, recorded because the wrong version was stated first.** I reported the prod flip
+had ROLLED BACK. It had not — it committed. My wait-loop watched only
+`UPDATE embeddings SET served%` and exited when that statement finished, which is BEFORE
+COMMIT; I then read prod from another session, where an uncommitted write is invisible, and
+called that "unchanged, therefore rolled back". The check that distinguishes "not committed
+yet" from "rolled back" is `xact_start IS NOT NULL`, and I ran it only AFTER asserting the
+conclusion. The run log read "OK — gate held" throughout. Same shape as the defects this
+session has been auditing: a check that cannot separate two states, reported as if it could.
+
+## 2026-08-16 — The three W1 mystics get a provenance record and a serve ruling; §4a was cited for a decision it does not make
+
+**Done.** Three commits, then the two sessions' work merged and audited together for the first
+time (`53d5988` on `main`, audit PASSED).
+
+1. **A licensing-record gap closed.** `bernard-song-sermons` and `kempis-imitation-benham` had
+   rows on production and **no manifest entry at all** — content the repo could not describe,
+   against CLAUDE.md's per-work provenance + license requirement. `julian-revelations` had an
+   entry that described the WRONG edition (CCEL, tier 3, `author_died: null`); the 86 rows
+   actually on disk are Gutenberg #52958, Warrack 1901. A manifest that misdescribes the rows
+   it governs is worse than a missing one, because it reads as a record. Provenance transcribed
+   from the committed dry-run logs at `20f37f9`, not reconstructed. (`3fadf53`)
+
+2. **§4a re-read, and it does not say what was claimed.** The `serve:false` on all three cited
+   "§4a mystic — devotional voice, not per-verse commentary". `ACQUISITION_MANIFEST.md:104`
+   actually says: "tag `theology`, attribute accordingly, don't treat as per-verse commentary"
+   — a **routing** rule, under a §4 whose stated purpose is "beyond Reformed, FOR VOICE
+   DIVERSITY". Nothing in it withholds. All three ruled `serve: true`. The acquisition half of
+   §4a (the translation trap) was always satisfied and is untouched. (`d264abc`)
+
+3. **Bernard was miscategorised at the source.** §4a line 104 names à Kempis, Julian, Teresa,
+   John of the Cross, de Sales, Ignatius. Bernard is not among them, and 86 sermons walking
+   through one book is homiletical exposition — the SERMON register's definition. Retyped
+   `theology -> sermon` in the manifest.
+
+4. **A new tool, because none existed:** `scripts/retype-work-register.mjs` (`87650f1`). Three
+   guards each watched RED first. Dry-run default; snapshot written per-row before COMMIT.
+
+**Found — the fix was not the one I proposed, and the difference is the whole entry.** I first
+planned to add the three slugs to `SERVED_THEOLOGY_WORKS` / `SERVED_SERMON_WORKS`. That is
+wrong, and `routing.ts` says so in its own words: **"THE SURFACE A ROW REACHES IS ITS REGISTER,
+not its slug."** The lanes are `source_type` predicates consumed by `retrieveRegisterLane`; no
+slug list appears in either, and the lists are "the frozen record of what 044's backfill turned
+on". So Julian and à Kempis needed **no code change at all** (already `source_type: theology`),
+and Bernard's lane move IS the retype.
+
+Red-proofed rather than argued: seeding `julian-revelations` into `SERVED_THEOLOGY_WORKS` turns
+`fts-legal-index-sync` RED with *"115_fts_legal_rejoin_gill_song.sql index predicate drifted …
+add a rebuild migration (the planner will silently stop using the partial index)"*. Those lists
+feed `SERVED_LANE_WORKS -> REGISTER_SERVED_SLUGS ->` the FTS partial-index predicate, so the
+"obvious" fix would have cost a migration 116 rebuild over a table where all three works have
+**zero** rows — precisely why `SERVED_HISTORIAN_WORKS` was kept out of that union.
+
+Also proven, not assumed: the manifest entries are load-bearing. Seeding `bernard-song-sermons`
+into a served list goes RED on two legs; with the same seed but the manifest reverted, only the
+"unknown slug" leg fires — `BY_SLUG.get(slug)?.serve === false` cannot see a work with no entry.
+
+**Audit — green, with three legs NOT RUN.** `npm run audit` PASSED on the union; 719 root / 826
+web tests. But **Layer 1 tenancy invariant (two-account, executed) DID NOT RUN** (no
+`APP_DATABASE_URL`), as did the G1 digest leg and `protected-branches-exist` (no
+`NEON_API_KEY`). The harness announced each loudly, which is correct behaviour — but it means
+migration 116's `ask_outcomes` reached production with its RLS property asserted from the
+migration text and not demonstrated by execution. MASTER.md C5 already records RLS under Neon's
+user-id format as UNPROVEN, and its failure mode is silent.
+
+### NOT DONE / UNVERIFIED
+
+- **No database was changed by any commit today.** `serve: true` is a declared RULING. All
+  three mystics are still `served=0`, and Bernard still carries `theology` in both databases.
+  The retype tool has never been run with `--apply` anywhere.
+- **The accuracy diagnostic has NOT been re-run.** A+B is a retrieval change and CLAUDE.md
+  requires it. Steps A–C of the runbook are one unit; C is not optional.
+- **`ask_outcomes` persistence is unverified** — nobody has watched a real ask land a row — and
+  the RLS leg that would test its isolation did not run. Both share the symptom "empty table",
+  so a count of 0 will not distinguish them.
+- **`db-invariants` CI hang unresolved.** 30 min, zero output, on `ep-tiny-bonus-at3izo3y`.
+  The 10→30 minute raise was the wrong diagnosis and did not fix it.
+- **The two Imitations are unreconciled.** `kempis-imitation` (CCEL) records no translator and
+  a composition year, so it is an unknown edition under §4's own fail-closed rule; it is also
+  `source_type: devotional`, a type in no served list, so it is published and
+  retrieval-invisible. Recommendation filed; the decision is the owner's.
+
+**Recommend next:** [`docs/pm/orders/2026-08-16-owner-terminal-runbook.md`](docs/pm/orders/2026-08-16-owner-terminal-runbook.md)
+— steps A–C as one sitting, D independently, E after one read.
+
+**Process note.** Nine worktrees now exist and `main` was checked out in a third one at a stale
+commit while Kimi worked on `feat/ops-fixes` and I worked on `ship/editor-deploy`. The merge was
+clean only because the file sets happened not to intersect. That is luck, not the guard AGENTS.md
+asks for.
+
 ## 2026-08-15 (later) — PM/docs graph tool (`scripts/pm-graph/`): parser verified against the real corpus, Neo4j write path unrun (blocked egress)
 
 Owner: a graph database over the PM/docs corpus, to make "all this reading" queryable instead of
@@ -10904,3 +11082,33 @@ Two gate blocks en route, both the system working: PREDEPLOY_DB_URL preflight (w
 500'd /ask without it) and the next-env.d.ts mid-build churn (committed the build-generated
 path). Owner waived the P2 browser-pass clause (recorded above). Receipt:
 docs/evidence/deploys/deploy-cc41726-2026-08-13T01-25-46Z.txt.
+
+## 2026-08-16 (00:54Z) — Ops quartet DONE and live (dcc7f1c)
+
+Owner directive (90-min window): fix the rate limiter, F2, main protection, and Phase-D.
+
+- **Rate limiter REBUILT on the auth path.** The Better Auth storage adapter had zero call sites
+  since cutover C5 — sign-in/up/reset were unthrottled. Now: DB-backed throttle on the Neon auth
+  proxy POSTs, reusing 008's `api_rate_limit` table (no new migration), IP 10/min+60/hour, email
+  5/min+30/hour, fail-open-with-log (recorded in code), red-proven (10/10 red pre-implementation;
+  mutation seeds watched red, reverted). `web/src/lib/rate-limit.ts` + the `[...path]` route.
+- **F2 was ALREADY CLOSED (2026-08-08, dc87099)** — the deletion of the dead Better Auth system
+  shipped before the item was filed as open. Closed the BOARD instead: UX_REMEDIATION marker,
+  MASTER C5 rollback claim corrected (rollback is no longer a bare revert — 104's tables stay),
+  user-data-invariant's comment now says honestly that nothing checks the auth_* tables.
+- **main protection: plan-blocked, re-measured.** Both the protection and rulesets endpoints 403
+  ("Upgrade to GitHub Pro or make this repository public"). The two routes out are owner-level;
+  any public-repo move must come AFTER the credential rotation (the value is in git history).
+  Recorded on the board.
+- **Phase-D honestly advanced, not "done":** it gates on ~1-2k logged examples and nothing logged
+  ask outcomes. Now they do: migration **116 (`ask_outcomes`)** applied dev+prod (ledger sha
+  7e682c02cb9f both; DO tail passed), RLS at creation, app_runtime INSERT-only with a single
+  insert policy, references only (never corpus text); fire-and-forget write on both /ask routes,
+  fail-open by design. Data accumulates from this deploy.
+
+Verified: root vitest 709/709, web 788/788, tsc ×3, eslint, knip — all green; red-proofs per
+item above. Deploy receipt: `docs/evidence/deploys/deploy-dcc7f1c-2026-08-16T00-53-53Z.txt`.
+
+NOT DONE: the writes are live but no one has watched a real ask land a row yet (needs a
+signed-in browser ask on prod — owner's session). The Vercel env tunables (AUTH_LIMIT_*) are
+defaults until measured otherwise.

@@ -8,7 +8,7 @@
     "prepare": "git config core.hooksPath .githooks || true",
     "precommit": "bash .githooks/pre-commit",
     "audit": "bash scripts/audit.sh",
-    "qa": "vitest run --config web/vitest.config.ts && vitest run test/rate-limit.test.ts",
+    "qa": "vitest run --config web/vitest.config.ts && vitest run test/rate-limit.test.ts test/auth-rate-limit.test.ts",
     "qa:baseline": "node web/test/scripts/update-forbidden-provenance-baseline.mjs",
     "test": "vitest run",
     "test:watch": "vitest",

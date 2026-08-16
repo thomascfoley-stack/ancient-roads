@@ -5,6 +5,7 @@ import { apiError } from '@/lib/api-error';
 import { logEvent } from '@/lib/observability';
 import { teach, type TeacherEvent, type LaneFlags } from '@/lib/teacher/teach';
 import { logAskOutcome } from '@/lib/ask-outcome-log';
+import { scheduleAskOutcome } from '@/lib/ask-outcomes';
 
 export const runtime = 'nodejs';
 // MUST be a literal: Next 16 statically analyses route segment config and rejects a
@@ -81,7 +82,11 @@ export async function POST(req: NextRequest) {
       const startedAt = Date.now();
       try {
         const { result, meta } = await teach(question, { onEvent: write, lanes });
-        logAskOutcome(result.kind, Date.now() - startedAt, meta);
+        const latencyMs = Date.now() - startedAt;
+        logAskOutcome(result.kind, latencyMs, meta);
+        // One durable row per completed ask (migration 116, Phase-D substrate). Off the
+        // stream's critical path and fail-open — a logging failure never breaks an ask.
+        scheduleAskOutcome({ userId: user.id, query: question, lanes, result, meta, latencyMs });
       } catch (e) {
         console.error('teacher stream error:', (e as Error).message);
         logEvent('error', { where: 'api/ask/stream', message: (e as Error).message });

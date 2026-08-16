@@ -4,10 +4,11 @@
 // every author must pass isPublishedCommentaryEntry. Red-proof: change one word of any
 // excerpt in verse-panel-demo.tsx, or name an unserved author, and this goes red.
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { VERSE_PANEL_VOICES } from '@/components/marketing/verse-panel-demo';
 import { isPublishedCommentaryEntry } from '@/lib/legal-corpus';
+import { announceSkip } from './helpers/loud-skip';
 
 interface Entry {
   verseStart: number;
@@ -29,11 +30,31 @@ const norm = (s: string) =>
     .trim();
 
 const file = path.join(__dirname, '..', 'public', 'commentaries', 'jhn', '1.json');
-const entries = (JSON.parse(readFileSync(file, 'utf8')) as { entries: Entry[] }).entries.filter(
-  (e) => e.verseStart <= 1 && 1 <= e.verseEnd,
+
+// The corpus is gitignored — local disk is the only copy — so CI can never have this file
+// (deploy.sh:206: "this content reaches production WITHOUT ever passing through git or CI").
+// Reading it at module load therefore ENOENT'd collection in CI and the whole suite failed
+// before a single assertion ran (run 31910463039). House pattern: a LOUD artifact skip, never
+// a silent pass — the excerpts stay enforced wherever the corpus exists (locally and at the
+// predeploy gate, which hard-fails on the same tree).
+const CORPUS_AVAILABLE = existsSync(file);
+const SKIP = announceSkip(
+  'marketing verse-panel demo sync',
+  [{
+    name: 'web/public/commentaries/jhn/1.json (gitignored static corpus)',
+    present: CORPUS_AVAILABLE,
+    kind: 'artifact',
+  }],
+  'a marketing excerpt drifting from the verbatim served corpus text, or naming an unserved author',
 );
 
-describe('marketing verse-panel demo — every excerpt is verbatim served corpus text', () => {
+const entries = CORPUS_AVAILABLE
+  ? (JSON.parse(readFileSync(file, 'utf8')) as { entries: Entry[] }).entries.filter(
+      (e) => e.verseStart <= 1 && 1 <= e.verseEnd,
+    )
+  : [];
+
+describe.skipIf(SKIP)('marketing verse-panel demo — every excerpt is verbatim served corpus text', () => {
   it('names ten distinct voices', () => {
     expect(VERSE_PANEL_VOICES).toHaveLength(10);
     expect(new Set(VERSE_PANEL_VOICES.map((v) => v.author)).size).toBe(10);

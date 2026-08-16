@@ -46,6 +46,47 @@ const GLOBAL_BUCKET_USER = '__global__';
 const GATE_LIMIT_PER_MIN = Number(process.env.GATE_LIMIT_PER_MIN ?? 10);
 const GATE_LIMIT_PER_HOUR = Number(process.env.GATE_LIMIT_PER_HOUR ?? 60);
 
+// Auth-proxy throttle (owner directive 2026-08-15; finding: docs/UX_REMEDIATION.md §9,
+// filed 2026-08-08). Since the Neon Auth cutover (ADR-107/108), better-auth runs on
+// Neon's hosted servers and this app's /api/auth/[...path] route is a bare HTTP proxy —
+// A1-2's Better Auth storage adapter has no plugin point to attach to (0 call sites),
+// so sign-in, sign-up and password-reset were unthrottled at fleet width. This limiter
+// sits IN FRONT OF the proxy, keyed by IP plus the email in the body when present (an
+// attacker rotating IPs behind one target account still hits the email bucket).
+//
+// Neon's hosted service may enforce its own limits, but that is UNPROVEN from this repo
+// (docs/AUTH_CUTOVER_V2_NEON.md: "Confirm Neon's limits, or the finding re-opens" — never
+// confirmed), so the app-level limiter is built, not assumed away.
+//
+// FAIL-OPEN-WITH-LOG, deliberately — same posture as the site-gate throttle below, and
+// deliberately UNLIKE the ask limiter and the old Better Auth adapter: these endpoints
+// spend nothing (no embeddings, no mail on our bill), the credential itself remains the
+// barrier, and failing closed here would turn a limiter-DB hiccup into a total sign-in
+// outage while Neon's hosted auth service is still up. Every fail-open is logged
+// (rate_limit_fail_open) so a silent open door is at least a loud one.
+const AUTH_LIMIT_PER_MIN = Number(process.env.AUTH_LIMIT_PER_MIN ?? 10);
+const AUTH_LIMIT_PER_HOUR = Number(process.env.AUTH_LIMIT_PER_HOUR ?? 60);
+const AUTH_EMAIL_LIMIT_PER_MIN = Number(process.env.AUTH_EMAIL_LIMIT_PER_MIN ?? 5);
+const AUTH_EMAIL_LIMIT_PER_HOUR = Number(process.env.AUTH_EMAIL_LIMIT_PER_HOUR ?? 30);
+
+// The credential-bearing auth subpaths (hosted better-auth's route names, as they arrive
+// at /api/auth/<segment>/...). Session reads (get-session, list-sessions, ...) are NOT
+// throttled — they are high-frequency and unauthenticated-reading, and the proxy's GETs
+// never reach the limiter anyway (the wrapper throttles POST only).
+const AUTH_LIMITED_SEGMENTS = new Set([
+  'sign-in',
+  'sign-up',
+  'forget-password',
+  'request-password-reset',
+  'reset-password',
+]);
+
+/** True when `pathname` is one of the credential-bearing auth endpoints. */
+export function isAuthLimitedPath(pathname: string): boolean {
+  const seg = pathname.replace(/^\/api\/auth\/?/, '').split('/')[0] ?? '';
+  return AUTH_LIMITED_SEGMENTS.has(seg);
+}
+
 type Sql = ReturnType<typeof getDb>;
 
 export interface RateLimitResult {
@@ -153,6 +194,57 @@ export async function checkGateRateLimit(
     return { ok: true };
   } catch (e) {
     logEvent('rate_limit_fail_open', { userId: key, error: (e as Error).message });
+    return { ok: true };
+  }
+}
+
+// Per-IP (and per-email, when the body carried one) throttle for the auth proxy's
+// credential endpoints — see the header block above for why this exists and why it fails
+// OPEN. Same table (api_rate_limit, migration 008), same atomic upsert, same
+// minute-before-hour ordering (H4) so a refused burst can't burn the hourly bucket.
+// `email` should already be lowercased by the caller; the key is lowercased again here
+// so a mixed-case body can never split one account across two buckets.
+export async function checkAuthRateLimit(
+  ip: string,
+  email: string | null,
+  sql: Sql = getDb(),
+): Promise<RateLimitResult> {
+  try {
+    const now = Date.now();
+    const minStart = new Date(Math.floor(now / 60_000) * 60_000).toISOString();
+    const hourStart = new Date(Math.floor(now / 3_600_000) * 3_600_000).toISOString();
+
+    // Subject keys: the IP always; the account under attack when the body names it.
+    // One counter pair per subject, so each cap binds independently.
+    const subjects: Array<{ key: string; perMin: number; perHour: number }> = [
+      { key: `auth:ip:${ip}`, perMin: AUTH_LIMIT_PER_MIN, perHour: AUTH_LIMIT_PER_HOUR },
+    ];
+    if (email) {
+      subjects.push({
+        key: `auth:email:${email.toLowerCase()}`,
+        perMin: AUTH_EMAIL_LIMIT_PER_MIN,
+        perHour: AUTH_EMAIL_LIMIT_PER_HOUR,
+      });
+    }
+
+    for (const { key, perMin, perHour } of subjects) {
+      const minCount = await bump(sql, key, 'auth:min', minStart);
+      if (minCount > perMin) {
+        logEvent('rate_limit_hit', { userId: key, cap: 'min', count: minCount, limit: perMin });
+        return { ok: false, limited: 'min', retryAfterSec: 60 };
+      }
+      const hourCount = await bump(sql, key, 'auth:hour', hourStart);
+      if (hourCount > perHour) {
+        logEvent('rate_limit_hit', { userId: key, cap: 'hour', count: hourCount, limit: perHour });
+        return { ok: false, limited: 'hour', retryAfterSec: 3600 };
+      }
+    }
+    await maybeSweep(sql);
+    return { ok: true };
+  } catch (e) {
+    // FAIL OPEN, logged. See the header: availability of sign-in outranks an unmetered
+    // window during a limiter-DB outage, and the event makes the open door audible.
+    logEvent('rate_limit_fail_open', { userId: `auth:ip:${ip}`, error: (e as Error).message });
     return { ok: true };
   }
 }
