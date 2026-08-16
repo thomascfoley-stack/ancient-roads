@@ -269,7 +269,11 @@ route. Watch for gates that exist only inside an irreversible operation.
 is empty and rulesets are unavailable on this plan for a private repo. `audit` is not a required
 check. So the build gate is real inside the job, and nothing mechanically stops a red commit
 reaching `main`. Every "nothing merges red" sentence in this repo is a statement about discipline,
-not mechanism.
+not mechanism. **Re-measured 2026-08-15** (owner directive "fix main"): both endpoints re-executed
+and both return the same 403 — `Upgrade to GitHub Pro or make this repository public`. The only
+two routes out are owner-level: upgrade the plan, or take the repo public (which must come AFTER
+the prod-credential rotation — the value is in git history, and publicizing it pre-rotation would
+be the worse exposure). No agent-side mechanism exists; the note stands until one of those moves.
 
 **A sixth, and it produced two of this week's errors: an instrument's blind spot recorded as a
 property of the thing it could not see.** `6ab5779` established, correctly and precisely, that the
