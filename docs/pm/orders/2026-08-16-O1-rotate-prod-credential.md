@@ -6,6 +6,24 @@ Session type: **one agent session, owner present at a terminal and a browser.**
 This is a **security remediation with a hard ordering constraint**, not a chore. Read the whole
 brief before starting; step 3 is irreversible in the sense that matters (publishing the repo).
 
+> **STATUS 2026-08-16: PRE-FLIGHT DONE · ROTATION DEFERRED TO JANUARY 2026 BY OWNER DECISION.**
+> Owner: *"leave #1 alone forever, I will do it at my own discretion, we're in build mode… when we
+> are done I will rotate. I will get users in January, in January I will rotate keys."* **That is a
+> ruling. Do not re-raise the rotation as a blocker in any session before January** — Phases 1 and
+> the §7 guard are complete; Phases 2, 3 and 4 wait on the owner and nothing else.
+>
+> **Read the four corrections inline below before executing, and correction 2 first.** The
+> exposure is **wider than §1 states**: a second live credential, on the **dev** branch, in Neon's
+> pre-`npg_` 43-character format, invisible to every `npg_`-keyed search in this document. Also
+> corrected: §4's verification cannot detect a rotation, §5's `164` fires the §8 stop falsely, and
+> §6's single-endpoint red-proof misses the branches forked from `production`.
+>
+> **Blast radius is capped by the repo being private, and by nothing else.** O-1 step 3 must not
+> happen before step 1 — publishing pre-rotation publishes **two** working credentials.
+>
+> Session record: `WORKLOG.md` 2026-08-16 (latest) · `docs/SECURITY.md` → SEC-4 ·
+> `docs/pm/MASTER.md` → O-1 · commits `5618cf6`, `0c47ef1`.
+
 ---
 
 ## 1. The finding
@@ -152,6 +170,20 @@ node -e "const u=require('fs').readFileSync(process.env.HOME+'/.neon_prod_url','
 
 Expect `endpoint: ep-odd-fog-atnykudm`, `role: neondb_owner`, `len_ok: true`.
 
+> **THAT CHECK CANNOT DETECT A ROTATION — corrected 2026-08-16, after it was run against an
+> UNROTATED file and printed exactly the expected line.** `len_ok` is `length > 80`, true of the
+> old string and the new one alike; endpoint and role are unchanged by a password reset. All three
+> fields are identical before and after, so the check confirms only that the file parses. Use this
+> instead — same three fields plus one that can go red:
+>
+> ```bash
+> node -e "const fs=require('fs'),os=require('os'),cp=require('child_process');const h=cp.execSync(\"git log --all -p --format= --unified=0 | grep -ohE 'neondb_owner:npg_[A-Za-z0-9]{12}@' | sort -u\",{shell:'/bin/bash',maxBuffer:1<<28}).toString().trim().split('\n').filter(Boolean).map(s=>s.slice(13,-1));const u=fs.readFileSync(os.homedir()+'/.neon_prod_url','utf8').trim(),p=new URL(u);console.log('endpoint:',p.host.split('.')[0],'| role:',p.username,'| len_ok:',u.length>80,'| STILL_THE_LEAKED_ONE:',h.includes(p.password))"
+> ```
+>
+> Expect `STILL_THE_LEAKED_ONE: false`. It was **watched printing `true`** on 2026-08-16, so the
+> red state is already banked — this is a check known to be capable of failing, not merely
+> asserted to be.
+
 ---
 
 ## 5. Phase 3 — verify the new credential (agent)
@@ -160,8 +192,10 @@ Expect `endpoint: ep-odd-fog-atnykudm`, `role: neondb_owner`, `len_ok: true`.
 psql "$(cat ~/.neon_prod_url)" -X -q -c "SELECT current_user, count(*) FROM sources;"
 ```
 
-Must return `neondb_owner` and **164** (the 2026-08-16 count: 164 published / 7 staged /
-2 quarantined — re-derive rather than trusting this number if the corpus has moved since).
+Must return `neondb_owner` and **173** — measured 2026-08-16, which is 164 published + 7 staged
++ 2 quarantined. **This line said `164` and would have fired the §8 stop condition falsely:**
+164 is the *published* subset, not `count(*)`. Corrected after taking the baseline. Re-derive
+rather than trusting either number if the corpus has moved since.
 
 Then prove the *app* is unaffected — it uses its own credential:
 
@@ -180,16 +214,41 @@ project, `since: 1h`.
 
 **A rotation nobody watched fail proves nothing** (THE_LOOP §4). The old secret is in git
 history, so the proof is available — but the agent must not handle it. **The owner runs this**,
-from their own shell, substituting the old string:
+from their own shell. No substitution by hand is needed; the shell supplies the string and never
+displays it.
+
+> **THE CONTROL LEG IS ALREADY BANKED — 2026-08-16, before any rotation.** The command below was
+> run against `ep-odd-fog` and **CONNECTED** (`?column? 1`). That was not a failure: it is the
+> green-before half of the pair, and it is what makes the eventual `refused` mean something. A
+> post-rotation refusal on its own is weak — a typo in the pickaxe, a network fault or a wrong
+> host all produce "refused" too. Now they cannot, because the byte-identical command connected.
+> It also upgrades the finding from *"identical to the configured value"* to *"authenticates
+> against production."*
+
+> **ONE ENDPOINT IS NOT ENOUGH — added 2026-08-16.** The project has **8 branches, 3 cut directly
+> from `production`**. A Neon branch clones `pg_authid`, so it keeps the parent's role passwords
+> from the moment it was cut, and a later reset on the parent **does not propagate**.
+> `pre-cutover-ep-odd-fog-atnykudm-20260729164220` → **`ep-delicate-bonus-atpq28cq`** was cut
+> 2026-07-29 and is a full production snapshot; if it carries the same password, rotating
+> `production` alone leaves the leaked credential working against production data. Owner ruled
+> **test first** (2026-08-16). Sweep all 7 reachable endpoints:
 
 ```bash
-psql "<OLD connection string>" -X -q -c "SELECT 1;"
+OLD="$(git log --all -p --format= -S'neondb_owner:npg_' --pickaxe-regex \
+  | grep -ohE 'postgresql://neondb_owner:npg_[A-Za-z0-9]{12}@' | head -1)"
+for H in ep-odd-fog-atnykudm ep-delicate-bonus-atpq28cq ep-tiny-hat-atdgpisx \
+         ep-tiny-bonus-at3izo3y ep-holy-rice-athhpp5z ep-misty-firefly-atz9pgg1 \
+         ep-snowy-bird-atmdsv3g; do
+  printf '%-28s ' "$H"
+  psql "${OLD}${H}.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require" \
+    -X -q -t -c "SELECT 'CONNECTED';" 2>&1 | head -1
+done
 ```
 
-**Expected: authentication failure.** If it CONNECTS, the rotation did not take effect and the
-finding is still open — stop and re-rotate.
+**Expected after rotation: authentication failure on `ep-odd-fog`.** Any endpoint that still
+CONNECTS needs its own reset — the finding is not closed until every one refuses.
 
-Report to the agent only the outcome word (`refused` / `connected`), never the string.
+Report to the agent only the outcome per host (`refused` / `connected`), never the string.
 
 ---
 
@@ -203,15 +262,35 @@ Report to the agent only the outcome word (`refused` / `connected`), never the s
    capture a full connection string.** `publish-flip` already redacts its own banner
    (`target … (credentials redacted)`); what leaked was the shell command echo written by the
    `expect`/`tee` wrapper in `scripts/land-wave.sh`. Name that as the mechanism.
-4. Commit with a `Model:` trailer. **Never commit the credential**; the pre-commit hook does not
-   scan for secrets, so this is discipline, not mechanism.
+4. Commit with a `Model:` trailer. **Never commit the credential** — ~~the pre-commit hook does
+   not scan for secrets, so this is discipline, not mechanism~~ **it is mechanism as of
+   2026-08-16, see below.**
 
-### Worth proposing, not required
+### ~~Worth proposing, not required~~ — BUILT 2026-08-16
 
-The leak had a mechanism and it will recur: a wrapper that `tee`s a command line containing
-`CUTOVER_DATABASE_URL` into `docs/evidence/`. A cheap guard is a pre-commit check that refuses
-any staged file matching `postgresql://[a-z_]+:[^@]{8,}@`. If proposed, **red-proof it** — stage
-a file with a synthetic match, watch it refuse, then remove.
+The proposal was a pre-commit check refusing any staged file matching
+`postgresql://[a-z_]+:[^@]{8,}@`. **Built, and deliberately not in that form**, because that
+pattern reproduces the defect it exists to catch:
+
+- **`{8,}` is a threshold that encodes an expectation.** An identical `{8,}` in this session's own
+  tree sweep hid a real match — `docs/evidence/hygiene-2026-07-29/loud-skip-app-url.log`. The
+  floor shipped is `{12,}`, anchored to the conventional minimum for a generated secret rather
+  than to what makes today's tree pass, and its limit is written down.
+- **A pre-commit hook is a pre-FILTER, not a gate.** `--no-verify` bypasses it and it only exists
+  where `package.json`'s `prepare` has run. `scripts/audit.sh` and `.github/workflows/audit.yml`
+  were grepped: **zero** credential legs. So the check also ships as
+  `test/invariants/no-committed-credentials.test.ts`, which the existing `test/**/*.test.ts` glob
+  puts inside `npm run audit` and CI with no config change.
+
+Two legs, **different in kind**, which is the whole lesson of the incident: format-keyed
+repo-wide for `npg_`, and **format-agnostic** under `docs/evidence/` — the leg `bf2fbb0` lacked.
+
+Red-proofed, both layers, each case watched: seeded `npg_` → RED/REFUSED · seeded 43-char
+non-`npg_` → RED/REFUSED · exactly 12 chars → RED/REFUSED · **11 chars → passes**, the stated
+limit watched rather than merely written. Red-proofing found **two defects in the check itself**,
+neither visible by reading — it was vacuously green (a JS regex handed to `git grep -E` matched 0
+lines), and it then surfaced a third connection string nothing else had seen. Both recorded in
+`docs/SECURITY.md` → SEC-4 and commit `0c47ef1`.
 
 ---
 
@@ -223,9 +302,10 @@ Stop and report rather than improvising if:
   If a later re-measurement ever shows a different role connecting, that is a stop.
 - Any step tempts you to **rotate or delete a Vercel variable in order to read it.** Sensitive
   variables cannot be read; that is the platform working, not an obstacle to route around.
-- Phase 3 returns a different `current_user`, or a `sources` count that is not 164 without an
-  explanation in `WORKLOG.md`.
-- The Phase 4 red-proof **connects**.
+- Phase 3 returns a different `current_user`, or a `sources` count that is not **173** without an
+  explanation in `WORKLOG.md`. (**Was `164` and would have fired falsely** — that is the published
+  subset, not `count(*)`. Baseline 2026-08-16: 173 = 164 published + 7 staged + 2 quarantined.)
+- The Phase 4 red-proof **connects** — **on any of the 7 endpoints, not just `ep-odd-fog`.**
 - `ancientpaths.app` returns 5xx at any point.
 - Anything tempts you to write a credential into a file, a commit, or the chat. There is no
   version of this task that requires it.

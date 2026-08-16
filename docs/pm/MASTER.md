@@ -203,34 +203,75 @@ legs NOT RUN. See WORKLOG 2026-08-07.
 | 5 | Each ⚑ gate above | that gate |
 | 6 | **SEC-1 — the gate decision IS the public-launch decision.** The site password gate (`middleware.ts`, everything but `gate\|api/gate\|_next/\|favicon\|manifest\|icons`) stays up until the Neon Auth transitive CVEs are resolved. Note the second-order effect measured 2026-08-16: **nothing reaches `/api/ask` while the gate is up**, so `ask_outcomes` accumulates only from owner asks — Phase-D's ~1–2k training examples are blocked behind this decision, not merely "started" | public launch · Phase-D |
 
-### O-1 — ROTATE THE PRODUCTION DATABASE PASSWORD (owner console; strict sequence)
+### O-1 — ROTATE THE PRODUCTION DATABASE PASSWORD
 
-**Filed 2026-08-16.** Not previously on this board, which by bylaw 1 means it had never been
-issued. A live `neondb_owner` production credential is reachable in **git history**: measured
-at **5 commits / 12 diff lines** (`git log --all -S'neondb_owner:npg_' --pickaxe-regex`).
-`bf2fbb0` redacted the six evidence logs in the **working tree** — which is clean, 0 files —
-but a later redaction does not remove a secret from history.
+**Filed 2026-08-16. Step 1 DEFERRED BY OWNER DECISION the same day, to January 2026** — "we're
+in build mode… when we are done I will rotate. I will get users in January, in January I will
+rotate keys." That is a ruling, not an open action: **do not re-raise it as a blocker in any
+session before then.** Everything below is the standing state it is deferred *against*, and
+the pre-flight that was completed around it.
+
+Pre-flight ran 2026-08-16 ([session](../../WORKLOG.md), commits `5618cf6` · `0c47ef1`). It found
+**more than this row originally described**, so read the corrections before acting in January.
+
+**What is exposed, re-measured 2026-08-16.** A live `neondb_owner` production credential is in
+git history, and **the current `~/.neon_prod_url` password is one of them** — verified by boolean
+comparison, never printed. The old string was observed **connecting to `ep-odd-fog` at 17:44 UTC**,
+so it is live in fact and not merely by inference. That observation is the pre-rotation control
+leg of the eventual red-proof; the January session inherits a check already watched green.
+
+**Correction 1 — the row's own measurement command counts itself.** `git log --all -S'neondb_owner:npg_'
+--pickaxe-regex` now returns **7 commits**, because `c27c59a` and `1eb2b40` *quote the search
+pattern*. Classifying matches by characters-after-`npg_` separates them: **12 real diff lines
+across 5 commits, 6 files, 1 distinct secret.** The original numbers were right; the instrument
+inflates by one every time someone writes the finding down.
+
+**Correction 2 — scope was wider than "only `neondb_owner` [on prod]", and the working tree was
+NOT clean.** A **second live credential** was in the tree and in history: `neondb_owner` on the
+**dev** branch `ep-tiny-hat-atdgpisx`, a **43-character** password in Neon's pre-`npg_` format,
+which no `npg_`-keyed search can see. Byte-compared against `.env.local` `DATABASE_URL_UNPOOLED`:
+**identical**. `bf2fbb0` rewrote the exact line it sat on — redacting the prod credential later in
+the same string and leaving this one earlier in it — because it redacted by **pattern, not by
+class**. Now redacted in the tree (`5618cf6`); still in history, so **this credential needs
+rotating too**, and until it is, step 3 stays blocked *independently of the prod rotation*.
+
+**Correction 3 — step 1's Vercel precondition is closed, by measurement.** The dashboard read it
+asked for is **impossible** (all three vars are Sensitive; see the order's §3b). Settled two other
+ways instead: `pg_stat_activity` under load shows **`app_runtime` and nothing else** connecting,
+and `web/src/lib/db.ts:24-29` throws in production rather than falling back to `DATABASE_URL`,
+with a boot canary (`assertAppRuntimeRole`, `instrumentation.ts:8`) that hard-fails on any
+`BYPASSRLS` role — proven red at `web/test/db-boot-assert.test.ts:34`. **Serving is unaffected by
+this rotation. No redeploy step.**
+
+**Correction 4 — a rotation of `production` alone does not close the exposure.** The project has
+**8 branches, 3 of them cut directly from `production`**, and a Neon branch clones `pg_authid`, so
+it keeps the parent's role passwords from the moment it was cut; a later reset does not propagate.
+`pre-cutover-ep-odd-fog-atnykudm-20260729164220` → **`ep-delicate-bonus-atpq28cq`** was cut
+2026-07-29 and is a full production snapshot. **UNVERIFIED whether it accepts the leaked
+credential** — owner ruled test-first. The sweep across all 7 reachable endpoints is in the
+order's Phase 4.
 
 The order below is **load-bearing, not preference**:
 
-1. **Rotate `neondb_owner`** in the Neon console and update `~/.neon_prod_url` in the same
-   sitting. **SCOPE, measured 2026-08-16 — only `neondb_owner` is compromised.** `app_runtime`
-   is a separate login role with its own password; the two strings matching `app_runtime:` in
-   history are **6 and 11 characters and non-`npg_`** (a real Neon secret is `npg_` + 12), and
-   they live in `docs/OWNER_ACTIONS.md` and a test file — placeholders, not credentials.
-   **This corrects an overstatement in the first version of this row**, which said rotating
-   "takes production down": the app connects as `app_runtime`, so a `neondb_owner` rotation
-   should not touch serving at all. It breaks the OWNER tooling — `~/.neon_prod_url`,
-   `CUTOVER_DATABASE_URL`, migrations. **Do not treat that as settled: verify in the Vercel
-   dashboard which env vars carry an owner URL before rotating** (they cannot be read from this
-   repo), because a `DATABASE_URL` holding an owner string would make this app-affecting after
-   all.
+1. **Rotate `neondb_owner`** — **DEFERRED to January by owner decision, 2026-08-16.** Then, in the
+   same sitting: `~/.neon_prod_url`; the **dev** branch per correction 2; and `ep-delicate-bonus`
+   if the sweep shows it accepting the old value. Breaks OWNER tooling only —
+   `~/.neon_prod_url`, `CUTOVER_DATABASE_URL`, migrations — never serving (correction 3).
 2. **Blob-store token** for the corpus CDN (D3) — a separate secret, unaffected by the rotation.
 3. **Branch-protection call** (Pro upgrade, or make the repo public) — **NEVER before step 1.**
-   The repo being private is the only thing currently capping the blast radius; publishing it
-   pre-rotation publishes a working production credential.
+   The repo being private is the only thing capping the blast radius; publishing it pre-rotation
+   publishes **two** working credentials, prod and dev.
 
-Rotation is the fix, not history-scrubbing: once the secret is dead, the history is inert.
+Rotation is the fix, not history-scrubbing: once the secrets are dead, the history is inert.
+
+**Shipped 2026-08-16 instead of the rotation, and it is the durable half.** The leak had a
+mechanism — `scripts/land-wave.sh` `tee`s a spawned command line carrying the full
+`CUTOVER_DATABASE_URL` into `docs/evidence/` — and the mechanism now has a gate:
+`test/invariants/no-committed-credentials.test.ts`, which runs in `npm run audit` and CI, plus
+`.githooks/pre-commit` step 4 as the fast pre-filter. Two legs, deliberately different in kind:
+format-keyed repo-wide for `npg_`, and **format-agnostic** under `docs/evidence/` — the leg
+`bf2fbb0` lacked. Red-proof matrix and the two defects red-proofing exposed in the check itself
+are in `0c47ef1`. See `docs/SECURITY.md` → SEC-4 for the defect class.
 
 ## Failure-mode watchlist
 

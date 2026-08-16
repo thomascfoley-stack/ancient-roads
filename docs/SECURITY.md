@@ -1,5 +1,102 @@
 # Known security issues (tracked)
 
+## SEC-4 — a credential in git history, and the class that put it there (2026-08-16)
+
+**Status: EXPOSURE OPEN, DEFERRED BY OWNER TO JANUARY 2026. Mechanism CLOSED.** The rotation is
+an owner decision on an owner timeline (`docs/pm/MASTER.md` → O-1); do not re-raise it. This
+section is about the *class*, which is the part that generalises.
+
+### The incident, in one line
+
+A live production `neondb_owner` connection string reached `docs/evidence/` — 12 diff lines, 5
+commits, 6 files — and a later redaction commit did not remove it from history. Verified live: the
+historical string **connected to production** on 2026-08-16.
+
+### The class: a redaction scoped to the secret you already know about
+
+`bf2fbb0` ("redact the prod credential from six evidence logs") searched for
+`neondb_owner:npg_` — the format of the credential it had been told about. Neon's *older*
+password format is 43 characters with no `npg_` prefix, and a second live credential in that
+format sat **on the same line**, earlier in the same string. The commit rewrote that line and left
+it there. It survived two days in the tracked working tree while the incident record described the
+tree as clean.
+
+**The general shape, and it is not specific to credentials:**
+
+> A cleanup keyed to the *instance* rather than the *class* certifies the class as clean.
+> The narrower the pattern, the more confident the resulting all-clear sounds.
+
+This is the failure-mode watchlist's artefact 1 (a hand-maintained expected set) wearing a
+security uniform: `npg_` was a hand-typed idea of what a credential looks like, and everything
+outside it was invisible by construction. It recurred **twice more inside the session diagnosing
+it** — a tree sweep with an `{8,}` password minimum missed a third connection string, and the
+first version of the guard below was vacuously green. Assume it will recur.
+
+**Three tells, worth checking for directly:**
+
+1. **A search pattern derived from one known sample.** `npg_`, a specific host, a specific
+   filename. Ask what the same thing looks like in a format you have not seen.
+2. **A universal negative resting on one instrument's silence** — "the tree is clean, 0 files".
+   That is a NOT-FOUND, and it is only as wide as the query.
+3. **A threshold that encodes an expectation.** `{8,}` on a password length hid a real match. A
+   floor is sometimes necessary (see below), but it must be anchored to something outside the
+   corpus being searched, or it is tuning to the test.
+
+### What is enforced now
+
+- **`test/invariants/no-committed-credentials.test.ts`** — the gate. Runs in `npm run audit`
+  (`scripts/audit.sh:59`) and CI via the existing `test/**/*.test.ts` glob. Asserts that **no
+  tracked file in the current tree** carries an unredacted connection string.
+- **`.githooks/pre-commit` step 4** — the fast pre-filter on staged content. It is *not* the
+  enforcement: `--no-verify` bypasses it and it only exists where `package.json`'s `prepare` has
+  run. That distinction is why the test exists.
+
+Two legs, **deliberately different in kind**, because that is the lesson:
+
+| leg | scope | keyed on |
+|---|---|---|
+| A | repo-wide | the `npg_` format — catches Neon's current secret anywhere |
+| B | `docs/evidence/` only | **nothing about the password's format** — any shape, in the one directory with no legitimate reason to hold a real connection string |
+
+**Stated limits, because a check whose limits are hidden is the thing this section is about:**
+
+- Scope is the **tree, not history**. The leak is in history permanently; rotation makes it inert
+  rather than absent, and a history-scanning check would be permanently and uninformatively red.
+  What this asserts is that a fresh checkout hands nobody a live credential.
+- `MIN_CREDENTIAL_LENGTH = 12`, so a real credential shorter than 12 characters passes. Neon
+  issues none (its formats are 16 and 43). The floor exists because
+  `docs/evidence/hygiene-2026-07-29/loud-skip-app-url.log` legitimately records a **one-character**
+  fixture password against a real endpoint, and a check that is always red is deleted as fast as
+  one that is always green. It is anchored to the conventional minimum for a generated secret, not
+  to what makes today's tree pass.
+- A non-`npg_` credential leaked **outside** `docs/evidence/` is caught by neither leg. Closing
+  that needs an entropy heuristic, which false-positives on this repo's own fixtures
+  (`test/invariants/dev-only-target.test.ts` uses `pw` and `SUPERSECRETPW` against real
+  `ep-*.neon.tech` hosts).
+
+### The leak's mechanism, so it is fixed at source rather than mopped up
+
+`scripts/land-wave.sh` wraps runs in `expect`/`tee` and writes the **spawned command line** into
+`docs/evidence/`. That line carries the full `CUTOVER_DATABASE_URL`. `publish-flip` itself is not
+at fault — it already redacts its own banner (`target … (credentials redacted)`). **An evidence
+log must never capture a full connection string**; pass credentials via the environment and echo
+only the host.
+
+### Red-proofing found two defects in the guard itself
+
+Recorded because it is the strongest argument for THE_LOOP §4 in this file:
+
+1. **Vacuously green.** v1 handed a JavaScript regex source to `git grep -E`. A JS regex is not a
+   POSIX ERE — the escaped slashes in `:\/\/` match nothing — so it scanned **0 lines** of a tree
+   containing six such strings, and stayed green against a seeded 43-character credential. The
+   precise defect it existed to catch, in the check written to catch it. Fixed by two-stage
+   matching (`git grep -F` narrows, the regex runs in JS), plus a third test that goes red if the
+   pattern ever stops matching the redacted strings known to be present.
+2. **A third connection string**, found by the repaired leg B and by nothing else. A fixture, not
+   a credential — but invisible to every earlier search.
+
+Neither was visible by reading. Both were found by seeding a bug and watching.
+
 ## GHSA-g38m — RULED 2026-08-08: closed by verification, both sign-in methods kept
 
 **Owner ruling.** Email/password **and** Google both stay. `Verify at Sign-up` goes **ON**, which
@@ -466,3 +563,11 @@ and the backstop denies queries with the session var unset. `next build` is gree
 (never committed — the whole `db/` dir is untracked), so the credential is **not in git history**; no history
 rewrite is needed. Fixed to require `DATABASE_URL` from the environment (errors if unset). Because it sat in
 plaintext, the Neon `neondb_owner` password should still be rotated.
+
+> **CORRECTED 2026-08-16 — read SEC-4 above.** "Not in git history" was true **of this file** and
+> is false **of the credential**. The same `neondb_owner` password entered history by a different
+> route (evidence logs, 12 diff lines / 5 commits), and was measured **still live** on 2026-08-16.
+> A reader who meets this paragraph would otherwise conclude the value was never committed. The
+> "should still be rotated" sentence has stood since 2026-07-08 and is now the O-1 order, deferred
+> by the owner to January (`docs/pm/MASTER.md` → O-1). **The lesson is the section's own: a
+> per-file all-clear is not a per-secret all-clear.**

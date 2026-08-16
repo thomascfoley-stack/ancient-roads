@@ -1,5 +1,141 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-16 (latest) — O-1 pre-flight: a SECOND live credential, and the credential guard is now a gate. Rotation deferred to January by owner decision
+
+**The rotation did not happen and that is a ruling, not a miss.** Owner, 2026-08-16: *"leave #1
+alone forever, I will do it at my own discretion, we're in build mode… when we are done I will
+rotate. I will get users in January, in January I will rotate keys."* Recorded in `docs/pm/MASTER.md`
+→ O-1. **Do not re-raise it as a blocker before then.** Everything below is the pre-flight that ran
+around that decision, and it found more than the order described.
+
+### The headline: the order's scope claim was incomplete
+
+The order measured the leak with `-S'neondb_owner:npg_'` and concluded one secret, prod only.
+Sweeping for connection strings **by class rather than by pattern** found a second:
+
+```
+postgresql://neondb_owner:<43 chars>@ep-tiny-hat-atdgpisx…      NEON_BRANCH=dev
+```
+
+43 characters, Neon's **pre-`npg_` format**, so no `npg_`-keyed search can see it. It was in git
+history (3 diff lines) **and still in the working tree, tracked**, at
+`docs/evidence/corpus-backlog/corpus-copy-run-2026-08-14.log` — a file the order records as clean
+at 0 files. Byte-compared against `.env.local` `DATABASE_URL_UNPOOLED` without printing either:
+**identical**. A live credential, believed redacted, for two days.
+
+**The mechanism is the finding.** `bf2fbb0` redacted by **pattern, not by class**: it rewrote that
+exact line — 6 `npg_` lines removed, 6 placeholders added, 2 diff lines touching the 43-char token
+— replacing the prod credential later in the string and leaving the dev credential earlier in the
+same string. Now redacted in the tree; still in history, so it needs its own rotation, and until
+then O-1 step 3 (public repo) is blocked **independently of the prod rotation**.
+
+### Measurements
+
+| what | measured 2026-08-16 |
+|---|---|
+| `-S'neondb_owner:npg_'` commits | **7** — 2 are the order and the MASTER row *quoting the pattern* |
+| real credential lines | **12 across 5 commits, 6 files, 1 distinct secret** (order's numbers confirmed) |
+| current `~/.neon_prod_url` password in history | **true** (boolean, never printed) |
+| old credential vs `ep-odd-fog`, 17:44 UTC | **CONNECTED** — live in fact, not by inference |
+| env-var consumer set | **9 names**, identical to the order — no difference |
+| file-level consumers | **34** (23 `scripts/`, 11 docs), none holding a value |
+| prod baseline | `neondb_owner` · `sources` **173** (164 published / 7 staged / 2 quarantined) · `schema_migrations` **60** · `/` 200 · `/ask` 307 |
+
+### Three corrections to the order, beyond the scope one
+
+1. **Its own measurement command counts itself** and grows by one each time the finding is written
+   down. Classify by characters-after-`npg_` to separate prose from secret.
+2. **The `164` stop condition would fire falsely.** §5 says `count(*) FROM sources` must be 164;
+   it is **173**. 164 is the *published* subset.
+3. **The §4 shape check cannot detect a rotation.** `endpoint / role / len_ok` prints identically
+   before and after — `len_ok` is `length > 80`, true of both strings. Replaced with a
+   `STILL_THE_LEAKED_ONE` boolean, which the owner **watched go red** pre-rotation.
+
+### Correction to `dc09153` (the concurrent session's Phase 1b amendment)
+
+It claims an owner string in `APP_DATABASE_URL` "would have been silently accepted and RLS would
+have been inert… with every check green." It would not have been silent. `web/src/lib/db.ts:62`
+`assertAppRuntimeRole()` runs at boot from `web/src/instrumentation.ts:8`, reads
+`pg_roles.rolbypassrls` for `current_user`, and throws. `web/test/db-boot-assert.test.ts:34`
+watches it reject. The amendment read `db.ts:19-31` and stopped 30 lines short of the guard. Its
+*class* instinct was right, one level out — the real residual is below.
+
+### Correction 4 — rotating `production` alone would not close it
+
+The project has **8 branches, 3 cut directly from `production`**. A Neon branch clones `pg_authid`,
+so it keeps the parent's role passwords from the moment it was cut and a later reset does not
+propagate. **`pre-cutover-ep-odd-fog-atnykudm-20260729164220` → `ep-delicate-bonus-atpq28cq`**, cut
+2026-07-29, is a full production snapshot. Owner ruled **test first**; the 7-endpoint sweep is in
+the order's Phase 4.
+
+### Shipped: the credential guard, and red-proofing found two defects in it
+
+`.githooks/pre-commit` step 4 plus **`test/invariants/no-committed-credentials.test.ts`**, which
+runs in `npm run audit` (`scripts/audit.sh:59`) and CI via the existing glob — so the check is a
+**gate**, not a hook that `--no-verify` bypasses. Two legs, deliberately different in kind:
+format-keyed repo-wide for `npg_`, and **format-agnostic** under `docs/evidence/`, which is the leg
+`bf2fbb0` lacked.
+
+| case | test | hook |
+|---|---|---|
+| clean tree | 3 passed | passed |
+| leg A: a seeded synthetic `npg_`-format secret | **RED** | **REFUSED** |
+| leg B: seeded 43-char non-`npg_` | **RED** | **REFUSED** |
+| boundary: exactly 12 chars | **RED** | **REFUSED** |
+| boundary: 11 chars — the stated limit | passed | passed |
+
+**Writing it was not the work; red-proofing it was.** Two defects, neither visible by reading:
+(1) **vacuously green** — v1 handed a JS regex source to `git grep -E`, which matched **0 lines** of
+a tree containing six such strings, so leg B stayed green against a seeded credential: the precise
+defect it existed to catch. (2) It then found a **third** connection string,
+`docs/evidence/hygiene-2026-07-29/loud-skip-app-url.log` (`postgres://u:<1 char>@ep-tiny-bonus…`) —
+a **fixture, not a credential**, but invisible to every earlier search including my own `{8,}`
+sweep. Hence `MIN_CREDENTIAL_LENGTH = 12`, anchored outside this repo's contents.
+
+Gate: `tsc --noEmit` clean · eslint clean · root suite **67 files / 722 tests**.
+
+**And it immediately caught this entry.** The first draft of the table above quoted the synthetic
+seed string in full; leg A went red on `WORKLOG.md`. A true positive on a non-secret. **Fixed by
+rewording the document, not by adding an exception** — an allowlist is how a gate like this
+decays, and "it's only a test value" is the first entry on every such list. The literal added
+nothing the description does not.
+
+### Process failure worth recording: two sessions, one working tree
+
+A second (browser) session was live in this tree. Its `git commit` at 10:42 **swept this session's
+two staged files into `5618cf6`**, whose message is about a prod census and mentions neither the
+credential redaction nor the new guard. Nothing was lost, but a security fix landed under an
+unrelated title — `AGENTS.md`'s 2026-07-12 scar, repeating. `5618cf6` is the commit that actually
+carries them. Subsequent commits used `git commit --only <paths>` to make the race impossible.
+The owner closed the second session at 11:0x.
+
+### NOT DONE / UNVERIFIED
+
+- **NOT DONE — the rotation itself (O-1 step 1).** Deferred to January by owner decision. The
+  production `neondb_owner` credential in git history is **live**, observed connecting 17:44 UTC.
+  The repo being private is the only thing capping blast radius; **O-1 step 3 must not happen**.
+- **NOT DONE — the dev-branch credential** (`ep-tiny-hat-atdgpisx`, 43-char). Redacted in the tree,
+  still in history, still live. Needs its own rotation on the same January occasion.
+- **NOT RUN — Phases 3, 4, 5-as-specified.** Post-rotation verification, the dead-credential
+  red-proof, and marking O-1 done all require step 1. The **pre-rotation control leg is banked**:
+  the old credential was watched CONNECTING, so January's "refused" will be a real red/green pair
+  rather than an unfalsifiable single reading.
+- **UNVERIFIED — does `ep-delicate-bonus-atpq28cq` accept the leaked credential?** Settled by the
+  7-endpoint sweep in the order's Phase 4. Not run: it means connecting with a leaked credential,
+  which is owner-side work.
+- **UNVERIFIED — does a throw from `register()` actually stop Vercel serving?**
+  `db-boot-assert.test.ts:34` proves the *function* rejects; nothing here proves the *deployment*
+  refuses traffic. Settled by deploying a deliberately-wrong `APP_DATABASE_URL`, which is not worth
+  doing. This is the real residual behind `dc09153`'s claim, stated at its true width.
+- **UNVERIFIED — `assertAppRuntimeRole` checks `rolbypassrls`, not `rolname === 'app_runtime'`.**
+  A different non-`BYPASSRLS` role would pass. Arguably the right property, since `BYPASSRLS` is
+  what makes RLS inert — but the assertion is narrower than the name suggests.
+- **NOT RUN — `npm run audit` in full.** Typecheck, lint and the root suite were run directly;
+  the DB-backed legs were not.
+- **KNOWN LIMIT, not a gap to close quietly.** The new gate scans the **tree, not history**, and a
+  non-`npg_` credential outside `docs/evidence/` is caught by neither leg. Both are stated in the
+  test file and in `docs/SECURITY.md` → SEC-4.
+
 ## 2026-08-16 (later) — The three mystics are LIVE on prod; Bernard on the sermon lane; v3 run and recorded
 
 **Executed, not just written.** Steps A–C of the runbook ran; B was owner-executed at the
