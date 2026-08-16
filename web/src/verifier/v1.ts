@@ -36,9 +36,23 @@ export async function verifyV1(
   // 1. Contract schema. Anything malformed stops here: later checks assume shape.
   if (!validateSchema(response)) {
     for (const err of validateSchema.errors ?? []) {
+      // `err.params` carries the ONE datum a fix needs and this line used to drop it: for
+      // `additionalProperties` it names the offending property, for `required` the missing one,
+      // for `const` the allowed value. Without it every such rejection read "/blocks/1 must NOT
+      // have additional properties" — true, unactionable, and identical across every cause.
+      // Measured 2026-08-15: additionalProperties was the single most common schema rejection,
+      // and no one could say which property because it was never recorded.
+      //
+      // This text is not only diagnostic — it is fed back to the model as the retry instruction
+      // (teach.ts builds the retry prompt from `violations`), so naming the property tells the
+      // next attempt exactly what to remove instead of asking it to guess.
+      const params = err.params as Record<string, unknown> | undefined;
+      const detail = params && Object.keys(params).length > 0
+        ? ` (${Object.entries(params).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(', ')})`
+        : '';
       violations.push({
         check: 'schema',
-        message: `${err.instancePath || '/'} ${err.message ?? 'invalid'}`,
+        message: `${err.instancePath || '/'} ${err.message ?? 'invalid'}${detail}`,
       });
     }
     return { ok: false, violations };

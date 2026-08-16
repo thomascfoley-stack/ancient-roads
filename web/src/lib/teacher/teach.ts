@@ -46,6 +46,21 @@ export type StageTimings = {
   total: number;
 };
 
+/** One rejected compose attempt, kept for the failure-code diagnostic (verdict
+ *  2026-08-15 §5/§6 step 1). The verifier already computes the full `Violation[]` for every
+ *  rejection; `firstCheck` below kept only the first check's NAME and the rest was dropped one
+ *  line later, so the very payload the diagnostic needs was being produced and discarded.
+ *
+ *  `span` is MODEL OUTPUT in both places the verifier sets it — `block.quote` at v1.ts:72 (the
+ *  model's claimed quote, recorded precisely because it FAILED to match the corpus, so by
+ *  construction it is not a corpus reproduction) and `hit.span` at v1.ts:253 (a screen hit over
+ *  model-authored text). It is bounded here anyway, and the sink is the server-only ask_outcome
+ *  log — never a response body. */
+export type RejectedAttempt = {
+  attempt: number;
+  violations: { check: string; message: string; span?: string }[];
+};
+
 /** Observability fields for ask_outcome — no question text, no secrets. */
 export type TeachMeta = {
   attempts: number;
@@ -55,6 +70,8 @@ export type TeachMeta = {
   stageMs?: StageTimings;
   /** First request served by this instance — cold starts explain tail latency honestly. */
   coldStart?: boolean;
+  /** Every rejected attempt's full violation set, in order. Empty when nothing was rejected. */
+  rejections?: RejectedAttempt[];
 };
 
 export type TeachRun = { result: TeacherResult; meta: TeachMeta };
@@ -83,6 +100,11 @@ export type TeacherEvent =
 
 const RETRIEVE_K = 6;
 const COMPOSE_VOICES = 5;
+
+// Bounds on the persisted violation payload (verdict 2026-08-15 §7). `message` and `span` are
+// model-authored strings; a runaway generation must not be able to write an unbounded log line.
+const MAX_VIOLATIONS_PER_ATTEMPT = 12;
+const MAX_VIOLATION_FIELD_CHARS = 300;
 
 function selectVoices(pool: RetrievedChunk[], n: number): RetrievedChunk[] {
   if (pool.length <= n) return pool;
@@ -131,11 +153,24 @@ export async function teach(
   let firstCheck: string | undefined;
   const stageMs: StageTimings = { embed: 0, retrieve: 0, lanes: 0, compose: [], verify: [], total: 0 };
   const coldStart = instance.served++ === 0;
+  // Verdict 2026-08-15 step 1: keep every rejection, not just the first check's name. Bounded at
+  // the source so a pathological attempt cannot write an unbounded log line.
+  const rejections: RejectedAttempt[] = [];
+  const recordRejection = (attempt: number, violations: Violation[]): void => {
+    rejections.push({
+      attempt,
+      violations: violations.slice(0, MAX_VIOLATIONS_PER_ATTEMPT).map((v) => ({
+        check: v.check,
+        message: v.message.slice(0, MAX_VIOLATION_FIELD_CHARS),
+        ...(v.span === undefined ? {} : { span: v.span.slice(0, MAX_VIOLATION_FIELD_CHARS) }),
+      })),
+    });
+  };
 
-  const finish = (result: TeacherResult, meta: Omit<TeachMeta, 'attempts' | 'firstCheck' | 'stageMs' | 'coldStart'>): TeachRun => {
+  const finish = (result: TeacherResult, meta: Omit<TeachMeta, 'attempts' | 'firstCheck' | 'stageMs' | 'coldStart' | 'rejections'>): TeachRun => {
     emit({ stage: 'done', result });
     stageMs.total = Date.now() - startedAt;
-    return { result, meta: { attempts, firstCheck, ...meta, stageMs, coldStart } };
+    return { result, meta: { attempts, firstCheck, ...meta, stageMs, coldStart, rejections } };
   };
 
   emit({ stage: 'retrieving' });
@@ -239,6 +274,7 @@ export async function teach(
       stageMs.compose.push(Date.now() - composeStart);
       lastViolations = [{ check: 'llm_error', message: (e as Error).message }];
       if (!firstCheck) firstCheck = firstViolationCheck(lastViolations);
+      recordRejection(attempt, lastViolations);
       continue;
     }
 
@@ -248,6 +284,7 @@ export async function teach(
     } catch {
       lastViolations = [{ check: 'json_parse', message: 'Response is not valid JSON' }];
       if (!firstCheck) firstCheck = firstViolationCheck(lastViolations);
+      recordRejection(attempt, lastViolations);
       continue;
     }
 
@@ -260,6 +297,7 @@ export async function teach(
     }
     lastViolations = result.violations;
     if (!firstCheck) firstCheck = firstViolationCheck(lastViolations);
+    recordRejection(attempt, lastViolations);
   }
 
   return finish(withRegister({ kind: 'fallback', retrieval, violations: lastViolations }), metaBase);

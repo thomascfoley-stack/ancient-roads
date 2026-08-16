@@ -1,0 +1,2144 @@
+[
+  {
+    "q": "Explain Romans 8:28",
+    "rep": 3,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain Romans 8:28",
+    "rep": 1,
+    "firstCheck": "diversity_voices",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "diversity_voices"
+    }
+  },
+  {
+    "q": "Explain Romans 8:28",
+    "rep": 2,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": false,
+      "check": "diversity_voices"
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain Romans 8:28",
+    "rep": 0,
+    "firstCheck": "diversity_voices",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain Romans 8:28",
+    "rep": 4,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain Romans 8:28",
+    "rep": 5,
+    "firstCheck": "diversity_voices",
+    "armA": {
+      "recovered": false,
+      "check": "schema"
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain Romans 8:28",
+    "rep": 7,
+    "firstCheck": "diversity_voices",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "diversity_voices"
+    }
+  },
+  {
+    "q": "Explain Romans 8:28",
+    "rep": 6,
+    "firstCheck": "diversity_voices",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain Romans 8:28",
+    "rep": 8,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": false,
+      "check": "schema"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "schema"
+    }
+  },
+  {
+    "q": "Explain Romans 8:28",
+    "rep": 9,
+    "firstCheck": "diversity_voices",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "diversity_voices"
+    }
+  },
+  {
+    "q": "Explain Romans 8:28",
+    "rep": 10,
+    "firstCheck": "diversity_voices",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain Romans 8:28",
+    "rep": 13,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain Romans 8:28",
+    "rep": 12,
+    "firstCheck": "diversity_voices",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "diversity_voices"
+    }
+  },
+  {
+    "q": "Explain Romans 8:28",
+    "rep": 11,
+    "firstCheck": "diversity_voices",
+    "armA": {
+      "recovered": false,
+      "check": "diversity_voices"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "diversity_voices"
+    }
+  },
+  {
+    "q": "Explain Romans 8:28",
+    "rep": 14,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": false,
+      "check": "diversity_voices"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "diversity_voices"
+    }
+  },
+  {
+    "q": "What does Ephesians 2:8-9 teach?",
+    "rep": 0,
+    "firstCheck": "passages_grounded",
+    "armA": {
+      "recovered": false,
+      "check": "passages_grounded"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "passages_grounded"
+    }
+  },
+  {
+    "q": "What does Ephesians 2:8-9 teach?",
+    "rep": 1,
+    "firstCheck": "passages_grounded",
+    "armA": {
+      "recovered": false,
+      "check": "passages_grounded"
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Ephesians 2:8-9 teach?",
+    "rep": 2,
+    "firstCheck": "passages_grounded",
+    "armA": {
+      "recovered": false,
+      "check": "passages_grounded"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "passages_grounded"
+    }
+  },
+  {
+    "q": "What does Ephesians 2:8-9 teach?",
+    "rep": 3,
+    "firstCheck": "passages_grounded",
+    "armA": {
+      "recovered": false,
+      "check": "passages_grounded"
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Ephesians 2:8-9 teach?",
+    "rep": 6,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Ephesians 2:8-9 teach?",
+    "rep": 4,
+    "firstCheck": "diversity_voices",
+    "armA": {
+      "recovered": false,
+      "check": "passages_grounded"
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Ephesians 2:8-9 teach?",
+    "rep": 5,
+    "firstCheck": "passages_grounded",
+    "armA": {
+      "recovered": false,
+      "check": "passages_grounded"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "passages_grounded"
+    }
+  },
+  {
+    "q": "What does Ephesians 2:8-9 teach?",
+    "rep": 9,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Ephesians 2:8-9 teach?",
+    "rep": 7,
+    "firstCheck": "diversity_voices",
+    "armA": {
+      "recovered": false,
+      "check": "passages_grounded"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "passages_grounded"
+    }
+  },
+  {
+    "q": "What does Ephesians 2:8-9 teach?",
+    "rep": 10,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Ephesians 2:8-9 teach?",
+    "rep": 8,
+    "firstCheck": "diversity_voices",
+    "armA": {
+      "recovered": false,
+      "check": "passages_grounded"
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Ephesians 2:8-9 teach?",
+    "rep": 11,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Ephesians 2:8-9 teach?",
+    "rep": 12,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is the meaning of Isaiah 53:5?",
+    "rep": 1,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is the meaning of Isaiah 53:5?",
+    "rep": 0,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Ephesians 2:8-9 teach?",
+    "rep": 13,
+    "firstCheck": "diversity_voices",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is the meaning of Isaiah 53:5?",
+    "rep": 2,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is the meaning of Isaiah 53:5?",
+    "rep": 3,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Ephesians 2:8-9 teach?",
+    "rep": 14,
+    "firstCheck": "passages_grounded",
+    "armA": {
+      "recovered": false,
+      "check": "passages_grounded"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "passages_grounded"
+    }
+  },
+  {
+    "q": "What is the meaning of Isaiah 53:5?",
+    "rep": 6,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is the meaning of Isaiah 53:5?",
+    "rep": 5,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is the meaning of Isaiah 53:5?",
+    "rep": 4,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is the meaning of Isaiah 53:5?",
+    "rep": 8,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is the meaning of Isaiah 53:5?",
+    "rep": 9,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is the meaning of Isaiah 53:5?",
+    "rep": 10,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is the meaning of Isaiah 53:5?",
+    "rep": 7,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is the meaning of Isaiah 53:5?",
+    "rep": 11,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is the meaning of Isaiah 53:5?",
+    "rep": 12,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is the meaning of Isaiah 53:5?",
+    "rep": 13,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is the meaning of Isaiah 53:5?",
+    "rep": 14,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is justification by faith?",
+    "rep": 1,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is justification by faith?",
+    "rep": 0,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is justification by faith?",
+    "rep": 2,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is justification by faith?",
+    "rep": 3,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is justification by faith?",
+    "rep": 5,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is justification by faith?",
+    "rep": 4,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is justification by faith?",
+    "rep": 6,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is justification by faith?",
+    "rep": 7,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is justification by faith?",
+    "rep": 8,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is justification by faith?",
+    "rep": 9,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is justification by faith?",
+    "rep": 10,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is justification by faith?",
+    "rep": 11,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is justification by faith?",
+    "rep": 12,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is justification by faith?",
+    "rep": 14,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is justification by faith?",
+    "rep": 13,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about prayer?",
+    "rep": 0,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about prayer?",
+    "rep": 2,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about prayer?",
+    "rep": 4,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about prayer?",
+    "rep": 5,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about prayer?",
+    "rep": 3,
+    "firstCheck": "anchor_offbase",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about prayer?",
+    "rep": 1,
+    "firstCheck": "passages_grounded",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about prayer?",
+    "rep": 7,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about prayer?",
+    "rep": 6,
+    "firstCheck": "anchor_offbase",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about prayer?",
+    "rep": 9,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about prayer?",
+    "rep": 10,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about prayer?",
+    "rep": 11,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about prayer?",
+    "rep": 8,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about prayer?",
+    "rep": 12,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about suffering?",
+    "rep": 1,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about suffering?",
+    "rep": 0,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about prayer?",
+    "rep": 14,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about prayer?",
+    "rep": 13,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about suffering?",
+    "rep": 2,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about suffering?",
+    "rep": 5,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about suffering?",
+    "rep": 6,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about suffering?",
+    "rep": 7,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about suffering?",
+    "rep": 3,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about suffering?",
+    "rep": 4,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "schema"
+    }
+  },
+  {
+    "q": "What does Scripture teach about suffering?",
+    "rep": 8,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about suffering?",
+    "rep": 9,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about suffering?",
+    "rep": 10,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about suffering?",
+    "rep": 13,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about suffering?",
+    "rep": 11,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Scripture teach about suffering?",
+    "rep": 12,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "schema"
+    }
+  },
+  {
+    "q": "What does Scripture teach about suffering?",
+    "rep": 14,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What happens in the Sermon on the Mount?",
+    "rep": 2,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What happens in the Sermon on the Mount?",
+    "rep": 1,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What happens in the Sermon on the Mount?",
+    "rep": 5,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What happens in the Sermon on the Mount?",
+    "rep": 0,
+    "firstCheck": "passages_grounded",
+    "armA": {
+      "recovered": false,
+      "check": "passages_grounded"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "passages_grounded"
+    }
+  },
+  {
+    "q": "What happens in the Sermon on the Mount?",
+    "rep": 4,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What happens in the Sermon on the Mount?",
+    "rep": 8,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What happens in the Sermon on the Mount?",
+    "rep": 9,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What happens in the Sermon on the Mount?",
+    "rep": 6,
+    "firstCheck": "passages_grounded",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What happens in the Sermon on the Mount?",
+    "rep": 10,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What happens in the Sermon on the Mount?",
+    "rep": 11,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What happens in the Sermon on the Mount?",
+    "rep": 7,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": false,
+      "check": "passages_grounded"
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What happens in the Sermon on the Mount?",
+    "rep": 12,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What happens in the Sermon on the Mount?",
+    "rep": 14,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What happens in the Sermon on the Mount?",
+    "rep": 3,
+    "firstCheck": "json_parse",
+    "armA": {
+      "recovered": false,
+      "check": "passages_grounded"
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain the parable of the sower",
+    "rep": 0,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain the parable of the sower",
+    "rep": 1,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain the parable of the sower",
+    "rep": 2,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain the parable of the sower",
+    "rep": 3,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain the parable of the sower",
+    "rep": 4,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain the parable of the sower",
+    "rep": 5,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain the parable of the sower",
+    "rep": 6,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain the parable of the sower",
+    "rep": 7,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain the parable of the sower",
+    "rep": 8,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain the parable of the sower",
+    "rep": 9,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain the parable of the sower",
+    "rep": 10,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain the parable of the sower",
+    "rep": 11,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What happens in the Sermon on the Mount?",
+    "rep": 13,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain the parable of the sower",
+    "rep": 12,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain the parable of the sower",
+    "rep": 13,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Explain the parable of the sower",
+    "rep": 14,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "Who was Josephus?",
+    "rep": 2,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "Who was Josephus?",
+    "rep": 1,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "Who was Josephus?",
+    "rep": 0,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "Who was Josephus?",
+    "rep": 3,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "Who was Josephus?",
+    "rep": 6,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "Who was Josephus?",
+    "rep": 4,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "Who was Josephus?",
+    "rep": 5,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "Who was Josephus?",
+    "rep": 7,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "Who was Josephus?",
+    "rep": 10,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "Who was Josephus?",
+    "rep": 8,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "Who was Josephus?",
+    "rep": 9,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "Who was Josephus?",
+    "rep": 11,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "What does Song of Solomon 4:14 mean?",
+    "rep": 0,
+    "firstCheck": "passages_grounded",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "anchor_offbase"
+    }
+  },
+  {
+    "q": "Who was Josephus?",
+    "rep": 14,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "Who was Josephus?",
+    "rep": 12,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "Who was Josephus?",
+    "rep": 13,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "What does Song of Solomon 4:14 mean?",
+    "rep": 4,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Song of Solomon 4:14 mean?",
+    "rep": 1,
+    "firstCheck": "anchor_offbase",
+    "armA": {
+      "recovered": false,
+      "check": "schema"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "passages_grounded"
+    }
+  },
+  {
+    "q": "What does Song of Solomon 4:14 mean?",
+    "rep": 5,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Song of Solomon 4:14 mean?",
+    "rep": 3,
+    "firstCheck": "passages_grounded",
+    "armA": {
+      "recovered": false,
+      "check": "anchor_offbase"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "passage_valid"
+    }
+  },
+  {
+    "q": "What does Song of Solomon 4:14 mean?",
+    "rep": 2,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": false,
+      "check": "anchor_valid"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "anchor_offbase"
+    }
+  },
+  {
+    "q": "What does Song of Solomon 4:14 mean?",
+    "rep": 6,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": false,
+      "check": "anchor_offbase"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "anchor_offbase"
+    }
+  },
+  {
+    "q": "What does Song of Solomon 4:14 mean?",
+    "rep": 9,
+    "firstCheck": "anchor_offbase",
+    "armA": {
+      "recovered": false,
+      "check": "anchor_offbase"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "anchor_offbase"
+    }
+  },
+  {
+    "q": "What does Song of Solomon 4:14 mean?",
+    "rep": 7,
+    "firstCheck": "passages_grounded",
+    "armA": {
+      "recovered": false,
+      "check": "anchor_offbase"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "schema"
+    }
+  },
+  {
+    "q": "What does Song of Solomon 4:14 mean?",
+    "rep": 8,
+    "firstCheck": "anchor_offbase",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "passages_grounded"
+    }
+  },
+  {
+    "q": "What does Song of Solomon 4:14 mean?",
+    "rep": 11,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Song of Solomon 4:14 mean?",
+    "rep": 10,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": false,
+      "check": "anchor_offbase"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "schema"
+    }
+  },
+  {
+    "q": "What does Song of Solomon 4:14 mean?",
+    "rep": 13,
+    "firstCheck": "anchor_offbase",
+    "armA": {
+      "recovered": false,
+      "check": "schema"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "passages_grounded"
+    }
+  },
+  {
+    "q": "What does Song of Solomon 4:14 mean?",
+    "rep": 12,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": false,
+      "check": "anchor_offbase"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "passages_grounded"
+    }
+  },
+  {
+    "q": "What does Hebrews 11 teach about faith?",
+    "rep": 0,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Song of Solomon 4:14 mean?",
+    "rep": 14,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": false,
+      "check": "schema"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "schema"
+    }
+  },
+  {
+    "q": "What does Hebrews 11 teach about faith?",
+    "rep": 1,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Hebrews 11 teach about faith?",
+    "rep": 2,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Hebrews 11 teach about faith?",
+    "rep": 3,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Hebrews 11 teach about faith?",
+    "rep": 5,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Hebrews 11 teach about faith?",
+    "rep": 6,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Hebrews 11 teach about faith?",
+    "rep": 8,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Hebrews 11 teach about faith?",
+    "rep": 9,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Hebrews 11 teach about faith?",
+    "rep": 7,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": false,
+      "check": "schema"
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Hebrews 11 teach about faith?",
+    "rep": 4,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "schema"
+    }
+  },
+  {
+    "q": "What does Hebrews 11 teach about faith?",
+    "rep": 10,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Hebrews 11 teach about faith?",
+    "rep": 13,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Hebrews 11 teach about faith?",
+    "rep": 11,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Hebrews 11 teach about faith?",
+    "rep": 12,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Hebrews 11 teach about faith?",
+    "rep": 14,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What is the argument of Romans 5?",
+    "rep": 0,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "schema"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "What is the argument of Romans 5?",
+    "rep": 1,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "What is the argument of Romans 5?",
+    "rep": 2,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "schema"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "What is the argument of Romans 5?",
+    "rep": 3,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "anchor_offbase"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "What is the argument of Romans 5?",
+    "rep": 4,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "schema"
+    }
+  },
+  {
+    "q": "What is the argument of Romans 5?",
+    "rep": 5,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "anchor_offbase"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "schema"
+    }
+  },
+  {
+    "q": "What is the argument of Romans 5?",
+    "rep": 6,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "What is the argument of Romans 5?",
+    "rep": 7,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "What is the argument of Romans 5?",
+    "rep": 8,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "schema"
+    }
+  },
+  {
+    "q": "What is the argument of Romans 5?",
+    "rep": 9,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "anchor_offbase"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "What is the argument of Romans 5?",
+    "rep": 10,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "What is the argument of Romans 5?",
+    "rep": 11,
+    "firstCheck": "schema",
+    "armA": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "schema"
+    }
+  },
+  {
+    "q": "What is the argument of Romans 5?",
+    "rep": 12,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "anchor_offbase"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "schema"
+    }
+  },
+  {
+    "q": "What is the argument of Romans 5?",
+    "rep": 13,
+    "firstCheck": "quote_verbatim",
+    "armA": {
+      "recovered": false,
+      "check": "schema"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "schema"
+    }
+  },
+  {
+    "q": "What is the argument of Romans 5?",
+    "rep": 14,
+    "firstCheck": "anchor_offbase",
+    "armA": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    },
+    "armB": {
+      "recovered": false,
+      "check": "quote_verbatim"
+    }
+  },
+  {
+    "q": "What does Galatians teach about the law?",
+    "rep": 0,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Galatians teach about the law?",
+    "rep": 1,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Galatians teach about the law?",
+    "rep": 2,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Galatians teach about the law?",
+    "rep": 3,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Galatians teach about the law?",
+    "rep": 4,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Galatians teach about the law?",
+    "rep": 5,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Galatians teach about the law?",
+    "rep": 6,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Galatians teach about the law?",
+    "rep": 7,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Galatians teach about the law?",
+    "rep": 8,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Galatians teach about the law?",
+    "rep": 9,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Galatians teach about the law?",
+    "rep": 11,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Galatians teach about the law?",
+    "rep": 10,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Galatians teach about the law?",
+    "rep": 13,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Galatians teach about the law?",
+    "rep": 12,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  },
+  {
+    "q": "What does Galatians teach about the law?",
+    "rep": 14,
+    "armA": {
+      "recovered": true
+    },
+    "armB": {
+      "recovered": true
+    }
+  }
+]

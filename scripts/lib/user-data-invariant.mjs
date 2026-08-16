@@ -77,6 +77,19 @@ export const USER_TABLE_EXCLUDED = {
     'digest over it would churn on normal use; RLS/tenancy is covered by its policy and the ' +
     'two-account suites. See the note above.',
 
+  // Ask-outcome log (migration 116) — the Phase-D training substrate. Same exclusion shape as
+  // user_document_readings: these are telemetry rows, one appended per completed ask, so a
+  // content digest would go red on ordinary use (every ask is a new row) and be muted within a
+  // week. Nothing here is AUTHORED by the user either — the question text is input, not
+  // content, and the rest is pipeline measurements. The property that matters (runtime can
+  // append but never read/alter/destroy) is pinned by 116's self-verifying DO tail and the
+  // static migration-shape suite (web/test/invariants/ask-outcomes-migration.test.ts).
+  ask_outcomes:
+    'Append-only /ask outcome log (migration 116) — one row per completed ask, written ' +
+    'fail-open off the request path. Training telemetry, not authored user content; a digest ' +
+    'would churn on every ask. Runtime posture (INSERT-only via an INSERT-only RLS policy) is ' +
+    'covered by the migration DO block and its static shape test.',
+
   // ── The four Better Auth tables (migration 104, the SEC-1 cutover) ────────────────────────────
   // EXCLUDED from the G1 digest, and the distinction is worth stating precisely: these hold data
   // ABOUT users, but they are not user CONTENT. G1 exists to prove that a cutover did not silently
@@ -88,12 +101,17 @@ export const USER_TABLE_EXCLUDED = {
   // They are also the wrong shape for it: the digest is keyed on `user_id`, and these use Better
   // Auth's quoted camelCase `"userId"`. A spec entry would silently measure nothing.
   //
-  // What DOES check them is `web/test/invariants/better-auth-schema.test.ts`: the columns are
-  // derived from Better Auth's own `getAuthTables()` and compared against the migration, and no
-  // module outside `web/src/lib/auth/` may reference the tables at all.
+  // What checks them: nothing, any more. `web/test/invariants/better-auth-schema.test.ts` did —
+  // it derived the columns from Better Auth's own `getAuthTables()` and compared them against the
+  // migration — but it was deleted with the rest of the dead Better Auth system on 2026-08-08
+  // (F2, commit dc87099; owner ruling, bylaw 3). The tables themselves still exist in production,
+  // dead but holding 7 pre-cutover rows, which docs/SECURITY.md flags as retained credential
+  // material nobody has inspected. These exclusions keep the tables out of the G1 digest; they
+  // are not a claim that anything else watches them.
   auth_users:
     'Better Auth identity rows (migration 104). Auth infrastructure, not user content; see the ' +
-    'note above. Checked by better-auth-schema.test.ts, not by the G1 digest.',
+    'note above. Outside the G1 digest, and checked by nothing since better-auth-schema.test.ts ' +
+    'was deleted with the dead system (F2, 2026-08-08).',
   auth_sessions:
     'Better Auth session rows (migration 104). Written on every sign-in and deleted on sign-out, ' +
     'so a content digest over them is meaningless by construction.',
