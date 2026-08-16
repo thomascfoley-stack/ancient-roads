@@ -1,6 +1,11 @@
 # RESEARCH HISTORY — architecture and design
 
-**Status:** DRAFT, not approved. Design-before-code; no implementation exists.
+**Status:** APPROVED IN PART, 2026-08-16 (owner, in session). §4.1 storage (`chats` +
+`messages`) approved — "yes i like chats + messages we can fix later". The three §1 questions
+answered: click-through opens the reader with a way back; history per-account in the database;
+**every ask runs fresh, never cached** ("always a new, not cached, correct or incorrect").
+§4.7 (the Show filter) added and ruled variant A. §8 S0 measurement still required before
+build; no implementation exists.
 **Lane:** C (client surfaces + the user-data layer). File-disjoint from A and B.
 **Filed:** 2026-08-10 against `39cc32b`. Revised the same day after the owner added the
 open-a-resource / back-button requirement and named the section **Research History**.
@@ -331,6 +336,43 @@ takes `limit`/`before` and already carries the H1 belt.
 **The saved signal.** If persistence fails, the answer still renders — and the turn says it was not
 saved. A silent save failure turns "I lost my question" into "I lost my question *and* believed I
 hadn't", which is worse than not shipping the feature. This is the `saved` field on `done`.
+
+### 4.7 The Show filter — owner-ruled 2026-08-16, variant A
+
+Two rows of controls, deliberately different jobs, deliberately different places:
+
+**The search row** (exists today, unchanged): the lane checkboxes above the question —
+Commentary always on, Sermons / Theology / Historians / Hymns & Poetry checkable. Changing
+these changes what is retrieved, so it takes effect on the next ask. The owner rejected
+collapsing this into display-only filtering ("B dies"): the user should be able to genuinely
+narrow the search, not just the view.
+
+**The Show row** (new): sits between the question and the results, on `/ask` after an answer
+and on every turn of `/ask/[id]`. Client-side only — it changes visibility of rows already in
+the page. Nothing re-runs, nothing is fetched, no server call. The owner's framing: "I search
+5 subjects, I get 150 results, I want to only see hymns to start" — hide the rest, recheck to
+bring them back, never overwhelmed and never re-paying the ask latency.
+
+Behaviour:
+
+- One chip per register **that returned results in this turn** — a register that was not
+  searched or returned nothing gets no chip. (Owner ruling: no greyed-out placeholder chips;
+  "you would not wonder".)
+- Each chip carries its **count**, so the reader sees what they are about to hide.
+- Uncheck → that register's rows hide, instantly. Recheck → they reappear. Pure display state.
+- **"only"** on each chip isolates that register in one click (the 150-results case above,
+  without four unchecks).
+- **"Show all"** appears only while something is hidden; one click restores the full set.
+- All rows hidden → an explicit "everything is hidden" line, never a silently blank pane.
+
+Filter state is **per-turn, ephemeral, and never persisted** — not to the URL, not to the
+thread row, not to a preference. A reopened thread always starts with everything visible; the
+transcript is the durable record and the filter is a reading aid on top of it. (If a standing
+"never show me hymns" preference is ever wanted, that is a new decision, not a default drift.)
+
+The filter reads the same per-item register label the transcript already stores (§4.1
+`messages.sources[].register`), so it works identically on a live answer and on a thread
+reopened weeks later, and needs no new data.
 
 ---
 
