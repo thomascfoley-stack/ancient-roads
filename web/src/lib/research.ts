@@ -194,8 +194,7 @@ export async function getThread(userId: string, threadId: string): Promise<Loade
   return { id: chat.id, title: chat.title, turns };
 }
 
-/** §4.4 corpus drift — which of these works are still published? A stored turn re-checks its
- *  sources at render; a withdrawn work keeps its attribution and loses its quote (tombstone).
+/** §4.4 corpus drift — which of these works are still published? Kept for work-level checks.
  *  Corpus metadata, not user data: no user scoping, plain read. */
 export async function publishedOf(slugs: string[]): Promise<Set<string>> {
   const distinct = [...new Set(slugs.filter(Boolean))];
@@ -205,4 +204,48 @@ export async function publishedOf(slugs: string[]): Promise<Set<string>> {
     slug: string;
   }[];
   return new Set(rows.map((r) => r.slug));
+}
+
+/** The register a chunk was surfaced under → the embeddings.source_type values that register
+ *  can serve from (routing.ts's own filters: EXEGETICAL_TYPE_SQL, the lane filters, the
+ *  song/verse types). Derived from how the pipeline retrieves, so the servability re-check
+ *  queries exactly the rows the ask could have served. */
+const REGISTER_SOURCE_TYPES: Record<string, string[]> = {
+  commentary: ['commentary', 'father'],
+  sermon: ['sermon'],
+  theology: ['theology', 'confession'],
+  song_verse: ['hymn', 'poetry'],
+  historian: ['historian'],
+};
+
+/** §4.4, per ROW (live-battery finding P1): which of these (register, sourceId) chunks still
+ *  have a served, provenance-clean embeddings row? Same predicate shape as the ask surface
+ *  (user_id IS NULL AND served) over (source_type, source_id) pairs so the composite index
+ *  is usable. FAILS CLOSED: on any error returns null and the caller tombstones everything —
+ *  never renders text the check could not vouch for.
+ *
+ *  NOT resolveServability: that module's key universe is the STUDIES clipping format
+ *  (namespace-prefixed `type:id`, kind==='clipping'), and reusing it here silently returned
+ *  an empty servable set — every reopened thread tombstoned wholesale (P1). */
+export async function servedOf(chunks: { register: string; sourceId: string }[]): Promise<Set<string> | null> {
+  const pairs: [string, string][] = [];
+  for (const c of chunks) {
+    for (const t of REGISTER_SOURCE_TYPES[c.register] ?? []) pairs.push([t, c.sourceId]);
+  }
+  if (pairs.length === 0) return new Set();
+  try {
+    const sql = getDb();
+    const types = pairs.map((p) => p[0]);
+    const ids = pairs.map((p) => p[1]);
+    const rows = (await sql`
+      SELECT DISTINCT e.source_id
+        FROM embeddings e
+        JOIN unnest(${types}::text[], ${ids}::text[]) AS p(t, sid)
+          ON e.source_type = p.t AND e.source_id = p.sid
+       WHERE e.user_id IS NULL AND e.served`) as { source_id: string }[];
+    return new Set(rows.map((r) => r.source_id));
+  } catch (e) {
+    console.error('research servedOf failed (rendering tombstones):', (e as Error).message);
+    return null;
+  }
 }

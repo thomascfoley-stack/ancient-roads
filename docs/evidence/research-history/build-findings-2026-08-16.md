@@ -156,3 +156,34 @@ script's id match.
 - **NOT testable by an agent:** past-the-gate surfaces (site password), the signed-in E2E
   (Neon auth), and Vercel runtime logs (the MCP server disconnected mid-session). These
   remain the owner's two-minute walk.
+
+## Live battery findings (signed-in, production, 2026-08-16 ~23:45Z)
+
+**What the battery PROVED working live:** gate cookie + session honored; ask composed in
+**9.9s** (vs 58–104s in the 08-07 measurements — the corpus-CDN + latency work is visible in
+production); `{stage:'thread'}` swapped the URL to `/ask/9739e87a…` in real time; the
+`ask_outcomes` row landed (`composed`, 9936ms — Kimi's open verification CLOSED with live
+data); the assistant row persisted; the reopened thread renders dated with all five register
+sections, counts, the Passages link and the follow-up box; the Show filter's "only" isolated
+the History lane instantly on live data; the historian lane RENDERS (it had never rendered
+before this build); RESEARCH HISTORY shows in the rail.
+
+**P1 — every source on a REOPENED thread tombstones as WITHDRAWN (all servable in reality).**
+Cause, twofold, in my reuse of `resolveServability`:
+1. It keys on `b.kind === 'clipping'`; the page passed `kind: 'quote'` → both id lists empty
+   → empty servable set, `failedClosed:false`, no error — and the page treats not-in-set as
+   withdrawn. A silent kind-mismatch, not a query failure.
+2. Its source leg expects the STUDIES key format — namespace-prefixed `type:id`, split on ':'
+   — so raw ask sourceIds could never match even with the right kind.
+Fail-closed held (no unverifiable quote rendered; the failure direction is the safe one), but
+the check could never say yes. NO test integration-tested `/ask/[id]` against real stored
+rows — the jsdom fixtures used synthetic ids and the DB tests stored `kind:'empty'` results.
+FIX: a research-owned `servedOf` query over `(source_type, source_id)` pairs derived from the
+per-register collection the page already does; integration-check against prod read-only.
+
+**P2 (minor, pre-known):** a thread created in-session does not appear in the rail until
+reload (I1-L6 mount-once fetch). Confirmed live. Accepted for this slice.
+
+**P3 (UX note):** the reopened thread shows the full /ask header ("Explore the paths" +
+examples block context) above the historical turn — serviceable, but a thread page could lead
+with the thread title. Filed as polish, not fixed tonight.

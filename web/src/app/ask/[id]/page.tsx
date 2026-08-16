@@ -1,7 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { currentUser } from '@/lib/session';
-import { getThread, type StoredAnswer } from '@/lib/research';
-import { resolveServability } from '@/lib/servability';
+import { getThread, servedOf, type StoredAnswer } from '@/lib/research';
 import { AskClient, type InitialThread } from '@/components/ask-client';
 
 export const metadata = {
@@ -14,13 +13,11 @@ export const metadata = {
 // stored transcript and mounts the SAME AskClient the live /ask uses, so a follow-up appends
 // through the identical streaming path — one renderer, no drift.
 //
-// §4.4 corpus drift, fixed per inspector findings I1-H1/H2/M6: servability is re-checked
-// PER ROW against embeddings.served via the SHARED resolveServability module (the studies
-// clippings path — same rule, one implementation), not per work against sources.status. A
-// row unserved for licensing while its work stays published (the wesley/calvin pattern)
-// tombstones correctly. resolveServability fails CLOSED: on any resolution error it returns
-// an empty servable set with failedClosed=true, and every cited row renders as a tombstone
-// rather than as possibly-withdrawn text.
+// §4.4 corpus drift, per ROW: servedOf() checks each cited (register, sourceId) against the
+// live embeddings.served predicate — the same rows the ask surface serves from. FAILS CLOSED:
+// a null resolution tombstones every citation rather than rendering text the check could not
+// vouch for. (Live-battery P1: the first version reused the studies clipping resolver, whose
+// key universe never matched ask sourceIds — every reopened thread tombstoned wholesale.)
 export default async function ThreadPage(props: { params: Promise<{ id: string }> }) {
   const user = await currentUser();
   if (!user) redirect('/auth/sign-in');
@@ -29,33 +26,38 @@ export default async function ThreadPage(props: { params: Promise<{ id: string }
   const thread = await getThread(user.id, id);
   if (!thread) notFound();
 
-  // Collect every cited sourceId across the thread — retrieval chunks and all four lanes.
-  const allIds = new Set<string>();
-  const idsOf = (answer: StoredAnswer | null): string[] => {
+  // Every cited chunk with the register it was surfaced under — retrieval is the composed
+  // commentary surface; the four lanes carry their own registers.
+  const chunksOf = (answer: StoredAnswer | null): { register: string; sourceId: string }[] => {
     const r = answer?.result;
     if (!r || r.kind === 'empty') return [];
-    const ids: string[] = [];
-    for (const c of r.retrieval) ids.push(c.sourceId);
-    for (const lane of [r.sermons, r.theology, r.song_verse, r.historians]) {
-      for (const c of lane ?? []) ids.push(c.sourceId);
-    }
-    return ids;
+    const out: { register: string; sourceId: string }[] = [];
+    for (const c of r.retrieval) out.push({ register: 'commentary', sourceId: c.sourceId });
+    const lanes = [
+      ['sermon', r.sermons],
+      ['theology', r.theology],
+      ['song_verse', r.song_verse],
+      ['historian', r.historians],
+    ] as const;
+    for (const [register, cs] of lanes) for (const c of cs ?? []) out.push({ register, sourceId: c.sourceId });
+    return out;
   };
-  for (const t of thread.turns) for (const sid of idsOf(t.answer)) allIds.add(sid);
 
-  const servability = await resolveServability(
-    [...allIds].map((sid) => ({ kind: 'quote', section_id: null, source_id: sid, quote: '', attribution: null })),
-  );
-  const servable = servability.servableSourceIds;
+  const all: { register: string; sourceId: string }[] = [];
+  const seen = new Set<string>();
+  for (const t of thread.turns) {
+    for (const c of chunksOf(t.answer)) {
+      const k = `${c.register}:${c.sourceId}`;
+      if (!seen.has(k)) { seen.add(k); all.push(c); }
+    }
+  }
+  const servable = await servedOf(all); // null = resolution failed → tombstone everything
 
   const initialThread: InitialThread = {
     id: thread.id,
     turns: thread.turns.map((t) => {
-      const ids = idsOf(t.answer);
-      // withdrawnIds: rows no longer servable (or unresolvable — failedClosed treats ALL as
-      // withdrawn). Voice blocks carry no sourceId; they tombstone via withdrawnIds matched
-      // against the retrieval rows they were composed from (the client resolves per voice).
-      const withdrawnIds = ids.filter((sid) => !servable.has(sid));
+      const ids = [...new Set(chunksOf(t.answer).map((c) => c.sourceId))];
+      const withdrawnIds = servable === null ? ids : ids.filter((sid) => !servable.has(sid));
       return {
         question: t.question,
         askedAt: t.askedAt,
