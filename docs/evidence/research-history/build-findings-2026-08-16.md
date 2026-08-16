@@ -116,6 +116,21 @@ acceptable).
 | D2 | `messages.sources` now stores the FULL surfaced list with register labels (retrieval + all four lanes) | code |
 | D3 | Framing and Passages hide with Commentary | jsdom case |
 
+## Exhaustive pass (task #31, post-deploy)
+
+**48 feature tests total** after the pass: 14 store edge cases (E1–E14, executed against dev),
+12 live-stream client cases (L1–L12, the layer inspector 2's M3 named untested — URL swap,
+saved signal, threadId in the follow-up body, terminal-state guard, ephemeral filter,
+malformed-NDJSON resilience), 6 tenancy, 10 filter/tombstone, 5 static, 1 scoped sidebar case.
+All green. Prod smoke: `/` 200, `/ask` 307→gate, `/api/research` behind the gate as designed.
+
+**Discrepancies found by the pass, documented before fixing:**
+
+| # | Behavior observed | Disposition |
+|---|---|---|
+| X1 | An answer whose `qid` misses every question falls back POSITIONALLY and can attach to an unanswered turn it does not belong to (E4 recorded it). | FIXED after documenting: fallback now fires only when qid is ABSENT (legacy rows); E4 tightened to assert it and goes red on revert |
+| X2 | An archived thread disappears from the list but stays readable at its URL (E11). Archive-hides-from-list, URL-still-works matches how chats behave elsewhere. | ACCEPT, recorded |
+
 **Accepted residues, named:** a composed voice whose sourceId cannot be resolved from its
 retrieval rows cannot be row-checked (rare; quote-match plus unique-attribution fallback both
 have to miss). I2-M2 (owner-fallback belt suite) and I-8 immutability enforcement are follow-ups,

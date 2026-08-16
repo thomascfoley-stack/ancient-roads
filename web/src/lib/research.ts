@@ -180,9 +180,14 @@ export async function getThread(userId: string, threadId: string): Promise<Loade
       // I1-M1: pair by question-message id when the answer carries one — positional pairing
       // misattributes when asks interleave (second tab during a 60-100s in-flight ask).
       // Positional is the fallback for pre-qid rows only.
-      const target =
-        (parsed.qid && byQid.get(parsed.qid)) ||
-        (turns.length > 0 && turns[turns.length - 1]!.answer === null ? turns[turns.length - 1] : undefined);
+      // X1 (exhaustive pass): the positional fallback exists ONLY for pre-qid legacy rows.
+      // A qid that is present but matches nothing attaches NOWHERE — attaching it to
+      // whatever turn happens to be last is exactly the misattribution I1-M1 closed.
+      const target = parsed.qid
+        ? byQid.get(parsed.qid)
+        : turns.length > 0 && turns[turns.length - 1]!.answer === null
+          ? turns[turns.length - 1]
+          : undefined;
       if (target && target.answer === null) target.answer = parsed;
     }
   }
