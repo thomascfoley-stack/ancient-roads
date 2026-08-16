@@ -131,6 +131,14 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 
 ### 2d. Prod `sources.status` — published count (2026-08-01, gate A2)
 
+> **RE-MEASURED 2026-08-16, and this is the current number:** **164 published · 7 staged ·
+> 2 quarantined**, `SELECT status, count(*) FROM sources GROUP BY status` against
+> `ep-odd-fog` under the owner's go. Taken with `pg_stat_activity` showing **zero** non-idle
+> connections — i.e. no copy or flip in flight, the 2026-08-15/16 landings had completed.
+> Recorded because a status list circulating in chat on 2026-08-16 described "~24 acquired works
+> landing on prod (running)" when nothing was running and the landings were done. The count moves
+> with every flip; **re-measure before quoting it** rather than citing this line.
+
 > **CORRECTION (2026-08-13):** this 2026-08-01 table is a historical snapshot. Since then:
 > `calvin-crosswire` was shelved by owner ruling 2026-08-11 (status → staged) and its manifest
 > block + 2 clean `books.google.com` flat rows were DELETED 2026-08-13 (corpus-backlog decision

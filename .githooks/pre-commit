@@ -55,6 +55,46 @@ if [ -d web/public/commentaries ]; then
   fi
 fi
 
+# --- 4. credential guard (O-1, 2026-08-16) -----------------------------------
+# A live prod credential reached git history through an evidence log: scripts/land-wave.sh
+# `tee`s the spawned command line, and that line carries the full CUTOVER_DATABASE_URL.
+# `bf2fbb0` then redacted by PATTERN (`neondb_owner:npg_`) rather than by CLASS, so a second
+# live credential in a DIFFERENT password format survived on the same line for two days.
+# Hence two legs, deliberately different in kind:
+#   A. format-keyed, repo-wide  — catches Neon's current `npg_` secret anywhere.
+#   B. format-AGNOSTIC, scoped to docs/evidence/ — catches ANY password shape in the one
+#      place that has no legitimate reason to hold a real connection string. This leg is the
+#      one bf2fbb0 lacked; it does not care what a credential looks like.
+# LIMIT, stated rather than hidden: a non-`npg_` credential leaked OUTSIDE docs/evidence/ is
+# caught by neither leg. Closing that needs an entropy heuristic, which would false-positive
+# on the fixtures in test/invariants/dev-only-target.test.ts (`pw`, `SUPERSECRETPW`).
+REDACTION_PLACEHOLDER='REDACTED-ROTATE-THIS'
+step "credential guard (no connection string may be committed)"
+CRED_HITS=''
+for f in $STAGED; do
+  BLOB="$(git show ":$f" 2>/dev/null)" || continue
+  if printf '%s' "$BLOB" | grep -aqE 'npg_[A-Za-z0-9]{10,}'; then
+    CRED_HITS="$CRED_HITS
+  $f — Neon npg_ secret"
+  fi
+  case "$f" in
+    docs/evidence/*)
+      if printf '%s' "$BLOB" \
+        | grep -aoE 'postgres(ql)?://[A-Za-z0-9_]+:[^@[:space:]"'"'"']+@[^/[:space:]"'"'"']*neon\.tech' \
+        | grep -avqF ":$REDACTION_PLACEHOLDER@"; then
+        CRED_HITS="$CRED_HITS
+  $f — unredacted Neon connection string in evidence"
+      fi
+      ;;
+  esac
+done
+if [ -n "$CRED_HITS" ]; then
+  bad "credential(s) in staged content:$CRED_HITS"
+  printf '    Replace the password with %s. Rotation, not redaction, is the fix once it is committed.\n' "$REDACTION_PLACEHOLDER"
+else
+  ok "no connection string in staged content"
+fi
+
 if [ "$FAIL" -ne 0 ]; then
   printf '\n\033[31mpre-commit blocked. Fix the above, or bypass with: git commit --no-verify\033[0m\n'
   exit 1
