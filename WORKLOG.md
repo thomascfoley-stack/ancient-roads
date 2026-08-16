@@ -10839,3 +10839,33 @@ Two gate blocks en route, both the system working: PREDEPLOY_DB_URL preflight (w
 500'd /ask without it) and the next-env.d.ts mid-build churn (committed the build-generated
 path). Owner waived the P2 browser-pass clause (recorded above). Receipt:
 docs/evidence/deploys/deploy-cc41726-2026-08-13T01-25-46Z.txt.
+
+## 2026-08-16 (00:54Z) — Ops quartet DONE and live (dcc7f1c)
+
+Owner directive (90-min window): fix the rate limiter, F2, main protection, and Phase-D.
+
+- **Rate limiter REBUILT on the auth path.** The Better Auth storage adapter had zero call sites
+  since cutover C5 — sign-in/up/reset were unthrottled. Now: DB-backed throttle on the Neon auth
+  proxy POSTs, reusing 008's `api_rate_limit` table (no new migration), IP 10/min+60/hour, email
+  5/min+30/hour, fail-open-with-log (recorded in code), red-proven (10/10 red pre-implementation;
+  mutation seeds watched red, reverted). `web/src/lib/rate-limit.ts` + the `[...path]` route.
+- **F2 was ALREADY CLOSED (2026-08-08, dc87099)** — the deletion of the dead Better Auth system
+  shipped before the item was filed as open. Closed the BOARD instead: UX_REMEDIATION marker,
+  MASTER C5 rollback claim corrected (rollback is no longer a bare revert — 104's tables stay),
+  user-data-invariant's comment now says honestly that nothing checks the auth_* tables.
+- **main protection: plan-blocked, re-measured.** Both the protection and rulesets endpoints 403
+  ("Upgrade to GitHub Pro or make this repository public"). The two routes out are owner-level;
+  any public-repo move must come AFTER the credential rotation (the value is in git history).
+  Recorded on the board.
+- **Phase-D honestly advanced, not "done":** it gates on ~1-2k logged examples and nothing logged
+  ask outcomes. Now they do: migration **116 (`ask_outcomes`)** applied dev+prod (ledger sha
+  7e682c02cb9f both; DO tail passed), RLS at creation, app_runtime INSERT-only with a single
+  insert policy, references only (never corpus text); fire-and-forget write on both /ask routes,
+  fail-open by design. Data accumulates from this deploy.
+
+Verified: root vitest 709/709, web 788/788, tsc ×3, eslint, knip — all green; red-proofs per
+item above. Deploy receipt: `docs/evidence/deploys/deploy-dcc7f1c-2026-08-16T00-53-53Z.txt`.
+
+NOT DONE: the writes are live but no one has watched a real ask land a row yet (needs a
+signed-in browser ask on prod — owner's session). The Vercel env tunables (AUTH_LIMIT_*) are
+defaults until measured otherwise.
