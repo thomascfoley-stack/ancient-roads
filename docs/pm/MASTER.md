@@ -273,6 +273,19 @@ format-keyed repo-wide for `npg_`, and **format-agnostic** under `docs/evidence/
 `bf2fbb0` lacked. Red-proof matrix and the two defects red-proofing exposed in the check itself
 are in `0c47ef1`. See `docs/SECURITY.md` → SEC-4 for the defect class.
 
+### O-2 — Observability: PostHog (owner ruling 2026-08-16)
+
+**RULED by the owner 2026-08-16: PostHog is the analytics + error-tracking tool.** This addresses
+SEC-1 gate condition 9 ("zero observability — a broken auth or /ask path would be reported by a
+user, not a dashboard"). Datadog declined (wrong scale/cost for a solo-operator product); Sentry
+deferred — add it only if PostHog's error view proves thin after launch. PostHog's free tier
+covers launch volume and bundles error tracking, product analytics, and session replay in one
+dependency. Install path: `npx -y @posthog/wizard@latest` in `web/`. Two requirements when it
+lands: session replay must mask inputs (auth-gated site — the gate password field and /ask
+payloads must not be captured verbatim), and the new dependency gets its one-line written
+justification per CLAUDE.md. Does NOT close condition 9 by itself — alerting to the owner's
+inbox on auth//ask errors must be configured and observed firing.
+
 ## Failure-mode watchlist
 
 **Fourteen instances so far.** The thirteenth: the four SERVED_*_WORKS routing lists themselves,
