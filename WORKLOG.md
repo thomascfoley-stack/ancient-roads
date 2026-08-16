@@ -1,5 +1,91 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-16 (session 02, Phase 1) — SEC-1 decision brief: Neon shipped an SDK pinning a PATCHED better-auth
+
+Worktree `/Users/foley/Projects/ap-02` on `work/02` off `origin/main` @ `5618cf6` (three sessions
+are on `ancient-roads-git`; one contaminated a commit with `git add -A` tonight). No prod
+connection taken. Brief: [`docs/pm/orders/2026-08-16-sec1-decision-brief.md`](docs/pm/orders/2026-08-16-sec1-decision-brief.md).
+
+**The premise SEC-1 has rested on since 2026-08-07 is stale.** Six places in this repo say
+`@neondatabase/auth@0.4.2-beta` is the newest version that exists and hard-pins `better-auth@1.4.18`
+(`SECURITY.md:62-63,93-94,187-188`; `AUTH_CUTOVER_V2_NEON.md:15-16`; `package.json`
+`pnpm.auditConfig["//"]`; `scripts/audit.sh:56-57`). Measured today: `npm view @neondatabase/auth
+version` → **`0.5.0-beta`**, pinning **`better-auth@1.6.23`**. GHSA-g38m is patched at ≥1.6.11 and
+GHSA-qq9h at ≥1.6.22 — 1.6.23 clears both, and the standing "do not migrate below 1.6.11" rule
+(`SECURITY.md:62-64`) is satisfied for the first time.
+
+**Enumerated from the registry, not the table.** The npm bulk endpoint returns **10** advisories
+against `better-auth@1.4.18`, not the 15 `SECURITY.md:182` claims (that 2026-07-08 figure folded in
+dev-tooling advisories with a different root). Reachability adjudicated by grep over `web/src`: 0
+hits for `oidcProvider`/`mcpProvider`/`oauthProvider`/`organization`/`magicLink`/`emailOTP`/
+`passkey`/`accountLinking`/`socialProviders`. Only **g38m** is reachable, and it is fully assembled
+(Google button at `auth-forms.tsx:118` beside email/password). **GHSA-2vg6-77g8-24mp is in the live
+set and in no table here** — `low`, so `deps-audit` (high+) has never surfaced it; not in path, but
+that adjudication was never actually made.
+
+**The bump measured clean, in scratch, without touching the tree.** `npm install
+--package-lock-only --legacy-peer-deps` resolves a single hoisted `better-auth@1.6.23`; the four
+residual advisories are vitest/vite/esbuild/vite-node, all already ignored dev tooling. Peers
+(`next>=16`, `react>=18`) already satisfied — the Next-16 blocker at `SECURITY.md:188` was cleared by
+an unrelated upgrade. Blast radius is two importers: `web/src/lib/auth/neon-auth.ts:18` and
+`web/src/lib/auth/client.ts:3`.
+
+**And the trap this repo already wrote down still applies.** `SECURITY.md:359-373` closed
+`fix/sec1-better-auth-1-6-25` unmerged because "the override upgrades the wrong copy of
+better-auth" — g38m's auto-link executes on **Neon's hosted server**. A vendor release pinning
+1.6.23 is *evidence about* the platform version in a way a local override is not (a client SDK must
+be protocol-compatible with the server it proxies), but it is evidence, not proof. The question that
+settles it — `AUTH_CUTOVER_V2_NEON.md:131-135` — has been drafted and unsent since 2026-07-08.
+
+### Finding: the SEC-1 → multi-user-upload coupling is dormant, with a red-proof
+
+`access.ts:19-21` says `MULTI_USER_UPLOADS = true` goes RED while an in-path advisory sits in
+`ignoreGhsas`. The flag **is** `true` (`access.ts:43`). Measured: `inPath` derives to
+`["GHSA-g38m-r43w-p2q7"]`, `ignoreGhsas` does not contain it, so `stillIgnored = []` and the
+assertion at `sec1-upload-gate.test.ts:77-82` **sits inside a dead `if` and never executes**. Cause:
+the 2026-08-11 relocation of g38m from `ignoreGhsas` to `--expect-red` — done for a good reason
+(a disappearance becomes a build event) — emptied the condition. The advisory is still tracked; the
+coupling is not. The test reports 7 passed having never evaluated its load-bearing claim.
+
+Red-proof, watched: baseline **7 passed** → seed g38m back into `ignoreGhsas` → **1 failed | 6
+passed** (`sec1-upload-gate.test.ts:82`, expected `true` to be `false`) → `git checkout --
+package.json` → **7 passed**, tree clean. The guard is correct and still fires when its condition
+holds; its condition no longer holds. Watchlist shape, one layer over: a guard whose trigger was
+moved out from under it by an unrelated legitimate change.
+
+**Not fixed** — arming it against the declared set turns CI red immediately, and whether
+`MULTI_USER_UPLOADS = true` stands is an owner call that belongs *with* the SEC-1 decision, not
+ahead of it.
+
+### Also measured while establishing "what would have to be true"
+
+- **Rate limit on `/api/ask` is PRESENT** — `checkAskRateLimit`, `ask/stream/route.ts:3,50-59`,
+  denies on limiter failure. That CLAUDE.md pre-signup item is satisfied.
+- **`createPgStore` `rejectUnauthorized` guard is STILL OPEN** — `src/retrieval/store.ts:15` sets
+  `rejectUnauthorized: false`. **Smaller than the gate line implies**: no `web/src` file imports it;
+  callers are `src/ingest/*` and `src/teacher/run.ts`, i.e. offline tooling, not the request path.
+- **The gate's running cost is not zero.** `middleware.ts:57` + the 10-entry exact-match allowlist at
+  `gate.ts:13-31` mean no anonymous request reaches `/api/ask`, so `ask_outcomes` accumulates only
+  from owner asks and Phase-D's ~1–2k examples are blocked *by this decision*.
+
+### NOT DONE / UNVERIFIED
+
+- **NOT DONE (deliberately):** the gate is up and untouched; no dependency was bumped; no
+  `SECURITY.md` adjudication, `ignoreGhsas` entry or `--expect-red` list was edited. Phase 1 is a
+  brief and stops here for the owner.
+- **UNVERIFIED — whether `@neondatabase/auth@0.5.0-beta` keeps the two export names this app uses
+  (`createNeonAuth`, `createAuthClient`) and the `getSession()` return shape.** A lockfile resolve
+  does not exercise an API. Settles by installing it and running
+  `node -e "console.log(Object.keys(require('@neondatabase/auth/next/server')))"` plus the sign-in
+  path — a build, out of scope here.
+- **UNVERIFIED and unverifiable from this repo — the better-auth version Neon's hosted server runs.**
+  Only Neon can answer; the question is drafted at `SECURITY.md:286-295` and pending since
+  2026-07-08.
+- **UNVERIFIED — `Verify at Sign-up`.** Last observed 2026-08-08, by the owner, at the Neon console.
+  `SECURITY.md:151-154` says re-attest rather than carry forward; this brief does not assert it.
+- **NOT RUN — `npm run audit`.** No code changed this phase (docs only); the one test touched was
+  run directly, red-proofed and reverted. The full gate runs before any Phase 2 build lands.
+
 ## 2026-08-16 (later) — The three mystics are LIVE on prod; Bernard on the sermon lane; v3 run and recorded
 
 **Executed, not just written.** Steps A–C of the runbook ran; B was owner-executed at the
