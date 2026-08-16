@@ -37,10 +37,46 @@ Reading them as a regression would be over-reading noise; reading them as an imp
 be worse. The load-bearing signals are the ones that would actually indicate harm from adding
 lane voices — **controls clean with hijacks=0**, and 0 exegetical-pool rows — and both are good.
 
+### `ask_outcomes` — the 0 rows is NOT a defect, and the RLS leg has now been run
+
+The count stayed 0 after an ask was attempted, which made it a real signal rather than the
+earlier ambiguity. Diagnosed rather than assumed: **no `/api/ask` or `/api/ask/stream` request
+reached production at all.** The 12h path breakdown on the live deployment is `/` 29, `/gate`
+28, robots/sitemap and WordPress bot probes — nothing else; 6h status codes are 16x200, 6x307,
+3x304 with **zero 4xx/5xx** and no `[ask_outcomes] persist failed` line. `middleware.ts` gates
+everything but `gate|api/gate|_next/|favicon|manifest|icons`, and `/api/ask/route.ts:25` also
+calls `requireUser()`. Measured live: `GET /ask` -> `307 -> /gate?next=%2Fask`. So persistence
+is **untested, not broken**.
+
+**The audit's NOT RUN tenancy leg was then executed** as the real `app_runtime` role, five
+cases, all inside `BEGIN … ROLLBACK` — both databases re-read at 0 rows after, nothing written
+([proof](docs/evidence/ask-outcomes-rls-proof-2026-08-16.md)):
+
+| # | case | observed |
+|---|---|---|
+| 1 | `user_id` = `app.current_user_id` | `INSERT 0 1` |
+| 2 | `user_id` NULL, binding set | `INSERT 0 1` |
+| 3 | a DIFFERENT user's id | **REFUSED** — RLS violation |
+| 4 | binding never set, non-null `user_id` | **REFUSED** |
+| 5 | binding never set, `user_id` NULL | `INSERT 0 1` |
+
+Run on dev because prod's `neondb_owner` **cannot** `SET ROLE app_runtime` ("permission denied
+to set role") and owner bypasses RLS anyway (`relforcerowsecurity=f`); the policy text was
+confirmed byte-identical on both first. Cases 3 and 4 are red-proofs — the policy fires.
+
+**And it corrects a standing assumption.** MASTER.md C5 records an RLS misbinding as *silent*
+because "matches nothing" reads as "no data". For WRITES that is false, and case 4 proves it: an
+unbound `app.current_user_id` makes a non-null-`user_id` INSERT **refused**, not silently
+stored as NULL — and `recordAskOutcome` catches it and logs `[ask_outcomes] persist failed`. So
+a live misbinding yields a LOG LINE, not silence. If a signed-in ask leaves the table empty and
+no such line appears, the cause is upstream of the database.
+
 ### NOT DONE / UNVERIFIED
 
-- **`ask_outcomes` still 0 rows** (prod read taken). Needs a signed-in ask; a count of 0 does
-  not distinguish "nobody asked", "fail-open write failed silently", and "RLS rejected it".
+- **`ask_outcomes` end-to-end still unproven.** Two things need one real gated, signed-in ask:
+  whether `after()` fires in the deployed Vercel runtime, and whether Neon Auth's user-id
+  FORMAT binds to `app.current_user_id` live (C5). Both are now observable rather than silent,
+  per the proof above.
 - **The two Imitations are still unreconciled, and my stated cost was WRONG.** I recorded that
   retiring `kempis-imitation` (CCEL) "costs no serving surface" because `devotional` is in no
   served type list. Measured on prod: it is **published with 114 sections and 333 SERVED rows**.
