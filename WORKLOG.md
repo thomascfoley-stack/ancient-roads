@@ -314,6 +314,58 @@ commit while Kimi worked on `feat/ops-fixes` and I worked on `ship/editor-deploy
 clean only because the file sets happened not to intersect. That is luck, not the guard AGENTS.md
 asks for.
 
+## 2026-08-15 (later) — PM verdict on the `/ask` compose-latency design: direction approved, scope cut, because the diagnostic payload is already being computed and thrown away
+
+Owner: "you are acting as the pm — read this and let me know." Ruled on
+`docs/ASK_COMPOSE_LATENCY_DESIGN.md` (`16d9431`), written by a prior session. I wrote none of it,
+nor the measurement it rests on — bylaw 4 holds for the verdict.
+[Verdict](docs/pm/orders/2026-08-15-verdict-ask-compose-latency-design.md).
+
+**The doc's spine holds.** Re-executed every code claim against the tree and recomputed every
+number from the JSON: `MAX_RETRIES = 2` at `teach-budget.ts:7`, the `retrieved` event at
+`teach.ts:78`/`:181`, the mid-wait source render at `ask-client.tsx:466-477`, 13/25 retried, 4/25
+fallback, 9 recovered. All true as cited. **Its leading correction — streaming is already shipped —
+is ratified**, and the now-known-false sentence still asserting the opposite in the evidence file
+was corrected in place rather than only in the design doc (watchlist shape three).
+
+**What I found, and why the ask got cut rather than funded:** the doc requests a slice to "read
+~100–200 rejected-attempt samples". Nothing in the tree persists a rejected attempt's body — so
+taken literally, that ask is *build the capture, then run 100–200 asks, then read them*, which the
+doc does not say. **But `web/src/verifier/types.ts:59-64` already carries `check` · `message` ·
+`span` on every `Violation`, and `teach.ts` computes the full `Violation[]` for every rejected
+attempt in production right now, feeds it to the retry prompt, and keeps one derived scalar —
+`firstViolationCheck(...)`.** The exact payload the diagnostic wants is produced and discarded one
+line later. So step 1 is a persistence change through the existing `ask-outcome-log.ts`, after
+which the sample accrues from real traffic for free. Ordered as three small steps, not a slice.
+
+**The doc's own central table was the significant finding.** It reports the failure codes as "most
+common / present / present" — adjectives, in a file whose JSON carries `firstCheck` on all 13
+retried rows. Counted: `quote_verbatim` 5 · `passages_grounded` 4 · `schema` 3 · `diversity_voices`
+1. Three defects: the counts existed and were not used; the column header claims a denominator
+("all 25 asks' rejected attempts" — there were **23**, of which 13 carry a code) that no cell
+counts, which is an instrument's blind spot written down as a property of the world; and bundling
+`passages_grounded` with `diversity_voices` hides that `passages_grounded` is #2 overall and **#1
+among questions that recovered** (4 of 9), which is exactly what a diagnostic scoped by the doc's
+prose would under-weight. The counted table is now in the evidence file, with the denominator
+stated. **5 vs 4 on n=13 establishes no ordering** — filed with that caution attached.
+
+**One cheap experiment ordered, because it closes the doc's largest open question.** The doc rules
+out a blind parallel race on the grounds that informed retries succeed 9/13. That 9 is arithmetic
+(a fallback exhausts all attempts, so 13−4=9), not a second observation, and it shows retries
+succeed — not that the feedback caused it. Re-running those 13 with the feedback block suppressed
+is ~13 compose calls and converts the rejection from argument to measurement.
+
+### NOT DONE / UNVERIFIED
+
+- **No code change. Nothing built, nothing measured beyond recomputation of an existing JSON.**
+  The three ordered steps and the counterfactual experiment are all unstarted.
+- **`npm run audit` NOT RUN** — docs-only change, and audit refuses without a dev `DATABASE_URL`
+  in this tree (same constraint as WORKLOG 2026-08-07).
+- **The 10 uncoded rejected attempts stay uncoded.** They are unrecoverable from this run; only a
+  fresh run with step 1's capture in place can see them.
+- **Process, carried from the audited session:** the design doc was pushed to `main`, not to the
+  designated branch, and no WORKLOG entry was written for it. This entry closes the second.
+
 ## 2026-08-15 (late) — The Song coverage/retrieval "gap" is RETRACTED; the residue is 1.9% and it is a keying granularity, not a hole
 
 Owner: "fix the songs coverage vs retrieval". Ran it as a `quality-slice`. **Step 0 killed the

@@ -23,14 +23,37 @@ prod corpus is not the bottleneck; if anything prod's indexes look healthier.
 
 - **Rule 1** (compose+verify ≥60% of total → stream sources + cap retries at 2): **74.5%
   measured. FIRES.** The dev-local run said 50.4%, untriggered — real prod compose latency is
-  markedly worse. Half the fix is already shipped: `MAX_RETRIES = 2` (3 attempts total) is
-  already the current code, not a gap. The unbuilt half is **streaming sources early** so the
-  user sees the retrieved passages while compose runs — compose is genuinely the whole story
-  here (74% of wall time), not something a retry cap alone fixes.
+  markedly worse. `MAX_RETRIES = 2` (3 attempts total) is already the current code, not a gap.
+  **CORRECTED 2026-08-15: the sentence here previously called streaming sources early "the unbuilt
+  half". That was false when written — it is shipped, end to end, in production**: `teach.ts:78`
+  types a `retrieved` event, `:181` emits it the moment retrieval finishes, and
+  `ask-client.tsx:466-477` renders those sources mid-wait under "Reading these while I compose".
+  **Rule 1's prescribed fix was therefore already fully shipped before this run measured it, so
+  the rule firing prescribes nothing.** Compose is genuinely the whole story here (74% of wall
+  time), but neither half of the prescription is the remedy. See
+  [the verdict](../../pm/orders/2026-08-15-verdict-ask-compose-latency-design.md).
 - **Rule 2** (retrieve p50 ≥15s → skip rerank for verse-ref): 2.7s. Does not fire.
 
 **13/25 (52%) needed at least one retry.** That's the direct cause of the long tail — a single
 compose call runs 4–11s, and over half of today's questions paid for more than one.
+
+### Why the first attempt was rejected — counts, added 2026-08-15
+
+Recomputed from the `firstCheck` field on the 13 retried rows of the JSON. **Read the denominator
+carefully: this is one code per retried QUESTION, from its first rejected attempt only** —
+`teach.ts:218` writes `if (!firstCheck)`, so later attempts' codes are never recorded. There were
+**23 rejected attempts** in this run; 13 carry a code and 10 do not.
+
+| first failing check | count | share of 13 | recovered | fell back |
+|---|---|---|---|---|
+| `quote_verbatim` | 5 | 38% | 3 | 2 |
+| `passages_grounded` | 4 | 31% | 4 | 0 |
+| `schema` | 3 | 23% | 2 | 1 |
+| `diversity_voices` | 1 | 8% | 0 | 1 |
+
+**Do not steer a fix by the ordering.** 5 against 4 on n=13 is inside noise, and the two leaders
+behave differently: every `passages_grounded` rejection recovered, while `quote_verbatim` accounts
+for half the fallbacks. Nothing here is a distribution; it is a reason to capture more.
 
 ## Output correctness
 
