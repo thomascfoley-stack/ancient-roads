@@ -19924,29 +19924,80 @@
   {
     "id": "julian-revelations",
     "slug": "julian-revelations",
-    "title": "Revelations of Divine Love",
-    "author": "Julian of Norwich",
-    "author_died": null,
-    "year_written": 1901,
+    "title": "Revelations of Divine Love (Warrack version)",
+    "author": "Julian of Norwich, ed. Grace Warrack",
+    "author_died": 1416,
+    "year_written": 1393,
     "source_type": "theology",
-    "tradition": "unassigned",
-    "era": "unassigned",
+    "tradition": "english-mystic",
+    "era": "medieval",
     "license": "Public Domain",
-    "tier": 3,
+    "tier": 2,
+    "text_only": true,
+    "note": "§4a mystic — devotional voice, not per-verse commentary; Warrack 1901 (Methuen) verified from the PG #52958 title page before ingest; editor's introduction/notes and glossary excluded by scope. Corrects the prior CCEL-sourced entry, which described an edition this repo never actually ingested — the 86/86-section DB rows landed 2026-08-14 are this Gutenberg text (WORKLOG 2026-08-15).",
     "provenance": {
-      "url": "https://www.ccel.org/ccel/julian/revelations",
-      "edition": "Revelations of Divine Love (CCEL)",
+      "url": "https://www.gutenberg.org/ebooks/52958",
+      "edition": "Julian of Norwich, Revelations of Divine Love, ed. Grace Warrack, Methuen & Company 1901 (Gutenberg #52958)",
       "year": 1901,
-      "year_basis": "printSourceInfo",
-      "licence_basis": "rightsDeclared",
       "acquire": {
-        "adapter": "ccel",
-        "ccel_ids": [
-          "julian/revelations"
-        ],
-        "strip_markup": true
+        "adapter": "gutenberg",
+        "ebook_id": 52958,
+        "translation_year": 1901
       }
-    }
+    },
+    "serve": false
+  },
+  {
+    "id": "bernard-song-sermons",
+    "slug": "bernard-song-sermons",
+    "title": "Sermons on the Song of Songs (Cantica Canticorum, 86 sermons)",
+    "author": "Bernard of Clairvaux, trans. Samuel J. Eales",
+    "author_died": 1153,
+    "year_written": 1135,
+    "source_type": "theology",
+    "tradition": "cistercian",
+    "era": "medieval",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "note": "§4a mystic — devotional voice, not per-verse commentary (sermons on the Canticles kept as whole sermons, NOT verse-sliced). Title page verified: trans. S.J. Eales, John Hodges, London 1896 (the manifest's 'Eales 1895' is the series' first issue; this copy is the 1896 issue — both PD). Eales' Introductory Essay and the sermons table excluded by scope; OCR garbage 0.05% vs 5% bar.",
+    "provenance": {
+      "url": "https://archive.org/details/LifeAndWorksOfSaintBernardV4",
+      "edition": "Life and Works of Saint Bernard, vol. IV: Cantica Canticorum — Eighty-Six Sermons on the Song of Solomon, trans. Samuel J. Eales, John Hodges, London, 1896 (archive.org LifeAndWorksOfSaintBernardV4)",
+      "year": 1896,
+      "acquire": {
+        "adapter": "gutenberg",
+        "archive_id": "LifeAndWorksOfSaintBernardV4",
+        "translation_year": 1896
+      }
+    },
+    "serve": false
+  },
+  {
+    "id": "kempis-imitation-benham",
+    "slug": "kempis-imitation-benham",
+    "title": "The Imitation of Christ (Benham translation)",
+    "author": "Thomas à Kempis, trans. William Benham",
+    "author_died": 1471,
+    "year_written": 1418,
+    "source_type": "theology",
+    "tradition": "devotio-moderna",
+    "era": "medieval",
+    "license": "Public Domain",
+    "tier": 2,
+    "text_only": true,
+    "note": "§4a mystic — devotional voice, not per-verse commentary; translator/year verified from the PG #1653 header + title page before ingest. Verified-edition companion to kempis-imitation (CCEL, published, provenance under-specified); reconciling the two is an owner call.",
+    "provenance": {
+      "url": "https://www.gutenberg.org/ebooks/1653",
+      "edition": "Thomas à Kempis, The Imitation of Christ, trans. William Benham, 1874 (Gutenberg #1653)",
+      "year": 1874,
+      "acquire": {
+        "adapter": "gutenberg",
+        "ebook_id": 1653,
+        "translation_year": 1874
+      }
+    },
+    "serve": false
   },
   {
     "id": "ignatius-autobiography",
