@@ -136,3 +136,23 @@ retrieval rows cannot be row-checked (rare; quote-match plus unique-attribution 
 have to miss). I2-M2 (owner-fallback belt suite) and I-8 immutability enforcement are follow-ups,
 logged NOT DONE in WORKLOG. Live-stream client behaviors (URL swap, saved-notice, threadId in
 POST body) are covered by the prod E2E walk, not jsdom.
+
+## Production battery (post-deploy, 2026-08-16 ~23:30Z)
+
+Live target: `82403f1` on `dpl_GjeCYSXNFor4k3QLkNk1nwPoaGrX`, alias verified by the deploy
+script's id match.
+
+- **Route battery, 15 surfaces:** public marketing (`/`, `/why`, `/features`, `/gate`) 200;
+  every app surface (`/ask`, `/read`, `/library`, `/api/research`, `/api/ask/stream`,
+  `/auth/sign-in`, `/prayers`, `/studies`, `/desk`, `/settings`) 307 → gate. Exactly the
+  gated design; no 4xx/5xx anywhere.
+- **Gate wrong-password path driven in a real browser:** garbage value submitted → "That
+  wasn't it. Try again.", form intact, no crash, no console errors. (First read of the field
+  mistook the ••••• PLACEHOLDER for autofill; the DOM showed an empty input — corrected
+  rather than left as an assumption. No credential was entered or submitted beyond the
+  deliberate garbage probe.)
+- **Gate at 375px:** no horizontal overflow; zero console errors.
+- **Full suites on the shipped tree:** root + web, both DB URLs, zero FAIL lines, exit 0.
+- **NOT testable by an agent:** past-the-gate surfaces (site password), the signed-in E2E
+  (Neon auth), and Vercel runtime logs (the MCP server disconnected mid-session). These
+  remain the owner's two-minute walk.
