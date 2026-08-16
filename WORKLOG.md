@@ -1,5 +1,84 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-16 (session 02, Phase 1b) — the SDK bump EXECUTED; API surface held; one merge-gating finding
+
+Owner approved the bump in principle and required real evidence: *"a lockfile resolve is not
+evidence."* Correct — and the install found things the resolve could not. `work/02` in
+`/Users/foley/Projects/ap-02`. Addendum §8 of the brief carries the detail.
+
+**The API surface did not move, so no caller was adapted.** Verified against the installed
+`dist/next/server/index.d.mts`, not a changelog: `createNeonAuth`, the `NeonAuth` type, the
+`{ baseUrl, cookies: { secret } }` config, `getSession()` → `{ data }`, `handler()` → `{GET,POST}`,
+and `createAuthClient` on `/next` (runtime-enumerated) are all unchanged. New and non-breaking here:
+a documented **32-char minimum on `cookies.secret` with an explicit throw**, structured
+`[neon-auth]` logging, and a bundled middleware this app does not use. **Owner check: a production
+`NEON_AUTH_COOKIE_SECRET` shorter than 32 chars would now throw at construction** — one minted by
+the runbook's `openssl rand -base64 32` is 44, so it clears.
+
+**Measured:** `tsc` web **0** · `tsc -p tsconfig.test.json` **0** · **`next build` exit 0** (the
+gate that caught all three A6 deploy failures) · `neon-auth-wiring` 5 + `neon-auth-config` 3 passed
+· deps closure reports no EXTRA advisory, so the enlarged `@neondatabase/auth-ui@0.3.0-beta` tree
+adds no high/critical. `upload-root-lockfile.test.ts` went red first on the stale
+`web/package-lock.json` and green after regenerating it per `AUTH_V2_IMPLEMENTATION.md` §3.
+
+**Method error, caught mid-flight and worth more than the result.** `preview_start` ran the dev
+server from `/Users/foley/Projects/ancient-roads-git/web` — the MAIN tree — because it resolves
+`.claude/launch.json` against the session's primary directory, not the worktree. **My first round of
+browser observations was three other sessions' code at `0.4.2-beta`, not the bump.** Caught with
+`lsof -a -p <pid> -d cwd`, re-run from `ap-02/web` on port 3003, cwd verified before trusting
+anything. THE_LOOP rule 1, and it nearly produced a confident result about the wrong tree.
+
+**Browser, correct tree, `NEON_AUTH_BASE_URL` deliberately set to the placeholder
+`https://example.neonauth.invalid`** (the value `neon-auth-config.test.ts:36` already uses) to
+isolate our side of the wire from Neon's: `/auth/sign-in` **renders** at desktop and **390×844**;
+**no horizontal overflow** (`scrollWidth` 390 == `innerWidth` 390); no application console errors.
+The **full client→route→SDK wire runs** — a deliberately non-existent `@example.invalid` address
+with a junk password produced `POST /api/auth/sign-in/email 502` and `[neon-auth] Upstream fetch
+failed { proxyPath: 'sign-in/email', detail: 'ENOTFOUND' }`, i.e. `createAuthClient` built it, the
+rate limiter passed it, `handler().POST` routed it, the SDK proxied it out, and only the placeholder
+DNS failed. So `getSession()` returns signed-out cleanly under 0.5.0-beta rather than throwing,
+against an unreachable host — the harsher case.
+
+**Incidental finding:** the first submit 500'd in OUR code, not the SDK — `route.ts:49` →
+`checkAuthRateLimit` → `APP_DATABASE_URL or DATABASE_URL must be set`. The auth route hard-depends
+on the rate limiter's database, so **a DB outage makes sign-in fail closed with a 500**.
+
+### The finding that should gate the merge: the bump DELETES the record of SEC-1
+
+`npm run audit` is **RED on the deps leg, correctly**: `scanned better-auth: 1.6.23` and
+`declared --expect-red id(s) no longer observed` for both g38m and qq9h. That is `audit.sh:41-44`
+turning a disappearance into a build event. **But the obvious fix is a documented trap.**
+`SECURITY.md:368-369` says the ignore-list entry *"is currently the only mechanical record that
+SEC-1 is open."* After the bump **neither `ignoreGhsas` nor `--expect-red` carries an auth
+advisory**, so every mechanical check reads SEC-1 as closed while the hosted-server question is
+still unanswered. Third instance in one day of the same shape: **the remedy removes the marker, not
+the risk.** Not implemented — what replaces it is an owner call about what the gate asserts, and the
+honest replacement is a dated attestation that fails when stale, since SEC-1's real state lives on
+Neon's server where no local check can see it.
+
+### NOT DONE / UNVERIFIED
+
+- **NOT PROVEN — a real credential against Neon's hosted server.** Needs the real
+  `NEON_AUTH_BASE_URL`, which exists only in Vercel production. `neon-auth-live.test.ts` stayed
+  **NOT RUN** and said so loudly: *"A green suite without it is not evidence that any of those
+  hold."*
+- **DECLINED, not blocked — the authenticated step itself.** Signing in means typing someone's
+  password, and `neon-auth-live.test.ts` proves the path by creating an account its own comment says
+  it cannot delete, against the production auth instance (the only one whose URL exists). Both are
+  owner actions. Everything up to Neon's front door is proven; the owner driving one sign-in with
+  the real env closes it.
+- **PRE-EXISTING RED, proven not mine.** `target-guard.test.ts > register-label-embeddings.mjs
+  refuses a generic CUTOVER_EXPECT_HOST` fails in the full suite whenever the shell carries a
+  `DATABASE_URL`: full suite without it **pass**; with it **fail 2/2**; that file alone **pass 2/2**;
+  and **with my diff stashed so tracked files equal `origin/main`, still fail.** That last run is the
+  proof. Another instance of the watchlist's non-determinism — a red that cannot distinguish "broken"
+  from "your shell has an env var". Filed, not fixed.
+- **NOT GREEN — `npm run audit` fails 2 legs**: the deps leg above (by design) and vitest via the
+  pre-existing `target-guard` flake. No leg fails because of the bump.
+- **UNVERIFIED — the Google/OAuth path.** Only `signIn.email` was exercised; `signIn.social` needs a
+  reachable provider and a real redirect domain.
+- **NOT DONE — the site gate is up and untouched**, per the owner's instruction.
+
 ## 2026-08-16 (session 02, Phase 1) — SEC-1 decision brief: Neon shipped an SDK pinning a PATCHED better-auth
 
 Worktree `/Users/foley/Projects/ap-02` on `work/02` off `origin/main` @ `5618cf6` (three sessions

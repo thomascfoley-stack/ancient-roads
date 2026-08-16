@@ -252,3 +252,137 @@ gate has a running cost, and it is not zero.
 pins a patched better-auth, that it resolves cleanly against this tree, and that the upload coupling
 is dormant. What is *not* proven is that Neon's hosted server runs patched code — and that, not the
 dependency graph, is where GHSA-g38m actually executes.
+
+---
+
+## 8. ADDENDUM 2026-08-16 — the bump, EXECUTED and exercised (owner-approved in principle)
+
+§1a's lockfile resolve is superseded by a real install. `web/package.json` now declares
+`@neondatabase/auth: ^0.5.0-beta`; both lockfiles regenerated per
+`AUTH_V2_IMPLEMENTATION.md` §3. **Nothing else in the source tree changed** — no caller was
+adapted, because none needed adapting.
+
+### 8.1 The API surface did NOT move
+
+Checked against the installed package, not the changelog. `dist/next/server/index.d.mts`:
+
+| What the app uses | 0.5.0-beta | Verdict |
+|---|---|---|
+| `createNeonAuth(config): NeonAuth` from `/next/server` | present, same name | unchanged |
+| `NeonAuth` exported as a type | present | unchanged |
+| config `{ baseUrl, cookies: { secret } }` | `NeonAuthConfig`, same shape | unchanged |
+| `auth.getSession()` → `{ data }` | documented and observed | unchanged |
+| `auth.handler()` → `{ GET, POST, … }` | present | unchanged |
+| `createAuthClient` from `/next` | present (runtime-enumerated) | unchanged |
+
+New in 0.5.0-beta, none of it breaking for this app: `cookies.secret` now carries a documented
+**32-character minimum with an explicit throw**; structured `[neon-auth]` logging
+(`NeonAuthLogger`, `logLevel`); a bundled `neonAuthMiddleware` / `auth.middleware()` this app does
+not use. **The 32-char floor is worth an owner check** — a shorter production
+`NEON_AUTH_COOKIE_SECRET` would now throw at construction. `openssl rand -base64 32` yields 44, so
+a secret minted per the runbook clears it.
+
+### 8.2 Measured
+
+| Check | Result |
+|---|---|
+| `tsc --noEmit` (web) | **0** |
+| `tsc --noEmit -p tsconfig.test.json` | **0** |
+| `next build` | **exit 0** — the gate that caught all three A6 deploy failures |
+| `upload-root-lockfile.test.ts` | 6 passed (red first: it correctly caught the stale `web/package-lock.json` before regeneration) |
+| `neon-auth-wiring.test.ts` / `neon-auth-config.test.ts` | 5 + 3 passed |
+| deps closure | no EXTRA advisory — the enlarged `@neondatabase/auth-ui@0.3.0-beta` tree (radix/captcha/`@better-auth/api-key`) adds no high/critical |
+
+### 8.3 The browser leg — and a method error caught mid-flight
+
+**`preview_start` ran the dev server from `/Users/foley/Projects/ancient-roads-git/web` — the MAIN
+tree — not this worktree.** It resolves `.claude/launch.json` against the session's primary
+directory. The first round of browser observations was therefore of three other sessions' code at
+`0.4.2-beta`, not of the bump. Caught with `lsof -a -p <pid> -d cwd`; re-run from `ap-02/web` on
+port 3003 with the cwd verified before trusting anything. THE_LOOP rule 1 — name the artifact
+before you trust a number — and it nearly produced a confident result about the wrong tree.
+
+Exercised against the corrected server, with `NEON_AUTH_BASE_URL` deliberately set to the
+placeholder `https://example.neonauth.invalid` (the same value `neon-auth-config.test.ts:36` uses)
+and a locally-minted throwaway cookie secret. That isolates **our** side of the wire from Neon's:
+
+- `/auth/sign-in` **renders** at desktop (1280×720) and **390×844**. So `createNeonAuth` constructs
+  and `getSession()` returns a clean signed-out result under 0.5.0-beta rather than throwing —
+  against an unreachable host, which is the harsher case.
+- **No horizontal overflow at 390px**: `documentElement.scrollWidth` 390 == `innerWidth` 390.
+- Console carries no application errors — one Next dev-mode `eval()` notice, and the 502 below.
+- **The full client→route→SDK wire runs.** Submitting a deliberately non-existent
+  `@example.invalid` address with a junk password produced
+  `POST /api/auth/sign-in/email 502` and
+  `[neon-auth] Upstream fetch failed { proxyPath: 'sign-in/email', detail: 'ENOTFOUND' }`.
+  So `createAuthClient` built the request, our rate limiter passed it, `auth.handler().POST` routed
+  it, and the SDK proxied it outward under the correct path — failing only on the placeholder DNS,
+  by design. The error surfaced in the form rather than crashing the page.
+
+**A first attempt at that submit 500'd inside OUR code, not the SDK** — `route.ts:49` →
+`checkAuthRateLimit` → `APP_DATABASE_URL or DATABASE_URL must be set`, because Next runs from
+`web/` and `web/.env.local` had no DB URL. Worth recording: the auth route has a hard dependency on
+the rate limiter's database, so **a DB outage makes sign-in fail closed with a 500**, not merely
+degrade.
+
+### 8.4 What is still NOT proven, and why I stopped rather than fake it
+
+**No real credential was ever authenticated against Neon's hosted server.** That leg needs the real
+`NEON_AUTH_BASE_URL`, which exists only in the Vercel production env. Two things follow, and the
+second is a refusal rather than a blocker:
+
+1. `neon-auth-live.test.ts` — the repo's own end-to-end proof — remains **NOT RUN**, and said so
+   loudly in the suite: *"A green suite without it is not evidence that any of those hold."*
+2. Even given the URL, **I will not perform the authenticated step.** Signing in requires typing
+   someone's password, and `neon-auth-live.test.ts` proves the path by *creating an account* which
+   its own comment says it cannot delete afterwards — against the production auth instance, since
+   that is the only one whose URL exists. Both are owner actions. The honest completion is the
+   owner driving sign-in once with the real env, at which point everything above is already proven
+   up to Neon's front door.
+
+### 8.5 The finding that should gate the merge: the bump DELETES the record of SEC-1
+
+`npm run audit` is **RED on the deps leg, by design and correctly**:
+
+```
+deps-audit scanned package versions (expect-red / ignore carriers):
+  scanned better-auth: 1.6.23
+✗ deps-audit: declared --expect-red id(s) no longer observed (set changed):
+  GHSA-g38m-r43w-p2q7
+  GHSA-qq9h-g4jm-xgf3
+```
+
+That is `scripts/audit.sh:41-44` working exactly as written — a disappearance is a build event, not
+silence. But the obvious fix is a trap this repo has already documented.
+`docs/SECURITY.md:368-369`, rejecting the override branch, says the ignore-list entry *"is currently
+the only mechanical record that SEC-1 is open."* After this bump, **neither `ignoreGhsas` nor
+`--expect-red` carries an auth advisory** — so every mechanical check in the repo reads SEC-1 as
+closed while the hosted-server question (§3) is still unanswered.
+
+**This is the same shape as §5, and it is the third instance in one day**: the remedy removes the
+marker rather than the risk. Emptying `--expect-red` is not a bookkeeping tidy-up; it retires the
+last automated statement that this launch gate is open.
+
+**Owner decision, and it should land with the merge, not after it:** what mechanically records
+SEC-1's openness once the dependency tree is clean? SEC-1's true state is a property of Neon's
+hosted server, which no local check can observe — so the honest replacement is a **dated
+attestation that fails the gate when stale**, not another advisory-list entry. Recommended, not
+implemented; it is an owner call about what the gate asserts.
+
+### 8.6 Pre-existing red, proven not to be this change
+
+`test/invariants/target-guard.test.ts > register-label-embeddings.mjs refuses a generic
+CUTOVER_EXPECT_HOST` fails in the full suite **whenever the shell carries a `DATABASE_URL`** — which
+is every developer who has sourced their env:
+
+| condition | result |
+|---|---|
+| full suite, no ambient `DATABASE_URL` | **pass** |
+| full suite, ambient `DATABASE_URL` | **fail** (2/2) |
+| that file alone, either way | **pass** (2/2) |
+| full suite, ambient `DATABASE_URL`, **my diff stashed (tracked files == `origin/main`)** | **fail** |
+
+The last row is the proof: it is pre-existing on `main`, not caused by the bump. It is also another
+instance of the non-determinism the watchlist already names — a red that does not distinguish
+"broken" from "your shell has an env var", which is how a real red gets waved through. Filed, not
+fixed; it is outside this change.
