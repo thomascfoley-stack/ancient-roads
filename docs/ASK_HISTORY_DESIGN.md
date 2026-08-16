@@ -433,6 +433,14 @@ no value at all.
 **S0 — recon. Blocking, no code.** ⚑ Needs an owner go for a read-only production session
 (bylaw 7). Three measurements, and no slice starts until they are numbers:
 
+> **S0.1 + S0.2 MEASURED 2026-08-16 under the owner's "build it and ship it" go.** All four
+> tables exist on prod (`chats`, `messages`, `channels`, `chat_memories` —
+> `information_schema.tables`); `app_runtime` holds **SELECT, INSERT, UPDATE, DELETE** on both
+> `chats` and `messages` (`role_table_grants`), and each carries a single `ALL` RLS policy
+> (`chats_policy` / `messages_policy`). The 032-narrowing fear in S0.2 did not materialise.
+> **D2 resolves: reuse.** S0.3 (resolver coverage) remains unmeasured — S3 ships at the rung
+> the data supports, per D5.
+
 1. **Do `chats`/`messages` exist on production?** `db/schema.sql` defines them and **no migration
    on disk creates them.** Migration 032's backfill list names `015_channels.sql` (line 78) — a
    filename that is not in `db/migrations/`, where 015 is `015_highlight_subverse.sql`. The ledger
