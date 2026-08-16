@@ -1,6 +1,58 @@
 # WORKLOG — Autonomous session 2026-08-12
 
-## 2026-08-16 (latest) — O-1 pre-flight: a SECOND live credential, and the credential guard is now a gate. Rotation deferred to January by owner decision
+## 2026-08-16 (latest) — O-2 implemented: PostHog wired in, CSP untouched, gate bypassed for /ingest
+
+Owner ruled PostHog for analytics + error tracking (recorded as MASTER O-2, `b3fc026`) and asked
+for the implementation. Manual wiring, not the `@posthog/wizard` — the wizard is interactive
+(account login) and writes its own file layout; the manual path is ~30 lines and keeps every
+secret in env vars, per least-code.
+
+**What landed** (`web/`): `posthog-js@1.417.1`; `src/instrumentation-client.ts` (guarded
+`posthog.init` — no `NEXT_PUBLIC_POSTHOG_KEY`, total no-op); `next.config.ts` gains the
+`/ingest` reverse-proxy rewrites (static leg first, host env-driven US→EU, unconditional so the
+CDN merge can't drop them) plus `skipTrailingSlashRedirect` (posthog-js beacons carry a trailing
+slash; a 308 in front of a beacon POST is an avoidable failure mode); `src/middleware.ts` matcher
+excludes `ingest/` — **without this every beacon from the public marketing tier 307s to /gate
+and PostHog shows zero events with no error anywhere**. Env documented in `ENVIRONMENT.md` +
+`.env.local.example`.
+
+**Two deliberate choices.** `api_host: '/ingest'` (same-origin) so `connect-src 'self'` stands —
+widening CSP for a third party is the rejected remedy class (owner ruling 2026-08-08). And
+`maskAllInputs: true` stated explicitly: gate password and /ask text must never leave the page.
+
+**Verification.** New `web/test/posthog-wiring.test.ts` (4 tests) covers the three silent-death
+modes: matcher sweeping /ingest, missing/wrong rewrites, env not reaching the config.
+Red-proofed both legs: reverting the matcher → 1 failed; emptying the rewrite legs → 3 failed;
+restored → 4 passed. `tsc --noEmit` clean; full web suite 830 passed / 241 skipped; production
+`next build` compiles clean.
+
+**The install exposed a latent gate defect, fixed here.** posthog-js is the first dependency in
+this tree with an *aliased* transitive (`web-vitals-soft-navs: npm:web-vitals@6.0.0`), and
+deps-audit's coherence check did a plain substring match — pnpm reports the alias by its alias
+name, the lockfile records `web-vitals-soft-navs: web-vitals@6.0.0`, the literal never appears,
+and the gate REFUSED a coherent tree. Extracted the predicate as `resolvedInLockfile` into
+`scripts/deps-audit-core.mjs` (alias form accepted, same strictness), unit-tested with a
+can-fail leg (`web-vitals-soft-navs@9.9.9` still refuses). Watched red on the real trigger
+before the fix, green after. Also: web's node_modules in this worktree is now pnpm-layout — npm
+and pnpm had both written it, which is what made the incoherence look install-side at first.
+
+**Dependency justification** (CLAUDE.md): one dep, `posthog-js`, first-party — closes SEC-1
+condition 9's "zero observability" for the browser half per owner ruling O-2; alternatives
+weighed and declined there (Datadog scale/cost, Sentry deferred).
+
+### NOT DONE / UNVERIFIED
+
+- **No event has been observed landing.** Needs the real project key in Vercel (owner: PostHog
+  dashboard → `NEXT_PUBLIC_POSTHOG_KEY`) and a deployed page load. Until then O-2's own bar —
+  "alerting must be observed firing" — is unmet.
+- **Alerting is unconfigured.** PostHog-side, owner action: alert on exception volume for the
+  auth + /ask paths.
+- **Server-side errors still go only to stdout logs** (`src/lib/observability.ts`); PostHog here
+  covers the browser half. A `posthog-node` leg for API routes is a separate slice, not started.
+- Session replay is enabled-by-config but PostHog-side toggles (whether recordings are captured
+  at all, sampling) are dashboard settings the owner controls.
+
+## 2026-08-16 — O-1 pre-flight: a SECOND live credential, and the credential guard is now a gate. Rotation deferred to January by owner decision
 
 **The rotation did not happen and that is a ruling, not a miss.** Owner, 2026-08-16: *"leave #1
 alone forever, I will do it at my own discretion, we're in build mode… when we are done I will

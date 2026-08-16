@@ -8,7 +8,7 @@
  */
 import { readFileSync, existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
-import { selectFindings, compareExpectRed } from './deps-audit-core.mjs';
+import { selectFindings, compareExpectRed, resolvedInLockfile } from './deps-audit-core.mjs';
 
 const BULK = 'https://registry.npmjs.org/-/npm/v1/security/advisories/bulk';
 const ROOT = new URL('..', import.meta.url).pathname;
@@ -85,7 +85,7 @@ for (const p of projects) walk(p.dependencies);
 const incoherent = [];
 for (const [name, versions] of pkgs) {
   for (const v of versions) {
-    if (!lockText.includes(`${name}@${v}`)) {
+    if (!resolvedInLockfile(lockText, name, v)) {
       incoherent.push(`${name}@${v}`);
     }
   }

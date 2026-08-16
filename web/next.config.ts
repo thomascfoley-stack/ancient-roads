@@ -29,6 +29,14 @@ const NEON_AUTH_ORIGIN = (() => {
   }
 })();
 
+// PostHog reverse proxy (owner ruling O-2). The client inits with api_host '/ingest'
+// (src/instrumentation-client.ts) so connect-src stays 'self' — see the CSP note above.
+// Two legs per PostHog's proxy guide: static assets come from the `-assets` subdomain,
+// everything else (events, decide, replay) from the ingest host. Host is env-driven so
+// a US→EU region move is a var change, not a code change.
+const POSTHOG_HOST = (process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com').replace(/\/+$/, '');
+const POSTHOG_ASSETS = POSTHOG_HOST.replace(/^(https:\/\/[a-z]+)\.i\.posthog\.com$/, '$1-assets.i.posthog.com');
+
 const CSP = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -118,19 +126,33 @@ const nextConfig: NextConfig = {
   // BEFORE rewrites, so the site password still fronts these paths; the raw Blob URLs are
   // public, which is stated and acceptable — every byte here is Gate-B-verified PD/permissive
   // text, and the gates run on the local copies these were synced from.
+  // The /ingest legs are UNCONDITIONAL — they cost nothing when PostHog is unconfigured and
+  // gating them on the key would make next.config dependent on a NEXT_PUBLIC_ var being
+  // present at build time. /ingest/static/ must be listed first: it also matches /ingest/:path*.
+  // skipTrailingSlashRedirect is set (below) because posthog-js POSTs to /ingest/e/ WITH the
+  // slash, and a 308 in front of a beacon POST is an avoidable failure mode per PostHog's docs.
   async rewrites() {
+    const ingest = [
+      { source: '/ingest/static/:path*', destination: `${POSTHOG_ASSETS}/static/:path*` },
+      { source: '/ingest/:path*', destination: `${POSTHOG_HOST}/:path*` },
+    ];
     const base = process.env.CORPUS_CDN_BASE;
-    if (!base) return { beforeFiles: [], afterFiles: [], fallback: [] };
+    if (!base) return { beforeFiles: ingest, afterFiles: [], fallback: [] };
     const origin = base.replace(/\/+$/, '');
     return {
-      beforeFiles: ['bible', 'commentaries', 'original'].map((root) => ({
-        source: `/${root}/:path*`,
-        destination: `${origin}/${root}/:path*`,
-      })),
+      beforeFiles: [
+        ...ingest,
+        ...['bible', 'commentaries', 'original'].map((root) => ({
+          source: `/${root}/:path*`,
+          destination: `${origin}/${root}/:path*`,
+        })),
+      ],
       afterFiles: [],
       fallback: [],
     };
   },
+  // See the rewrites note — posthog-js beacons carry a trailing slash.
+  skipTrailingSlashRedirect: true,
 };
 
 export default nextConfig;
