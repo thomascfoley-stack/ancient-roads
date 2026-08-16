@@ -32,7 +32,10 @@
     "repoint:sections": "tsx src/ingest/repoint-sections-work.ts",
     "preflight:ingest": "node scripts/ingest-preflight.mjs",
     "ingest:topical": "tsx src/ingest/ingest-topical-index.ts",
-    "coverage:rebuild": "tsx scripts/rebuild-verse-coverage.ts"
+    "coverage:rebuild": "tsx scripts/rebuild-verse-coverage.ts",
+    "pm-graph:up": "docker compose -f scripts/pm-graph/docker-compose.yml up -d --wait",
+    "pm-graph:down": "docker compose -f scripts/pm-graph/docker-compose.yml down",
+    "pm-graph:ingest": "tsx scripts/pm-graph/ingest.mts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -47,6 +50,7 @@
     "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9.0.0",
     "knip": "^6.25.0",
+    "neo4j-driver": "^6.2.0",
     "pg": "^8.22.0",
     "pg-copy-streams": "^7.0.0",
     "tsx": "^4.19.0",

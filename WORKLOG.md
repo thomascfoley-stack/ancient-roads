@@ -314,6 +314,71 @@ commit while Kimi worked on `feat/ops-fixes` and I worked on `ship/editor-deploy
 clean only because the file sets happened not to intersect. That is luck, not the guard AGENTS.md
 asks for.
 
+## 2026-08-15 (later) — PM/docs graph tool (`scripts/pm-graph/`): parser verified against the real corpus, Neo4j write path unrun (blocked egress)
+
+Owner: a graph database over the PM/docs corpus, to make "all this reading" queryable instead of
+grep-and-scroll. Confirmed scope with the owner first (AskUserQuestion): PM/docs corpus (not the
+product's Bible corpus, not the codebase), checked into the repo, backed by a real Neo4j server —
+all three the owner's explicit choice, not assumed. Built on `tooling/pm-docs-graph` off latest
+`main` (`d1cc2e1`), file-disjoint from every open lane. Full account:
+[`docs/evidence/pm-graph/ingest-run-2026-08-15.md`](docs/evidence/pm-graph/ingest-run-2026-08-15.md)
+· tool: [`scripts/pm-graph/README.md`](scripts/pm-graph/README.md).
+
+**What it is:** `Document`/`Gate`/`Adr`/`WorklogEntry` nodes and `LINKS_TO`/`MENTIONS`/`DEFINES`/
+`CORRECTS` edges, all **derived** from the docs on every ingest — gate IDs from MASTER.md's own
+lane tables, ADR IDs from DECISIONS.md's own headers, never hand-typed. That derive-don't-hand-type
+rule is this repo's own most-repeated lesson (MASTER.md's failure-mode watchlist: "a hand-maintained
+expected set that nothing enforces," at least eleven prior instances) — a graph tool that hand-typed
+its own gate list would just be instance twelve wearing a database.
+
+**Parser fully verified.** `test/pm-graph-parse.test.ts`, 18 assertions, red-proofed (seeded a bug
+in the allowlist check, watched the decoy test fail, restored, watched it pass). `tsc --noEmit -p
+tsconfig.cutover.json` clean (covers `scripts/**/*.mts`). Full root `vitest` suite: 66 files / 717
+passed / 10 skipped, no regressions. `knip` output identical before/after (A-B via `git
+stash`/`stash pop`) — scripts/ has never been in its `project`/`entry` config, same gap
+`tsconfig.cutover.json`'s own header already names for the rest of that directory.
+
+**Run against the real corpus (207 tracked files), not a fixture — two real bugs found this way,
+neither by the unit tests:**
+1. `git ls-files 'docs/**/*.md'` silently drops every file directly under `docs/` (a git pathspec
+   quirk: bare `*` already matches `/` under git's default matching, so `docs/*.md` alone
+   recurses; adding `**/` requires a *non-empty* directory segment before it). First run reported
+   "0 ADRs" against a real 60. Fixed; re-run matched an independent `grep -c` count exactly, and
+   the 28 derived gate IDs diffed byte-identical against an independent `grep` extraction.
+2. The Neo4j write queries used `MATCH ... UNION MATCH ... UNION MATCH ...` per edge type,
+   wrongly assuming one early `UNWIND` bound `row` across all three branches — it doesn't, each
+   `UNION` branch is an independent query. **Caught by re-reading the Cypher, not by running it**
+   (see below), before commit. Fixed by giving `Document`/`Gate`/`WorklogEntry` a shared
+   `:Node{key}` label so every edge write is one plain `MATCH`.
+
+Spot-checked the `CORRECTS` heuristic (a fixed keyword list co-occurring with a reference — never
+asserted as fact, every edge carries its snippet) against real gate text and got genuine hits on
+the first try, no tuning: `Gate A7 --RETRACTED--> Gate A7b` and `Gate B0b --SUPERSEDE--> Gate B0a`,
+both matching what the board's own prose says.
+
+**The Neo4j write path itself is NOT RUN — reported, not claimed.** `npm run pm-graph:up` (Docker)
+failed: pulling `neo4j:5-community` hit `production.cloudfront.docker.com` and got an explicit 403
+at the egress proxy (`gateway answered 403 to CONNECT (policy denial or upstream failure)`,
+confirmed via the proxy's own status endpoint — not a timeout). A fallback fetch of Neo4j's raw
+distribution tarball from `dist.neo4j.org`, bypassing Docker entirely, got the identical 403 from
+the same gateway. Per this session's tooling guidance, a policy denial is reported, not routed
+around, so no further workaround was attempted. The Cypher has been read carefully twice (the bug
+above was caught that way) but has never executed against a live server.
+
+### NOT DONE / UNVERIFIED
+
+- **The Neo4j write queries have never run against a live database.** Next real step: `npm run
+  pm-graph:up && npm run pm-graph:ingest` on a machine with real Docker Hub access — the script
+  fails loudly (non-zero exit, printed Neo4j error) rather than silently, so that run IS the
+  verification, not a formality.
+- ADR bodies aren't scanned for their own outbound citations (document-level only); `CORRECTS`
+  finds only the first marker occurrence per chunk; `UX_REMEDIATION.md`'s own block ids (`S1`,
+  `T1`, ...) aren't derived or matched — all filed as known gaps in the tool's own README rather
+  than half-built here.
+- `npm run audit` NOT RUN (refuses without a dev `DATABASE_URL` in this tree, same standing
+  constraint as every other docs-only session this month) — ran the equivalent DB-free legs
+  (typecheck, lint-adjacent knip, full test suite) individually instead, all reported above.
+
 ## 2026-08-15 (late) — The Song coverage/retrieval "gap" is RETRACTED; the residue is 1.9% and it is a keying granularity, not a hole
 
 Owner: "fix the songs coverage vs retrieval". Ran it as a `quality-slice`. **Step 0 killed the
