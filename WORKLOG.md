@@ -1,5 +1,85 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-16 — The three W1 mystics get a provenance record and a serve ruling; §4a was cited for a decision it does not make
+
+**Done.** Three commits, then the two sessions' work merged and audited together for the first
+time (`53d5988` on `main`, audit PASSED).
+
+1. **A licensing-record gap closed.** `bernard-song-sermons` and `kempis-imitation-benham` had
+   rows on production and **no manifest entry at all** — content the repo could not describe,
+   against CLAUDE.md's per-work provenance + license requirement. `julian-revelations` had an
+   entry that described the WRONG edition (CCEL, tier 3, `author_died: null`); the 86 rows
+   actually on disk are Gutenberg #52958, Warrack 1901. A manifest that misdescribes the rows
+   it governs is worse than a missing one, because it reads as a record. Provenance transcribed
+   from the committed dry-run logs at `20f37f9`, not reconstructed. (`3fadf53`)
+
+2. **§4a re-read, and it does not say what was claimed.** The `serve:false` on all three cited
+   "§4a mystic — devotional voice, not per-verse commentary". `ACQUISITION_MANIFEST.md:104`
+   actually says: "tag `theology`, attribute accordingly, don't treat as per-verse commentary"
+   — a **routing** rule, under a §4 whose stated purpose is "beyond Reformed, FOR VOICE
+   DIVERSITY". Nothing in it withholds. All three ruled `serve: true`. The acquisition half of
+   §4a (the translation trap) was always satisfied and is untouched. (`d264abc`)
+
+3. **Bernard was miscategorised at the source.** §4a line 104 names à Kempis, Julian, Teresa,
+   John of the Cross, de Sales, Ignatius. Bernard is not among them, and 86 sermons walking
+   through one book is homiletical exposition — the SERMON register's definition. Retyped
+   `theology -> sermon` in the manifest.
+
+4. **A new tool, because none existed:** `scripts/retype-work-register.mjs` (`87650f1`). Three
+   guards each watched RED first. Dry-run default; snapshot written per-row before COMMIT.
+
+**Found — the fix was not the one I proposed, and the difference is the whole entry.** I first
+planned to add the three slugs to `SERVED_THEOLOGY_WORKS` / `SERVED_SERMON_WORKS`. That is
+wrong, and `routing.ts` says so in its own words: **"THE SURFACE A ROW REACHES IS ITS REGISTER,
+not its slug."** The lanes are `source_type` predicates consumed by `retrieveRegisterLane`; no
+slug list appears in either, and the lists are "the frozen record of what 044's backfill turned
+on". So Julian and à Kempis needed **no code change at all** (already `source_type: theology`),
+and Bernard's lane move IS the retype.
+
+Red-proofed rather than argued: seeding `julian-revelations` into `SERVED_THEOLOGY_WORKS` turns
+`fts-legal-index-sync` RED with *"115_fts_legal_rejoin_gill_song.sql index predicate drifted …
+add a rebuild migration (the planner will silently stop using the partial index)"*. Those lists
+feed `SERVED_LANE_WORKS -> REGISTER_SERVED_SLUGS ->` the FTS partial-index predicate, so the
+"obvious" fix would have cost a migration 116 rebuild over a table where all three works have
+**zero** rows — precisely why `SERVED_HISTORIAN_WORKS` was kept out of that union.
+
+Also proven, not assumed: the manifest entries are load-bearing. Seeding `bernard-song-sermons`
+into a served list goes RED on two legs; with the same seed but the manifest reverted, only the
+"unknown slug" leg fires — `BY_SLUG.get(slug)?.serve === false` cannot see a work with no entry.
+
+**Audit — green, with three legs NOT RUN.** `npm run audit` PASSED on the union; 719 root / 826
+web tests. But **Layer 1 tenancy invariant (two-account, executed) DID NOT RUN** (no
+`APP_DATABASE_URL`), as did the G1 digest leg and `protected-branches-exist` (no
+`NEON_API_KEY`). The harness announced each loudly, which is correct behaviour — but it means
+migration 116's `ask_outcomes` reached production with its RLS property asserted from the
+migration text and not demonstrated by execution. MASTER.md C5 already records RLS under Neon's
+user-id format as UNPROVEN, and its failure mode is silent.
+
+### NOT DONE / UNVERIFIED
+
+- **No database was changed by any commit today.** `serve: true` is a declared RULING. All
+  three mystics are still `served=0`, and Bernard still carries `theology` in both databases.
+  The retype tool has never been run with `--apply` anywhere.
+- **The accuracy diagnostic has NOT been re-run.** A+B is a retrieval change and CLAUDE.md
+  requires it. Steps A–C of the runbook are one unit; C is not optional.
+- **`ask_outcomes` persistence is unverified** — nobody has watched a real ask land a row — and
+  the RLS leg that would test its isolation did not run. Both share the symptom "empty table",
+  so a count of 0 will not distinguish them.
+- **`db-invariants` CI hang unresolved.** 30 min, zero output, on `ep-tiny-bonus-at3izo3y`.
+  The 10→30 minute raise was the wrong diagnosis and did not fix it.
+- **The two Imitations are unreconciled.** `kempis-imitation` (CCEL) records no translator and
+  a composition year, so it is an unknown edition under §4's own fail-closed rule; it is also
+  `source_type: devotional`, a type in no served list, so it is published and
+  retrieval-invisible. Recommendation filed; the decision is the owner's.
+
+**Recommend next:** [`docs/pm/orders/2026-08-16-owner-terminal-runbook.md`](docs/pm/orders/2026-08-16-owner-terminal-runbook.md)
+— steps A–C as one sitting, D independently, E after one read.
+
+**Process note.** Nine worktrees now exist and `main` was checked out in a third one at a stale
+commit while Kimi worked on `feat/ops-fixes` and I worked on `ship/editor-deploy`. The merge was
+clean only because the file sets happened not to intersect. That is luck, not the guard AGENTS.md
+asks for.
+
 ## 2026-08-15 (late) — The Song coverage/retrieval "gap" is RETRACTED; the residue is 1.9% and it is a keying granularity, not a hole
 
 Owner: "fix the songs coverage vs retrieval". Ran it as a `quality-slice`. **Step 0 killed the
