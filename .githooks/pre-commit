@@ -79,8 +79,13 @@ for f in $STAGED; do
   fi
   case "$f" in
     docs/evidence/*)
+      # {12,} on the password: shorter than that is a fixture, not a credential. Anchored outside
+      # this repo (the conventional minimum for a generated secret); both Neon formats are 16 and
+      # 43. Without it this fires forever on hygiene-2026-07-29/loud-skip-app-url.log, which
+      # records a real endpoint with a ONE-character password. Kept identical to
+      # MIN_CREDENTIAL_LENGTH in test/invariants/no-committed-credentials.test.ts.
       if printf '%s' "$BLOB" \
-        | grep -aoE 'postgres(ql)?://[A-Za-z0-9_]+:[^@[:space:]"'"'"']+@[^/[:space:]"'"'"']*neon\.tech' \
+        | grep -aoE 'postgres(ql)?://[A-Za-z0-9_]+:[^@[:space:]"'"'"']{12,}@[^/[:space:]"'"'"']*neon\.tech' \
         | grep -avqF ":$REDACTION_PLACEHOLDER@"; then
         CRED_HITS="$CRED_HITS
   $f — unredacted Neon connection string in evidence"
