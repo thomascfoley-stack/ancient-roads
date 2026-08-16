@@ -1,5 +1,67 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-16 (later) — The three mystics are LIVE on prod; Bernard on the sermon lane; v3 run and recorded
+
+**Executed, not just written.** Steps A–C of the runbook ran; B was owner-executed at the
+terminal, the rest from this session.
+
+| slug | status | lane | served rows |
+|---|---|---|---|
+| `bernard-song-sermons` | published | **sermon** | 1515 |
+| `julian-revelations` | published | theology | 334 |
+| `kempis-imitation-benham` | published | theology | 349 |
+
+- **B (serve flip, owner-executed):** 3 status rows `staged -> published`, 2198 embedding rows
+  `served=true`, gate held. The serve:false gate read "HEAD 3, tree 3" with NO divergence —
+  yesterday's attempt from the corpus worktree read "tree 6, DIVERGENT" and blocked all three.
+  **That gate is directory-sensitive**; it must be run from `ancient-roads-git`. Snapshot
+  committed (`c774fd6`).
+- **A2/A4 (retype):** `bernard-song-sermons` `theology -> sermon` on dev (1515 rows) and prod
+  (1515 rows), each with a per-row pre-COMMIT snapshot. Verified with the SHIPPED lane
+  predicates, not a lookalike: bernard 1515 in the sermon lane / 0 theology, julian 334 and
+  kempis-benham 349 in the theology lane, and **all three contribute 0 rows to the exegetical
+  pool** — so they cannot dilute the composed >=2-voices floor. That is the structural check;
+  the eval below is the empirical one.
+- **C (v3 held-out, prod):** verse-ref 100/100 (n=40) · pericope 80/93 (15) · epistle 68/92
+  (25) · topical 40/75 (20) · proper-noun 80/90 (10) · **controls clean 10/10, hijacks=0**, no
+  no-content failures in any category.
+  [log](docs/evidence/heldout/v3-prod-after-mystics-2026-08-16.log)
+
+**What the v3 number does and does not say.** It is NOT a controlled before/after. CLAUDE.md's
+v3 baseline (95/95 · 87/100 · 68/80 · 45/75 · 60/90) was measured on **dev on 2026-07-18**;
+this ran on **prod**, whose corpus has grown by hundreds of works since. So the deltas
+(pericope -7, topical -5 HIT@1; proper-noun +20, epistle +12 HIT@2, verse-ref +5) are
+**cross-environment and cross-corpus**, not attributable to this change. At these n a 7-point
+pericope move is ONE case (12/15 vs 13/15) and the 5-point topical move is ONE (8/20 vs 9/20).
+Reading them as a regression would be over-reading noise; reading them as an improvement would
+be worse. The load-bearing signals are the ones that would actually indicate harm from adding
+lane voices — **controls clean with hijacks=0**, and 0 exegetical-pool rows — and both are good.
+
+### NOT DONE / UNVERIFIED
+
+- **`ask_outcomes` still 0 rows** (prod read taken). Needs a signed-in ask; a count of 0 does
+  not distinguish "nobody asked", "fail-open write failed silently", and "RLS rejected it".
+- **The two Imitations are still unreconciled, and my stated cost was WRONG.** I recorded that
+  retiring `kempis-imitation` (CCEL) "costs no serving surface" because `devotional` is in no
+  served type list. Measured on prod: it is **published with 114 sections and 333 SERVED rows**.
+  `served` is a column, and reachability depends on each path pinning a type — most do, but the
+  Lane B tradition-gap routes (`/api/user-corpus/documents/[id]/related` and `/voices`) use
+  `corpusPredicate(LEGAL_CORPUS_FILTER)`, and `LEGAL_CORPUS_FILTER` is bare `(served)`;
+  `corpusPredicate` is only an injection validator and adds no type conjunct. The licensing
+  argument for retiring it stands; the claim that it was free does not.
+- **A runbook step that would have failed the owner.** Step C as first written
+  (`npx tsx --env-file=.env.local … eval-heldout.mts --v3`) has no database URL —
+  `web/.env.local` carries only `DEEPINFRA_API_KEY`. Corrected in the runbook.
+
+**Correction, recorded because the wrong version was stated first.** I reported the prod flip
+had ROLLED BACK. It had not — it committed. My wait-loop watched only
+`UPDATE embeddings SET served%` and exited when that statement finished, which is BEFORE
+COMMIT; I then read prod from another session, where an uncommitted write is invisible, and
+called that "unchanged, therefore rolled back". The check that distinguishes "not committed
+yet" from "rolled back" is `xact_start IS NOT NULL`, and I ran it only AFTER asserting the
+conclusion. The run log read "OK — gate held" throughout. Same shape as the defects this
+session has been auditing: a check that cannot separate two states, reported as if it could.
+
 ## 2026-08-16 — The three W1 mystics get a provenance record and a serve ruling; §4a was cited for a decision it does not make
 
 **Done.** Three commits, then the two sessions' work merged and audited together for the first
