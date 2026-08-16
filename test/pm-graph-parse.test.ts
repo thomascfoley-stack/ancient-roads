@@ -10,7 +10,7 @@ import {
   extractMentions,
   extractWorklogEntries,
   splitTableRow,
-} from '../scripts/pm-graph/lib/parse-docs.mts';
+} from '../scripts/pm-graph/lib/parse-docs.mjs';
 
 describe('splitTableRow', () => {
   it('splits a well-formed row into trimmed cells', () => {
