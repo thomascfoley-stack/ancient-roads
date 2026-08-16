@@ -213,9 +213,18 @@ but a later redaction does not remove a secret from history.
 
 The order below is **load-bearing, not preference**:
 
-1. **Rotate** in the Neon console, **and in the same sitting** update `~/.neon_prod_url` and the
-   Vercel `DATABASE_URL` / `APP_DATABASE_URL`. Rotating without the env updates takes production
-   down; the app connects as `app_runtime` and the tooling as owner, so both must move.
+1. **Rotate `neondb_owner`** in the Neon console and update `~/.neon_prod_url` in the same
+   sitting. **SCOPE, measured 2026-08-16 — only `neondb_owner` is compromised.** `app_runtime`
+   is a separate login role with its own password; the two strings matching `app_runtime:` in
+   history are **6 and 11 characters and non-`npg_`** (a real Neon secret is `npg_` + 12), and
+   they live in `docs/OWNER_ACTIONS.md` and a test file — placeholders, not credentials.
+   **This corrects an overstatement in the first version of this row**, which said rotating
+   "takes production down": the app connects as `app_runtime`, so a `neondb_owner` rotation
+   should not touch serving at all. It breaks the OWNER tooling — `~/.neon_prod_url`,
+   `CUTOVER_DATABASE_URL`, migrations. **Do not treat that as settled: verify in the Vercel
+   dashboard which env vars carry an owner URL before rotating** (they cannot be read from this
+   repo), because a `DATABASE_URL` holding an owner string would make this app-affecting after
+   all.
 2. **Blob-store token** for the corpus CDN (D3) — a separate secret, unaffected by the rotation.
 3. **Branch-protection call** (Pro upgrade, or make the repo public) — **NEVER before step 1.**
    The repo being private is the only thing currently capping the blast radius; publishing it
