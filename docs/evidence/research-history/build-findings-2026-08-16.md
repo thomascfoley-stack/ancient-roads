@@ -187,3 +187,7 @@ reload (I1-L6 mount-once fetch). Confirmed live. Accepted for this slice.
 **P3 (UX note):** the reopened thread shows the full /ask header ("Explore the paths" +
 examples block context) above the historical turn — serviceable, but a thread page could lead
 with the thread title. Filed as polish, not fixed tonight.
+
+**P1 VERIFIED FIXED LIVE (23:55Z):** deploy `e59213d`; the same thread that rendered 18
+tombstones now renders all 18 quotes attributed across all five registers. The integration
+check (18 cited / 18 servable, run against prod before deploying) matched the rendered page.
