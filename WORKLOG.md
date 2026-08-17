@@ -1,5 +1,80 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-17 (QA remediation, ledger N1) — "Continue reading" is no longer dead: the reader now syncs its position to the account
+
+**Lane:** QA remediation, branch `fix/q1-signed-out-state` (this session fast-forwarded
+`claude/zealous-perlman-4ccc44` onto `23eaec6` — it was a strict ancestor, and all five target
+files were byte-identical, so nothing was rebased or lost). **Gate:** ledger §5b **N1**.
+
+**The defect.** `saveReadingProgress` (`web/src/lib/library.ts:116`) was the only writer of
+`reading_progress` and had **zero call sites**. `listContinueReading` reads that table, so it could
+only ever return `[]`, so the Library hub's "Continue reading" section — rendered only when
+`mine.reading.length > 0` — was permanently absent for every account and always had been. Thirty QA
+sessions missed it because it renders as ABSENT, not broken. Same shape as the A7b bookmark finding.
+
+**Decision: option (a), wire it** — the hub advertises the feature, and removing a rendered product
+promise is an owner call, not a cleanup.
+
+**Built (4 files changed, 4 test files added):**
+- `POST /api/work/[slug]/progress` — `requireUser` in its own try (A1-16), edge validation, and
+  slug resolved through the **exported** `publishedSourceId`, so the WRITE path admits exactly the
+  works the read paths serve. A withdrawn work stops accruing rows the moment it is quarantined.
+- `lib/work-reader.ts` — `parseProgressBody` and `shouldSyncProgress`, both PURE, both used by
+  BOTH sides of the wire so the contract cannot drift between client and route.
+- `app/work/[slug]/page.tsx` — throttled fire-and-forget sync: a real section change, >=30s apart,
+  never awaited on the scroll path, flushed unconditionally on hide/pagehide/unmount. Signed-out
+  readers never call it. `total` hoisted above the early returns so the effect can be a hook.
+- `app/library/page.tsx` — the sign-in line regains "your place in a work **across devices**",
+  which is the form that is now true. Its comment asserted the defect I just fixed.
+
+**Verified, and every check was watched RED first:**
+- **Round trip against dev Postgres under real RLS** (15 cases). Red-proofed against a no-op stub:
+  14/15 failed, `expected [] to have a length of 1` — the defect itself, through the shipped path.
+- **Licensing leg** red-proofed by dropping `AND status = 'published'`: a quarantined work then
+  accepted writes (200, row written) instead of 404.
+- **Edge validation** red-proofed by removing the percent bound: the route returned **500** as the
+  DB CHECK constraint caught it — the exact "let the DB be your validator" failure the code comments
+  warn about, demonstrated live.
+- **Client wiring** (jsdom, 6 cases) red-proofed by deleting the `pushPosition` call: 5 failed. This
+  is the test that would have caught the original bug; the other two would not have.
+- **`no-dead-user-table-writer.test.ts`** — a DERIVED ratchet over the whole user-write layer
+  (modules reaching user rows via `runAsUser`; exported functions carrying a SQL write verb). Its
+  quarantine is hand-maintained but checked in BOTH directions, so it can only shrink. Red-proofed
+  four ways: new dead writer, revived-but-still-quarantined writer, quarantine naming a function not
+  in the tree, and a broken derivation (the control leg).
+- Full web suite: **174 files / 1158 tests passed, 0 failed**. Typecheck clean.
+- Browser at **390px and 1280px**: reader and Library hub render, horizontal overflow measured
+  `false` at both, real scroll exercised, localStorage resume still written. Network capture proven
+  live (40 requests) before concluding **zero** `/progress` calls fire for a signed-out reader.
+  Live route `POST .../progress` with no session -> **401** with the correct envelope, and the
+  `reading_progress` row count did not move.
+
+**Found while fixing, filed NOT fixed (ledger N3-N6):** the `library_items` write path is dead too
+(`setShelf`/`removeFromLibrary`, zero call sites — "Yours" is an unbuilt feature with a live data
+layer); `addChatMemory` likewise; the Library hub queries the shelf on every load and discards the
+result; and `npm run audit` is RED on this branch on two legs.
+
+### NOT DONE / UNVERIFIED
+- **`npm run audit` does NOT pass, and it did not pass before this slice either.** Two legs fail:
+  `typecheck — web/test` (4 errors in `bookmark-state-label.test.tsx` / `unhighlight-affordance.test.tsx`,
+  batch-2 files) and `hygiene — no test residue in dev` (9 rows stranded by `qa-rls-a-…` and
+  `qa-research-edge-…`). **Both reproduced on clean `23eaec6` with my work stashed**, so neither is
+  mine — but the gate is red and this slice does not turn it green. Filed as N6; NOT fixed, because
+  they belong to the batches that introduced them.
+- **The signed-in path was never walked in a browser.** Neon Auth secrets exist only in Vercel, so
+  `/api/auth/get-session` 500s locally and `useSignedIn()` is false. The signed-in loop is proven by
+  execution instead — the round-trip test drives the real route against real Postgres under real RLS
+  — but nobody has watched a human sign in, read, and see the row appear on the hub. Same ceiling
+  the 2026-08-16 entry records.
+- **Nothing deployed.**
+- **`reading_progress` has never held a real user row.** The one row on dev is test residue.
+- The 30s floor and "ordinal changed" rule are a judgement, not a measurement. No telemetry says
+  what cadence real reading produces.
+- A **DeepInfra API key was printed into an agent transcript** by a bad redaction one-liner in this
+  session (a sed that assumed every env value was a connection string). **`DEEPINFRA_API_KEY` needs
+  rotating.** `no-committed-credentials.test.ts` covers files, not agent stdout — that gap is real.
+
+
 ## 2026-08-17 (QA) — Third batch closes out prayer journal and notes-link-to-verse (successful re-run after manual re-auth)
 
 Follow-up to the entry directly below, which left prayer journal and notes-link-to-verse

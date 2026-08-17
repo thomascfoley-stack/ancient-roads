@@ -99,21 +99,25 @@ export default async function LibraryHubPage({
           ))}
         </div>
         {!mine && (
-          // WHAT SIGNING IN ACTUALLY ADDS, and nothing more. This used to promise "notes,
-          // highlights, and your place in a work". The first two are true — /api/annotations
-          // requires a user on every verb. The third was not: a work's reading position is a
-          // localStorage record (`saveWorkProgress`, lib/work-reader.ts, called from
-          // app/work/[slug]/page.tsx with no session check), so it survives a tab close for a
-          // signed-out reader, and QA proved it does (2026-08-16, A037). Worse, signing in adds
-          // nothing at all here — `saveReadingProgress` in lib/library.ts, the only writer of
-          // `reading_progress`, has ZERO call sites, so the account-side record is never written.
-          // A sign-in prompt that names a benefit the reader already has, and that an account
-          // would not in fact deliver, spends the one piece of trust this line is asking for.
+          // WHAT SIGNING IN ACTUALLY ADDS, and nothing more.
+          //
+          // This line has now been wrong in both directions, which is why it carries a comment at
+          // all. It first promised "notes, highlights, and your place in a work"; A037 (2026-08-16)
+          // correctly cut the third clause, because a work's reading position is a localStorage
+          // record (`saveWorkProgress`) that a signed-out reader already keeps on this device — and
+          // because signing in did not in fact deliver it either: `saveReadingProgress`, the only
+          // writer of `reading_progress`, had ZERO call sites (ledger N1).
+          //
+          // N1 is now closed — the Book Reader syncs the position to the account
+          // (api/work/[slug]/progress) — so the clause comes back, in the form that is TRUE. What
+          // an account adds was never "keeping your place"; it is keeping it ACROSS DEVICES, which
+          // localStorage cannot do. Claiming less than that undersells it; claiming the original
+          // wording oversells it to a reader who has one device.
           <p className="mt-3 text-sm text-stone-500 dark:text-stone-400">
             <Link href="/auth/sign-in" className="underline underline-offset-4">
               Sign in
             </Link>{' '}
-            to keep notes and highlights.
+            to keep notes and highlights, and your place in a work across devices.
           </p>
         )}
       </section>

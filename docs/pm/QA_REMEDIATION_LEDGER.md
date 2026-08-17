@@ -13,13 +13,15 @@ authenticated sessions). IDs below are positional within each sheet.
 
 | Disposition | Count |
 |---|---|
-| **Done** | 39 |
+| **Done** | 40 |
 | **Not reproduced / retracted** | 13 |
 | **No action** — positive or informational notes | 41 |
 | **Open — me** | 30 |
 | **Open — owner** | 18 |
 | **Open — corpus & retrieval lane** | 15 |
 | **Total** | **156** |
+
+**2026-08-17 addendum (N1 slice).** Done 39 -> 40 (N1). §5b grew 2 -> 6: N3-N6 were found by the derivation written for N1 and are all OPEN. So the corpus of findings is now 160, not 156. The bucket table above is NOT re-partitioned here, because it already disagrees with its own section heading (this row reads `Open — me | 30`; §4 is titled `Open — me (47)`). That contradiction predates this slice and is left visible rather than papered over — inventing a mapping is how drift becomes permanent (MASTER.md, failure-mode watchlist).
 
 Counts verified by script: the six buckets **partition all 156 ids exactly** — no duplicates, none
 unassigned. (A first draft of this table read 47 / 15 / 12 for the last three rows; that was
@@ -33,7 +35,7 @@ breaches** (B001, B002).
 
 ---
 
-## 1. Done (39)
+## 1. Done (40)
 
 | ID | Finding | Commit |
 |---|---|---|
@@ -76,6 +78,7 @@ breaches** (B001, B002).
 | A078 | 3-pane cap enforced silently | batch 2 — **premise half wrong**: `decodeDesk` drops the 4th, `withPane` evicts the OLDEST |
 | A014 | Third example prompt clipped at 390px | batch 2 — not the divider; a 48px+safe-area band sat under the composer at every scroll offset |
 | A017 | Empty error banner frame on retry | batch 2 — **filed mechanism disproven**; an adjacent latent path (error event with no message) guarded instead |
+| N1 | **"Continue reading" on the Library hub was dead for every account** — `saveReadingProgress` had zero call sites, so `listContinueReading` could only return `[]` | `PENDING` |
 
 Also corrected, not a finding: **A001's blocker was false** and the correction is filed in three
 places (`93f6be0`).
@@ -238,12 +241,16 @@ No agent can close these.
 
 ---
 
-## 5b. NEW — found while fixing, not in either sheet (2)
+## 5b. NEW — found while fixing, not in either sheet (6)
 
 | # | Item | Note |
 |---|---|---|
-| N1 | **"Continue reading" on the Library hub is dead for every account** | `saveReadingProgress` is the only writer of `reading_progress` and has ZERO call sites, so `listContinueReading` can only ever return empty. Never reported because it renders as absent, not broken — same shape as the A7b bookmark-write defect. Filed as a task chip |
+| N1 | **CLOSED — see §1.** Wired: `POST /api/work/[slug]/progress`, called from the Book Reader, throttled 30s + flush on leave. Round-trip proven against dev Postgres under real RLS; four red-proofs watched fail |
 | N2 | `/ask` double-counts the tab-bar offset | `main` reserves the tab-bar height and the composer's sticky offset reserves it again — ~60px wasted on every mobile view. This is WHY A014's permanent overlap exists; closing it moves the composer on every mobile view, so it is a design change. Filed as a task chip |
+| N3 | **The `library_items` write path is dead too — nothing in the app shelves a work** | `setShelf` and `removeFromLibrary` have ZERO call sites, measured the same way N1 was. So "Yours" is an unbuilt feature with a live data layer, an RLS policy and a passing test suite. `/library/books` says the shelf "will live here", so this is *acknowledged* unbuilt rather than broken — filed, not fixed, because building a shelving UI is a product decision. Quarantined in `no-dead-user-table-writer.test.ts` |
+| N4 | `addChatMemory` / `getChatMemories` are both dead | `chat_memories` has a store and a table and no product surface. Same quarantine |
+| N5 | **The Library hub queries the shelf on every load and throws the result away** | `personal()` awaits `listLibraryItems(userId, {limit: 12})` and `mine.shelf` appears nowhere in the JSX — a per-request DB query feeding nothing. Cheap to fix, but it is the read half of N3 and should go in that slice, not alone |
+| N6 | **`npm run audit` is RED on this branch, on two legs, and neither is recorded here** | (a) `typecheck — web/test`: 4 errors in `bookmark-state-label.test.tsx` / `unhighlight-affordance.test.tsx` (batch-2 files, `PendingAnnotation` shape). (b) `hygiene — no test residue in dev`: 9 stranded rows owned by `qa-rls-a-…` (7 tables) and `qa-research-edge-…` (chats+messages). **Both reproduced on clean `23eaec6` with no other work in the tree**, so both predate this slice. The ledger header records the suite as "1 failed" but not that the GATE is red |
 
 ## 6. Open — corpus & retrieval lane (15)
 

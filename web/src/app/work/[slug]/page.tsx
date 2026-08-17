@@ -10,7 +10,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { loadWorkProgress, saveWorkProgress, tocUnitLabel, type WorkProgress } from '@/lib/work-reader';
+import {
+  loadWorkProgress,
+  saveWorkProgress,
+  shouldSyncProgress,
+  tocUnitLabel,
+  type ProgressPosition,
+  type ProgressSyncState,
+  type WorkProgress,
+} from '@/lib/work-reader';
 import type { WorkSource, WorkTocUnit } from '@/lib/work';
 import { WorkReader, type WorkReaderSeek } from '@/components/work-reader';
 import { WorkToc } from '@/components/work-toc';
@@ -102,6 +110,81 @@ export default function WorkPage() {
     [],
   );
 
+  // PROGRESS IS OVER SECTIONS, and `toc` is a list of UNITS — so the denominator comes from the
+  // last unit's range, not from the row count. It was `work.toc.length`, which silently meant
+  // "however many rows survived the cap": on the fifteen works that exceeded it the bar measured
+  // progress against 5,000 instead of the real total, so a reader 40% through john-gill's 28,843
+  // sections saw a full bar. Ordinals are 1..N contiguous within a work, so the final unit's
+  // lastOrdinal IS the section count, exactly and for free.
+  //
+  // Computed HERE, above the early returns, because the account-sync effect below needs it and a
+  // hook cannot live after a conditional return.
+  const total = work && work.toc.length > 0 ? work.toc[work.toc.length - 1]!.lastOrdinal : 0;
+
+  // ── The account-side position (ledger N1) ─────────────────────────────────────────────────
+  //
+  // The record above is per DEVICE (localStorage). This one is per ACCOUNT, and it is the ONLY
+  // writer of `reading_progress` — which is what the Library hub's "Continue reading" section
+  // reads, and why that section was empty for every account until this existed.
+  //
+  // Deliberately a different cadence and a different failure posture from the localStorage
+  // record beside it:
+  //   • throttled by `shouldSyncProgress` (a real section change, ≥30s apart) rather than 500ms,
+  //     because this is a per-user DB write and that one is a same-process `setItem`;
+  //   • fire-and-forget — the reader's scroll never awaits it (CLAUDE.md: writes off the
+  //     request path);
+  //   • silent on failure, because localStorage still holds the position: a lost sync costs a
+  //     cross-device convenience, not a page. It is emphatically NOT silent server-side, where
+  //     the route logs and returns a 500.
+  // Signed-out readers never call it at all — the route would 401 every one of them, and their
+  // place is already kept on this device.
+  const syncedRef = useRef<ProgressSyncState | null>(null);
+  const positionRef = useRef<ProgressPosition | null>(null);
+
+  const pushPosition = useCallback(
+    (force: boolean) => {
+      const position = positionRef.current;
+      if (!position) return;
+      const next = { ordinal: position.ordinal, at: Date.now() };
+      if (!shouldSyncProgress(syncedRef.current, next, { force })) return;
+      syncedRef.current = next;
+      void fetch(`/api/work/${encodeURIComponent(slug)}/progress`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(position),
+        // The flush below runs as the page is going away; without keepalive the browser is free
+        // to cancel it, which is exactly the position most worth keeping.
+        keepalive: true,
+      }).catch(() => {});
+    },
+    [slug],
+  );
+
+  useEffect(() => {
+    positionRef.current =
+      signedIn && progress && total > 0
+        ? { ordinal: progress.ordinal, percent: clamp01((progress.ordinal - 1 + progress.scrollPct) / total) }
+        : null;
+    pushPosition(false);
+  }, [signedIn, progress, total, pushPosition]);
+
+  // Leaving is the position most worth recording, and it arrives three different ways: the tab is
+  // hidden, the page is unloaded, or the reader navigates to another route inside the app (which
+  // fires neither of the first two — only the cleanup).
+  useEffect(() => {
+    const flush = () => pushPosition(true);
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', flush);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', flush);
+      flush();
+    };
+  }, [pushPosition]);
+
   if (notFound) {
     return (
       <div className="mx-auto max-w-2xl px-5 py-24 text-center">
@@ -125,13 +208,6 @@ export default function WorkPage() {
     return <p className="py-24 text-center text-sm text-stone-500 dark:text-stone-400">Loading…</p>;
   }
 
-  // PROGRESS IS OVER SECTIONS, and `toc` is now a list of UNITS — so the denominator comes from
-  // the last unit's range, not from the row count. It was `work.toc.length`, which silently meant
-  // "however many rows survived the cap": on the fifteen works that exceeded it the bar measured
-  // progress against 5,000 instead of the real total, so a reader 40% through john-gill's 28,843
-  // sections saw a full bar. Ordinals are 1..N contiguous within a work, so the final unit's
-  // lastOrdinal IS the section count, exactly and for free.
-  const total = work.toc.length > 0 ? work.toc[work.toc.length - 1]!.lastOrdinal : 0;
   const pct = progress && total > 0 ? clamp01((progress.ordinal - 1 + progress.scrollPct) / total) : 0;
   const continueHeading = continueTarget
     ? (() => {

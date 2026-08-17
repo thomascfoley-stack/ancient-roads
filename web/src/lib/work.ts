@@ -165,7 +165,12 @@ const VERSE_RANGE_COLS = `,
 
 // Resolve slug → surrogate id under the published filter. Both reads key off this;
 // null means "not a published work" and maps to a 404 at the route.
-async function publishedSourceId(slug: string): Promise<string | number | null> {
+//
+// EXPORTED for the progress write route (api/work/[slug]/progress), so the write path admits
+// exactly the works the read paths serve. Duplicating the lookup there would have been the
+// cheaper edit and would have given licensing two definitions of "published" to drift between —
+// the failure this repo has already logged fifteen times under a different name.
+export async function publishedSourceId(slug: string): Promise<string | number | null> {
   const sql = getDb();
   const rows = (await sql.query(`SELECT id FROM sources WHERE slug = $1 AND status = 'published'`, [slug])) as {
     id: string | number;
