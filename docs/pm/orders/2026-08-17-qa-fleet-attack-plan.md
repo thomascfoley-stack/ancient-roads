@@ -256,9 +256,17 @@ independently by three sessions · "Ignatius" ranks Loyola above Ignatius of Ant
 ToC cannot browse or filter by scripture reference.
 
 **Minimal change:** every search box gets three honest states — results, empty ("no matches for
-X"), error. No fourth silent state. The 9-vs-10 count is **derived from the lane list, never
-typed** — it is a hand-maintained expected set, the artefact at the top of the watchlist, and typing
-it again is how it comes back.
+X"), error. No fourth silent state.
+
+**The 9-vs-10 count is DONE, and this block was wrong about it (corrected 2026-08-17).** The plan
+said it was a hand-typed expected set and prescribed deriving it from the lane list. **Both counts
+were already derived** — from different sets, wearing one noun on one screen:
+`passages/page.tsx:405` renders `{manifest.length} sources across the library` from the
+whole-library commentary manifest, while `:547` rendered `All sources ({grouped.length})` over a
+list whose every option is `g.author` — authors with a result on *this* passage. Neither number
+was ever wrong; the label was. Relabelled to "All authors (N)". **Second time this plan prescribed
+a fix for code it had not read** (see Q1). The remaining Q4 work — the silent no-op search boxes —
+is untouched and still needs its own reproduction.
 
 **Exit test:** search a term with no matches in each catalog → the empty state renders, the
 unfiltered list does not; the stated source count is read from the same array the dropdown renders.
