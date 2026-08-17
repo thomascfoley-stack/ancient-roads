@@ -12,20 +12,22 @@
 import Link from 'next/link';
 import { count } from '@/lib/plural';
 import { CATALOGS, CATALOG_IDS, catalogTraditions } from '@/lib/catalog';
+import { libraryLabel } from '@/lib/library-nav';
 import { listContinueReading, listLibraryItems, type ContinueReadingRow, type LibraryItem } from '@/lib/library';
 import { requireUser } from '@/lib/session';
 
 export const metadata = { title: 'Library' };
 export const dynamic = 'force-dynamic';
 
-const YOURS = [
-  { href: '/library/notes', label: 'Notes' },
-  { href: '/library/books', label: 'Saved' },
-  { href: '/library/word-study', label: 'Word study' },
-  // "My Works", never "Uploads" or "Sermons" — the Slice 1 order governs the NAV LABEL as well
-  // as the page title, and "Sermons" is two entries above this one as a corpus register.
-  { href: '/library/uploads', label: 'My uploads' },
-];
+// Labels come from lib/library-nav.ts, not from here. This row and the sidebar had drifted into
+// naming the same routes differently — "Notes" here vs "Saved" in the sidebar for /library/notes,
+// and "Saved" here for /library/books, which meant "Saved" opened two different destinations
+// depending on which nav you used (2026-08-16 QA fleet). The comment that used to sit on the last
+// entry — "'My Works', never 'Uploads' or 'Sermons'" — was correct about the rule and was sitting
+// directly above `label: 'My uploads'`, which broke it.
+const YOURS = (['/library/notes', '/library/books', '/library/word-study', '/library/uploads'] as const).map(
+  (href) => ({ href, label: libraryLabel(href) }),
+);
 
 async function personal(): Promise<{ reading: ContinueReadingRow[]; shelf: LibraryItem[] } | null> {
   let userId: string;

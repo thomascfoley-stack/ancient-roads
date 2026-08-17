@@ -7,6 +7,7 @@ import { authClient } from '@/lib/auth/client';
 import { isPrayerWriting, PRAYER_WRITING_EVENT } from '@/lib/prayer-writing-mode';
 import { CATALOGS, CATALOG_IDS, type CatalogId } from '@/lib/catalog-defs';
 import { orderStudiesForNav, type StudySummary } from '@/components/save-to-study';
+import { libraryLabel } from '@/lib/library-nav';
 
 // --- user-defined study sections (parent/child). Stored locally per user
 // while the real feature (saved work, conversation) is still coming soon;
@@ -338,7 +339,7 @@ export function SidebarNavContent({
           <SidebarLink
             href="/library/passages"
             icon={<QuoteIcon />}
-            label="Passage search"
+            label={libraryLabel('/library/passages')}
             tier="shelf"
             active={pathname.startsWith('/library/passages')}
             row={row}
@@ -347,7 +348,7 @@ export function SidebarNavContent({
           <SidebarLink
             href="/library/notes"
             icon={<BookStackIcon />}
-            label="Saved"
+            label={libraryLabel('/library/notes')}
             tier="shelf"
             active={pathname.startsWith('/library/notes')}
             row={row}
@@ -356,7 +357,7 @@ export function SidebarNavContent({
           <SidebarLink
             href="/library/word-study"
             icon={<LanguagesIcon />}
-            label="Word study"
+            label={libraryLabel('/library/word-study')}
             tier="shelf"
             active={pathname.startsWith('/library/word-study')}
             row={row}
@@ -370,7 +371,7 @@ export function SidebarNavContent({
           <SidebarLink
             href="/library/uploads"
             icon={<BookStackIcon />}
-            label="My uploads"
+            label={libraryLabel('/library/uploads')}
             tier="shelf"
             active={pathname.startsWith('/library/uploads')}
             row={row}
