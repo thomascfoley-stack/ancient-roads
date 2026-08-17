@@ -366,15 +366,36 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
           shadow. `.edge` owns the hairline and is unlayered, so a `focus-within:border-*`
           utility could never override it — focus is shown with the PRD's antique-gold
           outline (§10) instead of a border-colour swap. */}
-      {/* The composer floats above the page bottom (bottom-3 / the mobile tab-bar offset),
-          which leaves a slot BELOW it that scrolling content streamed straight through
-          (owner-reported 2026-08-17, screenshot: a quote sliding through the gap under the
-          box). The after: strip fills exactly that slot in the PAGE background (body is
-          bg-stone-50/dark:bg-stone-950, layout.tsx:134), so content vanishes at the
-          composer's bottom edge instead of reappearing beneath it. Top-edge slide-under is
-          ordinary sticky behavior and stays. */}
+      {/* THE OFFSET IS MEASURED FROM `main`'s CONTENT BOX, WHICH ALREADY EXCLUDES THE TAB BAR.
+          This read `bottom-[calc(3.75rem+env(safe-area-inset-bottom)+0.25rem)]`, i.e. the mobile
+          tab bar's height again, on the reasonable-sounding assumption that a bottom offset is
+          measured from the screen. It is not: the scroller is `main` (app-shell.tsx:35) and a
+          sticky inset resolves against that scroller's CONTENT box, which `pb-[calc(3.75rem+
+          env(safe-area-inset-bottom))]` on the same line has already inset by the bar's height.
+          Measured at 390x844 (computed style, dev server): viewport 844, main padding-bottom 60,
+          composer bottom edge 720 = 844 - 60 - 64. So the box floated a whole tab bar ABOVE the
+          tab bar, wasting ~60px of a phone screen and covering that much more of the answer.
+
+          A `fixed` element DOES have to add the bar (it resolves against the viewport) — verified
+          by probe, bottom edge 784 — which is why selection-popover.tsx:272, work/[slug]/page.tsx:170
+          and read/[book]/[chapter]/page.tsx:417 keep the same expression and are NOT this bug.
+          `bottom-1` is the mobile twin of `md:bottom-3`: 4px above main's content box is 11px of
+          visible gap above the bar (the bar renders 53px into the 60px reserved for it), against
+          desktop's 12px above the scrollport. It carries no `env()` because both terms that
+          bracket it already do, so the gap holds at every safe-area inset instead of growing with
+          it.
+
+          THE `after:` STRIP fills the slot below the box, which scrolling content streamed
+          straight through (owner-reported 2026-08-17, screenshot: a quote sliding through the gap
+          under the box), in the PAGE background (body is bg-stone-50/dark:bg-stone-950,
+          layout.tsx:134). Its height is `offset + main's padding-bottom` — it must reach the
+          bottom of the scrollport's padding box, not merely the top of the bar, because the bar's
+          rendered height is an emergent 53px (min-h-[52px] + 1px border) that no CSS here can
+          name. The previous 68px was hand-computed against an assumed 60px bar and fell 4px short:
+          a strip of document was live at y 787-790 on every scroll (hit-tested, and visible in the
+          before/after screenshots). Top-edge slide-under is ordinary sticky behavior and stays. */}
       <form onSubmit={(e) => { e.preventDefault(); ask(question); }}
-        className="edge sticky bottom-[calc(3.75rem+env(safe-area-inset-bottom)+0.25rem)] mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-accent-600 after:absolute after:inset-x-[-1px] after:top-full after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.5rem)] after:bg-stone-50 md:bottom-3 md:after:h-4 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400">
+        className="edge sticky bottom-1 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-accent-600 after:absolute after:inset-x-[-1px] after:top-full after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.25rem)] after:bg-stone-50 md:bottom-3 md:after:h-4 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400">
         <textarea
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
