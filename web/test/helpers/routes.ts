@@ -20,11 +20,29 @@ export function readRouteSource(file: string): string {
   return readFileSync(file, 'utf-8');
 }
 
+/** Source with comments removed, so a route is judged on what it DOES, not what it mentions. */
+function stripComments(src: string): string {
+  return src.replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '');
+}
+
+// Does this route actually spend money (an LLM call through teach())?
+//
+// COMMENTS ARE STRIPPED FIRST, and that is a fix, not a loosening. The match is textual, so
+// before this a route that merely NAMED `teach()` in a comment was classified as a spender and
+// then failed the wallet invariant for not calling a rate limiter it has no reason to call —
+// which is what `/api/research/[id]` (a DELETE that makes no model call) did on 2026-08-17, its
+// comment explaining where the assistant row IS written.
+//
+// The pressure that creates is the wrong way round: it teaches people to reword an accurate
+// comment to appease a test. `research-history-static.test.ts` already learned this exact lesson
+// from the other direction — a comment containing `appendQuestion(` defeated its order check —
+// and strips comments for the same reason. Real calls survive stripping; only prose does not.
 export function routeSpendsMoney(src: string): boolean {
+  const code = stripComments(src);
   return (
-    src.includes("from '@/lib/teacher/teach'") ||
-    src.includes('from "@/lib/teacher/teach"') ||
-    /\bteach\s*\(/.test(src)
+    code.includes("from '@/lib/teacher/teach'") ||
+    code.includes('from "@/lib/teacher/teach"') ||
+    /\bteach\s*\(/.test(code)
   );
 }
 

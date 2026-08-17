@@ -26,18 +26,44 @@ describe('research history — static invariants', () => {
     // written exclusively inside /api/ask/stream from the object teach() returned.
     // NOTE the [id] route was DELETED (I1-M4, bylaw 3): it had zero consumers and returned
     // stored answers with no servability data — a §4.4 bypass for any future consumer.
+    // AMENDED 2026-08-17, narrowly, and the narrowness is the point. I-1's stated reason is that
+    // "a client that could write history rows could store text that later re-renders as Ancient
+    // Paths output" — a claim about ORIGINATING CONTENT. POST/PUT/PATCH can do that and stay
+    // forbidden on every route under /api/research. A DELETE cannot: it removes rows and never
+    // authors one, so no text reaches the assistant-attributed render path through it. Threads
+    // were otherwise unremovable by any means — the 2026-08-17 authenticated QA pass filed nine
+    // stuck on the owner's real account. See docs/pm/orders/2026-08-17-research-thread-delete.md.
+    //
+    // The amendment is per-route rather than global, so the list route cannot quietly grow a
+    // write verb on the strength of an argument made about a different file.
     const routes = execSync(`find "${path.join(ROOT, 'web/src/app/api/research')}" -name "route.ts"`, { encoding: 'utf8' })
       .split('\n')
-      .filter(Boolean);
-    expect(routes.length, 'exactly one research route (the list)').toBe(1);
-    for (const route of routes) {
-      const src = stripComments(readFileSync(route, 'utf8'));
-      expect(src, `${route} must export GET`).toMatch(/export async function GET/);
-      // ANY export line that names a write verb — function, const, or re-export.
-      expect(src, `${route} must not export a write verb in any form`).not.toMatch(
-        /export[^\n]*\b(POST|PUT|PATCH|DELETE)\b/,
-      );
-    }
+      .filter(Boolean)
+      .sort();
+    expect(routes.map((r: string) => path.relative(ROOT, r)), 'the research routes are exactly these two').toEqual([
+      'web/src/app/api/research/[id]/route.ts',
+      'web/src/app/api/research/route.ts',
+    ]);
+
+    const listSrc = stripComments(readFileSync(path.join(ROOT, 'web/src/app/api/research/route.ts'), 'utf8'));
+    expect(listSrc, 'the list route must export GET').toMatch(/export async function GET/);
+    expect(listSrc, 'the list route must not export ANY write verb').not.toMatch(
+      /export[^\n]*\b(POST|PUT|PATCH|DELETE)\b/,
+    );
+
+    const idSrc = stripComments(readFileSync(path.join(ROOT, 'web/src/app/api/research/[id]/route.ts'), 'utf8'));
+    expect(idSrc, 'the [id] route must export DELETE').toMatch(/export async function DELETE/);
+    // Content-originating verbs stay forbidden HERE TOO — only DELETE was argued for.
+    expect(idSrc, 'the [id] route must not export a content-originating verb').not.toMatch(
+      /export[^\n]*\b(POST|PUT|PATCH)\b/,
+    );
+    // AND NO GET. An /api/research/[id] route existed once and was deleted (I1-M4) because it
+    // returned STORED ANSWERS with no servability data — a §4.4 bypass, where a quote whose
+    // source has since been unserved would render anyway. Re-adding a GET here reintroduces it,
+    // so the absence is pinned rather than left to a reviewer noticing.
+    expect(idSrc, 'the [id] route must NOT export GET — that is the §4.4 bypass it was deleted for').not.toMatch(
+      /export[^\n]*\bGET\b/,
+    );
   });
 
   it('I-1b: the assistant write exists only in the stream route (server-side, post-verifier)', () => {
@@ -55,6 +81,9 @@ describe('research history — static invariants', () => {
       .sort();
     expect(hits).toEqual([
       'web/src/app/api/ask/stream/route.ts',
+      // Imports `deleteThread` only. Removing rows cannot originate an assistant-attributed
+      // answer, which is what this leg exists to fence.
+      'web/src/app/api/research/[id]/route.ts',
       'web/src/app/api/research/route.ts',
       'web/src/app/ask/[id]/page.tsx',
     ]);

@@ -638,6 +638,28 @@ function ResearchHistory({
 }) {
   const [threads, setThreads] = useState<{ id: string; title: string }[] | null>(null);
   const [error, setError] = useState(false);
+  // Two-step, not window.confirm: the first tap arms the row, the second removes it. A thread is
+  // a real piece of the reader's work and this is irreversible, so a single stray tap must not
+  // destroy one — but a native confirm() dialog in a sidebar is heavier than the action deserves.
+  const [arming, setArming] = useState<string | null>(null);
+
+  // OPTIMISTIC WITH ROLLBACK. The row disappears immediately, and comes back if the request
+  // fails — the alternative is a spinner on a delete, which reads as "did that work?".
+  const remove = useCallback(async (id: string) => {
+    setArming(null);
+    let previous: { id: string; title: string }[] | null = null;
+    setThreads((prev) => {
+      previous = prev;
+      return prev?.filter((t) => t.id !== id) ?? prev;
+    });
+    try {
+      const res = await fetch(`/api/research/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(String(res.status));
+    } catch {
+      setThreads(previous);
+      setError(true);
+    }
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -678,18 +700,40 @@ function ResearchHistory({
               Your research could not be loaded.
             </p>
           )}
+          {/* Every /ask persists a thread and NOTHING could remove one — no control here, none on
+              the thread page, no endpoint (2026-08-17 authenticated QA pass, which left nine on the
+              owner's real account and filed it as an outstanding action item). The remove control
+              is ALWAYS VISIBLE rather than hover-only: this repo has already shipped an
+              affordance that existed on a pointer and did not exist on touch (UX-2), and a
+              delete nobody can find is the bug being fixed here. */}
           {threads.slice(0, RESEARCH_NAV_CAP).map((t) => (
-            <SidebarLink
-              key={t.id}
-              href={`/ask/${t.id}`}
-              icon={
-                <span className="inline-block h-2 w-2 rounded-full bg-accent-600 dark:bg-accent-400" />
-              }
-              label={t.title}
-              active={pathname === `/ask/${t.id}`}
-              row={row}
-              onNavigate={onNavigate}
-            />
+            <div key={t.id} className="relative flex items-center">
+              <div className="min-w-0 flex-1">
+                <SidebarLink
+                  href={`/ask/${t.id}`}
+                  icon={
+                    <span className="inline-block h-2 w-2 rounded-full bg-accent-600 dark:bg-accent-400" />
+                  }
+                  label={t.title}
+                  active={pathname === `/ask/${t.id}`}
+                  row={row}
+                  onNavigate={onNavigate}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => (arming === t.id ? void remove(t.id) : setArming(t.id))}
+                onBlur={() => setArming((cur) => (cur === t.id ? null : cur))}
+                aria-label={arming === t.id ? `Confirm delete: ${t.title}` : `Delete research thread: ${t.title}`}
+                className={`mr-1 shrink-0 rounded px-2 py-1 text-micro transition-colors ease-gentle ${
+                  arming === t.id
+                    ? 'font-semibold text-red-700 dark:text-red-400'
+                    : 'text-stone-400 hover:text-stone-700 dark:text-stone-500 dark:hover:text-stone-200'
+                }`}
+              >
+                {arming === t.id ? 'Delete?' : '\u00d7'}
+              </button>
+            </div>
           ))}
         </>
       )}

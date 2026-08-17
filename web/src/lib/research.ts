@@ -137,6 +137,50 @@ export async function listThreads(userId: string, limit = 20): Promise<ResearchT
   return rows as ResearchThread[];
 }
 
+/**
+ * Owner-scoped hard delete of one research thread. Returns false for absent OR not-owned —
+ * indistinguishable on purpose, exactly as `getThread` is: the caller gets a 404 either way and
+ * never a 403 that would confirm somebody else's thread id exists.
+ *
+ * WHY DELETE IS ADMISSIBLE WHERE POST IS NOT (I-1, and see the amended
+ * `research-history-static.test.ts`). I-1 exists because "a client that could write history rows
+ * could store text that later re-renders as Ancient Paths output, attributed, in the product's
+ * typography". That is a statement about ORIGINATING CONTENT. A delete cannot originate content:
+ * it removes rows, it never authors one, so no text can enter the assistant-attributed render path
+ * through here. The assistant row is still written in exactly one place, inside /api/ask/stream
+ * from the object `teach()` returned, and that is unchanged.
+ *
+ * WHY HARD, NOT `is_archived = true`. The column exists and `listThreads` already honours it, so a
+ * soft delete would be one word — but it would make "delete" a lie: the reader's question text
+ * would still be on the account after the product told them it was gone. The QA pass that
+ * prompted this filed nine threads as an OUTSTANDING ACTION ITEM on a real account; hiding them
+ * does not discharge that.
+ *
+ * MESSAGES ARE DELETED EXPLICITLY even though `messages.chat_id` is `ON DELETE CASCADE`. A
+ * referential action runs as the table owner and bypasses RLS, so relying on it would mean the
+ * only thing standing between a thread's turns and deletion is a constraint this module does not
+ * own. Both statements carry `user_id`, so the scoping is visible in the code that intends it.
+ */
+export async function deleteThread(userId: string, threadId: string): Promise<boolean> {
+  if (!isThreadId(threadId)) return false;
+  const [, chatRows] = await runAsUser(userId, (sql) => [
+    // THE `EXISTS` IS LOAD-BEARING, not defensive noise. `chats` holds more than research threads
+    // — the persona fence below is what separates them — and the two statements run as one batch
+    // with no branch between them. Without this clause, calling with the id of a NON-research chat
+    // the caller owns would empty its messages while the chat row itself survived the persona
+    // fence: a thread with no turns, and no error. Same fence, both statements.
+    sql`DELETE FROM messages
+        WHERE user_id = ${userId} AND chat_id = ${threadId}
+          AND EXISTS (SELECT 1 FROM chats c
+                      WHERE c.id = ${threadId} AND c.user_id = ${userId}
+                        AND c.persona = ${THREAD_PERSONA})`,
+    sql`DELETE FROM chats
+        WHERE id = ${threadId} AND user_id = ${userId} AND persona = ${THREAD_PERSONA}
+        RETURNING id`,
+  ]);
+  return (chatRows as unknown[]).length > 0;
+}
+
 export interface LoadedThread {
   id: string;
   title: string;
