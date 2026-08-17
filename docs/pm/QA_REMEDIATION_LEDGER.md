@@ -13,10 +13,10 @@ authenticated sessions). IDs below are positional within each sheet.
 
 | Disposition | Count |
 |---|---|
-| **Done** | 27 |
+| **Done** | 29 |
 | **Not reproduced / retracted** | 13 |
 | **No action** — positive or informational notes | 41 |
-| **Open — me** | 42 |
+| **Open — me** | 40 |
 | **Open — owner** | 18 |
 | **Open — corpus & retrieval lane** | 15 |
 | **Total** | **156** |
@@ -33,7 +33,7 @@ breaches** (B001, B002).
 
 ---
 
-## 1. Done (27)
+## 1. Done (29)
 
 | ID | Finding | Commit |
 |---|---|---|
@@ -64,6 +64,8 @@ breaches** (B001, B002).
 | B046 | No discoverable way to un-highlight | `84e1c3d` — removal existed in the study panel; it lived on a different surface from creation |
 | B017 | Upload "Remove" deletes instantly with no confirmation | `7d31f0e` |
 | B018 | Stale search results after deleting a document | `7d31f0e` |
+| B047 | Highlight popover does not mount across a verse boundary | `9c2f1ab` — the end now clamps; a start outside is still refused |
+| A010 | Retrying a failed Ask stacks a duplicate | `4e8d55c` — replacement scoped to the error path so a completed answer is never eaten |
 
 Also corrected, not a finding: **A001's blocker was false** and the correction is filed in three
 places (`93f6be0`).
@@ -141,10 +143,8 @@ I can do every one of these end-to-end on a branch, with tests.
 
 | ID | Finding |
 |---|---|
-| B047 | **[MAJOR]** Highlight popover does not mount when a drag-selection crosses a verse boundary |
 | B029 | **[MAJOR]** Study-editor Library-panel buttons often don't respond — **reproduce before fixing**; may be the B036 instrument artifact |
 | B015 | **[MAJOR]** "Suggested readings" never completes for an uploaded document *(may route to §6 if it is an embedding-pipeline fault)* |
-| A010 | Retrying a failed Ask stacks a duplicate error block |
 | A015 | One submit fires two POSTs to `/api/ask/stream` — measure first |
 | A031 | Reading-settings popover and study dialog can be open simultaneously |
 | A084 | Malformed chapter routes fire `NaN` backend fetches |
