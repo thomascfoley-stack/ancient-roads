@@ -1,0 +1,12 @@
+deployed_at_utc: 2026-08-17T05:00:16Z
+sha:             a3bb381ffb133e2d1c90c67c91f73a549ee922d2
+branch:          ship/editor-deploy
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@50.38.2
+url:             https://web-6equo4p55-home-network-hardening.vercel.app
+deployment_id:   dpl_FqwncDKDRWHSrFywD8Eu1bzSaime
+alias:           ancientpaths.app
+alias_serves:    dpl_FqwncDKDRWHSrFywD8Eu1bzSaime
+state:           live
