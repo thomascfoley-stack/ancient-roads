@@ -18,7 +18,7 @@ authenticated sessions). IDs below are positional within each sheet.
 | **No action** — positive or informational notes | 41 |
 | **Open — me** | 47 |
 | **Open — owner** | 18 |
-| **Open — Kimi / quality-slice lane** | 15 |
+| **Open — corpus & retrieval lane** | 15 |
 | **Total** | **156** |
 
 Counts verified by script: the six buckets **partition all 156 ids exactly** — no duplicates, none
@@ -228,10 +228,13 @@ No agent can close these.
 
 ---
 
-## 6. Open — Kimi / quality-slice lane (15)
+## 6. Open — corpus & retrieval lane (15)
 
-Corpus and retrieval. These carry the accuracy diagnostic and held-out eval; **never ship one
-without re-running the eval and recording it in `WORKLOG.md`** (CLAUDE.md).
+Corpus and retrieval. **Not a different agent — a different GATE.** These change what the
+pipeline retrieves or ranks, so each one carries the accuracy diagnostic and the held-out eval and
+must be recorded in `WORKLOG.md` (CLAUDE.md). That is why they are not batched with the UI work
+above: mixing them would mean shipping a retrieval change under a UI change's evidence. I can do
+them; they just need the `quality-slice` discipline and their own session.
 
 | ID | Item | Note |
 |---|---|---|
@@ -257,5 +260,5 @@ without re-running the eval and recording it in `WORKLOG.md`** (CLAUDE.md).
 2. **You, 30 seconds:** clear the tree; remove the stuck highlight via the study panel.
 3. **Me:** §4b real bugs, reproducing each before fixing.
 4. **You:** the gate password → I finish `/library` (the most-reported defect across both sheets).
-5. **Kimi:** A064/A065/A055/A053 as one metadata batch, then A047/A048/A050.
+5. **Corpus lane (own session, own gate):** A064/A065/A055/A053 as one metadata batch (no eval needed — metadata only), then A047/A048/A050, each with the accuracy diagnostic re-run.
 6. **You, at your pace:** Desk (§5), latency-vs-copy (B004), funnel promise, ADR-047.
