@@ -345,7 +345,35 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
           boxes in a stack" the landing page and the library have already been moved off.
           They are a hairline-separated list now, in the reading face, so they read as
           questions a person might ask rather than as buttons. */}
-      <div className={turns.length === 0 ? 'flex flex-1 flex-col justify-center' : 'flex-1 space-y-8'}>
+      {/* A014 — THE SCROLL COLUMN RESERVES THE COMPOSER'S FLOAT, or the bottom of the page is
+          unreachable. Two sessions filed the third example prompt as "clipped by the divider
+          below it at 390px"; it is not the `li` divider, it is the composer's top edge, and the
+          clipped strip cannot be scrolled to.
+
+          MEASURED at 390x844 (dev server, computed style — not inferred): the scroller is
+          `main` (`app-shell.tsx:35`, `overflow-y-auto`), the composer is sticky 64px above
+          `main`'s CONTENT box, and this container's own `pb-4` is 16px. At maximum scroll the
+          composer therefore still sits `64px + safe-area - 16px` above its static position, so
+          that band of document is covered at EVERY scroll offset — 48px in a desktop browser,
+          82px on a phone reporting `safe-area-inset-bottom: 34px`. Against that, both states
+          offered ~56px of spacing (empty state: `pb-8` + the form's `mt-6`), which measured 8px
+          of clearance at maximum scroll — for the examples list AND for the foot of a rendered
+          answer, A/B'd at 390px by zeroing this padding. 8px is not a margin, it is a near miss:
+          the overlap grows with the safe-area inset and that 56px does not, so every notched
+          phone hides ~26px, which is the wrapped second line two sessions reported. Measured
+          after: 68px in both states, and 68px at every inset, because the reserve below is
+          expressed in the same token the overlap is.
+
+          Reserving the float here — on the scroll column, not on the examples list — is what
+          covers both states with one declaration. `flex-1` absorbs free space, so on a viewport
+          where the empty state already fits this adds no scroll: it eats grown space, not
+          height. Desktop is `md:pb-0` because there the offset is `md:bottom-3` (12px) against
+          the same 16px, a NEGATIVE overlap — nothing to reserve. Deliberately NOT fixed here:
+          `main` already pads by the tab-bar height (`md:pb-0` on that same line) and the
+          composer's sticky offset adds it a second time, which is why the composer floats a
+          whole tab-bar above the tab bar. Closing that double-count would move the composer on
+          every mobile view — a design change, not a clipping fix. Reported, not taken. */}
+      <div className={`pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0 ${turns.length === 0 ? 'flex flex-1 flex-col justify-center' : 'flex-1 space-y-8'}`}>
         {turns.length === 0 && (
           <div className="pb-8">
             <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">
@@ -457,6 +485,28 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
   );
 }
 
+// A017 — THE FRAME IS CONDITIONAL ON THE STAGE; THE MESSAGE WAS NOT, so the banner could paint
+// as a bordered box with nothing in it but "Ask again".
+//
+// The finding this closes was filed as "momentary empty error banner frame when retrying a failed
+// Ask", and THAT mechanism is disproven: a retry replaces the failed turn in ONE batched update
+// (`ask`, above — setTurns/setQuestion/setBusy all run before the first `await`), so no committed
+// render exists between the old banner and the new progress view. A MutationObserver over a real
+// retry records `alerts=1 "Please sign in…"` → `alerts=0` → `alerts=1 "Please sign in…"`, never an
+// alert without its message.
+//
+// What DOES render the reported box is a `{stage:'error'}` event carrying no `message`: the stream
+// is `JSON.parse(line) as StreamEvent` (a CAST over external input, not a parse), and `error:
+// ev.message` writes whatever came back — undefined included — straight into state. Measured
+// against this component, that renders an alert whose entire text content is "Ask again".
+// `api/ask/stream/route.ts:145` is the only writer today and always sets a message, so this is
+// latent rather than live; it is guarded here because the guarantee wanted is "a failure always
+// says what failed", and that must not depend on a remote field's presence.
+//
+// Falls back to a message rather than dropping the frame: the frame carries the retry control and
+// the sign-in link, so a silent failure would be the worse end of the same fault.
+const ERROR_FALLBACK = 'Something went wrong. Please try again.';
+
 function TurnView({ turn, onRetry, busy }: { turn: Turn; onRetry: () => void; busy: boolean }) {
   return (
     <div>
@@ -481,7 +531,9 @@ function TurnView({ turn, onRetry, busy }: { turn: Turn; onRetry: () => void; bu
       </div>
       {turn.stage === 'error' ? (
         <div role="alert" className="border border-red-300/60 bg-red-50/60 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
-          {turn.error}
+          {/* A017 — `trim()`, not `??`: an empty or whitespace-only message is the same empty box
+              as a missing one, and `??` would let '' through. See ERROR_FALLBACK above. */}
+          {turn.error?.trim() ? turn.error : ERROR_FALLBACK}
           {/* Q1 — the 401 asked the reader to sign in and offered only "Ask again", which
               re-fails identically (2026-08-16 QA fleet; the most-repeated finding of the run).
               The way out belongs in the failure itself, not elsewhere in the nav. */}
