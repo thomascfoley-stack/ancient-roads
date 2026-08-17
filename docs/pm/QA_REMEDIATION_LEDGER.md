@@ -97,7 +97,7 @@ pool per session.** Until then, a single-session MAJOR reading "control does not
 
 Nothing to build. Listed so they are accounted for, not lost.
 
-**Sheet A (25):** A005 gated surfaces gate cleanly · A006 no cookies, localStorage only · A018
+**Sheet A (21):** A005 gated surfaces gate cleanly · A006 no cookies, localStorage only · A018
 Search works while Ask does not (addressed in Q1's copy) · A023 John 1:1 demo works end-to-end ·
 A025 Easter demo unverifiable pre-signup (a consequence of the gate) · A039 commentary correctly
 verse-scoped · A041 React #418 not reproduced · A046 interlinear licensing correct · A059 hymn
@@ -109,7 +109,7 @@ A100 focus visibly indicated · A101 no overflow at 200% zoom · A004 the `/api/
 **downgraded to NOTE**: `use-annotation-writes.ts:85-93` rejects gating it deliberately, and my
 first plan wrongly prescribed "fixing" it.
 
-**Sheet B (22):** B001 + B002 the guarantee held 10/10 · B006 sporadic 401/403 traced to setup ·
+**Sheet B (20):** B001 + B002 the guarantee held 10/10 · B006 sporadic 401/403 traced to setup ·
 B008 Desk `+` adds correctly · B009 3-pane cap enforced · B010 closing a middle pane works · B012
 mobile desk stacks cleanly · B019 honest "no scripture detected" explanation · B020 full-text
 search over uploads works · B021 upload flow works end-to-end · B025 duplicate of B014 · B027 My
