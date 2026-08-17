@@ -68,7 +68,16 @@ D2 resolved: reuse.
 - **The owner-fallback tenancy path (DATABASE_URL owner, BYPASSRLS) is exercised by no test in
   the tree** — the H1/H2 belts are its only enforcement and only RLS-masked runs exist. Follow-up.
 - **Owner directive appended post-build**: an exhaustive ~50-test pass over the feature;
-  document every failure and UX discrepancy FIRST, then fix. Tracked as task #31.
+  document every failure and UX discrepancy FIRST, then fix. **DONE 2026-08-17**: 48 offline
+  tests + the 20-question live signed-in battery on production. The battery found and closed
+  P1 (reopened threads tombstoned wholesale — the misused studies resolver; fixed, integration
+  -checked 18/18, verified live at `e59213d`) and filed P4 (a live control hijack: a
+  flight-booking question composed Paul's Aegean routes — verbatim, attributed, irrelevant;
+  quality-slice work, not patched), B1 (Bernard absent from the sermon lane on "black but
+  comely" — ranking diagnostic), and the hesed/shalom asymmetry (live evidence for the
+  Hebrews/Hebrew search-design pass). 17 composed / 3 fallback, 7-11s typical. Durability
+  proven by an unplanned POWER FAILURE mid-battery: all in-flight results survived.
+  Full record: docs/evidence/research-history/build-findings-2026-08-16.md.
 
 ## 2026-08-16 (latest) — O-1 pre-flight: a SECOND live credential, and the credential guard is now a gate. Rotation deferred to January by owner decision
 
