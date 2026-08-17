@@ -228,3 +228,14 @@ width, in the page background tokens (identical to body's `bg-stone-50 dark:bg-s
 light/dark parity holds by construction), height matched per breakpoint. Verified by computed
 style: light `match:true`, mobile 68px / desktop 16px. Top-edge slide-under is ordinary sticky
 behavior and was left alone.
+
+**B1 RETRACTED (2026-08-17, retested with clean evidence).** The original finding — Bernard
+absent from the sermon lane on "black but comely" — was a MISATTRIBUTION caused by the power
+cut: Q2 (the Song question) never actually ran, so the lane I read as its evidence was Q1's
+good-shepherd lane, where Spurgeon and Maclaren are the correct answers. Rerun cleanly, the
+real question returns **Bernard of Clairvaux (Eales, Sermons on the Song of Songs) RANKED
+FIRST** on the sermon lane, Maclaren behind him; the exegetical voices are Poole ×2 + Schaff.
+The full chain — same-day ingest → retype to the sermon register → serve flip → lane
+retrieval → composed answer — is proven end to end on Bernard's own book. The lesson is the
+watchlist's standing one: a finding is only as good as the provenance of its evidence, and
+"latest row" is not provenance when a crash sits between the question and the read.
