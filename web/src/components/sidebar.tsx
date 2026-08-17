@@ -181,7 +181,7 @@ export function SidebarNavContent({
           <SidebarLink
             href="/ask"
             icon={<AskIcon />}
-            label="Ancient Paths"
+            label="Ask"
             active={pathname.startsWith('/ask')}
             row={row}
             onNavigate={onNavigate}

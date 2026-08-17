@@ -33,7 +33,7 @@ export function MarketingNav({ active }: { active?: MarketingPage }) {
 
         {/* Auth CTA: pill, ink fill on hover, gentle transition. */}
         <Link
-          href="/home"
+          href="/auth/sign-in"
           className="inline-flex min-h-[44px] items-center justify-self-end rounded-full border border-stone-400/70 px-7 font-sans text-micro font-semibold uppercase tracking-[0.2em] text-stone-900 transition-colors duration-200 ease-gentle hover:border-stone-900 hover:bg-stone-900 hover:text-stone-50 sm:order-3"
         >
           Log in
