@@ -13,10 +13,10 @@ authenticated sessions). IDs below are positional within each sheet.
 
 | Disposition | Count |
 |---|---|
-| **Done** | 22 |
+| **Done** | 27 |
 | **Not reproduced / retracted** | 13 |
 | **No action** — positive or informational notes | 41 |
-| **Open — me** | 47 |
+| **Open — me** | 42 |
 | **Open — owner** | 18 |
 | **Open — corpus & retrieval lane** | 15 |
 | **Total** | **156** |
@@ -33,7 +33,7 @@ breaches** (B001, B002).
 
 ---
 
-## 1. Done (22)
+## 1. Done (27)
 
 | ID | Finding | Commit |
 |---|---|---|
@@ -59,6 +59,11 @@ breaches** (B001, B002).
 | B026 | Sidebar "Saved" label mismatch on the bookmark-list page | `01a0747` |
 | B032 | Could not delete the research thread created during the session | `fb33cf6` |
 | B042 | Sidebar label mismatches its destination page | `01a0747` |
+| B028 | No way to delete a Study from the UI at all | `20b4a9f` |
+| B023 | Bookmark control is stateless about removal | `20b4a9f` — half the finding was already wrong: the `⚑` flag and the toggle both existed; only the label never said so |
+| B046 | No discoverable way to un-highlight | `84e1c3d` — removal existed in the study panel; it lived on a different surface from creation |
+| B017 | Upload "Remove" deletes instantly with no confirmation | `7d31f0e` |
+| B018 | Stale search results after deleting a document | `7d31f0e` |
 
 Also corrected, not a finding: **A001's blocker was false** and the correction is filed in three
 places (`93f6be0`).
@@ -125,17 +130,12 @@ routed to the lane) · B033/B034/B037 counted in §2 as retractions.
 
 I can do every one of these end-to-end on a branch, with tests.
 
-### 4a. Delete / remove paths — plumbing exists, UI missing (7)
+### 4a. Delete / remove paths — plumbing exists, UI missing (2 remain of 7)
 
 | ID | Finding | What it takes |
 |---|---|---|
-| B028 | **[MAJOR]** No way to delete a Study from the UI | `DELETE /api/studies/[id]` exists. Button + two-step confirm + optimistic rollback + test — same shape as `fb33cf6` |
-| B023 | **[MAJOR]** Bookmark button is stateless — can't see or remove one | Annotations DELETE exists. Surface bookmark state, add a remove path |
 | B022 | **[MAJOR]** Bookmark feature exists but has no icon or button in chrome | Same slice as B023 |
-| B046 | **[MAJOR]** No discoverable way to un-highlight | **Capability already exists** — the study panel's `clear`. A discoverability defect: removal lives on a different surface than creation. Put it in the selection popover |
 | B024 | Bookmark control hidden on mobile behind an undiscoverable scroll | Same slice |
-| B017 | Upload "Remove" deletes instantly with no confirmation | Reuse the two-step pattern |
-| B018 | Stale search results after deleting a document | Invalidate the result set on delete |
 
 ### 4b. Real bugs (10)
 
