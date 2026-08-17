@@ -43,6 +43,9 @@ export interface SelectionPopoverProps {
   onDefine?: () => void;
   /** Phase 3 (bookmarks table) wires this; the button renders ONLY when provided. */
   onBookmark?: () => void;
+  /** Whether the verse the popover is raised on is ALREADY bookmarked. Drives the label: the
+   *  handler has always been a toggle, so removal existed and was invisible (B023). */
+  bookmarked?: boolean;
   onOpenCommentaries?: () => void;
   onDismiss: () => void;
 }
@@ -57,6 +60,7 @@ export function SelectionPopover({
   onAsk,
   onDefine,
   onBookmark,
+  bookmarked = false,
   onOpenCommentaries,
   onDismiss,
 }: SelectionPopoverProps) {
@@ -185,13 +189,17 @@ export function SelectionPopover({
           ✎ Note
         </button>
       )}
+      {/* The label follows the STATE. `onToggleBookmark` has always toggled, so a second press
+          already removed the bookmark — but the button read "Bookmark" either way, so removal
+          existed and no reader could know it (B023, 2026-08-17 authenticated QA). Bookmarked
+          verses already carry a visible flag (verse-display.tsx:341); this is the other half. */}
       {onBookmark && (
         <button
           onClick={onBookmark}
-          title="Bookmark"
+          title={bookmarked ? 'Remove bookmark' : 'Bookmark'}
           className="shrink-0 rounded-full px-2 py-1 text-xs font-medium text-stone-200 hover:text-white dark:text-stone-700 dark:hover:text-stone-900"
         >
-          Bookmark
+          {bookmarked ? 'Remove bookmark' : 'Bookmark'}
         </button>
       )}
       {onAsk && (

@@ -365,6 +365,9 @@ export function VerseDisplay({
           signedIn={!!signedIn}
           onHighlight={onAddHighlight ? highlightPending : undefined}
           onAddNote={onOpen ? () => openPending('notes') : undefined}
+          // The popover needs the CURRENT state of the verse it was raised on, or the label it
+          // now renders would be decoration. `pending.key` is that verse.
+          bookmarked={bookmarkedVerses?.has(Number(pending.key)) ?? false}
           onBookmark={
             // Gated on signedIn, the same as the highlight swatches (selection-popover.tsx). The
             // button is not merely useless when signed out: the optimistic toggle would show the
