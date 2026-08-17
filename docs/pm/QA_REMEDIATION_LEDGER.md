@@ -78,7 +78,7 @@ breaches** (B001, B002).
 | A078 | 3-pane cap enforced silently | batch 2 — **premise half wrong**: `decodeDesk` drops the 4th, `withPane` evicts the OLDEST |
 | A014 | Third example prompt clipped at 390px | batch 2 — not the divider; a 48px+safe-area band sat under the composer at every scroll offset |
 | A017 | Empty error banner frame on retry | batch 2 — **filed mechanism disproven**; an adjacent latent path (error event with no message) guarded instead |
-| N1 | **"Continue reading" on the Library hub was dead for every account** — `saveReadingProgress` had zero call sites, so `listContinueReading` could only return `[]` | `PENDING` |
+| N1 | **"Continue reading" on the Library hub was dead for every account** — `saveReadingProgress` had zero call sites, so `listContinueReading` could only return `[]` | `1c95774` |
 
 Also corrected, not a finding: **A001's blocker was false** and the correction is filed in three
 places (`93f6be0`).
