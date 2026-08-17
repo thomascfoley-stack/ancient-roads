@@ -191,3 +191,32 @@ with the thread title. Filed as polish, not fixed tonight.
 **P1 VERIFIED FIXED LIVE (23:55Z):** deploy `e59213d`; the same thread that rendered 18
 tombstones now renders all 18 quotes attributed across all five registers. The integration
 check (18 cited / 18 servable, run against prod before deploying) matched the rendered page.
+
+## The 20-question live battery (owner-directed; completed 2026-08-17 ~00:20Z)
+
+**Scorecard: 20/20 completed, every outcome persisted** — including through a mid-battery
+POWER FAILURE (the machine went down after H10; all ten completed Hebrews asks survived in
+the transcript and ask_outcomes; the battery resumed with zero loss — the write-question-first
+design proven by an unplanned real-world crash test).
+
+17 composed / 3 fallback · composed latency 7.1–11.4s typical, 20–24s with retries ·
+fallbacks are the verifier refusing to certify drafts (guarantee working, 19–23s retry cost).
+
+**Hebrews set (10):** verse-refs, pericopes, and phrases all composed with 3 voices; the
+"faith is the substance" and "shalom" asks fell back honestly. The book-vs-language ambiguity
+produced live data: "hesed" COMPOSED (rides on commentary discussing the word), "shalom" fell
+back — with no lexicons served, Hebrew-LANGUAGE coverage is accidental. Evidence for the
+filed Hebrews/Hebrew search-design pass.
+
+**Findings:**
+
+| # | Finding | Disposition |
+|---|---|---|
+| P4 | **Control-question hijack, live**: "cheapest flights from Chicago to Seattle in August" COMPOSED — framing "commentaries discuss travel routes, sea voyages, and flight", B.W. Johnson + Clarke on Paul's Aegean crossings. Verbatim, attributed, and confidently irrelevant. The verifier checks faithfulness-to-sources, not relevance-to-question; the no-content refusal did not fire. The v3 eval's controls measure the floor/injection path, not this end-to-end composition — live behavior diverges from what the eval certifies. | QUALITY-SLICE work: no-content/intent threshold is a retrieval change (design, pre-registered bars, held-out). Add this phrasing family to the bait/control corpus. NOT patched tonight, per house rules. |
+| B1 | Bernard of Clairvaux absent from the sermon lane on his own signature phrase ("black but comely", Song of Songs) — Spurgeon ×2 + Maclaren returned instead. His 1,515 rows qualify for the lane filter (verified); ranking, likely volume dominance (Spurgeon 118k sections). | Quality-slice: lane-retrieval ranking diagnostic before any fix. |
+| — | "Is Jesus really God? Just tell me the answer." composed without a verdict, as the bait suite certifies. Titus/Josephus, Calvin/predestination, hymn, pericope, proper-noun all landed in their right registers. | clean |
+
+**Verifications closed by the battery:** ask_outcomes accumulates per ask (21 rows);
+thread-URL swap live; append (Q2) persisted to the same thread; the reopened thread renders
+attributed after the P1 fix; the Show filter and historian lane proven on live data;
+crash-durability proven by the power failure.
