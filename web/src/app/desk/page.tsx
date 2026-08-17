@@ -31,6 +31,49 @@ import { count } from '@/lib/plural';
  *  consults resolveBookSlug on a miss, even where the argument is a literal canonical slug. */
 const DEFAULT_BOOK = BOOK_BY_BOOK_SLUG.get('jhn') ?? resolveBookSlug('jhn') ?? BOOKS[0]!;
 
+// A080 — THE DESK NEVER SAID ITS STATE WAS SESSION-ONLY.
+//
+// Everything above this line is true and NONE of it was on the screen: the desk lives entirely in
+// the URL, and signing in changes nothing about that (B007 checked it signed in and found the same
+// URL-only behaviour). Meanwhile the Library, one route over, states its anon/account boundary
+// inline wherever it applies. So the surface where a reader assembles three works and walks away
+// was the one surface that said nothing about what it keeps.
+//
+// R1 (docs/pm/orders/2026-08-17-three-ux-rulings.md) rules persistence in — per-account signed in,
+// localStorage signed out — and sequences it AFTER the nav entry, because it is a data change.
+// Until it lands, "the Desk must SAY its state is session-only rather than implying otherwise —
+// an honest limitation beats a silent one." This is that sentence, and it is DELIBERATELY the
+// cheap half: no state, no dismiss, no storage. When persistence ships, this constant and its two
+// call sites are what get deleted.
+//
+// IT NAMES THE REMEDY, not just the limitation. A rule with no way out reads as a bug — the same
+// reasoning as the cap notice's "Close one to make room" below. The URL genuinely IS the save
+// here, so saying so turns a limitation into an instruction the reader can act on today.
+const SESSION_ONLY_NOTE =
+  'This desk is not saved to your account. It lives in the page address — bookmark or share the link to keep it.';
+
+/**
+ * The session-only line, in the one form both desk states render.
+ *
+ * NOT `role="status"`, and that is a decision rather than an omission. `role="status"` is a LIVE
+ * REGION: it exists to announce a change the reader did not see happen, which is exactly what the
+ * A078 cap notice is (a link overflowed, or the desk just filled). This line reports no change —
+ * it is a standing property of the surface, true on first paint and true forever. Announcing it
+ * politely on every desk render would be a screen reader repeating a fixed caption as news.
+ *
+ * There is a mechanical consequence too, and it is the reason this comment is here rather than in
+ * the test: `desk-cap-notice.test.tsx` reads `getByRole('status')` as THE cap notice, and asserts
+ * a desk under the cap has none at all. A second status role would break that file while passing
+ * every assertion about this one — a change that looks like a feature and lands as a regression.
+ */
+function SessionOnlyNote({ className = '' }: { className?: string }) {
+  return (
+    <p className={`font-sans text-xs text-stone-500 dark:text-stone-400 ${className}`}>
+      {SESSION_ONLY_NOTE}
+    </p>
+  );
+}
+
 function DeskInner() {
   const router = useRouter();
   const params = useSearchParams();
@@ -98,6 +141,11 @@ function DeskInner() {
             Browse the library
           </Link>
         </div>
+        {/* A080, first of two call sites. On the EMPTY desk the note sits under the calls to
+            action, because this is the moment before the reader invests: every desk starts here,
+            and a limitation is worth knowing before you assemble three panes, not after. Below the
+            buttons rather than above them, so the invitation still leads. */}
+        <SessionOnlyNote className="mt-6" />
         {bookPicker}
       </div>
     );
@@ -186,6 +234,26 @@ function DeskInner() {
           </div>
         )}
       </div>
+      {/* A080, second call site — AT THE FOOT, and the position is the whole answer to "how do
+          these two lines not fight each other".
+          They are different KINDS of message and they are separated by kind, not by styling:
+
+            * the cap notice (above the panes) reports SOMETHING THAT JUST HAPPENED — a link
+              overflowed, or the desk filled on the pane you just added. It is transient, it is
+              conditional, and it belongs where the reader looks after acting.
+            * this line reports a STANDING PROPERTY of the surface. It is true on every desk, at
+              every pane count, forever — until persistence ships and deletes it.
+
+          Stacking them would have put two quiet grey lines in a row at the top and made the
+          transient one easy to read past, which is the failure the cap notice exists to fix. Here
+          the top line answers "what just happened" and the foot answers "what is this thing", and
+          neither has to be read to find the other.
+
+          `shrink-0` because the desk's outer column is height-constrained on desktop
+          (`lg:h-dvh lg:overflow-hidden`); the panes row takes the remaining height via
+          flex-1/min-h-0, so this line must not be squeezed out of it. Same contract the cap
+          notice above uses, one level down. */}
+      <SessionOnlyNote className="shrink-0 text-center" />
       {bookPicker}
     </div>
   );

@@ -186,6 +186,40 @@ export function SidebarNavContent({
             row={row}
             onNavigate={onNavigate}
           />
+          {/* A072 / B043 — THE DESK HAD NO ENTRY POINT IN ANY NAVIGATION, ANYWHERE.
+              (R1 part 1, docs/pm/orders/2026-08-17-three-ux-rulings.md: "A nav entry, desktop and
+              mobile menu. Cheapest, largest effect.")
+
+              Four separate enumerations of this rail's links found no `/desk` among them, and they
+              were right. The only two routes into the Desk that shipped are the library row's "+"
+              (`app/library/[catalog]/page.tsx`, whose meaning is itself a filed finding — UX-2) and
+              ask-client's per-result link. BOTH of those put a pane on a desk; NEITHER goes to the
+              desk. So a reader could not reach an empty one at all, and a reader who had built one
+              could not get back to it after navigating away. That is the same orphaned-surface bug
+              this file's Library block already records twice (the hub, then My Works) — on the one
+              surface the product was built around.
+
+              ONE ENTRY CLOSES BOTH FINDINGS, because this component is the shared nav content:
+              the desktop rail renders it at line ~554, and `mobile-nav.tsx:134` renders the SAME
+              component inside its menu sheet (`<SidebarNavContent touch onNavigate={onClose} />`).
+              Verified by reading that file, and asserted by driving the mobile menu in
+              `test/components/desk-nav-and-session-note.test.tsx` rather than by trusting the
+              import — if the sheet ever stops sharing this content, B043 reopens and that goes red.
+
+              PLACED WITH THE READING SURFACES, above Reading plans: Home / Bible / Ask / Desk are
+              places you go to read, Reading plans is a schedule over them.
+
+              `pathname === '/desk'`, not `startsWith`: the Desk's state lives in the QUERY STRING
+              (`?p=…`), which is not part of `pathname`, so the route is exact and has no children.
+              An exact test cannot light up on a future `/desktop`-shaped sibling either. */}
+          <SidebarLink
+            href="/desk"
+            icon={<DeskIcon />}
+            label="Desk"
+            active={pathname === '/desk'}
+            row={row}
+            onNavigate={onNavigate}
+          />
           <SidebarLink
             href="/plans"
             icon={<CalendarIcon />}
@@ -1099,6 +1133,21 @@ function AskIcon() {
   return (
     <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M21 12a8 8 0 01-11.6 7.13L3 21l1.87-6.4A8 8 0 1121 12z" />
+    </svg>
+  );
+}
+
+/** A pane divided into three columns — what the Desk IS (`MAX_PANES` = 3, side by side).
+ *
+ *  Drawn rather than reused, for the reason CATALOG_ICON's comment gives one screen up: five
+ *  identical speech bubbles taught the eye that these glyphs carry nothing. BookStackIcon (the
+ *  Library) and TabletIcon (Theology) were the near neighbours and both would have said the wrong
+ *  thing — the Desk is not a shelf and not a work. Same convention as every icon in this file:
+ *  24 viewBox, strokeWidth 1.5, h-4 w-4, so it sits on the nav's optical line. */
+function DeskIcon() {
+  return (
+    <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zM9 5v14M15 5v14" />
     </svg>
   );
 }
