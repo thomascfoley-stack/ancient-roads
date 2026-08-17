@@ -13,10 +13,10 @@ authenticated sessions). IDs below are positional within each sheet.
 
 | Disposition | Count |
 |---|---|
-| **Done** | 29 |
+| **Done** | 39 |
 | **Not reproduced / retracted** | 13 |
 | **No action** — positive or informational notes | 41 |
-| **Open — me** | 40 |
+| **Open — me** | 30 |
 | **Open — owner** | 18 |
 | **Open — corpus & retrieval lane** | 15 |
 | **Total** | **156** |
@@ -33,7 +33,7 @@ breaches** (B001, B002).
 
 ---
 
-## 1. Done (29)
+## 1. Done (39)
 
 | ID | Finding | Commit |
 |---|---|---|
@@ -66,6 +66,16 @@ breaches** (B001, B002).
 | B018 | Stale search results after deleting a document | `7d31f0e` |
 | B047 | Highlight popover does not mount across a verse boundary | `9c2f1ab` — the end now clamps; a start outside is still refused |
 | A010 | Retrying a failed Ask stacks a duplicate | `4e8d55c` — replacement scoped to the error path so a completed answer is never eaten |
+| A095 | Sidebar collapse chevron unlabeled | batch 1 — **half false**: aria-labels existed and followed state; only `title` was missing |
+| A066 | Catalog row link has no accessible name | batch 1 — **FALSE**, proven by computed accessible name at HEAD; pinned with a test |
+| A094 | Long titles truncated with no tooltip at 768px | batch 1 |
+| A037 | Library copy overstates what sign-in adds | batch 1 — and signing in adds *nothing* here; see N1 below |
+| B016 | Uploaded file size shows "0 KB" | batch 1 — plus a second defect: sizes ≥1,048,064 rendered as "1024 KB" |
+| A084 | Malformed chapter routes fire `NaN` fetches | batch 1 — one shared predicate, not a fourth `isNaN` |
+| B011 | New desk pane flashes "UNLABELLED" + raw slug | batch 2 — plus a second: the first frame claimed "Nothing to read here yet" |
+| A078 | 3-pane cap enforced silently | batch 2 — **premise half wrong**: `decodeDesk` drops the 4th, `withPane` evicts the OLDEST |
+| A014 | Third example prompt clipped at 390px | batch 2 — not the divider; a 48px+safe-area band sat under the composer at every scroll offset |
+| A017 | Empty error banner frame on retry | batch 2 — **filed mechanism disproven**; an adjacent latent path (error event with no message) guarded instead |
 
 Also corrected, not a finding: **A001's blocker was false** and the correction is filed in three
 places (`93f6be0`).
@@ -227,6 +237,13 @@ No agent can close these.
 | — | **Next fleet run** needs a dedicated tab pool per session | See §2 |
 
 ---
+
+## 5b. NEW — found while fixing, not in either sheet (2)
+
+| # | Item | Note |
+|---|---|---|
+| N1 | **"Continue reading" on the Library hub is dead for every account** | `saveReadingProgress` is the only writer of `reading_progress` and has ZERO call sites, so `listContinueReading` can only ever return empty. Never reported because it renders as absent, not broken — same shape as the A7b bookmark-write defect. Filed as a task chip |
+| N2 | `/ask` double-counts the tab-bar offset | `main` reserves the tab-bar height and the composer's sticky offset reserves it again — ~60px wasted on every mobile view. This is WHY A014's permanent overlap exists; closing it moves the composer on every mobile view, so it is a design change. Filed as a task chip |
 
 ## 6. Open — corpus & retrieval lane (15)
 
