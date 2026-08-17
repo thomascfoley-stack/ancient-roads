@@ -229,11 +229,21 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
     setTurns((prev) => prev.map((t) => (t.id === id ? { ...t, ...p } : t)));
   }, []);
 
-  const ask = useCallback(async (raw: string) => {
+  // `replaceId` — retry a FAILED turn in its own slot instead of appending a second copy of the
+  // same question (A010). Retry three times on a persistent failure and the page used to be four
+  // identical questions under four identical error banners. Only the error path passes it: a
+  // COMPLETED answer also offers "Ask again" (the fallback control), and replacing there would
+  // destroy an answer the reader already has.
+  const ask = useCallback(async (raw: string, replaceId?: number) => {
     const q = raw.trim();
     if (!q || busy) return;
-    const id = nextId.current++;
-    setTurns((prev) => [...prev, { id, question: q, stage: 'retrieving', attempt: 0, sources: [], traditions: 0 }]);
+    const id = replaceId ?? nextId.current++;
+    const fresh: Turn = { id, question: q, stage: 'retrieving', attempt: 0, sources: [], traditions: 0 };
+    setTurns((prev) =>
+      replaceId !== undefined && prev.some((t) => t.id === replaceId)
+        ? prev.map((t) => (t.id === replaceId ? fresh : t))
+        : [...prev, fresh],
+    );
     setQuestion('');
     setBusy(true);
 
@@ -371,7 +381,15 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
           {/* Retry re-asks THIS turn's question, not whatever is in the composer — `ask` clears
               the composer on submit, so by the time a turn can fail its question exists only on
               the turn itself. */}
-          {turns.map((t) => <TurnView key={t.id} turn={t} onRetry={() => ask(t.question)} busy={busy} />)}
+          {turns.map((t) => (
+            <TurnView
+              key={t.id}
+              turn={t}
+              // Replace in place ONLY when retrying a failure; a completed answer's retry appends.
+              onRetry={() => ask(t.question, t.stage === 'error' ? t.id : undefined)}
+              busy={busy}
+            />
+          ))}
         </div>
         <div ref={bottomRef} className="scroll-mb-48 md:scroll-mb-36" />
       </div>
