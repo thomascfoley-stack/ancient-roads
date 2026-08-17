@@ -1,5 +1,41 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-17 (build) — Design C shipped: the /ask scope control is an always-visible chip band
+
+Owner reviewed three scope-control designs and ruled C ("ok deploy c"). The collapsed
+disclosure ("Choose what to search ▾") is gone; /ask now shows a "Search these" band of
+aria-pressed toggle chips above the composer — a dashed, non-clickable "✓ Commentary always"
+chip plus the four lanes — with the cost stated on the band ("changes run on your next ask ·
+~10s"). The Show band on results carries the matching "instant · nothing re-runs" pill, so
+the two controls can never be confused: each wears its price.
+
+**Deployed `2d043ba`**, alias-verified serving `dpl_DqgXGyPUC8frZr56uV93Y2RHJHQ1`
+(`docs/evidence/deploys/deploy-2d043ba-2026-08-17T05-50-26Z.txt`). Verified live: band
+renders, a chip toggle flips `aria-pressed` true→false on ancientpaths.app, no horizontal
+overflow; dev pass at 390px + desktop before deploy.
+
+**Findings first, fixes after** (ledger: `docs/evidence/research-history/build-findings-2026-08-16.md`
+§Design C): C-1 the new chips collided with the Show chips for tests AND screen readers (same
+labels, same pressed state) — fixed semantically with named groups ("Search these collections"
+/ "Show collections"), not by loosening tests; C-2 `s2-polish` S2-item-3 pinned the
+`accent-accent-700` checkbox fix whose checkboxes design C removed — repointed at the
+successor property; C-3 the first audit run raced the mutation verifier rewriting
+ask-client.tsx and produced 6 spurious reds — gate re-run on a quiet tree, green.
+
+**Two inspectors (bylaw 4), both completed before deploy.** The diff inspector found one
+MAJOR: the band's ~10s pill sat three lines under a stale "15–45 seconds" intro claim —
+intro now says "about ten seconds", grounded in the 20-question prod battery (7–11s typical).
+MINORs fixed with it: `SHOW_LABELS.songVerse` harmonized to "Hymns & Sacred Poetry" (one
+register wore two names on one screen); the Show group's SR name says "collections", not the
+internal noun "registers"; L10 scoped to the Show group. The adversarial verifier
+mutation-tested the re-scoped suites — six mutations, every one red with loud failures, tree
+restored byte-identical (sha256-matched).
+
+NOT DONE / UNVERIFIED: the 32px chip tap-target (matches the shipped Show chips; below the
+44px convention elsewhere — filed as polish, not changed here); dark-mode live screenshot of
+the band (dev-verified by token idiom parity; the app's theme class is account-scoped and the
+verification session was signed out).
+
 ## 2026-08-16 (build) — Research History shipped: /ask threads persist, reopen at a URL, filter by register
 
 **Owner-directed build** ("build it and ship it to prod"), against the approved
