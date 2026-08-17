@@ -18,8 +18,8 @@ and sequences the work so each block is one branch with one exit test.
 | **Q0** | **DONE** | Corrections filed in the report, the WORKLOG and this plan |
 | **Q1** | **DONE** | Pre-submit notice + sign-in link in the 401. `?next=` split out as **Q1b** (below) |
 | **Q2** | **DONE** | `lib/library-nav.ts` — one label per route, both navs derive it; heading-match invariant |
-| **Q3** | **PART 1 DONE** | 11th voice reachable; Gethsemane line deleted. Four findings remain (below) |
-| **Q4** | **PART DONE** | The 3-session count bug closed. The silent no-op search boxes remain |
+| **Q3** | **MOSTLY DONE** | 11th voice; Gethsemane line; the word-study language race; chapter-advance identity. Two remain (below) |
+| **Q4** | **DONE** | Count bug closed; **both no-op search findings NOT REPRODUCED** (see below) |
 | **Q5** | **NOT REPRODUCED** | Does not occur in dev; a production-build repro is blocked (below) |
 | **Q6** | **DONE** | Normalizer fix closes every hyphenated/unspaced-ordinal book URL; robots + sitemap added |
 | **Q7** | **DONE** | Log in → sign-in, footer "Contact" renamed, `/ask` title, sidebar duplicate label |
@@ -40,6 +40,27 @@ turned out to be wrong about their own root cause**:
 
 The lesson is now load-bearing rather than rhetorical: **a findings list tells you where to look,
 never what is wrong.** Reproduce from the code before writing a line of fix.
+
+### NOT REPRODUCED — six findings, three of them BLOCKER/MAJOR
+
+Driven against the running app, not reasoned about. Each was reported by one session and each
+works:
+
+| Finding | What actually happens |
+|---|---|
+| **[BLOCKER]** No site-wide gate on any route | Gate is up and unchanged since 2026-07-15; the sessions were behind it holding an `httpOnly` cookie they could not read |
+| **[MAJOR]** Hero CTA "See it answered" is inert | `<a href="#ask">` with a matching `<section id="ask">` sixteen lines below |
+| **[MAJOR]** Catalog search box does not filter or navigate | Returns **1000+ matches** with 62 highlighted hits on `/library/commentaries`; the empty case renders "No matches." rather than reverting |
+| **[MAJOR]** Library search silently no-ops on Sermons and Historians | `/api/search/works` returns results for **every** catalog including both of those |
+| **[MAJOR]** In-work Table of Contents is a dead click | Opens a dialog labelled "Contents" with 22 rows of real chapter titles — and the report's **own** Library session praised this same feature as "fast and accurate even on a 3,540-entry work" |
+| **[MINOR]** Inconsistent `/ask` copy and control layout across loads | Describes the pre-Design-C build; `2d043ba` shipped the always-visible chip band and corrected the latency line the same week |
+
+**These are not sloppy reporting so much as a contaminated instrument.** The report itself records
+that ~12 of 20 sessions hit tab-cap exhaustion and cross-agent tab hijacking, and a hijacked tab
+produces exactly one symptom: *"I clicked it and nothing happened."* That is the signature of four
+of the six above. **A future fleet run needs a dedicated tab pool per session**; without it, a
+single-session MAJOR that reads as "control does nothing" should be treated as unconfirmed until
+driven by hand.
 
 ### Carried forward
 
