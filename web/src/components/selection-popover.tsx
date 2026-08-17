@@ -46,6 +46,11 @@ export interface SelectionPopoverProps {
   /** Whether the verse the popover is raised on is ALREADY bookmarked. Drives the label: the
    *  handler has always been a toggle, so removal existed and was invisible (B023). */
   bookmarked?: boolean;
+  /** Whether the verse the popover is raised on already carries a highlight. */
+  highlighted?: boolean;
+  /** Clears the highlight on that verse. Absent on surfaces that cannot clear — the control is
+   *  not rendered then, rather than rendered as a no-op (B046). */
+  onClearHighlight?: () => void;
   onOpenCommentaries?: () => void;
   onDismiss: () => void;
 }
@@ -61,6 +66,8 @@ export function SelectionPopover({
   onDefine,
   onBookmark,
   bookmarked = false,
+  highlighted = false,
+  onClearHighlight,
   onOpenCommentaries,
   onDismiss,
 }: SelectionPopoverProps) {
@@ -193,6 +200,19 @@ export function SelectionPopover({
           already removed the bookmark — but the button read "Bookmark" either way, so removal
           existed and no reader could know it (B023, 2026-08-17 authenticated QA). Bookmarked
           verses already carry a visible flag (verse-display.tsx:341); this is the other half. */}
+      {/* B046 — removal was never missing: `study-panel.tsx` clears a highlight whenever the verse
+          carries a colour. It lived on a DIFFERENT SURFACE from creation, so a reader who
+          highlighted from this popover had no route back. Conditional on the verse actually
+          carrying one: an always-present "Remove highlight" would be worse than none. */}
+      {highlighted && onClearHighlight && (
+        <button
+          onClick={onClearHighlight}
+          title="Remove highlight"
+          className="shrink-0 rounded-full px-2 py-1 text-xs font-medium text-stone-200 hover:text-white dark:text-stone-700 dark:hover:text-stone-900"
+        >
+          Remove highlight
+        </button>
+      )}
       {onBookmark && (
         <button
           onClick={onBookmark}

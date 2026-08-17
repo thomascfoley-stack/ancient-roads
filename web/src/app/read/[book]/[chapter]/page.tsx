@@ -335,6 +335,7 @@ export default function ReaderPage() {
             notedVerses={new Set(notes.keys())}
             bookmarkedVerses={bookmarks}
             onToggleBookmark={toggleBookmark}
+            onClearHighlight={clearVerse}
             signedIn={signedIn}
             onAddHighlight={addHighlight}
             onOpen={(verse, tab) => openStudy(verse, tab)}

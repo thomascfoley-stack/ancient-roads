@@ -84,6 +84,7 @@ export function VerseDisplay({
   notedVerses,
   bookmarkedVerses,
   onToggleBookmark,
+  onClearHighlight,
   signedIn,
   onAddHighlight,
   onOpen,
@@ -105,6 +106,8 @@ export function VerseDisplay({
   /** Toggles the bookmark on a verse. Absent when signed out, which is what hides the button:
    *  SelectionPopover renders Bookmark only when a handler exists (selection-popover.tsx). */
   onToggleBookmark?: (verse: number) => void;
+  /** Clears every highlight span on a verse (B046). Absent signed out — the control hides. */
+  onClearHighlight?: (verse: number) => void;
   signedIn?: boolean;
   onAddHighlight?: (verse: number, range: { start: number; end: number } | null, color: string) => void;
   onOpen?: (verse: number, tab: StudyTab) => void;
@@ -368,6 +371,18 @@ export function VerseDisplay({
           // The popover needs the CURRENT state of the verse it was raised on, or the label it
           // now renders would be decoration. `pending.key` is that verse.
           bookmarked={bookmarkedVerses?.has(Number(pending.key)) ?? false}
+          highlighted={(highlights?.get(Number(pending.key)) ?? []).length > 0}
+          onClearHighlight={
+            // Same signed-out gate as the bookmark control: offering a clear that would 401 is a
+            // control that appears to work and silently does not.
+            signedIn && onClearHighlight
+              ? () => {
+                  const verse = Number(pending!.key);
+                  dismiss();
+                  onClearHighlight(verse);
+                }
+              : undefined
+          }
           onBookmark={
             // Gated on signedIn, the same as the highlight swatches (selection-popover.tsx). The
             // button is not merely useless when signed out: the optimistic toggle would show the
