@@ -7,6 +7,7 @@ import { authClient } from '@/lib/auth/client';
 import { isPrayerWriting, PRAYER_WRITING_EVENT } from '@/lib/prayer-writing-mode';
 import { CATALOGS, CATALOG_IDS, type CatalogId } from '@/lib/catalog-defs';
 import { orderStudiesForNav, type StudySummary } from '@/components/save-to-study';
+import { bibleTabHref, DEFAULT_BIBLE_HREF } from '@/lib/bible-position';
 import { libraryLabel } from '@/lib/library-nav';
 
 // --- user-defined study sections (parent/child). Stored locally per user
@@ -122,6 +123,15 @@ export function SidebarNavContent({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  // A034 — the Bible link went to John 1 unconditionally, discarding the reader's position. This
+  // component feeds BOTH the desktop rail and MobileNav's Menu sheet (mobile-nav.tsx:161), so the
+  // hardlink here was the phone user's second route to the old behaviour even after the bottom tab
+  // was fixed. Same shape as mobile-nav's: seeded with the DEFAULT so the first client render
+  // matches the server's (reading localStorage during render is the React #418 this repo has paid
+  // for twice), and keyed on `pathname` rather than `[]` because the rail stays mounted across
+  // client navigations and a one-shot effect would freeze at boot.
+  const [bibleHref, setBibleHref] = useState(DEFAULT_BIBLE_HREF);
+  useEffect(() => setBibleHref(bibleTabHref()), [pathname]);
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
   // See the sign-in/sign-out branch below: this exists solely to keep the first client render
@@ -171,7 +181,7 @@ export function SidebarNavContent({
             onNavigate={onNavigate}
           />
           <SidebarLink
-            href="/read/jhn/1"
+            href={bibleHref}
             icon={<BookIcon />}
             label="Bible"
             active={pathname.startsWith('/read')}
@@ -456,6 +466,11 @@ const CATALOG_ICON: Partial<Record<CatalogId, React.ReactNode>> = {
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  // A034 — the writing rail's own Bible link. Same hardlink, same fix, its own state because this
+  // is a different component from SidebarNavContent and the value cannot be shared without lifting
+  // it. Seeded with the DEFAULT for the same hydration reason.
+  const [bibleHref, setBibleHref] = useState(DEFAULT_BIBLE_HREF);
+  useEffect(() => setBibleHref(bibleTabHref()), [pathname]);
   // WRITING MODE (owner direction 2026-08-12, journal-redesign mockup): while the prayer compose
   // view owns the screen, the 256px sidebar drops to a 58px icon rail — the journal area is the
   // screen, not a widget on it. The rail re-expands on hover or ⌘\, and collapses again when the
@@ -509,7 +524,7 @@ export function Sidebar() {
     // not a sync task — do not derive this from the catalog list.
     const railLinks = [
       { href: '/home', label: 'Home', icon: <HomeIcon /> },
-      { href: '/read/jhn/1', label: 'Bible', icon: <BookIcon /> },
+      { href: bibleHref, label: 'Bible', icon: <BookIcon /> },
       { href: '/ask', label: 'Ancient Paths', icon: <AskIcon /> },
       { href: '/plans', label: 'Reading plans', icon: <CalendarIcon /> },
       { href: '/prayers', label: 'My prayers', icon: <PrayerIcon /> },
