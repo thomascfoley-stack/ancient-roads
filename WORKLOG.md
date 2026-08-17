@@ -1,5 +1,72 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-17 (fix) — /ask: the mobile composer double-counted the tab bar, and the P5 mask was 4px short
+
+**The reported defect, re-measured before touching anything** (390x844, dev server, computed
+style — not inferred). The scroller is `main` (`app-shell.tsx:35`), which reserves the fixed tab
+bar with `pb-[calc(3.75rem+env(safe-area-inset-bottom))]`. The composer's sticky inset added the
+same token a second time. A sticky inset resolves against the scroller's CONTENT box, which that
+padding has already inset, so the bar was counted twice: viewport 844, main padding-bottom 60,
+composer bottom edge **720 = 844 - 60 - 64**. The box floated a whole tab bar above the tab bar.
+
+**Fixed** in `ask-client.tsx`: `bottom-[calc(3.75rem+env(safe-area-inset-bottom)+0.25rem)]` ->
+`bottom-1`. Measured after: composer bottom **780** when stuck, **11px** of visible gap above the
+bar, against desktop's 12px above the scrollport (`md:bottom-3`, untouched). `bottom-1` carries no
+`env()` on purpose — both terms that bracket it already do, so the gap holds at every safe-area
+inset instead of growing with it. **This moves the composer on every mobile /ask view**; it is a
+design change and was screenshotted before/after at 390px, the before captured by stashing the
+change rather than reconstructing it in the DOM.
+
+**A second defect, found while verifying and NOT in the brief: the P5 mask was already leaking.**
+`after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.5rem)]` = 68px was hand-computed against an
+assumed 60px bar. The bar renders **53px** (`min-h-[52px]` + 1px border) into the 60px reserved for
+it, so the strip to cover was 71px and a band of document was live at **y 787-790 at every scroll
+offset** — hit-tested, and visible as a red sliver above the tab bar in the striped-probe capture.
+The mask is now `offset + main's padding-bottom`, i.e. it reaches the bottom of the scrollport's
+padding box rather than the top of a bar whose height no CSS here can name. Re-verified by scanning
+**every** y between the composer's bottom edge and the nav's top: **0 leaked pixels**, light and
+`.reader-dark`, mask background byte-equal to body's in both.
+
+**A014's root cause is closed as a side effect.** Before: at maximum scroll the composer sat 48px
+above its static position and covered 24px of real document. After: `pinnedAboveStaticBy: 0`,
+`documentCoveredAtMaxScroll: 0` — it reaches rest, as desktop already did.
+
+**The other three call sites are NOT this bug**, and that was measured, not reasoned:
+`selection-popover.tsx:272`, `work/[slug]/page.tsx:170` and `read/[book]/[chapter]/page.tsx:417`
+use the same `3.75rem+env()` expression but are `fixed`, which resolves against the viewport. A
+probe element rendered inside `main` with those exact classes landed its bottom edge at **784** =
+viewport - 60, clearing the bar correctly. They must keep the expression. Only a `sticky` inset
+double-counts, and `ask-client.tsx` held the only `sticky bottom-*` in `web/src`.
+
+**Verified:** web typecheck exit 0; eslint on the changed file exit 0; web suite **122 files /
+815 tests passed, 38 files / 299 tests skipped, exit 0**; desktop re-measured unchanged
+(`pb-0` / offset 12px / mask 16px / nav hidden).
+
+### NOT DONE / UNVERIFIED
+
+- **DB-backed test legs NOT RUN** — this worktree has no `.env.local`, so 38 files / 299 tests
+  skipped and `npm run audit` was not run (it refuses without a dev `DATABASE_URL`). The legs that
+  ran are DB-free. Same posture as the UX-5 tranche.
+- **Not deployed.** No owner go was given and none was asked for.
+- **MERGE HAZARD, and it is the one thing to read before landing this.** `ee76b55` on
+  `fix/q1-signed-out-state` (a concurrently-active session, main working tree) closed A014 by
+  ADDING `pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0` to the /ask scroll column, and
+  its own message says the double-count was "Reported, not taken" because closing it "would move
+  the composer on every mobile view — a design change, not a clipping fix". That deferral is what
+  this entry executes. **The two changes are not additive:** with the root cause gone the reserve
+  becomes ~60px of dead space at the foot of every mobile /ask. When the branches meet, that
+  padding must be deleted, returning the line to
+  `className={turns.length === 0 ? 'flex flex-1 flex-col justify-center' : 'flex-1 space-y-8'}`.
+  Both branches also touch the same file, so the merge will conflict on the composer's class
+  string; take this branch's `bottom-1` and that branch's A017/`ERROR_FALLBACK` work.
+- **No automated test.** jsdom has no layout, so an assertion here would grep a class string rather
+  than measure geometry — the same reasoning `ee76b55` recorded. The check that could have failed
+  is the browser A/B, and it did fail: it is what exposed the 4px mask leak. Evidence is the
+  computed-style and hit-test output in this session, not a green tick.
+- **Dark mode was forced with `.reader-dark`**, not by the app's own theme control. The control is
+  a known-broken surface (A7b, MEDIUM, two theme systems own the class); untouched here.
+
+
 ## 2026-08-16 (build) — Research History shipped: /ask threads persist, reopen at a URL, filter by register
 
 **Owner-directed build** ("build it and ship it to prod"), against the approved
