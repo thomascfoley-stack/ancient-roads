@@ -162,11 +162,6 @@ export function StudyPanel({
           )}
         </div>
 
- <div className="border-t edge px-5 py-3 text-center">
-          <p className="font-scripture text-xs italic text-stone-500 dark:text-stone-400">
-            Nevertheless, not as I will, but as you will. . . . Your will be done!
-          </p>
-        </div>
       </div>
     </div>
   );
@@ -220,14 +215,20 @@ function CommentariesTab({ entries }: { entries: CommentaryEntry[] }) {
   // hymns/poetry on this LIVE reader tab; the sermon-lane slice 2026-07-18 extends
   // the same treatment to sermon + theology).
   const { exegetical, sermon, theology, songVerse } = partitionByRegister(entries);
+  const [showAll, setShowAll] = useState(false);
   const diverse = pickDiverse(exegetical, 10);
+  // APPEND, never re-pick. `pickDiverse(exegetical, exegetical.length)` would also return every
+  // entry, but in the ORIGINAL order — so expanding would reshuffle the ten already on screen
+  // under the reader's eyes. The first ten keep their places and the remainder follows.
+  const rest = exegetical.filter((e) => !diverse.includes(e));
+  const shown = showAll ? [...diverse, ...rest] : diverse;
   let lastEra = '';
   if (diverse.length === 0 && sermon.length === 0 && theology.length === 0 && songVerse.length === 0) {
     return <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">No commentary on this verse yet.</p>;
   }
   return (
     <div className="space-y-1 px-5 py-4">
-      {diverse.map((entry, i) => {
+      {shown.map((entry, i) => {
         const era = eraLabel(entry.year);
         const showEra = era !== lastEra && era !== '';
         if (showEra) lastEra = era;
@@ -246,10 +247,19 @@ function CommentariesTab({ entries }: { entries: CommentaryEntry[] }) {
           </div>
         );
       })}
-      {diverse.length < exegetical.length && (
-        <p className="pt-1 text-center text-xs text-stone-500 dark:text-stone-400">
-          Showing {diverse.length} of {exegetical.length} voices
-        </p>
+      {/* The count used to be a bare sentence: "Showing 10 of 11 voices", with no way to reach
+          the 11th (2026-08-16 QA fleet). The cap is deliberate — pickDiverse rotates over
+          tradition buckets so ten slots are not spent on one school — but stating a shortfall
+          and offering nothing to do about it reads as a broken control. Every withheld entry is
+          already in `entries`; this renders them, and retrieves nothing. */}
+      {!showAll && diverse.length < exegetical.length && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="mt-1 flex min-h-[44px] w-full items-center justify-center text-center font-sans text-xs text-stone-500 underline underline-offset-2 transition-colors ease-gentle hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-100"
+        >
+          Show all {exegetical.length} voices
+        </button>
       )}
       <div className="pt-2">
         <RegisterLaneSections sermon={sermon} theology={theology} songVerse={songVerse} />
