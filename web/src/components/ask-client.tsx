@@ -8,6 +8,7 @@ import { count } from '@/lib/plural';
 import { deskHref, withPane } from '@/lib/desk';
 import { DISPLAY_LOCALE } from '@/lib/locale';
 import { SaveToStudy, resolveVoiceSourceId } from '@/components/save-to-study';
+import { useSignedIn } from '@/lib/auth/use-signed-in';
 
 // --- shapes mirrored from the server (client only renders; server verifier is truth) ---
 interface Attribution { author: string; work: string; slug?: string; tradition: string; year?: number }
@@ -59,6 +60,10 @@ interface Turn {
   /** Stored turns: sourceIds whose embeddings row is no longer served (per-row §4.4 check,
    *  resolveServability — fails closed). These render attribution, never the quote. */
   withdrawnIds?: string[];
+  /** Q1: this turn failed on auth, not on the pipeline. The failure renders a way OUT (a sign-in
+   *  link) rather than only "Ask again", which re-fails identically. A flag rather than matching
+   *  on `error` text: the copy is user-facing and would silently unhook the link when reworded. */
+  needsSignIn?: boolean;
 }
 
 /** What /ask/[id] passes down: stored turns already in their terminal state. */
@@ -189,6 +194,11 @@ function LaneFilter({ lanes, onToggle }: { lanes: Record<LaneKey, boolean>; onTo
 export const SLOW_ANSWER_NOTICE_MS = 90_000;
 
 export function AskClient({ initialThread }: { initialThread?: InitialThread } = {}) {
+  // Q1: renders the composer's sign-in notice. `useSignedIn` is the shared source and is
+  // deliberately NOT a fetch — see its header for the four features a failed request used to
+  // revoke. Its `mounted` guard means one render returns false, which is the correct direction
+  // here: a signed-in reader sees the notice for one frame, never the reverse.
+  const signedIn = useSignedIn();
   const [question, setQuestion] = useState('');
   const [turns, setTurns] = useState<Turn[]>(() =>
     (initialThread?.turns ?? []).map((t, i) =>
@@ -233,7 +243,7 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: q, lanes, ...(threadIdRef.current ? { threadId: threadIdRef.current } : {}) }),
       });
-      if (res.status === 401) { patch(id, { stage: 'error', error: 'Please sign in to explore the paths.' }); return; }
+      if (res.status === 401) { patch(id, { stage: 'error', error: 'Please sign in to explore the paths.', needsSignIn: true }); return; }
       if (!res.ok || !res.body) { patch(id, { stage: 'error', error: 'Something went wrong. Please try again.' }); return; }
 
       const reader = res.body.getReader();
@@ -375,6 +385,23 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
           ordinary sticky behavior and stays. */}
       <form onSubmit={(e) => { e.preventDefault(); ask(question); }}
         className="edge sticky bottom-[calc(3.75rem+env(safe-area-inset-bottom)+0.25rem)] mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-accent-600 after:absolute after:inset-x-[-1px] after:top-full after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.5rem)] after:bg-stone-50 md:bottom-3 md:after:h-4 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400">
+        {/* Q1 — 13 of 20 QA-fleet sessions typed a full question and only then learned that
+            asking needs an account: the composer, the lane chips and the example prompts all
+            invited input and nothing said otherwise until the POST came back 401. The notice
+            rides the composer rather than the page top, so it cannot scroll away from the
+            control it constrains. NOT an alert and NOT a disabled composer: signed-out is the
+            app's own auth state, not a fault (the prayer-journal lesson), and a reader who
+            signs in on another tab can still submit what they have already typed. The second
+            sentence exists because the fleet also found Search working anonymously while Ask
+            did not, and read the pair as broken rather than as a boundary. */}
+        {!signedIn && (
+          <p className="mb-2 border-b border-stone-200 px-1.5 pb-2 font-sans text-xs leading-relaxed text-stone-600 dark:border-stone-800 dark:text-stone-400">
+            <Link href="/auth/sign-in" className="font-semibold underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-400">
+              Sign in
+            </Link>
+            {' '}to ask — answers are kept in your research history. Reading and search stay open to everyone.
+          </p>
+        )}
         <textarea
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
@@ -433,6 +460,16 @@ function TurnView({ turn, onRetry, busy }: { turn: Turn; onRetry: () => void; bu
       {turn.stage === 'error' ? (
         <div role="alert" className="border border-red-300/60 bg-red-50/60 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
           {turn.error}
+          {/* Q1 — the 401 asked the reader to sign in and offered only "Ask again", which
+              re-fails identically (2026-08-16 QA fleet; the most-repeated finding of the run).
+              The way out belongs in the failure itself, not elsewhere in the nav. */}
+          {turn.needsSignIn && (
+            <p className="mt-2">
+              <Link href="/auth/sign-in" className="font-semibold underline underline-offset-2 hover:text-red-900 dark:hover:text-red-100">
+                Sign in to ask
+              </Link>
+            </p>
+          )}
           {/* An error told the reader to "please try again" and gave them nothing to try it
               with — the question is already gone from the composer by then (`ask` clears it),
               so trying again meant retyping it. */}
