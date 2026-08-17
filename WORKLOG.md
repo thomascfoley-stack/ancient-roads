@@ -1,5 +1,104 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-17 (triage) — QA fleet findings triaged; both blockers corrected; attack plan filed
+
+Read the 20-session fleet report (504 lines, 104 severity-marked findings) and built a fix plan:
+[`docs/pm/orders/2026-08-17-qa-fleet-attack-plan.md`](docs/pm/orders/2026-08-17-qa-fleet-attack-plan.md).
+Checked three of the report's claims before planning on them. **All three were misframed**, which is
+why the plan's first rule is reproduce-before-fix.
+
+**The fleet's BLOCKER 1 — "no site-wide access/password gate encountered on any route" — is FALSE,
+and the entry below this one repeats it.** Re-measured against production 2026-08-17:
+`/read/jhn/1`, `/ask` and `/sitemap.xml` all return `307 → /gate?next=…`; only `/`, `/about`,
+`/features`, `/why` and named marketing assets are public, per the exact-match allowlist in
+`web/src/lib/gate.ts`. `web/src/middleware.ts` is unchanged since `2338c57` (2026-07-15). **The
+sessions were behind the gate the whole time**: the gate cookie is set `httpOnly: true`
+(`web/src/app/api/gate/route.ts:56`), so `document.cookie` reads empty while a valid cookie is
+present. They read JavaScript's view of cookies, saw nothing, and concluded no gate existed.
+That is **watchlist instance six** — an instrument's blind spot recorded as a property of the
+world — committed by an audit written to find defects, in a repo that already names the class.
+
+Consequences, and they reshape the report rather than discard it: **BLOCKER 2** (`/ask` 401s a
+signed-out visitor) is correct behaviour, downgraded to MAJOR-UX — the defect is that nothing
+announces the requirement until after submission. And **every session was a gate-passed,
+signed-out visitor, not an anonymous member of the public** — the beta-tester persona, which is
+a real and useful one, so the findings are relabelled, not invalidated. Any line reading "an
+anonymous visitor can reach X" says nothing about the public. Third check: the MAJOR "hero CTA is
+inert" is `<a href="#ask">` with a matching `id="ask"` section 16 lines below
+(`web/src/app/page.tsx:78`); flagged UNREPRODUCED, not fixed.
+
+**The plan groups the findings by root cause, not by page** — nine blocks (Q0–Q9), three of which
+cover half the findings. Q2 (one route registry: nothing orphaned, no label that lies) and Q4
+(a search box must filter or say "no matches") each close a recurring defect *class* by derivation
+plus a test rather than patching instances; Q4's "9 sources stated vs 10 in the dropdown", found
+independently by three sessions, is the hand-typed-expected-set artefact at the top of the
+watchlist. Two deliberate refusals: **Q8 (Desk) files a design question and does not open a
+branch** — eight of its nine findings are one sentence about having no coherent way in or out,
+that is an owner call, and it overlaps UX-1/UX-3/UX-4; **Q9 (corpus/content) leaves Lane C
+entirely** for the quality-slice lane, since Watts→Gal 6:14 and the Ignatius ranking are retrieval
+changes that carry the accuracy diagnostic with them.
+
+Corrections filed in both places a reader meets the wrong version, per the standing rule: a
+banner on `MASTER_QA_REPORT.md` (findings left as filed — it is evidence, annotated not rewritten)
+and this entry above the fleet's own.
+
+**The run's most valuable finding is not in its findings list:** the interpretation guarantee was
+never exercised (one session fired 5 bait questions and got 401 on all 5 before any model output
+existed), `/ask` production latency is still unmeasured, and RLS is untouched. All three need the
+next fleet run to carry the gate password and two signed-in accounts — an owner decision, since
+the fleet is correctly barred from entering passwords or creating accounts. The fleet independently
+demonstrated SEC-1's second-order effect from the outside: nothing reaches `/api/ask` while the
+gate is up.
+
+NOT DONE / UNVERIFIED: **no code changed and no defect was fixed** — this is triage only. The other
+~100 findings are unverified; each block states its findings as *reported*, and Q0's rule stands
+that reproduction precedes any fix. Browser reproduction of gated surfaces is blocked for an agent
+session (entering the site password to authenticate is not something I do); the clean path is local
+dev, which runs gate-free by design. `npm run audit` NOT RUN — docs-only change.
+
+## 2026-08-16 (QA) — Overnight 20-session anonymous QA fleet against production
+
+Ran 20 independent persona-driven QA sessions (cold-start visitor, Ask explorer, verse-panel
+reader, topical/historian/hymnody/word-study researchers, library browser, reader
+stress-tester, mobile/tablet width checks, gated-feature prober, interpretation-guarantee
+prober, desk explorer, console/network hunter, alias hunter, latency tester, keyboard-only
+a11y skim, marketing funnel checker, returning-user simulation) against
+`https://ancientpaths.app`, all logged out — the fleet is not permitted to create accounts or
+enter passwords, so every account-gated surface (highlighting, prayer journal, desk
+persistence, My Works, Settings, RLS/multi-account isolation) is out of scope for this run and
+explicitly flagged as such in the report, not silently skipped.
+
+**Result: 115 distinct findings after dedup (2 blocker, 24 major, 33 minor, 9 cosmetic, 47
+note/positive), synthesized from well over 220 raw per-session findings.** The single
+most-repeated finding: **13 of 20 sessions independently hit the same wall** — every `/ask`
+submission by an anonymous visitor returns an instant 401 (`"Please sign in to explore the
+paths."`) with no upfront warning before the user types and submits, which also means **the
+interpretation guarantee itself was never exercised this run** — one session ran 5 deliberately
+leading/bait questions specifically to test it and got 401 on all 5 before any model output was
+produced. The second blocker: no site-wide access/password gate was encountered on any of the
+~15 distinct routes tested across the fleet, despite MASTER.md's SEC-1 describing one as
+standing pre-launch policy. Also surfaced: a real corpus-content miss (Watts's "When I Survey
+the Wondrous Cross" not cross-linked to Gal. 6:14 despite the hymn's own printed heading), a
+Desk feature with zero nav entry point whose only discoverable "+" control replaces rather than
+adds a pane, an infinite-scroll bug that silently jumps from 1 John into unrelated Gospel-of-John
+chapters, a dead Table-of-Contents button on long reference works, and confirmation/re-tests of
+several existing backlog items (`/settings` now appears to be a fully-built page rather than the
+documented "Coming Soon" stub — flagged for board re-verification, not changed here; the
+book-alias table gap extends to several new specific slugs; React #418 did not reproduce in 6
+spot-checks this run, which is a non-reproduction, not a fix confirmation).
+
+Full findings, session-by-session coverage list, area breakdown, and the "what this run could
+not tell us" section: `docs/evidence/qa-fleet-2026-08-16/MASTER_QA_REPORT.md`. This is a raw
+findings document for human triage per the fleet's own instructions — no fixes were applied, no
+roadmap/board updates were made, and `ROADMAP.md`/`MASTER.md`/`STATE_OF_TRUTH.md` were
+deliberately left untouched.
+
+NOT DONE / UNVERIFIED: nothing in this report was independently re-verified against production
+by a second pass; roughly 12 of 20 sessions flagged heavy shared-browser-pool contention
+(tab-cap exhaustion, cross-agent tab hijacking) that lowers confidence on a handful of
+low-session-count findings, called out inline in the report; no fix, triage, or severity
+re-ranking has happened yet — this is the raw input to that process, not the process itself.
+
 ## 2026-08-17 (build) — Design C shipped: the /ask scope control is an always-visible chip band
 
 Owner reviewed three scope-control designs and ruled C ("ok deploy c"). The collapsed
