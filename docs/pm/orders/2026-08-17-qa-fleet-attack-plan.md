@@ -11,6 +11,51 @@ and sequences the work so each block is one branch with one exit test.
 
 ---
 
+## Status board — updated 2026-08-17, end of the first build session
+
+| Block | State | Landed |
+|---|---|---|
+| **Q0** | **DONE** | Corrections filed in the report, the WORKLOG and this plan |
+| **Q1** | **DONE** | Pre-submit notice + sign-in link in the 401. `?next=` split out as **Q1b** (below) |
+| **Q2** | **DONE** | `lib/library-nav.ts` — one label per route, both navs derive it; heading-match invariant |
+| **Q3** | **PART 1 DONE** | 11th voice reachable; Gethsemane line deleted. Four findings remain (below) |
+| **Q4** | **PART DONE** | The 3-session count bug closed. The silent no-op search boxes remain |
+| **Q5** | **NOT REPRODUCED** | Does not occur in dev; a production-build repro is blocked (below) |
+| **Q6** | **DONE** | Normalizer fix closes every hyphenated/unspaced-ordinal book URL; robots + sitemap added |
+| **Q7** | **DONE** | Log in → sign-in, footer "Contact" renamed, `/ask` title, sidebar duplicate label |
+| **Q8** | **DESIGN QUESTION** | Unchanged — still an owner call, still not a branch |
+| **Q9** | **OUT OF LANE** | Unchanged — quality-slice lane |
+
+**The single most useful output of this session is not a fix.** Every block was written from the
+findings list rather than from the code, and **three of the four blocks that got read carefully
+turned out to be wrong about their own root cause**:
+
+- **Q1** prescribed gating `/api/annotations` on the session. The tree had already rejected that,
+  with reasons; the prescribed exit test would have failed against correct code.
+- **Q4** called the source count a hand-typed set. Both counts were derived — from different sets.
+  The defect was one noun.
+- **Q6** was filed as four missing aliases. Three of the four were already in the table; the
+  normalizer never converted hyphens, so **every** numbered and multi-word book failed from a
+  pasted URL. The property test found ~20 more than the fleet reported.
+
+The lesson is now load-bearing rather than rhetorical: **a findings list tells you where to look,
+never what is wrong.** Reproduce from the code before writing a line of fix.
+
+### Carried forward
+
+| # | Item | Why it is not done |
+|---|---|---|
+| **Q1b** | `?next=` return path after sign-in | Sign-in hardcodes `router.push('/home')`; Google rides `FIRST_RUN_DESTINATION` through a Neon `callbackURL` validator that has already taken production auth down once over the value's shape (`auth-forms.tsx:30-45`). Three call sites and an external validator — its own block |
+| **Q3a** | No next/previous-verse control; adjacent verse click closes the panel instead of switching | Genuine feature work: the panel would need the chapter's verse list threaded through the reader. Beyond "minimal change"; flag-and-stop per the UX protocol |
+| **Q3b** | Verse-number tap targets under WCAG 24×24 | **Governed by ADR-047, an owner ruling.** The handle already carries an expanded invisible hit area, and its asymmetry is deliberate and documented — `-right-0.5` matches `mr-0.5` exactly "so the invisible area never steals a long-press from the first word". Widening re-litigates the ADR. WCAG 2.2 SC 2.5.8's inline exception plausibly applies to a verse marker set in running text. Owner call, not an agent's |
+| **Q3c** | Background verse buttons in the a11y tree behind the open dialog | Largely mitigated already: `use-dialog.ts` implements a real focus trap (Tab cycles inside, wraps back in) and sets `aria-modal="true"`, which is the standard instruction to assistive tech to ignore the rest. Residual gap is small; a DOM-level `inert` would need the reader page to track dialog state |
+| **Q4b** | Search boxes that silently no-op (catalog search, Sermons/Historians) | Untouched. Needs its own reproduction first — see the lesson above |
+| **Q5** | The `/library` hang | **Does not reproduce in dev** — the Suspense fallback swaps out correctly, verified in the DOM. Root cause is already diagnosed in-tree at `library/uploads/page.tsx:14-28` (the parent `loading.tsx` boundary never swaps on a hard load; measured at 43s) and `/library/uploads` fixed itself by going synchronous while the hub never did. A local production-build repro is blocked: `next start` sets `NODE_ENV=production`, so the gate fails closed with 503 without `SITE_PASSWORD`. **Needs either that value in a local env or a look at production** |
+| **Q6b** | `/bible/web`, `/commentaries` returning an unstyled raw 400 | Root cause found: `next.config`'s corpus rewrite forwards them to the Blob origin and the raw "Not a valid path" is **the Blob store's own error**. That is Lane D **D3** infrastructure, the store is not connected yet, and it cannot be tested locally |
+| **Q7b** | The static demo has no path into the live feature | Owner call: while SEC-1 is open, "See it answered" can only mean "see this screenshot". The honest fix may be copy, not code |
+
+---
+
 ## 0. Read this before you fix anything: the frame is wrong
 
 **Both of the report's BLOCKERs are misframed, and one of them is simply false.** Verified

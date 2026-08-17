@@ -1,5 +1,68 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-17 (build) — QA fleet remediation: Q1/Q2/Q6/Q7 done, Q3/Q4 part, Q5 not reproduced
+
+Worked the attack plan filed earlier the same day
+([order](docs/pm/orders/2026-08-17-qa-fleet-attack-plan.md); status board at its head). Branch
+`fix/q1-signed-out-state`. Seven commits.
+
+**Shipped:** **Q1** — `/ask` announces the sign-in requirement before the reader types, and the 401
+carries a live sign-in link (the fleet's most-repeated finding, 13 of 20 sessions). **Q2** —
+`lib/library-nav.ts`, one label per library route derived by both nav surfaces, closing a drift
+where "Saved" opened two different destinations depending on which nav you used and "My Works" was
+advertised as "My uploads" directly beneath a comment forbidding exactly that. **Q6** — the book
+alias normalizer, plus `robots.ts`/`sitemap.ts`. **Q7** — Log in now reaches sign-in, the footer's
+"Contact" column no longer claims a contact method it does not have, `/ask`'s tab says "Ask", and
+the sidebar stopped calling `/ask` "Ancient Paths" beside the logo of the same name. **Q3 part 1** —
+the 11th voice on John 1:1 is reachable and the unrelated Gethsemane line is deleted from both
+panels. **Q4 part** — the Passage-search count.
+
+**THE SESSION'S REAL FINDING IS METHODOLOGICAL, and it cost nothing to learn because the plan's own
+rule caught it: a findings list tells you where to look, never what is wrong.** Three of the four
+blocks read carefully were wrong about their own root cause, and in each case the truth was both
+smaller and wider than the report:
+
+- **Q1** prescribed gating `/api/annotations` on the session. `use-annotation-writes.ts:85-93` had
+  already rejected that deliberately — gating serialises the load behind the session query and
+  makes Retry unreachable exactly when it helps. **The block's original exit test ("zero 401s on a
+  reader page") would have failed against correct code.** The finding is downgraded to NOTE.
+- **Q4** called the 9-vs-10 source count a hand-typed set and prescribed deriving it. Both counts
+  were already derived, from different sets — whole-library manifest vs authors on this passage —
+  and every option under the dropdown is an author. One noun was wrong, not the arithmetic.
+- **Q6** was filed as four missing book aliases. Three of the four were already in the table:
+  `normalizeBookInput` never converted HYPHENS, so the whole hyphenated slug was compared against a
+  spaced key and **every numbered and multi-word book failed from a pasted URL** — the property
+  test watched ~20 go red, against the fleet's four. The roman-ordinal rule separately required a
+  space the digit rule never did. Both fixes are in the normalizer, so the whole class closes at
+  once. The roman rule is table-guarded because "isaiah" begins with a roman "i" and an unguarded
+  rewrite breaks a book that works today.
+
+**Deliberately NOT fixed, each with its reason** (full table in the order): `?next=` after sign-in
+(three call sites plus a Neon `callbackURL` validator that has already taken prod auth down once);
+verse-number tap targets (**ADR-047, an owner ruling**, whose asymmetry is documented as
+deliberate — widening it re-litigates the ADR); background-focus behind the study dialog (already
+mitigated — `use-dialog.ts` traps focus and sets `aria-modal`); the bare `/bible/web` 400 (the raw
+error is the **Blob store's**, i.e. Lane D D3, store not yet connected); next/prev verse (real
+feature work, flag-and-stop per the UX protocol).
+
+**Q5, the `/library` hang — NOT REPRODUCED, not fixed.** It does not occur in dev: the Suspense
+fallback swaps out correctly, verified in the DOM. Root cause is already written down in-tree at
+`library/uploads/page.tsx:14-28` — the parent `loading.tsx` boundary never swaps in the resolved
+segment on a hard load, measured at 43s — and that page fixed itself by going synchronous while the
+hub never did, which is exactly the fleet's report. A local production-build repro is **blocked**:
+`next start` forces `NODE_ENV=production`, so the site gate fails closed with 503 without
+`SITE_PASSWORD`. Needs that value in a local env, or a look at production. (That 503 is incidentally
+a third independent confirmation that the fleet's "no gate anywhere" blocker is false.)
+
+NOT DONE / UNVERIFIED: `npm run audit` NOT RUN (refuses without a dev `DATABASE_URL`). Full web
+suite 1031/1126 with 94 skipped and **one failure that is pre-existing and environmental** —
+`user-corpus/queue-never-drops`, `ECONNREFUSED`, proven by stashing the session's changes and
+watching it fail identically. Root suite 68 files / 794 tests green. Every UI change was loaded in a
+browser against the dev server at 390px and 1280px; the `/ask` 401 path and the John 1:1 expansion
+were driven against real data. **Nothing is deployed** — this is all on a branch, and the browser
+pass was dev, not production. Q4b (silent no-op search boxes) is untouched and still needs its own
+reproduction before anyone writes a fix for it.
+
 ## 2026-08-17 (triage) — QA fleet findings triaged; both blockers corrected; attack plan filed
 
 Read the 20-session fleet report (504 lines, 104 severity-marked findings) and built a fix plan:
