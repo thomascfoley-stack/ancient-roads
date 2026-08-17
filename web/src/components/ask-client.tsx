@@ -347,7 +347,11 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
               {EXAMPLES.map((ex) => (
                 <li key={ex} className="edge border-b">
                   <button
-                    onClick={() => ask(ex)}
+                    /* FILLS the composer; it used to `ask(ex)` outright. Submitting a question
+                       the reader never read is the wrong default on a control whose whole purpose
+                       is to show what a good question looks like — and signed out it now spends
+                       their click on an instant 401. */
+                    onClick={() => setQuestion(ex)}
                     className="group flex min-h-[56px] w-full items-center gap-3 py-3 text-left font-serif text-lg leading-snug text-stone-500 transition-colors ease-gentle hover:text-accent-700 dark:text-stone-400 dark:hover:text-accent-300"
                   >
                     <span className="flex-1">{ex}</span>

@@ -21,6 +21,17 @@ const LINKS: { key: MarketingPage; href: string; label: string }[] = [
 
 export function MarketingNav({ active }: { active?: MarketingPage }) {
   return (
+    <>
+      {/* The public pages had NO skip link, while `.skip-link` has been in globals.css all along
+          and `app-shell.tsx` renders one — so keyboard readers got the treatment on every surface
+          EXCEPT the front door (2026-08-16 QA fleet). First focusable element in the document,
+          visible only on focus. Each marketing page carries the matching `id="main"`. */}
+      <a
+        href="#main"
+        className="skip-link bg-accent-700 px-4 py-2 text-sm font-semibold text-stone-50"
+      >
+        Skip to content
+      </a>
     <nav className="sticky top-0 z-40 border-b border-stone-200/40 bg-stone-50/70 backdrop-blur-xl">
       <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto] items-center px-5 py-2 sm:h-16 sm:grid-cols-[1fr_auto_1fr] sm:px-8 sm:py-0">
         {/* Wordmark: left on all sizes; mobile wraps the links to a second row. */}
@@ -62,5 +73,6 @@ export function MarketingNav({ active }: { active?: MarketingPage }) {
         </div>
       </div>
     </nav>
+    </>
   );
 }

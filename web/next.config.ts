@@ -118,6 +118,14 @@ const nextConfig: NextConfig = {
   // BEFORE rewrites, so the site password still fronts these paths; the raw Blob URLs are
   // public, which is stated and acceptable — every byte here is Gate-B-verified PD/permissive
   // text, and the gates run on the local copies these were synced from.
+  // `/reading-plans` 404'd while the sidebar's own visible label reads "Reading plans" — a
+  // reader who types what the nav says lands on an error (2026-08-16 QA fleet). The route is
+  // `/plans`; this is the redirect that makes the guessable spelling work. Permanent, because the
+  // canonical URL is not changing.
+  async redirects() {
+    return [{ source: '/reading-plans', destination: '/plans', permanent: true }];
+  },
+
   async rewrites() {
     const base = process.env.CORPUS_CDN_BASE;
     if (!base) return { beforeFiles: [], afterFiles: [], fallback: [] };

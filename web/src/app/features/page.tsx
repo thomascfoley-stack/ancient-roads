@@ -44,7 +44,7 @@ function SectionNumber({ n }: { n: string }) {
 
 export default function FeaturesPage() {
   return (
-    <main className="relative isolate">
+    <main id="main" className="relative isolate">
       <MarketingGround veil="light" />
       <MarketingNav active="features" />
 
