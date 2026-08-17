@@ -1,11 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchLexEntry, fetchConcordance, decodeMorph, type OWord, type LexEntry, type Concordance } from '@/lib/original';
-import { decodeVerseId, formatVerseId } from '@bible/verse-id';
-import { BOOK_BY_NUM } from '@bible/books';
-
-const CONCORDANCE_PAGE = 12;
+import { fetchLexEntry, decodeMorph, type OWord, type LexEntry } from '@/lib/original';
+import { ConcordanceList } from '@/components/concordance-list';
 
 export function WordPanel({
   word,
@@ -24,21 +21,18 @@ export function WordPanel({
   // Lexicon file itself failed to load (vs. entry === null: no entry for this key).
   const [lexDown, setLexDown] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [concordance, setConcordance] = useState<Concordance | null>(null);
-  const [ccPage, setCcPage] = useState(0);
 
   useEffect(() => {
     setLoading(true);
     setEntry(null);
     setLexDown(false);
-    setConcordance(null);
-    setCcPage(0);
     fetchLexEntry(word.s).then((e) => {
       setLexDown(e === 'unavailable');
       setEntry(e === 'unavailable' ? null : e);
       setLoading(false);
     });
-    if (word.s) fetchConcordance(word.s).then(setConcordance);
+    // A042/A044: the concordance fetch and its paging moved into <ConcordanceList> below, which
+    // the standalone lexicon now renders too. This effect keeps only the lexicon entry.
   }, [word.s]);
 
   useEffect(() => {
@@ -135,52 +129,9 @@ export function WordPanel({
           )}
         </div>
 
-        {concordance && concordance.count > 1 && (
-          <div className="border-t edge px-5 py-4">
-            <p className="mb-2 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-              Also appears in {concordance.count} verse{concordance.count === 1 ? '' : 's'}
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {concordance.verseIds
-                .slice(ccPage * CONCORDANCE_PAGE, ccPage * CONCORDANCE_PAGE + CONCORDANCE_PAGE)
-                .map((vid) => {
-                  const { book, chapter } = decodeVerseId(vid);
-                  const slug = BOOK_BY_NUM.get(book)?.slug;
-                  return (
-                    <a
-                      key={vid}
-                      href={slug ? `/read/${slug}/${chapter}` : undefined}
-                      className="bg-stone-100 px-2.5 py-1 text-xs text-stone-600 transition-colors ease-gentle hover:bg-accent-100 hover:text-accent-800 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-accent-950/40 dark:hover:text-accent-300"
-                    >
-                      {formatVerseId(vid)}
-                    </a>
-                  );
-                })}
-            </div>
-            {concordance.count > CONCORDANCE_PAGE && (
-              <div className="mt-3 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
-                <button
-                  onClick={() => setCcPage((p) => Math.max(0, p - 1))}
-                  disabled={ccPage === 0}
-                  className="inline-flex min-h-[44px] items-center px-2 hover:text-stone-600 disabled:opacity-40 dark:hover:text-stone-300"
-                >
-                  ← prev
-                </button>
-                <span>
-                  {ccPage * CONCORDANCE_PAGE + 1}–{Math.min((ccPage + 1) * CONCORDANCE_PAGE, concordance.count)} of{' '}
-                  {concordance.count}
-                </span>
-                <button
-                  onClick={() => setCcPage((p) => p + 1)}
-                  disabled={(ccPage + 1) * CONCORDANCE_PAGE >= concordance.count}
-                  className="inline-flex min-h-[44px] items-center px-2 hover:text-stone-600 disabled:opacity-40 dark:hover:text-stone-300"
-                >
-                  next →
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+        {/* minCount 2: the reader is standing in one of these verses already, so a one-item list
+            would offer a link to the verse behind this panel. */}
+        <ConcordanceList strong={word.s} minCount={2} />
 
         <div className="border-t edge px-5 py-4">
           {/* PRD §6 primary CTA: 1px ink hairline, transparent, ink fill on hover. */}

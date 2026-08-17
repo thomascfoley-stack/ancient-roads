@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { loadFullLexicon, type LexEntry } from '@/lib/original';
+import { ConcordanceList } from '@/components/concordance-list';
 import { useDragDismiss } from '@/lib/use-drag-dismiss';
 import { useDialog } from '@/lib/use-dialog';
 
@@ -222,6 +223,13 @@ function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: ()
           {hit.def && <Field label="Definition" large>{hit.def}</Field>}
           {hit.derivation && <Field label="Derivation">{hit.derivation}</Field>}
           {hit.kjv && <Field label="KJV usage"><span className="italic">{hit.kjv}</span></Field>}
+          {/* A042 — the standalone lexicon was "a strictly thinner tool" than the reader's word
+              panel, and the cross-verse occurrence list was the gap that was real AND cheap: the
+              concordance is keyed by a Strong's number alone, which is exactly what this page has.
+              It also gives the entry its only route back into Scripture — each chip lands on the
+              verse (A044), where commentary is one tap away. -mx-5 lets the rule run full width
+              inside this padded scroll container. */}
+          <ConcordanceList strong={hit.strong} className="-mx-5 border-t edge px-5 pt-4" />
         </div>
       </div>
     </div>
