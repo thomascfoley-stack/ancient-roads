@@ -445,6 +445,27 @@ export function Sidebar() {
     return () => window.removeEventListener('keydown', onKey);
   }, [writing]);
 
+  // A095 — THE COLLAPSE CHEVRON'S NAME AND TOOLTIP, FROM ONE BINDING.
+  //
+  // The 2026-08-17 QA pass filed this control as "an unlabeled, undiscoverable chevron with no
+  // tooltip". HALF OF THAT WAS ALREADY FALSE and it is worth saying, because it changes the fix:
+  // both branches below already carried a state-correct `aria-label` ("Expand sidebar" when
+  // collapsed, "Collapse sidebar" when open), and `sidebar-writing-rail.test.tsx` has queried the
+  // full nav BY that name since 2026-08-12. A screen reader was never the reader left guessing.
+  //
+  // What was true is that a SIGHTED reader was. The two states render as bare `>` and `<` strokes
+  // with no `title`, so hovering the chevron said nothing at all — the same shape as UX-2, where an
+  // affordance's only explanation lived somewhere the person looking at it never went. The rail's
+  // own icon-only links (`railLinks` above) already set `aria-label` AND `title` together for
+  // exactly this reason; this control was the one icon-only button in the file that did not.
+  //
+  // ONE BINDING, DERIVED FROM `collapsed`, spent on both attributes in both branches. Two
+  // hand-typed strings per branch is how a tooltip ends up disagreeing with the accessible name,
+  // and a fixed string across branches is how a control ends up announcing "Collapse" while it
+  // expands — which is the bookmark control's B023 defect ("Bookmark" whether or not the verse was
+  // bookmarked) in a different corner of the app. Derived, it cannot drift either way.
+  const toggleLabel = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+
   // The pre-launch password gate stands alone — no app chrome around it.
   if (pathname === '/gate') return null;
 
@@ -495,7 +516,8 @@ export function Sidebar() {
         <button
           onClick={() => setCollapsed(false)}
           className="p-1 text-stone-500 transition-colors ease-gentle hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
-          aria-label="Expand sidebar"
+          aria-label={toggleLabel}
+          title={toggleLabel}
         >
           <svg aria-hidden className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
@@ -521,7 +543,8 @@ export function Sidebar() {
         <button
           onClick={() => setCollapsed(true)}
           className="p-1 text-stone-500 transition-colors ease-gentle hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
-          aria-label="Collapse sidebar"
+          aria-label={toggleLabel}
+          title={toggleLabel}
         >
           <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />

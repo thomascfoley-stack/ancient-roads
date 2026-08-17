@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
+import { isFetchableChapter } from '@/lib/chapter-param';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   BOOK_BY_BOOK_SLUG,
@@ -209,6 +210,8 @@ export default function ReaderPage() {
 
   // Prefetch commentary for the chapter.
   useEffect(() => {
+    // A084 — unguarded, this prefetched `.../NaN` on every malformed chapter URL.
+    if (!isFetchableChapter(book?.bookNum, chapterNum)) return;
     const key = `${fetchSlug}:${chapterNum}`;
     if (commentaryCache.has(key)) return;
     fetchCommentary(fetchSlug, chapterNum).then((result) => {
@@ -219,7 +222,8 @@ export default function ReaderPage() {
   // Prefetch original-language words for the chapter (small per-chapter file);
   // powers both the interlinear view and the study panel's Word study tab.
   useEffect(() => {
-    if (!book) return;
+    // A084 — same as the commentary prefetch above: guarded the book, never the chapter.
+    if (!isFetchableChapter(book?.bookNum, chapterNum)) return;
     setOriginal(null);
     fetchOriginal(fetchSlug, chapterNum).then(setOriginal);
   }, [book, fetchSlug, chapterNum]);
