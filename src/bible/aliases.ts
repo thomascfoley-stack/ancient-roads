@@ -72,9 +72,9 @@ export const BOOK_ALIASES: Record<string, string[]> = {
   jas: ['james', 'jam', 'jms'],
   '1pe': ['1 peter', '1 pet', '1 pt', '1 pe'],
   '2pe': ['2 peter', '2 pet', '2 pt', '2 pe'],
-  '1jn': ['1 john', '1 jn', '1 jhn', '1 joh'],
-  '2jn': ['2 john', '2 jn', '2 jhn', '2 joh'],
-  '3jn': ['3 john', '3 jn', '3 jhn', '3 joh'],
+  '1jn': ['1 john', '1 jn', '1 jhn', '1 joh', '1 jo'],
+  '2jn': ['2 john', '2 jn', '2 jhn', '2 joh', '2 jo'],
+  '3jn': ['3 john', '3 jn', '3 jhn', '3 joh', '3 jo'],
   jud: ['jude'],
   rev: ['revelation', 'revelations', 'rv', 'apoc', 'apocalypse'],
 };

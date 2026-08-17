@@ -90,13 +90,34 @@ const ORDINAL_WORDS: Record<string, string> = {
 // Normalize a book token: lowercase, strip periods, collapse whitespace,
 // digit ordinals. "I Jn." → "1 jn", "FIRST JOHN" → "1 john".
 export function normalizeBookInput(raw: string): string {
-  let s = raw.toLowerCase().replace(/\./g, ' ').replace(/\s+/g, ' ').trim();
+  // HYPHENS AND UNDERSCORES ARE SEPARATORS, NOT CHARACTERS. A URL path segment spells
+  // "Song of Solomon" as "song-of-solomon", and this table is keyed with spaces — so without
+  // this the whole hyphenated form was compared against a spaced key and could never match.
+  // That is not a gap of a few aliases: EVERY numbered and multi-word book (1 Samuel, 2 Kings,
+  // 1 Corinthians, Song of Songs…) failed from a pasted or hand-typed URL, while its unspaced
+  // abbreviation worked. Four instances of it were reported by the 2026-08-16 QA fleet; the
+  // property test in test/invariants/book-slug-url-forms.test.ts found the rest.
+  let s = raw.toLowerCase().replace(/[.\-_]/g, ' ').replace(/\s+/g, ' ').trim();
   const m = /^(i{1,3}|1st|2nd|3rd|first|second|third)\s+(.+)$/.exec(s);
   if (m && m[1] !== undefined && m[2] !== undefined) {
     s = `${ORDINAL_WORDS[m[1]] ?? m[1]} ${m[2]}`;
   }
   // "1john" → "1 john"
   s = s.replace(/^([1-3])(?=[a-z])/, '$1 ');
+  // "iikings" → "2 kings". The ordinal rule above requires a separator that the digit rule on the
+  // line above never did, so the roman spelling of the same URL resolved to nothing.
+  //
+  // TABLE-GUARDED, because a bare prefix rule here is WRONG: "isaiah" begins with a roman "i", and
+  // an unguarded transform rewrites it to "1 saiah" and breaks a book that works today. So the
+  // rewrite is applied only when the input names no book as written AND the rewritten form does —
+  // which also makes "iv kings" and a lone "ii" fall through untouched.
+  if (!ALIAS_EXACT.has(s)) {
+    const roman = /^(i{1,3})(?=[a-z])/.exec(s);
+    if (roman && roman[1] !== undefined) {
+      const candidate = `${ORDINAL_WORDS[roman[1]] ?? roman[1]} ${s.slice(roman[1].length)}`;
+      if (ALIAS_EXACT.has(candidate)) s = candidate;
+    }
+  }
   return s;
 }
 
