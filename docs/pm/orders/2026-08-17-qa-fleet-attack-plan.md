@@ -144,22 +144,47 @@ retry stacks a duplicate error block instead of replacing · authenticated deep 
 `/api/auth/get-session` calls in ~10s · `/prayers` flashes a "Write a prayer" button before the
 gate resolves · momentary empty error-banner frame.
 
-**Minimal change**, escalating only as far as needed:
+**Minimal change — REVISED 2026-08-17 after reading the code. Two of the four things this block
+originally prescribed were already answered in the tree, with better reasoning than mine.** Recorded
+rather than silently dropped, because the same two proposals will occur to the next reader:
 
-1. One shared auth-state source so components read a single resolved session instead of each
-   re-fetching (kills the 20+ calls and the flash-of-wrong-state in the same stroke).
-2. Reader stops calling `/api/annotations` when there is no session — a signed-out page should not
-   fire a request it knows will 401.
-3. The `/ask` composer renders a persistent, non-blocking line above the input: signed-out users are
-   told before they type. The error path gets a real sign-in link that carries `?next=` back.
+1. ~~One shared auth-state source~~ — **ALREADY EXISTS.** `lib/auth/use-signed-in.ts` wraps
+   `authClient.useSession()` behind a `mounted` guard, and its header documents why it is not a
+   fetch (two surfaces used to infer sign-in from `GET /api/annotations` succeeding, so any 500,
+   429 or dropped phone connection revoked four features under a genuinely signed-in reader). The
+   remaining question is narrower: whether Neon's `authClient.useSession()` dedupes across the 5
+   call sites (`sidebar.tsx:124`, `prayer-journal.tsx:58`, `save-to-study.tsx:150`, plus
+   `useSignedIn` in the reader and work pages) or fires one `get-session` each. **Unverified — it
+   needs a running client, not a grep.** If it dedupes, the 20+ finding is a re-render problem, not
+   an architecture one.
+2. ~~Reader stops calling `/api/annotations` when signed out~~ — **DELIBERATELY REJECTED ALREADY,
+   and my proposal would have reintroduced a fixed defect.** `use-annotation-writes.ts:85-93` says
+   the GET is "NOT gated on `useSignedIn()`, on purpose": the auth cookie rides the request whether
+   or not the session query has resolved, so gating serialises the load behind it for no gain, and
+   whenever the session query is pending, slow or failing the GET would never be issued, `loadFailed`
+   could never be set, and Retry would be unreachable exactly when it helps. **The console 401 on
+   every signed-out reader load is therefore a known, accepted cost of that trade, not a defect.**
+   Downgrade the finding to NOTE and stop re-filing it. If the noise is genuinely worth removing, the
+   honest fix is on the route (`api/annotations/route.ts` wraps auth and the DB query in one `try` and
+   answers 401 for both — splitting those is a real improvement), not on the caller.
+3. **The `/ask` composer tells you before you type.** CONFIRMED from source: `ask-client.tsx:236` is
+   the *only* signed-out handling on the whole surface — a bare `'Please sign in to explore the
+   paths.'` string, set after the POST returns 401. Nothing on the page consults `useSignedIn()` at
+   all. So both halves of the 13-session finding reproduce statically: no pre-submit signal exists,
+   and the error carries no link. This is the block's real work.
 4. `requireUser` redirects preserve the destination in `?next=` and the sign-in page honours it.
 
-**Exit test:** signed-out, load a reader page → zero console errors and zero 401s; submit on `/ask`
-→ the pre-submit notice was already visible and the error offers a working link that returns you to
-`/ask` after sign-in; count `get-session` calls across a 10s page interaction → 1.
+**Exit test:** signed-out on `/ask`, the notice is visible *before* any submit, and the error offers
+a working link that returns to `/ask` after sign-in. (The original exit test said "zero 401s on a
+reader page" — **that test was wrong and would have failed against correct code**, per item 2.)
 
 **Watch for:** item 4 touches auth redirect flow, which is C5 territory. If it needs a change to
 `requireUser`'s signature, stop — that is 18 call sites and a different block.
+
+**Method note, and it is the point of this whole plan:** this block was written from the findings
+list and was wrong twice in four items. The code had already reasoned past both. Every other block
+below is in the same state — written from the report, not yet checked against the tree. Do to each
+of them what was just done to this one *before* opening its branch.
 
 ---
 
