@@ -220,3 +220,11 @@ filed Hebrews/Hebrew search-design pass.
 thread-URL swap live; append (Q2) persisted to the same thread; the reopened thread renders
 attributed after the P1 fix; the Show filter and historian lane proven on live data;
 crash-durability proven by the power failure.
+
+**P5 (owner-reported 2026-08-17): content streamed through the slot BELOW the sticky
+composer.** The composer floats at `bottom-3` (desktop) / the tab-bar offset (mobile), and
+scrolling text reappeared in the gap beneath it. FIX: an `after:` strip the composer's own
+width, in the page background tokens (identical to body's `bg-stone-50 dark:bg-stone-950`, so
+light/dark parity holds by construction), height matched per breakpoint. Verified by computed
+style: light `match:true`, mobile 68px / desktop 16px. Top-edge slide-under is ordinary sticky
+behavior and was left alone.

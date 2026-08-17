@@ -363,8 +363,15 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
           shadow. `.edge` owns the hairline and is unlayered, so a `focus-within:border-*`
           utility could never override it — focus is shown with the PRD's antique-gold
           outline (§10) instead of a border-colour swap. */}
+      {/* The composer floats above the page bottom (bottom-3 / the mobile tab-bar offset),
+          which leaves a slot BELOW it that scrolling content streamed straight through
+          (owner-reported 2026-08-17, screenshot: a quote sliding through the gap under the
+          box). The after: strip fills exactly that slot in the PAGE background (body is
+          bg-stone-50/dark:bg-stone-950, layout.tsx:134), so content vanishes at the
+          composer's bottom edge instead of reappearing beneath it. Top-edge slide-under is
+          ordinary sticky behavior and stays. */}
       <form onSubmit={(e) => { e.preventDefault(); ask(question); }}
-        className="edge sticky bottom-[calc(3.75rem+env(safe-area-inset-bottom)+0.25rem)] mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-accent-600 md:bottom-3 dark:bg-stone-950 dark:focus-within:outline-accent-400">
+        className="edge sticky bottom-[calc(3.75rem+env(safe-area-inset-bottom)+0.25rem)] mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-accent-600 after:absolute after:inset-x-[-1px] after:top-full after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.5rem)] after:bg-stone-50 md:bottom-3 md:after:h-4 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400">
         <textarea
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
