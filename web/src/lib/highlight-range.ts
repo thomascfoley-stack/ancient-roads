@@ -153,12 +153,29 @@ function pieceIndexOf(nodes: Text[], node: Node, offset: number): { piece: numbe
  *  container's canonical text (v.text / sections.body). Formerly `rangeToVerseOffsets`; the
  *  logic was always container-generic — the name was the only verse coupling. */
 export function rangeToOffsetsInContainer(range: Range, container: Element, textLen: number): { start: number; end: number } | null {
-  if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) return null;
+  // A START outside the container is still refused: `useTextAnnotation` resolves its target FROM
+  // the start node, so a start elsewhere means the caller asked about the wrong container, and
+  // clamping it would be a guess at which verse the reader meant.
+  if (!container.contains(range.startContainer)) return null;
   const nodes = textNodesOf(container);
   if (nodes.length === 0) return null;
   const s = pieceIndexOf(nodes, range.startContainer, range.startOffset);
-  const e = pieceIndexOf(nodes, range.endContainer, range.endOffset);
-  if (!s || !e) return null;
+  if (!s) return null;
+  // AN END OUTSIDE THE CONTAINER CLAMPS TO THIS CONTAINER'S END, rather than voiding the whole
+  // selection. It used to be half of one guard with the start check, so a drag that crossed a
+  // verse boundary returned null — `pending` went null and the popover never mounted. The reader
+  // dragged, released, and the app did nothing at all: no highlight, no popover, no message
+  // (B047, 2026-08-16 QA fleet).
+  //
+  // Clamping is the repair, not multi-verse spanning. Highlights ARE stored per verse so spanning
+  // is buildable, but it changes what `useTextAnnotation` returns and that hook serves two other
+  // surfaces — a design change, filed separately. Clamping is visible in its result: the highlight
+  // paints on the first verse only, which tells the reader exactly what happened.
+  const lastNode = nodes[nodes.length - 1]!;
+  const e = container.contains(range.endContainer)
+    ? pieceIndexOf(nodes, range.endContainer, range.endOffset)
+    : pieceIndexOf(nodes, lastNode, lastNode.length);
+  if (!e) return null;
   const lengths = nodes.map((n) => n.length);
   return rangeToOffsets(lengths, s.piece, s.offset, e.piece, e.offset, textLen);
 }
