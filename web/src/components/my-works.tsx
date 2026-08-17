@@ -78,6 +78,8 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
   const [hits, setHits] = useState<Hit[] | null>(null);
   const [presence, setPresence] = useState<Presence[] | null>(null);
   const [searchNote, setSearchNote] = useState<string | null>(null);
+  /** Which row's Remove is armed (B017). One at a time; null when nothing is armed. */
+  const [armedRemove, setArmedRemove] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
   const [voices, setVoices] = useState<Record<string, VoicesState>>({});
   const fileInput = useRef<HTMLInputElement>(null);
@@ -145,6 +147,15 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
   }
   async function remove(id: string) {
     await fetch(`/api/user-corpus/documents/${id}`, { method: 'DELETE' });
+    // B018 — the document list reloaded and the SEARCH RESULTS did not, so hits pointing at the
+    // just-deleted document stayed on screen until the reader searched again. Clicking one of
+    // those is the failure that matters: a result for a document that no longer exists. Cleared
+    // rather than silently re-run — re-running spends a request the reader did not ask for, and
+    // the honest state after a delete is "these results are no longer current".
+    setHits(null);
+    setPresence(null);
+    setSearchNote(null);
+    setArmedRemove(null);
     await load();
   }
 
@@ -400,12 +411,21 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                         The tradition on this
                       </button>
                     )}
+                    {/* B017 — this deleted on ONE click, with no confirmation, on the reader's
+                        own uploaded file. Two steps, disarming on blur so an armed row cannot sit
+                        waiting to catch a later stray click. Same pattern as the research-thread
+                        and study controls. */}
                     <button
                       type="button"
-                      onClick={() => void remove(d.id)}
-                      className="min-h-[44px] px-3 text-[13px] font-semibold text-stone-500 hover:text-red-700 dark:text-stone-400"
+                      onClick={() => (armedRemove === d.id ? void remove(d.id) : setArmedRemove(d.id))}
+                      onBlur={() => setArmedRemove((cur) => (cur === d.id ? null : cur))}
+                      className={`min-h-[44px] px-3 text-[13px] font-semibold ${
+                        armedRemove === d.id
+                          ? 'text-red-700 dark:text-red-400'
+                          : 'text-stone-500 hover:text-red-700 dark:text-stone-400'
+                      }`}
                     >
-                      Remove
+                      {armedRemove === d.id ? 'Remove?' : 'Remove'}
                     </button>
                   </div>
 
