@@ -24,7 +24,10 @@
       ],
       "port": 3003,
       "autoPort": true,
-      "cwd": "web"
+      "cwd": "web",
+      "env": {
+        "NODE_ENV": "development"
+      }
     }
   ]
 }

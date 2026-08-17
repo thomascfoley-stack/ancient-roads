@@ -21,13 +21,27 @@ export default function WordStudyPage() {
   const [selected, setSelected] = useState<Hit | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // THE LOAD IS DISOWNED WHEN `lang` CHANGES. Without the guard an in-flight load kept its claim
+  // on state, so switching tabs before the first fetch settled let the ABANDONED language land on
+  // top of the current one: `lang` said hebrew while `lex` held Greek. Nothing looked wrong —
+  // `lex` was non-null, so no loading line and no error — and the page then searched the wrong
+  // lexicon while labelling the count "hebrew entries". Reported as "intermittently searches stale
+  // Greek data" (2026-08-16 QA fleet); intermittent because it turns on which fetch wins.
   useEffect(() => {
+    let cancelled = false;
     setLex(null);
     setLexFailed(false);
+    // A selected entry belongs to the language it was found in; carrying it across is the same
+    // staleness one layer up (a Greek word open on a page that says Hebrew).
+    setSelected(null);
     loadFullLexicon(lang).then((data) => {
+      if (cancelled) return;
       setLex(data);
       setLexFailed(data === null);
     });
+    return () => {
+      cancelled = true;
+    };
   }, [lang]);
 
   // Focus the search on pointer devices only — auto-popping the keyboard on
