@@ -239,3 +239,24 @@ The full chain — same-day ingest → retype to the sermon register → serve f
 retrieval → composed answer — is proven end to end on Bernard's own book. The lesson is the
 watchlist's standing one: a finding is only as good as the provenance of its evidence, and
 "latest row" is not provenance when a crash sits between the question and the read.
+
+## Design C — scope-control redesign (owner: "ok deploy c", 2026-08-17)
+
+**C-1 (found by tests, fixed).** The always-visible "Search these" chips share labels AND
+pressed-state semantics with the Show band's chips, so neither the test suite nor a screen
+reader could tell "stop searching Sermons" from "hide the sermons I already have" — 3 tests
+went red on the collision. Fixed semantically, not by loosening tests: each band is a named
+group (`role="group"`, `aria-label="Search these collections"` / `"Show registers"`) and the
+chip queries scope through the group. The failing tests were doing their job.
+
+**C-2 (found by audit, test repointed).** `s2-polish.test.ts` S2-item-3 pinned
+`accent-accent-700` — the e196e4b fix for browser-blue lane CHECKBOXES. Design C removed the
+checkboxes, so the assertion lost its subject and went red. Repointed at the successor
+property: aria-pressed chips exist, no `type="checkbox"` remains in ask-client.tsx, the inert
+forms-plugin idiom stays out. Documented here before the fix per standing directive.
+
+**C-3 (process, no code change).** The first full-audit run raced the adversarial mutation
+verifier, which mutates ask-client.tsx in place and restores it — 6 spurious component-test
+reds from reading a mutated file mid-suite. Same class as the 2026-08-16 inspector-2 env
+fixture artifact: concurrent verification that touches shared files invalidates the gate run
+it overlaps. Gate re-run after the verifier restored the tree.

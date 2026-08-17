@@ -13,7 +13,7 @@
 //     watched fail (quote rendered); green only after Fallback learned `gone`.
 //   counts (I2-L1): count span deleted → chip-count case red.
 //   Show all (I2-L2): made unconditional → only-while-hidden case red.
-import { cleanup, render, screen, fireEvent } from '@testing-library/react';
+import { cleanup, render, screen, fireEvent, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { AskClient, type InitialThread } from '@/components/ask-client';
 
@@ -83,8 +83,12 @@ function renderThread() {
   return render(<AskClient initialThread={THREAD} />);
 }
 
-const chipOf = (label: string) =>
-  screen.queryAllByRole('button', { pressed: true }).find((c) => c.textContent?.includes(label));
+// Scoped to the SHOW bands: the design-C search band (2026-08-17) has chips with the same
+// labels and pressed state, so an unscoped query grabs the wrong control — exactly the
+// ambiguity the named groups exist to prevent, for tests and screen readers alike.
+const showButtons = () =>
+  screen.queryAllByRole('group', { name: 'Show collections' }).flatMap((g) => within(g).queryAllByRole('button', { pressed: true }));
+const chipOf = (label: string) => showButtons().find((c) => c.textContent?.includes(label));
 
 describe('§4.7 Show filter + stored-thread rendering (variant A)', () => {
   it('stored turns render dated and historical, voices and lanes present', () => {
@@ -118,7 +122,7 @@ describe('§4.7 Show filter + stored-thread rendering (variant A)', () => {
     expect(chipOf('Commentary')?.textContent).toMatch(/Commentary\s*2/);
     expect(chipOf('Sermons')?.textContent).toMatch(/Sermons\s*2/);
     expect(chipOf('Theology & Confessions')?.textContent).toMatch(/1/);
-    const labels = screen.queryAllByRole('button', { pressed: true }).map((c) => c.textContent ?? '');
+    const labels = showButtons().map((c) => c.textContent ?? '');
     expect(labels.some((l) => l.includes('Hymns'))).toBe(false);
     expect(labels.some((l) => l.includes('History') && !l.includes('Hymns'))).toBe(false);
   });
@@ -126,7 +130,7 @@ describe('§4.7 Show filter + stored-thread rendering (variant A)', () => {
   it('the FALLBACK turn gets a Show row even with one register (owner ruling: no suppression)', () => {
     renderThread();
     // Turn 2 has only Commentary (2 retrieval rows) — its chip must still render.
-    const commentaryChips = screen.queryAllByRole('button', { pressed: true }).filter((c) => c.textContent?.includes('Commentary'));
+    const commentaryChips = showButtons().filter((c) => c.textContent?.includes('Commentary'));
     expect(commentaryChips.length).toBe(2); // one per turn
   });
 

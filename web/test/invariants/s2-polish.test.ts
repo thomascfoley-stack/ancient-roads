@@ -23,13 +23,17 @@ describe('S2 item 2 — the tradition tag is legible on a dark card', () => {
   });
 });
 
-describe('S2 item 3 — the Ask lane checkboxes use the terracotta', () => {
-  // ALREADY SHIPPED at e196e4b; asserted so it cannot silently regress to browser blue. The old
-  // class was `text-accent-700 focus:ring-accent-600` — the @tailwindcss/forms idiom, with that
-  // plugin NOT installed, so both were inert. A dead class that looks like the fix.
-  it('uses accent-color, not the forms-plugin idiom', () => {
+describe('S2 item 3 — the Ask lane scope control carries the terracotta, not browser defaults', () => {
+  // History: e196e4b fixed the lane CHECKBOXES rendering browser-blue (`accent-accent-700`,
+  // because the old `text-accent-700 focus:ring-accent-600` was the @tailwindcss/forms idiom
+  // with that plugin NOT installed — a dead class that looks like the fix). Design C
+  // (owner-ruled 2026-08-17) then replaced the checkboxes with aria-pressed toggle chips, so
+  // the accent-color assertion lost its subject. The property now: the chips exist, no lane
+  // checkbox remains for a dead class to regress on, and the inert idiom stays out.
+  it('lane scope is aria-pressed chips; no checkbox or forms-plugin idiom remains', () => {
     const c = read('components/ask-client.tsx');
-    expect(c).toMatch(/accent-accent-700/);
+    expect(c, 'design C: the lane scope control is aria-pressed toggle chips').toMatch(/aria-pressed/);
+    expect(c, 'no lane checkbox should remain in the ask client after design C').not.toMatch(/type="checkbox"/);
     expect(c, 'the forms-plugin idiom is inert here — that plugin is not installed').not.toMatch(/text-accent-700 focus:ring-accent-600/);
   });
 });

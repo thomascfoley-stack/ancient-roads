@@ -126,44 +126,47 @@ const LANE_OPTIONS: { key: LaneKey; label: string }[] = [
   { key: 'historians', label: 'History' },
 ];
 
+// Design C (owner-ruled 2026-08-17): the scope control is ALWAYS VISIBLE — a labeled band of
+// toggle chips above the composer, its cost stated on the band. The previous disclosure
+// ("Choose what to search ▾") hid the choice behind a click; the ruling replaces it. The SHOW
+// band on results carries the matching "instant" caption so the two controls can never be
+// confused: each wears its price.
 function LaneFilter({ lanes, onToggle }: { lanes: Record<LaneKey, boolean>; onToggle: (key: LaneKey, value: boolean) => void }) {
-  const [open, setOpen] = useState(false);
-  const activeCount = LANE_OPTIONS.filter((o) => lanes[o.key]).length;
-
   return (
-    <div className="mt-3">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="flex items-center gap-1.5 text-xs font-medium text-stone-500 transition-colors duration-150 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
-      >
-        <span>Choose what to search — Commentary + {activeCount} of {LANE_OPTIONS.length} collections</span>
-        <span aria-hidden="true" className={`transition-transform duration-150 ${open ? 'rotate-180' : ''}`}>▾</span>
-      </button>
-      {open && (
-        <ul className="edge mt-2 flex flex-col gap-1.5 border bg-stone-50 p-3 dark:bg-stone-950">
-          {LANE_OPTIONS.map((o) => (
-            <li key={o.key}>
-              <label className="flex min-h-[28px] items-center gap-2 text-sm text-stone-700 dark:text-stone-300">
-                {/* `accent-*`, not `text-*`. The class here used to be `text-accent-700
-                    focus:ring-accent-600`, which is the @tailwindcss/forms idiom — and that
-                    plugin is NOT installed (checked package.json), so both classes were inert
-                    and every one of these boxes rendered in native browser blue against a
-                    terracotta app. A dead class that looks like the fix is worse than no class:
-                    it reads as handled. `accent-color` is plain CSS and needs no plugin. */}
-                <input
-                  type="checkbox"
-                  checked={lanes[o.key]}
-                  onChange={(e) => onToggle(o.key, e.target.checked)}
-                  className="h-4 w-4 rounded border-stone-300 accent-accent-700 dark:border-stone-600 dark:bg-stone-900 dark:accent-accent-500"
-                />
-                {o.label}
-              </label>
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="mt-4">
+      <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">Search these</p>
+        <span className="bg-accent-700/10 px-2 py-0.5 font-sans text-micro font-medium text-accent-700 dark:text-accent-300">
+          changes run on your next ask · ~10s
+        </span>
+      </div>
+      <div role="group" aria-label="Search these collections" className="flex flex-wrap gap-1.5">
+        {/* Commentary is the always-on answer — shown as a chip so the set reads complete,
+            never clickable, and saying so. */}
+        <span className="inline-flex min-h-[32px] items-center gap-1.5 border border-dashed border-stone-300 px-2.5 font-sans text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400">
+          <span aria-hidden className="text-[10px] text-accent-700 dark:text-accent-400">✓</span>
+          Commentary <span className="opacity-70">always</span>
+        </span>
+        {LANE_OPTIONS.map((o) => {
+          const on = lanes[o.key];
+          return (
+            <button
+              key={o.key}
+              type="button"
+              aria-pressed={on}
+              onClick={() => onToggle(o.key, !on)}
+              className={`inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 font-sans text-xs transition-colors ease-gentle ${
+                on
+                  ? 'border-accent-600/50 bg-accent-600/10 font-semibold text-accent-800 dark:border-accent-400/50 dark:bg-accent-400/10 dark:text-accent-200'
+                  : 'border-stone-300 text-stone-500 dark:border-stone-700 dark:text-stone-400'
+              }`}
+            >
+              <span aria-hidden className="text-[10px]">{on ? '✓' : '○'}</span>
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -306,7 +309,7 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
               pass all happen before anything is shown. Unannounced, that reads as a stall; named
               here, it reads as the checking the line above just promised. */}
           <span className="mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500">
-            Currently answering from the Gospels. An answer usually takes 15–45 seconds — every quote is verified before you see it.
+            Currently answering from the Gospels. An answer usually takes about ten seconds — every quote is verified before you see it.
           </span>
         </p>
         <LaneFilter lanes={lanes} onToggle={toggleLane} />
@@ -546,7 +549,7 @@ const SHOW_LABELS: Record<ShowKey, string> = {
   commentary: 'Commentary',
   sermons: 'Sermons',
   theology: 'Theology & Confessions',
-  songVerse: 'Hymns & Poetry',
+  songVerse: 'Hymns & Sacred Poetry',
   historians: 'History',
 };
 
@@ -559,15 +562,18 @@ function ShowFilter({ entries, hidden, onToggle, onOnly, onAll }: {
 }) {
   return (
     <div className="edge border-t pt-3">
-      <div className="mb-2 flex items-baseline justify-between">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">Show</p>
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">Show</p>
+          <span className="bg-stone-500/10 px-2 py-0.5 font-sans text-micro font-medium text-stone-500 dark:text-stone-400">instant · nothing re-runs</span>
+        </span>
         {hidden.size > 0 && (
           <button type="button" onClick={onAll} className="text-xs font-medium text-accent-600 hover:underline dark:text-accent-400">
             Show all
           </button>
         )}
       </div>
-      <div className="flex flex-wrap gap-1.5">
+      <div role="group" aria-label="Show collections" className="flex flex-wrap gap-1.5">
         {entries.map(({ key, n }) => {
           const on = !hidden.has(key);
           return (

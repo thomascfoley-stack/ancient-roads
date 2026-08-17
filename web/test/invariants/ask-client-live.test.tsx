@@ -4,7 +4,7 @@
 // the streaming state machine, the thread-URL swap, the saved signal, the follow-up body —
 // exercised through a mocked NDJSON fetch, which is the layer inspector 2's M3 named as
 // wholly untested. Findings documented before fixes in build-findings-2026-08-16.md.
-import { cleanup, render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AskClient, type InitialThread } from '@/components/ask-client';
 
@@ -129,7 +129,9 @@ describe('live ask path — stream, thread URL, saved signal (exhaustive pass)',
       }],
     };
     const { unmount } = render(<AskClient initialThread={initialThread} />);
-    const chip = screen.queryAllByRole('button', { pressed: true }).find((c) => c.textContent?.includes('Sermons'))!;
+    const chip = screen.queryAllByRole('group', { name: 'Show collections' })
+      .flatMap((g) => within(g).queryAllByRole('button', { pressed: true }))
+      .find((c) => c.textContent?.includes('Sermons'))!;
     fireEvent.click(chip);
     expect(screen.queryByText('SERMON TEXT')).toBeNull();
     unmount();
@@ -153,7 +155,13 @@ describe('live ask path — stream, thread URL, saved signal (exhaustive pass)',
     fireEvent.change(screen.getByLabelText('Ask a question'), { target: { value: 'q' } });
     fireEvent.click(screen.getByRole('button', { name: 'Ask' }));
     await waitFor(() => expect(screen.getByText(/LIVE QUOTE RENDERS/)).toBeTruthy());
-    expect(screen.queryAllByRole('button', { pressed: true }).some((c) => c.textContent?.includes('Commentary'))).toBe(true);
+    // Scoped to the Show group: unscoped, this would go vacuously green if the search band
+    // ever rendered Commentary as a pressed button (mutation-verifier finding, 2026-08-17).
+    expect(
+      screen.queryAllByRole('group', { name: 'Show collections' })
+        .flatMap((g) => within(g).queryAllByRole('button', { pressed: true }))
+        .some((c) => c.textContent?.includes('Commentary')),
+    ).toBe(true);
   });
 
   it('L11: a live turn never shows the historical-record stamp', async () => {
