@@ -296,3 +296,36 @@ them; they just need the `quality-slice` discipline and their own session.
 4. **You:** the gate password → I finish `/library` (the most-reported defect across both sheets).
 5. **Corpus lane (own session, own gate):** A064/A065/A055/A053 as one metadata batch (no eval needed — metadata only), then A047/A048/A050, each with the accuracy diagnostic re-run.
 6. **You, at your pace:** Desk (§5), latency-vs-copy (B004), funnel promise, ADR-047.
+
+## Wave 4 — 2026-08-18, the systematic close (all six agent batches + serial track)
+
+**Closed (findings):** B015 (stale readings brick — fail-closed restart predicate) · B022/B024
+(bookmark in the study panel; the mobile bar reordered on real 390px pixel measurements) · A031
+(settings popover closes when the dialog opens, on every no-mousedown path) · A015 (**adjudicated
+NOT REPRODUCED** — the single-flight property is doubly guarded and now pinned) · B038 (settings
+surfaces cross-linked, merge rejected for the auth/device split) · B044 (Menu trigger
+title/aria-expanded; **Sign out arms first** per the slide-under-the-finger diagnosis) · A096
+(768px multi-pane desk driven: panes STACK, so the cramped-columns worry never materializes).
+
+**Closed (pre-existing audit findings):** #2 `/search` servability belt (tombstones, bytes never
+move, proven on the dev DB both directions) · #3 studies GETs **deleted** (zero consumers, the
+research-route precedent) · #5 sections provenance belt (VALUES-probed on the live engine) ·
+#6 `servedOf` provenance belt · #7 withdrawn-thread fail-closed (narrowly — live turns do not
+regress) + a typographic resolution tier · #8 the front-door quote guard now runs at the predeploy
+gate · #9 the register wall fails closed — census found THREE registers riding the default
+(13,951 entries, 0 licence-passing) · attack #4/#6/#7/#8/#9 (bait parse, health throttle,
+annotations split-try + integer verseId + note cap, chats/messages/channels caps).
+
+**Tooling hardened by its own catches:** the corpus-sync wrong-store refusal now fires BEFORE the
+first byte (red-proofed with the real wrong token) · per-migration timing in apply-pending so the
+next CI timeout names its culprit · the I-1b fence judges comment-stripped code, not prose (third
+home of one defect) · two audit-only tsconfig legs caught fixture and JSX gaps vitest cannot see.
+
+**Remaining — mine, blocked or scoped:** B029 (unresponsive editor buttons — needs an
+AUTHENTICATED repro; local auth env absent; likely the B036 automation artifact) · B030 (whole-
+chapter insert — a clipping-engine design question: what is "the matched excerpt"?) · A054
+(hymnal ToC scripture filter — a feature, not a defect). **Corpus lane:** unchanged 15 + gill-song
+(needs a DB read + an owner tradition ruling). **Owner:** unchanged — delete the 9 threads (live
+now), /library hang password, clean-profile QA re-run, ADR-047, Desk persistence (R1 part 3),
+db-invariants CI re-run to read the new per-migration timing, persona-fence design change (filed),
+eval/bait spend (owner-accepted by design).
