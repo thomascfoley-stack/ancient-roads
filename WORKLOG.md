@@ -1,5 +1,68 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-18 (census) — historians: 41 declared, 1 serving, 2 held, 38 unbuilt; and the P4.n backlog re-derives to 670
+
+Owner asked how many historians exist in ingestion, how many are hung, and how many wait on a
+deploy. **Owner gave explicit go for a read-only production census** (bylaw 7). `ep-odd-fog`,
+`neondb_owner`, every query inside `BEGIN TRANSACTION READ ONLY` + `ROLLBACK`; no writes.
+
+### Historians
+
+| | count |
+|---|---|
+| declared in `ingest/sources.config.json` | **41** |
+| on production (published, serving) | **1** — `josephus-whiston`, 4,112 sections |
+| exist off-prod, staged | **2** — `edersheim-lifetimes`, `schaff-history` (lane-b) |
+| never ingested anywhere | **38** |
+| **hung** | **0** |
+
+**Nothing is hung, and that is the substantive answer.** Every held historian carries a reason
+recorded in three places that agree: the manifest marks them `serve: false` with notes ("no history
+read-path yet"; "chunk on Schaff's dated section headings"), `teacher/routing.ts:121` pre-authorises
+`josephus-whiston` alone and says the rest "must NOT be pre-authorized here", and
+`legal-corpus.ts:125` lists "the two unpublished historians" as deliberately absent. The historian
+LANE was ruled and built 2026-08-13 (corpus-backlog decision 6, option (a)), so the machinery
+exists; the two works are parked on chunking, not on the lane.
+
+**FINDING: `docs/HISTORY_RETRIEVAL_DESIGN.md` DOES NOT EXIST.** Three manifest entries
+(`edersheim-lifetimes`, `schaff-history`, `josephus-works`) cite it as the reason they are held.
+Per bylaw 1 the blocker they name was never issued, so the hold has no written design behind it —
+the 38-work head is unbuilt against a document nobody can open. Not fixed here; filed.
+
+### The wider backlog — what is actually undeployed
+
+Set difference by slug, measured rather than subtracted from an old census:
+
+| target | not on production |
+|---|---|
+| **lane-b (`ep-snowy-bird`)** | **670 of 832** — theology 461 · sermon 95 · commentary 88 · father 18 · historian 2 · lexicon 2 · confession 2 · commentary-quarantined 1 · sermon-published 1 |
+| dev (`ep-tiny-hat`) | 2 of 175 (one commentary, one sermon, both staged) |
+
+Totals: prod 164 published / 7 staged / 2 quarantined. lane-b 796 staged / 35 published / 1
+quarantined.
+
+**This is the re-derivation MASTER.md's A9 row asks for and it moves the number: 670, not 669.**
+That row records the 669 as derived 2026-08-08 and warns it "needs re-deriving against a live prod
+read before any run — it subtracts an 08-08 prod census that the 08-11 withdrawals and 08-13/14
+corpus-backlog copies have since moved." Re-derived: **670**.
+
+Two outliers worth naming:
+- `spurgeon-talks-to-farmers` is **published on lane-b and absent from production** — the only
+  work in that state. A9 already records it as needing a dev→prod embeddings copy to serve on
+  `/ask`; this census confirms the source row never reached prod either.
+- Prod's 7 staged are `origen-commentary` (father) and six lexicon/commentary rows
+  (`smiths-dictionary`, `eastons-dictionary`, `isbe`, `naves-topical`, `bdb-lexicon`, `jfb`) —
+  each held by a cited ruling, consistent with A8's "7 held works".
+
+### NOT DONE / UNVERIFIED
+- **Read-only census only. Nothing was published, copied or deployed.**
+- The 41 manifest historians were counted by `source_type === 'historian'` in the manifest; works
+  filed under another type that a reader would still call history (e.g. `father`) are NOT in that 41.
+- `josephus-works` is in the manifest and in no database; `josephus-whiston` is the ingested one.
+  Two manifest entries for the same corpus, only one built — not investigated further here.
+- Embedding/served counts per historian were NOT taken on prod; this census covered `sources` only.
+
+
 ## 2026-08-17 (QA remediation, N2) — /ask reserved the mobile tab bar twice; 52px back on every phone
 
 Owner-directed ("finish N2"). It had been held back deliberately — closing it MOVES the composer on
