@@ -131,8 +131,10 @@ them. A cruder `%origen%` rule would have vetoed both.
   function in it to be IMMUTABLE. `split_part` and `LIKE` both are, so it should hold — and the
   statement is `CREATE INDEX CONCURRENTLY IF NOT EXISTS`, so a refusal is safe and non-destructive
   (the DROP only runs after the replacement is valid).
-- **Not deployed**, and not verified on production. The predicate is shipped code, so it is
-  environment-independent — but the row counts above are lane-b.
+- **The CODE is not deployed.** ~~and not verified on production … the row counts above are lane-b~~ —
+  both halves of that were wrong and are corrected: migrations 117/118 ARE applied to production and
+  WERE verified there (see the body above and the evidence file), and the counts quoted are prod
+  figures, not lane-b. Corrected 2026-08-18 by the pre-deploy audit.
 - Item 1 not run; item 2 (`DEEPINFRA_API_KEY`) deferred to next week by the owner.
 
 
@@ -160,8 +162,8 @@ read-path yet"; "chunk on Schaff's dated section headings"), `teacher/routing.ts
 LANE was ruled and built 2026-08-13 (corpus-backlog decision 6, option (a)), so the machinery
 exists; the two works are parked on chunking, not on the lane.
 
-**FINDING: `docs/HISTORY_RETRIEVAL_DESIGN.md` DOES NOT EXIST.** Three manifest entries
-(`edersheim-lifetimes`, `schaff-history`, `josephus-works`) cite it as the reason they are held.
+**FINDING: `docs/HISTORY_RETRIEVAL_DESIGN.md` DOES NOT EXIST.** Two manifest entries
+(`schaff-history`, `josephus-works`) cite it as the reason they are held.
 Per bylaw 1 the blocker they name was never issued, so the hold has no written design behind it —
 the 38-work head is unbuilt against a document nobody can open. Not fixed here; filed.
 

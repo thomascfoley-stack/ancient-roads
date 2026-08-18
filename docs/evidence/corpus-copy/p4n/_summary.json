@@ -3,8 +3,9 @@
   "devRows": 831,
   "backlog": {
     "father": 18,
-    "commentary": 88,
+    "commentary": 87,
     "theology": 439,
     "sermon": 95
-  }
+  },
+  "note": "commentary is 87, not 88: the runbook STOP block excludes adeney-expositorsonglament when the source is lane-b (pre-fix form). Batches total 639."
 }

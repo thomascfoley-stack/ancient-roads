@@ -49,6 +49,15 @@ export const MUST_NOT_SERVE = [
   'Origen',
   'Origen of Alexandria',
   'Aquinas-Larcher',
+  // Owner ruling 2026-08-18 (§17.10). The four modern copyrighted authors this file's own header
+  // has measured in the static corpus since the 2026-08-02 audit — CS Lewis 1,102, GK Chesterton
+  // 714, Douglas Wilson 16, JRR Tolkien 11 — plus Pseudo-Origen, which the ruling extends the
+  // standing Origen veto to. Adding them here is what makes predeploy-gate.ts SEE them.
+  'CS Lewis',
+  'GK Chesterton',
+  'Douglas Wilson',
+  'JRR Tolkien',
+  'Pseudo-Origen',
 ];
 
 /**
