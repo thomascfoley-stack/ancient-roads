@@ -329,7 +329,15 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
               pass all happen before anything is shown. Unannounced, that reads as a stall; named
               here, it reads as the checking the line above just promised. */}
           <span className="mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500">
-            Currently answering from the Gospels. An answer usually takes about ten seconds — every quote is verified before you see it.
+            {/* R3 (docs/pm/orders/2026-08-17-three-ux-rulings.md). This read "about ten seconds",
+                which came from D4's DEV-LOCAL p50 of 9.1s and was never true in production: the
+                2026-08-17 authenticated QA pass measured 21-37s live, averaging 28.5s. A RANGE,
+                not the average — an average invites the reader to treat 28s as the expectation and
+                read a legitimate 37s answer as broken. Same principle the repo already applied to
+                SLOW_ANSWER_NOTICE_MS, which was specified at 15s against a measured 58-104s and
+                re-derived from measurement. Whether 28.5s is ACCEPTABLE is Lane D's D4 and stays
+                open; this only stops the UI misreporting it in the meantime. */}
+            Currently answering from the Gospels. An answer usually takes 20–40 seconds — every quote is verified before you see it.
           </span>
         </p>
         <LaneFilter lanes={lanes} onToggle={toggleLane} />
