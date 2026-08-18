@@ -15,6 +15,7 @@
 // id and owner; a re-ask always runs the live pipeline and APPENDS. There is no content index
 // and there must never be one.
 import { runAsUser, getDb } from './db';
+import { FORBIDDEN_PROVENANCE_DOMAINS } from './forbidden-provenance.mjs';
 import type { TeacherResult } from './teacher/teach';
 
 export const THREAD_PERSONA = 'ask';
@@ -281,12 +282,23 @@ export async function servedOf(chunks: { register: string; sourceId: string }[])
     const sql = getDb();
     const types = pairs.map((p) => p[0]);
     const ids = pairs.map((p) => p[1]);
+    // THE PROVENANCE BELT, grafted 2026-08-18 (pre-deploy audit, domain lens #6). This predicate
+    // was `served` alone while its sibling resolveServability ALSO rejects rows whose sourceUrl
+    // matches a forbidden aggregator — so a provenance-dirty-but-served row re-rendered on a
+    // reopened /ask/[id] thread where the identical row would tombstone inside a study. Same
+    // clause, copied in the sibling's exact form: IS NULL passes (corpus rows record provenance
+    // elsewhere and a NULL here is not a violation), NOT EXISTS rejects — the positive spelling,
+    // because a NOT-predicate over a NULL-evaluating row fails open (the watchlist's
+    // three-valued-logic corollary).
     const rows = (await sql`
       SELECT DISTINCT e.source_id
         FROM embeddings e
         JOIN unnest(${types}::text[], ${ids}::text[]) AS p(t, sid)
           ON e.source_type = p.t AND e.source_id = p.sid
-       WHERE e.user_id IS NULL AND e.served`) as { source_id: string }[];
+       WHERE e.user_id IS NULL AND e.served
+         AND (e.metadata->>'sourceUrl' IS NULL OR NOT EXISTS (
+                SELECT 1 FROM unnest(${FORBIDDEN_PROVENANCE_DOMAINS}::text[]) d
+                WHERE lower(e.metadata->>'sourceUrl') LIKE '%' || d || '%'))`) as { source_id: string }[];
     return new Set(rows.map((r) => r.source_id));
   } catch (e) {
     console.error('research servedOf failed (rendering tombstones):', (e as Error).message);
