@@ -73,6 +73,24 @@ CREATE POLICY ask_outcomes_insert ON ask_outcomes
 -- production ask (which fails OPEN — the ask still answers; the training row is just lost).
 GRANT INSERT ON ask_outcomes TO app_runtime;
 
+-- ── REVOKE THE APPEND-ONLY VIOLATIONS, do not merely assert them ────────────────────────────────
+-- Same defect as 110, one migration later, and worth naming as a CLASS rather than an incident:
+-- a migration that RAISEs on a privilege it does not revoke can never converge on a database
+-- where the table already exists. `CREATE TABLE IF NOT EXISTS` skips, the pre-existing grants
+-- survive, and the tail then refuses — recording nothing, so the next run refuses identically.
+-- Measured 2026-08-18 on the CI test branch: `116 FAILED: app_runtime has UPDATE on ask_outcomes;
+-- the log is append-only`, immediately after the same fix unblocked 110.
+--
+-- The source is the repo's watchlist instance 15: 001-era default privileges hand DML to
+-- app_runtime on tables created later — what 032 narrowed and 039 tripped over.
+--
+-- REVOKE is a no-op where this file really created the table, and a repair everywhere else. The
+-- assertions below are UNCHANGED and still RAISE, so append-only is now ENFORCED rather than
+-- merely inspected. Safe against the product: nothing in web/src or src issues UPDATE or DELETE
+-- against ask_outcomes (grepped at HEAD) — the log is written once by logAskOutcome and never
+-- amended, which is the property these lines exist to keep.
+REVOKE UPDATE, DELETE ON ask_outcomes FROM app_runtime;
+
 -- ── Verification, in the same file — 106/110's self-verifying tail ─────────────────────────────
 DO $$
 BEGIN
