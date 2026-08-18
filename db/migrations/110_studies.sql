@@ -165,6 +165,28 @@ GRANT SELECT, INSERT, UPDATE ON studies TO app_runtime;
 GRANT SELECT, INSERT, UPDATE ON study_blocks TO app_runtime;
 GRANT SELECT, INSERT ON study_block_revisions TO app_runtime;
 
+-- ── REVOKE THE VERBS THAT MUST STAY ABSENT, do not merely assert them ───────────────────────────
+-- The tail below RAISEs if app_runtime holds DELETE here, on the stated premise that "this file
+-- CREATES its tables, so any disagreement between intent and state is this file's own defect".
+-- That premise is false on any database where the tables ALREADY EXIST: `CREATE TABLE IF NOT
+-- EXISTS` skips, whatever grants they carry survive, and the assertion then fires against state
+-- this file never created. Measured 2026-08-18 on the CI test branch — `110 FAILED: app_runtime
+-- has DELETE on studies` — where it had blocked every db-invariants run since, because an
+-- assert-only migration cannot converge: it refuses, records nothing, and refuses again.
+--
+-- Where that grant comes from is the repo's own watchlist instance 15: 001-era default privileges
+-- hand DML to app_runtime on tables created later, which is exactly what 032 narrowed and 039 then
+-- tripped over. So the drift is expected on older databases and absent on new ones.
+--
+-- REVOKE is a no-op on a database where this file really did create the tables, and a repair
+-- everywhere else. The assertions below are UNCHANGED and still RAISE — the invariant is now
+-- ENFORCED rather than merely inspected, which is strictly stronger than what stood here.
+-- Safe against the shipped feature: the data layer issues no `DELETE FROM` on any of these three
+-- tables (grepped at HEAD); a deleted study is `deleted_at` set by UPDATE (studies.ts).
+REVOKE DELETE ON studies FROM app_runtime;
+REVOKE DELETE ON study_blocks FROM app_runtime;
+REVOKE UPDATE, DELETE ON study_block_revisions FROM app_runtime;
+
 -- ── Verification, in the same file — 106's self-verifying tail ──────────────────────────────────
 -- A typo'd table name or a forgotten GRANT fails the migration instead of being reported applied.
 -- Every check RAISES: unlike 106 (repairing live tables, where an unrelated pre-existing grant

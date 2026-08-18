@@ -243,6 +243,13 @@ try {
 async function reportLockHolders(client, err) {
   const isLock = /lock timeout|deadlock|could not obtain lock/i.test(err?.message ?? '');
   try {
+    // THE CONNECTION IS USUALLY UNUSABLE HERE, which made the first version of this useless in the
+    // commonest case. A multi-statement file runs in an implicit transaction, so a failure inside
+    // one leaves the session in "current transaction is aborted, commands ignored until end of
+    // transaction block" — and the diagnostic query is a command, so it was ignored and reported
+    // itself unavailable. Observed 2026-08-18 on 110_studies.sql. ROLLBACK first; it is harmless
+    // when there is no open transaction, and it is the only thing that makes the session answer.
+    await client.query('ROLLBACK').catch(() => {});
     const { rows } = await client.query(
       `SELECT pid, state, wait_event_type, wait_event,
               date_trunc('second', now() - query_start)::text AS age,
