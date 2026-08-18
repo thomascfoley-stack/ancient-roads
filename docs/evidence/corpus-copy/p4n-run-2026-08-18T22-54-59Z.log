@@ -1,0 +1,6 @@
+P4.n run — all-remaining.json, 621 work(s)
+started : 2026-08-18T22:54:59Z
+
+--- attempt 1 of 3 — 22:55:10Z ---
+copy exited 2 at 22:57:24Z
+STOP: the copy refused before writing (gate, env or TTY). Nothing was written.

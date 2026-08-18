@@ -1,0 +1,17 @@
+P4.n run — father.json, 18 work(s)
+started : 2026-08-18T22:54:29Z
+Already complete — nothing to copy. Verifying aloud:
+(node:5736) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  source : 18 work(s), 7,445 sections, 26,674 flat
+  dest   : 18 work(s), 7,445 sections, 26,674 flat
+  served=true on dest: 0  <- MUST be 0; a copy that serves is a retrieval change
+
+  ✓ COMPLETE — all 18 work(s) match source, all staged and unserved.
