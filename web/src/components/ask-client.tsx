@@ -391,11 +391,38 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
           layout.tsx:134). Its height is `offset + main's padding-bottom` — it must reach the
           bottom of the scrollport's padding box, not merely the top of the bar, because the bar's
           rendered height is an emergent 53px (min-h-[52px] + 1px border) that no CSS here can
-          name. The previous 68px was hand-computed against an assumed 60px bar and fell 4px short:
-          a strip of document was live at y 787-790 on every scroll (hit-tested, and visible in the
+          name.
+
+          `top-[calc(100%+1px)]`, NOT `top-full`. An absolutely-positioned child resolves against
+          the PADDING box, so `top-full` starts the strip one border-width ABOVE the border edge
+          (measured: 779 against a border-box bottom of 780) and the strip then paints OVER the
+          composer's own bottom hairline and over the bottom of its focus-within outline — the
+          PRD §5 box rendered open-bottomed, and the app's primary input carried a three-sided
+          focus ring (WCAG 2.4.11). Proved by giving the form a 3px red bottom border and seeing
+          no red at all. The `+1px` moves the strip below the border instead of over it, which is
+          why the height needs no compensating pixel.
+
+          `outline-offset-[-2px]` for the same reason, one layer out: an outline is drawn OUTSIDE
+          the border box, so the PRD §10 gold ring occupied y 768-770 while the strip began at 768
+          and clipped its bottom edge — a three-sided focus indicator on the app's primary input
+          (WCAG 2.4.11). Drawing it 2px inside keeps the whole ring above the strip. The
+          alternative, starting the strip below the ring, would open a 2px gap for content to
+          stream through whenever the composer is NOT focused, which is the defect this strip
+          exists to prevent.
+
+          `inset-x-[calc(-0.625rem-1px)]`, not `-1px`: result cards are `-mx-2.5` (ResultLink,
+          above), so they are 10px wider than this form on each side and a `-1px` mask left a
+          20px-wide lateral gap for them to paint through — measured at x 6-15 and 368-377, at
+          every row of the band. A y-scan down the centre line cannot see that, which is how it
+          survived P5. The `-1px` term is the border, for the same reason `top-full` needs one:
+          an absolutely-positioned child resolves against the PADDING box, so a bare `-0.625rem`
+          still left x=6 and x=377 live (measured, 22 hits over an 11-row band).
+
+          The previous 68px was hand-computed against an assumed 60px bar and fell 4px short: a
+          strip of document was live at y 787-790 on every scroll (hit-tested, and visible in the
           before/after screenshots). Top-edge slide-under is ordinary sticky behavior and stays. */}
       <form onSubmit={(e) => { e.preventDefault(); ask(question); }}
-        className="edge sticky bottom-1 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-accent-600 after:absolute after:inset-x-[-1px] after:top-full after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.25rem)] after:bg-stone-50 md:bottom-3 md:after:h-4 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400">
+        className="edge sticky bottom-1 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-[-2px] focus-within:outline-accent-600 after:absolute after:inset-x-[calc(-0.625rem-1px)] after:top-[calc(100%+1px)] after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.25rem)] after:bg-stone-50 md:bottom-3 md:after:h-4 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400">
         <textarea
           value={question}
           onChange={(e) => setQuestion(e.target.value)}

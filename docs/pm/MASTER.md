@@ -3,9 +3,15 @@
 **Read this first, every session.** It is the plan and the gate board. It is **not** the state —
 state lives in `docs/STATE_OF_TRUTH.md` and this file points at it rather than copying it.
 
-Last verified: 2026-08-16 · `main` @ `9a36ab8` · working branch: `ship/editor-deploy` (same commit as
-`main`) — re-measured with `git rev-parse`, not copied. **This line had stood at 2026-08-02 /
-`b569c90` for 14 days**, which is the exact decay the note below describes, in the note's own file.
+Last verified: 2026-08-17 · `main` @ `32ea135` · **live on `ancientpaths.app`: `2d043ba`** (Design C,
+receipt `dpl_DqgXGyPUC8frZr56uV93Y2RHJHQ1`) — re-measured with `git rev-parse` and from the deploy
+receipts, not copied. **The previous line was false in both measurable clauses**: it named `main` @
+`9a36ab8`, a commit that has never been in `main`'s ancestry at all (it lives only on
+`ship/editor-deploy` and its descendants), and called `ship/editor-deploy` "the same commit as
+`main`" when the two have never been equal. It had stood since 2026-08-16 — the third recorded
+instance of this exact decay, in the file whose next paragraph forbids it. **Note `main` is 105
+commits BEHIND what is live**: reading `main` as "what production runs" is wrong today, which is
+why the live sha is now named here explicitly rather than left to a proxy.
 
 > The line above went 57 commits stale while still naming a working branch that had been merged and
 > deleted, and the board's own A2 row said "(unmerged)" of a commit that merged at `1f4bf8d`

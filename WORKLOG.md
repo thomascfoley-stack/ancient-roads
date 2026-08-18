@@ -1,70 +1,125 @@
 # WORKLOG — Autonomous session 2026-08-12
 
-## 2026-08-17 (fix) — /ask: the mobile composer double-counted the tab bar, and the P5 mask was 4px short
+## 2026-08-17 (fix) — /ask: the mobile composer double-counted the tab bar; and four more defects the pre-deploy audit found in the fix
 
-**The reported defect, re-measured before touching anything** (390x844, dev server, computed
-style — not inferred). The scroller is `main` (`app-shell.tsx:35`), which reserves the fixed tab
-bar with `pb-[calc(3.75rem+env(safe-area-inset-bottom))]`. The composer's sticky inset added the
-same token a second time. A sticky inset resolves against the scroller's CONTENT box, which that
-padding has already inset, so the bar was counted twice: viewport 844, main padding-bottom 60,
-composer bottom edge **720 = 844 - 60 - 64**. The box floated a whole tab bar above the tab bar.
+**The reported defect, re-measured before touching anything** (390x844, computed style). `main`
+(`app-shell.tsx:35`) is the scroll container and reserves the tab bar with
+`pb-[calc(3.75rem+env(safe-area-inset-bottom))]`. The composer's sticky inset added the same token
+again — but a sticky inset resolves against the scroller's CONTENT box, which that padding has
+already inset. Viewport 844, main padding-bottom 60, composer bottom edge **720 = 844 - 60 - 64**:
+the box floated a whole tab bar above the tab bar, wasting ~60px of a phone screen.
 
-**Fixed** in `ask-client.tsx`: `bottom-[calc(3.75rem+env(safe-area-inset-bottom)+0.25rem)]` ->
-`bottom-1`. Measured after: composer bottom **780** when stuck, **11px** of visible gap above the
-bar, against desktop's 12px above the scrollport (`md:bottom-3`, untouched). `bottom-1` carries no
-`env()` on purpose — both terms that bracket it already do, so the gap holds at every safe-area
-inset instead of growing with it. **This moves the composer on every mobile /ask view**; it is a
-design change and was screenshotted before/after at 390px, the before captured by stashing the
-change rather than reconstructing it in the DOM.
+Fixed: `bottom-1`. Composer bottom **780** when stuck, **11px** of visible gap above the bar
+against desktop's 12px above the scrollport (`md:bottom-3`, untouched). No `env()` on it — both
+terms that bracket it already carry the inset, so the gap holds at every inset instead of growing
+with it. **This moves the composer on every mobile /ask view**, so it is an owner-visible design
+change; before/after captured at 390px, the before by stashing the change rather than
+reconstructing it in the DOM.
 
-**A second defect, found while verifying and NOT in the brief: the P5 mask was already leaking.**
-`after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.5rem)]` = 68px was hand-computed against an
-assumed 60px bar. The bar renders **53px** (`min-h-[52px]` + 1px border) into the 60px reserved for
-it, so the strip to cover was 71px and a band of document was live at **y 787-790 at every scroll
-offset** — hit-tested, and visible as a red sliver above the tab bar in the striped-probe capture.
-The mask is now `offset + main's padding-bottom`, i.e. it reaches the bottom of the scrollport's
-padding box rather than the top of a bar whose height no CSS here can name. Re-verified by scanning
-**every** y between the composer's bottom edge and the nav's top: **0 leaked pixels**, light and
-`.reader-dark`, mask background byte-equal to body's in both.
+**P5's mask was already leaking.** `after:h-[...+0.5rem]` = 68px was hand-computed against an
+assumed 60px bar; the bar renders **53px** inside the 60px reserved for it, so the strip to cover
+was 71px and a band of document was live at **y 787-790 at every scroll offset**.
 
-**A014's root cause is closed as a side effect.** Before: at maximum scroll the composer sat 48px
-above its static position and covered 24px of real document. After: `pinnedAboveStaticBy: 0`,
-`documentCoveredAtMaxScroll: 0` — it reaches rest, as desktop already did.
+**Then a 5-agent pre-deploy deep audit found three more, all in my own fix, and all the same
+trap** — an absolutely-positioned child resolves against the PADDING box:
 
-**The other three call sites are NOT this bug**, and that was measured, not reasoned:
-`selection-popover.tsx:272`, `work/[slug]/page.tsx:170` and `read/[book]/[chapter]/page.tsx:417`
-use the same `3.75rem+env()` expression but are `fixed`, which resolves against the viewport. A
-probe element rendered inside `main` with those exact classes landed its bottom edge at **784** =
-viewport - 60, clearing the bar correctly. They must keep the expression. Only a `sticky` inset
-double-counts, and `ask-client.tsx` held the only `sticky bottom-*` in `web/src`.
+1. The mask was **1px short** of the scrollport (`top-full` starts at 767 against a border-box
+   bottom of 768). My first correction added `+1px` to the HEIGHT, which reached the bottom while
+   still painting over the border. The real fix is `top-[calc(100%+1px)]`, after which the height
+   needs no compensating pixel.
+2. A **20px lateral gap**: the strip spanned the composer only, while result cards are `-mx-2.5`.
+   Leaks measured at x 6-15 and 368-377, every row. **My "0 leaked pixels" claim was a y-scan down
+   one column and could not see this** — the scan is now 2-D: 11 rows x 390 columns = 4,290 pixels,
+   0 leaks.
+3. The strip **painted over the composer's own bottom hairline and the bottom of its focus ring** —
+   a three-sided focus indicator on the app's primary input (WCAG 2.4.11). Closed with
+   `outline-offset-[-2px]`, which keeps the whole ring above the strip; starting the strip below
+   the ring instead would open a 2px gap whenever the composer is NOT focused.
 
-**Verified:** web typecheck exit 0; eslint on the changed file exit 0; web suite **122 files /
-815 tests passed, 38 files / 299 tests skipped, exit 0**; desktop re-measured unchanged
-(`pb-0` / offset 12px / mask 16px / nav hidden).
+**A014's root cause closes as a side effect**: at max scroll the composer was pinned 48px above its
+static position and covered 24px of document; both are now 0.
+
+**The other three `3.75rem+env()` sites are NOT this bug, and that was measured**: a probe with
+their exact classes rendered inside `main` landed at **784** = viewport - 60. They are `fixed`,
+resolve against the viewport, and must keep the expression. `ask-client.tsx` held the only
+`sticky bottom-*` in `web/src`.
+
+**Guard, red-proofed five ways.** `web/test/invariants/ask-composer-mask.test.ts` DERIVES the three
+values from the two source files and checks the relationship rather than snapshotting a class
+string. Each mutation was applied, watched fail, reverted: restore the double-count (2 failed),
+mask height off by 4px, `top-full`, lateral inset `-1px`, and — the one that matters — **changing
+`app-shell.tsx`'s padding turns it red**, proving the expectation is derived from the coupled file
+and the pair cannot drift silently. Cross-file, so not the watchlist's tautology shape.
+
+**The guard test broke the entire app, and only the browser caught it.** Writing the offending
+class out inside a COMMENT in `web/test/invariants/ask-composer-mask.test.ts` — with an ellipsis
+standing in for the safe-area argument — was enough: Tailwind v4 auto-detects content and scans
+`web/test/**`, so it compiled that comment into a real rule whose value contained the ellipsis.
+Invalid CSS, `globals.css` failed to parse, and **every route returned 500**. `tsc` was clean, and
+the full 823-test suite was green, through all of it. `next build` (which CI runs) and loading the
+page are the only things that see it. Fixed by describing the class instead of quoting it, with the
+reason recorded in the file so the next person does not re-add it; `next build` now exits 0 and the
+page was re-verified on a cleared `.next` cache. Filed as the tell for this class: **a comment in a
+scanned file is code**, and a green typecheck plus a green suite is not evidence that the app boots.
+
+**DoD legs, both now done rather than merely asserted.** A real interaction: typed (submit went
+disabled -> enabled, proving the controlled input reached React state) and submitted; a turn
+rendered with the Q1 sign-in banner (correct 401 signed-out path) and its bottom sat above the
+composer's top — not occluded. Errors during that interaction: **0**, caught by a listener armed
+BEFORE the interaction (the A7-X1 lesson).
+
+**Evidence filed** — [`docs/evidence/ask-composer-offset-2026-08-17.md`](docs/evidence/ask-composer-offset-2026-08-17.md).
+The P5 record was retracted **in place** in
+[`build-findings-2026-08-16.md`](docs/evidence/research-history/build-findings-2026-08-16.md), the
+document a reader meets, not only here: its "Verified by computed style, mobile 68px, match:true"
+compared the mask's height against the constant that had just been typed — an identity that is
+green for every possible value, including every wrong one.
+
+**Verified:** web typecheck 0; eslint 0 on the changed file (red-proofed with a seeded `any`); web
+suite green; desktop 1280x800 re-measured unchanged; overflow-neutral (`main.scrollHeight` 879 with
+and without the strip); dark `.reader-dark` mask == body.
 
 ### NOT DONE / UNVERIFIED
 
-- **DB-backed test legs NOT RUN** — this worktree has no `.env.local`, so 38 files / 299 tests
-  skipped and `npm run audit` was not run (it refuses without a dev `DATABASE_URL`). The legs that
-  ran are DB-free. Same posture as the UX-5 tranche.
-- **Not deployed.** No owner go was given and none was asked for.
-- **MERGE HAZARD, and it is the one thing to read before landing this.** `ee76b55` on
-  `fix/q1-signed-out-state` (a concurrently-active session, main working tree) closed A014 by
-  ADDING `pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0` to the /ask scroll column, and
-  its own message says the double-count was "Reported, not taken" because closing it "would move
-  the composer on every mobile view — a design change, not a clipping fix". That deferral is what
-  this entry executes. **The two changes are not additive:** with the root cause gone the reserve
-  becomes ~60px of dead space at the foot of every mobile /ask. When the branches meet, that
-  padding must be deleted, returning the line to
+- **`npm run audit` is NOT green here.** Two suites fail on `ECONNREFUSED 127.0.0.1:5432` —
+  `queue-never-drops` and `commentary-entries-provenance` need a local throwaway Postgres that is
+  not running. That is a NOT RUN, not a RED (neither imports the changed component), but the repo's
+  definition of green was not met.
+- **Not deployed, and it CANNOT be deployed from this worktree.** `web/public/{bible,commentaries,
+  original,...}` are gitignored and do not follow a worktree checkout: this tree has **0** bible and
+  **0** commentary files against the main tree's **22,590** and **1,213**. `vercel --prod` uploads
+  `web/` as-is, so a deploy from here would strip ~23,800 static files. `predeploy-gate.ts` hard-
+  fails first (exit 1, before upload), so there is no live risk — but the deploy must run from a
+  corpus-bearing tree.
+- **Deploy sequencing, from the ops lens:** the `2d043ba` receipt exists only on
+  `ship/editor-deploy`, so deploying from this branch forks the receipt ledger — cherry-pick
+  `5981b9e` first. `predeploy-gate.ts` also opens a PRODUCTION connection (`PREDEPLOY_DB_URL`),
+  which is a bylaw-7 owner act per occasion, not a side effect.
+- **Real devices unmeasured.** This browser reports `env(safe-area-inset-bottom): 0`, so no notched
+  phone was exercised; iOS Safari ignores `interactive-widget`, where the composer now sits 64px
+  above the layout viewport instead of 128px, and the `scrollIntoView` nudge at the textarea is a
+  measured no-op for a bottom-stuck sticky box. DEVICE check, not made.
+- **Console at load is not a clean claim.** Only the pane's CSP `eval()` notice, `get-session` 500s
+  and the 401 above appeared, all environmental to a tree with no `.env.local` — but per the A7-X1
+  retraction a post-load read cannot prove absence of load-time errors, and is not offered as such.
+- **No answer was ever on screen** (401 without credentials), so voice cards, the Show band and
+  long-quote wrapping under the composer are unmeasured. `/ask/[id]` was not loaded.
+- **MERGE HAZARD.** `ee76b55` on `fix/q1-signed-out-state` mitigated A014 by adding
+  `pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0` to the /ask scroll column, explicitly
+  deferring this double-count as "a design change... Reported, not taken" — **that wording is in the
+  code comment it added, not in its commit message** (an earlier version of this entry cited the
+  wrong artifact). The two are not additive: with the root cause gone that reserve is ~60px of dead
+  space and must be deleted on merge, returning the line to
   `className={turns.length === 0 ? 'flex flex-1 flex-col justify-center' : 'flex-1 space-y-8'}`.
-  Both branches also touch the same file, so the merge will conflict on the composer's class
-  string; take this branch's `bottom-1` and that branch's A017/`ERROR_FALLBACK` work.
-- **No automated test.** jsdom has no layout, so an assertion here would grep a class string rather
-  than measure geometry — the same reasoning `ee76b55` recorded. The check that could have failed
-  is the browser A/B, and it did fail: it is what exposed the 4px mask leak. Evidence is the
-  computed-style and hit-test output in this session, not a green tick.
-- **Dark mode was forced with `.reader-dark`**, not by the app's own theme control. The control is
-  a known-broken surface (A7b, MEDIUM, two theme systems own the class); untouched here.
+- **Pre-existing findings from the audit, filed not fixed** — deliberately kept out of a CSS branch:
+  `/api/search/works` has no length cap on `q` while its sibling caps at 200; the auth-proxy throttle
+  is keyed off a hand-maintained segment list behind a catch-all; `/api/eval/bait` spends real money
+  outside the global daily ceiling; `/api/health`'s only protection is the temporary gate;
+  `scripts/corpus-blob-sync.mjs` has no licensing gate and is designed to replace the path that has
+  one (D3); `/ask` cannot render a CC attribution notice (retrieval metadata carries no `license`);
+  the withdrawal tombstone fails OPEN on duplicate-quote ambiguity; submit disables the focused
+  button and dumps focus to `<body>` for the whole ask; `aria-busy` suppresses the live region it
+  exists to announce; result cards have no visible focus indicator.
 
 
 ## 2026-08-16 (build) — Research History shipped: /ask threads persist, reopen at a URL, filter by register

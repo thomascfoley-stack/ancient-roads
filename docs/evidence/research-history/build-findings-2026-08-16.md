@@ -229,6 +229,28 @@ light/dark parity holds by construction), height matched per breakpoint. Verifie
 style: light `match:true`, mobile 68px / desktop 16px. Top-edge slide-under is ordinary sticky
 behavior and was left alone.
 
+**P5 PARTIALLY RETRACTED (2026-08-17) — the mask shipped 4px short, and "match:true" could not
+have failed.** The 68px above was hand-computed against an assumed 60px tab bar. The bar renders
+**53px** (`min-h-[52px]` + 1px border) inside the 60px `main` reserves for it, so the strip to
+cover was **71px**: a band of document stayed live at **y 787-790 at every scroll offset**,
+hit-tested, and visible as a sliver above the tab bar. The defect this entry closes was therefore
+still open on the surface it was closed on, and `836a21d`'s subject ("P5 composer-slot mask
+**verified** on the reporting page") records the stronger claim in immutable history.
+
+The verification is the more useful correction. `match:true` compared the mask's computed height
+against **the constant that had just been typed into the class string** — the mask agreeing with
+itself. It is an identity, not a measurement, and it is green for every possible value including
+every wrong one. What it needed was a check against the thing being covered: content placed behind
+the composer and the band scanned for leaks. Run that way the strip failed immediately.
+
+Two further defects of the same family survived into the fix for this one and were caught by a
+pre-deploy audit rather than by the author: the strip spanned only the composer's width while
+result cards are `-mx-2.5` (a 20px lateral gap a centre-line scan cannot see), and `top-full`
+resolves against the PADDING box, so the strip painted over the composer's own bottom hairline and
+the bottom of its focus ring. All three are closed on `ship/ask-composer-offset`, with a derived
+guard test (`web/test/invariants/ask-composer-mask.test.ts`) red-proofed five ways. Full
+measurement log: [`ask-composer-offset-2026-08-17.md`](../ask-composer-offset-2026-08-17.md).
+
 **B1 RETRACTED (2026-08-17, retested with clean evidence).** The original finding — Bernard
 absent from the sermon lane on "black but comely" — was a MISATTRIBUTION caused by the power
 cut: Q2 (the Song question) never actually ran, so the lane I read as its evidence was Q1's
