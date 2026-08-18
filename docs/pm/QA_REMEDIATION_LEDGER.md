@@ -79,8 +79,8 @@ breaches** (B001, B002).
 | A014 | Third example prompt clipped at 390px | batch 2 — not the divider; a 48px+safe-area band sat under the composer at every scroll offset |
 | A017 | Empty error banner frame on retry | batch 2 — **filed mechanism disproven**; an adjacent latent path (error event with no message) guarded instead |
 | N1 | **"Continue reading" on the Library hub was dead for every account** — `saveReadingProgress` had zero call sites, so `listContinueReading` could only return `[]` | `1c95774` |
-| N3 | The `library_items` write path was dead — nothing in the app could shelve a work | `PENDING3` |
-| N5 | The Library hub queried the shelf on every load and discarded the result | `PENDING3` |
+| N3 | The `library_items` write path was dead — nothing in the app could shelve a work | `a5b0ce0` |
+| N5 | The Library hub queried the shelf on every load and discarded the result | `a5b0ce0` |
 | N6 | `npm run audit` was RED on two legs (web/test typecheck; test residue) | `93fbcb3` |
 
 Also corrected, not a finding: **A001's blocker was false** and the correction is filed in three
