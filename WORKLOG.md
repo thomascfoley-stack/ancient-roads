@@ -49,7 +49,11 @@ the leaked copies (chat transcript, shell history, `~/.corpus_blob_token`) are i
 - Only 22 of the 211 files were content-diffed; the other 189 share the plan-level shape
   (changed hash, same path set, no adds/deletes) but their field-level diffs are inferred.
 - Which session performed the repair: not established.
-- `deploy.sh` re-run: pending, owner at the terminal.
+
+**DEPLOYED 2026-08-18 06:08 UTC** — the re-run passed every gate including the freshness leg
+(0 changed / 0 orphaned, 24,992 files); `7f62991` live on `ancientpaths.app`, alias verified by
+deployment-id match (`dpl_DyCgDgehRbadxTHznQCj9a9fuysJ`), receipt
+`docs/evidence/deploys/deploy-7f62991-2026-08-18T06-08-49Z.txt`.
 
 ## 2026-08-17 (fix) — the /ask composer mask, re-derived: N2's offset kept, its 4px full-width leak closed
 
