@@ -159,3 +159,47 @@ that window. Getting migrations to apply is step one of an unknown number.
 - §4 red-proof: executed on a throwaway PG17, each step observed. Log below.
 - §3 measurements: read-only against the test branch, per-leg against 044's own predicates.
 - Review: `docs/evidence/ci-db-invariants-2026-08-18/review-findings.md`.
+
+---
+
+## 8. MEASURED 2026-08-18 18:21 UTC — the blocker is a LIVE build, not an orphan. WAIT.
+
+The lock-holder diagnostic (`db/apply-pending.mjs`, run 32170461224) answered the question this
+document exists to ask, on its first real run:
+
+```
+  ✗ 044_embeddings_served_expand.sql failed: canceling statement due to lock timeout
+  ⓘ 3 other non-idle backend(s) on this database:
+     pid 9596   active  age 00:03:46  -/-
+       -- idx_embeddings_served_legal — the composed /ask exegetical pool …
+     pid 17659  active  age 00:03:46  Extension/Neon/PS_ReadIO
+       -- idx_embeddings_served_legal …
+     pid 17658  active  age 00:03:46  -/-
+       -- idx_embeddings_served_legal …
+```
+
+**All three run the same statement** — 044's first HNSW build, `idx_embeddings_served_legal` — as a
+leader plus two parallel workers, one of them inside Neon's pageserver read path. Same age to the
+second. That is a build **in progress and doing I/O**, not a wedged or orphaned backend.
+
+So the action is **WAIT**, and that is the whole value of the line: `canceling statement due to lock
+timeout` is identical whether the branch needs another few minutes or needs a human to terminate a
+zombie, and the two ask for opposite things. Before this, the only way to choose was to guess — and
+the previous two guesses were both wrong (30-minute slow build; 113/114/115, which had never run).
+
+**The structural defect this exposes, and it is worse than the symptom.** The 30-minute
+`timeout-minutes` kills the *client*; the server-side `CREATE INDEX CONCURRENTLY` carries on. So a
+timed-out run leaves a build running, the next run's `ALTER TABLE` cannot get ACCESS EXCLUSIVE
+against it, and — because runs can overlap the build even when the job's concurrency group
+serialises the *jobs* — each attempt can start yet another build over the same table. The step does
+not converge by retrying; retrying is what sustains it. The ledger records nothing either way,
+because `recordMigration` runs only after the file completes.
+
+**Therefore:** 044 must be completed ONCE, out of band, and allowed to finish (it is `IF NOT
+EXISTS` / idempotent, so a completed build makes every later run cheap). CI's step should not be
+the thing that starts it. Until the in-flight build finishes and its ledger row lands, every
+db-invariants run will fail in ~5s on this lock, and that failure is now self-describing rather
+than mute.
+
+**Not claimed:** that this makes the job green. It does not. It makes the red decidable.
+
