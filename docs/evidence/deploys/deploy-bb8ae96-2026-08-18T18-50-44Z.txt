@@ -1,0 +1,12 @@
+deployed_at_utc: 2026-08-18T18:56:13Z
+sha:             bb8ae9607b4011aa1955b8b05e766d73b65a3f3f
+branch:          fix/db-invariants-lock-diagnostic
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@50.38.2
+url:             https://web-kw37piagg-home-network-hardening.vercel.app
+deployment_id:   dpl_3cVjhUQWeibA2fmVcNygcgkvwqi4
+alias:           ancientpaths.app
+alias_serves:    dpl_3cVjhUQWeibA2fmVcNygcgkvwqi4
+state:           live
