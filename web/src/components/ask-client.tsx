@@ -849,10 +849,18 @@ function Answer({ result, onRetry, busy, contextTitle, withdrawnIds }: { result:
         {voices.map((v, i) => {
           const era = eraOf(v.attribution.year);
           // §4.4: withdrawn ROW → attribution stays, quote goes. A voice is tombstoned when
-          // the retrieval row it was composed from is no longer served (per-row check). An
-          // unresolvable voice cannot be checked — an accepted, findings-logged residue.
+          // the retrieval row it was composed from is no longer served (per-row check).
+          //
+          // AND THE UNRESOLVABLE CASE FAILS CLOSED — NARROWLY (audit #7, 2026-08-18). This used
+          // to read `voiceSid && gone.has(voiceSid)`, so a voice whose row could not be resolved
+          // skipped the check and rendered its stored quote: the one fail-open path in a
+          // subsystem that fails closed everywhere else. The narrowing is what makes it safe:
+          // `gone` is non-empty only on a stored thread with KNOWN withdrawals, so on a live turn
+          // (gone empty) an unresolvable voice still renders — tombstoning fresh verifier-passed
+          // voices would be a mass false positive. Withdrawals present + cannot prove this voice
+          // is not among them = attribution without the quote.
           const voiceSid = resolveVoiceSourceId(result.retrieval, v);
-          if (voiceSid && gone.has(voiceSid)) {
+          if ((voiceSid === null && gone.size > 0) || (voiceSid !== null && gone.has(voiceSid))) {
             return (
               <div key={i}>
                 <div aria-hidden="true" className="edge mb-6 border-t" />

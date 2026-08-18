@@ -124,17 +124,30 @@ export interface VoiceLike {
 
 const collapseWhitespace = (s: string) => s.replace(/\s+/g, ' ').trim();
 
+// Typographic fold: curly quotes -> straight, en/em dashes -> hyphen, then whitespace-collapse.
+// The verifier passes a quote on a NORMALIZED match, so one smart quote of drift between the
+// composed voice and the retrieval bytes passed verification and failed resolution here — which
+// mattered once resolution failure started failing closed on withdrawn threads (audit #7): every
+// avoidable null is a voice that would tombstone unnecessarily.
+const typographicFold = (s: string) =>
+  collapseWhitespace(s.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014]/g, '-'));
+
 export function resolveVoiceSourceId(
   retrieval: readonly RetrievalLike[],
   voice: VoiceLike,
 ): string | null {
   const exact = retrieval.filter((r) => r.content.includes(voice.quote));
-  const byQuote =
+  const collapsed =
     exact.length > 0
       ? exact
       : retrieval.filter((r) =>
           collapseWhitespace(r.content).includes(collapseWhitespace(voice.quote)),
         );
+  // Third tier, added with audit #7's fail-closed change: typographic drift only.
+  const byQuote =
+    collapsed.length > 0
+      ? collapsed
+      : retrieval.filter((r) => typographicFold(r.content).includes(typographicFold(voice.quote)));
   if (byQuote.length > 0) return byQuote[0]!.sourceId;
   const byAttribution = retrieval.filter(
     (r) => r.metadata.author === voice.attribution.author && r.metadata.sourceTitle === voice.attribution.work,
