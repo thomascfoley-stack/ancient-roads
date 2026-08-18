@@ -369,6 +369,19 @@ export function VerseDisplay({
           drawer came to be open — verse handle, `#v16` deep link, a jump from My library — the
           popover does not co-render with it. A guard that depends on every future path
           remembering to call `dismiss()` is the kind that goes stale. */}
+      {/* NO `clip` — "Add to study" cannot be offered here, and that is a fact about the data,
+          not a gap in this component. A study clipping is a REFERENCE to a corpus row
+          (`sectionId` | `sourceId` | `slug`); the route rejects text before any branch runs
+          (`api/studies/[id]/blocks/route.ts:116`) and `110_studies.sql:90` refuses to STORE a
+          clipping that carries neither key. Scripture in this reader has neither: `data.verses`
+          comes from `/bible/{translation}/{book}.json`, a static asset built by
+          `src/ingest/consolidate-bibles.ts`, so a verse is not a `sections` row and has no
+          embeddings key. The chapter's commentary is the same story one file over
+          (`/commentaries/{book}/{chapter}.json` — entries carry author and verse range, no id).
+          Rendering the control anyway would give the reader a button whose only outcome is a
+          400. Closing this needs a scripture reference the study_blocks table can hold — a
+          migration plus a route branch, both outside this file. The Book Reader
+          (`work-reader.tsx`) DOES have the key and offers the verb today. */}
       {pending && selectedVerse === null && (
         <SelectionPopover
           pending={pending}

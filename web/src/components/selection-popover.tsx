@@ -12,10 +12,11 @@
 // The context label is `Author · Work · locus` shaped — NEVER a host URL.
 // `onBookmark` is Phase 3 (bookmarks table): the button renders ONLY when a handler exists.
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { HIGHLIGHT_COLORS } from '@/lib/highlight-colors';
+import { SaveToStudy, type ClipRef } from './save-to-study';
 import {
   formatLines,
   formatStyledHtml,
@@ -27,6 +28,49 @@ import { placePopover, type Placement } from '@/lib/popover-position';
 import type { PendingAnnotation } from '@/lib/use-text-annotation';
 
 type CopyMode = 'styled' | 'lines' | 'text';
+
+/** Mirror of `CLIP_REFERENCE_MAX` in `@/lib/studies.ts` — that module is server-only (it imports
+ *  the db layer), so the bound is restated here rather than pulled into a client bundle, exactly
+ *  as `save-to-study.tsx` restates `STUDY_TITLE_MAX`. Over-long references are CLAMPED rather
+ *  than posted: a work's `heading` is free text from ingest, and an unclamped label turns a
+ *  working affordance into a 400 on precisely the works with long headings. */
+const CLIP_REFERENCE_MAX = 300;
+/** B030: the selected text, used only to LOCATE a paragraph server-side. Mirrors the route's
+ *  500-char cap so an over-long drag is trimmed at the source rather than 400'd at the edge. */
+const CLIP_MATCH_HINT_MAX = 500;
+
+/**
+ * `SaveToStudy` is authored for the app's ordinary surfaces — stone-500 ink on a parchment page,
+ * which is what /ask gives it. This pill is INVERTED (night surface in light mode, parchment in
+ * dark, PRD §8), so the component's own palette lands wrong on both. Restated here as
+ * child-scoped overrides rather than by editing `save-to-study.tsx`: that component's colours are
+ * correct where it already ships, and this file's standing rule is that every control on the pill
+ * carries both palettes.
+ *
+ * `[role=status]` / `[role=alert]` rather than a blanket `p`, so the ERROR notice keeps being red
+ * instead of being flattened into the same ink as the success toast.
+ *
+ * THE TOAST'S CHILDREN ARE LISTED SEPARATELY, and they are not padding: colouring the `<p>` alone
+ * leaves `Saved to <study>.` on its own `text-stone-700` (#44403c on the #0c0a09 pill — ~1.9:1)
+ * and `Change?` on `text-accent-700`, because both carry their own class and a rule aimed at the
+ * paragraph never reaches them. The one CONFIRMATION the primary path produces would have been
+ * the least readable text in the component. Found by compiling the stylesheet and reading the
+ * emitted selectors, not by looking at the JSX.
+ *
+ * The accent flip (300 on the night pill, 700 on the parchment one) is this file's existing
+ * idiom — the same pair the "Sign in to highlight" link already uses, inverted for the same
+ * reason. The picker panel is NOT overridden: it paints its own `bg-stone-50 dark:bg-stone-950`
+ * surface, so its authored colours are already correct on it, and `[&>button]` is direct-child
+ * scoped so it cannot leak into the picker's rows.
+ */
+const SAVE_ON_PILL = [
+  '[&>button]:text-stone-200 [&>button]:hover:text-white',
+  'dark:[&>button]:text-stone-700 dark:[&>button]:hover:text-stone-900',
+  '[&_[role=status]]:text-stone-300 dark:[&_[role=status]]:text-stone-600',
+  '[&_[role=status]_span]:text-stone-100 dark:[&_[role=status]_span]:text-stone-800',
+  '[&_[role=status]_button]:text-accent-300 dark:[&_[role=status]_button]:text-accent-700',
+  '[&_[role=alert]]:text-red-300 dark:[&_[role=alert]]:text-red-800',
+].join(' ');
 
 export interface SelectionPopoverProps {
   pending: PendingAnnotation;
@@ -52,6 +96,31 @@ export interface SelectionPopoverProps {
    *  not rendered then, rather than rendered as a no-op (B046). */
   onClearHighlight?: () => void;
   onOpenCommentaries?: () => void;
+  /**
+   * ADD TO STUDY — a clipping REFERENCE for the selected passage, never its text.
+   *
+   * The route states the rule (`api/studies/[id]/blocks/route.ts:25`) and enforces it before any
+   * branch runs (:116, `quote`/`attribution` → 400): a clipping carries `sectionId`, `sourceId`
+   * or `slug`. The TABLE says it one layer down — `110_studies.sql:90`,
+   * `CHECK ( kind <> 'clipping' OR (source_id IS NOT NULL OR section_id IS NOT NULL) )` — so a
+   * clipping that is not a corpus key cannot be stored at all. The server snapshots the bytes
+   * itself, inside the licensing gate of the same INSERT…SELECT (F3/S-1).
+   *
+   * WHICH IS WHY THIS IS OPTIONAL, AND WHY ITS ABSENCE IS NOT AN OVERSIGHT. The Book Reader has a
+   * key for every section it renders (`WorkSectionRow.id` IS `sections.id`), so it passes one.
+   * The BIBLE READER HAS NONE: `/read` serves verse text from a static asset
+   * (`web/public/bible/{translation}/{book}.json`, built by `src/ingest/consolidate-bibles.ts`)
+   * and its commentary from another (`/commentaries/{book}/{chapter}.json`, whose entries carry
+   * author/verse range and no id at all). Neither is a `sections` row and neither has an
+   * embeddings key, so there is nothing to reference — and no text-carrying path to fall back on,
+   * by design. `verse-display.tsx` therefore passes no clip and the control does not render,
+   * because a control that can only 400 is worse than no control. Closing that gap is a
+   * migration + route change (a scripture reference the table can hold), not a client change.
+   */
+  clip?: ClipRef;
+  /** Title for the "New study" the picker offers when there is nothing to save to yet. Falls
+   *  back to `contextLabel`, which is already `Author · Work · locus` shaped. */
+  clipTitle?: string;
   onDismiss: () => void;
 }
 
@@ -69,6 +138,8 @@ export function SelectionPopover({
   highlighted = false,
   onClearHighlight,
   onOpenCommentaries,
+  clip,
+  clipTitle,
   onDismiss,
 }: SelectionPopoverProps) {
   const cardRef = useRef<HTMLDivElement | null>(null);
@@ -147,6 +218,22 @@ export function SelectionPopover({
     [pending, contextLabel, copyLineNo],
   );
 
+  // Clamped ONCE, here, so every surface gets the bound rather than each caller remembering it —
+  // and memoised because `SaveToStudy` keys a `useCallback` off this object's identity.
+  const clampedClip = useMemo<ClipRef | undefined>(() => {
+    if (!clip) return undefined;
+    const reference = clip.reference?.slice(0, CLIP_REFERENCE_MAX);
+    // B030: clamped HERE for the same reason the reference is — one bound, not one per caller.
+    // The route caps it again at 500; this keeps a long drag-selection from being sent at all.
+    const matchHint = clip.matchHint?.slice(0, CLIP_MATCH_HINT_MAX);
+    // Rebuilt per branch rather than spread: `ClipRef` is a union of two exclusive shapes, and a
+    // spread would let a stray `sourceId` ride along beside a `sectionId` — which the route
+    // rejects ("send exactly one of sectionId (reader) or sourceId (ask)").
+    return 'sectionId' in clip
+      ? { sectionId: clip.sectionId, reference, matchHint }
+      : { sourceId: clip.sourceId, reference };
+  }, [clip]);
+
   if (typeof document === 'undefined') return null;
 
   // Keep the selection alive: a press on either surface must not clear it before we read it.
@@ -172,6 +259,19 @@ export function SelectionPopover({
   );
 
   const divider = <span className="mx-0.5 h-5 w-px shrink-0 bg-white/15 dark:bg-stone-900/20" aria-hidden />;
+
+  // THE ONE CANONICAL SAVE-TO-STUDY VERB, not a second implementation of it. Targeting is
+  // already solved — a stored last target, the picker as the second tap, "Change?" to move the
+  // block (E7, "always auto-save, never ask") — and solving it again here would give the reader
+  // a different answer to "which study?" than /ask gives, for the same user, on the same device.
+  //
+  // Gated on `signedIn` like the highlight/bookmark/clear controls beside it: the POST 401s for a
+  // signed-out reader, and this file's standing rule is that a control which appears to work and
+  // silently does not is worse than an absent one.
+  const saveToStudy =
+    signedIn && clampedClip ? (
+      <SaveToStudy clip={clampedClip} contextTitle={clipTitle ?? contextLabel} className={`shrink-0 ${SAVE_ON_PILL}`} />
+    ) : null;
 
   // The pill is night-surface in light mode and INVERTED to parchment in dark (PRD §8), so
   // every control on it carries both palettes: stone-200→white text on the dark pill,
@@ -295,7 +395,14 @@ export function SelectionPopover({
               preference, not a decision worth a third of the toolbar. `styled` is the one that
               carries the attribution, and an unattributed quote is the failure this product
               exists to prevent, so it is the only sensible default. */}
-          <div className="mt-2 flex items-center gap-1.5 px-0.5">{copyChip('styled', 'Copy')}</div>
+          {/* Save sits beside Copy rather than in the action row above: both are "take this
+              passage away with you" verbs, where the row above is "mark up what is in front of
+              me". The card has no `overflow` clip, so the picker and the toast that open from
+              here escape it normally. */}
+          <div className="mt-2 flex items-center gap-1.5 px-0.5">
+            {copyChip('styled', 'Copy')}
+            {saveToStudy}
+          </div>
         </div>
       </div>
 
@@ -316,9 +423,28 @@ export function SelectionPopover({
           locus still travels with every copy (copy-format.ts); this trims only the bar's echo of
           it. Desktop card untouched: its rows wrap, so nothing there ever overflowed. */}
       <div
-        className="fixed inset-x-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-3 md:hidden"
+        className="fixed inset-x-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom))] z-40 flex flex-col items-center gap-1.5 px-3 md:hidden"
         {...holdSelection}
       >
+        {/* SAVE RIDES ABOVE THE PILL, OUTSIDE IT — not fastidiousness, two hard constraints.
+            (1) The pill is `overflow-x-auto`, and a box with `overflow-x: auto` and
+            `overflow-y: visible` has its used `overflow-y` computed to `auto` as well: the
+            picker AND the "Saved to <study>." toast would both be clipped by the pill they
+            opened from, so the primary path's only confirmation would be invisible. That is the
+            same class of defect as B024 (a control hidden behind this bar's own overflow), which
+            is why it is not being repeated one row down.
+            (2) The picker opens downward (`absolute … mt-1`, save-to-study.tsx) — from above the
+            pill it lands over the toolbar and the nav rather than off the bottom of the screen.
+            It out-paints both: `z-20` inside this `z-40` container beats the pill's auto, and the
+            portal mounts after the `z-40` mobile nav, so equal z-index resolves on tree order.
+            Square corners, like the desktop card and for its stated reason: this box grows to two
+            rows when the toast is up, and `rounded-full` on a multi-row box renders an ellipse
+            that clips its own corners. */}
+        {saveToStudy && (
+          <div className="max-w-full animate-[fade-in_150ms_var(--ease-gentle)] border border-stone-800 bg-stone-950 px-3 py-1 dark:border-stone-900 dark:bg-stone-50">
+            {saveToStudy}
+          </div>
+        )}
         <div className="flex max-w-full animate-[fade-in_150ms_var(--ease-gentle)] items-center gap-2 overflow-x-auto rounded-full border border-stone-800 bg-stone-950 px-3 py-2 dark:border-stone-900 dark:bg-stone-50">
           <span className="max-w-[96px] shrink-0 truncate px-1 font-sans text-xs font-medium text-stone-300 dark:text-stone-600">{contextLabel}</span>
           {actionButtons}

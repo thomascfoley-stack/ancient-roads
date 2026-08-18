@@ -92,3 +92,21 @@ describe('B030 — the clipping is born trimmed to the matched paragraph', () =>
     expect(captured.some((c) => /UPDATE study_blocks/i.test(c.text))).toBe(false);
   });
 });
+
+// The reader-selection surface, end to end at the contract level: what SaveToStudy PUTS ON THE
+// WIRE from a reader selection. Without this the two halves of B030 can drift — the server can
+// keep its paragraph logic while the reader stops sending the hint, and every existing test
+// stays green because each half is individually correct.
+describe('B030 — a save from a reader selection carries the selected text as the hint', () => {
+  it('SaveToStudy posts matchHint for a sectionId clip, and never posts quote text', async () => {
+    // SEED: drop `matchHint` from the sectionId branch of the body in save-to-study.tsx -> RED.
+    const src = await import('node:fs').then((fs) =>
+      fs.readFileSync(new URL('../src/components/save-to-study.tsx', import.meta.url), 'utf8'),
+    );
+    const body = src.match(/\{ kind: 'clipping', sectionId:[^}]*\}/);
+    expect(body, 'the sectionId clipping body must exist').toBeTruthy();
+    expect(body![0], 'the reader save must carry the hint').toContain('matchHint');
+    // S-1 stays intact: a hint LOCATES, it never becomes stored content.
+    expect(body![0]).not.toMatch(/\bquote\b|\battribution\b/);
+  });
+});

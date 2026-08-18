@@ -45,7 +45,9 @@ export interface StudySummary {
 }
 
 /** The clipping reference a surface hands us — exactly the route's two shapes, never text. */
-export type ClipRef = { sourceId: string; reference?: string } | { sectionId: number; reference?: string };
+export type ClipRef =
+  | { sourceId: string; reference?: string; matchHint?: string }
+  | { sectionId: number; reference?: string; matchHint?: string };
 
 interface LastTarget {
   id: string;
@@ -178,7 +180,10 @@ export function SaveToStudy({ clip, contextTitle, className }: { clip: ClipRef; 
     const body =
       'sourceId' in clip
         ? { kind: 'clipping', sourceId: clip.sourceId, reference: clip.reference }
-        : { kind: 'clipping', sectionId: clip.sectionId, reference: clip.reference };
+        // B030: `matchHint` is a HINT, never text to store — the server locates it in its own
+        // snapshot and stores the surrounding paragraph as a trim VIEW. The S-1 rule that no
+        // surface may send `quote`/`attribution` is untouched: this field cannot become content.
+        : { kind: 'clipping', sectionId: clip.sectionId, reference: clip.reference, matchHint: clip.matchHint };
     const res = await fetch(`/api/studies/${studyId}/blocks`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
