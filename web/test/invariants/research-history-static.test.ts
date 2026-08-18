@@ -71,12 +71,26 @@ describe('research history — static invariants', () => {
     expect(streamSrc).toMatch(/appendAnswer\(/);
     // Derived from the app tree, not hand-listed — and keyed on the MODULE SPECIFIER, not the
     // function name, so an aliased import cannot slip it (I2-L3).
+    //
+    // COMMENT-STRIPPED BEFORE DECIDING, as of 2026-08-18 — the third home of one defect. The raw
+    // grep classified two routes as importers because their WHY comments accurately NAME
+    // lib/research while documenting the persona bypass (audit #5) — prose, not imports. The
+    // pressure a content-level guard creates runs backwards: it teaches people to weaken accurate
+    // comments to appease a test. routeSpendsMoney learned this (a comment saying teach() made a
+    // DELETE route a "spender"), this file's own order-check learned it in v1 (a comment saying
+    // appendQuestion( defeated it), and now its import fence. The grep stays as the cheap
+    // candidate filter; the DECISION is made on comment-stripped source matching an actual
+    // import/require of the specifier.
     const hits = execSync(
       `grep -rl "lib/research" "${path.join(ROOT, 'web/src/app')}" || true`,
       { encoding: 'utf8' },
     )
       .split('\n')
       .filter(Boolean)
+      .filter((f: string) => {
+        const code = stripComments(readFileSync(f, 'utf8'));
+        return /(?:from\s*['"][^'"]*lib\/research(?:\.m?js)?['"]|require\(\s*['"][^'"]*lib\/research)/.test(code);
+      })
       .map((p: string) => path.relative(ROOT, p))
       .sort();
     // WHAT the [id] route imports, not merely THAT it may. The allowlist below admits the file;

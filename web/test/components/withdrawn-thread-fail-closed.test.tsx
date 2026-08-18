@@ -43,13 +43,13 @@ function thread(withdrawnIds: string[]): InitialThread {
         response: {
           blocks: [{
             type: 'voice',
-            attribution: { author: 'John Gill', work: 'Exposition' },
+            attribution: { author: 'John Gill', work: 'Exposition', tradition: 'reformed' },
             quote: 'Grace is the free favour of God — unmerited.',
           }],
         },
         retrieval: [
-          { sourceId: 'src-A', score: 1, content: 'An entirely different passage about faith.', metadata: { author: 'John Gill', sourceTitle: 'Exposition' } },
-          { sourceId: 'src-B', score: 0.9, content: 'Another passage.', metadata: { author: 'John Gill', sourceTitle: 'Exposition' } },
+          { sourceId: 'src-A', score: 1, content: 'An entirely different passage about faith.', metadata: { author: 'John Gill', sourceTitle: 'Exposition', tradition: 'reformed' } },
+          { sourceId: 'src-B', score: 0.9, content: 'Another passage.', metadata: { author: 'John Gill', sourceTitle: 'Exposition', tradition: 'reformed' } },
         ],
       },
     }],
