@@ -203,3 +203,48 @@ than mute.
 
 **Not claimed:** that this makes the job green. It does not. It makes the red decidable.
 
+---
+
+## 9. CLOSED 2026-08-18 19:44 UTC — every migration applies. The blocker is gone; the suite it hid is not.
+
+`✓ 116_ask_outcomes.sql (0.2s)` — **all 12 pending migrations now apply**, in run 32178276561.
+The chain, in the order it was actually unwound, with each hypothesis killed by measurement:
+
+| wall | what it really was |
+|---|---|
+| 30-minute step timeout | never slow work. The per-file start line disproved it. |
+| 5-second lock timeout | a **live** `CREATE INDEX CONCURRENTLY` on `idx_embeddings_served_legal`. §8 said WAIT; it finished on its own and 044/045/107/108/109 applied. |
+| `110_studies` | assert-without-repair. Fixed by revoking before asserting. Applied in **0.6s**. |
+| 111–115 | all green once 110 cleared: 0.3s / 13.1s / 29.4s / **1.1s** / 13.2s. 114 is free, as measured earlier — it was never a suspect. |
+| `116_ask_outcomes` | the same class again. Same fix. **0.2s**. |
+
+**The class, stated once so it is not rediscovered a third time:** *a migration that RAISEs on a
+privilege it does not REVOKE cannot converge on a database where its table already exists.*
+`CREATE TABLE IF NOT EXISTS` skips, the pre-existing grants survive, the tail refuses, nothing is
+recorded, and the next run refuses identically. Its source is watchlist instance 15 — 001-era
+default privileges handing DML to `app_runtime` on tables created later, which 032 narrowed and
+039 tripped over. Both fixes REVOKE and then assert, so the invariants are now **enforced rather
+than inspected** — strictly stronger than what stood there, not a weakening to obtain green.
+
+### What db-invariants is red on NOW, and it is not the same problem
+
+The migration step was failing first, so **the DB-backed suite had not run in a long time**.
+It runs now: **716 tests pass, 4 fail, across 5 files.** These are revealed, not caused — verified
+for the one that touches something this work changed:
+
+| file | failure | whose |
+|---|---|---|
+| `neon-auth-live.test.ts` | `REQUIRE_SECRETS … missing NEON_AUTH_BASE_URL and NEON_AUTH_COOKIE_SECRET` | **OWNER** — two repo secrets. Fail-closed by design; not a defect. |
+| `studies-order.test.ts` | `a midpoint race must resolve by retry, not failure (position_conflict)` | real ordering defect. **NOT caused by the 110 revoke**: its teardown `DELETE FROM studies` runs on `ownerUrl`, not `app_runtime` (`:73-79`). |
+| `plan-tenancy.test.ts` | two-account tenancy invariant | real, unexamined |
+| `register-wall-surfaces.test.ts` ×2 | catalog fence against real data | real, unexamined |
+| `licensing.test.ts` | `LEGAL_CORPUS_FILTER admits ALL 9 served voices (presence)` | data state on the test branch |
+
+Also NOT RUN, loudly and correctly: §3 verse-key distribution (needs the gitignored
+`web/public/commentaries`, absent on a CI runner) and the waitlist leg (table absent on target).
+
+**Do not read this section as "db-invariants is fixed".** The thing this order was opened about —
+migrations that could never apply — is fixed and stays fixed. What replaced it is a gate that is
+finally allowed to report, and it is reporting four real failures plus one missing-secret. That is
+the gate working, and each row above is its own piece of work.
+
