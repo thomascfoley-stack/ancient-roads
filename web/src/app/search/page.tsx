@@ -19,6 +19,12 @@
 // looks like an empty one, and never takes the other groups down with it.
 //
 // R0: this page finds and labels. Nothing here implies the app remembers or converses.
+//
+// LICENSING: the "Your studies" group renders snapshotted corpus quotes, so the servability
+// re-check belt (servability.ts, the doc page's rule) runs INSIDE searchStudies — a refused
+// block's row arrives as a tombstone hit, never as quote bytes. See search-personal.ts
+// (2026-08-17 pre-deploy audit, domain lens #2: this was the fourth render path, and the only
+// one that had forgotten the belt).
 
 import Link from 'next/link';
 import { currentUser } from '@/lib/session';

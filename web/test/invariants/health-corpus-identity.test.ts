@@ -41,6 +41,15 @@ vi.mock('@/lib/db', () => ({
   },
 }));
 
+/** What the per-IP read throttle answers: null = proceed, a Response = refused (2026-08-17
+ *  pre-deploy audit #9). Pass-through by default so the identity cases stay about identity;
+ *  that the throttle is WIRED IN AT ALL is asserted from source by api-hardening.test.ts H3,
+ *  so mocking it here cannot hide its removal. */
+const throttle = vi.hoisted(() => ({ value: null as Response | null }));
+vi.mock('@/lib/public-read-limit', () => ({
+  publicReadThrottle: vi.fn(async () => throttle.value),
+}));
+
 const HEALTHY_MANIFEST = JSON.stringify({
   sha: 'deadbee',
   ts: '2026-07-30T18:51:33.189Z',
@@ -51,7 +60,7 @@ const HEALTHY_MANIFEST = JSON.stringify({
 
 async function health(): Promise<{ status: number; body: Record<string, unknown>; res: Response }> {
   const { GET } = await import('@/app/api/health/route');
-  const res = await GET();
+  const res = await GET(new Request('http://localhost/api/health'));
   return { status: res.status, body: (await res.json()) as Record<string, unknown>, res };
 }
 
@@ -59,6 +68,7 @@ beforeEach(() => {
   vi.resetModules();
   manifestFixture = HEALTHY_MANIFEST;
   dbRows = [{ n: 31 }];
+  throttle.value = null;
   vi.stubEnv('VERCEL_GIT_COMMIT_SHA', 'deadbeefcafe');
 });
 
@@ -166,6 +176,23 @@ describe('the writer and the reader must agree on one path', () => {
   it('the shipped copy is gitignored — the committed record is the docs/evidence one', () => {
     // Committing both is how the two are allowed to disagree.
     expect(readFileSync(path.join(ROOT, '.gitignore'), 'utf-8')).toContain('web/public/corpus-manifest.json');
+  });
+});
+
+describe('the health check is throttled (#9, 2026-08-17 pre-deploy audit)', () => {
+  it('returns the throttle refusal instead of running the count(*)', async () => {
+    // Unauthenticated + force-dynamic + one count(*) per request, on the SAME Neon endpoint the
+    // fail-closed ask limiter depends on — the coupling public-read-limit.ts exists for. The
+    // route's own header admitted it was safe only while the site gate is up.
+    // SEED: delete the publicReadThrottle call from the route → this reads 200 and goes RED.
+    throttle.value = new Response(JSON.stringify({ error: { code: 'RATE_LIMIT_MINUTE' } }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json' },
+    });
+    // Were the route to ignore the refusal and proceed, the mocked DB would answer and this
+    // would be a 200 with a healthy body — so the 429 proves the early return, not the mock.
+    const { status } = await health();
+    expect(status).toBe(429);
   });
 });
 

@@ -52,7 +52,11 @@ vi.mock('@/lib/session', () => ({
 }));
 
 import { POST as createStudy } from '@/app/api/studies/route';
-import { GET as getBlocks, PATCH as patchBlocks, POST as postBlocks } from '@/app/api/studies/[id]/blocks/route';
+import { PATCH as patchBlocks, POST as postBlocks } from '@/app/api/studies/[id]/blocks/route';
+// The raw-blocks GET was DELETED 2026-08-17 (zero consumers; returned stored quotes with no
+// servability re-check — studies-api-no-get.test.ts pins the absence). The read-back below
+// goes through the feed route, the shipped servability-checked read.
+import { GET as feedGet } from '@/app/studies/[id]/feed/route';
 
 ensureDbEnv();
 const ownerConn = seedOwnerUrl();
@@ -143,9 +147,10 @@ describe.skipIf(SKIP)('S-1 — the server is the only writer of clipping quote/a
       expect(await code(res)).toBe('INVALID_REQUEST');
     }
     // Rejected means rejected: the study is still empty. (This case runs before the golden path
-    // below, same file-order dependence as the published-boundary suite.)
-    const page = await getBlocks(
-      req('GET', undefined, `http://localhost/api/studies/${studyId}/blocks`),
+    // below, same file-order dependence as the published-boundary suite.) Read back through the
+    // feed — with zero blocks, resolveServability short-circuits, so this adds no corpus query.
+    const page = await feedGet(
+      req('GET', undefined, `http://localhost/studies/${studyId}/feed`),
       ctx(studyId),
     );
     expect(page.status).toBe(200);

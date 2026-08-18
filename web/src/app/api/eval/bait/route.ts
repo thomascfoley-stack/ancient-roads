@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
 import { teach } from '@/lib/teacher/teach';
+import { apiError } from '@/lib/api-error';
 
 // PERMANENT faithfulness (interpretation_bait) harness endpoint (docs/BAIT_HARNESS.md).
 // Runs the REAL teach() (retrieve → compose → normalize → verify → retry → fail-closed
@@ -25,7 +26,19 @@ export async function POST(req: NextRequest) {
   if (!tokenOk(req.headers.get('authorization'), secret)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
-  const body = (await req.json()) as { question?: unknown };
+  // 2026-08-17 pre-deploy audit (attack lens) #4: this parse sat OUTSIDE any try/catch, so a
+  // malformed body threw into Next's raw 500 instead of the api-error envelope every /api/*
+  // route promises (lib/api-error.ts header). A parse failure is caller error, not ours: 400.
+  // NOTE deliberately NOT added here: a rate limiter. The wallet invariant
+  // (test/invariants/wallet.test.ts) exempts this route by design as the bearer-secret eval
+  // harness; its unmetered spend behind EVAL_HARNESS_SECRET is an owner-accepted design
+  // (same audit, #3) — do not "fix" it in passing.
+  let body: { question?: unknown };
+  try {
+    body = (await req.json()) as { question?: unknown };
+  } catch {
+    return apiError('INVALID_REQUEST');
+  }
   const question = typeof body.question === 'string' ? body.question.slice(0, 500) : '';
   if (!question) return NextResponse.json({ error: 'question required' }, { status: 400 });
   const { result } = await teach(question);

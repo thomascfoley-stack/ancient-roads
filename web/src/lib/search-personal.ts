@@ -18,6 +18,7 @@
 
 import { runAsUser } from './db';
 import { escapeLike } from './search-groups';
+import { blockRenderState, resolveServability, type ServabilityKeyed } from './servability';
 
 // Bounds mirror search-sections.ts / user-corpus/search.ts (each bound is a documented scar
 // there). The count cap means the UI renders "N+" exactly like the corpus groups do.
@@ -38,11 +39,69 @@ export interface PersonalPage<T> {
   totalCapped: boolean;
 }
 
-export interface StudySearchHit {
+/** The attribution shape study_blocks stores (studies.ts StudyBlock) — kept on a tombstoned hit. */
+export interface StudyAttribution {
+  author?: string;
+  work_title?: string;
+  reference?: string;
+}
+
+/**
+ * One "Your studies" row. Discriminated on `state`, because the two shapes must not be
+ * confusable: a `snippet` hit carries ts_headline HTML (render ONLY through sanitizeSnippet);
+ * a `tombstone` hit carries NO text from the corpus at all — attribution only, and the UI adds
+ * the shared TOMBSTONE_NOTICE (servability.ts). See the servability re-check inside
+ * searchStudies for why the tombstone shape exists on this surface.
+ */
+export type StudySearchHit =
+  | {
+      studyId: string;
+      title: string;
+      state: 'snippet';
+      /** ts_headline HTML — render ONLY through sanitizeSnippet. */
+      snippet: string;
+    }
+  | {
+      studyId: string;
+      title: string;
+      state: 'tombstone';
+      /** Plain data, never HTML — the tombstone keeps attribution and drops the quote (S-10). */
+      attribution: StudyAttribution | null;
+    };
+
+/** The ranked-page row searchStudies reads before any snippet text is built (phase 1 below). */
+export interface StudyRankedRow {
   studyId: string;
   title: string;
-  /** ts_headline HTML — render ONLY through sanitizeSnippet. */
-  snippet: string;
+  blockId: string;
+  kind: string;
+  sectionId: string | null;
+  sourceId: string | null;
+  /** `b.quote IS NOT NULL` — the null-test is all the render rule needs (see toServabilityKeyed). */
+  hasQuote: boolean;
+  attribution: StudyAttribution | null;
+}
+
+/**
+ * Bridge a ranked search row into servability.ts's keyed shape so `/search` runs the SAME
+ * resolveServability/blockRenderState pair as the study doc page, feed, and export — never a
+ * parallel re-derivation (servability.ts: "reimplementing it per caller is how one of them
+ * forgets"; 2026-08-17 pre-deploy audit, domain lens #2: this path was the fourth render
+ * surface and the only one that had forgotten).
+ *
+ * `quote` is a SENTINEL, not the bytes: blockRenderState only ever null-tests quote
+ * (isTombstone's data-state leg), so the search page never SELECTs the stored quote out of the
+ * ranked page at all. A withdrawn work's text cannot leak from a query that never fetched it.
+ * Exported for the unit suite (search-personal-servability.test.ts).
+ */
+export function toServabilityKeyed(row: StudyRankedRow): ServabilityKeyed {
+  return {
+    kind: row.kind,
+    section_id: row.sectionId,
+    source_id: row.sourceId,
+    quote: row.hasQuote ? '[bytes withheld — never fetched on the search path]' : null,
+    attribution: row.attribution,
+  };
 }
 
 export interface PrayerSearchHit {
@@ -67,6 +126,37 @@ export interface NoteSearchHit {
  * a soft-deleted study's blocks contribute nothing (S-7). The tsv is migration 110's
  * body+quote+attribution vector, so clippings match on what they quote and who said it, not
  * only on the user's own words.
+ *
+ * ── THE LICENSING RE-CHECK RUNS HERE TOO (2026-08-17 pre-deploy audit, domain lens #2) ───────
+ * A clipping's `quote` is snapshotted corpus text, and this function used to feed it into
+ * ts_headline gated on nothing but `deleted_at IS NULL` — the exact bypass servability.ts
+ * exists to close, on the ONE sibling render path that had forgotten it (doc page, feed, and
+ * export all apply it). The rule (servability.ts:135-137): the re-check "outranks the stored
+ * bytes; a render path that forgets to purge still shows nothing unlicensed".
+ *
+ * So the query is now three BOUNDED phases — never per-row (no N+1; resolveServability batches
+ * both key legs with `= ANY`):
+ *   1. rank + page WITHOUT building any snippet text — the page rows carry corpus keys and a
+ *      `quote IS NOT NULL` flag, never the quote bytes;
+ *   2. ONE batched resolveServability over the page's blocks (≤ limit rows), decided per row by
+ *      the SAME shared blockRenderState the siblings use;
+ *   3. ONE `= ANY(uuid[])` ts_headline query for the surviving rows, where `b.quote` enters the
+ *      concat ONLY for block ids servability confirmed (the CASE gate). A withdrawn quote's
+ *      bytes therefore never reach the headline, the process, or the page.
+ * A row whose best block is refused renders as the sibling paths' tombstone — attribution +
+ * TOMBSTONE_NOTICE, no quote, no work link (S-10). Why tombstone rather than quietly dropping
+ * the quote from the headline: a clipping block has NO body by schema CHECK (110_studies.sql),
+ * so a quote-less headline would be attribution fragments with no <mark> — a snippet that
+ * misreports the match — where the notice states the truth the siblings already state.
+ *
+ * FAILS CLOSED at every seam: resolveServability's own error path returns the empty resolution
+ * (every keyed clipping tombstones); a block that vanishes between phases gets no headline row
+ * and falls back to tombstone; and a phase-3 error rejects, which /search renders as the
+ * group-level error, not as text.
+ *
+ * (Ranking still matches over the stored tsv, which includes withdrawn quote bytes until the
+ * Flow D purge runs — same as the doc page holding the bytes in the DB. The belt governs what
+ * RENDERS; matching displays nothing.)
  */
 export async function searchStudies(
   userId: string,
@@ -78,9 +168,10 @@ export async function searchStudies(
   const limit = clampLimit(opts.limit);
   const offset = clampOffset(opts.offset);
 
+  // Phase 1 — rank and dedupe on the cheap columns FIRST (the search-sections.ts lesson:
+  // headline inside the dedupe paid 17x on the corpus). No ts_headline and no quote bytes
+  // here: snippet text is built in phase 3, after servability has spoken.
   const [pageRows, countRows] = await runAsUser(userId, (sql) => [
-    // Rank and dedupe on the cheap columns FIRST; ts_headline runs only for the page's rows
-    // (the search-sections.ts lesson: headline inside the dedupe paid 17x on the corpus).
     sql`WITH ranked AS (
           SELECT DISTINCT ON (b.study_id) b.study_id, b.id AS block_id,
                  ts_rank_cd(b.tsv, websearch_to_tsquery('english', ${q})) AS rank
@@ -93,10 +184,10 @@ export async function searchStudies(
           SELECT study_id, block_id, rank FROM ranked ORDER BY rank DESC, study_id LIMIT ${limit} OFFSET ${offset}
         )
         SELECT p.study_id AS "studyId", st.title,
-               ts_headline('english',
-                 concat_ws(' ', b.body, b.quote, b.attribution->>'work_title', b.attribution->>'author'),
-                 websearch_to_tsquery('english', ${q}),
-                 'MaxWords=50, MinWords=20, StartSel=<mark>, StopSel=</mark>') AS snippet
+               b.id::text AS "blockId", b.kind,
+               b.section_id::text AS "sectionId", b.source_id AS "sourceId",
+               (b.quote IS NOT NULL) AS "hasQuote",
+               b.attribution
         FROM page p
         JOIN study_blocks b ON b.id = p.block_id
         JOIN studies st ON st.id = p.study_id
@@ -111,7 +202,51 @@ export async function searchStudies(
         ) capped`,
   ]);
   const total = (countRows as { total: number }[])[0]?.total ?? 0;
-  return { rows: pageRows as unknown as StudySearchHit[], total, totalCapped: total >= PERSONAL_COUNT_CAP };
+  const ranked = pageRows as unknown as StudyRankedRow[];
+  if (ranked.length === 0) return { rows: [], total, totalCapped: total >= PERSONAL_COUNT_CAP };
+
+  // Phase 2 — the shared belt, batched once for the whole page (its two legs are `= ANY`
+  // queries by design). Corpus read, so it runs outside runAsUser, exactly as on the doc page.
+  const resolution = await resolveServability(ranked.map(toServabilityKeyed));
+  const decided = ranked.map((row) => ({
+    row,
+    state: blockRenderState(toServabilityKeyed(row), resolution),
+  }));
+
+  // Phase 3 — build headlines ONLY for rows the rule allows, and let `b.quote` into the
+  // concat ONLY for confirmed-servable clippings ('clipping' state; 'text' rows have quote
+  // NULL by schema CHECK, and tombstoned rows are not queried at all).
+  const headlineIds = decided.filter((d) => d.state !== 'tombstone').map((d) => d.row.blockId);
+  const quoteOkIds = decided.filter((d) => d.state === 'clipping').map((d) => d.row.blockId);
+  const snippets = new Map<string, string>();
+  if (headlineIds.length > 0) {
+    const [headlineRows] = await runAsUser(userId, (sql) => [
+      sql`SELECT b.id::text AS "blockId",
+                 ts_headline('english',
+                   concat_ws(' ', b.body,
+                     CASE WHEN b.id = ANY(${quoteOkIds}::uuid[]) THEN b.quote END,
+                     b.attribution->>'work_title', b.attribution->>'author'),
+                   websearch_to_tsquery('english', ${q}),
+                   'MaxWords=50, MinWords=20, StartSel=<mark>, StopSel=</mark>') AS snippet
+          FROM study_blocks b
+          WHERE b.user_id = ${userId} AND b.deleted_at IS NULL
+            AND b.id = ANY(${headlineIds}::uuid[])`,
+    ]);
+    for (const r of headlineRows as { blockId: string; snippet: string }[]) {
+      snippets.set(r.blockId, r.snippet);
+    }
+  }
+
+  const rows: StudySearchHit[] = decided.map(({ row, state }) => {
+    const snippet = snippets.get(row.blockId);
+    // `snippet === undefined` for a non-tombstone row means it vanished between phases —
+    // fail closed to the tombstone shape rather than render anything unvouched-for.
+    if (state === 'tombstone' || snippet === undefined) {
+      return { studyId: row.studyId, title: row.title, state: 'tombstone', attribution: row.attribution };
+    }
+    return { studyId: row.studyId, title: row.title, state: 'snippet', snippet };
+  });
+  return { rows, total, totalCapped: total >= PERSONAL_COUNT_CAP };
 }
 
 /**

@@ -123,3 +123,28 @@ export async function readingCounts(userId: string, documentIds: string[]): Prom
   ]);
   return new Map((rows as { document_id: string; n: number }[]).map((r) => [r.document_id, r.n]));
 }
+
+/**
+ * Should a new readings run be REFUSED because one is already live? (B015)
+ *
+ * Pure, because the failure it guards is subtle enough to pin: `running` used to refuse
+ * unconditionally, and a job killed between its `running` write and any terminal write (the
+ * `after()` callback is not guaranteed past a platform recycle) left the document refusing
+ * restarts forever. `updatedAtIso` is the heartbeat — every setReadingsState touches it, including
+ * per-category progress, so a live run advances it at least every ~10s against a 10-minute bar.
+ *
+ * FAILS CLOSED ON A CORRUPT TIMESTAMP: an unparseable `updatedAtIso` makes the age NaN, every
+ * NaN comparison is false, and the NEGATED form below therefore refuses — a corrupt row reads as
+ * "still running", never as "corpse, go ahead". The SQL watchlist's three-valued-logic lesson,
+ * applied in TypeScript.
+ */
+export const READINGS_STALE_MS = 10 * 60_000;
+export function readingsRunRefused(
+  status: ReadingsStatus | null,
+  updatedAtIso: string,
+  now: number,
+): boolean {
+  if (status !== 'running') return false;
+  const age = now - new Date(updatedAtIso).getTime();
+  return !(age > READINGS_STALE_MS);
+}

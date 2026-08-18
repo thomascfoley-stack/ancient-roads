@@ -125,6 +125,11 @@ export function StudyLibraryPanel({
           kind: 'clipping',
           sectionId: row.sectionId,
           reference: row.heading ?? undefined,
+          // B030 — what the reader actually matched, so the block opens on that paragraph instead
+          // of the whole chapter. A hint only: the server locates it in its own snapshot and stores
+          // a trim VIEW; the bytes are still the full section, so "add more" is a widen, not a
+          // refetch. `q` is the live search term that produced this row.
+          matchHint: q || undefined,
           ...takePlacement(),
         }),
       });

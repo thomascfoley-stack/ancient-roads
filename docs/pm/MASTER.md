@@ -3,9 +3,14 @@
 **Read this first, every session.** It is the plan and the gate board. It is **not** the state —
 state lives in `docs/STATE_OF_TRUTH.md` and this file points at it rather than copying it.
 
-Last verified: 2026-08-16 · `main` @ `9a36ab8` · working branch: `ship/editor-deploy` (same commit as
-`main`) — re-measured with `git rev-parse`, not copied. **This line had stood at 2026-08-02 /
-`b569c90` for 14 days**, which is the exact decay the note below describes, in the note's own file.
+Last verified: 2026-08-18 · **live on `ancientpaths.app`: `7f62991`** (receipt
+`dpl_DyCgDgehRbadxTHznQCj9a9fuysJ`, 2026-08-18T06:08Z) — the CDN-freshness unblock deploy: two
+docs-only commits atop `13e3abb` plus the 211-file corpus CDN re-sync (metadata repair —
+`year`/`verseEnd` on the corpus-backlog authors — parity green; WORKLOG 2026-08-17 ops entry).
+**The live commit sits on `fix/q1-signed-out-state`, ahead of `origin/main` (`13e3abb`) by those
+two commits** — ancestry gate satisfied (live CONTAINS origin/main), but main needs the branch
+merged to close the gap. This line will go stale the moment the next lane ships; re-measure it
+rather than reading it.
 
 > The line above went 57 commits stale while still naming a working branch that had been merged and
 > deleted, and the board's own A2 row said "(unmerged)" of a commit that merged at `1f4bf8d`

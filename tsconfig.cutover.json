@@ -24,6 +24,10 @@
   // green in tsc and only surfaces at runtime.
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    // predeploy-gate.ts statically type-imports the marketing demo (.tsx) for the front-door
+    // quote leg (audit #8) — executed via tsx, which handles JSX; this only tells the CHECKER how
+    // to read it. react-jsx matches web's own setting.
+    "jsx": "react-jsx",
     // The gate imports web/src/lib/teacher/routing.ts and web/src/lib/legal-corpus.ts
     // directly and runs under `npx tsx`, which resolves .ts specifiers as written.
     "allowImportingTsExtensions": true

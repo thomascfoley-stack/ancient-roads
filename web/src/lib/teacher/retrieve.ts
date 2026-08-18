@@ -135,9 +135,19 @@ export const retrieveSermonLane = (queryVec: number[], ranges: readonly VerseRan
   retrieveRegisterLane('sermon', SERMON_CORPUS_FILTER, queryVec, ranges, limit);
 export const retrieveTheologyLane = (queryVec: number[], ranges: readonly VerseRange[], limit = LANE_LIMIT) =>
   retrieveRegisterLane('theology', THEOLOGY_CORPUS_FILTER, queryVec, ranges, limit);
-// Historian lane (ruled 2026-08-13, corpus-backlog #6): same reusable machinery. Serves
-// nothing until the owner-gated `served` flip lands on historian rows — every row the
-// filter could match is served=false until then, so this returns [] by construction.
+// Historian lane (ruled 2026-08-13, corpus-backlog #6): same reusable machinery.
+//
+// CORRECTED 2026-08-18 — the comment here used to close by asserting the lane could return
+// nothing at all, as a matter of construction rather than of data. True when written; false once
+// the serve flip landed, and nothing re-checked it. Measured on dev: 6,492 historian rows, ALL
+// 6,492 served, and HISTORIAN_CORPUS_FILTER matches every one. The lane is live. Independently
+// re-measured before this edit, because the previous sentence is exactly what a reader would have
+// trusted instead of asking.
+//
+// It matters more than a stale comment usually would: 5,999 of those rows (92.4%) carry no verse
+// anchor and 0 fall in a typical query's verse band, so the on-range leg returns nothing and
+// execution falls through to an unconstrained global top-3 — no lane in this file applies a
+// relevance floor (B031, filed). The old sentence is why nobody looked.
 export const retrieveHistorianLane = (queryVec: number[], ranges: readonly VerseRange[], limit = LANE_LIMIT) =>
   retrieveRegisterLane('historian', HISTORIAN_CORPUS_FILTER, queryVec, ranges, limit);
 

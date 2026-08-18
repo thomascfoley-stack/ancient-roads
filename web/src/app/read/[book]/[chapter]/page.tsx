@@ -399,6 +399,15 @@ export default function ReaderPage() {
         onTranslationChange={handleTranslationChange}
         interlinear={interlinear}
         onToggleInterlinear={() => setInterlinear((v) => !v)}
+        // A031 — the study dialog and the header's Aa popover could both be open at once,
+        // overlapping. The popover's only exit was an outside MOUSEDOWN, and the keyboard path
+        // (Enter on a verse handle), the `#v16:study` deep link and `?firstrun=1` all open the
+        // dialog without one. This is the same invariant VerseDisplay keeps for the popover's
+        // sibling — the selection popover never co-renders with the drawer (`pending &&
+        // selectedVerse === null`) — applied at the only seam available: the page owns `study`,
+        // the popover owns its `open`, so the page states the fact and the popover acts on it.
+        // `study !== null` covers BOTH sheets that state opens (StudyPanel and WordPanel).
+        dialogOpen={study !== null}
       />
       {/* THE CHAPTER'S ANNOTATIONS DID NOT LOAD. Signed-in readers only: signed out this GET is a
           401 by design, and there is nothing to have failed to load. In flow rather than fixed, so
@@ -499,6 +508,13 @@ export default function ReaderPage() {
           prevVerse={studyNeighbours.prev}
           nextVerse={studyNeighbours.next}
           onNavigate={navigateStudy}
+          // B022 — the bookmark toggle in the panel's persistent chrome. The same closure shape
+          // as `annotation.onClearHighlight` below: the page holds the verse, the panel gets the
+          // answer. `bookmarks` is the optimistic Set from useAnnotationWrites, so the label
+          // flips live with the toggle. Signed-out gating happens inside the panel's row (it
+          // renders the sign-in line instead), same as the highlight controls.
+          bookmarked={bookmarks.has(study.verse)}
+          onToggleBookmark={() => toggleBookmark(study.verse)}
           verseId={encodeVerseId({ book: book.bookNum, chapter: chapterNum, verse: study.verse })}
           annotation={{
             color: highlights.get(study.verse)?.at(-1)?.color ?? null,

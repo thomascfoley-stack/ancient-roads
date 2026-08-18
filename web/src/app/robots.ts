@@ -1,32 +1,40 @@
 import type { MetadataRoute } from 'next';
+import { PUBLIC_MARKETING_ROUTES } from '@/lib/gate';
 
 // /robots.txt — it did not exist, so the path fell through to the app's HTML 404 (2026-08-16 QA
 // fleet, filed alongside /sitemap.xml).
 //
-// WHY THIS IS NOT IN gate.ts's PUBLIC_PATHS, WHICH IS A DELIBERATE HALF-FIX.
+// ── ALLOWLIST, NOT BLOCKLIST, AND THAT IS THE WHOLE DESIGN ────────────────────────────────────
 //
-// While SEC-1 is open, `middleware.ts` redirects every non-marketing path to /gate, so this file
-// is unreachable to a crawler and the rules below do nothing yet. That is the correct state and
-// not worth widening the wall for: nothing is crawlable while the gate is up, because every URL a
-// crawler could follow also 307s to /gate. The allowlist is the only lock on a copyrighted corpus
-// (`test/middleware-gate.test.ts` calls it "airtight"), and one exact path is still one hole.
+// The first version of this file was `allow: '/'` plus a hand-typed list of disallowed prefixes.
+// The 2026-08-17 pre-deploy audit called it correctly: that is a hand-maintained expected set —
+// the artefact at the top of this repo's own watchlist — and it was ALREADY incomplete, omitting
+// `/read/`, `/work/`, `/library/`, `/bible` and `/commentaries`. Those are the licensed corpus.
 //
-// The rejected alternative was allowlisting this file with `disallow: '/'` today. It buys nothing
-// over the redirect, and it leaves a live footgun: launch is "remove the gate", and a disallow-all
-// robots.txt left behind would deindex the entire site at exactly the moment it went public. The
-// policy below is therefore the POST-LAUNCH one, and it starts working by itself the moment the
-// gate comes down — no second edit, nothing to remember.
+// Worse, it was written to "start working by itself the moment the gate comes down, no second
+// edit, nothing to remember". That property is precisely what made it dangerous: SEC-1's closure
+// would have silently published crawl permission over copyrighted text, with nothing prompting a
+// review. A file that needs no decision at launch is a file that makes the decision for you.
 //
-// The corpus is not enumerated here and must not be: `/bible` and `/commentaries` hold licensed
-// text, and a robots file is a published list of paths.
+// So it is inverted. `Disallow: /` is the default, and only the marketing tier is allowed —
+// DERIVED from the same `PUBLIC_MARKETING_ROUTES` the sitemap uses, which is itself derived from
+// `gate.ts`'s allowlist. Adding a crawlable page is therefore one edit, in the file that already
+// governs what the wall serves, and a page cannot become crawlable by being forgotten.
+//
+// Licensing is the existential rule (CLAUDE.md): ingest only PD/CC content, never store or serve
+// the full text of a copyrighted translation. A robots file that invites indexing of `/read/` is
+// not itself a licensing breach, but it is the mechanism by which one becomes discoverable and
+// permanent, and it fails in the direction that cannot be undone — a crawl that already happened.
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
-      userAgent: '*',
-      allow: '/',
-      // Nothing that is per-user, credentialed, or an API surface.
-      disallow: ['/api/', '/account/', '/auth/', '/gate', '/desk', '/studies/', '/study/', '/prayers'],
-    },
+    rules: [
+      {
+        userAgent: '*',
+        // Order matters to crawlers only as specificity; stating the deny first is for the reader.
+        disallow: '/',
+        allow: [...PUBLIC_MARKETING_ROUTES],
+      },
+    ],
     sitemap: 'https://ancientpaths.app/sitemap.xml',
   };
 }

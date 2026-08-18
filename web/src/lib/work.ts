@@ -1,4 +1,5 @@
 import { getDb } from './db';
+import { FORBIDDEN_PROVENANCE_DOMAINS } from './forbidden-provenance.mjs';
 
 // The Book Reader's served reads (docs/LIBRARY_READER_DESIGN.md §2). Corpus reads run
 // as the least-privilege app_runtime role (SELECT-only on sources/sections, 006/010) —
@@ -275,13 +276,39 @@ export async function getWorkSectionsPage(
   const limit = Math.min(Math.max(1, opts.limit ?? WORK_SECTIONS_DEFAULT_LIMIT), WORK_SECTIONS_MAX_LIMIT);
 
   const sql = getDb();
+  // THE FORBIDDEN-PROVENANCE BELT, AT SERVE TIME (2026-08-17 deep-audit domain lens, MEDIUM).
+  // This query serves section BODIES and was gated only by `publishedSourceId` above — the one
+  // body-serving path with no provenance belt while every sibling carries one on every query:
+  // search-sections.ts (H6), the clipping INSERT…SELECT in studies.ts, servability.ts's section
+  // leg. `status='published'` is a one-shot admission check; this is the second lock, evaluated
+  // at serve time, so an admission mistake (a row ingested before a rule existed, or provenance
+  // edited in place after publication) cannot outlive the mistake. The domain list is bound from
+  // the CANONICAL constant, never re-typed here — the verse-key-scan defect.
+  //
+  // POSITIVE/COALESCED FORM, DELIBERATELY — the three-valued-logic trap (MASTER watchlist,
+  // instance fourteen's corollary): SQL `NOT predicate` over a NULL-evaluating row yields NULL,
+  // not TRUE. Written as a bare `NOT (source_url LIKE …)`, every NULL-source_url row silently
+  // vanishes from THIS query (clean rows with no recorded host stop serving), and the same trap
+  // in a check of the opposite polarity fails OPEN — "a licensing predicate that can evaluate
+  // NULL fails open" is the watchlist's standing sentence. So the NULL case is NAMED, never left
+  // to the engine: `source_url IS NULL OR NOT EXISTS` admits a row with no recorded host by
+  // decision, byte-for-byte the siblings' form. Semantics watched on the live engine 2026-08-17
+  // (VALUES probe: shipped form serves {clean, null}, refuses forbidden; bare negation drops the
+  // NULL row). Pinned statically by web/test/invariants/work-sections-provenance-static.test.ts.
+  //
+  // Pagination stays correct with rows filtered: the belt is inside the WHERE, so LIMIT counts
+  // CLEAN rows and the keyset cursor (`ordinal > $2` on the last returned row) simply steps past
+  // any refused rows on the next page — a filtered row is skipped, never a truncation point.
   const rows = (await sql.query(
     `SELECT id, ordinal, unit_ordinal, heading, body${VERSE_RANGE_COLS}
      FROM sections
      WHERE source_id = $1 AND ordinal > $2
+       AND (source_url IS NULL OR NOT EXISTS (
+              SELECT 1 FROM unnest($4::text[]) d
+              WHERE lower(source_url) LIKE '%' || d || '%'))
      ORDER BY ordinal ASC
      LIMIT $3`,
-    [sourceId, after, limit],
+    [sourceId, after, limit, FORBIDDEN_PROVENANCE_DOMAINS],
   )) as (SectionRow & { body: string })[];
 
   const sections = rows.map((r) => ({ ...toTocRow(r), body: r.body }));

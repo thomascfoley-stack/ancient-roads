@@ -24,13 +24,16 @@ vi.mock('@/lib/session', () => ({
 }));
 
 import { GET as listStudies, POST as createStudy } from '@/app/api/studies/route';
-import { DELETE as deleteStudy, GET as getStudy, PATCH as patchStudy } from '@/app/api/studies/[id]/route';
+import { DELETE as deleteStudy, PATCH as patchStudy } from '@/app/api/studies/[id]/route';
 import {
   DELETE as deleteBlock,
-  GET as getBlocks,
   PATCH as patchBlocks,
   POST as postBlocks,
 } from '@/app/api/studies/[id]/blocks/route';
+// The API GETs were DELETED 2026-08-17 (zero consumers; returned stored quotes with no
+// servability re-check — see studies-api-no-get.test.ts). The read contract this suite pins
+// therefore lives on the feed route, which is the shipped paginated read.
+import { GET as feedGet } from '@/app/studies/[id]/feed/route';
 
 const dbUrl = requireDbInCi();
 const SKIP = announceSkip(
@@ -76,17 +79,17 @@ describe.skipIf(SKIP)('Studies routes (handler → lib → dev DB, session mocke
   });
 
   it('400 INVALID_REQUEST on a malformed study id (before any DB work)', async () => {
-    const res = await getStudy(req('GET', undefined, 'http://localhost/api/studies/nope'), ctx('nope'));
+    // Was a GET case; the GET is deleted, and the id check runs before body parsing on PATCH,
+    // so the same "no DB work" property is what this now proves.
+    const res = await patchStudy(req('PATCH', { title: 'x' }, 'http://localhost/api/studies/nope'), ctx('nope'));
     expect(res.status).toBe(400);
     expect(await code(res)).toBe('INVALID_REQUEST');
   });
 
   it('404 NOT_FOUND (never 401) for a well-formed id the caller does not own', async () => {
-    const res = await getStudy(req('GET'), ctx(VALID_BUT_FOREIGN));
-    expect(res.status).toBe(404);
-    expect(await code(res)).toBe('NOT_FOUND');
     const patch = await patchStudy(req('PATCH', { title: 'x' }), ctx(VALID_BUT_FOREIGN));
     expect(patch.status).toBe(404);
+    expect(await code(patch)).toBe('NOT_FOUND');
     const del = await deleteStudy(req('DELETE'), ctx(VALID_BUT_FOREIGN));
     expect(del.status).toBe(404);
   });
@@ -109,7 +112,8 @@ describe.skipIf(SKIP)('Studies routes (handler → lib → dev DB, session mocke
     const b2 = await postBlocks(req('POST', { kind: 'text', body: 'Second.' }), ctx(study.id));
     expect(b2.status).toBe(201);
 
-    const page = await getBlocks(req('GET'), ctx(study.id));
+    // Read back through the feed — the shipped paginated read (the raw-blocks GET is deleted).
+    const page = await feedGet(req('GET', undefined, `http://localhost/studies/${study.id}/feed`), ctx(study.id));
     expect(page.status).toBe(200);
     const { blocks } = (await page.json()) as { blocks: { body: string | null }[] };
     expect(blocks.map((b) => b.body)).toEqual(['First.', 'Second.']);
@@ -125,7 +129,12 @@ describe.skipIf(SKIP)('Studies routes (handler → lib → dev DB, session mocke
 
     const deleted = await deleteStudy(req('DELETE'), ctx(study.id));
     expect(deleted.status).toBe(200);
-    expect((await getStudy(req('GET'), ctx(study.id))).status).toBe(404);
+    // Deleted means gone on every surviving verb: PATCH 404s (updateStudy filters
+    // deleted_at IS NULL), and the feed pages the tombstoned study as an empty list.
+    expect((await patchStudy(req('PATCH', { title: 'x' }), ctx(study.id))).status).toBe(404);
+    const afterDelete = await feedGet(req('GET', undefined, `http://localhost/studies/${study.id}/feed`), ctx(study.id));
+    expect(afterDelete.status).toBe(200);
+    expect(((await afterDelete.json()) as { blocks: unknown[] }).blocks).toEqual([]);
   });
 
   it('S-1: client-supplied quote or attribution is rejected 400 on POST, whatever else the body carries', async () => {

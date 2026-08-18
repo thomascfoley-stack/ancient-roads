@@ -17,7 +17,8 @@ import { count } from '@/lib/plural';
 import { sanitizeSnippet } from '@/lib/snippet';
 import { excerpt } from '@/lib/search-groups';
 import type { SectionSearchResult } from '@/lib/search-sections';
-import type { NoteSearchHit, PrayerSearchHit, StudySearchHit } from '@/lib/search-personal';
+import type { NoteSearchHit, PrayerSearchHit, StudyAttribution, StudySearchHit } from '@/lib/search-personal';
+import { TOMBSTONE_NOTICE } from '@/lib/servability';
 import type { UserHit } from '@/lib/user-corpus/search';
 import { verseHref } from '@/lib/verse-link';
 import { formatVerseId } from '@bible/verse-id';
@@ -159,6 +160,19 @@ export function CorpusGroupRows({ results }: { results: SectionSearchResult[] })
 // ── personal rows ───────────────────────────────────────────────────────────────────────────
 // No register label on these rows by design (§7.3): group membership says whose they are.
 
+/** One attribution line, plain text — the wording of the study editor's AttributionLine and the
+ *  export's attributionLine ("author, work_title (reference)", 'Unknown source' fallback), in
+ *  the row's single-line register. Formatting only: the DECISION that this row is a tombstone
+ *  was made server-side by servability.ts's shared blockRenderState (searchStudies phase 2) —
+ *  this component never re-derives licensing. */
+function tombstoneAttributionText(attribution: StudyAttribution | null): string {
+  const author = attribution?.author?.trim();
+  const title = attribution?.work_title?.trim();
+  const reference = attribution?.reference?.trim();
+  const name = [author, title].filter(Boolean).join(', ') || 'Unknown source';
+  return `${name}${reference ? ` (${reference})` : ''}`;
+}
+
 export function StudiesGroupRows({ rows }: { rows: StudySearchHit[] }) {
   return (
     <ul className="border-y edge">
@@ -169,10 +183,22 @@ export function StudiesGroupRows({ rows }: { rows: StudySearchHit[] }) {
             className="group block py-4 transition-colors ease-gentle hover:bg-accent-50/40 dark:hover:bg-accent-950/20"
           >
             <span className="truncate font-scripture text-[17px] text-stone-900 group-hover:text-accent-800 dark:text-stone-100 dark:group-hover:text-accent-300">{r.title}</span>
-            <span
-              className="mt-1 block text-sm leading-relaxed text-stone-600 [&_mark]:bg-accent-100 [&_mark]:text-stone-900 dark:text-stone-300 dark:[&_mark]:bg-accent-900/60 dark:[&_mark]:text-stone-100"
-              dangerouslySetInnerHTML={{ __html: sanitizeSnippet(r.snippet) }}
-            />
+            {r.state === 'snippet' ? (
+              <span
+                className="mt-1 block text-sm leading-relaxed text-stone-600 [&_mark]:bg-accent-100 [&_mark]:text-stone-900 dark:text-stone-300 dark:[&_mark]:bg-accent-900/60 dark:[&_mark]:text-stone-100"
+                dangerouslySetInnerHTML={{ __html: sanitizeSnippet(r.snippet) }}
+              />
+            ) : (
+              /* Tombstone (S-10 on the search surface; 2026-08-17 audit, domain lens #2): the
+                 best-matching block's quote is no longer servable, so the row shows attribution
+                 + the ONE shared notice — no quote bytes, no dangerouslySetInnerHTML (plain
+                 text; React escapes it), and no link to the withdrawn WORK. The row still links
+                 to the STUDY above, which is the user's own doc and tombstones the block
+                 itself. */
+              <span className="mt-1 block text-sm italic leading-relaxed text-stone-500 dark:text-stone-400">
+                — {tombstoneAttributionText(r.attribution)} — {TOMBSTONE_NOTICE}
+              </span>
+            )}
           </Link>
         </li>
       ))}

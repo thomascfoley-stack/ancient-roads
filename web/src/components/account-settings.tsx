@@ -8,6 +8,7 @@
 // account is worse than not shipping one.
 
 import { useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import { authClient } from '@/lib/auth/client';
 
 const MIN_PASSWORD = 12;
@@ -64,6 +65,24 @@ export function AccountSettings({ email }: { email: string }) {
         Your account
       </h1>
       <p className="mt-1 font-serif text-sm text-stone-600 dark:text-stone-400">{email}</p>
+
+      {/* B038 — the app has two "settings" surfaces ON PURPOSE, and the ruling is cross-link,
+          not merge: this page is the auth-bound half (server session, password writes) and
+          /settings is the per-device half (localStorage reading prefs) — two security contexts,
+          deliberately two files. /settings has linked here since it shipped (settings-form.tsx,
+          the "Account" section); this quiet line is the missing direction back, in this page's
+          own hint typography. */}
+      <p className="mt-3 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+        This page is your account — email and password. Reading preferences (theme, text size,
+        translation) are saved per-device in{' '}
+        <Link
+          href="/settings"
+          className="font-semibold text-accent-600 underline-offset-4 hover:underline dark:text-accent-400"
+        >
+          Settings
+        </Link>
+        .
+      </p>
 
       <form onSubmit={submit} className="mt-8 space-y-4 border-t edge pt-8">
         <h2 className="font-display text-lg text-stone-900 dark:text-stone-100">Change password</h2>

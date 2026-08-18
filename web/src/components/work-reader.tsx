@@ -441,6 +441,25 @@ export function WorkReader({
           signedIn={signedIn}
           onHighlight={highlightPending}
           onAsk={askPending}
+          // ADD TO STUDY. `pendingSection.id` is `sections.id` — the corpus key
+          // `insertClippingFromSection` looks up (`lib/studies.ts:544`), which is why this
+          // surface can offer the verb and the Bible reader cannot (see SelectionPopoverProps
+          // `clip`). It must be `.id` and never `.ordinal`: both are integers on this row, both
+          // satisfy the type, and the wrong one would snapshot a DIFFERENT passage's bytes into
+          // the user's study with nothing to signal it.
+          //
+          // The clipping is the whole SECTION, not the selected phrase — the section is the unit
+          // the corpus is keyed by, and the design's answer to "I only wanted this sentence" is
+          // the editor's trim ("Trim, not edit", migration 111: the client sends offsets into the
+          // server's own snapshot, never text). Deliberately not composed here.
+          // B030: the selected text IS the hint, so a save from the reader opens on the
+          // paragraph the reader had their finger on rather than the whole section.
+          clip={{
+            sectionId: pendingSection.id,
+            reference: pendingLocus || undefined,
+            matchHint: pending.text || undefined,
+          }}
+          clipTitle={`${source.title}${pendingLocus ? ` · ${pendingLocus}` : ''}`}
           onDismiss={dismiss}
         />
       )}

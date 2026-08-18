@@ -2,6 +2,7 @@ import 'server-only';
 import type { TeacherResponse } from '@/contract/types';
 import type { Violation } from '@/verifier/types';
 import { verifyV1 } from '@/verifier/v1';
+import { normalizeForMatch } from '@/verifier/normalize';
 import { embedQuery, compose } from './deepinfra';
 import { retrieveCommentary, retrieveSongVerse, retrieveSermonLane, retrieveTheologyLane, retrieveHistorianLane, type RetrievedChunk, type SongVerseChunk, type RegisterLaneChunk } from './retrieve';
 import { hasPassageCoverage } from './routing';
@@ -182,8 +183,10 @@ export async function teach(
   const songVersePromise = lanes.songVerse === false ? Promise.resolve([]) : retrieveSongVerse(queryVec, ranges);
   const sermonPromise = lanes.sermons === false ? Promise.resolve([]) : retrieveSermonLane(queryVec, ranges);
   const theologyPromise = lanes.theology === false ? Promise.resolve([]) : retrieveTheologyLane(queryVec, ranges);
-  // The historian lane fires by default like the others; until the owner serve-flip
-  // lands on historian rows it returns [] and no `historians` payload is attached.
+  // The historian lane fires by default like the others. CORRECTED 2026-08-18: this used to say
+  // the lane stayed inert, and its result absent from the payload, until an owner serve-flip. The
+  // flip has landed — all 6,492 historian rows are served and the payload IS attached. See
+  // retrieve.ts, which carries the measurement and the B031 consequence.
   const historianPromise = lanes.historians === false ? Promise.resolve([]) : retrieveHistorianLane(queryVec, ranges);
   stageStart = Date.now();
   const retrieval = await retrieveCommentary(queryVec, RETRIEVE_K, { query });
@@ -211,7 +214,23 @@ export async function teach(
     );
   }
 
-  const traditions = new Set(retrieval.map((r) => r.metadata.tradition ?? 'unknown'));
+  // COUNTED THE WAY THE VERIFIER COUNTS. This number is rendered to the reader as
+  // "across N traditions" (ask-client.tsx:673), and it was built from RAW metadata strings while
+  // the `diversity_traditions` gate that gives it meaning folds case (verifier/v1.ts:302-320, via
+  // normalizeForMatch). The corpus carries the case pairs that make the two disagree — measured
+  // 2026-08-18 on dev: Methodist/methodist 26,633 rows, Patristic/patristic 13,971,
+  // Nonconformist/nonconformist 6,367; Augustine alone is served under both `patristic` and
+  // `Patristic`. So a reader could be told "2 traditions" for a retrieval the verifier counts as
+  // one — an overstatement of attribution breadth on a product whose whole guarantee is
+  // attribution.
+  //
+  // This does NOT change retrieval, composition, or the gate: the floor already normalised and
+  // was never defeatable this way (independently re-measured 2026-08-18 — the claim that it was
+  // is REFUTED). It changes only the count shown, from a number nothing computed against to the
+  // same number the gate uses.
+  const traditions = new Set(
+    retrieval.map((r) => normalizeForMatch(r.metadata.tradition ?? 'unknown')),
+  );
   emit({
     stage: 'retrieved',
     traditions: traditions.size,

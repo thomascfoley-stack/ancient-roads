@@ -1,4 +1,5 @@
 import { runAsUser } from './db';
+import { paragraphAround } from './paragraph-around';
 import { FORBIDDEN_PROVENANCE_DOMAINS } from './forbidden-provenance.mjs';
 
 // Study Docs data layer (docs/STUDY_DOCS_DESIGN.md §6; build file P1 tasks 1.2/1.4/1.6).
@@ -524,7 +525,7 @@ export async function softDeleteBlock(userId: string, studyId: string, blockId: 
 export async function insertClippingFromSection(
   userId: string,
   studyId: string,
-  clip: { sectionId: number; reference?: string },
+  clip: { sectionId: number; reference?: string; matchHint?: string },
   place: BlockPlacement = {},
 ): Promise<InsertBlockResult> {
   for (let attempt = 0; attempt < POSITION_RETRIES; attempt++) {
@@ -553,7 +554,26 @@ export async function insertClippingFromSection(
             WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL`,
       ]);
       const block = (rows as StudyBlock[])[0];
-      if (block) return { ok: true, block };
+      if (block) {
+        // B030 — OPEN ON THE PARAGRAPH, NOT THE CHAPTER. The insert above snapshots the whole
+        // section, which is right and stays right (migration 111: "trim not edit" — the bytes are
+        // the record). What was wrong is what the reader SAW: an entire commentary chapter for a
+        // one-paragraph match. So the row is written whole and then given a VIEW of the paragraph
+        // the match sits in. Widening later is an offset change with no refetch, which is the
+        // owner's ruling exactly: adding is occasional, subtracting was 100%.
+        //
+        // Computed SERVER-SIDE from the server's own bytes: the client sends a hint of what it
+        // matched, never offsets, so a client cannot aim the view at text it never saw. A failed
+        // placement stores NO trim — the pre-B030 behaviour — rather than guessing a range.
+        if (clip.matchHint && block.quote) {
+          const view = paragraphAround(block.quote, clip.matchHint);
+          if (view) {
+            await trimBlock(userId, studyId, block.id, view);
+            return { ok: true, block: { ...block, trim_start: view.start, trim_end: view.end } };
+          }
+        }
+        return { ok: true, block };
+      }
       return { ok: false, reason: await probeSectionClipFailure(userId, studyId, clip.sectionId) };
     } catch (e) {
       if (!isUniqueViolation(e)) throw e;

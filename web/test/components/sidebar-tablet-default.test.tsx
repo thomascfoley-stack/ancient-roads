@@ -127,3 +127,30 @@ describe('A093 — the sidebar boots to the icon rail at tablet widths', () => {
     expect(fullNav(), 'crossing back into the tablet band did not restore the rail').toBeNull();
   });
 });
+
+// ── the band's ceiling ──────────────────────────────────────────────────────────────────────
+//
+// ADDED 2026-08-17 after the pre-deploy audit. The original legs asserted 768 and 1280 and nothing
+// between, so a ceiling of `1279.98px` — 256px past the bound this file's own header states — was
+// invisible to them: every laptop window from 1024px up booted into the 48px rail, and the suite
+// stayed green. A two-point test cannot see a wrong bound that lies between its two points.
+describe('A093 — the band stops at lg, so a desktop reader never boots collapsed', () => {
+  it('1024px (lg) gets the full sidebar', () => {
+    // SEED: restore the 1279.98px ceiling -> RED. This is the width the wrong constant broke.
+    stubMatchMedia(1024);
+    render(<Sidebar />);
+    expect(fullNav(), 'a desktop-width reader booted into the icon rail').toBeTruthy();
+  });
+
+  it('1100px — mid-band under the wrong ceiling — gets the full sidebar', () => {
+    stubMatchMedia(1100);
+    render(<Sidebar />);
+    expect(fullNav(), 'the commonest laptop window booted into the icon rail').toBeTruthy();
+  });
+
+  it('1023px still gets the rail — the ceiling moved, it did not vanish', () => {
+    stubMatchMedia(1023);
+    render(<Sidebar />);
+    expect(fullNav(), 'the tablet band stopped firing inside its own range').toBeNull();
+  });
+});

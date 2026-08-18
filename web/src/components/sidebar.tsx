@@ -139,6 +139,16 @@ export function SidebarNavContent({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const [sections, setSections] = useState<StudySection[] | null>(null);
+  // B044 — Sign out arms on the first tap and fires on the second. The authenticated QA fleet's
+  // one BLOCKER was an accidental sign-out from inside the Menu sheet, and the diagnosis fits the
+  // geometry: the sheet slides up UNDER the finger (bottom-anchored animate-slide-up, and
+  // transform-animated rows hit-test at their animated position), so a habitual second tap lands
+  // on whatever row is transiting — and Sign out was a single-tap row styled identically to the
+  // nav links around it. The research-thread delete two rows down already carries this exact
+  // arming pattern for the same reason ("a single stray tap must not destroy"); signing out
+  // mid-task destroys the reader's place and, on the QA run, took two further sessions with it.
+  // Disarms on blur so an armed row cannot lie in wait.
+  const [signOutArmed, setSignOutArmed] = useState(false);
 
   useEffect(() => {
     try {
@@ -248,12 +258,16 @@ export function SidebarNavContent({
           {mounted && session?.user ? (
             <SidebarButton
               icon={<LogOutIcon />}
-              label="Sign out"
+              label={signOutArmed ? 'Sign out?' : 'Sign out'}
               row={row}
+              onBlur={() => setSignOutArmed(false)}
               // A failed sign-out used to navigate to '/' anyway, leaving the reader on the
               // marketing page still authenticated while believing they had signed out. On a
               // shared device that is a false security signal, which is worse than an error.
               onClick={async () => {
+                // First tap arms (B044); the second, while armed, signs out.
+                if (!signOutArmed) { setSignOutArmed(true); return; }
+                setSignOutArmed(false);
                 // Better Auth's own client, not a hand-rolled POST. The route that used to serve
                 // this cleared `__Secure-neon-auth*` cookies -- the wrong cookie family now -- and
                 // it sat at /api/auth/sign-out, SHADOWING the catch-all handler Better Auth mounts
@@ -488,7 +502,14 @@ const CATALOG_ICON: Partial<Record<CatalogId, React.ReactNode>> = {
 // but it means a phone rotated up into tablet width arrives already collapsed, having never been
 // shown the choice. Caught by this change's own test ("does not fire on the phone side of the
 // cliff"), which asserted 767px and went red against the 640px floor.
-const TABLET_MEDIA_QUERY = '(min-width: 768px) and (max-width: 1279.98px)';
+// CEILING CORRECTED 2026-08-17 (pre-deploy audit). It read `1279.98px` — Tailwind's `xl` — while
+// the block above states the bound as `1023.98px`, "the last width below `lg`", and states the
+// invariant "a desktop reader must never boot collapsed". The constant contradicted both by 256px,
+// so every laptop window from 1024px to 1279.98px — the commonest desktop browser-window band —
+// booted into the 48px rail, where the only destinations are the 7 icon links: no Desk, no catalog
+// shelves, no My Studies, no Research history, no Sign in. The suite could not see it because the
+// test asserted 768 and 1280 and nothing in between.
+const TABLET_MEDIA_QUERY = '(min-width: 768px) and (max-width: 1023.98px)';
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -1119,15 +1140,19 @@ function SidebarButton({
   label,
   row = 'py-1.5',
   onClick,
+  onBlur,
 }: {
   icon: React.ReactNode;
   label: string;
   row?: string;
   onClick: () => void;
+  /** B044: lets an armed two-step control disarm when focus leaves it. */
+  onBlur?: () => void;
 }) {
   return (
     <button
       onClick={onClick}
+      onBlur={onBlur}
       className={`flex w-full items-center gap-2.5 px-2 text-sm text-stone-500 transition-colors ease-gentle hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200 ${row}`}
     >
       <span className="flex w-4 items-center justify-center text-sm">{icon}</span>

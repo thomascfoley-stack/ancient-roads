@@ -89,7 +89,12 @@ export const VERSE_PANEL_VOICES = [
 
 export function VersePanelDemo() {
   const [active, setActive] = useState(0);
-  const voice = VERSE_PANEL_VOICES[active];
+  // `?? VERSE_PANEL_VOICES[0]!` — under noUncheckedIndexedAccess (the cutover tsconfig, which now
+  // type-checks this file because predeploy-gate imports it for the front-door quote leg) an
+  // indexed read is `T | undefined`. `active` is state clamped to the buttons below, so the
+  // fallback is unreachable in practice; the first voice (not a throw) because this is the public
+  // marketing page, where a render crash is the worst of the three options.
+  const voice = VERSE_PANEL_VOICES[active] ?? VERSE_PANEL_VOICES[0]!;
   return (
     // No frame of its own: the marketing pages set this inside a frosted sheet, which
     // provides the surface and padding.

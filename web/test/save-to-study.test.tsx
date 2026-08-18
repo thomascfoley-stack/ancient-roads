@@ -101,6 +101,23 @@ afterEach(cleanup);
 // ── voice → source_id resolution ─────────────────────────────────────────────────────────────
 
 describe('resolveVoiceSourceId', () => {
+  it('resolves across typographic drift — the verifier passes normalized, so must we', () => {
+    // SEED: remove the typographicFold tier -> RED. A curly-quote difference between the composed
+    // voice and the retrieval bytes made resolution fail while verification passed — and once
+    // unresolvable voices fail closed on withdrawn threads (audit #7), every avoidable null is an
+    // unnecessary tombstone.
+    // TWO rows sharing author+work, deliberately: with one row the attribution tier resolves it
+    // and this leg is vacuous for the fold — measured, the first fixture stayed green with the
+    // fold deleted. Ambiguous attribution forces the quote tiers to do the work.
+    const retrieval = [
+      { sourceId: 'src-1', content: 'And God\u2019s grace \u2014 freely given \u2014 abounds.', metadata: { author: 'A', sourceTitle: 'W' } },
+      { sourceId: 'src-2', content: 'A different passage entirely.', metadata: { author: 'A', sourceTitle: 'W' } },
+    ];
+    const voice = { quote: "And God's grace - freely given - abounds.", attribution: { author: 'A', work: 'W' } };
+    expect(resolveVoiceSourceId(retrieval, voice)).toBe('src-1');
+  });
+
+
   it('resolves an exact verbatim quote to its chunk', () => {
     const id = resolveVoiceSourceId(RETRIEVAL, {
       quote: 'and the Word was with God',
