@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { loadFullLexicon, type LexEntry } from '@/lib/original';
+import { ConcordanceList } from '@/components/concordance-list';
 import { useDragDismiss } from '@/lib/use-drag-dismiss';
 import { useDialog } from '@/lib/use-dialog';
 
@@ -21,13 +22,27 @@ export default function WordStudyPage() {
   const [selected, setSelected] = useState<Hit | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // THE LOAD IS DISOWNED WHEN `lang` CHANGES. Without the guard an in-flight load kept its claim
+  // on state, so switching tabs before the first fetch settled let the ABANDONED language land on
+  // top of the current one: `lang` said hebrew while `lex` held Greek. Nothing looked wrong —
+  // `lex` was non-null, so no loading line and no error — and the page then searched the wrong
+  // lexicon while labelling the count "hebrew entries". Reported as "intermittently searches stale
+  // Greek data" (2026-08-16 QA fleet); intermittent because it turns on which fetch wins.
   useEffect(() => {
+    let cancelled = false;
     setLex(null);
     setLexFailed(false);
+    // A selected entry belongs to the language it was found in; carrying it across is the same
+    // staleness one layer up (a Greek word open on a page that says Hebrew).
+    setSelected(null);
     loadFullLexicon(lang).then((data) => {
+      if (cancelled) return;
       setLex(data);
       setLexFailed(data === null);
     });
+    return () => {
+      cancelled = true;
+    };
   }, [lang]);
 
   // Focus the search on pointer devices only — auto-popping the keyboard on
@@ -208,6 +223,13 @@ function EntrySheet({ hit, rtl, onClose }: { hit: Hit; rtl: boolean; onClose: ()
           {hit.def && <Field label="Definition" large>{hit.def}</Field>}
           {hit.derivation && <Field label="Derivation">{hit.derivation}</Field>}
           {hit.kjv && <Field label="KJV usage"><span className="italic">{hit.kjv}</span></Field>}
+          {/* A042 — the standalone lexicon was "a strictly thinner tool" than the reader's word
+              panel, and the cross-verse occurrence list was the gap that was real AND cheap: the
+              concordance is keyed by a Strong's number alone, which is exactly what this page has.
+              It also gives the entry its only route back into Scripture — each chip lands on the
+              verse (A044), where commentary is one tap away. -mx-5 lets the rule run full width
+              inside this padded scroll container. */}
+          <ConcordanceList strong={hit.strong} className="-mx-5 border-t edge px-5 pt-4" />
         </div>
       </div>
     </div>

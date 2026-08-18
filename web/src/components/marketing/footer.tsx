@@ -34,13 +34,13 @@ export function MarketingFooter() {
               </ul>
             </div>
             <div className="space-y-5">
-              <h4 className="text-micro font-bold uppercase tracking-[0.3em] text-stone-900">Contact</h4>
+              <h4 className="text-micro font-bold uppercase tracking-[0.3em] text-stone-900">More</h4>
               <ul className="space-y-1 text-xs uppercase tracking-widest text-stone-500">
                 <li>
                   <Link href="/about" className="inline-flex min-h-[40px] items-center transition-colors ease-gentle hover:text-stone-900">About</Link>
                 </li>
                 <li>
-                  <Link href="/home" className="inline-flex min-h-[40px] items-center transition-colors ease-gentle hover:text-stone-900">Log in</Link>
+                  <Link href="/auth/sign-in" className="inline-flex min-h-[40px] items-center transition-colors ease-gentle hover:text-stone-900">Log in</Link>
                 </li>
               </ul>
             </div>

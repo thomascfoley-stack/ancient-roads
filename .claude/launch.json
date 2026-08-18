@@ -12,6 +12,22 @@
       "port": 3002,
       "autoPort": true,
       "cwd": "web"
+    },
+    {
+      "name": "theology-prod",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "next",
+        "start",
+        "--port",
+        "3003"
+      ],
+      "port": 3003,
+      "autoPort": true,
+      "cwd": "web",
+      "env": {
+        "NODE_ENV": "development"
+      }
     }
   ]
 }

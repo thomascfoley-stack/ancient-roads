@@ -173,10 +173,29 @@ export function prevChapter(
   chapter: number,
 ): { book: Book; chapter: number } | null {
   if (chapter > 1) return { book, chapter: chapter - 1 };
-  const idx = BOOKS.indexOf(book);
+  // BY SLUG, NOT BY REFERENCE — see canonIndex below.
+  const idx = canonIndex(book);
   if (idx <= 0) return null;
   const prev = BOOKS[idx - 1]!;
   return { book: prev, chapter: prev.chapterCount };
+}
+
+// A book's position in the canon, or -1.
+//
+// This was `BOOKS.indexOf(book)`, which compares by REFERENCE, so any book that was equal but not
+// identical — rebuilt from a route param, round-tripped through JSON, spread into a new object, or
+// returned by a resolver that constructs rather than hands back the singleton — scored -1. Neither
+// caller was written for -1, and they failed in opposite directions and in silence:
+//
+//   nextChapter guarded `idx >= BOOKS.length - 1`, which -1 is not, and fell through to
+//   BOOKS[-1 + 1] — **Genesis 1**. So reading past the last chapter of any book could continue
+//   into an unrelated one with no error, and past Revelation it WRAPPED the canon.
+//   prevChapter guarded `idx <= 0` and returned null: a silent dead end at the top of every book.
+//
+// Slug is how the rest of the app identifies a book (`resolveBookSlug`, the reader routes, the
+// desk panes), so this makes the lookup agree with them and removes identity from the contract.
+function canonIndex(book: Book): number {
+  return BOOKS.findIndex((b) => b.slug === book.slug);
 }
 
 export function nextChapter(
@@ -184,8 +203,10 @@ export function nextChapter(
   chapter: number,
 ): { book: Book; chapter: number } | null {
   if (chapter < book.chapterCount) return { book, chapter: chapter + 1 };
-  const idx = BOOKS.indexOf(book);
-  if (idx >= BOOKS.length - 1) return null;
+  const idx = canonIndex(book);
+  // `idx < 0` must be its own case: the old `idx >= BOOKS.length - 1` guard let -1 through and
+  // landed on BOOKS[0]. An unknown book has no successor; it does not have Genesis.
+  if (idx < 0 || idx >= BOOKS.length - 1) return null;
   const next = BOOKS[idx + 1]!;
   return { book: next, chapter: 1 };
 }

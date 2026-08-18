@@ -21,7 +21,7 @@ export const metadata = {
 
 export default function WhyPage() {
   return (
-    <main className="relative isolate">
+    <main id="main" className="relative isolate">
       <MarketingGround veil="light" />
       <MarketingNav active="why" />
 

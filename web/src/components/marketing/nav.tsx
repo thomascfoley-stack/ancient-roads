@@ -21,46 +21,86 @@ const LINKS: { key: MarketingPage; href: string; label: string }[] = [
 
 export function MarketingNav({ active }: { active?: MarketingPage }) {
   return (
+    <>
+      {/* The public pages had NO skip link, while `.skip-link` has been in globals.css all along
+          and `app-shell.tsx` renders one — so keyboard readers got the treatment on every surface
+          EXCEPT the front door (2026-08-16 QA fleet). First focusable element in the document,
+          visible only on focus. Each marketing page carries the matching `id="main"`. */}
+      <a
+        href="#main"
+        className="skip-link bg-accent-700 px-4 py-2 text-sm font-semibold text-stone-50"
+      >
+        Skip to content
+      </a>
+    {/* A098 — DOM ORDER IS THE TAB ORDER, SO THE DOM IS AUTHORED IN READING ORDER.
+        (2026-08-16 QA fleet: "keyboard focus order in the header zigzags — logo → Log in on the
+        far right → Features → Why — rather than following visual left-to-right order.")
+
+        The children used to be authored wordmark → Log in → links and then reordered for paint
+        with `sm:order-1 / sm:order-3 / sm:order-2`. CSS `order` moves the PAINT and never the tab
+        stop, so at ≥640px a keyboard reader watched focus jump from the left edge to the right
+        edge and back to the middle — WCAG 2.4.3 as filed. Positive `tabindex` would "fix" it by
+        hoisting these five above every control in the document; that is the anti-pattern, not the
+        cure. The cure is that the source now reads left-to-right and each cell is PLACED
+        explicitly (`col-start-*` / `row-start-*`) instead of ordered, which pins the two layouts
+        without a utility that can decouple them again.
+
+        THE ONE PLACE THIS TRADE IS VISIBLE: below 640px the bar is two rows — wordmark and the
+        pill on row 1, the links beneath on row 2 — so no single DOM order can match both axes.
+        Tab now reaches the links before the pill on a phone. That is a VERTICAL reading
+        difference, not a left-right zigzag, it groups the three navigation items together, and
+        it makes the tab order identical at every width, which is the stronger property.
+        Asserted in `test/components/marketing-nav-focus-order.test.tsx`. */}
     <nav className="sticky top-0 z-40 border-b border-stone-200/40 bg-stone-50/70 backdrop-blur-xl">
       <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto] items-center px-5 py-2 sm:h-16 sm:grid-cols-[1fr_auto_1fr] sm:px-8 sm:py-0">
-        {/* Wordmark: left on all sizes; mobile wraps the links to a second row. */}
+        {/* Wordmark: left on all sizes; mobile wraps the links to a second row. Row 1 / column 1
+            at both breakpoints, so it needs no `sm:` override. */}
         <Link
           href="/"
-          className="inline-flex min-h-[44px] items-center justify-self-start font-display text-lg font-medium tracking-[-0.01em] text-stone-900 sm:order-1"
+          className="col-start-1 row-start-1 inline-flex min-h-[44px] items-center justify-self-start font-display text-lg font-medium tracking-[-0.01em] text-stone-900"
         >
           Ancient Paths
         </Link>
 
-        {/* Auth CTA: pill, ink fill on hover, gentle transition. */}
+        <div className="col-span-2 col-start-1 row-start-2 flex items-center gap-6 sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:justify-self-center sm:gap-8">
+          {/* THE CURRENT PAGE STAYS A LINK. It used to render as a `<span aria-current="page">`,
+              which is why the same finding also says "'Home' is not itself focusable" — on `/`
+              the item had no tab stop at all. Dropping the current item from the tab order is a
+              defensible convention elsewhere, but not in this app: the reader's own rail already
+              makes the opposite call (`SidebarLink` renders every row as a `<Link>` and marks the
+              current one with `aria-current`), so the product's two navigations disagreed, and
+              `aria-current` exists exactly so an item can be both current AND a link. Concretely
+              it cost a keyboard reader the ability to tab back to the top of the site, and made
+              the header's tab-stop count depend on which page they were standing on.
+
+              One element with a conditional class, not two branches: two branches is how the
+              active and inactive states drift apart, and it is what put a `<span>` here. */}
+          {LINKS.map((l) => (
+            <Link
+              key={l.key}
+              href={l.href}
+              aria-current={l.key === active ? 'page' : undefined}
+              className={`flex min-h-[44px] items-center font-sans text-sm transition-colors duration-200 ease-gentle ${
+                l.key === active
+                  ? 'border-b border-stone-900 text-stone-900'
+                  : 'text-stone-500 hover:text-stone-900'
+              }`}
+            >
+              {l.label}
+            </Link>
+          ))}
+        </div>
+
+        {/* Auth CTA: pill, ink fill on hover, gentle transition. Right-hand cell at both
+            breakpoints — column 2 of 2 on a phone, column 3 of 3 from `sm` up. */}
         <Link
-          href="/home"
-          className="inline-flex min-h-[44px] items-center justify-self-end rounded-full border border-stone-400/70 px-7 font-sans text-micro font-semibold uppercase tracking-[0.2em] text-stone-900 transition-colors duration-200 ease-gentle hover:border-stone-900 hover:bg-stone-900 hover:text-stone-50 sm:order-3"
+          href="/auth/sign-in"
+          className="col-start-2 row-start-1 inline-flex min-h-[44px] items-center justify-self-end rounded-full border border-stone-400/70 px-7 font-sans text-micro font-semibold uppercase tracking-[0.2em] text-stone-900 transition-colors duration-200 ease-gentle hover:border-stone-900 hover:bg-stone-900 hover:text-stone-50 sm:col-start-3"
         >
           Log in
         </Link>
-
-        <div className="col-span-2 flex items-center gap-6 sm:order-2 sm:col-span-1 sm:justify-self-center sm:gap-8">
-          {LINKS.map((l) =>
-            l.key === active ? (
-              <span
-                key={l.key}
-                aria-current="page"
-                className="flex min-h-[44px] items-center border-b border-stone-900 font-sans text-sm text-stone-900"
-              >
-                {l.label}
-              </span>
-            ) : (
-              <Link
-                key={l.key}
-                href={l.href}
-                className="flex min-h-[44px] items-center font-sans text-sm text-stone-500 transition-colors duration-200 ease-gentle hover:text-stone-900"
-              >
-                {l.label}
-              </Link>
-            ),
-          )}
-        </div>
       </div>
     </nav>
+    </>
   );
 }

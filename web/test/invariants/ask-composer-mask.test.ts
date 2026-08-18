@@ -115,12 +115,16 @@ describe('the /ask composer mask covers the slot below it, exactly', () => {
   });
 
   it('the desktop pair still covers its own smaller gap', () => {
+    // The offset may be unified across breakpoints (one `bottom-N`, no `md:` override), so the
+    // effective desktop offset is the md override IF present and the base offset otherwise.
+    // Requiring an `md:bottom-N` would fail on a perfectly correct unified offset.
     const dTop = /md:bottom-(\d+)/.exec(cls);
+    const effectiveDesktopOffset = Number((dTop ?? offset)![1]) * SPACING_PX;
     const dMask = /md:after:h-(\d+)/.exec(cls);
-    expect(dTop, 'md:bottom-N missing').not.toBeNull();
-    expect(dMask, 'md:after:h-N missing').not.toBeNull();
+    expect(dMask, 'md:after:h-N missing — desktop must not inherit the mobile height, which is '
+      + 'sized for a tab bar that md:pb-0 means desktop does not reserve').not.toBeNull();
     // main is md:pb-0, so the desktop strip only has to span the offset itself.
-    expect(Number(dMask![1]) * SPACING_PX).toBeGreaterThanOrEqual(Number(dTop![1]) * SPACING_PX);
+    expect(Number(dMask![1]) * SPACING_PX).toBeGreaterThanOrEqual(effectiveDesktopOffset);
     expect(appShell).toMatch(/md:pb-0/);
   });
 

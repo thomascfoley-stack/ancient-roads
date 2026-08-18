@@ -12,30 +12,36 @@
 import Link from 'next/link';
 import { count } from '@/lib/plural';
 import { CATALOGS, CATALOG_IDS, catalogTraditions } from '@/lib/catalog';
-import { listContinueReading, listLibraryItems, type ContinueReadingRow, type LibraryItem } from '@/lib/library';
+import { libraryLabel } from '@/lib/library-nav';
+import { listContinueReading, type ContinueReadingRow } from '@/lib/library';
 import { requireUser } from '@/lib/session';
 
 export const metadata = { title: 'Library' };
 export const dynamic = 'force-dynamic';
 
-const YOURS = [
-  { href: '/library/notes', label: 'Notes' },
-  { href: '/library/books', label: 'Saved' },
-  { href: '/library/word-study', label: 'Word study' },
-  // "My Works", never "Uploads" or "Sermons" — the Slice 1 order governs the NAV LABEL as well
-  // as the page title, and "Sermons" is two entries above this one as a corpus register.
-  { href: '/library/uploads', label: 'My uploads' },
-];
+// Labels come from lib/library-nav.ts, not from here. This row and the sidebar had drifted into
+// naming the same routes differently — "Notes" here vs "Saved" in the sidebar for /library/notes,
+// and "Saved" here for /library/books, which meant "Saved" opened two different destinations
+// depending on which nav you used (2026-08-16 QA fleet). The comment that used to sit on the last
+// entry — "'My Works', never 'Uploads' or 'Sermons'" — was correct about the rule and was sitting
+// directly above `label: 'My uploads'`, which broke it.
+const YOURS = (['/library/notes', '/library/books', '/library/word-study', '/library/uploads'] as const).map(
+  (href) => ({ href, label: libraryLabel(href) }),
+);
 
-async function personal(): Promise<{ reading: ContinueReadingRow[]; shelf: LibraryItem[] } | null> {
+// N5: this used to `Promise.all` a `listLibraryItems(userId, { limit: 12 })` alongside the
+// reading list and return it as `shelf` — and `mine.shelf` appeared NOWHERE in the JSX below. A
+// per-request, RLS-scoped, sources-joined query on the busiest personal surface in the app, whose
+// result was discarded every single time. The shelf now has a page of its own (/library/books),
+// which is where that query belongs and where it now lives.
+async function personal(): Promise<{ reading: ContinueReadingRow[] } | null> {
   let userId: string;
   try {
     userId = (await requireUser()).id;
   } catch {
     return null; // signed out — not an error, just no personal shelf
   }
-  const [reading, shelf] = await Promise.all([listContinueReading(userId, { limit: 6 }), listLibraryItems(userId, { limit: 12 })]);
-  return { reading, shelf };
+  return { reading: await listContinueReading(userId, { limit: 6 }) };
 }
 
 export default async function LibraryHubPage({
@@ -97,11 +103,25 @@ export default async function LibraryHubPage({
           ))}
         </div>
         {!mine && (
+          // WHAT SIGNING IN ACTUALLY ADDS, and nothing more.
+          //
+          // This line has now been wrong in both directions, which is why it carries a comment at
+          // all. It first promised "notes, highlights, and your place in a work"; A037 (2026-08-16)
+          // correctly cut the third clause, because a work's reading position is a localStorage
+          // record (`saveWorkProgress`) that a signed-out reader already keeps on this device — and
+          // because signing in did not in fact deliver it either: `saveReadingProgress`, the only
+          // writer of `reading_progress`, had ZERO call sites (ledger N1).
+          //
+          // N1 is now closed — the Book Reader syncs the position to the account
+          // (api/work/[slug]/progress) — so the clause comes back, in the form that is TRUE. What
+          // an account adds was never "keeping your place"; it is keeping it ACROSS DEVICES, which
+          // localStorage cannot do. Claiming less than that undersells it; claiming the original
+          // wording oversells it to a reader who has one device.
           <p className="mt-3 text-sm text-stone-500 dark:text-stone-400">
             <Link href="/auth/sign-in" className="underline underline-offset-4">
               Sign in
             </Link>{' '}
-            to keep notes, highlights, and your place in a work.
+            to keep notes and highlights, and your place in a work across devices.
           </p>
         )}
       </section>

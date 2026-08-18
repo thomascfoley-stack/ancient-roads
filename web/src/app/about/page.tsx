@@ -29,7 +29,7 @@ const PRINCIPLES = [
 
 export default function About() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col px-5 py-14 sm:px-8 sm:py-20">
+    <main id="main" className="mx-auto flex min-h-dvh max-w-2xl flex-col px-5 py-14 sm:px-8 sm:py-20">
       <p className="font-display text-lg italic leading-relaxed text-stone-600 dark:text-stone-400">
         &ldquo;Ask for the ancient paths, where the good way is, and walk in it.&rdquo;
         <span className="ml-2 text-sm not-italic uppercase tracking-[0.2em] text-stone-500">Jeremiah 6:16</span>

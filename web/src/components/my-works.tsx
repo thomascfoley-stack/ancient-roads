@@ -36,7 +36,46 @@ const STATUS: Record<Doc['status'], { label: string; tone: string }> = {
   empty: { label: 'No text found', tone: 'text-amber-700 dark:text-amber-400' },
 };
 
-const fmtBytes = (n: number | null) => (n == null ? '' : n < 1024 * 1024 ? `${Math.round(n / 1024)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
+const KB = 1024;
+const MB = KB * KB;
+
+/**
+ * A file's size, in the largest unit that does not round its content away.
+ *
+ * B016 — THIS REPORTED A ~130-BYTE UPLOAD AS "0 KB". The old formatter expressed everything below
+ * a megabyte in kilobytes (`Math.round(n / 1024)`), and `Math.round(130 / 1024)` is 0, so the
+ * ENTIRE sub-kilobyte range — every note, every short sermon outline, every plain-text file — was
+ * displayed as nothing at all. On a status wall whose job is to say truthfully what happened to
+ * the reader's document (§8, "a wall of status, not a wall of red"), "0 KB" next to "Ready" reads
+ * as "we lost your file". The bytes were never lost: `api/user-corpus/upload/route.ts` stores
+ * `bytes.byteLength` and `lib/user-corpus/documents.ts` reads it back intact. Only the display
+ * was false.
+ *
+ * So the sub-kilobyte branch states bytes exactly rather than rounding to a unit too coarse to
+ * hold them. Zero is still sayable — an empty upload IS "0 bytes", and `empty` is a real status
+ * here — but it is now reachable only from an actually-empty file.
+ *
+ * The handoff to MB is keyed on the ROUNDED kilobyte value, not on `n < 1024 * 1024`. That looks
+ * like pedantry and is not: the naive threshold sends 1,048,575 bytes to the KB branch, where it
+ * rounds to "1024 KB" — a quantity that should be spelled as a megabyte and never appears in any
+ * file manager. The same off-by-a-rounding-step that produced the "0 KB" at the bottom of the
+ * range produced a bogus unit at the top of it, which is why this is exported and swept across
+ * both boundaries in test/components/my-works-file-size.test.tsx rather than spot-checked.
+ *
+ * Exported for that test. It was a private const, so the only way to reach this arithmetic was to
+ * render the whole client component — fetch stubs, effects and polling, to check a division.
+ */
+export function fmtBytes(n: number | null): string {
+  // Absent, not zero. The call site guards on `!= null`, so an unknown size renders as nothing;
+  // returning "0 bytes" here would reintroduce B016 from the other direction — the product
+  // asserting a file is empty when what it actually has is no measurement.
+  if (n == null || !Number.isFinite(n) || n < 0) return '';
+  const b = Math.round(n);
+  if (b < KB) return `${b} ${b === 1 ? 'byte' : 'bytes'}`;
+  const kb = Math.round(b / KB);
+  if (kb < KB) return `${kb} KB`;
+  return `${(b / MB).toFixed(1)} MB`;
+}
 
 /**
  * Markdown syntax out of the search excerpt.
@@ -78,6 +117,8 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
   const [hits, setHits] = useState<Hit[] | null>(null);
   const [presence, setPresence] = useState<Presence[] | null>(null);
   const [searchNote, setSearchNote] = useState<string | null>(null);
+  /** Which row's Remove is armed (B017). One at a time; null when nothing is armed. */
+  const [armedRemove, setArmedRemove] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
   const [voices, setVoices] = useState<Record<string, VoicesState>>({});
   const fileInput = useRef<HTMLInputElement>(null);
@@ -145,6 +186,15 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
   }
   async function remove(id: string) {
     await fetch(`/api/user-corpus/documents/${id}`, { method: 'DELETE' });
+    // B018 — the document list reloaded and the SEARCH RESULTS did not, so hits pointing at the
+    // just-deleted document stayed on screen until the reader searched again. Clicking one of
+    // those is the failure that matters: a result for a document that no longer exists. Cleared
+    // rather than silently re-run — re-running spends a request the reader did not ask for, and
+    // the honest state after a delete is "these results are no longer current".
+    setHits(null);
+    setPresence(null);
+    setSearchNote(null);
+    setArmedRemove(null);
     await load();
   }
 
@@ -400,12 +450,21 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                         The tradition on this
                       </button>
                     )}
+                    {/* B017 — this deleted on ONE click, with no confirmation, on the reader's
+                        own uploaded file. Two steps, disarming on blur so an armed row cannot sit
+                        waiting to catch a later stray click. Same pattern as the research-thread
+                        and study controls. */}
                     <button
                       type="button"
-                      onClick={() => void remove(d.id)}
-                      className="min-h-[44px] px-3 text-[13px] font-semibold text-stone-500 hover:text-red-700 dark:text-stone-400"
+                      onClick={() => (armedRemove === d.id ? void remove(d.id) : setArmedRemove(d.id))}
+                      onBlur={() => setArmedRemove((cur) => (cur === d.id ? null : cur))}
+                      className={`min-h-[44px] px-3 text-[13px] font-semibold ${
+                        armedRemove === d.id
+                          ? 'text-red-700 dark:text-red-400'
+                          : 'text-stone-500 hover:text-red-700 dark:text-stone-400'
+                      }`}
                     >
-                      Remove
+                      {armedRemove === d.id ? 'Remove?' : 'Remove'}
                     </button>
                   </div>
 

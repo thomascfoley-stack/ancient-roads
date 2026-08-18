@@ -4,15 +4,90 @@
 // Attribution discipline (§8.6): these fields come from the whitelisted /api/work response —
 // `provenance` (host URLs) is never selected server-side, so no host URL can render here.
 
+import { useCallback, useEffect, useState } from 'react';
 import { ReaderSettings } from './reader-settings';
 import type { WorkSource } from '@/lib/work';
 
+/**
+ * SAVE THIS WORK TO MY BOOKS (ledger N3).
+ *
+ * The only caller of the `library_items` write path. Before this, `setShelf` and
+ * `removeFromLibrary` had zero call sites: the table, its RLS policy and its tenancy tests all
+ * existed and nothing in the product could put a work on a shelf.
+ *
+ * Signed-out readers get NOTHING here rather than a disabled control or a sign-in prompt — the
+ * route 401s them, and the reader is mid-page in a book, which is the wrong moment to advertise an
+ * account. `/library/books` makes the offer where it is relevant.
+ *
+ * Optimistic with revert: shelving is a one-bit convenience and waiting on a round trip to
+ * repaint a button is worse than briefly showing a state the server has not confirmed. On failure
+ * the previous state comes back, so the button never ends up lying about what was stored.
+ */
+function SaveToShelf({ slug, signedIn }: { slug: string; signedIn: boolean }) {
+  // `undefined` = not asked yet, which is NOT the same as `null` = asked, not shelved. The
+  // distinction is what keeps the control from flashing "Save" at a reader whose work is saved.
+  const [shelf, setShelf] = useState<string | null | undefined>(undefined);
+  const [busy, setBusy] = useState(false);
+  const url = `/api/work/${encodeURIComponent(slug)}/shelf`;
+
+  useEffect(() => {
+    if (!signedIn) return;
+    let cancelled = false;
+    fetch(url)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: { shelf: string | null }) => {
+        if (!cancelled) setShelf(d.shelf);
+      })
+      // A failed read leaves the control absent rather than guessing. Rendering "Save" on a work
+      // that IS saved would be a lie about stored state; showing nothing is merely unhelpful.
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [url, signedIn]);
+
+  const toggle = useCallback(async () => {
+    if (busy || shelf === undefined) return;
+    const previous = shelf;
+    const next = shelf ? null : 'saved';
+    setBusy(true);
+    setShelf(next);
+    try {
+      const res = await (next
+        ? fetch(url, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ shelf: next }) })
+        : fetch(url, { method: 'DELETE' }));
+      if (!res.ok) throw new Error(String(res.status));
+    } catch {
+      setShelf(previous);
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, shelf, url]);
+
+  if (!signedIn || shelf === undefined) return null;
+  const saved = shelf !== null;
+  return (
+    <button
+      onClick={toggle}
+      aria-pressed={saved}
+      title={saved ? 'Remove from My books' : 'Save to My books'}
+      className="min-h-[44px] shrink-0 border edge bg-transparent px-3 font-sans text-sm font-semibold text-stone-800 transition-colors ease-gentle hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 dark:text-stone-100 dark:hover:bg-stone-800"
+    >
+      {saved ? 'Saved' : 'Save'}
+    </button>
+  );
+}
+
 export function WorkHeader({
   source,
+  slug,
+  signedIn = false,
   onOpenToc,
   ref,
 }: {
   source: WorkSource;
+  slug: string;
+  signedIn?: boolean;
   onOpenToc: () => void;
   /** The reader measures the header's live bottom edge for scroll/progress math (React 19
    *  ref-as-prop). */
@@ -51,6 +126,7 @@ export function WorkHeader({
             </p>
           )}
         </div>
+        <SaveToShelf slug={slug} signedIn={signedIn} />
         <ReaderSettings />
       </div>
     </header>

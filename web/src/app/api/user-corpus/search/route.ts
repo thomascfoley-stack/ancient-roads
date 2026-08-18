@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guardUser } from '@/lib/user-corpus/route-guard';
+import { checkCorpusSearchRateLimit } from '@/lib/rate-limit';
+import { apiError } from '@/lib/api-error';
 import { embedChunks } from '@/lib/user-corpus/embed';
 import { keywordSearch, searchMyWorks, verseAnchorScan } from '@/lib/user-corpus/search';
 import { parseRef } from '@bible/ref-parse';
@@ -23,10 +25,29 @@ export const runtime = 'nodejs';
  * route already does. It is one call, and the alternative — a round trip to a queue for an
  * interactive search — would be worse for the same reason.
  */
-export async function GET(req: NextRequest): Promise<NextResponse> {
+// Returns `Response`, not `NextResponse`: `apiError` (the app-wide error envelope,
+// docs/API_ERRORS.md) is deliberately framework-free and returns the global Web Response.
+// NextResponse extends Response, so every JSON return below still satisfies this.
+export async function GET(req: NextRequest): Promise<Response> {
   const guard = await guardUser();
   if (guard.denied) return guard.denied;
   const user = guard.user;
+
+  // METERED BEFORE ANY SPEND. This route calls `embedChunks([q])` on the request path — a paid
+  // DeepInfra embedding — and had NO limiter until the 2026-08-17 pre-deploy audit. The wallet
+  // invariant was green over it only because `routeSpendsMoney` matched `teach()` alone while
+  // being named for spend in general; both the predicate and this route are fixed together.
+  //
+  // The allowlist in `guardUser` is NOT the meter, and must not be mistaken for one: it is a
+  // temporary protection that stops binding the moment USER_CORPUS_MULTI_USER is set, with no
+  // deploy and no review. Assume it is gone (the audit's framing) and this is the only thing
+  // between an authenticated account and an unbounded embedding bill.
+  const limit_ = await checkCorpusSearchRateLimit(user.id);
+  if (!limit_.ok) {
+    return apiError(limit_.limited === 'day' ? 'RATE_LIMIT_DAY' : 'RATE_LIMIT_MINUTE', {
+      retryAfterSec: limit_.retryAfterSec,
+    });
+  }
 
   const params = req.nextUrl.searchParams;
   const documentId = params.get('documentId') ?? undefined;
@@ -50,7 +71,15 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   // ── text search ───────────────────────────────────────────────────────────────────────────────
-  const q = params.get('q')?.trim();
+  // CAPPED. `q` is embedded verbatim by `embedChunks([q])`, so an uncapped query is an uncapped
+  // paid call. 500 matches the corpus /ask route's own question cap — the same shape of input
+  // going to the same provider should not have two different bounds.
+  const MAX_QUERY = 500;
+  const qRaw = params.get('q')?.trim();
+  if (qRaw !== undefined && qRaw.length > MAX_QUERY) {
+    return apiError('INVALID_REQUEST', { message: 'That search is too long. Please shorten it.' });
+  }
+  const q = qRaw;
   if (!q) return NextResponse.json({ error: 'Provide q or ref.' }, { status: 400 });
 
   if (params.get('mode') === 'keyword') {

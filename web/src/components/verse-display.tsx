@@ -84,6 +84,7 @@ export function VerseDisplay({
   notedVerses,
   bookmarkedVerses,
   onToggleBookmark,
+  onClearHighlight,
   signedIn,
   onAddHighlight,
   onOpen,
@@ -105,6 +106,8 @@ export function VerseDisplay({
   /** Toggles the bookmark on a verse. Absent when signed out, which is what hides the button:
    *  SelectionPopover renders Bookmark only when a handler exists (selection-popover.tsx). */
   onToggleBookmark?: (verse: number) => void;
+  /** Clears every highlight span on a verse (B046). Absent signed out — the control hides. */
+  onClearHighlight?: (verse: number) => void;
   signedIn?: boolean;
   onAddHighlight?: (verse: number, range: { start: number; end: number } | null, color: string) => void;
   onOpen?: (verse: number, tab: StudyTab) => void;
@@ -280,6 +283,15 @@ export function VerseDisplay({
                 role="button"
                 tabIndex={0}
                 aria-label={`Verse ${v.verse}, read commentary`}
+                /* A028 — THE HANDLE HAS TO BE IDENTIFIABLE FROM UNDERNEATH.
+                   With the study panel open, its `fixed inset-0` scrim lies over this whole column:
+                   the numbers are still legible through it and still read as handles, but the click
+                   lands on the scrim, which closed the panel. The scrim now hit-tests the stack
+                   under the pointer and switches verses when it finds THIS attribute
+                   (study-panel.tsx `verseHandleUnder`). It has to be on the number rather than the
+                   enclosing `data-verse` span, or the verse TEXT would become a switch too and
+                   ADR-047 rules that it is not a handle. */
+                data-verse-handle={v.verse}
                 onClick={() => openVerse(v.verse)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -365,6 +377,21 @@ export function VerseDisplay({
           signedIn={!!signedIn}
           onHighlight={onAddHighlight ? highlightPending : undefined}
           onAddNote={onOpen ? () => openPending('notes') : undefined}
+          // The popover needs the CURRENT state of the verse it was raised on, or the label it
+          // now renders would be decoration. `pending.key` is that verse.
+          bookmarked={bookmarkedVerses?.has(Number(pending.key)) ?? false}
+          highlighted={(highlights?.get(Number(pending.key)) ?? []).length > 0}
+          onClearHighlight={
+            // Same signed-out gate as the bookmark control: offering a clear that would 401 is a
+            // control that appears to work and silently does not.
+            signedIn && onClearHighlight
+              ? () => {
+                  const verse = Number(pending!.key);
+                  dismiss();
+                  onClearHighlight(verse);
+                }
+              : undefined
+          }
           onBookmark={
             // Gated on signedIn, the same as the highlight swatches (selection-popover.tsx). The
             // button is not merely useless when signed out: the optimistic toggle would show the

@@ -20,6 +20,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { encodeVerseId } from '@bible/verse-id';
 import { persistWrite } from './persist-write';
+import { isFetchableChapter } from './chapter-param';
 
 // A stored highlight span as the reader holds it: character offsets into v.text (null/null = a
 // legacy whole-verse highlight), the background color, and the translation it was anchored in.
@@ -91,7 +92,10 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
   // this GET is a 401 exactly as it is today; the notice it sets is rendered only for a signed-in
   // reader (see the reader page).
   useEffect(() => {
-    if (!bookNum) return;
+    // A084 — this guarded only the BOOK, so a malformed chapter segment sent
+    // `?book=43&chapter=NaN` on every load of `/read/jhn/abc`. The shared predicate answers the
+    // one question all three dispatchers were each answering for themselves.
+    if (!isFetchableChapter(bookNum, chapterNum)) return;
     setHighlights(new Map());
     setNotes(new Map());
     setBookmarks(new Set());

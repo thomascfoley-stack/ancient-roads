@@ -7,6 +7,8 @@ import { authClient } from '@/lib/auth/client';
 import { isPrayerWriting, PRAYER_WRITING_EVENT } from '@/lib/prayer-writing-mode';
 import { CATALOGS, CATALOG_IDS, type CatalogId } from '@/lib/catalog-defs';
 import { orderStudiesForNav, type StudySummary } from '@/components/save-to-study';
+import { bibleTabHref, DEFAULT_BIBLE_HREF } from '@/lib/bible-position';
+import { libraryLabel } from '@/lib/library-nav';
 
 // --- user-defined study sections (parent/child). Stored locally per user
 // while the real feature (saved work, conversation) is still coming soon;
@@ -121,6 +123,15 @@ export function SidebarNavContent({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  // A034 — the Bible link went to John 1 unconditionally, discarding the reader's position. This
+  // component feeds BOTH the desktop rail and MobileNav's Menu sheet (mobile-nav.tsx:161), so the
+  // hardlink here was the phone user's second route to the old behaviour even after the bottom tab
+  // was fixed. Same shape as mobile-nav's: seeded with the DEFAULT so the first client render
+  // matches the server's (reading localStorage during render is the React #418 this repo has paid
+  // for twice), and keyed on `pathname` rather than `[]` because the rail stays mounted across
+  // client navigations and a one-shot effect would freeze at boot.
+  const [bibleHref, setBibleHref] = useState(DEFAULT_BIBLE_HREF);
+  useEffect(() => setBibleHref(bibleTabHref()), [pathname]);
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
   // See the sign-in/sign-out branch below: this exists solely to keep the first client render
@@ -170,7 +181,7 @@ export function SidebarNavContent({
             onNavigate={onNavigate}
           />
           <SidebarLink
-            href="/read/jhn/1"
+            href={bibleHref}
             icon={<BookIcon />}
             label="Bible"
             active={pathname.startsWith('/read')}
@@ -180,8 +191,42 @@ export function SidebarNavContent({
           <SidebarLink
             href="/ask"
             icon={<AskIcon />}
-            label="Ancient Paths"
+            label="Ask"
             active={pathname.startsWith('/ask')}
+            row={row}
+            onNavigate={onNavigate}
+          />
+          {/* A072 / B043 — THE DESK HAD NO ENTRY POINT IN ANY NAVIGATION, ANYWHERE.
+              (R1 part 1, docs/pm/orders/2026-08-17-three-ux-rulings.md: "A nav entry, desktop and
+              mobile menu. Cheapest, largest effect.")
+
+              Four separate enumerations of this rail's links found no `/desk` among them, and they
+              were right. The only two routes into the Desk that shipped are the library row's "+"
+              (`app/library/[catalog]/page.tsx`, whose meaning is itself a filed finding — UX-2) and
+              ask-client's per-result link. BOTH of those put a pane on a desk; NEITHER goes to the
+              desk. So a reader could not reach an empty one at all, and a reader who had built one
+              could not get back to it after navigating away. That is the same orphaned-surface bug
+              this file's Library block already records twice (the hub, then My Works) — on the one
+              surface the product was built around.
+
+              ONE ENTRY CLOSES BOTH FINDINGS, because this component is the shared nav content:
+              the desktop rail renders it at line ~554, and `mobile-nav.tsx:134` renders the SAME
+              component inside its menu sheet (`<SidebarNavContent touch onNavigate={onClose} />`).
+              Verified by reading that file, and asserted by driving the mobile menu in
+              `test/components/desk-nav-and-session-note.test.tsx` rather than by trusting the
+              import — if the sheet ever stops sharing this content, B043 reopens and that goes red.
+
+              PLACED WITH THE READING SURFACES, above Reading plans: Home / Bible / Ask / Desk are
+              places you go to read, Reading plans is a schedule over them.
+
+              `pathname === '/desk'`, not `startsWith`: the Desk's state lives in the QUERY STRING
+              (`?p=…`), which is not part of `pathname`, so the route is exact and has no children.
+              An exact test cannot light up on a future `/desktop`-shaped sibling either. */}
+          <SidebarLink
+            href="/desk"
+            icon={<DeskIcon />}
+            label="Desk"
+            active={pathname === '/desk'}
             row={row}
             onNavigate={onNavigate}
           />
@@ -338,7 +383,7 @@ export function SidebarNavContent({
           <SidebarLink
             href="/library/passages"
             icon={<QuoteIcon />}
-            label="Passage search"
+            label={libraryLabel('/library/passages')}
             tier="shelf"
             active={pathname.startsWith('/library/passages')}
             row={row}
@@ -347,7 +392,7 @@ export function SidebarNavContent({
           <SidebarLink
             href="/library/notes"
             icon={<BookStackIcon />}
-            label="Saved"
+            label={libraryLabel('/library/notes')}
             tier="shelf"
             active={pathname.startsWith('/library/notes')}
             row={row}
@@ -356,7 +401,7 @@ export function SidebarNavContent({
           <SidebarLink
             href="/library/word-study"
             icon={<LanguagesIcon />}
-            label="Word study"
+            label={libraryLabel('/library/word-study')}
             tier="shelf"
             active={pathname.startsWith('/library/word-study')}
             row={row}
@@ -370,7 +415,7 @@ export function SidebarNavContent({
           <SidebarLink
             href="/library/uploads"
             icon={<BookStackIcon />}
-            label="My uploads"
+            label={libraryLabel('/library/uploads')}
             tier="shelf"
             active={pathname.startsWith('/library/uploads')}
             row={row}
@@ -418,9 +463,72 @@ const CATALOG_ICON: Partial<Record<CatalogId, React.ReactNode>> = {
   theology: <TabletIcon />,
 };
 
+/**
+ * A093 — THE WIDTH BAND THAT GETS THE ICON RAIL INSTEAD OF THE 256px SIDEBAR.
+ *
+ * The 2026-08-16 QA fleet filed it as "no dedicated tablet nav treatment — 768px renders the full
+ * 256px desktop sidebar with full text labels (consuming a third of the screen); one pixel
+ * narrower flips entirely to the phone bottom-nav layout". Both halves check out in the source:
+ * `mobile-nav.tsx:93` is `md:hidden` and this file's `<aside>` is `hidden … md:flex`, so 767px and
+ * 768px are two completely different navigations with nothing between them.
+ *
+ * THE BOUNDS ARE THE ONES ALREADY IN THE BUILD, not a new breakpoint. `768px` is Tailwind's `md`,
+ * the exact pixel the bottom tab bar hands over at; `1023.98px` is the last width below `lg`,
+ * where the viewport is wide enough that 256px of chrome stops being a third of it. Widening this
+ * band is a design decision, not a tidy-up — a desktop reader must never boot collapsed.
+ *
+ * Written as a media query rather than a `window.innerWidth` read on purpose: the browser owns the
+ * definition of "how wide am I" (zoom, device pixel ratio, scrollbar gutters all move it), and a
+ * media query is the same arithmetic the stylesheet next door is already doing.
+ */
+// The band's floor is `md` (768px), NOT `sm` (640px), and the difference is load-bearing rather
+// than cosmetic. This `<aside>` is `hidden … md:flex` and mobile-nav is `md:hidden`, so below 768px
+// the rail does not render at all and the reader has the bottom tab bar instead. A floor of 640px
+// therefore set `collapsed` across a range where the sidebar is invisible — harmless on screen,
+// but it means a phone rotated up into tablet width arrives already collapsed, having never been
+// shown the choice. Caught by this change's own test ("does not fire on the phone side of the
+// cliff"), which asserted 767px and went red against the 640px floor.
+// CEILING CORRECTED 2026-08-17 (pre-deploy audit). It read `1279.98px` — Tailwind's `xl` — while
+// the block above states the bound as `1023.98px`, "the last width below `lg`", and states the
+// invariant "a desktop reader must never boot collapsed". The constant contradicted both by 256px,
+// so every laptop window from 1024px to 1279.98px — the commonest desktop browser-window band —
+// booted into the 48px rail, where the only destinations are the 7 icon links: no Desk, no catalog
+// shelves, no My Studies, no Research history, no Sign in. The suite could not see it because the
+// test asserted 768 and 1280 and nothing in between.
+const TABLET_MEDIA_QUERY = '(min-width: 768px) and (max-width: 1023.98px)';
+
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+
+  // A093 — A TABLET BOOTS INTO THE RAIL. This is the whole treatment: no new breakpoint system,
+  // no third layout, just the collapse this component already had, defaulted ON inside the band
+  // above. The chevron is untouched, so it stays a DEFAULT and not a lockout.
+  //
+  // `false` REMAINS THE INITIAL STATE and the query is read in an effect, never during render.
+  // Reading it during render would make the first client pass disagree with the server's (which
+  // has no viewport at all) — the React #418 this file has already paid for twice, once on the
+  // Sign in/Sign out branch below and once on the Bible link. The cost of doing it correctly is
+  // one frame of the wide sidebar on a tablet before it collapses; the cost of doing it the other
+  // way is a hydration error on every page load in the app.
+  //
+  // IT LISTENS FOR `change`, NOT FOR EVERY RESIZE, and the difference is the reader's own choice:
+  // a `change` fires only when the answer FLIPS, so expanding the rail and then resizing within
+  // the band leaves it expanded, while crossing out of the band (rotation, a window dragged wider)
+  // applies the default for the layout the reader has actually moved to.
+  useEffect(() => {
+    const tablet = window.matchMedia(TABLET_MEDIA_QUERY);
+    setCollapsed(tablet.matches);
+    const onCross = (e: MediaQueryListEvent) => setCollapsed(e.matches);
+    tablet.addEventListener('change', onCross);
+    return () => tablet.removeEventListener('change', onCross);
+  }, []);
+
+  // A034 — the writing rail's own Bible link. Same hardlink, same fix, its own state because this
+  // is a different component from SidebarNavContent and the value cannot be shared without lifting
+  // it. Seeded with the DEFAULT for the same hydration reason.
+  const [bibleHref, setBibleHref] = useState(DEFAULT_BIBLE_HREF);
+  useEffect(() => setBibleHref(bibleTabHref()), [pathname]);
   // WRITING MODE (owner direction 2026-08-12, journal-redesign mockup): while the prayer compose
   // view owns the screen, the 256px sidebar drops to a 58px icon rail — the journal area is the
   // screen, not a widget on it. The rail re-expands on hover or ⌘\, and collapses again when the
@@ -444,62 +552,71 @@ export function Sidebar() {
     return () => window.removeEventListener('keydown', onKey);
   }, [writing]);
 
+  // A095 — THE COLLAPSE CHEVRON'S NAME AND TOOLTIP, FROM ONE BINDING.
+  //
+  // The 2026-08-17 QA pass filed this control as "an unlabeled, undiscoverable chevron with no
+  // tooltip". HALF OF THAT WAS ALREADY FALSE and it is worth saying, because it changes the fix:
+  // both branches below already carried a state-correct `aria-label` ("Expand sidebar" when
+  // collapsed, "Collapse sidebar" when open), and `sidebar-writing-rail.test.tsx` has queried the
+  // full nav BY that name since 2026-08-12. A screen reader was never the reader left guessing.
+  //
+  // What was true is that a SIGHTED reader was. The two states render as bare `>` and `<` strokes
+  // with no `title`, so hovering the chevron said nothing at all — the same shape as UX-2, where an
+  // affordance's only explanation lived somewhere the person looking at it never went. The rail's
+  // own icon-only links (`railLinks` above) already set `aria-label` AND `title` together for
+  // exactly this reason; this control was the one icon-only button in the file that did not.
+  //
+  // ONE BINDING, DERIVED FROM `collapsed`, spent on both attributes in both branches. Two
+  // hand-typed strings per branch is how a tooltip ends up disagreeing with the accessible name,
+  // and a fixed string across branches is how a control ends up announcing "Collapse" while it
+  // expands — which is the bookmark control's B023 defect ("Bookmark" whether or not the verse was
+  // bookmarked) in a different corner of the app. Derived, it cannot drift either way.
+  const toggleLabel = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+
   // The pre-launch password gate stands alone — no app chrome around it.
   if (pathname === '/gate') return null;
 
   if (writing && !railOpen) {
-    // A DELIBERATE SUBSET, not a mirror of the full nav: while writing, the rail offers the few
-    // places a reader might actually leave for. Adding a destination here is a design decision,
-    // not a sync task — do not derive this from the catalog list.
-    const railLinks = [
-      { href: '/home', label: 'Home', icon: <HomeIcon /> },
-      { href: '/read/jhn/1', label: 'Bible', icon: <BookIcon /> },
-      { href: '/ask', label: 'Ancient Paths', icon: <AskIcon /> },
-      { href: '/plans', label: 'Reading plans', icon: <CalendarIcon /> },
-      { href: '/prayers', label: 'My prayers', icon: <PrayerIcon /> },
-      { href: '/library', label: 'All items', icon: <BookStackIcon /> },
-      { href: '/settings', label: 'Settings', icon: <SettingsIcon /> },
-    ];
     return (
       <aside
         aria-label="Navigation"
         onMouseEnter={() => setRailOpen(true)}
         className="hidden w-[58px] flex-col items-center gap-1 border-r edge bg-stone-200 py-4 md:flex dark:bg-stone-900"
       >
-        {railLinks.map((l) => {
-          const active = l.href === '/home' ? pathname === '/home' : pathname.startsWith(l.href);
-          return (
-            <Link
-              key={l.href}
-              href={l.href}
-              aria-label={l.label}
-              title={l.label}
-              className={`flex h-9 w-9 items-center justify-center transition-colors ease-gentle ${
-                active
-                  ? 'text-stone-900 dark:text-stone-200'
-                  : 'text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200'
-              }`}
-            >
-              {l.icon}
-            </Link>
-          );
-        })}
+        <IconRailLinks pathname={pathname} bibleHref={bibleHref} />
       </aside>
     );
   }
 
   if (collapsed) {
     return (
-      <aside className="hidden w-12 flex-col items-center border-r edge bg-stone-200 py-3 md:flex dark:bg-stone-900">
+      // A093 — THE COLLAPSED RAIL CARRIES DESTINATIONS NOW, and that is a precondition of the
+      // tablet default above rather than a bonus. Until this change the collapsed state was a
+      // 48px strip holding exactly ONE control: the chevron that undoes it. On desktop that is
+      // the reader's own choice and one click from reversible. As a tablet DEFAULT it would have
+      // been a screen with no navigation on it at all — the rail empty AND `mobile-nav.tsx`'s
+      // bottom tab bar absent, because that bar is `md:hidden`.
+      //
+      // Same list as the writing-mode rail, from `IconRailLinks` — one source, because two
+      // hand-kept copies of a destination list is the failure this repo has now logged sixteen
+      // times. Landmark named to match that rail for the same reason: at tablet width this IS the
+      // navigation, and an unnamed `complementary` region is not something a screen-reader user
+      // can jump to.
+      <aside
+        aria-label="Navigation"
+        className="hidden w-12 flex-col items-center gap-1 border-r edge bg-stone-200 py-3 md:flex dark:bg-stone-900"
+      >
         <button
           onClick={() => setCollapsed(false)}
           className="p-1 text-stone-500 transition-colors ease-gentle hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
-          aria-label="Expand sidebar"
+          aria-label={toggleLabel}
+          title={toggleLabel}
         >
           <svg aria-hidden className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
           </svg>
         </button>
+        <IconRailLinks pathname={pathname} bibleHref={bibleHref} />
       </aside>
     );
   }
@@ -520,7 +637,8 @@ export function Sidebar() {
         <button
           onClick={() => setCollapsed(true)}
           className="p-1 text-stone-500 transition-colors ease-gentle hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
-          aria-label="Collapse sidebar"
+          aria-label={toggleLabel}
+          title={toggleLabel}
         >
           <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
@@ -637,6 +755,28 @@ function ResearchHistory({
 }) {
   const [threads, setThreads] = useState<{ id: string; title: string }[] | null>(null);
   const [error, setError] = useState(false);
+  // Two-step, not window.confirm: the first tap arms the row, the second removes it. A thread is
+  // a real piece of the reader's work and this is irreversible, so a single stray tap must not
+  // destroy one — but a native confirm() dialog in a sidebar is heavier than the action deserves.
+  const [arming, setArming] = useState<string | null>(null);
+
+  // OPTIMISTIC WITH ROLLBACK. The row disappears immediately, and comes back if the request
+  // fails — the alternative is a spinner on a delete, which reads as "did that work?".
+  const remove = useCallback(async (id: string) => {
+    setArming(null);
+    let previous: { id: string; title: string }[] | null = null;
+    setThreads((prev) => {
+      previous = prev;
+      return prev?.filter((t) => t.id !== id) ?? prev;
+    });
+    try {
+      const res = await fetch(`/api/research/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(String(res.status));
+    } catch {
+      setThreads(previous);
+      setError(true);
+    }
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -677,18 +817,40 @@ function ResearchHistory({
               Your research could not be loaded.
             </p>
           )}
+          {/* Every /ask persists a thread and NOTHING could remove one — no control here, none on
+              the thread page, no endpoint (2026-08-17 authenticated QA pass, which left nine on the
+              owner's real account and filed it as an outstanding action item). The remove control
+              is ALWAYS VISIBLE rather than hover-only: this repo has already shipped an
+              affordance that existed on a pointer and did not exist on touch (UX-2), and a
+              delete nobody can find is the bug being fixed here. */}
           {threads.slice(0, RESEARCH_NAV_CAP).map((t) => (
-            <SidebarLink
-              key={t.id}
-              href={`/ask/${t.id}`}
-              icon={
-                <span className="inline-block h-2 w-2 rounded-full bg-accent-600 dark:bg-accent-400" />
-              }
-              label={t.title}
-              active={pathname === `/ask/${t.id}`}
-              row={row}
-              onNavigate={onNavigate}
-            />
+            <div key={t.id} className="relative flex items-center">
+              <div className="min-w-0 flex-1">
+                <SidebarLink
+                  href={`/ask/${t.id}`}
+                  icon={
+                    <span className="inline-block h-2 w-2 rounded-full bg-accent-600 dark:bg-accent-400" />
+                  }
+                  label={t.title}
+                  active={pathname === `/ask/${t.id}`}
+                  row={row}
+                  onNavigate={onNavigate}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => (arming === t.id ? void remove(t.id) : setArming(t.id))}
+                onBlur={() => setArming((cur) => (cur === t.id ? null : cur))}
+                aria-label={arming === t.id ? `Confirm delete: ${t.title}` : `Delete research thread: ${t.title}`}
+                className={`mr-1 shrink-0 rounded px-2 py-1 text-micro transition-colors ease-gentle ${
+                  arming === t.id
+                    ? 'font-semibold text-red-700 dark:text-red-400'
+                    : 'text-stone-400 hover:text-stone-700 dark:text-stone-500 dark:hover:text-stone-200'
+                }`}
+              >
+                {arming === t.id ? 'Delete?' : '\u00d7'}
+              </button>
+            </div>
           ))}
         </>
       )}
@@ -904,6 +1066,61 @@ function SidebarLink({
   );
 }
 
+/**
+ * THE ICON RAIL'S DESTINATIONS — one list, rendered by BOTH narrow rails.
+ *
+ * A DELIBERATE SUBSET, not a mirror of the full nav: a rail this narrow offers the few places a
+ * reader might actually leave for. Adding a destination here is a design decision, not a sync
+ * task — do NOT derive this from the catalog list. (The Desk, added to the full nav on 2026-08-17
+ * by A072, is deliberately not here: putting it on the rail is that same design decision and
+ * belongs to whoever makes it, not to A093's layout fix.)
+ *
+ * WHY IT IS A COMPONENT RATHER THAN A LIST IN ONE BRANCH. It was inline in the writing-mode rail
+ * until A093 gave the collapsed rail the same job — a tablet boots into the collapsed rail, so
+ * that rail had to stop being a chevron on an empty strip. Two rails that render "the same
+ * destinations" from two typed lists agree on the day they are written and drift afterwards;
+ * that is the failure mode this repo keeps a running count of. One list cannot drift, and
+ * `test/components/sidebar-tablet-default.test.tsx` asserts the two rails still match by
+ * rendering both and comparing.
+ *
+ * Every link carries `aria-label` AND `title`: the glyphs are the only label a sighted reader
+ * gets, and the two attributes are set from one binding so they cannot disagree (A095's lesson,
+ * applied where it was already correct).
+ */
+function IconRailLinks({ pathname, bibleHref }: { pathname: string; bibleHref: string }) {
+  const links = [
+    { href: '/home', label: 'Home', icon: <HomeIcon /> },
+    { href: bibleHref, label: 'Bible', icon: <BookIcon /> },
+    { href: '/ask', label: 'Ancient Paths', icon: <AskIcon /> },
+    { href: '/plans', label: 'Reading plans', icon: <CalendarIcon /> },
+    { href: '/prayers', label: 'My prayers', icon: <PrayerIcon /> },
+    { href: '/library', label: 'All items', icon: <BookStackIcon /> },
+    { href: '/settings', label: 'Settings', icon: <SettingsIcon /> },
+  ];
+  return (
+    <>
+      {links.map((l) => {
+        const active = l.href === '/home' ? pathname === '/home' : pathname.startsWith(l.href);
+        return (
+          <Link
+            key={l.href}
+            href={l.href}
+            aria-label={l.label}
+            title={l.label}
+            className={`flex h-9 w-9 items-center justify-center transition-colors ease-gentle ${
+              active
+                ? 'text-stone-900 dark:text-stone-200'
+                : 'text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200'
+            }`}
+          >
+            {l.icon}
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
 function SidebarButton({
   icon,
   label,
@@ -1031,6 +1248,21 @@ function AskIcon() {
   return (
     <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M21 12a8 8 0 01-11.6 7.13L3 21l1.87-6.4A8 8 0 1121 12z" />
+    </svg>
+  );
+}
+
+/** A pane divided into three columns — what the Desk IS (`MAX_PANES` = 3, side by side).
+ *
+ *  Drawn rather than reused, for the reason CATALOG_ICON's comment gives one screen up: five
+ *  identical speech bubbles taught the eye that these glyphs carry nothing. BookStackIcon (the
+ *  Library) and TabletIcon (Theology) were the near neighbours and both would have said the wrong
+ *  thing — the Desk is not a shelf and not a work. Same convention as every icon in this file:
+ *  24 viewBox, strokeWidth 1.5, h-4 w-4, so it sits on the nav's optical line. */
+function DeskIcon() {
+  return (
+    <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zM9 5v14M15 5v14" />
     </svg>
   );
 }

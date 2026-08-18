@@ -38,6 +38,7 @@ function PaneFrame({
   subtitle,
   register,
   fullHref,
+  loading = false,
   onContents,
   onClose,
   children,
@@ -46,6 +47,28 @@ function PaneFrame({
   subtitle?: string | null;
   register: string;
   fullHref: string;
+  /**
+   * B011 — the pane has not learned what it is yet, and must not pretend otherwise.
+   *
+   * A work pane is created from a URL that carries a SLUG and nothing else, so between mount and
+   * the `/api/work/[slug]` response the header had a title and a register to render and neither
+   * one was true: `source?.title ?? pane.slug` printed the raw identifier as though it were the
+   * work's name, and `paneRegisterLabel(undefined)` fell through to "Unlabelled". So a new pane
+   * flashed `UNLABELLED · spurgeon-sermons` and then became `SERMON · Sermons on the Psalms`.
+   *
+   * "Unlabelled" is the part that actually matters, and it is worse than ugly. That string is the
+   * register wall's signal for a work whose `source_type` this build does not recognise — a real,
+   * rare, investigate-me state. Rendering it on every single pane load spends the signal on a
+   * condition that is not it, and teaches the reader (and anyone reading a screenshot) to see
+   * UNLABELLED as noise. A pane that does not yet know its register must look like it does not
+   * know, not like a wall breach.
+   *
+   * So while `loading`, both slots become skeletons: the frame keeps its shape, nothing is
+   * asserted, and the slug never appears as a title. Scripture panes never take this path — their
+   * title and register are known from the URL itself, which is the "already-known title" case and
+   * the reason this is a flag rather than a blanket loading screen.
+   */
+  loading?: boolean;
   /** Renders the Contents button only when the pane has something to navigate. */
   onContents?: () => void;
   onClose: () => void;
@@ -53,21 +76,47 @@ function PaneFrame({
 }) {
   return (
     <section
-      aria-label={`${title} (${register})`}
+      // Named honestly while loading, for the same reason the visible header is: "spurgeon-sermons
+      // (Unlabelled)" told a screen reader two things that were not so. Three panes loading at once
+      // are momentarily indistinguishable here, which is the true state of affairs.
+      aria-label={loading ? 'Loading a pane' : `${title} (${register})`}
+      aria-busy={loading || undefined}
  className="flex min-h-0 min-w-0 flex-1 flex-col rounded-2xl border edge bg-paper/60 dark:bg-stone-950/30"
     >
  <header className="flex items-start justify-between gap-2 border-b edge px-4 py-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            {/* The register label. Never omitted, never inferred from position. */}
-            <span className="shrink-0 bg-stone-200/70 px-2 py-0.5 text-micro font-semibold uppercase tracking-wider text-stone-600 dark:bg-stone-800 dark:text-stone-300">
-              {register}
-            </span>
-            <Link href={fullHref} className="truncate font-scripture text-sm text-stone-800 hover:underline dark:text-stone-100">
-              {title}
-            </Link>
+            {loading ? (
+              // Same box sizes as the real pill and title, so nothing jumps when they arrive.
+              // aria-hidden because the section's own label already says "Loading a pane";
+              // announcing two empty boxes as well would be noise.
+              <>
+                <span
+                  className="h-[18px] w-16 shrink-0 animate-pulse rounded bg-stone-200/70 dark:bg-stone-800"
+                  aria-hidden
+                />
+                <span className="h-[18px] w-40 max-w-full animate-pulse rounded bg-stone-200/70 dark:bg-stone-800" aria-hidden />
+              </>
+            ) : (
+              <>
+                {/* The register label. Never omitted, never inferred from position. */}
+                <span className="shrink-0 bg-stone-200/70 px-2 py-0.5 text-micro font-semibold uppercase tracking-wider text-stone-600 dark:bg-stone-800 dark:text-stone-300">
+                  {register}
+                </span>
+                <Link href={fullHref} className="truncate font-scripture text-sm text-stone-800 hover:underline dark:text-stone-100">
+                  {title}
+                </Link>
+              </>
+            )}
           </div>
-          {subtitle && <p className="mt-0.5 truncate text-xs text-stone-500 dark:text-stone-400">{subtitle}</p>}
+          {/* The subtitle (author · tradition) arrives with the title, so its space is reserved
+              too — otherwise the header grows by a line the moment the fetch lands and the whole
+              pane's text shifts down under the reader's eyes. */}
+          {loading ? (
+            <span className="mt-1 block h-3 w-28 animate-pulse rounded bg-stone-200/70 dark:bg-stone-800" aria-hidden />
+          ) : (
+            subtitle && <p className="mt-0.5 truncate text-xs text-stone-500 dark:text-stone-400">{subtitle}</p>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {onContents && (
@@ -86,7 +135,10 @@ function PaneFrame({
           <button
             type="button"
             onClick={onClose}
-            aria-label={`Close ${title}`}
+            // B011: `Close ${title}` read "Close spurgeon-sermons" while the title was still the
+            // raw slug. The close button works the same either way, so it says the plain thing
+            // until there is a real name to say.
+            aria-label={loading ? 'Close this pane' : `Close ${title}`}
             className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-stone-800 dark:hover:text-stone-200"
           >
             ✕
@@ -213,7 +265,12 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
   const [sections, setSections] = useState<WorkSectionRow[]>([]);
   const [nextAfter, setNextAfter] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  // B011: starts TRUE, because a work pane is fetching from the moment it mounts. It used to start
+  // false, and the effect that sets it runs only after the first paint — so for that first frame
+  // `sections.length === 0 && !busy` was true and the pane rendered "Nothing to read here yet."
+  // about a work it had not yet asked for. Same defect as the UNLABELLED header one line up: state
+  // that has not been established yet, reported as an established fact.
+  const [busy, setBusy] = useState(true);
   const [tocOpen, setTocOpen] = useState(false);
   // Guards against a stale response from a previous slug landing in this pane.
   const seq = useRef(0);
@@ -301,18 +358,27 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
     }
   }, [pane.slug, nextAfter, busy]);
 
+  // B011: neither the work nor a reason it failed — the pane genuinely does not know what it is
+  // yet. Derived rather than tracked, so it cannot drift out of step with `source`/`error`; the
+  // two states it distinguishes from are exactly the two the header needs to render truthfully.
+  const loading = !source && !error;
+
   return (
     <PaneFrame
+      // Still the fallbacks, because `loading` suppresses their rendering — but they are now
+      // reached only in the impossible case (no source, no error, not loading), where a raw slug
+      // is the honest thing to show: it is all we have.
       title={source?.title ?? pane.slug}
       subtitle={source ? [source.author, source.tradition].filter(Boolean).join(' · ') || null : null}
       register={paneRegisterLabel(source?.source_type)}
       fullHref={`/work/${pane.slug}`}
+      loading={loading}
       onContents={source && toc.length > 0 ? () => setTocOpen(true) : undefined}
       onClose={onClose}
     >
       {error ? (
         <Message tone="error">{error}</Message>
-      ) : !source && busy ? (
+      ) : loading ? (
         <Message>Loading…</Message>
       ) : (
         <>

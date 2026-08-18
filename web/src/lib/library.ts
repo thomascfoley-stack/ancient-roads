@@ -97,6 +97,20 @@ export async function listContinueReading(
   return rows as ContinueReadingRow[];
 }
 
+/** The shelf this work sits on for this user, or null when it is not shelved.
+ *  PUBLISHED ONLY (see the header) — a withdrawn work reports as unshelved, which is what the
+ *  reader's Save control must show, because the shelf it would appear on filters it out too. */
+export async function getShelf(userId: string, sourceId: string): Promise<Shelf | null> {
+  const [rows] = await runAsUser(userId, (sql) => [
+    sql`SELECT li.shelf
+        FROM library_items li
+        JOIN sources s ON s.id = li.source_id
+        WHERE li.user_id = ${userId} AND li.source_id = ${sourceId} AND s.status = 'published'
+        LIMIT 1`,
+  ]);
+  return (rows as { shelf: Shelf }[])[0]?.shelf ?? null;
+}
+
 /** Put a work on a shelf (or move it). Upserts on 027's UNIQUE(user_id, source_id). */
 export async function setShelf(userId: string, sourceId: string, shelf: Shelf): Promise<void> {
   await runAsUser(userId, (sql) => [

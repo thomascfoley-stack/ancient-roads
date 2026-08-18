@@ -8,6 +8,7 @@ import { count } from '@/lib/plural';
 import { deskHref, withPane } from '@/lib/desk';
 import { DISPLAY_LOCALE } from '@/lib/locale';
 import { SaveToStudy, resolveVoiceSourceId } from '@/components/save-to-study';
+import { useSignedIn } from '@/lib/auth/use-signed-in';
 
 // --- shapes mirrored from the server (client only renders; server verifier is truth) ---
 interface Attribution { author: string; work: string; slug?: string; tradition: string; year?: number }
@@ -59,6 +60,10 @@ interface Turn {
   /** Stored turns: sourceIds whose embeddings row is no longer served (per-row §4.4 check,
    *  resolveServability — fails closed). These render attribution, never the quote. */
   withdrawnIds?: string[];
+  /** Q1: this turn failed on auth, not on the pipeline. The failure renders a way OUT (a sign-in
+   *  link) rather than only "Ask again", which re-fails identically. A flag rather than matching
+   *  on `error` text: the copy is user-facing and would silently unhook the link when reworded. */
+  needsSignIn?: boolean;
 }
 
 /** What /ask/[id] passes down: stored turns already in their terminal state. */
@@ -189,6 +194,11 @@ function LaneFilter({ lanes, onToggle }: { lanes: Record<LaneKey, boolean>; onTo
 export const SLOW_ANSWER_NOTICE_MS = 90_000;
 
 export function AskClient({ initialThread }: { initialThread?: InitialThread } = {}) {
+  // Q1: renders the composer's sign-in notice. `useSignedIn` is the shared source and is
+  // deliberately NOT a fetch — see its header for the four features a failed request used to
+  // revoke. Its `mounted` guard means one render returns false, which is the correct direction
+  // here: a signed-in reader sees the notice for one frame, never the reverse.
+  const signedIn = useSignedIn();
   const [question, setQuestion] = useState('');
   const [turns, setTurns] = useState<Turn[]>(() =>
     (initialThread?.turns ?? []).map((t, i) =>
@@ -219,11 +229,21 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
     setTurns((prev) => prev.map((t) => (t.id === id ? { ...t, ...p } : t)));
   }, []);
 
-  const ask = useCallback(async (raw: string) => {
+  // `replaceId` — retry a FAILED turn in its own slot instead of appending a second copy of the
+  // same question (A010). Retry three times on a persistent failure and the page used to be four
+  // identical questions under four identical error banners. Only the error path passes it: a
+  // COMPLETED answer also offers "Ask again" (the fallback control), and replacing there would
+  // destroy an answer the reader already has.
+  const ask = useCallback(async (raw: string, replaceId?: number) => {
     const q = raw.trim();
     if (!q || busy) return;
-    const id = nextId.current++;
-    setTurns((prev) => [...prev, { id, question: q, stage: 'retrieving', attempt: 0, sources: [], traditions: 0 }]);
+    const id = replaceId ?? nextId.current++;
+    const fresh: Turn = { id, question: q, stage: 'retrieving', attempt: 0, sources: [], traditions: 0 };
+    setTurns((prev) =>
+      replaceId !== undefined && prev.some((t) => t.id === replaceId)
+        ? prev.map((t) => (t.id === replaceId ? fresh : t))
+        : [...prev, fresh],
+    );
     setQuestion('');
     setBusy(true);
 
@@ -233,7 +253,7 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: q, lanes, ...(threadIdRef.current ? { threadId: threadIdRef.current } : {}) }),
       });
-      if (res.status === 401) { patch(id, { stage: 'error', error: 'Please sign in to explore the paths.' }); return; }
+      if (res.status === 401) { patch(id, { stage: 'error', error: 'Please sign in to explore the paths.', needsSignIn: true }); return; }
       if (!res.ok || !res.body) { patch(id, { stage: 'error', error: 'Something went wrong. Please try again.' }); return; }
 
       const reader = res.body.getReader();
@@ -309,7 +329,15 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
               pass all happen before anything is shown. Unannounced, that reads as a stall; named
               here, it reads as the checking the line above just promised. */}
           <span className="mt-1.5 block font-sans text-xs tracking-wide text-stone-500 dark:text-stone-500">
-            Currently answering from the Gospels. An answer usually takes about ten seconds — every quote is verified before you see it.
+            {/* R3 (docs/pm/orders/2026-08-17-three-ux-rulings.md). This read "about ten seconds",
+                which came from D4's DEV-LOCAL p50 of 9.1s and was never true in production: the
+                2026-08-17 authenticated QA pass measured 21-37s live, averaging 28.5s. A RANGE,
+                not the average — an average invites the reader to treat 28s as the expectation and
+                read a legitimate 37s answer as broken. Same principle the repo already applied to
+                SLOW_ANSWER_NOTICE_MS, which was specified at 15s against a measured 58-104s and
+                re-derived from measurement. Whether 28.5s is ACCEPTABLE is Lane D's D4 and stays
+                open; this only stops the UI misreporting it in the meantime. */}
+            Currently answering from the Gospels. An answer usually takes 20–40 seconds — every quote is verified before you see it.
           </span>
         </p>
         <LaneFilter lanes={lanes} onToggle={toggleLane} />
@@ -325,6 +353,49 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
           boxes in a stack" the landing page and the library have already been moved off.
           They are a hairline-separated list now, in the reading face, so they read as
           questions a person might ask rather than as buttons. */}
+      {/* A014 / N2 — THE COMPOSER'S FLOAT, AND WHY THERE IS NOTHING LEFT TO RESERVE HERE.
+          Two sessions filed the third example prompt as "clipped by the divider below it at
+          390px". It was never the `li` divider: it was the composer's top edge, over a strip of
+          document that could not be scrolled to.
+
+          The first fix (A014) reserved that strip on this scroll column —
+          `pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0` — and was correct about the
+          symptom while leaving the cause in place. The cause was a DOUBLE COUNT, named in A014's
+          own note and deliberately not taken there because closing it moves the composer on every
+          mobile view: `main` (app-shell.tsx) already pads its content box clear of the tab bar,
+          and the composer's sticky offset spelled out the same `3.75rem + safe-area` a second
+          time. Sticky resolves against the SCROLL CONTAINER, whose content box the shell has
+          already lifted — so the reserve landed twice.
+
+          MEASURED at 390x844 (dev server, computed style):
+            before — main pb 60px, sticky bottom 64px, composer 124px above the viewport bottom
+                     and 71px above the tab bar, with an `after:` mask 60px tall whose only job
+                     was to hide the gap the double-count opened
+            after  — sticky bottom 12px, composer 72px above the viewport bottom and 19px above
+                     the tab bar; 52px of wasted band reclaimed on every mobile view
+
+          With the offset now 12px against this container's own 16px `pb-4`, the overlap is
+          NEGATIVE — there is no strip left to reserve, which is exactly the condition that made
+          desktop `md:pb-0` all along. So A014's reserve is gone rather than retuned, and the
+          mobile/desktop split with it: one `bottom-3`. Clearance at maximum scroll measured 56px,
+          so the bottom of the document is still reachable, which is the property A014 existed to
+          protect.
+
+          THE MASK COULD NOT COLLAPSE WITH THE OFFSET, and did (amended 2026-08-17). Unifying to a
+          single `after:h-4` is correct for desktop, where `main` is `md:pb-0` and 16px spans the
+          whole 12px float. On mobile `main` still reserves the bar, so the strip to cover is
+          `offset + that reserve` = 12 + 60 = 72px, not 16px. Measured at 390x844 with content
+          scrolled behind the composer: the strip ended at y 787 while the tab bar starts at 791,
+          leaving a FULL-WIDTH 4px band of live document (rows 787-790 hit-tested at 253-372px
+          each) — the same defect P5 was written to close, reproduced by re-tuning one side of the
+          pair. The height is per-breakpoint again for that reason; `md:after:h-4` keeps desktop
+          exactly as this note describes it.
+
+          The three FIXED bottom-anchored chips (reader Continue, verse popover, chapter toast)
+          keep the full `3.75rem + safe-area` and must: fixed resolves against the VIEWPORT, which
+          the shell's padding does not move, so there the reserve is the only thing holding them
+          off the tab bar. Same token, opposite meaning — `tab-bar-reserved-once.test.ts` reads the
+          position type for that reason. */}
       <div className={turns.length === 0 ? 'flex flex-1 flex-col justify-center' : 'flex-1 space-y-8'}>
         {turns.length === 0 && (
           <div className="pb-8">
@@ -337,7 +408,11 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
               {EXAMPLES.map((ex) => (
                 <li key={ex} className="edge border-b">
                   <button
-                    onClick={() => ask(ex)}
+                    /* FILLS the composer; it used to `ask(ex)` outright. Submitting a question
+                       the reader never read is the wrong default on a control whose whole purpose
+                       is to show what a good question looks like — and signed out it now spends
+                       their click on an instant 401. */
+                    onClick={() => setQuestion(ex)}
                     className="group flex min-h-[56px] w-full items-center gap-3 py-3 text-left font-serif text-lg leading-snug text-stone-500 transition-colors ease-gentle hover:text-accent-700 dark:text-stone-400 dark:hover:text-accent-300"
                   >
                     <span className="flex-1">{ex}</span>
@@ -357,7 +432,15 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
           {/* Retry re-asks THIS turn's question, not whatever is in the composer — `ask` clears
               the composer on submit, so by the time a turn can fail its question exists only on
               the turn itself. */}
-          {turns.map((t) => <TurnView key={t.id} turn={t} onRetry={() => ask(t.question)} busy={busy} />)}
+          {turns.map((t) => (
+            <TurnView
+              key={t.id}
+              turn={t}
+              // Replace in place ONLY when retrying a failure; a completed answer's retry appends.
+              onRetry={() => ask(t.question, t.stage === 'error' ? t.id : undefined)}
+              busy={busy}
+            />
+          ))}
         </div>
         <div ref={bottomRef} className="scroll-mb-48 md:scroll-mb-36" />
       </div>
@@ -366,63 +449,60 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
           shadow. `.edge` owns the hairline and is unlayered, so a `focus-within:border-*`
           utility could never override it — focus is shown with the PRD's antique-gold
           outline (§10) instead of a border-colour swap. */}
-      {/* THE OFFSET IS MEASURED FROM `main`'s CONTENT BOX, WHICH ALREADY EXCLUDES THE TAB BAR.
-          This read `bottom-[calc(3.75rem+env(safe-area-inset-bottom)+0.25rem)]`, i.e. the mobile
-          tab bar's height again, on the reasonable-sounding assumption that a bottom offset is
-          measured from the screen. It is not: the scroller is `main` (app-shell.tsx:35) and a
-          sticky inset resolves against that scroller's CONTENT box, which `pb-[calc(3.75rem+
-          env(safe-area-inset-bottom))]` on the same line has already inset by the bar's height.
-          Measured at 390x844 (computed style, dev server): viewport 844, main padding-bottom 60,
-          composer bottom edge 720 = 844 - 60 - 64. So the box floated a whole tab bar ABOVE the
-          tab bar, wasting ~60px of a phone screen and covering that much more of the answer.
+      {/* The composer floats above the page bottom, which leaves a slot BELOW it that scrolling
+          content streamed straight through (owner-reported 2026-08-17, screenshot: a quote
+          sliding through the gap under the box). The after: strip fills that slot in the PAGE
+          background (body is bg-stone-50/dark:bg-stone-950, layout.tsx:134), so content vanishes
+          at the composer's bottom edge instead of reappearing beneath it. Top-edge slide-under is
+          ordinary sticky behavior and stays.
 
-          A `fixed` element DOES have to add the bar (it resolves against the viewport) — verified
-          by probe, bottom edge 784 — which is why selection-popover.tsx:272, work/[slug]/page.tsx:170
-          and read/[book]/[chapter]/page.tsx:417 keep the same expression and are NOT this bug.
-          `bottom-1` is the mobile twin of `md:bottom-3`: 4px above main's content box is 11px of
-          visible gap above the bar (the bar renders 53px into the 60px reserved for it), against
-          desktop's 12px above the scrollport. It carries no `env()` because both terms that
-          bracket it already do, so the gap holds at every safe-area inset instead of growing with
-          it.
+          ALL THREE of its geometry terms were wrong at some point, and each is the same trap: an
+          absolutely-positioned child resolves against the PADDING box, not the border box.
 
-          THE `after:` STRIP fills the slot below the box, which scrolling content streamed
-          straight through (owner-reported 2026-08-17, screenshot: a quote sliding through the gap
-          under the box), in the PAGE background (body is bg-stone-50/dark:bg-stone-950,
-          layout.tsx:134). Its height is `offset + main's padding-bottom` — it must reach the
-          bottom of the scrollport's padding box, not merely the top of the bar, because the bar's
-          rendered height is an emergent 53px (min-h-[52px] + 1px border) that no CSS here can
-          name.
+          `h`   = offset + `main`'s reserve. P5 shipped a hand-computed 68px against an ASSUMED
+                  60px bar (it renders 53px: `min-h-[52px]` + 1px border), leaving document live
+                  at y 787-790; N2 then moved the offset and left the height at 16px, leaving a
+                  full-width 4px band in the same place. Derive it, never type it.
+          `top` = `calc(100%+1px)`, NOT `top-full` — which starts one border-width ABOVE the
+                  border edge (measured: 779 against a border-box bottom of 780) and paints over
+                  the composer's own hairline and the bottom of its focus ring.
+          `inset-x` = the `-mx-2.5` result-card overhang PLUS the border. A bare `-1px` left a
+                  20px lateral gap (x 6-15 and 368-377) that a centre-line scan cannot see.
 
-          `top-[calc(100%+1px)]`, NOT `top-full`. An absolutely-positioned child resolves against
-          the PADDING box, so `top-full` starts the strip one border-width ABOVE the border edge
-          (measured: 779 against a border-box bottom of 780) and the strip then paints OVER the
-          composer's own bottom hairline and over the bottom of its focus-within outline — the
-          PRD §5 box rendered open-bottomed, and the app's primary input carried a three-sided
-          focus ring (WCAG 2.4.11). Proved by giving the form a 3px red bottom border and seeing
-          no red at all. The `+1px` moves the strip below the border instead of over it, which is
-          why the height needs no compensating pixel.
+          `outline-offset-[-2px]` belongs to the same fix: an outline is drawn OUTSIDE the border
+          box, so the ring's bottom 2px sat under the strip and the app's primary input carried a
+          three-sided focus indicator (WCAG 2.4.11). Drawing it inside keeps the ring above the
+          strip; starting the strip below the ring instead would reopen a 2px gap whenever the
+          composer is NOT focused.
 
-          `outline-offset-[-2px]` for the same reason, one layer out: an outline is drawn OUTSIDE
-          the border box, so the PRD §10 gold ring occupied y 768-770 while the strip began at 768
-          and clipped its bottom edge — a three-sided focus indicator on the app's primary input
-          (WCAG 2.4.11). Drawing it 2px inside keeps the whole ring above the strip. The
-          alternative, starting the strip below the ring, would open a 2px gap for content to
-          stream through whenever the composer is NOT focused, which is the defect this strip
-          exists to prevent.
+          HEADROOM IS 4px AND IT IS NOT ENFORCED. The strip is an absolutely-positioned descendant
+          of the scroll container, so it adds to scrollable overflow unless it fits inside this
+          column's `pb-4` (16px) plus `main`'s reserve (60px) = 76px against a 72px strip.
+          Measured: `main.scrollHeight` is 935 with the strip and 935 without, so no phantom
+          scroll today. Shrink this column's padding or grow the tab bar and /ask silently gains
+          dead scroll under every answer.
 
-          `inset-x-[calc(-0.625rem-1px)]`, not `-1px`: result cards are `-mx-2.5` (ResultLink,
-          above), so they are 10px wider than this form on each side and a `-1px` mask left a
-          20px-wide lateral gap for them to paint through — measured at x 6-15 and 368-377, at
-          every row of the band. A y-scan down the centre line cannot see that, which is how it
-          survived P5. The `-1px` term is the border, for the same reason `top-full` needs one:
-          an absolutely-positioned child resolves against the PADDING box, so a bare `-0.625rem`
-          still left x=6 and x=377 live (measured, 22 hits over an 11-row band).
-
-          The previous 68px was hand-computed against an assumed 60px bar and fell 4px short: a
-          strip of document was live at y 787-790 on every scroll (hit-tested, and visible in the
-          before/after screenshots). Top-edge slide-under is ordinary sticky behavior and stays. */}
+          `web/test/invariants/ask-composer-mask.test.ts` derives all of this from this file and
+          `app-shell.tsx` and fails if the pair drifts. */}
       <form onSubmit={(e) => { e.preventDefault(); ask(question); }}
-        className="edge sticky bottom-1 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-[-2px] focus-within:outline-accent-600 after:absolute after:inset-x-[calc(-0.625rem-1px)] after:top-[calc(100%+1px)] after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.25rem)] after:bg-stone-50 md:bottom-3 md:after:h-4 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400">
+        className="edge sticky bottom-3 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-[-2px] focus-within:outline-accent-600 after:absolute after:inset-x-[calc(-0.625rem-1px)] after:top-[calc(100%+1px)] after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.75rem)] md:after:h-4 after:bg-stone-50 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400">
+        {/* Q1 — 13 of 20 QA-fleet sessions typed a full question and only then learned that
+            asking needs an account: the composer, the lane chips and the example prompts all
+            invited input and nothing said otherwise until the POST came back 401. The notice
+            rides the composer rather than the page top, so it cannot scroll away from the
+            control it constrains. NOT an alert and NOT a disabled composer: signed-out is the
+            app's own auth state, not a fault (the prayer-journal lesson), and a reader who
+            signs in on another tab can still submit what they have already typed. The second
+            sentence exists because the fleet also found Search working anonymously while Ask
+            did not, and read the pair as broken rather than as a boundary. */}
+        {!signedIn && (
+          <p className="mb-2 border-b border-stone-200 px-1.5 pb-2 font-sans text-xs leading-relaxed text-stone-600 dark:border-stone-800 dark:text-stone-400">
+            <Link href="/auth/sign-in" className="font-semibold underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-400">
+              Sign in
+            </Link>
+            {' '}to ask — answers are kept in your research history. Reading and search stay open to everyone.
+          </p>
+        )}
         <textarea
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
@@ -456,6 +536,28 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
   );
 }
 
+// A017 — THE FRAME IS CONDITIONAL ON THE STAGE; THE MESSAGE WAS NOT, so the banner could paint
+// as a bordered box with nothing in it but "Ask again".
+//
+// The finding this closes was filed as "momentary empty error banner frame when retrying a failed
+// Ask", and THAT mechanism is disproven: a retry replaces the failed turn in ONE batched update
+// (`ask`, above — setTurns/setQuestion/setBusy all run before the first `await`), so no committed
+// render exists between the old banner and the new progress view. A MutationObserver over a real
+// retry records `alerts=1 "Please sign in…"` → `alerts=0` → `alerts=1 "Please sign in…"`, never an
+// alert without its message.
+//
+// What DOES render the reported box is a `{stage:'error'}` event carrying no `message`: the stream
+// is `JSON.parse(line) as StreamEvent` (a CAST over external input, not a parse), and `error:
+// ev.message` writes whatever came back — undefined included — straight into state. Measured
+// against this component, that renders an alert whose entire text content is "Ask again".
+// `api/ask/stream/route.ts:145` is the only writer today and always sets a message, so this is
+// latent rather than live; it is guarded here because the guarantee wanted is "a failure always
+// says what failed", and that must not depend on a remote field's presence.
+//
+// Falls back to a message rather than dropping the frame: the frame carries the retry control and
+// the sign-in link, so a silent failure would be the worse end of the same fault.
+const ERROR_FALLBACK = 'Something went wrong. Please try again.';
+
 function TurnView({ turn, onRetry, busy }: { turn: Turn; onRetry: () => void; busy: boolean }) {
   return (
     <div>
@@ -480,7 +582,19 @@ function TurnView({ turn, onRetry, busy }: { turn: Turn; onRetry: () => void; bu
       </div>
       {turn.stage === 'error' ? (
         <div role="alert" className="border border-red-300/60 bg-red-50/60 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
-          {turn.error}
+          {/* A017 — `trim()`, not `??`: an empty or whitespace-only message is the same empty box
+              as a missing one, and `??` would let '' through. See ERROR_FALLBACK above. */}
+          {turn.error?.trim() ? turn.error : ERROR_FALLBACK}
+          {/* Q1 — the 401 asked the reader to sign in and offered only "Ask again", which
+              re-fails identically (2026-08-16 QA fleet; the most-repeated finding of the run).
+              The way out belongs in the failure itself, not elsewhere in the nav. */}
+          {turn.needsSignIn && (
+            <p className="mt-2">
+              <Link href="/auth/sign-in" className="font-semibold underline underline-offset-2 hover:text-red-900 dark:hover:text-red-100">
+                Sign in to ask
+              </Link>
+            </p>
+          )}
           {/* An error told the reader to "please try again" and gave them nothing to try it
               with — the question is already gone from the composer by then (`ask` clears it),
               so trying again meant retyping it. */}

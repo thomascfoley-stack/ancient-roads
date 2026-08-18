@@ -4,6 +4,7 @@ import { currentUser } from '@/lib/session';
 import { listStudies, STUDIES_PAGE_LIMIT, type Study } from '@/lib/studies';
 import { DISPLAY_LOCALE } from '@/lib/locale';
 import { NewStudyButton } from '@/components/study-editor';
+import { DeleteStudyButton } from '@/components/study-delete-button';
 
 // `/studies` — the My Studies list (design §7.1/§7.4; E1: the user-facing name is "My Studies";
 // E3: many studies, not one master doc).
@@ -70,11 +71,13 @@ export default async function StudiesPage({
       ? `/studies?beforeUpdatedAt=${encodeURIComponent(lastOfPage.updated_at)}&beforeId=${encodeURIComponent(lastOfPage.id)}`
       : null;
 
+  // The delete control sits OUTSIDE the <Link>, not inside it: a button nested in an anchor is
+  // invalid, and a click on it would navigate as well as delete (B028).
   const row = (s: Study) => (
-    <li key={s.id} className="border-t edge">
+    <li key={s.id} className="flex items-center gap-2 border-t edge">
       <Link
         href={`/studies/${s.id}`}
-        className="group block px-1 py-6 transition-colors ease-gentle hover:bg-stone-200/10 dark:hover:bg-stone-800/20"
+        className="group block min-w-0 flex-1 px-1 py-6 transition-colors ease-gentle hover:bg-stone-200/10 dark:hover:bg-stone-800/20"
       >
         <span className="mb-2 flex items-center gap-3 font-sans text-sm small-caps tracking-[0.08em] text-stone-500 dark:text-stone-400">
           {when(s.updated_at)}
@@ -83,6 +86,7 @@ export default async function StudiesPage({
           {s.title}
         </span>
       </Link>
+      <DeleteStudyButton id={s.id} title={s.title} />
     </li>
   );
 

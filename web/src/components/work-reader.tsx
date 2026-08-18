@@ -365,7 +365,7 @@ export function WorkReader({
 
   return (
     <div ref={rootRef}>
-      <WorkHeader ref={headerRef} source={source} onOpenToc={onOpenToc} />
+      <WorkHeader ref={headerRef} source={source} slug={slug} signedIn={signedIn} onOpenToc={onOpenToc} />
 
  {/* The reading column sits directly on the parchment page — PRD §3: hairlines and
             whitespace carry separation, so the bordered "page card" (edge + shadow) is gone.

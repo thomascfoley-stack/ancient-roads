@@ -19,6 +19,7 @@ import { listHighlights, listNotes } from '@/lib/annotations';
 import { getDb, runAsUser } from '@/lib/db';
 import { requireDbInCi } from '../helpers/env';
 import { announceSkip } from '../helpers/loud-skip';
+import { sweepQaResidue } from '../helpers/qa-residue';
 
 const dbUrl = requireDbInCi();
 const A = `qa-rls-a-${Date.now()}`;
@@ -62,19 +63,47 @@ describe.skipIf(SKIP)('Phase 3 annotation tables — two-account RLS tenancy (ex
     ]);
   }, 60_000);
 
+  // Teardown in two passes, because they fail differently.
+  //
+  // PASS 1 is the RLS-scoped delete this suite has always done — exact user ids, through
+  // `runAsUser`, needing nothing but app_runtime. It is the one that runs everywhere.
+  //
+  // It used to be a single `for` loop over one batched `runAsUser` call, and that is how this
+  // suite stranded rows in seven tables on 2026-08-17: any throw inside A's batch skipped the
+  // remaining statements AND the whole B iteration. Each user is now independent, and a failure
+  // is REPORTED rather than ending the teardown.
+  //
+  // PASS 2 is the prefix sweep, which is the only thing that can ever reap an INTERRUPTED run —
+  // once this process dies, `Date.now()` ids are unrecoverable and pass 1 can no longer name the
+  // rows. It needs the owner role (RLS makes a prefix sweep meaningless as app_runtime) and
+  // announces itself when it cannot run. See helpers/qa-residue.ts.
   afterAll(async () => {
     if (!dbUrl) return;
+    // Children before parents: annotation_tags references tags. Written out rather than looped
+    // over a table-name list because the Neon driver's tagged template cannot bind an IDENTIFIER,
+    // and building the SQL by string concatenation to save seven lines would be the worse trade.
+    const steps: ReadonlyArray<{ table: string; run: (u: string) => Promise<unknown[][]> }> = [
+      { table: 'annotation_tags', run: (u) => runAsUser(u, (sql) => [sql`DELETE FROM annotation_tags WHERE user_id = ${u}`]) },
+      { table: 'tags', run: (u) => runAsUser(u, (sql) => [sql`DELETE FROM tags WHERE user_id = ${u}`]) },
+      { table: 'reading_progress', run: (u) => runAsUser(u, (sql) => [sql`DELETE FROM reading_progress WHERE user_id = ${u}`]) },
+      { table: 'library_items', run: (u) => runAsUser(u, (sql) => [sql`DELETE FROM library_items WHERE user_id = ${u}`]) },
+      { table: 'bookmarks', run: (u) => runAsUser(u, (sql) => [sql`DELETE FROM bookmarks WHERE user_id = ${u}`]) },
+      { table: 'highlights', run: (u) => runAsUser(u, (sql) => [sql`DELETE FROM highlights WHERE user_id = ${u}`]) },
+      { table: 'notes', run: (u) => runAsUser(u, (sql) => [sql`DELETE FROM notes WHERE user_id = ${u}`]) },
+    ];
     for (const u of [A, B]) {
-      await runAsUser(u, (sql) => [
-        sql`DELETE FROM annotation_tags WHERE user_id = ${u}`,
-        sql`DELETE FROM tags WHERE user_id = ${u}`,
-        sql`DELETE FROM reading_progress WHERE user_id = ${u}`,
-        sql`DELETE FROM library_items WHERE user_id = ${u}`,
-        sql`DELETE FROM bookmarks WHERE user_id = ${u}`,
-        sql`DELETE FROM highlights WHERE user_id = ${u}`,
-        sql`DELETE FROM notes WHERE user_id = ${u}`,
-      ]);
+      for (const step of steps) {
+        try {
+          await step.run(u);
+        } catch (e) {
+          console.error(`[teardown] ${step.table} for ${u} failed: ${(e as Error).message}`);
+        }
+      }
     }
+    await sweepQaResidue(
+      ['qa-rls-a-', 'qa-rls-b-'],
+      ['annotation_tags', 'tags', 'reading_progress', 'library_items', 'bookmarks', 'highlights', 'notes'],
+    );
   }, 60_000);
 
   it('A sees exactly its own row in every Phase 3 table', async () => {

@@ -194,7 +194,15 @@ export default async function CatalogPage({
  className="group flex min-h-[44px] min-w-0 flex-1 items-center justify-between gap-3 py-3 transition-colors ease-gentle hover:bg-accent-50/40 dark:hover:bg-accent-950/20"
               >
                 <span className="min-w-0">
-                  <span className="block truncate font-scripture text-[17px] text-stone-900 group-hover:text-accent-800 dark:text-stone-100 dark:group-hover:text-accent-300">{w.title}</span>
+                  {/* `title` because the line above it TRUNCATES. `truncate` cuts with an ellipsis
+                      and puts the rest of the string nowhere — at 768px "The Complete Works of
+                      Thomas Manton, Volume 3" and Volume 4 are two rows a reader cannot tell
+                      apart, since the part that identifies them is the part cut off (QA A094).
+                      The tooltip goes on the truncating element rather than on the whole row, so
+                      it appears where the text a reader is squinting at actually is. It does not
+                      touch the link's accessible name: name-from-contents wins over `title`, and
+                      the contents are unchanged. */}
+                  <span title={w.title} className="block truncate font-scripture text-[17px] text-stone-900 group-hover:text-accent-800 dark:text-stone-100 dark:group-hover:text-accent-300">{w.title}</span>
                   <span className="block truncate text-micro uppercase tracking-wider text-stone-500 dark:text-stone-400">
                     {w.author ?? 'Unattributed'}
                     {w.tradition ? ` · ${w.tradition}` : ''}

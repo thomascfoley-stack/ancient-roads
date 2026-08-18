@@ -1,6 +1,9 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { isFetchableChapter } from '@/lib/chapter-param';
+import { DEFAULT_BIBLE_HREF, DEFAULT_BIBLE_LABEL, saveBiblePosition } from '@/lib/bible-position';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   BOOK_BY_BOOK_SLUG,
@@ -16,6 +19,8 @@ import {
 } from '@/lib/bible';
 import { resolveBookSlug } from '@bible/ref-parse';
 import { ReaderHeader } from '@/components/reader-header';
+// A035: the recovery page opens the SAME picker the header does, rather than growing its own.
+import { BookPicker } from '@/components/book-picker';
 import { VerseDisplay } from '@/components/verse-display';
 import { ChapterNav } from '@/components/chapter-nav';
 import { Interlinear } from '@/components/interlinear';
@@ -130,6 +135,10 @@ export default function ReaderPage() {
   const [define, setDefine] = useState<
     { english: string; verse: number; matches: EnglishMatch[]; lexiconDown: boolean } | null
   >(null);
+  // A035: the book/chapter picker offered from the error page below, so an impossible chapter is
+  // not a dead end. Declared up here with the other state because the error branch returns EARLY —
+  // a `useState` after that return would be a conditional hook.
+  const [recoveryPickerOpen, setRecoveryPickerOpen] = useState(false);
 
   const handleTranslationChange = useCallback((t: Translation) => {
     setTranslation(t);
@@ -156,6 +165,25 @@ export default function ReaderPage() {
       .then(setData)
       .catch(() => setError('Failed to load chapter'));
   }, [book, fetchSlug, chapterNum, translation, hydrated]);
+
+  // A040 — REMEMBER WHERE THE READER IS, so closing the tab does not send them back to John 1.
+  //
+  // This is the write half of the record `lib/bible-position.ts` documents; `mobile-nav.tsx` is the
+  // read half (A034). It is deliberately keyed on the book and chapter ALONE, not on `data`: the
+  // position is where they navigated, not what finished downloading, so a slow or failed chapter
+  // fetch still leaves them somewhere sensible to come back to.
+  //
+  // AN EFFECT, NOT A RENDER-TIME WRITE. Same rule as every other storage touch on this page (see
+  // the translation note at the top of the file): nothing may read or write localStorage until
+  // after mount. A write during render would also fire on the server, where there is no storage.
+  //
+  // `saveBiblePosition` re-validates and refuses an out-of-range chapter, so the A035 case below
+  // is never recorded — otherwise the reader's own dead end would become the destination their
+  // next Bible tap aims at.
+  useEffect(() => {
+    if (!book) return;
+    saveBiblePosition(book.slug, chapterNum);
+  }, [book, chapterNum]);
 
   // ── deep link to a verse (`/read/jhn/3#v16`) ───────────────────────────────────────────────
   const openStudy = useCallback(
@@ -209,6 +237,8 @@ export default function ReaderPage() {
 
   // Prefetch commentary for the chapter.
   useEffect(() => {
+    // A084 — unguarded, this prefetched `.../NaN` on every malformed chapter URL.
+    if (!isFetchableChapter(book?.bookNum, chapterNum)) return;
     const key = `${fetchSlug}:${chapterNum}`;
     if (commentaryCache.has(key)) return;
     fetchCommentary(fetchSlug, chapterNum).then((result) => {
@@ -219,7 +249,8 @@ export default function ReaderPage() {
   // Prefetch original-language words for the chapter (small per-chapter file);
   // powers both the interlinear view and the study panel's Word study tab.
   useEffect(() => {
-    if (!book) return;
+    // A084 — same as the commentary prefetch above: guarded the book, never the chapter.
+    if (!isFetchableChapter(book?.bookNum, chapterNum)) return;
     setOriginal(null);
     fetchOriginal(fetchSlug, chapterNum).then(setOriginal);
   }, [book, fetchSlug, chapterNum]);
@@ -272,10 +303,87 @@ export default function ReaderPage() {
     : '';
   const studyWords = study && original ? original.verses[String(study.verse)] ?? [] : null;
 
+  // A027 — THE VERSE BEFORE AND AFTER THE OPEN ONE, so the panel can step through the chapter
+  // instead of being closed and reopened for every verse.
+  //
+  // Derived from `data.verses`, NOT from `study.verse ± 1`. The list is filtered to verses that
+  // actually render — VerseDisplay skips `!v.text` — so "next" is the next verse the reader can
+  // SEE, and a gap in the chapter's text cannot strand the panel on a blank one. `null` at either
+  // end is what disables the control; an unknown verse (the panel can be open before `data` lands)
+  // disables both, which is honest rather than a guess.
+  const studyNeighbours = useMemo(() => {
+    if (!study || !data) return { prev: null, next: null };
+    const rendered = data.verses.filter((v) => v.text).map((v) => v.verse);
+    const i = rendered.indexOf(study.verse);
+    if (i === -1) return { prev: null, next: null };
+    return { prev: rendered[i - 1] ?? null, next: rendered[i + 1] ?? null };
+  }, [study, data]);
+
+  // A027/A028 — move the open verse WITHIN the chapter. Not `openStudy`, because that takes a tab
+  // and would make every caller decide one: `s.tab` KEEPS the reader's tab, which is the whole
+  // point of stepping (reading commentary verse by verse must not drop you back on Commentaries'
+  // sibling every step — and StudyPanel holds the tab across a verse change on its own side too).
+  // `focusWordIdx`/`focusWord` are dropped by omission: a word index belongs to the verse it was
+  // taken from, and carrying `focusWord` over would swap the panel for WordPanel mid-step.
+  const navigateStudy = useCallback((verse: number) => {
+    setStudy((s) => (s ? { verse, tab: s.tab } : s));
+  }, []);
+
+  // A035 — AN IMPOSSIBLE CHAPTER MUST NOT BE A DEAD END.
+  //
+  // `/read/psa/999` used to render this one grey sentence and nothing else: no link, no picker, no
+  // nav (the reader route has no chrome of its own), so the only way out of the app's own error was
+  // the browser's back button. The page ALREADY KNOWS the way out — it prints the book's name and
+  // its chapter count in the very message, which means it is holding the `Book` the whole time.
+  //
+  // Two cases, because they can offer different amounts:
+  //   - the BOOK resolved and the chapter did not (`psa/999`, `psa/abc`): offer that book's first
+  //     chapter, and the picker. Send them to the book they ASKED for — landing them on John after
+  //     they asked for a psalm is just a politer dead end.
+  //   - the book did not resolve at all (`enoch/1`): there is no book to offer a chapter of, so
+  //     offer the default way into Scripture. The picker needs a `currentBook` and there isn't one.
   if (error) {
     return (
-      <div className="flex min-h-dvh items-center justify-center">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-5 px-6 text-center">
         <p className="text-lg text-stone-500 dark:text-stone-400">{error}</p>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {book ? (
+            <>
+              <Link
+                href={`/read/${book.slug}/1`}
+                className="min-h-[44px] border edge px-4 py-2.5 text-sm font-semibold text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:text-stone-200 dark:hover:bg-stone-200 dark:hover:text-stone-950"
+              >
+                {book.name} 1
+              </Link>
+              <button
+                onClick={() => setRecoveryPickerOpen(true)}
+                className="min-h-[44px] border edge px-4 py-2.5 text-sm font-medium text-stone-500 hover:bg-stone-900 hover:text-stone-50 dark:text-stone-400 dark:hover:bg-stone-200 dark:hover:text-stone-950"
+              >
+                Choose another chapter
+              </button>
+            </>
+          ) : (
+            // Label and href both come from `lib/bible-position.ts`, derived from one slug, so a
+            // link that says "John 1" cannot start pointing somewhere else.
+            <Link
+              href={DEFAULT_BIBLE_HREF}
+              className="min-h-[44px] border edge px-4 py-2.5 text-sm font-semibold text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:text-stone-200 dark:hover:bg-stone-200 dark:hover:text-stone-950"
+            >
+              {DEFAULT_BIBLE_LABEL}
+            </Link>
+          )}
+        </div>
+        {/* The SAME BookPicker the header opens — reused, not re-built, so the recovery path and
+            the normal path cannot drift. `currentChapter={chapterNum}` deliberately: the requested
+            chapter does not exist, so nothing in the grid highlights, which is the honest picture
+            (passing 1 would highlight a chapter the reader is not in). */}
+        {recoveryPickerOpen && book && (
+          <BookPicker
+            currentBook={book}
+            currentChapter={chapterNum}
+            onClose={() => setRecoveryPickerOpen(false)}
+          />
+        )}
       </div>
     );
   }
@@ -335,6 +443,7 @@ export default function ReaderPage() {
             notedVerses={new Set(notes.keys())}
             bookmarkedVerses={bookmarks}
             onToggleBookmark={toggleBookmark}
+            onClearHighlight={clearVerse}
             signedIn={signedIn}
             onAddHighlight={addHighlight}
             onOpen={(verse, tab) => openStudy(verse, tab)}
@@ -387,6 +496,9 @@ export default function ReaderPage() {
           lang={original?.lang ?? null}
           defaultTab={study.tab}
           focusWordIdx={study.focusWordIdx}
+          prevVerse={studyNeighbours.prev}
+          nextVerse={studyNeighbours.next}
+          onNavigate={navigateStudy}
           verseId={encodeVerseId({ book: book.bookNum, chapter: chapterNum, verse: study.verse })}
           annotation={{
             color: highlights.get(study.verse)?.at(-1)?.color ?? null,

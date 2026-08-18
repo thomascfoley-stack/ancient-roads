@@ -13,6 +13,7 @@ import { runAsUser } from '@/lib/db';
 import { createDocument, getDocument, listDocuments, setDocStatus } from '@/lib/user-corpus/documents';
 import { MAX_ATTEMPTS, STALE_CLAIM_MINUTES, drain, queueStats, reapExhausted } from '@/lib/user-corpus/queue';
 import { runtimeDbUrl, seedOwnerUrl } from '../helpers/env';
+import { announceSkip } from '../helpers/loud-skip';
 
 const APP_URL = runtimeDbUrl();
 // Only the lock-holder in the SKIP LOCKED test uses this. It must be an INDEPENDENT connection:
@@ -30,6 +31,21 @@ if (!APP_URL) {
       'Set it to the lane-b app_runtime URL to run these.',
   );
 }
+
+// …AND THE SUITE HAS TWO PRECONDITIONS, NOT ONE. The guard above covers APP_URL, which is all
+// seven other cases need. The SKIP LOCKED case additionally needs OWNER_URL, because it must hold
+// a row lock from a connection that is NOT the drain's. With OWNER_URL undefined, that test built
+// `new Client({ connectionString: undefined })`, which is not an error — pg falls back to libpq
+// defaults and dials localhost:5432. On a machine with no local Postgres that is ECONNREFUSED, so
+// a MISSING CREDENTIAL was reported as a FAILING INVARIANT: an unearned RED, and the exact mirror
+// of the unearned green this file's own header warns about. It is the failure the QA ledger
+// carried as "pre-existing ECONNREFUSED in user-corpus/queue-never-drops" for the life of the
+// branch, because it looks like a broken queue and is a missing env var.
+const SKIP_LOCK_CASE = announceSkip(
+  'user-corpus queue — FOR UPDATE SKIP LOCKED under a concurrent lock holder',
+  [{ name: 'DATABASE_URL (an independent owner connection, via seedOwnerUrl)', present: Boolean(OWNER_URL) }],
+  'that a drain steps over a row another worker holds instead of blocking on it',
+);
 
 async function seedQueued(userId: string, title: string) {
   return createDocument(userId, {
@@ -75,7 +91,7 @@ describeDb('the queue never silently drops a document', () => {
     expect(after?.parseError).toMatch(/upload/i);
   });
 
-  it('skips a row another worker holds, instead of blocking on it', async () => {
+  it.skipIf(SKIP_LOCK_CASE)('skips a row another worker holds, instead of blocking on it', async () => {
     // WHY THIS SHAPE, AND NOT "run two drains and check for a double-claim". That version was
     // written first and it is a FALSE-CONFIDENCE TEST: with FOR UPDATE SKIP LOCKED deleted from
     // claimNext it went red twice and then PASSED, because whether two drains actually collide is

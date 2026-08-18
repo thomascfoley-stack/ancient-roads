@@ -44,7 +44,7 @@ const CTA =
 
 export default function MarketingHome() {
   return (
-    <main className="relative isolate">
+    <main id="main" className="relative isolate">
       <MarketingGround veil="light" />
       <MarketingNav active="home" />
 

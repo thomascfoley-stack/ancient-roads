@@ -14,6 +14,7 @@ import {
 import { runAsUser } from '@/lib/db';
 import { requireDbInCi } from './helpers/env';
 import { announceSkip } from './helpers/loud-skip';
+import { sweepQaResidue } from './helpers/qa-residue';
 
 const dbUrl = requireDbInCi();
 const U = `qa-research-edge-${Date.now()}`;
@@ -35,9 +36,24 @@ const answer = (over: Partial<StoredAnswer> = {}): StoredAnswer => ({
 });
 
 describe.skipIf(SKIP)('research store — edge cases (executed)', () => {
+  // `messages` is not deleted here and does not need to be: messages_chat_id_fkey is
+  // ON DELETE CASCADE (verified against the live schema, not read off a migration), so removing
+  // the chat takes its turns with it.
+  //
+  // What DID need fixing is everything around that. The delete was `.catch(() => {})`, so a
+  // teardown that failed said nothing at all — and CLAUDE.md's "no empty catch, no silent
+  // failures" applies to a test's cleanup as much as to product code, because this is the cleanup
+  // whose silence lets residue build up on a shared database. It also had no answer for an
+  // INTERRUPTED run: `U` carries a `Date.now()`, so once this process is gone nothing can name
+  // its rows again. That is how 3 chats and 7 messages were still sitting on dev hours later.
   afterAll(async () => {
     if (!dbUrl) return;
-    await runAsUser(U, (sql) => [sql`DELETE FROM chats WHERE user_id = ${U} AND persona = 'ask'`]).catch(() => {});
+    try {
+      await runAsUser(U, (sql) => [sql`DELETE FROM chats WHERE user_id = ${U} AND persona = 'ask'`]);
+    } catch (e) {
+      console.error(`[teardown] chats for ${U} failed: ${(e as Error).message}`);
+    }
+    await sweepQaResidue(['qa-research-edge-'], ['chats']);
   });
 
   it('E1: a crashed ask (question with no answer) renders as an unanswered turn, not lost', async () => {

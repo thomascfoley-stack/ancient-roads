@@ -305,3 +305,85 @@ export function saveWorkProgress(p: WorkProgress): boolean {
     return false;
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// THE ACCOUNT-SIDE POSITION (ledger N1). The two records above are per-DEVICE (localStorage);
+// `reading_progress` is per-ACCOUNT and is what the Library hub's "Continue reading" section
+// reads. They are complementary, not duplicates: localStorage keeps a signed-out reader's place
+// on this device, the account record carries it to the next one.
+//
+// Everything below is PURE, and deliberately so — it is the same file's standing rule (see the
+// header), and it is what lets the SAME contract be enforced on both sides of the wire: the
+// reader decides *when* to send with `shouldSyncProgress`, and the route decides *what it will
+// accept* with `parseProgressBody`. One definition, two callers, no drift.
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+/** A position as it crosses the wire. `percent` is a 0..1 fraction of the whole work (028's
+ *  CHECK bounds it), null when the work's length is not yet known. */
+export interface ProgressPosition {
+  ordinal: number;
+  percent: number | null;
+}
+
+/** What the client remembers about its last successful sync. */
+export interface ProgressSyncState {
+  ordinal: number;
+  /** epoch ms */
+  at: number;
+}
+
+/**
+ * Floor on how often a reader's scroll may reach the database.
+ *
+ * The localStorage record is throttled at 500ms, which is right for a same-process write and
+ * badly wrong for a per-user DB round trip on a scroll path (CLAUDE.md: keep writes off the
+ * request path). 30s plus "the ordinal actually changed" means an ordinary reading session
+ * writes single-digit times, and the position is still exact because the reader's departure is
+ * flushed unconditionally — see `shouldSyncProgress`'s `force`.
+ */
+export const PROGRESS_SYNC_MIN_MS = 30_000;
+
+/**
+ * Is this position worth a server round trip?
+ *
+ * Three rules, in order:
+ *   1. Nothing synced yet — yes. Opening a work is exactly what "Continue reading" is for.
+ *   2. Same section as the last sync — no, at any cadence. Scrolling within one section moves
+ *      `percent` by a hair on a long work, and the cursor the hub links to is the ORDINAL.
+ *   3. Otherwise — only once the floor has elapsed, unless `force`.
+ *
+ * `force` is the tab going away (hide / pagehide / unmount). It skips the clock but NOT rule 2,
+ * because a flush with nothing new to say is still a wasted write.
+ */
+export function shouldSyncProgress(
+  last: ProgressSyncState | null,
+  next: ProgressSyncState,
+  opts: { force?: boolean; minMs?: number } = {},
+): boolean {
+  if (!last) return true;
+  if (next.ordinal === last.ordinal) return false;
+  if (opts.force) return true;
+  return next.at - last.at >= (opts.minMs ?? PROGRESS_SYNC_MIN_MS);
+}
+
+/**
+ * Validate an inbound position at the edge, before it reaches the database.
+ *
+ * Returns null for anything the contract does not allow. Migration 028 CHECK-constrains both
+ * columns (`last_ordinal >= 1`, `percent BETWEEN 0 AND 1`), so every rejection here would also
+ * be refused by Postgres — the point is that it is refused BEFORE that, as a 400 the client can
+ * act on rather than a 500 and a log line. `Number.isFinite` is what keeps NaN and Infinity out:
+ * both are `typeof 'number'`, and NaN passes every comparison this could otherwise be written as.
+ */
+export function parseProgressBody(body: unknown): ProgressPosition | null {
+  if (typeof body !== 'object' || body === null) return null;
+  const { ordinal, percent } = body as { ordinal?: unknown; percent?: unknown };
+
+  if (typeof ordinal !== 'number' || !Number.isInteger(ordinal) || ordinal < 1) return null;
+
+  // `percent` is optional and nullable — a work whose total is not yet known reports no fraction.
+  if (percent === null || percent === undefined) return { ordinal, percent: null };
+  if (typeof percent !== 'number' || !Number.isFinite(percent)) return null;
+  if (percent < 0 || percent > 1) return null;
+  return { ordinal, percent };
+}

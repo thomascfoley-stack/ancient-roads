@@ -544,7 +544,13 @@ export default function PassageSearchPage() {
                 onChange={(e) => setAuthorFilter(e.target.value)}
                 className="min-h-[44px] max-w-full border edge bg-transparent px-3 text-base text-stone-800 sm:min-h-0 sm:py-1.5 sm:text-sm dark:text-stone-100"
               >
-                <option value="all">All sources ({grouped.length})</option>
+                {/* "authors", not "sources": every option below this one is `g.author`, and the
+                    header three hundred lines up already says "N sources across the library" from
+                    a DIFFERENT set (the whole-library manifest, not this passage's results). Two
+                    counts of two different things wearing one noun on one screen — three of the
+                    2026-08-16 QA fleet's twenty sessions independently filed it as an arithmetic
+                    contradiction. Neither number was ever wrong; the label was. */}
+                <option value="all">All authors ({grouped.length})</option>
                 {grouped.map((g) => (
                   <option key={g.author} value={g.author}>{g.author}</option>
                 ))}

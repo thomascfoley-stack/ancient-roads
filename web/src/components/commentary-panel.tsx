@@ -479,11 +479,6 @@ export function CommentaryPanel({
           </div>
         )}
 
-        <div className="border-t border-stone-500/25 px-5 py-5 text-center">
-          <p className="font-scripture text-sm text-stone-500 italic dark:text-stone-400">
-            Nevertheless, not as I will, but as you will. . . . Your will be done!
-          </p>
-        </div>
       </div>
     </div>
   );

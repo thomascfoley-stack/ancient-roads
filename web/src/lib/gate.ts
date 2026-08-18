@@ -34,6 +34,15 @@ export function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.has(pathname);
 }
 
+// The human-facing subset of PUBLIC_PATHS: the marketing PAGES, without the waitlist API or the
+// image assets. DERIVED, never typed — `app/sitemap.ts` publishes this list, and a hand-kept copy
+// would eventually advertise a URL the gate answers with a 307, or worse, name a gated route.
+// Adding an entry to PUBLIC_PATHS above is the only way to add one here, which is the intent:
+// the sitemap can never claim more than the wall actually serves.
+export const PUBLIC_MARKETING_ROUTES: string[] = [...PUBLIC_PATHS].filter(
+  (p) => !p.startsWith('/api/') && !/\.[a-z0-9]+$/i.test(p),
+);
+
 export async function gateToken(password: string): Promise<string> {
   const bytes = new TextEncoder().encode(`ancient-paths-gate:${password}`);
   const digest = await crypto.subtle.digest('SHA-256', bytes);

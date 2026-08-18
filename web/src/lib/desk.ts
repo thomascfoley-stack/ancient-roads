@@ -85,25 +85,58 @@ export function decodePane(raw: string): Pane | null {
 }
 
 /**
- * Parse the whole desk from `?p=` values (repeated, or comma-joined).
+ * What the parser did with a desk URL: the panes that fit, and how many did not.
+ *
+ * A078 — THE CAP WAS ENFORCED IN SILENCE. `?p=a&p=b&p=c&p=d` rendered three panes and said nothing
+ * about the fourth, so a reader who shared or hand-edited a four-pane desk got a page that looked
+ * complete and was not. The rule at the top of this file — "a missing pane is visibly missing" —
+ * holds when you know how many you asked for; the person opening a link someone else sent does
+ * not. The cap stays exactly as it is; what changes is that it now REPORTS, and the surface says
+ * so (see app/desk/page.tsx).
+ *
+ * `overflow` counts ONLY panes that parsed AND were not already on the desk, because those are the
+ * only ones the reader actually lost. A malformed `p=` was never a pane (that is `decodePane`'s
+ * own documented rule, and it has its own reason), and a duplicate is already in front of them. A
+ * notice that announced either would name a loss that did not happen, which is a worse failure
+ * than the silence it replaces — the count has to mean one thing.
+ */
+export interface DeskDecodeReport {
+  panes: Pane[];
+  /** Valid, distinct panes in the URL beyond MAX_PANES — the ones that did not open. */
+  overflow: number;
+}
+
+/**
+ * Parse the whole desk from `?p=` values (repeated, or comma-joined), reporting the overflow.
  *
  * Deduped, so the same work cannot occupy two panes — that is always a mistake and it wastes one of
  * three slots. Truncated to MAX_PANES *after* dedupe, so `a,a,b,c` yields three panes rather than
  * two: deduping first is what makes the cap mean "three distinct things".
  */
-export function decodeDesk(values: readonly string[]): Pane[] {
+export function decodeDeskReport(values: readonly string[]): DeskDecodeReport {
   const seen = new Set<string>();
   const out: Pane[] = [];
+  let overflow = 0;
   for (const raw of values.flatMap((v) => v.split(','))) {
     const pane = decodePane(raw);
     if (!pane) continue;
     const key = encodePane(pane);
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push(pane);
-    if (out.length === MAX_PANES) break;
+    // Past the cap we keep SCANNING instead of breaking — the only change to the original loop.
+    // A count of what did not fit cannot be known without reading to the end, and the RESULT is
+    // still bounded at MAX_PANES; only the tally grows. This is not new work in the bad case
+    // either: the old loop already walked the whole input whenever the first MAX_PANES entries
+    // were not all valid and distinct, which is exactly the hostile-URL case.
+    if (out.length < MAX_PANES) out.push(pane);
+    else overflow += 1;
   }
-  return out;
+  return { panes: out, overflow };
+}
+
+/** The panes alone, for the callers that have nothing to say about the overflow. */
+export function decodeDesk(values: readonly string[]): Pane[] {
+  return decodeDeskReport(values).panes;
 }
 
 /** Serialise a desk back to a query string, e.g. `p=scripture:john/3&p=work:x`. */
@@ -124,6 +157,17 @@ export function deskHref(panes: readonly Pane[]): string {
  * reader just asked for the new thing, so dropping it would make the button appear broken. Adding
  * a pane that is already open is a no-op rather than a reshuffle — the thing they asked for is
  * already in front of them.
+ *
+ * A078, THE HALF THIS FUNCTION CANNOT FIX. That eviction is silent at its one real call site:
+ * `app/library/[catalog]/page.tsx` builds the "+" href as `deskHref(withPane(openDesk, work))`, so
+ * a reader who adds a fourth work from a full desk lands on a desk with their FIRST pane quietly
+ * gone. (Note that it does ADD — the QA claim that "+" REPLACES the desk is false, and a second
+ * session already contradicted it.) The desk page cannot detect this after the fact: by the time
+ * the URL arrives the evicted pane is simply absent, indistinguishable from never having been
+ * there. Fixing it means the library's "+" saying so at the moment of the click, which is a change
+ * to a file this pass does not own. Filed rather than smuggled in through a brand or a side
+ * channel on the returned array — a desk URL that means something different depending on which
+ * function produced it is worse than the defect.
  */
 export function withPane(panes: readonly Pane[], pane: Pane): Pane[] {
   const key = encodePane(pane);
