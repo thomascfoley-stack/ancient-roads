@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, after } from 'next/server';
 import { getDocument } from '@/lib/user-corpus/documents';
 import { runReadingsJob } from '@/lib/user-corpus/readings-job';
-import { listReadings, readingsState, setReadingsState, setSearchCategories } from '@/lib/user-corpus/readings-store';
+import { listReadings, readingsState, setReadingsState, setSearchCategories, readingsRunRefused } from '@/lib/user-corpus/readings-store';
 import { guardUser } from '@/lib/user-corpus/route-guard';
 import { DEFAULT_CATEGORIES, sanitiseCategories } from '@/lib/user-corpus/suggested-readings';
 
@@ -48,8 +48,20 @@ export async function POST(req: NextRequest, ctx: Ctx): Promise<NextResponse> {
       { status: 409 },
     );
   }
-  if (doc.readingsStatus === 'running') {
+  // B015 ("suggested readings never completes") — the guard below used to be unconditional, and
+  // that is what BRICKED a document. The job runs in `after()`, which the platform may recycle
+  // between the `running` write and any terminal write; die there and the status is `running`
+  // forever, the panel polls forever, and this 409 refuses every restart. One crash, no way out
+  // short of SQL. The 2026-08-17 authenticated QA session hit exactly that symptom.
+  //
+  // The staleness key is `updated_at`, which every setReadingsState touches — including each
+  // per-category progress write — so a LIVE run's heartbeat advances at least every category
+  // (~10s apart, ~49-90s total, hard-bounded by the route's maxDuration = 300). Ten minutes is
+  // beyond every legitimate case by more than 2x, so a `running` older than that is a corpse and
+  // re-running is recovery, not double work.
+  if (readingsRunRefused(doc.readingsStatus, doc.updatedAt, Date.now())) {
     // Not an error the user can act on, and re-entering would double the work on one document.
+    // The staleness/fail-closed reasoning lives on the predicate itself (readings-store.ts).
     return NextResponse.json({ error: 'That search is already running.' }, { status: 409 });
   }
 
