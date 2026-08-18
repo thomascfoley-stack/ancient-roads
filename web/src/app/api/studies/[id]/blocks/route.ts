@@ -30,6 +30,9 @@ import {
 export const runtime = 'nodejs';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** B030: a search snippet, not a document. Long enough for a sentence-plus, short enough that
+ *  it cannot be used to smuggle content — the server only ever uses it to LOCATE, never to store. */
+const MATCH_HINT_MAX = 500;
 const SOURCE_ID_MAX = 512;
 const SLUG_MAX = 200;
 
@@ -155,7 +158,20 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         if (!Number.isSafeInteger(sectionId) || sectionId < 1) {
           return apiError('INVALID_REQUEST', { message: 'sectionId must be a positive integer' });
         }
-        const result = await insertClippingFromSection(user.id, id, { sectionId, reference }, place);
+        // B030 — a HINT of what the reader matched, never offsets. The server locates it in its
+        // own snapshot and stores the paragraph as a trim VIEW; a client that could send offsets
+        // could aim the view at text it never saw. Capped like every other free-text field here;
+        // absent or unplaceable means no trim, i.e. the pre-B030 whole-section view.
+        const rawHint = typeof body.matchHint === 'string' ? body.matchHint : undefined;
+        if (rawHint !== undefined && rawHint.length > MATCH_HINT_MAX) {
+          return apiError('INVALID_REQUEST', { message: `matchHint must be at most ${MATCH_HINT_MAX} characters` });
+        }
+        const result = await insertClippingFromSection(
+          user.id,
+          id,
+          { sectionId, reference, matchHint: rawHint },
+          place,
+        );
         if (!result.ok) return reasonResponse(result.reason);
         return NextResponse.json({ block: result.block }, { status: 201 });
       }
