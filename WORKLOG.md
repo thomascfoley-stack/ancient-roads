@@ -26,10 +26,20 @@ hit, first-token normalisation, the `Jerome's …` bucket).
 - `Tyndale Study Notes` (15,161) and `Origen of Alexandria` (1,272) now evaluate the veto FALSE;
   `John Gill` (28,300) TRUE. `Theophylact of Ohrid` (11) is caught by the FIRST-TOKEN rule, which
   is that normalisation doing exactly the job it was written for.
-- **Behaviour-preserving, proven rather than asserted: allowlist alone admits 99,937 rows;
-  allowlist AND veto admits 99,937. Difference ZERO.** So this is a licensing belt, not a
-  retrieval change, and carries no accuracy diagnostic. 16,480 rows move from "excluded because
-  unnamed" to "excluded because named and refused".
+- **Behaviour-preserving, measured against the SHIPPED predicate: it admits 114,349 rows, and the
+  number of ADMITTED rows the veto blocks is ZERO.** So this is a licensing belt, not a retrieval
+  change, and carries no accuracy diagnostic. **18,393** rows move from "excluded because unnamed"
+  to "excluded because named and refused".
+  - **A correction to my own first measurement.** I originally reported "allowlist alone 99,937 =
+    allowlist AND veto 99,937". That comparison was internally consistent but I described it
+    wrongly: both sides omitted the `work IN (...)` and provenance legs, so it was not "the
+    allowlist". The zero above is the direct measurement against the real predicate and is the one
+    to trust.
+- **Owner ruling 2026-08-18: all four modern copyrighted authors added** — CS Lewis, GK Chesterton,
+  Douglas Wilson, JRR Tolkien. Measuring the exact author strings first is what earned the
+  NAME-PREFIX rule: `CS Lewis  (via the character Screwtape, a devil)` (70 rows, DOUBLE space) is
+  missed by exact match AND by the first-token rule, because splitting it on ' the ' yields
+  `CS Lewis  (via`. All five variants now fail the veto; John Gill (28,300) still passes.
 - 12 exit-test legs, watched RED first (the predicate had no `NOT (` at all).
 
 **IT NEEDED A MIGRATION, AND I DID NOT SEE THAT COMING — the repo's own guard did.**

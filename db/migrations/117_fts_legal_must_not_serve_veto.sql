@@ -2,7 +2,8 @@
 -- 117: idx_commentary_fts_legal rebuild — the MUST_NOT_SERVE veto joins the predicate
 -- ============================================================
 -- WHY. `commentary_entries` holds copyrighted and standing-MUST_NOT_SERVE material —
--- Tyndale Study Notes 15,161 rows, Origen of Alexandria 1,272, Oecumenius 36,
+-- Tyndale Study Notes 15,161 rows, Origen of Alexandria 1,272, CS Lewis 1,102 (+70 under a
+-- suffixed variant), GK Chesterton 714, Oecumenius 36, Douglas Wilson 16, JRR Tolkien 11,
 -- Theophylact of Ohrid 11 (measured on lane-b, 2026-08-18) — and it was excluded
 -- from the FTS surface ONLY by not appearing on the 8-name published allowlist.
 -- `routing.ts` argues in its own comments that "unnamed" is strictly weaker than
@@ -17,14 +18,23 @@
 -- PUBLISHED_WHOLE_BIBLE_AUTHORS who also appears on copyrighted rows, or a new OR
 -- leg written without the veto in mind. ANDed, the veto survives all three.
 --
--- FUNCTIONAL DELTA: NONE, and it is measured rather than argued. On lane-b the
--- allowlist alone admits 99,937 rows; the allowlist AND the veto admits 99,937.
--- Difference ZERO — every row the veto blocks was already refused. So this is a
--- licensing belt, not a retrieval change, and it carries no accuracy diagnostic.
--- 16,480 rows move from "excluded because unnamed" to "excluded because named
--- and refused". `must-not-serve-veto-on-fts.test.ts` asserts the condition that
--- keeps that true (no vetoed author is on the allowlist); the day it fails, the
--- veto has started doing real work and a human must look.
+-- FUNCTIONAL DELTA: NONE, and it is measured against the SHIPPED predicate rather
+-- than a reduced stand-in. On lane-b: the full predicate admits 114,349 rows, and
+-- the number of ADMITTED rows the veto blocks is ZERO. Every row it names was
+-- already refused by the allowlist. So this is a licensing belt, not a retrieval
+-- change, and it carries no accuracy diagnostic. 18,393 rows move from "excluded
+-- because unnamed" to "excluded because named and refused".
+--
+-- (An earlier draft of this header quoted 99,937 = 99,937. That comparison was
+-- internally consistent but described imprecisely: both sides omitted the
+-- `work IN (...)` and provenance legs, so it was not "the allowlist" as claimed.
+-- The zero above is the direct measurement against the real predicate.)
+--
+-- The 2026-08-18 owner ruling added the four modern copyrighted authors. One of
+-- them is why the veto carries a NAME-PREFIX rule and not just exact names:
+-- `CS Lewis  (via the character Screwtape, a devil)` — 70 rows, note the DOUBLE
+-- space — is missed by exact match AND by the first-token rule (splitting it on
+-- ' the ' yields `CS Lewis  (via`). Measured, not imagined.
 --
 -- WHY A MIGRATION AT ALL. The constant is not only the query filter — it IS this
 -- partial index's predicate. Changing one without the other is the 2026-07-13 rot
@@ -56,9 +66,21 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_commentary_fts_legal_v11
    OR work IN ('keil-delitzsch','catena-aurea','chrysostom-homilies','augustine-homilies','barnes-crosswire-nt','scofield-crosswire','pnt-crosswire','poole-tcp','gill-song','olney-hymns','scottish-psalter-1650','neale-eastern-hymns','watts-hymns','watts-psalms','keble-christian-year','herbert-temple','montgomery-sacred-poems','rossetti-verses','traherne-poems','milton-poetical-works','hopkins-poems','tennyson-in-memoriam','dante-divine-comedy','wheatley-poems','donne-divine-poems','herrick-noble-numbers','spurgeon-sermons','maclaren-expositions','watson-works','flavel-works','edwards-works','wesley-sermons','whitefield-works','owen-works','hodge-systematic','calvin-institutes','schaff-creeds'))
   AND (source_url IS NULL OR (source_url NOT ILIKE '%biblehub.com%' AND source_url NOT ILIKE '%studylight.org%' AND source_url NOT ILIKE '%historicalchristian.faith%'))
   AND NOT (
-     author IN ('Tyndale Study Notes','Tyndale Open Study Notes','Theophylact','Bonaventure','Oecumenius','Origen','Origen of Alexandria','Aquinas-Larcher')
-     OR split_part(author, ' of ', 1) IN ('Tyndale Study Notes','Tyndale Open Study Notes','Theophylact','Bonaventure','Oecumenius','Origen','Origen of Alexandria','Aquinas-Larcher')
-     OR split_part(author, ' the ', 1) IN ('Tyndale Study Notes','Tyndale Open Study Notes','Theophylact','Bonaventure','Oecumenius','Origen','Origen of Alexandria','Aquinas-Larcher')
+     author IN ('Tyndale Study Notes','Tyndale Open Study Notes','Theophylact','Bonaventure','Oecumenius','Origen','Origen of Alexandria','Aquinas-Larcher','CS Lewis','GK Chesterton','Douglas Wilson','JRR Tolkien')
+     OR split_part(author, ' of ', 1) IN ('Tyndale Study Notes','Tyndale Open Study Notes','Theophylact','Bonaventure','Oecumenius','Origen','Origen of Alexandria','Aquinas-Larcher','CS Lewis','GK Chesterton','Douglas Wilson','JRR Tolkien')
+     OR split_part(author, ' the ', 1) IN ('Tyndale Study Notes','Tyndale Open Study Notes','Theophylact','Bonaventure','Oecumenius','Origen','Origen of Alexandria','Aquinas-Larcher','CS Lewis','GK Chesterton','Douglas Wilson','JRR Tolkien')
+     OR author LIKE 'Tyndale Study Notes %'
+     OR author LIKE 'Tyndale Open Study Notes %'
+     OR author LIKE 'Theophylact %'
+     OR author LIKE 'Bonaventure %'
+     OR author LIKE 'Oecumenius %'
+     OR author LIKE 'Origen %'
+     OR author LIKE 'Origen of Alexandria %'
+     OR author LIKE 'Aquinas-Larcher %'
+     OR author LIKE 'CS Lewis %'
+     OR author LIKE 'GK Chesterton %'
+     OR author LIKE 'Douglas Wilson %'
+     OR author LIKE 'JRR Tolkien %'
      OR author LIKE 'Jerome''s%'
    ));
 --SPLIT--

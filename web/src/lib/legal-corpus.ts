@@ -21,6 +21,14 @@ export const MUST_NOT_SERVE_AUTHORS = [
   'Origen',
   'Origen of Alexandria', // the register ingest's author string — same ruling (A6 2026-07-17)
   'Aquinas-Larcher',
+  // Owner ruling 2026-08-18 (§17.10): the four modern copyrighted authors in commentary_entries.
+  // Measured there: CS Lewis 1,102 + 70 under a suffixed variant, GK Chesterton 714,
+  // Douglas Wilson 16, JRR Tolkien 11. None was served — they were excluded only by absence from
+  // the published allowlist, which is the weak mechanism this list exists to replace.
+  'CS Lewis',
+  'GK Chesterton',
+  'Douglas Wilson',
+  'JRR Tolkien',
 ] as const;
 
 export type MustNotServeAuthor = (typeof MUST_NOT_SERVE_AUTHORS)[number];
@@ -32,6 +40,13 @@ export function isMustNotServeAuthor(author: string): boolean {
   if ((MUST_NOT_SERVE_AUTHORS as readonly string[]).includes(author)) return true;
   const first = author.split(/\s+(of|the)\s+/i)[0]!.trim();
   if (first !== author && (MUST_NOT_SERVE_AUTHORS as readonly string[]).includes(first)) return true;
+  // NAME-PREFIX. A vetoed name followed by a space and anything else is the same author wearing an
+  // annotation. Found by measurement, not imagined: commentary_entries carries
+  // `CS Lewis  (via the character Screwtape, a devil)` — 70 rows, note the DOUBLE space — which the
+  // exact-name rule misses, and which the first-token rule ALSO misses because splitting it on
+  // ' the ' yields `CS Lewis  (via`. Anchored to a space boundary so it cannot over-reach onto a
+  // genuinely different author whose name merely starts the same way.
+  if ((MUST_NOT_SERVE_AUTHORS as readonly string[]).some((n) => author.startsWith(`${n} `))) return true;
   return author.startsWith("Jerome's"); // Jeremiah/Lamentations modern translation bucket
 }
 
@@ -136,6 +151,7 @@ const MUST_NOT_SERVE_VETO = `NOT (
      author IN (${sqlList(MUST_NOT_SERVE_AUTHORS)})
      OR split_part(author, ' of ', 1) IN (${sqlList(MUST_NOT_SERVE_AUTHORS)})
      OR split_part(author, ' the ', 1) IN (${sqlList(MUST_NOT_SERVE_AUTHORS)})
+     OR ${MUST_NOT_SERVE_AUTHORS.map((n) => `author LIKE '${n.replace(/'/g, "''")} %'`).join('\n     OR ')}
      OR author LIKE 'Jerome''s%'
    )`;
 
