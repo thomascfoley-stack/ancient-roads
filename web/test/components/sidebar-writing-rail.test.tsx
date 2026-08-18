@@ -19,6 +19,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Sidebar } from '@/components/sidebar';
 import { setPrayerWriting } from '@/lib/prayer-writing-mode';
+import { stubMatchMedia } from '../helpers/match-media';
 
 // The two things the shell needs from outside itself, stubbed at their least interesting value —
 // the same reasoning as sidebar-catalog-nav.test.tsx, whose ResizeObserver note applies here too.
@@ -31,6 +32,14 @@ class NoopResizeObserver {
   disconnect() {}
 }
 vi.stubGlobal('ResizeObserver', NoopResizeObserver);
+
+// A THIRD browser API jsdom does not implement, added 2026-08-17 with A093: `Sidebar` now consults
+// `matchMedia` on mount to decide whether it is booting on a tablet. Without this the effect
+// throws and every case below goes red for a reason that has nothing to do with writing mode.
+// 1280 = DESKTOP, and that is the point rather than an arbitrary number — this file describes the
+// desktop rail, where the full 256px sidebar is the correct state at rest. The tablet band is
+// `test/components/sidebar-tablet-default.test.tsx`'s subject.
+stubMatchMedia(1280);
 
 afterEach(() => {
   // Never leak writing mode into the next test — it is global document state by design.

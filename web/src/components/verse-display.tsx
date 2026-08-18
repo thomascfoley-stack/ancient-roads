@@ -283,6 +283,15 @@ export function VerseDisplay({
                 role="button"
                 tabIndex={0}
                 aria-label={`Verse ${v.verse}, read commentary`}
+                /* A028 — THE HANDLE HAS TO BE IDENTIFIABLE FROM UNDERNEATH.
+                   With the study panel open, its `fixed inset-0` scrim lies over this whole column:
+                   the numbers are still legible through it and still read as handles, but the click
+                   lands on the scrim, which closed the panel. The scrim now hit-tests the stack
+                   under the pointer and switches verses when it finds THIS attribute
+                   (study-panel.tsx `verseHandleUnder`). It has to be on the number rather than the
+                   enclosing `data-verse` span, or the verse TEXT would become a switch too and
+                   ADR-047 rules that it is not a handle. */
+                data-verse-handle={v.verse}
                 onClick={() => openVerse(v.verse)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
