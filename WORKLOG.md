@@ -1,5 +1,172 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-17 (fix) — the /ask composer mask, re-derived: N2's offset kept, its 4px full-width leak closed
+
+**AMENDED AFTER MERGING `ship/editor-deploy` (57 commits).** This branch and N2 (`73293f1`, below)
+found and fixed the same double-count independently, hours apart. **N2's design decision wins and
+is kept**: the offset is `bottom-3` (12px, owner-directed), not this branch's `bottom-1` (4px). The
+two differ only in how far above the bar the composer rests, and that is the owner's call, already
+made. What this branch contributes is the half N2 did not re-derive — the mask — plus the guard
+that would have caught it.
+
+**N2 unified the offset AND the mask, and only the offset could be unified.** `after:h-4` (16px) is
+right for desktop, where `main` is `md:pb-0`. On mobile `main` still reserves the bar, so the strip
+to cover is `offset + reserve` = 12 + 60 = **72px**. Measured at 390x844 against the base's own
+file, content scrolled behind the composer: the strip ends at y **787** while the tab bar starts at
+**791** — a **full-width 4px band of live document**, rows 787-790 hit-testing at 253-372px each.
+That is the identical defect P5 existed to close, reproduced by re-tuning one side of a coupled
+pair. Rows 772-786 additionally leak 20px each (the lateral gap below). Closed here; the height is
+per-breakpoint again, with `md:after:h-4` leaving desktop exactly as N2 describes it.
+
+**The guard catches it.** Seeding the base's exact shipped geometry (`inset-x-[-1px] top-full h-4`)
+turns `ask-composer-mask.test.ts` **red on 4 of its 8 legs**. Had it been on the base, N2 would not
+have gone green.
+
+**AND N2'S OWN EXIT TEST ASSERTED THE DEFECT.** `tab-bar-reserved-once.test.ts` leg 4 read *"no
+sticky element masks a tab-bar-sized strip beneath itself"*, on the premise that *"the mask existed
+only to hide the gap the double-count opened"*. That premise is false: the mask covers the strip
+between the composer's bottom edge and the top of the fixed tab bar, and on mobile that strip
+contains `main`'s reserve **whatever the offset is**, because the reserve is padding INSIDE the
+scrollport that content scrolls through. So the leg forbade the only height that closes the gap,
+and it was **green while the defect it names was on screen**. Its other three legs are correct and
+kept — the sticky-vs-`fixed` distinction in particular is exactly right and matches this branch's
+own probe (a `fixed` element with those classes lands at 784 = viewport − 60).
+
+Per the repo rule (*"if a test is genuinely wrong, stop and flag it"*) it is **retracted and
+inverted, not deleted**: a sticky mask inside the reserving scroller must now CARRY the reserve.
+Red-proofed two ways — the base's own shape (`after:h-4`, no calc, which trips the vacuity control)
+and a calc mask with the reserve removed. The retraction and both measurements are written into the
+test file itself, where the next reader meets the claim.
+
+---
+
+*Original entry, as written before the merge — the measurements stand, the `bottom-1` conclusion is
+superseded by N2 above:*
+
+## 2026-08-17 (fix, superseded in part) — /ask: the mobile composer double-counted the tab bar; and four more defects the pre-deploy audit found in the fix
+
+**The reported defect, re-measured before touching anything** (390x844, computed style). `main`
+(`app-shell.tsx:35`) is the scroll container and reserves the tab bar with
+`pb-[calc(3.75rem+env(safe-area-inset-bottom))]`. The composer's sticky inset added the same token
+again — but a sticky inset resolves against the scroller's CONTENT box, which that padding has
+already inset. Viewport 844, main padding-bottom 60, composer bottom edge **720 = 844 - 60 - 64**:
+the box floated a whole tab bar above the tab bar, wasting ~60px of a phone screen.
+
+Fixed: `bottom-1` — **SUPERSEDED: shipped as `bottom-3` per N2, see the amendment above.** Composer
+bottom **780** when stuck, **11px** of visible gap above the bar
+against desktop's 12px above the scrollport (`md:bottom-3`, untouched). No `env()` on it — both
+terms that bracket it already carry the inset, so the gap holds at every inset instead of growing
+with it. **This moves the composer on every mobile /ask view**, so it is an owner-visible design
+change; before/after captured at 390px, the before by stashing the change rather than
+reconstructing it in the DOM.
+
+**P5's mask was already leaking.** `after:h-[...+0.5rem]` = 68px was hand-computed against an
+assumed 60px bar; the bar renders **53px** inside the 60px reserved for it, so the strip to cover
+was 71px and a band of document was live at **y 787-790 at every scroll offset**.
+
+**Then a 5-agent pre-deploy deep audit found three more, all in my own fix, and all the same
+trap** — an absolutely-positioned child resolves against the PADDING box:
+
+1. The mask was **1px short** of the scrollport (`top-full` starts at 767 against a border-box
+   bottom of 768). My first correction added `+1px` to the HEIGHT, which reached the bottom while
+   still painting over the border. The real fix is `top-[calc(100%+1px)]`, after which the height
+   needs no compensating pixel.
+2. A **20px lateral gap**: the strip spanned the composer only, while result cards are `-mx-2.5`.
+   Leaks measured at x 6-15 and 368-377, every row. **My "0 leaked pixels" claim was a y-scan down
+   one column and could not see this** — the scan is now 2-D: 11 rows x 390 columns = 4,290 pixels,
+   0 leaks.
+3. The strip **painted over the composer's own bottom hairline and the bottom of its focus ring** —
+   a three-sided focus indicator on the app's primary input (WCAG 2.4.11). Closed with
+   `outline-offset-[-2px]`, which keeps the whole ring above the strip; starting the strip below
+   the ring instead would open a 2px gap whenever the composer is NOT focused.
+
+**A014's root cause closes as a side effect**: at max scroll the composer was pinned 48px above its
+static position and covered 24px of document; both are now 0.
+
+**The other three `3.75rem+env()` sites are NOT this bug, and that was measured**: a probe with
+their exact classes rendered inside `main` landed at **784** = viewport - 60. They are `fixed`,
+resolve against the viewport, and must keep the expression. `ask-client.tsx` held the only
+`sticky bottom-*` in `web/src`.
+
+**Guard, red-proofed five ways.** `web/test/invariants/ask-composer-mask.test.ts` DERIVES the three
+values from the two source files and checks the relationship rather than snapshotting a class
+string. Each mutation was applied, watched fail, reverted: restore the double-count (2 failed),
+mask height off by 4px, `top-full`, lateral inset `-1px`, and — the one that matters — **changing
+`app-shell.tsx`'s padding turns it red**, proving the expectation is derived from the coupled file
+and the pair cannot drift silently. Cross-file, so not the watchlist's tautology shape.
+
+**The guard test broke the entire app, and only the browser caught it.** Writing the offending
+class out inside a COMMENT in `web/test/invariants/ask-composer-mask.test.ts` — with an ellipsis
+standing in for the safe-area argument — was enough: Tailwind v4 auto-detects content and scans
+`web/test/**`, so it compiled that comment into a real rule whose value contained the ellipsis.
+Invalid CSS, `globals.css` failed to parse, and **every route returned 500**. `tsc` was clean, and
+the full 823-test suite was green, through all of it. `next build` (which CI runs) and loading the
+page are the only things that see it. Fixed by describing the class instead of quoting it, with the
+reason recorded in the file so the next person does not re-add it; `next build` now exits 0 and the
+page was re-verified on a cleared `.next` cache. Filed as the tell for this class: **a comment in a
+scanned file is code**, and a green typecheck plus a green suite is not evidence that the app boots.
+
+**DoD legs, both now done rather than merely asserted.** A real interaction: typed (submit went
+disabled -> enabled, proving the controlled input reached React state) and submitted; a turn
+rendered with the Q1 sign-in banner (correct 401 signed-out path) and its bottom sat above the
+composer's top — not occluded. Errors during that interaction: **0**, caught by a listener armed
+BEFORE the interaction (the A7-X1 lesson).
+
+**Evidence filed** — [`docs/evidence/ask-composer-offset-2026-08-17.md`](docs/evidence/ask-composer-offset-2026-08-17.md).
+The P5 record was retracted **in place** in
+[`build-findings-2026-08-16.md`](docs/evidence/research-history/build-findings-2026-08-16.md), the
+document a reader meets, not only here: its "Verified by computed style, mobile 68px, match:true"
+compared the mask's height against the constant that had just been typed — an identity that is
+green for every possible value, including every wrong one.
+
+**Verified:** web typecheck 0; eslint 0 on the changed file (red-proofed with a seeded `any`); web
+suite green; desktop 1280x800 re-measured unchanged; overflow-neutral (`main.scrollHeight` 879 with
+and without the strip); dark `.reader-dark` mask == body.
+
+### NOT DONE / UNVERIFIED
+
+- **`npm run audit` is NOT green here.** Two suites fail on `ECONNREFUSED 127.0.0.1:5432` —
+  `queue-never-drops` and `commentary-entries-provenance` need a local throwaway Postgres that is
+  not running. That is a NOT RUN, not a RED (neither imports the changed component), but the repo's
+  definition of green was not met.
+- **Not deployed, and it CANNOT be deployed from this worktree.** `web/public/{bible,commentaries,
+  original,...}` are gitignored and do not follow a worktree checkout: this tree has **0** bible and
+  **0** commentary files against the main tree's **22,590** and **1,213**. `vercel --prod` uploads
+  `web/` as-is, so a deploy from here would strip ~23,800 static files. `predeploy-gate.ts` hard-
+  fails first (exit 1, before upload), so there is no live risk — but the deploy must run from a
+  corpus-bearing tree.
+- **Deploy sequencing, from the ops lens — receipt half now CLOSED.** The `2d043ba` receipt used
+  to exist only on `ship/editor-deploy`, so deploying from this branch would have forked the
+  receipt ledger. Merging the base (`5981b9e`) on 2026-08-17 brought it in; the ledger is linear
+  and no cherry-pick is outstanding. **Still open:** `predeploy-gate.ts` opens a PRODUCTION
+  connection (`PREDEPLOY_DB_URL`), which is a bylaw-7 owner act per occasion, not a side effect.
+- **Real devices unmeasured.** This browser reports `env(safe-area-inset-bottom): 0`, so no notched
+  phone was exercised; iOS Safari ignores `interactive-widget`, where the composer now sits 64px
+  above the layout viewport instead of 128px, and the `scrollIntoView` nudge at the textarea is a
+  measured no-op for a bottom-stuck sticky box. DEVICE check, not made.
+- **Console at load is not a clean claim.** Only the pane's CSP `eval()` notice, `get-session` 500s
+  and the 401 above appeared, all environmental to a tree with no `.env.local` — but per the A7-X1
+  retraction a post-load read cannot prove absence of load-time errors, and is not offered as such.
+- **No answer was ever on screen** (401 without credentials), so voice cards, the Show band and
+  long-quote wrapping under the composer are unmeasured. `/ask/[id]` was not loaded.
+- **MERGE HAZARD — CLOSED 2026-08-17 by the merge.** N2 (`73293f1`) deleted the A014 reserve for
+  exactly the reason predicted here, so the ~60px of dead space never shipped. Original note:
+  `ee76b55` on `fix/q1-signed-out-state` mitigated A014 by adding
+  `pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0` to the /ask scroll column, explicitly
+  deferring this double-count as "a design change... Reported, not taken" — **that wording is in the
+  code comment it added, not in its commit message** (an earlier version of this entry cited the
+  wrong artifact). The two are not additive: with the root cause gone that reserve is ~60px of dead
+  space and must be deleted on merge, returning the line to
+  `className={turns.length === 0 ? 'flex flex-1 flex-col justify-center' : 'flex-1 space-y-8'}`.
+- **Pre-existing findings from the audit, filed not fixed** — deliberately kept out of a CSS branch:
+  `/api/search/works` has no length cap on `q` while its sibling caps at 200; the auth-proxy throttle
+  is keyed off a hand-maintained segment list behind a catch-all; `/api/eval/bait` spends real money
+  outside the global daily ceiling; `/api/health`'s only protection is the temporary gate;
+  `scripts/corpus-blob-sync.mjs` has no licensing gate and is designed to replace the path that has
+  one (D3); `/ask` cannot render a CC attribution notice (retrieval metadata carries no `license`);
+  the withdrawal tombstone fails OPEN on duplicate-quote ambiguity; submit disables the focused
+  button and dumps focus to `<body>` for the whole ask; `aria-busy` suppresses the live region it
+  exists to announce; result cards have no visible focus indicator.
 ## 2026-08-17 (QA remediation, N2) — /ask reserved the mobile tab bar twice; 52px back on every phone
 
 Owner-directed ("finish N2"). It had been held back deliberately — closing it MOVES the composer on

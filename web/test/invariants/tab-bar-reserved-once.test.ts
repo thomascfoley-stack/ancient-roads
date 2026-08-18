@@ -107,21 +107,49 @@ describe('N2 — the mobile tab bar is reserved once, by the shell', () => {
     expect(fixedUsers.length, 'expected the fixed bottom-anchored chrome to still reserve the tab bar').toBeGreaterThanOrEqual(3);
   });
 
-  // The mask existed only to hide the gap the double-count opened. Once the offset is small, a
-  // tab-bar-sized mask is both unnecessary and a hint the offset crept back.
-  it('no sticky element masks a tab-bar-sized strip beneath itself', () => {
+  // RETRACTED AND INVERTED, 2026-08-17 — this leg asserted the exact opposite, and it was wrong.
+  //
+  // It read: "no sticky element masks a tab-bar-sized strip beneath itself", on the premise that
+  // "the mask existed only to hide the gap the double-count opened. Once the offset is small, a
+  // tab-bar-sized mask is both unnecessary and a hint the offset crept back."
+  //
+  // The premise does not survive measurement. The mask does not cover the DOUBLE-COUNT's gap, it
+  // covers the strip between the composer's bottom edge and the top of the fixed tab bar — and on
+  // mobile that strip contains `main`'s reserve no matter how small the offset gets, because the
+  // reserve is padding INSIDE the scrollport that page content still scrolls through. The strip is
+  // `offset + reserve`: 12 + 60 = 72px at `bottom-3`, not 16px.
+  //
+  // MEASURED at 390x844 against the tree that shipped with this leg green (computed style and a
+  // full 2-D hit-test, content scrolled behind the composer): the 16px mask ended at y 787 while
+  // the tab bar starts at 791, leaving a FULL-WIDTH 4px band of live document — rows 787-790
+  // hit-testing at 253-372 leaked pixels each, 1,431 in total. With the mask restored to 72px the
+  // same scan returns 0 leaked pixels over 7,410 scanned. So this leg was green while the defect
+  // it names was on screen, and it forbade the only value that closes it.
+  //
+  // Kept and inverted rather than deleted, because the underlying worry is real: a tab-bar-sized
+  // mask IS suspicious if the OFFSET also carries the reserve. That is what the second leg above
+  // already checks, on the offset, where the double-count actually lives. Here the correct
+  // property is the opposite one — a sticky mask inside the reserving scroller must carry the
+  // reserve. The exact arithmetic (height == offset + reserve, per breakpoint) is asserted in
+  // `ask-composer-mask.test.ts`, which is red-proofed against this file's own shipped geometry.
+  it('a sticky mask inside the reserving scroller carries the reserve', () => {
     const reserve = RESERVE![1]!;
-    const offenders: string[] = [];
+    const masks: string[] = [];
     for (const file of walk(SRC)) {
       const src = readFileSync(file, 'utf8');
       for (const m of src.matchAll(/after:h-\[calc\(([^\]]+)\)\]/g)) {
-        if (m[1]!.includes(reserve)) offenders.push(`${path.relative(SRC, file)}: after:h-[calc(${m[1]})]`);
+        masks.push(`${path.relative(SRC, file)}: after:h-[calc(${m[1]})]`);
+        expect(
+          m[1],
+          `${path.relative(SRC, file)} paints an after: strip below a sticky box but sizes it `
+            + 'without the shell\'s reserve. On mobile the strip spans offset + reserve, because '
+            + 'the reserve is padding inside the scrollport that content scrolls through. Measured '
+            + 'cost of omitting it: a full-width 4px band of live document above the tab bar.',
+        ).toContain(reserve);
       }
     }
-    expect(
-      offenders,
-      'A mask as tall as the tab bar is the double-count wearing a different hat — it hides the gap '
-        + 'rather than closing it.',
-    ).toEqual([]);
+    // Control: if no mask is found at all this leg is vacuously true, which is the rot the file
+    // above refuses. The /ask composer is the one known site.
+    expect(masks.length, 'no after: mask found anywhere — this check has gone blind').toBeGreaterThanOrEqual(1);
   });
 });

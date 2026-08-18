@@ -377,9 +377,19 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
           With the offset now 12px against this container's own 16px `pb-4`, the overlap is
           NEGATIVE — there is no strip left to reserve, which is exactly the condition that made
           desktop `md:pb-0` all along. So A014's reserve is gone rather than retuned, and the
-          mobile/desktop split with it: one `bottom-3`, one `after:h-4`. Clearance at maximum
-          scroll measured 56px, so the bottom of the document is still reachable, which is the
-          property A014 existed to protect.
+          mobile/desktop split with it: one `bottom-3`. Clearance at maximum scroll measured 56px,
+          so the bottom of the document is still reachable, which is the property A014 existed to
+          protect.
+
+          THE MASK COULD NOT COLLAPSE WITH THE OFFSET, and did (amended 2026-08-17). Unifying to a
+          single `after:h-4` is correct for desktop, where `main` is `md:pb-0` and 16px spans the
+          whole 12px float. On mobile `main` still reserves the bar, so the strip to cover is
+          `offset + that reserve` = 12 + 60 = 72px, not 16px. Measured at 390x844 with content
+          scrolled behind the composer: the strip ended at y 787 while the tab bar starts at 791,
+          leaving a FULL-WIDTH 4px band of live document (rows 787-790 hit-tested at 253-372px
+          each) — the same defect P5 was written to close, reproduced by re-tuning one side of the
+          pair. The height is per-breakpoint again for that reason; `md:after:h-4` keeps desktop
+          exactly as this note describes it.
 
           The three FIXED bottom-anchored chips (reader Continue, verse popover, chapter toast)
           keep the full `3.75rem + safe-area` and must: fixed resolves against the VIEWPORT, which
@@ -439,15 +449,43 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
           shadow. `.edge` owns the hairline and is unlayered, so a `focus-within:border-*`
           utility could never override it — focus is shown with the PRD's antique-gold
           outline (§10) instead of a border-colour swap. */}
-      {/* The composer floats above the page bottom (bottom-3 / the mobile tab-bar offset),
-          which leaves a slot BELOW it that scrolling content streamed straight through
-          (owner-reported 2026-08-17, screenshot: a quote sliding through the gap under the
-          box). The after: strip fills exactly that slot in the PAGE background (body is
-          bg-stone-50/dark:bg-stone-950, layout.tsx:134), so content vanishes at the
-          composer's bottom edge instead of reappearing beneath it. Top-edge slide-under is
-          ordinary sticky behavior and stays. */}
+      {/* The composer floats above the page bottom, which leaves a slot BELOW it that scrolling
+          content streamed straight through (owner-reported 2026-08-17, screenshot: a quote
+          sliding through the gap under the box). The after: strip fills that slot in the PAGE
+          background (body is bg-stone-50/dark:bg-stone-950, layout.tsx:134), so content vanishes
+          at the composer's bottom edge instead of reappearing beneath it. Top-edge slide-under is
+          ordinary sticky behavior and stays.
+
+          ALL THREE of its geometry terms were wrong at some point, and each is the same trap: an
+          absolutely-positioned child resolves against the PADDING box, not the border box.
+
+          `h`   = offset + `main`'s reserve. P5 shipped a hand-computed 68px against an ASSUMED
+                  60px bar (it renders 53px: `min-h-[52px]` + 1px border), leaving document live
+                  at y 787-790; N2 then moved the offset and left the height at 16px, leaving a
+                  full-width 4px band in the same place. Derive it, never type it.
+          `top` = `calc(100%+1px)`, NOT `top-full` — which starts one border-width ABOVE the
+                  border edge (measured: 779 against a border-box bottom of 780) and paints over
+                  the composer's own hairline and the bottom of its focus ring.
+          `inset-x` = the `-mx-2.5` result-card overhang PLUS the border. A bare `-1px` left a
+                  20px lateral gap (x 6-15 and 368-377) that a centre-line scan cannot see.
+
+          `outline-offset-[-2px]` belongs to the same fix: an outline is drawn OUTSIDE the border
+          box, so the ring's bottom 2px sat under the strip and the app's primary input carried a
+          three-sided focus indicator (WCAG 2.4.11). Drawing it inside keeps the ring above the
+          strip; starting the strip below the ring instead would reopen a 2px gap whenever the
+          composer is NOT focused.
+
+          HEADROOM IS 4px AND IT IS NOT ENFORCED. The strip is an absolutely-positioned descendant
+          of the scroll container, so it adds to scrollable overflow unless it fits inside this
+          column's `pb-4` (16px) plus `main`'s reserve (60px) = 76px against a 72px strip.
+          Measured: `main.scrollHeight` is 935 with the strip and 935 without, so no phantom
+          scroll today. Shrink this column's padding or grow the tab bar and /ask silently gains
+          dead scroll under every answer.
+
+          `web/test/invariants/ask-composer-mask.test.ts` derives all of this from this file and
+          `app-shell.tsx` and fails if the pair drifts. */}
       <form onSubmit={(e) => { e.preventDefault(); ask(question); }}
-        className="edge sticky bottom-3 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-accent-600 after:absolute after:inset-x-[-1px] after:top-full after:h-4 after:bg-stone-50 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400">
+        className="edge sticky bottom-3 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-[-2px] focus-within:outline-accent-600 after:absolute after:inset-x-[calc(-0.625rem-1px)] after:top-[calc(100%+1px)] after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.75rem)] md:after:h-4 after:bg-stone-50 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400">
         {/* Q1 — 13 of 20 QA-fleet sessions typed a full question and only then learned that
             asking needs an account: the composer, the lane chips and the example prompts all
             invited input and nothing said otherwise until the POST came back 401. The notice
