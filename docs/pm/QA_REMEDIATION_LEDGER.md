@@ -13,7 +13,7 @@ authenticated sessions). IDs below are positional within each sheet.
 
 | Disposition | Count |
 |---|---|
-| **Done** | 41 |
+| **Done** | 43 |
 | **Not reproduced / retracted** | 13 |
 | **No action** — positive or informational notes | 41 |
 | **Open — me** | 30 |
@@ -21,7 +21,7 @@ authenticated sessions). IDs below are positional within each sheet.
 | **Open — corpus & retrieval lane** | 15 |
 | **Total** | **156** |
 
-**2026-08-17 addendum (N1 slice).** Done 39 -> 40 (N1). §5b grew 2 -> 6: N3-N6 were found by the derivation written for N1. N6 is now CLOSED; N3-N5 remain OPEN. So the corpus of findings is now 160, not 156. The bucket table above is NOT re-partitioned here, because it already disagrees with its own section heading (this row reads `Open — me | 30`; §4 is titled `Open — me (47)`). That contradiction predates this slice and is left visible rather than papered over — inventing a mapping is how drift becomes permanent (MASTER.md, failure-mode watchlist).
+**2026-08-17 addendum (N1 slice).** Done 39 -> 40 (N1). §5b grew 2 -> 6: N3-N6 were found by the derivation written for N1. All six are now closed: N3/N5/N6 fixed, N4 closed as a recorded decision to keep it quarantined. So the corpus of findings is now 160, not 156. The bucket table above is NOT re-partitioned here, because it already disagrees with its own section heading (this row reads `Open — me | 30`; §4 is titled `Open — me (47)`). That contradiction predates this slice and is left visible rather than papered over — inventing a mapping is how drift becomes permanent (MASTER.md, failure-mode watchlist).
 
 Counts verified by script: the six buckets **partition all 156 ids exactly** — no duplicates, none
 unassigned. (A first draft of this table read 47 / 15 / 12 for the last three rows; that was
@@ -35,7 +35,7 @@ breaches** (B001, B002).
 
 ---
 
-## 1. Done (41)
+## 1. Done (43)
 
 | ID | Finding | Commit |
 |---|---|---|
@@ -79,6 +79,8 @@ breaches** (B001, B002).
 | A014 | Third example prompt clipped at 390px | batch 2 — not the divider; a 48px+safe-area band sat under the composer at every scroll offset |
 | A017 | Empty error banner frame on retry | batch 2 — **filed mechanism disproven**; an adjacent latent path (error event with no message) guarded instead |
 | N1 | **"Continue reading" on the Library hub was dead for every account** — `saveReadingProgress` had zero call sites, so `listContinueReading` could only return `[]` | `1c95774` |
+| N3 | The `library_items` write path was dead — nothing in the app could shelve a work | `PENDING3` |
+| N5 | The Library hub queried the shelf on every load and discarded the result | `PENDING3` |
 | N6 | `npm run audit` was RED on two legs (web/test typecheck; test residue) | `93fbcb3` |
 
 Also corrected, not a finding: **A001's blocker was false** and the correction is filed in three
@@ -242,15 +244,15 @@ No agent can close these.
 
 ---
 
-## 5b. NEW — found while fixing, not in either sheet (6)
+## 5b. NEW — found while fixing, not in either sheet (6, all closed)
 
 | # | Item | Note |
 |---|---|---|
 | N1 | **CLOSED — see §1.** Wired: `POST /api/work/[slug]/progress`, called from the Book Reader, throttled 30s + flush on leave. Round-trip proven against dev Postgres under real RLS; four red-proofs watched fail |
 | N2 | `/ask` double-counts the tab-bar offset | `main` reserves the tab-bar height and the composer's sticky offset reserves it again — ~60px wasted on every mobile view. This is WHY A014's permanent overlap exists; closing it moves the composer on every mobile view, so it is a design change. Filed as a task chip |
-| N3 | **The `library_items` write path is dead too — nothing in the app shelves a work** | `setShelf` and `removeFromLibrary` have ZERO call sites, measured the same way N1 was. So "Yours" is an unbuilt feature with a live data layer, an RLS policy and a passing test suite. `/library/books` says the shelf "will live here", so this is *acknowledged* unbuilt rather than broken — filed, not fixed, because building a shelving UI is a product decision. Quarantined in `no-dead-user-table-writer.test.ts` |
-| N4 | `addChatMemory` / `getChatMemories` are both dead | `chat_memories` has a store and a table and no product surface. Same quarantine |
-| N5 | **The Library hub queries the shelf on every load and throws the result away** | `personal()` awaits `listLibraryItems(userId, {limit: 12})` and `mine.shelf` appears nowhere in the JSX — a per-request DB query feeding nothing. Cheap to fix, but it is the read half of N3 and should go in that slice, not alone |
+| N3 | **CLOSED.** Built rather than deleted, and the reasoning is the same evidence that keeps N4 dead: `/library/books` was pure CRUD over a table that already existed, so "coming soon" was only ever true for want of a caller. Ships `GET/PUT/DELETE /api/work/[slug]/shelf` (published-only on all three verbs, `isShelf` as the validator so the accepted set cannot drift from `SHELVES`), a Save/Saved control in the reader header (optimistic with revert; absent entirely when signed out), and `/library/books` as a real page. 13-case round trip against dev Postgres under RLS + 7 jsdom wiring cases, both red-proofed |
+| N4 | **CLOSED as a DECISION, not a fix — kept quarantined.** `chat_memories` looked identical to N3 from the ratchet's point of view (a user-table write path behind a `ComingSoon`), but `/chat/[id]` says in its own copy that study partners "arrive with the trained model", so this is infrastructure for a feature that cannot be built today. Deleting it under bylaw 3 would destroy work for a capability the product publicly promises, in order to satisfy a check. The `no-dead-user-table-writer` quarantine records the reason and still DEMANDS the entry be removed the moment anything calls it |
+| N5 | **CLOSED.** The hub's `personal()` no longer queries the shelf it never rendered — the query moved to `/library/books`, which is the page that displays it. `mine.shelf` appeared nowhere in the JSX; that was a per-request RLS-scoped sources-joined query discarded on every load of the busiest personal surface in the app |
 | N6 | **CLOSED — `npm run audit` now passes, all gates green.** (a) typecheck: the `pending` fixture in `bookmark-state-label` / `unhighlight-affordance` is now typed `PendingAnnotation` instead of an `as DOMRect` cast that hid three mismatches, and the invalid `copyLineNo={false}` is gone — runtime behaviour unchanged, both suites still pass. (b) residue: **three** leaking teardowns, not two — `annotation-rls-tenancy` (one batched call, so a single throw skipped six tables and all of user B), `research-store-edges` (`.catch(() => {})` swallowing a failed cleanup), and `studies-routes` (`if (!owner) return`, so "no credentials" was indistinguishable from "swept"). All three now sweep by PREFIX through `test/helpers/qa-residue.ts`, which is the only thing that can reap an INTERRUPTED run — `Date.now()` ids die with the process. Verified: 9 stranded rows reaped, then 3/3 consecutive runs clean, then the full suite + gate green  **(c) two unearned REDs, found only by running the audit in the OWNER's tree rather than mine** — my worktree had an owner `DATABASE_URL` and the main tree does not, and that difference was doing the work. `queue-never-drops` gated the suite on `APP_DATABASE_URL` while ONE case also needs an independent owner connection; with it undefined `new Client({connectionString: undefined})` is not an error, it dials localhost:5432, so a missing env var was reported as a broken queue invariant (this IS the ledger header's "pre-existing ECONNREFUSED"). `commentary-entries-provenance` had a comment correctly explaining that a temp table cannot live on Neon's POOLED endpoint, and a fallback on the very next line that used the pooled endpoint — passing alone, flaking under a full parallel run. Both now announce NOT RUN; both verified to still EXECUTE when credentials are present (13/13) |
 
 ## 6. Open — corpus & retrieval lane (15)

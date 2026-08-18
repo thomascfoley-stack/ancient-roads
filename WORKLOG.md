@@ -1,5 +1,72 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-17 (QA remediation, N3/N4/N5) — the shelf is real: a work can be saved, and the page that promised it is no longer a stub
+
+Owner: "can you do n3-5 now?" All three closed. **N3 and N4 looked like the same defect and got
+opposite answers**, which is the part worth reading.
+
+**Both were a user-table write path built behind a `ComingSoon` surface.** `library_items` had
+`setShelf`/`removeFromLibrary` with zero call sites behind "My books"; `chat_memories` had
+`addChatMemory`/`getChatMemories` with zero call sites behind "Study partners". From the
+`no-dead-user-table-writer` ratchet they are indistinguishable. The difference is in the stubs'
+own copy: `/chat/[id]` says study partners "arrive with the trained model", so that one CANNOT be
+built today, while `/library/books` was plain CRUD over a table that already existed — "coming
+soon" was true only for want of a caller. So:
+
+- **N3 — built.** `GET/PUT/DELETE /api/work/[slug]/shelf`: auth caught alone (A1-16), the shelf
+  value validated by the shipped `isShelf` guard so the accepted set cannot drift from `SHELVES`,
+  and the slug resolved through `publishedSourceId` on **all three verbs**. DELETE is included in
+  that deliberately: `lib/library.ts`'s header says the published predicate FILTERS rather than
+  deletes, so a work withdrawn while shelved keeps its row and returns if re-published — honouring
+  a DELETE for one would quietly destroy the row that design exists to preserve.
+  A Save/Saved control in the reader header (optimistic with revert; **absent entirely** when
+  signed out, because the route 401s them and mid-book is the wrong moment to sell an account),
+  and `/library/books` rewritten from a stub into a real server-rendered shelf.
+- **N4 — kept dead, as a recorded decision.** Deleting it under bylaw 3 would destroy
+  infrastructure for a capability the product publicly promises, to satisfy a check. The
+  quarantine now carries that reasoning, and still demands the entry be removed the moment
+  anything calls it.
+- **N5 — closed by moving the query.** `personal()` was `Promise.all`-ing
+  `listLibraryItems(userId, {limit: 12})` and `mine.shelf` appeared NOWHERE in the JSX: a
+  per-request, RLS-scoped, sources-joined query discarded on every load of the busiest personal
+  surface in the app. It now lives on the page that renders it.
+
+**Verified, every check watched RED first:**
+- 13-case round trip against dev Postgres under real RLS. Red-proofed against a no-op stub —
+  `expected [] to have a length of 1`, the defect through the shipped path. Covers the upsert
+  (re-shelving MOVES, one row), 401 on every verb, 404 + no write for a withdrawn work, edge
+  validation, and the licensing boundary both ways (a work withdrawn after shelving vanishes from
+  the shelf while its row survives).
+- 7 jsdom wiring cases on the real header. Red-proofed by breaking the write: the "saving PUTs"
+  case failed. **This is the test that would have caught the original defect; the round trip
+  would not have.**
+- **The ratchet earned its keep unprompted.** Wiring the two writers made
+  `no-dead-user-table-writer` go RED by itself — "listed as known-dead but now have callers" —
+  naming both. That is the quarantine's second direction working before anyone thought to check.
+- `library-nav-labels` also went red on cue: its `/library/books` extractor read a `title=` prop
+  from the stub and correctly went blind when the page changed shape. Rather than repointing the
+  regex at an `<h1>`, the case was replaced: the page now DERIVES its heading from
+  `LIBRARY_LABELS`, so comparing it to that map would be `X === X`, green forever. The property
+  asserted is the stronger one — that it derives at all.
+- Full web suite **1209 passed / 0 failed**. Browser at 390px and 1280px: `/library/books` renders
+  signed-out and empty states, and the reader header holds the new control with **no overflow**
+  (measured with a node carrying the shipped classes, since the control is signed-in only and
+  there is no local auth). Live route: GET/PUT/DELETE all 401 signed-out, `library_items` still 0.
+
+### NOT DONE / UNVERIFIED
+- **Nothing deployed.**
+- **No signed-in browser walk, again** — Neon Auth secrets are Vercel-only, so `useSignedIn()` is
+  false locally and the Save control never renders in a real browser. Its behaviour is proven by
+  execution (jsdom against the real component + the route against real Postgres), and its LAYOUT
+  by a synthetic node with the shipped classes. Nobody has watched a person press Save.
+- **Only `saved` is ever written.** The schema carries `reading`/`saved`/`archived` and the route
+  accepts all three; the UI is a binary toggle. That is a deliberate first slice, not an oversight
+  — a three-state control needs a design decision nobody has made.
+- `/library/passages` is still absent from the nav-label HEADINGS table. Pre-existing gap, noted
+  while working there, not filed as its own row.
+- **`DEEPINFRA_API_KEY` still needs rotating.**
+
+
 ## 2026-08-17 (QA remediation, N6) — `npm run audit` is green again: three leaking teardowns and a lying test fixture
 
 Owner directive: "merge it and get it fixed." Merged `fix/q1-signed-out-state` (3 incoming commits,

@@ -29,8 +29,6 @@ const SRC = join(__dirname, '../../src');
 const HEADINGS: Record<string, { file: string; extract: RegExp }> = {
   '/library/notes': { file: 'app/library/notes/page.tsx', extract: /<h1[^>]*>([^<{]+)<\/h1>/ },
   '/library/word-study': { file: 'app/library/word-study/page.tsx', extract: /<h1[^>]*>([^<{]+)<\/h1>/ },
-  // A ComingSoon stub: its heading is a prop, not an <h1> in the page.
-  '/library/books': { file: 'app/library/books/page.tsx', extract: /title="([^"]+)"/ },
   // Rendered by a client component, so the heading lives there rather than in the route file.
   '/library/uploads': { file: 'components/my-works.tsx', extract: /<h1[^>]*>([^<{]+)<\/h1>/ },
 };
@@ -46,6 +44,28 @@ describe('Q2 — every library nav label matches the heading of the page it open
       expect(m![1].trim()).toBe(LIBRARY_LABELS[href as keyof typeof LIBRARY_LABELS]);
     });
   }
+
+  // /library/books IS NOT IN THE TABLE ABOVE, and that is the point rather than an omission.
+  //
+  // It was there while it was a ComingSoon stub with a hand-typed `title="My books"`. Ledger N3
+  // made it a real page whose heading is `{libraryLabel('/library/books')}` — read from
+  // LIBRARY_LABELS instead of typed — so there is no literal string in the file to compare, and
+  // the extractor above correctly went blind the moment the page changed shape. (It failed loudly,
+  // which is what the "no heading found" assertion exists for.)
+  //
+  // Comparing a derived value against its own source would be the tautology this repo's watchlist
+  // is mostly made of: `LIBRARY_LABELS[x] === LIBRARY_LABELS[x]`, green forever. So the property
+  // asserted for this route is the STRONGER one that replaced it — that the page derives its
+  // heading at all. A page that derives cannot disagree; a page that types can, which is why the
+  // three above still get the string comparison.
+  it('/library/books derives its heading rather than typing one', () => {
+    const src = readFileSync(join(SRC, 'app/library/books/page.tsx'), 'utf8');
+    expect(
+      src,
+      'the books page should render {libraryLabel(...)} in its h1 — if it now types its heading, '
+        + 'put it back in the HEADINGS table above so the string comparison covers it again',
+    ).toMatch(/<h1[^>]*>\s*\{libraryLabel\('\/library\/books'\)\}/);
+  });
 
   it('no two library routes share a label — "Saved" named two destinations before this', () => {
     const labels = Object.values(LIBRARY_LABELS);

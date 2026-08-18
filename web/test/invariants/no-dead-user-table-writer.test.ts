@@ -46,9 +46,20 @@ const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../sr
  * ADD an entry only with an owner-visible ledger row saying why the feature is not wired.
  */
 const KNOWN_DEAD: ReadonlyMap<string, string> = new Map([
-  ['setShelf', 'ledger N3 — nothing in the UI shelves a work; /library/books is still a ComingSoon stub'],
-  ['removeFromLibrary', 'ledger N3 — the unshelve half of the same unbuilt feature'],
-  ['addChatMemory', 'ledger N4 — chat_memories has a store and a table and no product surface'],
+  // ledger N4. NOT the same case as N3, which was wired rather than quarantined, and the
+  // difference is worth stating because both looked identical from here: a user-table write path
+  // built ahead of a `ComingSoon` surface.
+  //
+  // `/library/books` was pure CRUD over a table that already existed, so "coming soon" was only
+  // ever true for want of a caller — it was built (N3). `/chat/[id]` says in its own copy that
+  // study partners "arrive with the trained model", so `chat_memories` is infrastructure for a
+  // feature that CANNOT be built today. Deleting it under bylaw 3 would destroy work for a
+  // capability the product publicly promises, to satisfy a check; quarantining it says the same
+  // thing honestly and costs nothing.
+  //
+  // The test below still demands this entry be REMOVED the moment anything calls it, so this is a
+  // record of a decision rather than a place to hide one.
+  ['addChatMemory', 'ledger N4 — chat_memories backs /chat, a ComingSoon gated on the trained model'],
 ]);
 
 /** Every .ts/.tsx file under web/src. */

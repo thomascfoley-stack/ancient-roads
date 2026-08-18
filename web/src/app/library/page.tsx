@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { count } from '@/lib/plural';
 import { CATALOGS, CATALOG_IDS, catalogTraditions } from '@/lib/catalog';
 import { libraryLabel } from '@/lib/library-nav';
-import { listContinueReading, listLibraryItems, type ContinueReadingRow, type LibraryItem } from '@/lib/library';
+import { listContinueReading, type ContinueReadingRow } from '@/lib/library';
 import { requireUser } from '@/lib/session';
 
 export const metadata = { title: 'Library' };
@@ -29,15 +29,19 @@ const YOURS = (['/library/notes', '/library/books', '/library/word-study', '/lib
   (href) => ({ href, label: libraryLabel(href) }),
 );
 
-async function personal(): Promise<{ reading: ContinueReadingRow[]; shelf: LibraryItem[] } | null> {
+// N5: this used to `Promise.all` a `listLibraryItems(userId, { limit: 12 })` alongside the
+// reading list and return it as `shelf` — and `mine.shelf` appeared NOWHERE in the JSX below. A
+// per-request, RLS-scoped, sources-joined query on the busiest personal surface in the app, whose
+// result was discarded every single time. The shelf now has a page of its own (/library/books),
+// which is where that query belongs and where it now lives.
+async function personal(): Promise<{ reading: ContinueReadingRow[] } | null> {
   let userId: string;
   try {
     userId = (await requireUser()).id;
   } catch {
     return null; // signed out — not an error, just no personal shelf
   }
-  const [reading, shelf] = await Promise.all([listContinueReading(userId, { limit: 6 }), listLibraryItems(userId, { limit: 12 })]);
-  return { reading, shelf };
+  return { reading: await listContinueReading(userId, { limit: 6 }) };
 }
 
 export default async function LibraryHubPage({
