@@ -303,6 +303,32 @@ export default function ReaderPage() {
     : '';
   const studyWords = study && original ? original.verses[String(study.verse)] ?? [] : null;
 
+  // A027 — THE VERSE BEFORE AND AFTER THE OPEN ONE, so the panel can step through the chapter
+  // instead of being closed and reopened for every verse.
+  //
+  // Derived from `data.verses`, NOT from `study.verse ± 1`. The list is filtered to verses that
+  // actually render — VerseDisplay skips `!v.text` — so "next" is the next verse the reader can
+  // SEE, and a gap in the chapter's text cannot strand the panel on a blank one. `null` at either
+  // end is what disables the control; an unknown verse (the panel can be open before `data` lands)
+  // disables both, which is honest rather than a guess.
+  const studyNeighbours = useMemo(() => {
+    if (!study || !data) return { prev: null, next: null };
+    const rendered = data.verses.filter((v) => v.text).map((v) => v.verse);
+    const i = rendered.indexOf(study.verse);
+    if (i === -1) return { prev: null, next: null };
+    return { prev: rendered[i - 1] ?? null, next: rendered[i + 1] ?? null };
+  }, [study, data]);
+
+  // A027/A028 — move the open verse WITHIN the chapter. Not `openStudy`, because that takes a tab
+  // and would make every caller decide one: `s.tab` KEEPS the reader's tab, which is the whole
+  // point of stepping (reading commentary verse by verse must not drop you back on Commentaries'
+  // sibling every step — and StudyPanel holds the tab across a verse change on its own side too).
+  // `focusWordIdx`/`focusWord` are dropped by omission: a word index belongs to the verse it was
+  // taken from, and carrying `focusWord` over would swap the panel for WordPanel mid-step.
+  const navigateStudy = useCallback((verse: number) => {
+    setStudy((s) => (s ? { verse, tab: s.tab } : s));
+  }, []);
+
   // A035 — AN IMPOSSIBLE CHAPTER MUST NOT BE A DEAD END.
   //
   // `/read/psa/999` used to render this one grey sentence and nothing else: no link, no picker, no
@@ -470,6 +496,9 @@ export default function ReaderPage() {
           lang={original?.lang ?? null}
           defaultTab={study.tab}
           focusWordIdx={study.focusWordIdx}
+          prevVerse={studyNeighbours.prev}
+          nextVerse={studyNeighbours.next}
+          onNavigate={navigateStudy}
           verseId={encodeVerseId({ book: book.bookNum, chapter: chapterNum, verse: study.verse })}
           annotation={{
             color: highlights.get(study.verse)?.at(-1)?.color ?? null,

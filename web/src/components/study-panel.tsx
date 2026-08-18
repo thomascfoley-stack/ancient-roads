@@ -36,6 +36,9 @@ export function StudyPanel({
   defaultTab = 'commentaries',
   focusWordIdx,
   verseId,
+  prevVerse = null,
+  nextVerse = null,
+  onNavigate,
   onTabChange,
   onClose,
 }: {
@@ -50,6 +53,19 @@ export function StudyPanel({
   focusWordIdx?: number;
   /** Numeric verse id, for the Pray entry point. Optional so existing callers are unaffected. */
   verseId?: number;
+  /** A027/A028 — THE PANEL IS IN A SEQUENCE AND DID NOT KNOW IT.
+   *
+   *  The verse before / after this one IN THE RENDERED CHAPTER, or null at either end. The caller
+   *  derives them because the caller is the one holding the chapter; the panel is handed the answer
+   *  so it never has to guess what "next" means (the next verse is not always `verseNum + 1` — a
+   *  verse with no text renders nothing, so stepping onto it would open an empty panel).
+   *  `null` is what makes the control DISABLED rather than dead. */
+  prevVerse?: number | null;
+  nextVerse?: number | null;
+  /** Moves the open verse WITHIN the chapter. Not a fetch: everything the panel needs for the
+   *  neighbouring verse is already in the caller's hands. Absent = no stepping controls at all,
+   *  which is how existing callers stay untouched. */
+  onNavigate?: (verse: number) => void;
   onTabChange?: (tab: StudyTab) => void;
   onClose: () => void;
 }) {
@@ -57,7 +73,19 @@ export function StudyPanel({
   const drag = useDragDismiss(onClose);
   const dialog = useDialog(onClose, 'Study this verse');
 
-  useEffect(() => setTab(defaultTab), [defaultTab, verseNum]);
+  // A027 — THE TAB IS THE READER'S MODE, NOT A PROPERTY OF THE VERSE, so it survives a verse
+  // change: someone reading commentary verse by verse stays on Commentaries, and someone comparing
+  // the Greek stays on Word study.
+  //
+  // `verseNum` was in this dep array and is deliberately gone. It re-derived the tab from
+  // `defaultTab` on every step, which made the persistence rest ENTIRELY on the caller happening to
+  // carry the current tab across a navigate — it does (page.tsx `navigateStudy`), so nothing is
+  // visibly different today, and that is exactly the problem: the property would be held by the
+  // other file, silently, and a caller that passed a fixed tab would snap the reader back to
+  // Commentaries on every step with nothing here to notice. `defaultTab` alone still resets when
+  // the CALLER asks for a different tab, which is the only case that ever wanted a reset —
+  // WordPanel's "show commentary" and the `#v16:study` deep link both change it.
+  useEffect(() => setTab(defaultTab), [defaultTab]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -84,7 +112,27 @@ export function StudyPanel({
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-stone-950/[0.32] animate-fade-in dark:bg-stone-50/[0.08]"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        // A028 — A CLICK ON A VERSE NUMBER BEHIND THE SCRIM ASKS FOR THAT VERSE, NOT FOR CLOSE.
+        //
+        // The scrim is `inset-0`, so it lies over the whole reading column. The chapter is still
+        // legible through it at 32% and the verse numbers still LOOK like the handles they are —
+        // but every click on one landed here, matched `target === currentTarget`, and closed the
+        // panel. Reported twice by the same QA session: the reader aims at verse 3, the sheet
+        // vanishes, and nothing says why.
+        //
+        // Only the NUMBER switches. A click on the verse text still closes, deliberately: ADR-047
+        // already rules that the number is the handle and the text is not, and making the text a
+        // switch would leave almost nowhere on a reading page to click-outside-to-close.
+        if (e.target !== e.currentTarget) return; // inside the sheet — not an outside click at all
+        const verse = onNavigate ? verseHandleUnder(e.clientX, e.clientY) : null;
+        // Tapping the OPEN verse's own handle falls through to close: the panel is already showing
+        // it, so switching would be a click that visibly does nothing, and a second tap on the
+        // handle you opened with reads as toggling it back off.
+        if (verse !== null && verse !== verseNum) {
+          onNavigate?.(verse);
+          return;
+        }
+        onClose();
       }}
     >
       <div
@@ -100,20 +148,37 @@ export function StudyPanel({
         {/* Header */}
  <div className="flex items-center justify-between border-b edge px-5 py-3" {...drag.handleProps}>
           <div>
-            <p className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">{reference}</p>
+            {/* A027 — announced, because the verse can now change UNDER the panel. Without this a
+                screen-reader user who presses Next hears nothing at all: the dialog's own name is
+                static ("Study this verse") and the reference is the only thing that says which
+                verse is open. Polite, so it never interrupts the commentary being read. */}
+            <p aria-live="polite" className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">{reference}</p>
             <p className="mt-0.5 line-clamp-2 max-w-md font-scripture text-sm italic leading-snug text-stone-600 dark:text-stone-400">
               &ldquo;{verseText}&rdquo;
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-600 active:bg-stone-100 dark:hover:bg-stone-800"
-            aria-label="Close"
-          >
-            <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </button>
+          {/* A027 — VERSE-BY-VERSE READING WITHOUT LEAVING THE PANEL. Filed as MAJOR: every single
+              verse cost a close, a hunt for the next number on the page behind, and a reopen — and
+              the panel was already holding a chapter's worth of context it could step through.
+              These sit INSIDE the drag handle, which is safe by construction: `useDragDismiss`
+              refuses to start a drag from a press on a control (drag-handle-swallows-clicks). */}
+          <div className="flex shrink-0 items-center">
+            {onNavigate && (
+              <>
+                <VerseStepButton verse={prevVerse} direction="previous" onNavigate={onNavigate} />
+                <VerseStepButton verse={nextVerse} direction="next" onNavigate={onNavigate} />
+              </>
+            )}
+            <button
+              onClick={onClose}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-100 hover:text-stone-600 active:bg-stone-100 dark:hover:bg-stone-800"
+              aria-label="Close"
+            >
+              <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Always-visible highlight row */}
@@ -164,6 +229,85 @@ export function StudyPanel({
 
       </div>
     </div>
+  );
+}
+
+/**
+ * A028 — which verse handle, if any, is under a point on the scrim.
+ *
+ * `elementsFromPoint` (plural) returns the whole paint-order stack, so the scrim itself comes back
+ * first and whatever the reader was actually aiming at comes back behind it. That is the only way
+ * to answer this question without making the scrim `pointer-events: none`, which would hand every
+ * click through to the page behind a dialog that declares `aria-modal` — a worse defect than the
+ * one being fixed.
+ *
+ * `[data-verse-handle]` is the reading surface's contract for "this element IS the verse's handle"
+ * (verse-display.tsx). Reaching for the enclosing `[data-verse]` instead would make the whole verse
+ * — text included — a switch, which ADR-047 rules against.
+ *
+ * The typeof guard is not defensive noise: this is a LAYOUT query, jsdom has no layout and does not
+ * implement it, and the fallback is deliberately `null` so that where the API is missing the panel
+ * behaves exactly as it did before (close), rather than guessing at a verse.
+ */
+function verseHandleUnder(x: number, y: number): number | null {
+  if (typeof document.elementsFromPoint !== 'function') return null;
+  for (const el of document.elementsFromPoint(x, y)) {
+    if (!(el instanceof HTMLElement)) continue;
+    const handle = el.closest<HTMLElement>('[data-verse-handle]');
+    if (!handle) continue;
+    const verse = Number(handle.dataset.verseHandle);
+    return Number.isInteger(verse) ? verse : null;
+  }
+  return null;
+}
+
+/**
+ * A027 — one step along the chapter.
+ *
+ * `verse === null` means there is no neighbour that way (the chapter's first or last rendered
+ * verse), and the button is DISABLED rather than hidden: hiding it would shift the close button
+ * sideways at exactly the two moments the reader is clicking repeatedly in that spot. Disabled is
+ * also what stops it being a dead control — `<button disabled>` fires no click and is announced as
+ * unavailable, where a live-looking button that does nothing is the "fake door" this repo files as
+ * its own defect class.
+ *
+ * Chevrons point LEFT/RIGHT, not up/down, even though verses run down the page: an up/down pair in
+ * the header of a bottom sheet reads as expand/collapse, which is a gesture this sheet already has
+ * (drag the handle).
+ */
+function VerseStepButton({
+  verse,
+  direction,
+  onNavigate,
+}: {
+  verse: number | null;
+  direction: 'previous' | 'next';
+  onNavigate: (verse: number) => void;
+}) {
+  const label = direction === 'previous' ? 'Previous verse' : 'Next verse';
+  return (
+    <button
+      type="button"
+      disabled={verse === null}
+      onClick={() => {
+        // The null check is the type narrowing, not a second belt: at the boundary the button is
+        // disabled and this handler is unreachable.
+        if (verse !== null) onNavigate(verse);
+      }}
+      aria-label={label}
+      title={label}
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-stone-600 active:bg-stone-100 disabled:pointer-events-none disabled:opacity-30 dark:text-stone-400 dark:hover:bg-stone-800"
+    >
+      <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path
+          d={direction === 'previous' ? 'M11 4L6 9l5 5' : 'M7 4l5 5-5 5'}
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
   );
 }
 

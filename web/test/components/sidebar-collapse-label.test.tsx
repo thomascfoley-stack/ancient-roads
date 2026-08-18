@@ -21,6 +21,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Sidebar } from '@/components/sidebar';
+import { stubMatchMedia } from '../helpers/match-media';
 
 // The two things the shell needs from outside itself, stubbed at their least interesting value —
 // same reasoning (and the same ResizeObserver note) as sidebar-writing-rail.test.tsx.
@@ -33,6 +34,15 @@ class NoopResizeObserver {
   disconnect() {}
 }
 vi.stubGlobal('ResizeObserver', NoopResizeObserver);
+
+// A THIRD browser API jsdom does not implement, added 2026-08-17 with A093: `Sidebar` consults
+// `matchMedia` on mount to decide whether it is booting on a tablet, and jsdom has none, so
+// without this every case below dies in the effect rather than on the label it is testing.
+// 1280 = DESKTOP DELIBERATELY: this file asserts the control's two states as a reader drives it,
+// which requires starting from the expanded one. A093's own default — the rail at 768–1023px — is
+// asserted in `test/components/sidebar-tablet-default.test.tsx`, including the leg proving the
+// chevron still works there, so nothing is lost by pinning this file to one width.
+stubMatchMedia(1280);
 
 afterEach(() => {
   cleanup();

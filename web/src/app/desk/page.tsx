@@ -127,6 +127,13 @@ function DeskInner() {
         <div className="flex flex-wrap justify-center gap-2">
           {/* PRD §6 CTAs: 1px hairline, transparent, fill on hover — primary in ink,
               secondary in ink-wash. */}
+          {/* A075 — REPORTED as "navigates away to the plain reader instead of putting a Scripture
+              pane on the desk". Measured FALSE (2026-08-17, driven at 390px): this is a button, it
+              opens the picker in pick mode, and `addScripture` writes the pane into `?p=` without
+              leaving /desk. It has been a button since 5760eec (2026-08-02). Kept a button
+              DELIBERATELY — the empty state's copy promises panes, and a link to /read/... is the
+              obvious-looking rewrite that would make the copy a lie. Welded by
+              test/components/desk-empty-cta-adds-scripture.test.tsx. */}
           <button
             type="button"
             onClick={() => setPickingBible(true)}
@@ -199,8 +206,42 @@ function DeskInner() {
         {panes.map((pane, i) => (
           <div
             key={`${pane.kind}:${pane.kind === 'work' ? pane.slug : `${pane.book}/${pane.chapter}`}`}
-            className="flex min-h-[60vh] min-w-0 flex-1 lg:min-h-0"
+            // flex-col (was a bare `flex` row holding one child) so the A079 line below can sit
+            // above the pane. The pane keeps `flex-1`, so it still takes the whole remaining box on
+            // both axes and the desktop layout is unchanged — verified in a browser at 1280px.
+            className="flex min-h-[60vh] min-w-0 flex-1 flex-col gap-1.5 lg:min-h-0"
           >
+            {/* A079 — A STACKED DESK GAVE NO SIGN THE OTHER PANES EXISTED.
+                MEASURED FIRST, because the finding offered three treatments and two of them
+                describe a layout this desk does not have. At 390x844 with two panes open:
+                `scrollWidth === clientWidth` (nothing scrolls sideways), pane 1 was 3165px tall at
+                y=12, pane 2 began at y=3189. The panes STACK below `lg:` — so a swipe hint or a
+                dot-pager would advertise a horizontal gesture that does nothing, which is worse
+                than the silence it replaced. A counter is the treatment that matches the layout.
+
+                WHY PER PANE RATHER THAN ONE LINE AT THE TOP. The same measurement decides it: the
+                first pane alone is 3.8 screens tall, so a single top-of-page line is off-screen for
+                most of the scroll, and a reader who lands mid-stack (after closing a pane, or on a
+                shared link) never sees it at all. Attached to each pane it is present at the top of
+                whichever pane you are on, and it doubles as "where am I".
+
+                `lg:hidden` because above that breakpoint the panes ARE side by side and visibly
+                co-present — there the line would be a caption stating what the reader can see.
+
+                Not a `role="status"`: nothing changed, this is a standing property of the layout.
+                The same reasoning as SessionOnlyNote above, and the same mechanical consequence —
+                `desk-cap-notice.test.tsx` reads the one status role on this page as the A078 cap
+                notice. */}
+            {panes.length > 1 && (
+              <p className="shrink-0 font-sans text-xs text-stone-500 dark:text-stone-400 lg:hidden">
+                {/* The last pane gets the number without the invitation: there is nothing below it,
+                    and pointing a reader at a pane that is not there is the failure mode the A078
+                    overflow count was careful to avoid. */}
+                {i + 1 < panes.length
+                  ? `Pane ${i + 1} of ${panes.length} — scroll down for the next`
+                  : `Pane ${panes.length} of ${panes.length}`}
+              </p>
+            )}
             <DeskPane pane={pane} onClose={() => close(i)} onReplace={(p) => replace(i, p)} />
           </div>
         ))}

@@ -463,9 +463,60 @@ const CATALOG_ICON: Partial<Record<CatalogId, React.ReactNode>> = {
   theology: <TabletIcon />,
 };
 
+/**
+ * A093 — THE WIDTH BAND THAT GETS THE ICON RAIL INSTEAD OF THE 256px SIDEBAR.
+ *
+ * The 2026-08-16 QA fleet filed it as "no dedicated tablet nav treatment — 768px renders the full
+ * 256px desktop sidebar with full text labels (consuming a third of the screen); one pixel
+ * narrower flips entirely to the phone bottom-nav layout". Both halves check out in the source:
+ * `mobile-nav.tsx:93` is `md:hidden` and this file's `<aside>` is `hidden … md:flex`, so 767px and
+ * 768px are two completely different navigations with nothing between them.
+ *
+ * THE BOUNDS ARE THE ONES ALREADY IN THE BUILD, not a new breakpoint. `768px` is Tailwind's `md`,
+ * the exact pixel the bottom tab bar hands over at; `1023.98px` is the last width below `lg`,
+ * where the viewport is wide enough that 256px of chrome stops being a third of it. Widening this
+ * band is a design decision, not a tidy-up — a desktop reader must never boot collapsed.
+ *
+ * Written as a media query rather than a `window.innerWidth` read on purpose: the browser owns the
+ * definition of "how wide am I" (zoom, device pixel ratio, scrollbar gutters all move it), and a
+ * media query is the same arithmetic the stylesheet next door is already doing.
+ */
+// The band's floor is `md` (768px), NOT `sm` (640px), and the difference is load-bearing rather
+// than cosmetic. This `<aside>` is `hidden … md:flex` and mobile-nav is `md:hidden`, so below 768px
+// the rail does not render at all and the reader has the bottom tab bar instead. A floor of 640px
+// therefore set `collapsed` across a range where the sidebar is invisible — harmless on screen,
+// but it means a phone rotated up into tablet width arrives already collapsed, having never been
+// shown the choice. Caught by this change's own test ("does not fire on the phone side of the
+// cliff"), which asserted 767px and went red against the 640px floor.
+const TABLET_MEDIA_QUERY = '(min-width: 768px) and (max-width: 1279.98px)';
+
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+
+  // A093 — A TABLET BOOTS INTO THE RAIL. This is the whole treatment: no new breakpoint system,
+  // no third layout, just the collapse this component already had, defaulted ON inside the band
+  // above. The chevron is untouched, so it stays a DEFAULT and not a lockout.
+  //
+  // `false` REMAINS THE INITIAL STATE and the query is read in an effect, never during render.
+  // Reading it during render would make the first client pass disagree with the server's (which
+  // has no viewport at all) — the React #418 this file has already paid for twice, once on the
+  // Sign in/Sign out branch below and once on the Bible link. The cost of doing it correctly is
+  // one frame of the wide sidebar on a tablet before it collapses; the cost of doing it the other
+  // way is a hydration error on every page load in the app.
+  //
+  // IT LISTENS FOR `change`, NOT FOR EVERY RESIZE, and the difference is the reader's own choice:
+  // a `change` fires only when the answer FLIPS, so expanding the rail and then resizing within
+  // the band leaves it expanded, while crossing out of the band (rotation, a window dragged wider)
+  // applies the default for the layout the reader has actually moved to.
+  useEffect(() => {
+    const tablet = window.matchMedia(TABLET_MEDIA_QUERY);
+    setCollapsed(tablet.matches);
+    const onCross = (e: MediaQueryListEvent) => setCollapsed(e.matches);
+    tablet.addEventListener('change', onCross);
+    return () => tablet.removeEventListener('change', onCross);
+  }, []);
+
   // A034 — the writing rail's own Bible link. Same hardlink, same fix, its own state because this
   // is a different component from SidebarNavContent and the value cannot be shared without lifting
   // it. Seeded with the DEFAULT for the same hydration reason.
@@ -519,49 +570,35 @@ export function Sidebar() {
   if (pathname === '/gate') return null;
 
   if (writing && !railOpen) {
-    // A DELIBERATE SUBSET, not a mirror of the full nav: while writing, the rail offers the few
-    // places a reader might actually leave for. Adding a destination here is a design decision,
-    // not a sync task — do not derive this from the catalog list.
-    const railLinks = [
-      { href: '/home', label: 'Home', icon: <HomeIcon /> },
-      { href: bibleHref, label: 'Bible', icon: <BookIcon /> },
-      { href: '/ask', label: 'Ancient Paths', icon: <AskIcon /> },
-      { href: '/plans', label: 'Reading plans', icon: <CalendarIcon /> },
-      { href: '/prayers', label: 'My prayers', icon: <PrayerIcon /> },
-      { href: '/library', label: 'All items', icon: <BookStackIcon /> },
-      { href: '/settings', label: 'Settings', icon: <SettingsIcon /> },
-    ];
     return (
       <aside
         aria-label="Navigation"
         onMouseEnter={() => setRailOpen(true)}
         className="hidden w-[58px] flex-col items-center gap-1 border-r edge bg-stone-200 py-4 md:flex dark:bg-stone-900"
       >
-        {railLinks.map((l) => {
-          const active = l.href === '/home' ? pathname === '/home' : pathname.startsWith(l.href);
-          return (
-            <Link
-              key={l.href}
-              href={l.href}
-              aria-label={l.label}
-              title={l.label}
-              className={`flex h-9 w-9 items-center justify-center transition-colors ease-gentle ${
-                active
-                  ? 'text-stone-900 dark:text-stone-200'
-                  : 'text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200'
-              }`}
-            >
-              {l.icon}
-            </Link>
-          );
-        })}
+        <IconRailLinks pathname={pathname} bibleHref={bibleHref} />
       </aside>
     );
   }
 
   if (collapsed) {
     return (
-      <aside className="hidden w-12 flex-col items-center border-r edge bg-stone-200 py-3 md:flex dark:bg-stone-900">
+      // A093 — THE COLLAPSED RAIL CARRIES DESTINATIONS NOW, and that is a precondition of the
+      // tablet default above rather than a bonus. Until this change the collapsed state was a
+      // 48px strip holding exactly ONE control: the chevron that undoes it. On desktop that is
+      // the reader's own choice and one click from reversible. As a tablet DEFAULT it would have
+      // been a screen with no navigation on it at all — the rail empty AND `mobile-nav.tsx`'s
+      // bottom tab bar absent, because that bar is `md:hidden`.
+      //
+      // Same list as the writing-mode rail, from `IconRailLinks` — one source, because two
+      // hand-kept copies of a destination list is the failure this repo has now logged sixteen
+      // times. Landmark named to match that rail for the same reason: at tablet width this IS the
+      // navigation, and an unnamed `complementary` region is not something a screen-reader user
+      // can jump to.
+      <aside
+        aria-label="Navigation"
+        className="hidden w-12 flex-col items-center gap-1 border-r edge bg-stone-200 py-3 md:flex dark:bg-stone-900"
+      >
         <button
           onClick={() => setCollapsed(false)}
           className="p-1 text-stone-500 transition-colors ease-gentle hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
@@ -572,6 +609,7 @@ export function Sidebar() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
           </svg>
         </button>
+        <IconRailLinks pathname={pathname} bibleHref={bibleHref} />
       </aside>
     );
   }
@@ -1018,6 +1056,61 @@ function SidebarLink({
         {label}
       </span>
     </Link>
+  );
+}
+
+/**
+ * THE ICON RAIL'S DESTINATIONS — one list, rendered by BOTH narrow rails.
+ *
+ * A DELIBERATE SUBSET, not a mirror of the full nav: a rail this narrow offers the few places a
+ * reader might actually leave for. Adding a destination here is a design decision, not a sync
+ * task — do NOT derive this from the catalog list. (The Desk, added to the full nav on 2026-08-17
+ * by A072, is deliberately not here: putting it on the rail is that same design decision and
+ * belongs to whoever makes it, not to A093's layout fix.)
+ *
+ * WHY IT IS A COMPONENT RATHER THAN A LIST IN ONE BRANCH. It was inline in the writing-mode rail
+ * until A093 gave the collapsed rail the same job — a tablet boots into the collapsed rail, so
+ * that rail had to stop being a chevron on an empty strip. Two rails that render "the same
+ * destinations" from two typed lists agree on the day they are written and drift afterwards;
+ * that is the failure mode this repo keeps a running count of. One list cannot drift, and
+ * `test/components/sidebar-tablet-default.test.tsx` asserts the two rails still match by
+ * rendering both and comparing.
+ *
+ * Every link carries `aria-label` AND `title`: the glyphs are the only label a sighted reader
+ * gets, and the two attributes are set from one binding so they cannot disagree (A095's lesson,
+ * applied where it was already correct).
+ */
+function IconRailLinks({ pathname, bibleHref }: { pathname: string; bibleHref: string }) {
+  const links = [
+    { href: '/home', label: 'Home', icon: <HomeIcon /> },
+    { href: bibleHref, label: 'Bible', icon: <BookIcon /> },
+    { href: '/ask', label: 'Ancient Paths', icon: <AskIcon /> },
+    { href: '/plans', label: 'Reading plans', icon: <CalendarIcon /> },
+    { href: '/prayers', label: 'My prayers', icon: <PrayerIcon /> },
+    { href: '/library', label: 'All items', icon: <BookStackIcon /> },
+    { href: '/settings', label: 'Settings', icon: <SettingsIcon /> },
+  ];
+  return (
+    <>
+      {links.map((l) => {
+        const active = l.href === '/home' ? pathname === '/home' : pathname.startsWith(l.href);
+        return (
+          <Link
+            key={l.href}
+            href={l.href}
+            aria-label={l.label}
+            title={l.label}
+            className={`flex h-9 w-9 items-center justify-center transition-colors ease-gentle ${
+              active
+                ? 'text-stone-900 dark:text-stone-200'
+                : 'text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200'
+            }`}
+          >
+            {l.icon}
+          </Link>
+        );
+      })}
+    </>
   );
 }
 
