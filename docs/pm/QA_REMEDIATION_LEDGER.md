@@ -13,7 +13,7 @@ authenticated sessions). IDs below are positional within each sheet.
 
 | Disposition | Count |
 |---|---|
-| **Done** | 43 |
+| **Done** | 44 |
 | **Not reproduced / retracted** | 13 |
 | **No action** — positive or informational notes | 41 |
 | **Open — me** | 22 |
@@ -21,7 +21,7 @@ authenticated sessions). IDs below are positional within each sheet.
 | **Open — corpus & retrieval lane** | 15 |
 | **Total** | **156** |
 
-**2026-08-17 addendum (N1/N3/N4/N5/N6 slices).** Done 39 -> 43. §5b grew 2 -> 6. FIVE are closed — N1/N3/N5/N6 fixed, N4 closed as a recorded decision to keep it quarantined (see its row). **N2 is OPEN**: the /ask tab-bar double-offset is a design change (it moves the composer on every mobile view), so it was never in scope for these slices. **Two counts re-measured against the actual rows rather than carried:** §1 has exactly 43 data rows and §4 exactly 22, which is what those two now say.
+**2026-08-17 addendum (N1/N3/N4/N5/N6 slices).** Done 39 -> 44. §5b grew 2 -> 6. FIVE are closed — N1/N3/N5/N6 fixed, N4 closed as a recorded decision to keep it quarantined (see its row). **N2 is now CLOSED too** (owner-directed 2026-08-17): it was held back as a design change because it moves the composer on every mobile view, and that is exactly what it does — 52px reclaimed, measured before and after. **Two counts re-measured against the actual rows rather than carried:** §1 has exactly 44 data rows and §4 exactly 22, which is what those two now say.
 
 An earlier version of this note recorded that the bucket table disagreed with its own section heading (`Open — me | 30` against a §4 titled `(47)`) and deliberately left it visible. **That contradiction was fixed by the 2026-08-17 reconcile (`ae7b133`), which moved both to 22**, so the note is retired rather than repeated. The remaining bucket counts are NOT re-derived here: the obvious instrument for it (a regex over `| ID |` rows) cannot see this file's multi-id rows such as `| A056 / A057 / A067 |`, and reporting a partition gap measured with a tool known to undercount would be the watchlist's sixth artefact — an instrument's blind spot written down as a property of the thing it could not see.
 
@@ -37,7 +37,7 @@ breaches** (B001, B002).
 
 ---
 
-## 1. Done (43)
+## 1. Done (44)
 
 | ID | Finding | Commit |
 |---|---|---|
@@ -81,6 +81,7 @@ breaches** (B001, B002).
 | A014 | Third example prompt clipped at 390px | batch 2 — not the divider; a 48px+safe-area band sat under the composer at every scroll offset |
 | A017 | Empty error banner frame on retry | batch 2 — **filed mechanism disproven**; an adjacent latent path (error event with no message) guarded instead |
 | N1 | **"Continue reading" on the Library hub was dead for every account** — `saveReadingProgress` had zero call sites, so `listContinueReading` could only return `[]` | `1c95774` |
+| N2 | `/ask` reserved the mobile tab bar twice — composer floated 71px above it | `PENDING4` |
 | N3 | The `library_items` write path was dead — nothing in the app could shelve a work | `a5b0ce0` |
 | N5 | The Library hub queried the shelf on every load and discarded the result | `a5b0ce0` |
 | N6 | `npm run audit` was RED on two legs (web/test typecheck; test residue) | `93fbcb3` |
@@ -228,12 +229,12 @@ No agent can close these.
 
 ---
 
-## 5b. NEW — found while fixing, not in either sheet (6: five closed, N2 OPEN)
+## 5b. NEW — found while fixing, not in either sheet (6, all closed)
 
 | # | Item | Note |
 |---|---|---|
 | N1 | **CLOSED — see §1.** Wired: `POST /api/work/[slug]/progress`, called from the Book Reader, throttled 30s + flush on leave. Round-trip proven against dev Postgres under real RLS; four red-proofs watched fail |
-| N2 | `/ask` double-counts the tab-bar offset | `main` reserves the tab-bar height and the composer's sticky offset reserves it again — ~60px wasted on every mobile view. This is WHY A014's permanent overlap exists; closing it moves the composer on every mobile view, so it is a design change. Filed as a task chip |
+| N2 | **CLOSED.** The double-count was real and measured, not inferred: at 390x844 `main` padded 60px and the composer's sticky offset spelled out the same `3.75rem + safe-area` again (64px), so the composer sat **124px above the viewport bottom and 71px above the tab bar**, with a 60px `after:` mask whose only job was to hide the gap the duplicate opened. Sticky resolves against the SCROLL CONTAINER, whose content box the shell has already lifted. Now `bottom-3` / `after:h-4`: **19px above the tab bar, 52px reclaimed on every mobile view.** A014's reserve on the scroll column is DELETED rather than retuned — the overlap is now negative, which is the condition that already made desktop `md:pb-0`, so the mobile/desktop split collapses into one declaration. Clearance at max scroll measured 56px, so A014's own property (the bottom of the document is reachable) still holds. The three FIXED chips keep the full reserve and must — fixed resolves against the viewport — which is why `tab-bar-reserved-once.test.ts` reads the position type rather than the offset alone |
 | N3 | **CLOSED.** Built rather than deleted, and the reasoning is the same evidence that keeps N4 dead: `/library/books` was pure CRUD over a table that already existed, so "coming soon" was only ever true for want of a caller. Ships `GET/PUT/DELETE /api/work/[slug]/shelf` (published-only on all three verbs, `isShelf` as the validator so the accepted set cannot drift from `SHELVES`), a Save/Saved control in the reader header (optimistic with revert; absent entirely when signed out), and `/library/books` as a real page. 13-case round trip against dev Postgres under RLS + 7 jsdom wiring cases, both red-proofed |
 | N4 | **CLOSED as a DECISION, not a fix — kept quarantined.** `chat_memories` looked identical to N3 from the ratchet's point of view (a user-table write path behind a `ComingSoon`), but `/chat/[id]` says in its own copy that study partners "arrive with the trained model", so this is infrastructure for a feature that cannot be built today. Deleting it under bylaw 3 would destroy work for a capability the product publicly promises, in order to satisfy a check. The `no-dead-user-table-writer` quarantine records the reason and still DEMANDS the entry be removed the moment anything calls it |
 | N5 | **CLOSED.** The hub's `personal()` no longer queries the shelf it never rendered — the query moved to `/library/books`, which is the page that displays it. `mine.shelf` appeared nowhere in the JSX; that was a per-request RLS-scoped sources-joined query discarded on every load of the busiest personal surface in the app |

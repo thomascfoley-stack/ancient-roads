@@ -345,35 +345,40 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
           boxes in a stack" the landing page and the library have already been moved off.
           They are a hairline-separated list now, in the reading face, so they read as
           questions a person might ask rather than as buttons. */}
-      {/* A014 — THE SCROLL COLUMN RESERVES THE COMPOSER'S FLOAT, or the bottom of the page is
-          unreachable. Two sessions filed the third example prompt as "clipped by the divider
-          below it at 390px"; it is not the `li` divider, it is the composer's top edge, and the
-          clipped strip cannot be scrolled to.
+      {/* A014 / N2 — THE COMPOSER'S FLOAT, AND WHY THERE IS NOTHING LEFT TO RESERVE HERE.
+          Two sessions filed the third example prompt as "clipped by the divider below it at
+          390px". It was never the `li` divider: it was the composer's top edge, over a strip of
+          document that could not be scrolled to.
 
-          MEASURED at 390x844 (dev server, computed style — not inferred): the scroller is
-          `main` (`app-shell.tsx:35`, `overflow-y-auto`), the composer is sticky 64px above
-          `main`'s CONTENT box, and this container's own `pb-4` is 16px. At maximum scroll the
-          composer therefore still sits `64px + safe-area - 16px` above its static position, so
-          that band of document is covered at EVERY scroll offset — 48px in a desktop browser,
-          82px on a phone reporting `safe-area-inset-bottom: 34px`. Against that, both states
-          offered ~56px of spacing (empty state: `pb-8` + the form's `mt-6`), which measured 8px
-          of clearance at maximum scroll — for the examples list AND for the foot of a rendered
-          answer, A/B'd at 390px by zeroing this padding. 8px is not a margin, it is a near miss:
-          the overlap grows with the safe-area inset and that 56px does not, so every notched
-          phone hides ~26px, which is the wrapped second line two sessions reported. Measured
-          after: 68px in both states, and 68px at every inset, because the reserve below is
-          expressed in the same token the overlap is.
+          The first fix (A014) reserved that strip on this scroll column —
+          `pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0` — and was correct about the
+          symptom while leaving the cause in place. The cause was a DOUBLE COUNT, named in A014's
+          own note and deliberately not taken there because closing it moves the composer on every
+          mobile view: `main` (app-shell.tsx) already pads its content box clear of the tab bar,
+          and the composer's sticky offset spelled out the same `3.75rem + safe-area` a second
+          time. Sticky resolves against the SCROLL CONTAINER, whose content box the shell has
+          already lifted — so the reserve landed twice.
 
-          Reserving the float here — on the scroll column, not on the examples list — is what
-          covers both states with one declaration. `flex-1` absorbs free space, so on a viewport
-          where the empty state already fits this adds no scroll: it eats grown space, not
-          height. Desktop is `md:pb-0` because there the offset is `md:bottom-3` (12px) against
-          the same 16px, a NEGATIVE overlap — nothing to reserve. Deliberately NOT fixed here:
-          `main` already pads by the tab-bar height (`md:pb-0` on that same line) and the
-          composer's sticky offset adds it a second time, which is why the composer floats a
-          whole tab-bar above the tab bar. Closing that double-count would move the composer on
-          every mobile view — a design change, not a clipping fix. Reported, not taken. */}
-      <div className={`pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0 ${turns.length === 0 ? 'flex flex-1 flex-col justify-center' : 'flex-1 space-y-8'}`}>
+          MEASURED at 390x844 (dev server, computed style):
+            before — main pb 60px, sticky bottom 64px, composer 124px above the viewport bottom
+                     and 71px above the tab bar, with an `after:` mask 60px tall whose only job
+                     was to hide the gap the double-count opened
+            after  — sticky bottom 12px, composer 72px above the viewport bottom and 19px above
+                     the tab bar; 52px of wasted band reclaimed on every mobile view
+
+          With the offset now 12px against this container's own 16px `pb-4`, the overlap is
+          NEGATIVE — there is no strip left to reserve, which is exactly the condition that made
+          desktop `md:pb-0` all along. So A014's reserve is gone rather than retuned, and the
+          mobile/desktop split with it: one `bottom-3`, one `after:h-4`. Clearance at maximum
+          scroll measured 56px, so the bottom of the document is still reachable, which is the
+          property A014 existed to protect.
+
+          The three FIXED bottom-anchored chips (reader Continue, verse popover, chapter toast)
+          keep the full `3.75rem + safe-area` and must: fixed resolves against the VIEWPORT, which
+          the shell's padding does not move, so there the reserve is the only thing holding them
+          off the tab bar. Same token, opposite meaning — `tab-bar-reserved-once.test.ts` reads the
+          position type for that reason. */}
+      <div className={turns.length === 0 ? 'flex flex-1 flex-col justify-center' : 'flex-1 space-y-8'}>
         {turns.length === 0 && (
           <div className="pb-8">
             <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">
@@ -434,7 +439,7 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
           composer's bottom edge instead of reappearing beneath it. Top-edge slide-under is
           ordinary sticky behavior and stays. */}
       <form onSubmit={(e) => { e.preventDefault(); ask(question); }}
-        className="edge sticky bottom-[calc(3.75rem+env(safe-area-inset-bottom)+0.25rem)] mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-accent-600 after:absolute after:inset-x-[-1px] after:top-full after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.5rem)] after:bg-stone-50 md:bottom-3 md:after:h-4 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400">
+        className="edge sticky bottom-3 mt-6 border bg-stone-50 p-3 focus-within:outline-2 focus-within:outline-solid focus-within:outline-accent-600 after:absolute after:inset-x-[-1px] after:top-full after:h-4 after:bg-stone-50 dark:bg-stone-950 dark:after:bg-stone-950 dark:focus-within:outline-accent-400">
         {/* Q1 — 13 of 20 QA-fleet sessions typed a full question and only then learned that
             asking needs an account: the composer, the lane chips and the example prompts all
             invited input and nothing said otherwise until the POST came back 401. The notice

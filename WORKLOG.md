@@ -1,5 +1,60 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-17 (QA remediation, N2) — /ask reserved the mobile tab bar twice; 52px back on every phone
+
+Owner-directed ("finish N2"). It had been held back deliberately — closing it MOVES the composer on
+every mobile view, which is a design change rather than a clipping fix — so the direction is the
+decision, and this is what it cost.
+
+**Measured before touching anything**, at 390x844 on the dev server, computed style rather than
+inferred:
+
+| | before | after |
+|---|---|---|
+| `main` padding-bottom | 60px | 60px (unchanged — the shell's reserve is correct) |
+| composer sticky `bottom` | 64px | 12px |
+| composer above viewport bottom | 124px | 72px |
+| **composer above the tab bar** | **71px** | **19px** |
+| `after:` mask height | 60px | 16px |
+
+The cause is in the geometry rather than in a number: `main` is the scroll container and already
+pads its content box clear of the tab bar, and **sticky resolves against the scroll container**, so
+a sticky child whose `bottom` also spells out `3.75rem + safe-area` reserves the same strip twice.
+The 60px mask underneath existed only to stop page content showing through the gap the duplicate
+opened — a second declaration whose whole job was hiding the first one's effect.
+
+**A014's reserve is DELETED, not retuned.** With the offset at 12px against this container's own
+16px `pb-4` the overlap is negative, which is precisely the condition that already made desktop
+`md:pb-0` — so the mobile/desktop split collapses to one `bottom-3` and one `after:h-4`. A014's
+actual property (the bottom of the document must be reachable) was re-measured, not assumed:
+**56px of clearance at maximum scroll**, against the 8px it measured before its own fix.
+
+**The exit test caught me over-reaching, which is the part worth keeping.** The first version
+flagged every `bottom-[calc(<reserve>…)]` and found FOUR sites. Three are `fixed` — the reader's
+Continue chip, the verse popover, the chapter toast — and for a fixed element the offset resolves
+against the VIEWPORT, which the shell's padding does not move. There the reserve is not a duplicate,
+it is the only thing holding those chips off the tab bar, and "fixing" them would have pushed all
+three underneath it. Same token, same shape, opposite meaning. `tab-bar-reserved-once.test.ts` now
+reads the POSITION TYPE, and carries a control asserting the three fixed users still keep the
+reserve — so the narrowing cannot later be mistaken for permission to strip them.
+
+Full web suite **1247 passed / 0 failed**. Browser verified at 390px and 1280px; desktop measured
+unchanged (main pb 0, composer 12px, no overflow).
+
+### NOT DONE / UNVERIFIED
+- **The ANSWERED state was not driven in a browser.** Asking needs a session and Neon Auth secrets
+  are Vercel-only, so the 390px walk covers the empty state only. The answered branch shares the
+  same single declaration and the same negative-overlap arithmetic that desktop has used since
+  A014, and its container class changed only by losing the reserve — but nobody has watched a
+  rendered answer scroll under this composer.
+- **A separate 7px over-reserve is left alone.** The shell reserves `3.75rem` (60px) while the tab
+  bar measures 53px tall, which is where the "19px above the tab bar" comes from rather than 12px.
+  That is a different defect (the reserve token disagreeing with the rendered height), it is not
+  the double-count, and it was not in scope. Not filed as a ledger row — recorded here.
+- **Nothing deployed.**
+- **`DEEPINFRA_API_KEY` still needs rotating** — owner is doing it next week.
+
+
 ## 2026-08-17 (QA remediation, N3/N4/N5) — the shelf is real: a work can be saved, and the page that promised it is no longer a stub
 
 Owner: "can you do n3-5 now?" All three closed. **N3 and N4 looked like the same defect and got
