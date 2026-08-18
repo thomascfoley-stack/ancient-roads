@@ -1,5 +1,45 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-17 (ops) — CDN freshness refusal diagnosed: the 211 files are a metadata repair the CDN never received; the sync is owner-gated on the corpus-store token
+
+`deploy.sh` refused at the corpus-CDN manifest freshness leg: 211 changed/unsynced, 0 orphaned.
+Diagnosed read-only — nothing written to the store, the corpus, or the manifest.
+
+- **What the 211 are, verified against the store's own bytes rather than inferred.** All 211 sit
+  under `commentaries/` (44 books); 0 new files, 0 deletes, +7,116 bytes across 360MB, and entry
+  counts are identical per file in every file sampled. A 22-file stride sample (every 10th of the
+  sorted plan) diffed disk against the fetched CDN copies: every rewritten entry belongs to
+  Luther / Manton / Pascal / Ignatius of Loyola / Bunyan / Jowett, and the only fields that
+  differ are `year` (backfilled — 62 of the paired entries, e.g. Manton 1874) and `verseEnd`
+  (12 widenings, e.g. 1Jn 2 Sermons II/III now span 13–14). Every added entry in the sample had
+  a text-identical twin on the CDN — no text bodies changed.
+- **Why every other leg was green, and legitimately so:** `corpusHash` hashes the inventory
+  (per-author entry counts), not bytes — `predeploy-gate.ts:299` says exactly this — and a
+  field-level rewrite moves no count. The freshness leg is the only leg built to see this class,
+  and it did.
+- **No licensing component.** 0 deletes means no unsynced quarantine (the fail-open case the
+  gate's message names); the ratchet and provenance legs passed on the same tree.
+- **The blocking credential is absent by design.** Root `.env.local`'s `BLOB_READ_WRITE_TOKEN`
+  belongs to the PRIVATE user-uploads store (boolean-compared against the corpus store id, no
+  match, value never printed). The `ancient-paths-corpus` token is owner-held and never written
+  to disk. With the wrong token the sync fails loudly on base-URL drift against the manifest's
+  `baseUrl` — it cannot silently write to the wrong store — but it also cannot succeed.
+- **Unlogged corpus write, flagged.** The repair postdates the 2026-08-15T11:17Z sync manifest,
+  and no WORKLOG entry or commit names it (`web/public` is gitignored, so an in-place rewrite
+  leaves no git trace — the WORKLOG entry IS the only possible record, and it is missing).
+  Benign in content, but 211 corpus files were rewritten by a session that left no record.
+
+### NOT DONE / UNVERIFIED
+
+- **⚑ OWNER: the sync itself.** With the `ancient-paths-corpus` read-write token in env:
+  `BLOB_READ_WRITE_TOKEN=… node scripts/corpus-blob-sync.mjs --execute` (plans 211 uploads /
+  0 deletes), then `node scripts/corpus-cdn-parity.mjs` (read-only), commit the updated
+  `docs/evidence/corpus-cdn/sync-manifest.json`, and re-run `deploy.sh`. Commentaries carry a
+  1-hour CDN TTL, so edge caches age out within the hour.
+- Only 22 of the 211 files were content-diffed; the other 189 share the plan-level shape
+  (changed hash, same path set, no adds/deletes) but their field-level diffs are inferred.
+- Which session performed the repair: not established.
+
 ## 2026-08-17 (fix) — the /ask composer mask, re-derived: N2's offset kept, its 4px full-width leak closed
 
 **AMENDED AFTER MERGING `ship/editor-deploy` (57 commits).** This branch and N2 (`73293f1`, below)
