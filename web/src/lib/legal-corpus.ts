@@ -29,6 +29,15 @@ export const MUST_NOT_SERVE_AUTHORS = [
   'GK Chesterton',
   'Douglas Wilson',
   'JRR Tolkien',
+  // Owner ruling 2026-08-18: the Origen veto extends to the pseudonymous attribution.
+  // NARROW ON PURPOSE, and the narrowness is the ruling. `commentary_entries` carries TWENTY-THREE
+  // `Pseudo-` author strings (Pseudo-Chrysostom 370, Pseudo-Jerome 198, Pseudo-Clement 173,
+  // Pseudo-Augustine 29, Pseudo-Athanasius 28, … ~660 rows in total). `Pseudo-X` is the scholarly
+  // convention for "wrongly attributed to X" — the text is by someone ELSE, usually anonymous and
+  // ancient. So a blanket `Pseudo-%` rule would veto twenty-two authors on the strength of a name
+  // that is not theirs and against whom no ruling exists. Only Origen's is listed, because only
+  // Origen has the standing ruling (A6 2026-07-17).
+  'Pseudo-Origen',
 ] as const;
 
 export type MustNotServeAuthor = (typeof MUST_NOT_SERVE_AUTHORS)[number];
