@@ -29,16 +29,27 @@ Diagnosed read-only — nothing written to the store, the corpus, or the manifes
   leaves no git trace — the WORKLOG entry IS the only possible record, and it is missing).
   Benign in content, but 211 corpus files were rewritten by a session that left no record.
 
+**SYNC EXECUTED 2026-08-18 06:04 UTC, owner at the terminal, gate's own command.** Plan matched
+the diagnosis exactly — 211 uploads / 0 deletes / 24,781 unchanged — completed in 85s, manifest
+rewritten (committed with this amendment). `corpus-cdn-parity.mjs` GREEN immediately after:
+stale=0, orphaned=0, 200 sampled, integrity-mismatch=0, fetch-failed=0. Commentaries carry a
+1-hour CDN TTL, so edge caches converge within the hour.
+
+**⚑ OWNER, filed during the run: rotate the `ancient-paths-corpus` store token.** The token value
+was pasted into a chat transcript mid-run (and sits in shell history and `~/.corpus_blob_token`).
+Rotation is free on this store — no project is connected, nothing in production holds the token,
+and public reads don't use tokens, so CDN serving is unaffected. Dashboard → Storage →
+ancient-paths-corpus. The on-disk copies go inert the moment it rotates. NOT the O-1 class (that
+is the prod DB password, deferred to January by owner ruling); this one costs a click now.
+**ROTATED same sitting, owner-confirmed, before the deploy re-ran.** The exposed value is dead;
+the leaked copies (chat transcript, shell history, `~/.corpus_blob_token`) are inert.
+
 ### NOT DONE / UNVERIFIED
 
-- **⚑ OWNER: the sync itself.** With the `ancient-paths-corpus` read-write token in env:
-  `BLOB_READ_WRITE_TOKEN=… node scripts/corpus-blob-sync.mjs --execute` (plans 211 uploads /
-  0 deletes), then `node scripts/corpus-cdn-parity.mjs` (read-only), commit the updated
-  `docs/evidence/corpus-cdn/sync-manifest.json`, and re-run `deploy.sh`. Commentaries carry a
-  1-hour CDN TTL, so edge caches age out within the hour.
 - Only 22 of the 211 files were content-diffed; the other 189 share the plan-level shape
   (changed hash, same path set, no adds/deletes) but their field-level diffs are inferred.
 - Which session performed the repair: not established.
+- `deploy.sh` re-run: pending, owner at the terminal.
 
 ## 2026-08-17 (fix) — the /ask composer mask, re-derived: N2's offset kept, its 4px full-width leak closed
 
