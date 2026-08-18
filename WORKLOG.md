@@ -1,5 +1,76 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-18 (licensing) — a MUST_NOT_SERVE author is SERVED on production, and today's veto cannot see it
+
+**Found while preparing the 621-work P4.n batch, not by looking for it.** The batch contained 22
+`chesterton-*` works; GK Chesterton went onto `MUST_NOT_SERVE_AUTHORS` this morning under the §17.10
+ruling. Checking why they were not already excluded exposed the defect.
+
+**THE DEFECT IS MINE, SHIPPED TODAY.** The veto names authors in the format
+`commentary_entries` uses. The `sources` table writes surname-first. Measured against the shipped
+guard, not inferred:
+
+```
+NOT vetoed   "Chesterton, Gilbert Keith"   <- what production actually stores
+NOT vetoed   "G.K. Chesterton"
+VETOED       "GK Chesterton"               <- the only form the veto knows
+```
+
+So the veto covers one surface and is blind on the one that serves readers. **Watchlist instance
+seventeen, same shape as eleven and sixteen: an expected set typed by hand in one format, guarding
+data written in another — introduced by the tranche that closed the finding it belongs to.**
+
+**LIVE EXPOSURE, measured read-only on `ep-odd-fog`:** `chesterton-preexistence`, `status=published`,
+**25 embedding rows with `served=true`**. It is retrievable now. A format-agnostic sweep of all 191
+prod works returns exactly two candidates — that one, and `origen-commentary` (staged, unserved,
+correctly held).
+
+**The first sweep I ran returned a FALSE CLEAN and is recorded rather than discarded.** It matched
+by token-subset, so it required `gk` to appear inside `Gilbert Keith` and reported only Origen —
+structurally unable to see the very case that prompted it. The instrument had the same blind spot as
+the thing it audited. The replacement matches on surname and carries a CONTROL asserting the known
+case is visible; without that control the clean result would have read as reassurance.
+
+**Fixing the veto is not a one-line edit.** `mustNotServeVetoSql()`'s default-column rendering IS the
+live production index predicate (migrations 117/118, applied 2026-08-18). Widening
+`MUST_NOT_SERVE_AUTHORS` changes that rendering and drifts it from the deployed index — a silent seq
+scan at best. A widened veto needs **migration 119** plus the zero-window rebuild, not a code edit.
+
+**Licensing basis, for the owner's call — reported, not adjudicated.** The manifest records
+`license: "Public Domain"` for all 25 Chesterton works, but the basis is `rightsDeclared` (CCEL
+asserted it) plus `year_basis: "authorDeathUpperBound"` — his 1936 death standing in for a
+publication year. Several were first published in the 1930s. `chesterton-thingsconsidered` records
+`year: 1969`, thirty-three years after his death: a data error inside a licensing claim. Copyright
+term is not an agent call.
+
+### Actions taken (both reversible, neither an owner-level call)
+
+- **22 `chesterton-*` works held out of the copy batch.** `all-remaining.json` is now **599 works /
+  487,064 flat rows / ~310 min**, with the held slugs and the reason recorded in the file itself.
+  Licensing fails closed; this is not a finding that they are unlicensed.
+- Nothing quarantined, nothing deleted, nothing unpublished. `chesterton-preexistence` is still
+  live and serving.
+
+### NOT DONE — owner decisions
+
+1. **`chesterton-preexistence`: leave live, or quarantine?** Content quarantine is an owner call
+   (`AGENTS.md`). It is serving right now either way.
+2. **The 22 held works: copy or hold?** They are inert if copied (staged, `served=false`), but
+   copying material from an author under a never-serve ruling wants a deliberate yes.
+3. **Migration 119 to widen the veto** to surname/initial-variant forms, with the zero-window
+   rebuild. Until then the veto covers `commentary_entries` only.
+
+### Also verified this session
+
+- The `commentary` copy was **interrupted before writing** — prod re-read at 164 published / 25
+  staged / 2 quarantined, zero commentary works present. The Ctrl-C landed.
+- `scripts/p4n-verify.mjs` and `scripts/p4n-run.sh` added. Exit taxonomy red-proofed (0 complete /
+  1 short / 2 cannot-check), preflight short-circuit proven on an already-complete batch, and the
+  runner proven to stop at the TTY gate without writing. Two defects fixed during that proof: a
+  missing file exited 1 (indistinguishable from "short", which would have retried a production
+  write), and piping the copy through `tee` could swallow the newline-less consent prompt.
+
+
 ## 2026-08-18 (P4.n Phase A) — the `father` batch is on production: 18 works, staged and unserved
 
 **Owner-executed at the terminal.** First real copy of the P4.n backlog. Nothing a reader can see
