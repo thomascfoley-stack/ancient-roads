@@ -152,6 +152,33 @@ if (isMain) {
   }
 
   let baseUrl = manifest.baseUrl;
+
+  // WRONG-STORE REFUSAL, BEFORE THE FIRST BYTE MOVES. The old drift guard compared store origins
+  // from `put()`'s RESULT — i.e. after an upload had already landed, with up to 16 in flight. On
+  // 2026-08-18 that was nearly exercised for real: the tree's local BLOB_READ_WRITE_TOKEN binds
+  // the PRIVATE user-corpus store (Lane B), and running --execute with it would have poured
+  // corpus files into that store before the late guard threw. Caught only because the operator
+  // compared the token's embedded store id by hand first.
+  //
+  // A Vercel blob token is `vercel_blob_rw_<storeId>_<secret>`, and a public store's base URL is
+  // `https://<storeid-lowercased>.public.blob.vercel-storage.com` — so the manifest's own baseUrl
+  // names the store the token must bind, and the comparison needs no network and leaks no secret.
+  // Only enforceable when a manifest exists; a first-ever sync (baseUrl null) proceeds and the
+  // late in-flight guard below remains as the backstop for that case.
+  if (baseUrl) {
+    const tokenStore = (process.env.BLOB_READ_WRITE_TOKEN.split('_')[3] ?? '').toLowerCase();
+    const manifestStore = new URL(baseUrl).hostname.split('.')[0];
+    if (!tokenStore || tokenStore !== manifestStore) {
+      console.error(
+        `STOP: the supplied token binds store "${tokenStore || '(unparseable)'}" but the manifest's ` +
+        `store is "${manifestStore}". Refusing before any upload — the wrong token here is how ` +
+        `corpus files end up in the private user-corpus store (or worse, how a sync targets a ` +
+        `store the app is not reading from). Supply the ${manifestStore} store's token.`,
+      );
+      process.exit(1);
+    }
+  }
+
   let done = 0;
   const started = Date.now();
   const uploadFailures = await pool(plan.uploads, 16, async (rel) => {

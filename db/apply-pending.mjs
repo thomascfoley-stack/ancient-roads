@@ -181,6 +181,15 @@ try {
   for (const f of pending) {
     const full = path.join(DIR, f);
     const text = readFileSync(full, 'utf-8');
+    // A START LINE PER FILE, BEFORE THE WORK. The db-invariants CI job died at its 30-minute step
+    // timeout on 2026-08-17 while applying 12 pending migrations, and the log could not say WHICH
+    // ONE: the pending list prints up front and `✓ f` prints only after success, so a hang's last
+    // line is the previous file's checkmark. Everyone then guesses (044's whole-table backfill and
+    // 114's HNSW build are the plausible suspects — but plausible is not measured). With this line
+    // the next timeout names its culprit in the last line of the log, which converts "raise the
+    // timeout and hope" into "make THIS migration cheaper".
+    const t0 = Date.now();
+    console.log(`  ▶ applying ${f} …`);
     try {
       // CONCURRENTLY CANNOT RUN IN A TRANSACTION, AND `client.query(wholeFile)` IS ONE.
       //
@@ -203,7 +212,7 @@ try {
         await client.query(text); // simple protocol: one implicit transaction per file
       }
       await recordMigration(client, full, text);
-      console.log(`  ✓ ${f}`);
+      console.log(`  ✓ ${f} (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
     } catch (e) {
       // Stop at the first failure. Continuing would apply later migrations over a schema the
       // failed one was supposed to establish, which turns one clear error into an unrecoverable
