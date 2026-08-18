@@ -488,7 +488,14 @@ const CATALOG_ICON: Partial<Record<CatalogId, React.ReactNode>> = {
 // but it means a phone rotated up into tablet width arrives already collapsed, having never been
 // shown the choice. Caught by this change's own test ("does not fire on the phone side of the
 // cliff"), which asserted 767px and went red against the 640px floor.
-const TABLET_MEDIA_QUERY = '(min-width: 768px) and (max-width: 1279.98px)';
+// CEILING CORRECTED 2026-08-17 (pre-deploy audit). It read `1279.98px` — Tailwind's `xl` — while
+// the block above states the bound as `1023.98px`, "the last width below `lg`", and states the
+// invariant "a desktop reader must never boot collapsed". The constant contradicted both by 256px,
+// so every laptop window from 1024px to 1279.98px — the commonest desktop browser-window band —
+// booted into the 48px rail, where the only destinations are the 7 icon links: no Desk, no catalog
+// shelves, no My Studies, no Research history, no Sign in. The suite could not see it because the
+// test asserted 768 and 1280 and nothing in between.
+const TABLET_MEDIA_QUERY = '(min-width: 768px) and (max-width: 1023.98px)';
 
 export function Sidebar() {
   const pathname = usePathname();

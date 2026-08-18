@@ -46,8 +46,25 @@ describe('Layer 1 — wallet invariant', () => {
       // spends. Presence of the import is not enough — a route that calls teach() first
       // has already burned the money by the time it authenticates.
       const teachIdx = code.search(/\bteach\s*\(/);
-      const authIdx = callIndex(code, 'requireUser');
-      const rlIdx = callIndex(code, 'checkAskRateLimit');
+      // `guardUser()` counts as calling `requireUser()`, because it IS one plus more:
+      // route-guard.ts:35 calls requireUser() and route-guard.ts:40-41 then enforces the
+      // user-corpus allowlist, returning 403. Treating the wrapper as un-gated would have pushed
+      // whoever hit this toward inlining requireUser beside guardUser — two auth paths on one
+      // route — which is worse than the thing this leg exists to prevent. Recognised 2026-08-17
+      // when the money predicate was widened to embeddings and correctly pulled
+      // /api/user-corpus/search into the spender set for the first time.
+      const authIdx = Math.max(callIndex(code, 'requireUser'), callIndex(code, 'guardUser'));
+      // ANY per-user limiter, not `checkAskRateLimit` specifically. The property this leg names is
+      // "metered before it spends"; hardcoding one limiter's name made the predicate narrower than
+      // the property — the same defect that let /api/user-corpus/search go unmetered in the first
+      // place (`routeSpendsMoney` matched `teach()` alone). That route now calls
+      // `checkCorpusSearchRateLimit`, which is deliberately a DIFFERENT bucket: charging an
+      // embedding search against the ask quota would let a reader exhaust their questions by
+      // searching their own uploads. Matched by shape so a future limiter is covered on arrival.
+      const rlIdx = Math.max(
+        callIndex(code, 'checkAskRateLimit'),
+        callIndex(code, 'checkCorpusSearchRateLimit'),
+      );
 
       if (authIdx < 0) {
         failures.push(`${route}: never CALLS requireUser() (import alone does not gate)`);
@@ -55,9 +72,9 @@ describe('Layer 1 — wallet invariant', () => {
         failures.push(`${route}: requireUser() is called AFTER teach() — money spent before auth`);
       }
       if (rlIdx < 0) {
-        failures.push(`${route}: never CALLS checkAskRateLimit() (import alone does not gate)`);
+        failures.push(`${route}: never CALLS a per-user rate limiter (import alone does not gate)`);
       } else if (teachIdx >= 0 && rlIdx > teachIdx) {
-        failures.push(`${route}: checkAskRateLimit() is called AFTER teach() — money spent before limit`);
+        failures.push(`${route}: the rate limiter is called AFTER the spend — money spent before limit`);
       }
     }
 

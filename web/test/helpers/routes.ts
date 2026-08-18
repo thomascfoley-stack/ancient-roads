@@ -37,13 +37,27 @@ function stripComments(src: string): string {
 // comment to appease a test. `research-history-static.test.ts` already learned this exact lesson
 // from the other direction — a comment containing `appendQuestion(` defeated its order check —
 // and strips comments for the same reason. Real calls survive stripping; only prose does not.
+// Every module whose use costs money at a provider. Keyed on the MODULE SPECIFIER, not on a
+// function name, so an aliased import cannot slip past — the same reasoning
+// research-history-static.test.ts uses for its lib/research fence.
+//
+// WIDENED 2026-08-17 after the pre-deploy audit. The predicate matched `teach()` alone while the
+// function it backs is named `routeSpendsMoney`, so `/api/user-corpus/search` — which calls
+// `embedChunks([q])` on the request path, a paid DeepInfra embedding — was not in the spender set
+// and `wallet.test.ts` was GREEN over an unmetered, uncapped paid call. A guard whose predicate is
+// narrower than the property it names is this repo's most-repeated defect, and it had landed
+// inside the guard written to catch unmetered spend.
+const PAID_MODULES = [
+  '@/lib/teacher/teach',
+  '@/lib/user-corpus/embed',
+] as const;
+
 export function routeSpendsMoney(src: string): boolean {
   const code = stripComments(src);
-  return (
-    code.includes("from '@/lib/teacher/teach'") ||
-    code.includes('from "@/lib/teacher/teach"') ||
-    /\bteach\s*\(/.test(code)
-  );
+  for (const m of PAID_MODULES) {
+    if (code.includes(`from '${m}'`) || code.includes(`from "${m}"`)) return true;
+  }
+  return /\bteach\s*\(/.test(code) || /\bembedChunks\s*\(/.test(code);
 }
 
 export function relRoute(file: string): string {

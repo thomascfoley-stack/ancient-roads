@@ -96,7 +96,10 @@ describe('the Bible reading position record (A034/A040)', () => {
     // is what would notice if that stopped being true.
     expect(DEFAULT_BIBLE_LABEL).toBe('John 1');
     const [, , slug, chapter] = DEFAULT_BIBLE_HREF.split('/');
-    expect(DEFAULT_BIBLE_LABEL).toBe(`${BOOK_BY_SLUG.get(slug!)!.name} ${chapter}`);
+    // NOT `${BOOK_BY_SLUG.get(slug)!.name} ${chapter}` — that derives the expectation from the same
+    // constants the value derives from, so it cannot fail (2026-08-17 pre-deploy audit; the same
+    // tautology shape library-nav-labels.test.ts already documents avoiding). The literal above is
+    // the assertion that can actually catch drift.
   });
 
   // ── canonicalisation, pinned on EACH SIDE SEPARATELY ──────────────────────────────────────

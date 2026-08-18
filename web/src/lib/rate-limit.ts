@@ -162,6 +162,47 @@ export async function checkAskRateLimit(userId: string, sql: Sql = getDb()): Pro
   }
 }
 
+// Per-user throttle for user-corpus search, which spends a DeepInfra embedding on the request
+// path (`embedChunks([q])`).
+//
+// ITS OWN BUCKETS, not `ask:*`. A corpus search is one embedding; an ask is a full teach() with
+// retries. Charging searches against the ask quota would let a reader exhaust their questions by
+// searching their own uploads, which is a worse failure than the one being fixed. Same table, new
+// keys — `api_rate_limit` is keyed by an opaque bucket string, so this needs no migration.
+//
+// FAILS CLOSED, for the reason the ask limiter's header gives: an unmetered paid endpoint is the
+// worse outcome. Until 2026-08-17 this route had NO limiter at all and the wallet invariant was
+// green over it, because `routeSpendsMoney` matched `teach()` alone while being named for spend
+// in general (pre-deploy audit finding 1).
+const CORPUS_SEARCH_PER_MIN = Number(process.env.CORPUS_SEARCH_LIMIT_PER_MIN ?? 30);
+const CORPUS_SEARCH_PER_DAY = Number(process.env.CORPUS_SEARCH_LIMIT_PER_DAY ?? 500);
+
+export async function checkCorpusSearchRateLimit(userId: string, sql: Sql = getDb()): Promise<RateLimitResult> {
+  try {
+    const now = Date.now();
+    const minStart = new Date(Math.floor(now / 60_000) * 60_000).toISOString();
+    const d = new Date(now);
+    const dayStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toISOString();
+
+    // Minute before day, so a retry loop cannot burn the daily quota (the H4 pattern).
+    const minCount = await bump(sql, userId, 'corpus-search:min', minStart);
+    if (minCount > CORPUS_SEARCH_PER_MIN) {
+      logEvent('rate_limit_hit', { userId, cap: 'corpus-search:min', count: minCount, limit: CORPUS_SEARCH_PER_MIN });
+      return { ok: false, limited: 'min', retryAfterSec: 60 };
+    }
+    const dayCount = await bump(sql, userId, 'corpus-search:day', dayStart);
+    if (dayCount > CORPUS_SEARCH_PER_DAY) {
+      logEvent('rate_limit_hit', { userId, cap: 'corpus-search:day', count: dayCount, limit: CORPUS_SEARCH_PER_DAY });
+      return { ok: false, limited: 'day', retryAfterSec: 3600 };
+    }
+    await maybeSweep(sql);
+    return { ok: true };
+  } catch (e) {
+    logEvent('rate_limit_fail_closed', { userId, error: (e as Error).message });
+    return { ok: false, limited: 'unavailable', retryAfterSec: 30 };
+  }
+}
+
 // Per-IP brute-force throttle for the site-password gate. Same fail-open asymmetry as the
 // ask limiter: a limiter outage must not lock legitimate visitors out (the password is still
 // required regardless), but each throttled attempt is logged. Minute cap checked first so a

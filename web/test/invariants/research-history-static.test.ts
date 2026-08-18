@@ -48,21 +48,21 @@ describe('research history — static invariants', () => {
     const listSrc = stripComments(readFileSync(path.join(ROOT, 'web/src/app/api/research/route.ts'), 'utf8'));
     expect(listSrc, 'the list route must export GET').toMatch(/export async function GET/);
     expect(listSrc, 'the list route must not export ANY write verb').not.toMatch(
-      /export[^\n]*\b(POST|PUT|PATCH|DELETE)\b/,
+      /export[\s\S]{0,200}?\b(POST|PUT|PATCH|DELETE)\b/,
     );
 
     const idSrc = stripComments(readFileSync(path.join(ROOT, 'web/src/app/api/research/[id]/route.ts'), 'utf8'));
     expect(idSrc, 'the [id] route must export DELETE').toMatch(/export async function DELETE/);
     // Content-originating verbs stay forbidden HERE TOO — only DELETE was argued for.
     expect(idSrc, 'the [id] route must not export a content-originating verb').not.toMatch(
-      /export[^\n]*\b(POST|PUT|PATCH)\b/,
+      /export[\s\S]{0,200}?\b(POST|PUT|PATCH)\b/,
     );
     // AND NO GET. An /api/research/[id] route existed once and was deleted (I1-M4) because it
     // returned STORED ANSWERS with no servability data — a §4.4 bypass, where a quote whose
     // source has since been unserved would render anyway. Re-adding a GET here reintroduces it,
     // so the absence is pinned rather than left to a reviewer noticing.
     expect(idSrc, 'the [id] route must NOT export GET — that is the §4.4 bypass it was deleted for').not.toMatch(
-      /export[^\n]*\bGET\b/,
+      /export[\s\S]{0,200}?\bGET\b/,
     );
   });
 
@@ -79,6 +79,20 @@ describe('research history — static invariants', () => {
       .filter(Boolean)
       .map((p: string) => path.relative(ROOT, p))
       .sort();
+    // WHAT the [id] route imports, not merely THAT it may. The allowlist below admits the file;
+    // this pins the symbol. Without it a DELETE handler on that route could import `appendAnswer`
+    // and — HTTP DELETE carries a body — turn `await req.json()` into an assistant-attributed row,
+    // with I-1 green (the export is named DELETE) and I-1b green (the file is on the list). Found
+    // by the 2026-08-17 pre-deploy audit; the adjacent comment already CLAIMED "imports
+    // deleteThread only" and nothing asserted it.
+    const idRouteSrc = stripComments(readFileSync(path.join(ROOT, 'web/src/app/api/research/[id]/route.ts'), 'utf8'));
+    const researchImport = idRouteSrc.match(/import\s*\{([^}]*)\}\s*from\s*['"]@\/lib\/research['"]/);
+    expect(researchImport, 'the [id] route must import from lib/research with a named import').toBeTruthy();
+    expect(
+      researchImport![1].split(',').map((x) => x.trim()).filter(Boolean),
+      'the [id] route may import deleteThread and nothing else from lib/research',
+    ).toEqual(['deleteThread']);
+
     expect(hits).toEqual([
       'web/src/app/api/ask/stream/route.ts',
       // Imports `deleteThread` only. Removing rows cannot originate an assistant-attributed
