@@ -1,0 +1,68 @@
+#!/bin/bash
+# REFUSE A DIRECT PUSH TO main. The free stand-in for branch protection.
+#
+# WHY THIS EXISTS. `main` is unprotected and cannot be protected: this repo is PRIVATE on a free
+# plan, and both endpoints answer the same way (re-measured 2026-08-18, not copied):
+#
+#   GET /repos/:owner/:repo/branches/main/protection -> 403 "Upgrade to GitHub Pro or make this
+#   GET /repos/:owner/:repo/rulesets                 -> 403  repository public to enable this feature."
+#
+# The two ways out are both owner-level: pay for GitHub Pro, or make the repo public — and public
+# is BLOCKED until the January credential rotation (O-1), because live credentials are in git
+# history and publishing pre-rotation is the worse exposure. So until then, every "nothing merges
+# red" sentence in this repo is a statement about discipline with no mechanism under it.
+#
+# This is the mechanism that IS available. It does not check whether the tree is green — that is
+# CI's job, and CI only gets to run if the change arrives as a PR. So the rule is narrow: main is
+# reached by merging a pushed branch, never by pushing to it directly.
+#
+# WHAT IT IS NOT. Client-side, therefore bypassable — `--no-verify`, a different clone, or the
+# GitHub web UI all sail past it. It is a speed bump against habit, not a control against intent,
+# and calling it branch protection would be exactly the unearned green this repo keeps finding.
+# It is strictly better than nothing and strictly weaker than the real thing. Both halves matter.
+#
+# ESCAPE HATCH, deliberately explicit and deliberately awkward:
+#   ALLOW_MAIN_PUSH=1 git push origin main
+# Typing that is a decision. `--no-verify` is not, which is why the hatch is a named variable.
+
+set -euo pipefail
+
+protected_branch='main'
+blocked=0
+
+# stdin: <local ref> <local sha> <remote ref> <remote sha>, one line per ref being pushed.
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  [ -z "${remote_ref:-}" ] && continue
+  if [ "$remote_ref" = "refs/heads/$protected_branch" ]; then
+    blocked=1
+  fi
+done
+
+if [ "$blocked" -eq 1 ]; then
+  if [ "${ALLOW_MAIN_PUSH:-}" = "1" ]; then
+    echo "pre-push: ALLOW_MAIN_PUSH=1 — pushing directly to $protected_branch by explicit override." >&2
+    exit 0
+  fi
+  cat >&2 <<EOF
+
+  ✗ pre-push: refusing a direct push to '$protected_branch'.
+
+    main is unprotected on this plan (GitHub Pro or a public repo would be needed, and public is
+    blocked until the O-1 credential rotation), so this hook is the only thing standing in for
+    branch protection. It exists so a change reaches main by MERGING A PUSHED BRANCH, which is
+    what gives CI a chance to run on it at all.
+
+    Instead:
+      git push -u origin <your-branch>
+      gh pr create --base main
+
+    If you genuinely mean it:
+      ALLOW_MAIN_PUSH=1 git push origin $protected_branch
+
+    (This hook is client-side and bypassable. It is a speed bump, not a guarantee.)
+
+EOF
+  exit 1
+fi
+
+exit 0
