@@ -16,7 +16,7 @@ authenticated sessions). IDs below are positional within each sheet.
 | **Done** | 43 |
 | **Not reproduced / retracted** | 13 |
 | **No action** — positive or informational notes | 41 |
-| **Open — me** | 30 |
+| **Open — me** | 22 |
 | **Open — owner** | 18 |
 | **Open — corpus & retrieval lane** | 15 |
 | **Total** | **156** |
@@ -144,18 +144,18 @@ routed to the lane) · B033/B034/B037 counted in §2 as retractions.
 
 ---
 
-## 4. Open — me (47)
+## 4. Open — me (22)
 
 I can do every one of these end-to-end on a branch, with tests.
 
-### 4a. Delete / remove paths — plumbing exists, UI missing (2 remain of 7)
+### 4a. Delete / remove paths — plumbing exists, UI missing (2)
 
 | ID | Finding | What it takes |
 |---|---|---|
 | B022 | **[MAJOR]** Bookmark feature exists but has no icon or button in chrome | Same slice as B023 |
 | B024 | Bookmark control hidden on mobile behind an undiscoverable scroll | Same slice |
 
-### 4b. Real bugs (10)
+### 4b. Real bugs (7)
 
 | ID | Finding |
 |---|---|
@@ -163,47 +163,29 @@ I can do every one of these end-to-end on a branch, with tests.
 | B015 | **[MAJOR]** "Suggested readings" never completes for an uploaded document *(may route to §6 if it is an embedding-pipeline fault)* |
 | A015 | One submit fires two POSTs to `/api/ask/stream` — measure first |
 | A031 | Reading-settings popover and study dialog can be open simultaneously |
-| A084 | Malformed chapter routes fire `NaN` backend fetches |
 | A102 | 20+ redundant `/api/auth/get-session` calls — measured 1–2 in dev; needs a production check |
 | B013 | 4 persistent console errors on every desk page |
 | B041 | Console errors incl. one React #418 — **note A041 says #418 did not reproduce**; reconcile |
 
-### 4c. Missing affordances / dead ends (11)
+### 4c. Missing affordances / dead ends (4)
 
 | ID | Finding |
 |---|---|
 | A027 | **[MAJOR]** No next/previous-verse control in the study panel |
 | A028 | **[MAJOR]** Adjacent verse click closes the panel instead of switching |
-| A042 | **[MAJOR]** Standalone lexicon is a thinner tool than the in-reader one — product question inside it |
-| A035 | Out-of-range chapter routes are a dead end with no recovery |
-| A034 | "Bible" tab hardlinks to John 1, discarding reading position |
-| A044 | Word-study occurrence links jump to chapter top, not the verse |
-| A045 | Interlinear mode dropped when following an occurrence link |
 | A054 | Hymnal ToC cannot browse or filter by scripture reference |
 | A075 | Empty desk's "Open the Bible" CTA navigates away instead of adding a pane |
-| A078 | 3-pane cap is enforced silently — say something |
-| B043 | Desk has no nav entry in the mobile-width menu — safe subset of the Desk design question |
 
-### 4d. Copy, labels, a11y, layout (16)
+### 4d. Copy, labels, a11y, layout (6)
 
 | ID | Finding |
 |---|---|
 | B044 | **[BLOCKER]** Unlabeled Menu button silently signed the account out — I can label it; the "why" is O-side |
-| A014 | Third example prompt clipped at 390px |
-| A017 | Momentary empty error-banner frame on retry |
 | A019 | First Ask attempt failed silently once — unverified, low confidence |
 | A033 | Background verse buttons in the a11y tree — largely mitigated (`aria-modal` + focus trap); residual only |
-| A037 | Library copy overstates what sign-in adds |
-| A040 | Bible reading position does not persist, unlike Library works |
-| A066 | Catalog row's "open work" link has no accessible name |
 | A079 | At 390px a multi-pane desk gives no sign a second pane exists |
-| A080 | Desk never explains its state is URL-only |
 | A093 | No dedicated tablet nav treatment at 768px |
-| A094 | Long titles truncated with no tooltip at 768px |
-| A095 | Sidebar collapse control is an unlabeled chevron |
 | A098 | Header keyboard focus order zigzags |
-| B011 | New desk pane flashes "UNLABELLED" and a raw slug |
-| B016 | Uploaded file size shows "0 KB" |
 
 ### 4e. Needs a small decision first (2)
 
