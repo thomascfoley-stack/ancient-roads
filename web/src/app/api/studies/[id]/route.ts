@@ -1,56 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
-import {
-  getStudyWithBlocks,
-  softDeleteStudy,
-  updateStudy,
-  BLOCKS_PAGE_MAX,
-  STUDY_TITLE_MAX,
-} from '@/lib/studies';
+import { softDeleteStudy, updateStudy, STUDY_TITLE_MAX } from '@/lib/studies';
 
-// /api/studies/[id] — read, rename/pin, soft-delete. Route-shape and error-code rules are in
+// /api/studies/[id] — rename/pin, soft-delete. Route-shape and error-code rules are in
 // ../route.ts's header; ownership misses are 404 (the study either does not exist or is not
 // yours — indistinguishable on purpose), never 401.
+//
+// NO GET — DELETED 2026-08-17 (deep-audit domain lens, HIGH), and the absence is pinned by
+// web/test/invariants/studies-api-no-get.test.ts. The GET that stood here returned the study's
+// blocks with `quote` verbatim and NO servability re-check — the §4.4 bypass servability.ts
+// exists to close (a work withdrawn for a licensing reason keeps serving its stored text
+// forever). It also had ZERO consumers: every fetch of this path in web/src is PATCH
+// (study-editor.tsx) or DELETE (study-delete-button.tsx); the shipped reads are the study page
+// (getStudyWithBlocks + resolveServability, both Flow D legs) and GET /studies/[id]/feed
+// (listBlocks + resolveServability, per page). Deletion over plumbing is the precedented remedy
+// (bylaw 3): /api/research/[id]'s GET was removed for exactly this shape — "zero consumers and
+// returned stored answers with no servability data — a §4.4 bypass for any future consumer"
+// (research-history-static.test.ts I-1). A future reader who needs a JSON read of one study
+// must go through a route that runs resolveServability on every page, the way the feed does.
 
 export const runtime = 'nodejs';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const POSITION_RE = /^[0-9A-Za-z]+$/;
-
-// GET /api/studies/[id]?limit&afterPosition — the study plus a page of its blocks in
-// (position, id) order. nextAfterPosition is the cursor for the next page, null at the end.
-export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }): Promise<Response> {
-  let user: { id: string };
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
-  const { id } = await ctx.params;
-  if (!UUID_RE.test(id)) return apiError('INVALID_REQUEST', { message: 'study id must be a UUID' });
-
-  const url = new URL(req.url);
-  const rawLimit = url.searchParams.get('limit');
-  const limit = rawLimit === null ? undefined : Number(rawLimit);
-  if (limit !== undefined && (!Number.isInteger(limit) || limit < 1 || limit > BLOCKS_PAGE_MAX)) {
-    return apiError('INVALID_REQUEST', { message: `limit must be an integer 1..${BLOCKS_PAGE_MAX}` });
-  }
-  const afterPosition = url.searchParams.get('afterPosition') ?? undefined;
-  if (afterPosition !== undefined && !POSITION_RE.test(afterPosition)) {
-    return apiError('INVALID_REQUEST', { message: 'afterPosition must be a base-62 position key' });
-  }
-
-  try {
-    const found = await getStudyWithBlocks(user.id, id, { limit, afterPosition });
-    if (!found) return NextResponse.json({ error: { code: 'NOT_FOUND', message: 'No such study.' } }, { status: 404 });
-    const pageSize = limit ?? found.blocks.length;
-    const nextAfterPosition =
-      found.blocks.length > 0 && found.blocks.length >= pageSize
-        ? found.blocks[found.blocks.length - 1]!.position
-        : null;
-    return NextResponse.json({ ...found, nextAfterPosition });
-  } catch (e) {
-    console.error('study get error:', (e as Error).message);
-    return apiError('INTERNAL');
-  }
-}
 
 // PATCH /api/studies/[id] { title? , pinned? } — rename and/or pin. At least one field.
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }): Promise<Response> {

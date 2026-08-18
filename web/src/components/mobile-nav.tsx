@@ -114,10 +114,22 @@ export function MobileNav() {
             <SearchIcon />
             Search
           </button>
+          {/* B044 (label half) — the blocker was a stray tap out of this trigger's sheet reaching
+              Sign out. The trigger already had an accessible name and a visible "Menu" caption;
+              what it lacked was a tooltip and any exposed open/closed state. `aria-label` and
+              `title` come from ONE binding (the sidebar collapse chevron's A095 lesson: two
+              hand-typed strings is how a tooltip drifts from the announced name). The label does
+              NOT flip to "Close menu" while open, because that would name an action this control
+              cannot perform — the sheet's z-50 scrim covers this z-40 bar, so the trigger is
+              unreachable until the sheet closes. Open/closed rides `aria-expanded`, the channel
+              screen readers actually announce for a disclosure. */}
           <button
             onClick={() => setMenuOpen(true)}
             className={tabClass(menuOpen)}
-            aria-label="Open menu"
+            aria-label={MENU_TRIGGER_LABEL}
+            title={MENU_TRIGGER_LABEL}
+            aria-expanded={menuOpen}
+            aria-haspopup="dialog"
           >
             <MenuIcon />
             Menu
@@ -128,9 +140,17 @@ export function MobileNav() {
   );
 }
 
+// B044 (label half) — one binding feeds the Menu trigger's aria-label AND title (see the button
+// in the tab bar); module scope because the trigger's label carries no state.
+const MENU_TRIGGER_LABEL = 'Open menu';
+
 function MenuSheet({ onClose }: { onClose: () => void }) {
   const drag = useDragDismiss(onClose);
   const dialog = useDialog(onClose, 'Menu');
+  // B044 (label half) — the X is the one icon-only control this file owns inside the sheet that
+  // also carries Sign out (rendered by SidebarNavContent below). It had an aria-label and no
+  // title, so hovering it said nothing. One binding for both attributes, same reason as above.
+  const closeLabel = 'Close menu';
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-stone-950/[0.32] animate-fade-in md:hidden dark:bg-stone-50/[0.08]"
@@ -149,7 +169,8 @@ function MenuSheet({ onClose }: { onClose: () => void }) {
           <span className="h-1.5 w-10 rounded-full bg-stone-300/80 dark:bg-stone-700" />
           <button
             onClick={onClose}
-            aria-label="Close menu"
+            aria-label={closeLabel}
+            title={closeLabel}
             className="flex h-11 w-11 items-center justify-center text-stone-500 transition-colors ease-gentle hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
           >
             <svg aria-hidden width="18" height="18" viewBox="0 0 18 18" fill="none">

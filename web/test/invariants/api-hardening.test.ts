@@ -124,6 +124,10 @@ describe('the public read routes are throttled at all — H3', () => {
     'src/app/api/search/commentaries/route.ts',
     'src/app/api/work/[slug]/route.ts',
     'src/app/api/work/[slug]/sections/route.ts',
+    // 2026-08-17 pre-deploy audit #9: /api/health was unauthenticated, unthrottled and
+    // force-dynamic, with one count(*) per request against the SAME Neon endpoint the
+    // fail-closed ask limiter depends on — the exact coupling H3 describes, on a fifth route.
+    'src/app/api/health/route.ts',
   ];
 
   it.each(ROUTES)('%s calls publicReadThrottle', async (rel) => {

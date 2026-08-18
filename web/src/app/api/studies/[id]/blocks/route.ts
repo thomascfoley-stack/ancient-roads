@@ -6,12 +6,10 @@ import {
   insertClippingFromSection,
   insertClippingsForWork,
   insertTextBlock,
-  listBlocks,
   moveBlock,
   softDeleteBlock,
   trimBlock,
   updateTextBlock,
-  BLOCKS_PAGE_MAX,
   CLIP_REFERENCE_MAX,
   STUDY_TEXT_MAX,
   type BlockPlacement,
@@ -32,7 +30,6 @@ import {
 export const runtime = 'nodejs';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const POSITION_RE = /^[0-9A-Za-z]+$/;
 const SOURCE_ID_MAX = 512;
 const SLUG_MAX = 200;
 
@@ -84,35 +81,19 @@ function parsePlacement(body: { afterBlockId?: unknown; beforeBlockId?: unknown 
   return place;
 }
 
-// GET /api/studies/[id]/blocks?limit&afterPosition — one page, ORDER BY position, id.
-export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }): Promise<Response> {
-  let user: { id: string };
-  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
-  const { id } = await ctx.params;
-  if (!UUID_RE.test(id)) return apiError('INVALID_REQUEST', { message: 'study id must be a UUID' });
-
-  const url = new URL(req.url);
-  const rawLimit = url.searchParams.get('limit');
-  const limit = rawLimit === null ? undefined : Number(rawLimit);
-  if (limit !== undefined && (!Number.isInteger(limit) || limit < 1 || limit > BLOCKS_PAGE_MAX)) {
-    return apiError('INVALID_REQUEST', { message: `limit must be an integer 1..${BLOCKS_PAGE_MAX}` });
-  }
-  const afterPosition = url.searchParams.get('afterPosition') ?? undefined;
-  if (afterPosition !== undefined && !POSITION_RE.test(afterPosition)) {
-    return apiError('INVALID_REQUEST', { message: 'afterPosition must be a base-62 position key' });
-  }
-
-  try {
-    const blocks = await listBlocks(user.id, id, { limit, afterPosition });
-    const pageSize = limit ?? blocks.length;
-    const nextAfterPosition =
-      blocks.length > 0 && blocks.length >= pageSize ? blocks[blocks.length - 1]!.position : null;
-    return NextResponse.json({ blocks, nextAfterPosition });
-  } catch (e) {
-    console.error('blocks list error:', (e as Error).message);
-    return apiError('INTERNAL');
-  }
-}
+// NO GET — DELETED 2026-08-17 (deep-audit domain lens, HIGH), absence pinned by
+// web/test/invariants/studies-api-no-get.test.ts. The GET that stood here returned raw blocks
+// carrying `quote` verbatim with NO servability re-check — the exact F-W3-2 gap the feed
+// route's header records ("GET /api/studies/[id]/blocks returns raw blocks with NO servability
+// re-check, and a stored clipping quote read back without one bypasses every live licensing
+// predicate"). It had ZERO consumers: every fetch of this path in web/src is POST
+// (save-to-study.tsx, study-library-panel.tsx, study-editor.tsx), PATCH (study-editor.tsx) or
+// DELETE (save-to-study.tsx, study-editor.tsx); pagination reads go to GET /studies/[id]/feed,
+// which runs resolveServability on every page. Deletion over servability plumbing is the
+// precedented remedy (bylaw 3) — /api/research/[id]'s GET was removed for the same shape:
+// "zero consumers and returned stored answers with no servability data — a §4.4 bypass for any
+// future consumer" (research-history-static.test.ts I-1). Do not re-add a GET here; extend the
+// feed route instead, so the re-check cannot be forgotten per caller.
 
 // POST /api/studies/[id]/blocks — insert one block (or a capped whole-work append):
 //   { kind: 'text', body, afterBlockId? | beforeBlockId? }

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/session';
+import { apiError } from '@/lib/api-error';
+import { encodeVerseId } from '@bible/verse-id';
 import {
   getChapterAnnotations,
   createHighlight,
@@ -11,37 +13,101 @@ import {
   removeBookmark,
 } from '@/lib/annotations';
 
+// Reader annotations: highlights, notes, bookmarks (POST-with-kind, this surface's mutation
+// idiom — see prayers/route.ts).
+//
+// AUTH FAILURE IS DISTINGUISHED FROM SERVER FAILURE (2026-08-17 pre-deploy audit, attack lens,
+// #7). All three handlers used to wrap requireUser AND the DB call in ONE try whose catch
+// returned 401 — so an RLS denial or a schema error surfaced to the user as "signed out", which
+// is how a real isolation failure hides (library/page.tsx and studies/route.ts both name this
+// route as the defect they refuse to copy; pre-deploy audit A1-16). Now: requireUser in its own
+// try (→ 401), body parse in its own (→ 400), DB work in its own (→ 500 INTERNAL with the
+// message logged server-side, never sent — audit A1-13).
+//
+// INPUT IS BOUNDED AT THE EDGE (#8). `Number(body.verseId)` accepted 1.5 and 1e999 — both
+// truthy, both SQL cast errors that the old blanket catch then dressed up as a 401. And the note
+// body was uncapped while the bookmark label four lines below it was capped at 200 with a
+// comment explaining why.
+
+export const runtime = 'nodejs';
+
+// Verse ids encode book*1_000_000 + chapter*1_000 + verse (@bible/verse-id) over 66 books, so
+// every real id is ≤ this ceiling. Structural validity (chapter within the book) is the
+// verifier's job; the edge only refuses what could never be a verse id at all.
+const VERSE_ID_MAX = encodeVerseId({ book: 66, chapter: 999, verse: 999 });
+
+// #8: same bound as PRAYER_MAX_LENGTH (lib/prayers.ts: "longer than a note's practical length
+// and far short of anything pathological") — a verse note is the same kind of text as a prayer
+// entry, so the same number, and the same choice as prayers: REJECT over-cap rather than
+// silently truncating a user's words (the label below slices because it is decoration; a note
+// is content).
+const NOTE_MAX_LENGTH = 20_000;
+
+/** #8: an integer in the encodable range, or null. Never forward `Number(x)` raw to SQL. */
+function parseVerseId(v: unknown): number | null {
+  const n = Number(v);
+  return Number.isInteger(n) && n >= 1 && n <= VERSE_ID_MAX ? n : null;
+}
+
+type AnnotationBody = {
+  kind?: unknown;
+  id?: unknown;
+  verseId?: unknown;
+  color?: unknown;
+  textColor?: unknown;
+  spanStart?: unknown;
+  spanEnd?: unknown;
+  translation?: unknown;
+  body?: unknown;
+  label?: unknown;
+};
+
 export async function GET(req: NextRequest) {
+  let user: { id: string };
+  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+
+  // #8's class on the query side: Number('1.5') and Number('1e999') are truthy and used to ride
+  // straight into SQL. Bounds follow the verse-id encoding: 66 books, chapter < 1000.
+  const book = Number(req.nextUrl.searchParams.get('book'));
+  const chapter = Number(req.nextUrl.searchParams.get('chapter'));
+  if (!Number.isInteger(book) || book < 1 || book > 66 || !Number.isInteger(chapter) || chapter < 1 || chapter > 999) {
+    return NextResponse.json({ error: 'book and chapter required' }, { status: 400 });
+  }
+
   try {
-    const user = await requireUser();
-    const book = Number(req.nextUrl.searchParams.get('book'));
-    const chapter = Number(req.nextUrl.searchParams.get('chapter'));
-    if (!book || !chapter) {
-      return NextResponse.json({ error: 'book and chapter required' }, { status: 400 });
-    }
     const data = await getChapterAnnotations(user.id, book, chapter);
     return NextResponse.json(data);
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  } catch (e) {
+    // The message, never the payload — server-side only (A1-13).
+    console.error('annotations read error:', (e as Error).message);
+    return apiError('INTERNAL');
   }
 }
 
 export async function POST(req: NextRequest) {
-  try {
-    const user = await requireUser();
-    const body = await req.json();
-    const verseId = Number(body.verseId);
-    if (!verseId) return NextResponse.json({ error: 'verseId required' }, { status: 400 });
+  let user: { id: string };
+  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
 
+  let body: AnnotationBody;
+  try { body = (await req.json()) as AnnotationBody; } catch { return apiError('INVALID_REQUEST'); }
+
+  const verseId = parseVerseId(body.verseId);
+  if (verseId === null) {
+    return apiError('INVALID_REQUEST', { message: 'verseId must be a positive integer verse id' });
+  }
+
+  try {
     if (body.kind === 'highlight') {
       // Sub-verse span when spanStart/spanEnd are present; whole verse otherwise (null/null).
-      const hasSpan = Number.isInteger(body.spanStart) && Number.isInteger(body.spanEnd) && body.spanEnd > body.spanStart;
+      const spanStart = typeof body.spanStart === 'number' && Number.isInteger(body.spanStart) ? body.spanStart : null;
+      const spanEnd = typeof body.spanEnd === 'number' && Number.isInteger(body.spanEnd) ? body.spanEnd : null;
+      const hasSpan = spanStart !== null && spanEnd !== null && spanEnd > spanStart;
       const h = await createHighlight(user.id, {
         verseId,
         color: String(body.color ?? 'yellow'),
         textColor: body.textColor != null ? String(body.textColor) : null,
-        spanStart: hasSpan ? Number(body.spanStart) : null,
-        spanEnd: hasSpan ? Number(body.spanEnd) : null,
+        spanStart: hasSpan ? spanStart : null,
+        spanEnd: hasSpan ? spanEnd : null,
         translation: body.translation != null ? String(body.translation) : null,
       });
       return NextResponse.json(h, { status: 201 });
@@ -49,6 +115,10 @@ export async function POST(req: NextRequest) {
     if (body.kind === 'note') {
       const text = String(body.body ?? '').trim();
       if (!text) return NextResponse.json({ error: 'body required' }, { status: 400 });
+      // #8: the cap the bookmark label always had, at the prayer bound. Reject, don't slice.
+      if (text.length > NOTE_MAX_LENGTH) {
+        return apiError('INVALID_REQUEST', { message: 'That is longer than a note can hold.' });
+      }
       const n = await upsertNote(user.id, verseId, text);
       return NextResponse.json(n, { status: 201 });
     }
@@ -62,28 +132,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(b, { status: 201 });
     }
     return NextResponse.json({ error: 'unknown kind' }, { status: 400 });
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  } catch (e) {
+    console.error('annotations write error:', (e as Error).message);
+    return apiError('INTERNAL');
   }
 }
 
 export async function DELETE(req: NextRequest) {
+  let user: { id: string };
+  try { user = await requireUser(); } catch { return apiError('UNAUTHENTICATED'); }
+
+  let body: AnnotationBody;
+  try { body = (await req.json()) as AnnotationBody; } catch { return apiError('INVALID_REQUEST'); }
+
   try {
-    const user = await requireUser();
-    const body = await req.json();
     // Highlight delete: by span id (one span) if given, else clear the whole verse.
     if (body.kind === 'highlight' && typeof body.id === 'string' && body.id) {
       await removeHighlightById(user.id, body.id);
       return NextResponse.json({ ok: true });
     }
-    const verseId = Number(body.verseId);
-    if (!verseId) return NextResponse.json({ error: 'verseId required' }, { status: 400 });
+    const verseId = parseVerseId(body.verseId);
+    if (verseId === null) {
+      return apiError('INVALID_REQUEST', { message: 'verseId must be a positive integer verse id' });
+    }
     if (body.kind === 'highlight') await removeHighlight(user.id, verseId);
     else if (body.kind === 'note') await removeNote(user.id, verseId);
     else if (body.kind === 'bookmark') await removeBookmark(user.id, verseId);
     else return NextResponse.json({ error: 'unknown kind' }, { status: 400 });
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  } catch (e) {
+    console.error('annotations delete error:', (e as Error).message);
+    return apiError('INTERNAL');
   }
 }

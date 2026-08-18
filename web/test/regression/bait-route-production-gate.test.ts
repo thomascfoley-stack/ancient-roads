@@ -67,6 +67,27 @@ describe('bait-route-production-gate (Stage 1.5)', () => {
     expect(teach).toHaveBeenCalledWith('What is faith?');
   });
 
+  it('a malformed body returns the 400 envelope, not a raw 500 (#4, 2026-08-17 attack lens)', async () => {
+    // `await req.json()` sat OUTSIDE any try/catch, so a non-JSON body threw straight into
+    // Next's raw 500 instead of the api-error envelope every /api/* route promises
+    // (lib/api-error.ts header). SEED: unwrap the parse → this rejects and goes RED.
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('EVAL_HARNESS_SECRET', 'test-secret');
+    const { POST } = await import('@/app/api/eval/bait/route');
+    const { teach } = await import('@/lib/teacher/teach');
+    vi.mocked(teach).mockClear();
+    const req = new NextRequest('http://localhost/api/eval/bait', {
+      method: 'POST',
+      headers: { authorization: 'Bearer test-secret' },
+      body: 'this is not JSON{',
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error?: { code?: string } };
+    expect(body.error?.code).toBe('INVALID_REQUEST');
+    expect(teach).not.toHaveBeenCalled();
+  });
+
   it('truncates question to 500 characters before calling teach()', async () => {
     vi.stubEnv('NODE_ENV', 'development');
     vi.stubEnv('EVAL_HARNESS_SECRET', 'test-secret');

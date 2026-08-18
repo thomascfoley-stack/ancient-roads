@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { publicReadThrottle } from '@/lib/public-read-limit';
 
 // CORPUS IDENTITY AT RUNTIME (Work Order v2 Stage 3.1).
 //
@@ -19,6 +20,13 @@ import { getDb } from '@/lib/db';
 // reports the build sha and the published-work count. Widening the wall was not part of
 // this work order. To allow external monitoring later, add '/api/health' to that set and
 // keep web/test/middleware-gate.test.ts green.
+//
+// THROTTLED (2026-08-17 pre-deploy audit, attack lens, #9). Unauthenticated + force-dynamic +
+// one count(*) per request, on the SAME Neon endpoint the fail-closed /api/ask limiter depends
+// on — so an unthrottled flood here degrades the paid route's limiter, which is exactly the
+// coupling public-read-limit.ts was built for and the four public read routes already close.
+// The paragraph above ("safe while the gate is up") stops being a mitigation the day the gate
+// comes off; the throttle does not.
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -53,7 +61,14 @@ function envOrNull(...names: string[]): string | null {
   return null;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  // #9: throttle before doing any work — the search/works idiom. Same per-IP bucket table,
+  // same deliberate fail-OPEN posture (a limiter outage must not blind a monitor; the ask
+  // limiter's fail-closed posture protects a bill, this protects a database — see
+  // public-read-limit.ts's header for why the two differ). Response shape is unchanged.
+  const throttled = await publicReadThrottle(req, 'health');
+  if (throttled) return throttled;
+
   const sha = envOrNull('VERCEL_GIT_COMMIT_SHA', 'GIT_COMMIT_SHA');
   const { corpusHash, corpusFiles } = await readCorpusHash();
 
