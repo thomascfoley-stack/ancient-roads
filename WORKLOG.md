@@ -287,6 +287,22 @@ and without the strip); dark `.reader-dark` mask == body.
   exists to announce; result cards have no visible focus indicator.
 ## 2026-08-17 (QA remediation, N2) — /ask reserved the mobile tab bar twice; 52px back on every phone
 
+> **PARTLY WRONG, corrected 2026-08-18 by the pre-deploy audit — read that entry too.** The OFFSET
+> half of this entry stands: `bottom-3` is still what ships and the 52px reclaim is real. **The MASK
+> half was wrong.** I took `after:h-4` on the reasoning that the mask only had to cover the small
+> gap I measured (19px to the tab bar), and that reasoning does not survive a hit-test: the strip
+> under the composer is `offset + reserve` — 12 + 60 = **72px** — because `main`'s reserve is padding
+> INSIDE the scrollport that page content still scrolls through. My 16px mask ended at y 787 while
+> the tab bar starts at 791, leaving a **full-width 4px band of live document, 1,431 leaked pixels**.
+> Worse, my own fourth test leg asserted that a tab-bar-sized mask was a defect, so it was green
+> while the leak was on screen AND it forbade the value that closes it. That leg is now retracted and
+> INVERTED (`a sticky mask inside the reserving scroller carries the reserve`), and the mask ships as
+> `after:h-[calc(3.75rem+env(safe-area-inset-bottom)+0.75rem)]`.
+>
+> The lesson is mine to keep: I verified with a 1-D gap measurement (`gapComposerToTabBar`) when the
+> property was 2-D coverage. A hit-test would have caught it in the same browser session, and the
+> entry below claims the browser check was sufficient. It was not.
+
 Owner-directed ("finish N2"). It had been held back deliberately — closing it MOVES the composer on
 every mobile view, which is a design change rather than a clipping fix — so the direction is the
 decision, and this is what it cost.
