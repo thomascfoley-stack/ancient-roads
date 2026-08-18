@@ -21,7 +21,7 @@ authenticated sessions). IDs below are positional within each sheet.
 | **Open — corpus & retrieval lane** | 15 |
 | **Total** | **156** |
 
-**2026-08-17 addendum (N1/N3/N4/N5/N6 slices).** Done 39 -> 43. §5b grew 2 -> 6 and all six are now closed: N1/N3/N5/N6 fixed, N2 still open, N4 closed as a recorded decision to keep it quarantined (see its row). **Two counts re-measured against the actual rows rather than carried:** §1 has exactly 43 data rows and §4 exactly 22, which is what those two now say.
+**2026-08-17 addendum (N1/N3/N4/N5/N6 slices).** Done 39 -> 43. §5b grew 2 -> 6. FIVE are closed — N1/N3/N5/N6 fixed, N4 closed as a recorded decision to keep it quarantined (see its row). **N2 is OPEN**: the /ask tab-bar double-offset is a design change (it moves the composer on every mobile view), so it was never in scope for these slices. **Two counts re-measured against the actual rows rather than carried:** §1 has exactly 43 data rows and §4 exactly 22, which is what those two now say.
 
 An earlier version of this note recorded that the bucket table disagreed with its own section heading (`Open — me | 30` against a §4 titled `(47)`) and deliberately left it visible. **That contradiction was fixed by the 2026-08-17 reconcile (`ae7b133`), which moved both to 22**, so the note is retired rather than repeated. The remaining bucket counts are NOT re-derived here: the obvious instrument for it (a regex over `| ID |` rows) cannot see this file's multi-id rows such as `| A056 / A057 / A067 |`, and reporting a partition gap measured with a tool known to undercount would be the watchlist's sixth artefact — an instrument's blind spot written down as a property of the thing it could not see.
 
@@ -228,7 +228,7 @@ No agent can close these.
 
 ---
 
-## 5b. NEW — found while fixing, not in either sheet (6, all closed)
+## 5b. NEW — found while fixing, not in either sheet (6: five closed, N2 OPEN)
 
 | # | Item | Note |
 |---|---|---|
