@@ -92,7 +92,39 @@ was to what.
 Twice in one slice I asserted a property without first checking it holds. Both were caught in
 seconds by running the check; neither would have been caught by reading it.
 
-- **Migration 117 is NOT APPLIED** — to dev or prod. Applying it is an owner action. Its predicate
+**APPLIED 2026-08-18, dev AND production, owner-directed.** `apply-migration-concurrent.mjs`,
+3/3 parts each, index VALID+READY, ledger `sha256 bd51593eb946…` on both. Evidence:
+[117-apply-2026-08-18.md](docs/evidence/must-not-serve-veto/117-apply-2026-08-18.md).
+
+**Verified on prod after the apply, and the seq-scan check is the one that mattered** — the whole
+reason this needed a migration is that the constant IS the partial index's predicate, so drift
+would leave results correct and the surface silently scanning. `EXPLAIN` on prod: uses
+`idx_commentary_fts_legal`. Veto and prefix rule present in the LIVE predicate (`pg_get_expr`);
+0 vetoed authors reachable; 64,216 rows still admitted; no stray `_v11` left behind.
+
+**Delta on prod is ZERO, proven by construction** rather than by slicing SQL (three attempts at
+brace-matching the predicate produced invalid SQL, so I stopped): `commentary_entries.work` is
+0 non-NULL of 371,406 on prod, so the work-slug leg admits nothing, and no vetoed author is on the
+allowlist. Therefore no vetoed row could ever have been admitted. **32,407 rows** move to
+named-and-refused.
+
+**CHECKING PROD RATHER THAN EXTRAPOLATING FROM LANE-B WAS NOT CEREMONY.** Lane-b showed
+`Theophylact of Ohrid` at 11 rows; production has **5,715**, plus Aquinas-quotation variants
+(`Theophylact of Ohrid  (as quoted by Aquinas, AD 1274)` 930, `Origen of Alexandria  (as quoted
+by Aquinas…)` 467). The lane-b figure would have been wrong by an order of magnitude. All are
+caught by the first-token rule.
+
+**One residual, and it is the owner's call:** `Pseudo-Origen  (as quoted by Aquinas, AD 1274)`,
+12 rows, passes the veto — not a listed name, and no first-token or prefix rule reaches it. Still
+excluded by the allowlist, i.e. still on the weak mechanism. Whether the Origen ruling extends to a
+pseudonymous attribution is editorial and is NOT decided here.
+
+**Two strings that pass the veto SHOULD pass**, and they are the evidence the rule is not
+over-reaching: `Ignatius of Antioch  (as quoted by Origen, AD 235)` and `Heracleon  (as quoted by
+Origen, AD 253)` — legitimate authors where "Origen" appears only in the attribution of who quoted
+them. A cruder `%origen%` rule would have vetoed both.
+
+- **Migration 117 was NOT APPLIED at the time this entry was first written** — to dev or prod. Applying it is an owner action. Its predicate
   is proven row-equivalent by transitivity (the sync test asserts migration == constant modulo
   whitespace; the constant was executed against real rows at 99,937 = 99,937). What the apply will
   confirm and I cannot: that the predicate is accepted as an INDEX predicate, which needs every
