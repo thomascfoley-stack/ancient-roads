@@ -1,4 +1,5 @@
 import { getDb } from './db';
+import { MUST_NOT_SERVE_AUTHORS } from './legal-corpus';
 import { FORBIDDEN_PROVENANCE_DOMAINS } from './forbidden-provenance.mjs';
 
 // Servability re-check + the ONE tombstone render rule (design §2.4/§6.5; build task 1.5).
@@ -87,6 +88,16 @@ export async function resolveServability(blocks: readonly ServabilityKeyed[]): P
               FROM sections s JOIN sources src ON src.id = s.source_id
               WHERE s.id = ANY(${sectionIds}::bigint[])
                 AND src.status = 'published'
+                -- MUST_NOT_SERVE veto (audit H7). Bound as an ARRAY PARAMETER, the same idiom the
+                -- provenance belt below uses. The neon tagged template has no unsafe() at
+                -- runtime whatever its .d.ts claims, and raw interpolation is not wanted here anyway.
+                AND NOT (
+                     src.author = ANY(${MUST_NOT_SERVE_AUTHORS}::text[])
+                     OR split_part(src.author, ' of ', 1) = ANY(${MUST_NOT_SERVE_AUTHORS}::text[])
+                     OR split_part(src.author, ' the ', 1) = ANY(${MUST_NOT_SERVE_AUTHORS}::text[])
+                     OR EXISTS (SELECT 1 FROM unnest(${MUST_NOT_SERVE_AUTHORS}::text[]) n
+                                WHERE src.author LIKE n || ' %')
+                     OR src.author LIKE 'Jerome''s%')
                 AND (s.source_url IS NULL OR NOT EXISTS (
                        SELECT 1 FROM unnest(${FORBIDDEN_PROVENANCE_DOMAINS}::text[]) d
                        WHERE lower(s.source_url) LIKE '%' || d || '%'))`

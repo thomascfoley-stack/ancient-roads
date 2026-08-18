@@ -73,6 +73,13 @@ export function isMustNotServe(author) {
   if (MUST_NOT_SERVE.includes(author)) return true;
   const first = author.split(/\s+(of|the)\s+/i)[0]?.trim();
   if (first && first !== author && MUST_NOT_SERVE.includes(first)) return true;
+  // NAME-PREFIX. Added 2026-08-18 — the shipped guard gained this rule and this copy did not, and
+  // the invariant that exists to stop exactly that drift compared only the two LISTS, never the two
+  // MATCHERS. Measured cost of the gap: `CS Lewis  (via the character Screwtape, a devil)` (70
+  // entries) and `Pseudo-Origen  (as quoted by Aquinas, AD 1274)` (12) were blocked by the shipped
+  // code and INVISIBLE here — i.e. `predeploy-gate.ts` would have cleared 82 entries of vetoed
+  // material for delivery as unauthenticated static JSON while printing green.
+  if (MUST_NOT_SERVE.some((n) => author.startsWith(`${n} `))) return true;
   return author.startsWith("Jerome's");
 }
 

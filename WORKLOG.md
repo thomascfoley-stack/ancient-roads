@@ -1,5 +1,74 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-18 (audit remediation) — PostHog unembedded per owner ruling; the veto reaches the surfaces it was missing
+
+Owner ruling 2026-08-18: *"It shouldn't be deeply embedded in the product at all. It should be
+after-the-fact analytics. If PostHog doesn't work, I don't care, but it should never be embedded in
+the product or any of our product docs."*
+
+**That ruling closed four HIGHs at once, because the `/ingest` reverse proxy WAS the embedding.**
+Removing it removes: cookie forwarding to a third party (Next's external rewrites copy request
+headers verbatim, and `site_gate` — the bearer credential for the whole pre-launch wall — is
+`path:'/'`), the open unauthenticated relay on our domain, and the CSP exfiltration channel that a
+same-origin tunnel created inside `connect-src 'self'`. PostHog now dials its own origin
+cross-origin, where the browser sends none of our cookies, and CSP NAMES that origin — narrower and
+auditable, rather than a hole hidden inside `'self'`.
+
+Also off, each explicitly rather than by default (all three default to ON in posthog-js):
+`autocapture` (shipped `$el_text` — the user's own study titles and privately uploaded filenames),
+`capture_pageview` (shipped `$current_url`, and the readers navigate to `/ask?q=<up to 220 chars of
+the reader's selection>`), and session recording (`maskAllInputs` masks inputs, not rendered page
+text, so a replay would have carried Lane B private uploads verbatim). A `sanitize_properties` hook
+strips query strings off **every** event, because `$current_url` rides all events and not just
+pageviews — turning pageview capture off is necessary and not sufficient.
+
+`skipTrailingSlashRedirect` went with the proxy (it existed only for the beacon POST, and risked
+`/about/` reaching the gate). The gate matcher no longer exempts anything.
+
+`web/test/posthog-wiring.test.ts` was REWRITTEN, not adjusted: it had welded the proxy in place —
+its three guards pinned the `/ingest` legs, the leg order and the slash-redirect flag. Genuine
+guards for "the integration silently dies", and together they were the mechanism. It now guards the
+opposite property, and "it silently dies" is deliberately NOT tested for, per the ruling.
+
+**Audit H6 — the deploy-gate matcher.** When the gate copy went red earlier today I synced the LIST
+and left the MATCHER without the name-prefix rule. Measured cost: `CS Lewis  (via the character
+Screwtape, a devil)` (70 entries) and `Pseudo-Origen  (as quoted by Aquinas, AD 1274)` (12) were
+blocked by the shipped code and INVISIBLE to `predeploy-gate.ts` — the only thing between
+`web/public/commentaries/` and delivery as unauthenticated static JSON. Fixed, and the invariant
+that should have caught it now compares the two FUNCTIONS over the measured double-space author
+shapes instead of asserting hand-picked booleans against one side. Its title had claimed parity with
+the shipped predicate while its body never referenced it. Red-proofed: seeding the removal reports
+exactly those two strings.
+
+**Audit H7 — the veto reached one surface.** It was ANDed into the FTS predicate and nowhere else,
+so `servability.ts` (whether a STORED clipping keeps rendering) and `studies.ts` (whether one may be
+created) gated on `status='published'` + provenance only. Both now carry it. Verified in the real
+join shape on dev: parses, delta 0 today, and the one `sources` row it names is `origen-commentary`
+— **staged**, so the exposure was latent and is now closed by construction rather than by that row
+happening not to be published.
+
+**The FTS predicate text is byte-identical**, deliberately: it IS the live index predicate on
+production, and moving even its whitespace would drop the index. No third migration.
+
+### NOT DONE / UNVERIFIED
+- **Two mistakes of mine in this slice, both caught by checks rather than by me.** I used
+  `sql.unsafe()` on the strength of the driver's `.d.ts`; it does not exist at runtime and three
+  clipping tests said so. I had avoided that exact call earlier for the progress route and then
+  talked myself out of the right instinct by reading a type declaration instead of behaviour. The
+  fix uses the repo's own idiom, two lines below in the same query: bind the constant list as an
+  array parameter. Then I put backticks in a comment INSIDE a `sql` template literal, terminating
+  the string; typecheck caught it.
+- **Nothing deployed.** Production still serves commentary search off the wide index (audit finding
+  #2) until this ships or the index is rebuilt to the 115 predicate. Owner's call, still open.
+- **PostHog is unverified end to end** — no key in this environment, and by the ruling a failure is
+  acceptable. Nobody has watched an event land, or NOT land.
+- The audit's remaining HIGHs are untouched and still listed in
+  [REMEDIATION_CHECKLIST.md](docs/evidence/predeploy-audit-2026-08-18/REMEDIATION_CHECKLIST.md):
+  `violations[].span` reaching the response body, the unbounded provider-error prompt injection, the
+  missing lane relevance floor, and the mobile picker opening off-screen.
+- **`DEEPINFRA_API_KEY` still needs rotating.**
+
+
 ## 2026-08-18 (licensing) — §17.10: the MUST_NOT_SERVE veto now reaches the FTS surface it was missing
 
 Owner: "do 1 and 3 now." **Item 1 (the P4.n Phase-A copy) was NOT executed and cannot be by me** —

@@ -1,5 +1,6 @@
 import { runAsUser } from './db';
 import { paragraphAround } from './paragraph-around';
+import { MUST_NOT_SERVE_AUTHORS } from './legal-corpus';
 import { FORBIDDEN_PROVENANCE_DOMAINS } from './forbidden-provenance.mjs';
 
 // Study Docs data layer (docs/STUDY_DOCS_DESIGN.md §6; build file P1 tasks 1.2/1.4/1.6).
@@ -544,6 +545,15 @@ export async function insertClippingFromSection(
             FROM sections s JOIN sources src ON src.id = s.source_id
             WHERE s.id = ${clip.sectionId}
               AND src.status = 'published'
+              -- MUST_NOT_SERVE veto (2026-08-18, audit H7). Without it a clipping of a vetoed
+              -- author could be CREATED here, and servability.ts would keep rendering it.
+              AND NOT (
+                  src.author = ANY(${MUST_NOT_SERVE_AUTHORS}::text[])
+                  OR split_part(src.author, ' of ', 1) = ANY(${MUST_NOT_SERVE_AUTHORS}::text[])
+                  OR split_part(src.author, ' the ', 1) = ANY(${MUST_NOT_SERVE_AUTHORS}::text[])
+                  OR EXISTS (SELECT 1 FROM unnest(${MUST_NOT_SERVE_AUTHORS}::text[]) n
+                             WHERE src.author LIKE n || ' %')
+                  OR src.author LIKE 'Jerome''s%')
               AND (s.source_url IS NULL OR NOT EXISTS (
                      SELECT 1 FROM unnest(${FORBIDDEN_PROVENANCE_DOMAINS}::text[]) d
                      WHERE lower(s.source_url) LIKE '%' || d || '%'))

@@ -18,6 +18,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { IN_COPYRIGHT_SUSPECTS, MUST_NOT_SERVE, isMustNotServe, scanServedCorpusAuthors } from '../../scripts/lib/served-corpus-authors.mjs';
+import { isMustNotServeAuthor } from '../../web/src/lib/legal-corpus';
 import { MUST_NOT_SERVE_AUTHORS } from '../../web/src/lib/legal-corpus';
 
 const tmps: string[] = [];
@@ -42,15 +43,47 @@ describe('the gate list mirrors the shipped list', () => {
     expect([...MUST_NOT_SERVE].sort()).toEqual([...MUST_NOT_SERVE_AUTHORS].sort());
   });
 
-  it('normalises the same way the shipped predicate does', () => {
-    // "Origen of Alexandria" ~ "Origen", and the Jerome's-translation bucket. Without this the
-    // gate would miss the exact author strings the register ingest actually writes.
+  // THIS TEST'S TITLE WAS TRUE OF ITS INTENT AND FALSE OF ITS BODY, and that gap shipped a real
+  // hole on 2026-08-18. It claimed the gate copy "normalises the same way the shipped predicate
+  // does" while never once referencing the shipped predicate — it asserted hand-picked booleans
+  // against the copy alone, so it stayed green when the shipped guard gained a name-prefix rule and
+  // this copy did not. Measured cost of that green: `CS Lewis  (via the character Screwtape, a
+  // devil)` (70 entries) and `Pseudo-Origen  (as quoted by Aquinas, AD 1274)` (12) were blocked by
+  // the app and INVISIBLE to `predeploy-gate.ts` — the only thing standing between
+  // `web/public/commentaries/` and delivery as unauthenticated static JSON.
+  //
+  // It now compares the two FUNCTIONS, over the author shapes the corpus is measured to contain
+  // (including the double-space forms, which are what defeated the old rules), plus the two strings
+  // that merely MENTION a vetoed name and must not be caught.
+  it('normalises the same way the shipped predicate does — compared function to function', () => {
+    const shapes = [
+      'CS Lewis  (via the character Screwtape, a devil)',
+      'Pseudo-Origen  (as quoted by Aquinas, AD 1274)',
+      'Origen of Alexandria  (as quoted by Aquinas, AD 1274)',
+      'Theophylact of Ohrid  (as quoted by Aquinas, AD 1274)',
+      'Origen of Alexandria  is referenced above by Jerome (AD 420)',
+      "Jerome's translation of Origen",
+      'Origen of Alexandria', 'Theophylact of Ohrid', 'Tyndale Study Notes',
+      'CS Lewis', 'GK Chesterton', 'JRR Tolkien', 'Douglas Wilson',
+      'John Gill', 'Matthew Henry', 'Augustine of Hippo', 'John Chrysostom',
+      'Origenes Adamantius the Younger',
+      'Ignatius of Antioch  (as quoted by Origen, AD 235)',
+      'Heracleon  (as quoted by Origen, AD 253)',
+    ];
+    const disagree = shapes.filter((a) => isMustNotServe(a) !== isMustNotServeAuthor(a));
+    expect(
+      disagree,
+      'the deploy gate and the shipped predicate disagree on these author strings — the gate is what '
+        + 'stands between web/public/commentaries and unauthenticated delivery, so a gap here ships '
+        + 'the material while the gate prints green',
+    ).toEqual([]);
+
+    // Absolute anchors too, so a parity test cannot pass by both sides being wrong together.
     expect(isMustNotServe('Origen of Alexandria')).toBe(true);
-    expect(isMustNotServe('Theophylact of Ohrid')).toBe(true);
-    expect(isMustNotServe("Jerome's translation of Origen")).toBe(true);
-    // ...and does not over-match a legitimately published author.
+    expect(isMustNotServe('CS Lewis  (via the character Screwtape, a devil)')).toBe(true);
     expect(isMustNotServe('John Gill')).toBe(false);
     expect(isMustNotServe('Origenes Adamantius the Younger')).toBe(false);
+    expect(isMustNotServe('Ignatius of Antioch  (as quoted by Origen, AD 235)')).toBe(false);
   });
 });
 

@@ -156,13 +156,35 @@ const REGISTER_SERVED_SLUGS: readonly string[] = [...SERVED_PROSE_WORKS, ...SERV
  * The day that assertion fails, the veto has started doing real work and it stops being a
  * licensing belt and becomes a retrieval change — which is precisely when a human should look.
  */
-const MUST_NOT_SERVE_VETO = `NOT (
-     author IN (${sqlList(MUST_NOT_SERVE_AUTHORS)})
-     OR split_part(author, ' of ', 1) IN (${sqlList(MUST_NOT_SERVE_AUTHORS)})
-     OR split_part(author, ' the ', 1) IN (${sqlList(MUST_NOT_SERVE_AUTHORS)})
-     OR ${MUST_NOT_SERVE_AUTHORS.map((n) => `author LIKE '${n.replace(/'/g, "''")} %'`).join('\n     OR ')}
-     OR author LIKE 'Jerome''s%'
+/**
+ * The MUST_NOT_SERVE veto as SQL, over any author column.
+ *
+ * PARAMETERISED 2026-08-18 because the veto was reaching ONE surface. It was ANDed into
+ * `LEGAL_COMMENTARY_ENTRIES_PREDICATE` (the `commentary_entries` FTS search) and nowhere else, so
+ * `servability.ts` and `studies.ts` — the two paths that decide whether a STORED study clipping
+ * keeps rendering, and whether a new one may be created — gated on `status='published'` and
+ * provenance only. A clipping of a vetoed author kept rendering in a study, its feed and its
+ * export (pre-deploy audit 2026-08-18, H7).
+ *
+ * THE DEFAULT COLUMN MUST STAY `author` AND THE TEXT MUST NOT MOVE. This exact string is the
+ * predicate of the partial index `idx_commentary_fts_legal`, live on production via migrations
+ * 117/118. Change the rendering — even the whitespace — and the query stops implying the index
+ * predicate, the planner drops the index, and commentary search silently seq-scans. That is not a
+ * theory: it is the live state this repo is in today, and `fts-legal-index-sync.test.ts` is the
+ * guard. Callers on other tables pass their own qualified column; the `author` rendering is
+ * byte-identical to what it was before this was made a function.
+ */
+export function mustNotServeVetoSql(col = 'author'): string {
+  return `NOT (
+     ${col} IN (${sqlList(MUST_NOT_SERVE_AUTHORS)})
+     OR split_part(${col}, ' of ', 1) IN (${sqlList(MUST_NOT_SERVE_AUTHORS)})
+     OR split_part(${col}, ' the ', 1) IN (${sqlList(MUST_NOT_SERVE_AUTHORS)})
+     OR ${MUST_NOT_SERVE_AUTHORS.map((n) => `${col} LIKE '${n.replace(/'/g, "''")} %'`).join('\n     OR ')}
+     OR ${col} LIKE 'Jerome''s%'
    )`;
+}
+
+const MUST_NOT_SERVE_VETO = mustNotServeVetoSql();
 
 export const LEGAL_COMMENTARY_ENTRIES_PREDICATE = `((author IN (${sqlList(PUBLISHED_WHOLE_BIBLE_AUTHORS)})
    OR (author = 'John Chrysostom' AND book IN (40, 43, 44))

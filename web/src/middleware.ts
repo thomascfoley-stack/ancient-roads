@@ -55,5 +55,5 @@ export default async function middleware(req: NextRequest) {
 export const config = {
   // Everything except the gate itself, Next internals, the PostHog proxy (O-2 — gated, its
   // beacons would 307 to /gate and every event would be lost), and the favicon.
-  matcher: ['/((?!gate|api/gate|ingest/|_next/|favicon.svg|manifest.webmanifest|icons/).*)'],
+  matcher: ['/((?!gate|api/gate|_next/|favicon.svg|manifest.webmanifest|icons/).*)'],
 };

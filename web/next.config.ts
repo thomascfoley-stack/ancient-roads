@@ -29,11 +29,13 @@ const NEON_AUTH_ORIGIN = (() => {
   }
 })();
 
-// PostHog reverse proxy (owner ruling O-2). The client inits with api_host '/ingest'
-// (src/instrumentation-client.ts) so connect-src stays 'self' — see the CSP note above.
-// Two legs per PostHog's proxy guide: static assets come from the `-assets` subdomain,
-// everything else (events, decide, replay) from the ingest host. Host is env-driven so
-// a US→EU region move is a var change, not a code change.
+// PostHog talks to its OWN origin, not through us (owner ruling 2026-08-18: analytics must not be
+// embedded in the product). The previous shape reverse-proxied it at same-origin `/ingest` so that
+// `connect-src` could stay `'self'` — and that traded a named CSP entry for something strictly
+// worse: a wildcard tunnel to a third party living inside `'self'`, on our domain, inside our gate,
+// with our cookies attached to every beacon (Next's external rewrites copy request headers
+// verbatim). Naming the origin here is the narrower and auditable option: one host, visible in the
+// header, blocked by CSP if it ever changes without this file changing.
 const POSTHOG_HOST = (process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com').replace(/\/+$/, '');
 const POSTHOG_ASSETS = POSTHOG_HOST.replace(/^(https:\/\/[a-z]+)\.i\.posthog\.com$/, '$1-assets.i.posthog.com');
 
@@ -47,7 +49,8 @@ const CSP = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  `connect-src 'self'${NEON_AUTH_ORIGIN ? ` ${NEON_AUTH_ORIGIN}` : ''}`,
+  // PostHog is named, not tunnelled. If the key is unset the SDK never dials, and the entry is inert.
+  `connect-src 'self'${NEON_AUTH_ORIGIN ? ` ${NEON_AUTH_ORIGIN}` : ''} ${POSTHOG_HOST} ${POSTHOG_ASSETS}`,
 ].join('; ');
 
 const nextConfig: NextConfig = {
@@ -134,22 +137,14 @@ const nextConfig: NextConfig = {
     return [{ source: '/reading-plans', destination: '/plans', permanent: true }];
   },
 
-  // The /ingest legs are UNCONDITIONAL — they cost nothing when PostHog is unconfigured and
-  // gating them on the key would make next.config dependent on a NEXT_PUBLIC_ var being
-  // present at build time. /ingest/static/ must be listed first: it also matches /ingest/:path*.
-  // skipTrailingSlashRedirect is set (below) because posthog-js POSTs to /ingest/e/ WITH the
-  // slash, and a 308 in front of a beacon POST is an avoidable failure mode per PostHog's docs.
+  // No PostHog legs here any more — the SDK dials PostHog directly (see the note above). The only
+  // rewrites left are the corpus CDN's, which serve OUR OWN assets from OUR OWN store.
   async rewrites() {
-    const ingest = [
-      { source: '/ingest/static/:path*', destination: `${POSTHOG_ASSETS}/static/:path*` },
-      { source: '/ingest/:path*', destination: `${POSTHOG_HOST}/:path*` },
-    ];
     const base = process.env.CORPUS_CDN_BASE;
-    if (!base) return { beforeFiles: ingest, afterFiles: [], fallback: [] };
+    if (!base) return { beforeFiles: [], afterFiles: [], fallback: [] };
     const origin = base.replace(/\/+$/, '');
     return {
       beforeFiles: [
-        ...ingest,
         ...['bible', 'commentaries', 'original'].map((root) => ({
           source: `/${root}/:path*`,
           destination: `${origin}/${root}/:path*`,
@@ -160,7 +155,6 @@ const nextConfig: NextConfig = {
     };
   },
   // See the rewrites note — posthog-js beacons carry a trailing slash.
-  skipTrailingSlashRedirect: true,
 };
 
 export default nextConfig;
