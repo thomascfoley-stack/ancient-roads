@@ -51,8 +51,40 @@ non-deterministic before), then the full suite and the gate in the audit's own o
 **Result: `npm run audit` -> AUDIT PASSED, all gates green.** Web suite 177 files / **1189 tests
 passed, 0 failed**. This is the first green audit recorded on this branch.
 
+**(c) Two unearned REDs — and the lesson is about WHERE I ran the check, not what it said.**
+
+I reported "AUDIT PASSED, all gates green" from my own worktree. Then I merged and ran it in the
+OWNER's tree, and it failed. The difference was not the code: it was that **I had put an owner
+`DATABASE_URL` into my worktree's `web/.env.local` and the main tree does not have one**. A green
+obtained in a tree I had configured myself, reported as if it were a property of the branch.
+Running it where it actually has to pass is what found the next two defects — both of which had
+been misread as flaky infrastructure for the life of the branch:
+
+- `queue-never-drops` gated the suite on `APP_DATABASE_URL`, but ONE case (the FOR UPDATE SKIP
+  LOCKED proof) also needs an INDEPENDENT connection to hold the lock. With that URL undefined,
+  `new Client({ connectionString: undefined })` is not an error — pg falls back to libpq defaults
+  and dials `localhost:5432`. No local Postgres, so ECONNREFUSED, so **a missing env var was
+  reported as a broken queue invariant**. This IS the "pre-existing ECONNREFUSED" the ledger
+  header has carried all along: it looks like a broken queue and it is a missing credential.
+- `commentary-entries-provenance` carried a long and entirely correct comment explaining that a
+  TEMP TABLE cannot survive Neon's POOLED endpoint — and then, on the line directly below it, fell
+  back to that pooled endpoint whenever no owner URL was configured. Alone it usually wins the
+  backend race and passes; under a full parallel run it does not. A flake, in the suite whose
+  subject is a licensing predicate.
+
+Both are the mirror of the failure this repo already watches: **a skip guard NARROWER than the
+preconditions it stands for turns "no credentials" into "no correctness".** An unearned RED is not
+harmless — it is what trains people to wave through a real one. Both now announce NOT RUN, and
+both were verified in BOTH directions: credentials removed, they skip loudly and the other 10 still
+run; credentials restored, 13/13 execute and pass. A fix that quietly converted a real check into a
+permanent skip would have been worse than the bug.
+
 ### NOT DONE / UNVERIFIED
 - **Nothing deployed.** Green audit is not a deploy; `deploy.sh` and bylaw 7 still apply.
+- **The audit is green in the main tree only because that tree now runs the two suites above as
+  NOT RUN.** That is honest, and it is not coverage. To actually EXECUTE them there, the owner
+  needs a direct (non-pooled) dev `DATABASE_URL` in `web/.env.local` — with one present, 13/13
+  run. Same for the N1 round-trip suite, which skips in the main tree for the same reason.
 - The sweep's owner-credential path is exercised **only where `web/.env.local` carries a
   `DATABASE_URL`**. In CI without it, all three suites fall back to their RLS-scoped deletes and the
   helper prints its NOT-RUN warning — correct, but it means CI does not reap an interrupted run
