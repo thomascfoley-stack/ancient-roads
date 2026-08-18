@@ -1672,3 +1672,45 @@ What survives from S1's intent, because it was about honesty rather than layout:
 
 **Status:** RULED (owner, in session). Implementation on `feat/marketing-site`; deploy remains
 owner-gated per bylaw 7 / A-lane ⚑.
+
+## ADR-112 — GK Chesterton: works published before 1931 may be used; 1931-or-later may not (2026-08-18)
+
+**Owner ruling, verbatim:** *"GK works published prior to 1931 we use, everything else we don't use."*
+
+Supersedes the blanket effect of the §17.10 addition of `GK Chesterton` to
+`MUST_NOT_SERVE_AUTHORS` (2026-08-18, same day) **for the corpus works**. It does not disturb the
+`commentary_entries` veto, which concerns a different body of rows.
+
+**Applying it exposed that the repo cannot execute it from its own records.** Publication dates for
+these works exist in NO source this project holds:
+
+* `ingest/sources.config.json` carries `year: 1936` with `year_basis: "authorDeathUpperBound"` for
+  13 of 25 — his death year as a ceiling, not a publication date. A mechanical read of the rule
+  would have excluded *Orthodoxy* (1908) and *Heretics* (1905).
+* The CCEL work pages state no publication or copyright date (checked directly).
+* The ingested text carries none — CCEL front matter is stripped at ingest (`strip_markup: true`).
+* One record is affirmatively wrong: `chesterton-thingsconsidered` records **1969**, thirty-three
+  years after the author died. *All Things Considered* is 1908.
+
+Dates were therefore taken from the G. K. Chesterton bibliography
+(`en.wikipedia.org/wiki/G._K._Chesterton_bibliography`, fetched 2026-08-18) and **recorded in
+`docs/evidence/corpus-copy/p4n/all-remaining.json` with their source**, so the admission is
+auditable rather than resting on an agent's recollection. A licensing decision made from model
+recall is not evidence.
+
+**Outcome: 21 of 22 works in the P4.n batch admitted; one excluded by the rule** —
+`chesterton-aquinas` (*St. Thomas Aquinas*, 1933). Batch: 620 works.
+
+**Two things this ruling does NOT settle, both filed:**
+
+1. **`chesterton-preexistence` is PUBLISHED and SERVING on production** (25 `served=true` rows) and
+   is **undated**. CCEL attributes it to Chesterton; it does not appear in the standard
+   bibliography. Under a fail-closed reading it does not demonstrably clear 1931. Quarantine is an
+   owner call (`AGENTS.md`) and has not been made.
+2. **The veto cannot see it regardless.** `MUST_NOT_SERVE_AUTHORS` holds `GK Chesterton`;
+   `sources.author` stores `Chesterton, Gilbert Keith`, and `isMustNotServeAuthor` returns **false**
+   for that string — measured, not inferred. Widening it needs **migration 119**, because
+   `mustNotServeVetoSql()`'s default rendering is the live index predicate applied by 117/118.
+
+**Follow-up not taken here:** correcting the manifest's `year`/`year_basis` for the 12 dated works.
+That edit touches the licensing ratchet's input and should be its own change with its own guard.

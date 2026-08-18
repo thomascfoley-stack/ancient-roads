@@ -129,6 +129,27 @@
     "chadwick-expositor2",
     "chadwick-mark",
     "charnock-reconcil",
+    "chesterton-america",
+    "chesterton-ball-cross",
+    "chesterton-defendant",
+    "chesterton-divorce",
+    "chesterton-eugenics",
+    "chesterton-everlasting",
+    "chesterton-heretics",
+    "chesterton-innocencebrown",
+    "chesterton-longbow",
+    "chesterton-magic",
+    "chesterton-manalive",
+    "chesterton-napoleon",
+    "chesterton-orthodoxy",
+    "chesterton-thingsconsidered",
+    "chesterton-thursday",
+    "chesterton-toomuch",
+    "chesterton-trifles",
+    "chesterton-victorianage",
+    "chesterton-whatwrong",
+    "chesterton-whitehorse",
+    "chesterton-wisdom",
     "coleridge-reflection",
     "collins-divinesongs",
     "conybeare-lxxgrammar",
@@ -606,10 +627,16 @@
     "young-e-night"
   ],
   "heldPendingRuling": {
-    "reason": "MUST_NOT_SERVE_AUTHORS carries GK Chesterton (owner ruling 2026-08-18 §17.10). Licensing fails closed: held out of the copy until the owner rules. NOT a judgement that they are unlicensed.",
+    "reason": "GK Chesterton, 1931 or later, or undated. Owner rule 2026-08-18: pre-1931 may be used. chesterton-aquinas (St. Thomas Aquinas, 1933) is excluded BY the rule. Undated works are held fail-closed, not judged unlicensed.",
+    "slugs": [
+      "chesterton-aquinas"
+    ]
+  },
+  "admittedByOwnerRule": {
+    "rule": "published before 1931",
+    "basis": "provenance.year_basis=printSourceInfo",
     "slugs": [
       "chesterton-america",
-      "chesterton-aquinas",
       "chesterton-ball-cross",
       "chesterton-defendant",
       "chesterton-divorce",
@@ -630,6 +657,7 @@
       "chesterton-whatwrong",
       "chesterton-whitehorse",
       "chesterton-wisdom"
-    ]
+    ],
+    "dateSources": "provenance.year_basis=printSourceInfo where present; otherwise the G. K. Chesterton bibliography (en.wikipedia.org/wiki/G._K._Chesterton_bibliography), fetched 2026-08-18, because the manifest, the CCEL work pages and the ingested text all lack a publication date."
   }
 }
