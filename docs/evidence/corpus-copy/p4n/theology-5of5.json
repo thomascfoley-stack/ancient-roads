@@ -1,10 +1,5 @@
 {
   "slugs": [
-    "pusey-eirenicon",
-    "quadrupani-light",
-    "ramsay-bethlehem",
-    "ray-persuasive",
-    "richardson-fathers",
     "robertson-at-word",
     "robinson-j-words",
     "rolt-dionysius",
@@ -92,5 +87,7 @@
     "wuttke-ethics2",
     "wyss-swiss",
     "young-e-night"
-  ]
+  ],
+  "derived": "2026-08-18",
+  "note": "re-split from theology.json (640-work derivation); the 08-17 files were the stale 464-work split"
 }

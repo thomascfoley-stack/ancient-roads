@@ -87,11 +87,8 @@
     "gordon-talkspower",
     "gordon-talkswinners",
     "gray-jm-synthetic",
-    "griffin-sufferings",
-    "groom-bible",
-    "guthrie-interest2",
-    "guyon-auto",
-    "guyon-song",
-    "guyon-spiritual-torrents"
-  ]
+    "griffin-sufferings"
+  ],
+  "derived": "2026-08-18",
+  "note": "re-split from theology.json (640-work derivation); the 08-17 files were the stale 464-work split"
 }

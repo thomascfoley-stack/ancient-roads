@@ -1,7 +1,6 @@
 {
   "slugs": [
     "adeney-expositoreznehes",
-    "adeney-expositorsonglament",
     "alexander-w-expositorjohnepistles",
     "ball-expositorjer1",
     "bennett-expositorjer2",
@@ -53,7 +52,6 @@
     "findlay-expositoreph",
     "findlay-expositorgal",
     "gibson-expositormatt",
-    "gill-song",
     "gray-jm-cwc",
     "harper-expositordeut",
     "henry-mhc1",
@@ -64,12 +62,10 @@
     "henry-mhc6",
     "henry-mhcc",
     "hodge-ephesians",
-    "jamieson-jfb",
     "johnson-bw-john",
     "kellogg-expositor3",
     "leupold-genesis",
     "lumby-expositorpeter",
-    "luther-galatians",
     "maclaren-expositorcolphm",
     "maclaren-expositorpsalms1",
     "maclaren-expositorpsalms2",
@@ -91,5 +87,10 @@
     "watson-ra-expositorjob",
     "watson-ra-expositornum",
     "wesley-notes"
+  ],
+  "excluded_pre_fix_on_lane_b": [
+    "gill-song",
+    "jamieson-jfb",
+    "adeney-expositorsonglament"
   ]
 }

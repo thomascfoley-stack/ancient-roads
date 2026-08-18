@@ -1,15 +1,6 @@
 {
   "slugs": [
     "manning-henry-grounds",
-    "manton-manton01",
-    "manton-manton02",
-    "manton-manton03",
-    "manton-manton04",
-    "manton-manton05",
-    "manton-manton06",
-    "manton-manton07",
-    "manton-manton08",
-    "manton-manton20",
     "mcgarvey-gospels",
     "mead-matthew-almost",
     "mead-matthew-name",
@@ -79,7 +70,6 @@
     "paley-evidence",
     "paley-paleysnatural",
     "palgrave-sacredsong",
-    "pascal-pensees",
     "pascal-provincial",
     "penn-primitivechristianity",
     "penn-quakers",
@@ -92,6 +82,13 @@
     "pink-return",
     "pink-sovereignty",
     "pressense-early",
-    "prideaux-directions"
-  ]
+    "prideaux-directions",
+    "pusey-eirenicon",
+    "quadrupani-light",
+    "ramsay-bethlehem",
+    "ray-persuasive",
+    "richardson-fathers"
+  ],
+  "derived": "2026-08-18",
+  "note": "re-split from theology.json (640-work derivation); the 08-17 files were the stale 464-work split"
 }

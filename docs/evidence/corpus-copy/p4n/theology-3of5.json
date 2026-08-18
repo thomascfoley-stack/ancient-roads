@@ -1,5 +1,10 @@
 {
   "slugs": [
+    "groom-bible",
+    "guthrie-interest2",
+    "guyon-auto",
+    "guyon-song",
+    "guyon-spiritual-torrents",
     "handel-messiah",
     "harnack-origin-nt",
     "havergal-keptuse",
@@ -12,8 +17,6 @@
     "howe-john-howe07",
     "howe-john-howe08",
     "iecm-ojibway",
-    "ignatius-autobiography",
-    "ignatius-exercises",
     "inge-mysticism",
     "inge-outspoken",
     "james-varieties",
@@ -27,13 +30,11 @@
     "jowett-b-essays",
     "jowett-b-scripture",
     "jowett-b-theological",
-    "jowett-brooks",
     "jowett-calvary",
     "jowett-epistpeter",
     "jowett-friendonroad",
     "jowett-passion",
     "jowett-silverlining",
-    "julian-revelations",
     "keble-year",
     "kelly-gerhardtsong",
     "kierkegaard-selections",
@@ -56,12 +57,6 @@
     "lightfoot-talmud",
     "lindsay-early-church",
     "luckock-h-studies",
-    "luther-bondage",
-    "luther-first-prin",
-    "luther-good-works",
-    "luther-smalcald",
-    "luther-stpeter-stjude",
-    "luther-tabletalk",
     "macdonald-adela1",
     "macdonald-adela2",
     "macdonald-adela3",
@@ -93,5 +88,7 @@
     "macdonald-vicardaughter",
     "maclaren-david",
     "maimonides-guide"
-  ]
+  ],
+  "derived": "2026-08-18",
+  "note": "re-split from theology.json (640-work derivation); the 08-17 files were the stale 464-work split"
 }
