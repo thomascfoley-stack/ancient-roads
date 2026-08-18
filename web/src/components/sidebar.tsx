@@ -7,6 +7,7 @@ import { authClient } from '@/lib/auth/client';
 import { isPrayerWriting, PRAYER_WRITING_EVENT } from '@/lib/prayer-writing-mode';
 import { CATALOGS, CATALOG_IDS, type CatalogId } from '@/lib/catalog-defs';
 import { orderStudiesForNav, type StudySummary } from '@/components/save-to-study';
+import { bibleTabHref, DEFAULT_BIBLE_HREF } from '@/lib/bible-position';
 import { libraryLabel } from '@/lib/library-nav';
 
 // --- user-defined study sections (parent/child). Stored locally per user
@@ -122,6 +123,15 @@ export function SidebarNavContent({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  // A034 — the Bible link went to John 1 unconditionally, discarding the reader's position. This
+  // component feeds BOTH the desktop rail and MobileNav's Menu sheet (mobile-nav.tsx:161), so the
+  // hardlink here was the phone user's second route to the old behaviour even after the bottom tab
+  // was fixed. Same shape as mobile-nav's: seeded with the DEFAULT so the first client render
+  // matches the server's (reading localStorage during render is the React #418 this repo has paid
+  // for twice), and keyed on `pathname` rather than `[]` because the rail stays mounted across
+  // client navigations and a one-shot effect would freeze at boot.
+  const [bibleHref, setBibleHref] = useState(DEFAULT_BIBLE_HREF);
+  useEffect(() => setBibleHref(bibleTabHref()), [pathname]);
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
   // See the sign-in/sign-out branch below: this exists solely to keep the first client render
@@ -171,7 +181,7 @@ export function SidebarNavContent({
             onNavigate={onNavigate}
           />
           <SidebarLink
-            href="/read/jhn/1"
+            href={bibleHref}
             icon={<BookIcon />}
             label="Bible"
             active={pathname.startsWith('/read')}
@@ -183,6 +193,40 @@ export function SidebarNavContent({
             icon={<AskIcon />}
             label="Ask"
             active={pathname.startsWith('/ask')}
+            row={row}
+            onNavigate={onNavigate}
+          />
+          {/* A072 / B043 — THE DESK HAD NO ENTRY POINT IN ANY NAVIGATION, ANYWHERE.
+              (R1 part 1, docs/pm/orders/2026-08-17-three-ux-rulings.md: "A nav entry, desktop and
+              mobile menu. Cheapest, largest effect.")
+
+              Four separate enumerations of this rail's links found no `/desk` among them, and they
+              were right. The only two routes into the Desk that shipped are the library row's "+"
+              (`app/library/[catalog]/page.tsx`, whose meaning is itself a filed finding — UX-2) and
+              ask-client's per-result link. BOTH of those put a pane on a desk; NEITHER goes to the
+              desk. So a reader could not reach an empty one at all, and a reader who had built one
+              could not get back to it after navigating away. That is the same orphaned-surface bug
+              this file's Library block already records twice (the hub, then My Works) — on the one
+              surface the product was built around.
+
+              ONE ENTRY CLOSES BOTH FINDINGS, because this component is the shared nav content:
+              the desktop rail renders it at line ~554, and `mobile-nav.tsx:134` renders the SAME
+              component inside its menu sheet (`<SidebarNavContent touch onNavigate={onClose} />`).
+              Verified by reading that file, and asserted by driving the mobile menu in
+              `test/components/desk-nav-and-session-note.test.tsx` rather than by trusting the
+              import — if the sheet ever stops sharing this content, B043 reopens and that goes red.
+
+              PLACED WITH THE READING SURFACES, above Reading plans: Home / Bible / Ask / Desk are
+              places you go to read, Reading plans is a schedule over them.
+
+              `pathname === '/desk'`, not `startsWith`: the Desk's state lives in the QUERY STRING
+              (`?p=…`), which is not part of `pathname`, so the route is exact and has no children.
+              An exact test cannot light up on a future `/desktop`-shaped sibling either. */}
+          <SidebarLink
+            href="/desk"
+            icon={<DeskIcon />}
+            label="Desk"
+            active={pathname === '/desk'}
             row={row}
             onNavigate={onNavigate}
           />
@@ -422,6 +466,11 @@ const CATALOG_ICON: Partial<Record<CatalogId, React.ReactNode>> = {
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  // A034 — the writing rail's own Bible link. Same hardlink, same fix, its own state because this
+  // is a different component from SidebarNavContent and the value cannot be shared without lifting
+  // it. Seeded with the DEFAULT for the same hydration reason.
+  const [bibleHref, setBibleHref] = useState(DEFAULT_BIBLE_HREF);
+  useEffect(() => setBibleHref(bibleTabHref()), [pathname]);
   // WRITING MODE (owner direction 2026-08-12, journal-redesign mockup): while the prayer compose
   // view owns the screen, the 256px sidebar drops to a 58px icon rail — the journal area is the
   // screen, not a widget on it. The rail re-expands on hover or ⌘\, and collapses again when the
@@ -475,7 +524,7 @@ export function Sidebar() {
     // not a sync task — do not derive this from the catalog list.
     const railLinks = [
       { href: '/home', label: 'Home', icon: <HomeIcon /> },
-      { href: '/read/jhn/1', label: 'Bible', icon: <BookIcon /> },
+      { href: bibleHref, label: 'Bible', icon: <BookIcon /> },
       { href: '/ask', label: 'Ancient Paths', icon: <AskIcon /> },
       { href: '/plans', label: 'Reading plans', icon: <CalendarIcon /> },
       { href: '/prayers', label: 'My prayers', icon: <PrayerIcon /> },
@@ -1099,6 +1148,21 @@ function AskIcon() {
   return (
     <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M21 12a8 8 0 01-11.6 7.13L3 21l1.87-6.4A8 8 0 1121 12z" />
+    </svg>
+  );
+}
+
+/** A pane divided into three columns — what the Desk IS (`MAX_PANES` = 3, side by side).
+ *
+ *  Drawn rather than reused, for the reason CATALOG_ICON's comment gives one screen up: five
+ *  identical speech bubbles taught the eye that these glyphs carry nothing. BookStackIcon (the
+ *  Library) and TabletIcon (Theology) were the near neighbours and both would have said the wrong
+ *  thing — the Desk is not a shelf and not a work. Same convention as every icon in this file:
+ *  24 viewBox, strokeWidth 1.5, h-4 w-4, so it sits on the nav's optical line. */
+function DeskIcon() {
+  return (
+    <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zM9 5v14M15 5v14" />
     </svg>
   );
 }

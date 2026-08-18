@@ -7,6 +7,7 @@ import { SidebarNavContent } from './sidebar';
 import { OMNIBOX_OPEN_EVENT } from './omnibox';
 import { useDragDismiss } from '@/lib/use-drag-dismiss';
 import { useDialog } from '@/lib/use-dialog';
+import { DEFAULT_BIBLE_HREF, bibleTabHref } from '@/lib/bible-position';
 
 // Phone navigation: a bottom tab bar for the primary destinations (thumb
 // zone) plus a Menu sheet carrying the full sidebar content (Home, study
@@ -39,6 +40,27 @@ export function MobileNav() {
 
   useEffect(() => setMenuOpen(false), [pathname]);
 
+  // A034 — THE BIBLE TAB USED TO HARDLINK `/read/jhn/1`, so a reader in Psalm 23 who tapped Home
+  // and then Bible landed in John, having done nothing to ask for that. The record it consults now
+  // is `lib/bible-position.ts`, written by the reader page; A040 (position lost across a tab close)
+  // is the same missing record seen from the other side, and this is the same fix.
+  //
+  // INITIALISED TO THE DEFAULT AND ADOPTED IN AN EFFECT — NOT read in the `useState` initializer.
+  // An initializer runs during the FIRST client render, and the server has no localStorage, so the
+  // server would emit `/read/jhn/1` and the browser `/read/psa/23`: a server/client attribute
+  // mismatch, i.e. the React #418 hydration error this repo has already paid for twice (the
+  // reader's translation badge, `read/[book]/[chapter]/page.tsx:38-51`, which threw on EVERY reader
+  // page load in production until 2026-08-02; and the session, `lib/auth/use-signed-in.ts`).
+  //
+  // KEYED ON `pathname`, not `[]`: this nav stays mounted across client navigations, so a one-shot
+  // mount effect would freeze the tab at wherever the reader was when the app booted. Re-reading on
+  // each navigation costs one localStorage get. While the reader is ON a chapter the value may lag
+  // by one chapter — this effect and the reader page's save effect both fire on the same navigation
+  // and their relative order is not guaranteed — which is harmless, because tapping Bible from
+  // inside the Bible is not the journey either finding is about, and the next navigation corrects it.
+  const [bibleHref, setBibleHref] = useState(DEFAULT_BIBLE_HREF);
+  useEffect(() => setBibleHref(bibleTabHref()), [pathname]);
+
   if (pathname === '/gate') return null;
 
   const tabs = [
@@ -47,7 +69,9 @@ export function MobileNav() {
     // with no nav back. The active test matched '/' too, where this nav never renders,
     // so the tab could also never light up.
     { href: '/home', label: 'Home', active: pathname === '/home', icon: <HomeIcon /> },
-    { href: '/read/jhn/1', label: 'Bible', active: pathname.startsWith('/read'), icon: <BookIcon /> },
+    // A034: the destination is the reader's last position, defaulting to John 1. `active` still
+    // keys off the /read prefix, so it lights up for whatever chapter they are actually in.
+    { href: bibleHref, label: 'Bible', active: pathname.startsWith('/read'), icon: <BookIcon /> },
     { href: '/ask', label: 'Ask', active: pathname.startsWith('/ask'), icon: <AskIcon /> },
     // → the hub, not /library/commentaries: that slug is shadowed by the old
     // passage-browse page, so the tab labelled "Library" landed on the one catalog
@@ -70,7 +94,10 @@ export function MobileNav() {
         >
           {tabs.map((t) => (
             <Link
-              key={t.href}
+              // KEYED ON THE LABEL, NOT THE HREF: since A034 the Bible tab's href changes after
+              // mount, and a changing key would unmount and remount that anchor on every
+              // navigation. The labels are the stable identity of these five tabs.
+              key={t.label}
               href={t.href}
               aria-current={t.active ? 'page' : undefined}
               className={tabClass(t.active)}
