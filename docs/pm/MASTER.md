@@ -3,9 +3,7 @@
 **Read this first, every session.** It is the plan and the gate board. It is **not** the state —
 state lives in `docs/STATE_OF_TRUTH.md` and this file points at it rather than copying it.
 
-Last verified: 2026-08-16 · `main` @ `9a36ab8` · working branch: `ship/editor-deploy` (same commit as
-`main`) — re-measured with `git rev-parse`, not copied. **This line had stood at 2026-08-02 /
-`b569c90` for 14 days**, which is the exact decay the note below describes, in the note's own file.
+Last verified: 2026-08-02 · `main` @ `b569c90` · working branch: none — re-measured, not copied
 
 > The line above went 57 commits stale while still naming a working branch that had been merged and
 > deleted, and the board's own A2 row said "(unmerged)" of a commit that merged at `1f4bf8d`
@@ -124,17 +122,18 @@ pre-deploy audit (finding 6), not by this board.
 | C2 | `INSTR` — instrument both broken loops | **DONE 2026-08-07.** `Mark as read` was `500`, 5/5 — **not** the auth-scope fault the audit deck inferred, and not the 404 `R0` guessed. `permission denied for table plan_days`: `032` narrowed the schema default, `039` then created `plans`/`plan_days` citing a `016` comment `032` had already invalidated. **`Delete plan` was broken identically and neither audit had tried it.** Ask did NOT reproduce — 2/2 succeeded; what showed up was latency (~104s/~58s vs the block's stated 18s/45s) |
 | C3 | ⚑ `L2` — the plan-write outage | **STEP 1 DONE AND LIVE 2026-08-07.** `db/migrations/106_plan_write_grants.sql` — `UPDATE` on `plan_days`, `DELETE` on `plans`, derived from the only write verbs in `store.ts`. Red-proofed on a throwaway by replaying `001 → 032 → 039`, three checks watched RED, cascade proven with a control. Owner-applied; ledger `sha256 7893d0d8ebc5…`. Verified live: 10/10 marks persist, survives reload, delete works. Step 2 (optimistic toggle) deferred to the next deploy |
 | C4 | ⚑ Deploy — ships `L1`'s retry, `L2` step 2, and UX-5 | **DEPLOYED — row corrected 2026-08-10; it still read BLOCKED four deploys after reality.** `2611e1f` is live on `ancientpaths.app`, alias verified serving `dpl_4SRFDzwh5HbKLrAXCu5UqpHTu4aw` by deployment-id match ([receipt](../evidence/deploys/deploy-2611e1f-2026-08-09T01-11-00Z.txt)); the C5 auth-cutover deploy `f197406` and the 08-08/09 marketing+restyle deploys also landed. History: pre-deploy deep audit (5 lenses) returned **DO NOT DEPLOY**: `npm ci` would have failed on the builder *after* the upload, and the guard written for exactly that class was green. Both closed at `7bc3bdd`. **A1 re-run 2026-08-07** as two lenses (both completed): all 26 API routes now audited, 20 findings — **1 CRITICAL** (.docx ReDoS, 919-byte upload → 46s CPU, reproduced independently) and 3 HIGH. **Carried open (NOT re-verified 2026-08-10):** `db-invariants` was red on `main`; `DEPLOY_PREFLIGHT.md` pointed rollback at a bundle predating migrations 044/045. [Checklist](../evidence/predeploy-audit-2026-08-07/CHECKLIST.md) |
-| C5 | ⚑ Neon Auth cutover | **LIVE 2026-08-08 — email/password AND Google both verified working.** Deploy `f197406` (`dpl_9sEyz51uegvYXbiGbNc4afMW61i7`) serves `ancientpaths.app`. Blast radius held to the four files the design predicted; `requireUser`/`currentUser` kept their signatures, so none of the 18 callers changed. **§10 PARTIALLY RUN — sentence corrected 2026-08-15; it claimed the Better Auth tests and package were untouched five days after F2 removed them.** The Better Auth tests and the `better-auth` package were deleted 2026-08-08 (`dc87099`, bylaw 3); migration 104's `auth_*` tables remain in prod, dead but holding 7 pre-cutover rows (`SECURITY.md`). Rollback is therefore no longer a bare `git revert` + redeploy. **The runbook's §0 owner-actions list was INCOMPLETE and cost a debugging cycle: Neon's trusted-domains list is a FOURTH console action, and with it empty every OAuth redirect is blocked with no signal visible to the repo, the SDK types, or the deploy gate.** Three things carried over worse than Better Auth and are filed, not fixed: GHSA-g38m's precondition is now fully assembled and reachable (ADR-109 + `SECURITY.md`); the 12-char password minimum and reset-revokes-sessions are UNENFORCEABLE (no such fields exist in Neon's config); and auth mail moved to Neon's shared sender `auth@mail.myneon.app`, replacing the project's branded Resend sender on the account-recovery path. **RLS under Neon's user-id format is UNPROVEN** — a working sign-in does not prove `runAsUser` binds a value the policies match, and that failure is silent (matches-nothing reads as "no data", which is indistinguishable from the ADR-108 clean start). Design: [`AUTH_CUTOVER_V2_NEON.md`](../AUTH_CUTOVER_V2_NEON.md) · runbook: [`AUTH_V2_IMPLEMENTATION.md`](../AUTH_V2_IMPLEMENTATION.md) |
+| C5 | ⚑ Neon Auth cutover | **LIVE 2026-08-08 — email/password AND Google both verified working.** Deploy `f197406` (`dpl_9sEyz51uegvYXbiGbNc4afMW61i7`) serves `ancientpaths.app`. Blast radius held to the four files the design predicted; `requireUser`/`currentUser` kept their signatures, so none of the 18 callers changed. **§10 has NOT run** — migration 104's `auth_*` tables, the Better Auth tests and the `better-auth` package are all untouched, so rollback is still `git revert` + redeploy. **The runbook's §0 owner-actions list was INCOMPLETE and cost a debugging cycle: Neon's trusted-domains list is a FOURTH console action, and with it empty every OAuth redirect is blocked with no signal visible to the repo, the SDK types, or the deploy gate.** Three things carried over worse than Better Auth and are filed, not fixed: GHSA-g38m's precondition is now fully assembled and reachable (ADR-109 + `SECURITY.md`); the 12-char password minimum and reset-revokes-sessions are UNENFORCEABLE (no such fields exist in Neon's config); and auth mail moved to Neon's shared sender `auth@mail.myneon.app`, replacing the project's branded Resend sender on the account-recovery path. **RLS under Neon's user-id format is UNPROVEN** — a working sign-in does not prove `runAsUser` binds a value the policies match, and that failure is silent (matches-nothing reads as "no data", which is indistinguishable from the ADR-108 clean start). Design: [`AUTH_CUTOVER_V2_NEON.md`](../AUTH_CUTOVER_V2_NEON.md) · runbook: [`AUTH_V2_IMPLEMENTATION.md`](../AUTH_V2_IMPLEMENTATION.md) |
 | C6 | Waves 1–4 closed | **OPEN.** `T1`/`T2` wait on an auth migration that does not exist; `T4` on an owner schema call; `T3` is `DEVICE`-only; `S1` needs owner-supplied content. See the roadmap |
 
 ## Lane D — corpus CDN + /ask latency (opened 2026-08-13, [plan](orders/2026-08-13-cdn-and-ask-latency-plan.md))
 
 | # | Gate | Status |
 |---|---|---|
-| D1 | Fork merge — `worktree-corpus-cdn-build` + `main` both grew the serving lists | **DONE 2026-08-15**, [PR #90](https://github.com/thomascfoley-stack/ancient-roads/pull/90) @ `08aca18`, audit green. Three checks red on the union, all real: **`gill-song` is missing from `idx_commentary_fts_legal` wherever 113 was applied** — 113 was rebuilt from a `routing.ts` that never carried it, while the other branch had it deployed and serving since 2026-08-12 (`509d690`). Neither branch was wrong alone; the union is what could see it. **Measured on dev; INFERRED for prod** from 113's text plus the 2026-08-13 WORKLOG's "applied dev+prod" — no prod read was taken (bylaw 7), so confirm with `pg_index` at the terminal. Also: the `publish-flip-toolchain` serve:false fixture moved for the **third** time (thayers published by close-out #4 → `josephus-works`), and `ObsFields` widened for the per-attempt timing arrays |
-| D2 | ⚑ Migration **115** on prod | **DONE — applied 2026-08-15 10:58:20 UTC, ledger `sha256 1840d90f0d00…` (the same hash this row recorded for dev). This row read OPEN until 2026-08-16, a full day after the migration it says is outstanding had been applied to the database it names.** Verified two ways rather than one, because a ledger row is a record of intent and the planner reads the index: `schema_migrations` carries `115_fts_legal_rejoin_gill_song.sql`, AND `pg_get_expr(indpred)` on the live `idx_commentary_fts_legal` contains `gill-song`. So the predicate is 115-era and the exegetical FTS is **not** silently seq-scanning — the failure this row correctly described never occurred. `116_ask_outcomes.sql` also applied, 2026-08-16 00:52:10 |
-| D3 | ⚑ Write credential for the **new** public Blob store | **OPEN — A5's premise was wrong.** The existing store is **private and holds Lane B's private `user-corpus/` uploads**; making it public would expose them. `ancient-paths-corpus` (`store_mBP8qokd9O4O9qNZ`, public, base `mbp8qokd9o4o9qnz.public.blob.vercel-storage.com`) created and **deliberately not connected** — connecting a second store is what can overwrite the `BLOB_READ_WRITE_TOKEN` Lane B depends on (verified unchanged). Owner: a token from the dashboard, or connect with a non-default env prefix. A1–A4 are built, merged and audited; the dry run plans 24,992 uploads / 0 deletes |
-| D4 | B2 — where the seconds go in `/ask` | **DEV-LOCAL DONE 2026-08-15; both pre-registered rules UNTRIGGERED, so B4 built nothing.** p50 9.1s: retrieve 47.8% · compose 50.3% · verify ~0% · embed 1.8% · lanes 0ms (overlapped); 10/10 composed. Rule 1 50.4% (bar 60) · Rule 2 4.2s (bar 15). **Says nothing about production** — C2 measured ~104s there on 2026-08-07, and the prod run needs the timers deployed (D2). Cold start put 18.2s into retrieve on ask 1 vs a 4.2s p50; one ask took three compose attempts. [Evidence](../evidence/ask-latency/B2-measurement-2026-08-15-devlocal.md) |
+| D1 | Fork merge — `worktree-corpus-cdn-build` + `main` both grew the serving lists | **DONE 2026-08-15**, [PR #90](https://github.com/thomascfoley-stack/ancient-roads/pull/90) @ `08aca18`, audit green. Three checks red on the union, all real: **`gill-song` is missing from `idx_commentary_fts_legal` wherever 113 was applied** — 113 was rebuilt from a `routing.ts` that never carried it, while the other branch had it deployed and serving since 2026-08-12 (`509d690`). Neither branch was wrong alone; the union is what could see it. Also: the `publish-flip-toolchain` serve:false fixture moved for the **third** time (thayers published by close-out #4 → `josephus-works`), and `ObsFields` widened for the per-attempt timing arrays |
+| D2 | ⚑ Migration **115** on prod | **DONE 2026-08-15, owner-run at the terminal.** The `pg_index` read the owner took FIRST proved the hazard was real: prod's index was 113-era (`has_gill_song = f`), so this branch's deploy would have shipped a query predicate broader than the live partial index — the planner would have stopped using it entirely. 115 applied, ledger `sha256 1840d90f0d00…` matching dev byte-for-byte, `idx_commentary_fts_legal` confirmed `indisvalid=true` with `gill-song` in the live predicate |
+| D3 | ⚑ Write credential for the **new** public Blob store | **DONE 2026-08-15.** Owner supplied the token; verified against the empty store BEFORE any upload (a wrong/private-store token would have listed `user-corpus/` blobs — it didn't). `BLOB_READ_WRITE_TOKEN` confirmed unchanged throughout (still bound to the private user-corpus store; Lane B unaffected) |
+| D5 | Deploy A (flip) + Deploy B (payoff) | **BOTH LIVE 2026-08-15.** Sync: 24,992 files uploaded, 0 failed, parity proven (200 sampled fetches, sha256-verified, 0 mismatches). Flip deploy `ca2eb2b` set `CORPUS_CDN_BASE` live — verified not just present but FIRING (`https://ancientpaths.app/commentaries/1ch/1.json` → 200, served from Blob). Payoff deploy `5e24cd8` excludes the three corpus dirs from the upload. **The obvious payoff number was wrong and got corrected the same session**: the CLI's own progress bar printed the identical `358.2MB` on all three of today's deploys — a stale cached total, not a real byte count (proven via a `--debug` preview deploy: only 736 files / 4 chunks needed uploading, which cannot be 358MB). Reconstructing the CLI's own archive logic gives the honest number: **353.8MB → 11.5MB, a 97.2% reduction, 3,590 fewer files**. [Evidence](../evidence/corpus-cdn/A6-payoff-2026-08-15.md) |
+| D4 | B2 — where the seconds go in `/ask` | **DEV-LOCAL DONE 2026-08-15; both pre-registered rules UNTRIGGERED, so B4 built nothing.** p50 9.1s: retrieve 47.8% · compose 50.3% · verify ~0% · embed 1.8% · lanes 0ms (overlapped); 10/10 composed. Rule 1 50.4% (bar 60) · Rule 2 4.2s (bar 15). **Says nothing about production** — C2 measured ~104s there on 2026-08-07; the timers are now live (D5), so the production run can happen next. Cold start put 18.2s into retrieve on ask 1 vs a 4.2s p50; one ask took three compose attempts. [Evidence](../evidence/ask-latency/B2-measurement-2026-08-15-devlocal.md) |
 
 **Ingestion note (2026-08-15):** the Kimi corpus session died mid-run on a **provider quota**, not
 on context. Dev is frozen at its last polled number (flat embeddings 580,939); `bernard-song-sermons`,
@@ -158,8 +157,7 @@ they exist for.
 |---|---|---|
 | UX-1 | **The Bible cannot be reached on the desk** | **Corrected 2026-08-02**: this row first said the pane model could not hold Scripture and needed a design decision. Wrong — `lib/desk.ts` already has `kind:'scripture'` beside `kind:'work'` and `/desk` renders both, so a Bible pane opens today by URL. It is a **picker gap**: `+` routes to `/library?desk=…`, which offers catalogs of works only. Much cheaper than filed |
 | UX-2 | **The `+` affordance is unexplained** | Row opens the work alone, `+` adds it to the desk, nothing says so; the tooltip is hover-only and absent on touch. **ADDRESSED 2026-08-07** (`e196e4b`): one visible line above the work list — "Tap a work to read it, or + to open it beside what is on your desk" — rather than a label on every row, which is the same answer twenty times down a page. **NOT browser-verified**: `/library/[catalog]` needs DB credentials the working tree does not have, so this is typecheck-and-lint only (WORKLOG 2026-08-07 NOT DONE). A 2026-08-07 UX walk reported the `+` as having "no label or tooltip" — it has both an `aria-label` and a `title`; this row already had the real diagnosis |
-| UX-4 | **SHIPPED 2026-08-16/17** — Research History closed this: threads persist per-account at `/ask/[id]`, results open on the desk without losing the search, the §4.7 Show filter ships, every ask runs fresh (owner-ruled). Built, 4-agent-inspected, 48 tests + a 20-question live battery; deployed `e59213d`. Remaining polish filed (P2 rail refresh, P3 thread header); P4/B1 retrieval findings to quality-slice. Original text kept below for the record. |
-| UX-4 (historical) | **Results cannot be opened; searches do not persist** | Captured 2026-08-02, deliberately NOT designed (owner is mid-thought and said so). Settled: click a result -> open in reader, WITHOUT losing the search; searches persist with history; history probably lives in the study-partner tabs. Open: which thing opens (the anchored passage or the voice's own work), per-device vs per-account history, and whether a stored search keeps the answer — caching generated output is governed by the accuracy bar and goes stale when the corpus moves, as it just did. **Same problem as UX-1 and should be one slice with it** |
+| UX-4 | **Results cannot be opened; searches do not persist** | Captured 2026-08-02, deliberately NOT designed (owner is mid-thought and said so). Settled: click a result -> open in reader, WITHOUT losing the search; searches persist with history; history probably lives in the study-partner tabs. Open: which thing opens (the anchored passage or the voice's own work), per-device vs per-account history, and whether a stored search keeps the answer — caching generated output is governed by the accuracy bar and goes stale when the corpus moves, as it just did. **Same problem as UX-1 and should be one slice with it** |
 | UX-3 | **Desk layout model** | Grid not a row (top-to-bottom as well as left-to-right), no 3-pane cap, drag-resize, collapsible left chrome. **The cap is doing performance work**: an uncapped grid over `spurgeon-sermons` (118,371 sections) is a virtualisation problem before it is a layout one |
 
 [Order](orders/2026-08-02-reader-ux-desk-and-bible.md). Deliberately not merged into A8: these are
@@ -202,77 +200,6 @@ legs NOT RUN. See WORKLOG 2026-08-07.
 | ~~3~~ | ~~Vercel Pro~~ | **DONE 2026-08-03** — Pro badge observed; and Slice 1's queue does not use cron at all. See B3 |
 | 4 | Front-matter gating — all admitted hits stop, or strong-only (`origin/wip/front-matter-strength`) | merge of that branch |
 | 5 | Each ⚑ gate above | that gate |
-| 6 | **SEC-1 — the gate decision IS the public-launch decision.** The site password gate (`middleware.ts`, everything but `gate\|api/gate\|_next/\|favicon\|manifest\|icons`) stays up until the Neon Auth transitive CVEs are resolved. Note the second-order effect measured 2026-08-16: **nothing reaches `/api/ask` while the gate is up**, so `ask_outcomes` accumulates only from owner asks — Phase-D's ~1–2k training examples are blocked behind this decision, not merely "started" | public launch · Phase-D |
-
-### O-1 — ROTATE THE PRODUCTION DATABASE PASSWORD
-
-**Filed 2026-08-16. Step 1 DEFERRED BY OWNER DECISION the same day, to January 2026** — "we're
-in build mode… when we are done I will rotate. I will get users in January, in January I will
-rotate keys." That is a ruling, not an open action: **do not re-raise it as a blocker in any
-session before then.** Everything below is the standing state it is deferred *against*, and
-the pre-flight that was completed around it.
-
-Pre-flight ran 2026-08-16 ([session](../../WORKLOG.md), commits `5618cf6` · `0c47ef1`). It found
-**more than this row originally described**, so read the corrections before acting in January.
-
-**What is exposed, re-measured 2026-08-16.** A live `neondb_owner` production credential is in
-git history, and **the current `~/.neon_prod_url` password is one of them** — verified by boolean
-comparison, never printed. The old string was observed **connecting to `ep-odd-fog` at 17:44 UTC**,
-so it is live in fact and not merely by inference. That observation is the pre-rotation control
-leg of the eventual red-proof; the January session inherits a check already watched green.
-
-**Correction 1 — the row's own measurement command counts itself.** `git log --all -S'neondb_owner:npg_'
---pickaxe-regex` now returns **7 commits**, because `c27c59a` and `1eb2b40` *quote the search
-pattern*. Classifying matches by characters-after-`npg_` separates them: **12 real diff lines
-across 5 commits, 6 files, 1 distinct secret.** The original numbers were right; the instrument
-inflates by one every time someone writes the finding down.
-
-**Correction 2 — scope was wider than "only `neondb_owner` [on prod]", and the working tree was
-NOT clean.** A **second live credential** was in the tree and in history: `neondb_owner` on the
-**dev** branch `ep-tiny-hat-atdgpisx`, a **43-character** password in Neon's pre-`npg_` format,
-which no `npg_`-keyed search can see. Byte-compared against `.env.local` `DATABASE_URL_UNPOOLED`:
-**identical**. `bf2fbb0` rewrote the exact line it sat on — redacting the prod credential later in
-the same string and leaving this one earlier in it — because it redacted by **pattern, not by
-class**. Now redacted in the tree (`5618cf6`); still in history, so **this credential needs
-rotating too**, and until it is, step 3 stays blocked *independently of the prod rotation*.
-
-**Correction 3 — step 1's Vercel precondition is closed, by measurement.** The dashboard read it
-asked for is **impossible** (all three vars are Sensitive; see the order's §3b). Settled two other
-ways instead: `pg_stat_activity` under load shows **`app_runtime` and nothing else** connecting,
-and `web/src/lib/db.ts:24-29` throws in production rather than falling back to `DATABASE_URL`,
-with a boot canary (`assertAppRuntimeRole`, `instrumentation.ts:8`) that hard-fails on any
-`BYPASSRLS` role — proven red at `web/test/db-boot-assert.test.ts:34`. **Serving is unaffected by
-this rotation. No redeploy step.**
-
-**Correction 4 — a rotation of `production` alone does not close the exposure.** The project has
-**8 branches, 3 of them cut directly from `production`**, and a Neon branch clones `pg_authid`, so
-it keeps the parent's role passwords from the moment it was cut; a later reset does not propagate.
-`pre-cutover-ep-odd-fog-atnykudm-20260729164220` → **`ep-delicate-bonus-atpq28cq`** was cut
-2026-07-29 and is a full production snapshot. **UNVERIFIED whether it accepts the leaked
-credential** — owner ruled test-first. The sweep across all 7 reachable endpoints is in the
-order's Phase 4.
-
-The order below is **load-bearing, not preference**:
-
-1. **Rotate `neondb_owner`** — **DEFERRED to January by owner decision, 2026-08-16.** Then, in the
-   same sitting: `~/.neon_prod_url`; the **dev** branch per correction 2; and `ep-delicate-bonus`
-   if the sweep shows it accepting the old value. Breaks OWNER tooling only —
-   `~/.neon_prod_url`, `CUTOVER_DATABASE_URL`, migrations — never serving (correction 3).
-2. **Blob-store token** for the corpus CDN (D3) — a separate secret, unaffected by the rotation.
-3. **Branch-protection call** (Pro upgrade, or make the repo public) — **NEVER before step 1.**
-   The repo being private is the only thing capping the blast radius; publishing it pre-rotation
-   publishes **two** working credentials, prod and dev.
-
-Rotation is the fix, not history-scrubbing: once the secrets are dead, the history is inert.
-
-**Shipped 2026-08-16 instead of the rotation, and it is the durable half.** The leak had a
-mechanism — `scripts/land-wave.sh` `tee`s a spawned command line carrying the full
-`CUTOVER_DATABASE_URL` into `docs/evidence/` — and the mechanism now has a gate:
-`test/invariants/no-committed-credentials.test.ts`, which runs in `npm run audit` and CI, plus
-`.githooks/pre-commit` step 4 as the fast pre-filter. Two legs, deliberately different in kind:
-format-keyed repo-wide for `npg_`, and **format-agnostic** under `docs/evidence/` — the leg
-`bf2fbb0` lacked. Red-proof matrix and the two defects red-proofing exposed in the check itself
-are in `0c47ef1`. See `docs/SECURITY.md` → SEC-4 for the defect class.
 
 ## Failure-mode watchlist
 
@@ -343,11 +270,7 @@ route. Watch for gates that exist only inside an irreversible operation.
 is empty and rulesets are unavailable on this plan for a private repo. `audit` is not a required
 check. So the build gate is real inside the job, and nothing mechanically stops a red commit
 reaching `main`. Every "nothing merges red" sentence in this repo is a statement about discipline,
-not mechanism. **Re-measured 2026-08-15** (owner directive "fix main"): both endpoints re-executed
-and both return the same 403 — `Upgrade to GitHub Pro or make this repository public`. The only
-two routes out are owner-level: upgrade the plan, or take the repo public (which must come AFTER
-the prod-credential rotation — the value is in git history, and publicizing it pre-rotation would
-be the worse exposure). No agent-side mechanism exists; the note stands until one of those moves.
+not mechanism.
 
 **A sixth, and it produced two of this week's errors: an instrument's blind spot recorded as a
 property of the thing it could not see.** `6ab5779` established, correctly and precisely, that the

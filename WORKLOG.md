@@ -1062,6 +1062,36 @@ commit while Kimi worked on `feat/ops-fixes` and I worked on `ship/editor-deploy
 clean only because the file sets happened not to intersect. That is luck, not the guard AGENTS.md
 asks for.
 
+## 2026-08-15 (later) — A6 payoff corrected: the deploy CLI's progress bar was showing a stale total, not real bytes
+
+CLI-reported upload size on all three today's deploys — `ca2eb2b` (CDN flip) and `5e24cd8`
+(vercelignore payoff) — printed the identical `358.2MB/358.2MB`, the SAME number as the pre-CDN
+baseline deploy this morning. Taken at face value this said the `.vercelignore` payoff (excluding
+`bible/commentaries/original` from the upload) did nothing.
+
+**It was a display artifact.** A non-prod preview deploy with `--debug` showed the client-side
+file scan correctly finding 736 files (matching an independent walk with the `ignore` package:
+734), packed into 4 chunks of which only 4 needed fresh upload. The progress total climbed in
+exact quarters of 358.2MB — the bar was dividing a STALE cached total evenly across the run's
+chunk count, not measuring bytes in flight; it never recomputed between the three deploys.
+
+**Real measurement, reconstructing the CLI's own archive:** OLD ruleset (per-chapter Bible only
+excluded) = 4,324 files / **353.8MB** compressed — close enough to the CLI's historical 358.2MB
+(~1.2% gap, gzip-parameter noise) to trust both as real for the file set each was computed
+against. NEW ruleset (all three corpus dirs excluded) = 734 files / **11.5MB** compressed.
+**Reduction: 342.3MB, 97.2% smaller, 3,590 fewer files.** This is the real A6 payoff number —
+recorded honestly instead of the misleading one. Evidence:
+`docs/evidence/corpus-cdn/A6-payoff-2026-08-15.md`.
+
+Nothing about the site changed because of this correction — `5e24cd8` is live, alias-verified,
+and the corpus continues to be served correctly via the CDN rewrite (parity-proven earlier
+today). This only corrects what number gets reported as the win.
+
+**Watchlist-shaped finding, worth carrying:** an instrument's own progress bar looked live (a
+filling bar ending "N/N") while computing its denominator from something that didn't track the
+actual run. The tell was the same one this repo's watchlist keeps naming: a number that should
+have moved and didn't, three runs in a row.
+
 ## 2026-08-15 (late) — The Song coverage/retrieval "gap" is RETRACTED; the residue is 1.9% and it is a keying granularity, not a hole
 
 Owner: "fix the songs coverage vs retrieval". Ran it as a `quality-slice`. **Step 0 killed the
