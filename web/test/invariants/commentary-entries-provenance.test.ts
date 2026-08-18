@@ -72,11 +72,24 @@ describe('shape — the provenance leg is conjunctive', () => {
 // seed their own fixtures (helpers/env.ts). It refuses production loudly and requires any
 // non-dev endpoint to be declared by exact id in SEED_TEST_ENDPOINT, so preferring it here does
 // not widen what this can be pointed at.
-const PG_URL =
-  seedOwnerUrl() ?? (requireDbInCi() ? runtimeDbUrl() : process.env.REDPROOF_DATABASE_URL);
+//
+// THE FALLBACK BELOW USED TO UNDO THE PARAGRAPH ABOVE. It read
+//     seedOwnerUrl() ?? (requireDbInCi() ? runtimeDbUrl() : REDPROOF_DATABASE_URL)
+// and `runtimeDbUrl()` returns APP_DATABASE_URL — the POOLED endpoint this comment has just
+// finished explaining cannot hold a temp table. So on any tree without an owner URL the suite
+// walked straight back into the documented failure, and did it INTERMITTENTLY: alone it usually
+// wins the backend race and passes, under a full parallel run it does not. A flake, in a suite
+// whose whole subject is a licensing predicate.
+//
+// Pooled URLs are now REFUSED rather than used: a missing direct endpoint is a loud NOT RUN,
+// which is honest, where a flaky red is not. `-pooler.` is how Neon names them; localhost and any
+// direct endpoint pass through unchanged.
+const isPooled = (u: string | undefined): boolean => Boolean(u && /-pooler\./.test(u));
+const CANDIDATE = seedOwnerUrl() ?? (requireDbInCi() ? runtimeDbUrl() : process.env.REDPROOF_DATABASE_URL);
+const PG_URL = isPooled(CANDIDATE) ? undefined : CANDIDATE;
 const SKIP = announceSkip(
   'executed — the predicate run as SQL over seeded rows',
-  [{ name: 'a test DB (APP_DATABASE_URL) or a throwaway Postgres (REDPROOF_DATABASE_URL)', present: Boolean(PG_URL) }],
+  [{ name: 'a DIRECT (non-pooled) test DB — DATABASE_URL via seedOwnerUrl, or REDPROOF_DATABASE_URL', present: Boolean(PG_URL) }],
   'that the predicate actually refuses aggregator rows and keeps their clean twins',
 );
 
