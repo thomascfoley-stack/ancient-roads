@@ -218,6 +218,7 @@ try {
       // failed one was supposed to establish, which turns one clear error into an unrecoverable
       // mess.
       console.error(`  ✗ ${f} failed: ${e.message}`);
+      await reportLockHolders(client, e);
       console.error('  Stopped. Later migrations were NOT applied.');
       process.exitCode = 1;
       break;
@@ -225,4 +226,55 @@ try {
   }
 } finally {
   await client.end();
+}
+
+// WHO HELD THE LOCK. A lock timeout names the victim and never the culprit, and on this repo that
+// difference is the whole diagnosis: `✗ 044 failed: canceling statement due to lock timeout` is
+// the same line whether the branch needs FIVE MORE MINUTES or human intervention, and the two ask
+// for opposite actions. 044 opens `SET lock_timeout='5s'` then ALTER TABLE embeddings — and
+// `ADD COLUMN IF NOT EXISTS` still takes ACCESS EXCLUSIVE even when the column is already there,
+// so ANY conflicting lock kills it in five seconds. The likeliest holder is a long
+// `CREATE INDEX CONCURRENTLY` from an out-of-band apply or a previous run whose step GitHub killed
+// while the server-side build carried on.
+//
+// So on failure, say who was busy. Strictly READ-ONLY (pg_stat_activity / pg_locks), and
+// FAIL-SOFT: a diagnostic that throws would replace the real error with its own, which is worse
+// than no diagnostic. The original message is already printed before this runs.
+async function reportLockHolders(client, err) {
+  const isLock = /lock timeout|deadlock|could not obtain lock/i.test(err?.message ?? '');
+  try {
+    const { rows } = await client.query(
+      `SELECT pid, state, wait_event_type, wait_event,
+              date_trunc('second', now() - query_start)::text AS age,
+              left(regexp_replace(query, '\\s+', ' ', 'g'), 140) AS q
+         FROM pg_stat_activity
+        WHERE datname = current_database() AND pid <> pg_backend_pid() AND state <> 'idle'
+        ORDER BY query_start NULLS LAST
+        LIMIT 10`,
+    );
+    if (!rows.length) {
+      console.error(
+        isLock
+          ? '  ⓘ no other non-idle backend on this database — the blocker finished between the failure and this query, or holds the lock from an idle-in-transaction session.'
+          : '  ⓘ no other non-idle backend on this database.',
+      );
+      return;
+    }
+    console.error(`  ⓘ ${rows.length} other non-idle backend(s) on this database:`);
+    for (const r of rows) {
+      console.error(`     pid ${r.pid}  ${r.state}  age ${r.age}  ${r.wait_event_type ?? '-'}/${r.wait_event ?? '-'}`);
+      console.error(`       ${r.q}`);
+    }
+    if (isLock) {
+      console.error(
+        '  → A CREATE INDEX CONCURRENTLY above with a long age is the expected culprit: it holds\n' +
+        '    ShareUpdateExclusive, which conflicts with the ACCESS EXCLUSIVE this migration needs.\n' +
+        '    If it is still progressing, WAIT for it. If it is orphaned, it must be terminated on\n' +
+        '    the target before this job can pass.',
+      );
+    }
+  } catch (e2) {
+    // Deliberately swallowed: see FAIL-SOFT above.
+    console.error(`  ⓘ lock-holder diagnostic unavailable (${e2.message})`);
+  }
 }
