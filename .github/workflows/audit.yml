@@ -179,11 +179,14 @@ jobs:
       # an implicit transaction) with no output and no failure. An unbounded migration step is a way
       # for one bad file to block every future run.
       #
-      # 10 -> 30 on 2026-08-15. The old comment's premise — "10 minutes is far above any legitimate
-      # apply here" — was true when written and went stale when 113/114/115 landed: three GIN
-      # rebuilds over 162k commentary entries plus an HNSW build over ~580k embedding rows, all
-      # legitimately pending on this test branch. Run 31910463039 timed out at 10:00 doing exactly
-      # that work (the CONCURRENTLY wedge it was written against is separately handled —
+      # 10 -> 30 on 2026-08-15, blaming 113/114/115. CORRECTED 2026-08-18: THOSE FILES NEVER RAN.
+      # With a per-migration start line in the log, run 32108864575 named the culprit in one line —
+      # `▶ applying 044_embeddings_served_expand.sql …`, then the timeout, with 045-116 untouched.
+      # The old text was wrong in three further ways, each measured: 114 is FREE (its predicate
+      # `served AND source_type='historian'` matches 0 rows); there are FOUR pending GIN rebuilds
+      # (108/109/113/115), not three; and commentary_entries holds 191,749 rows, not 162k. A number
+      # reasoned about rather than measured sent the last diagnosis at the wrong four files.
+      # Run 31910463039 timed out at 10:00 (the CONCURRENTLY wedge it was written against is separately handled —
       # apply-pending.mjs splits those statements outside transactions; see its :185 comment).
       # This is the watchlist's instance-fifteen shape: a cited premise nothing re-checks.
       - name: apply pending migrations to the test branch
@@ -206,8 +209,21 @@ jobs:
           # over-wide forget, so assert them back without running. 044/045 are genuinely missing —
           # the column read says `embeddings.served` is absent — so they stay in the forget list.
           # BOTH lines are one-shot: delete them once the run is green.
-          APPLY_PENDING_MARK_APPLIED: '39,42'
-          APPLY_PENDING_FORGET: '44,45'
+          # BOTH ONE-SHOT LINES REMOVED 2026-08-18, and the FORGET one was load-bearing in the
+          # wrong direction. Its own comment said "delete once the run is green" — but while it is
+          # present it DELETES 044's ledger row on every run, so a run that finally completed 044
+          # would have its record erased before the next one started. Removal is a PRECONDITION
+          # for convergence, not a reward for it. That inversion is why 044 re-ran forever.
+          #
+          # 039/042 are present on the branch (describe-target: "PRESENCE BY MIGRATION: 039 ALL
+          # PRESENT, 042 ALL PRESENT") and their ledger rows were asserted back by earlier runs, so
+          # MARK_APPLIED is now a no-op and goes with it.
+          #
+          # 044 was applied OUT OF BAND on 2026-08-18 via db/apply-migration-concurrent.mjs — the
+          # runner its own header names, which carries the invalid-index pre-clean and the
+          # validity assert — because its backfill legs 3 and 4 (162,507 + 33,578 rows) plus six
+          # index builds do not fit a 30-minute step and were restarted from zero every run.
+          # See docs/pm/orders/2026-08-18-ci-db-invariants-diagnosis.md.
         run: node db/apply-pending.mjs
 
       - name: DB-backed invariants (real DB) — whole directory, no allowlist
