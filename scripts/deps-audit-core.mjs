@@ -43,3 +43,21 @@ export function compareExpectRed(observedGhsas, declared) {
   const missing = [...declared].filter((g) => !obs.has(g));
   return { ok: extra.length === 0 && missing.length === 0, extra, missing };
 }
+
+const reEscape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Is name@version resolved in the lockfile text? Two forms:
+ *   plain — `web-vitals@6.0.0` appears verbatim (the common case);
+ *   alias — pnpm reports an aliased dep by its ALIAS name (posthog-js depends on
+ *     `web-vitals-soft-navs: npm:web-vitals@6.0.0`), while the lockfile records it as
+ *     `web-vitals-soft-navs: web-vitals@6.0.0` — the plain string never appears.
+ * The alias fallback requires the alias name AND a real resolution at that version, so it is
+ * exactly as strict as the plain check. (Found 2026-08-16: the gate refused posthog-js, the
+ * first dependency in this tree with an aliased transitive.)
+ */
+export function resolvedInLockfile(lockText, name, version) {
+  if (lockText.includes(`${name}@${version}`)) return true;
+  const alias = new RegExp(`${reEscape(name)}:\\s*\\S+@${reEscape(version)}(\\D|$)`);
+  return alias.test(lockText);
+}
