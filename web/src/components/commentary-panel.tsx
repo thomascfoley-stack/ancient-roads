@@ -28,8 +28,10 @@ export interface AnnotationControls {
 // register-wall-check probes this across the whole corpus), so classification is
 // by the register string — ONE source of truth consumed by every surface.
 export type RegisterLane = 'exegetical' | 'sermon' | 'theology' | 'song_verse';
-export function registerLane(e: { register?: string }): RegisterLane {
-  switch (e.register) {
+export function registerLane(e: { register?: string }): RegisterLane | 'excluded' {
+  // `?? undefined` folds a runtime JSON `null` into the legacy no-register case: the static
+  // type says `string | undefined`, but this classifier sits directly on parsed corpus JSON.
+  switch (e.register ?? undefined) {
     case 'hymn':
     case 'poetry':
       return 'song_verse';
@@ -38,8 +40,25 @@ export function registerLane(e: { register?: string }): RegisterLane {
     case 'theology':
     case 'confession':
       return 'theology';
+    // The exegetical pool is a POSITIVE allowlist: the two registers the exegetical corpus
+    // actually carries, plus the legacy rows that predate the register column (measured
+    // across all 1,212 served chapter files, 2026-08-17: no register 99,410 · commentary
+    // 14,074 · father 6,009 — nothing else is exegetical).
+    case 'commentary':
+    case 'father':
+    case undefined:
+      return 'exegetical';
     default:
-      return 'exegetical'; // commentary/father + legacy (null register) rows
+      // Fail CLOSED (QA 2026-08-17, was `return 'exegetical'` — fail-OPEN). A register
+      // nobody wired a lane for must never fill an exegetical voice slot or count toward
+      // the >=2-voices floor: `historian` is live in teacher/routing.ts ("never doctrine,
+      // never part of the composed answer"), and topical_index / devotional / lexicon rows
+      // exist in the corpus today. The reader renders NO section for any of these, and
+      // inventing one would mislabel them — so they are EXCLUDED from every surface that
+      // partitions by lane. (In practice they were already invisible — none of their
+      // works/authors pass isPublishedCommentaryEntry — but the register wall holds by
+      // construction, never by leaning on the licence filter.)
+      return 'excluded';
   }
 }
 // Sermon + theology/confession are a register of their OWN — like song/verse they
@@ -72,8 +91,13 @@ export function partitionByRegister<T extends { register?: string }>(entries: T[
       case 'theology':
         p.theology.push(e);
         break;
-      default:
-        p.exegetical.push(e); // commentary/father + legacy (null register) rows only
+      case 'exegetical':
+        p.exegetical.push(e); // commentary/father + legacy (no-register) rows only
+        break;
+      // Deliberately NO default: 'excluded' (historian + unrecognized registers) falls out
+      // of the switch and is dropped. The old `default:` arm pushed everything unmatched
+      // into `.exegetical` — the fail-open half of the wall (QA 2026-08-17); a register
+      // without a lane must be excluded, never swallowed by the voice pool.
     }
   }
   return p;

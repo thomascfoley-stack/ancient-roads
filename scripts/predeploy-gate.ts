@@ -41,6 +41,11 @@ import {
   evaluateCorpusRatchet,
   loadLatestManifest,
 } from './lib/corpus-manifest.mjs';
+import {
+  loadJohn1Entries,
+  marketingVersePanelFindings,
+  type MarketingVoice,
+} from '../web/test/helpers/marketing-verse-panel-check';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -395,6 +400,58 @@ if (!existsSync(COMMENTARIES_DIR)) {
       gateFail(`${served.length.toLocaleString()} SERVED entry/entries carry biblehub/studylight provenance (${authors.join(', ')}).`);
     } else {
       console.log('  \x1b[32m✓ No served entry carries forbidden aggregator provenance.\x1b[0m');
+    }
+  }
+}
+
+// ── Marketing verse-panel excerpts — C1 on the PUBLIC front door (QA 2026-08-17, lens #8) ─────
+// The homepage bakes ten attributed quotes (web/src/components/marketing/verse-panel-demo.tsx);
+// each must be a VERBATIM substring of a SERVED John 1:1 entry by that author. The ONLY guard
+// was test/marketing-verse-panel-sync.test.ts, which skipIf's on the gitignored corpus — so in
+// CI it ALWAYS skipped, and its comment claimed this gate "hard-fails on the same tree", which
+// was false (this gate never ran vitest). Net: a fabricated quote on the public front door
+// would ship unless someone happened to run vitest locally. Same fix as verse-key-scan: the
+// test and this leg now share ONE module (web/test/helpers/marketing-verse-panel-check.ts),
+// and the leg runs it here, where the corpus provably exists at the moment it ships.
+// gateFail = the corpus-identity split: HARD-FAIL on deploy, WARN on pre-commit (the corpus may
+// legitimately be mid-regeneration there; the QUOTES ship at deploy, which is when this bites).
+console.log('\n=== Pre-deploy gate: marketing verse-panel excerpts (verbatim + served) ===');
+{
+  const demoCorpusFile = path.join(COMMENTARIES_DIR, 'jhn', '1.json');
+  const john1 = loadJohn1Entries(demoCorpusFile);
+  if (john1 === null) {
+    gateFail(
+      `The demo's anchor corpus file is missing:\n  ${demoCorpusFile}\n` +
+        `The ten public marketing quotes cannot be verified against the corpus about to ship.\n` +
+        `At deploy time that is a refusal, not a skip.`,
+    );
+  } else {
+    // Dynamic import: the demo is a .tsx client component (tsx compiles it; react resolves from
+    // web/node_modules). An import failure must be a LOUD refusal, never a skipped leg — a tree
+    // where the demo module does not load is a tree whose quotes cannot be verified.
+    try {
+      const demo = (await import('../web/src/components/marketing/verse-panel-demo')) as {
+        VERSE_PANEL_VOICES: readonly MarketingVoice[];
+      };
+      const findings = marketingVersePanelFindings(demo.VERSE_PANEL_VOICES, john1);
+      console.log(`  voices checked               : ${demo.VERSE_PANEL_VOICES.length} against ${john1.length} John 1:1 entries`);
+      if (findings.length > 0) {
+        gateFail(
+          `MARKETING QUOTE DRIFT — the public front door's attributed excerpts no longer match\n` +
+            `the served corpus:\n${findings.map((f) => `  • ${f}`).join('\n')}\n\n` +
+            `Every excerpt in verse-panel-demo.tsx must be a verbatim substring of a SERVED John\n` +
+            `1:1 entry by that author (isPublishedCommentaryEntry). A fabricated or drifted quote\n` +
+            `there breaks the product's own guarantee where the most people see it. Fix the\n` +
+            `excerpt (or the corpus), never this check.`,
+        );
+      } else {
+        console.log('  \x1b[32m✓ every public excerpt is verbatim served corpus text by a served author.\x1b[0m');
+      }
+    } catch (e) {
+      gateFail(
+        `could not load the marketing demo module to verify its quotes: ${(e as Error).message}\n` +
+          `At deploy time that is a refusal, not a skip.`,
+      );
     }
   }
 }
