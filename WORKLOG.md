@@ -1,5 +1,71 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-17 (QA remediation, N6) — `npm run audit` is green again: three leaking teardowns and a lying test fixture
+
+Owner directive: "merge it and get it fixed." Merged `fix/q1-signed-out-state` (3 incoming commits,
+no file overlap with the N1 slice) and then closed **N6** — the two red audit legs this session
+filed but did not fix.
+
+**(a) `typecheck — web/test`, 4 errors.** `bookmark-state-label.test.tsx` and
+`unhighlight-affordance.test.tsx` built a `pending` fixture as `{ key, text, rect }` with `rect`
+cast `as DOMRect`. Three things wrong at once: `kind`/`start`/`end` missing, the rect described as
+a `DOMRect` when the prop wants the component's own `SelectionRect`, and the cast placed exactly
+where a reader would look for the mismatch. **The suite passed the whole time** — types are erased
+at runtime — so the only thing that ever objected was a separate audit leg nobody runs while
+writing a component test. Fixed by ANNOTATING the fixture `PendingAnnotation`, so the compiler
+rejects the next drift here rather than a gate catching it two batches later. Runtime behaviour
+unchanged: both suites still pass, 5/5.
+
+**(b) `hygiene — no test residue in dev`, 9 stranded rows — and it was THREE leaking teardowns,
+not the two the residue report named.** The third only appeared once the first two were fixed,
+which is the argument for re-running a gate rather than reasoning about it.
+
+The shared root cause is one this repo has not written down before: **a suite whose user id carries
+`Date.now()` cannot clean up after an interrupted run, ever.** Kill the process and the ids die with
+it; every later run invents new ones and cleans only after itself, so residue on a SHARED dev
+database is permanent by construction. That is exactly how rows seeded at 14:38 UTC were still
+there hours later. Each teardown was correct on the happy path and had no answer for any other.
+
+Each also had its own second defect, and they are three different ways of going quiet:
+- `annotation-rls-tenancy` — ONE batched `runAsUser` call inside a `for` loop, so a single throw
+  skipped the remaining six tables AND the whole user-B iteration. Now one statement per call,
+  each independently caught and REPORTED.
+- `research-store-edges` — `.catch(() => {})`. CLAUDE.md's "no empty catch, no silent failures"
+  applies to cleanup most of all, because cleanup's silence is what lets residue accumulate.
+  (Its not deleting `messages` is NOT a defect: `messages_chat_id_fkey` is ON DELETE CASCADE,
+  verified against the live schema rather than read off a migration.)
+- `studies-routes` — `if (!owner) return`, which made "no credentials" indistinguishable from
+  "swept". Its SQL was already a correct prefix sweep; it just had no voice.
+
+New `web/test/helpers/qa-residue.ts` does the prefix sweep for all three. It needs the OWNER role,
+because a prefix sweep as `app_runtime` is meaningless — RLS restricts it to the caller's own rows,
+which is the case that already worked. So the suites keep their RLS-scoped deletes as the primary
+teardown and stay runnable with no owner credentials; this is an additional pass that announces
+itself LOUDLY when it cannot run, rather than reading as "swept". It refuses a prefix that is not
+`qa-`/`qa_`-anchored or that contains a wildcard, so it can never sweep a real user off a target.
+
+**Verified by execution, not by reading:** the sweep reaped exactly the 9 stranded rows (logged per
+table), then `studies-routes` ran **3 consecutive times leaving 0 rows each time** (it had been
+non-deterministic before), then the full suite and the gate in the audit's own order.
+
+**Result: `npm run audit` -> AUDIT PASSED, all gates green.** Web suite 177 files / **1189 tests
+passed, 0 failed**. This is the first green audit recorded on this branch.
+
+### NOT DONE / UNVERIFIED
+- **Nothing deployed.** Green audit is not a deploy; `deploy.sh` and bylaw 7 still apply.
+- The sweep's owner-credential path is exercised **only where `web/.env.local` carries a
+  `DATABASE_URL`**. In CI without it, all three suites fall back to their RLS-scoped deletes and the
+  helper prints its NOT-RUN warning — correct, but it means CI does not reap an interrupted run
+  either. The durable fix is CI credentials, not more test code.
+- The three leaks were found by the gate, not by a test. Nothing yet FAILS when a new suite is
+  written with a `Date.now()` id and no prefix sweep; the gate catches it only after it has already
+  leaked. A derivation like `no-dead-user-table-writer` could close that, and is not built.
+- **N3/N4/N5 remain open** (dead `library_items` write path, dead `addChatMemory`, the Library hub's
+  discarded shelf query).
+- The signed-in browser walk for N1 is still not done — Neon Auth secrets are Vercel-only.
+- **`DEEPINFRA_API_KEY` still needs rotating** (leaked into an agent transcript earlier this session).
+
+
 ## 2026-08-17 (QA remediation, ledger N1) — "Continue reading" is no longer dead: the reader now syncs its position to the account
 
 **Lane:** QA remediation, branch `fix/q1-signed-out-state` (this session fast-forwarded

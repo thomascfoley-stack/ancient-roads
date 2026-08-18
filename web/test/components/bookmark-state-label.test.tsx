@@ -19,6 +19,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SelectionPopover } from '../../src/components/selection-popover';
+import type { PendingAnnotation } from '../../src/lib/use-text-annotation';
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 beforeEach(() => {
@@ -26,10 +27,23 @@ beforeEach(() => {
   vi.stubGlobal('getSelection', () => null);
 });
 
-const pending = {
+// TYPED, not shaped by hand. This fixture was `{ key, text, rect }` cast at `rect` with `as DOMRect`,
+// which is three kinds of wrong at once: it omitted `kind`/`start`/`end`, it described the rect as a
+// DOMRect when the prop wants the component's own `SelectionRect`, and the cast hid the mismatch at
+// the point a reader would look for it. The suite still passed — types are erased at runtime — so
+// the only thing that ever complained was `tsc -p tsconfig.test.json`, which is a separate audit leg
+// nobody runs while writing a component test. Annotating it means the compiler rejects the next
+// drift here instead of a gate doing it two batches later.
+const pending: PendingAnnotation = {
+  kind: 'verse',
   key: '16',
+  // Offsets into the canonical container text. 0..text.length is the whole-span case the popover
+  // is raised on here; they are real numbers rather than placeholders because `start`/`end` are
+  // what persist as span_start/span_end.
+  start: 0,
+  end: 26,
   text: 'For God so loved the world',
-  rect: { top: 100, bottom: 120, left: 10, right: 200, width: 190, height: 20, x: 10, y: 100 } as DOMRect,
+  rect: { top: 100, bottom: 120, left: 10, right: 200, width: 190, height: 20 },
 };
 
 function renderPopover(bookmarked: boolean) {
@@ -37,7 +51,6 @@ function renderPopover(bookmarked: boolean) {
     <SelectionPopover
       pending={pending}
       contextLabel="John · Gospel of John · 3:16"
-      copyLineNo={false}
       signedIn
       bookmarked={bookmarked}
       onHighlight={() => {}}

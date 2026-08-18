@@ -8,6 +8,7 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { requireDbInCi } from '../helpers/env';
 import { announceSkip } from '../helpers/loud-skip';
+import { sweepQaResidue } from '../helpers/qa-residue';
 
 const testUser = `qa-study-routes-${Date.now()}`;
 // Mutable holder so individual cases can sign out (401 path) and sign back in.
@@ -50,20 +51,17 @@ const code = async (res: Response) => ((await res.json()) as { error?: { code?: 
 const VALID_BUT_FOREIGN = '00000000-0000-4000-8000-000000000000';
 
 describe.skipIf(SKIP)('Studies routes (handler → lib → dev DB, session mocked)', () => {
+  // Prefix sweep via the owner connection (check-test-residue's rule: fix the teardown;
+  // app_runtime holds no DELETE on studies — by design — so cleanup is an owner action).
+  //
+  // This was already a prefix sweep and was already correct SQL — `study_blocks` and
+  // `study_block_revisions` both cascade from `studies`, verified against the live schema. What it
+  // lacked was a VOICE: `if (!owner) return` made "no owner credentials" indistinguishable from
+  // "swept", so on any tree without a `DATABASE_URL` in web/.env.local this cleanup silently did
+  // nothing at all and the residue accrued run after run with no signal. Routed through the shared
+  // helper so the skip announces itself and every reap is reported.
   afterAll(async () => {
-    // Prefix sweep via the owner connection (check-test-residue's rule: fix the teardown;
-    // app_runtime holds no DELETE on studies — by design — so cleanup is an owner action).
-    const { seedOwnerUrl } = await import('../helpers/env');
-    const owner = seedOwnerUrl();
-    if (!owner) return;
-    const { default: pg } = await import('pg');
-    const c = new pg.Client({ connectionString: owner, ssl: { rejectUnauthorized: false } });
-    await c.connect();
-    try {
-      await c.query(`DELETE FROM studies WHERE user_id LIKE 'qa-study-routes-%'`);
-    } finally {
-      await c.end();
-    }
+    await sweepQaResidue(['qa-study-routes-'], ['studies']);
   });
 
   it('401 UNAUTHENTICATED when there is no session — and ONLY then', async () => {
