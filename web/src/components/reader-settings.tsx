@@ -8,7 +8,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { READING_MEASURES, READING_SIZES, useReadingPrefs } from '@/lib/reading-prefs';
 
-export function ReaderSettings() {
+export function ReaderSettings({
+  dialogOpen = false,
+}: {
+  /** A031 — true while the page this header sits on has a modal dialog open (the reader page's
+   *  verse-study sheet). The popover closes when this flips true. It cannot watch for that
+   *  itself: its only exit was the outside-MOUSEDOWN listener below, and the keyboard path
+   *  (Enter on a verse handle), the `#v16:study` deep link and `?firstrun=1` all open the dialog
+   *  without a mousedown — so both surfaces sat open, overlapping (2026-08-17 QA). Optional, so
+   *  the WorkHeader caller (no dialog to report) is untouched. */
+  dialogOpen?: boolean;
+} = {}) {
   const [open, setOpen] = useState(false);
   const { dark, sizeIdx, measureIdx, setDark, setSizeIdx, setMeasureIdx } = useReadingPrefs();
   const ref = useRef<HTMLDivElement>(null);
@@ -21,6 +31,14 @@ export function ReaderSettings() {
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
   }, [open]);
+
+  // A031 — a dialog opening claims the screen; the popover yields. ONE-WAY on purpose: closing
+  // the dialog must not resurrect the popover (state is set false, not suppressed), and the
+  // toggle above stays free to reopen it afterwards. While the dialog IS open its focus trap
+  // (use-dialog.ts) keeps the Aa button unreachable, so a flip-true close is the whole job.
+  useEffect(() => {
+    if (dialogOpen) setOpen(false);
+  }, [dialogOpen]);
 
   const applyDark = setDark;
   const applySize = setSizeIdx;

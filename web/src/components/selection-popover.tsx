@@ -200,6 +200,20 @@ export function SelectionPopover({
           already removed the bookmark — but the button read "Bookmark" either way, so removal
           existed and no reader could know it (B023, 2026-08-17 authenticated QA). Bookmarked
           verses already carry a visible flag (verse-display.tsx:341); this is the other half. */}
+      {/* B024 — Bookmark sits BEFORE the conditional Remove-highlight, not after it. On the
+          mobile bar this group is what the first 390px viewport shows, and Remove-highlight is
+          the group's widest optional control (~112px measured): rendered first, it pushed
+          Bookmark back off-screen on exactly the verses that carry a highlight. On the desktop
+          card the group wraps, so the order costs nothing there. */}
+      {onBookmark && (
+        <button
+          onClick={onBookmark}
+          title={bookmarked ? 'Remove bookmark' : 'Bookmark'}
+          className="shrink-0 rounded-full px-2 py-1 text-xs font-medium text-stone-200 hover:text-white dark:text-stone-700 dark:hover:text-stone-900"
+        >
+          {bookmarked ? 'Remove bookmark' : 'Bookmark'}
+        </button>
+      )}
       {/* B046 — removal was never missing: `study-panel.tsx` clears a highlight whenever the verse
           carries a colour. It lived on a DIFFERENT SURFACE from creation, so a reader who
           highlighted from this popover had no route back. Conditional on the verse actually
@@ -211,15 +225,6 @@ export function SelectionPopover({
           className="shrink-0 rounded-full px-2 py-1 text-xs font-medium text-stone-200 hover:text-white dark:text-stone-700 dark:hover:text-stone-900"
         >
           Remove highlight
-        </button>
-      )}
-      {onBookmark && (
-        <button
-          onClick={onBookmark}
-          title={bookmarked ? 'Remove bookmark' : 'Bookmark'}
-          className="shrink-0 rounded-full px-2 py-1 text-xs font-medium text-stone-200 hover:text-white dark:text-stone-700 dark:hover:text-stone-900"
-        >
-          {bookmarked ? 'Remove bookmark' : 'Bookmark'}
         </button>
       )}
       {onAsk && (
@@ -296,15 +301,29 @@ export function SelectionPopover({
 
       {/* <md — the docked-low action bar (existing pattern): never fights the OS copy callout,
           sits above the mobile nav, scrolls horizontally when actions overflow 390px. */}
+      {/* B024 — ACTIONS BEFORE THE SWATCH RUN, and the label capped. The old order (label ->
+          ten 28px swatches -> actions) put Bookmark at 538–607px in a 365px visible window
+          (measured at a 390px viewport, Source Sans 3 loaded — harness numbers, not estimates),
+          behind an `overflow-x-auto` that shows no scrollbar on a rounded pill: hidden with
+          nothing saying the bar scrolls. Actions-first flips who overflows, and the swatches are
+          the right thing to overflow twice over — they are ten variants of ONE feature, so the
+          cut-off circle at the right edge both still says "highlight colours here" AND is the
+          scroll affordance the bar lacked. Measured after the reorder: Note/Bookmark/Ask/❝ all
+          inside the first viewport (Bookmark 166–234px), swatch #2 cut mid-circle at the edge.
+          The 96px label cap is load-bearing, not taste: "Song of Solomon 1:1 · KJV" runs 139.5px,
+          and with Define present and the "Remove bookmark" label (112px) the toggle ended 24.5px
+          off-screen — capped, it ends at 346px with 19px to spare in that worst case. The full
+          locus still travels with every copy (copy-format.ts); this trims only the bar's echo of
+          it. Desktop card untouched: its rows wrap, so nothing there ever overflowed. */}
       <div
         className="fixed inset-x-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-3 md:hidden"
         {...holdSelection}
       >
         <div className="flex max-w-full animate-[fade-in_150ms_var(--ease-gentle)] items-center gap-2 overflow-x-auto rounded-full border border-stone-800 bg-stone-950 px-3 py-2 dark:border-stone-900 dark:bg-stone-50">
-          <span className="shrink-0 px-1 font-sans text-xs font-medium text-stone-300 dark:text-stone-600">{contextLabel}</span>
-          {swatches}
-          {divider}
+          <span className="max-w-[96px] shrink-0 truncate px-1 font-sans text-xs font-medium text-stone-300 dark:text-stone-600">{contextLabel}</span>
           {actionButtons}
+          {divider}
+          {swatches}
           {divider}
           {copyChip('styled', 'Copy')}
         </div>

@@ -12,6 +12,7 @@ export function ReaderHeader({
   onTranslationChange,
   interlinear,
   onToggleInterlinear,
+  dialogOpen = false,
 }: {
   book: Book;
   chapter: number;
@@ -19,6 +20,12 @@ export function ReaderHeader({
   onTranslationChange: (t: Translation) => void;
   interlinear: boolean;
   onToggleInterlinear: () => void;
+  /** A031 — true while the page has a modal dialog (the verse-study sheet) open. Pass-through to
+   *  ReaderSettings, which closes its popover on the flip: the popover's only other exit is an
+   *  outside mousedown, and the keyboard / deep-link paths into the dialog fire none, leaving both
+   *  surfaces open and overlapping. Optional so WorkHeader and any header without a dialog to
+   *  report are untouched. */
+  dialogOpen?: boolean;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [versionOpen, setVersionOpen] = useState(false);
@@ -51,7 +58,8 @@ export function ReaderHeader({
           {chapterLabel}
         </button>
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <ReaderSettings />
+          {/* A031 — see the prop's doc above: the popover closes itself when a dialog opens. */}
+          <ReaderSettings dialogOpen={dialogOpen} />
         <button
           onClick={onToggleInterlinear}
           title="Greek / Hebrew interlinear"

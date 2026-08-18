@@ -33,6 +33,8 @@ export function StudyPanel({
   originalWords,
   lang,
   annotation,
+  bookmarked = false,
+  onToggleBookmark,
   defaultTab = 'commentaries',
   focusWordIdx,
   verseId,
@@ -49,6 +51,17 @@ export function StudyPanel({
   originalWords: OWord[] | null;
   lang: 'hebrew' | 'greek' | null;
   annotation: AnnotationControls;
+  /** B022 — whether THIS verse is bookmarked, so the toggle below can say which way it will go
+   *  (B023's rule: a stateless "Bookmark" label hides that removal exists). */
+  bookmarked?: boolean;
+  /** B022 — the bookmark toggle for this verse. A SIBLING of `annotation`, not a member of it,
+   *  deliberately: `AnnotationControls` is declared in commentary-panel.tsx and shared with that
+   *  file's own surfaces, and widening a shared interface for one caller's new control is how
+   *  optional fields nobody else honours accumulate. Threaded the same way as the rest — the
+   *  caller closes over the verse (`() => toggleBookmark(study.verse)`), exactly like
+   *  `annotation.onClearHighlight`. Optional so existing callers are untouched; absent = no
+   *  control, never a dead one. */
+  onToggleBookmark?: () => void;
   defaultTab?: StudyTab;
   focusWordIdx?: number;
   /** Numeric verse id, for the Pray entry point. Optional so existing callers are unaffected. */
@@ -181,8 +194,10 @@ export function StudyPanel({
           </div>
         </div>
 
-        {/* Always-visible highlight row */}
-        <HighlightRow annotation={annotation} />
+        {/* Always-visible highlight row — and, per B022, the bookmark toggle beside it: this row
+            is the panel's persistent per-verse chrome, and until now the ONLY route to a working
+            bookmark feature was the text-selection popover, which nothing points at. */}
+        <HighlightRow annotation={annotation} bookmarked={bookmarked} onToggleBookmark={onToggleBookmark} />
 
         {/* Tabs — PRD §4: 14px Source Sans, weight 600, tracking 0.02em. */}
  <div className="flex gap-1 border-b edge px-4">
@@ -311,8 +326,20 @@ function VerseStepButton({
   );
 }
 
-function HighlightRow({ annotation }: { annotation: AnnotationControls }) {
+function HighlightRow({
+  annotation,
+  bookmarked = false,
+  onToggleBookmark,
+}: {
+  annotation: AnnotationControls;
+  bookmarked?: boolean;
+  onToggleBookmark?: () => void;
+}) {
   if (!annotation.signedIn) {
+    // B022 note: the bookmark toggle deliberately does not render in this branch either — same
+    // gate as the selection popover (verse-display.tsx wires onBookmark only when signed in). An
+    // optimistic toggle whose POST will 401 is a control that appears to work and silently does
+    // not, and this row already offers the honest alternative: sign in.
     return (
       <div className="border-b edge px-5 py-2.5">
         <Link href="/auth/sign-in" className="inline-flex min-h-[44px] items-center font-sans text-sm font-semibold text-accent-600 hover:underline dark:text-accent-400">
@@ -321,8 +348,13 @@ function HighlightRow({ annotation }: { annotation: AnnotationControls }) {
       </div>
     );
   }
+  // `flex-wrap` arrived WITH the bookmark toggle (B022): the ten 44px swatch buttons already fill
+  // a 390px sheet edge-to-edge, and a shrink-0 toggle jammed on the same line would squeeze the
+  // swatch hit targets below their dots. Wrapping drops the toggle to its own line on narrow
+  // screens instead — the same remedy the selection popover's desktop card uses for this exact
+  // swatch run.
   return (
- <div className="flex items-center gap-2 border-b edge px-5 py-1">
+ <div className="flex flex-wrap items-center gap-x-2 border-b edge px-5 py-1">
       <span className="text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Highlight</span>
       <div className="flex items-center gap-0.5">
         {HIGHLIGHT_COLORS.map((c) => (
@@ -348,6 +380,22 @@ function HighlightRow({ annotation }: { annotation: AnnotationControls }) {
           </button>
         )}
       </div>
+      {/* B022 — the bookmark toggle, in persistent chrome at last. The feature already worked
+          end-to-end (write path, optimistic Set, the `⚑` on the verse itself) and was reachable
+          ONLY through the text-selection popover. The label follows the state per B023 — a second
+          press removes, and the control must say so — and the glyph is the SAME `⚑` the verse
+          carries (verse-display.tsx), lit accent when set, so the control and the indicator read
+          as one feature. Renders only when the caller wired the toggle: absent handler, no
+          control (the fake-door rule this repo files as its own defect class). */}
+      {onToggleBookmark && (
+        <button
+          onClick={onToggleBookmark}
+          className="ml-auto flex min-h-[44px] shrink-0 items-center gap-1 px-2 font-sans text-xs font-semibold text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+        >
+          <span aria-hidden className={bookmarked ? 'text-accent-600 dark:text-accent-300' : ''}>⚑</span>
+          {bookmarked ? 'Remove bookmark' : 'Bookmark'}
+        </button>
+      )}
     </div>
   );
 }
