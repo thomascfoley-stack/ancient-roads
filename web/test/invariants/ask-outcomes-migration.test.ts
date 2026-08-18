@@ -35,13 +35,32 @@ const stripped = sql
 const writer = readFileSync(path.join(ROOT, 'web/src/lib/ask-outcomes.ts'), 'utf8');
 
 describe('116_ask_outcomes.sql — migration shape', () => {
-  it('is the next free number (no gap, no collision, nothing higher)', () => {
+  // "NOTHING HIGHER" WAS DROPPED, 2026-08-18, and it is worth saying why rather than just
+  // loosening it. This asserted `Math.max(...nums) === 116`, which was true when written and is
+  // false the moment ANY later migration lands — 117 broke it, correctly authored, applied to
+  // nothing. That is a guaranteed future false RED: every migration after this one would have to
+  // edit an ask_outcomes test to say so, and a check that fails on correct work teaches people to
+  // edit checks.
+  //
+  // 116's position relative to the newest migration stopped being meaningful once it was applied
+  // (2026-08-16 00:52:10, MASTER.md D2); before that it would have mattered, because an unapplied
+  // 116 sitting under an applied 117 is a real ordering hazard.
+  //
+  // "NO GAP" WAS TRIED AS THE REPLACEMENT AND IS ALSO WRONG — measured, not assumed. The sequence
+  // legitimately jumps at **14, 44 and 100**: the 100-series is Lane B's separate range (migrations
+  // 100/101/102 exist only on `lane-b-uploader`, MASTER.md B1), and the other two are historical
+  // skips. Asserting contiguity would red the suite on a tree that is perfectly correct, which is
+  // the same defect as the "nothing higher" clause it was meant to replace.
+  //
+  // So this asserts the one property that is actually true and actually durable: the number is
+  // not reused. Everything else about ordering is enforced by the ledger and by
+  // `apply-pending.mjs`, not by a filename.
+  it('is uniquely numbered', () => {
     const nums = readdirSync(MIGRATIONS)
       .map((f) => /^(\d+)_/.exec(f)?.[1])
       .filter(Boolean)
       .map(Number);
-    expect(Math.max(...nums)).toBe(116);
-    expect(nums.filter((n) => n === 116)).toHaveLength(1);
+    expect(nums.filter((n) => n === 116), '116 must appear exactly once').toHaveLength(1);
   });
 
   it('creates ask_outcomes with the Phase-D columns, user_id nullable', () => {

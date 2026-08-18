@@ -111,11 +111,40 @@ const NOT_FORBIDDEN_PROVENANCE = FORBIDDEN_PROVENANCE_DOMAINS.map(
 const REGISTER_SERVED_SLUGS: readonly string[] = [...SERVED_PROSE_WORKS, ...SERVED_SONG_VERSE_WORKS, ...SERVED_LANE_WORKS];
 // The register go-live adds `work IN (published slugs)` — migration 019 adds the
 // column + rebuilds idx_commentary_fts_legal in lockstep (fts-legal-index-sync).
+/**
+ * The MUST_NOT_SERVE veto, as SQL. Mirrors `isMustNotServeAuthor` rule for rule:
+ *   1. an exact hit on the list,
+ *   2. a first-token hit, so "Origen of Alexandria" is caught by 'Origen' even if the register
+ *      ingest invents another spelling variant,
+ *   3. the "Jerome's …" modern-translation bucket.
+ *
+ * WHY IT EXISTS SEPARATELY FROM THE ALLOWLIST, which already excludes every one of these authors
+ * today. The allowlist excludes them by NOT NAMING them, and `routing.ts` argues in its own
+ * comments that "unnamed" is strictly weaker than "unreachable". `commentary_entries` has no
+ * `served` column and its `work` column is entirely NULL, so the two mechanisms that make the
+ * vector surface unreachable are both inert here — the FTS surface had only the allowlist. Three
+ * ordinary edits would have undone it: the A048 backfill filling `work`, adding an author to
+ * PUBLISHED_WHOLE_BIBLE_AUTHORS who also appears on copyrighted rows, or a new OR leg written
+ * without this in mind. ANDed, the veto survives all three (2026-08-18 diagnosis §17.10).
+ *
+ * BEHAVIOUR-PRESERVING TODAY, and `must-not-serve-veto-on-fts.test.ts` asserts the condition that
+ * makes it so: no vetoed author is on the allowlist, so this subtracts only rows already refused.
+ * The day that assertion fails, the veto has started doing real work and it stops being a
+ * licensing belt and becomes a retrieval change — which is precisely when a human should look.
+ */
+const MUST_NOT_SERVE_VETO = `NOT (
+     author IN (${sqlList(MUST_NOT_SERVE_AUTHORS)})
+     OR split_part(author, ' of ', 1) IN (${sqlList(MUST_NOT_SERVE_AUTHORS)})
+     OR split_part(author, ' the ', 1) IN (${sqlList(MUST_NOT_SERVE_AUTHORS)})
+     OR author LIKE 'Jerome''s%'
+   )`;
+
 export const LEGAL_COMMENTARY_ENTRIES_PREDICATE = `((author IN (${sqlList(PUBLISHED_WHOLE_BIBLE_AUTHORS)})
    OR (author = 'John Chrysostom' AND book IN (40, 43, 44))
    OR (author = 'Augustine of Hippo' AND book IN (19, 43))
    OR work IN (${sqlList(REGISTER_SERVED_SLUGS)}))
-  AND (source_url IS NULL OR (${NOT_FORBIDDEN_PROVENANCE})))`;
+  AND (source_url IS NULL OR (${NOT_FORBIDDEN_PROVENANCE}))
+  AND ${MUST_NOT_SERVE_VETO})`;
 
 // Register go-live (CONTENT_GO_LIVE.md decisions 2/3, 2026-07-16): static-corpus
 // entries from the auto-published clean tier carry a `work` slug; membership here
