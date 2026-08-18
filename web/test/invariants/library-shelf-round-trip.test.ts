@@ -52,6 +52,10 @@ let sourceId = '';
 const setStatus = (status: string) =>
   owner!.query('UPDATE sources SET status = $1 WHERE slug = $2', [status, SLUG]);
 
+/** Restore to published ONLY when something actually moved it — see the beforeEach note. */
+const republish = () =>
+  owner!.query(`UPDATE sources SET status = 'published' WHERE slug = $1 AND status <> 'published'`, [SLUG]);
+
 const ctx = (slug: string) => ({ params: Promise.resolve({ slug }) });
 const url = (slug: string) => `https://test.local/api/work/${slug}/shelf`;
 
@@ -91,6 +95,24 @@ describe.skipIf(SKIP)('N3 — a work a reader saves reaches their shelf and come
       [SLUG],
     );
     sourceId = rows[0]!.id;
+    // SECTIONS ARE REQUIRED, even though nothing in this file reads one.
+    //
+    // A PUBLISHED source joins every corpus-wide invariant on the target, and
+    // `unit-ordinal-instrument.test.ts` asserts `digests.length === publishedWorks` over the whole
+    // published cohort. It counts SOURCES for one side and produces a digest per work WITH
+    // SECTIONS for the other, so a published fixture carrying no sections is counted and never
+    // digested: "expected 125 to be 126", from a sibling worker, with nothing wrong in the corpus.
+    // Isolated by running the instrument against each fixture separately — this file reproduced it
+    // 3/3, the sectioned one 0/3.
+    //
+    // unit_ordinal EQUALS ordinal for the same reason as the sibling suite: 024 decides
+    // verse-anchoredness by `heading IS NULL`, and these rows have headings, so it computes one
+    // unit per section. Any other grouping is a "grouping break" to the same instrument.
+    await owner.query(
+      `INSERT INTO sections (source_id, ordinal, unit_ordinal, heading, body)
+       VALUES ($1, 1, 1, 'QA shelf one', 'first'), ($1, 2, 2, 'QA shelf two', 'second')`,
+      [sourceId],
+    );
   }, 60_000);
 
   afterAll(async () => {
@@ -111,15 +133,23 @@ describe.skipIf(SKIP)('N3 — a work a reader saves reaches their shelf and come
             OR source_id IN (SELECT id FROM sources WHERE slug LIKE 'qa-shelf-%')`,
       ),
     );
+    await attempt('sections', () =>
+      owner!.query(`DELETE FROM sections WHERE source_id IN (SELECT id FROM sources WHERE slug LIKE 'qa-shelf-%')`),
+    );
     await attempt('sources', () => owner!.query(`DELETE FROM sources WHERE slug LIKE 'qa-shelf-%'`));
     // The prefix sweep that reaps an INTERRUPTED run — see helpers/qa-residue.ts (N6).
     await attempt('prefix sweep', () => sweepQaResidue(['qa-shelf-user-'], ['library_items']));
     await attempt('close', () => owner!.end());
   }, 60_000);
 
+  // The `AND status <> 'published'` guard makes this a no-op write in the common case, so only the
+  // cases that genuinely withdraw the work write a new row version. That is hygiene, not a fix: it
+  // was tried as a cure for a `unit-ordinal-instrument` failure and did NOT cure it (3/3 still red).
+  // The actual cause was a published fixture with no sections — see the beforeAll seed. Recorded
+  // because a plausible-but-wrong explanation left in a comment is worse than no comment.
   beforeEach(async () => {
     signedIn = { id: USER, email: 'qa@test.local' };
-    await setStatus('published');
+    await republish();
     await owner!.query('DELETE FROM library_items WHERE user_id = $1', [USER]);
   });
 

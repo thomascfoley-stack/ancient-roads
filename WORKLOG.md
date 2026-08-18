@@ -53,6 +53,50 @@ soon" was true only for want of a caller. So:
   (measured with a node carrying the shipped classes, since the control is signed-in only and
   there is no local auth). Live route: GET/PUT/DELETE all 401 signed-out, `library_items` still 0.
 
+**A flake I introduced, found and fixed before landing — and my first explanation of it was wrong.**
+
+Merging the other session's branch and re-running the full suite gave **63 failures across 24
+files**. Most were contention: two agent sessions were running vitest against the same dev Neon
+endpoint at once, so DB-backed suites timed out or skipped (95 skips became 156). A clean re-run
+dropped it to **one** real failure, in `unit-ordinal-instrument` — a SHARED gate that scans every
+published work on the target — and that one was mine.
+
+Two distinct defects in my own fixtures, both from the same root: **a fixture that publishes a
+source joins every corpus-wide invariant on that database, not just its own test.**
+
+1. `reading-progress` seeded `unit_ordinal` as (1,1,2) — a sensible shape for a chunked work, and
+   one migration 024 can never produce for rows that HAVE headings, since it decides
+   verse-anchoredness by `heading IS NULL` and so computes one unit per section. The instrument
+   reported "grouping break: stored unit 1 maps to computed 1 and 2". Fixed to (1,2,3).
+2. `library-shelf` seeded a published source with **no sections at all**. The instrument asserts
+   `digests.length === publishedWorks`; it counts SOURCES on one side and produces a digest per
+   work WITH SECTIONS on the other, so a sectionless published fixture is counted and never
+   digested — "expected 125 to be 126", from a sibling worker, with nothing wrong in the corpus.
+
+Both were INTERMITTENT, because the instrument only sees a fixture during the window in which it
+is published and vitest interleaves files differently each run. Same class as the 2026-07-19
+licensing fixture that turned Gate B red.
+
+**The wrong turn is worth recording too.** My first hypothesis for (2) was status churn: these
+suites called `setStatus('published')` in `beforeEach`, ~27 row versions per run, and the
+instrument's own header records being torn once before by exactly that. I made the write
+conditional and re-ran: still 3/3 red. The hypothesis was plausible, cited real evidence in the
+file, and was simply not the cause. Isolating each fixture against the instrument separately
+(reading-progress 0/3 red, shelf 3/3 red) found the real one in one step. The conditional write is
+kept as hygiene with a comment saying explicitly that it did NOT fix this — a plausible-but-wrong
+explanation left in a comment is worse than no comment.
+
+**One further failure, and it is NOT claimed fixed.** After both fixture defects were closed, a
+full parallel run produced a single `deadlock detected` in the perturbation leg of the same
+instrument (`runBackfill`, unit-ordinal-instrument.test.ts:230). Checked before theorising: that
+backfill IS properly scoped to its own fixture — MASTER.md's B-3 was genuinely fixed — so this is
+not a stray write. The plausible mechanism is FK key-share locks on `sources`, taken by my
+fixtures' section INSERT/DELETE and by the perturbation's own UPDATE, under concurrency. The
+instrument passes 3/3 alone, and the very next full run was **clean (1209 passed, 0 failed)**, so it
+did not reproduce. That is consistent with concurrency and is NOT proof of it: nothing was changed
+between the two runs, so the second run is evidence about frequency, not about cause. Recorded as
+observed-once-under-load, not diagnosed, and explicitly NOT claimed fixed.
+
 ### NOT DONE / UNVERIFIED
 - **Nothing deployed.**
 - **No signed-in browser walk, again** — Neon Auth secrets are Vercel-only, so `useSignedIn()` is
@@ -65,6 +109,11 @@ soon" was true only for want of a caller. So:
 - `/library/passages` is still absent from the nav-label HEADINGS table. Pre-existing gap, noted
   while working there, not filed as its own row.
 - **`DEEPINFRA_API_KEY` still needs rotating.**
+- **Two agent sessions sharing one dev database interfere.** The 63-failure run was not a code
+  regression and not a flake in the usual sense — it was concurrent vitest workers from two
+  sessions against `ep-tiny-hat`. `AGENTS.md` covers one-session-per-WORKING-TREE; the database is
+  the same hazard one level down and is not written down anywhere. Not filed as a ledger row
+  because it is an operating constraint rather than a defect, but it will bite again.
 
 
 ## 2026-08-17 (QA remediation, N6) — `npm run audit` is green again: three leaking teardowns and a lying test fixture

@@ -21,7 +21,9 @@ authenticated sessions). IDs below are positional within each sheet.
 | **Open — corpus & retrieval lane** | 15 |
 | **Total** | **156** |
 
-**2026-08-17 addendum (N1 slice).** Done 39 -> 40 (N1). §5b grew 2 -> 6: N3-N6 were found by the derivation written for N1. All six are now closed: N3/N5/N6 fixed, N4 closed as a recorded decision to keep it quarantined. So the corpus of findings is now 160, not 156. The bucket table above is NOT re-partitioned here, because it already disagrees with its own section heading (this row reads `Open — me | 30`; §4 is titled `Open — me (47)`). That contradiction predates this slice and is left visible rather than papered over — inventing a mapping is how drift becomes permanent (MASTER.md, failure-mode watchlist).
+**2026-08-17 addendum (N1/N3/N4/N5/N6 slices).** Done 39 -> 43. §5b grew 2 -> 6 and all six are now closed: N1/N3/N5/N6 fixed, N2 still open, N4 closed as a recorded decision to keep it quarantined (see its row). **Two counts re-measured against the actual rows rather than carried:** §1 has exactly 43 data rows and §4 exactly 22, which is what those two now say.
+
+An earlier version of this note recorded that the bucket table disagreed with its own section heading (`Open — me | 30` against a §4 titled `(47)`) and deliberately left it visible. **That contradiction was fixed by the 2026-08-17 reconcile (`ae7b133`), which moved both to 22**, so the note is retired rather than repeated. The remaining bucket counts are NOT re-derived here: the obvious instrument for it (a regex over `| ID |` rows) cannot see this file's multi-id rows such as `| A056 / A057 / A067 |`, and reporting a partition gap measured with a tool known to undercount would be the watchlist's sixth artefact — an instrument's blind spot written down as a property of the thing it could not see.
 
 Counts verified by script: the six buckets **partition all 156 ids exactly** — no duplicates, none
 unassigned. (A first draft of this table read 47 / 15 / 12 for the last three rows; that was

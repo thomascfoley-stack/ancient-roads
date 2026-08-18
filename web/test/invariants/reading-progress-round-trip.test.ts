@@ -58,6 +58,10 @@ let sourceId = '';
 const setStatus = (status: string) =>
   owner!.query('UPDATE sources SET status = $1 WHERE slug = $2', [status, SLUG]);
 
+/** Restore to published ONLY when something actually moved it — see the beforeEach note. */
+const republish = () =>
+  owner!.query(`UPDATE sources SET status = 'published' WHERE slug = $1 AND status <> 'published'`, [SLUG]);
+
 /** Drive the shipped route the way the browser does. */
 function post(slug: string, body: unknown): Promise<Response> {
   return POST(
@@ -103,9 +107,26 @@ describe.skipIf(SKIP)('N1 — a reader’s position reaches the account and retu
       [SLUG],
     );
     sourceId = rows[0]!.id;
+    // unit_ordinal MUST EQUAL ordinal HERE, and that is not cosmetic.
+    //
+    // This fixture is PUBLISHED, and `unit-ordinal-instrument.test.ts` scans every published work
+    // on the target and re-derives `unit_ordinal` by migration 024's rule. 024 groups by whether a
+    // section is verse-anchored, which it decides by `heading IS NULL`; these rows all HAVE
+    // headings, so 024 computes one unit per section — 1, 2, 3.
+    //
+    // The first version of this seed used (1,1,2), which is a perfectly sensible shape for a
+    // chunked work and is exactly what 024 would never produce for heading-bearing rows. The
+    // instrument caught it as "grouping break: stored unit 1 maps to computed 1 and 2" — but only
+    // INTERMITTENTLY, because it only sees this fixture during the window in which it is published,
+    // and vitest interleaves the two files differently from run to run. So it was a flake this
+    // suite introduced into a SHARED gate, which is the same class as the 2026-07-19 licensing
+    // fixture that turned Gate B red (see the note above about ALLOWED_LICENSES).
+    //
+    // The lesson generalises past this line: a fixture that publishes a source joins every
+    // corpus-wide invariant on the target, and must satisfy them all, not just its own.
     await owner.query(
       `INSERT INTO sections (source_id, ordinal, unit_ordinal, heading, body)
-       VALUES ($1, 1, 1, 'QA one', 'first'), ($1, 2, 1, 'QA two', 'second'), ($1, 3, 2, 'QA three', 'third')`,
+       VALUES ($1, 1, 1, 'QA one', 'first'), ($1, 2, 2, 'QA two', 'second'), ($1, 3, 3, 'QA three', 'third')`,
       [sourceId],
     );
   }, 60_000);
@@ -138,9 +159,14 @@ describe.skipIf(SKIP)('N1 — a reader’s position reaches the account and retu
     await attempt('close', () => owner!.end());
   }, 60_000);
 
+  // The `AND status <> 'published'` guard makes this a no-op write in the common case, so only the
+  // cases that genuinely withdraw the work write a new row version. That is hygiene, not a fix: it
+  // was tried as a cure for a `unit-ordinal-instrument` failure and did NOT cure it (3/3 still red).
+  // The actual cause was a published fixture with no sections — see the beforeAll seed. Recorded
+  // because a plausible-but-wrong explanation left in a comment is worse than no comment.
   beforeEach(async () => {
     signedIn = { id: USER, email: 'qa@test.local' };
-    await setStatus('published');
+    await republish();
     await owner!.query('DELETE FROM reading_progress WHERE user_id = $1', [USER]);
   });
 
