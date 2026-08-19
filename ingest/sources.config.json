@@ -19794,6 +19794,8 @@
     "author_died": 1892,
     "year_written": 1892,
     "source_type": "poetry",
+    "serve": false,
+    "quarantine": "MIS-REGISTERED, not a licensing hold. Declared source_type 'poetry', so all 344 of its embeddings served inside the /ask hymns-and-sacred-poetry lane — a Greek critical commentary on James answering in a pane titled 'Sung and poetic responses'. Measured on production 2026-08-19: 344 rows, all served, all register='poetry'. Driving the shipped song/verse SQL with real query vectors it took 44 of 75 top-three slots, and all three on one query, returning untransliterated Greek with critical apparatus. RE-REGISTRY WAS REJECTED ON EVIDENCE, not preference: only 1 of its 344 rows carries a verseId decoding to a real book and NONE are anchored in James, so moving it to 'commentary' would drop an unanchored work into the exegetical lane, where the on-range leg finds nothing and it falls through to the same unconstrained global top-3 (B031) — relocating the defect into the product's core pane. It also carries ingest damage: 1 of 5 sections has stripped reference slots ('not only of Abraham ( ; as also )'). Re-admission requires a re-ingest that anchors it AND repairs the references, not a source_type edit. Owner-ruled quarantine 2026-08-19.",
     "tradition": "unassigned",
     "era": "unassigned",
     "license": "Public Domain",
