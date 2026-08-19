@@ -55,9 +55,27 @@ serving against a ruling**.
 * **Migration `118` was applied to production while its file existed only on a worktree branch.**
   Merged onto the deployable line.
 
+### CLOSED AFTER THE ABOVE WAS WRITTEN — deploy 9268675, 13:03:22Z
+
+`ancientpaths.app` is served by `dpl_Vh11EUtmeQcmkUaD1HFUkdwDNZuS`, **verified by deployment-id
+match**, not by the script's own success line. Receipt `deploy-9268675-2026-08-19T13-03-22Z.txt`.
+
+**The 117/118 gap is closed and PROVEN, not assumed.** EXPLAIN against production, using the
+predicate imported from the shipped `legal-corpus.ts`:
+`Bitmap Index Scan on idx_commentary_fts_legal` (cost 62.78). The live `pg_index` predicate carries
+115's `gill-song`, 117's veto and 118's Pseudo-Origen; the deployed query now implies it. The
+355 ms vs 102 ms regression opened this morning by applying migrations ahead of the code is gone.
+
+**Two deploy gates fired first, both correctly.** (1) Clean-tree: `ec6b544` had swept in `.wc.mjs`,
+a scratch watcher of mine, via an unscoped `git add -A`; its deletion left the tree dirty and
+`vercel --prod` uploads the WORKING TREE, so it would have shipped un-reviewed. Untracked, and
+`/.*.mjs` added to `.gitignore`. (2) `PREDEPLOY_DB_URL` unset — the P0.3 preflight refuses to ship a
+bundle querying `embeddings.served` without proving the column exists on the target. Both are the
+system working.
+
 ### NOT DONE / UNVERIFIED
 
-- **Deploy has NOT run.** 11 commits ahead of the live `667e571`, `npm run audit` **PASSED all 16
+- ~~**Deploy has NOT run.**~~ **RAN — see the close-out above.** Was: 11 commits ahead of the live `667e571`, `npm run audit` **PASSED all 16
   gates**, tree clean. Until it ships, production runs migrations 117/118 with the matching query
   code unshipped — the measured 355 ms vs 102 ms on commentary search.
 - **The first audit run went RED on `typecheck — web/` and the second passed with no code change.**
