@@ -1,0 +1,25 @@
+{
+  "_": "P4.n Phase B. Works copied to prod 2026-08-18/19 as staged+unserved (WORKLOG 2026-08-19). Flipping publishes AND serves them: this IS a retrieval change and carries the accuracy diagnostic. Exact inverse: same file with --reverse. Does NOT include the 7 pre-existing staged works (origen-commentary, five lexicons, jfb) — each held by a cited ruling — nor chesterton-aquinas (ADR-112, 1933). CHUNK 1/4, split by embedding-row count (see scripts/split-flip-batch.mjs for why rows, not works).",
+  "parent": "docs/evidence/p4n-flip-2026-08-19/flip-sermon.json",
+  "rows": 39974,
+  "slugs": [
+    "bentley-sermons",
+    "calvin-sermons",
+    "owen-sermons",
+    "spurgeon-sermons07",
+    "spurgeon-sermons10",
+    "spurgeon-sermons13",
+    "spurgeon-sermons17",
+    "spurgeon-sermons18",
+    "spurgeon-sermons21",
+    "spurgeon-sermons22",
+    "spurgeon-sermons23",
+    "spurgeon-sermons24",
+    "spurgeon-sermons25",
+    "spurgeon-sermons26",
+    "spurgeon-sermons27",
+    "spurgeon-sermons28",
+    "spurgeon-sermons29",
+    "spurgeon-sermons33"
+  ]
+}

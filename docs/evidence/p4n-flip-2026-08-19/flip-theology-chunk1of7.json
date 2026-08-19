@@ -1,0 +1,13 @@
+{
+  "_": "P4.n Phase B. Works copied to prod 2026-08-18/19 as staged+unserved (WORKLOG 2026-08-19). Flipping publishes AND serves them: this IS a retrieval change and carries the accuracy diagnostic. Exact inverse: same file with --reverse. Does NOT include the 7 pre-existing staged works (origen-commentary, five lexicons, jfb) — each held by a cited ruling — nor chesterton-aquinas (ADR-112, 1933). CHUNK 1/7, split by embedding-row count (see scripts/split-flip-batch.mjs for why rows, not works).",
+  "parent": "docs/evidence/p4n-flip-2026-08-19/flip-theology.json",
+  "rows": 39999,
+  "slugs": [
+    "barnes-ntnotes",
+    "bernard-st-malachy",
+    "edwards-works1",
+    "edwards-works2",
+    "lightfoot-talmud",
+    "philo-works"
+  ]
+}
