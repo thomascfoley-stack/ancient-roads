@@ -1,0 +1,14 @@
+  ✓ [control] v3-ctl-08  clean (no floor) — the exodus of remote workers from big cities
+  ✓ [control] v3-ctl-09  clean (no floor) — genesis of a startup idea over coffee
+  ✓ [control] v3-ctl-10  clean (no floor) — apocalypse now movie runtime and cast
+
+category        n   HIT@1  HIT@2   pass / <2 / wrong / none
+  verse-ref     40   100%  100%    40 / 0 / 0 / 0
+  pericope      15    73%   93%    14 / 0 / 1 / 0
+  epistle       25    64%   92%    23 / 0 / 2 / 0
+  topical       20    35%   75%    15 / 2 / 3 / 0
+  proper-noun   10    80%   90%    9 / 0 / 1 / 0
+  control       10   clean 10/10  hijacks=0
+TAG corpus=legal(shared) pool=20 ef=64 cap=2 :: topicalH2=75 pericopeH1=73 epistleH2=92 verserefH1=100
+
+[exited with code 0]
