@@ -1,0 +1,20 @@
+quarantine-sources — target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (credentials redacted)
+direction    published -> quarantined
+slugs        chesterton-preexistence (from docs/evidence/register-cleanup/quarantine-chesterton-preexistence.json)
+! (node:62109) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+role         neondb_owner (asserted at the server)
+[1G[0J
+Type quarantine to QUARANTINE these 1 slug(s) on ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: [99Gquarantine
+eligible     1 of 1 are 'published'
+unserved     25 embedding row(s) -> served=false across 1 slug(s)
+snapshot     docs/evidence/register-cleanup/quarantine-pre-snapshot-2026-08-19T06-19-27-268Z.json (written before COMMIT)
+
+OK — 1 status row(s) published -> quarantined; 25 embedding row(s) -> served=false.
