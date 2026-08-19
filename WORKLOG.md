@@ -1,5 +1,77 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-19 (P4.n Phase B) — the Fathers are live; the flip costs 545 rows/min and that changes the plan
+
+**What is serving that was not yesterday: 18 Schaff patristic volumes, 26,674 embedding rows.**
+First new material served in weeks. Commentary (87 works) was fired after it and is running.
+
+### The measurement that matters most is the rate
+
+`father`: 26,674 rows, **49 minutes** (06:20:40Z → 07:09:42Z) = **545 rows/min**. Not the scan —
+the plan is a clean `Bitmap Index Scan on idx_embeddings_work`, verified by EXPLAIN. The cost is on
+the write side and is **inherent to the schema**: `embeddings` is 1,113,390 rows / **19 GB**, every
+row carries a 1024-dim vector, and **five HNSW indexes carry `served` in their predicate**. Setting
+`served=true` inserts each vector into an HNSW graph — neighbour search, scattered page reads, and
+on Neon those pages arrive over the network (`wait=Extension/Neon/PS_ReadIO`, later
+`FileCache_Read` as the cache warmed).
+
+**So the remaining registers cost, at this rate:** commentary 101,662 rows ≈ 3.1 h · sermon 146,205
+≈ 4.5 h · theology ~245,000 ≈ 7.5 h. **~14 hours total**, against an earlier estimate of 9 that was
+itself a correction. Anyone planning the rest should use **545 rows/min**, and should treat a
+single-transaction theology flip as a bad idea on durability grounds alone.
+
+### Accuracy: every pre-registered bar holds, and nothing improved
+
+Bars were fixed and committed (`da2d3a2`) **before** any work was published. Full table in
+[`RESULT-father.md`](docs/evidence/p4n-flip-2026-08-19/RESULT-father.md). Every HIT@2 identical;
+pericope HIT@1 80→73% and epistle HIT@1 68→64%, each exactly one query. Controls clean 10/10, zero
+hijacks. **Read as "no measurable effect", not "success"** — 18 patristic volumes are below what a
+120-query set resolves, in either direction. Commentary must be measured against THIS run, not the
+pre-father baseline, or the two interventions become inseparable.
+
+### Licensing: a MUST_NOT_SERVE author was serving, and is not now
+
+`chesterton-preexistence` — published, 25 served rows — quarantined by owner ruling (ADR-112).
+Corpus `served` moved 480,285 → 480,260, exactly −25. Post-flip audit: 811 works scanned, **0
+serving against a ruling**.
+
+### Three of my own defects, recorded because each nearly became a false report
+
+1. **My watcher declared the father flip CANCELLED at the moment it succeeded.** Its exit condition
+   was `UPDATE not active AND nothing published` — which is precisely true during the COMMIT window.
+   Fixed to a single positive condition: absence of evidence is not evidence of absence.
+2. **I captured the post-flip eval through `tail -12`**, losing every per-query line, then ran a diff
+   against the baseline that produced 41 spurious "changes" — pure truncation artifact. The
+   summary-level verdict is unaffected; the diagnosis of *which* queries moved is lost.
+3. **I read an exit code through a pipe three separate times** (`$?` was `grep`/`head`/`tail`), once
+   turning a real audit failure into a "pass" and once the reverse. Measure exit codes unpiped.
+
+### Corrections to standing documents
+
+* **MASTER C4 named a CRITICAL and never recorded its closure**, so the programme sheet read as
+  reporting an open CRITICAL. I believed it and began re-fixing the .docx ReDoS, which has been
+  fixed since `1ab40de` — an **ancestor of the deployed `667e571`**, checked by ancestry — and
+  guarded by a 500 ms timing test. A finding recorded without its closure reads as open forever.
+* **Migration `118` was applied to production while its file existed only on a worktree branch.**
+  Merged onto the deployable line.
+
+### NOT DONE / UNVERIFIED
+
+- **Deploy has NOT run.** 11 commits ahead of the live `667e571`, `npm run audit` **PASSED all 16
+  gates**, tree clean. Until it ships, production runs migrations 117/118 with the matching query
+  code unshipped — the measured 355 ms vs 102 ms on commentary search.
+- **The first audit run went RED on `typecheck — web/` and the second passed with no code change.**
+  Hypothesis, not finding: I ran `npx tsc --noEmit` in `web/` by hand while the audit ran its own in
+  the same directory. A gate that reds for reasons unrelated to the code is how a real red gets
+  waved through.
+- **sermon and theology are unflipped**, and want a durability story better than a 7-hour
+  transaction before they run.
+- **`chesterton-aquinas`** (1933) remains the single backlog work not on production, held by ADR-112.
+- Migration 119 (widening the veto to surname-first forms) **deliberately not written** — ADR-112
+  made Chesterton per-work, which an author-level veto cannot express. The
+  `served-veto-audit` script covers the gap operationally instead.
+
+
 ## 2026-08-19 (P4.n Phase A complete) — 620 works on production; the backlog is copied bar one
 
 **Owner-executed, `scripts/p4n-run.sh`.** Started 23:24:29Z, receipt 02:01:47Z: **2h 37m** for
