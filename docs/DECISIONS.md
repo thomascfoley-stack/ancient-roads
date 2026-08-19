@@ -1714,3 +1714,51 @@ recall is not evidence.
 
 **Follow-up not taken here:** correcting the manifest's `year`/`year_basis` for the 12 dated works.
 That edit touches the licensing ratchet's input and should be its own change with its own guard.
+
+## ADR-113 — `ep-odd-fog` suspend timeout raised 300s → 3600s for bulk flip work (2026-08-19)
+
+**Owner authorised, 2026-08-19.** Changed via the Neon API on project `spring-heart-74819093`,
+endpoint `ep-odd-fog-atnykudm`. Verified by re-reading the endpoint after the PATCH:
+`suspend_timeout_seconds = 3600`.
+
+**WHY — and this is a measured cause, after two wrong guesses.** Three consecutive `publish-flip`
+runs died with **nothing written**: `sermon` (146,205 rows, ~120 min), `sermon-chunk1of4` (39,974
+rows, ~16 min), and a 414-row probe. The probe produced the diagnosis the other two could not,
+because it failed *at the consent prompt, before anything was typed*:
+
+```
+error: terminating connection due to administrator command
+severity: FATAL   code: 57P01   routine: ProcessInterrupts
+```
+
+`57P01` is `admin_shutdown` — the platform terminated the connection. `suspend_timeout_seconds` was
+**300**, so the compute scales to zero after five minutes of inactivity and takes every open
+connection with it. `publish-flip` deliberately waits at a human gate; any pause over five minutes
+there is fatal to the connection, and the failure surfaces later as a hung client on a half-open
+socket (the client's TCP connection stays ESTABLISHED while the backend is gone — measured with
+`lsof` and `pg_stat_activity` disagreeing).
+
+**WHAT THIS WAS NOT.** Not transaction size: `commentary` committed **101,662** rows successfully,
+2.5× the chunk that later failed at 39,974. Not duration: 120 min failed, 16 min failed, 47 min
+succeeded. Not a compute restart: `pg_postmaster_start_time()` showed 2 h 19 m of uptime spanning
+both failures. Each of those was checked and eliminated, in that order, and the first two were
+asserted as the cause before being checked — recorded here because the chunking work
+(`scripts/split-flip-batch.mjs`) was built on the first wrong theory. That work is still worth
+keeping on its own merits — a two-hour transaction has no durability story — but it did not fix
+this and was presented as though it would.
+
+**COST, stated because it is the reason to revert.** A compute that waits an hour before suspending
+bills for that hour at the 1 CU floor whenever anything touches the database. This is a **temporary
+setting for the bulk P4.n flip work**, not a new default.
+
+**RESTORE when the flips are done:**
+
+```
+curl -X PATCH -H "Authorization: Bearer $(cat ~/.neon_api_key)" -H "Content-Type: application/json" \
+  -d '{"endpoint":{"suspend_timeout_seconds":300}}' \
+  https://console.neon.tech/api/v2/projects/spring-heart-74819093/endpoints/ep-odd-fog-atnykudm
+```
+
+**Still unproven:** whether a long single `UPDATE` counts as "activity" for Neon's idle detection. If
+it does not, a busy compute can still suspend mid-statement, and the raised timeout only widens the
+window rather than closing it. The next long flip is the test.
