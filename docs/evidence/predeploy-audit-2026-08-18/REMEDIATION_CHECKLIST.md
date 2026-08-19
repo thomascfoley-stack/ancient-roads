@@ -1,4 +1,12 @@
-# Pre-deploy deep audit — 2026-08-18
+# Remediation checklist — 2026-08-18 pre-deploy audit
+
+> **STATUS CORRECTED 2026-08-19.** Seven of the eight HIGHs (H1–H7) were fixed the same
+> night and the boxes were never ticked, so this file read as reporting eight open HIGHs.
+> A later session believed it. That is the same defect as MASTER's C4 row, which named a
+> CRITICAL and never recorded its closure — and cost this session a re-fix attempt on a
+> defect that had been live-fixed for eleven days. **A finding recorded without its closure
+> reads as open forever.** Each tick below carries the commit and the check that proves it.
+> **H8 is genuinely still open**, verified against the code, not assumed.
 
 Six parallel lenses (attack surface · data layer · licensing invariants · client · ops/gate · AI
 pipeline) over the deploy candidate `6cdfb4f`, i.e. everything since the live deploy `667e571`.
@@ -34,40 +42,47 @@ postdates 117/118, so `DEPLOY_PREFLIGHT.md`'s rollback rule excludes every candi
 
 ## HIGH — data egress to PostHog (blocks the deploy; NOT yet in production)
 
-- [ ] **H1. `/ingest/*` forwards `site_gate` and the Neon session cookie to PostHog.**
+- [x] **H1. `/ingest/*` forwards `site_gate` and the Neon session cookie to PostHog.**
+      **CLOSED e44ecd2 — both /ingest rewrite legs removed; only a comment names it now. Pinned by posthog-wiring.test.ts "next.config proxies NOTHING to a third party".**
       `web/next.config.ts:145`, `web/src/middleware.ts:58`, `web/src/app/api/gate/route.ts:54-60`.
       Next proxies external rewrites via `http-proxy`'s `setupOutgoing`, which does
       `Object.assign({}, req.headers)` — every header verbatim, only `host` replaced. Beacons are
       same-origin so the browser attaches cookies regardless of `HttpOnly`; `site_gate` is `path:'/'`.
       That cookie IS the bearer credential for the whole pre-launch wall. **Confirm on Vercel's edge
       before/after any fix — the proxy layer differs from the Node path that was code-proven.**
-- [ ] **H2. The reader's ask text leaves the browser as `$current_url`.**
+- [x] **H2. The reader's ask text leaves the browser as `$current_url`.**
+      **CLOSED e44ecd2 — capture_pageview:false PLUS sanitize_properties stripping query strings off EVERY event ($current_url rides all of them, so the flag alone is necessary and not sufficient).**
       `web/src/instrumentation-client.ts:18-27`, `work-reader.tsx:341`, `verse-display.tsx:178`.
       `capture_pageview` defaults on; `$current_url` is `location.href` verbatim. The readers push
       `/ask?q=What have commentators said about "<up to 220 chars of the selected passage>"…`, and
       the pageview fires before `ask-client.tsx:283` swaps the URL. `/search` does the same via its
       GET form (`name="q"`). Directly contradicts the file's own O-2 claim at `:12-13`.
-- [ ] **H3. Autocapture is on; `$el_text` ships user-authored content.**
+- [x] **H3. Autocapture is on; `$el_text` ships user-authored content.**
+      **CLOSED e44ecd2 — autocapture:false, explicit rather than defaulted (it defaults ON).**
       Study titles (`save-to-study.tsx:396`), uploaded document titles (Lane B private corpus),
       shelved-work rows. `person_profiles:'identified_only'` does not prevent capture with a
       `distinct_id` + IP.
-- [ ] **H4. `maskAllInputs` masks inputs, not page text.** `instrumentation-client.ts:26`. No
+- [x] **H4. `maskAllInputs` masks inputs, not page text.** `instrumentation-client.ts:26`. No
+      **CLOSED e44ecd2 — disable_session_recording:true. maskAllInputs was never the fix; replay records rendered page text, not just inputs.**
       `maskAllText`/`maskTextSelector`. If replay is enabled project-side, a replay of
       `/library/uploads` or a study contains the user's private uploaded text verbatim.
-- [ ] **H5. `/ingest/*` is an open, unauthenticated, unthrottled reverse proxy, and turns CSP
+- [x] **H5. `/ingest/*` is an open, unauthenticated, unthrottled reverse proxy, and turns CSP
+      **CLOSED e44ecd2 — the proxy is gone and the gate matcher no longer exempts anything; posthog-wiring.test.ts asserts /ingest/e/ IS gated.**
       `connect-src 'self'` into an exfiltration channel.** `script-src` is `'unsafe-inline'` with
       live `dangerouslySetInnerHTML` sinks; injected script can POST `document.cookie` to `/ingest/`
       under an attacker's own API key and read it on their dashboard. Also billable relay abuse.
 
 ## HIGH — licensing veto coverage (mine; incomplete)
 
-- [ ] **H6. The deploy-gate matcher never got the name-prefix rule.** I synced the *list* in
+- [x] **H6. The deploy-gate matcher never got the name-prefix rule.** I synced the *list* in
+      **CLOSED e44ecd2 — scripts/lib/served-corpus-authors.mjs carries the name-prefix rule, not just the synced list.**
       `scripts/lib/served-corpus-authors.mjs` and left `isMustNotServe()` behind. Measured:
       `CS Lewis  (via the character Screwtape, a devil)` (70 rows) and `Pseudo-Origen  (as quoted by
       Aquinas, AD 1274)` (12 rows) are blocked by the shipped TS and **invisible to the gate copy**.
       `test/invariants/served-corpus-authors.test.ts:40-42` compares only the two arrays, never the
       two matchers — weaker than the property it names.
-- [ ] **H7. The veto reaches only the FTS surface.** `servability.ts:85-92` and
+- [x] **H7. The veto reaches only the FTS surface.** `servability.ts:85-92` and
+      **CLOSED e44ecd2 — servability.ts and studies.ts both AND in the veto, via bound array params (NOT sql.unsafe, which does not exist at runtime despite the .d.ts).**
       `studies.ts:545-551` gate on `status='published'` + provenance only, so a stored study clipping
       of a vetoed author keeps rendering, and a new one can still be created. The embeddings leg
       rides `e.served`, a materialised column no TS edit changes.
