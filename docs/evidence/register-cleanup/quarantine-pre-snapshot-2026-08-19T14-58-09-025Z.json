@@ -1,0 +1,20 @@
+{
+  "host": "ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech",
+  "direction": "published->quarantined",
+  "slugFile": "docs/evidence/register-cleanup/quarantine-chesterton-preexistence.json",
+  "slugs": [
+    "chesterton-preexistence"
+  ],
+  "servedBefore": {
+    "chesterton-preexistence": {
+      "rows": 25,
+      "served": 25
+    }
+  },
+  "sources": [
+    {
+      "slug": "chesterton-preexistence",
+      "status": "published"
+    }
+  ]
+}

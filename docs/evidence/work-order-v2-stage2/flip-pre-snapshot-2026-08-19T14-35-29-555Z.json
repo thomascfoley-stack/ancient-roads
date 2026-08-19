@@ -1,0 +1,3827 @@
+{
+  "host": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "direction": "staged->published",
+  "slugFile": "docs/evidence/p4n-flip-2026-08-19/flip-sermon.json",
+  "slugs": [
+    "bentley-sermons",
+    "bradford-sertract",
+    "bushnell-christ",
+    "bushnell-sermons",
+    "butler-sermons",
+    "calvin-sermons",
+    "doddridge-evidences",
+    "eckhart-sermons",
+    "edwards-sermons",
+    "finney-sermons",
+    "hopkins-samuel-21sermons",
+    "jowett-b-faith",
+    "latimer-sermons",
+    "macdonald-unspoken1",
+    "macdonald-unspoken2",
+    "macdonald-unspoken3",
+    "manning-henry-sermons01",
+    "manning-henry-sermons02",
+    "manning-henry-sermons03",
+    "manning-henry-sermons04",
+    "owen-sermons",
+    "schleiermach-sermons",
+    "south-robert-sermons01",
+    "south-robert-sermons02",
+    "south-robert-sermons03",
+    "south-robert-sermons04",
+    "south-robert-sermons06",
+    "south-robert-sermons07",
+    "south-robert-sermons5",
+    "spurgeon-proverbs",
+    "spurgeon-sermons01",
+    "spurgeon-sermons02",
+    "spurgeon-sermons03",
+    "spurgeon-sermons04",
+    "spurgeon-sermons05",
+    "spurgeon-sermons06",
+    "spurgeon-sermons07",
+    "spurgeon-sermons08",
+    "spurgeon-sermons09",
+    "spurgeon-sermons10",
+    "spurgeon-sermons11",
+    "spurgeon-sermons12",
+    "spurgeon-sermons13",
+    "spurgeon-sermons14",
+    "spurgeon-sermons15",
+    "spurgeon-sermons16",
+    "spurgeon-sermons17",
+    "spurgeon-sermons18",
+    "spurgeon-sermons19",
+    "spurgeon-sermons20",
+    "spurgeon-sermons21",
+    "spurgeon-sermons22",
+    "spurgeon-sermons23",
+    "spurgeon-sermons24",
+    "spurgeon-sermons25",
+    "spurgeon-sermons26",
+    "spurgeon-sermons27",
+    "spurgeon-sermons28",
+    "spurgeon-sermons29",
+    "spurgeon-sermons30",
+    "spurgeon-sermons31",
+    "spurgeon-sermons32",
+    "spurgeon-sermons33",
+    "spurgeon-sermons34",
+    "spurgeon-sermons35",
+    "spurgeon-sermons36",
+    "spurgeon-sermons37",
+    "spurgeon-sermons38",
+    "spurgeon-sermons39",
+    "spurgeon-sermons40",
+    "spurgeon-sermons41",
+    "spurgeon-sermons42",
+    "spurgeon-sermons43",
+    "spurgeon-sermons44",
+    "spurgeon-sermons45",
+    "spurgeon-sermons46",
+    "spurgeon-sermons47",
+    "spurgeon-sermons48",
+    "spurgeon-sermons49",
+    "spurgeon-sermons50",
+    "spurgeon-sermons51",
+    "spurgeon-sermons52",
+    "spurgeon-sermons53",
+    "spurgeon-sermons54",
+    "spurgeon-sermons55",
+    "spurgeon-sermons56",
+    "spurgeon-sermons57",
+    "spurgeon-sermons58",
+    "spurgeon-sermons59",
+    "spurgeon-sermons60",
+    "spurgeon-sermons61",
+    "spurgeon-sermons62",
+    "spurgeon-sermons63",
+    "tulloch-somefacts",
+    "whitefield-sermons"
+  ],
+  "payload": [
+    "bentley-sermons",
+    "bradford-sertract",
+    "bushnell-christ",
+    "bushnell-sermons",
+    "butler-sermons",
+    "calvin-sermons",
+    "doddridge-evidences",
+    "eckhart-sermons",
+    "edwards-sermons",
+    "finney-sermons",
+    "hopkins-samuel-21sermons",
+    "jowett-b-faith",
+    "latimer-sermons",
+    "macdonald-unspoken1",
+    "macdonald-unspoken2",
+    "macdonald-unspoken3",
+    "manning-henry-sermons01",
+    "manning-henry-sermons02",
+    "manning-henry-sermons03",
+    "manning-henry-sermons04",
+    "owen-sermons",
+    "schleiermach-sermons",
+    "south-robert-sermons01",
+    "south-robert-sermons02",
+    "south-robert-sermons03",
+    "south-robert-sermons04",
+    "south-robert-sermons06",
+    "south-robert-sermons07",
+    "south-robert-sermons5",
+    "spurgeon-proverbs",
+    "spurgeon-sermons01",
+    "spurgeon-sermons02",
+    "spurgeon-sermons03",
+    "spurgeon-sermons04",
+    "spurgeon-sermons05",
+    "spurgeon-sermons06",
+    "spurgeon-sermons07",
+    "spurgeon-sermons08",
+    "spurgeon-sermons09",
+    "spurgeon-sermons10",
+    "spurgeon-sermons11",
+    "spurgeon-sermons12",
+    "spurgeon-sermons13",
+    "spurgeon-sermons14",
+    "spurgeon-sermons15",
+    "spurgeon-sermons16",
+    "spurgeon-sermons17",
+    "spurgeon-sermons18",
+    "spurgeon-sermons19",
+    "spurgeon-sermons20",
+    "spurgeon-sermons21",
+    "spurgeon-sermons22",
+    "spurgeon-sermons23",
+    "spurgeon-sermons24",
+    "spurgeon-sermons25",
+    "spurgeon-sermons26",
+    "spurgeon-sermons27",
+    "spurgeon-sermons28",
+    "spurgeon-sermons29",
+    "spurgeon-sermons30",
+    "spurgeon-sermons31",
+    "spurgeon-sermons32",
+    "spurgeon-sermons33",
+    "spurgeon-sermons34",
+    "spurgeon-sermons35",
+    "spurgeon-sermons36",
+    "spurgeon-sermons37",
+    "spurgeon-sermons38",
+    "spurgeon-sermons39",
+    "spurgeon-sermons40",
+    "spurgeon-sermons41",
+    "spurgeon-sermons42",
+    "spurgeon-sermons43",
+    "spurgeon-sermons44",
+    "spurgeon-sermons45",
+    "spurgeon-sermons46",
+    "spurgeon-sermons47",
+    "spurgeon-sermons48",
+    "spurgeon-sermons49",
+    "spurgeon-sermons50",
+    "spurgeon-sermons51",
+    "spurgeon-sermons52",
+    "spurgeon-sermons53",
+    "spurgeon-sermons54",
+    "spurgeon-sermons55",
+    "spurgeon-sermons56",
+    "spurgeon-sermons57",
+    "spurgeon-sermons58",
+    "spurgeon-sermons59",
+    "spurgeon-sermons60",
+    "spurgeon-sermons61",
+    "spurgeon-sermons62",
+    "spurgeon-sermons63",
+    "tulloch-somefacts",
+    "whitefield-sermons"
+  ],
+  "servedBefore": {
+    "bentley-sermons": {
+      "rows": 393,
+      "served": 0
+    },
+    "bradford-sertract": {
+      "rows": 234,
+      "served": 0
+    },
+    "bushnell-christ": {
+      "rows": 639,
+      "served": 0
+    },
+    "bushnell-sermons": {
+      "rows": 714,
+      "served": 0
+    },
+    "butler-sermons": {
+      "rows": 325,
+      "served": 0
+    },
+    "calvin-sermons": {
+      "rows": 5309,
+      "served": 0
+    },
+    "doddridge-evidences": {
+      "rows": 129,
+      "served": 0
+    },
+    "eckhart-sermons": {
+      "rows": 58,
+      "served": 0
+    },
+    "edwards-sermons": {
+      "rows": 948,
+      "served": 0
+    },
+    "finney-sermons": {
+      "rows": 733,
+      "served": 0
+    },
+    "hopkins-samuel-21sermons": {
+      "rows": 775,
+      "served": 0
+    },
+    "jowett-b-faith": {
+      "rows": 537,
+      "served": 0
+    },
+    "latimer-sermons": {
+      "rows": 862,
+      "served": 0
+    },
+    "macdonald-unspoken1": {
+      "rows": 227,
+      "served": 0
+    },
+    "macdonald-unspoken2": {
+      "rows": 345,
+      "served": 0
+    },
+    "macdonald-unspoken3": {
+      "rows": 284,
+      "served": 0
+    },
+    "manning-henry-sermons01": {
+      "rows": 495,
+      "served": 0
+    },
+    "manning-henry-sermons02": {
+      "rows": 482,
+      "served": 0
+    },
+    "manning-henry-sermons03": {
+      "rows": 534,
+      "served": 0
+    },
+    "manning-henry-sermons04": {
+      "rows": 455,
+      "served": 0
+    },
+    "owen-sermons": {
+      "rows": 2759,
+      "served": 0
+    },
+    "schleiermach-sermons": {
+      "rows": 839,
+      "served": 0
+    },
+    "south-robert-sermons01": {
+      "rows": 1000,
+      "served": 0
+    },
+    "south-robert-sermons02": {
+      "rows": 931,
+      "served": 0
+    },
+    "south-robert-sermons03": {
+      "rows": 855,
+      "served": 0
+    },
+    "south-robert-sermons04": {
+      "rows": 892,
+      "served": 0
+    },
+    "south-robert-sermons06": {
+      "rows": 879,
+      "served": 0
+    },
+    "south-robert-sermons07": {
+      "rows": 883,
+      "served": 0
+    },
+    "south-robert-sermons5": {
+      "rows": 819,
+      "served": 0
+    },
+    "spurgeon-proverbs": {
+      "rows": 1404,
+      "served": 0
+    },
+    "spurgeon-sermons01": {
+      "rows": 1616,
+      "served": 0
+    },
+    "spurgeon-sermons02": {
+      "rows": 1603,
+      "served": 0
+    },
+    "spurgeon-sermons03": {
+      "rows": 1761,
+      "served": 0
+    },
+    "spurgeon-sermons04": {
+      "rows": 1946,
+      "served": 0
+    },
+    "spurgeon-sermons05": {
+      "rows": 1963,
+      "served": 0
+    },
+    "spurgeon-sermons06": {
+      "rows": 2031,
+      "served": 0
+    },
+    "spurgeon-sermons07": {
+      "rows": 2338,
+      "served": 0
+    },
+    "spurgeon-sermons08": {
+      "rows": 1965,
+      "served": 0
+    },
+    "spurgeon-sermons09": {
+      "rows": 2045,
+      "served": 0
+    },
+    "spurgeon-sermons10": {
+      "rows": 2080,
+      "served": 0
+    },
+    "spurgeon-sermons11": {
+      "rows": 2048,
+      "served": 0
+    },
+    "spurgeon-sermons12": {
+      "rows": 2039,
+      "served": 0
+    },
+    "spurgeon-sermons13": {
+      "rows": 2051,
+      "served": 0
+    },
+    "spurgeon-sermons14": {
+      "rows": 2020,
+      "served": 0
+    },
+    "spurgeon-sermons15": {
+      "rows": 1972,
+      "served": 0
+    },
+    "spurgeon-sermons16": {
+      "rows": 2045,
+      "served": 0
+    },
+    "spurgeon-sermons17": {
+      "rows": 2126,
+      "served": 0
+    },
+    "spurgeon-sermons18": {
+      "rows": 2119,
+      "served": 0
+    },
+    "spurgeon-sermons19": {
+      "rows": 2042,
+      "served": 0
+    },
+    "spurgeon-sermons20": {
+      "rows": 2044,
+      "served": 0
+    },
+    "spurgeon-sermons21": {
+      "rows": 2051,
+      "served": 0
+    },
+    "spurgeon-sermons22": {
+      "rows": 2116,
+      "served": 0
+    },
+    "spurgeon-sermons23": {
+      "rows": 2072,
+      "served": 0
+    },
+    "spurgeon-sermons24": {
+      "rows": 2101,
+      "served": 0
+    },
+    "spurgeon-sermons25": {
+      "rows": 2095,
+      "served": 0
+    },
+    "spurgeon-sermons26": {
+      "rows": 2063,
+      "served": 0
+    },
+    "spurgeon-sermons27": {
+      "rows": 2107,
+      "served": 0
+    },
+    "spurgeon-sermons28": {
+      "rows": 2068,
+      "served": 0
+    },
+    "spurgeon-sermons29": {
+      "rows": 2067,
+      "served": 0
+    },
+    "spurgeon-sermons30": {
+      "rows": 2030,
+      "served": 0
+    },
+    "spurgeon-sermons31": {
+      "rows": 1972,
+      "served": 0
+    },
+    "spurgeon-sermons32": {
+      "rows": 2030,
+      "served": 0
+    },
+    "spurgeon-sermons33": {
+      "rows": 2059,
+      "served": 0
+    },
+    "spurgeon-sermons34": {
+      "rows": 1940,
+      "served": 0
+    },
+    "spurgeon-sermons35": {
+      "rows": 1928,
+      "served": 0
+    },
+    "spurgeon-sermons36": {
+      "rows": 1911,
+      "served": 0
+    },
+    "spurgeon-sermons37": {
+      "rows": 1869,
+      "served": 0
+    },
+    "spurgeon-sermons38": {
+      "rows": 1712,
+      "served": 0
+    },
+    "spurgeon-sermons39": {
+      "rows": 1802,
+      "served": 0
+    },
+    "spurgeon-sermons40": {
+      "rows": 1775,
+      "served": 0
+    },
+    "spurgeon-sermons41": {
+      "rows": 1755,
+      "served": 0
+    },
+    "spurgeon-sermons42": {
+      "rows": 1783,
+      "served": 0
+    },
+    "spurgeon-sermons43": {
+      "rows": 1793,
+      "served": 0
+    },
+    "spurgeon-sermons44": {
+      "rows": 1751,
+      "served": 0
+    },
+    "spurgeon-sermons45": {
+      "rows": 1831,
+      "served": 0
+    },
+    "spurgeon-sermons46": {
+      "rows": 1760,
+      "served": 0
+    },
+    "spurgeon-sermons47": {
+      "rows": 1762,
+      "served": 0
+    },
+    "spurgeon-sermons48": {
+      "rows": 1769,
+      "served": 0
+    },
+    "spurgeon-sermons49": {
+      "rows": 1760,
+      "served": 0
+    },
+    "spurgeon-sermons50": {
+      "rows": 1760,
+      "served": 0
+    },
+    "spurgeon-sermons51": {
+      "rows": 1755,
+      "served": 0
+    },
+    "spurgeon-sermons52": {
+      "rows": 1754,
+      "served": 0
+    },
+    "spurgeon-sermons53": {
+      "rows": 1756,
+      "served": 0
+    },
+    "spurgeon-sermons54": {
+      "rows": 1740,
+      "served": 0
+    },
+    "spurgeon-sermons55": {
+      "rows": 1777,
+      "served": 0
+    },
+    "spurgeon-sermons56": {
+      "rows": 1742,
+      "served": 0
+    },
+    "spurgeon-sermons57": {
+      "rows": 1652,
+      "served": 0
+    },
+    "spurgeon-sermons58": {
+      "rows": 1668,
+      "served": 0
+    },
+    "spurgeon-sermons59": {
+      "rows": 1677,
+      "served": 0
+    },
+    "spurgeon-sermons60": {
+      "rows": 1721,
+      "served": 0
+    },
+    "spurgeon-sermons61": {
+      "rows": 1696,
+      "served": 0
+    },
+    "spurgeon-sermons62": {
+      "rows": 1502,
+      "served": 0
+    },
+    "spurgeon-sermons63": {
+      "rows": 585,
+      "served": 0
+    },
+    "tulloch-somefacts": {
+      "rows": 313,
+      "served": 0
+    },
+    "whitefield-sermons": {
+      "rows": 1782,
+      "served": 0
+    }
+  },
+  "sources": [
+    {
+      "slug": "aaberg-hymnsdenmark",
+      "status": "published"
+    },
+    {
+      "slug": "abelard-misfortunes",
+      "status": "staged"
+    },
+    {
+      "slug": "adam-clarke",
+      "status": "published"
+    },
+    {
+      "slug": "addison-evidences",
+      "status": "staged"
+    },
+    {
+      "slug": "adeney-expositoreznehes",
+      "status": "published"
+    },
+    {
+      "slug": "alexander-a-canon",
+      "status": "staged"
+    },
+    {
+      "slug": "alexander-a-evidences",
+      "status": "staged"
+    },
+    {
+      "slug": "alexander-a-outlines",
+      "status": "staged"
+    },
+    {
+      "slug": "alexander-w-expositorjohnepistles",
+      "status": "published"
+    },
+    {
+      "slug": "allen-j-peace",
+      "status": "staged"
+    },
+    {
+      "slug": "allestree-government",
+      "status": "staged"
+    },
+    {
+      "slug": "allestree-oracles",
+      "status": "staged"
+    },
+    {
+      "slug": "alphonsus-uniformity",
+      "status": "staged"
+    },
+    {
+      "slug": "alphonsus-volonta",
+      "status": "staged"
+    },
+    {
+      "slug": "anderson-prayer",
+      "status": "staged"
+    },
+    {
+      "slug": "andrewes-devotions1",
+      "status": "staged"
+    },
+    {
+      "slug": "anselm-basic-works",
+      "status": "staged"
+    },
+    {
+      "slug": "anselm-devotions",
+      "status": "staged"
+    },
+    {
+      "slug": "anselm-meditations",
+      "status": "staged"
+    },
+    {
+      "slug": "aquinas-nature-grace",
+      "status": "staged"
+    },
+    {
+      "slug": "arminius-works1",
+      "status": "staged"
+    },
+    {
+      "slug": "arminius-works2",
+      "status": "staged"
+    },
+    {
+      "slug": "arminius-works3",
+      "status": "staged"
+    },
+    {
+      "slug": "arndt-true",
+      "status": "staged"
+    },
+    {
+      "slug": "augustine-confess",
+      "status": "published"
+    },
+    {
+      "slug": "augustine-confessions",
+      "status": "quarantined"
+    },
+    {
+      "slug": "augustine-doctrine",
+      "status": "staged"
+    },
+    {
+      "slug": "augustine-enchiridion",
+      "status": "staged"
+    },
+    {
+      "slug": "augustine-homilies",
+      "status": "published"
+    },
+    {
+      "slug": "baker-holy-wisdom",
+      "status": "staged"
+    },
+    {
+      "slug": "ball-expositorjer1",
+      "status": "published"
+    },
+    {
+      "slug": "barclay-quakers",
+      "status": "staged"
+    },
+    {
+      "slug": "barnes-crosswire-nt",
+      "status": "published"
+    },
+    {
+      "slug": "barnes-ntnotes",
+      "status": "staged"
+    },
+    {
+      "slug": "bartleman-deity",
+      "status": "staged"
+    },
+    {
+      "slug": "bavinck-revelation",
+      "status": "staged"
+    },
+    {
+      "slug": "baxter-causes",
+      "status": "staged"
+    },
+    {
+      "slug": "baxter-pastor",
+      "status": "staged"
+    },
+    {
+      "slug": "baxter-saints-rest",
+      "status": "published"
+    },
+    {
+      "slug": "baxter-unconverted",
+      "status": "staged"
+    },
+    {
+      "slug": "bayly-piety",
+      "status": "staged"
+    },
+    {
+      "slug": "bdb-lexicon",
+      "status": "staged"
+    },
+    {
+      "slug": "benedict-rule",
+      "status": "staged"
+    },
+    {
+      "slug": "bennett-expositorjer2",
+      "status": "published"
+    },
+    {
+      "slug": "benson-psalmody",
+      "status": "staged"
+    },
+    {
+      "slug": "bentley-sermons",
+      "status": "staged"
+    },
+    {
+      "slug": "berkhof-newtestament",
+      "status": "staged"
+    },
+    {
+      "slug": "berkhof-summary",
+      "status": "staged"
+    },
+    {
+      "slug": "berkhof-systematictheology",
+      "status": "staged"
+    },
+    {
+      "slug": "bernard-letters",
+      "status": "staged"
+    },
+    {
+      "slug": "bernard-loving-god",
+      "status": "staged"
+    },
+    {
+      "slug": "bernard-song-sermons",
+      "status": "published"
+    },
+    {
+      "slug": "bernard-st-malachy",
+      "status": "staged"
+    },
+    {
+      "slug": "beth-miracles",
+      "status": "staged"
+    },
+    {
+      "slug": "bett-methhymns",
+      "status": "published"
+    },
+    {
+      "slug": "bevan-friends",
+      "status": "staged"
+    },
+    {
+      "slug": "bevan-matelda",
+      "status": "staged"
+    },
+    {
+      "slug": "bevan-tersteegen",
+      "status": "published"
+    },
+    {
+      "slug": "bevan-tersteegen2",
+      "status": "published"
+    },
+    {
+      "slug": "beveridge-w-thoughts",
+      "status": "staged"
+    },
+    {
+      "slug": "beveridge-w-thoughts2",
+      "status": "staged"
+    },
+    {
+      "slug": "blaikie-expositor2sam",
+      "status": "published"
+    },
+    {
+      "slug": "blaikie-expositor8",
+      "status": "published"
+    },
+    {
+      "slug": "blaikie-expositorjosh",
+      "status": "published"
+    },
+    {
+      "slug": "blois-mirror",
+      "status": "staged"
+    },
+    {
+      "slug": "blois-oratory",
+      "status": "staged"
+    },
+    {
+      "slug": "blois-spiritual",
+      "status": "staged"
+    },
+    {
+      "slug": "boehme-supersensual",
+      "status": "staged"
+    },
+    {
+      "slug": "boehme-waytochrist",
+      "status": "staged"
+    },
+    {
+      "slug": "boethius-consolation",
+      "status": "staged"
+    },
+    {
+      "slug": "boethius-tracts",
+      "status": "staged"
+    },
+    {
+      "slug": "boettner-predest",
+      "status": "staged"
+    },
+    {
+      "slug": "bonar-peace",
+      "status": "staged"
+    },
+    {
+      "slug": "bonar-rentveil",
+      "status": "staged"
+    },
+    {
+      "slug": "borthwick-hll",
+      "status": "published"
+    },
+    {
+      "slug": "boston-crook",
+      "status": "staged"
+    },
+    {
+      "slug": "bounds-essentials",
+      "status": "staged"
+    },
+    {
+      "slug": "bounds-necessity",
+      "status": "staged"
+    },
+    {
+      "slug": "bounds-power",
+      "status": "staged"
+    },
+    {
+      "slug": "bounds-prayingmen",
+      "status": "staged"
+    },
+    {
+      "slug": "bounds-purpose",
+      "status": "staged"
+    },
+    {
+      "slug": "bounds-reality",
+      "status": "staged"
+    },
+    {
+      "slug": "bounds-weapon",
+      "status": "staged"
+    },
+    {
+      "slug": "boyce-theology",
+      "status": "staged"
+    },
+    {
+      "slug": "bradford-meditations",
+      "status": "staged"
+    },
+    {
+      "slug": "bradford-sertract",
+      "status": "staged"
+    },
+    {
+      "slug": "browne-morals",
+      "status": "staged"
+    },
+    {
+      "slug": "browne-religio",
+      "status": "staged"
+    },
+    {
+      "slug": "brownlie-aposthymns",
+      "status": "published"
+    },
+    {
+      "slug": "brownlie-earlyhymns",
+      "status": "published"
+    },
+    {
+      "slug": "brownlie-easternhymns",
+      "status": "published"
+    },
+    {
+      "slug": "brownlie-greekhymns",
+      "status": "published"
+    },
+    {
+      "slug": "brownlie-hymnseast",
+      "status": "published"
+    },
+    {
+      "slug": "brownlie-hymnsmorning",
+      "status": "published"
+    },
+    {
+      "slug": "brownlie-hyndbrow",
+      "status": "published"
+    },
+    {
+      "slug": "brownlie-officehymns",
+      "status": "published"
+    },
+    {
+      "slug": "brownlie-russianhymns",
+      "status": "published"
+    },
+    {
+      "slug": "bruce-twelve",
+      "status": "staged"
+    },
+    {
+      "slug": "bullinger-apocalypse",
+      "status": "published"
+    },
+    {
+      "slug": "bunyan-badman",
+      "status": "published"
+    },
+    {
+      "slug": "bunyan-grace",
+      "status": "published"
+    },
+    {
+      "slug": "bunyan-holy-war",
+      "status": "published"
+    },
+    {
+      "slug": "bunyan-miscellaneous",
+      "status": "published"
+    },
+    {
+      "slug": "bunyan-pilgrim",
+      "status": "published"
+    },
+    {
+      "slug": "burgon-corruption",
+      "status": "staged"
+    },
+    {
+      "slug": "burgon-mark",
+      "status": "staged"
+    },
+    {
+      "slug": "burgon-revision-revised",
+      "status": "staged"
+    },
+    {
+      "slug": "bushnell-christ",
+      "status": "staged"
+    },
+    {
+      "slug": "bushnell-nurture",
+      "status": "staged"
+    },
+    {
+      "slug": "bushnell-sermons",
+      "status": "staged"
+    },
+    {
+      "slug": "bushnell-vicarious",
+      "status": "staged"
+    },
+    {
+      "slug": "butler-analogy",
+      "status": "staged"
+    },
+    {
+      "slug": "butler-sermons",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-calcom",
+      "status": "quarantined"
+    },
+    {
+      "slug": "calvin-calcom01",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom02",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom03",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom04",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom05",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom06",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom07",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom08",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom09",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom10",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom11",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom12",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom13",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom14",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom15",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom16",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom17",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom18",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom19",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom20",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom21",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom22",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom23",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom24",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom25",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom26",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom27",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom28",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom29",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom30",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom31",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom32",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom33",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom34",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom35",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom36",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom37",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom38",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom39",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom40",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom41",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom42",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom43",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom44",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-calcom45",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-chr-life",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-institutes",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-prayer",
+      "status": "published"
+    },
+    {
+      "slug": "calvin-sermons",
+      "status": "staged"
+    },
+    {
+      "slug": "calvin-treatise-relics",
+      "status": "staged"
+    },
+    {
+      "slug": "campbell-atonement",
+      "status": "staged"
+    },
+    {
+      "slug": "cassian-conferences",
+      "status": "staged"
+    },
+    {
+      "slug": "catena-aurea",
+      "status": "published"
+    },
+    {
+      "slug": "catherine-dialog",
+      "status": "staged"
+    },
+    {
+      "slug": "catherine-g-life",
+      "status": "staged"
+    },
+    {
+      "slug": "chadwick-expositor2",
+      "status": "published"
+    },
+    {
+      "slug": "chadwick-mark",
+      "status": "published"
+    },
+    {
+      "slug": "charnock-reconcil",
+      "status": "staged"
+    },
+    {
+      "slug": "chatfield-greeksongs",
+      "status": "published"
+    },
+    {
+      "slug": "chesterton-america",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-ball-cross",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-defendant",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-divorce",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-eugenics",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-everlasting",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-heretics",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-innocencebrown",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-longbow",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-magic",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-manalive",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-napoleon",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-orthodoxy",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-preexistence",
+      "status": "quarantined"
+    },
+    {
+      "slug": "chesterton-thingsconsidered",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-thursday",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-toomuch",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-trifles",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-victorianage",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-whatwrong",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-whitehorse",
+      "status": "staged"
+    },
+    {
+      "slug": "chesterton-wisdom",
+      "status": "staged"
+    },
+    {
+      "slug": "chrysostom-homilies",
+      "status": "published"
+    },
+    {
+      "slug": "coleridge-reflection",
+      "status": "staged"
+    },
+    {
+      "slug": "collins-divinesongs",
+      "status": "staged"
+    },
+    {
+      "slug": "conybeare-lxxgrammar",
+      "status": "staged"
+    },
+    {
+      "slug": "cotton-john-keyes",
+      "status": "staged"
+    },
+    {
+      "slug": "cowper-guyonpoems",
+      "status": "staged"
+    },
+    {
+      "slug": "cox-s-expositoreccl",
+      "status": "published"
+    },
+    {
+      "slug": "crosby-indianhymnal",
+      "status": "published"
+    },
+    {
+      "slug": "cross-g-theology",
+      "status": "staged"
+    },
+    {
+      "slug": "daily-light",
+      "status": "published"
+    },
+    {
+      "slug": "dante-divine-comedy",
+      "status": "published"
+    },
+    {
+      "slug": "dante-divinecomedy",
+      "status": "staged"
+    },
+    {
+      "slug": "daubney-additions",
+      "status": "staged"
+    },
+    {
+      "slug": "deane-pseudepig",
+      "status": "staged"
+    },
+    {
+      "slug": "decaussade-abandonment",
+      "status": "staged"
+    },
+    {
+      "slug": "defoe-crusoe",
+      "status": "staged"
+    },
+    {
+      "slug": "denney-christ-death",
+      "status": "staged"
+    },
+    {
+      "slug": "denney-expositor2cor",
+      "status": "published"
+    },
+    {
+      "slug": "denney-expositorthess",
+      "status": "published"
+    },
+    {
+      "slug": "desales-devout-life",
+      "status": "staged"
+    },
+    {
+      "slug": "desales-love",
+      "status": "staged"
+    },
+    {
+      "slug": "dick-j-acts",
+      "status": "staged"
+    },
+    {
+      "slug": "dionysius-works",
+      "status": "staged"
+    },
+    {
+      "slug": "doddridge-evidences",
+      "status": "staged"
+    },
+    {
+      "slug": "doddridge-regen",
+      "status": "staged"
+    },
+    {
+      "slug": "dods-expositor1",
+      "status": "published"
+    },
+    {
+      "slug": "dods-expositor1cor",
+      "status": "published"
+    },
+    {
+      "slug": "dods-expositorjohn1",
+      "status": "published"
+    },
+    {
+      "slug": "dods-expositorjohn2",
+      "status": "published"
+    },
+    {
+      "slug": "dods-likechrist",
+      "status": "staged"
+    },
+    {
+      "slug": "donne-divine-poems",
+      "status": "published"
+    },
+    {
+      "slug": "dostoevsky-brothers",
+      "status": "staged"
+    },
+    {
+      "slug": "dostoevsky-crimepunish",
+      "status": "staged"
+    },
+    {
+      "slug": "dostoevsky-undernotes",
+      "status": "staged"
+    },
+    {
+      "slug": "drummond-ascent",
+      "status": "staged"
+    },
+    {
+      "slug": "drummond-bsi",
+      "status": "staged"
+    },
+    {
+      "slug": "drummond-greatest",
+      "status": "staged"
+    },
+    {
+      "slug": "drummond-ideal",
+      "status": "staged"
+    },
+    {
+      "slug": "drummond-life",
+      "status": "staged"
+    },
+    {
+      "slug": "drummond-monkey",
+      "status": "staged"
+    },
+    {
+      "slug": "drummond-natural-law",
+      "status": "staged"
+    },
+    {
+      "slug": "drummond-new-ev",
+      "status": "staged"
+    },
+    {
+      "slug": "drummond-stone-roll",
+      "status": "staged"
+    },
+    {
+      "slug": "easton-ebd2",
+      "status": "published"
+    },
+    {
+      "slug": "eastons-dictionary",
+      "status": "staged"
+    },
+    {
+      "slug": "eckhart-sermons",
+      "status": "staged"
+    },
+    {
+      "slug": "edersheim-sketches",
+      "status": "staged"
+    },
+    {
+      "slug": "edersheim-temple",
+      "status": "staged"
+    },
+    {
+      "slug": "edwards-affections",
+      "status": "staged"
+    },
+    {
+      "slug": "edwards-charity-fruits",
+      "status": "published"
+    },
+    {
+      "slug": "edwards-sermons",
+      "status": "staged"
+    },
+    {
+      "slug": "edwards-tc-expositorheb",
+      "status": "published"
+    },
+    {
+      "slug": "edwards-treatiseongrace",
+      "status": "staged"
+    },
+    {
+      "slug": "edwards-will",
+      "status": "staged"
+    },
+    {
+      "slug": "edwards-works",
+      "status": "published"
+    },
+    {
+      "slug": "edwards-works1",
+      "status": "staged"
+    },
+    {
+      "slug": "edwards-works2",
+      "status": "staged"
+    },
+    {
+      "slug": "emmerich-lifemary",
+      "status": "staged"
+    },
+    {
+      "slug": "emmerich-passion",
+      "status": "staged"
+    },
+    {
+      "slug": "erasmus-colloquies1",
+      "status": "staged"
+    },
+    {
+      "slug": "farrar-clouds",
+      "status": "staged"
+    },
+    {
+      "slug": "farrar-expositor1kings",
+      "status": "published"
+    },
+    {
+      "slug": "farrar-expositor2kings",
+      "status": "published"
+    },
+    {
+      "slug": "farrar-expositordan",
+      "status": "published"
+    },
+    {
+      "slug": "feltoe-dionysius",
+      "status": "staged"
+    },
+    {
+      "slug": "fenelon-existence-god",
+      "status": "staged"
+    },
+    {
+      "slug": "fenelon-maxims",
+      "status": "staged"
+    },
+    {
+      "slug": "fenelon-progress",
+      "status": "staged"
+    },
+    {
+      "slug": "findlay-expositoreph",
+      "status": "published"
+    },
+    {
+      "slug": "findlay-expositorgal",
+      "status": "published"
+    },
+    {
+      "slug": "finney-backslide",
+      "status": "staged"
+    },
+    {
+      "slug": "finney-power",
+      "status": "staged"
+    },
+    {
+      "slug": "finney-revivals",
+      "status": "staged"
+    },
+    {
+      "slug": "finney-sermons",
+      "status": "staged"
+    },
+    {
+      "slug": "finney-theology",
+      "status": "staged"
+    },
+    {
+      "slug": "finney-toprofessingchristians",
+      "status": "staged"
+    },
+    {
+      "slug": "fisher-e-marrow",
+      "status": "staged"
+    },
+    {
+      "slug": "flavel-fountain",
+      "status": "staged"
+    },
+    {
+      "slug": "flavel-grace",
+      "status": "staged"
+    },
+    {
+      "slug": "flavel-lovely",
+      "status": "staged"
+    },
+    {
+      "slug": "flavel-pneum",
+      "status": "staged"
+    },
+    {
+      "slug": "flavel-saintindeed",
+      "status": "staged"
+    },
+    {
+      "slug": "flavel-works",
+      "status": "published"
+    },
+    {
+      "slug": "forsyth-prayer",
+      "status": "staged"
+    },
+    {
+      "slug": "forsyth-work",
+      "status": "staged"
+    },
+    {
+      "slug": "fosdick-meaningprayer",
+      "status": "staged"
+    },
+    {
+      "slug": "fox-g-autobio",
+      "status": "staged"
+    },
+    {
+      "slug": "fuller-david",
+      "status": "staged"
+    },
+    {
+      "slug": "fuller-goodthoughts",
+      "status": "staged"
+    },
+    {
+      "slug": "gardner-cell",
+      "status": "staged"
+    },
+    {
+      "slug": "gerson-snares",
+      "status": "staged"
+    },
+    {
+      "slug": "gibson-expositormatt",
+      "status": "published"
+    },
+    {
+      "slug": "gill-doctrinal",
+      "status": "staged"
+    },
+    {
+      "slug": "gill-practical",
+      "status": "staged"
+    },
+    {
+      "slug": "gill-song",
+      "status": "published"
+    },
+    {
+      "slug": "gordon-talkschrist",
+      "status": "staged"
+    },
+    {
+      "slug": "gordon-talksfollowingchrist",
+      "status": "staged"
+    },
+    {
+      "slug": "gordon-talksjesus",
+      "status": "staged"
+    },
+    {
+      "slug": "gordon-talksjohn",
+      "status": "staged"
+    },
+    {
+      "slug": "gordon-talkspower",
+      "status": "staged"
+    },
+    {
+      "slug": "gordon-talkswinners",
+      "status": "staged"
+    },
+    {
+      "slug": "gray-jm-cwc",
+      "status": "published"
+    },
+    {
+      "slug": "gray-jm-synthetic",
+      "status": "staged"
+    },
+    {
+      "slug": "griffin-sufferings",
+      "status": "staged"
+    },
+    {
+      "slug": "groom-bible",
+      "status": "staged"
+    },
+    {
+      "slug": "guthrie-interest2",
+      "status": "staged"
+    },
+    {
+      "slug": "guyon-auto",
+      "status": "staged"
+    },
+    {
+      "slug": "guyon-prayer",
+      "status": "published"
+    },
+    {
+      "slug": "guyon-song",
+      "status": "staged"
+    },
+    {
+      "slug": "guyon-spiritual-torrents",
+      "status": "staged"
+    },
+    {
+      "slug": "habermann-dailyprayers",
+      "status": "published"
+    },
+    {
+      "slug": "handel-messiah",
+      "status": "staged"
+    },
+    {
+      "slug": "harnack-origin-nt",
+      "status": "staged"
+    },
+    {
+      "slug": "harper-expositordeut",
+      "status": "published"
+    },
+    {
+      "slug": "havergal-keptuse",
+      "status": "staged"
+    },
+    {
+      "slug": "henry-mhc1",
+      "status": "published"
+    },
+    {
+      "slug": "henry-mhc2",
+      "status": "published"
+    },
+    {
+      "slug": "henry-mhc3",
+      "status": "published"
+    },
+    {
+      "slug": "henry-mhc4",
+      "status": "published"
+    },
+    {
+      "slug": "henry-mhc5",
+      "status": "published"
+    },
+    {
+      "slug": "henry-mhc6",
+      "status": "published"
+    },
+    {
+      "slug": "henry-mhcc",
+      "status": "published"
+    },
+    {
+      "slug": "herbert-temple",
+      "status": "published"
+    },
+    {
+      "slug": "herbert-temple2",
+      "status": "staged"
+    },
+    {
+      "slug": "herrick-noble-numbers",
+      "status": "published"
+    },
+    {
+      "slug": "hewitt-gerhardt",
+      "status": "published"
+    },
+    {
+      "slug": "hitchcock-bible-names",
+      "status": "published"
+    },
+    {
+      "slug": "hoadly-acceptance",
+      "status": "staged"
+    },
+    {
+      "slug": "hodge-darwinism",
+      "status": "staged"
+    },
+    {
+      "slug": "hodge-ephesians",
+      "status": "published"
+    },
+    {
+      "slug": "hodge-systematic",
+      "status": "published"
+    },
+    {
+      "slug": "hopkins-poems",
+      "status": "published"
+    },
+    {
+      "slug": "hopkins-samuel-21sermons",
+      "status": "staged"
+    },
+    {
+      "slug": "hort-james1909",
+      "status": "published"
+    },
+    {
+      "slug": "hoskier-codexb1",
+      "status": "staged"
+    },
+    {
+      "slug": "howe-john-howe05",
+      "status": "staged"
+    },
+    {
+      "slug": "howe-john-howe06",
+      "status": "staged"
+    },
+    {
+      "slug": "howe-john-howe07",
+      "status": "staged"
+    },
+    {
+      "slug": "howe-john-howe08",
+      "status": "staged"
+    },
+    {
+      "slug": "iecm-ojibway",
+      "status": "staged"
+    },
+    {
+      "slug": "ignatius-autobiography",
+      "status": "published"
+    },
+    {
+      "slug": "ignatius-exercises",
+      "status": "published"
+    },
+    {
+      "slug": "inge-mysticism",
+      "status": "staged"
+    },
+    {
+      "slug": "inge-outspoken",
+      "status": "staged"
+    },
+    {
+      "slug": "isbe",
+      "status": "staged"
+    },
+    {
+      "slug": "james-varieties",
+      "status": "staged"
+    },
+    {
+      "slug": "jamieson-jfb",
+      "status": "published"
+    },
+    {
+      "slug": "jenyns-evil",
+      "status": "staged"
+    },
+    {
+      "slug": "jenyns-internal1776",
+      "status": "staged"
+    },
+    {
+      "slug": "jenyns-internal1799",
+      "status": "staged"
+    },
+    {
+      "slug": "jfb",
+      "status": "staged"
+    },
+    {
+      "slug": "john-cross-ascent",
+      "status": "staged"
+    },
+    {
+      "slug": "john-cross-canticle",
+      "status": "staged"
+    },
+    {
+      "slug": "john-cross-dark-night",
+      "status": "staged"
+    },
+    {
+      "slug": "john-gill",
+      "status": "published"
+    },
+    {
+      "slug": "johnson-bw-john",
+      "status": "published"
+    },
+    {
+      "slug": "johnson-bw-pnt",
+      "status": "staged"
+    },
+    {
+      "slug": "josephus-whiston",
+      "status": "published"
+    },
+    {
+      "slug": "jowett-b-essays",
+      "status": "staged"
+    },
+    {
+      "slug": "jowett-b-faith",
+      "status": "staged"
+    },
+    {
+      "slug": "jowett-b-scripture",
+      "status": "staged"
+    },
+    {
+      "slug": "jowett-b-theological",
+      "status": "staged"
+    },
+    {
+      "slug": "jowett-brooks",
+      "status": "published"
+    },
+    {
+      "slug": "jowett-calvary",
+      "status": "staged"
+    },
+    {
+      "slug": "jowett-epistpeter",
+      "status": "staged"
+    },
+    {
+      "slug": "jowett-friendonroad",
+      "status": "staged"
+    },
+    {
+      "slug": "jowett-mattermost",
+      "status": "published"
+    },
+    {
+      "slug": "jowett-passion",
+      "status": "staged"
+    },
+    {
+      "slug": "jowett-silverlining",
+      "status": "staged"
+    },
+    {
+      "slug": "julian-revelations",
+      "status": "published"
+    },
+    {
+      "slug": "keble-christian-year",
+      "status": "published"
+    },
+    {
+      "slug": "keble-year",
+      "status": "staged"
+    },
+    {
+      "slug": "keil-delitzsch",
+      "status": "published"
+    },
+    {
+      "slug": "kellogg-expositor3",
+      "status": "published"
+    },
+    {
+      "slug": "kelly-gerhardtsong",
+      "status": "staged"
+    },
+    {
+      "slug": "kempis-imitation",
+      "status": "published"
+    },
+    {
+      "slug": "kempis-imitation-benham",
+      "status": "published"
+    },
+    {
+      "slug": "kierkegaard-selections",
+      "status": "staged"
+    },
+    {
+      "slug": "knox-blast",
+      "status": "staged"
+    },
+    {
+      "slug": "knox-works1",
+      "status": "staged"
+    },
+    {
+      "slug": "kuyper-holy-spirit",
+      "status": "staged"
+    },
+    {
+      "slug": "kuyper-near",
+      "status": "staged"
+    },
+    {
+      "slug": "lardner-n-miracles",
+      "status": "staged"
+    },
+    {
+      "slug": "latimer-sermons",
+      "status": "staged"
+    },
+    {
+      "slug": "law-apracticaltreat",
+      "status": "staged"
+    },
+    {
+      "slug": "law-collection",
+      "status": "staged"
+    },
+    {
+      "slug": "law-doubt",
+      "status": "staged"
+    },
+    {
+      "slug": "law-humbleearnest",
+      "status": "staged"
+    },
+    {
+      "slug": "law-love2",
+      "status": "staged"
+    },
+    {
+      "slug": "law-prayer",
+      "status": "staged"
+    },
+    {
+      "slug": "law-serious-call",
+      "status": "staged"
+    },
+    {
+      "slug": "law-waytodivine",
+      "status": "staged"
+    },
+    {
+      "slug": "lawrence-practice-presence",
+      "status": "published"
+    },
+    {
+      "slug": "leightonpullan-earlychristian",
+      "status": "staged"
+    },
+    {
+      "slug": "leupold-genesis",
+      "status": "published"
+    },
+    {
+      "slug": "lewis-he-sswales",
+      "status": "staged"
+    },
+    {
+      "slug": "lightfoot-fathers",
+      "status": "staged"
+    },
+    {
+      "slug": "lightfoot-talmud",
+      "status": "staged"
+    },
+    {
+      "slug": "lindsay-early-church",
+      "status": "staged"
+    },
+    {
+      "slug": "longfellow-s-bookhymns",
+      "status": "published"
+    },
+    {
+      "slug": "luckock-h-studies",
+      "status": "staged"
+    },
+    {
+      "slug": "lumby-expositorpeter",
+      "status": "published"
+    },
+    {
+      "slug": "luther-bondage",
+      "status": "published"
+    },
+    {
+      "slug": "luther-first-prin",
+      "status": "published"
+    },
+    {
+      "slug": "luther-galatians",
+      "status": "published"
+    },
+    {
+      "slug": "luther-good-works",
+      "status": "published"
+    },
+    {
+      "slug": "luther-largecatechism",
+      "status": "published"
+    },
+    {
+      "slug": "luther-sermons",
+      "status": "published"
+    },
+    {
+      "slug": "luther-smalcald",
+      "status": "published"
+    },
+    {
+      "slug": "luther-smallcat",
+      "status": "published"
+    },
+    {
+      "slug": "luther-stpeter-stjude",
+      "status": "published"
+    },
+    {
+      "slug": "luther-tabletalk",
+      "status": "published"
+    },
+    {
+      "slug": "macdonald-adela1",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-adela2",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-adela3",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-backofnorth",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-dayboy",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-donal-grant",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-doublestory",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-elginbrod",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-heatherandsnow",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-hope",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-lady",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-lilith",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-miracles",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-neighbourhood",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-phantastes-faerie",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-portent",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-princess",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-princesscurdie",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-princessgoblin",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-purposes-shadows",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-rfalconer",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-salted",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-saltedfire",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-seaboardparish",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-sirgibbie",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-strife",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-there-back",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-thomaswingfold",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-unspoken1",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-unspoken2",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-unspoken3",
+      "status": "staged"
+    },
+    {
+      "slug": "macdonald-vicardaughter",
+      "status": "staged"
+    },
+    {
+      "slug": "maclaren-david",
+      "status": "staged"
+    },
+    {
+      "slug": "maclaren-expositions",
+      "status": "published"
+    },
+    {
+      "slug": "maclaren-expositorcolphm",
+      "status": "published"
+    },
+    {
+      "slug": "maclaren-expositorpsalms1",
+      "status": "published"
+    },
+    {
+      "slug": "maclaren-expositorpsalms2",
+      "status": "published"
+    },
+    {
+      "slug": "maclaren-expositorpsalms3",
+      "status": "published"
+    },
+    {
+      "slug": "maimonides-guide",
+      "status": "staged"
+    },
+    {
+      "slug": "manning-henry-grounds",
+      "status": "staged"
+    },
+    {
+      "slug": "manning-henry-sermons01",
+      "status": "staged"
+    },
+    {
+      "slug": "manning-henry-sermons02",
+      "status": "staged"
+    },
+    {
+      "slug": "manning-henry-sermons03",
+      "status": "staged"
+    },
+    {
+      "slug": "manning-henry-sermons04",
+      "status": "staged"
+    },
+    {
+      "slug": "manning-wesleyhymns",
+      "status": "published"
+    },
+    {
+      "slug": "manton-manton01",
+      "status": "published"
+    },
+    {
+      "slug": "manton-manton02",
+      "status": "published"
+    },
+    {
+      "slug": "manton-manton03",
+      "status": "published"
+    },
+    {
+      "slug": "manton-manton04",
+      "status": "published"
+    },
+    {
+      "slug": "manton-manton05",
+      "status": "published"
+    },
+    {
+      "slug": "manton-manton06",
+      "status": "published"
+    },
+    {
+      "slug": "manton-manton07",
+      "status": "published"
+    },
+    {
+      "slug": "manton-manton08",
+      "status": "published"
+    },
+    {
+      "slug": "manton-manton20",
+      "status": "published"
+    },
+    {
+      "slug": "matthew-henry",
+      "status": "published"
+    },
+    {
+      "slug": "mcgarvey-acts",
+      "status": "published"
+    },
+    {
+      "slug": "mcgarvey-gospels",
+      "status": "staged"
+    },
+    {
+      "slug": "mead-matthew-almost",
+      "status": "staged"
+    },
+    {
+      "slug": "mead-matthew-name",
+      "status": "staged"
+    },
+    {
+      "slug": "mede-key",
+      "status": "staged"
+    },
+    {
+      "slug": "melanchthon-apology",
+      "status": "published"
+    },
+    {
+      "slug": "meyer-guidance",
+      "status": "staged"
+    },
+    {
+      "slug": "meyer-homily2",
+      "status": "published"
+    },
+    {
+      "slug": "meyer-into-holiest",
+      "status": "staged"
+    },
+    {
+      "slug": "milligan-expositorrev",
+      "status": "published"
+    },
+    {
+      "slug": "milton-paradiselost",
+      "status": "staged"
+    },
+    {
+      "slug": "milton-poetical-works",
+      "status": "published"
+    },
+    {
+      "slug": "moffat-jampetjud",
+      "status": "staged"
+    },
+    {
+      "slug": "molinos-guide",
+      "status": "staged"
+    },
+    {
+      "slug": "montgomery-sacred-poems",
+      "status": "published"
+    },
+    {
+      "slug": "moody-anecdotes",
+      "status": "staged"
+    },
+    {
+      "slug": "more-comfort",
+      "status": "staged"
+    },
+    {
+      "slug": "morris-welshhymns",
+      "status": "published"
+    },
+    {
+      "slug": "moule-brethren",
+      "status": "staged"
+    },
+    {
+      "slug": "moule-expositorromans",
+      "status": "published"
+    },
+    {
+      "slug": "moule-hebrews",
+      "status": "staged"
+    },
+    {
+      "slug": "murray-covenants",
+      "status": "staged"
+    },
+    {
+      "slug": "murray-deeper",
+      "status": "staged"
+    },
+    {
+      "slug": "murray-indwelling",
+      "status": "staged"
+    },
+    {
+      "slug": "murray-lords-table",
+      "status": "staged"
+    },
+    {
+      "slug": "murray-new-life",
+      "status": "staged"
+    },
+    {
+      "slug": "murray-obedience",
+      "status": "staged"
+    },
+    {
+      "slug": "murray-prayer",
+      "status": "staged"
+    },
+    {
+      "slug": "murray-surrender",
+      "status": "staged"
+    },
+    {
+      "slug": "murray-true-vine",
+      "status": "staged"
+    },
+    {
+      "slug": "murray-waiting",
+      "status": "staged"
+    },
+    {
+      "slug": "murray-working",
+      "status": "staged"
+    },
+    {
+      "slug": "nave-bible",
+      "status": "staged"
+    },
+    {
+      "slug": "naves-topical",
+      "status": "staged"
+    },
+    {
+      "slug": "naves-topical-bible",
+      "status": "published"
+    },
+    {
+      "slug": "neale-eastern-hymns",
+      "status": "published"
+    },
+    {
+      "slug": "neander-a-expo-1john",
+      "status": "published"
+    },
+    {
+      "slug": "neander-a-expo-james",
+      "status": "published"
+    },
+    {
+      "slug": "neander-a-life",
+      "status": "staged"
+    },
+    {
+      "slug": "neander-a-light",
+      "status": "staged"
+    },
+    {
+      "slug": "newman-callista",
+      "status": "staged"
+    },
+    {
+      "slug": "newman-gerontius",
+      "status": "staged"
+    },
+    {
+      "slug": "newman-tractstimes",
+      "status": "staged"
+    },
+    {
+      "slug": "newton-messiah1",
+      "status": "staged"
+    },
+    {
+      "slug": "newton-messiah2",
+      "status": "staged"
+    },
+    {
+      "slug": "nutter-hymnwriters",
+      "status": "published"
+    },
+    {
+      "slug": "olney-hymns",
+      "status": "published"
+    },
+    {
+      "slug": "oman-grace",
+      "status": "staged"
+    },
+    {
+      "slug": "openbible-topics",
+      "status": "published"
+    },
+    {
+      "slug": "origen-commentary",
+      "status": "staged"
+    },
+    {
+      "slug": "orr-view",
+      "status": "staged"
+    },
+    {
+      "slug": "orrce-holylife",
+      "status": "staged"
+    },
+    {
+      "slug": "orrce-lambs",
+      "status": "staged"
+    },
+    {
+      "slug": "otto-ideaholy",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-apostasy",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-catechisms",
+      "status": "published"
+    },
+    {
+      "slug": "owen-churchlove",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-communion",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-conscience",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-deathofdeath",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-discourses",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-display",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-eshcol",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-evangelicalchurches",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-faith",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-glory",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-grotius",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-indwellingsin",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-just",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-justice",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-liturgies",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-mort",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-pastorspeople",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-perseverance",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-pneum",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-poema",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-psalm130",
+      "status": "published"
+    },
+    {
+      "slug": "owen-schism",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-sermons",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-sin-grace",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-spirituallyminded",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-temptation",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-trinity",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-truthinnocence",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-vindicevang",
+      "status": "staged"
+    },
+    {
+      "slug": "owen-works",
+      "status": "published"
+    },
+    {
+      "slug": "owen-worship",
+      "status": "staged"
+    },
+    {
+      "slug": "paley-evidence",
+      "status": "staged"
+    },
+    {
+      "slug": "paley-paleysnatural",
+      "status": "staged"
+    },
+    {
+      "slug": "palgrave-sacredsong",
+      "status": "staged"
+    },
+    {
+      "slug": "pascal-pensees",
+      "status": "published"
+    },
+    {
+      "slug": "pascal-provincial",
+      "status": "staged"
+    },
+    {
+      "slug": "penn-primitivechristianity",
+      "status": "staged"
+    },
+    {
+      "slug": "penn-quakers",
+      "status": "staged"
+    },
+    {
+      "slug": "philo-works",
+      "status": "staged"
+    },
+    {
+      "slug": "pilcher-passionhymns",
+      "status": "published"
+    },
+    {
+      "slug": "pink-antichrist",
+      "status": "staged"
+    },
+    {
+      "slug": "pink-godhood",
+      "status": "staged"
+    },
+    {
+      "slug": "pink-gospels",
+      "status": "staged"
+    },
+    {
+      "slug": "pink-inspiration",
+      "status": "staged"
+    },
+    {
+      "slug": "pink-just",
+      "status": "staged"
+    },
+    {
+      "slug": "pink-return",
+      "status": "staged"
+    },
+    {
+      "slug": "pink-sovereignty",
+      "status": "staged"
+    },
+    {
+      "slug": "pnt-crosswire",
+      "status": "published"
+    },
+    {
+      "slug": "poole-tcp",
+      "status": "published"
+    },
+    {
+      "slug": "pressense-early",
+      "status": "staged"
+    },
+    {
+      "slug": "prideaux-directions",
+      "status": "staged"
+    },
+    {
+      "slug": "prudentius-cathimerinon",
+      "status": "published"
+    },
+    {
+      "slug": "pusey-eirenicon",
+      "status": "staged"
+    },
+    {
+      "slug": "quadrupani-light",
+      "status": "staged"
+    },
+    {
+      "slug": "rainy-expositorphil",
+      "status": "published"
+    },
+    {
+      "slug": "ramsay-bethlehem",
+      "status": "staged"
+    },
+    {
+      "slug": "ray-persuasive",
+      "status": "staged"
+    },
+    {
+      "slug": "reeves-hymnlit",
+      "status": "published"
+    },
+    {
+      "slug": "richardson-fathers",
+      "status": "staged"
+    },
+    {
+      "slug": "robertson-at-word",
+      "status": "staged"
+    },
+    {
+      "slug": "robinson-j-words",
+      "status": "staged"
+    },
+    {
+      "slug": "rolt-dionysius",
+      "status": "staged"
+    },
+    {
+      "slug": "rossetti-verses",
+      "status": "published"
+    },
+    {
+      "slug": "rutherford-letters",
+      "status": "published"
+    },
+    {
+      "slug": "ruysbroeck-adornment",
+      "status": "staged"
+    },
+    {
+      "slug": "ryle-expository",
+      "status": "published"
+    },
+    {
+      "slug": "ryle-holiness",
+      "status": "published"
+    },
+    {
+      "slug": "ryle-matthew",
+      "status": "published"
+    },
+    {
+      "slug": "ryle-upper-room",
+      "status": "staged"
+    },
+    {
+      "slug": "schaff-anf01",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-anf02",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-anf03",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-anf04",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-anf05",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-creeds",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-dictionarybible",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-encyc01",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-encyc02",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-encyc09",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-encyc13",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-encyc13a",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-npnf101",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-npnf102",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-npnf103",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-npnf104",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-npnf105",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-npnf202",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-npnf203",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-npnf205",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-npnf206",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-npnf207",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-npnf208",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-npnf209",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-npnf210",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-npnf211",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-npnf212",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-npnf213",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-npnf214",
+      "status": "published"
+    },
+    {
+      "slug": "schaff-romance",
+      "status": "staged"
+    },
+    {
+      "slug": "schleiermach-religion",
+      "status": "staged"
+    },
+    {
+      "slug": "schleiermach-sermons",
+      "status": "staged"
+    },
+    {
+      "slug": "schmid-theology",
+      "status": "staged"
+    },
+    {
+      "slug": "scofield-crosswire",
+      "status": "published"
+    },
+    {
+      "slug": "scottish-psalter-1650",
+      "status": "published"
+    },
+    {
+      "slug": "scougal-life-of-god",
+      "status": "published"
+    },
+    {
+      "slug": "sheldon-ihsteps",
+      "status": "staged"
+    },
+    {
+      "slug": "shepard-worksthomas",
+      "status": "staged"
+    },
+    {
+      "slug": "simon-works1",
+      "status": "staged"
+    },
+    {
+      "slug": "simon-works2",
+      "status": "staged"
+    },
+    {
+      "slug": "singh-feet",
+      "status": "staged"
+    },
+    {
+      "slug": "smith-ga-expositorisa1",
+      "status": "published"
+    },
+    {
+      "slug": "smith-ga-expositorisa2",
+      "status": "published"
+    },
+    {
+      "slug": "smith-ga-jeremiah",
+      "status": "staged"
+    },
+    {
+      "slug": "smith-geo-carey",
+      "status": "staged"
+    },
+    {
+      "slug": "smith-hw-comfort",
+      "status": "staged"
+    },
+    {
+      "slug": "smith-hw-secret",
+      "status": "staged"
+    },
+    {
+      "slug": "smith-hw-types",
+      "status": "staged"
+    },
+    {
+      "slug": "smith-w-bibledict",
+      "status": "published"
+    },
+    {
+      "slug": "smiths-dictionary",
+      "status": "staged"
+    },
+    {
+      "slug": "south-robert-sermons01",
+      "status": "staged"
+    },
+    {
+      "slug": "south-robert-sermons02",
+      "status": "staged"
+    },
+    {
+      "slug": "south-robert-sermons03",
+      "status": "staged"
+    },
+    {
+      "slug": "south-robert-sermons04",
+      "status": "staged"
+    },
+    {
+      "slug": "south-robert-sermons06",
+      "status": "staged"
+    },
+    {
+      "slug": "south-robert-sermons07",
+      "status": "staged"
+    },
+    {
+      "slug": "south-robert-sermons5",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-comment",
+      "status": "published"
+    },
+    {
+      "slug": "spurgeon-faiths-checkbook",
+      "status": "published"
+    },
+    {
+      "slug": "spurgeon-grace",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-morning-evening",
+      "status": "published"
+    },
+    {
+      "slug": "spurgeon-proverbs",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons",
+      "status": "published"
+    },
+    {
+      "slug": "spurgeon-sermons01",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons02",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons03",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons04",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons05",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons06",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons07",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons08",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons09",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons10",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons11",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons12",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons13",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons14",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons15",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons16",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons17",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons18",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons19",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons20",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons21",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons22",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons23",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons24",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons25",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons26",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons27",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons28",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons29",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons30",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons31",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons32",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons33",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons34",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons35",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons36",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons37",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons38",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons39",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons40",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons41",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons42",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons43",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons44",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons45",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons46",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons47",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons48",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons49",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons50",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons51",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons52",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons53",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons54",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons55",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons56",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons57",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons58",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons59",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons60",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons61",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons62",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-sermons63",
+      "status": "staged"
+    },
+    {
+      "slug": "spurgeon-till-he-come",
+      "status": "staged"
+    },
+    {
+      "slug": "steele-love",
+      "status": "staged"
+    },
+    {
+      "slug": "stokes-expositoracts1",
+      "status": "published"
+    },
+    {
+      "slug": "stokes-expositoracts2",
+      "status": "published"
+    },
+    {
+      "slug": "stowe-religiouspoems",
+      "status": "published"
+    },
+    {
+      "slug": "swete-greekot",
+      "status": "staged"
+    },
+    {
+      "slug": "taylor-holy-dying",
+      "status": "staged"
+    },
+    {
+      "slug": "taylor-holy-living",
+      "status": "published"
+    },
+    {
+      "slug": "taylor-jh-union",
+      "status": "staged"
+    },
+    {
+      "slug": "tennyson-in-memoriam",
+      "status": "published"
+    },
+    {
+      "slug": "teresa-castle2",
+      "status": "staged"
+    },
+    {
+      "slug": "teresa-life",
+      "status": "staged"
+    },
+    {
+      "slug": "thayers-lexicon",
+      "status": "published"
+    },
+    {
+      "slug": "therese-autobio",
+      "status": "staged"
+    },
+    {
+      "slug": "therese-poems",
+      "status": "published"
+    },
+    {
+      "slug": "thompson-chain-reference",
+      "status": "published"
+    },
+    {
+      "slug": "thomson-owenlife",
+      "status": "staged"
+    },
+    {
+      "slug": "tillotson-works04",
+      "status": "staged"
+    },
+    {
+      "slug": "tillotson-works05",
+      "status": "staged"
+    },
+    {
+      "slug": "tillotson-works06",
+      "status": "staged"
+    },
+    {
+      "slug": "tillotson-works07",
+      "status": "staged"
+    },
+    {
+      "slug": "tillotson-works08",
+      "status": "staged"
+    },
+    {
+      "slug": "tillotson-works09",
+      "status": "staged"
+    },
+    {
+      "slug": "tillotson-works10",
+      "status": "staged"
+    },
+    {
+      "slug": "tischendorf-gospels",
+      "status": "staged"
+    },
+    {
+      "slug": "tischendorf-origins",
+      "status": "staged"
+    },
+    {
+      "slug": "tolstoy-23-tales",
+      "status": "staged"
+    },
+    {
+      "slug": "tolstoy-confession",
+      "status": "published"
+    },
+    {
+      "slug": "tolstoy-family",
+      "status": "staged"
+    },
+    {
+      "slug": "tolstoy-gospel",
+      "status": "staged"
+    },
+    {
+      "slug": "tolstoy-hadij",
+      "status": "staged"
+    },
+    {
+      "slug": "tolstoy-ivan",
+      "status": "staged"
+    },
+    {
+      "slug": "tolstoy-karenina",
+      "status": "staged"
+    },
+    {
+      "slug": "tolstoy-master",
+      "status": "staged"
+    },
+    {
+      "slug": "tolstoy-sergius",
+      "status": "staged"
+    },
+    {
+      "slug": "torrey-pray",
+      "status": "staged"
+    },
+    {
+      "slug": "torrey-revival",
+      "status": "staged"
+    },
+    {
+      "slug": "torrey-ttt",
+      "status": "staged"
+    },
+    {
+      "slug": "torrey-work-holy-spirit",
+      "status": "staged"
+    },
+    {
+      "slug": "torreys-topical-textbook",
+      "status": "published"
+    },
+    {
+      "slug": "traherne-centuries",
+      "status": "staged"
+    },
+    {
+      "slug": "traherne-poems",
+      "status": "published"
+    },
+    {
+      "slug": "trench-7churches",
+      "status": "staged"
+    },
+    {
+      "slug": "tulloch-luther",
+      "status": "staged"
+    },
+    {
+      "slug": "tulloch-sin",
+      "status": "staged"
+    },
+    {
+      "slug": "tulloch-somefacts",
+      "status": "staged"
+    },
+    {
+      "slug": "tulloch-theism",
+      "status": "staged"
+    },
+    {
+      "slug": "ullmann-sinlessness",
+      "status": "staged"
+    },
+    {
+      "slug": "underhill-essentials",
+      "status": "staged"
+    },
+    {
+      "slug": "underhill-life",
+      "status": "staged"
+    },
+    {
+      "slug": "underhill-mysticism",
+      "status": "staged"
+    },
+    {
+      "slug": "underhill-practical",
+      "status": "staged"
+    },
+    {
+      "slug": "upham-maxims",
+      "status": "staged"
+    },
+    {
+      "slug": "ursinus-catechism",
+      "status": "published"
+    },
+    {
+      "slug": "ursinus-gospel",
+      "status": "staged"
+    },
+    {
+      "slug": "vandyke-otherwiseman",
+      "status": "staged"
+    },
+    {
+      "slug": "wace-biodict",
+      "status": "published"
+    },
+    {
+      "slug": "walker-harmony2",
+      "status": "staged"
+    },
+    {
+      "slug": "waring-hymns",
+      "status": "published"
+    },
+    {
+      "slug": "watson-beatitudes",
+      "status": "published"
+    },
+    {
+      "slug": "watson-commandments",
+      "status": "staged"
+    },
+    {
+      "slug": "watson-cordial",
+      "status": "staged"
+    },
+    {
+      "slug": "watson-ra-expositor7",
+      "status": "published"
+    },
+    {
+      "slug": "watson-ra-expositorjob",
+      "status": "published"
+    },
+    {
+      "slug": "watson-ra-expositornum",
+      "status": "published"
+    },
+    {
+      "slug": "watson-works",
+      "status": "published"
+    },
+    {
+      "slug": "watts-divsongs",
+      "status": "staged"
+    },
+    {
+      "slug": "watts-hymns",
+      "status": "published"
+    },
+    {
+      "slug": "watts-psalms",
+      "status": "published"
+    },
+    {
+      "slug": "watts-psalmshymns",
+      "status": "published"
+    },
+    {
+      "slug": "wesley-crosswire",
+      "status": "published"
+    },
+    {
+      "slug": "wesley-journal",
+      "status": "staged"
+    },
+    {
+      "slug": "wesley-notes",
+      "status": "published"
+    },
+    {
+      "slug": "wesley-perfection",
+      "status": "staged"
+    },
+    {
+      "slug": "wesley-sermons",
+      "status": "published"
+    },
+    {
+      "slug": "wesley-works",
+      "status": "staged"
+    },
+    {
+      "slug": "west-ce-analogy",
+      "status": "staged"
+    },
+    {
+      "slug": "westcott-epistlehebrews",
+      "status": "staged"
+    },
+    {
+      "slug": "wheatley-poems",
+      "status": "published"
+    },
+    {
+      "slug": "white-acts",
+      "status": "staged"
+    },
+    {
+      "slug": "white-controversy",
+      "status": "staged"
+    },
+    {
+      "slug": "white-desire",
+      "status": "staged"
+    },
+    {
+      "slug": "white-prophets",
+      "status": "staged"
+    },
+    {
+      "slug": "white-steps",
+      "status": "staged"
+    },
+    {
+      "slug": "whitefield-sermons",
+      "status": "staged"
+    },
+    {
+      "slug": "whitefield-works",
+      "status": "published"
+    },
+    {
+      "slug": "whyte-pray",
+      "status": "staged"
+    },
+    {
+      "slug": "whyte-teresa",
+      "status": "staged"
+    },
+    {
+      "slug": "willison-testimony",
+      "status": "staged"
+    },
+    {
+      "slug": "winkworth-chorales",
+      "status": "staged"
+    },
+    {
+      "slug": "winkworth-hyndwink",
+      "status": "published"
+    },
+    {
+      "slug": "winkworth-life",
+      "status": "staged"
+    },
+    {
+      "slug": "winkworth-lyra",
+      "status": "staged"
+    },
+    {
+      "slug": "winkworth-singers",
+      "status": "staged"
+    },
+    {
+      "slug": "woolman-journal",
+      "status": "staged"
+    },
+    {
+      "slug": "wuttke-ethics2",
+      "status": "staged"
+    },
+    {
+      "slug": "wyss-swiss",
+      "status": "staged"
+    },
+    {
+      "slug": "young-e-night",
+      "status": "staged"
+    }
+  ]
+}

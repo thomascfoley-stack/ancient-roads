@@ -131,6 +131,22 @@ breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of t
 
 ### 2d. Prod `sources.status` — published count (2026-08-01, gate A2)
 
+> **SUPERSEDED 2026-08-19.** The entry below says "this is the current number" and was stale by
+> **104 published works within three days**. It also told readers to re-measure before quoting it.
+> It was right; nobody did.
+>
+> **Current, measured with `scripts/prod-census.mjs` against `ep-odd-fog`, 2026-08-19:**
+> **268 published · 540 staged · 3 quarantined · 811 total**, 482,337 sections,
+> 608,596 served embedding rows. The P4.n copy landed 638 works (2026-08-18/19); two flips
+> published 105 of them (`father` 18, `commentary` 87); `chesterton-preexistence` moved to
+> quarantined under ADR-112.
+>
+> Served by register: commentary 118 works · sermon 10 · father 25 · theology 29 · lexicon 11 ·
+> topical_index 4 · hymn 32 · confession 8 · devotional 15 · historian 1 · poetry 15.
+> **The exegetical pool `/ask` draws its ≥2-voices floor from is 143 works / 316,861 rows.**
+>
+> This line will go stale the same way. Run `node scripts/prod-census.mjs`; do not quote it.
+
 > **RE-MEASURED 2026-08-16, and this is the current number:** **164 published · 7 staged ·
 > 2 quarantined**, `SELECT status, count(*) FROM sources GROUP BY status` against
 > `ep-odd-fog` under the owner's go. Taken with `pg_stat_activity` showing **zero** non-idle
