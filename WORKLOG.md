@@ -1,5 +1,59 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-19 (P4.n Phase A complete) — 620 works on production; the backlog is copied bar one
+
+**Owner-executed, `scripts/p4n-run.sh`.** Started 23:24:29Z, receipt 02:01:47Z: **2h 37m** for
+620 works / 36,785 sections / **493,103 flat rows**.
+
+**MY ESTIMATE WAS 2x PESSIMISTIC AND THE REASON IS USEFUL.** I projected ~5h15m by scaling the
+father batch linearly (26,674 rows / 17 min = 1,569 rows/min). Actual: **3,140 rows/min** — the
+batched `unnest` writes and keyset-paged reads amortise, so per-row cost FALLS as the batch grows.
+Linear extrapolation from the smallest batch is the wrong model; the father run was the worst case,
+not the average. Anyone scheduling the next bulk copy should use ~3,100 rows/min.
+
+**Verified independently, not from the tool's receipt** (`scripts/p4n-verify.mjs`, both databases,
+read-only):
+
+| property | result |
+|---|---|
+| works matching source | **620 / 620**, sections and flat rows exact |
+| `served=true` among copied rows | **0** |
+| prod totals | 164 published · **645 staged** (was 25) · 2 quarantined · 811 works · 482,337 sections |
+| **corpus `served=true`, whole database** | **480,285 — identical to the pre-copy measurement** |
+| `chesterton-aquinas` (1933, excluded by ADR-112) | **absent from prod** |
+
+The serving-set line is the check that was **void this morning** — I wrote it as `chk(7, true, …)`,
+an unconditional pass, against a "baseline" never measured. A real baseline was taken later
+(480,285), so this run has a genuine before/after: **the copy moved the serving set by zero rows.**
+That is what makes a 620-work production write a non-event for readers.
+
+The tool's own receipt agrees (`corpus-copy-2026-08-19T02-01-47-395Z.json`, `mismatch: 0`,
+destBefore all zeros).
+
+**Where the backlog stands:** 638 of 639 works are on production. The remainder is
+`chesterton-aquinas` alone, held on lane-b by the owner's 1931 rule (ADR-112).
+
+### NOT DONE / UNVERIFIED
+
+- **Nothing serves. No flip has run and none is proposed.** All 620 are `staged` with
+  `served=false`; `/ask` and every register behave exactly as before. Switching a register on is a
+  retrieval change and carries the accuracy diagnostic + held-out eval, per register.
+- **`chesterton-preexistence` is still published and SERVING while undated** (25 rows). ADR-112 §1.
+  Quarantine is an owner call and has not been made.
+- **The MUST_NOT_SERVE veto still cannot see `Chesterton, Gilbert Keith`.** Migration 119 unwritten.
+- **The coverage census has not been re-run.** The 2026-08-08 baseline (95.6% of canon verses with a
+  served exegetical voice, 77.1% with >=2 authors) is unchanged BY CONSTRUCTION, because nothing
+  copied is served. It only moves after a flip.
+- Collision and payload checks were run for all 620 before the copy (0 absent, 0 empty, 0 NULL
+  `unit_ordinal`); **no per-register accuracy work has been done on any of them.**
+
+### Recommend next
+
+Not a flip. Two smaller things first: **migration 119** (so the veto covers the format the corpus
+actually stores, before any Chesterton work is ever considered for serving), and a **ruling on
+`chesterton-preexistence`**, which is live now and unaffected by anything copied today.
+
+
 ## 2026-08-18 (licensing) — a MUST_NOT_SERVE author is SERVED on production, and today's veto cannot see it
 
 **Found while preparing the 621-work P4.n batch, not by looking for it.** The batch contained 22
