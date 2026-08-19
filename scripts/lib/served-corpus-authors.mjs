@@ -49,6 +49,15 @@ export const MUST_NOT_SERVE = [
   'Origen',
   'Origen of Alexandria',
   'Aquinas-Larcher',
+  // Owner ruling 2026-08-18 (§17.10). The four modern copyrighted authors this file's own header
+  // has measured in the static corpus since the 2026-08-02 audit — CS Lewis 1,102, GK Chesterton
+  // 714, Douglas Wilson 16, JRR Tolkien 11 — plus Pseudo-Origen, which the ruling extends the
+  // standing Origen veto to. Adding them here is what makes predeploy-gate.ts SEE them.
+  'CS Lewis',
+  'GK Chesterton',
+  'Douglas Wilson',
+  'JRR Tolkien',
+  'Pseudo-Origen',
 ];
 
 /**
@@ -64,6 +73,13 @@ export function isMustNotServe(author) {
   if (MUST_NOT_SERVE.includes(author)) return true;
   const first = author.split(/\s+(of|the)\s+/i)[0]?.trim();
   if (first && first !== author && MUST_NOT_SERVE.includes(first)) return true;
+  // NAME-PREFIX. Added 2026-08-18 — the shipped guard gained this rule and this copy did not, and
+  // the invariant that exists to stop exactly that drift compared only the two LISTS, never the two
+  // MATCHERS. Measured cost of the gap: `CS Lewis  (via the character Screwtape, a devil)` (70
+  // entries) and `Pseudo-Origen  (as quoted by Aquinas, AD 1274)` (12) were blocked by the shipped
+  // code and INVISIBLE here — i.e. `predeploy-gate.ts` would have cleared 82 entries of vetoed
+  // material for delivery as unauthenticated static JSON while printing green.
+  if (MUST_NOT_SERVE.some((n) => author.startsWith(`${n} `))) return true;
   return author.startsWith("Jerome's");
 }
 

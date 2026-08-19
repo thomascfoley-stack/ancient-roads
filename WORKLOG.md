@@ -1,5 +1,260 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-19 (P4.n Phase A complete) — 620 works on production; the backlog is copied bar one
+
+**Owner-executed, `scripts/p4n-run.sh`.** Started 23:24:29Z, receipt 02:01:47Z: **2h 37m** for
+620 works / 36,785 sections / **493,103 flat rows**.
+
+**MY ESTIMATE WAS 2x PESSIMISTIC AND THE REASON IS USEFUL.** I projected ~5h15m by scaling the
+father batch linearly (26,674 rows / 17 min = 1,569 rows/min). Actual: **3,140 rows/min** — the
+batched `unnest` writes and keyset-paged reads amortise, so per-row cost FALLS as the batch grows.
+Linear extrapolation from the smallest batch is the wrong model; the father run was the worst case,
+not the average. Anyone scheduling the next bulk copy should use ~3,100 rows/min.
+
+**Verified independently, not from the tool's receipt** (`scripts/p4n-verify.mjs`, both databases,
+read-only):
+
+| property | result |
+|---|---|
+| works matching source | **620 / 620**, sections and flat rows exact |
+| `served=true` among copied rows | **0** |
+| prod totals | 164 published · **645 staged** (was 25) · 2 quarantined · 811 works · 482,337 sections |
+| **corpus `served=true`, whole database** | **480,285 — identical to the pre-copy measurement** |
+| `chesterton-aquinas` (1933, excluded by ADR-112) | **absent from prod** |
+
+The serving-set line is the check that was **void this morning** — I wrote it as `chk(7, true, …)`,
+an unconditional pass, against a "baseline" never measured. A real baseline was taken later
+(480,285), so this run has a genuine before/after: **the copy moved the serving set by zero rows.**
+That is what makes a 620-work production write a non-event for readers.
+
+The tool's own receipt agrees (`corpus-copy-2026-08-19T02-01-47-395Z.json`, `mismatch: 0`,
+destBefore all zeros).
+
+**Where the backlog stands:** 638 of 639 works are on production. The remainder is
+`chesterton-aquinas` alone, held on lane-b by the owner's 1931 rule (ADR-112).
+
+### NOT DONE / UNVERIFIED
+
+- **Nothing serves. No flip has run and none is proposed.** All 620 are `staged` with
+  `served=false`; `/ask` and every register behave exactly as before. Switching a register on is a
+  retrieval change and carries the accuracy diagnostic + held-out eval, per register.
+- **`chesterton-preexistence` is still published and SERVING while undated** (25 rows). ADR-112 §1.
+  Quarantine is an owner call and has not been made.
+- **The MUST_NOT_SERVE veto still cannot see `Chesterton, Gilbert Keith`.** Migration 119 unwritten.
+- **The coverage census has not been re-run.** The 2026-08-08 baseline (95.6% of canon verses with a
+  served exegetical voice, 77.1% with >=2 authors) is unchanged BY CONSTRUCTION, because nothing
+  copied is served. It only moves after a flip.
+- Collision and payload checks were run for all 620 before the copy (0 absent, 0 empty, 0 NULL
+  `unit_ordinal`); **no per-register accuracy work has been done on any of them.**
+
+### Recommend next
+
+Not a flip. Two smaller things first: **migration 119** (so the veto covers the format the corpus
+actually stores, before any Chesterton work is ever considered for serving), and a **ruling on
+`chesterton-preexistence`**, which is live now and unaffected by anything copied today.
+
+
+## 2026-08-18 (licensing) — a MUST_NOT_SERVE author is SERVED on production, and today's veto cannot see it
+
+**Found while preparing the 621-work P4.n batch, not by looking for it.** The batch contained 22
+`chesterton-*` works; GK Chesterton went onto `MUST_NOT_SERVE_AUTHORS` this morning under the §17.10
+ruling. Checking why they were not already excluded exposed the defect.
+
+**THE DEFECT IS MINE, SHIPPED TODAY.** The veto names authors in the format
+`commentary_entries` uses. The `sources` table writes surname-first. Measured against the shipped
+guard, not inferred:
+
+```
+NOT vetoed   "Chesterton, Gilbert Keith"   <- what production actually stores
+NOT vetoed   "G.K. Chesterton"
+VETOED       "GK Chesterton"               <- the only form the veto knows
+```
+
+So the veto covers one surface and is blind on the one that serves readers. **Watchlist instance
+seventeen, same shape as eleven and sixteen: an expected set typed by hand in one format, guarding
+data written in another — introduced by the tranche that closed the finding it belongs to.**
+
+**LIVE EXPOSURE, measured read-only on `ep-odd-fog`:** `chesterton-preexistence`, `status=published`,
+**25 embedding rows with `served=true`**. It is retrievable now. A format-agnostic sweep of all 191
+prod works returns exactly two candidates — that one, and `origen-commentary` (staged, unserved,
+correctly held).
+
+**The first sweep I ran returned a FALSE CLEAN and is recorded rather than discarded.** It matched
+by token-subset, so it required `gk` to appear inside `Gilbert Keith` and reported only Origen —
+structurally unable to see the very case that prompted it. The instrument had the same blind spot as
+the thing it audited. The replacement matches on surname and carries a CONTROL asserting the known
+case is visible; without that control the clean result would have read as reassurance.
+
+**Fixing the veto is not a one-line edit.** `mustNotServeVetoSql()`'s default-column rendering IS the
+live production index predicate (migrations 117/118, applied 2026-08-18). Widening
+`MUST_NOT_SERVE_AUTHORS` changes that rendering and drifts it from the deployed index — a silent seq
+scan at best. A widened veto needs **migration 119** plus the zero-window rebuild, not a code edit.
+
+**Licensing basis, for the owner's call — reported, not adjudicated.** The manifest records
+`license: "Public Domain"` for all 25 Chesterton works, but the basis is `rightsDeclared` (CCEL
+asserted it) plus `year_basis: "authorDeathUpperBound"` — his 1936 death standing in for a
+publication year. Several were first published in the 1930s. `chesterton-thingsconsidered` records
+`year: 1969`, thirty-three years after his death: a data error inside a licensing claim. Copyright
+term is not an agent call.
+
+### Actions taken (both reversible, neither an owner-level call)
+
+- **22 `chesterton-*` works held out of the copy batch.** `all-remaining.json` is now **599 works /
+  487,064 flat rows / ~310 min**, with the held slugs and the reason recorded in the file itself.
+  Licensing fails closed; this is not a finding that they are unlicensed.
+- Nothing quarantined, nothing deleted, nothing unpublished. `chesterton-preexistence` is still
+  live and serving.
+
+### NOT DONE — owner decisions
+
+1. **`chesterton-preexistence`: leave live, or quarantine?** Content quarantine is an owner call
+   (`AGENTS.md`). It is serving right now either way.
+2. **The 22 held works: copy or hold?** They are inert if copied (staged, `served=false`), but
+   copying material from an author under a never-serve ruling wants a deliberate yes.
+3. **Migration 119 to widen the veto** to surname/initial-variant forms, with the zero-window
+   rebuild. Until then the veto covers `commentary_entries` only.
+
+### Also verified this session
+
+- The `commentary` copy was **interrupted before writing** — prod re-read at 164 published / 25
+  staged / 2 quarantined, zero commentary works present. The Ctrl-C landed.
+- `scripts/p4n-verify.mjs` and `scripts/p4n-run.sh` added. Exit taxonomy red-proofed (0 complete /
+  1 short / 2 cannot-check), preflight short-circuit proven on an already-complete batch, and the
+  runner proven to stop at the TTY gate without writing. Two defects fixed during that proof: a
+  missing file exited 1 (indistinguishable from "short", which would have retried a production
+  write), and piping the copy through `tee` could swallow the newline-less consent prompt.
+
+
+## 2026-08-18 (P4.n Phase A) — the `father` batch is on production: 18 works, staged and unserved
+
+**Owner-executed at the terminal.** First real copy of the P4.n backlog. Nothing a reader can see
+changed, by design: `corpus-copy.mjs` writes `status` as the literal `'staged'` and omits `served`
+from the `embeddings` INSERT, where prod defaults it `false NOT NULL`.
+
+**Landed, verified by an independent read-only census rather than by the tool's own log** (the A1
+pattern: a claim resting on a tool's self-report is UNVERIFIED). Seven falsifiable checks, all pass:
+
+| property | result |
+|---|---|
+| slugs present | 18 / 18 |
+| status | `staged` on every one — none published |
+| sections | 7,445 (exact match to plan) |
+| flat `embeddings` rows | 26,674 (exact) |
+| `served = true` among them | **0** |
+| prod totals | 164 published / **25** staged (was 7) / 2 quarantined |
+| NULL `unit_ordinal` | 0 — G10 ratchet clear for the eventual flip |
+
+Tool receipt `docs/evidence/corpus-copy/corpus-copy-2026-08-18T22-42-44-418Z.json` independently
+agrees: `mismatch: 0`, `destBefore` all zeros, `destAfter` 18/18.
+
+**WALL-CLOCK, which is what this batch existed to buy: ~17 minutes** for 26,674 flat rows, and that
+is a FLOOR — the run had already started when the watcher launched (15:26:07 → receipt 15:42:44).
+Extrapolated to the remaining 493,380 flat rows: **~5¼ hours**, against the ~6.8 h the pre-2026-08-02
+one-row-per-round-trip implementation measured on a *single* register. Per batch: commentary ~65 min,
+sermon ~95 min, theology ×5 ~155 min total.
+
+**Two process defects, both mine, recorded because both will recur.**
+
+1. **A dry run was mistaken for the copy, and I caused it.** The Phase A command block ends with the
+   `--dry-run` line, and I followed it with "re-run the last line without it" — so the block read as
+   the whole job. The dry run touches no destination and writes no receipt, so "it shipped and is
+   done" was reported against a production census that was byte-identical to before. Caught only
+   because the census was run anyway. **A command block whose last line is a no-op is a trap**; the
+   real command should be the last thing in the block, or the block should not contain the dry run.
+2. **My own verifier carried an unearned green.** Check 7 ("existing published works unchanged") was
+   written `chk(7, true, …)` — a literal, so it passed unconditionally — and its label quoted a
+   "baseline 61,987 served rows" that was never measured (actual: 480,285). It proves nothing and is
+   reported as void rather than as a pass. The property is genuinely carried by checks 5 and 6. This
+   is the watchlist's own shape, produced while auditing for it.
+
+### NOT DONE / UNVERIFIED
+
+- **No flip. Nothing serves.** These 18 works are inert until `publish-flip.mjs` runs, and that step
+  is a retrieval change requiring the accuracy diagnostic + held-out eval per register. Not proposed.
+- **No pre-copy `served` baseline was taken**, so "the live serving set is untouched" is inferred
+  from checks 5+6, not measured as a delta. Take the baseline before the next batch.
+- **Collision checks were run for `father` and `commentary` only** (0 each). Sermon and the five
+  theology sub-batches are unchecked, as is their per-work flat-row coverage.
+- The copy has **no bulk undo** (`--reverse` belongs to `publish-flip.mjs`; removal is
+  `phase1-kill-work.mjs`, one work per gated run). Additive and inert, not reversible.
+
+### Recommend next
+
+`commentary` (87 works, 101,662 flat rows, ~65 min, 0 collisions already checked) — it and `father`
+are what feed the `/ask` exegetical floor, and the coverage census measures what they add against the
+2026-08-08 baseline (95.6% of canon verses with a served exegetical voice, 77.1% with ≥2 authors).
+Then stop again and re-census before sermon/theology.
+
+
+## 2026-08-18 (audit remediation) — PostHog unembedded per owner ruling; the veto reaches the surfaces it was missing
+
+Owner ruling 2026-08-18: *"It shouldn't be deeply embedded in the product at all. It should be
+after-the-fact analytics. If PostHog doesn't work, I don't care, but it should never be embedded in
+the product or any of our product docs."*
+
+**That ruling closed four HIGHs at once, because the `/ingest` reverse proxy WAS the embedding.**
+Removing it removes: cookie forwarding to a third party (Next's external rewrites copy request
+headers verbatim, and `site_gate` — the bearer credential for the whole pre-launch wall — is
+`path:'/'`), the open unauthenticated relay on our domain, and the CSP exfiltration channel that a
+same-origin tunnel created inside `connect-src 'self'`. PostHog now dials its own origin
+cross-origin, where the browser sends none of our cookies, and CSP NAMES that origin — narrower and
+auditable, rather than a hole hidden inside `'self'`.
+
+Also off, each explicitly rather than by default (all three default to ON in posthog-js):
+`autocapture` (shipped `$el_text` — the user's own study titles and privately uploaded filenames),
+`capture_pageview` (shipped `$current_url`, and the readers navigate to `/ask?q=<up to 220 chars of
+the reader's selection>`), and session recording (`maskAllInputs` masks inputs, not rendered page
+text, so a replay would have carried Lane B private uploads verbatim). A `sanitize_properties` hook
+strips query strings off **every** event, because `$current_url` rides all events and not just
+pageviews — turning pageview capture off is necessary and not sufficient.
+
+`skipTrailingSlashRedirect` went with the proxy (it existed only for the beacon POST, and risked
+`/about/` reaching the gate). The gate matcher no longer exempts anything.
+
+`web/test/posthog-wiring.test.ts` was REWRITTEN, not adjusted: it had welded the proxy in place —
+its three guards pinned the `/ingest` legs, the leg order and the slash-redirect flag. Genuine
+guards for "the integration silently dies", and together they were the mechanism. It now guards the
+opposite property, and "it silently dies" is deliberately NOT tested for, per the ruling.
+
+**Audit H6 — the deploy-gate matcher.** When the gate copy went red earlier today I synced the LIST
+and left the MATCHER without the name-prefix rule. Measured cost: `CS Lewis  (via the character
+Screwtape, a devil)` (70 entries) and `Pseudo-Origen  (as quoted by Aquinas, AD 1274)` (12) were
+blocked by the shipped code and INVISIBLE to `predeploy-gate.ts` — the only thing between
+`web/public/commentaries/` and delivery as unauthenticated static JSON. Fixed, and the invariant
+that should have caught it now compares the two FUNCTIONS over the measured double-space author
+shapes instead of asserting hand-picked booleans against one side. Its title had claimed parity with
+the shipped predicate while its body never referenced it. Red-proofed: seeding the removal reports
+exactly those two strings.
+
+**Audit H7 — the veto reached one surface.** It was ANDed into the FTS predicate and nowhere else,
+so `servability.ts` (whether a STORED clipping keeps rendering) and `studies.ts` (whether one may be
+created) gated on `status='published'` + provenance only. Both now carry it. Verified in the real
+join shape on dev: parses, delta 0 today, and the one `sources` row it names is `origen-commentary`
+— **staged**, so the exposure was latent and is now closed by construction rather than by that row
+happening not to be published.
+
+**The FTS predicate text is byte-identical**, deliberately: it IS the live index predicate on
+production, and moving even its whitespace would drop the index. No third migration.
+
+### NOT DONE / UNVERIFIED
+- **Two mistakes of mine in this slice, both caught by checks rather than by me.** I used
+  `sql.unsafe()` on the strength of the driver's `.d.ts`; it does not exist at runtime and three
+  clipping tests said so. I had avoided that exact call earlier for the progress route and then
+  talked myself out of the right instinct by reading a type declaration instead of behaviour. The
+  fix uses the repo's own idiom, two lines below in the same query: bind the constant list as an
+  array parameter. Then I put backticks in a comment INSIDE a `sql` template literal, terminating
+  the string; typecheck caught it.
+- **Nothing deployed.** Production still serves commentary search off the wide index (audit finding
+  #2) until this ships or the index is rebuilt to the 115 predicate. Owner's call, still open.
+- **PostHog is unverified end to end** — no key in this environment, and by the ruling a failure is
+  acceptable. Nobody has watched an event land, or NOT land.
+- The audit's remaining HIGHs are untouched and still listed in
+  [REMEDIATION_CHECKLIST.md](docs/evidence/predeploy-audit-2026-08-18/REMEDIATION_CHECKLIST.md):
+  `violations[].span` reaching the response body, the unbounded provider-error prompt injection, the
+  missing lane relevance floor, and the mobile picker opening off-screen.
+- **`DEEPINFRA_API_KEY` still needs rotating.**
+
+
 ## 2026-08-18 (licensing) — §17.10: the MUST_NOT_SERVE veto now reaches the FTS surface it was missing
 
 Owner: "do 1 and 3 now." **Item 1 (the P4.n Phase-A copy) was NOT executed and cannot be by me** —
@@ -131,8 +386,10 @@ them. A cruder `%origen%` rule would have vetoed both.
   function in it to be IMMUTABLE. `split_part` and `LIKE` both are, so it should hold — and the
   statement is `CREATE INDEX CONCURRENTLY IF NOT EXISTS`, so a refusal is safe and non-destructive
   (the DROP only runs after the replacement is valid).
-- **Not deployed**, and not verified on production. The predicate is shipped code, so it is
-  environment-independent — but the row counts above are lane-b.
+- **The CODE is not deployed.** ~~and not verified on production … the row counts above are lane-b~~ —
+  both halves of that were wrong and are corrected: migrations 117/118 ARE applied to production and
+  WERE verified there (see the body above and the evidence file), and the counts quoted are prod
+  figures, not lane-b. Corrected 2026-08-18 by the pre-deploy audit.
 - Item 1 not run; item 2 (`DEEPINFRA_API_KEY`) deferred to next week by the owner.
 
 
@@ -160,8 +417,8 @@ read-path yet"; "chunk on Schaff's dated section headings"), `teacher/routing.ts
 LANE was ruled and built 2026-08-13 (corpus-backlog decision 6, option (a)), so the machinery
 exists; the two works are parked on chunking, not on the lane.
 
-**FINDING: `docs/HISTORY_RETRIEVAL_DESIGN.md` DOES NOT EXIST.** Three manifest entries
-(`edersheim-lifetimes`, `schaff-history`, `josephus-works`) cite it as the reason they are held.
+**FINDING: `docs/HISTORY_RETRIEVAL_DESIGN.md` DOES NOT EXIST.** Two manifest entries
+(`schaff-history`, `josephus-works`) cite it as the reason they are held.
 Per bylaw 1 the blocker they name was never issued, so the hold has no written design behind it —
 the 38-work head is unbuilt against a document nobody can open. Not fixed here; filed.
 

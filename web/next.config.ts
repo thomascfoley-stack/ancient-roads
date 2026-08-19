@@ -29,6 +29,16 @@ const NEON_AUTH_ORIGIN = (() => {
   }
 })();
 
+// PostHog talks to its OWN origin, not through us (owner ruling 2026-08-18: analytics must not be
+// embedded in the product). The previous shape reverse-proxied it at same-origin `/ingest` so that
+// `connect-src` could stay `'self'` — and that traded a named CSP entry for something strictly
+// worse: a wildcard tunnel to a third party living inside `'self'`, on our domain, inside our gate,
+// with our cookies attached to every beacon (Next's external rewrites copy request headers
+// verbatim). Naming the origin here is the narrower and auditable option: one host, visible in the
+// header, blocked by CSP if it ever changes without this file changing.
+const POSTHOG_HOST = (process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com').replace(/\/+$/, '');
+const POSTHOG_ASSETS = POSTHOG_HOST.replace(/^(https:\/\/[a-z]+)\.i\.posthog\.com$/, '$1-assets.i.posthog.com');
+
 const CSP = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -39,7 +49,8 @@ const CSP = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  `connect-src 'self'${NEON_AUTH_ORIGIN ? ` ${NEON_AUTH_ORIGIN}` : ''}`,
+  // PostHog is named, not tunnelled. If the key is unset the SDK never dials, and the entry is inert.
+  `connect-src 'self'${NEON_AUTH_ORIGIN ? ` ${NEON_AUTH_ORIGIN}` : ''} ${POSTHOG_HOST} ${POSTHOG_ASSETS}`,
 ].join('; ');
 
 const nextConfig: NextConfig = {
@@ -126,19 +137,24 @@ const nextConfig: NextConfig = {
     return [{ source: '/reading-plans', destination: '/plans', permanent: true }];
   },
 
+  // No PostHog legs here any more — the SDK dials PostHog directly (see the note above). The only
+  // rewrites left are the corpus CDN's, which serve OUR OWN assets from OUR OWN store.
   async rewrites() {
     const base = process.env.CORPUS_CDN_BASE;
     if (!base) return { beforeFiles: [], afterFiles: [], fallback: [] };
     const origin = base.replace(/\/+$/, '');
     return {
-      beforeFiles: ['bible', 'commentaries', 'original'].map((root) => ({
-        source: `/${root}/:path*`,
-        destination: `${origin}/${root}/:path*`,
-      })),
+      beforeFiles: [
+        ...['bible', 'commentaries', 'original'].map((root) => ({
+          source: `/${root}/:path*`,
+          destination: `${origin}/${root}/:path*`,
+        })),
+      ],
       afterFiles: [],
       fallback: [],
     };
   },
+  // See the rewrites note — posthog-js beacons carry a trailing slash.
 };
 
 export default nextConfig;
