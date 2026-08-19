@@ -19,18 +19,44 @@ STAGED="$(git diff --cached --name-only --diff-filter=ACMR)"
 [ -z "$STAGED" ] && exit 0
 
 # --- 1. eslint --fix on staged TS (the only --fix step) -----------------------
-TS="$(printf '%s\n' "$STAGED" | grep -E '^(src|test|web)/.*\.(ts|tsx)$')"
-if [ -n "$TS" ]; then
-  N="$(printf '%s\n' "$TS" | wc -l | tr -d ' ')"
-  step "eslint --fix ($N staged TS file(s))"
+# TWO ROOTS, NOT ONE. `web/` has its OWN eslint.config.mjs; running root eslint on a `web/...`
+# path makes eslint treat it as outside the project, print "File ignored because of a matching
+# ignore pattern", and EXIT 0 — so this step printed "lint clean" while linting nothing at all.
+# Every web/ TypeScript file was silently unlinted at commit time (found 2026-08-19; the audit's
+# separate `lint — web/ eslint` gate is why nothing shipped broken). A check that passes on a file
+# it never opened is the defect class this repo keeps a watchlist for.
+TS_ROOT="$(printf '%s\n' "$STAGED" | grep -E '^(src|test)/.*\.(ts|tsx)$')"
+TS_WEB="$(printf '%s\n' "$STAGED" | grep -E '^web/.*\.(ts|tsx)$')"
+LINT_FAILED=0
+
+if [ -n "$TS_ROOT" ]; then
+  N="$(printf '%s\n' "$TS_ROOT" | wc -l | tr -d ' ')"
+  step "eslint --fix ($N staged root TS file(s))"
   # shellcheck disable=SC2086
-  if printf '%s\n' "$TS" | xargs npx eslint --fix; then
-    # Re-stage anything --fix rewrote so the fix is part of THIS commit.
-    printf '%s\n' "$TS" | xargs git add --
-    ok "lint clean"
+  if printf '%s\n' "$TS_ROOT" | xargs npx eslint --fix --no-warn-ignored; then
+    printf '%s\n' "$TS_ROOT" | xargs git add --
+    ok "root lint clean"
   else
-    bad "eslint reported errors — fix them or re-run (warnings do not block)"
+    LINT_FAILED=1
   fi
+fi
+
+if [ -n "$TS_WEB" ]; then
+  N="$(printf '%s\n' "$TS_WEB" | wc -l | tr -d ' ')"
+  step "eslint --fix ($N staged web/ TS file(s))"
+  # Paths must be relative to web/, and eslint must RUN there, or we are back to the bug above.
+  REL="$(printf '%s\n' "$TS_WEB" | sed 's|^web/||')"
+  # shellcheck disable=SC2086
+  if ( cd web && printf '%s\n' "$REL" | xargs npx eslint --fix --no-warn-ignored ); then
+    printf '%s\n' "$TS_WEB" | xargs git add --
+    ok "web lint clean"
+  else
+    LINT_FAILED=1
+  fi
+fi
+
+if [ "$LINT_FAILED" = "1" ]; then
+  bad "eslint reported errors — fix them or re-run (warnings do not block)"
 fi
 
 # --- 2. src/ <-> web/ byte-identical sync guards (rail) ------------------------
