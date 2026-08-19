@@ -22,6 +22,17 @@ const url = process.env.CENSUS_DB_URL
 if (!url) { console.error('STOP: set CENSUS_DB_URL or provide ~/.neon_prod_url'); process.exit(2); }
 
 const n = (v) => Number(v).toLocaleString();
+
+// NAME THE DATABASE, ALWAYS. Borrowed from scripts/prod-census.cjs, which says it best: "a `prod
+// census` that silently ran against dev would be a confidently wrong answer, which is worse than an
+// error." This tool is deliberately pointable at dev via CENSUS_DB_URL — it was, during the
+// 2026-08-19 session — so it cannot ASSERT the host, and must therefore ANNOUNCE it. Numbers
+// screenshotted out of context are how a dev reading becomes a prod claim.
+// Host only, parsed from the URL. The credential itself is never printed.
+const host = new URL(url.replace(/^postgres(ql)?:/, 'http:')).hostname;
+const endpoint = host.split('.')[0];
+console.log(`database: ${endpoint}${endpoint.startsWith('ep-odd-fog') ? '  (PRODUCTION)' : '  (NOT production)'}\n`);
+
 const c = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
 await c.connect();
 await c.query('BEGIN TRANSACTION READ ONLY');
