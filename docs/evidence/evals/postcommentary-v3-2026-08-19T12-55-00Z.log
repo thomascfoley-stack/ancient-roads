@@ -1,0 +1,131 @@
+Held-out eval — FROZEN_V3 · 120 q · K=6 · corpus=legal(shared) · pool=20 · ef=64
+
+  ✓ [verse-ref] v3-vr-01  HIT@1=Y voices=6 pass  — Genesis 1, in the beginning God created the he
+  ✓ [verse-ref] v3-vr-02  HIT@1=Y voices=6 pass  — Genesis 3, the serpent and the fall in the gar
+  ✓ [verse-ref] v3-vr-03  HIT@1=Y voices=6 pass  — Exodus 3, the burning bush and I AM WHO I AM
+  ✓ [verse-ref] v3-vr-04  HIT@1=Y voices=6 pass  — Exodus 20, the giving of the Ten Commandments 
+  ✓ [verse-ref] v3-vr-05  HIT@1=Y voices=6 pass  — Leviticus 19, you shall love your neighbor as 
+  ✓ [verse-ref] v3-vr-06  HIT@1=Y voices=6 pass  — Numbers 13, the twelve spies sent into Canaan
+  ✓ [verse-ref] v3-vr-07  HIT@1=Y voices=6 pass  — Deuteronomy 8, man does not live by bread alon
+  ✓ [verse-ref] v3-vr-08  HIT@1=Y voices=6 pass  — Joshua 24, choose this day whom you will serve
+  ✓ [verse-ref] v3-vr-09  HIT@1=Y voices=6 pass  — 1 Samuel 17, David and Goliath in the valley o
+  ✓ [verse-ref] v3-vr-10  HIT@1=Y voices=6 pass  — 2 Samuel 7, God’s covenant promise to David
+  ✓ [verse-ref] v3-vr-11  HIT@1=Y voices=6 pass  — 1 Kings 18, Elijah on Mount Carmel against the
+  ✓ [verse-ref] v3-vr-12  HIT@1=Y voices=6 pass  — 2 Kings 5, Naaman the leper washed seven times
+  ✓ [verse-ref] v3-vr-13  HIT@1=Y voices=6 pass  — 2 Chronicles 7, if my people humble themselves
+  ✓ [verse-ref] v3-vr-14  HIT@1=Y voices=6 pass  — Esther 4, for such a time as this
+  ✓ [verse-ref] v3-vr-15  HIT@1=Y voices=6 pass  — Job 1, the LORD gave and the LORD has taken aw
+  ✓ [verse-ref] v3-vr-16  HIT@1=Y voices=6 pass  — Psalm 1, blessed is the man who walks not in t
+  ✓ [verse-ref] v3-vr-17  HIT@1=Y voices=6 pass  — Psalm 23, the LORD is my shepherd I shall not 
+  ✓ [verse-ref] v3-vr-18  HIT@1=Y voices=6 pass  — Psalm 121, I lift up my eyes to the hills
+  ✓ [verse-ref] v3-vr-19  HIT@1=Y voices=6 pass  — Proverbs 3, trust in the LORD with all your he
+  ✓ [verse-ref] v3-vr-20  HIT@1=Y voices=6 pass  — Ecclesiastes 12, remember your Creator in the 
+  ✓ [verse-ref] v3-vr-21  HIT@1=Y voices=6 pass  — Song of Solomon 2, I am my beloved’s and my be
+  ✓ [verse-ref] v3-vr-22  HIT@1=Y voices=6 pass  — Isaiah 53, he was pierced for our transgressio
+  ✓ [verse-ref] v3-vr-23  HIT@1=Y voices=6 pass  — Isaiah 55, come everyone who thirsts come to t
+  ✓ [verse-ref] v3-vr-24  HIT@1=Y voices=6 pass  — Jeremiah 1, before I formed you in the womb I 
+  ✓ [verse-ref] v3-vr-25  HIT@1=Y voices=6 pass  — Ezekiel 37, the valley of dry bones comes to l
+  ✓ [verse-ref] v3-vr-26  HIT@1=Y voices=6 pass  — Daniel 6, Daniel in the den of lions
+  ✓ [verse-ref] v3-vr-27  HIT@1=Y voices=6 pass  — Zephaniah 3, the LORD your God is in your mids
+  ✓ [verse-ref] v3-vr-28  HIT@1=Y voices=6 pass  — Micah 5, from Bethlehem shall come forth a rul
+  ✓ [verse-ref] v3-vr-29  HIT@1=Y voices=6 pass  — Matthew 5, the Beatitudes, blessed are the poo
+  ✓ [verse-ref] v3-vr-30  HIT@1=Y voices=6 pass  — Matthew 6, the Lord’s Prayer, our Father in he
+  ✓ [verse-ref] v3-vr-31  HIT@1=Y voices=6 pass  — Mark 4, Jesus calms the storm on the sea
+  ✓ [verse-ref] v3-vr-32  HIT@1=Y voices=6 pass  — Luke 24, the road to Emmaus and the risen Chri
+  ✓ [verse-ref] v3-vr-33  HIT@1=Y voices=6 pass  — John 1, in the beginning was the Word and the 
+  ✓ [verse-ref] v3-vr-34  HIT@1=Y voices=6 pass  — John 3, for God so loved the world that he gav
+  ✓ [verse-ref] v3-vr-35  HIT@1=Y voices=6 pass  — Acts 9, the conversion of Saul on the road to 
+  ✓ [verse-ref] v3-vr-36  HIT@1=Y voices=6 pass  — Romans 8, there is no condemnation for those i
+  ✓ [verse-ref] v3-vr-37  HIT@1=Y voices=6 pass  — 1 Corinthians 13, love is patient love is kind
+  ✓ [verse-ref] v3-vr-38  HIT@1=Y voices=6 pass  — Galatians 5, the fruit of the Spirit is love j
+  ✓ [verse-ref] v3-vr-39  HIT@1=Y voices=6 pass  — Philippians 2, Christ emptied himself taking t
+  ✓ [verse-ref] v3-vr-40  HIT@1=Y voices=6 pass  — Revelation 21, a new heaven and a new earth, G
+  ✓ [pericope] v3-pc-01  HIT@1=n voices=3 pass  — Noah and the ark and the great flood
+  ✓ [pericope] v3-pc-02  HIT@1=Y voices=2 pass  — the tower of Babel and the confusion of langua
+  ✓ [pericope] v3-pc-03  HIT@1=n voices=2 pass  — Abraham and the sacrifice of Isaac stayed by t
+  ✓ [pericope] v3-pc-04  HIT@1=Y voices=6 pass  — Moses and the burning bush that was not consum
+  ✓ [pericope] v3-pc-05  HIT@1=n voices=2 pass  — the golden calf at the foot of the mountain
+  ✓ [pericope] v3-pc-06  HIT@1=Y voices=6 pass  — Daniel’s three friends in the fiery furnace
+  ✓ [pericope] v3-pc-07  HIT@1=Y voices=2 pass  — the handwriting on the wall at Belshazzar’s fe
+  ✓ [pericope] v3-pc-08  HIT@1=Y voices=6 pass  — the wise men following the star to the child
+  ✓ [pericope] v3-pc-09  HIT@1=Y voices=3 pass  — the feeding of the five thousand with loaves a
+  ✓ [pericope] v3-pc-10  HIT@1=Y voices=6 pass  — the raising of Lazarus from the tomb after fou
+  ✓ [pericope] v3-pc-11  HIT@1=Y voices=2 pass  — the annunciation to Mary by the angel Gabriel
+  ✓ [pericope] v3-pc-12  HIT@1=Y voices=2 pass  — doubting Thomas and the wounds of the risen Ch
+  ✓ [pericope] v3-pc-13  HIT@1=Y voices=2 pass  — Philip and the Ethiopian eunuch reading Isaiah
+  ✓ [pericope] v3-pc-14  HIT@1=Y voices=2 pass  — Paul and Silas singing in the Philippian jail
+  ✓ [pericope] v3-pc-15  HIT@1=n voices=2 pass  — the wedding at Cana where water became wine
+  ✓ [epistle] v3-ep-01  HIT@1=n voices=2 pass  — the atonement, Christ a sacrifice bearing our 
+  ✓ [epistle] v3-ep-02  HIT@1=Y voices=3 pass  — Christ our substitute, the just for the unjust
+  ✓ [epistle] v3-ep-03  HIT@1=n voices=2 pass  — the incarnation, the Word became flesh and dwe
+  ✓ [epistle] v3-ep-04  HIT@1=n voices=2 pass  — the humiliation of Christ unto death on a cros
+  ✓ [epistle] v3-ep-05  HIT@1=Y voices=2 pass  — the exaltation of Christ, raised and ascended 
+  ✓ [epistle] v3-ep-06  HIT@1=n voices=2 pass  — Christ our intercessor who ever lives to pray 
+  ✓ [epistle] v3-ep-07  HIT@1=Y voices=4 pass  — Christ the prophet who reveals the will of God
+  · [epistle] v3-ep-08  HIT@1=n voices=0 wrong-passage  — Christ the king who reigns over all things
+  ✓ [epistle] v3-ep-09  HIT@1=Y voices=2 pass  — what saving faith in Jesus Christ is
+  · [epistle] v3-ep-10  HIT@1=n voices=0 wrong-passage  — the second Adam undoing the first Adam’s fall
+  · [epistle] v3-ep-11  HIT@1=n voices=0 wrong-passage  — the priesthood of all believers offering spiri
+  ✓ [epistle] v3-ep-12  HIT@1=n voices=2 pass  — the church as the one body and bride of Christ
+  ✓ [epistle] v3-ep-13  HIT@1=n voices=2 pass  — the Lord’s Supper, the communion of the body a
+  ✓ [epistle] v3-ep-14  HIT@1=n voices=2 pass  — baptism in the name of the Father Son and Holy
+  ✓ [epistle] v3-ep-15  HIT@1=Y voices=2 pass  — the word of God living and active and profitab
+  ✓ [epistle] v3-ep-16  HIT@1=Y voices=2 pass  — the fear of the Lord and the judgment seat of 
+  ✓ [epistle] v3-ep-17  HIT@1=n voices=2 pass  — the freedom of the Christian from the bondage 
+  ✓ [epistle] v3-ep-18  HIT@1=Y voices=2 pass  — suffering with Christ and sharing in his glory
+  ✓ [epistle] v3-ep-19  HIT@1=Y voices=2 pass  — the gift of eternal life in the Son
+  ✓ [epistle] v3-ep-20  HIT@1=Y voices=2 pass  — God’s discipline of the children he loves
+  ✓ [epistle] v3-ep-21  HIT@1=n voices=3 pass  — the whole armour of God against spiritual powe
+  ✓ [epistle] v3-ep-22  HIT@1=n voices=2 pass  — thanksgiving and contentment in every circumst
+  ✓ [epistle] v3-ep-23  HIT@1=Y voices=3 pass  — the mystery of the gospel revealed to the nati
+  ✓ [epistle] v3-ep-24  HIT@1=Y voices=3 pass  — the sufferings of the present time and the glo
+  ✓ [epistle] v3-ep-25  HIT@1=Y voices=3 pass  — love as the fulfilling of the law
+  ✓ [topical] v3-tp-01  HIT@1=n voices=2 pass  — the holiness of God and be holy as I am holy
+  · [topical] v3-tp-02  HIT@1=n voices=0 wrong-passage  — the mercy and compassion of God toward sinners
+  ✓ [topical] v3-tp-03  HIT@1=n voices=3 pass  — what sin is and the transgression of the law
+  ✓ [topical] v3-tp-04  HIT@1=n voices=2 pass  — the fall of mankind in Adam’s first sin
+  ✓ [topical] v3-tp-05  HIT@1=n voices=2 pass  — keeping the Sabbath day holy and resting in Go
+  ✓ [topical] v3-tp-06  HIT@1=n voices=2 pass  — honoring father and mother and the family
+  · [topical] v3-tp-07  HIT@1=n voices=0 wrong-passage  — work and diligence and the sluggard
+  · [topical] v3-tp-08  HIT@1=n voices=0 wrong-passage  — justice and care for the poor and the needy
+  ✓ [topical] v3-tp-09  HIT@1=n voices=2 pass  — truthfulness and bearing false witness
+  ✓ [topical] v3-tp-10  HIT@1=Y voices=2 pass  — generosity and the grace of giving
+  ✓ [topical] v3-tp-11  HIT@1=Y voices=2 pass  — the Holy Spirit the comforter and helper
+  · [topical] v3-tp-12  HIT@1=n voices=0 wrong-passage  — praise and thanksgiving to God
+  ✓ [topical] v3-tp-13  HIT@1=Y voices=2 pass  — the word of God a lamp to my feet
+  ✓ [topical] v3-tp-14  HIT@1=Y voices=4 pass  — heaven and the new creation and the life to co
+  · [topical] v3-tp-15  HIT@1=n voices=0 wrong-passage  — wisdom and the fear of folly
+  ✓ [topical] v3-tp-16  HIT@1=n voices=2 pass  — anger and reconciliation with a brother
+  · [topical] v3-tp-17  HIT@1=n voices=0 wrong-passage  — the goodness of creation and the stewardship o
+  ✓ [topical] v3-tp-18  HIT@1=Y voices=3 pass  — trusting God and not being anxious about tomor
+  ✓ [topical] v3-tp-19  HIT@1=Y voices=2 pass  — loving one another as Christ has loved us
+  ✓ [topical] v3-tp-20  HIT@1=Y voices=2 pass  — the resurrection of Christ the firstfruits
+  ✓ [proper-noun] v3-pn-01  HIT@1=Y voices=3 pass  — Enoch who walked with God and was not
+  ✓ [proper-noun] v3-pn-02  HIT@1=Y voices=2 pass  — Deborah the prophetess who judged Israel
+  ✓ [proper-noun] v3-pn-03  HIT@1=Y voices=2 pass  — Gehazi the servant of Elisha struck with lepro
+  ✓ [proper-noun] v3-pn-04  HIT@1=Y voices=2 pass  — Nebuchadnezzar who ate grass like an ox
+  ✓ [proper-noun] v3-pn-05  HIT@1=Y voices=3 pass  — Simeon and Anna who saw the child in the templ
+  ✓ [proper-noun] v3-pn-06  HIT@1=Y voices=2 pass  — Nathanael whom Jesus saw under the fig tree
+  ✓ [proper-noun] v3-pn-07  HIT@1=Y voices=2 pass  — Ananias and Sapphira who lied to the Holy Spir
+  ✓ [proper-noun] v3-pn-08  HIT@1=Y voices=2 pass  — Dorcas also called Tabitha raised by Peter
+  · [proper-noun] v3-pn-09  HIT@1=n voices=0 wrong-passage  — the manna and the quail given in the wildernes
+  ✓ [proper-noun] v3-pn-10  HIT@1=Y voices=3 pass  — the bronze laver and the altar in the tabernac
+  ✓ [control] v3-ctl-01  clean (no floor) — living water plumbing and drain services
+  ✓ [control] v3-ctl-02  clean (no floor) — burning bush landscaping and tree trimming
+  ✓ [control] v3-ctl-03  clean (no floor) — promised land real estate listings near the coast
+  ✓ [control] v3-ctl-04  clean (no floor) — daily bread bakery hours and locations
+  ✓ [control] v3-ctl-05  clean (no floor) — the narrow gate climbing gym membership
+  ✓ [control] v3-ctl-06  clean (no floor) — how do I change a flat tire on the highway
+  ✓ [control] v3-ctl-07  clean (no floor) — cheapest flights from Chicago to Seattle in August
+  ✓ [control] v3-ctl-08  clean (no floor) — the exodus of remote workers from big cities
+  ✓ [control] v3-ctl-09  clean (no floor) — genesis of a startup idea over coffee
+  ✓ [control] v3-ctl-10  clean (no floor) — apocalypse now movie runtime and cast
+
+category        n   HIT@1  HIT@2   pass / <2 / wrong / none
+  verse-ref     40   100%  100%    40 / 0 / 0 / 0
+  pericope      15    73%  100%    15 / 0 / 0 / 0
+  epistle       25    48%   88%    22 / 0 / 3 / 0
+  topical       20    35%   70%    14 / 0 / 6 / 0
+  proper-noun   10    90%   90%    9 / 0 / 1 / 0
+  control       10   clean 10/10  hijacks=0
+TAG corpus=legal(shared) pool=20 ef=64 cap=2 :: topicalH2=70 pericopeH1=73 epistleH2=88 verserefH1=100
