@@ -1,0 +1,26 @@
+{
+  "_": "P4.n Phase B. Works copied to prod 2026-08-18/19 as staged+unserved (WORKLOG 2026-08-19). Flipping publishes AND serves them: this IS a retrieval change and carries the accuracy diagnostic. Exact inverse: same file with --reverse. Does NOT include the 7 pre-existing staged works (origen-commentary, five lexicons, jfb) — each held by a cited ruling — nor chesterton-aquinas (ADR-112, 1933).",
+  "register": "father",
+  "cohort": "staged",
+  "derivedAt": "2026-08-19",
+  "slugs": [
+    "schaff-anf01",
+    "schaff-anf02",
+    "schaff-anf03",
+    "schaff-anf04",
+    "schaff-anf05",
+    "schaff-npnf102",
+    "schaff-npnf103",
+    "schaff-npnf105",
+    "schaff-npnf202",
+    "schaff-npnf203",
+    "schaff-npnf205",
+    "schaff-npnf206",
+    "schaff-npnf207",
+    "schaff-npnf208",
+    "schaff-npnf209",
+    "schaff-npnf211",
+    "schaff-npnf212",
+    "schaff-npnf214"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "_": "ADR-112. Owner rule: GK Chesterton published before 1931 may be used, later or undated may not. chesterton-preexistence carries NO publication date in the manifest, on the CCEL page, or in the ingested text, and does not appear in the standard Chesterton bibliography (checked 2026-08-18). It has been published and SERVING (25 rows, confession lane). Fail-closed: quarantine until dated. Reversible.",
+  "slugs": [
+    "chesterton-preexistence"
+  ]
+}
