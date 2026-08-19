@@ -54,3 +54,9 @@ web/public/concordance
 .env.prod
 .cutover-checkpoint.json
 .env*
+
+# Agent scratch scripts. A dotfile .mjs at the repo root is a throwaway probe, never a deliverable.
+# Added 2026-08-19 after an unscoped `git add -A` committed `.wc.mjs` (a watcher) in ec6b544, whose
+# later deletion then BLOCKED a deploy — deploy.sh gates on a clean tree because `vercel --prod`
+# uploads the working tree, so anything uncommitted would ship to production un-reviewed.
+/.*.mjs
