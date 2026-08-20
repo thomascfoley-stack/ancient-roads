@@ -1,0 +1,41 @@
+=== vanbraght-mirror  16:03:59Z ===
+vanbraght-mirror: 34 node(s), 6116 KB text, max path depth 2 -> data/raw/historians/vanbraght-mirror.jsonl
+(node:38632) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+vanbraght-mirror: 7080 sections staged (source 995) · 2147 entity anchors · 125 explicit verse anchors
+(node:38632) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  embedded 640/7080
+  embedded 1280/7080
+  embedded 1920/7080
+  embedded 2560/7080
+  embedded 3200/7080
+  embedded 3840/7080
+  embedded 4480/7080
+  embedded 5120/7080
+  embedded 5760/7080
+  embedded 6400/7080
+  embedded 7040/7080
+embedded 7080/7080 sections whole (max 1800 chars, truncation never fired)
+(node:39765) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+digest vanbraght-mirror @ ep-tiny-hat-atdgpisx [staged]
+  sections        7080   headed 7080/7080   vectors 7080/7080
+  anchors         2147 (54 distinct entities)  = 0.30/section  (josephus baseline 1.10)
+  period-dated    0/7080 sections  (verbatim heading forms only)
+  gazetteer candidates (frequent, unanchored — CURATE, never auto-adopt):
+     Lord(5769) Christ(5292) Jesus(1806) Father(1206) Hence(1072) Word(978) Paul(926) Christian(849) Holy(794) Spirit(643) Scriptures(623) Christians(618) John(580) Ghost(549) Peter(541) Roman(520) Therefore(477) Gospel(465) Amen(451) Hist(425)
+  no flags
