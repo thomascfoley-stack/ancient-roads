@@ -1,6 +1,6 @@
 # HISTORY_RETRIEVAL_DESIGN — the history lane, end to end
 
-**Status: DESIGN FOR OWNER APPROVAL — nothing below is implemented.** This is the document
+**Status: DESIGN FOR OWNER APPROVAL — nothing below is implemented.** Amended 2026-08-20 after independent review (Kimi): entity vocabulary source of truth stated (§3.1), weights reframed as ordinal priors with tuning deferred to adequate n (§3.4/§7), the Josephus transition written (§2b), chip-filter framing + coverage derivation + threads migration + behavioral test #4 (§4/§5/§6). Review pushbacks and their dispositions are in the 2026-08-20 session log. This is the document
 `src/ingest/ingest-historian.ts` and three manifest notes have cited since migration 016. It did
 not exist until 2026-08-20 (bylaw 1). Written for an implementing agent: exact routes, contracts,
 click behavior, states, and exit criteria. CLAUDE.md requires owner approval before code.
@@ -53,11 +53,40 @@ nothing matches. Faithfulness gate for v1: **every excerpt must be an exact subs
 - Serving: `scripts/serve-batched.mjs` gains `--table=history_embeddings` (same preflight, same
   `served IS NOT TRUE` idempotency, same TTY gate) — or a 40-line sibling if a flag is uglier.
 
+## 2b. The Josephus transition (the one history work serving TODAY)
+
+`josephus-whiston` serves right now through **6,492 flat rows in the shared `embeddings` table**
+(`idx_embeddings_served_historian`, `SERVED_HISTORIAN_WORKS=['josephus-whiston']`), put there by
+the one-off `copy-josephus-flat.mjs`. This design's "history never enters `embeddings`" is the END
+state; the transition is:
+
+1. **Backfill** `history_embeddings` from `section_embeddings` — `INSERT..SELECT`, **zero
+   re-embedding**: dev verifiably holds 4,112/4,112 section vectors for josephus
+   (`ingest-historian` has always written them; measured 2026-08-20).
+2. **Serve** in the new table (`serve-batched --table=history_embeddings`, owner gate). Seconds,
+   not hours — the graph is tens of MB.
+3. **Cut the history read path** to the new table and prove it (frozen queries + browser walk).
+4. **Only then retire the old side** (owner-gated migration): unserve/remove the 6,492 shared-table
+   rows, drop `idx_embeddings_served_historian`, delete `SERVED_HISTORIAN_WORKS`. New path proven
+   before old rows die; no serving gap.
+
+**Consequence requiring an owner ruling (decision #4, §9):** the standalone ruling — history never
+searches with anything else — read strictly RETIRES the `/ask` historian register lane, where
+josephus answers today beside the other lanes. Step 4 executes that only if ruled.
+
 ## 3. Retrieval pipeline (deterministic, no LLM in v1)
 
 `searchHistory(query)`:
-1. **Entity match** — gazetteer (`history-gazetteer`) tokens found VERBATIM in the query →
-   `entity_slug[]`. No fuzzy, no embedding-based entity guessing.
+1. **Entity match** — the query-time entity vocabulary is **DERIVED from
+   `section_history_anchors`** (`SELECT DISTINCT entity_slug, entity_label`, cached), never a
+   second copy of the gazetteer — so query matching cannot drift from what the corpus actually
+   anchors. Matching is verbatim tokens only; no fuzzy, no embedding-based entity guessing.
+   The INGEST-time gazetteer (`history-gazetteer`) stays hand-seeded — editorial curation — and
+   its enforcement is (a) the verbatim-presence check and (b) a **per-work anchor-coverage gate**:
+   the ingest digest reports anchors/section and distinct entities per work, and a work landing at
+   ~zero anchors is FLAGGED for review, never silently admitted. Baseline (the one ingested work):
+   josephus 4,540 anchors / 4,112 sections = 1.10/section. Coverage for the other 32 is a property
+   of the ingest run and cannot be pre-measured — they have no rows yet.
 2. **Period parse** — verbatim "A.D. 325"/"325 B.C." forms plus a fixed table of natural spans
    ("first century" → 1..100). Deterministic mapping, exported constant, unit-tested.
 3. **Candidates** (union, capped 200):
@@ -65,8 +94,15 @@ nothing matches. Faithfulness gate for v1: **every excerpt must be an exact subs
    b. sections with `period_*` overlapping a parsed period
    c. vector top-50 from `history_embeddings WHERE served` (embed the query, bge-large)
    d. FTS over `sections.tsv` scoped to historian works (heading-weighted; the 016 tsv fix)
-4. **Rank** — one exported constant, one test:
-   `score = 3·entityHit + 2·periodOverlap + cosine(normalized) + 0.5·ftsRank(normalized)`
+4. **Rank** — one exported constant, one determinism test. The v1 weights are
+   **pre-registered ORDINAL priors**: the design commitment is the ORDER — verbatim entity match >
+   period overlap > cosine > fts — on precision grounds (a verbatim entity hit is near-certain
+   relevance; cosine is a guess). Magnitudes `3 / 2 / 1 / 0.5` are declared, not derived, and the
+   frozen eval set (§7) is a REGRESSION floor, never a tuning target. Weight TUNING is a defined
+   later slice: once history search logs real usage (its own ask_outcomes-style table), build a
+   dev set of n≥50 logged queries and apply the ADR-103 two-split (derive on dev, validate once on
+   a disjoint held-out). A 12/8 split of the frozen 20 was considered and REJECTED as underpowered:
+   one validation query = 12.5 points, below the resolution of any claim worth shipping.
    Ties: work tier, then `unit_ordinal`. Works ordered by their best section.
 5. **Scope** — `source_type='historian' AND status='published'` AND served vectors only.
    OPEN (owner): whether npnf201/202/203 (Eusebius, Socrates/Sozomen, Theodoret — genre history,
@@ -87,7 +123,7 @@ Response (the whole contract — no other fields reach the client):
 //            excerpt: string /* exact substring, ≤420 chars, server-asserted */,
 //            matched: ('entity'|'period'|'text')[] }
 ```
-Thread persistence: reuse Research History threads with `mode:'history'`; results render at
+Thread persistence: reuse Research History threads with `mode:'history'`. **If the threads table lacks a mode column this is a SECOND migration** beside 119 — enumerate it in the build, owner-applied on prod either way; results render at
 `/ask/[id]` by mode branch. Telemetry: PostHog event `history_search` carrying ONLY
 `{result_count, had_entity, had_period}` — never query text (PostHog ruling, 2026-08-18).
 
@@ -113,7 +149,12 @@ Top to bottom:
 1. **QueryEcho**: the query verbatim (escaped) · "New search" → `/ask?mode=history`, input focused.
 2. **InterpretationStrip**: chips for matched entities + period. Click a chip = client-side toggle
    filter over the already-returned set (no refetch), `aria-pressed`, counts update. This strip is
-   the honesty mechanism: the user SEES that "cease" matched nothing.
+   the honesty mechanism: the user SEES that "cease" matched nothing. **Filtered counts are framed
+   "within these results" (fixed string)** — the returned set is capped (200), so an unframed
+   "0 matches" after toggling would be a lie about the corpus when it is only a fact about the cap.
+   All coverage numbers on this page (works, sections, century buckets) are DERIVED from served
+   state with their **invalidation point at serve flips** — never hand-counted, never cached past
+   a flip (the 9-vs-10 source-count class).
 3. **ClosestMatch card** (hero): fixed label "Closest match to your question" · work/author ·
    heading-path breadcrumb · period badge · excerpt (≤420 chars). Whole card is ONE `<a>` →
    `/work/[slug]?section=[ordinal]&hl=[sectionId]&from=[threadId]`. Enter activates.
@@ -149,12 +190,19 @@ truncate the HEAD (tail = the specific chapter, most informative); tap targets �
 hover-only affordances. DoD: loaded and screenshotted at 390px AND desktop, one real query
 end-to-end, no horizontal overflow, no console errors.
 
+Converter/ingest note: embedding-input discipline is ALREADY ENFORCED in the shipped ingester —
+`ingest-historian.ts` caps chunks at `EMBED_MAX=1800` chars, asserted before the call (bge-large's
+512-token budget). The converter feeds that path; it does not grow a second chunking mechanism.
+
 ## 6. Tests the agent writes FIRST (red before fix)
 1. excerpt-is-exact-substring contract test (the v1 faithfulness gate) — seed a mutated excerpt, red.
 2. route auth + zod rejection + rate-limit tests (A1-16 pattern).
 3. ranking determinism: same inputs, same order; weights only from the exported constant.
-4. history never joins voices: assert the history query text contains no exegetical
-   predicate and `/api/ask` retrieval touches no `history_embeddings` (derived, not typed).
+4. history never joins voices — BEHAVIORAL, not string-matched: (a) every result row the
+   history route returns carries `source_type='historian'` (or the ruled genre allowlist);
+   (b) EXPLAIN on `/api/ask`'s shipped retrieval never references `history_embeddings`, the
+   servability-belt pattern. A string assertion on SQL text was considered and rejected as
+   brittle.
 5. serve tooling: `--table=history_embeddings` preflight red-proof (refuses unpublished work).
 6. Browser walk at 390px + desktop per DoD, screenshots into evidence.
 
@@ -168,6 +216,12 @@ Reader overhaul · conversational layer (v2, bait-gated, premium) · ingesting A
 Great Awakening acquisitions (parked: CCEL search inconclusive) · any change to voices retrieval.
 
 ## 9. Open owner decisions
-1. npnf201/202/203 in history search scope (allowlist) — default OUT.
+1. npnf201/202/203 in history search scope — both reviewer and author recommend IN (Eusebius is
+   the father of church history; a history search that cannot find him is product-visibly absurd).
+   Mechanism if ruled IN: **`genre:'history'` metadata on the manifest entries** — scope derived
+   from data carried per work, never a slug list in code (a slug allowlist is the watchlist's
+   hand-maintained-set artifact). Default OUT until ruled.
 2. Advertise unserved-but-matching works in empty states — default OFF.
 3. v2 conversational layer: pricing/gating (owner floated premium).
+4. Does the `/ask` historian register lane RETIRE when standalone history ships? (§2b consequence —
+   strict reading of the standalone ruling says yes; execution is step 4 of the transition.)
