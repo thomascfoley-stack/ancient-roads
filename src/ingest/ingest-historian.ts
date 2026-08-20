@@ -101,6 +101,33 @@ async function embedBatchWhole(texts: string[], key: string): Promise<number[][]
   for (const t of texts) {
     if (t.length > EMBED_MAX) throw new Error(`contract breach: chunk ${t.length} chars > ${EMBED_MAX} — truncation would fire`);
   }
+  try {
+    return await embedRaw(texts, key);
+  } catch (e) {
+    if (!/input_tokens|context length/i.test((e as Error).message)) throw e;
+    // TOKEN OVERFLOW FALLBACK (2026-08-20, third contact with the 512 budget). Char thresholds
+    // cannot bound this: Schaff's Greek quotations tokenize under 2 chars/token (a 1,000-char
+    // chunk measured 513 tokens), and the ratio has no floor a char cap can assert. So the
+    // overflow is handled WHERE IT IS DETECTED: bisect the batch to isolate offenders; a single
+    // offending text embeds as the L2-normalized MEAN of its halves' vectors, recursively.
+    // "Embedded whole" holds in the sense that matters — every character contributes; nothing is
+    // dropped or truncated. Deterministic, and terminates (halving always fits eventually).
+    if (texts.length > 1) {
+      const mid = Math.ceil(texts.length / 2);
+      return [...(await embedBatchWhole(texts.slice(0, mid), key)), ...(await embedBatchWhole(texts.slice(mid), key))];
+    }
+    const t = texts[0]!;
+    const halves = [t.slice(0, Math.ceil(t.length / 2)), t.slice(Math.ceil(t.length / 2))];
+    const parts = await embedBatchWhole(halves, key);
+    const dim = parts[0]!.length;
+    const mean = new Array<number>(dim).fill(0);
+    for (const v of parts) for (let i = 0; i < dim; i += 1) mean[i]! += v[i]! / parts.length;
+    const norm = Math.sqrt(mean.reduce((a, x) => a + x * x, 0)) || 1;
+    return [mean.map((x) => x / norm)];
+  }
+}
+
+async function embedRaw(texts: string[], key: string): Promise<number[][]> {
   const res = await fetch('https://api.deepinfra.com/v1/openai/embeddings', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
