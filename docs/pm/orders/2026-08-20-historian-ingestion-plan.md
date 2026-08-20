@@ -82,12 +82,15 @@ table list) → `backfill-history-embeddings --apply` → `serve-batched --table
 (the serve list file grows) → publish-flip `--status-only` for shelf visibility → frozen-v1 on
 prod → coverage re-census.
 
-## Decision points (owner; none blocks Phase 1)
+## Decision points — RESOLVED 2026-08-20 (ADR-114 addendum)
 
-1. **Gibbon** (`gibbon-decline`): unambiguously PD history, and famously NOT "a Christian writing
-   to a Christian audience" in chs. XV–XVI. The ADR-114 editorial standard applies; the Renan
-   precedent says the stance call is yours. Flagged BEFORE fetch so no work is wasted either way.
-2. `bennett-expositor10` (Expositor's Bible: Chronicles) is typed `historian` but smells like a
-   mis-shelved COMMENTARY — adjudicate type before ingest.
-3. `schaff-history` (umbrella) vs `schaff-hcc1..8` (volumes) — probable self-duplicate set.
-4. Standing: decision #4 (retire the /ask historian lane) and §8b (similarity floor) unchanged.
+1. **Gibbon: DECLINED by owner ruling** ("Decline gibbon drop him") — removed, editorial not
+   licensing, before any fetch.
+2. `bennett-expositor10` **retyped commentary** (every sibling Expositor volume is commentary).
+3. `schaff-history` umbrella **removed** as a self-duplicate of the hcc volumes.
+4. Decision #4: the /ask History lane checkbox is REMOVED from the voices picker (the owner's
+   screenshot showed the standalone ruling contradicted on the shipped page); the DATA half —
+   unserving the 6,492 shared-table josephus rows, dropping `idx_embeddings_served_historian`,
+   deleting `SERVED_HISTORIAN_WORKS` — stays owner-gated per §2b step 4. §8b unchanged.
+
+**Remaining to ingest: 29 works** (32 − gibbon − schaff-history − bennett retype).

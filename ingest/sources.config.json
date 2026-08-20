@@ -815,32 +815,6 @@
     }
   },
   {
-    "id": "schaff-history",
-    "slug": "schaff-history",
-    "title": "History of the Christian Church (8 vols)",
-    "author": "Philip Schaff",
-    "author_died": 1893,
-    "year_written": 1882,
-    "source_type": "historian",
-    "tradition": "reference",
-    "era": "modern",
-    "license": "Public Domain",
-    "tier": 2,
-    "serve": false,
-    "note": "STAGED not served — chunk on Schaff's dated section headings (HISTORY_RETRIEVAL_DESIGN)",
-    "provenance": {
-      "url": "https://www.ccel.org/ccel/schaff",
-      "edition": "Schaff, History of the Christian Church, 8 vols (CCEL) — dated section headings",
-      "year": 1882,
-      "acquire": {
-        "adapter": "ccel",
-        "ccel_id_pattern": "schaff/hcc{1..8}",
-        "strip_markup": true,
-        "chunk_on_headings": true
-      }
-    }
-  },
-  {
     "id": "olney-hymns",
     "slug": "olney-hymns",
     "title": "Olney Hymns",
@@ -17038,7 +17012,7 @@
     "author": "Bennett, William H.",
     "author_died": 1920,
     "year_written": 1920,
-    "source_type": "historian",
+    "source_type": "commentary",
     "tradition": "unassigned",
     "era": "unassigned",
     "license": "Public Domain",
@@ -22237,33 +22211,6 @@
         "adapter": "ccel",
         "ccel_ids": [
           "gerson/snares"
-        ],
-        "strip_markup": true
-      }
-    }
-  },
-  {
-    "id": "gibbon-decline",
-    "slug": "gibbon-decline",
-    "title": "History of the Decline and Fall of the Roman Empire",
-    "author": "Gibbon, Edward",
-    "author_died": 1794,
-    "year_written": 1794,
-    "source_type": "historian",
-    "tradition": "unassigned",
-    "era": "unassigned",
-    "license": "Public Domain",
-    "tier": 3,
-    "provenance": {
-      "url": "https://www.ccel.org/ccel/gibbon/decline",
-      "edition": "History of the Decline and Fall of the Roman Empire (CCEL)",
-      "year": 1794,
-      "year_basis": "authorDeathUpperBound",
-      "licence_basis": "rightsDeclared",
-      "acquire": {
-        "adapter": "ccel",
-        "ccel_ids": [
-          "gibbon/decline"
         ],
         "strip_markup": true
       }

@@ -1794,3 +1794,17 @@ stance as well as licence and provenance.
 **Not resolved by this ruling** (both still OPEN, both licensing rather than editorial):
 `garrison-histdisciple` (published 1945, author died 1969 — not PD on any reading) and
 `knox-history-reformation` (a 1949 edition of a 1572 work; Knox's text is PD, the apparatus may not be).
+
+## ADR-114 addendum — Gibbon declined (2026-08-20)
+
+**Owner ruling, verbatim: "Decline gibbon drop him."** `gibbon-decline` removed from the manifest
+under ADR-114's editorial standard (Christian writers writing to a Christian audience); chapters
+XV–XVI are the Enlightenment's case against the early church, which is stance, not licence — the
+work is unambiguously PD and the removal is editorial, exactly like Renan. No rows existed
+anywhere; a declaration was deleted, nothing quarantined. Flagged and ruled BEFORE any fetch was
+spent, which is what the ingestion plan's decision-point section is for.
+
+Same sitting, two adjudications from the plan's decision list: `bennett-expositor10` retyped
+historian → **commentary** (every sibling Expositor's Bible volume is commentary; the type was a
+shelving error), and `schaff-history` (the 8-volume umbrella declaration, serve:false, no rows)
+removed as a self-duplicate of `schaff-hcc1..8`.
