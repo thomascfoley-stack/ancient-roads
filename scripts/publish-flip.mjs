@@ -59,6 +59,25 @@ const reverse = has('--reverse');
 // tool inverse. serving the 88 published-but-unserved works (docs/evidence/corpus-copy/serve-88.json) is precisely this act, so it must
 // be deliberate: without this flag a forward payload containing a published slug is a STOP.
 const servePublished = has('--serve-published');
+// ── --status-only: move status, do NOT touch embeddings.served ─────────────────────────────
+// Added 2026-08-19 after measuring what the served write actually costs. `served` appears in six
+// index definitions/predicates on `embeddings`, so a HOT update is impossible; each row is 4,100
+// bytes (one per 8 kB page) so there is no room for a second version regardless; and every row is
+// therefore re-inserted into all 14 indexes — 13 GB, including an 8 GB HNSW graph. Measured
+// throughput is 20-36 rows/sec, so the remaining corpus is ~5 HOURS inside ONE transaction. Three
+// runs died mid-flight leaving nothing written.
+//
+// The status half is 95 rows and finishes instantly. Splitting them lets status commit in seconds
+// and the served write proceed in small COMMITTED batches via scripts/serve-batched.mjs, which is
+// resumable because `served IS NOT TRUE` makes each batch idempotent.
+//
+// published-but-unserved is a KNOWN-SAFE intermediate state, not a new invention: migration 044
+// created exactly that for 88 works, and A9 records "publishing a work is what makes it serve" as
+// the cutover. A work in this state is simply not retrievable yet.
+const statusOnly = has('--status-only');
+if (statusOnly && servePublished) {
+  die('STOP: --status-only and --serve-published are contradictory: one refuses to write served, the other exists only to write it.', 2);
+}
 const slugFile = val('--slugs');
 const snapshotFile = val('--snapshot');
 const localOk = has('--local-redproof');
@@ -100,7 +119,7 @@ function die(msg, code = 1) {
   process.exit(code);
 }
 
-if (!slugFile) die('usage: publish-flip.mjs --slugs=<flip-slugs.json> [--serve-published] [--reverse --snapshot=<flip-pre-snapshot-*.json>]', 2);
+if (!slugFile) die('usage: publish-flip.mjs --slugs=<flip-slugs.json> [--status-only] [--serve-published] [--reverse --snapshot=<flip-pre-snapshot-*.json>]', 2);
 
 // ── the slug list. Read LITERALLY. No predicate, ever. ────────────────────────────────────
 // PUBLISH_FLIP.md:71-73 is explicit: the flip names its works. A predicate ("everything
@@ -467,7 +486,14 @@ try {
   //             either direction; withdrawing those works moves status while /ask keeps
   //             serving their rows — a KNOWN, filed limit, printed below, never silent.
   const servedTo = to === 'published';
-  const servedTargets = reverse ? unserveSlugs : slugs;
+  // --status-only empties the target list, so the guarded block below is skipped entirely and
+  // `servedRows` stays 0. Deliberately expressed as "no targets" rather than a branch around the
+  // UPDATE, so the snapshot assertion and every downstream count stay on one code path.
+  const servedTargets = statusOnly ? [] : (reverse ? unserveSlugs : slugs);
+  if (statusOnly) {
+    console.log('  --status-only  : embeddings.served NOT written. These works will be PUBLISHED but NOT RETRIEVABLE');
+    console.log('                   until scripts/serve-batched.mjs runs against the same slug file.');
+  }
   let servedRows = 0;
   if (servedCol && servedTargets.length > 0) {
     const emb = await client.query(
