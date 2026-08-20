@@ -88,7 +88,11 @@ function chunkOnce(text: string, max: number): string[] {
 // 1200 chars (est ≤400) — deterministic, sentence-bounded, and nothing is ever truncated:
 // splitting is not losing. Josephus (already ingested at 1800) is untouched.
 export function chunkBody(text: string, max = EMBED_MAX): string[] {
-  return chunkOnce(text, max).flatMap((c) => (c.length / 3 > 500 ? chunkOnce(c, 1200) : [c]));
+  // Phase 2 MEASURED the real worst case: Schaff's footnote-dense prose hit 513 tokens from
+  // chunks the len/3 estimate passed — ~2.9 chars/token, not the ~3.5 Bede showed. Threshold and
+  // re-split sizes now assume 2.9: anything over 1200 chars re-splits at 1000 (~345 tokens at the
+  // observed worst). Still split-never-truncate; still deterministic.
+  return chunkOnce(text, max).flatMap((c) => (c.length > 1200 ? chunkOnce(c, 1000) : [c]));
 }
 
 interface Node { path: string[]; content: string }
