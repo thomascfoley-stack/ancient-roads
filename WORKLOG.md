@@ -1,5 +1,98 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-20 (Corpus↔Surface Reconciliation) — one job, one instrument; the matrix now returns zero
+
+**The job:** for every work in the corpus, does it reach every surface it should, and no surface it
+should not? Run against production end to end, per
+`docs/pm/orders/2026-08-20-corpus-surface-reconciliation.md` (disposable; deleted with this entry).
+
+### Result
+
+| | |
+|---|---|
+| Published works measured | **362** |
+| Findings, first run | **296** — of which **294 were the instrument being wrong** |
+| Findings, after reclassification | **2** |
+| Findings, final | **0** |
+| Books of 66 with zero admitted passage-search entries | **NONE** |
+| Admitted rows | 64,331 → **71,762** |
+
+### The two real findings, and what each was
+
+**`DEAD-CLAUSE`.** `LEGAL_COMMENTARY_ENTRIES_PREDICATE` named **37 work slugs** while
+`commentary_entries.work IS NOT NULL` is **0 of 371,521 rows**. The clause could never match.
+Behaviour neutrality proven against production BEFORE removal — **64,331 admitted with it and
+64,331 without, a difference of exactly 0**.
+
+Deleted, not repaired, and the reason is an asymmetry worth keeping: the **admission** leg fails
+OPEN on a future data change (populate `work` and it silently admits 37 works with no review),
+while `EXEGETICAL_FTS_EXCLUSION`'s work leg fails CLOSED (on the same change it begins protecting).
+So the first goes and the second stays, with `commentary-entries-work-column.test.ts` as the
+tripwire on the precondition. Making the clause "live" by tagging 115 of 371,521 rows was
+considered and rejected: that satisfies the letter of the bar while the condition it detects
+persists.
+
+**`MISSING-MATERIALIZATION` — `barnes-crosswire-nt`.** 17,490 served public-domain embeddings
+answering on `/ask`, while the only Barnes material in `commentary_entries` was 21,036 BibleHub
+rows, correctly excluded. Legal content invisible on one surface while a forbidden copy occupied
+the slot — the Song of Songs shape at 65× the scale. Materialized: **7,431 rows across 27 books**,
+all anchored, zero chapter-level anchors, bodies averaging 2,004 chars against the table's 5,000
+cap. BibleHub Barnes still admits 0; `EXPLAIN` still shows a Bitmap Index Scan.
+
+### Migration 119, and why a code-only change would have been a silent outage
+
+The partial GIN index `idx_commentary_fts_legal` carries that predicate in its `WHERE` clause.
+Changing the constant alone leaves the planner unable to prove implication, and passage search
+**seq-scans 371,521 rows** — correct results, silently. `fts-legal-index-sync` caught it. 119
+rebuilds the index with the new predicate **derived from 118's own text** rather than
+hand-transcribed, applied through the concurrent runner; index VALID, plan confirmed.
+
+`legal-hnsw-index-sync` also fired: it asserted the index *enumerates* every served slug, and its
+own comment warned that dropping it would "silently retire a live check". That warning is honoured
+— the check is **inverted, not retired**. Its premise was false in this one case, and its greenness
+is part of why Song of Songs stayed invisible while `gill-song` sat named in that very list.
+
+### My own defects, recorded because each would have shipped something wrong
+
+1. **294 of 296 first-run findings were mine.** The instrument treated the `SERVED_*_WORKS` lists
+   as a work's declared register and flagged everything absent from them — including `adam-clarke`
+   serving the exegetical lane as a commentary, which is simply correct. Those lists were
+   superseded by migration 044; lane membership is `served` + `source_type`, with no work allowlist
+   in the lane SQL at all. **Absence from a vestigial list is not a defect**, and 294 false
+   findings bury the two real ones.
+2. **The B4 check survived its own remedy.** It keyed on the column being empty rather than on a
+   clause being present, so after the deletion it still fired, reporting a disjunct that "names 0
+   slugs". A finding that outlives its fix trains people to ignore the report.
+3. **The first red-proof asserted the wrong world.** It required Hort to be ABSENT from the dev
+   baseline; dev was never quarantined (only production was), so the instrument was right and the
+   assertion was wrong. Both seeds are now proved in BOTH directions — a one-sided proof is how
+   "always reports a problem" passes for a detector.
+4. **A guard built on a coincidence** (from the 08-19 Song run, repeated here for the class): one
+   entry per verse held across all 28,300 John Gill rows and is not a table rule — 155 authors hold
+   multiple entries per slot, up to 176. Enforcing it would have silently dropped half of four
+   verses.
+
+### NOT DONE / UNVERIFIED
+
+- **The matrix does NOT run in CI, and the job doc said it should.** It needs production data to
+  mean anything; against the CI test branch it would report that branch's own gaps as defects. What
+  CI carries is the **code-level half** — the dead-clause tripwire. The reachability sweep is a
+  **periodic owner-gated production run** (bylaw 7), not an automated check. Recording this as a
+  limitation rather than claiming coverage that does not exist.
+- **`SUSPECT-REGISTER` is a heuristic** (title pattern vs declared register). It nominates for a
+  human read; it never auto-resolves, and it will miss a mis-registered work whose title is
+  innocuous.
+- **245 verse slots** now hold both an admitted `Albert Barnes` row and an excluded `Barnes''' Notes`
+  row — the same commentator under two author strings. Harmless while only one is admitted.
+- **Out of scope, still open, each filed with where it belongs:** B031's missing relevance floor on
+  every register lane; the 251-work tradition backfill (derived, unrun); `Anglican`/`anglican`
+  (11 published rows, cosmetic); CI `db-invariants` step 11 test-branch data gaps.
+
+### Evidence
+
+`docs/evidence/corpus-surface-2026-08-20/` — matrix runs before, after the deletion, and final.
+Deploy `15f4543` live on `ancientpaths.app` (`dpl_DhDLUwjowriAARfz5ffV8XTY6D4M`).
+
 ## 2026-08-19 (P4.n Phase B) — the Fathers are live; the flip costs 545 rows/min and that changes the plan
 
 **What is serving that was not yesterday: 18 Schaff patristic volumes, 26,674 embedding rows.**

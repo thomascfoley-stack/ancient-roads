@@ -279,6 +279,24 @@ format-keyed repo-wide for `npg_`, and **format-agnostic** under `docs/evidence/
 `bf2fbb0` lacked. Red-proof matrix and the two defects red-proofing exposed in the check itself
 are in `0c47ef1`. See `docs/SECURITY.md` → SEC-4 for the defect class.
 
+## Lane E — corpus↔surface reconciliation (opened and CLOSED 2026-08-20)
+
+One job, not a ticket list: **does every work reach every surface it should, and no surface it
+should not?** Both defects found on 08-18/19 were instances of its two failure directions —
+`gill-song` legal, served, verse-anchored and NAMED in the admission predicate while Song of Songs
+was the one book of 66 with zero passage-search entries; `hort-james1909` a Greek critical
+commentary declared `poetry`, taking 44 of 75 top-3 slots in the hymns lane. Neither was visible
+because nothing here asked the question per work × per surface: the serving lists, the admission
+predicate and the register wall each answer a piece, and both defects lived in the gaps.
+
+| # | Gate | Status |
+|---|---|---|
+| E1 | Instrument built and red-proved | **DONE.** `scripts/corpus-surface-matrix.mts`; predicates IMPORTED not retyped, surfaces derived from `SERVED_WORK_LISTS`. Its red-proof drives `detect()` itself, seeds inside rolled-back transactions, and proves both known defects in BOTH directions |
+| E2 | ⚑ Production run | **DONE 2026-08-20.** 362 works. First run returned 296 findings and **294 were the instrument** — it treated the vestigial `SERVED_*_WORKS` lists as a work's declared register, flagging `adam-clarke` for serving the exegetical lane as a commentary. Migration 044 superseded those lists; lane membership is `served` + `source_type` with no allowlist in the lane SQL. Reclassified → 2 |
+| E3 | Dead clause resolved | **DONE.** The admission predicate named 37 work slugs against a column that is NULL in all 371,521 rows. Neutrality proven before removal — 64,331 admitted with it and without it. Deleted (fails OPEN on a future data change); the exclusion leg kept (fails CLOSED); tripwire test on the precondition. **Migration 119** rebuilt `idx_commentary_fts_legal`, because a code-only change would have left passage search silently seq-scanning 371,521 rows |
+| E4 | Missing materializations closed | **DONE.** `gill-song` 115 rows (08-19) and `barnes-crosswire-nt` **7,431 rows across 27 books** (08-20). Admitted rows 64,331 → 71,762. Books of 66 with zero admitted entries: **NONE** |
+| E5 | Matrix clean | **DONE — 0 findings across 362 published works.** NOT in CI: the sweep needs production data, so it is a periodic owner-gated run; CI carries the code-level half only. See WORKLOG 2026-08-20 NOT DONE |
+
 ## Failure-mode watchlist
 
 **Fourteen instances so far.** The thirteenth: the four SERVED_*_WORKS routing lists themselves,

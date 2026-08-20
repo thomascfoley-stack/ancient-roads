@@ -1,6 +1,7 @@
 // CORPUS x SURFACE MATRIX — does every work reach every surface it should, and no surface it should not?
 //
-// One instrument for one job (docs/pm/orders/2026-08-20-corpus-surface-reconciliation.md). It exists
+// One instrument for one job. The job doc was disposable and is deleted; the durable record is
+// WORKLOG 2026-08-20 and MASTER's Lane E. This exists
 // because nothing in this repo asked that question per work x per surface: the serving lists, the
 // admission predicate and the register wall each answer a PIECE, and both defects found on
 // 2026-08-18/19 lived in the gaps between the pieces —
