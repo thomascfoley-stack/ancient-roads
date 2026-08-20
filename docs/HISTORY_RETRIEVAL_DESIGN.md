@@ -123,9 +123,14 @@ Response (the whole contract — no other fields reach the client):
 //            excerpt: string /* exact substring, ≤420 chars, server-asserted */,
 //            matched: ('entity'|'period'|'text')[] }
 ```
-Thread persistence: reuse Research History threads with `mode:'history'`. **If the threads table lacks a mode column this is a SECOND migration** beside 119 — enumerate it in the build, owner-applied on prod either way; results render at
-`/ask/[id]` by mode branch. Telemetry: PostHog event `history_search` carrying ONLY
-`{result_count, had_entity, had_period}` — never query text (PostHog ruling, 2026-08-18).
+Thread persistence: rides chats/messages under persona `'history'` — NO migration was needed
+(built 2026-08-20; `web/src/lib/history-threads.ts`); results render at `/ask/[id]` by persona.
+**Telemetry: NO event ships in v1 — corrected 2026-08-20 after independent review found this doc
+claiming a `history_search` PostHog event with zero `.capture()` calls in the tree.** The tuning
+set (n≥50 logged queries, §3.4) sources from the history THREADS themselves — persona='history'
+rows are already per-account persisted queries — so nothing depends on PostHog, matching the
+owner's ruling that analytics stay beside the product. Any future event carries ONLY
+`{result_count, had_entity, had_period}`, never query text (PostHog ruling, 2026-08-18).
 
 ## 5. Wireframes — stages & click matrix
 
@@ -214,6 +219,20 @@ No bar exists yet and none may be invented after seeing results.
 ## 8. Out of scope
 Reader overhaul · conversational layer (v2, bait-gated, premium) · ingesting ANF09/ANF10 ·
 Great Awakening acquisitions (parked: CCEL search inconclusive) · any change to voices retrieval.
+
+## 8b. LAUNCH GATES (independent review, 2026-08-20 — hold LAUNCH, not the prod walk)
+
+1. **Similarity floor for nonsense queries.** A control query ("best sourdough starter recipe")
+   correctly matches zero entities and zero period — the honesty strip is clean — but the vector
+   leg still surfaces nearest-neighbor text, so the reader sees a "Closest match to your question"
+   hero for sourdough. The pre-registered bars gate interpretation honesty only, so this PASSES
+   while rendering what Stage 4's empty state exists to prevent. The floor is derived on the
+   logged-queries tuning set, never on the frozen 20. Fine for the owner walk behind the site
+   gate; **must resolve before real users.**
+
+**Known limit, recorded:** heading paths round-trip through ' — ' (the ingest contract joins on
+it; the UI splits on it). A natural em-dash-with-spaces inside a heading mis-splits in DISPLAY
+only; the real fix is an array-typed path — a schema change, out of v1 scope.
 
 ## 9. Open owner decisions
 1. npnf201/202/203 in history search scope — both reviewer and author recommend IN (Eusebius is
