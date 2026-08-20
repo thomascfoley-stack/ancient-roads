@@ -46,6 +46,39 @@ const die = (m, c = 1) => { console.error(m); process.exit(c); };
 const slugFile = val('slugs');
 const batchSize = Math.max(1, Number(val('batch') ?? 2000));
 const dryRun = has('dry-run');
+// ── --table: WHICH vector table serves. A closed whitelist mapped to full statement strategies —
+// the table name is NEVER interpolated from input, and each entry carries its own scope queries
+// because the two tables key differently (embeddings by metadata->>'work'; history_embeddings by
+// section_id -> sections -> sources, per HISTORY_RETRIEVAL_DESIGN §2). Adding a table here means
+// writing its strategy, deliberately.
+const TABLES = {
+  embeddings: {
+    todo: `SELECT count(*)::int n FROM embeddings WHERE user_id IS NULL AND metadata->>'work' = ANY($1) AND served IS NOT TRUE`,
+    update: `UPDATE embeddings SET served = true WHERE ctid IN (
+       SELECT ctid FROM embeddings
+        WHERE user_id IS NULL AND metadata->>'work' = ANY($1) AND served IS NOT TRUE
+        LIMIT $2)`,
+    verify: `SELECT count(*) FILTER (WHERE served)::int s, count(*)::int n
+       FROM embeddings WHERE user_id IS NULL AND metadata->>'work' = ANY($1)`,
+  },
+  history_embeddings: {
+    todo: `SELECT count(*)::int n FROM history_embeddings he
+        JOIN sections s ON s.id = he.section_id JOIN sources src ON src.id = s.source_id
+       WHERE src.slug = ANY($1) AND he.served IS NOT TRUE`,
+    update: `UPDATE history_embeddings SET served = true WHERE section_id IN (
+       SELECT he.section_id FROM history_embeddings he
+         JOIN sections s ON s.id = he.section_id JOIN sources src ON src.id = s.source_id
+        WHERE src.slug = ANY($1) AND he.served IS NOT TRUE
+        LIMIT $2)`,
+    verify: `SELECT count(*) FILTER (WHERE he.served)::int s, count(*)::int n
+       FROM history_embeddings he
+        JOIN sections s ON s.id = he.section_id JOIN sources src ON src.id = s.source_id
+       WHERE src.slug = ANY($1)`,
+  },
+};
+const tableArg = val('table') ?? 'embeddings';
+const T = TABLES[tableArg];
+if (!T) die(`STOP: --table must be one of: ${Object.keys(TABLES).join(', ')}. Got '${tableArg}'. Nothing was written.`, 2);
 if (!slugFile) die('usage: serve-batched.mjs --slugs=<file.json> [--batch=2000] [--dry-run]', 2);
 
 let slugs;
@@ -71,6 +104,7 @@ try {
 console.log(`serve-batched — target ${host} (credentials redacted)`);
 console.log(`slugs        ${slugs.length} from ${slugFile}`);
 console.log(`batch size   ${batchSize} row(s) per COMMIT`);
+console.log(`table        ${tableArg}`);
 
 // TTY checked before connecting — pure environment; finding out after connect would mean holding a
 // production connection for the sole purpose of refusing.
@@ -118,7 +152,7 @@ try {
   console.log(`preflight    ${src.length} work(s): all published, licences allowed, provenance clean, none vetoed`);
 
   const todo = (await client.query(
-    `SELECT count(*)::int n FROM embeddings WHERE user_id IS NULL AND metadata->>'work' = ANY($1) AND served IS NOT TRUE`,
+    T.todo,
     [slugs])).rows[0].n;
   console.log(`to serve     ${todo.toLocaleString()} row(s)  (~${Math.ceil(todo / batchSize)} commits, ~${(todo / 28 / 60).toFixed(0)} min at the measured 28 rows/sec)`);
   if (todo === 0) { console.log('\nNothing to do — already fully served.'); process.exit(0); }
@@ -132,11 +166,7 @@ try {
   const startedAt = Date.now();
   for (let i = 1; ; i += 1) {
     const t0 = Date.now();
-    const r = await client.query(
-      `UPDATE embeddings SET served = true WHERE ctid IN (
-         SELECT ctid FROM embeddings
-          WHERE user_id IS NULL AND metadata->>'work' = ANY($1) AND served IS NOT TRUE
-          LIMIT $2)`, [slugs, batchSize]);
+    const r = await client.query(T.update, [slugs, batchSize]);
     if (r.rowCount === 0) break;
     written += r.rowCount;
     const secs = (Date.now() - startedAt) / 1000;
@@ -145,9 +175,7 @@ try {
     console.log(`  batch ${String(i).padStart(4)}  +${String(r.rowCount).padStart(5)}  total ${written.toLocaleString().padStart(9)}/${todo.toLocaleString()}  ${(100 * written / todo).toFixed(1)}%  ${rate.toFixed(0)}/s  eta ${(left / Math.max(rate, 1) / 60).toFixed(0)}m  (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
   }
 
-  const check = (await client.query(
-    `SELECT count(*) FILTER (WHERE served)::int s, count(*)::int n
-       FROM embeddings WHERE user_id IS NULL AND metadata->>'work' = ANY($1)`, [slugs])).rows[0];
+  const check = (await client.query(T.verify, [slugs])).rows[0];
   console.log(`\nOK — ${written.toLocaleString()} row(s) served across ${slugs.length} work(s).`);
   console.log(`Verified: ${check.s.toLocaleString()}/${check.n.toLocaleString()} row(s) for these works now carry served=true.`);
   console.log(`To UNDO: node scripts/publish-flip.mjs --slugs=${slugFile} --reverse --snapshot=<flip-pre-snapshot>.json`);
@@ -156,7 +184,7 @@ try {
   fs.mkdirSync(dir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   fs.writeFileSync(path.join(dir, `serve-batched-${stamp}.json`),
-    `${JSON.stringify({ host, slugFile, slugs: slugs.length, batchSize, rowsWritten: written, verified: check }, null, 2)}\n`);
+    `${JSON.stringify({ host, table: tableArg, slugFile, slugs: slugs.length, batchSize, rowsWritten: written, verified: check }, null, 2)}\n`);
 } catch (e) {
   console.error(`\nSTOPPED: ${e.message}`);
   console.error(`${written.toLocaleString()} row(s) were already COMMITTED and are safe. Re-run the same command to resume.`);
