@@ -5,6 +5,7 @@ import { encodeVerseId } from '@bible/verse-id';
 import {
   getChapterAnnotations,
   createHighlight,
+  findHighlight,
   removeHighlight,
   removeHighlightById,
   upsertNote,
@@ -102,14 +103,20 @@ export async function POST(req: NextRequest) {
       const spanStart = typeof body.spanStart === 'number' && Number.isInteger(body.spanStart) ? body.spanStart : null;
       const spanEnd = typeof body.spanEnd === 'number' && Number.isInteger(body.spanEnd) ? body.spanEnd : null;
       const hasSpan = spanStart !== null && spanEnd !== null && spanEnd > spanStart;
-      const h = await createHighlight(user.id, {
+      const span = {
         verseId,
         color: String(body.color ?? 'yellow'),
         textColor: body.textColor != null ? String(body.textColor) : null,
         spanStart: hasSpan ? spanStart : null,
         spanEnd: hasSpan ? spanEnd : null,
         translation: body.translation != null ? String(body.translation) : null,
-      });
+      };
+      // Idempotent create: the double-submit path (a retry after a timeout, a double-tap)
+      // used to INSERT a twin row — prod carried two identical spans (2026-08 live QA).
+      // An identical active span is returned with 200, not duplicated.
+      const existing = await findHighlight(user.id, span);
+      if (existing) return NextResponse.json(existing, { status: 200 });
+      const h = await createHighlight(user.id, span);
       return NextResponse.json(h, { status: 201 });
     }
     if (body.kind === 'note') {

@@ -33,6 +33,7 @@ vi.mock('@/lib/session', () => ({
 const lib = vi.hoisted(() => ({
   getChapterAnnotations: vi.fn(),
   createHighlight: vi.fn(),
+  findHighlight: vi.fn(),
   removeHighlight: vi.fn(),
   removeHighlightById: vi.fn(),
   upsertNote: vi.fn(),
@@ -68,6 +69,7 @@ beforeEach(() => {
   for (const fn of Object.values(lib)) fn.mockReset();
   lib.getChapterAnnotations.mockResolvedValue({ highlights: [], notes: [], bookmarks: [] });
   lib.createHighlight.mockResolvedValue({ id: 'h1' });
+  lib.findHighlight.mockResolvedValue(null);
   lib.upsertNote.mockResolvedValue({ id: 'n1' });
   lib.createBookmark.mockResolvedValue({ id: 'b1' });
 });
@@ -142,6 +144,36 @@ describe('#8 — verseId is an integer in the encoded range, not merely truthy',
       expect((await get(qs)).status, qs).toBe(400);
     }
     expect(lib.getChapterAnnotations).not.toHaveBeenCalled();
+  });
+});
+
+describe('highlight create is idempotent — the duplicate-row fix', () => {
+  it('a second identical POST returns 200 with the SAME row and inserts nothing', async () => {
+    // SEED: drop the findHighlight branch in the route -> both POSTs return 201 and
+    // createHighlight runs twice: the twin row this fix exists to prevent.
+    lib.createHighlight.mockResolvedValue({ id: 'h1', verse_id: 43_003_016, span_start: 4, span_end: 16, color: 'yellow', translation: 'kjv' });
+    const body = { kind: 'highlight', verseId: 43_003_016, color: 'yellow', spanStart: 4, spanEnd: 16, translation: 'kjv' };
+
+    const first = await post(body);
+    expect(first.status).toBe(201);
+    expect(lib.createHighlight).toHaveBeenCalledTimes(1);
+
+    // The row the first POST stored is what the second one's duplicate-check finds.
+    lib.findHighlight.mockResolvedValueOnce({ id: 'h1', verse_id: 43_003_016, span_start: 4, span_end: 16, color: 'yellow', translation: 'kjv' });
+    const second = await post(body);
+    expect(second.status).toBe(200);
+    expect(((await second.json()) as { id: string }).id).toBe('h1');
+    // Exactly one row exists: the second POST never reached INSERT.
+    expect(lib.createHighlight).toHaveBeenCalledTimes(1);
+  });
+
+  it('the duplicate-check matches on the SAME span the insert would write', async () => {
+    // A check that looked up different fields than the insert would pass the test above while
+    // missing real duplicates — pin that findHighlight sees exactly createHighlight's arguments.
+    await post({ kind: 'highlight', verseId: 43_003_016, color: 'blue', spanStart: 4, spanEnd: 16, translation: 'kjv' });
+    const expected = { verseId: 43_003_016, color: 'blue', textColor: null, spanStart: 4, spanEnd: 16, translation: 'kjv' };
+    expect(lib.findHighlight).toHaveBeenCalledWith('qa-annotations-routes', expected);
+    expect(lib.createHighlight).toHaveBeenCalledWith('qa-annotations-routes', expected);
   });
 });
 

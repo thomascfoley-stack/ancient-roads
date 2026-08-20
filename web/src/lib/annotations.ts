@@ -73,6 +73,28 @@ export interface NewHighlight {
   translation?: string | null;
 }
 
+// Idempotent-create lookup (2026-08 live QA: prod carried TWO identical rows for the same
+// user/verse/span/color/translation — the double-submit path, a retry after a timeout or a
+// double-tap, INSERTed a twin every time). The route SELECTs first and returns the existing row
+// instead of inserting. Read-then-branch is accepted here: unlike notes/bookmarks there is no
+// unique index over these columns, so ON CONFLICT has nothing to hang on, and adding one is a
+// migration this fix deliberately does not take. `IS NOT DISTINCT FROM` so legacy NULL/NULL
+// whole-verse spans match; the coalesce on color mirrors the read path so a legacy row with only
+// `color` set still dedupes. The oldest match wins — it is the id any reader already holds.
+export async function findHighlight(userId: string, h: NewHighlight): Promise<Highlight | null> {
+  const [rows] = await runAsUser(userId, (sql) => [
+    sql`SELECT id, verse_id, verse_end, coalesce(background_color, color) AS color, text_color, span_start, span_end, translation
+        FROM highlights
+        WHERE user_id = ${userId} AND verse_id = ${h.verseId} AND deleted_at IS NULL
+          AND coalesce(background_color, color) = ${h.color}
+          AND span_start IS NOT DISTINCT FROM ${h.spanStart ?? null}
+          AND span_end IS NOT DISTINCT FROM ${h.spanEnd ?? null}
+          AND translation IS NOT DISTINCT FROM ${h.translation ?? null}
+        ORDER BY created_at LIMIT 1`,
+  ]);
+  return (rows as Highlight[])[0] ?? null;
+}
+
 // Insert ONE highlight span. Multiple active spans per verse are allowed (no sibling delete) —
 // that is the multi-span rework. `color` and `background_color` are both set so a reader on the
 // pre-migration schema still renders the right background during the deploy gap.
