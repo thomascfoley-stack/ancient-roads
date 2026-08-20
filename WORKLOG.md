@@ -40,8 +40,14 @@ snapshot at docs/evidence/annotations-dedupe/pre-dedupe-snapshot-2026-08-20.csv.
 - Interlinear highlighting: unbuilt (above) — the single-word Greek/Hebrew dream loop stays open.
 - Discoverability (coach mark): deferred by owner ("big lift, later").
 - Note-editor UX: never exercised in this pass.
-- Post-deploy live battery (grace window, tap-mode, bloom, wash, idempotency on prod) runs after
-  the deploy lands.
+
+### Post-deploy live battery (prod, 2026-08-20, dpl_6rkRV96mPVHbhEwNXPSpS3mkUR8t serving d09d4f2)
+- V1 tap-mode: toggle → 970 word spans → tap "in" → anchor → tap "the" → popover. PASS.
+- V2 grace window: bar present pre-collapse, present at +0.7s, gone at +2.1s (the 1500ms contract). PASS.
+- V3 idempotency: first POST 201, second 200, same id. PASS.
+- V4 translation pin: KJV spans on WEB render carry titled dots ("Highlighted in KJV"); web span on v8 renders native `bg-yellow-200/70`. PASS.
+- V5 bloom via the full UI path (tap-mode → swatch): fresh mark wears `animate-highlight-bloom`. PASS. (An earlier miss was a probe artifact: marks are styled spans, not `<mark>` elements, and raw-fetch writes bypass the client's freshSpans tracking by design.)
+- Test residue cleaned: 2 verification rows deleted from prod (v10, v16); zero remain.
 
 
 ## 2026-08-20 (Phase 1 COMPLETE) — the converter exists and a second historian went end-to-end
