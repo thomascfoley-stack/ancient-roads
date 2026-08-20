@@ -1,0 +1,21 @@
+{
+  "_": "Copy batch (2026-08-20): the single-tx 27-work copy died mid-flight with nothing committed — the flip lesson applied to the copy. Each batch is its own transaction, minutes long. ON CONFLICT DO NOTHING makes re-runs safe.",
+  "slugs": [
+    "bacon-lw-history",
+    "baird-huguenots",
+    "bangs-history1",
+    "bangs-history2",
+    "bangs-history3",
+    "bangs-history4",
+    "bede-history",
+    "chesterton-historyengland",
+    "dickinson-musicchurch",
+    "hort-ecclesia",
+    "miller-history",
+    "robertson-history",
+    "rutherford-triumph",
+    "winkworth-tauler",
+    "wuttke-ethics1",
+    "young-j-christ"
+  ]
+}
