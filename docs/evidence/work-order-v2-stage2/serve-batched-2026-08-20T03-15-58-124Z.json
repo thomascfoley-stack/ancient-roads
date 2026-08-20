@@ -1,0 +1,11 @@
+{
+  "host": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "slugFile": "docs/evidence/p4n-flip-2026-08-19/flip-sermon.json",
+  "slugs": 95,
+  "batchSize": 500,
+  "rowsWritten": 32291,
+  "verified": {
+    "s": 146205,
+    "n": 146205
+  }
+}

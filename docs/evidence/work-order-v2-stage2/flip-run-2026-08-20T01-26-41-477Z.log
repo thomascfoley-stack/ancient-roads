@@ -1,0 +1,5 @@
+serve:false  4 standing ruling(s) (HEAD 4, tree 4)
+publish-flip — target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (credentials redacted)
+direction    staged -> published
+slugs        95 from docs/evidence/p4n-flip-2026-08-19/flip-sermon.json
+! STOP: stdin is not a terminal. The owner gate cannot be satisfied by a pipe, a heredoc or a CI job — that is the entire point of it. Run this from a terminal.

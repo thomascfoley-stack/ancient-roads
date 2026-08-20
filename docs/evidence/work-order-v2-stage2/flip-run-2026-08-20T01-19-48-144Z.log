@@ -1,0 +1,121 @@
+serve:false  4 standing ruling(s) (HEAD 4, tree 4)
+publish-flip — target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (credentials redacted)
+direction    staged -> published
+slugs        95 from docs/evidence/p4n-flip-2026-08-19/flip-sermon.json
+! (node:91613) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+role         neondb_owner (asserted at the server)
+[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: [77Gnode scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon.json --batch=500[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon.json --batch=50[177G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon.json --batch=5[176G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon.json --batch=[175G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon.json --batch[174G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon.json --batc[173G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon.json --bat[172G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon.json --ba[171G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon.json --b[170G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon.json --[169G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon.json -[168G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon.json [167G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon.json[166G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon.jso[165G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon.js[164G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon.j[163G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon.[162G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon[161G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermo[160G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-serm[159G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-ser[158G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-se[157G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-s[156G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-[155G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip[154G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/fli[153G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/fl[152G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/f[151G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/[150G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-19[149G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-1[148G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08-[147G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-08[146G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-0[145G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026-[144G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2026[143G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-202[142G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-20[141G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-2[140G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip-[139G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-flip[138G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-fli[137G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-fl[136G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-f[135G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n-[134G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4n[133G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p4[132G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/p[131G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence/[130G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidence[129G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evidenc[128G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/eviden[127G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evide[126G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evid[125G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/evi[124G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/ev[123G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/e[122G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs/[121G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=docs[120G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=doc[119G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=do[118G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=d[117G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs=[116G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slugs[115G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slug[114G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --slu[113G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --sl[112G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --s[111G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs --[110G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs -[109G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs [108G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mjs[107G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.mj[106G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.m[105G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched.[104G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batched[103G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batche[102G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batch[101G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-batc[100G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-bat[99G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-ba[98G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-b[97G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve-[96G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serve[95G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/serv[94G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/ser[93G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/se[92G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/s[91G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts/[90G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scripts[89G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node script[88G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scrip[87G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scri[86G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node scr[85G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node sc[84G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node s[83G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node [82G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: node[81G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: nod[80G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: no[79G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: n[78G[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: [77Gpublish 
+snapshot     docs/evidence/work-order-v2-stage2/flip-pre-snapshot-2026-08-20T01-20-04-258Z.json (811 rows + served state for 95 slug(s), written before COMMIT)
+! STOP: 3 listed slug(s) are already 'published': doddridge-evidences, eckhart-sermons, macdonald-unspoken1.
+  A forward flip would SERVE their embeddings rows without moving status. If serving
+  already-published works is what you mean (e.g. the 88), re-run with --serve-published.
