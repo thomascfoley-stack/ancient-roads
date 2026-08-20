@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChapterData } from '@/lib/bible';
 import { HIGHLIGHT_BG, HIGHLIGHT_WASH } from '@/lib/highlight-colors';
-import { flattenToSegments, type HighlightRange } from '@/lib/highlight-range';
+import { flattenToSegments, wordTokens, type HighlightRange } from '@/lib/highlight-range';
 import { useTextAnnotation, type AnnotationTarget } from '@/lib/use-text-annotation';
 import { singleWordOf } from '@/lib/original';
 // StoredSpan is defined in the hook that produces it (use-annotation-writes.ts), not here —
@@ -90,6 +90,8 @@ export function VerseDisplay({
   onAddHighlight,
   onOpen,
   onDefine,
+  tapMode,
+  onExitTapMode,
 }: {
   data: ChapterData;
   bookName: string;
@@ -119,6 +121,13 @@ export function VerseDisplay({
    *  single-word selections, because that is the only question this lookup can answer — a phrase
    *  has no one word behind it. Absent when the chapter has no interlinear data. */
   onDefine?: (english: string, verse: number) => void;
+  /** Two-tap highlighting (the phone flow): while on, verse text renders word-level tap
+   *  targets — first tap anchors, second completes the span and raises it as `pending`
+   *  through the SAME popover path a drag-selection uses. Word spans exist only in this
+   *  mode, so ordinary reading pays no per-word DOM cost. */
+  tapMode?: boolean;
+  /** ESC exits the mode; the page owns the toggle (the header button flips it). */
+  onExitTapMode?: () => void;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
@@ -143,7 +152,78 @@ export function VerseDisplay({
     [data],
   );
 
-  const { pending, dismiss } = useTextAnnotation(rootRef, resolveTarget);
+  const { pending, dismiss, raise } = useTextAnnotation(rootRef, resolveTarget);
+
+  // ── tap mode (two-tap highlight) ─────────────────────────────────────────────────────────
+  // The first tap's word. Kept here, not in the page: it is meaningless outside this mode and
+  // dies with it (the effect below clears it whenever the mode flips off).
+  const [anchor, setAnchor] = useState<{ verse: number; start: number; end: number } | null>(null);
+
+  useEffect(() => {
+    if (!tapMode) {
+      setAnchor(null);
+      return;
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setAnchor(null);
+        onExitTapMode?.();
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [tapMode, onExitTapMode]);
+
+  // First tap anchors; second completes [anchor..tap] in EITHER direction and raises the span
+  // as the same `pending` a drag-selection produces — one popover, not two.
+  function tapWord(verse: number, start: number, end: number, el: HTMLElement) {
+    if (!anchor || anchor.verse !== verse) {
+      setAnchor({ verse, start, end });
+      return;
+    }
+    const lo = Math.min(anchor.start, start);
+    const hi = Math.max(anchor.end, end);
+    const text = data.verses.find((v) => v.verse === verse)?.text ?? '';
+    const r = el.getBoundingClientRect();
+    raise({
+      kind: 'verse',
+      key: String(verse),
+      start: lo,
+      end: hi,
+      text: text.slice(lo, hi),
+      rect: { top: r.top, left: r.left, bottom: r.bottom, right: r.right, width: r.width, height: r.height },
+    });
+    setAnchor(null);
+  }
+
+  // A segment's slice as word-level tap targets (tap mode only). Offsets handed to tapWord are
+  // absolute into v.text (segment start + token offset), so a span across a colour boundary
+  // still anchors to the canonical text. Whitespace between words renders as bare text, which
+  // keeps the container's text-node concatenation exactly the slice — the §3 offset invariant
+  // the selection engine walks is untouched.
+  function tapWords(slice: string, base: number, verse: number) {
+    const nodes: ReactNode[] = [];
+    let cursor = 0;
+    for (const tok of wordTokens(slice)) {
+      if (tok.start > cursor) nodes.push(slice.slice(cursor, tok.start));
+      const absStart = base + tok.start;
+      const absEnd = base + tok.end;
+      const isAnchor = anchor?.verse === verse && anchor.start === absStart && anchor.end === absEnd;
+      nodes.push(
+        <span
+          key={tok.start}
+          data-tap-word={`${verse}:${absStart}:${absEnd}`}
+          onClick={(e) => tapWord(verse, absStart, absEnd, e.currentTarget)}
+          className={`cursor-pointer select-none rounded-[3px] hover:bg-accent-100/70 dark:hover:bg-accent-900/40${isAnchor ? ' bg-accent-200/80 dark:bg-accent-800/70' : ''}`}
+        >
+          {slice.slice(tok.start, tok.end)}
+        </span>,
+      );
+      cursor = tok.end;
+    }
+    if (cursor < slice.length) nodes.push(slice.slice(cursor));
+    return nodes;
+  }
 
   function highlightPending(color: string) {
     if (pending && onAddHighlight) {
@@ -347,18 +427,20 @@ export function VerseDisplay({
               {/* The verse-text container: its text nodes concatenate to exactly v.text, so the
                   anchoring mapper (rangeToOffsetsInContainer) walks it to derive offsets into v.text. */}
               <span data-verse-text={v.verse}>
-                {segments.map((seg, i) =>
-                  seg.color ? (
+                {segments.map((seg, i) => {
+                  const slice = v.text.slice(seg.start, seg.end);
+                  const content = tapMode ? tapWords(slice, seg.start, v.verse) : slice;
+                  return seg.color ? (
                     <span
                       key={i}
                       className={`rounded-[3px] ${HIGHLIGHT_BG[seg.color] ?? ''}${seg.fresh ? ' animate-highlight-bloom' : ''}`}
                     >
-                      {v.text.slice(seg.start, seg.end)}
+                      {content}
                     </span>
                   ) : (
-                    <span key={i}>{v.text.slice(seg.start, seg.end)}</span>
-                  ),
-                )}
+                    <span key={i}>{content}</span>
+                  );
+                })}
               </span>{' '}
               {/* The glyph is decorative and the `title` that used to carry its meaning was
                   hover-only: absent on touch, unreliable to assistive tech. The glyph is

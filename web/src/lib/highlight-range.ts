@@ -62,6 +62,18 @@ export function rangeToOffsets(
   return { start, end };
 }
 
+/** Whole-word tokens with their char offsets into `text` — deterministic, so the tap-mode
+ *  targets verse-display renders carry exactly the offsets a two-tap span persists. Words are
+ *  maximal non-whitespace runs, matching what snapToWords keeps (trailing punctuation rides
+ *  with its word in both). */
+export function wordTokens(text: string): { start: number; end: number }[] {
+  const out: { start: number; end: number }[] = [];
+  const re = /\S+/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) out.push({ start: m.index, end: m.index + m[0].length });
+  return out;
+}
+
 export interface HighlightRange {
   start: number;
   end: number;

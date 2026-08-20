@@ -55,7 +55,7 @@ export interface PendingAnnotation {
 export function useTextAnnotation(
   rootRef: RefObject<HTMLElement | null>,
   resolveTarget: ResolveTarget,
-): { pending: PendingAnnotation | null; dismiss: () => void } {
+): { pending: PendingAnnotation | null; dismiss: () => void; raise: (p: PendingAnnotation) => void } {
   const [pending, setPending] = useState<PendingAnnotation | null>(null);
 
   useEffect(() => {
@@ -111,5 +111,10 @@ export function useTextAnnotation(
     setPending(null);
   }, []);
 
-  return { pending, dismiss };
+  // Programmatic raise, for flows that produce a span without a DOM selection (tap mode's
+  // two-tap anchor→complete in verse-display.tsx). The caller builds exactly the shape the
+  // engine's own evaluate() builds, so the popover cannot tell the two paths apart.
+  const raise = useCallback((p: PendingAnnotation) => setPending(p), []);
+
+  return { pending, dismiss, raise };
 }
