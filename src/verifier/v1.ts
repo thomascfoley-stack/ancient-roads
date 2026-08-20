@@ -301,8 +301,32 @@ export async function verifyV1(
   // 2026-07-17): two voice blocks quoting the same section are one source, and
   // must not satisfy the >=2-voices floor. Traditions are normalized so raw-string
   // casing/spacing variants of one tradition don't inflate the count.
-  const availableTraditions = new Set(retrieval.traditions.map(normalizeForMatch));
-  const usedTraditions = new Set(voiceBlocks.map(({ block }) => normalizeForMatch(block.attribution.tradition)));
+  //
+  // `unassigned` IS NOT A TRADITION — it is the ABSENCE of one, and counting it as a value is
+  // what let one man satisfy a floor that exists to require two traditions. Measured on
+  // production 2026-08-19: 301 served works / 356,167 rows carry `unassigned`, and 15 people are
+  // served under BOTH a real tradition and `unassigned` because the bulk ingest used a different
+  // author convention for their later works — Spurgeon under `baptist` AND `unassigned` across 68
+  // works, Calvin 53, Schaff 38, Owen 32. An answer quoting Spurgeon twice counted as two
+  // traditions and cleared the gate.
+  //
+  // Dropped from BOTH sides, and both are load-bearing. On the USED side it stops an absent
+  // tradition from padding the count. On the AVAILABLE side it stops the gate from ENGAGING on
+  // breadth that does not exist: if retrieval offered only `baptist` and `unassigned`, there was
+  // never a second tradition to require, and demanding one would fail every answer for a corpus
+  // gap rather than for a composition fault.
+  //
+  // Fixing the DATA instead was measured and rejected: retrieval reads tradition out of
+  // `embeddings.metadata`, so it would mean rewriting 336,837 JSONB rows on a table carrying
+  // multiple multi-GB HNSW indexes — and it would still miss the people a name-matcher cannot
+  // safely join (`J.C. Ryle` / `Ryle, John Charles`, `B.W. Johnson` / `Johnson, Barton Warren`).
+  // The backfill remains worth doing for display and genuine breadth; it is not what makes the
+  // gate honest. This is.
+  const NOT_A_TRADITION = new Set(['unassigned', 'unknown', '']);
+  const realTraditions = (xs: readonly (string | null | undefined)[]) =>
+    new Set(xs.map((t) => normalizeForMatch(t ?? '')).filter((t) => !NOT_A_TRADITION.has(t)));
+  const availableTraditions = realTraditions(retrieval.traditions);
+  const usedTraditions = realTraditions(voiceBlocks.map(({ block }) => block.attribution.tradition));
   const distinctVoiceSections = new Set(voiceBlocks.map(({ block }) => block.section_id));
   const requiredVoices = Math.min(config.minVoices, retrieval.sectionIds.length);
   const requiredTraditions = Math.min(config.minTraditions, availableTraditions.size);
