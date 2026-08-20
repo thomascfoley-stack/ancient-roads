@@ -203,6 +203,37 @@ export async function checkCorpusSearchRateLimit(userId: string, sql: Sql = getD
   }
 }
 
+const HISTORY_SEARCH_PER_MIN = Number(process.env.HISTORY_SEARCH_LIMIT_PER_MIN ?? 30);
+const HISTORY_SEARCH_PER_DAY = Number(process.env.HISTORY_SEARCH_LIMIT_PER_DAY ?? 500);
+
+/** History search (HISTORY_RETRIEVAL_DESIGN §4). Same caps and FAIL-CLOSED posture as corpus
+ *  search: a limiter outage refuses search rather than uncapping it — search is never
+ *  load-bearing the way the site gate is, so the asymmetry argument cuts the other way here. */
+export async function checkHistorySearchRateLimit(userId: string, sql: Sql = getDb()): Promise<RateLimitResult> {
+  try {
+    const now = Date.now();
+    const minStart = new Date(Math.floor(now / 60_000) * 60_000).toISOString();
+    const d = new Date(now);
+    const dayStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toISOString();
+    // Minute before day, so a retry loop cannot burn the daily quota (the H4 pattern).
+    const minCount = await bump(sql, userId, 'history-search:min', minStart);
+    if (minCount > HISTORY_SEARCH_PER_MIN) {
+      logEvent('rate_limit_hit', { userId, cap: 'history-search:min', count: minCount, limit: HISTORY_SEARCH_PER_MIN });
+      return { ok: false, limited: 'min', retryAfterSec: 60 };
+    }
+    const dayCount = await bump(sql, userId, 'history-search:day', dayStart);
+    if (dayCount > HISTORY_SEARCH_PER_DAY) {
+      logEvent('rate_limit_hit', { userId, cap: 'history-search:day', count: dayCount, limit: HISTORY_SEARCH_PER_DAY });
+      return { ok: false, limited: 'day', retryAfterSec: 3600 };
+    }
+    await maybeSweep(sql);
+    return { ok: true };
+  } catch (e) {
+    logEvent('rate_limit_fail_closed', { userId, error: (e as Error).message });
+    return { ok: false, limited: 'unavailable', retryAfterSec: 30 };
+  }
+}
+
 // Per-IP brute-force throttle for the site-password gate. Same fail-open asymmetry as the
 // ask limiter: a limiter outage must not lock legitimate visitors out (the password is still
 // required regardless), but each throttled attempt is logged. Minute cap checked first so a
