@@ -123,12 +123,15 @@ function eraOf(year?: number) {
 // History became a real lane 2026-08-14 (corpus-backlog #6: SERVED_HISTORIAN_WORKS +
 // retrieveHistorianLane + the josephus serve-flip) — it joined LANE_OPTIONS then, and the
 // disabled "(coming soon)" placeholder below was removed.
-type LaneKey = 'sermons' | 'theology' | 'songVerse' | 'historians';
+// 'historians' REMOVED from the voices picker 2026-08-20 (owner decision #4, standalone-history
+// ruling): History is its own mode on /ask, never a voices lane. The RESULT renderer below keeps
+// its historian branches deliberately — persisted threads are transcripts and must keep rendering
+// the historian chunks they already hold.
+type LaneKey = 'sermons' | 'theology' | 'songVerse';
 const LANE_OPTIONS: { key: LaneKey; label: string }[] = [
   { key: 'sermons', label: 'Sermons' },
   { key: 'theology', label: 'Theology & Confessions' },
   { key: 'songVerse', label: 'Hymns & Sacred Poetry' },
-  { key: 'historians', label: 'History' },
 ];
 
 // Design C (owner-ruled 2026-08-17): the scope control is ALWAYS VISIBLE — a labeled band of
@@ -208,7 +211,7 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
     ),
   );
   const [busy, setBusy] = useState(false);
-  const [lanes, setLanes] = useState<Record<LaneKey, boolean>>({ sermons: true, theology: true, songVerse: true, historians: true });
+  const [lanes, setLanes] = useState<Record<LaneKey, boolean>>({ sermons: true, theology: true, songVerse: true });
   const nextId = useRef(1);
   // The thread this session appends to. Seeded by /ask/[id]; set by the first `thread` event on
   // /ask — where the URL is then swapped with replaceState (§4.3: a fresh ask must not leave an

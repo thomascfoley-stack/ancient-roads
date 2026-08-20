@@ -46,11 +46,19 @@ describe('teach(): caller-controlled lane flags', () => {
     retrieveCommentary.mockResolvedValue([]);
   });
 
-  it('fires all four lanes when lanes is omitted (unchanged default behavior)', async () => {
+  // CONTRACT CHANGE 2026-08-20 (owner decision #4, standalone-history ruling): the historian lane
+  // is explicit OPT-IN. Omitted lanes now fire THREE lanes; historians requires `historians: true`,
+  // which nothing in the product sends anymore — the voices picker no longer offers it.
+  it('fires the three voices lanes when lanes is omitted; historians stays OFF (decision #4)', async () => {
     await teach('What is grace?', {});
     expect(retrieveSongVerse).toHaveBeenCalledTimes(1);
     expect(retrieveSermonLane).toHaveBeenCalledTimes(1);
     expect(retrieveTheologyLane).toHaveBeenCalledTimes(1);
+    expect(retrieveHistorianLane).not.toHaveBeenCalled();
+  });
+
+  it('historians fires ONLY on explicit opt-in — the flip that makes retirement controllable', async () => {
+    await teach('q', { lanes: { historians: true } });
     expect(retrieveHistorianLane).toHaveBeenCalledTimes(1);
   });
 
@@ -59,7 +67,7 @@ describe('teach(): caller-controlled lane flags', () => {
     expect(retrieveSermonLane).not.toHaveBeenCalled();
     expect(retrieveSongVerse).toHaveBeenCalledTimes(1);
     expect(retrieveTheologyLane).toHaveBeenCalledTimes(1);
-    expect(retrieveHistorianLane).toHaveBeenCalledTimes(1);
+    expect(retrieveHistorianLane).not.toHaveBeenCalled(); // absent = OFF since decision #4
   });
 
   it('skips every lane when every flag is false — the exegetical retrieval is never gated by it', async () => {

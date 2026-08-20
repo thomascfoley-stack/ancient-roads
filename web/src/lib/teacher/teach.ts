@@ -187,7 +187,12 @@ export async function teach(
   // the lane stayed inert, and its result absent from the payload, until an owner serve-flip. The
   // flip has landed — all 6,492 historian rows are served and the payload IS attached. See
   // retrieve.ts, which carries the measurement and the B031 consequence.
-  const historianPromise = lanes.historians === false ? Promise.resolve([]) : retrieveHistorianLane(queryVec, ranges);
+  // FLIPPED to explicit OPT-IN 2026-08-20 (owner decision #4): the voices picker no longer offers
+  // History, so an absent flag must mean OFF — under the old `=== false` default, removing the
+  // checkbox would have made this lane run on EVERY ask with no way to disable it, the exact
+  // inversion of the standalone ruling. Nothing sends true anymore; the lane is dormant until the
+  // §2b data retirement (owner-gated) removes its rows.
+  const historianPromise = lanes.historians === true ? retrieveHistorianLane(queryVec, ranges) : Promise.resolve([]);
   stageStart = Date.now();
   const retrieval = await retrieveCommentary(queryVec, RETRIEVE_K, { query });
   stageMs.retrieve = Date.now() - stageStart;
