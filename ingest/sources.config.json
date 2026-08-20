@@ -16357,33 +16357,6 @@
     }
   },
   {
-    "id": "knox-history-reformation",
-    "slug": "knox-history-reformation",
-    "title": "History of the Reformation of Religion in Scotland",
-    "author": "Knox, John",
-    "author_died": null,
-    "year_written": 1949,
-    "source_type": "historian",
-    "tradition": "unassigned",
-    "era": "unassigned",
-    "license": "Public Domain",
-    "tier": 3,
-    "provenance": {
-      "url": "https://www.ccel.org/ccel/knox/history_reformation",
-      "edition": "History of the Reformation of Religion in Scotland (CCEL)",
-      "year": 1949,
-      "year_basis": "printSourceInfo",
-      "licence_basis": "rightsDeclared",
-      "acquire": {
-        "adapter": "ccel",
-        "ccel_ids": [
-          "knox/history_reformation"
-        ],
-        "strip_markup": true
-      }
-    }
-  },
-  {
     "id": "knox-works1",
     "slug": "knox-works1",
     "title": "Works of John Knox, Vol. 1 (of 6)",
@@ -22216,33 +22189,6 @@
     }
   },
   {
-    "id": "garrison-histdisciple",
-    "slug": "garrison-histdisciple",
-    "title": "American Religious Movement: A Brief History of the Disciples of Christ",
-    "author": "Garrison, Winfred Ernest",
-    "author_died": 1969,
-    "year_written": 1945,
-    "source_type": "historian",
-    "tradition": "unassigned",
-    "era": "unassigned",
-    "license": "Public Domain",
-    "tier": 3,
-    "provenance": {
-      "url": "https://www.ccel.org/ccel/garrison/histdisciple",
-      "edition": "American Religious Movement: A Brief History of the Disciples of Christ (CCEL)",
-      "year": 1945,
-      "year_basis": "printSourceInfo",
-      "licence_basis": "rightsDeclared",
-      "acquire": {
-        "adapter": "ccel",
-        "ccel_ids": [
-          "garrison/histdisciple"
-        ],
-        "strip_markup": true
-      }
-    }
-  },
-  {
     "id": "kelly-gerhardtsong",
     "slug": "kelly-gerhardtsong",
     "title": "Paul Gerhardt’s “Spiritual Songs”",
@@ -24463,6 +24409,370 @@
         "adapter": "ccel",
         "ccel_ids": [
           "foxe/martyrs"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "schaff-anf06",
+    "slug": "schaff-anf06",
+    "title": "ANF06. Fathers of the Third Century: Gregory Thaumaturgus, Dionysius the Great, Julius Africanus, Anatolius and Minor Writers, Methodius, Arnobius",
+    "author": "Schaff, Philip",
+    "author_died": 1893,
+    "year_written": 1890,
+    "source_type": "father",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff/anf06",
+      "edition": "ANF06. Fathers of the Third Century: Gregory Thaumaturgus, Dionysius the Great, Julius Africanus, Anatolius and Minor Writers, Methodius, Arnobius (CCEL)",
+      "year": 1890,
+      "year_basis": "seriesSiblingInference",
+      "licence_basis": "authorPre1930",
+      "note": "Title CONFIRMED verbatim against the CCEL Schaff author page 2026-08-20. year inferred from the series print run — replace with the volume date captured at ingest.",
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/anf06"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "schaff-anf07",
+    "slug": "schaff-anf07",
+    "title": "ANF07. Fathers of the Third and Fourth Centuries: Lactantius, Venantius, Asterius, Victorinus, Dionysius, Apostolic Teaching and Constitutions, Homily, and Liturgies",
+    "author": "Schaff, Philip",
+    "author_died": 1893,
+    "year_written": 1890,
+    "source_type": "father",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff/anf07",
+      "edition": "ANF07. Fathers of the Third and Fourth Centuries: Lactantius, Venantius, Asterius, Victorinus, Dionysius, Apostolic Teaching and Constitutions, Homily, and Liturgies (CCEL)",
+      "year": 1890,
+      "year_basis": "seriesSiblingInference",
+      "licence_basis": "authorPre1930",
+      "note": "Title CONFIRMED verbatim against the CCEL Schaff author page 2026-08-20. year inferred from the series print run — replace with the volume date captured at ingest.",
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/anf07"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "schaff-anf08",
+    "slug": "schaff-anf08",
+    "title": "ANF08. The Twelve Patriarchs, Excerpts and Epistles, The Clementia, Apocrypha, Decretals, Memoirs of Edessa and Syriac Documents, Remains of the First Ages",
+    "author": "Schaff, Philip",
+    "author_died": 1893,
+    "year_written": 1890,
+    "source_type": "father",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff/anf08",
+      "edition": "ANF08. The Twelve Patriarchs, Excerpts and Epistles, The Clementia, Apocrypha, Decretals, Memoirs of Edessa and Syriac Documents, Remains of the First Ages (CCEL)",
+      "year": 1890,
+      "year_basis": "seriesSiblingInference",
+      "licence_basis": "authorPre1930",
+      "note": "Title CONFIRMED verbatim against the CCEL Schaff author page 2026-08-20. year inferred from the series print run — replace with the volume date captured at ingest.",
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/anf08"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "schaff-npnf106",
+    "slug": "schaff-npnf106",
+    "title": "NPNF1-06. St. Augustine: Sermon on the Mount; Harmony of the Gospels; Homilies on the Gospels",
+    "author": "Schaff, Philip",
+    "author_died": 1893,
+    "year_written": 1890,
+    "source_type": "father",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff/npnf106",
+      "edition": "NPNF1-06. St. Augustine: Sermon on the Mount; Harmony of the Gospels; Homilies on the Gospels (CCEL)",
+      "year": 1890,
+      "year_basis": "seriesSiblingInference",
+      "licence_basis": "authorPre1930",
+      "note": "Title CONFIRMED verbatim against the CCEL Schaff author page 2026-08-20. year inferred from the series print run — replace with the volume date captured at ingest.",
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/npnf106"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "schaff-npnf107",
+    "slug": "schaff-npnf107",
+    "title": "NPNF1-07. St. Augustine: Homilies on the Gospel of John; Homilies on the First Epistle of John; Soliloquies",
+    "author": "Schaff, Philip",
+    "author_died": 1893,
+    "year_written": 1890,
+    "source_type": "father",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff/npnf107",
+      "edition": "NPNF1-07. St. Augustine: Homilies on the Gospel of John; Homilies on the First Epistle of John; Soliloquies (CCEL)",
+      "year": 1890,
+      "year_basis": "seriesSiblingInference",
+      "licence_basis": "authorPre1930",
+      "note": "Title CONFIRMED verbatim against the CCEL Schaff author page 2026-08-20. year inferred from the series print run — replace with the volume date captured at ingest.",
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/npnf107"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "schaff-npnf108",
+    "slug": "schaff-npnf108",
+    "title": "NPNF1-08. St. Augustine: Exposition on the Book of Psalms",
+    "author": "Schaff, Philip",
+    "author_died": 1893,
+    "year_written": 1890,
+    "source_type": "father",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff/npnf108",
+      "edition": "NPNF1-08. St. Augustine: Exposition on the Book of Psalms (CCEL)",
+      "year": 1890,
+      "year_basis": "seriesSiblingInference",
+      "licence_basis": "authorPre1930",
+      "note": "Title CONFIRMED verbatim against the CCEL Schaff author page 2026-08-20. year inferred from the series print run — replace with the volume date captured at ingest.",
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/npnf108"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "schaff-npnf109",
+    "slug": "schaff-npnf109",
+    "title": "NPNF1-09. St. Chrysostom: On the Priesthood; Ascetic Treatises; Select Homilies and Letters; Homilies on the Statutes",
+    "author": "Schaff, Philip",
+    "author_died": 1893,
+    "year_written": 1890,
+    "source_type": "father",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff/npnf109",
+      "edition": "NPNF1-09. St. Chrysostom: On the Priesthood; Ascetic Treatises; Select Homilies and Letters; Homilies on the Statutes (CCEL)",
+      "year": 1890,
+      "year_basis": "seriesSiblingInference",
+      "licence_basis": "authorPre1930",
+      "note": "Title CONFIRMED verbatim against the CCEL Schaff author page 2026-08-20. year inferred from the series print run — replace with the volume date captured at ingest.",
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/npnf109"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "schaff-npnf110",
+    "slug": "schaff-npnf110",
+    "title": "NPNF1-10. St. Chrysostom: Homilies on the Gospel of Saint Matthew",
+    "author": "Schaff, Philip",
+    "author_died": 1893,
+    "year_written": 1890,
+    "source_type": "father",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff/npnf110",
+      "edition": "NPNF1-10. St. Chrysostom: Homilies on the Gospel of Saint Matthew (CCEL)",
+      "year": 1890,
+      "year_basis": "seriesSiblingInference",
+      "licence_basis": "authorPre1930",
+      "note": "Title CONFIRMED verbatim against the CCEL Schaff author page 2026-08-20. year inferred from the series print run — replace with the volume date captured at ingest.",
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/npnf110"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "schaff-npnf111",
+    "slug": "schaff-npnf111",
+    "title": "NPNF1-11. Saint Chrysostom: Homilies on the Acts of the Apostles and the Epistle to the Romans",
+    "author": "Schaff, Philip",
+    "author_died": 1893,
+    "year_written": 1890,
+    "source_type": "father",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff/npnf111",
+      "edition": "NPNF1-11. Saint Chrysostom: Homilies on the Acts of the Apostles and the Epistle to the Romans (CCEL)",
+      "year": 1890,
+      "year_basis": "seriesSiblingInference",
+      "licence_basis": "authorPre1930",
+      "note": "Title CONFIRMED verbatim against the CCEL Schaff author page 2026-08-20. year inferred from the series print run — replace with the volume date captured at ingest.",
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/npnf111"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "schaff-npnf112",
+    "slug": "schaff-npnf112",
+    "title": "NPNF1-12. Saint Chrysostom: Homilies on the Epistles of Paul to the Corinthians",
+    "author": "Schaff, Philip",
+    "author_died": 1893,
+    "year_written": 1890,
+    "source_type": "father",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff/npnf112",
+      "edition": "NPNF1-12. Saint Chrysostom: Homilies on the Epistles of Paul to the Corinthians (CCEL)",
+      "year": 1890,
+      "year_basis": "seriesSiblingInference",
+      "licence_basis": "authorPre1930",
+      "note": "Title CONFIRMED verbatim against the CCEL Schaff author page 2026-08-20. year inferred from the series print run — replace with the volume date captured at ingest.",
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/npnf112"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "schaff-npnf113",
+    "slug": "schaff-npnf113",
+    "title": "NPNF1-13. Saint Chrysostom: Homilies on Galatians, Ephesians, Philippians, Colossians, Thessalonians, Timothy, Titus, and Philemon",
+    "author": "Schaff, Philip",
+    "author_died": 1893,
+    "year_written": 1890,
+    "source_type": "father",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff/npnf113",
+      "edition": "NPNF1-13. Saint Chrysostom: Homilies on Galatians, Ephesians, Philippians, Colossians, Thessalonians, Timothy, Titus, and Philemon (CCEL)",
+      "year": 1890,
+      "year_basis": "seriesSiblingInference",
+      "licence_basis": "authorPre1930",
+      "note": "Title CONFIRMED verbatim against the CCEL Schaff author page 2026-08-20. year inferred from the series print run — replace with the volume date captured at ingest.",
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/npnf113"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "schaff-npnf114",
+    "slug": "schaff-npnf114",
+    "title": "NPNF1-14. Saint Chrysostom: Homilies on the Gospel of St. John and the Epistle to the Hebrews",
+    "author": "Schaff, Philip",
+    "author_died": 1893,
+    "year_written": 1890,
+    "source_type": "father",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff/npnf114",
+      "edition": "NPNF1-14. Saint Chrysostom: Homilies on the Gospel of St. John and the Epistle to the Hebrews (CCEL)",
+      "year": 1890,
+      "year_basis": "seriesSiblingInference",
+      "licence_basis": "authorPre1930",
+      "note": "Title CONFIRMED verbatim against the CCEL Schaff author page 2026-08-20. year inferred from the series print run — replace with the volume date captured at ingest.",
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/npnf114"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "schaff-npnf204",
+    "slug": "schaff-npnf204",
+    "title": "NPNF2-04. Athanasius: Select Works and Letters",
+    "author": "Schaff, Philip",
+    "author_died": 1893,
+    "year_written": 1890,
+    "source_type": "father",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff/npnf204",
+      "edition": "NPNF2-04. Athanasius: Select Works and Letters (CCEL)",
+      "year": 1890,
+      "year_basis": "seriesSiblingInference",
+      "licence_basis": "authorPre1930",
+      "note": "Title CONFIRMED verbatim against the CCEL Schaff author page 2026-08-20. year inferred from the series print run — replace with the volume date captured at ingest.",
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/npnf204"
         ],
         "strip_markup": true
       }
