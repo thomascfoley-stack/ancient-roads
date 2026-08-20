@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChapterData } from '@/lib/bible';
-import { HIGHLIGHT_BG } from '@/lib/highlight-colors';
+import { HIGHLIGHT_BG, HIGHLIGHT_WASH } from '@/lib/highlight-colors';
 import { flattenToSegments, type HighlightRange } from '@/lib/highlight-range';
 import { useTextAnnotation, type AnnotationTarget } from '@/lib/use-text-annotation';
 import { singleWordOf } from '@/lib/original';
@@ -216,13 +216,18 @@ export function VerseDisplay({
           // made in. Whole-verse (null range) and null-translation (legacy) spans always render.
           const native: HighlightRange[] = [];
           let foreignColor: string | null = null;
+          let foreignTranslation: string | null = null;
           for (const s of spans) {
             const wholeVerse = s.start == null || s.end == null;
             const sameTranslation = s.translation == null || s.translation === translation;
             if (wholeVerse || sameTranslation) {
               native.push({ start: s.start ?? 0, end: s.end ?? v.text.length, color: s.color, id: s.id });
             } else {
-              foreignColor = s.color; // degrade to a verse-level indicator, never lost
+              // Degrade to a verse-level indicator, never lost. The WASH below keeps it visible:
+              // a 6px dot alone was the whole rendering, and a highlight the reader cannot see is
+              // a highlight they have lost (foreign-highlight.test.tsx).
+              foreignColor = s.color;
+              foreignTranslation = s.translation ?? null;
             }
           }
           const segments = flattenToSegments(v.text.length, native);
@@ -230,6 +235,10 @@ export function VerseDisplay({
           const isBookmarked = bookmarkedVerses?.has(v.verse);
           // PRD §5: a selected verse highlights in vellum (night hairline in dark), 100ms fade.
           const outerBg = isSelected ? 'bg-stone-200 transition-colors duration-100 ease-gentle dark:bg-stone-800' : '';
+          // A foreign span cannot point at words in this translation, so it paints the whole
+          // verse instead — a lighter wash of its colour, approximate by definition, beneath the
+          // selection vellum when the verse is selected.
+          const foreignWash = !isSelected && foreignColor ? ` ${HIGHLIGHT_WASH[foreignColor] ?? ''}` : '';
           // The deep-link flash is one of the three sanctioned candle-flame uses (PRD §4).
           // Stays a `ring`, not an outline: verse-deep-link.test.tsx asserts the `ring-2` class.
           const flashRing = v.verse === flashVerse ? ' ring-2 ring-flame/70' : '';
@@ -242,7 +251,7 @@ export function VerseDisplay({
               // keeps it clear of the sticky header when scrolled to.
               id={`v${v.verse}`}
               data-verse={v.verse}
-              className={`verse inline scroll-mt-20 rounded ${outerBg}${flashRing}`}
+              className={`verse inline scroll-mt-20 rounded ${outerBg}${foreignWash}${flashRing}`}
             >
               {/* THE NUMBER IS THE HANDLE; THE VERSE TEXT IS NOT.
                   This onClick used to sit on the whole verse span, so the FIRST click of a
@@ -321,9 +330,14 @@ export function VerseDisplay({
               </sup>
               {foreignColor && (
                 <sup
+                  // The dot says THAT another translation holds a highlight here; the title says
+                  // WHICH one — the sr-only text cannot rely on hover, so it names it too.
+                  title={`Highlighted in ${(foreignTranslation ?? 'another translation').toUpperCase()}`}
                   className={`mr-0.5 inline-block h-1.5 w-1.5 rounded-full align-super ${HIGHLIGHT_BG[foreignColor] ?? ''} select-none`}
                 >
-                  <span className="sr-only">Highlighted in another translation</span>
+                  <span className="sr-only">
+                    Highlighted in {foreignTranslation ? foreignTranslation.toUpperCase() : 'another translation'}.
+                  </span>
                 </sup>
               )}
               {/* The verse-text container: its text nodes concatenate to exactly v.text, so the
