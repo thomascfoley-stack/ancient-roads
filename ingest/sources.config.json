@@ -770,8 +770,6 @@
     "era": "modern",
     "license": "Public Domain",
     "tier": 2,
-    "serve": false,
-    "note": "STAGED not served — no history read-path yet",
     "provenance": {
       "url": "https://www.ccel.org/ccel/edersheim/lifetimes",
       "edition": "Edersheim, Life and Times (CCEL)",
