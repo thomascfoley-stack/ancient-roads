@@ -9,8 +9,14 @@
 // Selection-first: rides selectionchange (works on touch AND mouse; native copy still works).
 // The caller decides what to mount over `pending` (the selection popover / docked bar).
 
-import { useCallback, useEffect, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { rangeToOffsetsInContainer, snapToWords } from './highlight-range';
+
+/** Delay before a collapsed/unresolvable selection actually clears `pending`. Live measurement
+ *  (2026-08 QA) showed the popover can take >1s to mount under main-thread load; clearing the
+ *  instant the selection collapses dropped it under any tap/scroll inside that window, which is
+ *  the "flaky highlighter" report. A new valid selection still replaces `pending` immediately. */
+export const COLLAPSE_GRACE_MS = 1500;
 
 export type AnnotationTargetKind = 'verse' | 'section';
 
@@ -57,19 +63,33 @@ export function useTextAnnotation(
   resolveTarget: ResolveTarget,
 ): { pending: PendingAnnotation | null; dismiss: () => void } {
   const [pending, setPending] = useState<PendingAnnotation | null>(null);
+  // In a ref (not the effect closure) so `dismiss` — which lives outside the effect — can cancel
+  // a scheduled grace clear too.
+  const graceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
+    function cancelGrace() {
+      if (graceTimer.current) clearTimeout(graceTimer.current);
+      graceTimer.current = null;
+    }
+    function scheduleClear() {
+      cancelGrace();
+      graceTimer.current = setTimeout(() => setPending(null), COLLAPSE_GRACE_MS);
+    }
     function evaluate() {
+      // Any fresh selection event supersedes a scheduled clear; the failure paths below
+      // re-schedule it, the valid path leaves it cancelled.
+      cancelGrace();
       const sel = window.getSelection();
       if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
-        setPending(null);
+        scheduleClear();
         return;
       }
       const range = sel.getRangeAt(0);
       const target = resolveTarget(range.startContainer);
       if (!target || !rootRef.current?.contains(target.container)) {
-        setPending(null);
+        scheduleClear();
         return;
       }
       // The offset invariant (design §3): the container's text nodes concatenate to exactly
@@ -77,12 +97,12 @@ export function useTextAnnotation(
       const text = (target.container.textContent ?? '').slice(0, target.textLen);
       const raw = rangeToOffsetsInContainer(range, target.container, target.textLen);
       if (!raw) {
-        setPending(null);
+        scheduleClear();
         return;
       }
       const snapped = snapToWords(text, raw.start, raw.end);
       if (!snapped) {
-        setPending(null);
+        scheduleClear();
         return;
       }
       const r = range.getBoundingClientRect();
@@ -103,10 +123,13 @@ export function useTextAnnotation(
     return () => {
       document.removeEventListener('selectionchange', onChange);
       if (timer) clearTimeout(timer);
+      cancelGrace();
     };
   }, [rootRef, resolveTarget]);
 
   const dismiss = useCallback(() => {
+    if (graceTimer.current) clearTimeout(graceTimer.current);
+    graceTimer.current = null;
     window.getSelection()?.removeAllRanges();
     setPending(null);
   }, []);
