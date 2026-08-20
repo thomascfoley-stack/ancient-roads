@@ -1,5 +1,41 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-20 (Phase 1 COMPLETE) — the converter exists and a second historian went end-to-end
+
+**The ingestion bridge is built and proven deep**: `src/ingest/ccel-to-historian-jsonl.ts` (reuses
+adapter-ccel's fetch/cache/ThML-guard and its now-exported stripper — no second fetcher, no second
+stripper) → `bede-history` (the 1907 Sellar edition, confirmed on its own title page) → **142
+nodes / depth-3 tree → 785 sections staged on dev, 785/785 embedded whole, truncation never
+fired** → anchors → vectors served → **searchable beside Josephus**: "Rome under Diocletian"
+returns josephus(148) + bede(2), Bede's top hit being Book I › VI — the Diocletian-persecution
+chapter. Frozen-v1 after: **20/20, bars hold** ([log](docs/evidence/history-eval/postbede-dev-2026-08-20T15-21-23-693Z.log)).
+
+**The review pushback I rejected was RIGHT, and the first non-Josephus ingest proved it in one
+run.** I had argued citing `EMBED_MAX=1800` beat duplicating chunk discipline; Bede immediately
+threw `400: 513 input tokens` against bge-large's 512 budget from a chunk WITHIN the char cap —
+chars are not tokens, and dense proper-noun prose tokenizes worse than the cap assumes. Fixed at
+the one shared layer (`chunkBody`: stepped re-split 1800→1200 when the conservative len/3 estimate
+exceeds 500 tokens; splitting, never truncating). Conceded on the record.
+
+**`scripts/historian-digest.mjs`** — the per-work gate, run 28 more times in Phase 2. On Bede: no
+flags; anchors 0.18/section vs josephus 1.10 (the predicted gazetteer skew, above the ~zero
+floor); **period-dated 0/785** — Bede dates chapters "[54 BCE]", a verbatim form the parser
+deliberately does not read yet (extension decision recorded, not silently inferred); candidate
+list is exactly the curation feed: Britain(183), Augustine(77 — of CANTERBURY; adopting bare
+"Augustine" would collide with Hippo, so curation needs disambiguated labels), Saxons, Kent,
+Wilfrid, Easter.
+
+**Also:** Phase 0 done (`genre:'history'` on npnf201/202/203); converter fixed mid-build
+(expandCcelIdPattern returns [] for plain ids — pass-through added); I violated my own morning
+rule (`grep|cut` on an env file) within hours and the empty string it produced broke a spot
+check — `--env-file`, no exceptions.
+
+### NOT DONE
+- Bede is DEV-ONLY (dev-published for the spot check; prod path is Phase 4's copy→flip→serve).
+- Gazetteer curation from the candidate list — editorial, next.
+- Phase 2 (28 works: Schaff HCC first), Phase 3 (annotate npnf201-203), Phase 4 (prod).
+- The "[BCE]" verbatimPeriod extension — deliberate change + Bede re-ingest when taken.
+
 ## 2026-08-20 (history: IN THE WILD) — deployed, served, and measured on production
 
 **`ancientpaths.app` serves `29ce463`** (receipt sha == HEAD, `dpl_cGYDsWzvvLkS6mjMgNB2UmfxSfee`).

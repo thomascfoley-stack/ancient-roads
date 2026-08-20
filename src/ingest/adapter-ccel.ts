@@ -49,7 +49,7 @@ export async function fetchCcelXml(ccelId: string): Promise<string | null> {
 }
 
 // Strip ThML/markup to readable text; keep line breaks for verse <l>.
-function thmlText(frag: string): string {
+export function thmlText(frag: string): string {
   return frag
     .replace(/<l\b[^>]*>/gi, '').replace(/<\/l>/gi, '\n')
     .replace(/<verse\b[^>]*>/gi, '').replace(/<\/verse>/gi, '\n')

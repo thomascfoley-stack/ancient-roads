@@ -2018,7 +2018,8 @@
         ],
         "strip_markup": true
       }
-    }
+    },
+    "genre": "history"
   },
   {
     "id": "schaff-npnf206",
@@ -2207,7 +2208,8 @@
         ],
         "strip_markup": true
       }
-    }
+    },
+    "genre": "history"
   },
   {
     "id": "schaff-person",
@@ -24331,7 +24333,8 @@
         ],
         "strip_markup": true
       }
-    }
+    },
+    "genre": "history"
   },
   {
     "id": "foxe-martyrs",

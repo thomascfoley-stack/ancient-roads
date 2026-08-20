@@ -63,7 +63,7 @@ export function verbatimPeriod(text: string): { start: number; end: number } | n
 
 // sentence-boundary chunking under the embed budget; heading is NOT part of the
 // body (it rides in sections.heading and the fixed tsv covers both).
-export function chunkBody(text: string, max = EMBED_MAX): string[] {
+function chunkOnce(text: string, max: number): string[] {
   if (text.length <= max) return [text];
   const out: string[] = [];
   let buf = '';
@@ -74,6 +74,17 @@ export function chunkBody(text: string, max = EMBED_MAX): string[] {
   }
   if (buf) out.push(buf);
   return out;
+}
+
+// STEPPED RE-SPLIT (2026-08-20, the P2 400-scar remedy the independent review asked for and the
+// first non-Josephus ingest immediately vindicated): bede-history hit "513 input tokens" against
+// bge-large's 512 budget from a chunk WITHIN the 1800-char cap — dense proper-noun prose
+// tokenizes worse than the cap assumes. Chars are not tokens; a char cap alone cannot assert the
+// token contract. Any chunk whose conservative estimate (len/3) exceeds 500 tokens re-splits at
+// 1200 chars (est ≤400) — deterministic, sentence-bounded, and nothing is ever truncated:
+// splitting is not losing. Josephus (already ingested at 1800) is untouched.
+export function chunkBody(text: string, max = EMBED_MAX): string[] {
+  return chunkOnce(text, max).flatMap((c) => (c.length / 3 > 500 ? chunkOnce(c, 1200) : [c]));
 }
 
 interface Node { path: string[]; content: string }
