@@ -1,0 +1,157 @@
+{
+  "_": "FROZEN v1 history eval set. Frozen BEFORE the first accuracy measurement existed (quality-slice §4). Entity queries derived from dev served anchors 2026-08-20. NEVER edit in response to failures; fixes are measured against this set and ship on a fresh v2.",
+  "frozenAt": "2026-08-20",
+  "queries": [
+    {
+      "id": "he-01",
+      "kind": "entity",
+      "query": "tell me about Jerusalem",
+      "expectEntity": "jerusalem"
+    },
+    {
+      "id": "he-02",
+      "kind": "entity",
+      "query": "what happened to Herod",
+      "expectEntity": "herod-the-great"
+    },
+    {
+      "id": "he-03",
+      "kind": "entity",
+      "query": "who was the temple",
+      "expectEntity": "the-temple"
+    },
+    {
+      "id": "he-04",
+      "kind": "entity",
+      "query": "describe the history of Judea",
+      "expectEntity": "judea"
+    },
+    {
+      "id": "he-05",
+      "kind": "entity",
+      "query": "tell me about Egypt",
+      "expectEntity": "egypt"
+    },
+    {
+      "id": "he-06",
+      "kind": "entity",
+      "query": "what happened to Rome",
+      "expectEntity": "rome"
+    },
+    {
+      "id": "he-07",
+      "kind": "entity",
+      "query": "who was Titus",
+      "expectEntity": "titus"
+    },
+    {
+      "id": "he-08",
+      "kind": "entity",
+      "query": "describe the history of Vespasian",
+      "expectEntity": "vespasian"
+    },
+    {
+      "id": "hp-01",
+      "kind": "period",
+      "query": "what happened in A.D. 70",
+      "expectPeriod": [
+        70,
+        70
+      ]
+    },
+    {
+      "id": "hp-02",
+      "kind": "period",
+      "query": "events of the first century",
+      "expectPeriod": [
+        1,
+        100
+      ]
+    },
+    {
+      "id": "hp-03",
+      "kind": "period",
+      "query": "the years A.D. 60 to 73",
+      "expectPeriod": [
+        60,
+        73
+      ]
+    },
+    {
+      "id": "hp-04",
+      "kind": "period",
+      "query": "what was written about 4 B.C.",
+      "expectPeriod": [
+        -4,
+        -4
+      ]
+    },
+    {
+      "id": "hb-01",
+      "kind": "entity+period",
+      "query": "Herod in the first century",
+      "expectEntity": "herod-the-great",
+      "expectPeriod": [
+        1,
+        100
+      ]
+    },
+    {
+      "id": "hb-02",
+      "kind": "entity+period",
+      "query": "Caesar in the first century",
+      "expectEntity": "caesar",
+      "expectPeriod": [
+        1,
+        100
+      ]
+    },
+    {
+      "id": "hb-03",
+      "kind": "entity+period",
+      "query": "Moses in the first century",
+      "expectEntity": "moses",
+      "expectPeriod": [
+        1,
+        100
+      ]
+    },
+    {
+      "id": "hb-04",
+      "kind": "entity+period",
+      "query": "David in the first century",
+      "expectEntity": "david",
+      "expectPeriod": [
+        1,
+        100
+      ]
+    },
+    {
+      "id": "hc-01",
+      "kind": "control",
+      "query": "best sourdough starter recipe"
+    },
+    {
+      "id": "hc-02",
+      "kind": "control",
+      "query": "cheapest flights from Chicago to Seattle"
+    },
+    {
+      "id": "hc-03",
+      "kind": "control",
+      "query": "how do I change a flat tire"
+    },
+    {
+      "id": "hc-04",
+      "kind": "control",
+      "query": "quarterly revenue projections for startups"
+    }
+  ],
+  "preRegisteredBars": {
+    "_": "Floors, set before any number. The FIRST run is the baseline; these gate regressions and the controls.",
+    "controls": "4/4 controls match zero entities AND zero period (interpretation honesty — no noise argument applies)",
+    "entity": ">=6/8 entity queries: interpretation carries expectEntity AND the top result group contains a section anchored to it",
+    "period": "4/4 period queries parse to exactly expectPeriod (the parser is deterministic; anything less is a bug)",
+    "combined": ">=3/4 entity+period queries: both expectations met simultaneously"
+  }
+}
