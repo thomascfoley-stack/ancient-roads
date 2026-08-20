@@ -1,5 +1,28 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-20 (history: IN THE WILD) — deployed, served, and measured on production
+
+**`ancientpaths.app` serves `29ce463`** (receipt sha == HEAD, `dpl_cGYDsWzvvLkS6mjMgNB2UmfxSfee`).
+The prod sequence ran clean, owner at every gate: migration **120** applied (ledger
+`7b30f6e56e8f`), backfill 4,112/4,112 (INSERT..SELECT, zero embedding calls), serve
+**4,112/4,112 in 3 batches at ~307–337 rows/sec** — the fresh single-index table ran ~10× the
+shared table's best rate, the separate-table design measured doing its job on its first prod run.
+
+**Frozen-v1 against PRODUCTION: 20/20, ALL PRE-REGISTERED BARS HOLD** (controls 4/4 zero-match,
+entity 8/8, period 4/4 exact, combined 4/4) — run through the SHIPPED `searchHistory`, which also
+proves migration 120's grant matrix end-to-end under the runtime path
+([log](docs/evidence/history-eval/baseline-prod-2026-08-20T07-09-57-557Z.log)).
+
+Site gate correctly intercepts `/ask?mode=history` (307 → /gate) — SEC-1 unchanged; history is in
+the wild BEHIND the gate, which is where the §8b similarity-floor launch gate says it must stay
+until resolved.
+
+### Remaining
+- **Kimi's authenticated prod walk** (frozen queries + partial-match probe on the honesty strip).
+- **The converter** — the one unbuilt piece; 35 historians remain declarations.
+- **§8b launch gate**: similarity floor before real users; derived on logged queries, never the frozen 20.
+- Owner decision #4 (retire the /ask historian lane) — still unruled, still unexecuted.
+
 ## 2026-08-20 (history build II) — audit GREEN, serve tooling built, baseline 20/20, one collision
 
 **`npm run audit`: PASSED, all gates** — after four reds, three of which were derived inventories
