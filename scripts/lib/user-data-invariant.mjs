@@ -38,6 +38,8 @@
 export const USER_TABLE_EXCLUDED = {
   api_rate_limit:
     'Operational fixed-window rate-limit counters, not user-readable content (migration 008; no RLS).',
+  history_embeddings:
+    'Corpus vectors for the history lane (migration 120) — keyed by section_id, no user rows ever; app_runtime holds SELECT only. HISTORY_RETRIEVAL_DESIGN §2.',
   embeddings:
     'Mixed platform corpus (user_id IS NULL) and optional user uploads; G1 inventory tracks annotation/social/profile tables, not the vector store.',
   sources: 'Corpus catalog — platform content, not per-user rows (migration 006).',

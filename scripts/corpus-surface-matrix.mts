@@ -38,7 +38,7 @@ const url = (process.env.DATABASE_URL ?? '').replace(/^"|"$/g, '');
 const endpoint = process.env.MATRIX_TARGET_ENDPOINT;
 if (!url) { console.error('DATABASE_URL required'); process.exit(1); }
 if (!endpoint) { console.error('STOP: declare MATRIX_TARGET_ENDPOINT=<exact endpoint id>'); process.exit(2); }
-if (!new URL(url).hostname.split('.')[0].includes(endpoint)) {
+if (!(new URL(url).hostname.split('.')[0] ?? '').includes(endpoint)) {
   console.error(`STOP: connection does not resolve to declared endpoint ${endpoint}`); process.exit(2);
 }
 

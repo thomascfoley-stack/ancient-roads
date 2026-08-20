@@ -3,6 +3,7 @@
 // template or a verbatim excerpt; there is deliberately NO generated prose block anywhere.
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { DISPLAY_LOCALE } from '@/lib/locale';
 
 export interface HistoryResultRow {
   sectionId: number; ordinal: number; headingPath: string[];
@@ -175,7 +176,7 @@ export function HistoryResults({ data, query, threadId }: {
       </div>
 
       <footer className="mt-8 text-sm text-muted-foreground">
-        Searched {data.coverage.works} works · {data.coverage.sections.toLocaleString()} sections
+        Searched {data.coverage.works} works · {data.coverage.sections.toLocaleString(DISPLAY_LOCALE)} sections
       </footer>
     </div>
   );

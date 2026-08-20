@@ -4,7 +4,8 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/session';
 import { checkHistorySearchRateLimit } from '@/lib/rate-limit';
-import { createHistoryThread, searchHistory } from '@/lib/history-search-db';
+import { searchHistory } from '@/lib/history-search-db';
+import { createHistoryThread } from '@/lib/history-threads';
 
 // zlib-free but embedQuery + pg need node, not edge.
 export const runtime = 'nodejs';

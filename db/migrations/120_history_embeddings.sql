@@ -1,5 +1,5 @@
 -- ============================================================
--- 119: history_embeddings — the history lane's OWN vector table (HISTORY_RETRIEVAL_DESIGN §2)
+-- 120: history_embeddings (renumbered from 119 — a parallel session's 119 was applied to PROD first; prod ledgers are frozen, dev ledgers correct) — the history lane's OWN vector table (HISTORY_RETRIEVAL_DESIGN §2)
 -- ============================================================
 -- WHY A SEPARATE TABLE, measured not preferred (2026-08-19): `embeddings` carries 14 indexes /
 -- 13 GB including an 8 GB all-rows HNSW; `served` appears in six index definitions so no update
@@ -17,7 +17,7 @@
 -- owner-terminal operations (serve-batched.mjs --table=history_embeddings).
 --
 -- IDEMPOTENT: IF NOT EXISTS throughout.
---   RUN (owner, dev-guarded): DATABASE_URL=<owner> node db/apply-migration.mjs db/migrations/119_history_embeddings.sql
+--   RUN (owner, dev-guarded): DATABASE_URL=<owner> node db/apply-migration.mjs db/migrations/120_history_embeddings.sql
 --   ROLLBACK: DROP TABLE IF EXISTS history_embeddings;
 CREATE TABLE IF NOT EXISTS history_embeddings (
   section_id BIGINT PRIMARY KEY REFERENCES sections(id) ON DELETE CASCADE,
@@ -34,7 +34,7 @@ CREATE INDEX IF NOT EXISTS idx_history_embeddings_served
 
 -- Default privileges on this cluster grant app_runtime DML on new tables (the migration-001
 -- default; 032 narrowed the schema default but ALTER DEFAULT PRIVILEGES grants persist per
--- creating role). PROVEN: the DO tail below fired '119 FAILED: app_runtime holds a write
+-- creating role). PROVEN: the DO tail below fired '120 FAILED: app_runtime holds a write
 -- privilege' on the first dev apply, before this REVOKE existed. Revoke explicitly — the
 -- grant matrix must be what this file says, not what a default left behind.
 REVOKE ALL ON history_embeddings FROM app_runtime;
@@ -45,20 +45,20 @@ GRANT SELECT ON history_embeddings TO app_runtime;
 DO $$
 BEGIN
   IF NOT has_table_privilege('app_runtime', 'history_embeddings', 'SELECT') THEN
-    RAISE EXCEPTION '119 FAILED: app_runtime lacks SELECT on history_embeddings';
+    RAISE EXCEPTION '120 FAILED: app_runtime lacks SELECT on history_embeddings';
   END IF;
   IF has_table_privilege('app_runtime', 'history_embeddings', 'INSERT')
      OR has_table_privilege('app_runtime', 'history_embeddings', 'UPDATE')
      OR has_table_privilege('app_runtime', 'history_embeddings', 'DELETE') THEN
-    RAISE EXCEPTION '119 FAILED: app_runtime holds a write privilege on history_embeddings';
+    RAISE EXCEPTION '120 FAILED: app_runtime holds a write privilege on history_embeddings';
   END IF;
   IF (SELECT column_default FROM information_schema.columns
        WHERE table_name='history_embeddings' AND column_name='served') IS DISTINCT FROM 'false' THEN
-    RAISE EXCEPTION '119 FAILED: history_embeddings.served default is not false';
+    RAISE EXCEPTION '120 FAILED: history_embeddings.served default is not false';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_index i
       WHERE i.indexrelid = 'idx_history_embeddings_served'::regclass
         AND pg_get_expr(i.indpred, i.indrelid) ILIKE '%served%') THEN
-    RAISE EXCEPTION '119 FAILED: served-partial HNSW index missing or unpartialed';
+    RAISE EXCEPTION '120 FAILED: served-partial HNSW index missing or unpartialed';
   END IF;
 END $$;

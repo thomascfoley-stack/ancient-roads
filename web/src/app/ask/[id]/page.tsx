@@ -4,7 +4,7 @@ import { getThread, servedOf, type StoredAnswer } from '@/lib/research';
 import { AskClient, type InitialThread } from '@/components/ask-client';
 import { HistoryResults } from '@/components/history-results';
 import { ModeToggle } from '@/components/mode-toggle';
-import { getHistoryThread } from '@/lib/history-search-db';
+import { getHistoryThread } from '@/lib/history-threads';
 
 export const metadata = {
   title: 'Research thread',

@@ -6,7 +6,7 @@
 
 | slice | proof |
 |---|---|
-| migration 119 `history_embeddings` (dev, ledger `7f156545ea2d`) | its own DO tail went RED on first apply — dev default-privileges had silently granted app_runtime DML; the migration now REVOKEs explicitly |
+| migration 120 `history_embeddings` (renumbered; a parallel session took 119 on prod) (dev, ledger `7f156545ea2d`) | its own DO tail went RED on first apply — dev default-privileges had silently granted app_runtime DML; the migration now REVOKEs explicitly |
 | backfill 4,112 josephus vectors (INSERT..SELECT, zero re-embedding) | dev census 4,112/4,112 served; `--serve` REFUSES ep-odd-fog, watched exit 2 |
 | pure lib (ordinal-prior scorer, verbatim period parse, excerpt gate, entity match) | 13 tests, watched 12/13 RED against a wrong stub first |
 | `POST /api/history/search` + fail-closed limiter (30/min, 500/day) | 5 route tests; mutation red-proof (auth try stripped → 2 fail, restored → 5 pass) |
