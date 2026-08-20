@@ -759,34 +759,6 @@
     }
   },
   {
-    "id": "josephus-works",
-    "slug": "josephus-works",
-    "title": "The Works of Flavius Josephus (Whiston trans.)",
-    "author": "Flavius Josephus, trans. William Whiston",
-    "author_died": 100,
-    "year_written": 1737,
-    "source_type": "historian",
-    "tradition": "jewish",
-    "era": "patristic",
-    "license": "Public Domain",
-    "tier": 2,
-    "serve": false,
-    "note": "STAGED not served — no history read-path yet (HISTORY_RETRIEVAL_DESIGN)",
-    "provenance": {
-      "url": "https://www.ccel.org/ccel/josephus/complete",
-      "edition": "Josephus, Whiston 1737 (CCEL, NOT Loeb) — Antiquities 20 books + Wars 7",
-      "year": 1737,
-      "acquire": {
-        "adapter": "ccel",
-        "ccel_ids": [
-          "josephus/complete"
-        ],
-        "strip_markup": true,
-        "chunk_on_headings": true
-      }
-    }
-  },
-  {
     "id": "edersheim-lifetimes",
     "slug": "edersheim-lifetimes",
     "title": "The Life and Times of Jesus the Messiah",
