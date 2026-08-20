@@ -24411,5 +24411,61 @@
         "decoder": "src/ingest/sword-ld.ts"
       }
     }
+  },
+  {
+    "id": "schaff-npnf201",
+    "slug": "schaff-npnf201",
+    "title": "NPNF2-01. Eusebius Pamphilius: Church History, Life of Constantine, Oration in Praise of Constantine",
+    "author": "Schaff, Philip",
+    "author_died": 1893,
+    "year_written": 1890,
+    "source_type": "father",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/schaff/npnf201",
+      "edition": "NPNF2-01. Eusebius Pamphilius: Church History, Life of Constantine, Oration in Praise of Constantine (CCEL)",
+      "year": 1890,
+      "year_basis": "seriesSiblingInference",
+      "licence_basis": "authorPre1930",
+      "note": "Title and contents CONFIRMED against the CCEL page 2026-08-20. year is inferred from the NPNF2 series print run (siblings carry 1886-1890 printSourceInfo) and must be replaced with the volume date captured at ingest — it is NOT a printSourceInfo reading.",
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "schaff/npnf201"
+        ],
+        "strip_markup": true
+      }
+    }
+  },
+  {
+    "id": "foxe-martyrs",
+    "slug": "foxe-martyrs",
+    "title": "Foxe’s Book of Martyrs",
+    "author": "Foxe, John",
+    "author_died": 1587,
+    "year_written": 1563,
+    "source_type": "historian",
+    "tradition": "unassigned",
+    "era": "unassigned",
+    "license": "Public Domain",
+    "tier": 3,
+    "provenance": {
+      "url": "https://www.ccel.org/ccel/foxe/martyrs",
+      "edition": "Foxe’s Book of Martyrs (CCEL)",
+      "year": 1563,
+      "year_basis": "authorDeathUpperBound",
+      "licence_basis": "authorPre1930",
+      "note": "Author died 1587, so the WORK is unambiguously PD. The Book of Martyrs was re-edited for centuries and the CCEL edition year is NOT yet confirmed — capture it at ingest before serving. Availability and full text confirmed against the CCEL page 2026-08-20.",
+      "acquire": {
+        "adapter": "ccel",
+        "ccel_ids": [
+          "foxe/martyrs"
+        ],
+        "strip_markup": true
+      }
+    }
   }
 ]
