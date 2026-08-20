@@ -1,5 +1,17 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-20 (history build, correction) — "the DeepInfra key died" was FALSE; my env plumbing did
+
+Commit `e3f0e17`'s message and a session report claimed the key in `web/.env.local` had been
+rotated or revoked (401 invalid_api_key), blocking the scope test and possibly breaking prod /ask.
+**Wrong.** Probed through the proven `node --env-file` path: `200 KEY WORKS`, length 32, one entry
+in one file. The 401 came from my own `grep|cut` extraction mangling the value when passing env by
+hand — the same ad-hoc-plumbing failure class as the three piped exit codes of 2026-08-19. The
+scope test run through `--env-file` passes (`VITEST EXIT 0`): historian-only, published-only,
+every excerpt verbatim. Production was never at risk; no rotation is needed.
+
+Standing rule from this: env values for tests go through `--env-file`, never `grep|cut`.
+
 ## 2026-08-20 (Corpus↔Surface Reconciliation) — one job, one instrument; the matrix now returns zero
 
 **The job:** for every work in the corpus, does it reach every surface it should, and no surface it
