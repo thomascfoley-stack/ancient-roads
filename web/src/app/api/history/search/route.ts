@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireUser } from '@/lib/session';
 import { checkHistorySearchRateLimit } from '@/lib/rate-limit';
-import { searchHistory } from '@/lib/history-search-db';
+import { createHistoryThread, searchHistory } from '@/lib/history-search-db';
 
 // zlib-free but embedQuery + pg need node, not edge.
 export const runtime = 'nodejs';
@@ -38,7 +38,16 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   try {
-    return NextResponse.json(await searchHistory(query));
+    const data = await searchHistory(query);
+    // Persistence is UX (UX-4 parity), not correctness: losing the thread must not lose the
+    // results, so this single write fails OPEN with a log line — unlike everything above it.
+    let threadId: string | null = null;
+    try {
+      threadId = await createHistoryThread(userId, query, data);
+    } catch (e) {
+      console.error('history_thread_persist_failed', (e as Error).message);
+    }
+    return NextResponse.json({ threadId, ...data });
   } catch (e) {
     // Includes assertExcerptVerbatim throws: a mutated excerpt is a 500, never a render.
     console.error('history_search_failed', (e as Error).message);

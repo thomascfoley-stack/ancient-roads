@@ -2,6 +2,9 @@ import { notFound, redirect } from 'next/navigation';
 import { currentUser } from '@/lib/session';
 import { getThread, servedOf, type StoredAnswer } from '@/lib/research';
 import { AskClient, type InitialThread } from '@/components/ask-client';
+import { HistoryResults } from '@/components/history-results';
+import { ModeToggle } from '@/components/mode-toggle';
+import { getHistoryThread } from '@/lib/history-search-db';
 
 export const metadata = {
   title: 'Research thread',
@@ -24,7 +27,19 @@ export default async function ThreadPage(props: { params: Promise<{ id: string }
 
   const { id } = await props.params;
   const thread = await getThread(user.id, id);
-  if (!thread) notFound();
+  if (!thread) {
+    // A history thread rides the same tables under its own persona (HISTORY_RETRIEVAL_DESIGN §4).
+    const hist = await getHistoryThread(user.id, id);
+    if (hist) {
+      return (
+        <>
+          <ModeToggle mode="history" />
+          <HistoryResults data={hist.payload} query={hist.query} threadId={id} />
+        </>
+      );
+    }
+    notFound();
+  }
 
   // Every cited chunk with the register it was surfaced under — retrieval is the composed
   // commentary surface; the four lanes carry their own registers.
