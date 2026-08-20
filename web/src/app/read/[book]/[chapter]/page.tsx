@@ -112,6 +112,7 @@ export default function ReaderPage() {
     highlights,
     notes,
     bookmarks,
+    freshSpans,
     annotationsFailed,
     retryAnnotations,
     writeError,
@@ -449,6 +450,7 @@ export default function ReaderPage() {
             flashVerse={flashVerse}
             onVerseClick={handleVerseClick}
             highlights={highlights}
+            freshSpans={freshSpans}
             notedVerses={new Set(notes.keys())}
             bookmarkedVerses={bookmarks}
             onToggleBookmark={toggleBookmark}

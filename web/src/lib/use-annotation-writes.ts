@@ -59,6 +59,10 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
   // Bookmarked verses in this chapter, by verse number. A Set because a bookmark carries no
   // payload — it is a place, not an annotation.
   const [bookmarks, setBookmarks] = useState<Set<number>>(new Set());
+  // Spans written THIS session and not yet bloomed out — identity-based (the object addHighlight
+  // painted), so a server-hydrated span can never be a member. VerseDisplay reads it to run the
+  // one-shot bloom on fresh marks only.
+  const [freshSpans, setFreshSpans] = useState<Set<StoredSpan>>(new Set());
   // THE CHAPTER'S ANNOTATIONS FAILED TO LOAD. Deliberately NOT `writeError`: nothing was painted,
   // nothing was rolled back, nothing is queued to re-send. The reader's highlights and notes are
   // on the server and this screen is not showing them.
@@ -99,6 +103,7 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
     setHighlights(new Map());
     setNotes(new Map());
     setBookmarks(new Set());
+    setFreshSpans(new Set());
     setLoadFailed(false);
     fetch(`/api/annotations?book=${bookNum}&chapter=${chapterNum}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
@@ -206,6 +211,19 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
           next.set(verse, [...(next.get(verse) ?? []), optimistic]);
           return next;
         });
+        // Fresh marks bloom once on render (highlight-bloom in globals.css). "Fresh" lives
+        // here, not on the span, because it is a fact about the WRITE, not the data — a span
+        // the GET returned can never be in this set. It goes stale on its own a breath after
+        // the animation ends, so the class does not linger to re-fire on some later re-render.
+        setFreshSpans((prev) => new Set(prev).add(optimistic));
+        setTimeout(() => {
+          setFreshSpans((prev) => {
+            if (!prev.has(optimistic)) return prev;
+            const next = new Set(prev);
+            next.delete(optimistic);
+            return next;
+          });
+        }, 1000);
       };
       // Identity, not value, comparison: filtering out exactly the object `paint` added survives
       // another highlight landing on the same verse in between (never drops a sibling span).
@@ -215,6 +233,12 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
           const remaining = (next.get(verse) ?? []).filter((s) => s !== optimistic);
           if (remaining.length) next.set(verse, remaining);
           else next.delete(verse);
+          return next;
+        });
+        setFreshSpans((prev) => {
+          if (!prev.has(optimistic)) return prev;
+          const next = new Set(prev);
+          next.delete(optimistic);
           return next;
         });
       };
@@ -378,6 +402,7 @@ export function useAnnotationWrites(bookNum: number | undefined, chapterNum: num
     highlights,
     notes,
     bookmarks,
+    freshSpans,
     annotationsFailed: loadFailed,
     retryAnnotations,
     writeError,

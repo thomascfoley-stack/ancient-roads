@@ -81,6 +81,7 @@ export function VerseDisplay({
   flashVerse,
   onVerseClick,
   highlights,
+  freshSpans,
   notedVerses,
   bookmarkedVerses,
   onToggleBookmark,
@@ -100,6 +101,9 @@ export function VerseDisplay({
   flashVerse?: number | null;
   onVerseClick: (verse: number) => void;
   highlights?: Map<number, StoredSpan[]>;
+  /** Spans written this session (identity set from use-annotation-writes): their marks bloom
+   *  once. Absent or empty on the hydration path — a server-loaded mark never blooms. */
+  freshSpans?: Set<StoredSpan>;
   notedVerses?: Set<number>;
   /** Verses the reader has bookmarked, by verse number. A Set: a bookmark is a place, not data. */
   bookmarkedVerses?: Set<number>;
@@ -221,7 +225,7 @@ export function VerseDisplay({
             const wholeVerse = s.start == null || s.end == null;
             const sameTranslation = s.translation == null || s.translation === translation;
             if (wholeVerse || sameTranslation) {
-              native.push({ start: s.start ?? 0, end: s.end ?? v.text.length, color: s.color, id: s.id });
+              native.push({ start: s.start ?? 0, end: s.end ?? v.text.length, color: s.color, id: s.id, fresh: freshSpans?.has(s) || undefined });
             } else {
               // Degrade to a verse-level indicator, never lost. The WASH below keeps it visible:
               // a 6px dot alone was the whole rendering, and a highlight the reader cannot see is
@@ -345,7 +349,10 @@ export function VerseDisplay({
               <span data-verse-text={v.verse}>
                 {segments.map((seg, i) =>
                   seg.color ? (
-                    <span key={i} className={`rounded-[3px] ${HIGHLIGHT_BG[seg.color] ?? ''}`}>
+                    <span
+                      key={i}
+                      className={`rounded-[3px] ${HIGHLIGHT_BG[seg.color] ?? ''}${seg.fresh ? ' animate-highlight-bloom' : ''}`}
+                    >
                       {v.text.slice(seg.start, seg.end)}
                     </span>
                   ) : (

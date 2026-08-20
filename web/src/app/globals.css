@@ -346,6 +346,22 @@ html {
   animation: fade-in 0.2s var(--ease-gentle);
 }
 
+/* A freshly written highlight acknowledges the act: one breath of gold ring that expands and
+ * fades, then stillness. box-shadow, not transform — highlight marks are inline spans and
+ * transform does not apply to inline boxes; the ring needs no layout and survives a mark that
+ * wraps across lines (each fragment shadows its own box). Runs ONLY on just-painted spans
+ * (the freshSpans set in use-annotation-writes.ts), never on marks hydrating from the server —
+ * highlight-bloom.test.tsx pins both directions. --ring is the gold pair (accent-500 light,
+ * accent-400 dark) already used for focus, so the bloom matches on both surfaces. */
+@keyframes highlight-bloom {
+  from { box-shadow: 0 0 0 0 var(--ring); }
+  to { box-shadow: 0 0 0 7px transparent; }
+}
+
+.animate-highlight-bloom {
+  animation: highlight-bloom 0.35s var(--ease-gentle);
+}
+
 /* PRD §6 scrollbar: thin, transparent track, vellum thumb (night hairline in dark). */
 ::-webkit-scrollbar {
   width: 6px;
