@@ -1759,6 +1759,8 @@ curl -X PATCH -H "Authorization: Bearer $(cat ~/.neon_api_key)" -H "Content-Type
   https://console.neon.tech/api/v2/projects/spring-heart-74819093/endpoints/ep-odd-fog-atnykudm
 ```
 
+**RESTORED 2026-08-19, same session.** `suspend_timeout_seconds` is back to **300**, verified by re-reading the endpoint. The raise served its purpose as a diagnostic — it eliminated suspend as the cause, which mattered — but it did not fix the flips: the real cost was the served write itself (see WORKLOG), and connections kept dropping with the timeout at 3600. Left raised it would bill for idle compute indefinitely.
+
 **Still unproven:** whether a long single `UPDATE` counts as "activity" for Neon's idle detection. If
 it does not, a busy compute can still suspend mid-statement, and the raised timeout only widens the
 window rather than closing it. The next long flip is the test.
