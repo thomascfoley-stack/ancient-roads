@@ -1,0 +1,105 @@
+{
+  "_": "Licensing triage of the 40 declared-but-uningested historians. NO external date lookup is required: an author cannot publish after dying, so author_died<=1930 is a HARDER bound than a looked-up publication year. This corrects an earlier list of 22 works that asked for dates unnecessarily.",
+  "method": "1) author_died<=1930 -> publication necessarily pre-1930. 2) otherwise printSourceInfo year<1930. 3) otherwise OPEN, needs an owner ruling.",
+  "caveat": "This clears the WORK by authorship date. It does not clear a modern EDITION, translation or editorial apparatus — which is exactly what the two open items are about. Per the quality-slice rail, licensing should ultimately be confirmed by per-work text-match to a PD reference, not by metadata alone.",
+  "clears_by_author_death": {
+    "n": 35,
+    "slugs": [
+      "bacon-lw-history",
+      "baird-huguenots",
+      "bangs-history1",
+      "bangs-history2",
+      "bangs-history3",
+      "bangs-history4",
+      "bennett-expositor10",
+      "edersheim-lifetimes",
+      "gibbon-decline",
+      "hort-ecclesia",
+      "josephus-works",
+      "miller-history",
+      "renan-antichrist",
+      "renan-apostles",
+      "renan-gospels",
+      "renan-hadrian-pius",
+      "renan-lifeofjesus",
+      "renan-marcus",
+      "renan-saintpaul",
+      "robertson-history",
+      "rutherford-triumph",
+      "schaff-hcc1",
+      "schaff-hcc2",
+      "schaff-hcc3",
+      "schaff-hcc4",
+      "schaff-hcc5",
+      "schaff-hcc6",
+      "schaff-hcc7",
+      "schaff-hcc8",
+      "schaff-history",
+      "schaff-person",
+      "vanbraght-mirror",
+      "winkworth-tauler",
+      "wuttke-ethics1",
+      "young-j-christ"
+    ]
+  },
+  "clears_by_print_date": {
+    "n": 3,
+    "works": [
+      {
+        "slug": "chesterton-historyengland",
+        "author": "Chesterton, Gilbert Keith",
+        "author_died": 1936,
+        "title": "Short History of England",
+        "year": 1917,
+        "year_basis": "printSourceInfo",
+        "licence_basis": "rightsDeclared",
+        "url": "https://www.ccel.org/ccel/chesterton/historyengland"
+      },
+      {
+        "slug": "bede-history",
+        "author": "Bede, St.",
+        "author_died": null,
+        "title": "Bede's Ecclesiastical History of England",
+        "year": 1907,
+        "year_basis": "printSourceInfo",
+        "licence_basis": "rightsDeclared",
+        "url": "https://www.ccel.org/ccel/bede/history"
+      },
+      {
+        "slug": "dickinson-musicchurch",
+        "author": "Dickinson, Edward",
+        "author_died": null,
+        "title": "Music in the History of the Western Church",
+        "year": 1902,
+        "year_basis": "printSourceInfo",
+        "licence_basis": "rightsDeclared",
+        "url": "https://www.ccel.org/ccel/dickinson/musicchurch"
+      }
+    ]
+  },
+  "OPEN_owner_ruling_required": {
+    "n": 2,
+    "works": [
+      {
+        "slug": "knox-history-reformation",
+        "author": "Knox, John",
+        "author_died": null,
+        "title": "History of the Reformation of Religion in Scotland",
+        "year": 1949,
+        "year_basis": "printSourceInfo",
+        "licence_basis": "rightsDeclared",
+        "url": "https://www.ccel.org/ccel/knox/history_reformation"
+      },
+      {
+        "slug": "garrison-histdisciple",
+        "author": "Garrison, Winfred Ernest",
+        "author_died": 1969,
+        "title": "American Religious Movement: A Brief History of the Disciples of Christ",
+        "year": 1945,
+        "year_basis": "printSourceInfo",
+        "licence_basis": "rightsDeclared",
+        "url": "https://www.ccel.org/ccel/garrison/histdisciple"
+      }
+    ]
+  }
+}
