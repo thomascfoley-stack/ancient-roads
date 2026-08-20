@@ -449,13 +449,27 @@ try {
   // the deliberate mechanism for the 88 (serve-88.json), and it must never happen as a side effect of a stale
   // slug list, so without the flag it is a STOP, with the flag it is announced by name.
   const alreadyTo = payload.filter((sl) => beforeBy.get(sl) === to);
-  if (!reverse && alreadyTo.length > 0 && !servePublished) {
+  // --status-only is exempt from the refusal below, and the reason is the refusal's OWN reason.
+  // It exists because "a forward flip would SERVE their rows without moving status" — but
+  // --status-only writes no served rows at all, so an already-published slug moves nothing and
+  // serves nothing. It is a genuine no-op, which is the one case the 2026-08-03 audit was NOT
+  // worried about.
+  //
+  // Found the hard way, 2026-08-19: three probe works were drawn FROM flip-sermon.json and
+  // published first, so the sermon list then contained already-published slugs. --status-only was
+  // refused, and the escape hatch it names (--serve-published) is one this tool rejects as
+  // contradictory — leaving no legal command for a correct and harmless operation. A stale slug
+  // list is the normal case for a resumable workflow, not an exceptional one.
+  if (statusOnly && alreadyTo.length > 0) {
+    console.log(`  already ${to}  : ${alreadyTo.length} slug(s) — no status to move and --status-only writes no served rows, so these are no-ops: ${alreadyTo.slice(0, 5).join(', ')}${alreadyTo.length > 5 ? `, +${alreadyTo.length - 5}` : ''}`);
+  }
+  if (!reverse && !statusOnly && alreadyTo.length > 0 && !servePublished) {
     await client.query('ROLLBACK');
     die(`STOP: ${alreadyTo.length} listed slug(s) are already 'published': ${alreadyTo.slice(0, 8).join(', ')}${alreadyTo.length > 8 ? ', …' : ''}.\n` +
         '  A forward flip would SERVE their embeddings rows without moving status. If serving\n' +
         '  already-published works is what you mean (e.g. the 88), re-run with --serve-published.', 1);
   }
-  if (!reverse && alreadyTo.length > 0) {
+  if (!reverse && !statusOnly && alreadyTo.length > 0) {
     console.log(`serve-published  ${alreadyTo.length} already-published slug(s) will be SERVED (status unchanged)`);
   }
   console.log(`eligible     ${eligible.length} of ${payload.length} are '${from}'${alreadyTo.length > 0 ? ` (${alreadyTo.length} already '${to}')` : ''}`);
