@@ -4,7 +4,7 @@
 import { getDb } from './db';
 import { embedQuery } from './teacher/deepinfra';
 import {
-  type Period, assertExcerptVerbatim, makeExcerpt, matchEntities, parsePeriod, scoreSection,
+  type Period, assertExcerptVerbatim, makeExcerpt, matchEntities, parsePeriod, periodsOverlap, scoreSection,
 } from './history-search';
 
 export interface HistoryResult {
@@ -112,12 +112,9 @@ export async function searchHistory(query: string): Promise<HistoryResponse> {
 
   const maxFts = Math.max(...[...byId.values()].map((r) => r.fts ?? 0), 0) || 1;
   const scored = [...byId.values()].map((r) => {
-    const overlap = period ? (r.period_start_year !== null || r.period_end_year !== null)
-      && ((): boolean => {
-        const bs = r.period_start_year ?? Number.NEGATIVE_INFINITY;
-        const be = r.period_end_year ?? Number.POSITIVE_INFINITY;
-        return period.start <= be && bs <= period.end;
-      })() : false;
+    const overlap = period
+      ? periodsOverlap(period, { start: r.period_start_year, end: r.period_end_year })
+      : false;
     const matched: HistoryResult['matched'] = [];
     if (r.entity) matched.push('entity');
     if (overlap) matched.push('period');
@@ -131,8 +128,11 @@ export async function searchHistory(query: string): Promise<HistoryResponse> {
     };
   }).sort((a, b) => b.score - a.score).slice(0, 200);
 
+  const needle = entities[0]?.label;
   const toResult = (x: (typeof scored)[number]): HistoryResult => {
-    const excerpt = makeExcerpt(x.row.body);
+    // Window the excerpt around the matched entity when there is one, so the hero shows WHY it
+    // matched (review nit, 2026-08-20) — still an index slice, so the verbatim gate holds.
+    const excerpt = makeExcerpt(x.row.body, 420, x.matched.includes('entity') ? needle : undefined);
     assertExcerptVerbatim(x.row.body, excerpt); // v1's verifier: a mutated excerpt never renders
     return {
       sectionId: x.row.id, ordinal: x.row.unit_ordinal,

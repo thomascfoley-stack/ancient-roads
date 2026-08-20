@@ -87,3 +87,20 @@ describe('matchEntities — verbatim, word-bounded, derived vocab (§3.1)', () =
     expect(matchEntities('herod alone should not match the multi-word label', vocab)).toEqual([]);
   });
 });
+
+describe('makeExcerpt windowing (review nit 2026-08-20)', () => {
+  const body = `${'x'.repeat(500)} Vespasian sent Titus against Jerusalem ${'y'.repeat(500)}`;
+  it('windows around the needle, stays an exact substring, respects the cap', () => {
+    const ex = makeExcerpt(body, 120, 'Titus');
+    expect(ex.length).toBeLessThanOrEqual(120);
+    expect(ex).toContain('Titus');
+    expect(body.includes(ex)).toBe(true);
+  });
+  it('no needle, or needle near the start: plain head slice', () => {
+    expect(makeExcerpt(body, 50)).toBe(body.slice(0, 50));
+    expect(makeExcerpt('Titus first', 50, 'Titus')).toBe('Titus first');
+  });
+  it('needle absent from the body: falls back to the head slice, never throws', () => {
+    expect(makeExcerpt(body, 50, 'Nebuchadnezzar')).toBe(body.slice(0, 50));
+  });
+});

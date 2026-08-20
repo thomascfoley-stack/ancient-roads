@@ -58,8 +58,17 @@ export function scoreSection(p: { entityHit: boolean; periodOverlap: boolean; co
 }
 
 /** Excerpts are SLICES, so the substring property holds by construction; display ellipsis is the
- *  UI's, never part of the asserted excerpt. */
-export function makeExcerpt(body: string, maxLen = 420): string {
+ *  UI's, never part of the asserted excerpt. When a needle is given and present, the window
+ *  centers on its FIRST occurrence so the excerpt shows why the section matched (review nit,
+ *  2026-08-20) — computed purely by indices, so it remains an exact substring. */
+export function makeExcerpt(body: string, maxLen = 420, needle?: string): string {
+  if (needle) {
+    const at = body.toLowerCase().indexOf(needle.toLowerCase());
+    if (at > 60) {
+      const start = Math.min(at - 60, Math.max(0, body.length - maxLen));
+      return body.slice(start, start + maxLen);
+    }
+  }
   return body.slice(0, maxLen);
 }
 
