@@ -1,0 +1,14 @@
+{
+  "works": 362,
+  "byCode": {
+    "MISSING-MATERIALIZATION": 1
+  },
+  "findings": [
+    {
+      "slug": "barnes-crosswire-nt",
+      "code": "MISSING-MATERIALIZATION",
+      "detail": "author \"Albert Barnes\" is admitted by the predicate but contributes 0 admitted commentary_entries rows"
+    }
+  ],
+  "emptyBooks": "NONE"
+}

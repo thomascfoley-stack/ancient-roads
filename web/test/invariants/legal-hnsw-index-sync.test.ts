@@ -147,14 +147,34 @@ describe('§7 — partial HNSW index predicates stay in lockstep with the retrie
     });
   }
 
-  // The FTS index over `commentary_entries` is NOT part of 039: that table has no `served`
-  // column, so it still enumerates slugs and still needs the old-style guard. Keeping it here,
-  // unchanged, is deliberate — dropping it because "039 fixed the slug lists" would silently
-  // retire a live check over a table 039 never touched.
-  it('the newest legal FTS index carries every served prose + song/verse slug', () => {
-    const { sql } = newestContaining('idx_commentary_fts_legal');
-    for (const slug of [...SERVED_PROSE_WORKS, ...SERVED_SONG_VERSE_WORKS]) {
-      expect(sql.includes(`'${slug}'`), `FTS legal index missing served slug ${slug} — regenerate migration 019`).toBe(true);
-    }
+  // INVERTED 2026-08-20, and the previous comment's warning is honoured rather than ignored.
+  //
+  // This used to assert the FTS index ENUMERATES every served prose + song/verse slug, and its
+  // comment said dropping it "would silently retire a live check over a table 039 never touched".
+  // That warning was right in general and its premise was false in this specific case: the slug
+  // enumeration lived in a `work IN (...)` disjunct, and `commentary_entries.work` is NULL for all
+  // 371,521 rows on production. The enumeration therefore admitted NOTHING — measured, not argued:
+  // the shipped predicate returns 64,331 rows with the disjunct and 64,331 without it. The check
+  // was guarding a mechanism that had never functioned, and its greenness is part of why Song of
+  // Songs stayed invisible while `gill-song` sat named in that very list.
+  //
+  // So the check is not retired — it is pointed at the property that is actually load-bearing.
+  // Migration 119 removed the disjunct from the index; the constant lost it in legal-corpus.ts;
+  // and re-introducing slug enumeration here would rebuild the dead clause the deletion removed.
+  // Row-level coverage is asserted where it can be honest: fts-legal-index-sync.test.ts pins the
+  // index predicate byte-for-byte against the constant, and
+  // commentary-entries-work-column.test.ts pins the constant's shape.
+  it('the newest legal FTS index does NOT enumerate work slugs (the dead clause stays dead)', () => {
+    // SEED: regenerate the index with `OR work IN (...)` restored -> RED.
+    const { sql, name } = newestContaining('idx_commentary_fts_legal');
+    const predicate = indexPredicate(sql, 'idx_commentary_fts_legal');
+    expect(
+      /work\s+IN\s*\(/i.test(predicate),
+      `${name}: the FTS legal index predicate enumerates work slugs again. That column is NULL for ` +
+      'every row, so the clause admits nothing while reading like coverage — the exact shape that ' +
+      'hid Song of Songs. See migration 119.',
+    ).toBe(false);
+    // Anti-vacuity: the predicate must still be a real, author-keyed predicate, not empty.
+    expect(predicate).toMatch(/author/i);
   });
 });

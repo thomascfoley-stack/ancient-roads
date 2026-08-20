@@ -186,10 +186,34 @@ export function mustNotServeVetoSql(col = 'author'): string {
 
 const MUST_NOT_SERVE_VETO = mustNotServeVetoSql();
 
+// THE `work IN (...)` DISJUNCT WAS DELETED 2026-08-20. It was STRUCTURALLY DEAD, and the deletion
+// is bylaw 3 ("a check that cannot be made honest should be removed, not padded").
+//
+// Measured on production: it named 37 slugs, and `work IS NOT NULL` is 0 of 371,521 rows in
+// `commentary_entries` — nothing populates that column, so the clause could never match. Behaviour
+// neutrality was PROVEN before removal by evaluating the shipped predicate with and without it
+// against production: 64,331 admitted either way, a difference of exactly 0 rows.
+//
+// It is deleted rather than repaired because the two dead legs keyed on this column are NOT
+// symmetric, and the asymmetry is the whole argument:
+//   * THIS one is an ADMISSION clause. Dead, it costs nothing — but the moment `work` were
+//     populated it would silently ADMIT 37 works to passage search with no review. Dead weight
+//     that fails OPEN on a future data change.
+//   * `EXEGETICAL_FTS_EXCLUSION`'s work leg (routing.ts) is an EXCLUSION. Dead, it also costs
+//     nothing, and on the same future data change it would begin PROTECTING. It fails CLOSED, so
+//     it stays, and `commentary-entries-work-column.test.ts` fires the moment its precondition
+//     changes.
+// Making this one "live" by tagging a handful of rows was considered and rejected: 115 of 371,521
+// rows would satisfy the letter of the dead-clause bar while the condition it detects — a
+// table-wide unpopulated column — persisted. That is padding the check.
+//
+// Nothing is lost. Every work the clause named that genuinely reaches this surface reaches it via
+// the AUTHOR legs above, which carry all 64,331 admitted rows. A work admitted ONLY by slug was
+// never reachable here in the first place — that is precisely how Song of Songs went missing while
+// `gill-song` sat named in this list.
 export const LEGAL_COMMENTARY_ENTRIES_PREDICATE = `((author IN (${sqlList(PUBLISHED_WHOLE_BIBLE_AUTHORS)})
    OR (author = 'John Chrysostom' AND book IN (40, 43, 44))
-   OR (author = 'Augustine of Hippo' AND book IN (19, 43))
-   OR work IN (${sqlList(REGISTER_SERVED_SLUGS)}))
+   OR (author = 'Augustine of Hippo' AND book IN (19, 43)))
   AND (source_url IS NULL OR (${NOT_FORBIDDEN_PROVENANCE}))
   AND ${MUST_NOT_SERVE_VETO})`;
 

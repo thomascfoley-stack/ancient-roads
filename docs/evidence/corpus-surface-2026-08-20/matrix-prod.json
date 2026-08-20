@@ -1,0 +1,20 @@
+{
+  "works": 362,
+  "byCode": {
+    "MISSING-MATERIALIZATION": 1,
+    "DEAD-CLAUSE": 1
+  },
+  "findings": [
+    {
+      "slug": "barnes-crosswire-nt",
+      "code": "MISSING-MATERIALIZATION",
+      "detail": "author \"Albert Barnes\" is admitted by the predicate but contributes 0 admitted commentary_entries rows"
+    },
+    {
+      "slug": "(predicate)",
+      "code": "DEAD-CLAUSE",
+      "detail": "work-slug disjunct names 37 slugs; work IS NOT NULL is 0 of 371521 rows, so it matches nothing"
+    }
+  ],
+  "emptyBooks": "NONE"
+}
