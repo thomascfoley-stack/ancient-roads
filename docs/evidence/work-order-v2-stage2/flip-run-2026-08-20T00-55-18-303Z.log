@@ -1,0 +1,24 @@
+serve:false  4 standing ruling(s) (HEAD 4, tree 4)
+publish-flip — target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (credentials redacted)
+direction    staged -> published
+slugs        3 from docs/evidence/p4n-flip-2026-08-19/flip-sermon-PROBE.json
+! (node:88561) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+role         neondb_owner (asserted at the server)
+[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: [77Gpublish
+snapshot     docs/evidence/work-order-v2-stage2/flip-pre-snapshot-2026-08-20T00-55-45-440Z.json (811 rows + served state for 3 slug(s), written before COMMIT)
+eligible     3 of 3 are 'staged'
+  --status-only  : embeddings.served NOT written. These works will be PUBLISHED but NOT RETRIEVABLE
+                   until scripts/serve-batched.mjs runs against the same slug file.
+served       0 embedding row(s) -> served=true across 0 slug(s)
+
+OK — gate held. 3 status row(s) staged -> published; 0 embedding row(s) -> served=true.
+Reverse with: node scripts/publish-flip.mjs --slugs=docs/evidence/p4n-flip-2026-08-19/flip-sermon-PROBE.json --reverse --snapshot=docs/evidence/work-order-v2-stage2/flip-pre-snapshot-2026-08-20T00-55-45-440Z.json
