@@ -56,7 +56,11 @@ export { isExplicitCitation };
 export function verbatimPeriod(text: string): { start: number; end: number } | null {
   const years: number[] = [];
   for (const m of text.matchAll(/\bA\.?\s?D\.?\s+(\d{1,4})\b/gi)) years.push(Number(m[1]));
-  for (const m of text.matchAll(/\b(\d{1,4})\s+B\.?\s?C\.?\b/gi)) years.push(-Number(m[1]));
+  // BCE/CE forms added 2026-08-20 — Bede's chapter titles date "[54 BCE]" and the digest measured
+  // 0/785 sections dated under the A.D./B.C.-only rules. Still VERBATIM (§5): the marker must be
+  // in the text; nothing is inferred. "N CE" also accepted; bare years never are.
+  for (const m of text.matchAll(/\b(\d{1,4})\s+B\.?\s?C\.?(?:E\.?)?\b/gi)) years.push(-Number(m[1]));
+  for (const m of text.matchAll(/\b(\d{1,4})\s+C\.?E\.?\b/gi)) years.push(Number(m[1]));
   if (years.length === 0) return null;
   return { start: Math.min(...years), end: Math.max(...years) };
 }
