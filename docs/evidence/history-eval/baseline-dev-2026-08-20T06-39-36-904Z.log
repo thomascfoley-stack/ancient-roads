@@ -1,0 +1,29 @@
+history frozen-v1 baseline — 2026-08-20T06:39:16.695Z — set sha256 68097ecb9d7a88e2…
+  ✓ [entity       ] he-01  entities=[jerusalem] period=- groups=1  — tell me about Jerusalem
+  ✓ [entity       ] he-02  entities=[herod-the-great] period=- groups=1  — what happened to Herod
+  ✓ [entity       ] he-03  entities=[the-temple] period=- groups=1  — who was the temple
+  ✓ [entity       ] he-04  entities=[judea] period=- groups=1  — describe the history of Judea
+  ✓ [entity       ] he-05  entities=[egypt] period=- groups=1  — tell me about Egypt
+  ✓ [entity       ] he-06  entities=[rome] period=- groups=1  — what happened to Rome
+  ✓ [entity       ] he-07  entities=[titus] period=- groups=1  — who was Titus
+  ✓ [entity       ] he-08  entities=[vespasian] period=- groups=1  — describe the history of Vespasian
+  ✓ [period       ] hp-01  entities=[] period=70..70 groups=1  — what happened in A.D. 70
+  ✓ [period       ] hp-02  entities=[] period=1..100 groups=1  — events of the first century
+  ✓ [period       ] hp-03  entities=[] period=60..73 groups=1  — the years A.D. 60 to 73
+  ✓ [period       ] hp-04  entities=[] period=-4..-4 groups=1  — what was written about 4 B.C.
+  ✓ [entity+period] hb-01  entities=[herod-the-great] period=1..100 groups=1  — Herod in the first century
+  ✓ [entity+period] hb-02  entities=[caesar] period=1..100 groups=1  — Caesar in the first century
+  ✓ [entity+period] hb-03  entities=[moses] period=1..100 groups=1  — Moses in the first century
+  ✓ [entity+period] hb-04  entities=[david] period=1..100 groups=1  — David in the first century
+  ✓ [control      ] hc-01  entities=[] period=- groups=1  — best sourdough starter recipe
+  ✓ [control      ] hc-02  entities=[] period=- groups=1  — cheapest flights from Chicago to Seattle
+  ✓ [control      ] hc-03  entities=[] period=- groups=1  — how do I change a flat tire
+  ✓ [control      ] hc-04  entities=[] period=- groups=1  — quarterly revenue projections for startups
+
+kind            pass/n   pre-registered bar
+  control       4/4      4/4 zero-match (no noise argument)
+  entity        8/8      >=6/8
+  period        4/4      4/4 exact parse
+  entity+period 4/4      >=3/4
+
+BARS HOLD

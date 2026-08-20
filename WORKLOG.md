@@ -1,5 +1,42 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-20 (history build II) — audit GREEN, serve tooling built, baseline 20/20, one collision
+
+**`npm run audit`: PASSED, all gates** — after four reds, three of which were derived inventories
+catching my new code exactly as designed (§4.5 forced persistence into its own messages-only file
+`history-threads.ts`; `history_embeddings` registered EXCLUDED in the table spec; the coverage
+footer pins DISPLAY_LOCALE), plus a TS2532 in the OTHER session's `corpus-surface-matrix.mts`.
+
+**A second agent session is writing this branch.** Its `119_fts_legal_drop_dead_work_clause.sql`
+was owner-applied to PROD at 05:23Z, twelve minutes before my 119 hit dev. Prod ledgers are
+frozen, so mine renumbered → **`120_history_embeddings.sql`**, dev ledger row corrected (1 row).
+The AGENTS.md one-session-per-tree hazard, live; recorded, not resolved.
+
+**`serve-batched --table`** — the legal command to serve history on prod now exists. Closed
+whitelist mapped to per-table statement strategies (the two tables key differently); an
+injection-shaped `--table` refuses (watched exit 2); green control on dev: josephus preflight
+passes, 0 to serve, exit 0. Prod serve list: `docs/evidence/history-build-2026-08-20/serve-history-josephus.json`.
+
+**First frozen-eval baseline (dev): 20/20, ALL PRE-REGISTERED BARS HOLD** — controls 4/4
+zero-match, entity 8/8, period 4/4 exact, entity+period 4/4. Runner hash-verifies the frozen set
+at runtime and writes its log WHOLE ([log](docs/evidence/history-eval/baseline-dev-2026-08-20T06-39-36-904Z.log)).
+Run through the SHIPPED `searchHistory` — the server-only guard is defeated by a 3-line preload
+shim (`scripts/preload-server-only-noop.cjs` via NODE_OPTIONS), NOT by re-implementing the
+pipeline, which is the eval-heldout scar this repo already carries.
+
+**Observation, recorded not tuned:** controls return zero interpretation matches (the honesty
+strip is clean) but the vector leg still surfaces nearest-neighbor text for any query — sourdough
+gets Josephus's closest cosines, labeled as text matches. A minimum-similarity floor is a
+candidate knob for the TUNING slice (n≥50 logged queries); setting it now would be tuning to the
+frozen set. Also: `he-03` reads "who was the temple" — the generator template mispaired with a
+place entity; frozen stays frozen, noted.
+
+### NOT DONE
+- **The converter (CCEL→historian-JSONL)** — the one unbuilt piece. 35 historians remain
+  declarations; the pipe is proven end-to-end on Josephus only.
+- **Prod**: 120 unapplied, no backfill (prod's josephus `section_embeddings` existence UNVERIFIED),
+  unserved, undeployed. Every step assembled, every step owner-gated.
+
 ## 2026-08-20 (history build) — the vertical slice is BUILT: dev-served, tested, walked
 
 **Everything below HISTORY_RETRIEVAL_DESIGN §5's authenticated render exists and is green.**
