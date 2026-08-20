@@ -1764,3 +1764,33 @@ curl -X PATCH -H "Authorization: Bearer $(cat ~/.neon_api_key)" -H "Content-Type
 **Still unproven:** whether a long single `UPDATE` counts as "activity" for Neon's idle detection. If
 it does not, a busy compute can still suspend mid-statement, and the raised timeout only widens the
 window rather than closing it. The next long flip is the test.
+
+## ADR-114 — The history register is Christian writers writing to a Christian audience; Renan removed (2026-08-20)
+
+**Owner ruling, 2026-08-20.** Verbatim: *"remove all claims of Ernest Renan. I want christian writers
+writing to a christian audience."* Scope named in the same ruling: **martyrs, early church, Roman
+church, Egypt (the Israelites in slavery), the Middle East through a Christian lens, the Great
+Awakening, and notable writers from a Christian lens.**
+
+**REMOVED: 7 works, the whole of Renan's `History of the Origins of Christianity`** (`renan-antichrist`,
+`renan-apostles`, `renan-gospels`, `renan-hadrian-pius`, `renan-lifeofjesus`, `renan-marcus`,
+`renan-saintpaul`). Manifest 914 → 907 entries; historians 41 → 34. **Nothing was ingested, so no rows
+existed and nothing needed quarantining** — these were declarations only.
+
+**This is an EDITORIAL ruling, not a licensing one, and the distinction matters.** Renan is
+unambiguously public domain and the attributions would have been accurate. The problem is stance: the
+*Vie de Jésus* denies the miracles and treats the resurrection as legend, and it cost Renan his chair
+at the Collège de France. Under the existing product guarantee a verifier cannot catch this — the
+quote is real, the attribution correct, the work genuinely a history. Surfacing it beside Schaff as
+an undifferentiated "historian" would present a contested rationalist reading as neutral background.
+
+**The general principle this establishes, which outlives Renan:** for *voices* (commentary, sermon,
+theology), disagreement between authors IS the product working — that is what "≥2 grounded voices"
+means. For *history*, the same juxtaposition reads as settled fact, because history makes claims about
+events rather than readings of a text. **The history register therefore carries an editorial
+admission standard that the voice registers do not.** Future historian candidates are judged on
+stance as well as licence and provenance.
+
+**Not resolved by this ruling** (both still OPEN, both licensing rather than editorial):
+`garrison-histdisciple` (published 1945, author died 1969 — not PD on any reading) and
+`knox-history-reformation` (a 1949 edition of a 1572 work; Knox's text is PD, the apparatus may not be).
