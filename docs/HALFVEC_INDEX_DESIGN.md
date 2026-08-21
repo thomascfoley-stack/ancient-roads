@@ -107,6 +107,32 @@ spending it on a no-regression check burns a held-out set for a question a dev s
 regression in any category kills it. Record the numbers in `WORKLOG.md` either way, including a
 kill.
 
+### 4a. Early measurement on dev (2026-08-21) — Bars A and B look clear, with one gap
+
+Read-only on `~/.neon_dev_url`, 131,569 rows in the served legal pool, `hnsw.ef_search=200`,
+8 probe vectors drawn deterministically (`ORDER BY md5(source_id||'salt')`):
+
+| quantity | result |
+|---|---|
+| top-20 **set** overlap (Bar A) | **20/20 on 8 of 8 probes** |
+| top-6 set overlap (proxy for Bar B) | **6/6 on 8 of 8** |
+| top-20 order identical | **20/20 on 8 of 8** |
+| max abs distance error, fp32 vs halfvec | **1.41 × 10⁻⁵** |
+| smallest adjacent gap within a top-50 | **7.35 × 10⁻⁶** |
+
+**The mechanism, stated so nobody reads this as "half precision is free":** the quantization error
+is *larger* than the smallest gaps between near-tied neighbours, so halfvec genuinely can reorder.
+Measured over a top-50, it did — 48 of 50 kept their rank, two swapped. **Both swaps were below
+rank 20**, in the tail where distances bunch. Inside the pool that feeds composition, nothing moved
+on any probe. And the pool feeds a cross-encoder that re-orders everything anyway, so near-tie order
+at the retrieval stage is washed out downstream.
+
+**The gap, and it is the reason this is not a green light.** These comparisons re-rank *the candidate
+set fp32 selected*. They cannot show whether halfvec would pull in a row fp32 ranked 61st. Settling
+that needs an exact dual scan (attempted; timed out at 2 minutes over 131k rows — needs a longer
+budget or a narrower pool) or the index actually built. **Until then this is strong evidence, not
+proof, and the full pre-registered run in §4 still stands.**
+
 ## 5. Apply order (ADR-025 zero-window)
 
 Per-index, never drop-first: `CREATE INDEX CONCURRENTLY` the halfvec twin under a new name → verify
@@ -115,14 +141,20 @@ Per-index, never drop-first: `CREATE INDEX CONCURRENTLY` the halfvec twin under 
 `db/apply-migration-concurrent.mjs`, which splits on `--SPLIT--` because `CONCURRENTLY` cannot run
 inside a transaction block.
 
-**Requires pgvector ≥ 0.7.0** for the `halfvec` type. **UNVERIFIED** — no database was read for this
-design. Settle it first:
+**Requires pgvector ≥ 0.7.0** for the `halfvec` type.
+
+**CLEARED ON DEV, 2026-08-21** — read-only, `~/.neon_dev_url`:
+
+```
+vector 0.8.1        pg_trgm 1.6        halfvec type present: t
+```
+
+**PROD STILL UNVERIFIED** (bylaw 7 — owner go per occasion). Dev being 0.8.1 makes prod very likely
+but does not prove it; a branch carries the extension version it was cut with. Settle before applying:
 
 ```sql
 SELECT extversion FROM pg_extension WHERE extname = 'vector';
 ```
-
-If that returns below 0.7.0, everything here is moot until the extension is upgraded.
 
 ## 6. Out of scope, and one thing worth more
 
