@@ -1,0 +1,12 @@
+deployed_at_utc: 2026-08-21T07:00:37Z
+sha:             121a6db38d84be79b8e7497951d7381e2cf1ec2e
+branch:          HEAD
+project:         prj_Y9PVuNly5sSsf3NcvayS1vwE6FwR
+org:             team_TQ3BYCSyzQ3m0yatlkKmUzM0
+vercel_user:     thomascfoley-7284
+vercel_cli:      vercel@50.38.2
+url:             https://web-qj8ajknx3-home-network-hardening.vercel.app
+deployment_id:   dpl_3CnRpawfkEnCfJPDjGfP8MqS5vEY
+alias:           ancientpaths.app
+alias_serves:    dpl_3CnRpawfkEnCfJPDjGfP8MqS5vEY
+state:           live
