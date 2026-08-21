@@ -29,6 +29,13 @@ export interface ParsedDoc {
   pages?: number;
   /** Numerator of the scanned-document decision. See judgeExtraction. */
   extractableChars: number;
+  /**
+   * Per-page non-whitespace character counts. PDF only; undefined elsewhere. Evidence for the
+   * PER-PAGE leg of judgeExtraction (uploader deep-dive D2): the whole-document average cannot
+   * see a scan bound with a text appendix, and the counts are what let the refusal name which
+   * pages were unreadable. Optional so non-paged formats and older parsed results stay valid.
+   */
+  pageChars?: number[];
 }
 
 export interface UserDocument {

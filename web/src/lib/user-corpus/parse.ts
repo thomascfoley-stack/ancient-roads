@@ -17,11 +17,30 @@ import { UploadRefused, type ParsedDoc, type SniffedType } from './types';
  * order of magnitude below any real page of text and an order of magnitude above the stray-object
  * noise floor, so it does not need to be precise to be right -- there is almost nothing in the gap.
  *
- * PRE-REGISTERED, and it must be measured against real files rather than trusted: this number is
- * reasoning, not measurement, and the honest test is a corpus of genuine scans and genuine
- * text-layer PDFs. Recorded in WORKLOG as UNVERIFIED until that runs.
+ * PRE-REGISTERED, then MEASURED 2026-08-03 (docs/evidence/lane-b-slice1/
+ * scanned-threshold-calibration.log, via scanned-threshold-calibration.test.ts): TEXT n=120 real
+ * PDFs through the real extractor, chars/page median 1350.7, p05 316.3; SCAN n=12 rasterised
+ * image-only rebuilds of the same documents, all 0.0. Zero scans wrongly accepted at 100, and the
+ * threshold sits in the observed empty band between 74 (the one stamp-only outlier) and 316. The
+ * limitation that survives the measurement: scans carrying stray header-stamp text are represented
+ * by a single observation, so 100 is evidence-backed but not tightly bracketed from below.
  */
 export const MIN_CHARS_PER_PAGE = 100;
+
+/**
+ * Refuse a PDF when MORE THAN this fraction of its pages fall below MIN_CHARS_PER_PAGE.
+ *
+ * The second leg of the scanned-document rule (uploader deep-dive D2), PRE-REGISTERED at 0.4 in
+ * that order before this fix was written. The whole-document rule below is an AVERAGE, and an
+ * average cannot see a mixed binding: a 200-page scan bound with a 20-page text appendix runs
+ * 135 chars/page overall, sails past the floor, and indexes with ~90% of its content silently
+ * missing -- the exact silent drop §8 forbids. The per-page floor this leg reuses is the same
+ * calibrated MIN_CHARS_PER_PAGE (real text pages measured median 1350.7 chars/page; real scan
+ * pages 0.0 -- see the calibration note above), so a "low" page here is one that measures like a
+ * scan page, and 0.4 tolerates a scanned cover, plates, or an inserted facsimile without letting
+ * a majority-scan volume through.
+ */
+export const MAX_LOW_TEXT_PAGE_FRACTION = 0.4;
 
 /**
  * Below this many characters TOTAL, any document is empty regardless of format.
@@ -45,9 +64,28 @@ export function countExtractable(text: string): number {
  * can sit quietly and be treated as indexed.
  */
 export function judgeExtraction(parsed: ParsedDoc, type: SniffedType): void {
-  const { extractableChars, pages } = parsed;
+  const { extractableChars, pages, pageChars } = parsed;
 
   if (type === 'pdf' && pages !== undefined && pages > 0) {
+    // Leg 1, PER PAGE: more than MAX_LOW_TEXT_PAGE_FRACTION of pages below the per-page floor is
+    // a scan (possibly bound with some text pages), whatever the document-wide average says.
+    // Strictness matches leg 2 in both comparisons: a page AT the floor is not low, and a
+    // fraction AT the bar is not over it.
+    if (pageChars && pageChars.length > 0) {
+      const low = pageChars.filter((c) => c < MIN_CHARS_PER_PAGE).length;
+      if (low / pageChars.length > MAX_LOW_TEXT_PAGE_FRACTION) {
+        throw new UploadRefused(
+          'needs_ocr',
+          `${low} of ${pageChars.length} pages have no readable text — this looks like a scan, ` +
+            'and needs OCR before it can be searched.',
+        );
+      }
+    }
+
+    // Leg 2, WHOLE-DOCUMENT AVERAGE: kept beside leg 1 rather than replaced by it, because it is
+    // what still fires for a parsed result carrying no per-page counts (pageChars is optional --
+    // older results, or a future paged format that cannot count per page), and it is the leg the
+    // 2026-08-03 calibration measured directly.
     const perPage = extractableChars / pages;
     if (perPage < MIN_CHARS_PER_PAGE) {
       throw new UploadRefused(
@@ -74,8 +112,8 @@ export async function extractText(bytes: Uint8Array, filename: string): Promise<
   const type = sniffType(bytes, filename);
 
   if (type === 'pdf') {
-    const { text, pages } = await parsePdf(bytes);
-    return { parsed: { text, pages, extractableChars: countExtractable(text) }, type };
+    const { text, pages, pageChars } = await parsePdf(bytes);
+    return { parsed: { text, pages, pageChars, extractableChars: countExtractable(text) }, type };
   }
 
   if (type === 'docx') {

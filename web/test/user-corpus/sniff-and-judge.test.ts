@@ -10,7 +10,13 @@ import {
   checksum,
   sniffType,
 } from '@/lib/user-corpus/sniff';
-import { MIN_CHARS_PER_PAGE, MIN_DOC_CHARS, countExtractable, judgeExtraction } from '@/lib/user-corpus/parse';
+import {
+  MAX_LOW_TEXT_PAGE_FRACTION,
+  MIN_CHARS_PER_PAGE,
+  MIN_DOC_CHARS,
+  countExtractable,
+  judgeExtraction,
+} from '@/lib/user-corpus/parse';
 import { UploadRefused } from '@/lib/user-corpus/types';
 
 const utf8 = (s: string): Uint8Array => new TextEncoder().encode(s);
@@ -140,6 +146,92 @@ describe('judgeExtraction — the scanned-document loud failure (§8)', () => {
       expect((e as UploadRefused).message).toContain('12');
       expect((e as UploadRefused).message).toContain('40');
     }
+  });
+
+  describe('the per-page leg (uploader deep-dive D2)', () => {
+    // The whole-document rule above is an AVERAGE: a 200-page scan bound with a 20-page text
+    // appendix averages past MIN_CHARS_PER_PAGE and indexes with ~90% of its content silently
+    // missing — the exact silent drop §8 forbids. The per-page leg refuses when MORE THAN 40%
+    // of pages (pre-registered in the D2 order before this fix was written) fall below the SAME
+    // per-page floor. Floor calibration: docs/evidence/lane-b-slice1/
+    // scanned-threshold-calibration.log (2026-08-03) — real text pages median 1350.7 chars,
+    // real scans all 0.0. 1350 below is that median, so the rich pages here are realistic.
+    const MEDIAN_TEXT_PAGE = 1350;
+
+    const pdfWithPages = (pageChars: number[]) => {
+      const extractableChars = pageChars.reduce((a, b) => a + b, 0);
+      return { text: 'x'.repeat(extractableChars), pages: pageChars.length, extractableChars, pageChars };
+    };
+
+    it('REFUSES a scan bound with a text appendix, though the average clears the floor', () => {
+      // SEED: the pre-D2 average-only rule -> RED here: 27,000 chars / 200 pages = 135/page,
+      // accepted, with 180 unreadable pages indexed as a success.
+      const parsed = pdfWithPages([...Array<number>(180).fill(0), ...Array<number>(20).fill(MEDIAN_TEXT_PAGE)]);
+      expect(parsed.extractableChars / parsed.pages).toBeGreaterThan(MIN_CHARS_PER_PAGE); // the trap is real
+      let refused: UploadRefused | null = null;
+      try {
+        judgeExtraction(parsed, 'pdf');
+      } catch (e) {
+        refused = e as UploadRefused;
+      }
+      expect(refused?.code).toBe('needs_ocr');
+      // The verdict names its evidence as counts, so "needs OCR" is checkable afterwards.
+      expect(refused?.message).toContain('180 of 200 pages');
+    });
+
+    it('still accepts a uniformly texty document', () => {
+      expect(() => judgeExtraction(pdfWithPages(Array<number>(12).fill(MEDIAN_TEXT_PAGE)), 'pdf')).not.toThrow();
+    });
+
+    it('still refuses a fully scanned document — both legs agree', () => {
+      let code: string | undefined;
+      try {
+        judgeExtraction(pdfWithPages(Array<number>(40).fill(0)), 'pdf');
+      } catch (e) {
+        code = (e as UploadRefused).code;
+      }
+      expect(code).toBe('needs_ocr');
+    });
+
+    it('puts the boundary exactly at MORE THAN 40% of pages below the floor', () => {
+      // 4 low of 10 is exactly 40% — not MORE than — and the average (810/page) clears: accepted.
+      // The counts are stated here rather than derived from the shipped constant, deliberately:
+      // deriving the expectation from the artifact under test is the watchlist's fourteenth shape.
+      const atBar = pdfWithPages([...Array<number>(4).fill(0), ...Array<number>(6).fill(MEDIAN_TEXT_PAGE)]);
+      expect(() => judgeExtraction(atBar, 'pdf')).not.toThrow();
+      // 5 low of 10 is over the bar while the average (675/page) still clears — only the
+      // per-page leg can see it.
+      const overBar = pdfWithPages([...Array<number>(5).fill(0), ...Array<number>(5).fill(MEDIAN_TEXT_PAGE)]);
+      expect(() => judgeExtraction(overBar, 'pdf')).toThrow(UploadRefused);
+    });
+
+    it('a page at exactly the per-page floor is not a low page', () => {
+      // Same strictness as the document leg: < refuses, == passes. Half the pages sit exactly
+      // at the floor, so this flips if the comparison drifts to <=.
+      const parsed = pdfWithPages([
+        ...Array<number>(5).fill(MIN_CHARS_PER_PAGE),
+        ...Array<number>(5).fill(MEDIAN_TEXT_PAGE),
+      ]);
+      expect(() => judgeExtraction(parsed, 'pdf')).not.toThrow();
+    });
+
+    it('ships the pre-registered fraction, 0.4, and no other', () => {
+      // Stated independently of the boundary counts above, which are hardcoded on purpose: if
+      // the constant drifts, BOTH this and the boundary test go red, naming the drift twice.
+      expect(MAX_LOW_TEXT_PAGE_FRACTION).toBe(0.4);
+    });
+
+    it('without per-page counts, the average leg still governs (older parsed results)', () => {
+      // pageChars is optional on ParsedDoc; a parsed result without it must fall through to the
+      // document-average leg rather than bypass judgement.
+      let code: string | undefined;
+      try {
+        judgeExtraction({ text: '', pages: 300, extractableChars: 0 }, 'pdf');
+      } catch (e) {
+        code = (e as UploadRefused).code;
+      }
+      expect(code).toBe('needs_ocr');
+    });
   });
 
   it('calls a blank non-PDF empty, not needs_ocr — the remedies differ', () => {

@@ -7,6 +7,7 @@
 import { Buffer } from 'node:buffer';
 import { deflateRawSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
+import { chunkProse } from '@/lib/user-corpus/chunk';
 import { parseDocx } from '@/lib/user-corpus/parse-docx';
 import { MAX_DECOMPRESSED_BYTES } from '@/lib/user-corpus/sniff';
 import { UploadRefused } from '@/lib/user-corpus/types';
@@ -122,6 +123,55 @@ describe('parseDocx extracts prose from WordprocessingML', () => {
       '<w:r><w:rPr><w:b/></w:rPr><w:t>Grace</w:t></w:r>' +
       '<w:bookmarkStart w:id="1" w:name="x"/><w:t xml:space="preserve"> abounds</w:t></w:p></w:body></w:document>';
     expect(parseDocx(docx(xml))).toBe('Grace abounds');
+  });
+});
+
+describe('paragraph structure survives into the chunker (uploader deep-dive D1)', () => {
+  // chunk.ts splits paragraph blocks on /\n{2,}/, and isHeadingLine only ever fires on a
+  // single-line block. A single \n per </w:p> is therefore invisible downstream: a whole Word
+  // sermon arrives as ONE giant block, headings glue into body prose, and §4's "glues unrelated
+  // fragments" trap is the DEFAULT for the format sermons actually arrive in.
+
+  /** A paragraph carrying Word's own heading style, `<w:pStyle>` inside `<w:pPr>`. */
+  const styledPara = (style: string, text: string): string =>
+    `<w:p><w:pPr><w:pStyle w:val="${style}"/></w:pPr><w:r><w:t>${text}</w:t></w:r></w:p>`;
+
+  it('separates paragraphs with a BLANK line — the chunker’s block contract', () => {
+    // SEED: emit a single \n per </w:p> (the pre-D1 behaviour) -> RED: one block, not three.
+    const text = parseDocx(
+      docx(
+        `<w:document><w:body>${para('First move of the sermon.')}${para('Second move of the sermon.')}${para('Third move of the sermon.')}</w:body></w:document>`,
+      ),
+    );
+    expect(text.split(/\n{2,}/)).toEqual([
+      'First move of the sermon.',
+      'Second move of the sermon.',
+      'Third move of the sermon.',
+    ]);
+  });
+
+  it('a Word heading paragraph lands as its own block, never fused into body prose', () => {
+    // A real Word sermon shape: a Heading1-styled section head between body paragraphs. The
+    // style tag itself carries no text; the win is that the heading TEXT lands blank-line
+    // separated, so chunkProse's existing single-line heading path can see it. (Whether
+    // isHeadingLine then fires depends on its own heuristics — this head is ALL CAPS and
+    // roman-numbered, which it detects.)
+    const xml =
+      '<w:document><w:body>' +
+      para('Brethren, consider the field before us today.') +
+      styledPara('Heading1', 'II. THE PLOWMAN') +
+      para('Doth the plowman plow all day to sow his seed?') +
+      para('He opens and breaks the clods of his ground in hope.') +
+      '</w:body></w:document>';
+    const chunks = chunkProse(parseDocx(docx(xml)));
+
+    // All three RED against pre-D1 code: one giant multi-line block -> one body chunk with the
+    // heading fused between two sentences.
+    expect(chunks.length).toBeGreaterThan(1);
+    expect(chunks.some((c) => c.heading === 'II. THE PLOWMAN')).toBe(true);
+    for (const c of chunks) {
+      expect(c.text).not.toContain('II. THE PLOWMAN');
+    }
   });
 });
 

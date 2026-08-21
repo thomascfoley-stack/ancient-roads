@@ -18,8 +18,14 @@ import { parsePdf } from '@/lib/user-corpus/parse-pdf';
 import { MIN_CHARS_PER_PAGE, countExtractable, judgeExtraction } from '@/lib/user-corpus/parse';
 import { UploadRefused } from '@/lib/user-corpus/types';
 
-/** A syntactically valid PDF with `pages` pages, with or without a text layer. */
-function makePdf(pages: number, withText: boolean): Uint8Array {
+/**
+ * A syntactically valid PDF with `pages` pages, with or without a text layer.
+ *
+ * `withText` also takes a per-page predicate, because the D2 defect is exactly the mixed case: a
+ * scanned body BOUND WITH text pages, which no all-or-nothing fixture can represent.
+ */
+function makePdf(pages: number, withText: boolean | ((pageIndex: number) => boolean)): Uint8Array {
+  const hasText = typeof withText === 'function' ? withText : (): boolean => withText;
   const objects: string[] = [];
   const pageIds: number[] = [];
   let nextId = 3;
@@ -36,15 +42,19 @@ function makePdf(pages: number, withText: boolean): Uint8Array {
     const contentId = pageId + 1;
     objects[pageId] =
       `<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents ${contentId} 0 R` +
-      (withText ? `/Resources<</Font<</F1 ${fontId} 0 R>>>>` : '/Resources<<>>') +
+      (hasText(i) ? `/Resources<</Font<</F1 ${fontId} 0 R>>>>` : '/Resources<<>>') +
       '>>';
-    // With text: real BT/Tj/ET text objects. Without: a filled rectangle -- the page has content
-    // and a non-trivial content stream, but no text at all. That distinction is the whole test.
-    const stream = withText
+    // With text: real BT/Tj/ET text objects — eight lines (~500 chars), so a MINORITY of text
+    // pages can still pull a mixed document's AVERAGE over the floor, which is what makes the D2
+    // test below differential. Without: a filled rectangle -- the page has content and a
+    // non-trivial content stream, but no text at all. That distinction is the whole test.
+    const stream = hasText(i)
       ? `BT /F1 12 Tf 72 720 Td (Sermon page ${i + 1}.) Tj ` +
-        '0 -14 Td (The plowman plows for sowing and opens and harrows his ground,) Tj ' +
-        '0 -14 Td (that he may sow wheat in rows and barley in its proper place.) Tj ' +
-        '0 -14 Td (This paragraph exists so the page clears the per-page character floor.) Tj ET'
+        Array.from(
+          { length: 8 },
+          (_, k) => `0 -14 Td (Move ${k + 1}: the plowman plows for sowing and opens and harrows his ground in hope.) Tj`,
+        ).join(' ') +
+        ' ET'
       : '0.5 0.5 0.5 rg 72 72 468 648 re f';
     objects[contentId] = `<</Length ${stream.length}>>\nstream\n${stream}\nendstream`;
   });
@@ -71,20 +81,43 @@ const PAGES = 12;
 
 describe('a PDF with a real text layer', () => {
   it('is read, and accepted', async () => {
-    const { text, pages } = await parsePdf(makePdf(PAGES, true));
+    const { text, pages, pageChars } = await parsePdf(makePdf(PAGES, true));
     const chars = countExtractable(text);
     expect(pages).toBe(PAGES);
     expect(chars / pages).toBeGreaterThan(MIN_CHARS_PER_PAGE);
     expect(text).toContain('plowman');
     // The other side of the threshold. Without it, a rule that refused everything would pass the
-    // scan test below and this suite would report the same green.
-    expect(() => judgeExtraction({ text, pages, extractableChars: chars }, 'pdf')).not.toThrow();
+    // scan test below and this suite would report the same green. pageChars rides along because
+    // that is what the shipped path (extractText -> judgeExtraction) now carries.
+    expect(() => judgeExtraction({ text, pages, extractableChars: chars, pageChars }, 'pdf')).not.toThrow();
+  });
+});
+
+describe('a mixed binding: scanned body with a text appendix (uploader deep-dive D2)', () => {
+  it('is REFUSED by the per-page leg even though the document AVERAGE clears the floor', async () => {
+    // 6 of 12 pages scanned (50%, over the pre-registered 40%), 6 rich — the average lands well
+    // over the floor, so the pre-D2 whole-document rule indexed this with half its pages
+    // unreadable. SEED: average-only judgeExtraction, or parsePdf without pageChars -> RED.
+    const { text, pages, pageChars } = await parsePdf(makePdf(12, (i) => i >= 6));
+    const chars = countExtractable(text);
+    expect(pages).toBe(12);
+    expect(pageChars).toHaveLength(12);
+    expect(chars / pages).toBeGreaterThan(MIN_CHARS_PER_PAGE); // the average really does clear
+
+    let refused: UploadRefused | null = null;
+    try {
+      judgeExtraction({ text, pages, extractableChars: chars, pageChars }, 'pdf');
+    } catch (e) {
+      refused = e as UploadRefused;
+    }
+    expect(refused?.code).toBe('needs_ocr');
+    expect(refused?.message).toContain('6 of 12 pages');
   });
 });
 
 describe('a scan: real pages, no text layer', () => {
   it('is REFUSED needs_ocr rather than indexed as an empty success', async () => {
-    const { text, pages } = await parsePdf(makePdf(PAGES, false));
+    const { text, pages, pageChars } = await parsePdf(makePdf(PAGES, false));
     const chars = countExtractable(text);
 
     // The pages are genuinely there -- this is not a broken file, which is exactly why the
@@ -95,7 +128,7 @@ describe('a scan: real pages, no text layer', () => {
 
     let refused: UploadRefused | null = null;
     try {
-      judgeExtraction({ text, pages, extractableChars: chars }, 'pdf');
+      judgeExtraction({ text, pages, extractableChars: chars, pageChars }, 'pdf');
     } catch (e) {
       refused = e as UploadRefused;
     }
