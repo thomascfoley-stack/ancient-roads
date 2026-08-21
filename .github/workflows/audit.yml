@@ -93,6 +93,88 @@ jobs:
           node-version: 22
       - run: corepack enable
       - run: corepack pnpm install --frozen-lockfile
+
+      # ── EPHEMERAL TEST BRANCH (2026-08-21) ────────────────────────────────────
+      # Every run gets its OWN copy-on-write Neon branch, cut from the long-lived CI parent,
+      # and deletes it at the end. Why: this job used to migrate ONE persistent branch, and
+      # the comments below are the record of what that cost — `main` red for 12 consecutive
+      # runs across 3 days, a FORGET list that erased 044's ledger row on every run (so a run
+      # that finally completed 044 had its record deleted before the next one started), a
+      # 35-minute wedge, and 044 finally applied out of band by hand.
+      #
+      # A branch born as a copy of the parent cannot have a drifting ledger, and cannot carry
+      # another run's half-applied migration or leftover fixture rows. The tenancy suites
+      # INSERT and DELETE; today they do that to shared state that the next run inherits.
+      #
+      # PARENT CHOICE, and the one operational consequence. The parent is the SAME branch this
+      # job used before, so the tests see exactly the data they saw before — this change is
+      # about isolation, not about what is under test. The trade: the parent no longer advances,
+      # so a migration that is expensive to apply is paid on EVERY run rather than once. 044 is
+      # already applied on the parent, so today the pending set is empty or near it. When a new
+      # expensive migration lands, advance the parent once by hand (apply-pending against
+      # PARENT_BRANCH) rather than letting every run re-apply it — the 30-minute timeout below
+      # is the tripwire that will tell you.
+      #
+      # SAFETY. The endpoint id is created at runtime, so it can no longer be a reviewable
+      # literal in this file. The load-bearing rail is unaffected: `isAuditAllowedHost`
+      # (apply-pending.mjs) and the PROD_ENDPOINT prefix check in web/test/helpers/env.ts both
+      # refuse production regardless of what is declared. The assertion below adds the check
+      # this file used to make by being readable — it fails the job if the branch we just
+      # created is anywhere near the production endpoint, before any URL is exported.
+      - name: create ephemeral Neon branch
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT: spring-heart-74819093
+          PARENT_BRANCH: ci-test-20260729
+          PROD_ENDPOINT_PREFIX: ep-odd-fog
+          APP_URL_TEMPLATE: ${{ secrets.APP_DATABASE_URL_TEST }}
+        run: |
+          set -euo pipefail
+          if [ -z "$NEON_API_KEY" ]; then
+            echo "::error title=NEON_API_KEY missing::the ephemeral test branch cannot be created — db-invariants must fail, not skip green."
+            exit 1
+          fi
+          BRANCH="ci-eph-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          # Exported FIRST, before any step that can fail, so the always() cleanup below can
+          # still find and delete the branch if creation half-succeeded.
+          echo "EPH_BRANCH=$BRANCH" >> "$GITHUB_ENV"
+          npx --yes neonctl branches create \
+            --project-id "$NEON_PROJECT" --parent "$PARENT_BRANCH" --name "$BRANCH" \
+            --api-key "$NEON_API_KEY" --output json > /tmp/eph-branch.json
+          OWNER_URL=$(npx --yes neonctl connection-string "$BRANCH" --project-id "$NEON_PROJECT" \
+            --role-name neondb_owner --database-name neondb --api-key "$NEON_API_KEY" | tr -d '\n')
+          if [ -z "$OWNER_URL" ]; then
+            echo "::error title=ephemeral branch has no owner URL::neonctl returned nothing for $BRANCH."
+            exit 1
+          fi
+          echo "::add-mask::$OWNER_URL"
+          # Endpoint id computed EXACTLY as web/test/helpers/env.ts endpointIdOf() computes it
+          # (first label of the host), so the declared id and the parsed id cannot disagree.
+          EP=$(node -e 'process.stdout.write(new URL(process.argv[1]).hostname.split(".")[0])' "$OWNER_URL")
+          case "$EP" in
+            "$PROD_ENDPOINT_PREFIX"*)
+              echo "::error title=REFUSING::ephemeral branch resolved to the production endpoint ($EP). Nothing was exported."
+              exit 1 ;;
+          esac
+          echo "ephemeral branch $BRANCH → endpoint $EP (parent $PARENT_BRANCH)"
+          echo "DATABASE_URL=$OWNER_URL" >> "$GITHUB_ENV"
+          echo "MIGRATE_TARGET_ENDPOINT=$EP" >> "$GITHUB_ENV"
+          echo "SEED_TEST_ENDPOINT=$EP" >> "$GITHUB_ENV"
+          # app_runtime is a SQL-created role, not a Neon-managed one, so neonctl cannot mint a
+          # connection string for it. A branch clones pg_authid, so the role and its password are
+          # identical on the child — swap the HOST of the existing secret and keep everything else.
+          # Pooling is preserved: the repo's transaction-local set_config guarantee is proven
+          # through the pooler, and silently moving CI to a direct connection would drop that.
+          APP_EPH=$(OWNER_URL="$OWNER_URL" APP_URL="$APP_URL_TEMPLATE" node -e '
+            const o = new URL(process.env.OWNER_URL), a = new URL(process.env.APP_URL);
+            const rest = o.hostname.split(".").slice(1).join(".");
+            const pooled = a.hostname.split(".")[0].endsWith("-pooler");
+            a.hostname = (pooled ? o.hostname.split(".")[0] + "-pooler" : o.hostname.split(".")[0]) + "." + rest;
+            process.stdout.write(a.toString());
+          ')
+          echo "::add-mask::$APP_EPH"
+          echo "APP_DATABASE_URL=$APP_EPH" >> "$GITHUB_ENV"
+
       # A GLOB, NOT A LIST (owner ruling 2026-07-29). This was an explicit 13-file
       # allowlist, which made every new invariant OPT-IN to CI — and forgetting to add
       # one was invisible. Both checks written on 2026-07-29 (register-end-to-end,
@@ -121,34 +203,15 @@ jobs:
       #      NOT auto-masked the way stored secrets are).
       # With neither, the suites announce NOT RUN via helpers/loud-skip.ts — never silence.
       #
-      # This step is the ONLY writer of DATABASE_URL. Deliberately NOT a step-level `env:` on
-      # the vitest step: `${{ secrets.X }}` renders as an EMPTY STRING when unset, and a
-      # step-level empty DATABASE_URL would shadow the value written to GITHUB_ENV here.
-      - name: resolve seed-owner DATABASE_URL (secret, else fetched via NEON_API_KEY)
-        env:
-          OWNER_SECRET: ${{ secrets.DATABASE_URL_TEST_OWNER }}
-          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
-          SEED_BRANCH: ci-test-20260729
-          NEON_PROJECT: spring-heart-74819093
-        run: |
-          if [ -n "$OWNER_SECRET" ]; then
-            echo "DATABASE_URL=$OWNER_SECRET" >> "$GITHUB_ENV"
-            echo "seed owner: using DATABASE_URL_TEST_OWNER secret"
-          elif [ -n "$NEON_API_KEY" ]; then
-            URL=$(npx --yes neonctl connection-string "$SEED_BRANCH" --project-id "$NEON_PROJECT" \
-              --role-name neondb_owner --database-name neondb --api-key "$NEON_API_KEY" 2>/dev/null | tr -d '\n')
-            if [ -z "$URL" ]; then
-              echo "::error title=seed-owner URL not fetched::neonctl returned nothing for branch $SEED_BRANCH — db-invariants must fail when seed owner is unavailable."
-              exit 1
-            else
-              echo "::add-mask::$URL"
-              echo "DATABASE_URL=$URL" >> "$GITHUB_ENV"
-              echo "seed owner: fetched at runtime for $SEED_BRANCH (no stored owner secret)"
-            fi
-          else
-            echo "::error title=seed-owner URL absent::neither DATABASE_URL_TEST_OWNER nor NEON_API_KEY is set — seeding suites cannot run; db-invariants must fail."
-            exit 1
-          fi
+      # DATABASE_URL (the seed-owner connection) is written by the ephemeral-branch step above and
+      # nowhere else. It used to be resolved here, either from a stored DATABASE_URL_TEST_OWNER
+      # secret or fetched for the persistent branch; BOTH would now point at the PARENT rather than
+      # at this run's branch, so the step is gone rather than kept-and-ignored. The fail-closed
+      # posture it carried moved with it: no NEON_API_KEY is a hard failure up there, not a skip.
+      #
+      # Still true, and the reason DATABASE_URL is never a step-level `env:` on the vitest step:
+      # `${{ secrets.X }}` renders as an EMPTY STRING when unset, and a step-level empty value
+      # would shadow what GITHUB_ENV wrote.
       - name: require DEEPINFRA_API_KEY (fail closed)
         env:
           KEY: ${{ secrets.DEEPINFRA_API_KEY }}
@@ -170,9 +233,9 @@ jobs:
       # assumption below can be DERIVED rather than guessed. Two guesses cost two CI runs on
       # 2026-08-08; this answers it in one. Safe to keep — it changes nothing and the output is the
       # record of what the target actually held.
+      # MIGRATE_TARGET_ENDPOINT arrives from GITHUB_ENV (the ephemeral branch), so there is no
+      # step-level literal here any more — a literal would name the parent and shadow it.
       - name: describe the test branch (read-only)
-        env:
-          MIGRATE_TARGET_ENDPOINT: ep-tiny-bonus-at3izo3y
         run: node db/describe-target.mjs
 
       # timeout-minutes, because this step wedged CI for 35 minutes on 2026-08-08 (CONCURRENTLY in
@@ -192,7 +255,10 @@ jobs:
       - name: apply pending migrations to the test branch
         timeout-minutes: 30
         env:
-          MIGRATE_TARGET_ENDPOINT: ep-tiny-bonus-at3izo3y
+          # MIGRATE_TARGET_ENDPOINT arrives from GITHUB_ENV (the ephemeral branch). The history
+          # below is kept because it is the argument for cutting a fresh branch per run: every
+          # entry in it is a way that topping up ONE shared branch went wrong.
+          #
           # DERIVED, not guessed — db/describe-target.mjs read the branch on 2026-08-08 and reported
           # 039 and 042 as missing. 044/045 were added after `licensing.test.ts` then failed with
           # `column "served" does not exist` — a table-presence check cannot see a migration that
@@ -231,14 +297,17 @@ jobs:
         env:
           REQUIRE_DB: '1'
           REQUIRE_SECRETS: '1'
-          # app_runtime — the read paths, RLS and tenancy suites. Least privilege on purpose:
-          # owner would BYPASS RLS and make the tenancy suites pass while proving nothing.
-          # (DATABASE_URL — the seed-owner url — arrives via GITHUB_ENV from the step above.)
-          APP_DATABASE_URL: ${{ secrets.APP_DATABASE_URL_TEST }}
-          # The declared seed target, by exact endpoint id. NOT a secret — it is the reviewable
-          # statement of which database may be seeded and deleted from. seedOwnerUrl() refuses
-          # production regardless of what is declared here.
-          SEED_TEST_ENDPOINT: ep-tiny-bonus-at3izo3y
+          # APP_DATABASE_URL (app_runtime — least privilege on purpose: owner would BYPASS RLS and
+          # make the tenancy suites pass while proving nothing), DATABASE_URL (the seed owner) and
+          # SEED_TEST_ENDPOINT all arrive via GITHUB_ENV from the ephemeral-branch step. None may be
+          # a step-level `env:` here: an unset `${{ secrets.X }}` renders as an EMPTY STRING and
+          # would shadow the real value.
+          #
+          # SEED_TEST_ENDPOINT was a literal in this file — the reviewable statement of which
+          # database may be seeded and deleted from. With a per-run branch that id does not exist
+          # until the run starts, so the statement moved into the create step, which refuses to
+          # export anything if the branch it just made resolves near production. seedOwnerUrl()
+          # still refuses production independently, whatever is declared.
           DEEPINFRA_API_KEY: ${{ secrets.DEEPINFRA_API_KEY }}
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
           NEON_PROJECT: spring-heart-74819093
@@ -258,3 +327,30 @@ jobs:
             --reporter=default --reporter=json --outputFile=../vitest-db-invariants.json
           node ../scripts/ci-skip-ceiling.mjs ../vitest-db-invariants.json
           node ../scripts/ci-db-invariants-receipt.mjs ../vitest-db-invariants.json
+
+      # always(), because a branch that outlives its run is the failure mode that turns this from
+      # a cleanup problem into a quota problem — Neon caps branches per project, and the run that
+      # first hits the cap fails for a reason that has nothing to do with the commit under test.
+      # A delete failure is a WARNING, not a job failure: the tests have already reported by here,
+      # and turning a successful invariants run red over a leaked branch would train people to
+      # ignore this job. The warning names the branch so a sweep is one command.
+      - name: delete ephemeral Neon branch
+        if: always()
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT: spring-heart-74819093
+        run: |
+          if [ -z "${EPH_BRANCH:-}" ]; then
+            echo "no ephemeral branch was created — nothing to delete"
+            exit 0
+          fi
+          if [ -z "$NEON_API_KEY" ]; then
+            echo "::warning title=ephemeral branch NOT deleted::no NEON_API_KEY; delete $EPH_BRANCH by hand."
+            exit 0
+          fi
+          if npx --yes neonctl branches delete "$EPH_BRANCH" \
+               --project-id "$NEON_PROJECT" --api-key "$NEON_API_KEY"; then
+            echo "deleted ephemeral branch $EPH_BRANCH"
+          else
+            echo "::warning title=ephemeral branch NOT deleted::neonctl could not delete $EPH_BRANCH. Sweep it: npx neonctl branches delete $EPH_BRANCH --project-id $NEON_PROJECT"
+          fi
