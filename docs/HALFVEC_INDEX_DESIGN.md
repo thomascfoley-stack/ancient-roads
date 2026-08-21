@@ -160,18 +160,22 @@ inside a transaction block.
 
 **Requires pgvector ≥ 0.7.0** for the `halfvec` type.
 
-**CLEARED ON DEV, 2026-08-21** — read-only, `~/.neon_dev_url`:
+**CLEARED ON BOTH, 2026-08-21.** Read-only, one statement each, no writes:
 
-```
-vector 0.8.1        pg_trgm 1.6        halfvec type present: t
-```
+| database | endpoint | pgvector | `halfvec` type |
+|---|---|---|---|
+| dev | `ep-tiny-hat` (`~/.neon_dev_url`) | **0.8.1** | present |
+| **production** | **`ep-odd-fog-atnykudm`** | **0.8.1** | **present** |
 
-**PROD STILL UNVERIFIED** (bylaw 7 — owner go per occasion). Dev being 0.8.1 makes prod very likely
-but does not prove it; a branch carries the extension version it was cut with. Settle before applying:
+**Production read record (bylaw 7).** Authorised by the owner in chat on 2026-08-21, scoped to the
+extension-version check and nothing else, and executed as scoped: `SELECT extname, extversion FROM
+pg_extension WHERE extname IN ('vector','pg_trgm')` plus a `pg_type` existence check for `halfvec`.
+Read-only; no DDL, no writes, no connection string printed. The endpoint was resolved and echoed
+before the query so the record names the database that was actually read rather than the one
+intended.
 
-```sql
-SELECT extversion FROM pg_extension WHERE extname = 'vector';
-```
+So the ≥ 0.7.0 requirement is met where it matters. **This clears a precondition; it does not
+authorise building the indexes** — Bars C and D remain unmeasured and §4's run has not happened.
 
 ## 6. Out of scope, and one thing worth more
 
