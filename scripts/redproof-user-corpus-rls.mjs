@@ -174,6 +174,24 @@ try {
       [did, USER_A],
     );
     seeded.push('user_document_readings');
+    // The two tables the derivation FOUND that the hand-typed list never knew (2026-08-21, first
+    // run against lane-b): user_integrations and user_library predate this script and had never
+    // had a two-account proof. Seeds are conditional on existence — the 100-block dev branches
+    // may not carry them — but where a table derives, the weld demands its seed.
+    if (TABLES.includes('user_integrations')) {
+      await app.query(
+        `INSERT INTO user_integrations (user_id, provider, composio_account_id) VALUES ($1,'probe-provider',$2)`,
+        [USER_A, `${RUN}-acct-A`],
+      );
+      seeded.push('user_integrations');
+    }
+    if (TABLES.includes('user_library')) {
+      await app.query(
+        `INSERT INTO user_library (user_id, title, file_type, storage_key) VALUES ($1,$2,'notes',$3)`,
+        [USER_A, `${RUN} A library item`, `${RUN}-key-A`],
+      );
+      seeded.push('user_library');
+    }
     return { did, sid };
   });
   ok(`A inserted one row into each of: ${seeded.join(', ')}`);
@@ -234,20 +252,49 @@ try {
   check(naked.rows[0].n === 0, 'no GUC set -> 0 rows, not all rows', `n=${naked.rows[0].n}`);
 
   // ---- leg 7: the delete cascade, run by the owner of the data.
+  // The orphan sweep covers the DOCUMENT-CHILD tables — DERIVED from the FK graph (which
+  // derived tables reach user_documents through a foreign-key chain), not assumed: the first
+  // lane-b run flagged user_integrations/user_library as "orphans" when they are standalone
+  // per-user tables no document cascade could or should collect. Assuming every user_* table is
+  // a document child was this script's own superset-instrument error (watchlist 17/18 shape).
   console.log('\nleg 7 — A deleting its document cascades to sections/embeddings/anchors:');
+  const fkReach = await owner.query(
+    `WITH RECURSIVE reach AS (
+       SELECT 'user_documents'::text AS tbl
+       UNION
+       SELECT c.conrelid::regclass::text
+         FROM pg_constraint c JOIN reach r ON c.confrelid = r.tbl::regclass
+        WHERE c.contype = 'f'
+     ) SELECT tbl FROM reach`,
+  );
+  const documentChildren = TABLES.filter((t) => fkReach.rows.some((r) => r.tbl === t));
+  const standalone = TABLES.filter((t) => !documentChildren.includes(t));
+  console.log(`  document-child tables (FK-derived): ${documentChildren.join(', ')}`);
+  if (standalone.length) console.log(`  standalone per-user tables (no cascade expected): ${standalone.join(', ')}`);
+  check(documentChildren.length >= TABLE_FLOOR, 'FK derivation floor: the 100/105 chain still derives',
+    `got ${documentChildren.length}`);
   await asUser(USER_A, async () => {
     const d = await app.query('DELETE FROM user_documents WHERE id = $1', [docA.did]);
     check(d.rowCount === 1, "A's DELETE of its own document affects 1 row", `rowCount=${d.rowCount}`);
   });
-  for (const t of TABLES) {
+  for (const t of documentChildren) {
     const r = await owner.query(`SELECT count(*)::int AS n FROM ${t} WHERE user_id = $1`, [USER_A]);
     check(r.rows[0].n === 0, `cascade left 0 orphans in ${t}`, `n=${r.rows[0].n}`);
+  }
+  // Standalone tables keep their rows past a document delete BY DESIGN — assert presence, so a
+  // future wrong-way FK that starts cascading them is caught, then rely on cleanup.
+  for (const t of standalone) {
+    const r = await owner.query(`SELECT count(*)::int AS n FROM ${t} WHERE user_id = $1`, [USER_A]);
+    check(r.rows[0].n === 1, `${t} is standalone: its row SURVIVES the document delete`, `n=${r.rows[0].n}`);
   }
 } catch (e) {
   bad('unexpected error', e.message);
 } finally {
   if (!KEEP) {
     await owner.query('DELETE FROM user_documents WHERE user_id LIKE $1', [`${RUN}%`]).catch(() => {});
+    // No FK ties these two to user_documents, so the cascade cannot collect them.
+    await owner.query('DELETE FROM user_integrations WHERE user_id LIKE $1', [`${RUN}%`]).catch(() => {});
+    await owner.query('DELETE FROM user_library WHERE user_id LIKE $1', [`${RUN}%`]).catch(() => {});
   }
   const residue = await owner.query(
     'SELECT count(*)::int AS n FROM user_documents WHERE user_id LIKE $1', [`${RUN}%`],
