@@ -3,7 +3,12 @@
 **Read this first, every session.** It is the plan and the gate board. It is **not** the state —
 state lives in `docs/STATE_OF_TRUTH.md` and this file points at it rather than copying it.
 
-Last verified: 2026-08-18 · **live on `ancientpaths.app`: `7f62991`** (receipt
+Last verified: 2026-08-21 · **live on `ancientpaths.app`: `d5cfa04`** (receipt
+`dpl_C56HPSV59onumHD89PpqcxxhySrP`, 2026-08-21T07:13Z) — the night of three deploys: the union that
+restored the highlighter release, Daily Office Sprint 1 (+ five-lens audit remediation), study
+entrance, desk continuous read, My Works Tier 0, B021. Live sits on `fix/q1-signed-out-state`,
+ahead of `origin/main`; the merge-to-main gap remains. This line goes stale the moment the next
+lane ships; re-measure it rather than reading it.
 `dpl_DyCgDgehRbadxTHznQCj9a9fuysJ`, 2026-08-18T06:08Z) — the CDN-freshness unblock deploy: two
 docs-only commits atop `13e3abb` plus the 211-file corpus CDN re-sync (metadata repair —
 `year`/`verseEnd` on the corpus-backlog authors — parity green; WORKLOG 2026-08-17 ops entry).

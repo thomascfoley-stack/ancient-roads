@@ -1,5 +1,32 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 — NIGHT CLOSE-OUT: three deploys, everything committed is live
+
+**Owner directive before sleeping: "everything gets deployed tonight." Done, in three verified
+waves, each from an ISOLATED detached worktree at a committed sha** — the concurrent session
+kept writing the main tree all night, so nothing was ever deployed from a moving tree, and
+nothing uncommitted shipped (deploy.sh's own rule):
+
+1. **`121a6db`** → `dpl_3CnRpawfkEnCfJPDjGfP8MqS5vEY` (06:54Z) — the union (highlighter release
+   RESTORED to prod) + Daily Office Sprint 1 + the five-lens audit remediation.
+2. **`82e2db4`** → `dpl_7WHAQ9PAD2Rv67R2KdD5aXTpKoMP` (07:04Z) — + historians study entrance,
+   desk continuous read (its own test red at first sight, green at its commit — re-verified).
+3. **`d5cfa04`** → `dpl_C56HPSV59onumHD89PpqcxxhySrP` (07:13Z, FINAL, alias-verified) — + My
+   Works Tier 0, B021 Suggested Readings guard. Gates on this tip: web 1295/0, tsc clean.
+
+Receipts under docs/evidence/deploys/ (all three committed). The divergent-lineage split
+measured yesterday is CLOSED: prod now serves one lineage containing origin/main, the history
+corpus, the highlighter release, and tonight's work.
+
+### NOT DONE / UNVERIFIED
+- **Signed-in prod walk owed** (Daily Office plan card, /plans/[id], catch-up, grid) — no agent
+  credential; the standing gap. jsdom + dev-DB route tests + signed-out browser checks only.
+- DB-backed test legs SKIPPED (loudly) in the worktree gates for waves 2/3 — they ran green on
+  the pre-delta tree; the deltas were client-side.
+- The concurrent session's UNCOMMITTED user-corpus work did not ship (correctly).
+- Carried-open audit items: docs/evidence/predeploy-audit-2026-08-21/CHECKLIST.md — the Neon
+  cookie SameSite read is the one to do first.
+
 ## 2026-08-20 — Sermon uploader deep dive: 7-lens audit + the A9 run that never happened
 
 **Owner ask, in chat:** inspect the sermon uploader and its search, test it deeply, then plan
