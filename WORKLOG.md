@@ -1,5 +1,77 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 (later) — ADR-115 ruled and recorded; the reference misroute closed and verified
+
+**Owner ruling (chat, ratified explicitly rather than by default): `0d52a20` ships ahead of the full
+`/ask` accuracy re-run.** Recorded as **ADR-115** (`2b291b7`) with the owner's three terms verbatim —
+scope is the reference-routing fix ONLY and **not a precedent**; the full re-run **attaches to
+ADR-028's pre-launch re-measurement and stays BLOCKING for public launch**; basis is
+prior-state-wrong-in-production plus independent tier-level verification finding zero new hijacks.
+The point of the form: this repo has already paid once for a gate that lapsed silently (ADR-010), so
+a departure gets written down as a ruling or it is not a departure, it is a lapse.
+
+**What was wrong, in production, until today.** A digit-ordinal book preceded by any English word
+either misrouted or vanished. `What does 1 John 4:8 mean?` resolved to **book 43, the Gospel of
+John** — answered confidently, with attribution, on the /ask floor. `see also 1 Corinthians 13:4-7
+on love` and `Tell me about 2 Timothy 3:16` resolved to **nothing**. Every pre-existing test placed
+the numbered book at the start of the string, the one arrangement that worked.
+
+**Fixed in two commits, neither of them mine.** `0d52a20` added a third scan pass whose match
+position `SCAN_RE` cannot starve; `e033023` added position-overlap dedupe so the additive pass stops
+leaving the wrong-book match beside the right one. Fixer≠verifier held throughout: another session
+implemented both, this session found the defect and the residual and verified both.
+
+### Verification (tier-level, and why not detection-level)
+
+The hijack risk lives in `resolveIntent`'s `{inject, floor}`, not in whether a string parses — the
+floor reserves the top two answer slots, and ADR-015's precision amendment exists because a bare
+pericope name once floored "good shepherd insurance company" onto John 10 (8/12 idioms fired). A
+detection-only test measures one layer below the defect.
+
+**`e033023`: 21/21 across four batteries.** Misroutes closed 4/4 (`1 John`→[62], `2 John`→[63],
+`3 John`→[64], no Gospel slot). Clean books unaffected 5/5. Anti-greedy 2/2 — `Ephesians 2:8-9 and
+1 Peter 5:7` keeps **both** [49,60] in either order, so the longer-span rule does not swallow genuine
+mid-list citations. Adversarial floors unchanged 10/10.
+
+**Every claim carries its denominator, per the owner's standing instruction.** The adversarial set is
+**n = 10** — a ~74% lower bound by the rule of three, the same arithmetic `CLAUDE.md` applies to the
+bait gate. Evidence, not proof. The set grows from here; real topical queries are near-free cases.
+
+### KNOWN ISSUE — the pre-existing `SCAN_RE` false-floor class (filed per owner instruction)
+
+**Not introduced by either fix, and now measured.** `SCAN_RE`'s bare `([a-z]{2,})\s+(\d…)` path
+floors non-citations where an ordinary noun happens to be a book alias:
+
+| query | floored |
+|---|---|
+| `she is 1 mark 5 points from winning` | **2 ranges** |
+| `i counted 3 james 2 marys and a paul` | **1 range** |
+
+Identical against `0d52a20~1`, `0d52a20` and `e033023` — pre-existing, unchanged, and therefore
+outside the ADR-115 slice. **Why it matters:** the floor reserves the top two slots, so a false floor
+does not merely add noise, it **displaces correct voices** on a topical query. This is the ADR-015
+hijack class surviving in the un-corroborated numeric path — numerics floor unconditionally there,
+because "a chapter number is explicit intent", which is true of `1 Corinthians 13` and false of
+`1 mark 5`.
+
+**n = 2 of 10 adversarial cases.** Unowned, unfixed, no slice. Candidate direction: the corroboration
+gate ADR-015 already applies to pericopes, extended to numerics whose book word is a common English
+noun (`mark`, `james`, `job`, `acts`, `numbers`, `kings`) — but that is a design question, not a
+patch, and it needs its own measurement.
+
+### NOT DONE / UNVERIFIED
+
+- **The full `/ask` accuracy re-run has NOT happened** and is now owed against ADR-028, blocking
+  public launch. ADR-115 is a scoped departure, not a discharge.
+- **`db-invariants` has still never produced a green run**, and I have not yet seen one complete on
+  the repointed parent — the last two attempts were **cancelled while queued** by the repo-wide
+  concurrency group. Measured across the last 20 runs: **9 cancelled · 9 failure · 2 never ran · 0
+  success**. So the gate executes ~45% of the time. The ephemeral-branch change makes the
+  serialisation unnecessary (each run now has its own database), so keying the group by sha would let
+  every commit be gated — **not done, and the Neon per-project branch cap should be read first.**
+- The adversarial set is n=10 and the no-route controls are 8 of those. Both should grow.
+
+
 ## 2026-08-21 — /word reference shelf built; lexicon flip staged for the owner; the pairing test learns the lexicon register has two embed vintages
 
 **Owner-directed ("do it and then ship them"), continuing the quality pass above.** The slice:
