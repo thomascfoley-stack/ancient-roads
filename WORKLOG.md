@@ -1,5 +1,100 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 — Data-model inspection, then three fixes: one shipped, one filed, one RETRACTED
+
+**Owner ask, in two parts:** overnight, a read-only deep inspection of the backend data model and
+embeddings ("write up any suggestions or best practices or services"); this morning, "do this now"
+against the three services recommendations. Report:
+[artifact + `scratchpad/DATA-MODEL-INSPECTION.md`], 15 non-overlapping lenses, ~8,500 lines of
+per-lens findings. **No database was contacted at any point, prod or dev.**
+
+### The retraction, and it is the entry's real content
+
+**Services recommendation 1 — "stream the retrieved sources; the client just doesn't render it" —
+was FALSE, and I published it as the top-ranked item.** The client has rendered them since
+`79be87c`, **2026-07-09**: `ask-client.tsx`'s `Progress` shows "Reading these while I compose" with
+the top 3 by author and a 130-char excerpt, plus "Found N voices across M traditions" the moment
+the `retrieved` event lands. There was never a blank wait.
+
+**The chain, because the chain is the finding.**
+`docs/evidence/ask-latency/prod-25-measurement-2026-08-15.md` named streaming sources as Rule 1's
+"unbuilt half" — written **37 days after the feature shipped**. The services lens repeated the
+evidence file; the report repeated the lens; a published artifact repeated the report. **Fifteen
+agents and a severity-ranked deliverable, and not one of them opened the component.** It was caught
+only when the owner said "do this now" and implementation began. This is the watchlist's recurring
+class in a new costume: not a stale *number* — those get re-measured — but a claim about **what is
+built**, which nothing re-measures. Corrected at `5e996b3`, struck through in place with the
+correction beside it so the wrong claim stays readable.
+
+Consequence beyond the correction: **both halves of Rule 1 were already satisfied when prod-25
+ran**, so the remaining lever on a 10.5s p50 is **compose** (74% of wall time, 13/25 asks needing a
+retry). Harder, less glamorous, and hidden for five weeks by a shipped feature standing in for it.
+
+### Shipped — `208aef8`, per-run ephemeral Neon branch for `db-invariants`
+
+The job topped up ONE long-lived branch; `audit.yml`'s own comments are the record of the cost
+(`main` red 12 consecutive runs / 3 days; a FORGET list that deleted 044's ledger row every run, so
+a run that finally completed 044 had its record erased before the next started; a 35-minute wedge;
+044 applied by hand out of band). Now: copy-on-write branch per run, deleted in an `always()` step.
+
+- **Parent is the same branch as before** — isolation changed, not what is under test. Stated
+  trade: the parent no longer advances, so an expensive migration is paid per run; the 30-minute
+  timeout is the tripwire for advancing it by hand.
+- `app_runtime` is a SQL-created role so `neonctl` cannot mint its connection string; a branch
+  clones `pg_authid`, so the app URL is derived by swapping the **host** of `APP_DATABASE_URL_TEST`,
+  **preserving pooled-vs-direct** so the transaction-local `set_config` guarantee keeps being proven
+  through the pooler.
+- The endpoint id is minted at runtime and can no longer be a reviewable literal, so the create step
+  **refuses anything resolving to the production endpoint before exporting a URL**. `isAuditAllowedHost`
+  and the `PROD_ENDPOINT` prefix check still refuse prod independently.
+- Guard: `test/invariants/ci-ephemeral-branch.test.ts`, 4 properties + **5 red-proofs** that seed
+  each defect into a deep copy and drive the same predicate function, not a copy of its logic.
+  Sharpest property: no step may set `DATABASE_URL` / `APP_DATABASE_URL` / `SEED_TEST_ENDPOINT` /
+  `MIGRATE_TARGET_ENDPOINT` as a step-level `env:` — an unset `${{ secrets.X }}` renders as `''` and
+  shadows the real value. `audit.yml` warned about that shadowing in prose since July; prose did not
+  stop the literals being there.
+
+### Filed, not applied — `ac8bd22`, halfvec served indexes
+
+`docs/HALFVEC_INDEX_DESIGN.md` + `db/migrations/121_halfvec_served_indexes.sql.draft`.
+
+**The recommendation was wrong about its own category and the design says so.** This is a
+**retrieval change, not an index change**: Postgres uses an expression index only when the query
+carries the same expression, so the indexes are dead weight until `routing.ts` is rewritten to
+`ORDER BY embedding::halfvec(1024) <=> $1::halfvec(1024)` — which ranks on half-precision distances
+and therefore needs the accuracy diagnostic. Two halves ship together or not at all.
+
+`.draft` is load-bearing: `apply-pending.mjs` filters `/^\d+_.*\.sql$/`, so it cannot be applied by
+accident — including by the new per-run CI branch, where five HNSW builds would blow the 30-minute
+step. Red-proofed (runner picks up 64 files; 120 among them, 121 not). Pre-registered bars are
+deliberately **not** the label eval — this change cannot make retrieval smarter, only different, so
+the instrument is rank agreement (top-20 pool set-equal ≥99% over ≥200 queries; final top-6
+identical ≥99.5%; index size −40%; p50 no regression). Frozen v4 is explicitly **not** to be spent
+on a no-regression check.
+
+### NOT DONE / UNVERIFIED
+
+- **The CI change is NOT certified by a run.** A workflow cannot be red-proofed from a workstation;
+  the first CI run is its proof. Typecheck, lint and the new suite are green, and the URL rewriting
+  + endpoint-id derivation were executed locally against pooled and direct host forms and match
+  `endpointIdOf()` exactly. **If it goes red, that is this change and not the commit under test.**
+- **halfvec precondition UNVERIFIED**: needs pgvector ≥ 0.7.0; no database was read.
+  `SELECT extversion FROM pg_extension WHERE extname='vector'` settles it, and below 0.7.0 the whole
+  design is moot.
+- `npm run audit` **not run in full** — it refuses without a dev `DATABASE_URL`. DB-free legs green.
+- **The inspection took no live reads**, so every claim in the report about production is INFERRED.
+  The single highest-leverage read remains one owner-gated `SELECT * FROM schema_migrations ORDER BY 1`
+  per database, committed to `docs/evidence/` — it settles `SECURITY.md`'s self-contradiction about
+  migrations 100–104 (and 101 is the `REVOKE … ON embeddings FROM app_runtime`) plus four other open
+  questions.
+- Worth more than halfvec and still open: `related-voices.ts` carries no `source_type` conjunct, so
+  it implies none of the five partial indexes and can only be served by the never-dropped full-table
+  `idx_embeddings_vector` (~8 GB, ~60% of the footprint, and that broken query is its only shipped
+  consumer). Fixing it makes 8 GB droppable and needs no accuracy gate — the query is broken today.
+- The report's own CRITICAL — `chesterton-preexistence`, misattributed modern text whose PD basis is
+  Chesterton's death date, live on two surfaces — is an **owner quarantine call**, untouched here.
+
+
 ## 2026-08-21 (night) — Uploader Tier 0 SHIPPED; three-session night; the morning file
 
 **Owner directive, in chat: "everything gets deployed tonight, bypass permissions."** Three
