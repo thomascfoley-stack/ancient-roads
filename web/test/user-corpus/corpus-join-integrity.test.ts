@@ -47,7 +47,7 @@ import { FORBIDDEN_PROVENANCE_DOMAINS } from '@/lib/forbidden-provenance.mjs';
 import { __resetCorpusModelCache } from '@/lib/user-corpus/model';
 import { relatedVoices } from '@/lib/user-corpus/related-voices';
 import { computeSuggestedReadings } from '@/lib/user-corpus/suggested-readings';
-import { corpusPredicate, traditionGap } from '@/lib/user-corpus/tradition-gap';
+import { corpusPredicate, traditionGap, traditionGapForRanges } from '@/lib/user-corpus/tradition-gap';
 
 /** Everything the three modules ask of the database, answered with the minimum to keep walking. */
 function respondForWalk(q: FakeQuery): unknown[] {
@@ -122,7 +122,11 @@ describe('computeSuggestedReadings — the per-category exact scans (D9)', () =>
 
 describe('traditionGap — the verse-anchored corpus join (D9)', () => {
   it('the hits CTE carries the forbidden-provenance leg with the canonical denylist bound', async () => {
-    await traditionGap('u-integrity', 'd-integrity', corpusPredicate('true'));
+    // Since the 2026-08-21 draft-check refactor the ONE join body lives in traditionGapForRanges
+    // (traditionGap reads a document's ranges and delegates; an empty mock read short-circuits
+    // before the join, which is correct behaviour, not a missing statement). The tripwire drives
+    // the body directly with one range — the same statement both callers share.
+    await traditionGapForRanges('u-integrity', [{ start: 45008028, end: 45008028 }], corpusPredicate('true'));
     const hits = capture.batches
       .flat()
       .find((q) => q.text.includes('doc_anchors') && q.text.includes('FROM embeddings'));

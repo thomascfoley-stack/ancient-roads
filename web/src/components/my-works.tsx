@@ -7,6 +7,7 @@ import { DISPLAY_LOCALE } from '@/lib/locale';
 // and strings, no server-only imports), so the client bundle can carry the real number and the
 // two ends cannot disagree (D15).
 import { MAX_UPLOAD_BYTES } from '@/lib/user-corpus/sniff';
+import { formatVerseId } from '@bible/verse-id';
 
 // "My Works" — the personal-corpus surface. Never "Sermons": that word is the corpus register.
 
@@ -20,12 +21,22 @@ interface Doc {
   extractableChars: number | null;
   byteSize: number | null;
   createdAt: string;
+  /** Display-only chips extracted from the manuscript head (migration 124). */
+  suggestedReference?: string | null;
+  suggestedDate?: string | null;
 }
 // `createdAt` has been on the wire the whole time (UserHit, lib/user-corpus/search.ts) — the
 // client type simply omitted it, so §7's "doc + date" labelling had nothing to render (D17).
 interface Hit { documentId: string; sectionId: string; title: string; heading: string | null; text: string; score: number; createdAt?: string }
 interface Voice { author: string; work: string; tradition: string; origin: 'corpus'; verseId: number; sourceId: string }
 interface VoicesState { loading: boolean; error?: string; data?: { voices: Voice[]; authorCount: number; rangesConsidered: number; pending: boolean } }
+
+interface DraftCheckResponse {
+  detection: { translation: string; confidence: number; totalHits: number };
+  ranges: { start: number; end: number; channel: string }[];
+  overlaps: { range: { start: number; end: number }; documents: { documentId: string; title: string; channel: string; matchCount: number | null }[] }[];
+  gaps: { voices: { author: string; work: string; tradition: string; verseId: number; rangesHit: number }[]; authorCount: number; rangesConsidered: number };
+}
 
 interface Presence { documentId: string; title: string; sectionId: string; verseStart: number; verseEnd: number; channel: string; matchCount: number | null }
 
@@ -500,6 +511,40 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
     await load();
   }
 
+  // ── the draft check (design §1): paste a draft, see your own ground and the tradition's ──
+  const [draftOpen, setDraftOpen] = useState(false);
+  const [draftText, setDraftText] = useState('');
+  const [draftBusy, setDraftBusy] = useState(false);
+  const [draftNote, setDraftNote] = useState<string | null>(null);
+  const [draftResult, setDraftResult] = useState<DraftCheckResponse | null>(null);
+
+  async function checkDraft() {
+    const text = draftText.trim();
+    if (!text || draftBusy) return;
+    setDraftBusy(true);
+    setDraftNote(null);
+    setDraftResult(null);
+    try {
+      let r: Response;
+      try {
+        r = await fetch('/api/user-corpus/draft-check', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ text }),
+        });
+      } catch {
+        setDraftNote('The check could not run. Check your connection and try again.');
+        return;
+      }
+      const d = await readJson<DraftCheckResponse & { error?: unknown }>(r);
+      if (!r.ok) { setDraftNote(errorMessage(d, 'The check could not run.')); return; }
+      if (!d) { setDraftNote('The check could not run. Please try again.'); return; }
+      setDraftResult(d);
+    } finally {
+      setDraftBusy(false);
+    }
+  }
+
   async function search(e: React.FormEvent) {
     e.preventDefault();
     const q = query.trim();
@@ -747,6 +792,83 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
         )}
       </section>
 
+      {/* ── the draft check (design §1): all three loop questions in one action ─────────────── */}
+      <section className="mb-8">
+        <details open={draftOpen} onToggle={(e) => setDraftOpen((e.target as HTMLDetailsElement).open)}>
+          <summary className="min-h-[44px] cursor-pointer list-none font-display text-lg text-stone-700 hover:text-accent-700 dark:text-stone-200 dark:hover:text-accent-300">
+            Check a draft
+          </summary>
+          <p className="mt-1 font-serif text-[14px] text-stone-500 dark:text-stone-400">
+            Paste a draft to see where you have preached its passages before, and which voices from
+            the tradition speak on them. Matched by quoted Scripture.
+          </p>
+          <textarea
+            value={draftText}
+            onChange={(e) => setDraftText(e.target.value)}
+            rows={6}
+            aria-label="Draft to check"
+            placeholder="Paste your draft here…"
+            className="mt-3 w-full border edge bg-transparent p-3 font-serif text-[15px] text-stone-700 placeholder:text-stone-400 dark:text-stone-200"
+          />
+          <button
+            type="button"
+            onClick={() => void checkDraft()}
+            disabled={draftBusy || !draftText.trim()}
+            className="mt-2 min-h-[44px] border border-stone-900 px-5 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 disabled:opacity-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
+          >
+            {draftBusy ? 'Checking…' : 'Check this draft'}
+          </button>
+          {draftNote && <p role="alert" className="mt-3 font-serif text-[14px] text-amber-700 dark:text-amber-400">{draftNote}</p>}
+          {draftResult && (
+            <div className="mt-4" role="status" aria-label="Draft check results">
+              {draftResult.ranges.length === 0 ? (
+                <p className="font-serif text-[15px] text-stone-500 dark:text-stone-400">
+                  No quoted Scripture was found in this draft — the check matches by quotation, so a
+                  draft that paraphrases without quoting will not anchor.
+                </p>
+              ) : (
+                <>
+                  <h3 className="font-display text-base text-stone-700 dark:text-stone-200">
+                    {draftResult.overlaps.length === 0
+                      ? 'You have not written on these passages yet'
+                      : 'Where you have preached this ground'}
+                  </h3>
+                  {draftResult.overlaps.length > 0 && (
+                    <ul className="mt-2 border-y edge">
+                      {draftResult.overlaps.map((o) => (
+                        <li key={`${o.range.start}-${o.range.end}`} className="border-b edge px-1 py-2.5 last:border-b-0">
+                          <span className="font-sans text-[13px] font-semibold text-stone-600 dark:text-stone-300">
+                            {o.range.start === o.range.end ? formatVerseId(o.range.start) : `${formatVerseId(o.range.start)}–${formatVerseId(o.range.end).split(' ').pop()}`}
+                          </span>
+                          <span className="ml-2 font-serif text-[14px] text-stone-600 dark:text-stone-300">
+                            {o.documents.map((d) => d.title).join(' · ')}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {draftResult.gaps.voices.length > 0 && (
+                    <>
+                      <h3 className="mt-4 font-display text-base text-stone-700 dark:text-stone-200">
+                        Voices from the tradition on the same passages
+                      </h3>
+                      <ul className="mt-2 flex flex-wrap gap-2">
+                        {draftResult.gaps.voices.slice(0, 12).map((v) => (
+                          <li key={`${v.author}-${v.work}`} className="rounded-full bg-stone-100 px-3 py-1 font-sans text-[13px] text-stone-700 dark:bg-stone-800 dark:text-stone-200">
+                            {v.author}{v.work ? ` · ${v.work}` : ''}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </details>
+      </section>
+
+
       {/* ── the status wall ────────────────────────────────────────────────────────────────── */}
       {/* D19 — aria-live: this wall mutates every poll tick while documents are in flight, and
           without a live region every transition (Reading → Indexing → Ready) was silent to a
@@ -784,6 +906,13 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                     {d.mimeType && <span className="uppercase">{d.mimeType}</span>}
                     {d.byteSize != null && <span>{fmtBytes(d.byteSize)}</span>}
                     {d.pageCount != null && <span>{d.pageCount} pages</span>}
+                    {/* Extracted, not typed (design §2): what the manuscript head appears to say.
+                        Display-only — a wrong suggestion is a chip, not a renamed document. */}
+                    {(d.suggestedReference || d.suggestedDate) && (
+                      <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-[12px] text-stone-600 dark:bg-stone-800 dark:text-stone-300">
+                        Looks like: {[d.suggestedReference, d.suggestedDate ? when(d.suggestedDate) : null].filter(Boolean).join(' · ')}
+                      </span>
+                    )}
                   </div>
                   {d.parseError && (
                     <p className="mt-2 font-serif text-[14px] leading-relaxed text-amber-800 dark:text-amber-300">{d.parseError}</p>

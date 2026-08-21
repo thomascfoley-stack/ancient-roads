@@ -31,6 +31,8 @@ interface Row {
   readings_step: string | null;
   readings_error: string | null;
   readings_done_at: string | null;
+  suggested_reference: string | null;
+  suggested_date: string | null;
 }
 
 function toDocument(r: Row): UserDocument {
@@ -59,6 +61,8 @@ function toDocument(r: Row): UserDocument {
     readingsStep: r.readings_step ?? null,
     readingsError: r.readings_error ?? null,
     readingsDoneAt: r.readings_done_at ?? null,
+    suggestedReference: r.suggested_reference ?? null,
+    suggestedDate: r.suggested_date ?? null,
   };
 }
 
@@ -162,11 +166,20 @@ export async function setDocStatus(
 export async function setParseResult(
   userId: string,
   id: string,
-  result: { pageCount: number | null; extractableChars: number },
+  result: {
+    pageCount: number | null;
+    extractableChars: number;
+    /** Display-only chips (migration 124) — never read back into title or behaviour. */
+    suggestedReference?: string | null;
+    suggestedDate?: string | null;
+  },
 ): Promise<void> {
   await runAsUser(userId, (sql) => [
     sql`UPDATE user_documents
-        SET page_count = ${result.pageCount}, extractable_chars = ${result.extractableChars}, updated_at = now()
+        SET page_count = ${result.pageCount}, extractable_chars = ${result.extractableChars},
+            suggested_reference = COALESCE(${result.suggestedReference ?? null}, suggested_reference),
+            suggested_date = COALESCE(${result.suggestedDate ?? null}::date, suggested_date),
+            updated_at = now()
         WHERE user_id = ${userId} AND id = ${id}`,
   ]);
 }

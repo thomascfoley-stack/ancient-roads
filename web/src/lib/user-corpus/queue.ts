@@ -26,6 +26,7 @@ import { setDocStatus, setParseResult } from './documents';
 import { setReadingsState } from './readings-store';
 import { embedChunks } from './embed';
 import { extractText, judgeExtraction } from './parse';
+import { extractSermonMetadata } from './metadata-extract';
 import { storeSections } from './sections';
 import { UploadRefused, type DocStatus, type UserDocument } from './types';
 
@@ -134,9 +135,14 @@ async function processOne(userId: string, row: Row): Promise<DocStatus> {
 
     // Written BEFORE the judgement, so a refusal keeps the evidence it was based on. 'needs OCR'
     // with no recorded page or character count is an assertion nobody can check afterwards.
+    // The metadata suggestions ride the same write: display-only chips (migration 124), never
+    // read back into title or behaviour — a wrong suggestion is a chip, not a renamed document.
+    const suggested = extractSermonMetadata(parsed.text);
     await setParseResult(userId, row.id, {
       pageCount: parsed.pages ?? null,
       extractableChars: parsed.extractableChars,
+      suggestedReference: suggested.reference,
+      suggestedDate: suggested.date,
     });
 
     judgeExtraction(parsed, type);

@@ -63,6 +63,9 @@ export interface UserDocument {
   readingsStep: string | null;
   readingsError: string | null;
   readingsDoneAt: string | null;
+  /** Display-only chips, extracted from the manuscript head (migration 124). */
+  suggestedReference: string | null;
+  suggestedDate: string | null;
 }
 
 /**
