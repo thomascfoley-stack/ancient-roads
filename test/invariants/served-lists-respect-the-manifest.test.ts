@@ -63,15 +63,17 @@ describe('the manifest and the served lists are both really there', () => {
     expect(MANIFEST.length).toBeGreaterThan(40);
     expect(ALL_SERVED_WORKS.length).toBeGreaterThan(20);
     expect(WITHHELD.length, 'no serve:false entry found — the flag was renamed or the parse broke').toBeGreaterThan(0);
-    // The standing serve:false rulings. josephus-works is the floor's named pin: withheld as a
-    // not-yet-ingested historian. thayers-lexicon was the previous pin — its ruling was closed
-    // 2026-08-14 (owner close-out #4: re-sourced to the CC0 structured edition, published;
-    // lexicon rows match no lane/pool/index, so served=true is inert until a lexicon lane
-    // exists — D4 remains the standing note for that). If a rename or manifest edit removes
-    // josephus-works' ruling, that is a decision someone must have made on purpose.
-    // The three quality quarantines that used to be pinned here (whitefield-works,
-    // donne-divine-poems, herrick-noble-numbers) were RESOLVED 2026-08-13 and are serve:true.
-    for (const slug of ['josephus-works']) {
+    // The standing serve:false rulings. hort-james1909 is the floor's named pin — the Greek
+    // critical commentary the E-lane matrix caught taking 44 of 75 top-3 hymn-lane slots while
+    // declared `poetry`; ruled serve:false 2026-08-19/20 and still held. It took this slot on
+    // 2026-08-21, the pin's FOURTH move: josephus-works held it as a not-yet-ingested historian
+    // until the owner-gated history program ingested and SERVED it (WORKLOG 2026-08-21, licensing
+    // audit clean) — that flip went red here, was reviewed against the recorded ruling, and the
+    // fixture moved, which is this test working as built. Earlier pins: thayers-lexicon (closed
+    // 2026-08-14, owner close-out #4) and the three 2026-08-13 quality quarantines below.
+    // If a rename or manifest edit removes hort-james1909's ruling, that is a decision someone
+    // must have made on purpose — review it against docs/DECISIONS.md before touching this pin.
+    for (const slug of ['hort-james1909']) {
       expect(WITHHELD, `${slug} is no longer serve:false in the manifest`).toContain(slug);
     }
     // The resolved three must STAY out of the withheld set — a regression that re-withholds a

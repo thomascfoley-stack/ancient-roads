@@ -121,6 +121,14 @@ describe('every destructive writer actually invokes the guard', () => {
       .filter(Boolean)
       // register-writer.ts carries its own equivalent guard, documented in dev-only-target.mjs.
       .filter((f) => !f.endsWith('register-writer.ts'))
+      // annotate-history-existing.mts is exempt for the OPPOSITE reason register-writer is:
+      // its lawful use INCLUDES production (Phase 3 annotated works already serving on prod,
+      // owner-gated per AGENTS.md), so assertDevOnlyTarget — which refuses prod outright —
+      // would brick the tool's purpose. Its own gate is per-occasion and explicit:
+      // ANNOTATE_ALLOW_HOST must be declared and match the target endpoint, or it STOPs
+      // before connecting (annotate-history-existing.mts:36-43). Its one DELETE clears only
+      // the derived section_history_anchors rows it is about to rebuild, never sections.
+      .filter((f) => !f.endsWith('annotate-history-existing.mts'))
       // A GUARD THAT NAMES THE STATEMENT IT GUARDS IS NOT A WRITER. `grep` reads raw bytes, so it
       // enrolled dev-only-target.mjs on its own header, and on 2026-08-02 it enrolled the new
       // reingest-guard.ts on a comment and an error message. The exemption used to be a filename;
