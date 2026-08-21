@@ -12,6 +12,7 @@ export type ApiErrorCode =
   | 'GATE_LOCKED'
   | 'UPSTREAM_UNAVAILABLE'
   | 'INVALID_REQUEST'
+  | 'FORBIDDEN'
   | 'INTERNAL';
 
 interface Spec {
@@ -27,6 +28,10 @@ const SPECS: Record<ApiErrorCode, Spec> = {
   GATE_LOCKED: { status: 503, message: 'This site is temporarily unavailable.' },
   UPSTREAM_UNAVAILABLE: { status: 503, message: 'We couldn’t reach the study service just now. Please try again in a moment.', retryAfterSec: 30 },
   INVALID_REQUEST: { status: 400, message: 'That request wasn’t valid. Please try rephrasing your question.' },
+  // 403, distinct from 401: the caller IS signed in, and is still not permitted. Used by the
+  // gated-beta teacher gate (ADR-116 ruling 3). The message says what is true without hinting
+  // at an allowlist — a beta user is not being told they are on the wrong side of a door.
+  FORBIDDEN: { status: 403, message: 'The study assistant isn’t available on your account yet.' },
   INTERNAL: { status: 500, message: 'Something went wrong on our end. Please try again.' },
 };
 
