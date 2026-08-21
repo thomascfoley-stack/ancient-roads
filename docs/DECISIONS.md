@@ -1808,3 +1808,57 @@ Same sitting, two adjudications from the plan's decision list: `bennett-exposito
 historian → **commentary** (every sibling Expositor's Bible volume is commentary; the type was a
 shelving error), and `schaff-history` (the 8-volume umbrella declaration, serve:false, no rows)
 removed as a self-duplicate of `schaff-hcc1..8`.
+
+## ADR-115 — The reference-routing fix ships ahead of the full accuracy re-run; the re-run stays owed and blocking (owner, 2026-08-21)
+
+**Context.** `0d52a20` fixes `scanReferences`, which feeds `resolveIntent`, which drives both the
+injection pool **and the floor** — and the floor reserves the top two answer slots. That makes it a
+retrieval change, and `CLAUDE.md:27` / `:70` require the accuracy diagnostic re-run and recorded for
+every retrieval change. The diagnostic has **not** been run. `v4` is frozen and single-use, and
+spending it on a bug fix is the circularity `quality-slice` exists to prevent.
+
+The prior state was measurably wrong **in production**: a digit-ordinal book preceded by any English
+word either misrouted to the wrong book or was dropped silently. `What does 1 John 4:8 mean?`
+resolved to **book 43, the Gospel of John**, and answered confidently with attribution; `see also
+1 Corinthians 13:4-7 on love` and `Tell me about 2 Timothy 3:16` resolved to nothing at all. Every
+pre-existing test placed the numbered book at the start of the string — the one arrangement that
+worked — which is why it survived.
+
+**Decision (owner, in chat 2026-08-21): ship `0d52a20` ahead of the full `/ask` accuracy re-run.**
+Three terms, and they are the ruling, not commentary:
+
+1. **Scope.** This departure covers the **reference-routing fix only** — `0d52a20` plus the residual
+   position-overlap dedupe below. **It is not a precedent.** Every other retrieval change still owes
+   the accuracy diagnostic per the Definition of Done.
+2. **Owed.** The full `/ask` accuracy re-run **attaches to ADR-028's pre-launch re-measurement and
+   remains BLOCKING for public launch.** It is not discharged, deferred-without-owner, or absorbed
+   into a smaller measurement.
+3. **Basis.** Prior state measurably wrong in production; **independent tier-level verification found
+   zero new hijacks**; and the departure is recorded rather than silent.
+
+**Why the verification was tier-level and not detection-level.** The hijack risk lives in
+`resolveIntent`'s `{inject, floor}` output, not in whether a string parses — ADR-015's own precision
+amendment exists because a bare pericope name floored unconditionally and "good shepherd insurance
+company" seized John 10 (8 of 12 idiomatic queries fired). A detection-only test is one layer below
+the defect. Ten adversarial non-citations aimed at the new ordinal pass were run against **both**
+`0d52a20~1` and `0d52a20`: two produce floors (`she is 1 mark 5 points from winning` → floor=2;
+`i counted 3 james 2 marys and a paul` → floor=1) and **both are unchanged either side**, so they are
+pre-existing `SCAN_RE` behaviour and not introduced here. Filed separately — see the known-issue note
+in `WORKLOG.md` 2026-08-21.
+
+**The n, because a precision claim without its denominator is not a claim.** The adversarial set is
+**n = 10**, a ~74% lower bound by the rule of three — the same arithmetic `CLAUDE.md` applies to the
+bait gate. It is evidence, not proof, and the set grows: real topical queries are near-free cases.
+
+**Known residual, approved to fix under this same ruling.** The new pass is additive and dedupes by
+display, so where a bare book name is *itself* an alias the old wrong match survives beside the new
+right one: `What does 1 John 4:8 mean?` now floors **book 43 AND book 62**; `read 2 John 1:6` floors
+**43 AND 63**. Books whose bare name is not an alias are clean (`1 Corinthians` → 46 only, `1 Peter`
+→ 60 only). Since the floor reserves two slots, the wrong match **displaces a correct voice** rather
+than merely sitting in the pool. Fix: **position-overlap dedupe** — when two candidate spans overlap
+in the source query, keep the longer. Verified the same way: tier-level assertions, pre-registered
+adversarial cases, watched red before green.
+
+**Rejected:** spending frozen `v4` on a bug fix (single-use, and it is the set minted for the ship
+claim); letting the gate lapse silently, which is the ADR-010 failure mode this repo has already
+paid for once; and claiming a detection-level measurement covers a tier-level risk.
