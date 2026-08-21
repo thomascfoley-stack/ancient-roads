@@ -1,5 +1,15 @@
 # UPLOADER + PERSONAL SERMON SEARCH (design, 2026-07-24)
 
+> **Status amended 2026-08-21: BUILT AND LIVE.** The original header said "DESIGN ONLY. This
+> document ships zero feature code and zero migrations" — true when written, false since
+> 2026-08-05 when My Works shipped to production. Numbers below that disagree with the tree are
+> annotated in place; the shipped caps are `sniff.ts`'s (25 MB raw, 80 MB decompressed, NO page
+> cap — a per-page scan rule landed 2026-08-21 instead), and §2's quota table was UNBUILT until
+> 2026-08-21 (now: 200 docs / 100 MB per user + 10/min · 100/day upload limiter; the 20k-chunk
+> row remains unbuilt, tracked by the §5 tripwire instead). `asserted_ownership_at` (§1/§5/Q7)
+> still does not exist in any migration — the licensing posture for uploads rests on the ToS
+> sentence alone; owner decision still open.
+
 **Status: DESIGN ONLY. This document ships zero feature code and zero migrations. The owner
 approves this design, section by section, before any code is written.** It builds on the approved
 `docs/SERMON_SEARCH_DESIGN.md` (two spines, per-user brute-force vectors with the HNSW tripwire,

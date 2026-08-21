@@ -6532,6 +6532,10 @@ tree hashes, not by assuming. Production had been running this branch through `d
   still be listed under "Where you have written on it" until the next search. Seen at the very end;
   cosmetic, unfixed.
 - The **`MIN_CHARS_PER_PAGE = 100`** scanned-PDF threshold is still reasoning rather than measurement.
+  **[Corrected 2026-08-21: FALSE WHEN WRITTEN — the calibration ran 2026-08-03, two days before
+  this entry (`docs/evidence/lane-b-slice1/scanned-threshold-calibration.log`, TEXT n=120 median
+  1350.7 chars/page, SCAN n=12 all 0.0, 0/12 wrongly accepted). A NOT-DONE list naming finished
+  work invites a redundant re-run; the deep-dive's lens 5 caught it.]
   **Nothing in this session exercised a PDF at all** — every upload driven was markdown.
 - `bible-index.ts`'s fallback is exercised by the four suites under the audit, but **the production
   path it does not change was re-proved in a browser**: after deploying it, a fresh upload still
