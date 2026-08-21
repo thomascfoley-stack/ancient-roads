@@ -1,0 +1,12 @@
+{
+  "host": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "table": "history_embeddings",
+  "slugFile": "docs/evidence/history-phase4/serve-history-all.json",
+  "slugs": 28,
+  "batchSize": 2000,
+  "rowsWritten": 40463,
+  "verified": {
+    "s": 44575,
+    "n": 44575
+  }
+}

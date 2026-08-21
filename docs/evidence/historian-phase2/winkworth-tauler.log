@@ -1,0 +1,31 @@
+=== winkworth-tauler  16:26:16Z ===
+winkworth-tauler: 48 node(s), 626 KB text, max path depth 2 -> data/raw/historians/winkworth-tauler.jsonl
+(node:41777) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+winkworth-tauler: 731 sections staged (source 1002) · 133 entity anchors · 21 explicit verse anchors
+(node:41777) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  embedded 640/731
+embedded 731/731 sections whole (max 1800 chars, truncation never fired)
+(node:41834) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+digest winkworth-tauler @ ep-tiny-hat-atdgpisx [staged]
+  sections        731   headed 731/731   vectors 731/731
+  anchors         133 (21 distinct entities)  = 0.18/section  (josephus baseline 1.10)
+  period-dated    0/731 sections  (verbatim heading forms only)
+  gazetteer candidates (frequent, unanchored — CURATE, never auto-adopt):
+     Lord(221) Christ(190) Master(175) Tauler(149) Holy(134) Himself(111) Father(99) Dear(78) Nicolas(72) Jesus(70) Spirit(69) Strasburg(68) Sermon(60) Ghost(57) John(55) Bridegroom(55) Therefore(53) Church(52) Pope(48) Friends(48)
+  no flags

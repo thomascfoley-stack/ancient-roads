@@ -1,0 +1,31 @@
+=== baird-huguenots  16:25:14Z ===
+baird-huguenots: 17 node(s), 1036 KB text, max path depth 2 -> data/raw/historians/baird-huguenots.jsonl
+(node:41634) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+baird-huguenots: 1213 sections staged (source 1001) · 420 entity anchors · 2 explicit verse anchors
+(node:41634) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  embedded 640/1213
+embedded 1213/1213 sections whole (max 1800 chars, truncation never fired)
+(node:41720) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+digest baird-huguenots @ ep-tiny-hat-atdgpisx [staged]
+  sections        1213   headed 1213/1213   vectors 1213/1213
+  anchors         420 (25 distinct entities)  = 0.35/section  (josephus baseline 1.10)
+  period-dated    0/1213 sections  (verbatim heading forms only)
+  gazetteer candidates (frequent, unanchored — CURATE, never auto-adopt):
+     France(363) Francis(356) Paris(246) French(232) Protestants(168) Henry(167) Cardinal(165) Navarre(157) Beza(142) Charles(132) Lorraine(126) Catharine(123) Protestant(120) Pope(119) King(116) Roman(108) Church(103) Guises(100) Reformation(97) Sorbonne(96)
+  no flags

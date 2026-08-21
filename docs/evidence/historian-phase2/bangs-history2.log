@@ -1,0 +1,31 @@
+=== bangs-history2  16:27:51Z ===
+bangs-history2: 12 node(s), 686 KB text, max path depth 3 -> data/raw/historians/bangs-history2.jsonl
+(node:42015) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+bangs-history2: 791 sections staged (source 1004) · 379 entity anchors · 0 explicit verse anchors
+(node:42015) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  embedded 640/791
+embedded 791/791 sections whole (max 1800 chars, truncation never fired)
+(node:42335) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+digest bangs-history2 @ ep-tiny-hat-atdgpisx [staged]
+  sections        791   headed 791/791   vectors 791/791
+  anchors         379 (13 distinct entities)  = 0.48/section  (josephus baseline 1.10)
+  period-dated    0/791 sections  (verbatim heading forms only)
+  gazetteer candidates (frequent, unanchored — CURATE, never auto-adopt):
+     Church(256) Conference(239) Bishop(199) General(195) Year(178) Christ(128) Methodist(123) Lord(113) Coke(105) York(98) Last(92) Methodism(81) John(71) Increase(71) Virginia(68) Jesus(64) William(63) Episcopal(61) England(61) Baltimore(58)
+  no flags

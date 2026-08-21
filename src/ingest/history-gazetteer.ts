@@ -55,6 +55,60 @@ export const HISTORY_GAZETTEER: GazetteerEntry[] = [
   { slug: 'nicaea', label: 'Nicaea', kind: 'place', aliases: ['Nice'] },
   { slug: 'council-of-nicaea', label: 'Council of Nicaea', kind: 'event', aliases: ['Council of Nice'] },
   { slug: 'diocletian-persecution', label: 'Diocletian persecution', kind: 'event' },
+  // — Curated 2026-08-20 from Phase-1 digest candidates + the Phase-2 corpus eras (historian
+  //   plan §Phase 1 gate 3). DERIVED candidates, HUMAN-adopted, verbatim-gated at ingest as ever.
+  //   DELIBERATELY SKIPPED as ambiguous bare labels: "Augustine" (Canterbury vs Hippo — a bare
+  //   label would anchor both men indistinguishably), "Gregory" (the Great vs Nazianzen vs
+  //   Nyssa), "Constantine" is already present and unambiguous in practice. Disambiguation
+  //   needs alias-with-context support before those are adoptable.
+  // Bede / early Britain —
+  { slug: 'britain', label: 'Britain', kind: 'place' },
+  { slug: 'saxons', label: 'Saxons', kind: 'person' },
+  { slug: 'britons', label: 'Britons', kind: 'person' },
+  { slug: 'picts', label: 'Picts', kind: 'person' },
+  { slug: 'kent', label: 'Kent', kind: 'place' },
+  { slug: 'canterbury', label: 'Canterbury', kind: 'place' },
+  { slug: 'northumbria', label: 'Northumbria', kind: 'place' },
+  { slug: 'mercia', label: 'Mercia', kind: 'place' },
+  { slug: 'iona', label: 'Iona', kind: 'place' },
+  { slug: 'lindisfarne', label: 'Lindisfarne', kind: 'place' },
+  { slug: 'wilfrid', label: 'Wilfrid', kind: 'person' },
+  { slug: 'cuthbert', label: 'Cuthbert', kind: 'person' },
+  { slug: 'columba', label: 'Columba', kind: 'person' },
+  { slug: 'easter-controversy', label: 'Easter', kind: 'event' },
+  // — patristic / conciliar (Schaff HCC I–III) —
+  { slug: 'constantinople', label: 'Constantinople', kind: 'place' },
+  { slug: 'chalcedon', label: 'Chalcedon', kind: 'place' },
+  { slug: 'chrysostom', label: 'Chrysostom', kind: 'person' },
+  { slug: 'jerome-of-stridon', label: 'Jerome', kind: 'person' },
+  { slug: 'ambrose', label: 'Ambrose', kind: 'person' },
+  { slug: 'donatists', label: 'Donatists', kind: 'institution' },
+  { slug: 'arians', label: 'Arians', kind: 'institution' },
+  // — medieval / reformation (HCC IV–VIII, Foxe, van Braght, Baird) —
+  { slug: 'charlemagne', label: 'Charlemagne', kind: 'person' },
+  { slug: 'crusades', label: 'Crusade', kind: 'event', aliases: ['Crusades'] },
+  { slug: 'wycliffe', label: 'Wycliffe', kind: 'person', aliases: ['Wiclif'] },
+  { slug: 'huss', label: 'Huss', kind: 'person' },
+  { slug: 'luther', label: 'Luther', kind: 'person' },
+  { slug: 'melanchthon', label: 'Melanchthon', kind: 'person' },
+  { slug: 'zwingli', label: 'Zwingli', kind: 'person' },
+  { slug: 'calvin-john', label: 'Calvin', kind: 'person' },
+  { slug: 'geneva', label: 'Geneva', kind: 'place' },
+  { slug: 'wittenberg', label: 'Wittenberg', kind: 'place' },
+  { slug: 'worms', label: 'Worms', kind: 'place' },
+  { slug: 'huguenots', label: 'Huguenots', kind: 'person' },
+  { slug: 'waldenses', label: 'Waldenses', kind: 'person', aliases: ['Waldensians'] },
+  { slug: 'anabaptists', label: 'Anabaptists', kind: 'person' },
+  { slug: 'cranmer', label: 'Cranmer', kind: 'person' },
+  { slug: 'latimer', label: 'Latimer', kind: 'person' },
+  { slug: 'ridley', label: 'Ridley', kind: 'person' },
+  // — American / Methodist era (Bangs, Bacon) —
+  { slug: 'wesley-john', label: 'Wesley', kind: 'person' },
+  { slug: 'whitefield', label: 'Whitefield', kind: 'person' },
+  { slug: 'asbury', label: 'Asbury', kind: 'person' },
+  { slug: 'methodists', label: 'Methodists', kind: 'institution' },
+  { slug: 'puritans', label: 'Puritans', kind: 'person' },
+
 ];
 
 /** Anchors for one section: gazetteer entries whose label (or alias) appears

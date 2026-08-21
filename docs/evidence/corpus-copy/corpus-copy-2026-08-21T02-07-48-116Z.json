@@ -1,0 +1,39 @@
+{
+  "source": "ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech",
+  "destination": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "declaredEndpoint": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "slugs": [
+    "edersheim-lifetimes"
+  ],
+  "before": {
+    "edersheim-lifetimes": {
+      "sources": 1,
+      "sections": 4579,
+      "anchors": 60,
+      "section_embeddings": 4579,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "destBefore": {
+    "edersheim-lifetimes": {
+      "sources": 1,
+      "sections": 4579,
+      "anchors": 60,
+      "section_embeddings": 4579,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "destAfter": {
+    "edersheim-lifetimes": {
+      "sources": 1,
+      "sections": 4579,
+      "anchors": 60,
+      "section_embeddings": 4579,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "mismatch": 0
+}

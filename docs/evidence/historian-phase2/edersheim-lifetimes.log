@@ -1,0 +1,44 @@
+=== edersheim-lifetimes  16:17:27Z ===
+edersheim-lifetimes: 131 node(s), 3637 KB text, max path depth 2 -> data/raw/historians/edersheim-lifetimes.jsonl
+(node:40625) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+edersheim-lifetimes: 4277 sections staged (source 999) · 2768 entity anchors · 59 explicit verse anchors
+(node:40625) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  embedded 640/4277
+  embedded 1280/4277
+  embedded 1920/4277
+  embedded 2560/4277
+  embedded 3200/4277
+Error: embed 400: {"error":{"message":"You passed 513 input tokens and requested 0 output tokens. However, the model's context length is only 512 tokens, resulting in a maximum input length of 512 tokens. Please reduce the length of the input prompt. (parameter=input_tokens, value=513)","type":"invalid_request_error","param":null,"code":null}}
+    at embedBatchWhole (/Users/foley/Projects/ancient-roads-git/src/ingest/ingest-historian.ts:106:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/Users/foley/Projects/ancient-roads-git/src/ingest/ingest-historian.ts:243:22)
+    at async Promise.all (index 0)
+    at async main (/Users/foley/Projects/ancient-roads-git/src/ingest/ingest-historian.ts:240:5)
+=== RERUN edersheim-lifetimes  17:05:54Z ===
+(node:51795) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+edersheim-lifetimes: 4579 sections staged (source 999) · 2825 entity anchors · 60 explicit verse anchors
+(node:51795) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  embedded 640/4579
+  embedded 1280/4579
+  embedded 1920/4579
+  embedded 2560/4579
+  embedded 3200/4579
+  embedded 3840/4579
+  embedded 4480/4579
+embedded 4579/4579 sections whole (max 1800 chars, truncation never fired)
