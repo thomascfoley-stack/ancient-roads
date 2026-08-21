@@ -2,6 +2,11 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { DISPLAY_LOCALE } from '@/lib/locale';
+// The cap is the SERVER's constant, imported — not mirrored. sniff.ts is a pure module (bytes
+// and strings, no server-only imports), so the client bundle can carry the real number and the
+// two ends cannot disagree (D15).
+import { MAX_UPLOAD_BYTES } from '@/lib/user-corpus/sniff';
 
 // "My Works" — the personal-corpus surface. Never "Sermons": that word is the corpus register.
 
@@ -16,7 +21,9 @@ interface Doc {
   byteSize: number | null;
   createdAt: string;
 }
-interface Hit { documentId: string; sectionId: string; title: string; heading: string | null; text: string; score: number }
+// `createdAt` has been on the wire the whole time (UserHit, lib/user-corpus/search.ts) — the
+// client type simply omitted it, so §7's "doc + date" labelling had nothing to render (D17).
+interface Hit { documentId: string; sectionId: string; title: string; heading: string | null; text: string; score: number; createdAt?: string }
 interface Voice { author: string; work: string; tradition: string; origin: 'corpus'; verseId: number; sourceId: string }
 interface VoicesState { loading: boolean; error?: string; data?: { voices: Voice[]; authorCount: number; rangesConsidered: number; pending: boolean } }
 
@@ -24,6 +31,26 @@ interface Presence { documentId: string; title: string; sectionId: string; verse
 
 /** Statuses that are still moving — the poll runs only while one of these is present. */
 const IN_FLIGHT = new Set(['queued', 'parsing', 'chunking', 'embedding']);
+
+/** Poll cadence while something is genuinely moving. */
+const ACTIVE_POLL_MS = 2500;
+/**
+ * A document that has sat in ONE non-terminal status this long is "stuck" (H2's stranded
+ * `chunking`/`embedding` rows — a serverless kill mid-embed leaves the row invisible to the
+ * claim and the reap alike; one sat 3.66 days on dev). The row gets a Retry — the retry
+ * endpoint resets the claim and re-drains, which is the reclaim path — and the poll drops to a
+ * slower cadence, because hammering a stalled queue every 2.5 s forever is a request tax with
+ * no information in it.
+ */
+const STUCK_AFTER_MS = 5 * 60 * 1000;
+const STUCK_POLL_MS = 15_000;
+
+/**
+ * How many files travel at once (D13). Three is enough to make a 40-file drop feel parallel
+ * without racing the serverless upload route's own parse/store work or the browser's per-origin
+ * connection budget.
+ */
+const CONCURRENT_UPLOADS = 3;
 
 /** A wall of status, not a wall of red (§8). Every state says what it means in the user's terms. */
 const STATUS: Record<Doc['status'], { label: string; tone: string }> = {
@@ -138,6 +165,78 @@ export function plainExcerpt(s: string): string {
     .trim();
 }
 
+/** The merged search surface's date format (search-groups.tsx `when`), so a work carries the
+ *  same date on both surfaces. */
+const when = (iso: string) =>
+  new Date(iso).toLocaleDateString(DISPLAY_LOCALE, { day: 'numeric', month: 'long', year: 'numeric' });
+
+const MAX_UPLOAD_MB = MAX_UPLOAD_BYTES / MB;
+
+/**
+ * Extensions the server is CERTAIN to refuse — binary formats with no text to sniff as txt/md
+ * and no PDF/docx magic, or zip containers the docx reader will reject.
+ *
+ * A DENY-list, deliberately not an allow-list: the server sniffs CONTENT and accepts any textual
+ * file whatever it is called (an .rtf, an .html, a renamed anything — sniff.ts's whole point), so
+ * an allow-list here would refuse files the server takes. This list only pre-empts round trips
+ * the server would refuse anyway (D15).
+ */
+const REFUSED_EXTENSIONS = new Set([
+  // legacy / other binary office formats
+  'doc', 'dot', 'ppt', 'pptx', 'xls', 'xlsx', 'key', 'pages', 'numbers',
+  // archives (a zip that is not a docx fails the docx reader; the rest fail the sniff)
+  'zip', 'rar', '7z', 'gz', 'tar', 'epub',
+  // media
+  'png', 'jpg', 'jpeg', 'gif', 'webp', 'heic', 'tiff', 'bmp',
+  'mp3', 'm4a', 'wav', 'aac', 'mp4', 'mov', 'avi', 'mkv',
+  // executables
+  'exe', 'dmg', 'app',
+]);
+
+/**
+ * The pre-transfer refusal for one file, or null when it should travel (D15). `file.size` and the
+ * filename are in hand before any network; a 30 MB file must not upload for 25 MB before being
+ * told about a limit the client knew the whole time. Exported for the component tests.
+ */
+export function clientRefusal(file: { name: string; size: number }): string | null {
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return `Larger than the ${MAX_UPLOAD_MB} MB limit (${fmtBytes(file.size)}).`;
+  }
+  const ext = /\.([A-Za-z0-9]+)$/.exec(file.name)?.[1]?.toLowerCase();
+  if (ext && REFUSED_EXTENSIONS.has(ext)) {
+    return `.${ext} files cannot be read here — PDF, Word (.docx), text or Markdown only.`;
+  }
+  return null;
+}
+
+/** One file's journey through a batch upload (D13). `failed` keeps its reason; nothing is
+ *  overwritten by the next file's outcome. */
+type UploadItemState = 'waiting' | 'uploading' | 'done' | 'duplicate' | 'failed';
+interface UploadItem { key: string; name: string; state: UploadItemState; message?: string }
+
+/** Same register as the document STATUS map: person-words, one tone per verdict. The dedupe 200
+ *  is its OWN state — "already in your library" is not an error and must not dress as one. */
+const UPLOAD_STATE: Record<UploadItemState, { label: string; tone: string }> = {
+  waiting: { label: 'Waiting', tone: 'text-stone-500 dark:text-stone-400' },
+  uploading: { label: 'Uploading…', tone: 'text-stone-500 dark:text-stone-400' },
+  done: { label: 'Added', tone: 'text-emerald-700 dark:text-emerald-400' },
+  duplicate: { label: 'Already in your library', tone: 'text-stone-500 dark:text-stone-400' },
+  failed: { label: 'Refused', tone: 'text-amber-700 dark:text-amber-400' },
+};
+
+/** "12 added · 2 already in your library · 1 refused" — zero-count parts omitted. */
+function summarizeUploads(items: UploadItem[]): string {
+  const n = (s: UploadItemState) => items.filter((it) => it.state === s).length;
+  const parts: string[] = [];
+  const done = n('done');
+  const dup = n('duplicate');
+  const failed = n('failed');
+  if (done) parts.push(`${done} added`);
+  if (dup) parts.push(`${dup} already in your library`);
+  if (failed) parts.push(`${failed} refused`);
+  return parts.join(' · ');
+}
+
 export type MyWorksState = 'loading' | 'signedout' | 'unavailable' | 'ready';
 
 export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyWorksState }) {
@@ -150,7 +249,29 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
   // have none, for as long as the fetch takes.
   const [docsLoaded, setDocsLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  // D13: per-file rows replace the single overwritten error string. `uploadItems` is the batch in
+  // flight (or just settled); `uploadSummary` is the one line written when everything settles.
+  const [uploadItems, setUploadItems] = useState<UploadItem[] | null>(null);
+  const [uploadSummary, setUploadSummary] = useState<string | null>(null);
+  /** D16: per-document action note (a failed retry or remove says so ON the row it failed on). */
+  const [rowNotes, setRowNotes] = useState<Record<string, string>>({});
+  /** D14: the drop zone's armed state. Depth-counted, because dragenter/dragleave fire per child. */
+  const [dragArmed, setDragArmed] = useState(false);
+  const dragDepth = useRef(0);
+  /**
+   * When each document was FIRST SEEN in its current status, for the stuck test. Seeded from
+   * `createdAt` on first sight — an in-flight row that is already six minutes old on page load is
+   * stuck NOW, not five minutes from now — and reset to the observation time on any status
+   * change, so a just-retried document gets its full grace period even though `createdAt` never
+   * moves. Maintained inside load(), before setDocs, so render never sees a doc it cannot date.
+   */
+  const statusSince = useRef(new Map<string, { status: Doc['status']; since: number }>());
+  /**
+   * The render's clock for the stuck test, stamped by load() — never Date.now() in render (the
+   * purity rule, and the right call anyway: stuck-ness only changes when the poll ticks, and
+   * every tick runs load()).
+   */
+  const [clock, setClock] = useState(0);
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<Hit[] | null>(null);
@@ -162,7 +283,12 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
   const [voices, setVoices] = useState<Record<string, VoicesState>>({});
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const load = useCallback(async () => {
+  /**
+   * `reclaimedId` — a document whose stuck-clock must restart NOW (a successful retry). Done here
+   * rather than in retry() because this is where the clock lives; a retried document's status may
+   * already read `queued`, in which case no status CHANGE would ever reset it.
+   */
+  const load = useCallback(async (reclaimedId?: string) => {
     // A THROW HERE USED TO BE PERMANENT. `docsLoaded` gates the list, so a network failure left
     // "Loading your documents…" on screen for the life of the tab with nothing to retry — the same
     // shape as the `if (!r.ok) return;` bug that pinned the whole page on "Loading…" before it.
@@ -189,6 +315,23 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
       setLoadError('Your documents could not be loaded. Check your connection and try again.');
       return;
     }
+    // Status-age bookkeeping BEFORE the state lands, so the render that shows these docs can
+    // already answer "how long has this one been here".
+    const now = Date.now();
+    const seen = statusSince.current;
+    const ids = new Set(d.documents.map((doc) => doc.id));
+    for (const id of [...seen.keys()]) if (!ids.has(id)) seen.delete(id);
+    for (const doc of d.documents) {
+      const prev = seen.get(doc.id);
+      if (!prev) {
+        const created = Date.parse(doc.createdAt);
+        seen.set(doc.id, { status: doc.status, since: Number.isFinite(created) ? Math.min(created, now) : now });
+      } else if (prev.status !== doc.status || doc.id === reclaimedId) {
+        prev.status = doc.status;
+        prev.since = now;
+      }
+    }
+    setClock(now);
     setDocs(d.documents);
     setDocsLoaded(true);
     setState('ready');
@@ -196,39 +339,100 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
 
   useEffect(() => { void load(); }, [load]);
 
-  // Poll only while something is moving. A permanent interval on a settled list is a request every
-  // few seconds forever, on every open tab.
-  useEffect(() => {
-    if (!docs.some((d) => IN_FLIGHT.has(d.status))) return;
-    const t = setInterval(() => { void load(); }, 2500);
-    return () => clearInterval(t);
-  }, [docs, load]);
+  /** Stuck = non-terminal AND unchanged past the grace period. The reclaim affordance's predicate. */
+  const isStuck = useCallback((d: Doc, now: number) => {
+    if (!IN_FLIGHT.has(d.status)) return false;
+    const seen = statusSince.current.get(d.id);
+    return now - (seen?.since ?? now) > STUCK_AFTER_MS;
+  }, []);
 
-  async function upload(files: FileList | null) {
-    if (!files?.length) return;
-    setUploadError(null);
+  // Poll only while something is moving. A permanent interval on a settled list is a request every
+  // few seconds forever, on every open tab. When everything still in flight is STUCK, drop to the
+  // slow cadence — the row is waiting on a human clicking Retry, not on the queue.
+  useEffect(() => {
+    const now = Date.now();
+    const inFlight = docs.filter((d) => IN_FLIGHT.has(d.status));
+    if (inFlight.length === 0) return;
+    const allStuck = inFlight.every((d) => isStuck(d, now));
+    const t = setInterval(() => { void load(); }, allStuck ? STUCK_POLL_MS : ACTIVE_POLL_MS);
+    return () => clearInterval(t);
+  }, [docs, load, isStuck]);
+
+  /**
+   * D13 — the batch upload. Bounded-concurrency workers over the selection, one status row per
+   * file, every refusal named on ITS row and preserved. The serial loop this replaces overwrote a
+   * single error string per iteration, so 40 files with 6 refusals reported one message that
+   * never named a file.
+   */
+  async function upload(files: FileList | File[] | null) {
+    const list = files ? Array.from(files) : [];
+    if (!list.length || busy) return;
     setBusy(true);
-    try {
-      for (const file of Array.from(files)) {
-        const body = new FormData();
-        body.append('file', file);
-        let r: Response;
+    setUploadSummary(null);
+
+    // D15 — pre-checks BEFORE any transfer. A refused file starts (and ends) as `failed`,
+    // reason attached; it never reaches the network.
+    const stamp = Date.now();
+    const items: UploadItem[] = list.map((f, i) => {
+      const refusal = clientRefusal(f);
+      return {
+        key: `${stamp}-${i}-${f.name}`,
+        name: f.name,
+        state: refusal ? 'failed' : 'waiting',
+        message: refusal ?? undefined,
+      };
+    });
+    setUploadItems(items);
+    const patch = (key: string, next: Partial<UploadItem>) =>
+      setUploadItems((cur) => (cur ? cur.map((it) => (it.key === key ? { ...it, ...next } : it)) : cur));
+
+    // Settled outcomes tracked locally as well as in state: the summary must not depend on
+    // reading React state mid-flight.
+    const settled = new Map(items.filter((it) => it.state === 'failed').map((it) => [it.key, it] as const));
+
+    const queue = items
+      .map((it, i) => ({ it, file: list[i]! }))
+      .filter(({ it }) => it.state === 'waiting');
+    let next = 0;
+    const worker = async () => {
+      // Single-threaded pull; `next++` is atomic between awaits, so no two workers share a file.
+      while (next < queue.length) {
+        const { it, file } = queue[next++]!;
+        patch(it.key, { state: 'uploading' });
+        let outcome: UploadItemState;
+        let message: string | undefined;
         try {
-          r = await fetch('/api/user-corpus/upload', { method: 'POST', body });
+          const body = new FormData();
+          body.append('file', file);
+          const r = await fetch('/api/user-corpus/upload', { method: 'POST', body });
+          const d = await readJson<{ error?: unknown; message?: string; duplicateOf?: string }>(r);
+          if (!r.ok) {
+            // A refusal is shown as itself. The route writes messages a person can act on
+            // ("That PDF has no readable text layer… it needs OCR") — surfaced verbatim.
+            outcome = 'failed';
+            message = errorMessage(d, 'The upload failed. Please try again.');
+          } else if (!d) {
+            // B021 — a non-JSON 200 (the gate's HTML, a platform error page).
+            outcome = 'failed';
+            message = 'The upload could not be confirmed. Please try again.';
+          } else if (d.duplicateOf) {
+            // The dedupe 200 — its own state, never an error (D13).
+            outcome = 'duplicate';
+          } else {
+            outcome = 'done';
+          }
         } catch {
-          setUploadError(`“${file.name}” could not be uploaded. Check your connection and try again.`);
-          continue;
+          outcome = 'failed';
+          message = 'Could not be uploaded. Check your connection and try again.';
         }
-        const d = await readJson<{ error?: unknown; message?: string }>(r);
-        // A refusal is shown as itself. The route already writes messages a person can act on
-        // ("That PDF has no readable text layer… it needs OCR"), so they are surfaced verbatim
-        // rather than replaced with a generic failure.
-        if (!r.ok) setUploadError(errorMessage(d, `“${file.name}” could not be uploaded.`));
-        // B021 — a non-JSON 200 used to throw out of the loop: `finally` cleared `busy`, the label
-        // flicked back to "Add a document", and nothing was said about a file that never arrived.
-        else if (!d) setUploadError(`“${file.name}” could not be uploaded. Please try again.`);
-        else if (d.message) setUploadError(d.message); // e.g. already uploaded
+        settled.set(it.key, { ...it, state: outcome, message });
+        patch(it.key, { state: outcome, message });
       }
+    };
+
+    try {
+      await Promise.all(Array.from({ length: Math.min(CONCURRENT_UPLOADS, queue.length) }, () => worker()));
+      setUploadSummary(summarizeUploads([...settled.values()]));
       await load();
     } finally {
       setBusy(false);
@@ -236,12 +440,54 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
     }
   }
 
+  const setRowNote = (id: string, note: string | null) =>
+    setRowNotes((cur) => {
+      if (note === null) {
+        if (!(id in cur)) return cur;
+        const rest = { ...cur };
+        delete rest[id];
+        return rest;
+      }
+      return { ...cur, [id]: note };
+    });
+
+  // D16 — both actions READ THE RESPONSE. The route's 409s are written to be shown ("The
+  // original file was not stored… please upload it again"), and a failed delete must say so
+  // instead of silently keeping the row.
   async function retry(id: string) {
-    await fetch(`/api/user-corpus/documents/${id}`, { method: 'POST' });
-    await load();
+    setRowNote(id, null);
+    let r: Response;
+    try {
+      r = await fetch(`/api/user-corpus/documents/${id}`, { method: 'POST' });
+    } catch {
+      setRowNote(id, 'The retry could not be started. Check your connection and try again.');
+      return;
+    }
+    if (!r.ok) {
+      const d = await readJson<{ error?: unknown }>(r);
+      setRowNote(id, errorMessage(d, 'The retry could not be started.'));
+      return;
+    }
+    // The reclaim id restarts this document's stuck-clock inside load(), where the clock lives.
+    await load(id);
   }
+
   async function remove(id: string) {
-    await fetch(`/api/user-corpus/documents/${id}`, { method: 'DELETE' });
+    setRowNote(id, null);
+    let r: Response;
+    try {
+      r = await fetch(`/api/user-corpus/documents/${id}`, { method: 'DELETE' });
+    } catch {
+      setRowNote(id, 'This document could not be removed. Check your connection and try again.');
+      setArmedRemove(null);
+      return;
+    }
+    if (!r.ok) {
+      const d = await readJson<{ error?: unknown }>(r);
+      setRowNote(id, errorMessage(d, 'This document could not be removed.'));
+      setArmedRemove(null);
+      return;
+    }
     // B018 — the document list reloaded and the SEARCH RESULTS did not, so hits pointing at the
     // just-deleted document stayed on screen until the reader searched again. Clicking one of
     // those is the failure that matters: a result for a document that no longer exists. Cleared
@@ -359,14 +605,40 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
 
       {/* ── upload ─────────────────────────────────────────────────────────────────────────── */}
       <section className="mb-8">
+        {/* D14 — a real drop zone. All four handlers live on the label; an unhandled dragover is
+            the browser saying "not a drop target", and the eventual drop NAVIGATES THE TAB AWAY
+            with the reader's whole session. Enter/leave are depth-counted because they re-fire on
+            every child span. Drops while busy are ignored — the input is disabled, and the drop
+            path must not be a side door around that. */}
         <label
           htmlFor="my-works-file"
-          className="flex min-h-[44px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-stone-300 bg-paper px-5 py-8 text-center transition-colors hover:border-accent-400 dark:border-stone-700 dark:bg-stone-800"
+          onDragEnter={(e) => { e.preventDefault(); dragDepth.current += 1; setDragArmed(true); }}
+          onDragOver={(e) => { e.preventDefault(); }}
+          onDragLeave={() => {
+            dragDepth.current = Math.max(0, dragDepth.current - 1);
+            if (dragDepth.current === 0) setDragArmed(false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            dragDepth.current = 0;
+            setDragArmed(false);
+            if (!busy) void upload(e.dataTransfer?.files ?? null);
+          }}
+          /* D19 — the input is sr-only, so without focus-within the feature's primary action has
+             no visible keyboard focus at all. Same outline idiom as the ask composer. */
+          className={`flex min-h-[44px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed px-5 py-8 text-center transition-colors focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-2 focus-within:outline-accent-600 dark:focus-within:outline-accent-400 ${
+            dragArmed
+              ? 'border-accent-500 bg-accent-50/60 dark:border-accent-400 dark:bg-accent-950/30'
+              : 'border-stone-300 bg-paper hover:border-accent-400 dark:border-stone-700 dark:bg-stone-800'
+          }`}
         >
           <span className="font-serif text-[15px] text-stone-600 dark:text-stone-300">
-            {busy ? 'Uploading…' : 'Add a document'}
+            {busy ? 'Uploading…' : dragArmed ? 'Drop to add' : 'Add a document'}
           </span>
-          <span className="mt-1 text-[13px] text-stone-500 dark:text-stone-400">PDF, Word, text or Markdown</span>
+          {/* D15 — the cap is stated BEFORE the picker, from the server's own constant. */}
+          <span className="mt-1 text-[13px] text-stone-500 dark:text-stone-400">
+            PDF, Word, text or Markdown · up to {MAX_UPLOAD_MB} MB
+          </span>
           <input
             ref={fileInput}
             id="my-works-file"
@@ -378,10 +650,30 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
             onChange={(e) => void upload(e.target.files)}
           />
         </label>
-        {uploadError && (
-          <p role="status" className="mt-3 rounded-xl bg-amber-50 px-4 py-3 font-serif text-[14px] leading-relaxed text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-            {uploadError}
-          </p>
+
+        {/* D13 — the per-file batch report: one row per file, its own verdict, failures named and
+            preserved, and one summary line when everything settles. role="status" (D19) so state
+            transitions announce without stealing focus. */}
+        {uploadItems && (
+          <div role="status" aria-label="Upload progress" className="mt-3">
+            <ul className="border-y edge">
+              {uploadItems.map((it) => {
+                const s = UPLOAD_STATE[it.state];
+                return (
+                  <li key={it.key} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 border-b edge px-1 py-2 last:border-b-0">
+                    <span className="min-w-0 flex-1 truncate font-serif text-[14px] text-stone-700 dark:text-stone-200">{it.name}</span>
+                    <span className={`shrink-0 text-[13px] font-semibold ${s.tone}`}>{s.label}</span>
+                    {it.message && (
+                      <span className="w-full font-serif text-[13px] leading-relaxed text-amber-800 dark:text-amber-300">{it.message}</span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            {uploadSummary && (
+              <p className="mt-2 font-sans text-sm text-stone-600 dark:text-stone-300">{uploadSummary}</p>
+            )}
+          </div>
         )}
       </section>
 
@@ -414,9 +706,12 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
             </h2>
             <ul className="mt-3 border-y edge">
               {presence.map((p) => (
-                <li key={`${p.sectionId}-${p.channel}-${p.verseStart}`} className="border-b edge px-1 py-3 last:border-b-0">
-                  <span className="font-serif text-[15px] text-stone-700 dark:text-stone-200">{p.title}</span>
-                  <span className="ml-2 text-[13px] text-stone-500 dark:text-stone-400">
+                /* D18 — flex + min-w-0 + truncate: the title is a raw filename and must not
+                   push the row past 390px. No date here: VersePresence carries no createdAt on
+                   the wire (recorded gap — a route change, not a client one). */
+                <li key={`${p.sectionId}-${p.channel}-${p.verseStart}`} className="flex flex-wrap items-baseline gap-x-2 border-b edge px-1 py-3 last:border-b-0">
+                  <span className="min-w-0 max-w-full truncate font-serif text-[15px] text-stone-700 dark:text-stone-200">{p.title}</span>
+                  <span className="text-[13px] text-stone-500 dark:text-stone-400">
                     {/* channel and strength, so "quoted at length" is separable from "mentioned once" */}
                     {p.channel === 'explicit' ? 'cited' : `quoted (${p.matchCount ?? 0} matches)`}
                   </span>
@@ -434,8 +729,14 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
             <ul className="mt-3 border-y edge">
               {hits.map((h) => (
                 <li key={h.sectionId} className="border-b edge px-1 py-4 last:border-b-0">
-                  <p className="font-display text-[15px] text-stone-700 dark:text-stone-200">{h.title}</p>
-                  {h.heading && <p className="text-[13px] text-stone-500 dark:text-stone-400">{h.heading}</p>}
+                  {/* D18 — the title is a raw filename; truncate rather than overflow at 390px. */}
+                  <p className="truncate font-display text-[15px] text-stone-700 dark:text-stone-200">{h.title}</p>
+                  {/* D17 — doc + date (§7): the document's date, in the merged surface's format. */}
+                  {(h.createdAt || h.heading) && (
+                    <p className="truncate text-[13px] text-stone-500 dark:text-stone-400">
+                      {[h.createdAt ? when(h.createdAt) : null, h.heading].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
                   <p className="mt-1 font-serif text-[15px] leading-relaxed text-stone-600 dark:text-stone-300">
                     {(() => { const t = plainExcerpt(h.text); return t.length > 320 ? `${t.slice(0, 320)}…` : t; })()}
                   </p>
@@ -447,7 +748,10 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
       </section>
 
       {/* ── the status wall ────────────────────────────────────────────────────────────────── */}
-      <section>
+      {/* D19 — aria-live: this wall mutates every poll tick while documents are in flight, and
+          without a live region every transition (Reading → Indexing → Ready) was silent to a
+          screen reader. Polite, never assertive — a status change must not interrupt. */}
+      <section aria-live="polite">
         <h2 className="mb-3 font-display text-lg text-stone-700 dark:text-stone-200">Your documents</h2>
         {loadError ? (
           <p role="alert" className="font-serif text-[15px] text-amber-800 dark:text-amber-300">
@@ -469,10 +773,14 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                    14px Source Sans ink-wash metadata. */
                 <li key={d.id} className="border-b edge px-1 py-4 last:border-b-0">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                    <span className="font-serif text-lg text-stone-900 dark:text-stone-100">{d.title}</span>
-                    <span className={`text-[13px] font-semibold ${s.tone}`}>{s.label}</span>
+                    {/* D18 — min-w-0 + truncate (the library page's idiom): the title is a raw
+                        filename minus extension and must not overflow at 390px. */}
+                    <span className="min-w-0 flex-1 truncate font-serif text-lg text-stone-900 dark:text-stone-100">{d.title}</span>
+                    <span className={`shrink-0 text-[13px] font-semibold ${s.tone}`}>{s.label}</span>
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-x-3 font-sans text-sm text-stone-500 dark:text-stone-400">
+                    {/* D17 — doc + date, same format as the merged search surface. */}
+                    <span>{when(d.createdAt)}</span>
                     {d.mimeType && <span className="uppercase">{d.mimeType}</span>}
                     {d.byteSize != null && <span>{fmtBytes(d.byteSize)}</span>}
                     {d.pageCount != null && <span>{d.pageCount} pages</span>}
@@ -493,6 +801,21 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                       >
                         Try again
                       </button>
+                    )}
+                    {/* The reclaim affordance (H2's retry gap): a row stuck in a non-terminal
+                        state for five minutes is almost always a killed function, not a slow one.
+                        Retry is the reclaim path — the endpoint resets the claim and re-drains. */}
+                    {d.status !== 'failed' && isStuck(d, clock) && (
+                      <span className="inline-flex min-h-[44px] items-center gap-1.5 px-1 text-[13px] text-stone-500 dark:text-stone-400">
+                        Taking longer than expected —
+                        <button
+                          type="button"
+                          onClick={() => void retry(d.id)}
+                          className="min-h-[44px] font-semibold text-stone-600 hover:text-accent-800 dark:text-stone-300"
+                        >
+                          Retry
+                        </button>
+                      </span>
                     )}
                     {/* Reading view: the work on one side, the tradition on the other. Linked
                         from the card because a surface reachable only by typing its URL is a
@@ -533,6 +856,15 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
                       {armedRemove === d.id ? 'Remove?' : 'Remove'}
                     </button>
                   </div>
+
+                  {/* D16 — the answer to a failed retry/remove, on the row it failed on. The
+                      server's 409 sentences are written to be shown; a silent no-op reads as
+                      "remove worked" until the next reload contradicts it. */}
+                  {rowNotes[d.id] && (
+                    <p role="alert" className="mt-2 font-serif text-[14px] leading-relaxed text-amber-800 dark:text-amber-300">
+                      {rowNotes[d.id]}
+                    </p>
+                  )}
 
                   {voices[d.id] && (
                     <div className="mt-3 border-t edge pt-3">

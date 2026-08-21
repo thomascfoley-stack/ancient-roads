@@ -215,10 +215,19 @@ export function WorksGroupRows({ rows }: { rows: UserHit[] }) {
             href={`/library/uploads/${r.documentId}`}
             className="group block py-4 transition-colors ease-gentle hover:bg-accent-50/40 dark:hover:bg-accent-950/20"
           >
-            <span className="truncate font-scripture text-[17px] text-stone-900 group-hover:text-accent-800 dark:text-stone-100 dark:group-hover:text-accent-300">{r.title}</span>
-            {r.heading && (
-              <span className="mt-0.5 block truncate text-xs text-stone-500 dark:text-stone-400">{r.heading}</span>
-            )}
+            <span className="flex items-baseline justify-between gap-3">
+              <span className="truncate font-scripture text-[17px] text-stone-900 group-hover:text-accent-800 dark:text-stone-100 dark:group-hover:text-accent-300">{r.title}</span>
+              {/* D17 (2026-08-20 audit) — §7's ownership label, in the register-label position the
+                  corpus rows use for sourceType. Group membership alone vanishes the moment a row
+                  is read out of context (screen reader, screenshot). */}
+              <span className="shrink-0 text-micro font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Yours</span>
+            </span>
+            {/* D17 — doc + date: the document's date first, in the prayers rows' when() format,
+                then the heading if the hit has one. */}
+            <span className="mt-0.5 block truncate text-xs text-stone-500 dark:text-stone-400">
+              {when(r.createdAt)}
+              {r.heading && <span> · {r.heading}</span>}
+            </span>
             {/* user-corpus keyword search returns the stored body, not a headline — bounded
                 plain-text excerpt, rendered as text (never HTML: it is the user's own writing). */}
             <span className="mt-1 block text-sm leading-relaxed text-stone-600 dark:text-stone-300">{excerpt(r.text)}</span>
