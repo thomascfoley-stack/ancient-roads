@@ -106,12 +106,13 @@ export default async function CatalogPage({
       </nav>
       <h1 className="mb-5 font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100">{def.label}</h1>
 
-      {/* The SAME selection drives the search and the work list below. One source of truth (the
-          URL), so a lit chip can never mean two different things on one screen.
-          Historians leads with the STUDY ENTRANCE instead (order 2026-08-20-historians-study-
-          entrance): the question routes into History mode, and the classic body-text search
-          survives behind its exact-phrase reveal. Other catalogs keep the search box — they
-          have no History-mode equivalent to route into. */}
+      {/* On most catalogs the SAME tradition selection drives the search box and the work list
+          below — one source of truth (the URL), so a lit chip cannot mean two things on one screen.
+          Historians is the EXCEPTION (order 2026-08-20-historians-study-entrance): its study
+          question routes into History mode, which has no tradition filter, so the chips govern the
+          work list and the full-text reveal but NOT the study search. That divergence is
+          deliberate and scoped to this shelf (deep-audit domain finding 5); other catalogs keep the
+          unified search box, having no History-mode equivalent to route into. */}
       {catalog === 'historians' ? (
         <StudyEntrance catalog={catalog} label={def.label} traditions={selected} />
       ) : (

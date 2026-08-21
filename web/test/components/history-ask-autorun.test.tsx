@@ -10,6 +10,7 @@
 //   * Without initialQuery, mount fires NOTHING. The empty state stays an invitation, and a
 //     reader landing on /ask?mode=history directly is not charged a search they did not ask for.
 
+import { StrictMode } from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -44,15 +45,23 @@ afterEach(() => {
 });
 
 describe('HistoryAsk with a carried query', () => {
-  it('runs it once on mount', async () => {
-    render(<HistoryAsk initialQuery="Herod" />);
+  it('runs it once on mount — even under StrictMode double-invoke', async () => {
+    // The whole point of the value-keyed guard is that StrictMode's setup→cleanup→setup does NOT
+    // fire two searches (two embeddings, two persisted threads). RTL's plain render never
+    // double-invokes, so this test would pass against a guardless component; wrapping in StrictMode
+    // is what makes the guard the actual subject (proven by the false-confidence pass: deleting the
+    // guard goes red here, stays green without StrictMode).
+    render(<StrictMode><HistoryAsk initialQuery="Herod" /></StrictMode>);
 
-    await waitFor(() => expect(calls.length).toBe(1));
+    await waitFor(() => expect(calls.length).toBeGreaterThan(0));
+    // Settle a beat so a late duplicate would land before the count is asserted.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(calls.length).toBe(1);
     expect(calls[0]!.url).toBe('/api/history/search');
     expect(calls[0]!.body).toEqual({ query: 'Herod' });
 
     // The results view rendered — the carried query behaves exactly like a typed one.
-    await waitFor(() => expect(screen.getByText(/nothing in the 28 served history works/i)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/nothing in the 28 served history items/i)).toBeTruthy());
   });
 
   it('fires nothing when no query is carried', async () => {

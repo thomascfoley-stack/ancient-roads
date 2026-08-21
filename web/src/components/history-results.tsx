@@ -67,10 +67,18 @@ export function HistoryResults({ data, query, threadId }: {
     return [...m.entries()].sort((a, b) => a[0] - b[0]);
   }, [data.results]);
 
-  const cite = (r: HistoryResultRow, work: { title: string; author: string }): void => {
-    void navigator.clipboard.writeText(`${work.author}, ${work.title}, ${r.headingPath.join(' — ')} (CCEL)`);
-    setCopied(r.sectionId);
-    setTimeout(() => setCopied(null), 1500);
+  const cite = async (r: HistoryResultRow, work: { title: string; author: string }): Promise<void> => {
+    // Only confirm a copy that happened. navigator.clipboard is undefined on a non-secure context
+    // and rejects when the document is unfocused or permission is denied; flashing ✓ regardless is
+    // a false confirmation on an attribution control — the wrong direction for this product
+    // (deep-audit client finding 7).
+    try {
+      await navigator.clipboard.writeText(`${work.author}, ${work.title}, ${r.headingPath.join(' — ')} (CCEL)`);
+      setCopied(r.sectionId);
+      setTimeout(() => setCopied(null), 1500);
+    } catch {
+      /* no confirmation: the reader still has the citation visible on screen to copy by hand */
+    }
   };
 
   const noMatchLine = data.interpretation.entities.length === 0 && data.interpretation.period === null;
@@ -78,7 +86,7 @@ export function HistoryResults({ data, query, threadId }: {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-6">
       <div className="flex items-baseline justify-between gap-4">
-        <h1 className="font-display text-2xl font-medium tracking-tight text-stone-900 dark:text-stone-100">&ldquo;{query}&rdquo;</h1>
+        <h1 className="min-w-0 break-words font-display text-2xl font-medium tracking-tight text-stone-900 dark:text-stone-100">&ldquo;{query}&rdquo;</h1>
         <Link href="/ask?mode=history" className="shrink-0 text-sm text-stone-600 underline transition-colors ease-gentle hover:text-accent-700 dark:text-stone-400 dark:hover:text-accent-300">New study</Link>
       </div>
 
@@ -139,7 +147,7 @@ export function HistoryResults({ data, query, threadId }: {
         </Link>
       ) : (
         <div className="mt-6 border edge p-4">
-          <p className="text-stone-700 dark:text-stone-300">Nothing in the {data.coverage.works} served history works matches this.</p>
+          <p className="text-stone-700 dark:text-stone-300">Nothing in the {data.coverage.works} served history items matches this.</p>
           <Link href="/library/historians" className="mt-2 inline-block text-sm text-accent-700 underline dark:text-accent-300">Browse the history shelf</Link>
         </div>
       )}
@@ -169,7 +177,7 @@ export function HistoryResults({ data, query, threadId }: {
                     <button
                       type="button" aria-label="Copy citation" title="Copy citation"
                       className="h-8 w-8 shrink-0 self-center border edge text-xs text-stone-500 transition-colors ease-gentle hover:text-accent-700 dark:text-stone-400 dark:hover:text-accent-300"
-                      onClick={() => cite(s, g.work)}
+                      onClick={() => void cite(s, g.work)}
                     >{copied === s.sectionId ? '✓' : '⧉'}</button>
                   </li>
                 ))}
@@ -190,7 +198,7 @@ export function HistoryResults({ data, query, threadId }: {
       </div>
 
       <footer className="mt-8 text-sm text-stone-500 dark:text-stone-400">
-        Searched {data.coverage.works} works · {data.coverage.sections.toLocaleString(DISPLAY_LOCALE)} sections
+        Searched {data.coverage.works} items · {data.coverage.sections.toLocaleString(DISPLAY_LOCALE)} sections
       </footer>
     </div>
   );

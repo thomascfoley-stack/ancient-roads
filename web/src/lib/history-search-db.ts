@@ -50,13 +50,41 @@ async function vocab(): Promise<{ slug: string; label: string }[]> {
 }
 
 interface Row {
-  id: number; source_id: number; unit_ordinal: number; heading: string; body: string;
+  // `ordinal` is `sections.ordinal`, NOT `unit_ordinal`. The deep link this row becomes is
+  // `/work/{slug}#s{ordinal}`, and the reader resolves that hash by keyset over
+  // UNIQUE(source_id, ordinal) — the raw section number — exactly as catalog-search.tsx does for
+  // the identical URL. Carrying `unit_ordinal` here (the 024 collapsed-unit numbering) sent every
+  // "Open in book" to the wrong passage, or — since 11 of the 28 served history works have
+  // unit_ordinal NULL in every row — to `#snull`, which the reader's `^#s(\d+)$` cannot match, so
+  // it silently opened the work at the top. Confirmed against the dev corpus 2026-08-21. This is
+  // the concordance's one job: open the book THERE.
+  id: number; source_id: number; ordinal: number; heading: string; body: string;
   period_start_year: number | null; period_end_year: number | null;
   slug: string; title: string; author: string;
   cosine?: number; fts?: number; entity?: boolean;
 }
-const ROW_COLS = `s.id, s.source_id, s.unit_ordinal, s.heading, s.body,
+const ROW_COLS = `s.id, s.source_id, s.ordinal, s.heading, s.body,
   s.period_start_year, s.period_end_year, src.slug, src.title, src.author`;
+
+/** Row → result mapper, exported so the ordinal contract (the deep link the reader can resolve)
+ *  is unit-testable without a DB — see history-row-to-result.test.ts. `needle` windows the
+ *  excerpt around the matched entity; it is still a pure index slice, so the verbatim gate holds. */
+export function rowToResult(
+  row: Row, matched: HistoryResult['matched'], needle: string | undefined,
+): HistoryResult {
+  const excerpt = makeExcerpt(row.body, 420, matched.includes('entity') ? needle : undefined);
+  assertExcerptVerbatim(row.body, excerpt); // v1's verifier: a mutated excerpt never renders
+  return {
+    sectionId: row.id, ordinal: row.ordinal,
+    // Strip the ingest chunk marker (` (2/3)`, ingest-historian.ts) so it never reaches the
+    // reader's breadcrumb or a copied citation as "Chapter 4 (2/3)" — a retrieval artifact, not
+    // part of the source's own heading (deep-audit domain finding 6).
+    headingPath: (row.heading ?? '').replace(/\s*\(\d+\/\d+\)\s*$/, '').split(' — '),
+    period: row.period_start_year !== null
+      ? [row.period_start_year, row.period_end_year ?? row.period_start_year] : null,
+    excerpt, matched,
+  };
+}
 
 export async function searchHistory(query: string): Promise<HistoryResponse> {
   const sql = getDb();
@@ -129,19 +157,7 @@ export async function searchHistory(query: string): Promise<HistoryResponse> {
   }).sort((a, b) => b.score - a.score).slice(0, 200);
 
   const needle = entities[0]?.label;
-  const toResult = (x: (typeof scored)[number]): HistoryResult => {
-    // Window the excerpt around the matched entity when there is one, so the hero shows WHY it
-    // matched (review nit, 2026-08-20) — still an index slice, so the verbatim gate holds.
-    const excerpt = makeExcerpt(x.row.body, 420, x.matched.includes('entity') ? needle : undefined);
-    assertExcerptVerbatim(x.row.body, excerpt); // v1's verifier: a mutated excerpt never renders
-    return {
-      sectionId: x.row.id, ordinal: x.row.unit_ordinal,
-      headingPath: (x.row.heading ?? '').split(' — '),
-      period: x.row.period_start_year !== null
-        ? [x.row.period_start_year, x.row.period_end_year ?? x.row.period_start_year] : null,
-      excerpt, matched: x.matched,
-    };
-  };
+  const toResult = (x: (typeof scored)[number]): HistoryResult => rowToResult(x.row, x.matched, needle);
 
   const groups = new Map<string, { work: WorkRef; sections: (typeof scored)[number][] }>();
   for (const x of scored) {

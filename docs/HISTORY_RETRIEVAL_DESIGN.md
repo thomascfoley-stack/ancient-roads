@@ -1,6 +1,16 @@
 # HISTORY_RETRIEVAL_DESIGN — the history lane, end to end
 
-**Status: DESIGN FOR OWNER APPROVAL — nothing below is implemented.** Amended 2026-08-20 after independent review (Kimi): entity vocabulary source of truth stated (§3.1), weights reframed as ordinal priors with tuning deferred to adequate n (§3.4/§7), the Josephus transition written (§2b), chip-filter framing + coverage derivation + threads migration + behavioral test #4 (§4/§5/§6). Review pushbacks and their dispositions are in the 2026-08-20 session log. This is the document
+**Status: LIVE ON PRODUCTION — corrected 2026-08-21.** The header read "DESIGN FOR OWNER
+APPROVAL — nothing below is implemented" while `/ask?mode=history` had shipped, 28 works were
+serving, and the study entrance (order 2026-08-20-historians-study-entrance) had extended the
+lane — a header a reader could trust in neither direction, sitting above sections that report
+measured baselines and shipped filenames (deep-audit docs finding 2). **One launch gate remains
+open: the §8b similarity floor** — a nonsense query still renders a confident "Closest match"
+hero, held safe today only by the SEC-1 site-password gate (owner-only), NOT by code. Resolve it
+before this lane is any real user's front door. The wireframes in §5 are the ORIGINAL design;
+several fields diverged in implementation (deep-audit docs finding 6) — read the code, not §5, for
+current behavior. Historical context of this doc's own creation follows. Amended 2026-08-20 after
+independent review (Kimi): entity vocabulary source of truth stated (§3.1), weights reframed as ordinal priors with tuning deferred to adequate n (§3.4/§7), the Josephus transition written (§2b), chip-filter framing + coverage derivation + threads migration + behavioral test #4 (§4/§5/§6). Review pushbacks and their dispositions are in the 2026-08-20 session log. This is the document
 `src/ingest/ingest-historian.ts` and three manifest notes have cited since migration 016. It did
 not exist until 2026-08-20 (bylaw 1). Written for an implementing agent: exact routes, contracts,
 click behavior, states, and exit criteria. CLAUDE.md requires owner approval before code.

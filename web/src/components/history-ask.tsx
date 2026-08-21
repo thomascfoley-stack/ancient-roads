@@ -9,6 +9,7 @@
 // would be the entrance breaking its promise. Run once on mount, guarded by a ref because
 // React strict mode double-invokes effects and a second identical search is a real query.
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { HistoryResults, type HistoryPayload } from './history-results';
 
 const EXAMPLES = ['tell me about Herod', 'what happened in A.D. 70', 'Jerusalem in the first century'];
@@ -18,10 +19,15 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
   const [busy, setBusy] = useState(false);
   const [state, setState] = useState<
     | { kind: 'empty' }
-    | { kind: 'results'; query: string; data: HistoryPayload; threadId: string | null }
-    | { kind: 'error'; message: string }
+    // `seq` keys the results element so per-search filter state (century, entity chips) cannot
+    // survive into the next search — a stale filter silently emptied the new results and rendered
+    // "nothing matched" over a corpus that did match (deep-audit client finding 2). The entrance
+    // makes back-to-back searches the normal path, so this is a live bug, not a corner.
+    | { kind: 'results'; seq: number; query: string; data: HistoryPayload; threadId: string | null }
+    | { kind: 'error'; message: string; signIn?: boolean }
     | { kind: 'limited'; retryAfterSec: number }
   >({ kind: 'empty' });
+  const searchNo = useRef(0);
 
   const run = async (raw: string): Promise<void> => {
     const q = raw.trim();
@@ -34,7 +40,7 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
         body: JSON.stringify({ query: q }),
       });
       if (res.status === 401) {
-        setState({ kind: 'error', message: 'Please sign in to search history.' });
+        setState({ kind: 'error', message: 'Please sign in to study history.', signIn: true });
         return;
       }
       if (res.status === 429) {
@@ -44,7 +50,7 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
       }
       if (!res.ok) { setState({ kind: 'error', message: 'History search is unavailable right now.' }); return; }
       const body = (await res.json()) as HistoryPayload & { threadId: string | null };
-      setState({ kind: 'results', query: q, data: body, threadId: body.threadId });
+      setState({ kind: 'results', seq: ++searchNo.current, query: q, data: body, threadId: body.threadId });
       // Persisted thread gets the URL so reload and back both land here (UX-4 parity).
       if (body.threadId) window.history.pushState(null, '', `/ask/${body.threadId}?mode=history`);
     } catch {
@@ -52,15 +58,18 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
     } finally { setBusy(false); }
   };
 
-  const ranInitial = useRef(false);
+  // The carried query, keyed on its VALUE, not a boolean. App Router reconciles the same /ask
+  // segment on a searchParam change rather than remounting, so a boolean once-guard would ignore a
+  // genuine second `?q=` while still firing twice under StrictMode's double-invoke. Keying on the
+  // value skips the strict-mode repeat (same value) and honours a real change (new value).
+  const ranInitialFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!initialQuery || ranInitial.current) return;
-    ranInitial.current = true;
+    if (initialQuery == null || ranInitialFor.current === initialQuery) return;
+    ranInitialFor.current = initialQuery;
+    setQuery(initialQuery);
     void run(initialQuery);
-    // `run` is stable in behavior but not in identity; the ref guard is the once-only, and the
-    // empty dep list is deliberate — a later edit to the composer must not re-fire the carry.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialQuery]);
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-6">
@@ -87,6 +96,20 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
         </button>
       </form>
 
+      {/* One heading for the surface, so screen-reader heading navigation works in every state
+          (results supplies its own visible h1). Voices mode has "Explore the paths"; history mode
+          had none until here. */}
+      <h1 className="sr-only">Study history</h1>
+
+      {/* Busy is announced in EVERY state, not just the first search: a second search from a
+          results screen used to change nothing but the button label while the old results sat
+          live underneath (deep-audit client findings 5 + 6). */}
+      {busy && (
+        <p role="status" aria-live="polite" className="mt-6 text-sm text-stone-500 dark:text-stone-400">
+          Searching the historians…
+        </p>
+      )}
+
       {state.kind === 'empty' && !busy && (
         <div className="mt-8">
           <p className="text-sm text-stone-500 dark:text-stone-400">History points you into the sources. It never summarizes.</p>
@@ -102,22 +125,24 @@ export function HistoryAsk({ initialQuery }: { initialQuery?: string } = {}): Re
           </div>
         </div>
       )}
-      {state.kind === 'empty' && busy && (
-        <p className="mt-8 text-sm text-stone-500 dark:text-stone-400">Searching the historians…</p>
-      )}
-      {state.kind === 'limited' && (
-        <div className="mt-8 border edge p-4 text-sm text-stone-700 dark:text-stone-300">
+      {state.kind === 'limited' && !busy && (
+        <div role="status" aria-live="polite" className="mt-8 border edge p-4 text-sm text-stone-700 dark:text-stone-300">
           Too many searches. Try again in about {state.retryAfterSec} seconds.
         </div>
       )}
-      {state.kind === 'error' && (
-        <div className="mt-8 border edge p-4 text-sm text-stone-700 dark:text-stone-300">
+      {state.kind === 'error' && !busy && (
+        <div role="alert" className="mt-8 border edge p-4 text-sm text-stone-700 dark:text-stone-300">
           {state.message}{' '}
-          <button type="button" className="underline hover:text-accent-700 dark:hover:text-accent-300" onClick={() => void run(query)}>Retry</button>
+          {state.signIn ? (
+            // Q1 (the whole point of this branch): tell them how, don't dead-end. A real link.
+            <Link href="/auth/sign-in" className="underline hover:text-accent-700 dark:hover:text-accent-300">Sign in</Link>
+          ) : (
+            <button type="button" className="underline hover:text-accent-700 dark:hover:text-accent-300" onClick={() => void run(query)}>Retry</button>
+          )}
         </div>
       )}
       {state.kind === 'results' && (
-        <HistoryResults data={state.data} query={state.query} threadId={state.threadId} />
+        <HistoryResults key={state.seq} data={state.data} query={state.query} threadId={state.threadId} />
       )}
     </div>
   );

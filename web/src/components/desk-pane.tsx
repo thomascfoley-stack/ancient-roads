@@ -265,6 +265,12 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
   const [sections, setSections] = useState<WorkSectionRow[]>([]);
   const [nextAfter, setNextAfter] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // A load-MORE failure is not a pane failure. `error` unmounts everything (the render branches on
+  // it), and a scroll-driven auto-load that wiped the page mid-read would then re-measure the now
+  // detached button — whose getBoundingClientRect() is all zeros, i.e. "always near" — and retry
+  // forever (deep-audit client finding 1). `moreError` keeps the read intact, shows an inline
+  // retry, and STOPS the auto-loader (the sentinel button is not rendered while it is set).
+  const [moreError, setMoreError] = useState<string | null>(null);
   // B011: starts TRUE, because a work pane is fetching from the moment it mounts. It used to start
   // false, and the effect that sets it runs only after the first paint — so for that first frame
   // `sections.length === 0 && !busy` was true and the pane rendered "Nothing to read here yet."
@@ -296,6 +302,7 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
     setSections([]);
     setNextAfter(null);
     setError(null);
+    setMoreError(null);
     setBusy(true);
 
     (async () => {
@@ -341,10 +348,12 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
 
   // CONTINUOUS READING (order 2026-08-20-historians-study-entrance): "the book is the whole
   // book" — the full reader streams as you scroll, and the desk pane was the one surface still
-  // reading a page at a time behind its button. The button SURVIVES as the fallback (no
-  // IntersectionObserver, keyboard readers who reach it first); the observer merely presses it
-  // early. rootMargin prefetches ~a screen ahead so the seam is never seen; the `busy` guard in
-  // loadMore is what keeps a re-firing observer from stacking queries.
+  // reading a page at a time behind its button. A scroll+rect effect (below) presses the button
+  // early when its sentinel nears the viewport; the button SURVIVES as the visible fallback for
+  // keyboard readers and for environments the effect cannot serve. There is no IntersectionObserver
+  // and no rootMargin here — an earlier revision used IO, but it delivered zero entries in the QA
+  // browser and could not be watched firing, so it was replaced (git 672513a). Concurrency is held
+  // by the `moreInFlight` ref just below, NOT by `busy` (which two same-tick fires both read stale).
   const moreRef = useRef<HTMLButtonElement | null>(null);
   // A ref, because `busy` cannot do this job: two observer fires in one tick both read the
   // stale closure's busy=false and double-append the same page (watched red in
@@ -352,7 +361,7 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
   const moreInFlight = useRef(false);
 
   const loadMore = useCallback(async () => {
-    if (nextAfter === null || busy || moreInFlight.current) return;
+    if (nextAfter === null || busy || moreInFlight.current || moreError) return;
     moreInFlight.current = true;
     const mine = seq.current;
     setBusy(true);
@@ -365,12 +374,14 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
         setNextAfter(page.nextAfter);
       }
     } catch {
-      if (mine === seq.current) setError('Could not load more of this work.');
+      // moreError, NOT error: keep the sections already read, and stop the auto-loader until the
+      // reader asks again (below, Retry clears it). Wiping here is what fed the retry storm.
+      if (mine === seq.current) setMoreError('Could not load more of this work.');
     } finally {
       moreInFlight.current = false;
       if (mine === seq.current) setBusy(false);
     }
-  }, [pane.slug, nextAfter, busy]);
+  }, [pane.slug, nextAfter, busy, moreError]);
 
   // The ref pattern keeps the listeners stable while `loadMore` changes identity with every
   // page (it closes over `nextAfter`). Scroll + rect math rather than IntersectionObserver,
@@ -383,17 +394,22 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
   loadMoreRef.current = loadMore;
   useEffect(() => {
     const el = moreRef.current;
-    if (!el || nextAfter === null) return;
+    if (!el || nextAfter === null || moreError) return;
     let ticking = false;
+    let scrollRaf = 0;
     const check = () => {
       ticking = false;
+      // isConnected guards the detached-node case: a button removed between a scheduled frame and
+      // its run reports a zeroed rect (top 0 < innerHeight+600 = always true), which is exactly the
+      // storm loop. A detached sentinel can never be "near"; bail.
+      if (!el.isConnected) return;
       // Within ~a screen of visible: press the button early so the seam is never seen.
       if (el.getBoundingClientRect().top < window.innerHeight + 600) void loadMoreRef.current();
     };
     const onScroll = () => {
       if (!ticking) {
         ticking = true;
-        requestAnimationFrame(check);
+        scrollRaf = requestAnimationFrame(check);
       }
     };
     document.addEventListener('scroll', onScroll, { capture: true, passive: true });
@@ -405,8 +421,9 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
       document.removeEventListener('scroll', onScroll, { capture: true } as EventListenerOptions);
       window.removeEventListener('resize', onScroll);
       cancelAnimationFrame(raf);
+      cancelAnimationFrame(scrollRaf); // a frame queued by the last scroll, cancelled on teardown
     };
-  }, [nextAfter]);
+  }, [nextAfter, moreError]);
 
   // B011: neither the work nor a reason it failed — the pane genuinely does not know what it is
   // yet. Derived rather than tracked, so it cannot drift out of step with `source`/`error`; the
@@ -446,14 +463,33 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
               </article>
             ))}
           </div>
-          {sections.length === 0 && !busy && <Message>Nothing to read here yet.</Message>}
-          {nextAfter !== null && (
+          {sections.length === 0 && !busy && !moreError && <Message>Nothing to read here yet.</Message>}
+          {/* A load-more failure: the read stays, an inline retry appears, and the auto-load
+              sentinel below is NOT rendered — which is what breaks the storm (the effect has no
+              button to observe). Retry clears the flag and re-arms. */}
+          {moreError && (
+            <div className="mt-4 border edge p-3 text-sm text-stone-600 dark:text-stone-300">
+              {moreError}{' '}
+              <button
+                type="button"
+                onClick={() => { setMoreError(null); void loadMore(); }}
+                className="underline hover:text-accent-700 dark:hover:text-accent-300"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          {nextAfter !== null && !moreError && (
             <button
               type="button"
               ref={moreRef}
+              // NOT `disabled={busy}`. Auto-load flips `busy` with no user action, and a disabled
+              // button leaves the tab order — stealing focus from a keyboard reader parked on the
+              // very control kept as their fallback (deep-audit client finding 9). The moreInFlight
+              // ref already blocks a double-fire, so the button can stay focusable while loading.
+              aria-busy={busy || undefined}
               onClick={() => void loadMore()}
-              disabled={busy}
- className="mt-4 min-h-[44px] w-full border edge font-sans text-sm text-stone-600 hover:bg-accent-50/50 disabled:opacity-50 dark:text-stone-300 dark:hover:bg-accent-950/20"
+ className="mt-4 min-h-[44px] w-full border edge font-sans text-sm text-stone-600 hover:bg-accent-50/50 dark:text-stone-300 dark:hover:bg-accent-950/20"
             >
               {busy ? 'Loading…' : 'Read more'}
             </button>

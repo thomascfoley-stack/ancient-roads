@@ -40,7 +40,7 @@ describe('the church-history invitation on the voices empty state', () => {
 
     const link = inviteLink();
     expect(link).not.toBeNull();
-    expect(link!.textContent).toMatch(/church history/i);
+    expect(link!.textContent).toMatch(/step into the story behind the text/i);
     expect(link!.textContent).toMatch(/begin a study/i);
   });
 

@@ -65,15 +65,18 @@ describe('the study entrance routes into History mode', () => {
     expect(pushes).toEqual([]);
   });
 
-  it('exact-phrase search is demoted behind a reveal, and the reveal is the real CatalogSearch', () => {
+  it('full-text search is demoted behind a reveal, and the reveal is the real CatalogSearch', () => {
     render(<StudyEntrance {...PROPS} />);
 
     // Hidden until asked for — the entrance leads with the question, not two search boxes.
     expect(screen.queryByPlaceholderText('Search historians…')).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: /exact-phrase search/i }));
+    fireEvent.click(screen.getByRole('button', { name: /search the full text/i }));
 
-    // CatalogSearch's own templated placeholder — proof the shipped component mounted.
-    expect(screen.getByPlaceholderText('Search historians…')).toBeTruthy();
+    // Two CatalogSearch-specific fingerprints, not just a placeholder a lookalike could copy: the
+    // templated placeholder AND its own submit button, both in the revealed region.
+    const input = screen.getByPlaceholderText('Search historians…');
+    expect(input.getAttribute('aria-label')).toBe('Search Historians');
+    expect(screen.getByRole('button', { name: 'Search' })).toBeTruthy();
   });
 });

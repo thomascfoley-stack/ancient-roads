@@ -77,7 +77,10 @@ export function StudyEntrance({
           onClick={() => setPhraseOpen((v) => !v)}
           className="text-xs text-stone-500 underline transition-colors ease-gentle hover:text-accent-700 dark:text-stone-400 dark:hover:text-accent-300"
         >
-          Exact-phrase search
+          {/* NOT "Exact-phrase search": the reveal is CatalogSearch → websearch_to_tsquery, which
+              stems and ANDs terms and only honours a literal phrase inside quotes. "Search the
+              full text" is what it actually does (deep-audit domain finding 3). */}
+          Search the full text
         </button>
       </div>
 
