@@ -1,5 +1,29 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 (ALL PHASES COMPLETE) — the history corpus is live on production
+
+**Every claim below verified independently of the tools that made it.**
+
+`ancientpaths.app` serves `939bcf8` (receipt sha == HEAD, `dpl_7Cp963S5TLscNxkQfmzrbwDsEREB`).
+Production history lane: **28 works · 44,575 vectors, all served** — josephus + the 27 new
+historians, 40,463/40,463 sections and vectors and 25,807 history anchors matching dev exactly
+(27/27 census). Licensing audit: 0 serving against any ruling. **Frozen-v1 against the full
+production corpus: 20/20, ALL PRE-REGISTERED BARS HOLD**
+([log](docs/evidence/history-eval/postcorpus-prod-2026-08-21T03-17-16-017Z.log)).
+
+The copy shipped as five bounded batches after the single-tx 27-work copy died uncommitted (the
+flip lesson re-learned on the copy); batch 3 died once more mid-stream and re-ran clean. The
+census that gated the flip compared prod to dev per work across sections, vectors AND
+section_history_anchors — the anchor leg exists because the tool's own census only displays verse
+anchors.
+
+### Remaining (fast-follow, none blocking)
+- Eusebius (npnf201): father ingest died on a transient connection error, resumable; then the
+  annotate pass + scope widening ships npnf201/202/203 into the lane WITH its behavioral test.
+- Foxe: parked — CCEL serves no ThML at that id; needs a catalog id or a small HTML adapter.
+- §8b similarity floor: the launch gate, before the site gate ever drops.
+- Kimi's authenticated prod walk: unblocked now.
+
 ## 2026-08-20 (Phase 1 COMPLETE) — the converter exists and a second historian went end-to-end
 
 **The ingestion bridge is built and proven deep**: `src/ingest/ccel-to-historian-jsonl.ts` (reuses
