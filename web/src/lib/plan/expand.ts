@@ -63,6 +63,22 @@ function readingDayOffsets(weeks: number, daysPerWeek: number): number[] {
   return out;
 }
 
+/**
+ * Dates for `count` not-yet-read days at the plan's own cadence (the first
+ * `daysPerWeek` days of each week), restarting from `fromDate`. Pure arithmetic,
+ * no clock: the catch-up reschedule moves a lapsed plan's remaining days forward
+ * without touching what was read or changing the pace. Completed days keep their
+ * historical dates; only the remaining count is redated, in day_index order.
+ */
+export function rescheduleDates(daysPerWeek: number, count: number, fromDate: string): string[] {
+  const dpw = Math.min(7, Math.max(1, Math.floor(daysPerWeek)));
+  const n = Math.max(0, Math.floor(count));
+  if (n === 0) return [];
+  return readingDayOffsets(Math.ceil(n / dpw), dpw)
+    .slice(0, n)
+    .map((o) => addDays(fromDate, o));
+}
+
 interface ChapterSpan { bookNum: number; chapter: number }
 
 function chaptersOfScope(spec: PlanSpec): ChapterSpan[] | { fail: string } {
@@ -123,6 +139,12 @@ export function expandPlan(spec: PlanSpec): ExpandOutcome {
 
   const offsets = readingDayOffsets(spec.weeks, spec.daysPerWeek);
   const dayCount = offsets.length;
+  // Belt-and-braces below parsePlanSpec (which rejects weeks/daysPerWeek < 1): at
+  // dayCount 0 the too-few-chapters refusal below cannot fire (`n < 0` is false), and
+  // an { ok: true, days: [] } outcome reads as a buildable empty plan to any caller.
+  if (dayCount === 0) {
+    return { ok: false, reason: 'The schedule has no reading days. Choose at least one week and one day each week.' };
+  }
   if (chapters.length < dayCount) {
     // User-facing copy: it reaches the builder's live preview and the API's
     // refusal body verbatim. "chapter(s)" is engineering shorthand; say the

@@ -1,5 +1,63 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 — Daily Office Sprint 1 BUILT (dossier §3.1) + the union merge that heals the split
+
+**Owner go, in chat: "build it and deploy this, follow the rules."** Scope decision recorded:
+Sprint 1 of `docs/PLANS_STUDIES_EXCELLENCE.md` deep, not all seven mockup boards shallow —
+Journeys' per-day voices are accuracy-eval-gated (proper-noun 60/100 is BELOW its bar with the
+owner call open) and the Rules shelf needs the §10 un-scope; both filed, neither half-built.
+This slice touches NO schema, NO grants (the one write is `UPDATE plan_days.day_date`,
+granted by 106), NO retrieval — composition and arithmetic only, which is what lets it ship
+without a new design-gate cycle.
+
+**First: the union merge.** `origin/docs/plans-studies-excellence` merged clean into
+`fix/q1-signed-out-state` — the six highlighter commits + dossier now share one lineage with
+the history corpus (ancestry verified: HEAD contains `d09d4f2`, `939bcf8`, `origin/main`).
+The 16 highlighter tests pass here; the next deploy carries BOTH releases and closes the
+divergence measured this morning (entry below).
+
+**Built, each with tests that were watched fail or that drive the real path:**
+1. **The builder crash is dead** — clearing Weeks/Days crashed the page to the error boundary
+   (`Number('')`→0 → `expandPlan` `{ok:true, days:[]}` → `r.days[0]!.date` TypeError). Guard
+   above the per-mode branches renders a quiet finish-the-numbers refusal; `expandPlan` also
+   refuses `dayCount===0` (belt). Red watched: the new test crashed pre-fix, 7/7 after. The
+   topic-mode "about Infinity passages a day" died with it — and its test STRENGTHENED after
+   noticing it passed vacuously without a picked topic (the false-confidence class).
+2. **Plans have URLs** — `/plans/[id]` (dossier ruled it a Sprint-1 prerequisite). Rows are
+   Links; create routes to the new plan; back button and refresh behave. PlansClient serves
+   both routes via `initialPlanId`.
+3. **Catch-up** — `rescheduleDates` (pure, `web/src/lib/plan/expand.ts`) + `reschedulePlan`
+   (store; single UPDATE over unnest arrays, completed days untouched) + `POST kind:'reschedule'`
+   (fromDate must be today ±2d) + the forgiveness card ("N days behind · Resume from today /
+   Keep the original dates") + the progress grid (read=gold, passed-by=hollow, ahead=vellum;
+   no streak counter — "days kept" is a streak and §10's scope-out stands until the owner
+   rules). Tests: 6 pure cases; route happy-path asserting exact dates (completed day keeps
+   its history, day 2 = today, day 4 = today+7); far-date 400; cross-tenant reschedule
+   returns null through the real store path AND the schedule provably did not move.
+4. **The Daily Office on /home** — `scripts/export-daily-light.mjs` exported Bagster's Daily
+   Light from the published corpus row to `web/public/devotional/daily-light.json` (366 days /
+   732 entries / 0 skipped; refuses an unpublished source or an incomplete export), the same
+   off-request-path pattern as morning-evening.json. TodayView now composes: date + hour
+   header → Daily Light (verbatim, attributed, local half) → the due-plan card (from
+   `listPlans`' new LATERAL next-due fields; most-overdue-first) → Spurgeon + grounded voices
+   (untouched floor). Extras degrade to ABSENCE on 401/missing file — never an error screen.
+   Tests: JSON invariant (366/732, both halves, no raw ingest linebreaks); component tests
+   (composition, local half, degradation, finished-plan no-card).
+
+**Verified in a browser** (dev, signed-out): /home at desktop AND 390px — the office renders
+with the real August 20 evening chain, correct local half, voices below, no horizontal
+overflow; console clean except the known dev-env `/api/auth/get-session` 500 (missing local
+Neon env — pre-existing) and the expected 401→absence. Full web suite 1423 passed / 0 failed
+including the DB-backed legs.
+
+### NOT DONE / UNVERIFIED
+- **The signed-in surfaces were NOT browser-verified** — no Neon auth env in this tree; the
+  plan card, catch-up card, grid and /plans/[id] are covered by jsdom + real-DB route tests
+  only. Verify signed-in on prod after deploy (the standing gap every session hits here).
+- Journeys, Rules shelf, Lectio, memory: NOT BUILT (gated as above; mockups + dossier stand).
+- `npm run audit` + deep-audit + deploy: in flight as this entry is written; results appended
+  by the deploy record.
+
 ## 2026-08-21 — ⚠ DIVERGENT DEPLOY LINEAGES: the highlighter release is OFF production
 
 **Measured 2026-08-21 ~04:50 UTC, read-only `vercel inspect ancientpaths.app` (deploy.sh's own

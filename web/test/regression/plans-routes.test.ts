@@ -178,6 +178,56 @@ describe.skipIf(SKIP)('Plans routes (handler → store → dev DB, session mocke
     await deletePlanRoute(new NextRequest('http://localhost'), { params: Promise.resolve({ id: body.plan.id }) });
   }, 30_000);
 
+  it('POST kind:reschedule moves ONLY the unread days to today, at the plan cadence', async (ctx) => {
+    if (!createdId) return ctx.skip();
+    const { addDays } = await import('@/lib/plan/expand');
+    const d = new Date();
+    const todayIso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    // Day 1 was completed by the toggle case above; the plan started 2026-08-03,
+    // so the remaining 15 days are all in the past — the catch-up case exactly.
+    const res = await togglePlanRoute(jsonReq({ kind: 'reschedule', fromDate: todayIso }), {
+      params: Promise.resolve({ id: createdId }),
+    });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { moved: number }).moved).toBe(15);
+
+    const got = await getPlanRoute(new NextRequest('http://localhost'), { params: Promise.resolve({ id: createdId }) });
+    const detail = (await got.json()) as { days: Array<{ day_index: number; day_date: string; completed_at: string | null }> };
+    // The read day keeps its HISTORY — reschedule never rewrites what happened.
+    expect(detail.days[0]!.completed_at).not.toBeNull();
+    expect(detail.days[0]!.day_date).toBe('2026-08-03');
+    // The unread days resume today at the plan's own 2/week cadence: two readings,
+    // then the rest of the week off, then week 2 at +7. SEED: redate ALL days
+    // instead of the incomplete set and days[0] moves; use a flat daily cadence
+    // and days[3] lands at +2 instead of +7.
+    expect(detail.days[1]!.day_date).toBe(todayIso);
+    expect(detail.days[2]!.day_date).toBe(addDays(todayIso, 1));
+    expect(detail.days[3]!.day_date).toBe(addDays(todayIso, 7));
+  }, 30_000);
+
+  it('rejects a reschedule fromDate that is not today anywhere on Earth', async (ctx) => {
+    if (!createdId) return ctx.skip();
+    const res = await togglePlanRoute(jsonReq({ kind: 'reschedule', fromDate: '2026-01-01' }), {
+      params: Promise.resolve({ id: createdId }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('INVALID_REQUEST');
+  }, 30_000);
+
+  it('another user cannot reschedule this plan (store seam, real RLS + belt)', async (ctx) => {
+    if (!createdId) return ctx.skip();
+    const { reschedulePlan } = await import('@/lib/plan/store');
+    const d = new Date();
+    const todayIso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    // Not-found, not silently-zero: the plan is invisible to the other tenant.
+    expect(await reschedulePlan(`${testUser}-intruder`, createdId, todayIso)).toBeNull();
+    // And the schedule did not move under the failed attempt.
+    const got = await getPlanRoute(new NextRequest('http://localhost'), { params: Promise.resolve({ id: createdId }) });
+    const detail = (await got.json()) as { days: Array<{ day_date: string }> };
+    expect(detail.days[1]!.day_date).toBe(todayIso);
+  }, 30_000);
+
   it('rejects a malformed spec with the documented envelope', async () => {
     const res = await createPlanRoute(jsonReq({ spec: { scope: { kind: 'book', book: 'rom' }, weeks: 0, daysPerWeek: 2, startDate: '2026-08-03' } }));
     expect(res.status).toBe(400);

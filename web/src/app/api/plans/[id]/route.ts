@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
-import { deletePlan, getPlan, setDayCompleted } from '@/lib/plan/store';
+import { deletePlan, getPlan, reschedulePlan, setDayCompleted } from '@/lib/plan/store';
 
 export const runtime = 'nodejs';
 
@@ -27,7 +27,20 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   }
 }
 
+// The client's LOCAL calendar date arrives as YYYY-MM-DD. It may differ from the
+// server's UTC date by a day either way (time zones), never more — anything
+// outside that window is not "today" anywhere on Earth and is refused.
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+function isNearToday(iso: string): boolean {
+  if (!DATE_RE.test(iso)) return false;
+  const then = Date.parse(`${iso}T00:00:00Z`);
+  if (!Number.isFinite(then)) return false;
+  return Math.abs(then - Date.now()) <= 2 * 86_400_000;
+}
+
 // POST /api/plans/[id] { kind: 'day', dayIndex, completed } — progress toggle.
+// POST /api/plans/[id] { kind: 'reschedule', fromDate } — catch-up: redate the
+//   not-yet-read days to resume at fromDate, same cadence, progress untouched.
 // POST-with-kind is this API surface's mutation idiom (no PATCH exists
 // anywhere in the repo; see annotations/route.ts).
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -40,11 +53,25 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const { id } = await ctx.params;
   if (!UUID_RE.test(id)) return apiError('INVALID_REQUEST', { message: 'plan id must be a UUID' });
 
-  let body: { kind?: unknown; dayIndex?: unknown; completed?: unknown };
+  let body: { kind?: unknown; dayIndex?: unknown; completed?: unknown; fromDate?: unknown };
   try {
     body = await req.json();
   } catch {
     return apiError('INVALID_REQUEST');
+  }
+  if (body.kind === 'reschedule') {
+    const fromDate = typeof body.fromDate === 'string' ? body.fromDate : '';
+    if (!isNearToday(fromDate)) {
+      return apiError('INVALID_REQUEST', { message: 'fromDate must be today as YYYY-MM-DD' });
+    }
+    try {
+      const moved = await reschedulePlan(user.id, id, fromDate);
+      if (moved === null) return NextResponse.json({ error: { code: 'NOT_FOUND', message: 'No such plan.' } }, { status: 404 });
+      return NextResponse.json({ ok: true, moved });
+    } catch (e) {
+      console.error('plan reschedule error:', (e as Error).message);
+      return apiError('INTERNAL');
+    }
   }
   if (body.kind !== 'day') return apiError('INVALID_REQUEST', { message: 'unknown kind' });
   const dayIndex = Number(body.dayIndex);

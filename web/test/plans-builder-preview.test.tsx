@@ -15,6 +15,13 @@
 
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+
+// PlansClient routes now (/plans/[id]); outside the app router the hook throws.
+// Navigation is not this file's subject — the preview is.
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
+}));
+
 import { PlansClient } from '@/components/plans-client';
 
 // EXPLICIT cleanup: this config does not enable vitest globals, so
@@ -105,5 +112,48 @@ describe('the builder previews the real plan', () => {
     expect(screen.getByText(/Work through a single book/i)).toBeTruthy();
     fireEvent.click(screen.getByRole('tab', { name: /a topic/i }));
     await waitFor(() => expect(screen.getByText(/gathered by a classic topical index/i)).toBeTruthy());
+  });
+});
+
+describe('a half-typed schedule is an incomplete form, not a crash', () => {
+  // SEED: revert the preview's incomplete-shape guard and the first case THROWS during
+  // render — Number('') is 0, expandPlan returns { ok: true, days: [] }, and the preview
+  // reads r.days[0]!.date. The error boundary is the whole page; a cleared field must never
+  // cost the reader the form.
+  it('clearing Weeks shows a quiet finish-the-numbers refusal and disables Create', async () => {
+    await openBuilder();
+    fireEvent.change(screen.getByLabelText(/weeks/i), { target: { value: '' } });
+    await waitFor(() => expect(screen.getByText(/how many weeks and days each week/i)).toBeTruthy());
+    const create = screen.getByRole('button', { name: /create plan/i }) as HTMLButtonElement;
+    expect(create.disabled).toBe(true);
+    // Restoring the number restores the live preview.
+    fireEvent.change(screen.getByLabelText(/weeks/i), { target: { value: '8' } });
+    fireEvent.change(screen.getByLabelText(/days each week/i), { target: { value: '2' } });
+    await waitFor(() => expect(screen.getByText(/16 readings/)).toBeTruthy());
+  });
+
+  it('clearing Days each week never renders "Infinity" in topic mode', async () => {
+    // A PICKED topic, or this test cannot fail: with no pick the preview is null and
+    // nothing renders either way. The fetch stub serves one real-shaped match.
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (String(url).includes('topics')) {
+        return { ok: true, status: 200, json: async () => ({ matches: [
+          { workSlug: 'torreys-topical-textbook', workTitle: 'The New Topical Text Book', sectionId: 1, heading: 'TRUST', entryCount: 111 },
+        ] }) } as unknown as Response;
+      }
+      return { ok: true, status: 200, json: async () => ({ plans: [] }) } as unknown as Response;
+    }));
+    await openBuilder();
+    fireEvent.click(screen.getByRole('tab', { name: /a topic/i }));
+    fireEvent.change(screen.getByLabelText(/search topics/i), { target: { value: 'trust' } });
+    fireEvent.click(screen.getByRole('button', { name: /search/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /TRUST/ }));
+    // The pace line proves the picked-topic preview is live before the field clears.
+    await waitFor(() => expect(screen.getByText(/passages a day|passage a day/)).toBeTruthy());
+    fireEvent.change(screen.getByLabelText(/days each week/i), { target: { value: '' } });
+    // The guard sits above the per-mode branches, so topic mode gets the same quiet
+    // refusal instead of `entryCount / 0` = "about Infinity passages a day".
+    await waitFor(() => expect(screen.getByText(/how many weeks and days each week/i)).toBeTruthy());
+    expect(screen.queryByText(/Infinity/)).toBeNull();
   });
 });

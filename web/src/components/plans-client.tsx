@@ -13,6 +13,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { BOOKS, BOOK_BY_NUM } from '@/bible/books';
 import { CANONICAL_GROUPS } from '@/lib/plan/canonical-groups';
 import { expandPlan } from '@/lib/plan/expand';
@@ -25,6 +26,7 @@ import { storedTranslation, type PassageTarget } from '@/lib/verse-preview';
 import { count } from '@/lib/plural';
 import { DISPLAY_LOCALE } from '@/lib/locale';
 import { defaultPlanShape } from '@/lib/plan/defaults';
+import { refOf } from '@/lib/plan/day-ref';
 import { BOOK_BY_SLUG } from '@/bible/books';
 
 interface PlanListRow {
@@ -82,7 +84,8 @@ const FIELD =
 const PRIMARY_BUTTON =
   'inline-flex min-h-[44px] items-center justify-center border border-stone-900 bg-transparent px-6 py-3 text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 disabled:opacity-40 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950';
 
-export function PlansClient() {
+export function PlansClient({ initialPlanId }: { initialPlanId?: string } = {}) {
+  const router = useRouter();
   const [list, setList] = useState<ListState>({ status: 'loading' });
   const [open, setOpen] = useState<OpenPlan | null>(null);
   const [building, setBuilding] = useState(false);
@@ -114,6 +117,14 @@ export function PlansClient() {
     }
   }, []);
 
+  // A plan has a URL now (/plans/[id]) — the dossier ruled it a Sprint-1
+  // prerequisite: without one a plan cannot be linked from home, refreshed,
+  // or returned to with the back button. This component serves both routes:
+  // the list at /plans, and one plan when the page passes its id.
+  useEffect(() => {
+    if (initialPlanId) void openPlan(initialPlanId);
+  }, [initialPlanId, openPlan]);
+
   return (
     <div className="w-full px-4 py-8 sm:px-6">
       {/* NO max-width here. It used to be `mx-auto max-w-3xl` on this wrapper, which also
@@ -131,7 +142,9 @@ export function PlansClient() {
         </header>
       )}
 
-      {list.status === 'loading' && <p className="mx-auto max-w-3xl text-sm text-stone-500 dark:text-stone-400">Loading…</p>}
+      {(list.status === 'loading' || (initialPlanId && !open && list.status === 'ready')) && (
+        <p className="mx-auto max-w-3xl text-sm text-stone-500 dark:text-stone-400">Loading…</p>
+      )}
       {list.status === 'signed-out' && (
         <p className="mx-auto max-w-3xl text-sm text-stone-500">
           <Link href="/auth/sign-in" className="text-accent-700 hover:text-accent-800 dark:text-accent-300">Sign in</Link>
@@ -143,21 +156,24 @@ export function PlansClient() {
       {list.status === 'ready' && (open ? (
         <PlanDetail
           open={open}
-          onBack={() => { setOpen(null); void refresh(); }}
+          onBack={() => { setOpen(null); router.push('/plans'); }}
           onChanged={() => void openPlan(open.plan.id)}
         />
-      ) : (
+      ) : initialPlanId ? null : (
         <div className="mx-auto max-w-3xl">
           {list.plans.length > 0 && (
             <div className="border-b edge">
-              {list.plans.map((p) => <PlanRow key={p.id} plan={p} onOpen={() => void openPlan(p.id)} />)}
+              {list.plans.map((p) => <PlanRow key={p.id} plan={p} />)}
             </div>
           )}
 
           {list.plans.length === 0 && !building && <EmptyState />}
 
           {building ? (
-            <BuilderForm onDone={() => { setBuilding(false); void refresh(); }} onCancel={() => setBuilding(false)} />
+            <BuilderForm
+              onDone={(planId) => { setBuilding(false); if (planId) { router.push(`/plans/${planId}`); } else { void refresh(); } }}
+              onCancel={() => setBuilding(false)}
+            />
           ) : (
             <button
               onClick={() => setBuilding(true)}
@@ -208,14 +224,16 @@ function ProgressBar({ pct }: { pct: number }) {
   );
 }
 
-function PlanRow({ plan, onOpen }: { plan: PlanListRow; onOpen: () => void }) {
+function PlanRow({ plan }: { plan: PlanListRow }) {
   const pct = plan.total_days > 0 ? Math.round((plan.read_days / plan.total_days) * 100) : 0;
   const done = plan.total_days > 0 && plan.read_days === plan.total_days;
   // PRD §5 Plans: a hairline-separated ROW, not a card — 11px Source Sans metadata kicker
   // (0.05em tracking, ink-wash), 18px Literata title in ink that warms to antique gold on hover.
+  // A LINK, not a button: a plan has a URL, so a row is navigation — middle-click,
+  // back button and refresh all behave.
   return (
-    <button
-      onClick={onOpen}
+    <Link
+      href={`/plans/${plan.id}`}
       className="group block w-full border-t edge px-1 py-6 text-left transition-colors ease-gentle hover:bg-stone-100/50 dark:hover:bg-stone-800/40"
     >
       <span className="block text-micro font-medium uppercase tracking-[0.05em] text-stone-500 dark:text-stone-400">
@@ -230,7 +248,7 @@ function PlanRow({ plan, onOpen }: { plan: PlanListRow; onOpen: () => void }) {
           {done ? 'Finished' : `Day ${plan.read_days} of ${plan.total_days}`}
         </span>
       </span>
-    </button>
+    </Link>
   );
 }
 
@@ -239,6 +257,13 @@ function PlanRow({ plan, onOpen }: { plan: PlanListRow; onOpen: () => void }) {
 function todayLocalDate(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Whole calendar days from `fromIso` to `toIso` (UTC arithmetic on date-only strings). */
+function daysBetween(fromIso: string, toIso: string): number {
+  const [fy, fm, fd] = fromIso.split('-').map(Number) as [number, number, number];
+  const [ty, tm, td] = toIso.split('-').map(Number) as [number, number, number];
+  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86_400_000);
 }
 
 function prettyDate(iso: string): string {
@@ -258,7 +283,7 @@ const MODES = [
 ] as const;
 type Mode = (typeof MODES)[number]['key'];
 
-function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
+function BuilderForm({ onDone, onCancel }: { onDone: (planId?: string) => void; onCancel: () => void }) {
   const [mode, setMode] = useState<Mode>('book');
   const [book, setBook] = useState('rom');
   // Re-derive when the reader picks another book. `pickBook` rather than raw `setBook` so the two
@@ -294,6 +319,15 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
   // THE PREVIEW. Runs the server's own expandPlan, so what is shown is what will
   // be built — including its refusal when a scope cannot fill the schedule.
   const preview = useMemo(() => {
+    // A CLEARED NUMBER FIELD IS AN INCOMPLETE FORM, NOT A ZERO. Number('') is 0, and with
+    // weeks 0 expandPlan returns { ok: true, days: [] } (the too-few-chapters refusal
+    // cannot fire at dayCount 0), so the code below read r.days[0]!.date and THREW during
+    // render — the error boundary ate the whole page because someone cleared a field. In
+    // topic mode the same input divided by zero into "about Infinity passages a day".
+    // Guard ABOVE the per-mode branches so every mode gets the same quiet refusal.
+    if (!Number.isFinite(weeks) || weeks < 1 || !Number.isFinite(daysPerWeek) || daysPerWeek < 1) {
+      return { ok: false as const, reason: 'Choose how many weeks and days each week, and the preview appears here.' };
+    }
     const dayCount = weeks * daysPerWeek;
     if (mode === 'topic') {
       if (!pickedTopic) return null;
@@ -382,8 +416,8 @@ function BuilderForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =>
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ spec: { scope, weeks, daysPerWeek, startDate } }),
       });
-      const data = (await res.json()) as { refused?: boolean; reason?: string; error?: { message: string } };
-      if (res.status === 201) { onDone(); return; }
+      const data = (await res.json()) as { plan?: { id: string }; refused?: boolean; reason?: string; error?: { message: string } };
+      if (res.status === 201) { onDone(data.plan?.id); return; }
       setNotice(data.reason ?? data.error?.message ?? 'The plan could not be created.');
     } catch {
       setNotice('The plan could not be created. Please try again.');
@@ -570,16 +604,6 @@ function TopicPicker({
 
 // ── labels ───────────────────────────────────────────────────────────────────
 
-function refOf(verseStart: number, verseEnd: number): string {
-  const startBook = Math.floor(verseStart / 1_000_000);
-  const endBook = Math.floor(verseEnd / 1_000_000);
-  const startCh = Math.floor((verseStart % 1_000_000) / 1000);
-  const endCh = Math.floor((verseEnd % 1_000_000) / 1000);
-  const name = BOOK_BY_NUM.get(startBook)?.name ?? '?';
-  if (startBook !== endBook) return `${name} ${startCh}–${BOOK_BY_NUM.get(endBook)?.name ?? '?'} ${endCh}`;
-  return startCh === endCh ? `${name} ${startCh}` : `${name} ${startCh}–${endCh}`;
-}
-
 const dayRef = (d: PlanDay) => refOf(d.verse_start, d.verse_end);
 
 export function readingLabel(r: PlanReading): string {
@@ -608,6 +632,8 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
   const [busyDay, setBusyDay] = useState<number | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [pane, setPane] = useState<PassageTarget | null>(null);
+  const [catchUpDismissed, setCatchUpDismissed] = useState(false);
+  const [rescheduling, setRescheduling] = useState(false);
   // The server render and the first client render both use the default, and the reader's stored
   // choice is adopted only after mount. Reading localStorage during render is exactly what
   // produced this app's React #418 on every reader page load (see storedTranslation's note).
@@ -621,10 +647,32 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
 
   const today = todayLocalDate();
   const doneCount = open.days.filter((d) => d.completed_at).length;
-  const pct = open.days.length ? Math.round((doneCount / open.days.length) * 100) : 0;
   // "Up next" answers the one question someone opening a plan actually has, which
   // the flat list made them scan for.
   const upNext = open.days.find((d) => !d.completed_at);
+  // Behind = the next unread day's date has passed. One day behind is "due now" and the
+  // card would nag; from two days the plan needs forgiving, not a badge. This is the
+  // dossier's Sprint-1 retention piece: reading plans die silently without a catch-up.
+  const daysBehind = upNext && upNext.day_date < today ? daysBetween(upNext.day_date, today) : 0;
+
+  const reschedule = async () => {
+    if (rescheduling) return;
+    setRescheduling(true);
+    try {
+      const res = await fetch(`/api/plans/${open.plan.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'reschedule', fromDate: todayLocalDate() }),
+      });
+      if (!res.ok) { setWriteError('The schedule could not be moved. Please try again.'); return; }
+      setWriteError(null);
+      onChanged();
+    } catch {
+      setWriteError('The schedule could not be moved. Please try again.');
+    } finally {
+      setRescheduling(false);
+    }
+  };
 
   const toggle = async (d: PlanDay) => {
     setBusyDay(d.day_index);
@@ -695,10 +743,54 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
       {writeError && (
         <p role="alert" className="mt-2 text-sm text-red-800 dark:text-red-200">{writeError}</p>
       )}
-      <div className="mt-2 flex items-center gap-3">
-        <div className="flex-1"><ProgressBar pct={pct} /></div>
-        <span className="shrink-0 text-xs text-stone-500 dark:text-stone-400">{doneCount} of {open.days.length} days</span>
+      {/* The 40-day grid from the dossier: progress you can SEE growing — read days in
+          gold, passed-by days as hollow paper, days ahead as quiet vellum. Square 10px
+          cells, wrap by width; no percentages, no streak counter (a quiet texture, per
+          the design's no-gamification rule). */}
+      <div className="mt-3">
+        <div className="flex flex-wrap gap-[5px]" aria-hidden>
+          {open.days.map((d) => {
+            const cell = d.completed_at
+              ? 'bg-accent-600 dark:bg-accent-400'
+              : d.day_date < today
+                ? 'border edge bg-paper dark:bg-stone-900'
+                : 'bg-stone-100 dark:bg-stone-800';
+            return <span key={d.day_index} className={`h-2.5 w-2.5 ${cell}`} />;
+          })}
+        </div>
+        <p className="mt-2 text-micro font-medium text-stone-500 dark:text-stone-400">
+          {doneCount} of {open.days.length} days read{daysBehind >= 2 ? ` · ${count(daysBehind, 'day')} behind` : ''}
+        </p>
       </div>
+
+      {daysBehind >= 2 && !catchUpDismissed && (
+        <div className="mt-4 border border-accent-200 bg-accent-50 px-4 py-3 dark:border-accent-800 dark:bg-accent-950/40">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-accent-800 dark:text-accent-200">
+            {count(daysBehind, 'day')} behind
+          </p>
+          <p className="mt-1 font-serif text-base text-stone-900 dark:text-stone-100">
+            Life happened. Pick up where you left off — the remaining readings move forward
+            with you, and nothing you read is lost.
+          </p>
+          <div className="mt-2 flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => void reschedule()}
+              disabled={rescheduling}
+              className="inline-flex min-h-[44px] items-center border border-stone-900 bg-transparent px-4 text-xs font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 disabled:opacity-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-200 dark:hover:text-stone-950"
+            >
+              {rescheduling ? 'Moving the schedule…' : 'Resume from today'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCatchUpDismissed(true)}
+              className="inline-flex min-h-[44px] items-center text-xs text-stone-500 hover:text-accent-700 dark:text-stone-400"
+            >
+              Keep the original dates
+            </button>
+          </div>
+        </div>
+      )}
 
       {upNext ? (
         <div className="mt-4 border edge px-4 py-3">

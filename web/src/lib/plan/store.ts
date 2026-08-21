@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 // plan_days has no user_id column: ownership flows through the parent row.
 
 import { getDb, runAsUser } from '@/lib/db';
-import { expandPlan, expandTopicalPlan, type TopicalEntryInput, type TopicalPlanDay } from './expand';
+import { expandPlan, expandTopicalPlan, rescheduleDates, type TopicalEntryInput, type TopicalPlanDay } from './expand';
 import type { PlanSpec } from './spec';
 
 export interface PlanRow {
@@ -248,17 +248,39 @@ export async function topicTitle(scope: { workSlug: string; sectionId: number })
   return `${topic.heading} (${topic.workTitle})`;
 }
 
-export async function listPlans(userId: string): Promise<Array<PlanRow & { total_days: number; read_days: number }>> {
+export interface PlanListRow extends PlanRow {
+  total_days: number;
+  read_days: number;
+  // The first not-yet-read day, so the list (and the home card) can say what is
+  // due without a second request per plan. NULL on a finished plan.
+  next_day_index: number | null;
+  next_day_date: string | null;
+  next_verse_start: number | null;
+  next_verse_end: number | null;
+}
+
+export async function listPlans(userId: string): Promise<PlanListRow[]> {
   const [rows] = await runAsUser(userId, (sql) => [
     sql`SELECT p.id, p.title, p.spec, p.created_at, p.updated_at,
                (SELECT count(*)::int FROM plan_days d WHERE d.plan_id = p.id) AS total_days,
-               (SELECT count(*)::int FROM plan_days d WHERE d.plan_id = p.id AND d.completed_at IS NOT NULL) AS read_days
+               (SELECT count(*)::int FROM plan_days d WHERE d.plan_id = p.id AND d.completed_at IS NOT NULL) AS read_days,
+               n.day_index AS next_day_index,
+               n.day_date::text AS next_day_date,
+               n.verse_start AS next_verse_start,
+               n.verse_end AS next_verse_end
         FROM plans p
+        LEFT JOIN LATERAL (
+          SELECT d.day_index, d.day_date, d.verse_start, d.verse_end
+          FROM plan_days d
+          WHERE d.plan_id = p.id AND d.completed_at IS NULL
+          ORDER BY d.day_index
+          LIMIT 1
+        ) n ON true
         WHERE p.user_id = ${userId}
         ORDER BY p.updated_at DESC
         LIMIT 100`,
   ]);
-  return rows as Array<PlanRow & { total_days: number; read_days: number }>;
+  return rows as PlanListRow[];
 }
 
 export async function getPlan(
@@ -305,4 +327,35 @@ export async function deletePlan(userId: string, planId: string): Promise<boolea
     sql`DELETE FROM plans WHERE id = ${planId} AND user_id = ${userId} RETURNING id`,
   ]);
   return (rows as unknown[]).length === 1;
+}
+
+/**
+ * Catch-up: redate the plan's not-yet-read days to resume at `fromDate`, at the
+ * plan's own cadence (spec.daysPerWeek), in day_index order. Completed days keep
+ * their historical dates — nothing read is lost, nothing is re-generated. One
+ * UPDATE over plan_days (migration 106's grant); `plans` itself is untouched.
+ * Returns the number of days moved; null when the plan is not this user's.
+ */
+export async function reschedulePlan(
+  userId: string,
+  planId: string,
+  fromDate: string,
+): Promise<number | null> {
+  const found = await getPlan(userId, planId);
+  if (!found) return null;
+  const incomplete = found.days.filter((d) => !d.completed_at).sort((a, b) => a.day_index - b.day_index);
+  if (incomplete.length === 0) return 0;
+  const dates = rescheduleDates(found.plan.spec.daysPerWeek, incomplete.length, fromDate);
+  const indexes = incomplete.map((d) => d.day_index);
+  const [rows] = await runAsUser(userId, (sql) => [
+    sql`UPDATE plan_days d
+        SET day_date = v.new_date::date
+        FROM (SELECT unnest(${indexes}::int[]) AS day_index, unnest(${dates}::text[]) AS new_date) v,
+             plans p
+        WHERE d.plan_id = ${planId}
+          AND d.day_index = v.day_index
+          AND p.id = d.plan_id AND p.user_id = ${userId}
+        RETURNING d.day_index`,
+  ]);
+  return (rows as unknown[]).length;
 }
