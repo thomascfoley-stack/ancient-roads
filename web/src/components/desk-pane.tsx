@@ -372,23 +372,40 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
     }
   }, [pane.slug, nextAfter, busy]);
 
-  // The ref pattern keeps ONE observer per button lifetime while `loadMore` changes identity
-  // with every page (it closes over `nextAfter`) — re-creating the observer per page would
-  // re-fire on the same viewport and double-load the seam.
+  // The ref pattern keeps the listeners stable while `loadMore` changes identity with every
+  // page (it closes over `nextAfter`). Scroll + rect math rather than IntersectionObserver,
+  // for two reasons: it is the idiom work-reader.tsx already uses for the same job, and IO
+  // proved undeliverable in the embedded QA browser (zero entries arrived, including the
+  // spec-mandated initial observation) — a mechanism the standing browser check cannot watch
+  // fire is a mechanism this repo cannot keep honest. Capture-phase, because scroll does not
+  // bubble and the pane's scroll container belongs to PaneFrame, not to this component.
   const loadMoreRef = useRef(loadMore);
   loadMoreRef.current = loadMore;
   useEffect(() => {
     const el = moreRef.current;
     if (!el || nextAfter === null) return;
-    if (typeof IntersectionObserver === 'undefined') return; // the button stays the whole story
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) void loadMoreRef.current();
-      },
-      { rootMargin: '600px 0px' },
-    );
-    io.observe(el);
-    return () => io.disconnect();
+    let ticking = false;
+    const check = () => {
+      ticking = false;
+      // Within ~a screen of visible: press the button early so the seam is never seen.
+      if (el.getBoundingClientRect().top < window.innerHeight + 600) void loadMoreRef.current();
+    };
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(check);
+      }
+    };
+    document.addEventListener('scroll', onScroll, { capture: true, passive: true });
+    window.addEventListener('resize', onScroll);
+    // One check on attach: a first page shorter than the pane never scrolls, and the reader
+    // should not need to find the button to keep reading.
+    const raf = requestAnimationFrame(check);
+    return () => {
+      document.removeEventListener('scroll', onScroll, { capture: true } as EventListenerOptions);
+      window.removeEventListener('resize', onScroll);
+      cancelAnimationFrame(raf);
+    };
   }, [nextAfter]);
 
   // B011: neither the work nor a reason it failed — the pane genuinely does not know what it is
