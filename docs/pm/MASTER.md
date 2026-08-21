@@ -304,6 +304,21 @@ predicate and the register wall each answer a piece, and both defects lived in t
 
 ## Failure-mode watchlist
 
+**Instances seventeen and eighteen — one shape, found twice in one morning (2026-08-21), by two
+sessions, in each other's work: an INSTRUMENT WHOSE MATCH SET IS WIDER THAN THE PROPERTY BEING
+COUNTED, read as if it were the property.** (17) `history-scope-db.test.ts`'s probe drew its
+"served entity vocabulary" from a join WITHOUT the `sources` legs the shipped `vocab()` applies —
+a superset in which 50 of 81 labels are outside the app's actual scope, so the test's ~60% red
+rate was the dead fraction being sampled, and true positives were dismissed as flakiness for the
+life of the file. (18) The session AUDITING that finding then measured a CI baseline by
+`--log-failed | grep -oE 'test/…' | sort -u` — which counts files MENTIONED NEAR a failure, not
+files that failed — and reported "ten-plus failing suites" against an actual five; the same
+superset error, one layer up, in the instrument used to check the first instrument. Falsifiable
+form: *an extraction whose match set is wider than the property, read as the property.* The cure
+was identical both times: read the thing that STATES the property (the shipped `vocab()`
+predicate; the vitest summary line) instead of counting proxies around it. Distinct from the
+hand-maintained-expected-set class below: the set here is not typed wrong, it is measured wrong.
+
 **Fourteen instances so far.** The thirteenth: the four SERVED_*_WORKS routing lists themselves,
 closed by MATERIALIZATION rather than derivation (migration 044, `embeddings.served` — a partial
 index predicate cannot hold a subquery, so the set became a column with one writer; A9). **The

@@ -1,5 +1,23 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 — External live walk filed; watchlist instances 17+18 recorded
+
+The owner's Kimi K3 session walked all four surfaces of deploy `9567a88` SIGNED IN — the
+verification class no agent session here can run. Filed with cross-references:
+[`LIVE-WALK-2026-08-21.md`](docs/evidence/uploader-deep-dive-2026-08-20/LIVE-WALK-2026-08-21.md).
+Highlights: **B020's crash fix verified live** (663-char query → 400 + the page stays alive, says
+"too long"); the deep-link CRITICAL confirmed with a real ordinal (`#s17`); Daily Office +
+catch-up walked. **Still not exercised live: B019 and B022** — the walking account holds no
+documents; tests + dev measurements remain their only coverage until an account with uploads
+tries them. The walk's standing flags (similarity floor pre-launch blocker; thin entity recall
+consistent with the 50-of-81 scope finding) are in the evidence file.
+
+Also recorded, per the inspector session's suggestion and this repo's own-instrument convention:
+**MASTER watchlist instances 17+18** — the superset-instrument class, found twice in one morning
+(the history-scope probe measuring outside the shipped vocabulary's scope; my CI-log grep
+counting files mentioned-near-a-failure as failing files). Falsifiable form and cure recorded in
+MASTER.
+
 ## 2026-08-21 — Markdown export type REMOVED from Studies (owner ruling)
 
 **Owner, in chat: "why would someone need a markdown file export? Isn't that ai native? Remove
