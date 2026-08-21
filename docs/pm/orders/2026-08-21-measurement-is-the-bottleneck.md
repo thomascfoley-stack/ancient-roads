@@ -1,5 +1,51 @@
 # Build proposal — measurement is the bottleneck
 
+> ## ⚠️ CORRECTED AFTER REVIEW (2026-08-21) — read this before the body
+>
+> An independent review found two factual holes, **both verified and both conceded**. The
+> body below is left intact as the record; these corrections govern.
+>
+> **1. The centerpiece number is stale, and the miss is CLOSED.** This doc is built on
+> "proper-noun stuck at 60 against a bar of 70". The post-A8 production re-run
+> ([`docs/evidence/eval-v4-post-a8-2026-08-02.md`](../../evidence/eval-v4-post-a8-2026-08-02.md))
+> measured **70% HIT@1, 100% HIT@2, 10/10 pass, 0 wrong, 0 none — "clears — the July miss is
+> closed"** on 2026-08-02, **nineteen days before I filed this**. There is no outstanding
+> gate miss. A document whose entire sermon is *check the denominator before you speak* did
+> not check the newest evidence file. That is the same failure it was written to correct,
+> committed while correcting it.
+>
+> **2. Part A step 1 was already done — while I was writing the proposal for it.**
+> `.github/workflows/audit.yml:155` already reads `PARENT_BRANCH: dev`, changed 2026-08-21,
+> with a comment block at 109–123 reproducing this doc's own reasoning and adding the
+> measurement I did not have (15 published devotional works, 9,878 served JFB rows, 131,569
+> rows in the served legal pool on dev). **Only A-2 (the `neon-auth-live` `announceSkip`
+> downgrade) is outstanding.**
+>
+> **3. The "user impact is near zero" argument was understated against my own interest.**
+> "/ask composes 2–3 voices" is the *prompt floor* (`src/teacher/prompt.ts:58`, "at least
+> 2-3"). The shipped composer retrieves 6 and composes from 5
+> (`web/src/lib/teacher/teach.ts:102-103`). A HIT@2 miss sits well inside the compose pool,
+> so the right passage reaches the reader.
+>
+> **What survives:** only the narrow instrument claim — **proper-noun is n=10, so 60 and 70
+> are one query apart and neither resolves the bar.** That is still true and still worth
+> fixing eventually. It is NOT a blocked gate, NOT urgent, and NOT the highest-leverage work
+> available. **This proposal is demoted from "the build" to "a weak instrument, worth
+> strengthening when something actually depends on it."**
+>
+> **Two owner questions the reviewer raised that are cheaper than any labelling, and that I
+> failed to ask because I treated the bars as physics:**
+> - **Should the launch gate be HIT@2 rather than HIT@1**, given the composer draws from 5?
+>   Every recorded miss passes at HIT@2. One ruling could obsolete ~90 labelling tasks.
+> - **Is ≥99% the right `interpretation_bait` bar pre-launch?** Rule of three is the most
+>   conservative instrument available; the bar itself was never interrogated here.
+>
+> **Also conceded:** C1 is padding (the arithmetic is already in `CLAUDE.md`; fold it into
+> C2). C3 should be **deferred** pending its own costing and a ruling on the bar — §5.4
+> flagged the bundling risk and then bundled anyway. And **§4's "Journeys is gated on this"
+> is self-citation** — no other document states that gating; it was doing persuasive work
+> and should not have been asserted.
+
 **Filed 2026-08-21 for adversarial review. Nothing here is built by this document.**
 
 ## 0. What I got wrong first, since it is the reason this doc exists
