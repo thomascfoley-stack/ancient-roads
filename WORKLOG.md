@@ -50,6 +50,25 @@ overflow; console clean except the known dev-env `/api/auth/get-session` 500 (mi
 Neon env — pre-existing) and the expected 401→absence. Full web suite 1423 passed / 0 failed
 including the DB-backed legs.
 
+### Deep-audit + remediation (appended same session, pre-deploy)
+Five parallel lenses at `f17a329`; every fixable finding landed at `41207a5` — the full
+found→fixed table and the carried-open list live in
+[predeploy-audit-2026-08-21/CHECKLIST.md](docs/evidence/predeploy-audit-2026-08-21/CHECKLIST.md).
+Headlines: Daily Light's citation tails are now a real `refs` field rendered as citations
+(the invariant test caught a straggler mid-remediation — `02-18 pm`, the module's own `EPh`
+misprint); /plans/[id] signed-out race fixed; the office degrades both directions; a
+Content-Type CSRF floor on the plan mutation (the session cookie's SameSite is STILL
+unaudited — carried, loudly); reschedule re-asserts `completed_at IS NULL`, reads lean, and
+tells plan-gone from completed-under-us; ANNOTATE_ALLOW_HOST is exact-match now. `npm run
+audit` PASSED all gates on the union before the sweep; web suite 1452/0 after remediation
+(the only 2 reds are a CONCURRENT SESSION'S untracked in-flight probes — see below).
+
+**⚠ DEPLOY BLOCKED ON A HUMAN CALL: a second session is actively writing this working tree**
+(ask/history/study-entrance files + a git tag-probe lock, mtimes advancing during the audit).
+`deploy.sh`'s clean-tree gate will refuse, correctly — the 2026-07-12 scenario. Nothing of
+mine remains uncommitted; the owner must quiesce or authorize before the deploy that carries
+the union (highlighter restore) + Sprint 1.
+
 ### NOT DONE / UNVERIFIED
 - **The signed-in surfaces were NOT browser-verified** — no Neon auth env in this tree; the
   plan card, catch-up card, grid and /plans/[id] are covered by jsdom + real-DB route tests
