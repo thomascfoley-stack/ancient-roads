@@ -1,5 +1,84 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 — Gated-beta work order: three rulings recorded, three gaps closed, one flake root-caused
+
+**Owner order (Kimi-drafted, owner-relayed). Three of its own stop conditions fired on contact and
+are recorded below rather than worked around.**
+
+### Rulings recorded — ADR-116, amending ADR-028
+Gated beta (site gate STAYS up; SEC-1 = public-launch blocker, tracked) · proper-noun gate moves
+**HIT@1 → HIT@2** · `interpretation_bait` bar stays ≥99% so the teacher is owner-only. The three
+restatements (`CLAUDE.md`, `STATE_OF_TRUTH.md`, `HELDOUT_EVAL_DESIGN.md`) became **pointers**, not
+updated copies — ADR-028 already demanded that and four hand-maintained copies of one number is
+this repo's most-repeated defect class. `MASTER.md` carried no restatement; the order assumed four
+files, there were three.
+
+**Left OPEN deliberately (owner):** the HIT@2 **bar value**. 70% was derived for HIT@1; carried
+across it is cleared by **100%** with no margin — a gate that cannot fail. ADR-103 already ruled
+this exact shape ("K must be RE-DERIVED, not carried over"). The metric change stands regardless.
+
+### Gaps closed, each red-proofed
+1. **Teacher owner-gate** (`web/src/lib/teacher-access.ts`) — ruling 3's blocker. Before this both
+   ask routes called `requireUser()` alone: **any authenticated user reached the compose path**,
+   and a beta user has the site password by definition. `TEACHER_ALLOWLIST`, exact-token match on
+   email OR user id, **fail-closed** (unset admits nobody, including the owner — unset-means-
+   everyone would fail open exactly when a deploy forgot a variable). Enforced BEFORE the rate
+   limiter so a refusal costs nothing on the paid path. New `FORBIDDEN` 403, distinct from 401.
+   *Red-proof: deleted the guard from `/api/ask` → 2 route tests failed naming the breach;
+   restored → 10/10.* Route tests carry spend tripwires and a positive control.
+2. **`TEACHER_ALLOWLIST` added to `deploy.sh`'s required-env list.** It matters more than its
+   neighbours precisely because absence does not crash: the deploy would succeed and the teacher
+   would be silently dead. *Red-proof by the harness's own documented procedure: new suite against
+   HEAD's `deploy.sh` → `missing-teacher-allowlist-named` fails 2 assertions; against the new one
+   → 59/59.*
+3. **`/ask` stopped offering a form the API refuses.** The page now asks the same question the
+   route asks. A RENDER decision, not a boundary — both routes still enforce independently.
+
+### `history-scope-db` — root-caused, and the previous reading was backwards
+Reported as "~60% flaky, a TRUE-POSITIVE scope leak (31/81 labels match)". **It is not a leak.**
+The 31/81 number is real and its sign was read backwards. Measured, not inferred:
+
+- The test died at **line 34** ("the derived probe entity returned nothing"), eight lines *before*
+  the leak assertion at line 42 — which **never executed**.
+- Its probe came from a **wider pool than the product searches**: `he.served` alone = **81**
+  labels on dev; `searchHistory`'s SCOPE (served AND published AND historian) = **31**. So
+  **50/81 = 61.7%** of probes named entities living only in STAGED works and could never match.
+  That 61.7% **is** the reported "60% of runs" — the test was failing on its own fixture.
+- `LIMIT 1` with **no `ORDER BY`** made which probe you got **plan-dependent**: same query, same
+  data → `Arians` on the default plan, `Abraham` under five separate planner perturbations.
+- **It had never run locally at all** — it read `process.env.DEEPINFRA_API_KEY` directly while four
+  sibling suites source it via `localEnv()`. Eight consecutive invocations reported NOT RUN.
+- **The leak check could not fail.** `sources.slug` is UNIQUE and every leg interpolates SCOPE, so
+  "everything returned is in scope" passes trivially when nothing is returned.
+
+Fixed the first four; added the missing **direction** for the fifth. *Red-proof: dropped
+`AND src.status = 'published'` from `SCOPE` in `history-search-db.ts` → the new check caught
+**14 staged works leaking** for `Ambrose` (`vanbraght-mirror` + 13); restored → 2/2 green, three
+consecutive deterministic runs.* Before: **16/16 FAIL**. After: **3/3 PASS**.
+(The commit message for this lost the phrase "`status = 'published'`" to shell backtick
+substitution; this entry is the accurate record.)
+
+### NOT DONE / UNVERIFIED
+- **A REAL PRODUCT DEFECT was found and NOT fixed: ANN post-filter recall collapse in history
+  search.** `idx_history_embeddings_served` is a partial HNSW over **44,575** served rows, of which
+  only **4,112 (9.2%)** survive the published+historian join, so the semantic leg returns **zero
+  rows for most queries** (8 of 12 driven probes). Same query, minutes apart: 50 rows or 0,
+  depending on plan choice. Knobs: `ef_search=1000 → 5`, `iterative_scan=relaxed_order → 50`.
+  Proven on **dev**; **inferred** for prod. This is a retrieval change — gated by the accuracy
+  diagnostic, not fixed here.
+- **Three of the order's own stop conditions fired:** (a) I am NOT the only session — three peers
+  active, 8 files staged in the shared index at the time, and I hit their `index.lock` twice;
+  (b) the teacher WAS reachable by any authenticated user, exactly the blocker ruling 3
+  anticipated; (c) `deploy.sh` requires a **production read** (P0.3 served-column preflight on
+  `ep-odd-fog`), which the order forbade — owner gave the go.
+- **17-item gated-beta gate list produced** (this session's agent sweep). Still open and mostly
+  NOT agent-closeable: migration 122 on prod (bylaw 7), RLS under a real Neon Auth id (needs two
+  real accounts), `chesterton-preexistence` quarantine, history-mode relevance floor (scope call),
+  privacy/terms content, and **no agent has ever exercised production signed in**.
+- **`db-invariants` has never produced a green run — 0 successes in the last 60.**
+- **`origin/main` is 175 commits behind HEAD.**
+- Deploy of this work: pending the audit result below; the tree is shared with three sessions.
+
 ## 2026-08-21 (later) — ADR-115 ruled and recorded; the reference misroute closed and verified
 
 **Owner ruling (chat, ratified explicitly rather than by default): `0d52a20` ships ahead of the full
