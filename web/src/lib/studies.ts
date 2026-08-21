@@ -843,9 +843,16 @@ async function probeEmbeddingClipFailure(
 ): Promise<'study_not_found' | 'source_not_found' | 'not_servable'> {
   const [studyRows, embRows] = await runAsUser(userId, (sql) => [
     sql`SELECT 1 AS ok FROM studies WHERE id = ${studyId} AND user_id = ${userId} AND deleted_at IS NULL`,
+    // `user_id IS NULL` (D8): this was the ONE `FROM embeddings` read of fifteen without the
+    // plane fence, so a USER-owned row with a corpus-shaped key made the probe answer
+    // 'not_servable' — asserting a corpus source exists where the corpus plane holds nothing.
+    // Deliberately NOT `AND served`, mirroring the sections sibling above (which carries no
+    // status gate): the probe distinguishes "exists" from "servable", and gating it on `served`
+    // would collapse every unserved source into 'source_not_found'.
     sql`SELECT 1 AS ok FROM embeddings
         WHERE source_type = split_part(${sourceId}, ':', 1) AND source_id = ${sourceId}
           AND (${chunkIndex ?? null}::int IS NULL OR chunk_index = ${chunkIndex ?? null}::int)
+          AND user_id IS NULL
         LIMIT 1`,
   ]);
   if ((studyRows as unknown[]).length === 0) return 'study_not_found';

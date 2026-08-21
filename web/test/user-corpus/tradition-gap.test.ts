@@ -239,6 +239,116 @@ describe.skipIf(!enabled)('the tradition-gap join', () => {
     const r = await traditionGap(USER, docId, EVERYTHING, { maxVoices: 10_000 });
     expect(r.voices.length).toBeLessThanOrEqual(MAX_VOICES);
   }, 120_000);
+
+  it('D9 — a corpus row with forbidden provenance never surfaces, even under the widest predicate', async () => {
+    // The uploader deep-dive's D9: this join gated on `(served)` + `user_id IS NULL` while
+    // servability.ts / studies.ts / research.ts also apply the forbidden-provenance denylist —
+    // and ADR-044's served-but-forbidden rows are live exposure, so `(served)` does not subsume
+    // it. Seeded exactly like A2 above (owner connection; markers sort FIRST so the LIMIT cannot
+    // cut them — the A2 lesson), with a CLEAN twin as the reachability control: if the clean row
+    // does not surface, the dirty row's absence is the empty-set tautology and proves nothing.
+    const ownerUrl = seedOwnerUrl();
+    if (!ownerUrl) { console.warn('⚠ D9 leg SKIPPED: no owner URL'); return; }
+    const { Client } = (await import('pg')).default;
+    const c = new Client({ connectionString: ownerUrl, ssl: { rejectUnauthorized: false } });
+    await c.connect();
+    const dirty = `AAA-DIRTY-${RUN}`;
+    const clean = `AAB-CLEAN-${RUN}`;
+    const fixtures: [string, string, string][] = [
+      [dirty, `${RUN}-d9-dirty`, 'https://biblehub.com/commentaries/romans/8-28.htm'],
+      [clean, `${RUN}-d9-clean`, 'https://www.ccel.org/ccel/anon/romans.html'],
+    ];
+    try {
+      for (const [marker, srcId, url] of fixtures) {
+        await c.query(
+          `INSERT INTO embeddings (user_id, source_type, source_id, chunk_index, content, embedding, metadata)
+           VALUES (NULL,'commentary',$1,0,$2,array_fill(0.01::real,ARRAY[1024])::vector,$3::jsonb)`,
+          [srcId, `provenance fixture ${marker}`,
+           JSON.stringify({ author: marker, work: marker, tradition: marker, verseId: 45008028,
+                            model: 'BAAI/bge-large-en-v1.5', sourceUrl: url })],
+        );
+      }
+      const r = await traditionGap(USER, docId, EVERYTHING);
+      const authors = r.voices.map((v) => v.author);
+      expect(authors, 'the clean control row did not surface — this leg observed nothing').toContain(clean);
+      // SEED: remove the provenance leg from the hits CTE -> RED (the dirty row surfaces).
+      expect(authors, 'a forbidden-provenance corpus row surfaced as an attributed voice').not.toContain(dirty);
+    } finally {
+      await c.query(`DELETE FROM embeddings WHERE source_id = ANY($1)`,
+        [fixtures.map(([, srcId]) => srcId)]).catch(() => undefined);
+      await c.end().catch(() => undefined);
+    }
+  }, 180_000);
+
+  it('D8 — a USER-owned embeddings row is invisible to the clip-failure probe', async () => {
+    // The uploader deep-dive's D8: `probeEmbeddingClipFailure` in studies.ts was the ONE
+    // `FROM embeddings` read of fifteen without `user_id IS NULL`. It returns a reason code, not
+    // content — but pre-fix a user-owned row made it answer 'not_servable', i.e. "this corpus
+    // source exists", about a row the corpus plane does not contain. It belongs with this suite
+    // because it is the same fence A2 proves for the join, on a neighbouring read.
+    const ownerUrl = seedOwnerUrl();
+    if (!ownerUrl) { console.warn('⚠ D8 leg SKIPPED: no owner URL'); return; }
+    const { createStudy, insertClippingFromEmbedding } = await import('@/lib/studies');
+    const { Client } = (await import('pg')).default;
+    const c = new Client({ connectionString: ownerUrl, ssl: { rejectUnauthorized: false } });
+    await c.connect();
+    const srcId = `commentary:${RUN}-d8`;
+    let studyId: string | null = null;
+    try {
+      // A user-owned row whose key LOOKS like a corpus key (source_type matches its prefix, so
+      // the probe's index-riding equality matches it too). Seeded as the owner, like A2.
+      await c.query(
+        `INSERT INTO embeddings (user_id, source_type, source_id, chunk_index, content, embedding, metadata)
+         VALUES ($1,'commentary',$2,0,'a user chunk that must never read as corpus',
+                 array_fill(0.01::real,ARRAY[1024])::vector,'{}'::jsonb)`,
+        [USER, srcId],
+      );
+      // Reachability precondition (the A2 lesson): the row IS visible to this user under RLS,
+      // so 'source_not_found' below means fenced out, not merely invisible.
+      const [vis] = await runAsUser(USER, (sql) => [
+        sql`SELECT count(*)::int AS n FROM embeddings WHERE source_id = ${srcId}`,
+      ]);
+      expect((vis as { n: number }[])[0]!.n, 'seed not visible under RLS — this leg observes nothing').toBe(1);
+
+      const study = await createStudy(USER, `D8 probe ${RUN}`);
+      studyId = study.id;
+      const r = await insertClippingFromEmbedding(USER, study.id, { sourceId: srcId });
+      expect(r.ok).toBe(false);
+      // SEED: drop `user_id IS NULL` from the probe -> RED here ('not_servable').
+      if (!r.ok) expect(r.reason).toBe('source_not_found');
+    } finally {
+      await c.query(`DELETE FROM embeddings WHERE source_id = $1`, [srcId]).catch(() => undefined);
+      if (studyId) await c.query(`DELETE FROM studies WHERE id = $1`, [studyId]).catch(() => undefined);
+      await c.end().catch(() => undefined);
+    }
+  }, 180_000);
+
+  // ── REAL EXECUTION of the two sibling joins ───────────────────────────────────────────────────
+  // corpus-join-integrity.test.ts proves WHAT is in their statements (GUC, provenance leg, bound
+  // denylist) against a mocked driver; these prove the statements RUN — parameter counts, the
+  // array binds, set_config inside the runAsUser transaction, and the corpus-model read — against
+  // real Postgres. Dev's served corpus records exactly one model ('BAAI/bge-large-en-v1.5' on
+  // every served row, 0 NULLs; measured 2026-08-21), so `comparable: true` below is the parity
+  // check PASSING on a real read, not being skipped.
+
+  it('REAL EXECUTION — relatedVoices runs its sweeps (ef_search + provenance leg) live', async () => {
+    const { relatedVoices } = await import('@/lib/user-corpus/related-voices');
+    const r = await relatedVoices(USER, docId, SERVED);
+    expect(r.comparable).toBe(true);
+    expect(r.voices.length).toBeGreaterThan(0);
+    for (const v of r.voices) expect(v.origin).toBe('corpus');
+  }, 120_000);
+
+  it('REAL EXECUTION — computeSuggestedReadings runs its category scan (provenance leg) live', async () => {
+    const { computeSuggestedReadings } = await import('@/lib/user-corpus/suggested-readings');
+    // Hymns: the smallest category (6,887 served rows on dev), so the exact scan stays cheap.
+    const rows = await computeSuggestedReadings(USER, docId, ['hymns'], SERVED, async () => {});
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row.category).toBe('hymns');
+      expect(row.author).toBeTruthy();
+    }
+  }, 300_000);
 });
 
 describe('corpusPredicate — the tripwire, not a sanitiser', () => {

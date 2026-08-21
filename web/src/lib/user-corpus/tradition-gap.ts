@@ -21,6 +21,7 @@
 // `corpusPredicate(userInput)` call something you have to write on purpose.
 
 import { runAsUser } from '@/lib/db';
+import { FORBIDDEN_PROVENANCE_DOMAINS } from '@/lib/forbidden-provenance.mjs';
 
 /** A SQL boolean fragment over `embeddings e`. Compile-time constants only — never user input. */
 export type CorpusPredicate = string & { readonly __corpusPredicate: unique symbol };
@@ -128,6 +129,13 @@ export async function traditionGap(
           ON (e.metadata->>'verseId')::int BETWEEN d.verse_id_start AND d.verse_id_end
        WHERE e.user_id IS NULL
          AND e.metadata->>'author' IS NOT NULL
+         -- The provenance belt (D9): the same leg servability.ts / studies.ts / research.ts
+         -- apply. The injected predicate does NOT subsume it — ADR-044's served-but-forbidden
+         -- rows are live exposure — and a voice attributed from a forbidden aggregator is an
+         -- attribution the product may not make. Bound as $5, the array-parameter idiom.
+         AND (e.metadata->>'sourceUrl' IS NULL OR NOT EXISTS (
+                SELECT 1 FROM unnest($5::text[]) d2
+                WHERE lower(e.metadata->>'sourceUrl') LIKE '%' || d2 || '%'))
          AND ${predicate}
        ORDER BY e.metadata->>'author', e.metadata->>'work', (e.metadata->>'verseId')::int
     )
@@ -151,7 +159,7 @@ export async function traditionGap(
     ) r`;
 
   const [voiceRows, rangeRows] = await runAsUser(userId, (sql) => [
-    sql.query(text, [userId, documentId, maxRanges, maxVoices]),
+    sql.query(text, [userId, documentId, maxRanges, maxVoices, [...FORBIDDEN_PROVENANCE_DOMAINS]]),
     sql.query(countText, [userId, documentId, maxRanges]),
   ]);
 

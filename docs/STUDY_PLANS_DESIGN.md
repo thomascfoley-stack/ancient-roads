@@ -11,7 +11,8 @@ build record.
 
 **Sequencing note, stated up front so it is not discovered later.** `PRODUCT_ARCHITECTURE.md:62-66` puts
 "build one mode" third, after retrieval reaches 10/10, and names Workspace Paths as the likely first mode.
-`CLAUDE.md` records retrieval at ~9/10 with proper-noun HIT@1 at 60 against a 70 bar, an OPEN OWNER CALL.
+`CLAUDE.md` records retrieval at ~9/10 with proper-noun HIT@1 at 60 against a 70 bar — **ruled by ADR-028**
+(accepted for gated beta, blocking for public launch, pending re-measure at larger n), not an open call.
 `PRODUCT_ARCHITECTURE.md:42` marks Studies "DESIGN. Depends on the plan builder + integration work." The
 board has UX-1..UX-4 queued behind A8 and Lane B blocked on five decisions. **Nothing here is next.** This
 document exists so the design is settled when it becomes next, not to re-sequence the programme.

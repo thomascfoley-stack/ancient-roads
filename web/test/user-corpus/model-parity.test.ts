@@ -10,15 +10,43 @@
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+// '@/lib/db' is MOCKED (no database, no network — the file's charter holds): the H3 legs below
+// drive the SHIPPED relatedVoices call path against seeded query results, because the defect they
+// guard was invisible to every value-level assertion here — both call sites passed our own
+// constant as the "corpus" side, and only a fake corpus that RECORDS a different model can see it.
+type FakeQuery = { text: string; params: unknown[] };
+const dbMock = vi.hoisted(() => ({
+  respond: null as ((q: { text: string; params: unknown[] }) => unknown[]) | null,
+}));
+vi.mock('@/lib/db', () => ({
+  runAsUser: async (_userId: string, build: (sql: unknown) => unknown[]): Promise<unknown[][]> => {
+    const tag = Object.assign(
+      (strings: TemplateStringsArray, ...vals: unknown[]): FakeQuery => ({
+        text: strings.raw.join(' $? '),
+        params: vals,
+      }),
+      { query: (text: string, params: unknown[] = []): FakeQuery => ({ text, params }) },
+    );
+    const qs = build(tag) as FakeQuery[];
+    return qs.map((q) => (dbMock.respond ? dbMock.respond(q) : []));
+  },
+}));
+
 import {
   EMBEDDING_API_MODEL,
   EMBEDDING_DB_SLUG,
   EMBEDDING_DIMS,
+  __resetCorpusModelCache,
+  corpusRecordedModel,
   isJoinable,
   isSameModel,
   normaliseModel,
+  type CorpusQueryRunner,
 } from '@/lib/user-corpus/model';
+import { relatedVoices } from '@/lib/user-corpus/related-voices';
+import { corpusPredicate } from '@/lib/user-corpus/tradition-gap';
 
 describe('the model constants', () => {
   it('names the model ADR-102 confirmed', () => {
@@ -108,5 +136,122 @@ describe('the single-source guard for the user plane', () => {
     expect(existsSync(path.join(dir, 'model.ts'))).toBe(true);
     const modelSrc = readFileSync(path.join(dir, 'model.ts'), 'utf8');
     expect(/bge-large-en-v1\.5/.test(modelSrc)).toBe(true);
+  });
+});
+
+// ── H3 — the corpus side comes from the DATABASE, not our constant ──────────────────────────────
+//
+// The audit's finding: both shipped call sites called `isJoinable(slug, EMBEDDING_DB_SLUG)` — our
+// constant on both sides — and the arity assertion above CANNOT see a wrong argument. These legs
+// can: they read the corpus's recorded value through `corpusRecordedModel`, and they drive the
+// real `relatedVoices` path against a corpus that records a DIFFERENT model.
+
+/** A runner whose "corpus" answers every query with `rows`; the SQL it was asked is logged. */
+function stubRunner(rows: { model: string }[], log: string[] = []): CorpusQueryRunner {
+  return (async (build: (sql: unknown) => unknown[]) => {
+    const tag = Object.assign(
+      (strings: TemplateStringsArray, ...vals: unknown[]): FakeQuery => ({
+        text: strings.raw.join(' $? '),
+        params: vals,
+      }),
+      {
+        query: (text: string, params: unknown[] = []): FakeQuery => {
+          log.push(text);
+          return { text, params };
+        },
+      },
+    );
+    const qs = build(tag) as FakeQuery[];
+    return qs.map(() => rows);
+  }) as unknown as CorpusQueryRunner;
+}
+
+describe('corpusRecordedModel — reading what the corpus actually recorded (H3)', () => {
+  beforeEach(() => __resetCorpusModelCache());
+
+  it('returns the recorded value, normalised, and reads it from the plane the joins target', async () => {
+    const log: string[] = [];
+    const r = await corpusRecordedModel(stubRunner([{ model: 'BAAI/bge-large-en-v1.5' }], log));
+    expect(r).toEqual({ kind: 'one', model: 'bge-large-en-v1.5' });
+    // Tripwire on the read itself: served corpus rows' recorded model, nothing else.
+    expect(log[0]).toContain("metadata->>'model'");
+    expect(log[0]).toContain('user_id IS NULL');
+    expect(log[0]).toContain('served');
+  });
+
+  it('treats the two recorded SPELLINGS of one model as one model, not drift', async () => {
+    // The measured trap in model.ts: `embeddings` records the qualified form,
+    // `section_embeddings` the short form. One model; must not read as `mixed`.
+    const r = await corpusRecordedModel(
+      stubRunner([{ model: 'BAAI/bge-large-en-v1.5' }, { model: 'bge-large-en-v1.5' }]),
+    );
+    expect(r).toEqual({ kind: 'one', model: 'bge-large-en-v1.5' });
+  });
+
+  it('refuses with `mixed` when the corpus genuinely records two models — the drift alarm', async () => {
+    const r = await corpusRecordedModel(
+      stubRunner([{ model: 'BAAI/bge-large-en-v1.5' }, { model: 'jina-embeddings-v3' }]),
+    );
+    expect(r.kind).toBe('mixed');
+  });
+
+  it('returns `empty` when no served corpus row records a model — parity unverifiable', async () => {
+    expect(await corpusRecordedModel(stubRunner([]))).toEqual({ kind: 'empty' });
+  });
+
+  it('caches per process until reset — the DISTINCT must not run per request', async () => {
+    let calls = 0;
+    const counting: CorpusQueryRunner = (async (build: (sql: unknown) => unknown[]) => {
+      calls += 1;
+      const qs = build(
+        Object.assign(() => ({}), { query: (text: string, params: unknown[] = []) => ({ text, params }) }),
+      ) as unknown[];
+      return qs.map(() => [{ model: 'BAAI/bge-large-en-v1.5' }]);
+    }) as unknown as CorpusQueryRunner;
+    await corpusRecordedModel(counting);
+    await corpusRecordedModel(counting);
+    expect(calls).toBe(1);
+    __resetCorpusModelCache();
+    await corpusRecordedModel(counting);
+    expect(calls).toBe(2);
+  });
+});
+
+describe('the SHIPPED call path — relatedVoices must feed isJoinable the corpus value (H3)', () => {
+  beforeEach(() => {
+    __resetCorpusModelCache();
+    dbMock.respond = null;
+  });
+
+  /** Seed the fake database: user rows carry OUR slug; the corpus plane records `model`. */
+  function corpusRecords(models: string[]): void {
+    dbMock.respond = (q) => {
+      if (q.text.includes("metadata->>'model'")) return models.map((model) => ({ model }));
+      if (q.text.includes('AVG(')) return [{ v: '[0.1,0.2]' }];
+      if (q.text.includes('user_section_embeddings')) return [{ model_slug: 'bge-large-en-v1.5' }];
+      return []; // sweeps, set_config
+    };
+  }
+
+  it('REFUSES the join when the corpus plane records a different model', async () => {
+    // THE red leg. Against the tautological call site (`isJoinable(slug, EMBEDDING_DB_SLUG)`)
+    // this was watched fail: comparable stayed true with the corpus recording jina — the exact
+    // "compare two vector spaces forever" failure §6 names.
+    corpusRecords(['jina-embeddings-v3']);
+    const r = await relatedVoices('u-parity', 'd-parity', corpusPredicate('true'));
+    expect(r.comparable).toBe(false);
+  });
+
+  it('REFUSES the join while the corpus is mid-re-embed (two distinct models)', async () => {
+    corpusRecords(['BAAI/bge-large-en-v1.5', 'jina-embeddings-v3']);
+    const r = await relatedVoices('u-parity', 'd-parity', corpusPredicate('true'));
+    expect(r.comparable).toBe(false);
+  });
+
+  it('control: the identical path with the corpus recording OUR model proceeds', async () => {
+    // Proves the red legs above fail for the reason they claim, not as a harness artifact.
+    corpusRecords(['BAAI/bge-large-en-v1.5']);
+    const r = await relatedVoices('u-parity', 'd-parity', corpusPredicate('true'));
+    expect(r.comparable).toBe(true);
   });
 });

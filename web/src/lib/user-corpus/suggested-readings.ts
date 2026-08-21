@@ -25,7 +25,8 @@
 // contend for the same buffers and make the total worse, not better.
 
 import { runAsUser } from '@/lib/db';
-import { EMBEDDING_DB_SLUG, isJoinable } from './model';
+import { FORBIDDEN_PROVENANCE_DOMAINS } from '@/lib/forbidden-provenance.mjs';
+import { EMBEDDING_DB_SLUG, corpusRecordedModel, isJoinable } from './model';
 import type { CorpusPredicate } from './tradition-gap';
 
 /** The user-facing categories, in the order they are searched: largest corpus first. */
@@ -108,8 +109,17 @@ export async function computeSuggestedReadings(
   ]);
   const slugs = (modelRows as { model_slug: string }[]).map((r) => r.model_slug);
   if (slugs.length === 0) return [];
-  const bad = slugs.find((s) => !isJoinable(s, EMBEDDING_DB_SLUG));
-  if (bad) throw new Error(`embedding model mismatch: user rows are "${bad}", corpus is "${EMBEDDING_DB_SLUG}"`);
+  // The corpus value is READ, not assumed (H3): comparing against EMBEDDING_DB_SLUG was our
+  // constant on both sides — the tautology model.ts forbids. `empty` returns nothing (nothing to
+  // search); `mixed` throws like a mismatch does, because a mid-re-embed corpus would score two
+  // vector spaces against one centroid and rank garbage without an error.
+  const corpus = await corpusRecordedModel((build) => runAsUser(userId, build));
+  if (corpus.kind === 'empty') return [];
+  if (corpus.kind === 'mixed') {
+    throw new Error(`corpus records multiple embedding models (${corpus.models.join(', ')}); refusing a cross-model join`);
+  }
+  const bad = slugs.find((s) => !isJoinable(s, corpus.model));
+  if (bad) throw new Error(`embedding model mismatch: user rows are "${bad}", corpus is "${corpus.model}"`);
 
   const [centroidRows] = await runAsUser(userId, (sql) => [
     sql`SELECT AVG(ue.embedding)::vector AS v
@@ -152,6 +162,10 @@ export async function computeSuggestedReadings(
       // only for this transaction and cannot leak into any other query on the pooled connection.
       sql`SET LOCAL enable_indexscan = off`,
       sql.query(
+        // The provenance belt (D9): the same leg servability.ts / studies.ts / research.ts
+        // apply. `served` does NOT subsume it — ADR-044's served-but-forbidden rows are live
+        // exposure — and a reading suggested from a forbidden aggregator is an attribution the
+        // product may not make.
         `WITH near AS (
            SELECT e.metadata->>'author'    AS author,
                   e.metadata->>'work'      AS work,
@@ -160,6 +174,9 @@ export async function computeSuggestedReadings(
              FROM embeddings e
             WHERE e.user_id IS NULL
               AND e.metadata->>'author' IS NOT NULL
+              AND (e.metadata->>'sourceUrl' IS NULL OR NOT EXISTS (
+                     SELECT 1 FROM unnest($3::text[]) d
+                     WHERE lower(e.metadata->>'sourceUrl') LIKE '%' || d || '%'))
               AND ${predicate}
               AND e.metadata->>'work' IN (SELECT slug FROM sources WHERE source_type = ANY($2))
             ORDER BY e.embedding <=> $1::vector
@@ -172,7 +189,7 @@ export async function computeSuggestedReadings(
            FROM best b LEFT JOIN sources s ON s.slug = b.work
           ORDER BY b.sim DESC
           LIMIT ${PER_CATEGORY}`,
-        [centroid, cat.types as unknown as string[]],
+        [centroid, cat.types as unknown as string[], [...FORBIDDEN_PROVENANCE_DOMAINS]],
       ),
     ]);
 
