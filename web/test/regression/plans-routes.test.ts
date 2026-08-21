@@ -215,6 +215,45 @@ describe.skipIf(SKIP)('Plans routes (handler → store → dev DB, session mocke
     expect(body.error.code).toBe('INVALID_REQUEST');
   }, 30_000);
 
+  it('pins the ±48h window BOUNDARY, so the bound cannot silently widen or vanish', async (ctx) => {
+    if (!createdId) return ctx.skip();
+    // Tomorrow is inside the window (a UTC+14 client's local "today" can sit a
+    // calendar day past the server's); five days out is not today anywhere.
+    const iso = (offsetDays: number) => {
+      const d = new Date(Date.now() + offsetDays * 86_400_000);
+      return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+    };
+    const near = await togglePlanRoute(jsonReq({ kind: 'reschedule', fromDate: iso(1) }), {
+      params: Promise.resolve({ id: createdId }),
+    });
+    expect(near.status).toBe(200);
+    const far = await togglePlanRoute(jsonReq({ kind: 'reschedule', fromDate: iso(5) }), {
+      params: Promise.resolve({ id: createdId }),
+    });
+    expect(far.status).toBe(400);
+    // Restore the schedule the earlier cases assert against.
+    const d = new Date();
+    const todayIso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    await togglePlanRoute(jsonReq({ kind: 'reschedule', fromDate: todayIso }), {
+      params: Promise.resolve({ id: createdId }),
+    });
+  }, 30_000);
+
+  it('refuses a mutation without a JSON Content-Type (the CSRF floor)', async (ctx) => {
+    if (!createdId) return ctx.skip();
+    // A cross-origin <form enctype="text/plain"> is a simple request that can
+    // carry a JSON-shaped body without a preflight; the type gate refuses it.
+    const res = await togglePlanRoute(
+      new NextRequest('http://localhost/api/plans', {
+        method: 'POST',
+        body: JSON.stringify({ kind: 'day', dayIndex: 1, completed: true }),
+        headers: { 'Content-Type': 'text/plain' },
+      }),
+      { params: Promise.resolve({ id: createdId }) },
+    );
+    expect(res.status).toBe(400);
+  }, 30_000);
+
   it('another user cannot reschedule this plan (store seam, real RLS + belt)', async (ctx) => {
     if (!createdId) return ctx.skip();
     const { reschedulePlan } = await import('@/lib/plan/store');

@@ -118,6 +118,17 @@ const nextConfig: NextConfig = {
           { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
         ],
       },
+      {
+        // The two devotional JSONs (~2.3MB together) sit on /home's critical path
+        // and change only at deploy time; without this they revalidate on every
+        // visit — real egress money on a static asset. A day of cache with a week
+        // of stale-while-revalidate: a deploy's new file is picked up within a
+        // day, and the office never blocks on the fetch meanwhile.
+        source: '/devotional/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
+        ],
+      },
     ];
   },
 

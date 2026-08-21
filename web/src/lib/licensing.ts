@@ -108,6 +108,16 @@ export const DEVOTIONAL_LICENSES: Record<string, DevotionalLicenseRecord> = {
     verse_translation: 'KJV (Public Domain)',
     verified_on: '2026-07-16',
   },
+  'daily-light': {
+    work: 'Daily Light on the Daily Path',
+    author: 'Jonathan Bagster (d.1890), of Samuel Bagster & Sons',
+    license: 'Public Domain',
+    commercial_use: 'allow',
+    pd_basis: 'published 1875; compiler died 1890',
+    source: 'CrossWire SWORD module `Daily` 1.0 (DistributionLicense: Public Domain), via the daily-light corpus row — exported by scripts/export-daily-light.mjs, which refuses a row whose license is not recorded PD',
+    verse_translation: 'KJV (Public Domain)',
+    verified_on: '2026-08-21',
+  },
 };
 
 const NO_RECORD: LicenseRecord = { license: 'unknown', commercial_use: 'deny', source: 'no license record', verified_on: '—' };

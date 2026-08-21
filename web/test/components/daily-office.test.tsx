@@ -36,8 +36,8 @@ const SPURGEON = {
 };
 const DAILY_LIGHT = {
   '08-21': {
-    am: { title: 'August 21 — Morning', body: 'Thou art my portion, O LORD. All things are yours.', attribution: 'Daily Light on the Daily Path' },
-    pm: { title: 'August 21 — Evening', body: 'EVENING BODY — must not render in the morning.', attribution: 'Daily Light on the Daily Path' },
+    am: { title: 'August 21 — Morning', body: 'Thou art my portion, O LORD. All things are yours.', refs: 'Ps 119:57 1Co 3:21', attribution: 'Daily Light on the Daily Path' },
+    pm: { title: 'August 21 — Evening', body: 'EVENING BODY — must not render in the morning.', refs: 'Pr 14:12', attribution: 'Daily Light on the Daily Path' },
   },
 };
 const PLANS = {
@@ -100,5 +100,35 @@ describe('the Daily Office on /home', () => {
     render(<TodayView />);
     await waitFor(() => expect(screen.getByText('Thou art my portion, O LORD.')).toBeTruthy());
     expect(screen.queryByRole('link', { name: /open the plan/i })).toBeNull();
+  });
+
+  it('a plan that has not started yet is not "Your reading" — due means due', async () => {
+    // Built today, starts next month: nothing is due, so the card must not
+    // present it (the header comment's own claim, audited 2026-08-21).
+    stubFetch({
+      plans: () => ({ plans: [{ ...PLANS.plans[0], next_day_date: '2026-09-15' }] }),
+    });
+    render(<TodayView />);
+    await waitFor(() => expect(screen.getByText('Thou art my portion, O LORD.')).toBeTruthy());
+    expect(screen.queryByRole('link', { name: /open the plan/i })).toBeNull();
+  });
+
+  it('renders the citation list as a citation line, outside the scripture paragraph', async () => {
+    stubFetch();
+    render(<TodayView />);
+    await waitFor(() => expect(screen.getByText(/All things are yours/)).toBeTruthy());
+    const refs = screen.getByText('Ps 119:57 1Co 3:21');
+    // The refs sit in their own element, not fused into the body's text node.
+    expect(refs.textContent).not.toContain('All things are yours');
+  });
+
+  it('Spurgeon failing degrades to a quiet line — Daily Light and the plan card stand', async () => {
+    stubFetch({ me: () => { throw new Error('down'); } });
+    render(<TodayView />);
+    await waitFor(() => expect(screen.getByText(/All things are yours/)).toBeTruthy());
+    expect(screen.getByRole('link', { name: /open the plan/i })).toBeTruthy();
+    expect(screen.getByText(/Spurgeon.s page could not be opened/i)).toBeTruthy();
+    // The full-page error screen must NOT appear while the office stands.
+    expect(screen.queryByText(/The Scriptures are still there to search/i)).toBeNull();
   });
 });

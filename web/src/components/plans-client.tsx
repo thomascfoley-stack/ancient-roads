@@ -88,6 +88,7 @@ export function PlansClient({ initialPlanId }: { initialPlanId?: string } = {}) 
   const router = useRouter();
   const [list, setList] = useState<ListState>({ status: 'loading' });
   const [open, setOpen] = useState<OpenPlan | null>(null);
+  const [openError, setOpenError] = useState<string | null>(null);
   const [building, setBuilding] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -108,12 +109,21 @@ export function PlansClient({ initialPlanId }: { initialPlanId?: string } = {}) 
     // Was `if (res.ok) setOpen(...)` with no else and no catch: on a failure the row simply
     // did not respond, and a network rejection surfaced as an unhandled promise. Silence is
     // the one thing a click must never do.
+    //
+    // A 401 here is SIGNED OUT, and it must say so: two mount effects race on
+    // /plans/[id], and mapping every non-ok to the list-level error let this one
+    // win over refresh()'s signed-out state — an anonymous reader following a
+    // shared link saw "Plans could not be loaded" with no way in. A 404/400/500
+    // all get ONE plan-scoped message on purpose: no oracle separating "not
+    // yours" from "does not exist", and the loaded list is not clobbered.
     try {
-      const res = await fetch(`/api/plans/${id}`);
-      if (!res.ok) { setList({ status: 'error' }); return; }
+      const res = await fetch(`/api/plans/${encodeURIComponent(id)}`);
+      if (res.status === 401) { setList({ status: 'signed-out' }); return; }
+      if (!res.ok) { setOpenError('This plan could not be opened. It may have been removed.'); return; }
+      setOpenError(null);
       setOpen((await res.json()) as OpenPlan);
     } catch {
-      setList({ status: 'error' });
+      setOpenError('This plan could not be opened. Please try again.');
     }
   }, []);
 
@@ -122,6 +132,11 @@ export function PlansClient({ initialPlanId }: { initialPlanId?: string } = {}) 
   // or returned to with the back button. This component serves both routes:
   // the list at /plans, and one plan when the page passes its id.
   useEffect(() => {
+    // Clear the PREVIOUS plan first: navigating /plans/A -> /plans/B re-runs this
+    // effect, and without the reset plan A's title and grid render under B's URL
+    // for the length of the fetch.
+    setOpen(null);
+    setOpenError(null);
     if (initialPlanId) void openPlan(initialPlanId);
   }, [initialPlanId, openPlan]);
 
@@ -142,8 +157,17 @@ export function PlansClient({ initialPlanId }: { initialPlanId?: string } = {}) 
         </header>
       )}
 
-      {(list.status === 'loading' || (initialPlanId && !open && list.status === 'ready')) && (
+      {(list.status === 'loading' || (initialPlanId && !open && !openError && list.status === 'ready')) && (
         <p className="mx-auto max-w-3xl text-sm text-stone-500 dark:text-stone-400">Loading…</p>
+      )}
+
+      {openError && list.status !== 'signed-out' && (
+        <div className="mx-auto max-w-3xl">
+          <p role="alert" className="text-sm text-stone-700 dark:text-stone-200">{openError}</p>
+          <Link href="/plans" className="mt-3 inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-300">
+            ← All plans
+          </Link>
+        </div>
       )}
       {list.status === 'signed-out' && (
         <p className="mx-auto max-w-3xl text-sm text-stone-500">
@@ -155,9 +179,10 @@ export function PlansClient({ initialPlanId }: { initialPlanId?: string } = {}) 
 
       {list.status === 'ready' && (open ? (
         <PlanDetail
+          key={open.plan.id}
           open={open}
           onBack={() => { setOpen(null); router.push('/plans'); }}
-          onChanged={() => void openPlan(open.plan.id)}
+          onChanged={() => openPlan(open.plan.id)}
         />
       ) : initialPlanId ? null : (
         <div className="mx-auto max-w-3xl">
@@ -214,13 +239,15 @@ function EmptyState() {
 
 // PRD §5: 2px vellum track, 2px antique-gold fill, SQUARE ends (no rounded-full here).
 function ProgressBar({ pct }: { pct: number }) {
+  // Spans, not divs: this renders inside PlanRow's <Link> -> <span> chain, and a
+  // div inside a span is invalid HTML (phrasing content cannot contain flow).
   return (
-    <div className="h-[2px] bg-stone-200 dark:bg-stone-800">
-      <div
-        className="h-full bg-accent-600 transition-[width] duration-200 ease-gentle dark:bg-accent-400"
+    <span className="block h-[2px] bg-stone-200 dark:bg-stone-800">
+      <span
+        className="block h-full bg-accent-600 transition-[width] duration-200 ease-gentle dark:bg-accent-400"
         style={{ width: `${pct}%` }}
       />
-    </div>
+    </span>
   );
 }
 
@@ -628,12 +655,26 @@ export function readingLabel(r: PlanReading): string {
 
 // ── the plan itself ──────────────────────────────────────────────────────────
 
-function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () => void; onChanged: () => void }) {
+function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () => void; onChanged: () => void | Promise<void> }) {
   const [busyDay, setBusyDay] = useState<number | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [pane, setPane] = useState<PassageTarget | null>(null);
   const [catchUpDismissed, setCatchUpDismissed] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
+  // "Keep the original dates" is a decision, not a session mood. Without
+  // persistence the card returns on every visit for a reader who is permanently
+  // behind and has deliberately declined — the nag pattern the design's
+  // no-gamification rule exists to prevent. Read in an effect (the app's
+  // standing #418 rule: never localStorage during render).
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(`ap:catchup-dismissed:${open.plan.id}`) === '1') setCatchUpDismissed(true);
+    } catch { /* storage unavailable: the card simply reappears */ }
+  }, [open.plan.id]);
+  const dismissCatchUp = () => {
+    setCatchUpDismissed(true);
+    try { localStorage.setItem(`ap:catchup-dismissed:${open.plan.id}`, '1'); } catch { /* best effort */ }
+  };
   // The server render and the first client render both use the default, and the reader's stored
   // choice is adopted only after mount. Reading localStorage during render is exactly what
   // produced this app's React #418 on every reader page load (see storedTranslation's note).
@@ -666,7 +707,9 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
       });
       if (!res.ok) { setWriteError('The schedule could not be moved. Please try again.'); return; }
       setWriteError(null);
-      onChanged();
+      // AWAITED: releasing the button before the re-fetch lands leaves the stale
+      // "behind" card under an enabled button — an invitation to double-submit.
+      await Promise.resolve(onChanged());
     } catch {
       setWriteError('The schedule could not be moved. Please try again.');
     } finally {
@@ -687,7 +730,10 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
       });
       if (!res.ok) { setWriteError('That change could not be saved. Please try again.'); return; }
       setWriteError(null);
-      onChanged();
+      // AWAITED so busyDay holds until the re-read lands — the checkbox no longer
+      // sits visually unchecked and re-enabled for the length of the refetch,
+      // which read as a dead tap on phones.
+      await Promise.resolve(onChanged());
     } catch {
       setWriteError('That change could not be saved. Please try again.');
     } finally {
@@ -739,7 +785,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
           open this route had no h1 at all and the document started at h2. The plan title
           IS the subject of the screen once one is open, so it takes the h1 rather than
           adding a second heading above it. */}
-      <h1 className="font-display text-2xl font-medium text-stone-900 dark:text-stone-100">{open.plan.title}</h1>
+      <h1 className="break-words font-display text-2xl font-medium text-stone-900 dark:text-stone-100">{open.plan.title}</h1>
       {writeError && (
         <p role="alert" className="mt-2 text-sm text-red-800 dark:text-red-200">{writeError}</p>
       )}
@@ -758,7 +804,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
             return <span key={d.day_index} className={`h-2.5 w-2.5 ${cell}`} />;
           })}
         </div>
-        <p className="mt-2 text-micro font-medium text-stone-500 dark:text-stone-400">
+        <p role="status" className="mt-2 text-micro font-medium text-stone-500 dark:text-stone-400">
           {doneCount} of {open.days.length} days read{daysBehind >= 2 ? ` · ${count(daysBehind, 'day')} behind` : ''}
         </p>
       </div>
@@ -783,7 +829,7 @@ function PlanDetail({ open, onBack, onChanged }: { open: OpenPlan; onBack: () =>
             </button>
             <button
               type="button"
-              onClick={() => setCatchUpDismissed(true)}
+              onClick={dismissCatchUp}
               className="inline-flex min-h-[44px] items-center text-xs text-stone-500 hover:text-accent-700 dark:text-stone-400"
             >
               Keep the original dates

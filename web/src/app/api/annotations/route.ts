@@ -100,16 +100,33 @@ export async function POST(req: NextRequest) {
   try {
     if (body.kind === 'highlight') {
       // Sub-verse span when spanStart/spanEnd are present; whole verse otherwise (null/null).
-      const spanStart = typeof body.spanStart === 'number' && Number.isInteger(body.spanStart) ? body.spanStart : null;
-      const spanEnd = typeof body.spanEnd === 'number' && Number.isInteger(body.spanEnd) ? body.spanEnd : null;
+      // BOUNDED like their neighbours: verseId got parseVerseId, notes got NOTE_MAX_LENGTH,
+      // but the span ints accepted any integer (negatives, int4 overflow -> driver 500) and
+      // color/textColor/translation persisted unbounded strings — which also defeated the
+      // idempotent-create below, since a one-character color variant is a "different" span.
+      // No verse text approaches 2,000 chars; render-side clamps to [0, textLen] regardless.
+      const SPAN_MAX = 2000;
+      const rawStart = typeof body.spanStart === 'number' && Number.isInteger(body.spanStart) ? body.spanStart : null;
+      const rawEnd = typeof body.spanEnd === 'number' && Number.isInteger(body.spanEnd) ? body.spanEnd : null;
+      const spanStart = rawStart !== null && rawStart >= 0 && rawStart <= SPAN_MAX ? rawStart : null;
+      const spanEnd = rawEnd !== null && rawEnd >= 0 && rawEnd <= SPAN_MAX ? rawEnd : null;
       const hasSpan = spanStart !== null && spanEnd !== null && spanEnd > spanStart;
+      const TOKEN_RE = /^[a-z][a-z0-9-]{0,31}$/; // css-keyword-shaped: 'yellow', 'amber-2'
+      const color = String(body.color ?? 'yellow').toLowerCase();
+      if (!TOKEN_RE.test(color)) {
+        return apiError('INVALID_REQUEST', { message: 'color must be a short lowercase token' });
+      }
+      const textColorRaw = body.textColor != null ? String(body.textColor).toLowerCase() : null;
+      if (textColorRaw !== null && !TOKEN_RE.test(textColorRaw)) {
+        return apiError('INVALID_REQUEST', { message: 'textColor must be a short lowercase token' });
+      }
       const span = {
         verseId,
-        color: String(body.color ?? 'yellow'),
-        textColor: body.textColor != null ? String(body.textColor) : null,
+        color,
+        textColor: textColorRaw,
         spanStart: hasSpan ? spanStart : null,
         spanEnd: hasSpan ? spanEnd : null,
-        translation: body.translation != null ? String(body.translation) : null,
+        translation: body.translation != null ? String(body.translation).slice(0, 32) : null,
       };
       // Idempotent create: the double-submit path (a retry after a timeout, a double-tap)
       // used to INSERT a twin row — prod carried two identical spans (2026-08 live QA).

@@ -15,8 +15,9 @@ import { refOf } from '@/lib/plan/day-ref';
 import { resolveToday, mmddOf, halfOf, type TodayCard, type DevotionalData } from '@/lib/today';
 
 // Daily Light: date-keyed verbatim entries exported by scripts/export-daily-light.mjs —
-// the same static off-request-path pattern as morning-evening.json.
-interface OfficeReading { title: string; body: string; attribution: string }
+// the same static off-request-path pattern as morning-evening.json. `refs` is the
+// compiler's own trailing citation list, split out so citations render AS citations.
+interface OfficeReading { title: string; body: string; refs: string; attribution: string }
 type OfficeData = Record<string, { am?: OfficeReading; pm?: OfficeReading }>;
 
 // The caller's plans, from GET /api/plans (already carries the next unread day).
@@ -47,6 +48,10 @@ export function TodayView() {
 
   useEffect(() => {
     let live = true;
+    // ONE clock for the whole office. Two independent `new Date()` reads straddling
+    // the local noon boundary made Spurgeon's half and Daily Light's half disagree —
+    // a false provenance label over the wrong reading. One instant, every consumer.
+    const now = new Date();
     (async () => {
       try {
         const res = await fetch('/devotional/morning-evening.json');
@@ -54,7 +59,7 @@ export function TodayView() {
         const data = (await res.json()) as DevotionalData;
         // Voices come from the reader's own loader (already license-filtered); today.ts
         // re-filters + grounds them to the passage. Local date/time decides which entry.
-        const card = await resolveToday(new Date(), data, (slug, ch) =>
+        const card = await resolveToday(now, data, (slug, ch) =>
           fetchCommentary(slug, ch).then((d) => d?.entries ?? []),
         );
         if (!live) return;
@@ -63,15 +68,15 @@ export function TodayView() {
         if (live) setState({ status: 'error' });
       }
     })();
-    // The office extras degrade to absence, never to an error screen: Spurgeon's page is
-    // the floor this surface has always had, and a missing file or a signed-out 401 must
-    // not cost the reader their morning.
+    // The office pieces degrade INDEPENDENTLY to absence: a missing file or a
+    // signed-out 401 must never cost the reader the rest of the page — in either
+    // direction (Spurgeon failing must not take Daily Light or the plan card down;
+    // the render below composes from whatever loaded).
     (async () => {
       try {
         const res = await fetch('/devotional/daily-light.json');
         if (!res.ok) return;
         const data = (await res.json()) as OfficeData;
-        const now = new Date();
         const day = data[mmddOf(now)];
         const entry = day?.[halfOf(now)] ?? day?.am ?? day?.pm ?? null;
         if (live && entry) setOffice(entry);
@@ -84,10 +89,13 @@ export function TodayView() {
         const res = await fetch('/api/plans');
         if (!res.ok) return; // 401 signed-out included
         const { plans } = (await res.json()) as { plans: PlanDue[] };
-        const withNext = plans.filter((p) => p.next_day_index !== null && p.next_day_date !== null);
+        // DUE means due: next unread day dated today or earlier. A plan starting
+        // next month is not "Your reading" this morning — it renders nothing here.
+        const today = localToday();
+        const due = plans.filter((p) => p.next_day_index !== null && p.next_day_date !== null && p.next_day_date <= today);
         // The most overdue plan first; ties by earliest date. One card, not a list.
-        withNext.sort((a, b) => (a.next_day_date! < b.next_day_date! ? -1 : a.next_day_date! > b.next_day_date! ? 1 : 0));
-        if (live && withNext[0]) setDuePlan(withNext[0]);
+        due.sort((a, b) => (a.next_day_date! < b.next_day_date! ? -1 : a.next_day_date! > b.next_day_date! ? 1 : 0));
+        if (live && due[0]) setDuePlan(due[0]);
       } catch {
         /* absent, not broken */
       }
@@ -99,19 +107,24 @@ export function TodayView() {
 
   // NB: a plain <div>, not <main> — the app-shell already provides the <main> landmark and the
   // scroll container (with bottom-nav padding); nesting a second <main> is invalid HTML.
+  // The page composes from WHATEVER loaded — degradation runs in both directions.
+  // Spurgeon failing must not take down Daily Light or the reader's own plan card,
+  // and vice versa. The full error screen appears only when nothing at all loaded.
+  const anyExtra = office !== null || duePlan !== null;
+
   return (
     // One quiet centered column at the reader's measure — no card chrome (PRD §3/§5:
     // hairlines and whitespace carry separation; the parchment page IS the surface). Was a
     // hardcoded 66ch; it follows `.reading-measure` now (owner direction 2026-08-12), the
     // same control as every other reading surface.
     <div className="reading-measure mx-auto my-12 w-full px-6 sm:my-20">
-      {state.status === 'loading' && (
+      {state.status === 'loading' && !anyExtra && (
         <p className="mt-24 text-center font-scripture text-lg italic text-stone-500 dark:text-stone-400">
           Opening today&rsquo;s page&hellip;
         </p>
       )}
 
-      {state.status === 'error' && (
+      {state.status === 'error' && !anyExtra && (
         <div className="mt-24 text-center">
           <p className="font-scripture text-lg leading-[1.9] text-stone-900 dark:text-stone-100">
             Today&rsquo;s reading could not be opened. The Scriptures are still there to search.
@@ -125,7 +138,14 @@ export function TodayView() {
         </div>
       )}
 
-      {state.status === 'ready' && <ReadyCard card={state.card} office={office} duePlan={duePlan} />}
+      {(state.status === 'ready' || anyExtra) && (
+        <ReadyCard
+          card={state.status === 'ready' ? state.card : null}
+          spurgeonFailed={state.status === 'error'}
+          office={office}
+          duePlan={duePlan}
+        />
+      )}
     </div>
   );
 }
@@ -135,10 +155,17 @@ export function TodayView() {
 // remember to visit (dossier Sprint 2 item 4, pulled into Sprint 1 with the URL).
 function PlanDueCard({ plan }: { plan: PlanDue }) {
   if (plan.next_day_index === null || plan.next_verse_start === null || plan.next_verse_end === null) return null;
-  const behind = plan.next_day_date !== null && plan.next_day_date < localToday();
+  // Same threshold as the plan page's catch-up card (>= 2 days): one day behind
+  // is "due now", and a hint there would nag — plans-client.tsx documents why.
+  const behind = (() => {
+    if (plan.next_day_date === null) return false;
+    const [y, m, d] = plan.next_day_date.split('-').map(Number) as [number, number, number];
+    const [ty, tm, td] = localToday().split('-').map(Number) as [number, number, number];
+    return (Date.UTC(ty, tm - 1, td) - Date.UTC(y, m - 1, d)) / 86_400_000 >= 2;
+  })();
   return (
     <div className="mt-14 border edge bg-paper px-5 py-4 dark:bg-stone-900">
-      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400">
+      <p className="break-words text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400">
         Your reading · Day {plan.next_day_index} of {plan.total_days} · {plan.title}
       </p>
       <p className="mt-1 font-scripture text-xl text-stone-900 dark:text-stone-100">
@@ -161,10 +188,21 @@ function PlanDueCard({ plan }: { plan: PlanDue }) {
   );
 }
 
-function ReadyCard({ card, office, duePlan }: { card: TodayCard; office: OfficeReading | null; duePlan: PlanDue | null }) {
-  const half = card.half === 'am' ? 'Morning' : 'Evening';
+function ReadyCard({ card, spurgeonFailed, office, duePlan }: {
+  card: TodayCard | null;
+  spurgeonFailed: boolean;
+  office: OfficeReading | null;
+  duePlan: PlanDue | null;
+}) {
+  // The office's own title ("August 21 — Morning") is authoritative for ITS label —
+  // never Spurgeon's half, which is picked independently and can disagree across a
+  // fallback. The page header prefers Spurgeon's dateLabel (weekday included) and
+  // falls back to the office title's own date half.
+  const officeHalf = office ? (office.title.endsWith('Morning') ? 'Morning' : 'Evening') : null;
+  const headerHalf = card ? (card.half === 'am' ? 'Morning' : 'Evening') : officeHalf;
+  const headerDate = card ? card.dateLabel : office ? office.title.split(/\s*—\s*/)[0] : null;
   // Spurgeon's body carries verbatim newlines: blank line = paragraph, single newline = poetry line.
-  const paragraphs = card.lead.body.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  const paragraphs = card ? card.lead.body.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean) : [];
 
   return (
     <article>
@@ -172,33 +210,50 @@ function ReadyCard({ card, office, duePlan }: { card: TodayCard; office: OfficeR
           small-caps date over a short vellum hairline. With the office composed
           above Spurgeon's page, the HOUR is the title ("Morning"), and his
           reference heads its own section below. */}
-      <header className="text-center">
-        <p className="font-display text-sm tracking-[0.3em] text-stone-500 [font-variant:all-small-caps] dark:text-stone-400">
-          {card.dateLabel}
-        </p>
-        <div aria-hidden className="mx-auto mt-5 h-px w-[120px] bg-stone-200 dark:bg-stone-800" />
-        <h1 className="mt-8 font-display text-4xl font-medium tracking-tight text-stone-900 dark:text-stone-100">
-          {half}
-        </h1>
-      </header>
+      {headerHalf && (
+        <header className="text-center">
+          <p className="font-display text-sm tracking-[0.3em] text-stone-500 [font-variant:all-small-caps] dark:text-stone-400">
+            {headerDate}
+          </p>
+          <div aria-hidden className="mx-auto mt-5 h-px w-[120px] bg-stone-200 dark:bg-stone-800" />
+          <h1 className="mt-8 font-display text-4xl font-medium tracking-tight text-stone-900 dark:text-stone-100">
+            {headerHalf}
+          </h1>
+        </header>
+      )}
 
-      {/* Bagster's Daily Light for this date — the tradition's own verse chain,
-          verbatim and attributed, nothing added between the verses. Rendered
-          before Spurgeon: the office opens with Scripture answering Scripture. */}
+      {/* Bagster's Daily Light for this date — the compiler's own verse chain,
+          verbatim and attributed, with his citation list rendered AS citations.
+          Rendered before Spurgeon: the office opens with Scripture answering
+          Scripture. (The source's portion boundaries beyond its printed dashes
+          were flattened at ingest — see scripts/export-daily-light.mjs.) */}
       {office && (
         <section className="mt-14">
           <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400">
-            Daily Light &middot; {half}
+            Daily Light &middot; {officeHalf}
           </h2>
           <p className="mt-4 font-scripture text-lg leading-[1.9] text-stone-900 dark:text-stone-100">
             {office.body}
           </p>
-          <p className="mt-3 font-sans text-xs text-stone-500 dark:text-stone-400">{office.attribution}</p>
+          <p className="mt-3 font-sans text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+            {office.refs}
+          </p>
+          <p className="mt-1 font-sans text-xs text-stone-500 dark:text-stone-400">{office.attribution}</p>
         </section>
       )}
 
       {duePlan && <PlanDueCard plan={duePlan} />}
 
+      {/* Spurgeon failing is a quiet line, not a page-wide error — the office and
+          the reader's plan stand on their own. */}
+      {spurgeonFailed && (
+        <p className="mt-16 border-t edge pt-10 text-center font-sans text-sm text-stone-500 dark:text-stone-400">
+          Spurgeon&rsquo;s page could not be opened just now.
+        </p>
+      )}
+
+      {card && (
+        <>
       {/* Spurgeon's page: his reference heads the section, attribution beneath. */}
       <div className="mt-16 border-t edge pt-12 text-center">
         <h2 className="font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100">
@@ -255,6 +310,8 @@ function ReadyCard({ card, office, duePlan }: { card: TodayCard; office: OfficeR
           Read {card.lead.refDisplay} in full
         </Link>
       </div>
+        </>
+      )}
     </article>
   );
 }

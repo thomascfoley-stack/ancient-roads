@@ -37,8 +37,11 @@ const url = (process.env.DATABASE_URL ?? '').replace(/^"|"$/g, '');
 if (!url) { console.error('STOP: DATABASE_URL required (env only — never a dotfile fallback for a WRITER).'); process.exit(2); }
 const host = new URL(url.replace(/^postgres(ql)?:/, 'http:')).hostname.split('.')[0];
 const declared = process.env.ANNOTATE_ALLOW_HOST;
-if (!declared || !host.startsWith(declared)) {
-  console.error(`STOP: target is ${host} but ANNOTATE_ALLOW_HOST=${declared ?? '(unset)'} — declare the endpoint deliberately, per occasion.`);
+// EXACT equality, not startsWith: every Neon endpoint begins "ep-", so a prefix
+// match let ANNOTATE_ALLOW_HOST=ep authorize every endpoint including
+// production. Declaring the endpoint means typing the whole endpoint id.
+if (!declared || host !== declared) {
+  console.error(`STOP: target is ${host} but ANNOTATE_ALLOW_HOST=${declared ?? '(unset)'} — declare the FULL endpoint id deliberately, per occasion.`);
   process.exit(2);
 }
 const key = localEnv('DEEPINFRA_API_KEY');

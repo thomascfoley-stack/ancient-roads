@@ -4,8 +4,11 @@
 // voice-attachment, the license filter, the grounding invariant, and the render for free.
 //
 // GUARANTEE (§4), enforced mechanically because no verifier runs on this read path (no generation):
-//  - The app authors NOTHING but the date + a bare attribution. Only the Spurgeon lead carries
-//    attributed devotional prose (his verbatim words).
+//  - The app authors NOTHING but the date/hour, bare attributions, and bare plan labels. The
+//    devotional prose on /home is attributed verbatim text from TWO works since 2026-08-21
+//    (the Daily Office): Spurgeon's lead through this module, and Bagster's Daily Light
+//    rendered directly by today-view.tsx from its own date-keyed export — neither composed,
+//    both quoted whole. The plan card carries schedule arithmetic, never scripture comment.
 //  - Voices are POINTERS into the corpus (CommentaryEntry rows), never app-authored strings.
 //  - Selection is a mechanical function of the passage: grounded (verse-range intersects) +
 //    pickDiverse's rotation. No per-passage curation table exists, so "teaching by lineup" is

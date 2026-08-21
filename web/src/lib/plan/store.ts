@@ -341,21 +341,55 @@ export async function reschedulePlan(
   planId: string,
   fromDate: string,
 ): Promise<number | null> {
-  const found = await getPlan(userId, planId);
-  if (!found) return null;
-  const incomplete = found.days.filter((d) => !d.completed_at).sort((a, b) => a.day_index - b.day_index);
+  // A lean read, not getPlan: the reschedule needs the cadence and the incomplete
+  // day indexes — not 800 day rows and 4,000 readings fetched to be thrown away.
+  // This endpoint has no rate limiter (deliberately — no model/embedding spend),
+  // so its per-call weight IS its abuse ceiling.
+  const [planRows, dayRows] = await runAsUser(userId, (sql) => [
+    sql`SELECT spec FROM plans WHERE id = ${planId} AND user_id = ${userId}`,
+    sql`SELECT d.day_index FROM plan_days d JOIN plans p ON p.id = d.plan_id
+        WHERE d.plan_id = ${planId} AND p.user_id = ${userId} AND d.completed_at IS NULL
+        ORDER BY d.day_index
+        LIMIT 800`,
+  ]);
+  const plan = (planRows as Array<{ spec: PlanSpec }>)[0];
+  if (!plan) return null;
+  const incomplete = (dayRows as Array<{ day_index: number }>).map((d) => d.day_index);
   if (incomplete.length === 0) return 0;
-  const dates = rescheduleDates(found.plan.spec.daysPerWeek, incomplete.length, fromDate);
-  const indexes = incomplete.map((d) => d.day_index);
+  const dates = rescheduleDates(plan.spec.daysPerWeek, incomplete.length, fromDate);
+  // Lockstep unnest pads the SHORTER array with NULLs instead of erroring (SRF
+  // semantics), and day_date's NOT NULL is the only thing between that and a
+  // silent date wipe — so the lengths are asserted HERE, loudly, not left to a
+  // constraint nobody documented. Unreachable today (parsePlanSpec bounds
+  // daysPerWeek 1..7), which is exactly when an assert is cheapest.
+  if (dates.length !== incomplete.length) {
+    throw new Error(`rescheduleDates returned ${dates.length} dates for ${incomplete.length} days`);
+  }
+  const indexes = incomplete;
   const [rows] = await runAsUser(userId, (sql) => [
+    // `completed_at IS NULL` is RE-ASSERTED in the UPDATE, not trusted from the
+    // read: the snapshot and this write are two transactions, and a day marked
+    // read in the gap (second tab) must keep its historical date — the
+    // invariant the docstring promises. `moved` then counts what actually moved.
     sql`UPDATE plan_days d
         SET day_date = v.new_date::date
         FROM (SELECT unnest(${indexes}::int[]) AS day_index, unnest(${dates}::text[]) AS new_date) v,
              plans p
         WHERE d.plan_id = ${planId}
           AND d.day_index = v.day_index
+          AND d.completed_at IS NULL
           AND p.id = d.plan_id AND p.user_id = ${userId}
         RETURNING d.day_index`,
   ]);
-  return (rows as unknown[]).length;
+  const moved = (rows as unknown[]).length;
+  if (moved > 0) return moved;
+  // Zero rows from a non-empty incomplete set is ambiguous: the plan vanished
+  // mid-gap (report not-found, like the sibling writers), OR a second tab
+  // completed the last unread day under us (the plan EXISTS — a 404 for a plan
+  // sitting in front of the reader would be a lie). One cheap read separates
+  // the two; it only ever runs on this rare zero path.
+  const [stillThere] = await runAsUser(userId, (sql) => [
+    sql`SELECT 1 FROM plans WHERE id = ${planId} AND user_id = ${userId}`,
+  ]);
+  return (stillThere as unknown[]).length > 0 ? 0 : null;
 }

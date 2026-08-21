@@ -27,9 +27,12 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   }
 }
 
-// The client's LOCAL calendar date arrives as YYYY-MM-DD. It may differ from the
-// server's UTC date by a day either way (time zones), never more — anything
-// outside that window is not "today" anywhere on Earth and is refused.
+// The client's LOCAL calendar date arrives as YYYY-MM-DD. Compared against the
+// current instant, that date's UTC midnight can sit up to ~36h away at the
+// extremes (UTC-12 late evening: local "today" began 36h before its own UTC
+// midnight... measured as |now - midnight| just under 36h; UTC+14 gives -14h).
+// The 48h window below covers every real timezone with margin; anything outside
+// it is not "today" anywhere on Earth and is refused.
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 function isNearToday(iso: string): boolean {
   if (!DATE_RE.test(iso)) return false;
@@ -52,6 +55,17 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   }
   const { id } = await ctx.params;
   if (!UUID_RE.test(id)) return apiError('INVALID_REQUEST', { message: 'plan id must be a UUID' });
+
+  // CSRF floor for a cookie-authenticated mutation: a cross-origin
+  // <form enctype="text/plain"> is a *simple* request (no preflight) that can
+  // deliver a JSON-shaped body. Requiring application/json forces a preflight
+  // on any cross-origin caller, which the browser then refuses. The session
+  // cookie's SameSite posture is recorded as unaudited (2026-08-02 deep audit);
+  // until someone reads the live Set-Cookie, this route does not lean on it.
+  const contentType = req.headers.get('content-type') ?? '';
+  if (!contentType.toLowerCase().includes('application/json')) {
+    return apiError('INVALID_REQUEST', { message: 'Content-Type must be application/json' });
+  }
 
   let body: { kind?: unknown; dayIndex?: unknown; completed?: unknown; fromDate?: unknown };
   try {
