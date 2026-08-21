@@ -1,5 +1,39 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 — "Do it all": the uploader remediation programme, both waves, executed
+
+**Owner directive: implement everything open from the uploader deep-dive, loop-tested, smooth and
+elegant.** Executed as seven parallel slices + two waves by this session, every slice tests-first
+with watched reds. The complete record is the commit chain 2ccd481..0c47219 (each message carries
+its own red-proofs and denominators); the deep-dive order's checklist is the index.
+
+**Shipped (committed; deploy in flight at close):**
+- M2 translation detection (ADR-100 built; 69/69 family on two fresh held-outs, BEAT the KJV
+  oracle 15/19 vs 12/19; honest compatibility confidence, bar FAILED once as registered then
+  revised on principle and confirmed on v3 — the whole story in
+  translation-detect-PRE-REGISTRATION.md).
+- H4 origin-aware verifier · H3 real model parity · H5 upload limits + quotas · H8 readings CAS ·
+  H9 ef_search fed (owner EXPLAIN still owed) · D1/D2 parser quality · D6/D7 derived guards ·
+  D8/D9 predicate fences · M3 + the 1/2/3-John overlap dedupe (independently verified 21/21,
+  ADR-115) · D13–D19 + Tier-2 arrival experience · CI: user-corpus suites ride db-invariants ·
+  M1 docs-truth wave (STATE_OF_TRUTH §5 rewritten; MASTER B5/B1; both design headers) ·
+  migration 122 FORCE-RLS/grants (dev-applied both branches; REFUTED D11 with plans) · the RLS
+  proof widened by its own derivation to SEVEN tables (two never before proven), 43/43 on both
+  dev branches · Wave 2: the draft check (zero-spend by construction) + sermon metadata chips
+  (migration 124, dev-applied) · Tier-3 gap ranking + §5 tripwire.
+- Deploy-gate work while shipping: the corpus-identity gate caught the Chesterton quarantine's
+  missing manifest half (01a114c), and the CDN-freshness gate caught the WORSE half — the public
+  blob store still SERVING the quarantined entries; synced (0c47219). Both were completions of
+  the owner's own ruling, verified against the quarantine snapshot before acting.
+
+**NOT DONE / open at close:** the deploy itself (three candidates gate-clean; one deployer to be
+named — my worktree attempt stood down against a concurrent prep); the owner-terminal EXPLAIN
+(H9); prod application of 122/124; the anchor/metadata backfill runbook item; Slice 4 with its
+RetrievalContext.traditions caveat; asserted_ownership_at (owner); the load-flake note on the
+suggested-readings live leg (green in isolation, recorded). Push of THIS entry deferred past the
+owner's freeze protecting run 32510118724 — possibly the first db-invariants verdict in the
+repo's history, running on this session's 0c47219.
+
 ## 2026-08-21 — Gated-beta work order: three rulings recorded, three gaps closed, one flake root-caused
 
 **Owner order (Kimi-drafted, owner-relayed). Three of its own stop conditions fired on contact and
