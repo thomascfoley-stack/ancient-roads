@@ -1,5 +1,30 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 — ⚠ DIVERGENT DEPLOY LINEAGES: the highlighter release is OFF production
+
+**Measured 2026-08-21 ~04:50 UTC, read-only `vercel inspect ancientpaths.app` (deploy.sh's own
+`inspect_id` path, same cwd/env):** the alias serves `dpl_7Cp963S5TLscNxkQfmzrbwDsEREB` =
+`939bcf8` — the history-corpus deploy (receipt 03:14:49Z tonight, this clone,
+`fix/q1-signed-out-state`). A second session in the `ap-hl-release` clone had walked production
+earlier on 2026-08-20 observing `dpl_6rkRV96mPVHbhEwNXPSpS3mkUR8t` serving `d09d4f2` — the
+highlighter reliability/delight release (dossier `docs/PLANS_STUDIES_EXCELLENCE.md`, branch
+`docs/plans-studies-excellence`, commit `e4983ba`, Model: Kimi K2).
+
+**Ancestry, checked (not dated):** `939bcf8` and `d09d4f2` are mutually non-ancestors.
+`939bcf8..d09d4f2` = the 6 highlighter commits (`3fc5d39` grace window, `dc1ac45` foreign-highlight
+wash, `33581ec` idempotent creation, `9a9726c` bloom, `0ed0033` two-tap mode, `d09d4f2` worklog);
+`d09d4f2..939bcf8` = 9 history-corpus commits. Merge-base `92d1927`. **`origin/main` contains
+NEITHER lineage.** So tonight's 939bcf8 deploy reverted six shipped highlighter features from
+prod (the history-corpus DB rows are unaffected — data landed via owner-run copies, not the
+deploy). This is AGENTS.md's named two-clone failure mode (2026-07-12), recurring: deploy.sh's
+clean-tree gate cannot see a sibling clone.
+
+**Fix path (owner ⚑ — deploy timing is an owner call, not made here):** merge the two lineages
+(union of `fix/q1-signed-out-state` and the hl lineage at/above `d09d4f2`), run the full gate on
+the union — the D1 lesson applies, the union is what can see cross-branch breakage — then ONE
+deploy carrying both. Until then, every hour keeps the highlighter regression live. Neither
+branch should deploy alone again.
+
 ## 2026-08-21 — Reading-plans deep-dive inspection (read-only; findings + recommendations)
 
 Owner asked for a deep dive on the reading plan / Bible study feature and ideas to make it
