@@ -12,6 +12,8 @@ export function ReaderHeader({
   onTranslationChange,
   interlinear,
   onToggleInterlinear,
+  highlightMode,
+  onToggleHighlightMode,
   dialogOpen = false,
 }: {
   book: Book;
@@ -20,6 +22,10 @@ export function ReaderHeader({
   onTranslationChange: (t: Translation) => void;
   interlinear: boolean;
   onToggleInterlinear: () => void;
+  /** Two-tap highlight mode (the phone flow). Optional: headers without a highlightable
+   *  surface simply do not render the toggle. */
+  highlightMode?: boolean;
+  onToggleHighlightMode?: () => void;
   /** A031 — true while the page has a modal dialog (the verse-study sheet) open. Pass-through to
    *  ReaderSettings, which closes its popover on the flip: the popover's only other exit is an
    *  outside mousedown, and the keyboard / deep-link paths into the dialog fire none, leaving both
@@ -60,6 +66,21 @@ export function ReaderHeader({
         <div className="flex items-center gap-1.5 sm:gap-2">
           {/* A031 — see the prop's doc above: the popover closes itself when a dialog opens. */}
           <ReaderSettings dialogOpen={dialogOpen} />
+        {onToggleHighlightMode && (
+          <button
+            onClick={onToggleHighlightMode}
+            title="Highlight mode: tap a word, then another, to highlight that span"
+            aria-pressed={!!highlightMode}
+            className={`min-h-[44px] min-w-[44px] px-3 text-xs font-semibold sm:min-h-0 sm:min-w-0 sm:py-1.5 ${
+              highlightMode
+                ? // Same ON/OFF language as the interlinear toggle below: antique gold when on.
+                  'bg-accent-600 text-stone-50 hover:bg-accent-700 dark:bg-accent-400 dark:text-stone-950 dark:hover:bg-accent-500'
+                : 'border edge text-stone-500 hover:bg-stone-900 hover:text-stone-50 dark:text-stone-400 dark:hover:bg-stone-200 dark:hover:text-stone-950'
+            }`}
+          >
+            HL
+          </button>
+        )}
         <button
           onClick={onToggleInterlinear}
           title="Greek / Hebrew interlinear"

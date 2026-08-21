@@ -62,12 +62,26 @@ export function rangeToOffsets(
   return { start, end };
 }
 
+/** Whole-word tokens with their char offsets into `text` — deterministic, so the tap-mode
+ *  targets verse-display renders carry exactly the offsets a two-tap span persists. Words are
+ *  maximal non-whitespace runs, matching what snapToWords keeps (trailing punctuation rides
+ *  with its word in both). */
+export function wordTokens(text: string): { start: number; end: number }[] {
+  const out: { start: number; end: number }[] = [];
+  const re = /\S+/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) out.push({ start: m.index, end: m.index + m[0].length });
+  return out;
+}
+
 export interface HighlightRange {
   start: number;
   end: number;
   color: string; // background color key (HIGHLIGHT_COLORS id)
   textColor?: string | null; // reserved for the later text-color tool; ignored for now
   id?: string;
+  /** Just written this session (not hydrated from the server) — the mark blooms once on render. */
+  fresh?: boolean;
 }
 export interface Segment {
   start: number;
@@ -75,6 +89,7 @@ export interface Segment {
   color: string | null; // null = unhighlighted run
   textColor?: string | null;
   id?: string;
+  fresh?: boolean;
 }
 
 /** Flatten immutable highlight ranges into a contiguous, non-overlapping tiling of [0, textLen].
@@ -105,13 +120,14 @@ export function flattenToSegments(textLen: number, highlights: HighlightRange[])
       color: winner?.color ?? null,
       textColor: winner?.textColor ?? null,
       id: winner?.id,
+      fresh: winner?.fresh,
     });
   }
   // Merge adjacent runs that render identically, so the DOM stays minimal.
   const merged: Segment[] = [];
   for (const s of out) {
     const last = merged[merged.length - 1];
-    if (last && last.color === s.color && last.textColor === s.textColor && last.id === s.id && last.end === s.start) {
+    if (last && last.color === s.color && last.textColor === s.textColor && last.id === s.id && last.fresh === s.fresh && last.end === s.start) {
       last.end = s.end;
     } else {
       merged.push({ ...s });

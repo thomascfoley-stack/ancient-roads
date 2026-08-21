@@ -107,6 +107,56 @@ anchors.
 - §8b similarity floor: the launch gate, before the site gate ever drops.
 - Kimi's authenticated prod walk: unblocked now.
 
+## 2026-08-20 (latest) — Highlighter reliability + delight: ~60 live test cases, four fixes, tap-mode, bloom
+
+Owner asked for a deep inspection of the reader highlighter ("finicky, doesn't fire all the time"),
+then fixes 1–4 plus tap-mode and swatch juice, deployed. The inspection ran ~60 live cases against
+production via CDP (real mouse events, synthetic selections, 390px emulation, signed-in write path).
+
+**What the cases proved.** Engine logic is sound (~95% fire rate in isolation, desktop + mobile);
+the "flaky" is a **latency/collapse race** — time-series probes caught the popover mounting >1s
+after selection under main-thread load, while `pending` cleared instantly on collapse. Interlinear
+mode has ZERO annotatable containers (highlighter dead there). KJV highlights on a WEB render show
+only a 6px dot. Prod DB carried duplicate identical highlight rows (a John 1:4 twin and a
+Zechariah 1:1 set created 3× in 8 seconds — repeat taps because nothing appeared to happen).
+
+**What shipped** (two parallel workstreams, integrated on `feat/hl-release`):
+1. **Grace window** — `COLLAPSE_GRACE_MS = 1500` in use-text-annotation.ts: collapse schedules the
+   clear instead of instant-null; new selection replaces, dismiss still instant. Red-proofed by
+   stash-and-watch-red. (`3fc5d39`)
+2. **Interlinear** — STOPPED at its own guard, correctly: the ingest pipeline carries NO
+   English↔original alignment (`original.ts:130-134` says so in terms); word offsets would need
+   the heuristic `matchEnglishWord`'s own contract forbids. Real shape: alignment-data acquisition
+   + ingest rebuild + licensing review. Filed for the owner, not built.
+3. **Foreign-highlight wash** — a KJV span on a WEB render now paints the whole verse in
+   `HIGHLIGHT_WASH[color]` (same hue at /30) + a titled dot ("Highlighted in KJV"), instead of
+   invisibility. Red-proof 3/4 failed pre-fix. (`dc1ac45`)
+4. **Idempotent create** — POST /api/annotations SELECTs first (NULL-safe), returns 200 + existing
+   row on a twin instead of inserting. Caveat recorded: read-then-insert still races two truly
+   simultaneous requests; the sequential double-submit prod exhibited is closed. (`33581ec`)
+5. **Swatch bloom** — 350ms gold ring (box-shadow, not scale: marks are inline) on FRESH spans
+   only, object-identity-tracked so hydrated marks never bloom. (`9a9726c`)
+6. **Tap-mode** — header HL toggle (matching the אα pattern): word spans render only while on,
+   first tap anchors, second completes [min..max], raises the EXISTING popover path (no second
+   popover). ESC exits. Red-proof 6/6 failed pre-build. (`0ed0033`)
+
+**Prod data fix** (same deploy): 4 excess duplicate rows deleted (kept earliest of each set);
+snapshot at docs/evidence/annotations-dedupe/pre-dedupe-snapshot-2026-08-20.csv.
+
+### NOT DONE / UNVERIFIED
+- Interlinear highlighting: unbuilt (above) — the single-word Greek/Hebrew dream loop stays open.
+- Discoverability (coach mark): deferred by owner ("big lift, later").
+- Note-editor UX: never exercised in this pass.
+
+### Post-deploy live battery (prod, 2026-08-20, dpl_6rkRV96mPVHbhEwNXPSpS3mkUR8t serving d09d4f2)
+- V1 tap-mode: toggle → 970 word spans → tap "in" → anchor → tap "the" → popover. PASS.
+- V2 grace window: bar present pre-collapse, present at +0.7s, gone at +2.1s (the 1500ms contract). PASS.
+- V3 idempotency: first POST 201, second 200, same id. PASS.
+- V4 translation pin: KJV spans on WEB render carry titled dots ("Highlighted in KJV"); web span on v8 renders native `bg-yellow-200/70`. PASS.
+- V5 bloom via the full UI path (tap-mode → swatch): fresh mark wears `animate-highlight-bloom`. PASS. (An earlier miss was a probe artifact: marks are styled spans, not `<mark>` elements, and raw-fetch writes bypass the client's freshSpans tracking by design.)
+- Test residue cleaned: 2 verification rows deleted from prod (v10, v16); zero remain.
+
+
 ## 2026-08-20 (Phase 1 COMPLETE) — the converter exists and a second historian went end-to-end
 
 **The ingestion bridge is built and proven deep**: `src/ingest/ccel-to-historian-jsonl.ts` (reuses

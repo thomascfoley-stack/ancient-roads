@@ -104,6 +104,9 @@ export default function ReaderPage() {
   const [error, setError] = useState<string | null>(null);
   const [commentaryCache, setCommentaryCache] = useState<Map<string, CommentaryEntry[]>>(new Map());
   const [interlinear, setInterlinear] = useState(false);
+  // Two-tap highlight mode (the phone flow): header toggle flips it, ESC inside VerseDisplay
+  // exits it. VerseDisplay owns the anchor; the page owns only on/off.
+  const [highlightMode, setHighlightMode] = useState(false);
   const [original, setOriginal] = useState<OriginalData | null>(null);
   // Highlights, notes, bookmarks, and their write path (retry + rollback + a visible failure —
   // see use-annotation-writes.ts for why this isn't the fire-and-forget `.catch(() => {})` it
@@ -112,6 +115,7 @@ export default function ReaderPage() {
     highlights,
     notes,
     bookmarks,
+    freshSpans,
     annotationsFailed,
     retryAnnotations,
     writeError,
@@ -399,6 +403,8 @@ export default function ReaderPage() {
         onTranslationChange={handleTranslationChange}
         interlinear={interlinear}
         onToggleInterlinear={() => setInterlinear((v) => !v)}
+        highlightMode={highlightMode}
+        onToggleHighlightMode={() => setHighlightMode((v) => !v)}
         // A031 — the study dialog and the header's Aa popover could both be open at once,
         // overlapping. The popover's only exit was an outside MOUSEDOWN, and the keyboard path
         // (Enter on a verse handle), the `#v16:study` deep link and `?firstrun=1` all open the
@@ -449,6 +455,7 @@ export default function ReaderPage() {
             flashVerse={flashVerse}
             onVerseClick={handleVerseClick}
             highlights={highlights}
+            freshSpans={freshSpans}
             notedVerses={new Set(notes.keys())}
             bookmarkedVerses={bookmarks}
             onToggleBookmark={toggleBookmark}
@@ -456,6 +463,8 @@ export default function ReaderPage() {
             signedIn={signedIn}
             onAddHighlight={addHighlight}
             onOpen={(verse, tab) => openStudy(verse, tab)}
+            tapMode={highlightMode}
+            onExitTapMode={() => setHighlightMode(false)}
             // Absent until the chapter's interlinear has loaded: offering "Define" with no data
             // behind it would answer every word with "no match", which is a lie about the verse
             // rather than a fact about the lookup.
