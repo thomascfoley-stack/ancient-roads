@@ -302,6 +302,59 @@ predicate and the register wall each answer a piece, and both defects lived in t
 | E4 | Missing materializations closed | **DONE.** `gill-song` 115 rows (08-19) and `barnes-crosswire-nt` **7,431 rows across 27 books** (08-20). Admitted rows 64,331 → 71,762. Books of 66 with zero admitted entries: **NONE** |
 | E5 | Matrix clean | **DONE — 0 findings across 362 published works.** NOT in CI: the sweep needs production data, so it is a periodic owner-gated run; CI carries the code-level half only. See WORKLOG 2026-08-20 NOT DONE |
 
+## Lane F — the gate that could not go green (opened 2026-08-21)
+
+**`db-invariants` has never produced a green run.** Not "is currently red" — has *never* passed. It
+was diagnosed on 2026-08-21 as three defects stacked so that each hid the one behind it, and two are
+now closed.
+
+| # | Gate | Status |
+|---|---|---|
+| F1 | The CI parent predates the corpus | **CLOSED `13eed33`.** `ci-test-20260729` was cut before essentially every served row landed (topical publish, P4.n, the history corpus, gill-song, barnes-crosswire-nt), so four suites asserting properties OF SERVED CONTENT failed on their own preconditions. Repointed to `dev`, verified read-only first: 15 published devotional works · 9,878 served JFB rows · 131,569 in the served legal pool. **Trade recorded:** dev drifts with ingest, so a future ingest can redden CI for reasons unrelated to the commit — "green but drifting" over "stable but maintained", revisit if reds become unattributable |
+| F2 | Migration `011` could not be applied to any fresh branch | **CLOSED `c851c2c`.** The only `CONCURRENTLY` migration missing its `--SPLIT--` markers, so the runner sent all three statements as one implicit transaction and Postgres refused (25001). **The migration set could not be replayed from zero** — a fresh Neon branch, a DR rebuild or a new dev machine all died here. Filed as CRITICAL from static reading that morning; **proven by execution** the same day, the moment F1 pointed CI at a parent whose ledger did not already record it. Three statements, two separators |
+| F3 | The gate executed ~45% of the time | **CLOSED `a55db09`.** Repo-wide concurrency key with `cancel-in-progress: false` allowed one running + one pending run for the entire repo, so a third push cancelled the pending one while queued. **Measured over 20 runs: 9 cancelled · 9 failure · 2 never ran · 0 succeeded.** Re-keyed per-ref with `cancel-in-progress: true`. Per-ref not per-sha, deliberately: per-sha bounds nothing, per-ref bounds concurrent ephemeral branches by active refs. **Neon branch cap NOT READ** — the API key does not expose plan limits; 9 branches measured today |
+| F4 | Name what remains red, and who owns each | **OPEN — this is the number to watch.** See below |
+| F5 | ⚑ First green run | **NOT ACHIEVED.** No run has completed on the repointed parent as of filing |
+
+### F4 — the remaining red, by owner
+
+`neon-auth-live` is no longer in this list: `b24bfe3` converted a withheld credential from FAIL to an
+honest **NOT RUN** via the loud-skip helper, which is the correct posture and the model for the rest.
+
+| suite | why red | owner |
+|---|---|---|
+| `history-scope-db` | **TRUE POSITIVE.** dev carries 81 served anchored entities, only **31 inside the shipped `vocab()` scope**, so its `LIMIT 1` probe draws an out-of-scope label ~62% of the time. The entity scope leak, correctly reported | historians lane |
+| `licensing` · `plan-tenancy` · `register-wall-surfaces` | Expected to clear on the repointed parent — the data they need is present on `dev`. **UNCONFIRMED: no run has completed there yet** | — |
+
+**A green `db-invariants` is the exit condition for this lane.** Until then, every "nothing merges
+red" sentence in this repo is discipline, not mechanism — and five deploys have shipped through this
+gate while it was structurally incapable of passing.
+
+## Queued — the `SCAN_RE` false-floor class (filed 2026-08-21, owner: not beta-blocking)
+
+**A design decision, not a patch, which is why it is queued rather than fixed.** `SCAN_RE`'s bare
+`([a-z]{2,})\s+(\d…)` path floors non-citations where an ordinary noun is also a book alias:
+
+| query | floored ranges |
+|---|---|
+| `she is 1 mark 5 points from winning` | **2** |
+| `i counted 3 james 2 marys and a paul` | **1** |
+
+**n = 2 of 10** adversarial cases — a measurement, not a survey, and the set should grow because real
+topical queries are near-free cases. Identical across `0d52a20~1`, `0d52a20` and `e033023`, so
+**pre-existing and untouched by the reference-routing fixes** (ADR-115).
+
+**Why it is not merely noise:** the floor reserves the top two answer slots, so a false floor
+**displaces a correct voice** rather than adding one. This is [ADR-015](../DECISIONS.md)'s hijack
+class — the one that put "good shepherd insurance company" onto John 10 — surviving in the
+*un-corroborated numeric* path. ADR-015 floors numerics unconditionally because "a chapter number is
+explicit intent", which is true of `1 Corinthians 13` and false of `1 mark 5`.
+
+**Candidate direction, needing its own measurement:** extend ADR-015's corroboration gate to numerics
+whose book word is a common English noun (`mark`, `james`, `job`, `acts`, `numbers`, `kings`).
+Changing what the numeric path asserts is ADR-level. **Not beta-blocking** — a precision leak on
+idiomatic phrasing, not a wrong-book defect on genuine citations.
+
 ## Failure-mode watchlist
 
 **Instances seventeen and eighteen — one shape, found twice in one morning (2026-08-21), by two
