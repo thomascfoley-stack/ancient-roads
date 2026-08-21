@@ -343,8 +343,15 @@ MISSING=""
 # is serving. A gate demanding variables that no code reads and production does not have is not
 # protecting a runtime failure — it is inventing one, and it blocked a hotfix for a live auth
 # outage. `neon-auth.ts` throws on either NEON_AUTH_* being absent, so that pair still fails closed.
+# TEACHER_ALLOWLIST added 2026-08-21 (ADR-116 ruling 3). It is required for the OPPOSITE reason
+# to the rest of this list: the others fail at runtime when absent, this one fails SILENTLY and
+# SAFELY — `isTeacherAllowed` admits nobody with it unset, so an unset var ships a teacher that
+# is dead for the owner too, with no error anywhere to notice. That is the right default and the
+# wrong thing to discover in production. Listing it here makes the absence loud at deploy time
+# rather than at first use. (If the teacher is ever meant to be OFF deliberately, set it to an
+# empty-but-present value and this check still passes — the check is "declared", not "non-empty".)
 for v in APP_DATABASE_URL DATABASE_URL DEEPINFRA_API_KEY SITE_PASSWORD \
-         NEON_AUTH_BASE_URL NEON_AUTH_COOKIE_SECRET; do
+         NEON_AUTH_BASE_URL NEON_AUTH_COOKIE_SECRET TEACHER_ALLOWLIST; do
   printf '%s\n' "$ENV_NAMES" | grep -qx "$v" || MISSING="$MISSING $v"
 done
 if [ -n "$MISSING" ]; then
