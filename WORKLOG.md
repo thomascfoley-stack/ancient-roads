@@ -1,5 +1,62 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 — GATED-BETA DEPLOY: teacher owner-gate live on production (0c47219)
+
+**`npm run audit`: AUDIT PASSED — all gates green** (re-run after a real failure it caught: adding
+`FORBIDDEN` to `ApiErrorCode` broke the exhaustive `Record<ApiErrorCode, number>` in
+`test/api-error.test.ts` — the type system doing its job; a new code cannot be added unmapped).
+
+**Live: `0c47219` · `dpl_2uvhZCZL4VYSDMT6N8cjX8D8dVgt` · 2026-08-21T17:55:08Z**, alias-serves-this-
+deploy confirmed by deploy.sh's own inspect check. Receipt:
+`docs/evidence/deploys/deploy-0c47219-2026-08-21T17-55-08Z.txt`. Deployed from an isolated detached
+worktree at a committed sha (three peer sessions were writing the main tree; I hit their
+`.git/index.lock` twice during this work).
+
+`TEACHER_ALLOWLIST` was set by the owner in Vercel **Production** scope before this deploy — the
+new `deploy.sh` required-env check was blocking, by design, which is the first time that check has
+been load-bearing.
+
+### Smoke test — one of three VERIFIED, two UNVERIFIED and NOT claimed
+
+| # | Check | Result |
+|---|---|---|
+| 3 | **Site password gate still up** | **VERIFIED.** `/home`, `/plans`, `/read/jhn/1`, `/ask` all **307 → `/gate?next=…`**. Unauthenticated `POST /api/ask` → **401 "Locked"** (the gate, before the route). Note `/` returns **200** and that is CORRECT — it is the public marketing page in `PUBLIC_PATHS`; probing `/` is the wrong test for "is the gate up", and an earlier read of mine made exactly that mistake before being corrected against an app route. |
+| 1 | **POSITIVE control — owner asks a real question on prod, expects a composed answer not a 403** | **UNVERIFIED.** The Chrome extension disconnected mid-smoke-test ("Claude in Chrome is not connected"), and it is the only surface with the owner's live session. I cannot sign in myself. **The allowlist path is therefore proven only in test, never once against production.** |
+| 2 | **NEGATIVE control — an AUTHENTICATED non-owner gets FORBIDDEN** | **UNVERIFIED.** I hold no second account and may not create one. The 401 above proves only the site gate, not the owner-gate; the two are different doors and only the second is the ADR-116 claim. |
+
+**What that means, stated plainly:** the teacher owner-gate is proven by 10 tests including a
+seeded-defect red-proof, and is **unproven in production**. If `TEACHER_ALLOWLIST` were set to a
+value that does not match the owner's sign-in email, the symptom would be the owner seeing "Not
+open yet" — visible, harmless, one env edit to fix. The dangerous direction (a non-owner reaching
+the teacher) requires the allowlist to contain their identity, which it does not.
+
+### The `main` question — the premise was inverted, and the answer is the opposite of "push local main"
+
+The order said *"local main is 185 commits ahead of origin/main."* Measured:
+
+- **local `main` is 190 commits BEHIND `origin/main`, with ZERO commits of its own**
+  (`git rev-list --left-right --count origin/main...main` → `190  0`). It is a stale checkout.
+  **Pushing it would have been a no-op at best.** Nothing was ever owed *from* it.
+- The **185** is real but belongs to a different pair: `origin/fix/q1-signed-out-state` was 185
+  ahead of `origin/main`, containing it entirely — a clean fast-forward, no conflict possible.
+- No local branch held unique unpushed work. `claude/zealous-perlman-4ccc44` reads "ahead 55" of
+  its own upstream but is **fully contained** in the working branch; nothing is stranded.
+
+**Done: `origin/main` fast-forwarded to `0c47219` — the exact sha now serving production.** Chosen
+deliberately over the moving branch tip so that **`main` means "what is deployed"**, which is what
+rollback and recovery already assume and what the gate list flagged as broken. `origin/main` was
+`af668e7` (190 behind local main's parent lineage); it is now the live sha, and the branch sits 3
+commits ahead of it.
+
+### NOT DONE / UNVERIFIED
+- **Smoke-test items 1 and 2 above.** The owner can close item 1 in one page load.
+- ANN post-filter recall collapse in history search (filed in the previous entry, unfixed).
+- The 17-item gated-beta gate list: migration 122 on prod, RLS under a real Neon Auth id,
+  `chesterton-preexistence` quarantine, history-mode relevance floor, privacy/terms content.
+- `db-invariants` still has never produced a green run.
+- The `history-scope-db` commit message lost the phrase `status = 'published'` to shell backtick
+  substitution; the previous WORKLOG entry carries the accurate red-proof.
+
 ## 2026-08-21 — THE LEXICON FLIP IS DONE ON PROD: 5 works published, 52,043 rows served, /ask verified untouched
 
 **Owner-executed at the terminal ~18:03 UTC, gate held.** Continuation of the /word-shelf entry
