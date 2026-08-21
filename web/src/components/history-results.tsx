@@ -110,6 +110,9 @@ export function HistoryResults({ data, query, threadId }: {
             {data.interpretation.period && (
               <span className={`${CHIP} ${CHIP_ON} tabular-nums`}>{periodBadge([data.interpretation.period.start, data.interpretation.period.end])}</span>
             )}
+            {data.interpretation.entities.length > 0 && !filtering && (
+              <span className="text-xs text-stone-500 dark:text-stone-400">tap a name to set it aside</span>
+            )}
           </>
         )}
         {filtering && <span className="text-stone-500 dark:text-stone-400">(within these results)</span>}

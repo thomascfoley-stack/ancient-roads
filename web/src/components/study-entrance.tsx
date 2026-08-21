@@ -42,8 +42,10 @@ export function StudyEntrance({
         What do you want to study?
       </p>
 
+      {/* Stacked below sm (the approved mobile board): a shared row at 375px squeezed the input
+          to ~230px and truncated the placeholder mid-word. Full-width input, full-width button. */}
       <form
-        className="mt-3 flex gap-2"
+        className="mt-3 flex flex-col gap-2 sm:flex-row"
         onSubmit={(e) => {
           e.preventDefault();
           study(q);
@@ -61,7 +63,7 @@ export function StudyEntrance({
         />
         <button
           type="submit"
-          className="min-h-[44px] shrink-0 border border-stone-900 px-5 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
+          className="min-h-[44px] border border-stone-900 px-5 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 sm:shrink-0 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
         >
           Study
         </button>

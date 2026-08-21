@@ -231,6 +231,9 @@ export default function WorkPage() {
         signedIn={signedIn}
         onOpenToc={() => setTocOpen(true)}
         onProgress={handleProgress}
+        // The landing glow marks where a SHARED/STUDY link dropped the reader — deep links
+        // only. A resume restore is the reader's own place; glowing it would say nothing.
+        landingOrdinal={landing.deepLinked ? landing.ordinal : null}
       />
 
       {/* The progress rail: a subtle accent fill down the right edge. */}

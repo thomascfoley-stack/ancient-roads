@@ -52,6 +52,7 @@ export function WorkReader({
   signedIn,
   onOpenToc,
   onProgress,
+  landingOrdinal = null,
 }: {
   slug: string;
   source: WorkSource;
@@ -63,6 +64,9 @@ export function WorkReader({
   signedIn: boolean;
   onOpenToc: () => void;
   onProgress: (ordinal: number, scrollPct: number) => void;
+  /** The section a DEEP LINK landed on — gets the gold landing marker (WorkSection `landed`).
+   *  Null for saved-position restores and plain opens: resuming your own place needs no glow. */
+  landingOrdinal?: number | null;
 }) {
   const {
     sections,
@@ -262,7 +266,7 @@ export function WorkReader({
       if (scroller instanceof Window) scroller.scrollBy(0, dy);
       else scroller.scrollTop += dy;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires exactly when `sections` changes identity
+     
   }, [sections, getScroller]);
 
   // Re-evaluate the active section whenever content or the window changes (also the
@@ -405,7 +409,7 @@ export function WorkReader({
 
         <div className="reading-scale font-scripture leading-[1.9] text-stone-800 dark:text-stone-200">
           {visible.map((s) => (
-            <WorkSection key={s.id} section={s} spans={washes.get(String(s.id))} registerEl={registerEl} sourceType={source.source_type} />
+            <WorkSection key={s.id} section={s} spans={washes.get(String(s.id))} registerEl={registerEl} sourceType={source.source_type} landed={landingOrdinal !== null && s.ordinal === landingOrdinal} />
           ))}
         </div>
 

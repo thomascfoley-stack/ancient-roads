@@ -58,6 +58,7 @@ export function WorkSection({
   spans,
   registerEl,
   sourceType,
+  landed,
 }: {
   section: WorkSectionRow;
   /** Local (Phase-2, unpersisted) highlight preview ranges, as offsets into section.body. */
@@ -66,8 +67,12 @@ export function WorkSection({
   registerEl?: (ordinal: number, el: HTMLElement | null) => void;
   /** The work's `source_type`. Decides whether newlines inside a paragraph are rendered
    *  (verse) or collapsed (prose) — CSS only, so the render invariant above is untouched:
-   *  the character stream is identical either way. */
+   *  the character stream is identical either way. Also gates the margin ordinal below. */
   sourceType?: string;
+  /** True only for the section a DEEP LINK landed on (order 2026-08-20-historians-study-
+   *  entrance: "the landing passage gets a gold hairline… so you always know where the study
+   *  dropped you"). The caller decides — a saved-position restore must not glow. */
+  landed?: boolean;
 }) {
   const paragraphs = splitBodyParagraphs(section.body);
   const sectionHeading = sectionLabel(section);
@@ -83,8 +88,24 @@ export function WorkSection({
       id={`s${section.ordinal}`}
       data-section-ordinal={section.ordinal}
       ref={(el) => registerEl?.(section.ordinal, el)}
-      className="scroll-mt-24"
+      // The landing glow: a gold hairline + faint tint + the app's single 200ms fade, on the
+      // one section a deep link targeted. Classes on the SECTION, never inside the text
+      // container — the ★ render invariant above owns that container's character stream.
+      className={`relative scroll-mt-24${landed ? ' -ml-4 border-l-2 border-accent-400 bg-accent-50/40 pl-4 animate-fade-in dark:border-accent-500 dark:bg-accent-950/20' : ''}`}
     >
+      {/* The margin ordinal, historian works only (the register the design drew) — the same
+          number a study's deep link and a copied citation use, made quietly visible. Outside
+          the text container; aria-hidden (it duplicates data the URL already carries); xl-only
+          because narrower viewports have no margin to put it in. */}
+      {sourceType === 'historian' && (
+        <span
+          data-margin-ordinal
+          aria-hidden="true"
+          className="absolute -left-12 top-1.5 hidden select-none text-micro tabular-nums text-accent-600/70 xl:block dark:text-accent-400/60"
+        >
+          {section.ordinal}
+        </span>
+      )}
       {/* The heading a reader sees. `heading` alone left every commentary section untitled --
           the column is null for all of them (migrate-sections-slice.ts never wrote it), so a
           reader scrolling Matthew Henry saw unbroken prose with no indication of which verse
