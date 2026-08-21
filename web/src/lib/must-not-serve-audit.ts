@@ -68,6 +68,16 @@ export const MUST_NOT_SERVE_WORK_EXCEPTIONS: Readonly<Record<string, number>> = 
 /** ADR-112's cutoff. A work published in this year or later is NOT admitted. */
 export const ADR112_CUTOFF_YEAR = 1931;
 
+/** Surname-rule hits a human has reviewed and cleared, keyed by the exact author string, value
+ *  = who this actually is and why they are not the vetoed name. The ONLY way out of a surname
+ *  hit besides a ruling admission — a record, not a judgement inside the matcher. Mirrored into
+ *  scripts/lib/served-corpus-authors.mjs for the deploy gate; the invariant test asserts the two
+ *  are identical. */
+export const REVIEWED_SURNAME_CLEARANCES: Readonly<Record<string, string>> = {
+  'Bayly, Lewis':
+    'Lewis Bayly (d. 1631), bishop, author of The Practice of Piety — a different person from C. S. Lewis (d. 1963), public domain in fact. The only surname-token hit in the measured 1,212-file static corpus at the 2026-08-21 close-out; cleared then.',
+};
+
 /** Does this author string LOOK like a MUST_NOT_SERVE name, in any format?
  *
  *  Word-boundary matched so 'lewis' hits "Lewis, Howell Elvet" (a genuinely different person — a
@@ -90,7 +100,11 @@ export function auditServedWorks(
   rows: readonly { slug: string; author: string | null; served: number }[],
 ): { slug: string; author: string | null; served: number }[] {
   return rows.filter(
-    (r) => r.served > 0 && authorLooksMustNotServe(r.author) && !isRulingAdmittedWork(r.slug),
+    (r) =>
+      r.served > 0 &&
+      authorLooksMustNotServe(r.author) &&
+      !isRulingAdmittedWork(r.slug) &&
+      !(r.author !== null && r.author in REVIEWED_SURNAME_CLEARANCES),
   );
 }
 

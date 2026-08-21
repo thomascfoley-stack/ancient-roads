@@ -83,6 +83,71 @@ export function isMustNotServe(author) {
   return author.startsWith("Jerome's");
 }
 
+/**
+ * SURNAME-TOKEN RULE — the chesterton-preexistence hole, closed 2026-08-21 (owner close-out,
+ * ADR-112 follow-up). Measured hole: 5 static-corpus entries carried author
+ * 'Chesterton, Gilbert Keith' — surname-first, so every rule above missed them and the gate
+ * printed green over entries whose PD basis was void (the text cites the NIV, 1978; it is not
+ * Chesterton at all). The veto knew the NAME; it could not see the SURNAME in another format.
+ *
+ * These three lists are COPIES of web/src/lib/must-not-serve-audit.ts — same reason as
+ * MUST_NOT_SERVE above (plain node cannot import the .ts module), same discipline:
+ * test/invariants/served-corpus-authors.test.ts asserts all three are identical to the shipped
+ * side and goes red the moment either drifts.
+ */
+export const MUST_NOT_SERVE_SURNAMES = [
+  'tyndale', 'theophylact', 'bonaventure', 'oecumenius', 'origen',
+  'larcher', 'lewis', 'chesterton', 'wilson', 'tolkien', 'jerome',
+];
+
+/** ADR-112 admissions: works of a vetoed author an owner ruling admits anyway. Value = first-
+ *  publication year; admitted only when < ADR112_CUTOFF_YEAR. */
+export const MUST_NOT_SERVE_WORK_EXCEPTIONS = {
+  'chesterton-america': 1922,
+  'chesterton-ball-cross': 1909,
+  'chesterton-defendant': 1902,
+  'chesterton-divorce': 1920,
+  'chesterton-eugenics': 1922,
+  'chesterton-everlasting': 1925,
+  'chesterton-heretics': 1905,
+  'chesterton-innocencebrown': 1911,
+  'chesterton-longbow': 1925,
+  'chesterton-magic': 1913,
+  'chesterton-manalive': 1912,
+  'chesterton-napoleon': 1904,
+  'chesterton-orthodoxy': 1908,
+  'chesterton-thingsconsidered': 1908,
+  'chesterton-thursday': 1908,
+  'chesterton-toomuch': 1922,
+  'chesterton-trifles': 1909,
+  'chesterton-victorianage': 1913,
+  'chesterton-whatwrong': 1910,
+  'chesterton-whitehorse': 1911,
+  'chesterton-wisdom': 1914,
+};
+
+export const ADR112_CUTOFF_YEAR = 1931;
+
+/** Surname-rule hits a human has reviewed and cleared, keyed by the exact author string, value
+ *  = who this actually is. The ONLY way out of a surname hit besides a ruling admission — and it
+ *  is a record, not a judgement call inside the matcher. */
+export const REVIEWED_SURNAME_CLEARANCES = {
+  'Bayly, Lewis':
+    'Lewis Bayly (d. 1631), bishop, author of The Practice of Piety — a different person from C. S. Lewis (d. 1963), public domain in fact. The only surname-token hit in the measured 1,212-file static corpus at the 2026-08-21 close-out; cleared then.',
+};
+
+/** Word-boundary token match, so 'lewis' hits "Lewis, Howell Elvet" but never "Lewisham". */
+export function authorSurnameLooksMustNotServe(author) {
+  if (typeof author !== 'string') return false;
+  const tokens = new Set(author.toLowerCase().split(/[^a-z]+/).filter(Boolean));
+  return MUST_NOT_SERVE_SURNAMES.some((s) => tokens.has(s));
+}
+
+export function isRulingAdmittedWorkSlug(slug) {
+  const year = MUST_NOT_SERVE_WORK_EXCEPTIONS[slug];
+  return year !== undefined && year < ADR112_CUTOFF_YEAR;
+}
+
 function walkJson(dir) {
   const out = [];
   if (!existsSync(dir)) return out;
@@ -123,12 +188,23 @@ export function scanServedCorpusAuthors(dir) {
       const author = typeof e?.author === 'string' ? e.author : '(no author)';
       const must = isMustNotServe(author);
       const suspect = IN_COPYRIGHT_SUSPECTS.includes(author);
-      if (!must && !suspect) continue;
+      // The surname rule fires only where the exact/prefix rules did not, and the ONLY ways out
+      // are recorded lists — an owner ruling admitting the work, or a reviewed clearance of the
+      // person — never a judgement inside the matcher. Fail closed is the house posture on
+      // licensing; a false positive costs a blocked deploy and a review, a miss costs delivery
+      // of vetoed text as unauthenticated static JSON.
+      const work = typeof e?.work === 'string' ? e.work : '';
+      const surnameHit =
+        !must &&
+        authorSurnameLooksMustNotServe(author) &&
+        !isRulingAdmittedWorkSlug(work) &&
+        !(author in REVIEWED_SURNAME_CLEARANCES);
+      if (!must && !suspect && !surnameHit) continue;
       const rec = byAuthor.get(author) ?? {
         author,
         entries: 0,
         chars: 0,
-        kind: must ? 'must-not-serve' : 'in-copyright',
+        kind: must || surnameHit ? 'must-not-serve' : 'in-copyright',
         sample: path.relative(process.cwd(), f),
       };
       rec.entries += 1;

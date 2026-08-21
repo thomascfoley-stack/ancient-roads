@@ -8349,6 +8349,7 @@
     "era": "unassigned",
     "license": "Public Domain",
     "tier": 3,
+    "quarantine": "NOT Chesterton — the text cites the NIV (1978), NEB, TEV and J.N.D. Kelly, so the PD basis (authorDeathUpperBound 1936) is void and the attribution false (fail closed). Owner close-out 2026-08-21, ADR-112 follow-up: DB surfaces quarantined 2026-08-19 (sources status, 25 embedding rows served=false, FTS rows gone); the 5 static-JSON entries removed from web/public/commentaries (jhn/1 x4, php/2 x1); deploy gate widened to the surname-token rule so this shape cannot re-enter. Do NOT re-admit without a verified pre-1931 printing of this exact text.",
     "provenance": {
       "url": "https://www.ccel.org/ccel/chesterton/preexistence",
       "edition": "Pre-Existence of Christ in Scripture, Patristics, and Creed (CCEL)",
