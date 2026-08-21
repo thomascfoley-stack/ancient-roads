@@ -1,5 +1,22 @@
 # Order — make `db-invariants` mean something again
 
+> ⚠️ **PART 2 IS WITHDRAWN — SUPERSEDED THE SAME DAY by
+> [`2026-08-21-measurement-is-the-bottleneck.md`](2026-08-21-measurement-is-the-bottleneck.md).**
+> Do not execute Part 2 (the Neon Auth instance + two GitHub secrets). It was
+> over-engineering: `neon-auth-live` signs up a real undeletable user per run, auth is
+> already proven in production and by daily use, and **that suite has never executed once
+> in its life** — a promissory note, not a regression guard. The correct remedy is one
+> line: change its `announceSkip` requirement `kind` from `secret` to `artifact` so CI
+> reports NOT RUN loudly instead of FAIL. That fix was written into this document's own
+> "Not covered" footnote while the expensive version sat in the body; the superseding doc
+> promotes it.
+>
+> **Part 1 (repoint `PARENT_BRANCH` off the stale `ci-test-20260729`) STANDS**, along with
+> its diagnosis and its endpoint-allowlist warning — carried forward as Part A there.
+>
+> Kept rather than deleted so a reader who arrives here meets the correction, per this
+> repo's own rule about where corrections belong.
+
 **Filed 2026-08-21. Owner-executed in a browser; the code half is agent work.**
 
 `db-invariants` has been RED on every run for weeks and nobody decided that. It is not
