@@ -106,14 +106,41 @@ jobs:
       # another run's half-applied migration or leftover fixture rows. The tenancy suites
       # INSERT and DELETE; today they do that to shared state that the next run inherits.
       #
-      # PARENT CHOICE, and the one operational consequence. The parent is the SAME branch this
-      # job used before, so the tests see exactly the data they saw before — this change is
-      # about isolation, not about what is under test. The trade: the parent no longer advances,
-      # so a migration that is expensive to apply is paid on EVERY run rather than once. 044 is
-      # already applied on the parent, so today the pending set is empty or near it. When a new
-      # expensive migration lands, advance the parent once by hand (apply-pending against
-      # PARENT_BRANCH) rather than letting every run re-apply it — the 30-minute timeout below
-      # is the tripwire that will tell you.
+      # PARENT CHOICE — `dev`, changed from `ci-test-20260729` on 2026-08-21, and this is the
+      # substantive half of the change.
+      #
+      # `ci-test-20260729` was cut on 2026-07-29, BEFORE essentially every served row in this
+      # product landed (the topical publish, the P4.n batches, the 28-work history corpus,
+      # gill-song, barnes-crosswire-nt). So four suites that assert properties OF SERVED CONTENT
+      # could not exercise them and failed on their own preconditions — `catalog "devotionals"
+      # must have works`, `must serve all 9 voices; MISSING: Jamieson (JFB)`, `the corpus must
+      # contain lane/other works`, `seed plan refused: no commentary coverage on this passage`.
+      # That is a gate that CANNOT go green, which is worse than an absent one: it teaches
+      # everyone that red means "probably fine". Five deploys shipped through it.
+      #
+      # MEASURED on `dev` before switching (read-only, 2026-08-21): 15 published devotional works,
+      # 9,878 served JFB rows, 131,569 rows in the served legal pool. The starved preconditions
+      # are satisfied there.
+      #
+      # THE NEW TRADE, and it is the opposite of the old one. `dev` advances with real work, so
+      # the pending-migration set stays near empty instead of an expensive migration being paid
+      # per run. In exchange the gate's data moves under you: a future ingest can redden CI for
+      # reasons unrelated to the commit under test. That is the known cost of "green but
+      # drifting"; the alternative is a purpose-seeded branch that is stable but needs upkeep.
+      # Revisit if drift starts producing reds nobody can attribute.
+      #
+      # WRITES ARE SAFE, and only because of the ephemeral design above: the tenancy suites
+      # INSERT and DELETE, and they now do that to a per-run throwaway copy that is dropped at
+      # the end. Pointing the OLD shared-branch job at `dev` would have mutated the working dev
+      # database on every run.
+      #
+      # THIS DOES NOT MAKE THE JOB GREEN, and nobody should read it that way. Two failures
+      # survive, both real and both filed: `history-scope-db` (dev carries 81 served anchored
+      # entities but only 31 are inside the shipped `vocab()` scope, so its probe draws an
+      # out-of-scope label ~62% of the time — a TRUE POSITIVE for the entity scope leak, not
+      # flake), and `neon-auth-live` (missing NEON_AUTH_* secrets — needs the secrets or
+      # conversion to the loud-skip helper so it reports NOT RUN honestly). What this change buys
+      # is that the remaining red MEANS something.
       #
       # SAFETY. The endpoint id is created at runtime, so it can no longer be a reviewable
       # literal in this file. The load-bearing rail is unaffected: `isAuditAllowedHost`
@@ -125,7 +152,7 @@ jobs:
         env:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
           NEON_PROJECT: spring-heart-74819093
-          PARENT_BRANCH: ci-test-20260729
+          PARENT_BRANCH: dev
           PROD_ENDPOINT_PREFIX: ep-odd-fog
           APP_URL_TEMPLATE: ${{ secrets.APP_DATABASE_URL_TEST }}
         run: |
