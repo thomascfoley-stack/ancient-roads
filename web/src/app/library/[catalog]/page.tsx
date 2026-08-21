@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CATALOGS, catalogTraditions, isCatalogId, isSubFilterOf, listCatalogWorks } from '@/lib/catalog';
 import { CatalogSearch } from '@/components/catalog-search';
+import { StudyEntrance } from '@/components/study-entrance';
 import { catalogHref, toggleTradition, withFacet, type CatalogUrlState } from '@/lib/catalog-href';
 import { decodeDesk, deskHref as deskHrefWith, withPane } from '@/lib/desk';
 
@@ -106,8 +107,16 @@ export default async function CatalogPage({
       <h1 className="mb-5 font-display text-3xl font-medium tracking-tight text-stone-900 dark:text-stone-100">{def.label}</h1>
 
       {/* The SAME selection drives the search and the work list below. One source of truth (the
-          URL), so a lit chip can never mean two different things on one screen. */}
-      <CatalogSearch catalog={catalog} label={def.label} traditions={selected} />
+          URL), so a lit chip can never mean two different things on one screen.
+          Historians leads with the STUDY ENTRANCE instead (order 2026-08-20-historians-study-
+          entrance): the question routes into History mode, and the classic body-text search
+          survives behind its exact-phrase reveal. Other catalogs keep the search box — they
+          have no History-mode equivalent to route into. */}
+      {catalog === 'historians' ? (
+        <StudyEntrance catalog={catalog} label={def.label} traditions={selected} />
+      ) : (
+        <CatalogSearch catalog={catalog} label={def.label} traditions={selected} />
+      )}
 
       {/* aria-current, NOT aria-pressed. These chips are anchors — implicit role `link` — and
           aria-pressed is defined only on role `button`, so the lit state was announced by nothing

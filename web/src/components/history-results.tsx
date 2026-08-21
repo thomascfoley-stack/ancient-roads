@@ -1,6 +1,11 @@
 'use client';
 // History results — HISTORY_RETRIEVAL_DESIGN §5 stages 2-4. Every visible string is a fixed
 // template or a verbatim excerpt; there is deliberately NO generated prose block anywhere.
+//
+// Styling is the app's token set (order 2026-08-20-historians-study-entrance): this surface
+// shipped on `rounded border` + `text-muted-foreground`, neither of which is this app's
+// vocabulary — `rounded` is not on the zeroed radius ladder (so it alone painted corners the
+// PRD bans) and no `--color-muted-foreground` token exists (so that class styled nothing).
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { DISPLAY_LOCALE } from '@/lib/locale';
@@ -23,9 +28,16 @@ const periodBadge = (p: [number, number] | null): string | null =>
 const century = (p: [number, number] | null): number | null =>
   p ? Math.ceil(((p[0] + p[1]) / 2) / 100) : null;
 
-function workHref(slug: string, ordinal: number, threadId: string | null): string {
-  return `/work/${slug}${threadId ? `?from=hist:${threadId}` : ''}#s${ordinal}`;
+// `fq` beside `from=hist:` is what lets the reader's return strip name the study — see
+// HistoryContextBar. Same URL, no extra fetch, and links minted without it still work.
+function workHref(slug: string, ordinal: number, threadId: string | null, query: string): string {
+  const params = threadId ? `?from=hist:${threadId}&fq=${encodeURIComponent(query)}` : '';
+  return `/work/${slug}${params}#s${ordinal}`;
 }
+
+const CHIP = 'inline-flex min-h-[30px] items-center border px-2.5 text-xs transition-colors ease-gentle';
+const CHIP_ON = 'border-accent-400 bg-accent-50 text-accent-800 dark:bg-accent-950/40 dark:text-accent-200';
+const CHIP_OFF = 'edge text-stone-600 hover:bg-accent-50/50 dark:text-stone-400 dark:hover:bg-accent-950/20';
 
 export function HistoryResults({ data, query, threadId }: {
   data: HistoryPayload; query: string; threadId: string | null;
@@ -66,20 +78,20 @@ export function HistoryResults({ data, query, threadId }: {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-6">
       <div className="flex items-baseline justify-between gap-4">
-        <h1 className="font-serif text-xl">&ldquo;{query}&rdquo;</h1>
-        <Link href="/ask?mode=history" className="shrink-0 text-sm underline">New search</Link>
+        <h1 className="font-display text-2xl font-medium tracking-tight text-stone-900 dark:text-stone-100">&ldquo;{query}&rdquo;</h1>
+        <Link href="/ask?mode=history" className="shrink-0 text-sm text-stone-600 underline transition-colors ease-gentle hover:text-accent-700 dark:text-stone-400 dark:hover:text-accent-300">New study</Link>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-        <span className="text-muted-foreground">Matched:</span>
+        <span className="text-stone-500 dark:text-stone-400">Matched:</span>
         {noMatchLine ? (
-          <span>No known people or places matched — showing text matches.</span>
+          <span className="text-stone-700 dark:text-stone-300">No known people or places matched — showing text matches.</span>
         ) : (
           <>
             {data.interpretation.entities.map((e) => (
               <button
                 key={e.slug} type="button" aria-pressed={!offEntities.has(e.slug)}
-                className={`rounded border px-2 py-0.5 ${offEntities.has(e.slug) ? 'opacity-40' : ''}`}
+                className={`${CHIP} ${offEntities.has(e.slug) ? `${CHIP_OFF} opacity-40` : CHIP_ON}`}
                 onClick={() => setOffEntities((prev) => {
                   const next = new Set(prev);
                   if (next.has(e.slug)) next.delete(e.slug); else next.add(e.slug);
@@ -88,11 +100,11 @@ export function HistoryResults({ data, query, threadId }: {
               >{e.label}</button>
             ))}
             {data.interpretation.period && (
-              <span className="rounded border px-2 py-0.5">{periodBadge([data.interpretation.period.start, data.interpretation.period.end])}</span>
+              <span className={`${CHIP} ${CHIP_ON} tabular-nums`}>{periodBadge([data.interpretation.period.start, data.interpretation.period.end])}</span>
             )}
           </>
         )}
-        {filtering && <span className="text-muted-foreground">(within these results)</span>}
+        {filtering && <span className="text-stone-500 dark:text-stone-400">(within these results)</span>}
       </div>
 
       {buckets.length > 1 && (
@@ -101,7 +113,7 @@ export function HistoryResults({ data, query, threadId }: {
             {buckets.map(([c, n]) => (
               <button
                 key={c} type="button" aria-pressed={bucket === c}
-                className={`rounded border px-2 py-0.5 ${bucket === c ? 'font-semibold' : ''}`}
+                className={`${CHIP} tabular-nums ${bucket === c ? CHIP_ON : CHIP_OFF}`}
                 onClick={() => setBucket((b) => (b === c ? null : c))}
               >{c < 0 ? `${-c}c B.C.` : `${c}c`} · {n}</button>
             ))}
@@ -111,50 +123,52 @@ export function HistoryResults({ data, query, threadId }: {
 
       {data.closest && groups.length > 0 ? (
         <Link
-          href={workHref(data.closest.work.slug, data.closest.ordinal, threadId)}
-          className="mt-5 block rounded-lg border p-4 hover:bg-black/5"
+          href={workHref(data.closest.work.slug, data.closest.ordinal, threadId, query)}
+          className="mt-5 block border edge bg-paper p-5 transition-colors ease-gentle hover:bg-accent-50/40 dark:bg-stone-900 dark:hover:bg-accent-950/20"
         >
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">Closest match to your question</div>
-          <div className="mt-1 font-serif">{data.closest.work.author} — {data.closest.work.title}</div>
-          <div className="mt-0.5 truncate text-sm text-muted-foreground" style={{ direction: 'rtl', textAlign: 'left' }}>
-            <bdi>{data.closest.headingPath.join(' › ')}</bdi>
-            {periodBadge(data.closest.period) && <span className="ml-2 rounded border px-1">[{periodBadge(data.closest.period)}]</span>}
+          <div className="text-micro uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400">Closest match to your question</div>
+          <div className="mt-1 font-scripture text-[17px] text-stone-900 dark:text-stone-100">{data.closest.work.author} — {data.closest.work.title}</div>
+          <div className="mt-0.5 flex items-baseline gap-2 text-xs text-stone-500 dark:text-stone-400">
+            <span className="min-w-0 truncate" style={{ direction: 'rtl', textAlign: 'left' }}>
+              <bdi>{data.closest.headingPath.join(' › ')}</bdi>
+            </span>
+            {periodBadge(data.closest.period) && <span className="shrink-0 border edge px-1 tabular-nums">{periodBadge(data.closest.period)}</span>}
           </div>
-          <p className="mt-2 text-sm">&ldquo;{data.closest.excerpt}&rdquo;{data.closest.excerpt.length >= 420 ? '…' : ''}</p>
-          <div className="mt-2 text-sm underline">Open in book →</div>
+          <p className="mt-2 font-scripture text-[15px] leading-relaxed text-stone-800 dark:text-stone-200">&ldquo;{data.closest.excerpt}&rdquo;{data.closest.excerpt.length >= 420 ? '…' : ''}</p>
+          <div className="mt-2 text-sm text-accent-700 underline dark:text-accent-300">Open in book →</div>
         </Link>
       ) : (
-        <div className="mt-6 rounded-lg border p-4">
-          <p>Nothing in the {data.coverage.works} served history works matches this.</p>
-          <Link href="/library" className="mt-2 inline-block text-sm underline">Browse the history shelf</Link>
+        <div className="mt-6 border edge p-4">
+          <p className="text-stone-700 dark:text-stone-300">Nothing in the {data.coverage.works} served history works matches this.</p>
+          <Link href="/library/historians" className="mt-2 inline-block text-sm text-accent-700 underline dark:text-accent-300">Browse the history shelf</Link>
         </div>
       )}
 
-      <div className="mt-6 space-y-6">
+      <div className="mt-6 space-y-7">
         {groups.map((g) => {
           const open = expanded.has(g.work.slug);
           const shown = open ? g.sections : g.sections.slice(0, 3);
           return (
             <section key={g.work.slug}>
-              <header className="flex flex-wrap items-baseline justify-between gap-2 border-b pb-1">
-                <h2 className="font-serif">{g.work.author} — {g.work.title}</h2>
-                <span className="text-xs text-muted-foreground">
+              <header className="flex flex-wrap items-baseline justify-between gap-2 border-b edge pb-1.5">
+                <h2 className="font-scripture text-[17px] text-stone-900 dark:text-stone-100">{g.work.author} — {g.work.title}</h2>
+                <span className="text-micro tabular-nums text-stone-500 dark:text-stone-400">
                   {g.sections.length} match{g.sections.length === 1 ? '' : 'es'}
                   {periodBadge(g.periodSpan) ? ` · ${periodBadge(g.periodSpan)}` : ''}
                 </span>
               </header>
               <ul>
                 {shown.map((s) => (
-                  <li key={s.sectionId} className="flex gap-2 border-b py-2">
-                    <Link href={workHref(g.work.slug, s.ordinal, threadId)} className="min-w-0 flex-1">
-                      <div className="truncate text-sm text-muted-foreground" style={{ direction: 'rtl', textAlign: 'left' }}>
+                  <li key={s.sectionId} className="flex gap-2 border-b edge py-2.5">
+                    <Link href={workHref(g.work.slug, s.ordinal, threadId, query)} className="group min-w-0 flex-1">
+                      <div className="truncate text-xs text-stone-500 dark:text-stone-400" style={{ direction: 'rtl', textAlign: 'left' }}>
                         <bdi>{s.headingPath.join(' › ')}</bdi>
                       </div>
-                      <p className="mt-1 line-clamp-3 text-sm sm:line-clamp-2">{s.excerpt}</p>
+                      <p className="mt-1 line-clamp-3 text-sm leading-relaxed text-stone-600 transition-colors ease-gentle group-hover:text-stone-900 sm:line-clamp-2 dark:text-stone-300 dark:group-hover:text-stone-100">{s.excerpt}</p>
                     </Link>
                     <button
                       type="button" aria-label="Copy citation" title="Copy citation"
-                      className="h-8 w-8 shrink-0 self-center rounded border text-xs"
+                      className="h-8 w-8 shrink-0 self-center border edge text-xs text-stone-500 transition-colors ease-gentle hover:text-accent-700 dark:text-stone-400 dark:hover:text-accent-300"
                       onClick={() => cite(s, g.work)}
                     >{copied === s.sectionId ? '✓' : '⧉'}</button>
                   </li>
@@ -162,7 +176,7 @@ export function HistoryResults({ data, query, threadId }: {
               </ul>
               {g.sections.length > 3 && (
                 <button
-                  type="button" aria-expanded={open} className="mt-1 text-sm underline"
+                  type="button" aria-expanded={open} className="mt-1.5 text-sm text-stone-600 underline transition-colors ease-gentle hover:text-accent-700 dark:text-stone-400 dark:hover:text-accent-300"
                   onClick={() => setExpanded((prev) => {
                     const next = new Set(prev);
                     if (next.has(g.work.slug)) next.delete(g.work.slug); else next.add(g.work.slug);
@@ -175,7 +189,7 @@ export function HistoryResults({ data, query, threadId }: {
         })}
       </div>
 
-      <footer className="mt-8 text-sm text-muted-foreground">
+      <footer className="mt-8 text-sm text-stone-500 dark:text-stone-400">
         Searched {data.coverage.works} works · {data.coverage.sections.toLocaleString(DISPLAY_LOCALE)} sections
       </footer>
     </div>

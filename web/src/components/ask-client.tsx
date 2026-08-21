@@ -424,6 +424,29 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
                 </li>
               ))}
             </ul>
+
+            {/* THE INVITATION INTO HISTORY (order 2026-08-20-historians-study-entrance): the
+                other door into study, offered where a reader is already asking questions. A real
+                link, not a mode-flipping button, so it works before hydration and in a new tab.
+                Empty state only — under an answer it would be an advertisement, not a welcome.
+                Deliberately countless ("the church's historians", not "28 works"): a hardcoded
+                corpus count here is the watchlist's hand-maintained-fact shape, stale on the
+                next ingest. */}
+            <Link
+              href="/ask?mode=history"
+              className="mt-7 block border edge bg-paper p-5 transition-colors ease-gentle hover:bg-accent-50/40 dark:bg-stone-900 dark:hover:bg-accent-950/20"
+            >
+              <span className="block text-micro font-semibold uppercase tracking-[0.08em] text-accent-600 dark:text-accent-400">
+                Church history
+              </span>
+              <span className="mt-1 block font-display text-xl font-medium tracking-tight text-stone-900 dark:text-stone-100">
+                Step into the story behind the text
+              </span>
+              <span className="mt-1 block text-sm leading-relaxed text-stone-500 dark:text-stone-400">
+                Herod, the church at Ephesus, the fall of Jerusalem — the church&rsquo;s historians, opened to the exact page.
+              </span>
+              <span className="mt-2 block text-sm text-accent-700 underline dark:text-accent-300">Begin a study &rarr;</span>
+            </Link>
           </div>
         )}
 

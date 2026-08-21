@@ -339,8 +339,21 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
     [loadFrom],
   );
 
+  // CONTINUOUS READING (order 2026-08-20-historians-study-entrance): "the book is the whole
+  // book" — the full reader streams as you scroll, and the desk pane was the one surface still
+  // reading a page at a time behind its button. The button SURVIVES as the fallback (no
+  // IntersectionObserver, keyboard readers who reach it first); the observer merely presses it
+  // early. rootMargin prefetches ~a screen ahead so the seam is never seen; the `busy` guard in
+  // loadMore is what keeps a re-firing observer from stacking queries.
+  const moreRef = useRef<HTMLButtonElement | null>(null);
+  // A ref, because `busy` cannot do this job: two observer fires in one tick both read the
+  // stale closure's busy=false and double-append the same page (watched red in
+  // desk-pane-continuous-read.test.tsx). The ref flips synchronously before the first await.
+  const moreInFlight = useRef(false);
+
   const loadMore = useCallback(async () => {
-    if (nextAfter === null || busy) return;
+    if (nextAfter === null || busy || moreInFlight.current) return;
+    moreInFlight.current = true;
     const mine = seq.current;
     setBusy(true);
     try {
@@ -354,9 +367,29 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
     } catch {
       if (mine === seq.current) setError('Could not load more of this work.');
     } finally {
+      moreInFlight.current = false;
       if (mine === seq.current) setBusy(false);
     }
   }, [pane.slug, nextAfter, busy]);
+
+  // The ref pattern keeps ONE observer per button lifetime while `loadMore` changes identity
+  // with every page (it closes over `nextAfter`) — re-creating the observer per page would
+  // re-fire on the same viewport and double-load the seam.
+  const loadMoreRef = useRef(loadMore);
+  loadMoreRef.current = loadMore;
+  useEffect(() => {
+    const el = moreRef.current;
+    if (!el || nextAfter === null) return;
+    if (typeof IntersectionObserver === 'undefined') return; // the button stays the whole story
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) void loadMoreRef.current();
+      },
+      { rootMargin: '600px 0px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [nextAfter]);
 
   // B011: neither the work nor a reason it failed — the pane genuinely does not know what it is
   // yet. Derived rather than tracked, so it cannot drift out of step with `source`/`error`; the
@@ -400,6 +433,7 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
           {nextAfter !== null && (
             <button
               type="button"
+              ref={moreRef}
               onClick={() => void loadMore()}
               disabled={busy}
  className="mt-4 min-h-[44px] w-full border edge font-sans text-sm text-stone-600 hover:bg-accent-50/50 disabled:opacity-50 dark:text-stone-300 dark:hover:bg-accent-950/20"

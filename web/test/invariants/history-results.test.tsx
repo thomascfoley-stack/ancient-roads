@@ -27,10 +27,13 @@ describe('HistoryResults', () => {
     expect(screen.getByText(/Searched 1 works · 4,112 sections/)).toBeTruthy();
   });
 
-  it('deep links use the established /work/{slug}#s{ordinal} contract and carry the thread', () => {
+  it('deep links use the established /work/{slug}#s{ordinal} contract and carry the thread + query', () => {
+    // `fq=` joined the contract with the study entrance (order 2026-08-20-historians-study-
+    // entrance): it is what lets the reader's return strip name the study. Asserted as the FULL
+    // href, not a prefix match, so a param dropped in either direction goes red here.
     render(<HistoryResults data={BASE} query="q" threadId="t-1" />);
     const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
-    expect(hrefs.some((h) => h === '/work/josephus-whiston?from=hist:t-1#s42')).toBe(true);
+    expect(hrefs.some((h) => h === '/work/josephus-whiston?from=hist:t-1&fq=q#s42')).toBe(true);
   });
 
   it('toggling an entity chip frames counts as "within these results" — the cap-honesty string', () => {
