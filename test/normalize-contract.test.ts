@@ -91,6 +91,47 @@ describe('normalizeContract', () => {
     expect(out.blocks[0]!.attribution).not.toHaveProperty('slug');
   });
 
+  it('a user_library-resolved block keeps its origin — backfill must not launder provenance (H4)', () => {
+    // The section record declares the namespace it resolved under. Stamping
+    // `origin: 'corpus'` here destroyed the signal before the verifier ever saw
+    // it (SERMON_SEARCH_DESIGN §7: user content is additive, never load-bearing).
+    const withUserSection: SectionAttribution[] = [
+      { author: 'Uploaded Preacher', work: 'Sunday Sermons 2019', tradition: 'reformed', origin: 'user_library' },
+    ];
+    const out = normalizeContract(
+      {
+        contract_version: '1.1',
+        teacher: 'qwen',
+        blocks: [
+          // model even CLAIMS corpus — the resolved namespace wins, not the claim
+          { type: 'voice', section_id: 1, attribution: { author: 'Uploaded Preacher', work: 'Sunday Sermons 2019', tradition: 'reformed', origin: 'corpus' }, quote: 'x' },
+        ],
+      },
+      withUserSection,
+    ) as { blocks: Array<{ attribution: Record<string, unknown> }> };
+
+    expect(out.blocks[0]!.attribution.origin).toBe('user_library');
+  });
+
+  it('preserves a model-typed user_library origin when the section record declares none', () => {
+    // SECTIONS entries carry no origin (legacy corpus-only callers). The model's
+    // own user_library claim must survive the backfill, not be rewritten to
+    // corpus — the verifier then resolves it under `user_library:` and fails
+    // closed if no such section exists.
+    const out = normalizeContract(
+      {
+        contract_version: '1.1',
+        teacher: 'qwen',
+        blocks: [
+          { type: 'voice', section_id: 2, attribution: { author: 'X', work: 'Y', tradition: 'Z', origin: 'user_library' }, quote: 'x' },
+        ],
+      },
+      SECTIONS,
+    ) as { blocks: Array<{ attribution: Record<string, unknown> }> };
+
+    expect(out.blocks[0]!.attribution.origin).toBe('user_library');
+  });
+
   it('does NOT backfill a hallucinated (out-of-range) section_id — verifier still catches it', () => {
     const out = normalizeContract(
       {

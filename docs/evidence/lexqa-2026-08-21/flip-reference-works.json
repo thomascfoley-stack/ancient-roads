@@ -1,0 +1,13 @@
+{
+  "_": "The reference-works flip (owner terminal, prod). Quality pass: docs/evidence/lexqa-2026-08-21/README.md — all five serve-quality, records present. Design: docs/WORD_REFERENCE_PANE_DESIGN.md. Thayer's is DELIBERATELY absent: prod may hold its dead OCR copy (the healthy re-ingest postdates the dev reset) — prod-state check + quarantine-record lift first, then its own one-work flip.",
+  "builtFor": "the /word reference shelf + lexicon search — DECISIONS 'Lexicons stay staged until the reference-pane UX ships' (the pane shipped 2026-08-21)",
+  "host": "ep-odd-fog-atnykudm",
+  "cohort": "staged",
+  "slugs": [
+    "bdb-lexicon",
+    "eastons-dictionary",
+    "isbe",
+    "naves-topical",
+    "smiths-dictionary"
+  ]
+}

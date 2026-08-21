@@ -77,7 +77,7 @@ case "$cmd" in
           printf '%s\n' "  name                       value       environments   created"
           for n in APP_DATABASE_URL DATABASE_URL DEEPINFRA_API_KEY SITE_PASSWORD \
                    BETTER_AUTH_URL BETTER_AUTH_SECRET \
-                   NEON_AUTH_BASE_URL NEON_AUTH_COOKIE_SECRET; do
+                   NEON_AUTH_BASE_URL NEON_AUTH_COOKIE_SECRET TEACHER_ALLOWLIST; do
             case " ${FAKE_ENV_DROP:-} " in *" $n "*) continue ;; esac
             printf '  %-26s Encrypted   Production     1d ago\n' "$n"
           done
@@ -274,6 +274,20 @@ export FAKE_ENV_DROP="SITE_PASSWORD"
 run_deploy
 assert_rc 1
 assert_out "missing required environment variable(s): SITE_PASSWORD"
+
+# --------------------------------------------------------------------------
+# 7b. TEACHER_ALLOWLIST is required too (ADR-116 ruling 3), and this is its red-proof.
+#     It matters MORE than the others for the reason it is easy to forget: unset does not
+#     crash anything. `isTeacherAllowed` admits nobody with it absent, so the deploy would
+#     succeed and the teacher would simply be dead — for the owner as well — with no error
+#     to notice. Without this case, deleting the variable from deploy.sh's list would leave
+#     every gate green. SEED: remove TEACHER_ALLOWLIST from that list and this goes red.
+# --------------------------------------------------------------------------
+begin "missing-teacher-allowlist-named"
+export FAKE_ENV_DROP="TEACHER_ALLOWLIST"
+run_deploy
+assert_rc 1
+assert_out "missing required environment variable(s): TEACHER_ALLOWLIST"
 
 # --------------------------------------------------------------------------
 # 8. Org reachable but project absent

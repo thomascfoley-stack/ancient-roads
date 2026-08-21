@@ -185,7 +185,14 @@ place these are ruled.** Where any other doc states a status for these three, it
 
 **Decision (owner):**
 
+> ⚠️ **AMENDED 2026-08-21 by [ADR-116](#adr-116--gated-beta-scope-the-proper-noun-metric-and-the-teachers-availability-owner-2026-08-21).**
+> Ruling 1 below is SUPERSEDED in two ways: **the metric is now HIT@2, not HIT@1**, and the July
+> **60** was closed on 2026-08-02 at **HIT@1 70% / HIT@2 100%**
+> ([evidence](../evidence/eval-v4-post-a8-2026-08-02.md)). Ruling 3's teacher availability is also
+> ruled there. This ADR remains the single place these statuses are stated — read it WITH ADR-116.
+
 **1. proper-noun HIT@1 60 < 70 — ACCEPTED LIMITATION for gated beta; BLOCKING for public launch.**
+*(Historical, superseded — see the amendment above.)*
 Re-measure at larger n before public launch: 60/100 on n=10 carries a wide CI and may not be a true
 regression. Until that re-measure exists, do not describe the 60 as either "a regression" or
 "cleared".
@@ -1809,7 +1816,115 @@ historian → **commentary** (every sibling Expositor's Bible volume is commenta
 shelving error), and `schaff-history` (the 8-volume umbrella declaration, serve:false, no rows)
 removed as a self-duplicate of `schaff-hcc1..8`.
 
-## ADR-115 — `chesterton-preexistence`: not Chesterton, PD basis void; full close-out (2026-08-21)
+## ADR-115 — The reference-routing fix ships ahead of the full accuracy re-run; the re-run stays owed and blocking (owner, 2026-08-21)
+
+**Context.** `0d52a20` fixes `scanReferences`, which feeds `resolveIntent`, which drives both the
+injection pool **and the floor** — and the floor reserves the top two answer slots. That makes it a
+retrieval change, and `CLAUDE.md:27` / `:70` require the accuracy diagnostic re-run and recorded for
+every retrieval change. The diagnostic has **not** been run. `v4` is frozen and single-use, and
+spending it on a bug fix is the circularity `quality-slice` exists to prevent.
+
+The prior state was measurably wrong **in production**: a digit-ordinal book preceded by any English
+word either misrouted to the wrong book or was dropped silently. `What does 1 John 4:8 mean?`
+resolved to **book 43, the Gospel of John**, and answered confidently with attribution; `see also
+1 Corinthians 13:4-7 on love` and `Tell me about 2 Timothy 3:16` resolved to nothing at all. Every
+pre-existing test placed the numbered book at the start of the string — the one arrangement that
+worked — which is why it survived.
+
+**Decision (owner, in chat 2026-08-21): ship `0d52a20` ahead of the full `/ask` accuracy re-run.**
+Three terms, and they are the ruling, not commentary:
+
+1. **Scope.** This departure covers the **reference-routing fix only** — `0d52a20` plus the residual
+   position-overlap dedupe below. **It is not a precedent.** Every other retrieval change still owes
+   the accuracy diagnostic per the Definition of Done.
+2. **Owed.** The full `/ask` accuracy re-run **attaches to ADR-028's pre-launch re-measurement and
+   remains BLOCKING for public launch.** It is not discharged, deferred-without-owner, or absorbed
+   into a smaller measurement.
+3. **Basis.** Prior state measurably wrong in production; **independent tier-level verification found
+   zero new hijacks**; and the departure is recorded rather than silent.
+
+**Why the verification was tier-level and not detection-level.** The hijack risk lives in
+`resolveIntent`'s `{inject, floor}` output, not in whether a string parses — ADR-015's own precision
+amendment exists because a bare pericope name floored unconditionally and "good shepherd insurance
+company" seized John 10 (8 of 12 idiomatic queries fired). A detection-only test is one layer below
+the defect. Ten adversarial non-citations aimed at the new ordinal pass were run against **both**
+`0d52a20~1` and `0d52a20`: two produce floors (`she is 1 mark 5 points from winning` → floor=2;
+`i counted 3 james 2 marys and a paul` → floor=1) and **both are unchanged either side**, so they are
+pre-existing `SCAN_RE` behaviour and not introduced here. Filed separately — see the known-issue note
+in `WORKLOG.md` 2026-08-21.
+
+**The n, because a precision claim without its denominator is not a claim.** The adversarial set is
+**n = 10**, a ~74% lower bound by the rule of three — the same arithmetic `CLAUDE.md` applies to the
+bait gate. It is evidence, not proof, and the set grows: real topical queries are near-free cases.
+
+**Known residual, approved to fix under this same ruling.** The new pass is additive and dedupes by
+display, so where a bare book name is *itself* an alias the old wrong match survives beside the new
+right one: `What does 1 John 4:8 mean?` now floors **book 43 AND book 62**; `read 2 John 1:6` floors
+**43 AND 63**. Books whose bare name is not an alias are clean (`1 Corinthians` → 46 only, `1 Peter`
+→ 60 only). Since the floor reserves two slots, the wrong match **displaces a correct voice** rather
+than merely sitting in the pool. Fix: **position-overlap dedupe** — when two candidate spans overlap
+in the source query, keep the longer. Verified the same way: tier-level assertions, pre-registered
+adversarial cases, watched red before green.
+
+**Rejected:** spending frozen `v4` on a bug fix (single-use, and it is the set minted for the ship
+claim); letting the gate lapse silently, which is the ADR-010 failure mode this repo has already
+paid for once; and claiming a detection-level measurement covers a tier-level risk.
+
+## ADR-116 — Gated beta: scope, the proper-noun metric, and the teacher's availability (owner, 2026-08-21)
+
+**Amends [ADR-028](#adr-028--launch-blocking-vs-accepted-limitation-the-three-standing-rulings-owner-2026-07-19).**
+ADR-028 remains the single place the three standing statuses are ruled; this ADR changes what two
+of them say. Any doc restating either must point at ADR-028, which points here — restating the
+value itself is what this repo has now paid for sixteen times.
+
+**Context:** the accuracy status was re-derived on 2026-08-21 and two things about it had gone
+stale in opposite directions. `CLAUDE.md` advertised proper-noun as an "OPEN OWNER CALL" that
+ADR-028 had already ruled a month earlier, and separately still quoted the July **60** as current
+when the post-A8 production re-run
+([evidence](../evidence/eval-v4-post-a8-2026-08-02.md)) measured **HIT@1 70% · HIT@2 100% ·
+10/10 pass, 0 wrong, 0 none — "clears — the July miss is closed"** on 2026-08-02. Both are now
+corrected. An independent review then observed that the cheapest fix had never been considered:
+change the metric rather than build a bigger instrument.
+
+**Decision (owner):**
+
+**1. Launch scope is GATED BETA.** The site password gate (`web/src/middleware.ts`) STAYS UP.
+SEC-1 (Neon Auth transitive CVEs) remains the **public**-launch blocker and is tracked, not
+resolved, in this lane.
+
+**2. The proper-noun accuracy gate is HIT@2, not HIT@1.** **Why:** every recorded miss passes at
+HIT@2, and the shipped composer is fed **5** candidates (`web/src/lib/teacher/teach.ts:102-103`,
+`RETRIEVE_K = 6`, `COMPOSE_VOICES = 5`) — the "2-3 voices" in `src/teacher/prompt.ts:58` is a
+prompt FLOOR, not the pool. A HIT@1 miss therefore sits inside the set the reader is shown, so
+HIT@1 was measuring something narrower than the product's behaviour. **This obsoletes the
+proposed n≈100 proper-noun labelling slice; that work is cancelled, not deferred.**
+
+> **OPEN, AND DELIBERATELY NOT RULED HERE — the bar value.** The **70%** bar was derived for
+> HIT@1. Carried across unchanged it is cleared by **100%** with no margin, i.e. a gate that
+> cannot fail. This repo has already ruled on exactly this shape once:
+> [ADR-103](#adr-103) required K to be **re-derived** when the metric changed, because carrying it
+> over is "B-1's circularity in a new costume". The HIT@2 bar needs deriving on its own terms.
+> **Recorded as an outstanding owner decision; the metric change above stands regardless, since
+> HIT@2 is the honest metric whatever its bar turns out to be.**
+
+**3. The `interpretation_bait` bar stays ≥99%, and the teacher stays OWNER-ONLY through gated
+beta.** Current state is 100/100 clean = a **~97% lower bound** (rule of three, n=100), which does
+not meet the bar. ~300 clean cases of genuinely NEW attack vectors — never rephrasings — are
+required to earn it. Gated beta therefore launches on **reader / search / library** surfaces with
+teacher access owner-gated.
+
+> **FINDING, surfaced not shipped around (2026-08-21):** the teacher is **not** owner-gated today.
+> `web/src/app/api/ask/route.ts:25` and `web/src/app/api/ask/stream/route.ts:46` call
+> `requireUser()` — *any authenticated user*, with no owner allowlist anywhere on that path. So any
+> beta user who has the site password and registers an account reaches it. Ruling 3 is therefore
+> **net-new work, not a configuration change**, and it is a gated-beta blocker.
+
+**Rejected:** loosening the bait bar for beta (the faithfulness guarantee is the product's whole
+differentiator, and n=100 is honest evidence for ~97%, not for ≥99%); re-deriving the HIT@2 bar
+inside this ADR without the owner (that is the error ADR-103 names); and building the n≈100
+proper-noun set, which the metric change makes unnecessary.
+
+## ADR-117 — `chesterton-preexistence`: not Chesterton, PD basis void; full close-out (2026-08-21)
 
 **Owner ruling, in chat: "close out this chesterton thing."** Closes ADR-112's open follow-up #1,
 which had held the work as "undated, does not demonstrably clear 1931, quarantine an owner call."

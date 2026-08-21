@@ -478,28 +478,66 @@ const MULTIWORD_SCAN_RE =
       )
     : null;
 
+// SCAN_RE's leftmost-first match at a word PRECEDING a numbered book consumes the ordinal as that
+// word's numeric tail — "see also 1 Corinthians 13:4-7" yields the dead candidate "also 1", and
+// because matchAll resumes AFTER the consumed "1", the true span can never start; the leftover
+// "Corinthians 13:4-7" is ambiguous (1 Cor vs 2 Cor) and dies in parseRef. SCAN_RE's book group
+// (`[a-z]{2,}` straight into `\s+`) also has no room for an abbreviation's period, so
+// "1 Cor. 13:4-7" forms no candidate at all — while parseRef handles both forms fine
+// (docs/evidence/uploader-deep-dive-2026-08-20/MEASUREMENTS.md Run 4, defect M3). This pass scans
+// the ordinal-prefixed forms with their own regex, whose matchAll position SCAN_RE cannot starve,
+// and admits one optional trailing period on the book word. Additive: it never alters a SCAN_RE
+// match (dedupe by display), and parseRef still validates every span — "1 dog. 3" dies on the
+// unknown book "1 dog". The period is admitted ONLY here, behind a required ordinal: putting `\.?`
+// on SCAN_RE's own book word would turn every sentence ending in a book-alias word before a
+// number into a candidate ("did his job. 3 of them" → Job 3) on the /ask intent-routing path,
+// which has no isExplicitCitation gate. The unnumbered period form ("Rom. 8:28") therefore stays
+// unscanned — a known residual, recorded with M3, not silently.
+const ORDINAL_BOOK_SCAN_RE =
+  /\b([1-3]|i{1,3}|first|second|third)\s+([a-z]{2,})\.?\s+(\d{1,3}(?::\d{1,3})?(?:\s*[-–]\s*\d{1,3}(?::\d{1,3})?)?)\b/gi;
+
 // Find scripture references embedded in prose — "1 Corinthians 13 the greatest
 // of these…", "Isaiah 53", "John 3:16" — and return the resolved refs. Unlike
 // parseRef (whole-string typeahead), this scans candidate spans anywhere in the
 // text and keeps only those that parse to a valid reference (high precision).
 // Used to route a query to the passage it names; never guesses.
 export function scanReferences(text: string, opts: ParseOptions = {}): ResolvedRef[] {
-  const out: ResolvedRef[] = [];
-  const seen = new Set<string>();
-  const consider = (span: string) => {
+  // Candidates carry their SOURCE SPANS so overlaps can be resolved. Without positions,
+  // display-dedupe let the ordinal pass's correct "1 John 4:8" coexist with SCAN_RE's wrong
+  // "John 4:8" from the SAME characters — different displays, one slice of text — and the
+  // /ask floor spent a slot on Gospel-of-John commentary for an epistle question (tier-level
+  // verification, 2026-08-21). Where two VALID candidates overlap in the source, the longer
+  // span wins (ties: the earlier start); non-overlapping candidates are all kept, which is
+  // what protects "Ephesians 2:8-9 and 1 Peter 5:7".
+  const candidates: { ref: ResolvedRef; start: number; end: number }[] = [];
+  const consider = (span: string, start: number, end: number) => {
     const outcome = parseRef(span, opts);
-    if (outcome.ok && !seen.has(outcome.ref.display)) {
-      seen.add(outcome.ref.display);
-      out.push(outcome.ref);
-    }
+    if (outcome.ok) candidates.push({ ref: outcome.ref, start, end });
   };
   for (const m of text.matchAll(SCAN_RE)) {
-    consider(`${m[1] ?? ''}${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim());
+    consider(`${m[1] ?? ''}${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length);
+  }
+  for (const m of text.matchAll(ORDINAL_BOOK_SCAN_RE)) {
+    consider(`${m[1]} ${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length);
   }
   if (MULTIWORD_SCAN_RE) {
     for (const m of text.matchAll(MULTIWORD_SCAN_RE)) {
-      consider(`${m[1]} ${m[2]}`.replace(/\s+/g, ' ').trim());
+      consider(`${m[1]} ${m[2]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length);
     }
+  }
+  const keep = candidates.filter((c) =>
+    !candidates.some((o) =>
+      o !== c && o.start < c.end && c.start < o.end &&
+      (o.end - o.start > c.end - c.start ||
+        (o.end - o.start === c.end - c.start && (o.start < c.start || (o.start === c.start && candidates.indexOf(o) < candidates.indexOf(c))))),
+    ));
+  keep.sort((a, b) => a.start - b.start);
+  const out: ResolvedRef[] = [];
+  const seen = new Set<string>();
+  for (const { ref } of keep) {
+    if (seen.has(ref.display)) continue;
+    seen.add(ref.display);
+    out.push(ref);
   }
   return out;
 }

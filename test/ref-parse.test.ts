@@ -336,3 +336,99 @@ describe('scanReferences — multi-word book names in prose (B2b: the Song of So
     expect(scan('there is a song in the night for the weary soul')).toEqual([]);
   });
 });
+
+describe('scanReferences — numbered books mid-prose and abbreviated forms (M3)', () => {
+  // The two drops measured in docs/evidence/uploader-deep-dive-2026-08-20/MEASUREMENTS.md Run 4,
+  // plus the seven forms of that matrix that already worked, pinned as regression controls.
+  //
+  // Mechanism (a): SCAN_RE's leftmost match at a word PRECEDING a numbered book eats the ordinal —
+  // "see also 1 Corinthians 13" produces the candidate "also 1" (rejected), and because matchAll
+  // resumes after the consumed "1", the remaining "Corinthians 13" is ambiguous (1 Cor vs 2 Cor)
+  // and dies in parseRef. Mechanism (b): SCAN_RE's book word is `[a-z]{2,}` followed directly by
+  // `\s+`, so an abbreviation's trailing period ("Cor.") kills the candidate before it forms.
+  const scan = (t: string) => scanReferences(t).map((r) => r.display);
+
+  // ── the two measured drops ──────────────────────────────────────────────────────────────────
+  it('finds a numbered book preceded by prose (drop a)', () => {
+    expect(scan('see also 1 Corinthians 13:4-7 on love')).toEqual(['1 Corinthians 13:4–7']);
+  });
+  it('finds a numbered book after another reference in the same sentence (drop a)', () => {
+    expect(scan('Compare John 3:16, and see also 1 Corinthians 13:4-7 on love.')).toEqual([
+      'John 3:16',
+      '1 Corinthians 13:4–7',
+    ]);
+  });
+  it('finds the abbreviated form with a period, standalone (drop b)', () => {
+    expect(scan('1 Cor. 13:4-7')).toEqual(['1 Corinthians 13:4–7']);
+  });
+  it('finds the abbreviated form with a period, mid-prose (both mechanisms at once)', () => {
+    expect(scan('as Paul says in 1 Cor. 13:4-7, love is patient')).toEqual(['1 Corinthians 13:4–7']);
+  });
+  it('finds the CCEL header forms the measurement log cites', () => {
+    expect(scan('1 Cor. 11:26')).toEqual(['1 Corinthians 11:26']);
+    expect(scan('2 Chron. 33:9-13')).toEqual(['2 Chronicles 33:9–13']);
+  });
+
+  // ── the seven Run-4 forms that already worked: regression controls ──────────────────────────
+  it('control: unnumbered book mid-prose', () => {
+    expect(scan('As Paul writes in Romans 8:28, all things work together')).toEqual(['Romans 8:28']);
+  });
+  it('control: numbered book standalone', () => {
+    expect(scan('1 Corinthians 13:4-7')).toEqual(['1 Corinthians 13:4–7']);
+  });
+  it('control: worded ordinal', () => {
+    expect(scan('First Corinthians 13:4-7')).toEqual(['1 Corinthians 13:4–7']);
+  });
+  it('control: numbered book at string start, prose after', () => {
+    expect(scan('2 Timothy 1:18 is the text.')).toEqual(['2 Timothy 1:18']);
+  });
+  it('control: unnumbered book mid-prose with trailing period', () => {
+    expect(scan('Turn with me to Ephesians 2:8-9.')).toEqual(['Ephesians 2:8–9']);
+  });
+  it('control: two references joined by "and"', () => {
+    expect(scan('Genesis 1:1-3 and Revelation 22:20')).toEqual(['Genesis 1:1–3', 'Revelation 22:20']);
+  });
+  it('control: chapter reference followed by a number word-pair stays intact', () => {
+    expect(scan('Genesis 1 and 2')).toEqual(['Genesis 1']);
+  });
+
+  // ── adversarial NON-citations: every one measured [] before the fix, and must stay [] ───────
+  it.each([
+    ['digit-noun with sentence boundary', 'I have 1 dog. 3 cats'],
+    ['chapter-of-a-manual', 'Chapter 3:16 of the manual'],
+    ['digit-noun digit-noun', 'he ate 2 pizzas 4 nights running'],
+    ['counted things', 'the top 3 things in 2 weeks'],
+    ['clock time with sentence boundary', 'meeting at 1 pm. 30 people came'],
+    ['verse-less numbers', 'verse-less numbers like 12 and 14 mean nothing'],
+    ['ordinal-noun sentence boundary', 'we sang 2 hymns. 12 people wept'],
+  ])('yields nothing for %s', (_label, text) => {
+    expect(scan(text)).toEqual([]);
+  });
+});
+
+describe('scanReferences — overlap dedupe (the 1/2/3-John residual)', () => {
+  // Tier-level verification of the M3 fix (2026-08-21) found the additive ordinal pass left the
+  // OLD wrong-book match alive beside the new correct one wherever the bare name is itself an
+  // alias: "What does 1 John 4:8 mean?" scanned to BOTH John 4:8 (the Gospel, wrong) and
+  // 1 John 4:8 — display-dedupe cannot see that the two candidates overlap in the SOURCE. The
+  // floor then spent one of its two reserved slots on Gospel-of-John commentary. Overlapping
+  // candidate spans now resolve to the LONGER span.
+  const books = (s: string) => scanReferences(s).map((r) => r.display);
+
+  it('a prefixed numbered-John query yields ONLY the epistle', () => {
+    expect(books('What does 1 John 4:8 mean?')).toEqual(['1 John 4:8']);
+    // Single-chapter books display without the chapter — the canonical form, not a bug.
+    expect(books('read 2 John 1:6')).toEqual(['2 John 6']);
+    expect(books('on 3 John 1:4')).toEqual(['3 John 4']);
+  });
+
+  it('non-overlapping references all survive — the dedupe is positional, not greedy', () => {
+    expect(books('Ephesians 2:8-9 and 1 Peter 5:7')).toEqual(['Ephesians 2:8–9', '1 Peter 5:7']);
+    expect(books('Genesis 1:1-3 and Revelation 22:20')).toEqual(['Genesis 1:1–3', 'Revelation 22:20']);
+  });
+
+  it('the bare alias alone is untouched', () => {
+    expect(books('John 4:8')).toEqual(['John 4:8']);
+    expect(books('What does John 4:8 mean?')).toEqual(['John 4:8']);
+  });
+});

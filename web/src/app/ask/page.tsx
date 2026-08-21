@@ -1,6 +1,9 @@
+import Link from 'next/link';
 import { AskClient } from '@/components/ask-client';
 import { HistoryAsk } from '@/components/history-ask';
 import { ModeToggle } from '@/components/mode-toggle';
+import { currentUser } from '@/lib/session';
+import { isTeacherAllowed } from '@/lib/teacher-access';
 
 export const metadata = {
   title: 'Ask',
@@ -21,10 +24,52 @@ export default async function AskPage(props: { searchParams: Promise<{ mode?: st
       </>
     );
   }
+  // ADR-116 ruling 3: during gated beta the teacher is owner-only, and the API answers 403.
+  // Ask the SAME question here that the route asks, so a reader who cannot use it is told so
+  // instead of being handed a form that refuses them on submit. This is a render decision, not
+  // a security boundary — `/api/ask` and `/api/ask/stream` enforce it independently, which is
+  // what stops a hand-rolled POST. History mode is deliberately untouched: whether it is in
+  // beta scope is an open owner decision, not a call this page should make.
+  const user = await currentUser();
+  if (!user || !isTeacherAllowed(user)) return <TeacherUnavailable />;
+
   return (
     <>
       <ModeToggle mode="voices" />
       <AskClient />
     </>
+  );
+}
+
+function TeacherUnavailable() {
+  return (
+    <div className="reading-measure mx-auto my-12 w-full px-6 sm:my-20">
+      <h1 className="font-display text-3xl font-medium text-stone-900 dark:text-stone-100">
+        Not open yet
+      </h1>
+      <p className="mt-4 font-scripture text-lg leading-[1.9] text-stone-900 dark:text-stone-100">
+        The study assistant gathers what commentators have said and quotes them back to you. It is
+        held back while we finish testing that it never speaks in its own voice — the one promise
+        this product cannot get wrong.
+      </p>
+      <p className="mt-4 text-sm text-stone-500 dark:text-stone-400">
+        Everything else is open: the Scriptures, the commentaries, the sermons and the historians
+        are all here to read and search.
+      </p>
+      <div className="mt-10 flex flex-wrap gap-4 border-t edge pt-8">
+        <Link
+          href="/read/jhn/1"
+          className="inline-flex min-h-[44px] items-center border border-stone-900 px-6 py-3 font-sans text-sm font-semibold tracking-[0.02em] text-stone-900 hover:bg-stone-900 hover:text-stone-50 dark:border-stone-200 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900"
+        >
+          Open the Word
+        </Link>
+        <Link
+          href="/library"
+          className="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-300"
+        >
+          Browse the library
+        </Link>
+      </div>
+    </div>
   );
 }

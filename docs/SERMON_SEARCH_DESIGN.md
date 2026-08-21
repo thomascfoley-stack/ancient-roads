@@ -1,6 +1,6 @@
 # SERMON SEARCH — the personal corpus (design doc, 2026-07-14)
 
-**Status: DESIGN — for the owner to react to, NOT approval to build.** No feature code exists. Per the
+**Status: BUILT — Slice 1 live on production since 2026-08-05; header amended 2026-08-21** (it said "No feature code exists" for sixteen days after the feature shipped). Measured state and the remediation record: docs/pm/orders/2026-08-20-uploader-deep-dive.md. Historical design text below is kept as written; the shipped recall operating point is K=3 ≈ 70% chapter-level (the 90% headline below is K=1, which does not ship), and ADR-100's per-document translation detection was built 2026-08-21. Per the
 design-before-code rail: smallest slice, interfaces named, scaling risks named, out-of-scope explicit. Two owner
 dependencies gate the real build (§12); one measurement (§13, Slice 0) gates whether the ambition is real at all,
 and it needs neither of them.

@@ -45,11 +45,44 @@ rediscovering them. Do not duplicate their content here - go read them.
 ## Ground rules for any agent session
 
 - `npm run audit` is the definition of green. Run it before claiming done.
-- **Only one agent session per working tree at a time. A second session must be read-only AND
-  write-free, or work in a separate clone** — any write blocks the first session's deploy, because
-  `deploy.sh` gates on a clean tree and cannot tell whose file it is (2026-08-08: an untracked
-  `docs/` file from a second session blocked a ready deploy; the rule below was scoped to deploys
-  and DB writes, so it did not cover the session that caused it).
+- **THE MAIN TREE BELONGS TO WHOEVER HOLDS THE DEPLOY. Every other session works in a worktree**
+  (owner ruling, 2026-08-21). The older rule below said "read-only, or work in a separate clone",
+  which was right and was ignored because a clone sounds expensive. **A worktree is the cheap clone,
+  and this repo already has fourteen of them** — `git worktree list` — so this is not a new practice,
+  it is the practice this repo already follows on the days when it is not four sessions deep in one
+  checkout.
+
+  Two shared mutable resources make this non-negotiable, and they are the same root cause seen from
+  two ends. **The working tree**: `deploy.sh` gates on a clean tree and cannot tell whose file it is.
+  **The index**: a bare `git commit` after `git add` takes the WHOLE `.git/index`, so it sweeps up
+  whatever another session staged in the meantime, under your message. A linked worktree gets its own
+  index at `.git/worktrees/<name>/index` and its own clean-tree state — verified, not assumed.
+
+  **Evidence, all from 2026-08-21, one day, four sessions:** three aborted deploys (one after a full
+  build had already run); `deploy.sh` itself edited mid-deploy-window; two commits that swept another
+  session's staged files, one carrying **546 insertions across 8 files** under a 2-line docs message;
+  and **nine cancelled CI runs of twenty**, with zero ever green. Every gate held — nothing bad
+  reached production — and the entire cost was paid in aborted work and relay messages about who owns
+  which dirty file.
+
+  ```sh
+  git worktree add --detach /tmp/ap-work <sha-or-branch>
+  ```
+
+  **A fresh worktree does NOT have the gitignored `web/public` corpus assets, and `deploy.sh`'s
+  served-asset gate fails without them.** Clone them in — `cp -c` is an APFS copy-on-write clone, so
+  ~1.1 GB costs near-zero time and disk:
+
+  ```sh
+  cp -c -R web/public/{bible,commentaries,original,concordance,lexicon} /tmp/ap-work/web/public/
+  cp -c -R node_modules /tmp/ap-work/
+  ```
+
+  **`concordance` and `lexicon` are the small ones people forget** (4.1 MB and 3.0 MB against
+  `commentaries` at 850 MB) — and they are exactly what the served-asset gate fails on. Copy all five.
+
+- **Committing to the main tree while another session is live: use explicit pathspecs.**
+  `git commit -- <your files>`, never a bare `git commit` after `git add`. See the index note above.
 - One agent per working tree for anything that deploys or writes a database. Concurrent
   sessions have shipped each other's half-finished work here before (2026-07-12) and clobbered
   cutover checkpoints (2026-07-27). The guards exist, but do not lean on them.

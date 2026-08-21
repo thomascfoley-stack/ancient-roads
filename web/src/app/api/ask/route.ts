@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/session';
+import { isTeacherAllowed } from '@/lib/teacher-access';
 import { checkAskRateLimit } from '@/lib/rate-limit';
 import { apiError } from '@/lib/api-error';
 import { logEvent } from '@/lib/observability';
@@ -26,6 +27,12 @@ export async function POST(req: NextRequest) {
   } catch {
     return apiError('UNAUTHENTICATED');
   }
+
+  // ADR-116 ruling 3 (gated beta): the teacher is OWNER-ONLY until interpretation_bait earns
+  // its >=99% bar (currently 100/100 = a ~97% lower bound). Placed BEFORE the rate limiter and
+  // before any spend: a refused caller must cost nothing. The site password gate does not
+  // cover this — a beta user has the password by definition.
+  if (!isTeacherAllowed(user)) return apiError('FORBIDDEN');
 
   // Per-user rate limit BEFORE any spend (wallet-DoS guard). Fails open on its
   // own DB error (see rate-limit.ts) so a limiter outage can't down the product.

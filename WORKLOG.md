@@ -1,6 +1,343 @@
 # WORKLOG — Autonomous session 2026-08-12
 
-## 2026-08-21 — `chesterton-preexistence` CLOSED OUT: static JSON removed, deploy gate widened to surnames (ADR-115)
+## 2026-08-21 — GATED-BETA DEPLOY: teacher owner-gate live on production (0c47219)
+
+**`npm run audit`: AUDIT PASSED — all gates green** (re-run after a real failure it caught: adding
+`FORBIDDEN` to `ApiErrorCode` broke the exhaustive `Record<ApiErrorCode, number>` in
+`test/api-error.test.ts` — the type system doing its job; a new code cannot be added unmapped).
+
+**Live: `0c47219` · `dpl_2uvhZCZL4VYSDMT6N8cjX8D8dVgt` · 2026-08-21T17:55:08Z**, alias-serves-this-
+deploy confirmed by deploy.sh's own inspect check. Receipt:
+`docs/evidence/deploys/deploy-0c47219-2026-08-21T17-55-08Z.txt`. Deployed from an isolated detached
+worktree at a committed sha (three peer sessions were writing the main tree; I hit their
+`.git/index.lock` twice during this work).
+
+`TEACHER_ALLOWLIST` was set by the owner in Vercel **Production** scope before this deploy — the
+new `deploy.sh` required-env check was blocking, by design, which is the first time that check has
+been load-bearing.
+
+### Smoke test — one of three VERIFIED, two UNVERIFIED and NOT claimed
+
+| # | Check | Result |
+|---|---|---|
+| 3 | **Site password gate still up** | **VERIFIED.** `/home`, `/plans`, `/read/jhn/1`, `/ask` all **307 → `/gate?next=…`**. Unauthenticated `POST /api/ask` → **401 "Locked"** (the gate, before the route). Note `/` returns **200** and that is CORRECT — it is the public marketing page in `PUBLIC_PATHS`; probing `/` is the wrong test for "is the gate up", and an earlier read of mine made exactly that mistake before being corrected against an app route. |
+| 1 | **POSITIVE control — owner asks a real question on prod, expects a composed answer not a 403** | **UNVERIFIED.** The Chrome extension disconnected mid-smoke-test ("Claude in Chrome is not connected"), and it is the only surface with the owner's live session. I cannot sign in myself. **The allowlist path is therefore proven only in test, never once against production.** |
+| 2 | **NEGATIVE control — an AUTHENTICATED non-owner gets FORBIDDEN** | **UNVERIFIED.** I hold no second account and may not create one. The 401 above proves only the site gate, not the owner-gate; the two are different doors and only the second is the ADR-116 claim. |
+
+**What that means, stated plainly:** the teacher owner-gate is proven by 10 tests including a
+seeded-defect red-proof, and is **unproven in production**. If `TEACHER_ALLOWLIST` were set to a
+value that does not match the owner's sign-in email, the symptom would be the owner seeing "Not
+open yet" — visible, harmless, one env edit to fix. The dangerous direction (a non-owner reaching
+the teacher) requires the allowlist to contain their identity, which it does not.
+
+### The `main` question — the premise was inverted, and the answer is the opposite of "push local main"
+
+The order said *"local main is 185 commits ahead of origin/main."* Measured:
+
+- **local `main` is 190 commits BEHIND `origin/main`, with ZERO commits of its own**
+  (`git rev-list --left-right --count origin/main...main` → `190  0`). It is a stale checkout.
+  **Pushing it would have been a no-op at best.** Nothing was ever owed *from* it.
+- The **185** is real but belongs to a different pair: `origin/fix/q1-signed-out-state` was 185
+  ahead of `origin/main`, containing it entirely — a clean fast-forward, no conflict possible.
+- No local branch held unique unpushed work. `claude/zealous-perlman-4ccc44` reads "ahead 55" of
+  its own upstream but is **fully contained** in the working branch; nothing is stranded.
+
+**Done: `origin/main` fast-forwarded to `0c47219` — the exact sha now serving production.** Chosen
+deliberately over the moving branch tip so that **`main` means "what is deployed"**, which is what
+rollback and recovery already assume and what the gate list flagged as broken. `origin/main` was
+`af668e7` (190 behind local main's parent lineage); it is now the live sha, and the branch sits 3
+commits ahead of it.
+
+### NOT DONE / UNVERIFIED
+- **Smoke-test items 1 and 2 above.** The owner can close item 1 in one page load.
+- ANN post-filter recall collapse in history search (filed in the previous entry, unfixed).
+- The 17-item gated-beta gate list: migration 122 on prod, RLS under a real Neon Auth id,
+  `chesterton-preexistence` quarantine, history-mode relevance floor, privacy/terms content.
+- `db-invariants` still has never produced a green run.
+- The `history-scope-db` commit message lost the phrase `status = 'published'` to shell backtick
+  substitution; the previous WORKLOG entry carries the accurate red-proof.
+
+## 2026-08-21 — THE LEXICON FLIP IS DONE ON PROD: 5 works published, 52,043 rows served, /ask verified untouched
+
+**Owner-executed at the terminal ~18:03 UTC, gate held.** Continuation of the /word-shelf entry
+below. Migration 123 applied to prod first (this session, owner's explicit go in chat; index
+verified `indisvalid` + live `EXPLAIN` shows the planner on it — bitmap scan, cost ~12, vs the
+2,497 ms heap scan). Then the flip: 5 of 5 census-eligible, snapshot
+`flip-pre-snapshot-2026-08-21T17-42-00-008Z.json` (838 rows + served state) written before
+COMMIT, [run log](docs/evidence/work-order-v2-stage2/flip-run-2026-08-21T17-41-51-237Z.log).
+The transaction ran **~21 minutes** — the A9 served-sync UPDATE
+(`metadata->>'work' = ANY(slugs)`, no index) seq-scanned the flat embeddings table on a cold
+compute; watched live the whole way (`pg_stat_activity`: active on PS_ReadIO/FileCache_Read,
+never blocked). Do not Ctrl-C this next time; it is working.
+
+- **A dev-based prediction was WRONG, caught by measuring:** I forecast the served-sync would
+  move 0 rows (it moved 0 on dev). On PROD it moved **52,043 rows -> served=true** — prod's
+  lexicon embeddings carry `metadata->>'work'` (dev's lineage differs). Every claim about the
+  serving set below is therefore re-measured, not carried.
+- **/ask is untouched — verified four ways, not asserted:** every vector lane is type-fenced
+  (`EXEGETICAL_TYPE_SQL` = commentary+father; sermon; theology+confession; song-verse applies
+  `SONG_VERSE_TYPE_SQL` at both query sites routing.ts:365/374); `PROSE_TYPE_SQL` (the one list
+  containing 'lexicon') has **zero query consumers** — vestigial; the exegetical FTS leg runs
+  over `commentary_entries`, which holds **0 lexicon rows** (measured by work-slug AND title
+  heuristic); so the 52,043 served vectors are reachable by NO shipped query. Retrieval pools
+  unchanged ⇒ no accuracy-gate obligation. D4's "lexicons are served by nothing — no lane
+  exists" stays true at the query level.
+- **Finding, filed (E-lane shape, inert today):** lexicon embedding rows carry
+  `register='prose'` — misdeclared. `EXEGETICAL_FTS_EXCLUSION` is a NOT-list that fails OPEN on
+  it, so if lexicon rows ever reach a searched table (a future materialization, an unfenced
+  query), they leak into exegesis exactly like hort-james1909. Cheap durable fix is corpus
+  metadata: stamp `register='lexicon'`. Until then the fence is the type-fenced lanes.
+- Post-flip prod state: 389 published / 446 staged / 3 quarantined sources. H430 shelf row
+  serves (bdb-lexicon, 1 row; shipped query 815 ms cold, index-backed). Reverse ritual is in
+  the run log.
+
+### NOT DONE / UNVERIFIED
+
+- **/word/H430 NOT yet verified on the live site** — the deploy carrying 135d492 was in flight
+  (git-66's wave) at write time; the DB side is done, the page lights when the deploy lands.
+- Push freeze honored: this commit is LOCAL until CI run 32510118724 reports (owner ruling via
+  peer relay — `cancel-in-progress: true`, first potential db-invariants verdict ever).
+- The `register='prose'` metadata fix — filed above, not built.
+
+## 2026-08-21 — "Do it all": the uploader remediation programme, both waves, executed
+
+**Owner directive: implement everything open from the uploader deep-dive, loop-tested, smooth and
+elegant.** Executed as seven parallel slices + two waves by this session, every slice tests-first
+with watched reds. The complete record is the commit chain 2ccd481..0c47219 (each message carries
+its own red-proofs and denominators); the deep-dive order's checklist is the index.
+
+**Shipped (committed; deploy in flight at close):**
+- M2 translation detection (ADR-100 built; 69/69 family on two fresh held-outs, BEAT the KJV
+  oracle 15/19 vs 12/19; honest compatibility confidence, bar FAILED once as registered then
+  revised on principle and confirmed on v3 — the whole story in
+  translation-detect-PRE-REGISTRATION.md).
+- H4 origin-aware verifier · H3 real model parity · H5 upload limits + quotas · H8 readings CAS ·
+  H9 ef_search fed (owner EXPLAIN still owed) · D1/D2 parser quality · D6/D7 derived guards ·
+  D8/D9 predicate fences · M3 + the 1/2/3-John overlap dedupe (independently verified 21/21,
+  ADR-115) · D13–D19 + Tier-2 arrival experience · CI: user-corpus suites ride db-invariants ·
+  M1 docs-truth wave (STATE_OF_TRUTH §5 rewritten; MASTER B5/B1; both design headers) ·
+  migration 122 FORCE-RLS/grants (dev-applied both branches; REFUTED D11 with plans) · the RLS
+  proof widened by its own derivation to SEVEN tables (two never before proven), 43/43 on both
+  dev branches · Wave 2: the draft check (zero-spend by construction) + sermon metadata chips
+  (migration 124, dev-applied) · Tier-3 gap ranking + §5 tripwire.
+- Deploy-gate work while shipping: the corpus-identity gate caught the Chesterton quarantine's
+  missing manifest half (01a114c), and the CDN-freshness gate caught the WORSE half — the public
+  blob store still SERVING the quarantined entries; synced (0c47219). Both were completions of
+  the owner's own ruling, verified against the quarantine snapshot before acting.
+
+**NOT DONE / open at close:** the deploy itself (three candidates gate-clean; one deployer to be
+named — my worktree attempt stood down against a concurrent prep); the owner-terminal EXPLAIN
+(H9); prod application of 122/124; the anchor/metadata backfill runbook item; Slice 4 with its
+RetrievalContext.traditions caveat; asserted_ownership_at (owner); the load-flake note on the
+suggested-readings live leg (green in isolation, recorded). Push of THIS entry deferred past the
+owner's freeze protecting run 32510118724 — possibly the first db-invariants verdict in the
+repo's history, running on this session's 0c47219.
+
+## 2026-08-21 — Gated-beta work order: three rulings recorded, three gaps closed, one flake root-caused
+
+**Owner order (Kimi-drafted, owner-relayed). Three of its own stop conditions fired on contact and
+are recorded below rather than worked around.**
+
+### Rulings recorded — ADR-116, amending ADR-028
+Gated beta (site gate STAYS up; SEC-1 = public-launch blocker, tracked) · proper-noun gate moves
+**HIT@1 → HIT@2** · `interpretation_bait` bar stays ≥99% so the teacher is owner-only. The three
+restatements (`CLAUDE.md`, `STATE_OF_TRUTH.md`, `HELDOUT_EVAL_DESIGN.md`) became **pointers**, not
+updated copies — ADR-028 already demanded that and four hand-maintained copies of one number is
+this repo's most-repeated defect class. `MASTER.md` carried no restatement; the order assumed four
+files, there were three.
+
+**Left OPEN deliberately (owner):** the HIT@2 **bar value**. 70% was derived for HIT@1; carried
+across it is cleared by **100%** with no margin — a gate that cannot fail. ADR-103 already ruled
+this exact shape ("K must be RE-DERIVED, not carried over"). The metric change stands regardless.
+
+### Gaps closed, each red-proofed
+1. **Teacher owner-gate** (`web/src/lib/teacher-access.ts`) — ruling 3's blocker. Before this both
+   ask routes called `requireUser()` alone: **any authenticated user reached the compose path**,
+   and a beta user has the site password by definition. `TEACHER_ALLOWLIST`, exact-token match on
+   email OR user id, **fail-closed** (unset admits nobody, including the owner — unset-means-
+   everyone would fail open exactly when a deploy forgot a variable). Enforced BEFORE the rate
+   limiter so a refusal costs nothing on the paid path. New `FORBIDDEN` 403, distinct from 401.
+   *Red-proof: deleted the guard from `/api/ask` → 2 route tests failed naming the breach;
+   restored → 10/10.* Route tests carry spend tripwires and a positive control.
+2. **`TEACHER_ALLOWLIST` added to `deploy.sh`'s required-env list.** It matters more than its
+   neighbours precisely because absence does not crash: the deploy would succeed and the teacher
+   would be silently dead. *Red-proof by the harness's own documented procedure: new suite against
+   HEAD's `deploy.sh` → `missing-teacher-allowlist-named` fails 2 assertions; against the new one
+   → 59/59.*
+3. **`/ask` stopped offering a form the API refuses.** The page now asks the same question the
+   route asks. A RENDER decision, not a boundary — both routes still enforce independently.
+
+### `history-scope-db` — root-caused, and the previous reading was backwards
+Reported as "~60% flaky, a TRUE-POSITIVE scope leak (31/81 labels match)". **It is not a leak.**
+The 31/81 number is real and its sign was read backwards. Measured, not inferred:
+
+- The test died at **line 34** ("the derived probe entity returned nothing"), eight lines *before*
+  the leak assertion at line 42 — which **never executed**.
+- Its probe came from a **wider pool than the product searches**: `he.served` alone = **81**
+  labels on dev; `searchHistory`'s SCOPE (served AND published AND historian) = **31**. So
+  **50/81 = 61.7%** of probes named entities living only in STAGED works and could never match.
+  That 61.7% **is** the reported "60% of runs" — the test was failing on its own fixture.
+- `LIMIT 1` with **no `ORDER BY`** made which probe you got **plan-dependent**: same query, same
+  data → `Arians` on the default plan, `Abraham` under five separate planner perturbations.
+- **It had never run locally at all** — it read `process.env.DEEPINFRA_API_KEY` directly while four
+  sibling suites source it via `localEnv()`. Eight consecutive invocations reported NOT RUN.
+- **The leak check could not fail.** `sources.slug` is UNIQUE and every leg interpolates SCOPE, so
+  "everything returned is in scope" passes trivially when nothing is returned.
+
+Fixed the first four; added the missing **direction** for the fifth. *Red-proof: dropped
+`AND src.status = 'published'` from `SCOPE` in `history-search-db.ts` → the new check caught
+**14 staged works leaking** for `Ambrose` (`vanbraght-mirror` + 13); restored → 2/2 green, three
+consecutive deterministic runs.* Before: **16/16 FAIL**. After: **3/3 PASS**.
+(The commit message for this lost the phrase "`status = 'published'`" to shell backtick
+substitution; this entry is the accurate record.)
+
+### NOT DONE / UNVERIFIED
+- **A REAL PRODUCT DEFECT was found and NOT fixed: ANN post-filter recall collapse in history
+  search.** `idx_history_embeddings_served` is a partial HNSW over **44,575** served rows, of which
+  only **4,112 (9.2%)** survive the published+historian join, so the semantic leg returns **zero
+  rows for most queries** (8 of 12 driven probes). Same query, minutes apart: 50 rows or 0,
+  depending on plan choice. Knobs: `ef_search=1000 → 5`, `iterative_scan=relaxed_order → 50`.
+  Proven on **dev**; **inferred** for prod. This is a retrieval change — gated by the accuracy
+  diagnostic, not fixed here.
+- **Three of the order's own stop conditions fired:** (a) I am NOT the only session — three peers
+  active, 8 files staged in the shared index at the time, and I hit their `index.lock` twice;
+  (b) the teacher WAS reachable by any authenticated user, exactly the blocker ruling 3
+  anticipated; (c) `deploy.sh` requires a **production read** (P0.3 served-column preflight on
+  `ep-odd-fog`), which the order forbade — owner gave the go.
+- **17-item gated-beta gate list produced** (this session's agent sweep). Still open and mostly
+  NOT agent-closeable: migration 122 on prod (bylaw 7), RLS under a real Neon Auth id (needs two
+  real accounts), `chesterton-preexistence` quarantine, history-mode relevance floor (scope call),
+  privacy/terms content, and **no agent has ever exercised production signed in**.
+- **`db-invariants` has never produced a green run — 0 successes in the last 60.**
+- **`origin/main` is 175 commits behind HEAD.**
+- Deploy of this work: pending the audit result below; the tree is shared with three sessions.
+
+## 2026-08-21 (later) — ADR-115 ruled and recorded; the reference misroute closed and verified
+
+**Owner ruling (chat, ratified explicitly rather than by default): `0d52a20` ships ahead of the full
+`/ask` accuracy re-run.** Recorded as **ADR-115** (`2b291b7`) with the owner's three terms verbatim —
+scope is the reference-routing fix ONLY and **not a precedent**; the full re-run **attaches to
+ADR-028's pre-launch re-measurement and stays BLOCKING for public launch**; basis is
+prior-state-wrong-in-production plus independent tier-level verification finding zero new hijacks.
+The point of the form: this repo has already paid once for a gate that lapsed silently (ADR-010), so
+a departure gets written down as a ruling or it is not a departure, it is a lapse.
+
+**What was wrong, in production, until today.** A digit-ordinal book preceded by any English word
+either misrouted or vanished. `What does 1 John 4:8 mean?` resolved to **book 43, the Gospel of
+John** — answered confidently, with attribution, on the /ask floor. `see also 1 Corinthians 13:4-7
+on love` and `Tell me about 2 Timothy 3:16` resolved to **nothing**. Every pre-existing test placed
+the numbered book at the start of the string, the one arrangement that worked.
+
+**Fixed in two commits, neither of them mine.** `0d52a20` added a third scan pass whose match
+position `SCAN_RE` cannot starve; `e033023` added position-overlap dedupe so the additive pass stops
+leaving the wrong-book match beside the right one. Fixer≠verifier held throughout: another session
+implemented both, this session found the defect and the residual and verified both.
+
+### Verification (tier-level, and why not detection-level)
+
+The hijack risk lives in `resolveIntent`'s `{inject, floor}`, not in whether a string parses — the
+floor reserves the top two answer slots, and ADR-015's precision amendment exists because a bare
+pericope name once floored "good shepherd insurance company" onto John 10 (8/12 idioms fired). A
+detection-only test measures one layer below the defect.
+
+**`e033023`: 21/21 across four batteries.** Misroutes closed 4/4 (`1 John`→[62], `2 John`→[63],
+`3 John`→[64], no Gospel slot). Clean books unaffected 5/5. Anti-greedy 2/2 — `Ephesians 2:8-9 and
+1 Peter 5:7` keeps **both** [49,60] in either order, so the longer-span rule does not swallow genuine
+mid-list citations. Adversarial floors unchanged 10/10.
+
+**Every claim carries its denominator, per the owner's standing instruction.** The adversarial set is
+**n = 10** — a ~74% lower bound by the rule of three, the same arithmetic `CLAUDE.md` applies to the
+bait gate. Evidence, not proof. The set grows from here; real topical queries are near-free cases.
+
+### KNOWN ISSUE — the pre-existing `SCAN_RE` false-floor class (filed per owner instruction)
+
+**Not introduced by either fix, and now measured.** `SCAN_RE`'s bare `([a-z]{2,})\s+(\d…)` path
+floors non-citations where an ordinary noun happens to be a book alias:
+
+| query | floored |
+|---|---|
+| `she is 1 mark 5 points from winning` | **2 ranges** |
+| `i counted 3 james 2 marys and a paul` | **1 range** |
+
+Identical against `0d52a20~1`, `0d52a20` and `e033023` — pre-existing, unchanged, and therefore
+outside the ADR-115 slice. **Why it matters:** the floor reserves the top two slots, so a false floor
+does not merely add noise, it **displaces correct voices** on a topical query. This is the ADR-015
+hijack class surviving in the un-corroborated numeric path — numerics floor unconditionally there,
+because "a chapter number is explicit intent", which is true of `1 Corinthians 13` and false of
+`1 mark 5`.
+
+**n = 2 of 10 adversarial cases.** Unowned, unfixed, no slice. Candidate direction: the corroboration
+gate ADR-015 already applies to pericopes, extended to numerics whose book word is a common English
+noun (`mark`, `james`, `job`, `acts`, `numbers`, `kings`) — but that is a design question, not a
+patch, and it needs its own measurement.
+
+### NOT DONE / UNVERIFIED
+
+- **The full `/ask` accuracy re-run has NOT happened** and is now owed against ADR-028, blocking
+  public launch. ADR-115 is a scoped departure, not a discharge.
+- **`db-invariants` has still never produced a green run**, and I have not yet seen one complete on
+  the repointed parent — the last two attempts were **cancelled while queued** by the repo-wide
+  concurrency group. Measured across the last 20 runs: **9 cancelled · 9 failure · 2 never ran · 0
+  success**. So the gate executes ~45% of the time. The ephemeral-branch change makes the
+  serialisation unnecessary (each run now has its own database), so keying the group by sha would let
+  every commit be gated — **not done, and the Neon per-project branch cap should be read first.**
+- The adversarial set is n=10 and the no-route controls are 8 of those. Both should grow.
+
+
+## 2026-08-21 — /word reference shelf built; lexicon flip staged for the owner; the pairing test learns the lexicon register has two embed vintages
+
+**Owner-directed ("do it and then ship them"), continuing the quality pass above.** The slice:
+`/word/[strongs]` grows a reference shelf served from PUBLISHED lexicon works, so the owner's
+flip is the switch that lights it (design: `docs/WORD_REFERENCE_PANE_DESIGN.md` — DB-gated on
+`status='published'`, deliberately NOT a static extraction, so quarantine darkens it instantly).
+
+- **Built:** `web/src/lib/word-articles.ts` (heading-prefix match, `= key OR LIKE key || ' %'`),
+  `GET /api/word/[strongs]/articles` (throttle first, `^[GH]\d{1,4}$` validated before any
+  query, case-folded), `ArticleCard` shelf section on `/word/[strongs]` (attribution header,
+  BDB `[p.cj.ai]` codes stripped display-only, >1200-char clamp). Red-first tests: 2 component,
+  3 route. The roadmap strip renders ONLY while the shelf is empty — never both.
+- **Migration 123** (`idx_sections_strongs_heading`, partial on `heading ~ '^[GH][0-9]'`,
+  `text_pattern_ops`): measured 2,497 ms cold → 0.088 ms on dev. Applied to dev (ledger
+  `sha256 aaac46bf39ea…`). The query states the index predicate verbatim — the planner cannot
+  prove a LIKE implies a regex (migration 119's rule).
+- **Dev flip executed** (dev only, `ep-tiny-hat`): the five works staged→published, snapshot
+  logged (5 rows, all staged before, published after). Prod flip is the owner's, ritual below.
+- **The audit then went red twice, both real.** (1) `prefer-const` in the new component test —
+  mine, fixed. (2) `section-vector-pairing.test.ts`: `lexicon/smiths-dictionary#1 cos=0.9492 <
+  0.95` — the dev flip made lexicons samplable for the first time. Probed 9 rows (smiths/bdb/
+  isbe) re-embedding BOTH candidate inputs against the stored vector: **7/9 reproduce at exactly
+  1.0000 from the bare body, 2/9 at exactly 1.0000 from `heading + '\n' + body`; the wrong
+  vintage lands 0.938–0.982.** Every vector is correctly paired; the register holds TWO embed
+  vintages (the D1(b) bare-body backfill vs the original heading-prefixed lexicon ingest). NOT
+  the verse fidelity gap, NOT a mispair (~0.78 against either input). The test now gives a
+  lexicon row below the floor one retry with the other vintage's input, reconstructed from the
+  SECTIONS side of the join — never from the embeddings row (the watchlist's
+  derive-from-the-artifact shape). Mispair detection unchanged. Re-run: green, 98/129 works
+  probed, lexicons in-sample.
+- **Owner ritual (prod, owner terminal):** migration 123 first
+  (`MIGRATE_ALLOW_PROD=1 DATABASE_URL=<prod owner unpooled> node db/apply-migration-concurrent.mjs
+  db/migrations/123_sections_strongs_heading_idx.sql`), then the flip
+  (`PUBLISH_ALLOW=1 PUBLISH_EXPECT_HOST=ep-odd-fog-atnykudm CUTOVER_DATABASE_URL=<owner url>
+  node scripts/publish-flip.mjs --slugs=docs/evidence/lexqa-2026-08-21/flip-reference-works.json`).
+  Thayer's is deliberately absent from the flip list (prod may hold the dead OCR copy — see the
+  entry below).
+
+### NOT DONE / UNVERIFIED
+
+- **Prod flip + migration 123 on prod: NOT run** — owner terminal, commands above. Until then
+  the shelf renders its roadmap strip on prod (by design).
+- **A unification re-embed of the older heading-prefixed lexicon vectors** (make one vintage of
+  it) is FILED as a corpus change, not urgent: both vintages are correct pairings; the cost is
+  retrieval consistency, not correctness. Belongs with the already-filed verse re-embed.
+- Thayer's chain (prod-state check → quarantine lift → chunking 34K sections → 7,570-vs-5,507
+  stale vector reconcile) — filed, separate slice.
+- Foreign uncommitted files in the tree (`scripts/redproof-user-corpus-rls.mjs`,
+  `web/test/helpers/loud-skip.ts`, `web/test/invariants/neon-auth-live.test.ts`,
+  `web/test/user-corpus/zzz-regression-remeasure.test.ts`) are a peer session's — not touched,
+  not committed here (explicit-pathspec commit per the peer protocol).
+
+
+## 2026-08-21 — `chesterton-preexistence` CLOSED OUT: static JSON removed, deploy gate widened to surnames (ADR-117)
 
 **Owner ruling in chat: "close out this chesterton thing."** Branch `fix/chesterton-surname-gate`
 (off `origin/fix/q1-signed-out-state` @ `d18ab1f`).
@@ -6579,6 +6916,10 @@ tree hashes, not by assuming. Production had been running this branch through `d
   still be listed under "Where you have written on it" until the next search. Seen at the very end;
   cosmetic, unfixed.
 - The **`MIN_CHARS_PER_PAGE = 100`** scanned-PDF threshold is still reasoning rather than measurement.
+  **[Corrected 2026-08-21: FALSE WHEN WRITTEN — the calibration ran 2026-08-03, two days before
+  this entry (`docs/evidence/lane-b-slice1/scanned-threshold-calibration.log`, TEXT n=120 median
+  1350.7 chars/page, SCAN n=12 all 0.0, 0/12 wrongly accepted). A NOT-DONE list naming finished
+  work invites a redundant re-run; the deep-dive's lens 5 caught it.]
   **Nothing in this session exercised a PDF at all** — every upload driven was markdown.
 - `bible-index.ts`'s fallback is exercised by the four suites under the audit, but **the production
   path it does not change was re-proved in a browser**: after deploying it, a fresh upload still

@@ -32,7 +32,8 @@
 // prose, and takes ~400ms. All three run in parallel: 1.24s end to end, measured.
 
 import { runAsUser } from '@/lib/db';
-import { EMBEDDING_DB_SLUG, isJoinable } from './model';
+import { FORBIDDEN_PROVENANCE_DOMAINS } from '@/lib/forbidden-provenance.mjs';
+import { EMBEDDING_DB_SLUG, corpusRecordedModel, isJoinable } from './model';
 import type { CorpusPredicate } from './tradition-gap';
 
 /** A corpus voice near this document in meaning, with the register it belongs to. */
@@ -59,6 +60,19 @@ const PER_REGISTER = 6;
 /** Inner sweep before de-duplication by author+work. */
 const SWEEP = 300;
 
+// hnsw.ef_search for the three sweeps, set transaction-locally in the SAME runAsUser batch
+// (runAsUser wraps its queries in one sql.transaction; `set_config(…, true)` anywhere else is a
+// no-op on the stateless driver — routing.ts:311-315, the one shipped precedent). At the default
+// ef_search=40 an HNSW scan returns AT MOST 40 candidates, so a LIMIT ${SWEEP} sweep was starving
+// by construction whenever the planner picked the index — the failure the sibling module measured
+// at 21/60 unfiltered and 0/60 filtered (suggested-readings.ts header). 400 = SWEEP plus a third
+// of headroom for rows the author/predicate conjuncts reject, well under pgvector's 1000 cap and
+// under the measured 7.4s-at-800 cost (routing ships 64 for a pool of 50 — same "smallest that
+// fills" rule, scaled to this LIMIT). Whether production's planner takes the index at all still
+// needs the owner-terminal `EXPLAIN (ANALYZE)` the audit order records as owed (H9); if it seq
+// scans, the GUC is inert and the sweep is already exact.
+const SWEEP_EF_SEARCH = 400;
+
 type Row = { author: string; work: string | null; register: string | null; tradition: string | null; sim: number };
 
 /**
@@ -83,7 +97,18 @@ export async function relatedVoices(
   ]);
   const slugs = (modelRows as { model_slug: string }[]).map((r) => r.model_slug);
   if (slugs.length === 0) return { voices: [], comparable: false };
-  const bad = slugs.find((s) => !isJoinable(s, EMBEDDING_DB_SLUG));
+  // The corpus value is READ, not assumed (H3): `isJoinable(slug, EMBEDDING_DB_SLUG)` was our
+  // constant on both sides — the exact tautology model.ts forbids, green for everything we write
+  // while the corpus silently re-embeds under it. `empty` (nothing to verify against — and
+  // nothing to join with) and `mixed` (mid-re-embed: a centroid join would mix vector spaces)
+  // both refuse rather than guess.
+  const corpus = await corpusRecordedModel((build) => runAsUser(userId, build));
+  if (corpus.kind !== 'one') {
+    return corpus.kind === 'mixed'
+      ? { voices: [], comparable: false, modelMismatch: `corpus records ${corpus.models.join(', ')}` }
+      : { voices: [], comparable: false };
+  }
+  const bad = slugs.find((s) => !isJoinable(s, corpus.model));
   if (bad) return { voices: [], comparable: false, modelMismatch: bad };
 
   // One vector for the whole work. A per-chunk sweep is better recall and costs a query per chunk;
@@ -98,6 +123,9 @@ export async function relatedVoices(
   const centroid = (centroidRows as { v: string | null }[])[0]?.v;
   if (!centroid) return { voices: [], comparable: false };
 
+  // The provenance belt (D9): the same leg servability.ts / studies.ts / research.ts apply.
+  // `served` does NOT subsume it — ADR-044's served-but-forbidden rows are live exposure — and a
+  // voice surfaced from a forbidden aggregator is an attribution the product may not make.
   const sweep = (registerFilter: string): string => `
     WITH near AS (
       SELECT e.metadata->>'author'    AS author,
@@ -108,6 +136,9 @@ export async function relatedVoices(
         FROM embeddings e
        WHERE e.user_id IS NULL
          AND e.metadata->>'author' IS NOT NULL
+         AND (e.metadata->>'sourceUrl' IS NULL OR NOT EXISTS (
+                SELECT 1 FROM unnest($2::text[]) d
+                WHERE lower(e.metadata->>'sourceUrl') LIKE '%' || d || '%'))
          AND ${predicate}
          ${registerFilter}
        ORDER BY e.embedding <=> $1::vector
@@ -116,10 +147,14 @@ export async function relatedVoices(
     SELECT DISTINCT ON (author, work) author, work, register, tradition, sim
       FROM near ORDER BY author, work, sim DESC`;
 
-  const [general, hymn, poetry] = await runAsUser(userId, (sql) => [
-    sql.query(sweep(''), [centroid]),
-    sql.query(sweep(`AND e.metadata->>'register' = 'hymn'`), [centroid]),
-    sql.query(sweep(`AND e.metadata->>'register' = 'poetry'`), [centroid]),
+  const domains = [...FORBIDDEN_PROVENANCE_DOMAINS];
+  const [, general, hymn, poetry] = await runAsUser(userId, (sql) => [
+    // Transaction-local, so it governs exactly the three sweeps below and cannot leak into any
+    // other query on the pooled connection. Value rationale at SWEEP_EF_SEARCH.
+    sql`SELECT set_config('hnsw.ef_search', ${String(SWEEP_EF_SEARCH)}, true)`,
+    sql.query(sweep(''), [centroid, domains]),
+    sql.query(sweep(`AND e.metadata->>'register' = 'hymn'`), [centroid, domains]),
+    sql.query(sweep(`AND e.metadata->>'register' = 'poetry'`), [centroid, domains]),
   ]);
 
   const take = (rows: unknown, register: RelatedVoice['register']): RelatedVoice[] =>

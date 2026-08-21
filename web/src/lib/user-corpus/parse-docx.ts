@@ -124,6 +124,15 @@ function inflateEntry(bytes: Uint8Array, view: DataView, entry: CentralEntry): U
  * revision marks, bookmarks, section properties -- is dropped. `<w:tab/>` and `<w:br/>` become
  * whitespace so words either side do not fuse into one token, which would corrupt the 6-gram
  * shingles the uncited-quote channel depends on in step 3.
+ *
+ * PARAGRAPHS ARE BLANK-LINE SEPARATED (uploader deep-dive D1). chunk.ts splits paragraph blocks
+ * on /\n{2,}/ and its isHeadingLine only fires on a single-line block, so a single \n per </w:p>
+ * made a whole Word sermon arrive downstream as ONE block with headings glued into body prose.
+ * `\n\n` per </w:p> is the chunker's actual contract. This also covers Word's own heading
+ * paragraphs (`<w:pStyle w:val="Heading1"/>` inside `<w:pPr>`) by construction: EVERY paragraph
+ * lands as its own block, a heading paragraph included, so no pStyle scan is needed -- which is
+ * deliberate, because a new attribute-scanning regex here would be new ReDoS surface (A1-1) for
+ * zero behavioural gain. Whether the heading text then trips isHeadingLine is the chunker's call.
  */
 function xmlToText(xml: string): string {
   // `[^<>]`, NOT `[^>]`, in every attribute scan below — audit A1-1 (CRITICAL).
@@ -140,7 +149,10 @@ function xmlToText(xml: string): string {
   const withBreaks = xml
     .replace(/<w:tab\b[^<>]*\/?>/g, '\t')
     .replace(/<w:br\b[^<>]*\/?>/g, '\n')
-    .replace(/<\/w:p>/g, '\n'); // no quantifier, so never quadratic — left alone deliberately
+    // \n\n, NOT \n: the chunker's paragraph-block contract (see the doc comment above). Two
+    // consecutive \n survive the alternation below as two single-char matches, and the final
+    // \n{3,} squeeze keeps runs (empty paragraphs, a trailing <w:br/>) at exactly one blank line.
+    .replace(/<\/w:p>/g, '\n\n'); // literal, no quantifier, so never quadratic — kept that way deliberately
   const out: string[] = [];
   // The alternation must carry BOTH separators the substitutions above introduce. It listed only
   // \n, so every <w:tab/> was substituted and then silently dropped, fusing the words either side

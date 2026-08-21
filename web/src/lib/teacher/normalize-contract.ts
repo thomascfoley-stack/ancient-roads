@@ -14,6 +14,7 @@
 // and the whole path stays fail-closed.
 
 import { normalizeForMatch, isNormalizedSubstring } from '../../verifier/normalize';
+import type { Origin } from '../../contract/types';
 
 function toIntIfNumericString(v: unknown): unknown {
   if (typeof v === 'string' && /^-?\d+$/.test(v.trim())) {
@@ -83,6 +84,14 @@ export interface SectionAttribution {
   // The section's full text, used for snap-to-source quote repair. Optional so
   // callers that only need attribution backfill (e.g. tests) can omit it.
   body?: string;
+  // The namespace this section resolved under in the CorpusLookup the caller
+  // built (`corpus:${id}` vs `user_library:${id}`, see corpus.ts /
+  // memory-corpus.ts). When present it is authoritative for the backfilled
+  // attribution.origin — the verifier's trust boundary (SERMON_SEARCH_DESIGN §7)
+  // keys on origin, so it must record where the section CAME FROM, never a
+  // constant (defect H4: unconditional 'corpus' laundered user uploads into
+  // guarantee-bearing voices before the verifier could see the difference).
+  origin?: Origin;
 }
 
 export function normalizeContract(
@@ -107,12 +116,20 @@ export function normalizeContract(
       if (sections && typeof b.section_id === 'number') {
         const src = sections[b.section_id - 1];
         if (src) {
+          // Never launder provenance (H4, SERMON_SEARCH_DESIGN §7): origin is the
+          // namespace the section resolved under (src.origin, authoritative when
+          // the caller supplies it); else the model's own claim is preserved for
+          // the verifier to resolve fail-closed. 'corpus' is only the legacy
+          // default for corpus-only callers whose sections declare no origin.
+          const claimed = (b.attribution as Record<string, unknown> | null | undefined)?.origin;
+          const priorOrigin: Origin | undefined =
+            claimed === 'corpus' || claimed === 'user_library' ? claimed : undefined;
           b.attribution = {
             author: src.author,
             work: src.work,
             ...(src.slug ? { slug: src.slug } : {}),
             tradition: src.tradition,
-            origin: 'corpus',
+            origin: src.origin ?? priorOrigin ?? 'corpus',
           };
           // Snap-to-source: trim a drifted quote back to its verbatim prefix.
           if (src.body && typeof b.quote === 'string') {

@@ -153,3 +153,14 @@ first `<scripRef passage="…">` as the label, drop every paragraph up to and in
 containing it, validate each label against `web/public/bible/kjv/*.json`, then drive
 `createDocument` → `drain` → `verseAnchorScan` for run 1 and `anchorChunk` / `chunkProse` /
 `buildVerseShingleIndex` directly for runs 2–4.
+
+## Run 5 — post-remediation-wave regression re-measure (2026-08-21)
+
+Whole v1 dev set (first 30, de-headered) through the fully-remediated shipped drain (detection
+live, parser fixes, citation fixes): exact-range recall **16/30 — identical to Run 1**;
+chapter-level 20/30 (within one-document noise of the Run-2 K=3 figure, different n);
+verses/doc 13.2 (was 12.4). **Explicit anchors: 4, unchanged — EXPECTED, artifact named:** the
+M3 citation gains are header-line forms ("1 Cor. 11:26"), and this eval strips headers by
+construction, so it cannot see them; A6's direct measurement on un-de-headered text gained
++3/−0. No regressions. The ship gates for the wave's retrieval changes ran on fresh v2/v3
+held-outs (translation-detect-PRE-REGISTRATION.md), not on this dev set.

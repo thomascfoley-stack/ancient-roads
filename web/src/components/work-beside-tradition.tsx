@@ -158,7 +158,9 @@ export function WorkBesideTradition({ documentId }: { documentId: string }) {
         <Link href="/library/uploads" className="text-[13px] text-stone-500 underline underline-offset-2 hover:text-stone-700 dark:text-stone-400">
           ← My Works
         </Link>
-        <h1 className="mt-2 font-display text-2xl font-medium text-stone-800 sm:text-3xl dark:text-stone-100">
+        {/* D18 (2026-08-20 audit) — the title is a raw filename minus extension; at text-2xl/3xl a
+            long unbroken one overflows a 390px viewport. Truncate, same treatment as the list rows. */}
+        <h1 className="mt-2 truncate font-display text-2xl font-medium text-stone-800 sm:text-3xl dark:text-stone-100">
           {doc?.title ?? 'Loading…'}
         </h1>
         {voices !== null && !pending && (

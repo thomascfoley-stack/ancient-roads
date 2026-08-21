@@ -11,6 +11,14 @@ import { UploadRefused } from './types';
 export interface PdfExtraction {
   text: string;
   pages: number;
+  /**
+   * Non-whitespace characters PER PAGE, in page order. This file counts and does not judge (see
+   * the header); the per-page rule that consumes these lives in parse.ts judgeExtraction. The
+   * count uses the same rule as parse.ts countExtractable — whitespace is not extractable text —
+   * duplicated as a one-liner rather than imported, because parse.ts imports this file and the
+   * reverse import would be a cycle.
+   */
+  pageChars: number[];
 }
 
 /**
@@ -78,6 +86,7 @@ export async function parsePdf(bytes: Uint8Array): Promise<PdfExtraction> {
 
   const pages = doc.numPages;
   const chunks: string[] = [];
+  const pageChars: number[] = [];
   try {
     for (let n = 1; n <= pages; n++) {
       const page = await doc.getPage(n);
@@ -88,6 +97,10 @@ export async function parsePdf(bytes: Uint8Array): Promise<PdfExtraction> {
         .map((item) => ('str' in item ? item.str : ''))
         .join(' ');
       chunks.push(line);
+      // Counted here, per page, because after the join below the page boundaries are gone and no
+      // later stage can recover which pages were blank. Same rule as countExtractable (see the
+      // PdfExtraction doc comment for why it is not imported).
+      pageChars.push(line.replace(/\s+/g, '').length);
       // Release per-page resources as we go; a 400-page PDF otherwise holds every page's operator
       // list at once, which is the shape of an out-of-memory in a serverless function.
       page.cleanup();
@@ -104,5 +117,5 @@ export async function parsePdf(bytes: Uint8Array): Promise<PdfExtraction> {
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 
-  return { text, pages };
+  return { text, pages, pageChars };
 }

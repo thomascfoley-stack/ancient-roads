@@ -80,6 +80,23 @@ describe.skipIf(!HAVE_BIBLE)('the explicit channel', () => {
     const a = anchorChunk('See Romans 8:28.', { ...base(), translationConfidence: 0.4 });
     for (const x of a.filter((y) => y.channel === 'explicit')) expect(x.confidence).toBe(1.0);
   });
+
+  it('anchors the abbreviated numbered form mid-prose, and precision holds around it (M3)', () => {
+    // The form Run 4 measured as dropped (MEASUREMENTS.md, uploader deep-dive 2026-08-20):
+    // "1 Cor. 13:4" inside prose must reach the explicit channel THROUGH the isExplicitCitation
+    // gate — the widened scan is only safe because the gate still stands behind it.
+    const COR_13_4 = 46013004;
+    const cited = anchorChunk('As Paul says in 1 Cor. 13:4, charity suffereth long.', base());
+    expect(cited.filter((x) => x.channel === 'explicit').some((x) => x.verseStart === COR_13_4)).toBe(true);
+
+    // A bare chapter:verse with no book named is NOT a citation.
+    const bare = anchorChunk('as we noted in 13:4 of the previous lecture', base());
+    expect(bare.filter((x) => x.channel === 'explicit')).toEqual([]);
+
+    // A sentence boundary between a counted noun and a number is NOT a citation.
+    const counted = anchorChunk('I have 1 dog. 3 cats live next door.', base());
+    expect(counted.filter((x) => x.channel === 'explicit')).toEqual([]);
+  });
 });
 
 describe.skipIf(!HAVE_BIBLE)('the uncited channel', () => {

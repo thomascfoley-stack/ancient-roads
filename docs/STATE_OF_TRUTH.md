@@ -31,6 +31,14 @@ Method: `node scripts/ground-truth.mjs` (read-only, no DDL, no secrets) + `git l
 | topical | 20 | 35% | 70% | diagnostic (not a gate) |
 | control | 10 | clean 10/10 | hijacks=0 | guard |
 
+> **The proper-noun row's GATE is HIT@2, not HIT@1 — and this page does not rule that.**
+> [ADR-028 + its amendment ADR-116](DECISIONS.md) are the only place the accuracy status is
+> ruled (2026-08-21: metric moved to HIT@2 because the shipped composer draws from 5
+> candidates, so a HIT@1 miss is still shown to the reader; the July HIT@1 60 closed at
+> **70 / HIT@2 100** on 2026-08-02, [evidence](evidence/eval-v4-post-a8-2026-08-02.md); no
+> accuracy gate is currently outstanding). The table above is a **v3-era snapshot kept for
+> history** — do not read a current status off it, and do not restate the ruling here.
+
 - **Topical HIT@2 is 70, and 70 is NOT an improvement.** The earlier 75 was a 5-doc-pool artifact (the reranker
   had almost no pool); filling the pool to 20 surfaced the honest read (70). Do not file topical as "improved."
 - **Epistle/topical are diagnostic, not gates** (ADR-022). At n=25/20 the 95% CIs — epistle ≈ [70, 96], topical ≈
@@ -418,15 +426,32 @@ does not gate. See `docs/evidence/work-order-v2-stage2/TRANCHE5-STASH-EVALUATION
   Deploys happen ONLY via `./deploy.sh` (`vercel --prod` from a clean worktree) — pushing `main` deploys
   nothing (see `docs/DEPLOYMENT.md`). SEC-1 gates public launch.
 
-## 5. Sermon search — designed & measurement-proven, NOT built
+## 5. Sermon search — BUILT, LIVE ON PRODUCTION, and measured (section rewritten 2026-08-21)
 
-- `docs/SERMON_SEARCH_DESIGN.md` is the **design of record — NOT approved to build** (corrected
-  2026-08-01; this line previously said "the approved design", against that file's own `:3`, "Status:
-  DESIGN — for the owner to react to, NOT approval to build". No ADR approves sermon search, and Lane B's
-  B1/B2/B3 are still open owner decisions gating the build. `AGENTS.md:24` routes agents here over any
-  doc's narrative, so this line being the less accurate of the two sent a compliant agent to the wrong
-  conclusion.) It covers two spines, three modes, per-user brute-force + HNSW
-  tripwire, model parity, trust boundary). **No user-corpus code or tables exist yet.**
+> **This section said "No user-corpus code or tables exist yet" until 2026-08-21 — FALSE since
+> 2026-08-05**, when My Works went live on prod (WORKLOG 2026-08-05; migrations 100–104 applied,
+> 105 later). The 2026-08-20 uploader deep dive found the stale claim
+> (docs/pm/orders/2026-08-20-uploader-deep-dive.md, "the reframe"): an agent reading this page as
+> instructed concluded the feature was unbuilt. Corrected at the page a reader reaches.
+
+- **What exists and serves**: upload → parse (docx/pdf/txt/md) → chunk → anchor (explicit +
+  uncited channels) → embed → store under RLS; three searches (fused semantic+FTS, keyword,
+  verse-presence scan); the tradition-gap join (ADR-104 discharged — `LEGAL_CORPUS_FILTER` is
+  `(served)`); suggested readings; the `/library/uploads` UI ("My Works"). Multi-user is ON in
+  prod (`USER_CORPUS_MULTI_USER=true`).
+- **Measured through the SHIPPED pipeline** (2026-08-20/21, evidence under
+  `docs/evidence/uploader-deep-dive-2026-08-20/`): stated-text recall at the shipped K=3 was
+  **70% chapter-level** on fresh held-out (the design's 90% belongs to K=1, which does not ship);
+  per-chunk anchoring costs 0–2 points vs whole-document (refuted concern); a KJV-pinned index
+  cost non-KJV quoters ~half their recall — **fixed 2026-08-21 by ADR-100's per-document
+  translation detection** (69/69 family agreement across two fresh held-outs, detection BEAT the
+  KJV oracle 15/19 vs 12/19 through the shipped drain, honest compatibility confidence median
+  0.82 recorded per anchor).
+- The 2026-08-21 remediation wave also closed: the origin-blind verifier (user voices additive,
+  never load-bearing — H4), upload spend limits + quotas (H5), readings re-entrancy incl. a CAS
+  (H8), the tautological model-parity call sites (H3), docx paragraph loss + mixed-scan
+  acceptance (D1/D2), the explicit-citation digit-ordinal drops/misroutes (M3), and the client
+  arrival experience (D13–D19). See WORKLOG 2026-08-21 and the deep-dive order's checklist.
 - **Slice 0 (2026-07-14, frozen harness):** uncited-quote anchor **recall 90% chapter-level on a held-out n=30**
   (27/30, 95% CI [74, 96]) — clears the ≥70% bar with the CI lower bound above it. **Precision** trade curve:
   K=1 33% / K=2 68% / K=3 96%; recall K=1 93% / K=2 82% / K=3 75%. **Both bars (recall ≥70, precision ≥60) clear

@@ -34,7 +34,8 @@ const repoRoot = path.resolve(__dirname, '../..');
 const workflowPath = path.join(repoRoot, '.github/workflows/audit.yml');
 
 interface Step { name?: string; if?: string; env?: Record<string, unknown>; run?: string; uses?: string }
-interface Workflow { jobs: Record<string, { steps: Step[] }> }
+interface Concurrency { group?: string; 'cancel-in-progress'?: boolean }
+interface Workflow { jobs: Record<string, { steps: Step[]; concurrency?: Concurrency }> }
 
 /** Values the ephemeral-branch step writes to GITHUB_ENV. A step-level `env:` for any of these
  *  shadows the real value — with '' when the referenced secret is unset. */
@@ -76,6 +77,29 @@ export function checkEphemeralBranch(wf: Workflow): Violation[] {
 
   if (del && del.if !== 'always()') {
     out.push({ code: 'delete-not-always', detail: `delete step guard is ${JSON.stringify(del.if)}, not always()` });
+  }
+
+  // The concurrency key decides how often this gate RUNS, which is upstream of everything else it
+  // asserts. Repo-wide keying starved it to ~45% execution (9 cancelled of 20 runs, 0 ever green)
+  // because a third push cancelled the pending run. Per-ref gates each branch's latest commit and
+  // bounds concurrent ephemeral Neon branches by active refs rather than push rate — per-sha would
+  // gate everything but leave the branch count unbounded, and the Neon cap is unread.
+  const conc = job.concurrency;
+  if (!conc?.group?.includes('github.ref')) {
+    out.push({
+      code: 'concurrency-not-per-ref',
+      detail: `concurrency group is ${JSON.stringify(conc?.group)}; must key on github.ref or the gate starves under parallel pushes`,
+    });
+  }
+  // cancel-in-progress:true is what makes per-ref useful — but it also means a RUNNING job can be
+  // cancelled, so the always() cleanup above is the only thing standing between a superseded run
+  // and a leaked Neon branch. The two settings are a pair; asserting one without the other would
+  // let a future edit keep the key and drop the cancel, reintroducing the starvation.
+  if (conc && conc['cancel-in-progress'] !== true) {
+    out.push({
+      code: 'cancel-in-progress-off',
+      detail: 'cancel-in-progress must be true so superseded same-ref runs stop instead of queueing behind the head',
+    });
   }
 
   for (const step of steps) {
@@ -161,6 +185,18 @@ describe('db-invariants runs against an ephemeral Neon branch', () => {
     const wf = clone();
     steps(wf)[0]!.env = {};
     expect(codesFor(wf)).toContain('empty-env');
+  });
+
+  it('goes red when the concurrency key stops being per-ref', () => {
+    const wf = clone();
+    wf.jobs['db-invariants']!.concurrency = { group: 'db-invariants-${{ github.repository }}', 'cancel-in-progress': true };
+    expect(codesFor(wf)).toContain('concurrency-not-per-ref');
+  });
+
+  it('goes red when cancel-in-progress is turned back off', () => {
+    const wf = clone();
+    wf.jobs['db-invariants']!.concurrency = { group: 'db-invariants-${{ github.repository }}-${{ github.ref }}', 'cancel-in-progress': false };
+    expect(codesFor(wf)).toContain('cancel-in-progress-off');
   });
 
   it('goes red when the production refusal is dropped from the create step', () => {

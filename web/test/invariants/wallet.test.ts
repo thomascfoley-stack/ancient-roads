@@ -22,8 +22,18 @@ function callIndex(src: string, name: string): number {
 
 describe('Layer 1 — wallet invariant', () => {
   it('every money-spending API route CALLS the gate before it spends (teach())', () => {
-    const spenders = listApiRouteFiles().filter((f) => routeSpendsMoney(readRouteSource(f)));
+    const spenders = listApiRouteFiles().filter((f) => routeSpendsMoney(f));
     expect(spenders.length).toBeGreaterThan(0);
+
+    // Routes whose transitive reach is real but whose only use of the paid closure is a read.
+    // Module-level reach over-approximates (routeSpendsMoney's header): the documents LIST route
+    // imports queue.ts for queueStats() and never kicks the drain. Each exemption is
+    // SELF-INVALIDATING — the regex names every call that would turn reach into spend, and the
+    // loop below fails the route the moment one appears, so this cannot rot into a bare
+    // allowlist (the watchlist's first artefact class).
+    const REACHES_BUT_DOES_NOT_SPEND = new Map<string, RegExp>([
+      ['user-corpus/documents/route.ts', /\bdrain\s*\(|\bembedChunks\s*\(|\bteach\s*\(/],
+    ]);
 
     const failures: string[] = [];
     for (const file of spenders) {
@@ -31,6 +41,14 @@ describe('Layer 1 — wallet invariant', () => {
       const route = relRoute(file);
       const isEvalHarness = route.startsWith('eval/bait/');
       const code = codeOnly(src);
+
+      const spendCalls = REACHES_BUT_DOES_NOT_SPEND.get(route);
+      if (spendCalls) {
+        if (spendCalls.test(code)) {
+          failures.push(`${route}: exempted as reach-without-spend, but now CALLS a paid path — remove the exemption and add a per-user rate limiter`);
+        }
+        continue;
+      }
 
       if (isEvalHarness) {
         if (!src.includes('EVAL_HARNESS_SECRET')) {
@@ -60,11 +78,12 @@ describe('Layer 1 — wallet invariant', () => {
       // place (`routeSpendsMoney` matched `teach()` alone). That route now calls
       // `checkCorpusSearchRateLimit`, which is deliberately a DIFFERENT bucket: charging an
       // embedding search against the ask quota would let a reader exhaust their questions by
-      // searching their own uploads. Matched by shape so a future limiter is covered on arrival.
-      const rlIdx = Math.max(
-        callIndex(code, 'checkAskRateLimit'),
-        callIndex(code, 'checkCorpusSearchRateLimit'),
-      );
+      // searching their own uploads. Matched by SHAPE so a future limiter is covered on arrival —
+      // the previous version SAID "matched by shape" over a two-name list, and the third limiter
+      // (checkCorpusUploadRateLimit, H5) would have arrived uncovered. The lookahead excludes the
+      // per-IP fail-OPEN throttles (gate, auth): those are availability guards, not per-user
+      // meters, and counting one would let a spender pass on a limiter that allows on outage.
+      const rlIdx = code.search(/\bcheck(?!Gate|Auth)\w+RateLimit\s*\(/);
 
       if (authIdx < 0) {
         failures.push(`${route}: never CALLS requireUser() (import alone does not gate)`);
@@ -79,6 +98,21 @@ describe('Layer 1 — wallet invariant', () => {
     }
 
     expect(failures, failures.join('\n')).toEqual([]);
+  });
+
+  it('classifies routes that reach a paid module TRANSITIVELY (H5: upload spends through the drain)', () => {
+    // The 2026-08-20 uploader deep dive, H5: `routeSpendsMoney` graded the ROUTE FILE's text, so
+    // /api/user-corpus/upload — which reaches embedChunks through @/lib/user-corpus/queue's
+    // drain() — classified as non-spending and this suite never examined the product's largest
+    // spender. The predicate now resolves local imports transitively.
+    const spenders = listApiRouteFiles().filter((f) => routeSpendsMoney(f)).map(relRoute);
+    expect(spenders).toContain('user-corpus/upload/route.ts');
+    // The retry route re-embeds the WHOLE document through the same drain (and resets attempts,
+    // so MAX_ATTEMPTS is not a spend ceiling).
+    expect(spenders).toContain('user-corpus/documents/[id]/route.ts');
+    // Direct spenders must survive the widening.
+    expect(spenders).toContain('user-corpus/search/route.ts');
+    expect(spenders).toContain('ask/route.ts');
   });
 
   it('documents all API routes (coverage anchor)', () => {

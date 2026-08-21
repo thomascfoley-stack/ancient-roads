@@ -73,9 +73,39 @@ jobs:
   # executed-test count + ci-skip-ceiling.mjs output + NOT RUN annotations only for gitignored artifacts.
   db-invariants:
     runs-on: ubuntu-latest
+    # CONCURRENCY, re-keyed 2026-08-21 from repo-wide to per-REF.
+    #
+    # The old `db-invariants-${{ github.repository }}` with `cancel-in-progress: false` allowed one
+    # running plus one pending run FOR THE WHOLE REPO, so a third push cancelled the pending one
+    # while it was still queued. With four sessions pushing, that is most pushes. MEASURED over the
+    # last 20 runs on this branch: 9 cancelled · 9 failure · 2 never ran · **0 succeeded** — the gate
+    # executed about 45% of the time, and a gate that mostly does not run is a gate in name only.
+    #
+    # The repo-wide key existed for a real reason: every run migrated and seeded ONE shared test
+    # branch, so two concurrent runs would have collided. The per-run ephemeral branch above removes
+    # that constraint entirely — each run now has its own database and cannot collide with anything.
+    #
+    # WHY PER-REF AND NOT PER-SHA. Per-sha gates every commit but leaves runs unbounded: a push storm
+    # means one live Neon branch per superseded commit, for commits that are no longer the branch
+    # head and whose verdict nobody needs. Per-ref gates the LATEST commit on each branch, cancels
+    # superseded same-branch runs, and bounds concurrent ephemeral branches by ACTIVE REFS rather
+    # than push rate. On this repo, where the sessions share one branch, that is effectively one
+    # concurrent run — the same bound as before, without the starvation.
+    #
+    # NEON BRANCH CAP: **NOT READ — the API key does not expose plan limits** (`/users/me` returns no
+    # plan, the project object carries only a logical-size limit). MEASURED instead: 9 branches exist
+    # today. Per-ref keeps the ephemeral count at roughly one, so the cap is not load-bearing here;
+    # it WOULD be under per-sha, which is the second reason not to use it. Read the cap before
+    # raising concurrency any further.
+    #
+    # THE RISK THIS INTRODUCES, and it is new: `cancel-in-progress: true` cancels a RUNNING job, not
+    # just a queued one. Under the old setting a cancelled run had never started, so no ephemeral
+    # branch existed to leak. Now the `delete ephemeral Neon branch` step's `if: always()` is
+    # load-bearing on the cancellation path. Red-proofed by superseding a live run and confirming
+    # zero `ci-eph-*` branches survive — see the commit that made this change.
     concurrency:
-      group: db-invariants-${{ github.repository }}
-      cancel-in-progress: false
+      group: db-invariants-${{ github.repository }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -357,7 +387,14 @@ jobs:
           GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
           rm -f ../loud-skip-manifest.json
-          corepack pnpm exec vitest run test/invariants/ \
+          # test/user-corpus/ rides with the invariants (D3, 2026-08-21): the Lane B uploader
+          # suites — routes, queue-never-drops, search, pipeline-to-ready, tradition-gap — need
+          # credentials that only THIS job holds, so under the audit job they skipped: 62 tests,
+          # exit 0, green over the whole My Works feature without executing it. Same glob
+          # discipline as the invariants dir: a new user-corpus suite is covered the moment it
+          # exists. (blob-round-trip / real-files / calibration remain env-gated NOT-RUNs — they
+          # need operator-local stores/corpora — and announce themselves via loud-skip.)
+          corepack pnpm exec vitest run test/invariants/ test/user-corpus/ \
             --reporter=default --reporter=json --outputFile=../vitest-db-invariants.json
           node ../scripts/ci-skip-ceiling.mjs ../vitest-db-invariants.json
           node ../scripts/ci-db-invariants-receipt.mjs ../vitest-db-invariants.json

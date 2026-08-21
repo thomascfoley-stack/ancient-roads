@@ -1,0 +1,176 @@
+###############################################################################
+# Red-proof: migration 122 (D10 FORCE RLS / D12 verb narrowing / D11 refutation)
+# Throwaway local PostgreSQL 17 + pgvector 0.8.6 (Homebrew), port 55446, host-only.
+# Replay chain per the C3 precedent: 100 -> 101 -> 102 -> 103 -> 105 -> 122.
+# Date: 2026-08-21T17:06:47Z
+###############################################################################
+
+== phase 0 — cluster + roles + replay 100/101/102/103/105
+  roles: neondb_owner (LOGIN, NOSUPERUSER, **NOBYPASSRLS** — the D10 target shape: the
+  non-superuser owner without the attribute; superusers and BYPASSRLS roles still bypass
+  FORCE and are out of scope by design, as the migration header states)
+  PASS: applied 100_user_corpus
+  PASS: applied 101_revoke_embeddings_writes
+  PASS: applied 102_user_documents_parse_metadata
+  PASS: applied 103_user_anchors_channel_pk
+  PASS: applied 105_suggested_readings
+
+== phase 1 — seed two users through app_runtime (the shipped write path, RLS active)
+ set_config 
+------------
+ userA
+(1 row)
+
+ set_config 
+------------
+ userB
+(1 row)
+
+  PASS: userA: document+section+embedding+anchor+reading; userB: document+section (via app_runtime)
+ set_config 
+------------
+ userA
+(1 row)
+
+  PASS: seeded 50,001 user_document_readings rows (50,000 under docX)
+
+== RED (i) — D10: BEFORE 122, the non-BYPASSRLS owner bypasses RLS on user_documents
+  PASS: owner (no GUC, ENABLE-only RLS) sees ALL 3 documents across 2 users — the ownership bypass, watched RED
+  PASS: owner reads user B's section body verbatim: "Private paragraph of user B."
+
+== RED (ii) — D12: BEFORE 122, app_runtime holds verbs no code path uses
+  PASS: UPDATE user_sections / UPDATE+DELETE user_section_embeddings / UPDATE+DELETE user_section_anchors ALL SUCCEED as app_runtime — the surplus, watched RED (rolled back)
+
+== D11 — THE FINDING IS REFUTED BY MEASUREMENT (before 122): the PK already serves the FK scan
+  |                                                      QUERY PLAN                                                      
+  | ---------------------------------------------------------------------------------------------------------------------
+  |  Aggregate  (cost=4.45..4.46 rows=1 width=8)
+  |    ->  Index Only Scan using user_document_readings_pkey on user_document_readings  (cost=0.41..4.45 rows=2 width=0)
+  |          Index Cond: (document_id = 'docA'::text)
+  | (3 rows)
+  | 
+  PASS: pre-122 referential probe: Index Cond (document_id) via user_document_readings_pkey over a 50,001-row table — NOT a seq scan. D11's premise is FALSE; no index will be added
+  PASS: pg_index: the PK's LEADING column is document_id — the refutation's precondition, which 122's DO block now guards
+
+== phase 2 — APPLY 122_user_corpus_hardening.sql (as the table owner)
+  | psql:/Users/foley/Projects/ancient-roads-git/db/migrations/122_user_corpus_hardening.sql:171: WARNING:  122: app_runtime has UPDATE on user_document_readings, which no code path uses — owner call whether to narrow (not in the D12 table)
+  | psql:/Users/foley/Projects/ancient-roads-git/db/migrations/122_user_corpus_hardening.sql:171: NOTICE:  122 OK: 5 tables FORCE RLS · grants narrowed to measured verbs · D11 refutation precondition holds (pkey leads with document_id)
+  PASS: 122 applied (NOTICE/WARNING above — the WARNING is the D12 surplus report firing)
+
+== GREEN (i) — D10: AFTER 122, the same owner connection is policy-bound
+  PASS: owner with NO GUC now sees 0 documents (was 3)
+  PASS: owner with GUC=userA sees exactly userA's 2 documents (docA, docX) — policy-bound, not blind
+  PASS: owner as userA cannot see userB's sections (0 rows)
+
+== GREEN (ii) — D12: AFTER 122, the surplus verbs are DENIED for app_runtime
+  PASS: UPDATE user_sections — denied as required: ERROR:  permission denied for table user_sections
+  PASS: UPDATE user_section_embeddings — denied as required: ERROR:  permission denied for table user_section_embeddings
+  PASS: DELETE user_section_embeddings — denied as required: ERROR:  permission denied for table user_section_embeddings
+  PASS: UPDATE user_section_anchors — denied as required: ERROR:  permission denied for table user_section_anchors
+  PASS: DELETE user_section_anchors — denied as required: ERROR:  permission denied for table user_section_anchors
+
+== GREEN (ii-b) — the verbs the code USES still work for app_runtime
+  PASS: UPDATE/DELETE user_documents-side verbs + INSERTs + user_sections DELETE + readings INSERT/DELETE all still work
+
+== GREEN (iii) — D11 refutation holds AFTER 122; cascade survives the D12 revokes
+  PASS: post-122 referential probe: unchanged — still the pkey with Index Cond (document_id)
+  PASS: idx_user_document_readings_document_fk was deliberately NOT created (it would duplicate the pkey prefix)
+  |  Trigger for constraint user_sections_document_id_fkey: time=0.203 calls=1
+ Trigger for constraint user_document_readings_document_id_fkey: time=7.557 calls=1
+  PASS: superuser cascade-deleted docX (50,000 readings rows); trigger line above shows the RI pass
+  PASS: app_runtime deleted docA (its own doc) with DELETE revoked on embeddings/anchors
+  PASS: 0 orphans across sections/embeddings/anchors/readings after the cascade
+
+== GREEN (iv) — idempotence: re-apply 122 on the same database
+  PASS: second apply is a clean no-op (all statements idempotent)
+
+###############################################################################
+# D6 — scripts/redproof-user-corpus-rls.mjs with the DERIVED table set
+# neondb_owner is granted BYPASSRLS for this phase, mirroring the MEASURED lane-b
+# posture (the script's own header) — the anti-vacuity owner legs require it post-FORCE.
+###############################################################################
+
+== D6 RED 1 — the SEED WELD: a new user_* table with no seed leg must ABORT the run
+  |   derived table set: user_document_readings, user_documents, user_section_anchors, user_section_embeddings, user_sections, user_zzz_probe
+  |   ✗ seed weld: every derived table is seeded — NO SEED for: user_zzz_probe — extend leg 1's seed map
+  | ✗ FAIL — 11 legs passed, 2 failed
+  PASS: run ABORTED (exit 1) naming user_zzz_probe — a new table cannot be silently skipped (watched RED)
+
+== D6 RED 2 — the FLOOR: a narrowed derivation (4 < 5) must ABORT, not prove less
+  |   derived table set: user_documents, user_section_anchors, user_section_embeddings, user_sections
+  |   ✗ derivation floor: >= 5 user tables derived — got 4 — an empty/narrowed derivation proves isolation over nothing
+  | ✗ FAIL — 7 legs passed, 2 failed
+  |   - derivation floor: >= 5 user tables derived
+  PASS: run ABORTED (exit 1) on the floor — the old script would have proven 4 tables and reported green (watched RED)
+  PASS: restored user_document_readings by re-applying 105 + 122 (both idempotent)
+
+== D6 RED 3 — the fifth table is now GUARDED: RLS off on readings must fail the preconditions
+  |   ✗ user_document_readings: RLS enabled
+  |   ✗ unexpected error — preconditions failed — refusing to report the rest as green
+  | ✗ FAIL — 8 legs passed, 2 failed
+  |   - user_document_readings: RLS enabled
+  PASS: run FAILED (exit 1) on 'user_document_readings: RLS enabled' — the exact state the old 4-table script reported GREEN (watched RED)
+
+== D6 GREEN — full run over the derived five tables, post-122 posture (FORCE + narrowed grants)
+  | two-account RLS proof over the user-corpus tables (run rlsprobe-mt37bx6q)
+  | 
+  | preconditions:
+  |   ✓ app connection is app_runtime — got app_runtime
+  |   ✓ app_runtime rolbypassrls = false — got false
+  |   ✓ owner connection is neondb_owner — got neondb_owner
+  |   derived table set: user_document_readings, user_documents, user_section_anchors, user_section_embeddings, user_sections
+  |   ✓ derivation floor: >= 5 user tables derived — got 5 — an empty/narrowed derivation proves isolation over nothing
+  |   ✓ user_document_readings: RLS enabled
+  |   ✓ user_documents: RLS enabled
+  |   ✓ user_section_anchors: RLS enabled
+  |   ✓ user_section_embeddings: RLS enabled
+  |   ✓ user_sections: RLS enabled
+  | 
+  | leg 1 — user A writes one row per table (through app_runtime, RLS active):
+  |   ✓ A inserted one row into each of: user_documents, user_sections, user_section_embeddings, user_section_anchors, user_document_readings
+  |   ✓ seed weld: seed map covers exactly the derived table set
+  | 
+  | leg 2 — anti-vacuity: the rows exist and are visible to someone:
+  |   ✓ owner sees 1 row in user_document_readings for A — n=1
+  |   ✓ owner sees 1 row in user_documents for A — n=1
+  |   ✓ owner sees 1 row in user_section_anchors for A — n=1
+  |   ✓ owner sees 1 row in user_section_embeddings for A — n=1
+  |   ✓ owner sees 1 row in user_sections for A — n=1
+  | 
+  | leg 3 — user B cannot see A (the isolation claim):
+  |   ✓ B sees 0 rows in user_document_readings for A — n=0
+  |   ✓ B sees 0 rows in user_documents for A — n=0
+  |   ✓ B sees 0 rows in user_section_anchors for A — n=0
+  |   ✓ B sees 0 rows in user_section_embeddings for A — n=0
+  |   ✓ B sees 0 rows in user_sections for A — n=0
+  |   ✓ B cannot fetch A's document by its exact id — n=0
+  |   ✓ B sees an empty user_sections table entirely — n=0
+  | 
+  | leg 4 — B cannot write to A's rows:
+  |   ✓ B's UPDATE of A's document affects 0 rows — rowCount=0
+  |   ✓ B's DELETE of A's document affects 0 rows — rowCount=0
+  |   ✓ A's document survived B's attempts unmodified — rlsprobe-mt37bx6q A sermon
+  | 
+  | leg 5 — B cannot forge a row attributed to A (WITH CHECK):
+  |   ✓ B inserting user_id=A is rejected — new row violates row-level security policy for table "user_documents"
+  | 
+  | leg 6 — an unset app.current_user_id denies (fails closed):
+  |   ✓ no GUC set -> 0 rows, not all rows — n=0
+  | 
+  | leg 7 — A deleting its document cascades to sections/embeddings/anchors:
+  |   ✓ A's DELETE of its own document affects 1 row — rowCount=1
+  |   ✓ cascade left 0 orphans in user_document_readings — n=0
+  |   ✓ cascade left 0 orphans in user_documents — n=0
+  |   ✓ cascade left 0 orphans in user_section_anchors — n=0
+  |   ✓ cascade left 0 orphans in user_section_embeddings — n=0
+  |   ✓ cascade left 0 orphans in user_sections — n=0
+  | 
+  | residue after cleanup: 0 probe document(s)
+  | 
+  | ✓ PASS — 34 legs passed, 0 failed
+  PASS: full two-account proof GREEN over the derived set (exit 0)
+
+== teardown
+  cluster stopped, data dir removed
+
+RESULT: ALL CHECKS PASSED (every RED half watched red, every GREEN half watched green)

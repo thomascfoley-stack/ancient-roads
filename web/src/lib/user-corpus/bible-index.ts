@@ -21,18 +21,24 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { buildVerseShingleIndex, type IndexedVerse, type VerseShingleIndex } from '@bible/uncited-shingle';
+import {
+  buildDetectionIndex,
+  detectTranslation,
+  type Detection,
+  type DetectionIndex,
+} from './translation-detect';
 
 /** 6-gram, matching the frozen Slice 0 harness and every published number. */
 export const ANCHOR_NGRAM = 6;
 
 /**
- * The translation the uncited channel shingles against.
+ * The DEFAULT translation — the detection fallback and the eagerly-memoised index.
  *
- * ADR-100 ruled per-document detection; ADR-100's family-union clause was WITHDRAWN on measurement
- * (union costs 1.640× the largest member against a 1.50 bar). Detection itself is not built yet, so
- * Slice 1 uses the KJV family's canonical member and records full confidence — which is honest for
- * the corpus this ships against and is exactly what `translationConfidence` exists to qualify when
- * detection does land.
+ * ADR-100 ruled per-document detection, and since 2026-08-21 it is BUILT: `processOne` calls
+ * `detectDocumentTranslation` per document and anchors against the winner via
+ * `getAnchorIndexFor`, recording the detection's real confidence (translation-detect.ts). The
+ * family-union clause stays WITHDRAWN on measurement (union costs 1.640× the largest member
+ * against a 1.50 bar), so anchoring is always against ONE translation's index.
  */
 export const ANCHOR_TRANSLATION = 'kjv';
 
@@ -98,6 +104,68 @@ export function getAnchorIndex(): VerseShingleIndex {
   }
   cached = buildVerseShingleIndex(verses, ANCHOR_NGRAM, ANCHOR_TRANSLATION);
   return cached;
+}
+
+// ── per-document translation detection (ADR-100, built 2026-08-21) ─────────────────────────────
+// Detection picks WHICH translation's index the uncited channel matches against, per document,
+// with honest confidence — see translation-detect.ts for the mechanism and the measured why.
+// Memoisation mirrors the KJV index above: the combined detection index and a small cache of
+// per-translation anchor indexes are built once per warm instance; a drain batch pays once.
+
+/** The translations shipped under public/bible — derived from disk, never hand-listed. */
+export function availableTranslations(): string[] {
+  const root = path.dirname(bibleDir(ANCHOR_TRANSLATION));
+  return readdirSync(root, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && existsSync(path.join(root, d.name, 'jhn.json')))
+    .map((d) => d.name)
+    .sort();
+}
+
+let detectionCached: DetectionIndex | null = null;
+
+function getDetectionIndex(): DetectionIndex {
+  if (detectionCached) return detectionCached;
+  const corpora = availableTranslations().map((translation) => ({
+    translation,
+    texts: loadVerses(bibleDir(translation)).map((v) => v.text),
+  }));
+  if (corpora.length === 0) {
+    throw new BibleIndexUnavailable('no translation directories found — detection cannot run');
+  }
+  detectionCached = buildDetectionIndex(corpora, ANCHOR_NGRAM);
+  return detectionCached;
+}
+
+/**
+ * Per-translation anchor indexes, small LRU. Most documents detect into the KJV family, so in
+ * practice this holds one or two entries; the cap exists so a pathological mixed batch cannot
+ * hold 18 full indexes in memory.
+ */
+const anchorIndexCache = new Map<string, VerseShingleIndex>();
+const ANCHOR_INDEX_CACHE_MAX = 3;
+
+export function getAnchorIndexFor(translation: string): VerseShingleIndex {
+  if (translation === ANCHOR_TRANSLATION) return getAnchorIndex();
+  const hit = anchorIndexCache.get(translation);
+  if (hit) return hit;
+  const dir = bibleDir(translation);
+  if (!existsSync(dir)) {
+    throw new BibleIndexUnavailable(`bible index for detected translation '${translation}' not found at ${dir}`);
+  }
+  const verses = loadVerses(dir);
+  if (verses.length === 0) throw new BibleIndexUnavailable(`bible index at ${dir} contained no verses`);
+  const built = buildVerseShingleIndex(verses, ANCHOR_NGRAM, translation);
+  if (anchorIndexCache.size >= ANCHOR_INDEX_CACHE_MAX) {
+    const oldest = anchorIndexCache.keys().next().value;
+    if (oldest !== undefined) anchorIndexCache.delete(oldest);
+  }
+  anchorIndexCache.set(translation, built);
+  return built;
+}
+
+/** Detect a document's translation. Throws BibleIndexUnavailable rather than guessing silently. */
+export function detectDocumentTranslation(text: string): Detection {
+  return detectTranslation(text, getDetectionIndex());
 }
 
 /** Is the index reachable, and does it look right? For the deploy check, not for the hot path. */

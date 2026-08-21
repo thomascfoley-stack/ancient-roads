@@ -23,11 +23,20 @@ import { announceSkip } from '../helpers/loud-skip';
 
 const BASE_URL = process.env.NEON_AUTH_BASE_URL;
 const SECRET = process.env.NEON_AUTH_COOKIE_SECRET;
+// `withheld`, not `secret` — CI is DELIBERATELY not given these, and the decision is
+// recorded (docs/pm/orders/2026-08-21-ci-db-invariants-unblock.md, Part 2 WITHDRAWN).
+// Reason: the suite below signs up a REAL user against whatever Neon Auth instance these
+// point at, and has no delete path — so production credentials in CI would accumulate
+// undeletable accounts on every run, and a separate instance is more machinery than this
+// check is worth (it has never executed once; auth is proven in production and by daily
+// use). Classed `secret`, it failed forever and made db-invariants permanently red, which
+// is what teaches readers to ignore red. It now reports NOT RUN, loudly, which is the
+// truth. If a non-production instance is ever provisioned, change this back to `secret`.
 const SKIP = announceSkip(
   'neon-auth-live',
   [
-    { name: 'NEON_AUTH_BASE_URL', present: Boolean(BASE_URL) },
-    { name: 'NEON_AUTH_COOKIE_SECRET', present: Boolean(SECRET) },
+    { name: 'NEON_AUTH_BASE_URL', present: Boolean(BASE_URL), kind: 'withheld' },
+    { name: 'NEON_AUTH_COOKIE_SECRET', present: Boolean(SECRET), kind: 'withheld' },
   ],
   'Neon Auth can create and authenticate a user against the real hosted service',
 );

@@ -31,6 +31,8 @@
 // comparable either way; a different MODEL is what must be refused. So comparison is normalised,
 // and the check is fed the corpus's own recorded value rather than our constant.
 
+import type { NeonQueryFunction, NeonQueryPromise } from '@neondatabase/serverless';
+
 /** The id DeepInfra is called with. The one string that is not derived. */
 export const EMBEDDING_API_MODEL = 'BAAI/bge-large-en-v1.5';
 
@@ -63,8 +65,82 @@ export function isSameModel(a: string, b: string): boolean {
  * `corpusModel` MUST be the value the corpus itself recorded — read from the corpus plane the join
  * targets — never `EMBEDDING_API_MODEL`. Passing our own constant makes this return true for
  * everything we write, which is precisely the tautology this function exists to avoid, so callers
- * are required to supply it and there is deliberately no default.
+ * are required to supply it and there is deliberately no default. `corpusRecordedModel` below is
+ * how a caller fetches that value.
  */
 export function isJoinable(userModelSlug: string, corpusModel: string): boolean {
   return isSameModel(userModelSlug, corpusModel);
+}
+
+// ── reading the corpus's OWN recorded model ─────────────────────────────────────────────────────
+//
+// The contract above was forbidding something no caller could obey: both shipped call sites passed
+// `EMBEDDING_DB_SLUG` — our constant on both sides — because nothing in web/src ever read
+// `embeddings.metadata->>'model'` (uploader deep-dive H3). This is that read, in the one module
+// that owns the parity rule, injected with the caller's query runner so this file stays DB-free
+// (model-parity.test.ts's charter: seeded values, no network; the type-only import at the top of
+// this file has no runtime effect).
+
+/** The shape of `(build) => runAsUser(userId, build)` — the runner both call sites already hold. */
+export type CorpusQueryRunner = (
+  build: (sql: NeonQueryFunction<false, false>) => NeonQueryPromise<false, false>[],
+) => Promise<unknown[][]>;
+
+/**
+ * What the corpus plane records:
+ *  - `one`   — exactly one distinct model (after normalisation): the value to feed `isJoinable`.
+ *  - `empty` — no served corpus row records a model: parity is UNVERIFIABLE, so callers refuse
+ *              the join (there is also nothing to join against).
+ *  - `mixed` — more than one distinct model: mid-re-embed or drift, the exact state where a
+ *              centroid join mixes vector spaces. Callers refuse; this reading IS the drift alarm.
+ */
+export type CorpusModelReading =
+  | { kind: 'one'; model: string }
+  | { kind: 'empty' }
+  | { kind: 'mixed'; models: string[] };
+
+// DISTINCT, not `LIMIT 1`: one arbitrary row answers "what model?" only when there is exactly one
+// answer, and the drift case this check exists to catch is precisely when there is more than one.
+// ORDER BY makes the returned set deterministic; LIMIT 5 bounds it (CLAUDE.md — never unbounded;
+// ≥2 rows already means `mixed`, so nothing past the cap changes the verdict). The predicate is
+// the plane the joins target: served corpus rows (`user_id IS NULL AND served`).
+const CORPUS_MODEL_SQL = `
+  SELECT DISTINCT e.metadata->>'model' AS model
+    FROM embeddings e
+   WHERE e.user_id IS NULL AND e.served
+     AND e.metadata->>'model' IS NOT NULL
+   ORDER BY 1
+   LIMIT 5`;
+
+// Module-level TTL cache (the history-search-db idiom). The DISTINCT is a scan over served rows,
+// so it must not run per request; 60s bounds both the cost (one scan per process per minute at
+// worst) and the staleness (a live re-embed is refused within a minute).
+const CORPUS_MODEL_TTL_MS = 60_000;
+let corpusModelCache: { at: number; reading: CorpusModelReading } | null = null;
+
+/** Test hook: the cache is process-level state and red-proofs must start from a cold read. */
+export function __resetCorpusModelCache(): void {
+  corpusModelCache = null;
+}
+
+/**
+ * The model the corpus itself recorded, read from `embeddings.metadata->>'model'` — the value
+ * `isJoinable` demands for its second argument. Distinct SPELLINGS that normalise to one model
+ * (`BAAI/bge-large-en-v1.5` vs `bge-large-en-v1.5`, the measured two-strings trap above) are one
+ * model, not drift. Query errors propagate and are never cached.
+ */
+export async function corpusRecordedModel(run: CorpusQueryRunner): Promise<CorpusModelReading> {
+  if (corpusModelCache && Date.now() - corpusModelCache.at < CORPUS_MODEL_TTL_MS) {
+    return corpusModelCache.reading;
+  }
+  const [rows] = await run((sql) => [sql.query(CORPUS_MODEL_SQL, [])]);
+  const models = [...new Set((rows as { model: string }[]).map((r) => normaliseModel(r.model)))];
+  const reading: CorpusModelReading =
+    models.length === 0
+      ? { kind: 'empty' }
+      : models.length === 1
+        ? { kind: 'one', model: models[0]! }
+        : { kind: 'mixed', models };
+  corpusModelCache = { at: Date.now(), reading };
+  return reading;
 }

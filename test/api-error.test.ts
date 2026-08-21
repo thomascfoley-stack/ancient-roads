@@ -41,6 +41,11 @@ describe('apiError (API error contract)', () => {
     const expected: Record<ApiErrorCode, number> = {
       RATE_LIMIT_MINUTE: 429, RATE_LIMIT_DAY: 429, UNAUTHENTICATED: 401,
       GATE_LOCKED: 503, UPSTREAM_UNAVAILABLE: 503, INVALID_REQUEST: 400, INTERNAL: 500,
+      // 403, and deliberately NOT 401: the caller is authenticated and still refused
+      // (ADR-116 ruling 3, the gated-beta teacher gate). This map is `Record<ApiErrorCode, …>`
+      // on purpose — adding a code to the union without declaring its status here is a
+      // typecheck failure, which is exactly how this line came to exist.
+      FORBIDDEN: 403,
     };
     for (const [code, status] of Object.entries(expected)) {
       const r = apiError(code as ApiErrorCode);

@@ -19,13 +19,14 @@
 
 import { runAsUser } from '@/lib/db';
 import { MIN_VERSE_SHINGLES, SHIPPED_K, anchorChunk } from './anchor';
-import { getAnchorIndex } from './bible-index';
+import { detectDocumentTranslation, getAnchorIndexFor } from './bible-index';
 import { getUserDocument } from './blob';
 import { chunkProse } from './chunk';
 import { setDocStatus, setParseResult } from './documents';
 import { setReadingsState } from './readings-store';
 import { embedChunks } from './embed';
 import { extractText, judgeExtraction } from './parse';
+import { extractSermonMetadata } from './metadata-extract';
 import { storeSections } from './sections';
 import { UploadRefused, type DocStatus, type UserDocument } from './types';
 
@@ -134,9 +135,14 @@ async function processOne(userId: string, row: Row): Promise<DocStatus> {
 
     // Written BEFORE the judgement, so a refusal keeps the evidence it was based on. 'needs OCR'
     // with no recorded page or character count is an assertion nobody can check afterwards.
+    // The metadata suggestions ride the same write: display-only chips (migration 124), never
+    // read back into title or behaviour — a wrong suggestion is a chip, not a renamed document.
+    const suggested = extractSermonMetadata(parsed.text);
     await setParseResult(userId, row.id, {
       pageCount: parsed.pages ?? null,
       extractableChars: parsed.extractableChars,
+      suggestedReference: suggested.reference,
+      suggestedDate: suggested.date,
     });
 
     judgeExtraction(parsed, type);
@@ -152,19 +158,22 @@ async function processOne(userId: string, row: Row): Promise<DocStatus> {
     }
 
     // ── anchor ───────────────────────────────────────────────────────────────────────────────────
-    // Throws BibleIndexUnavailable if the index is missing, rather than anchoring nothing. An empty
-    // index would lose the channel carrying 90% of the recall and still report success.
-    const index = getAnchorIndex();
+    // ADR-100's detection, built 2026-08-21: the document votes on WHICH translation it quotes
+    // (a KJV-pinned index cost non-KJV quoters roughly half their recall — measured, Run 3 of
+    // the deep dive), the uncited channel shingles against the winner's index, and the
+    // detection's REAL confidence is what lands in user_section_anchors.confidence — never a
+    // hardcoded 1.0. Throws BibleIndexUnavailable if an index is missing, rather than anchoring
+    // nothing: an empty index would lose the channel carrying 90% of the recall and still
+    // report success.
+    const detection = detectDocumentTranslation(parsed.text);
+    const index = getAnchorIndexFor(detection.translation);
     const anchored = chunks.map((chunk) => ({
       chunk,
       anchors: anchorChunk(chunk.text, {
         index,
         minHits: SHIPPED_K,
         minVerseShingles: MIN_VERSE_SHINGLES,
-        // Detection is not built; Slice 1 shingles against the KJV family's canonical member and
-        // says so at full confidence. ADR-100's confidence field is what will qualify this when
-        // detection lands.
-        translationConfidence: 1.0,
+        translationConfidence: detection.confidence,
       }),
     }));
 
@@ -236,19 +245,51 @@ export async function drain(userId: string, max = 5): Promise<DrainResult> {
     processed++;
   }
 
+  // §5 tripwire: emit once per drain batch that ends over the line, so a bulk import that
+  // crosses it says so in the logs the day it happens, not the day search feels slow.
+  if (processed > 0) {
+    const stats = await queueStats(userId).catch(() => null);
+    if (stats?.overTripwire) {
+      console.warn(
+        `[user-corpus] TRIPWIRE user=${userId} sections=${stats.sectionCount} > ${SEMANTIC_SCAN_TRIPWIRE} — ` +
+          'brute-force semantic search is past the design ceiling; the per-user HNSW partition (SERMON_SEARCH_DESIGN §5) is due.',
+      );
+    }
+  }
+
   return { processed, outcomes, reaped };
 }
 
-/** Queue depth and oldest-queued age -- two of §9's four required numbers. */
-export async function queueStats(userId: string): Promise<{ depth: number; oldestQueuedSeconds: number | null }> {
+/**
+ * §5's brute-force tripwire — A NUMBER, NOT A COMMENT (it lived only as a comment in search.ts
+ * until the 2026-08-20 audit called that out). Above this many sections, one user's semantic
+ * search stops being a cheap 100%-recall scan and the design's per-user HNSW partition becomes
+ * due. At ~34 chunks per sermon that is roughly 700 documents — reachable in one bulk import.
+ * Crossing it does not degrade anything today; it makes the crossing VISIBLE (a structured log
+ * the drain emits once per crossing batch, and `sectionCount` on queueStats so ops can chart it)
+ * instead of a surprise latency cliff.
+ */
+export const SEMANTIC_SCAN_TRIPWIRE = 20_000;
+
+/** Queue depth, oldest-queued age, and the user's section count -- §9's observability numbers. */
+export async function queueStats(
+  userId: string,
+): Promise<{ depth: number; oldestQueuedSeconds: number | null; sectionCount: number; overTripwire: boolean }> {
   const [rows] = await runAsUser(userId, (sql) => [
-    sql`SELECT count(*)::int AS depth,
-               EXTRACT(EPOCH FROM (now() - min(created_at)))::int AS oldest
-        FROM user_documents
-        WHERE user_id = ${userId} AND status IN ('queued', 'parsing', 'chunking', 'embedding')`,
+    sql`SELECT (SELECT count(*)::int FROM user_documents
+                 WHERE user_id = ${userId} AND status IN ('queued', 'parsing', 'chunking', 'embedding')) AS depth,
+               (SELECT EXTRACT(EPOCH FROM (now() - min(created_at)))::int FROM user_documents
+                 WHERE user_id = ${userId} AND status IN ('queued', 'parsing', 'chunking', 'embedding')) AS oldest,
+               (SELECT count(*)::int FROM user_sections WHERE user_id = ${userId}) AS sections`,
   ]);
-  const r = (rows as { depth: number; oldest: number | null }[])[0];
-  return { depth: r?.depth ?? 0, oldestQueuedSeconds: r?.oldest ?? null };
+  const r = (rows as { depth: number; oldest: number | null; sections: number }[])[0];
+  const sectionCount = r?.sections ?? 0;
+  return {
+    depth: r?.depth ?? 0,
+    oldestQueuedSeconds: r?.oldest ?? null,
+    sectionCount,
+    overTripwire: sectionCount > SEMANTIC_SCAN_TRIPWIRE,
+  };
 }
 
 export type { UserDocument };
