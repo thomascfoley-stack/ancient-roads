@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// TWO-ACCOUNT RLS PROOF for the 100_user_corpus tables (Slice 1, gate B5).
+// TWO-ACCOUNT RLS PROOF for the user-corpus tables (Slice 1, gate B5).
 //
 // CLAUDE.md: "RLS is the data-isolation boundary. Verify it with two accounts, not by reading
 // policy." The Slice 1 order adds: not through the owner URL either — neondb_owner carries
@@ -11,6 +11,23 @@
 // SECOND connection as the owner and confirms the rows are really there and really visible to
 // someone — the 0 that B sees is then RLS, not emptiness. If the owner connection is absent the
 // script ABORTS rather than skipping the anti-vacuity leg and reporting the rest as green.
+//
+// THE TABLE LIST IS DERIVED, NOT TYPED (uploader deep dive 2026-08-20, finding D6). The old
+// hand-typed four-table array silently missed user_document_readings (migration 105) for the
+// life of that table — while user-data-invariant.mjs excluded it on the stated grounds that
+// this suite covers it. Derivation: information_schema, schema public, BASE TABLEs named
+// 'user\_%' that carry a user_id column — the 100-block's own naming convention. WHY THIS
+// DERIVATION AND NOT "tables with an app.current_user_id policy": a policy-based derivation
+// delists a table at the exact moment its policy is dropped — the derivation source would be
+// the property under test, which is the watchlist's instance-fourteen shape (MASTER.md). The
+// name+column derivation is independent of every property this script asserts: a table that
+// loses RLS, its policy, or its FORCE stays IN the list and its precondition leg goes RED.
+// Two welds keep the derivation honest:
+//   * a FLOOR (>= 5): an empty or narrowed derivation aborts loudly instead of proving
+//     isolation over nothing;
+//   * a SEED WELD: leg 1's per-table seed map must cover EXACTLY the derived set — a new
+//     user_* table with no seed leg ABORTS the run ("extend the seed map") rather than being
+//     silently skipped by the write-path legs.
 //
 // Mirrors the app's real mechanism: web/src/lib/db.ts runAsUser sets app.current_user_id with
 // set_config(..., true) — TRANSACTION-local, because the pooler pools in transaction mode and a
@@ -48,8 +65,11 @@ const ok = (label, detail) => { pass.push(label); console.log(`  ✓ ${label}${d
 const bad = (label, detail) => { fail.push(label); console.log(`  ✗ ${label}${detail ? ` — ${detail}` : ''}`); };
 const check = (cond, label, detail) => (cond ? ok(label, detail) : bad(label, detail));
 
-const app = new Client({ connectionString: APP_URL, ssl: { rejectUnauthorized: false } });
-const owner = new Client({ connectionString: OWNER_URL, ssl: { rejectUnauthorized: false } });
+// sslmode=disable in the URL is respected (a throwaway local Postgres has no SSL); anything
+// else keeps the Neon posture: TLS on, chain unverified (same as every runner script here).
+const sslFor = (url) => (/[?&]sslmode=disable\b/.test(url) ? false : { rejectUnauthorized: false });
+const app = new Client({ connectionString: APP_URL, ssl: sslFor(APP_URL) });
+const owner = new Client({ connectionString: OWNER_URL, ssl: sslFor(OWNER_URL) });
 await app.connect();
 await owner.connect();
 
@@ -81,11 +101,13 @@ async function asUserExpectingError(userId, fn) {
   }
 }
 
-const TABLES = ['user_documents', 'user_sections', 'user_section_embeddings', 'user_section_anchors'];
+// Populated in leg 0 by derivation (see header). Never hand-type a table name into this list.
+let TABLES = [];
+const TABLE_FLOOR = 5; // 100-block (4 tables) + 105 (user_document_readings)
 let docA;
 
 try {
-  console.log(`two-account RLS proof over 100_user_corpus (run ${RUN})\n`);
+  console.log(`two-account RLS proof over the user-corpus tables (run ${RUN})\n`);
 
   // ---- leg 0: preconditions. An unmet precondition reported as green is the whole failure mode.
   console.log('preconditions:');
@@ -94,36 +116,76 @@ try {
   check(who.rows[0].bypass === false, 'app_runtime rolbypassrls = false', `got ${who.rows[0].bypass}`);
   const ownerWho = await owner.query('SELECT current_user AS u');
   check(ownerWho.rows[0].u === 'neondb_owner', 'owner connection is neondb_owner', `got ${ownerWho.rows[0].u}`);
+
+  // Derive the table set (header: name+column, NOT policy — a dropped policy must not delist).
+  const derived = await owner.query(
+    `SELECT c.table_name
+       FROM information_schema.columns c
+       JOIN information_schema.tables t
+         ON t.table_schema = c.table_schema AND t.table_name = c.table_name
+      WHERE c.table_schema = 'public' AND t.table_type = 'BASE TABLE'
+        AND c.column_name = 'user_id' AND c.table_name LIKE 'user\\_%'
+      ORDER BY c.table_name`,
+  );
+  TABLES = derived.rows.map((r) => r.table_name);
+  console.log(`  derived table set: ${TABLES.join(', ')}`);
+  check(TABLES.length >= TABLE_FLOOR,
+    `derivation floor: >= ${TABLE_FLOOR} user tables derived`,
+    `got ${TABLES.length} — an empty/narrowed derivation proves isolation over nothing`);
+
   for (const t of TABLES) {
     const r = await owner.query('SELECT relrowsecurity FROM pg_class WHERE relname = $1', [t]);
     check(r.rows[0]?.relrowsecurity === true, `${t}: RLS enabled`);
   }
   if (fail.length) throw new Error('preconditions failed — refusing to report the rest as green');
 
-  // ---- leg 1: user A writes a full document through app_runtime, under RLS.
-  console.log('\nleg 1 — user A writes (through app_runtime, RLS active):');
+  // ---- leg 1: user A writes one row into EVERY derived table through app_runtime, under RLS.
+  // THE SEED WELD (header): the map below is necessarily hand-written — each table has its own
+  // shape — so it is welded to the derived set: a derived table with no seed, or a seed whose
+  // table no longer derives, ABORTS the run. A new user_* table cannot be silently skipped.
+  console.log('\nleg 1 — user A writes one row per table (through app_runtime, RLS active):');
+  const seeded = [];
   docA = await asUser(USER_A, async () => {
     const d = await app.query(
       `INSERT INTO user_documents (user_id, title, doc_type, status) VALUES ($1,$2,'sermon','ready') RETURNING id`,
       [USER_A, `${RUN} A sermon`],
     );
+    seeded.push('user_documents');
     const did = d.rows[0].id;
     const s = await app.query(
       `INSERT INTO user_sections (document_id, user_id, ordinal, body) VALUES ($1,$2,0,$3) RETURNING id`,
       [did, USER_A, 'A private paragraph belonging to user A.'],
     );
+    seeded.push('user_sections');
     const sid = s.rows[0].id;
     await app.query(
       `INSERT INTO user_section_embeddings (section_id, user_id, model_slug, embedding) VALUES ($1,$2,'bge-large-en-v1.5',$3)`,
       [sid, USER_A, VEC],
     );
+    seeded.push('user_section_embeddings');
     await app.query(
       `INSERT INTO user_section_anchors (section_id, user_id, verse_id_start, verse_id_end) VALUES ($1,$2,45008028,45008028)`,
       [sid, USER_A],
     );
+    seeded.push('user_section_anchors');
+    await app.query(
+      `INSERT INTO user_document_readings (document_id, user_id, category, author, work, work_title, similarity)
+       VALUES ($1,$2,'commentaries','Probe Author','probe-work','Probe Work',0.5)`,
+      [did, USER_A],
+    );
+    seeded.push('user_document_readings');
     return { did, sid };
   });
-  ok('A inserted document + section + embedding + anchor');
+  ok(`A inserted one row into each of: ${seeded.join(', ')}`);
+
+  const missingSeed = TABLES.filter((t) => !seeded.includes(t));
+  const staleSeed = seeded.filter((t) => !TABLES.includes(t));
+  if (missingSeed.length || staleSeed.length) {
+    if (missingSeed.length) bad('seed weld: every derived table is seeded', `NO SEED for: ${missingSeed.join(', ')} — extend leg 1's seed map`);
+    if (staleSeed.length) bad('seed weld: every seed targets a derived table', `stale seed for: ${staleSeed.join(', ')}`);
+    throw new Error('seed weld failed — the write-path legs below would silently skip a table');
+  }
+  ok('seed weld: seed map covers exactly the derived table set');
 
   // ---- leg 2: THE ANTI-VACUITY LEG. The owner must see A's rows.
   // Without this, every "B sees 0" below is equally consistent with "nothing was ever written".
