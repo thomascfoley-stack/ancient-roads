@@ -29,8 +29,9 @@ import { FORBIDDEN_PROVENANCE_DOMAINS } from './forbidden-provenance.mjs';
 // 3. ORDER IS TOTAL AND COLLISION-FREE. `position` is a base-62 fractional key
 //    (`positionBetween`); every read orders `position, id`; the partial unique index
 //    `idx_blocks_order` forbids duplicate live positions, so a concurrent insert at the same
-//    midpoint fails 23505 and is retried against fresh anchors (bounded), never silently
-//    reordered (S-14).
+//    midpoint fails 23505 and is retried against fresh anchors WITH a disambiguating suffix
+//    (`positionForAttempt` — contested rounds produce distinct keys, so lockstep racers of any
+//    width resolve in one retry), never silently reordered (S-14).
 //
 // runAsUser executes a STATIC statement array in one transaction — no read-then-conditional-
 // write exists inside a transaction (design §2.1). Multi-statement ops (revision + update +
@@ -53,6 +54,15 @@ export const CLIP_REFERENCE_MAX = 300;
 export const WHOLE_WORK_BLOCK_CAP = 500;
 /** Export reads every block, paged; this is the stated ceiling, not an aspiration. */
 export const EXPORT_MAX_BLOCKS = 2_000;
+/**
+ * The 23505 retry belt. NO LONGER LOAD-BEARING FOR CONCURRENCY (2026-08-21): until
+ * `positionForAttempt` below, retried racers recomputed the SAME midpoint from the same fresh
+ * anchors — collision by construction, so N lockstep racers needed N tries and this constant
+ * was a zero-margin bound the four-racer invariant test sat exactly on
+ * (docs/pm/orders/2026-08-21-studies-position-retry-zero-margin.md). Retries now disambiguate,
+ * so a round of any width resolves w.h.p. in one retry; 3 covers the ~1/3782-per-pair residual
+ * suffix collision twice over. Raising it is never the fix for a conflict storm.
+ */
 const POSITION_RETRIES = 3;
 
 // ── types ───────────────────────────────────────────────────────────────────────────────────
@@ -182,6 +192,65 @@ export function positionsAfter(after: string | null, n: number): string[] {
     out.push(last);
   }
   return out;
+}
+
+// ── retry-round disambiguation ──────────────────────────────────────────────────────────────
+// THE LOCKSTEP DEFECT (2026-08-21, docs/pm/orders/2026-08-21-studies-position-retry-zero-margin.md):
+// `positionBetween` is pure, so N concurrent racers that read the same anchors compute the SAME
+// key — one wins, and every loser re-reads the new state and computes the same NEXT midpoint,
+// colliding again. Not flakiness: collision by construction, N racers need N rounds, and
+// POSITION_RETRIES was a hand-typed bound one racer below the invariant test's own racer count.
+// No constant fixes that — under lockstep, N racers need N tries for every N.
+//
+// The cure is to make contested rounds produce DISTINCT keys: a retry appends two random
+// base-62 digits inside the gap, so racers that read identical anchors no longer collide, and
+// any-width rounds resolve in one retry (residual: a 1/3782 per-pair suffix collision, which
+// the remaining belt absorbs). Attempt 0 stays the plain midpoint, so sequential inserts —
+// the overwhelmingly common case — pay zero key growth.
+//
+// WHY THE SUFFIX IS SAFE UNDER AN UPPER BOUND: every `mid(a, b)` result differs from `b` at
+// some index with a strictly smaller digit (the midpoint branch floors below dB; the
+// consecutive-digit branch keeps dA = dB−1; the peel branch reduces to one of those on the
+// remainder), so NO extension of the result can reach `b`. Extensions only grow the key
+// rightward of that index, and `key < key + suffix` is lexicographic fact, so the suffixed key
+// stays strictly inside (a, b). The last suffix digit is drawn from 1..z so no key ever ends
+// in '0' (assertPositionKey's invariant).
+
+/** Uniform int in [0, maxExclusive) from the platform CSPRNG. Injectable for tests. */
+function randomBelow(maxExclusive: number): number {
+  const buf = new Uint32Array(1);
+  globalThis.crypto.getRandomValues(buf);
+  return buf[0]! % maxExclusive;
+}
+
+/** `key` plus a two-digit random suffix — still strictly inside the gap `key` came from. */
+export function disambiguatePosition(key: string, rand: (maxExclusive: number) => number = randomBelow): string {
+  const first = POSITION_DIGITS.charAt(rand(POSITION_DIGITS.length));
+  const last = POSITION_DIGITS.charAt(1 + rand(POSITION_DIGITS.length - 1));
+  return key + first + last;
+}
+
+/** The ONE definition of a retry round's key: plain midpoint first, disambiguated under contest. */
+export function positionForAttempt(
+  a: string | null,
+  b: string | null,
+  attempt: number,
+  rand?: (maxExclusive: number) => number,
+): string {
+  const base = positionBetween(a, b);
+  return attempt === 0 ? base : disambiguatePosition(base, rand);
+}
+
+/** The bulk-append twin: a contested retry restarts the chain from a disambiguated head. */
+export function positionsAfterForAttempt(
+  after: string | null,
+  n: number,
+  attempt: number,
+  rand?: (maxExclusive: number) => number,
+): string[] {
+  if (attempt === 0 || n === 0) return positionsAfter(after, n);
+  const head = disambiguatePosition(positionBetween(after, null), rand);
+  return [head, ...positionsAfter(head, n - 1)];
 }
 
 function isUniqueViolation(e: unknown): boolean {
@@ -396,7 +465,7 @@ export async function insertTextBlock(
   for (let attempt = 0; attempt < POSITION_RETRIES; attempt++) {
     const anchors = await readAnchors(userId, studyId, place);
     if (anchors === 'anchor_not_found') return { ok: false, reason: 'anchor_not_found' };
-    const position = positionBetween(anchors.a, anchors.b);
+    const position = positionForAttempt(anchors.a, anchors.b, attempt);
     try {
       // H2: INSERT…SELECT…WHERE EXISTS — a block lands only in a study the caller owns.
       // The updated_at bump rides the same transaction (design §6.2).
@@ -455,7 +524,7 @@ export async function moveBlock(
   for (let attempt = 0; attempt < POSITION_RETRIES; attempt++) {
     const anchors = await readAnchors(userId, studyId, place);
     if (anchors === 'anchor_not_found') return { ok: false, reason: 'anchor_not_found' };
-    const position = positionBetween(anchors.a, anchors.b);
+    const position = positionForAttempt(anchors.a, anchors.b, attempt);
     try {
       const [moved] = await runAsUser(userId, (sql) => [
         sql`UPDATE study_blocks SET position = ${position}, updated_at = now()
@@ -532,7 +601,7 @@ export async function insertClippingFromSection(
   for (let attempt = 0; attempt < POSITION_RETRIES; attempt++) {
     const anchors = await readAnchors(userId, studyId, place);
     if (anchors === 'anchor_not_found') return { ok: false, reason: 'anchor_not_found' };
-    const position = positionBetween(anchors.a, anchors.b);
+    const position = positionForAttempt(anchors.a, anchors.b, attempt);
     try {
       const [rows] = await runAsUser(userId, (sql) => [
         sql`INSERT INTO study_blocks (study_id, user_id, position, kind,
@@ -612,7 +681,7 @@ export async function insertClippingFromEmbedding(
   for (let attempt = 0; attempt < POSITION_RETRIES; attempt++) {
     const anchors = await readAnchors(userId, studyId, place);
     if (anchors === 'anchor_not_found') return { ok: false, reason: 'anchor_not_found' };
-    const position = positionBetween(anchors.a, anchors.b);
+    const position = positionForAttempt(anchors.a, anchors.b, attempt);
     try {
       const [rows] = await runAsUser(userId, (sql) => [
         sql`INSERT INTO study_blocks (study_id, user_id, position, kind,
@@ -709,7 +778,7 @@ export async function insertClippingsForWork(
   for (let attempt = 0; attempt < POSITION_RETRIES; attempt++) {
     const anchors = await readAnchors(userId, studyId, {});
     if (anchors === 'anchor_not_found') return { ok: false, reason: 'study_not_found' };
-    const positions = positionsAfter(anchors.a, unitKeys.length);
+    const positions = positionsAfterForAttempt(anchors.a, unitKeys.length, attempt);
     const placed = unitKeys.map((k, i) => ({ k, p: positions[i]! }));
     try {
       const [rows] = await runAsUser(userId, (sql) => [

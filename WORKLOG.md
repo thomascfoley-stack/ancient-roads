@@ -1,5 +1,42 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 — The zero-margin position race FIXED: contested retries disambiguate
+
+**Owner directive: implement the deterministic fix for the studies position race, then deploy.**
+Diagnosis credit: the inspector session's finding
+([order](docs/pm/orders/2026-08-21-studies-position-retry-zero-margin.md)) — `positionBetween`
+is pure, so N lockstep racers recomputed the SAME midpoint every round; `POSITION_RETRIES = 3`
+against the invariant test's four racers was a zero-margin bound, red whenever the interleaving
+was unkind (2-of-3 green on cold CI branches). No constant fixes it: under lockstep, N racers
+need N tries for every N.
+
+**The fix (`web/src/lib/studies.ts`):** contested retry rounds append a two-digit random base-62
+suffix inside the gap (`disambiguatePosition`), so racers that read identical anchors produce
+distinct keys and any-width rounds resolve in one retry. ONE definition
+(`positionForAttempt` / `positionsAfterForAttempt`) feeds all five retry loops — the constant and
+the racer count are no longer coupled. Attempt 0 stays the plain midpoint: sequential inserts pay
+zero key growth. Suffix safety under an upper bound is proven from the midpoint algorithm (every
+`mid(a,b)` differs from `b` at an index with a strictly smaller digit, so no extension reaches
+`b`) and EXECUTED, not argued: the unit test sweeps all 3,782 suffixes across adversarial gaps.
+
+**Red-proofed twice, deterministically where it matters:**
+- Unit (no DB, runs in the audit job): a faithful lockstep simulation — old semantics land
+  exactly **3 of 8** racers; shipped semantics land **8 of 8** inside the same 3-try belt.
+- Integration (real DB): `studies-order` raced at **8 racers — above the old bound**, per the
+  inspector's caution that a green at 4 was indistinguishable from a kind interleaving. Old code
+  stashed: RED first try (`position_conflict`). Fix restored: 6/6 green.
+
+Blast radius: study-position 14/14, studies-order 6/6, studies-bounds, studies-surface-routes,
+study-export-docx, clipping-tombstone all green; typecheck + lint clean.
+
+### NOT DONE / UNVERIFIED
+- The residual is probabilistic, stated: a ~1/3,782 per-pair suffix collision per round, absorbed
+  by the remaining 3-try belt (~1e-7 for a full second collision). Not zero; documented at the
+  constant.
+- CI's `db-invariants` remains red for the four data-starvation failures + `neon-auth-live`
+  (parent branch predates the served corpus — the -3e/-76 finding). The signal for this commit is
+  narrow: `studies-order` green, nothing else newly red.
+
 ## 2026-08-21 — External live walk filed; watchlist instances 17+18 recorded
 
 The owner's Kimi K3 session walked all four surfaces of deploy `9567a88` SIGNED IN — the

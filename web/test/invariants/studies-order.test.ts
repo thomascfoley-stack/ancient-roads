@@ -100,12 +100,19 @@ describe.skipIf(SKIP)('S-14 studies order', () => {
   });
 
   it('two blocks at the SAME computed midpoint resolve deterministically — no silent reorder', async () => {
-    // Four concurrent inserts after the same anchor: the anchor reads see the same state,
-    // the pure positionBetween returns the same key for all of them, the unique index
-    // admits one, and the rest must land — via bounded 23505 retry — at fresh midpoints,
-    // never fail a well-formed insert and never reorder.
+    // EIGHT concurrent inserts after the same anchor — deliberately ABOVE the old retry bound.
+    // Until 2026-08-21 this raced four against POSITION_RETRIES = 3, and since lockstep racers
+    // recomputed the SAME midpoint every round, four racers needed four tries: the test sat
+    // exactly on the cliff and went red whenever the interleaving was unkind (2-of-3 green on
+    // cold CI branches; docs/pm/orders/2026-08-21-studies-position-retry-zero-margin.md). At
+    // four racers a green was indistinguishable from a kind interleaving. Retries now
+    // disambiguate (positionForAttempt), so ANY width resolves in one retry round — eight
+    // racers prove the property, not the dice. The deterministic lockstep walk, both
+    // directions, is test/study-position.test.ts.
     const results = await Promise.all(
-      ['c1', 'c2', 'c3', 'c4'].map((body) => insertTextBlock(USER, study, body, { afterBlockId: anchorId })),
+      ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8'].map((body) =>
+        insertTextBlock(USER, study, body, { afterBlockId: anchorId }),
+      ),
     );
     for (const r of results) {
       expect(r.ok, `a midpoint race must resolve by retry, not failure (${r.ok ? '' : r.reason})`).toBe(true);
