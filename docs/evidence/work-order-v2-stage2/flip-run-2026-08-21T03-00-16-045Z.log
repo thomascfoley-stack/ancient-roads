@@ -1,0 +1,26 @@
+serve:false  1 standing ruling(s) (HEAD 1, tree 1)
+publish-flip — target ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech (credentials redacted)
+direction    staged -> published
+slugs        27 from docs/evidence/history-phase4/flip-historians.json
+! (node:38924) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+role         neondb_owner (asserted at the server)
+[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: [77Gpuv[1A[1G[0J
+Type publish to PUBLISH to ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech: pu[79Gblish
+snapshot     docs/evidence/work-order-v2-stage2/flip-pre-snapshot-2026-08-21T03-00-21-943Z.json (838 rows + served state for 27 slug(s), written before COMMIT)
+eligible     27 of 27 are 'staged'
+  --status-only  : embeddings.served NOT written. These works will be PUBLISHED but NOT RETRIEVABLE
+                   until scripts/serve-batched.mjs runs against the same slug file.
+served       0 embedding row(s) -> served=true across 0 slug(s)
+             ⚠ 27 slug(s) carry NO work-keyed rows (unreachable by slug): bacon-lw-history, baird-huguenots, bangs-history1, bangs-history2, bangs-history3, bangs-history4, …
+
+OK — gate held. 27 status row(s) staged -> published; 0 embedding row(s) -> served=true.
+Reverse with: node scripts/publish-flip.mjs --slugs=docs/evidence/history-phase4/flip-historians.json --reverse --snapshot=docs/evidence/work-order-v2-stage2/flip-pre-snapshot-2026-08-21T03-00-21-943Z.json

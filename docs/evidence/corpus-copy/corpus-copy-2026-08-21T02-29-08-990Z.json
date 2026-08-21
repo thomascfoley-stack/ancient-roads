@@ -1,0 +1,139 @@
+{
+  "source": "ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech",
+  "destination": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "declaredEndpoint": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "slugs": [
+    "schaff-hcc5",
+    "schaff-hcc6",
+    "schaff-hcc7",
+    "schaff-hcc8",
+    "schaff-person"
+  ],
+  "before": {
+    "schaff-hcc5": {
+      "sources": 1,
+      "sections": 1725,
+      "anchors": 30,
+      "section_embeddings": 1725,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-hcc6": {
+      "sources": 1,
+      "sections": 1861,
+      "anchors": 24,
+      "section_embeddings": 1861,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-hcc7": {
+      "sources": 1,
+      "sections": 1672,
+      "anchors": 38,
+      "section_embeddings": 1672,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-hcc8": {
+      "sources": 1,
+      "sections": 2053,
+      "anchors": 39,
+      "section_embeddings": 2053,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-person": {
+      "sources": 1,
+      "sections": 512,
+      "anchors": 20,
+      "section_embeddings": 512,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "destBefore": {
+    "schaff-hcc5": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-hcc6": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-hcc7": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-hcc8": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-person": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "destAfter": {
+    "schaff-hcc5": {
+      "sources": 1,
+      "sections": 1725,
+      "anchors": 30,
+      "section_embeddings": 1725,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-hcc6": {
+      "sources": 1,
+      "sections": 1861,
+      "anchors": 24,
+      "section_embeddings": 1861,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-hcc7": {
+      "sources": 1,
+      "sections": 1672,
+      "anchors": 38,
+      "section_embeddings": 1672,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-hcc8": {
+      "sources": 1,
+      "sections": 2053,
+      "anchors": 39,
+      "section_embeddings": 2053,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    },
+    "schaff-person": {
+      "sources": 1,
+      "sections": 512,
+      "anchors": 20,
+      "section_embeddings": 512,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "mismatch": 0
+}
