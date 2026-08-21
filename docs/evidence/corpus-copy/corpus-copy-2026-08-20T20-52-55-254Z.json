@@ -1,0 +1,39 @@
+{
+  "source": "ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech",
+  "destination": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "declaredEndpoint": "ep-odd-fog-atnykudm.c-9.us-east-1.aws.neon.tech",
+  "slugs": [
+    "vanbraght-mirror"
+  ],
+  "before": {
+    "vanbraght-mirror": {
+      "sources": 1,
+      "sections": 7080,
+      "anchors": 125,
+      "section_embeddings": 7080,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "destBefore": {
+    "vanbraght-mirror": {
+      "sources": 0,
+      "sections": 0,
+      "anchors": 0,
+      "section_embeddings": 0,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "destAfter": {
+    "vanbraght-mirror": {
+      "sources": 1,
+      "sections": 7080,
+      "anchors": 125,
+      "section_embeddings": 7080,
+      "topical_entries": 0,
+      "flat_embeddings": 0
+    }
+  },
+  "mismatch": 0
+}

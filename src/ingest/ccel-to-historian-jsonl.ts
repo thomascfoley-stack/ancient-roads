@@ -19,7 +19,6 @@ const arg = (n: string): string | undefined =>
 
 const slug = arg('--slug');
 const printN = Number(arg('--print') ?? 0);
-if (!slug) { console.error('usage: ccel-to-historian-jsonl.ts --slug=<manifest slug> [--print=N] [--out=path]'); process.exit(2); }
 
 interface Node { path: string[]; content: string }
 
@@ -44,6 +43,7 @@ export function xmlToNodes(xml: string): Node[] {
 }
 
 async function main(): Promise<void> {
+  if (!slug) { console.error('usage: ccel-to-historian-jsonl.ts --slug=<manifest slug> [--print=N] [--out=path]'); process.exit(2); }
   const manifest = JSON.parse(readFileSync('ingest/sources.config.json', 'utf8')) as Array<Record<string, unknown>>;
   const entry = manifest.find((e) => e.slug === slug);
   if (!entry) { console.error(`STOP: ${slug} has no manifest entry.`); process.exit(2); }
@@ -77,4 +77,7 @@ async function main(): Promise<void> {
   console.log(`${slug}: ${nodes.length} node(s), ${(chars / 1024).toFixed(0)} KB text, max path depth ${Math.max(...nodes.map((n) => n.path.length))} -> ${out}`);
 }
 
-void main();
+// Run only when executed directly — importing xmlToNodes must never trigger the CLI (the
+// adjudicator imports this module and hit the usage/exit on import; a library with top-level
+// side effects is not a library).
+if (process.argv[1]?.endsWith('ccel-to-historian-jsonl.ts')) void main();

@@ -1,0 +1,31 @@
+=== bacon-lw-history  16:29:54Z ===
+bacon-lw-history: 27 node(s), 734 KB text, max path depth 2 -> data/raw/historians/bacon-lw-history.jsonl
+(node:42598) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+bacon-lw-history: 854 sections staged (source 1007) · 192 entity anchors · 0 explicit verse anchors
+(node:42598) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  embedded 640/854
+embedded 854/854 sections whole (max 1800 chars, truncation never fired)
+(node:42659) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+digest bacon-lw-history @ ep-tiny-hat-atdgpisx [staged]
+  sections        854   headed 854/854   vectors 854/854
+  anchors         192 (27 distinct entities)  = 0.22/section  (josephus baseline 1.10)
+  period-dated    0/854 sections  (verbatim heading forms only)
+  gazetteer candidates (frequent, unanchored — CURATE, never auto-adopt):
+     American(272) England(265) Church(238) Christian(232) America(176) Catholic(129) Christ(107) Presbyterian(101) French(92) York(87) English(86) John(86) States(86) Virginia(80) Christians(79) Dutch(69) South(68) Christianity(68) Lord(65) Society(63)
+  no flags

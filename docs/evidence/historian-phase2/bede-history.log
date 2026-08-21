@@ -1,0 +1,65 @@
+=== bede-history  16:13:13Z ===
+bede-history: 142 node(s), 666 KB text, max path depth 3 -> data/raw/historians/bede-history.jsonl
+(node:39820) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Error: STOP: bede-history is PUBLISHED — the historian re-ingest would replace owner-approved content; unpublish first.
+  (Checked inside the transaction, on a row locked FOR UPDATE: a publish flip cannot land
+   between this check and the delete.)
+    at assertReingestable (/Users/foley/Projects/ancient-roads-git/src/ingest/reingest-guard.ts:65:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async main (/Users/foley/Projects/ancient-roads-git/src/ingest/ingest-historian.ts:163:5)
+=== RERUN bede-history  17:19:04Z ===
+(node:54944) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Error: STOP: bede-history is PUBLISHED — the historian re-ingest would replace owner-approved content; unpublish first.
+  (Checked inside the transaction, on a row locked FOR UPDATE: a publish flip cannot land
+   between this check and the delete.)
+    at assertReingestable (/Users/foley/Projects/ancient-roads-git/src/ingest/reingest-guard.ts:65:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async main (/Users/foley/Projects/ancient-roads-git/src/ingest/ingest-historian.ts:194:5)
+=== FINAL bede-history  17:48:28Z ===
+(node:62175) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+bede-history: 912 sections staged (source 985) · 949 entity anchors · 0 explicit verse anchors
+(node:62175) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+node:events:485
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: read ETIMEDOUT
+    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)
+Emitted 'error' event on Client instance at:
+    at Client._handleErrorEvent (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/pg@8.22.0/node_modules/pg/lib/client.js:417:10)
+    at Connection.emit (node:events:507:28)
+    at TLSSocket.reportStreamError (/Users/foley/Projects/ancient-roads-git/node_modules/.pnpm/pg@8.22.0/node_modules/pg/lib/connection.js:58:12)
+    at TLSSocket.emit (node:events:507:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  errno: -60,
+  code: 'ETIMEDOUT',
+  syscall: 'read'
+}
+
+Node.js v24.5.0

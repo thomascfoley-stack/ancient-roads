@@ -1,0 +1,32 @@
+=== hort-ecclesia  16:16:49Z ===
+hort-ecclesia: 19 node(s), 340 KB text, max path depth 2 -> data/raw/historians/hort-ecclesia.jsonl
+(node:40526) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+hort-ecclesia: 402 sections staged (source 998) · 220 entity anchors · 34 explicit verse anchors
+(node:40526) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+Error: embed 400: {"error":{"message":"You passed 513 input tokens and requested 0 output tokens. However, the model's context length is only 512 tokens, resulting in a maximum input length of 512 tokens. Please reduce the length of the input prompt. (parameter=input_tokens, value=513)","type":"invalid_request_error","param":null,"code":null}}
+    at embedBatchWhole (/Users/foley/Projects/ancient-roads-git/src/ingest/ingest-historian.ts:106:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/Users/foley/Projects/ancient-roads-git/src/ingest/ingest-historian.ts:243:22)
+    at async Promise.all (index 0)
+    at async main (/Users/foley/Projects/ancient-roads-git/src/ingest/ingest-historian.ts:240:5)
+=== RERUN hort-ecclesia  17:04:35Z ===
+(node:51439) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+hort-ecclesia: 437 sections staged (source 998) · 233 entity anchors · 34 explicit verse anchors
+(node:51439) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+embedded 437/437 sections whole (max 1800 chars, truncation never fired)

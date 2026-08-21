@@ -1,0 +1,9 @@
+{
+  "_": "Copy batch (2026-08-20): the single-tx 27-work copy died mid-flight with nothing committed — the flip lesson applied to the copy. Each batch is its own transaction, minutes long. ON CONFLICT DO NOTHING makes re-runs safe.",
+  "slugs": [
+    "schaff-hcc1",
+    "schaff-hcc2",
+    "schaff-hcc3",
+    "schaff-hcc4"
+  ]
+}

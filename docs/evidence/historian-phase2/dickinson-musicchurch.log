@@ -1,0 +1,31 @@
+=== dickinson-musicchurch  16:31:32Z ===
+dickinson-musicchurch: 20 node(s), 654 KB text, max path depth 2 -> data/raw/historians/dickinson-musicchurch.jsonl
+(node:42938) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+dickinson-musicchurch: 781 sections staged (source 1010) · 240 entity anchors · 20 explicit verse anchors
+(node:42938) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  embedded 640/781
+embedded 781/781 sections whole (max 1800 chars, truncation never fired)
+(node:42989) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+digest dickinson-musicchurch @ ep-tiny-hat-atdgpisx [staged]
+  sections        781   headed 781/781   vectors 781/781
+  anchors         240 (40 distinct entities)  = 0.31/section  (josephus baseline 1.10)
+  period-dated    0/781 sections  (verbatim heading forms only)
+  gazetteer candidates (frequent, unanchored — CURATE, never auto-adopt):
+     Church(491) Catholic(213) German(154) Bach(126) English(109) Christian(98) Mass(83) England(77) Gregorian(60) Greek(56) Italian(56) Christ(55) Protestant(55) Germany(53) Reformation(50) Roman(49) Latin(47) Music(46) Palestrina(43) Anglican(42)
+  no flags

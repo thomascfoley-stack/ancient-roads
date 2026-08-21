@@ -56,7 +56,11 @@ export { isExplicitCitation };
 export function verbatimPeriod(text: string): { start: number; end: number } | null {
   const years: number[] = [];
   for (const m of text.matchAll(/\bA\.?\s?D\.?\s+(\d{1,4})\b/gi)) years.push(Number(m[1]));
-  for (const m of text.matchAll(/\b(\d{1,4})\s+B\.?\s?C\.?\b/gi)) years.push(-Number(m[1]));
+  // BCE/CE forms added 2026-08-20 — Bede's chapter titles date "[54 BCE]" and the digest measured
+  // 0/785 sections dated under the A.D./B.C.-only rules. Still VERBATIM (§5): the marker must be
+  // in the text; nothing is inferred. "N CE" also accepted; bare years never are.
+  for (const m of text.matchAll(/\b(\d{1,4})\s+B\.?\s?C\.?(?:E\.?)?\b/gi)) years.push(-Number(m[1]));
+  for (const m of text.matchAll(/\b(\d{1,4})\s+C\.?E\.?\b/gi)) years.push(Number(m[1]));
   if (years.length === 0) return null;
   return { start: Math.min(...years), end: Math.max(...years) };
 }
@@ -84,7 +88,11 @@ function chunkOnce(text: string, max: number): string[] {
 // 1200 chars (est ≤400) — deterministic, sentence-bounded, and nothing is ever truncated:
 // splitting is not losing. Josephus (already ingested at 1800) is untouched.
 export function chunkBody(text: string, max = EMBED_MAX): string[] {
-  return chunkOnce(text, max).flatMap((c) => (c.length / 3 > 500 ? chunkOnce(c, 1200) : [c]));
+  // Phase 2 MEASURED the real worst case: Schaff's footnote-dense prose hit 513 tokens from
+  // chunks the len/3 estimate passed — ~2.9 chars/token, not the ~3.5 Bede showed. Threshold and
+  // re-split sizes now assume 2.9: anything over 1200 chars re-splits at 1000 (~345 tokens at the
+  // observed worst). Still split-never-truncate; still deterministic.
+  return chunkOnce(text, max).flatMap((c) => (c.length > 1200 ? chunkOnce(c, 1000) : [c]));
 }
 
 interface Node { path: string[]; content: string }
@@ -93,6 +101,33 @@ async function embedBatchWhole(texts: string[], key: string): Promise<number[][]
   for (const t of texts) {
     if (t.length > EMBED_MAX) throw new Error(`contract breach: chunk ${t.length} chars > ${EMBED_MAX} — truncation would fire`);
   }
+  try {
+    return await embedRaw(texts, key);
+  } catch (e) {
+    if (!/input_tokens|context length/i.test((e as Error).message)) throw e;
+    // TOKEN OVERFLOW FALLBACK (2026-08-20, third contact with the 512 budget). Char thresholds
+    // cannot bound this: Schaff's Greek quotations tokenize under 2 chars/token (a 1,000-char
+    // chunk measured 513 tokens), and the ratio has no floor a char cap can assert. So the
+    // overflow is handled WHERE IT IS DETECTED: bisect the batch to isolate offenders; a single
+    // offending text embeds as the L2-normalized MEAN of its halves' vectors, recursively.
+    // "Embedded whole" holds in the sense that matters — every character contributes; nothing is
+    // dropped or truncated. Deterministic, and terminates (halving always fits eventually).
+    if (texts.length > 1) {
+      const mid = Math.ceil(texts.length / 2);
+      return [...(await embedBatchWhole(texts.slice(0, mid), key)), ...(await embedBatchWhole(texts.slice(mid), key))];
+    }
+    const t = texts[0]!;
+    const halves = [t.slice(0, Math.ceil(t.length / 2)), t.slice(Math.ceil(t.length / 2))];
+    const parts = await embedBatchWhole(halves, key);
+    const dim = parts[0]!.length;
+    const mean = new Array<number>(dim).fill(0);
+    for (const v of parts) for (let i = 0; i < dim; i += 1) mean[i]! += v[i]! / parts.length;
+    const norm = Math.sqrt(mean.reduce((a, x) => a + x * x, 0)) || 1;
+    return [mean.map((x) => x / norm)];
+  }
+}
+
+async function embedRaw(texts: string[], key: string): Promise<number[][]> {
   const res = await fetch('https://api.deepinfra.com/v1/openai/embeddings', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
