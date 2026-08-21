@@ -24,9 +24,29 @@ prod corpus is not the bottleneck; if anything prod's indexes look healthier.
 - **Rule 1** (compose+verify ≥60% of total → stream sources + cap retries at 2): **74.5%
   measured. FIRES.** The dev-local run said 50.4%, untriggered — real prod compose latency is
   markedly worse. Half the fix is already shipped: `MAX_RETRIES = 2` (3 attempts total) is
-  already the current code, not a gap. The unbuilt half is **streaming sources early** so the
-  user sees the retrieved passages while compose runs — compose is genuinely the whole story
+  already the current code, not a gap. ~~The unbuilt half is **streaming sources early** so the
+  user sees the retrieved passages while compose runs~~ — compose is genuinely the whole story
   here (74% of wall time), not something a retry cap alone fixes.
+
+  > **CORRECTED 2026-08-21 — "the unbuilt half" was already built, and had been for five weeks.**
+  > `ask-client.tsx` renders the retrieved sources during compose: a "Reading these while I
+  > compose" block showing the top 3 by author with a 130-char excerpt, plus a "Found N voices
+  > across M traditions" line as soon as the `retrieved` event lands. It shipped in `79be87c`
+  > (**2026-07-09**, "streaming chat UI for the teacher"), **37 days before this measurement was
+  > written**. The `retrieved` event, the client's handling of it, and the render were all in
+  > place; nothing was missing. Verified by reading `Progress` in `web/src/components/ask-client.tsx`
+  > and by `git log -S "Reading these while I compose"`.
+  >
+  > **Both halves of Rule 1 were therefore already satisfied when this ran**, which changes what
+  > the measurement recommends: the remaining lever on a 10.5 s p50 is compose itself, not the
+  > UI. That is a different and harder piece of work, and pretending a shipped feature was the
+  > answer hid it.
+  >
+  > This line cost real effort downstream. A 2026-08-21 data-model inspection carried it forward
+  > as its top-ranked recommendation ("~1 day, $0 — the client just doesn't render it") on the
+  > strength of this sentence, and it was only caught when someone opened the component to
+  > implement it. Same shape as the watchlist's recurring class: a claim about what is built,
+  > written once without re-reading the code, then cited rather than re-checked.
 - **Rule 2** (retrieve p50 ≥15s → skip rerank for verse-ref): 2.7s. Does not fire.
 
 **13/25 (52%) needed at least one retry.** That's the direct cause of the long tail — a single
