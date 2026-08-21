@@ -203,6 +203,48 @@ export async function checkCorpusSearchRateLimit(userId: string, sql: Sql = getD
   }
 }
 
+// Per-user throttle for user-corpus UPLOAD and per-document RETRY (2026-08-20 uploader deep
+// dive, H5a). Each accepted upload spends DeepInfra embedding money through the after() drain,
+// and the retry route re-embeds the WHOLE document while zeroing `attempts` — so MAX_ATTEMPTS
+// bounds consecutive failures, never spend. Until this limiter neither route had any meter, and
+// the wallet invariant could not see them (`routeSpendsMoney` graded the route file's text while
+// the spend sits one hop away in queue.ts's drain).
+//
+// ITS OWN BUCKETS, for checkCorpusSearchRateLimit's reason: an upload is a whole document's
+// embedding batch, a search is one embedding, an ask is a full teach() — charging any against
+// another's quota couples features that should degrade independently. FAILS CLOSED: an unmetered
+// paid endpoint is the worse outcome (the ask limiter's header).
+//
+// Exported so the wallet/H5 suites pin the shipped numbers rather than restating them.
+export const CORPUS_UPLOAD_PER_MIN = Number(process.env.CORPUS_UPLOAD_LIMIT_PER_MIN ?? 10);
+export const CORPUS_UPLOAD_PER_DAY = Number(process.env.CORPUS_UPLOAD_LIMIT_PER_DAY ?? 100);
+
+export async function checkCorpusUploadRateLimit(userId: string, sql: Sql = getDb()): Promise<RateLimitResult> {
+  try {
+    const now = Date.now();
+    const minStart = new Date(Math.floor(now / 60_000) * 60_000).toISOString();
+    const d = new Date(now);
+    const dayStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toISOString();
+
+    // Minute before day, so a retry loop cannot burn the daily quota (the H4 pattern).
+    const minCount = await bump(sql, userId, 'corpus-upload:min', minStart);
+    if (minCount > CORPUS_UPLOAD_PER_MIN) {
+      logEvent('rate_limit_hit', { userId, cap: 'corpus-upload:min', count: minCount, limit: CORPUS_UPLOAD_PER_MIN });
+      return { ok: false, limited: 'min', retryAfterSec: 60 };
+    }
+    const dayCount = await bump(sql, userId, 'corpus-upload:day', dayStart);
+    if (dayCount > CORPUS_UPLOAD_PER_DAY) {
+      logEvent('rate_limit_hit', { userId, cap: 'corpus-upload:day', count: dayCount, limit: CORPUS_UPLOAD_PER_DAY });
+      return { ok: false, limited: 'day', retryAfterSec: 3600 };
+    }
+    await maybeSweep(sql);
+    return { ok: true };
+  } catch (e) {
+    logEvent('rate_limit_fail_closed', { userId, error: (e as Error).message });
+    return { ok: false, limited: 'unavailable', retryAfterSec: 30 };
+  }
+}
+
 const HISTORY_SEARCH_PER_MIN = Number(process.env.HISTORY_SEARCH_LIMIT_PER_MIN ?? 30);
 const HISTORY_SEARCH_PER_DAY = Number(process.env.HISTORY_SEARCH_LIMIT_PER_DAY ?? 500);
 

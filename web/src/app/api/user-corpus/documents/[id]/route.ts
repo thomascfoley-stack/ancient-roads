@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { after } from 'next/server';
+import { checkCorpusUploadRateLimit } from '@/lib/rate-limit';
 import { guardUser } from '@/lib/user-corpus/route-guard';
 import { deleteDocument, getDocument, getDocumentSections, setDocStatus } from '@/lib/user-corpus/documents';
 import { drain } from '@/lib/user-corpus/queue';
@@ -44,6 +45,19 @@ export async function POST(_req: NextRequest, ctx: Ctx): Promise<NextResponse> {
   const guard = await guardUser();
   if (guard.denied) return guard.denied;
   const user = guard.user;
+
+  // METERED LIKE AN UPLOAD (H5a): a retry re-embeds the WHOLE document through the same drain,
+  // and the attempts reset below means MAX_ATTEMPTS bounds consecutive failures, never spend —
+  // without this, holding the retry button was an unmetered embedding loop. Same bucket as
+  // upload, deliberately: both actions buy the same thing.
+  const limit_ = await checkCorpusUploadRateLimit(user.id);
+  if (!limit_.ok) {
+    return NextResponse.json(
+      { error: 'Too many retries. Please wait a moment and try again.', retryAfterSec: limit_.retryAfterSec },
+      { status: 429 },
+    );
+  }
+
   const { id } = await ctx.params;
   const doc = await getDocument(user.id, id);
   if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });

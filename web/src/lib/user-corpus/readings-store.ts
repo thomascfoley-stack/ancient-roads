@@ -36,6 +36,28 @@ export async function setReadingsState(
   ]);
 }
 
+/**
+ * Atomically claim the start of a readings run — the compare-and-set half of the H8 fix.
+ *
+ * `readingsStartRefused` reads then the route writes, so two SAME-INSTANT posts could both pass
+ * the read before either write landed (the read-guard closes back-to-back, not simultaneous).
+ * This is ONE statement: it flips to 'pending' only if no live pending/running run holds the
+ * document, and returns whether it won. The route keeps the read-guard for the cheap early 409
+ * with its human message; this is the belt that makes the winner singular.
+ */
+export async function claimReadingsStart(userId: string, documentId: string, staleMs: number): Promise<boolean> {
+  const [rows] = await runAsUser(userId, (sql) => [
+    sql`UPDATE user_documents SET
+          readings_status = 'pending', readings_progress = 0, readings_step = NULL,
+          readings_error = NULL, updated_at = now()
+        WHERE user_id = ${userId} AND id = ${documentId}
+          AND NOT (readings_status IN ('pending', 'running')
+                   AND updated_at > now() - (${Math.floor(staleMs / 1000)} || ' seconds')::interval)
+        RETURNING id`,
+  ]);
+  return (rows as unknown[]).length > 0;
+}
+
 export async function setSearchCategories(
   userId: string,
   documentId: string,
@@ -145,6 +167,39 @@ export function readingsRunRefused(
   now: number,
 ): boolean {
   if (status !== 'running') return false;
+  return liveWithinStaleWindow(updatedAtIso, now);
+}
+
+/**
+ * Should a POST refuse to START a new run? (2026-08-20 uploader deep dive, H8)
+ *
+ * `readingsRunRefused` above rejects a live `running`; this widens the refusal to a live
+ * `pending` — the state the route itself writes BEFORE kicking the job, so back-to-back POSTs
+ * all passed the narrower guard and each ran the full ~300 s unindexed corpus scan. The route
+ * must call THIS predicate; the narrower one remains for the running arm's pinned decision table.
+ *
+ * The staleness escape applies to `pending` for `running`'s own reason, one state earlier: a
+ * kick that died between the `pending` write and the job's first `running` write (`after()` is
+ * not guaranteed past a platform recycle) leaves `pending` as a corpse — nothing touches
+ * `updated_at` again — and refusing it forever would brick the document exactly as B015 did.
+ * The corrupt-timestamp behaviour is inherited from the shared helper: NaN refuses.
+ */
+export function readingsStartRefused(
+  status: ReadingsStatus | null,
+  updatedAtIso: string,
+  now: number,
+): boolean {
+  if (status === 'pending') return liveWithinStaleWindow(updatedAtIso, now);
+  return readingsRunRefused(status, updatedAtIso, now);
+}
+
+/**
+ * FAILS CLOSED ON A CORRUPT TIMESTAMP: an unparseable `updatedAtIso` makes the age NaN, every
+ * NaN comparison is false, and the NEGATED form therefore reads as "live" — a corrupt row
+ * refuses a new run, never green-lights a double one. The SQL watchlist's three-valued-logic
+ * lesson, applied in TypeScript.
+ */
+function liveWithinStaleWindow(updatedAtIso: string, now: number): boolean {
   const age = now - new Date(updatedAtIso).getTime();
   return !(age > READINGS_STALE_MS);
 }

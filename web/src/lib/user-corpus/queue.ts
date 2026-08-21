@@ -239,19 +239,51 @@ export async function drain(userId: string, max = 5): Promise<DrainResult> {
     processed++;
   }
 
+  // §5 tripwire: emit once per drain batch that ends over the line, so a bulk import that
+  // crosses it says so in the logs the day it happens, not the day search feels slow.
+  if (processed > 0) {
+    const stats = await queueStats(userId).catch(() => null);
+    if (stats?.overTripwire) {
+      console.warn(
+        `[user-corpus] TRIPWIRE user=${userId} sections=${stats.sectionCount} > ${SEMANTIC_SCAN_TRIPWIRE} — ` +
+          'brute-force semantic search is past the design ceiling; the per-user HNSW partition (SERMON_SEARCH_DESIGN §5) is due.',
+      );
+    }
+  }
+
   return { processed, outcomes, reaped };
 }
 
-/** Queue depth and oldest-queued age -- two of §9's four required numbers. */
-export async function queueStats(userId: string): Promise<{ depth: number; oldestQueuedSeconds: number | null }> {
+/**
+ * §5's brute-force tripwire — A NUMBER, NOT A COMMENT (it lived only as a comment in search.ts
+ * until the 2026-08-20 audit called that out). Above this many sections, one user's semantic
+ * search stops being a cheap 100%-recall scan and the design's per-user HNSW partition becomes
+ * due. At ~34 chunks per sermon that is roughly 700 documents — reachable in one bulk import.
+ * Crossing it does not degrade anything today; it makes the crossing VISIBLE (a structured log
+ * the drain emits once per crossing batch, and `sectionCount` on queueStats so ops can chart it)
+ * instead of a surprise latency cliff.
+ */
+export const SEMANTIC_SCAN_TRIPWIRE = 20_000;
+
+/** Queue depth, oldest-queued age, and the user's section count -- §9's observability numbers. */
+export async function queueStats(
+  userId: string,
+): Promise<{ depth: number; oldestQueuedSeconds: number | null; sectionCount: number; overTripwire: boolean }> {
   const [rows] = await runAsUser(userId, (sql) => [
-    sql`SELECT count(*)::int AS depth,
-               EXTRACT(EPOCH FROM (now() - min(created_at)))::int AS oldest
-        FROM user_documents
-        WHERE user_id = ${userId} AND status IN ('queued', 'parsing', 'chunking', 'embedding')`,
+    sql`SELECT (SELECT count(*)::int FROM user_documents
+                 WHERE user_id = ${userId} AND status IN ('queued', 'parsing', 'chunking', 'embedding')) AS depth,
+               (SELECT EXTRACT(EPOCH FROM (now() - min(created_at)))::int FROM user_documents
+                 WHERE user_id = ${userId} AND status IN ('queued', 'parsing', 'chunking', 'embedding')) AS oldest,
+               (SELECT count(*)::int FROM user_sections WHERE user_id = ${userId}) AS sections`,
   ]);
-  const r = (rows as { depth: number; oldest: number | null }[])[0];
-  return { depth: r?.depth ?? 0, oldestQueuedSeconds: r?.oldest ?? null };
+  const r = (rows as { depth: number; oldest: number | null; sections: number }[])[0];
+  const sectionCount = r?.sections ?? 0;
+  return {
+    depth: r?.depth ?? 0,
+    oldestQueuedSeconds: r?.oldest ?? null,
+    sectionCount,
+    overTripwire: sectionCount > SEMANTIC_SCAN_TRIPWIRE,
+  };
 }
 
 export type { UserDocument };

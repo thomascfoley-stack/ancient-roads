@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { after } from 'next/server';
+import { checkCorpusUploadRateLimit } from '@/lib/rate-limit';
 import { guardUser } from '@/lib/user-corpus/route-guard';
 import { putUserDocument } from '@/lib/user-corpus/blob';
 import { createDocument, findByChecksum, setBlobPathname } from '@/lib/user-corpus/documents';
 import { drain } from '@/lib/user-corpus/queue';
+import { checkUploadQuota } from '@/lib/user-corpus/quota';
 import { assertWithinSizeCap, checksum, sniffType } from '@/lib/user-corpus/sniff';
 import { UploadRefused } from '@/lib/user-corpus/types';
 
@@ -23,6 +25,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const guard = await guardUser();
   if (guard.denied) return guard.denied;
   const user = guard.user;
+
+  // METERED BEFORE ANYTHING IS ACCEPTED (H5a). An accepted upload spends DeepInfra embedding
+  // money through the after() drain below, and until 2026-08-21 this route had no limiter at all —
+  // invisible to the wallet invariant because the spend sits one hop away in queue.ts. Plain
+  // string error, not the apiError envelope: the client reads `error` as a string (H6).
+  const limit_ = await checkCorpusUploadRateLimit(user.id);
+  if (!limit_.ok) {
+    return NextResponse.json(
+      { error: 'Too many uploads. Please wait a moment and try again.', retryAfterSec: limit_.retryAfterSec },
+      { status: 429 },
+    );
+  }
 
   const form = await req.formData().catch(() => null);
   const file = form?.get('file');
@@ -48,6 +62,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         { document: existing, duplicateOf: existing.id, message: 'You have already uploaded this file.' },
         { status: 200 },
       );
+    }
+
+    // Quota AFTER the size cap and the dedupe, BEFORE the row exists (H5b). After dedupe on
+    // purpose: re-uploading identical bytes returns the existing document and adds nothing to
+    // usage, so refusing it on quota would refuse a free request. A quota-check failure lands in
+    // the catch below as a 500 — fail-closed, nothing accepted.
+    const quota = await checkUploadQuota(user.id, bytes.byteLength);
+    if (!quota.ok) {
+      return NextResponse.json({ error: quota.message, code: 'quota_exceeded' }, { status: 403 });
     }
 
     // The row is created BEFORE the bytes are stored: a failure between the two leaves a visible
