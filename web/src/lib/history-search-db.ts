@@ -63,7 +63,12 @@ interface Row {
   slug: string; title: string; author: string;
   cosine?: number; fts?: number; entity?: boolean;
 }
-const ROW_COLS = `s.id, s.source_id, s.ordinal, s.heading, s.body,
+// Exported so the SQL half of the deep-link contract is testable without a DB. The CRITICAL
+// (domain finding 1) lived in TWO places — this SELECT list AND the mapper — and a mapper-only
+// test can't fail for a regression here: if this reverts to `s.unit_ordinal`, `row.ordinal` is
+// undefined at runtime and a mapper unit test that builds the row by hand never sees it. The
+// invariant test asserts this string selects `s.ordinal` and not `s.unit_ordinal`.
+export const ROW_COLS = `s.id, s.source_id, s.ordinal, s.heading, s.body,
   s.period_start_year, s.period_end_year, src.slug, src.title, src.author`;
 
 /** Row → result mapper, exported so the ordinal contract (the deep link the reader can resolve)

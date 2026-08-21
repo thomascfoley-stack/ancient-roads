@@ -15,7 +15,7 @@
 // back toward a unit number in rowToResult and the ordinal assertions below go red.
 
 import { describe, expect, it } from 'vitest';
-import { rowToResult } from '@/lib/history-search-db';
+import { rowToResult, ROW_COLS } from '@/lib/history-search-db';
 
 // The mapper's Row shape is internal; this is the subset it reads, built to mirror a real
 // `SELECT s.id, s.ordinal, s.heading, s.body, …` row where the section sits deep in the work.
@@ -50,5 +50,24 @@ describe('rowToResult — the deep-link ordinal is the reader-resolvable section
 
   it('maps a present period to a [start, end] pair', () => {
     expect(rowToResult(row, ['period'], undefined).period).toEqual([70, 70]);
+  });
+
+  it('strips the ingest chunk marker from the heading path, not legitimate parentheticals', () => {
+    const chunked = { ...row, heading: 'Book VI — Chapter 4 (2/3)' } as typeof row;
+    expect(rowToResult(chunked, ['text'], undefined).headingPath).toEqual(['Book VI', 'Chapter 4']);
+    // A parenthetical that is NOT a chunk marker (not d/d) survives.
+    const kept = { ...row, heading: 'Chapter 4 (the fall)' } as typeof row;
+    expect(rowToResult(kept, ['text'], undefined).headingPath).toEqual(['Chapter 4 (the fall)']);
+  });
+});
+
+describe('ROW_COLS — the SQL half of the deep-link contract', () => {
+  // The other half of the CRITICAL: the SELECT must provide sections.ordinal (what the reader
+  // resolves), NOT unit_ordinal (the 024 collapsed units, NULL for 11 of 28 works). A mapper test
+  // cannot catch a regression here — it builds the row by hand. This can: revert the SELECT to
+  // `s.unit_ordinal` and it goes red.
+  it('selects s.ordinal and not s.unit_ordinal', () => {
+    expect(ROW_COLS).toMatch(/\bs\.ordinal\b/);
+    expect(ROW_COLS).not.toMatch(/\bs\.unit_ordinal\b/);
   });
 });

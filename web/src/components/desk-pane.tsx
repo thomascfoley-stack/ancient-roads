@@ -334,6 +334,7 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
       const mine = seq.current;
       setBusy(true);
       setError(null);
+      setMoreError(null); // a jump is a fresh position — a stale load-more banner must not persist (verifier F2)
       setSections([]);
       try {
         await loadFrom(ord, mine);
@@ -361,7 +362,12 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
   const moreInFlight = useRef(false);
 
   const loadMore = useCallback(async () => {
-    if (nextAfter === null || busy || moreInFlight.current || moreError) return;
+    // NOT guarded on moreError: the AUTO-loader is stopped by the effect below (which bails while
+    // moreError is set), so the only callers that reach here during an error are the deliberate
+    // ones — the inline Retry and the manual button. Guarding on the moreError state closure here
+    // made Retry a no-op (the state is still truthy at call time), so recovery silently rode on
+    // the effect re-arming — fragile if the sentinel re-rendered off-screen (verifier F1).
+    if (nextAfter === null || busy || moreInFlight.current) return;
     moreInFlight.current = true;
     const mine = seq.current;
     setBusy(true);
@@ -381,7 +387,7 @@ function WorkPaneView({ pane, onClose }: { pane: Extract<Pane, { kind: 'work' }>
       moreInFlight.current = false;
       if (mine === seq.current) setBusy(false);
     }
-  }, [pane.slug, nextAfter, busy, moreError]);
+  }, [pane.slug, nextAfter, busy]);
 
   // The ref pattern keeps the listeners stable while `loadMore` changes identity with every
   // page (it closes over `nextAfter`). Scroll + rect math rather than IntersectionObserver,

@@ -134,8 +134,11 @@ describe('the desk work pane reads continuously', () => {
     await new Promise((r) => setTimeout(r, 150));
     expect(moreCount()).toBe(afterError); // no additional requests — the auto-loader is stopped
 
-    // Retry clears the error and re-arms; with the failure lifted, the page loads.
+    // Retry loads via a DIRECT call, proven by parking the sentinel far away so the auto-loader
+    // cannot be what refetches (verifier F1: the click handler used to be a no-op that silently
+    // relied on the effect re-arming).
     failMore = false;
+    buttonTop = 99_999;
     fireEvent.click(screen.getByRole('button', { name: /retry/i }));
     await waitFor(() => expect(screen.getByText('Body of section 26.')).toBeTruthy());
   });
