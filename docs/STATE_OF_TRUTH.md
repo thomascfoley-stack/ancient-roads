@@ -31,6 +31,14 @@ Method: `node scripts/ground-truth.mjs` (read-only, no DDL, no secrets) + `git l
 | topical | 20 | 35% | 70% | diagnostic (not a gate) |
 | control | 10 | clean 10/10 | hijacks=0 | guard |
 
+> **The proper-noun row's GATE is HIT@2, not HIT@1 — and this page does not rule that.**
+> [ADR-028 + its amendment ADR-116](DECISIONS.md) are the only place the accuracy status is
+> ruled (2026-08-21: metric moved to HIT@2 because the shipped composer draws from 5
+> candidates, so a HIT@1 miss is still shown to the reader; the July HIT@1 60 closed at
+> **70 / HIT@2 100** on 2026-08-02, [evidence](evidence/eval-v4-post-a8-2026-08-02.md); no
+> accuracy gate is currently outstanding). The table above is a **v3-era snapshot kept for
+> history** — do not read a current status off it, and do not restate the ruling here.
+
 - **Topical HIT@2 is 70, and 70 is NOT an improvement.** The earlier 75 was a 5-doc-pool artifact (the reranker
   had almost no pool); filling the pool to 20 surfaced the honest read (70). Do not file topical as "improved."
 - **Epistle/topical are diagnostic, not gates** (ADR-022). At n=25/20 the 95% CIs — epistle ≈ [70, 96], topical ≈

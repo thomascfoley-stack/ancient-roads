@@ -2,9 +2,12 @@
 
 > ⚠️ **The v2 numbers in this Status block are HISTORICAL (annotated 2026-07-19).** In particular
 > `proper-noun 80%` here is **v2**, and `PHASE_A_CLOSE.md` records **80/90** on **v3** — the current
-> shipped-config figure is **60/100 on frozen v4**. Per **ADR-028** that 60 is an **ACCEPTED
-> LIMITATION for gated beta and BLOCKING for public launch**, pending a re-measure at larger n.
-> ADR-028 is the single place this status is ruled.
+> shipped-config figure was **60/100 on frozen v4** in July — **that miss is CLOSED**: the post-A8
+> re-run measured **HIT@1 70% / HIT@2 100%** on 2026-08-02
+> ([evidence](evidence/eval-v4-post-a8-2026-08-02.md)). **And the gate is now HIT@2, not HIT@1**
+> (ADR-116, 2026-08-21 — the shipped composer draws from 5 candidates, so a HIT@1 miss still
+> reaches the reader). **ADR-028 + ADR-116 are the single place this status is ruled — do not
+> restate the value here; this note is a pointer, not a record.**
 
 **Status:** RUN COMPLETE. v1 (`sha256 49685727…5ab8e`) → v2 re-freeze with authoritative
 WSC/HC labels (`sha256 56c00104…c98c`). Result (v2): verse-ref HIT@1 100%, pericope 80%,

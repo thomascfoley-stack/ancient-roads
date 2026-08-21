@@ -185,7 +185,14 @@ place these are ruled.** Where any other doc states a status for these three, it
 
 **Decision (owner):**
 
+> ⚠️ **AMENDED 2026-08-21 by [ADR-116](#adr-116--gated-beta-scope-the-proper-noun-metric-and-the-teachers-availability-owner-2026-08-21).**
+> Ruling 1 below is SUPERSEDED in two ways: **the metric is now HIT@2, not HIT@1**, and the July
+> **60** was closed on 2026-08-02 at **HIT@1 70% / HIT@2 100%**
+> ([evidence](../evidence/eval-v4-post-a8-2026-08-02.md)). Ruling 3's teacher availability is also
+> ruled there. This ADR remains the single place these statuses are stated — read it WITH ADR-116.
+
 **1. proper-noun HIT@1 60 < 70 — ACCEPTED LIMITATION for gated beta; BLOCKING for public launch.**
+*(Historical, superseded — see the amendment above.)*
 Re-measure at larger n before public launch: 60/100 on n=10 carries a wide CI and may not be a true
 regression. Until that re-measure exists, do not describe the 60 as either "a regression" or
 "cleared".
@@ -1862,3 +1869,57 @@ adversarial cases, watched red before green.
 **Rejected:** spending frozen `v4` on a bug fix (single-use, and it is the set minted for the ship
 claim); letting the gate lapse silently, which is the ADR-010 failure mode this repo has already
 paid for once; and claiming a detection-level measurement covers a tier-level risk.
+
+## ADR-116 — Gated beta: scope, the proper-noun metric, and the teacher's availability (owner, 2026-08-21)
+
+**Amends [ADR-028](#adr-028--launch-blocking-vs-accepted-limitation-the-three-standing-rulings-owner-2026-07-19).**
+ADR-028 remains the single place the three standing statuses are ruled; this ADR changes what two
+of them say. Any doc restating either must point at ADR-028, which points here — restating the
+value itself is what this repo has now paid for sixteen times.
+
+**Context:** the accuracy status was re-derived on 2026-08-21 and two things about it had gone
+stale in opposite directions. `CLAUDE.md` advertised proper-noun as an "OPEN OWNER CALL" that
+ADR-028 had already ruled a month earlier, and separately still quoted the July **60** as current
+when the post-A8 production re-run
+([evidence](../evidence/eval-v4-post-a8-2026-08-02.md)) measured **HIT@1 70% · HIT@2 100% ·
+10/10 pass, 0 wrong, 0 none — "clears — the July miss is closed"** on 2026-08-02. Both are now
+corrected. An independent review then observed that the cheapest fix had never been considered:
+change the metric rather than build a bigger instrument.
+
+**Decision (owner):**
+
+**1. Launch scope is GATED BETA.** The site password gate (`web/src/middleware.ts`) STAYS UP.
+SEC-1 (Neon Auth transitive CVEs) remains the **public**-launch blocker and is tracked, not
+resolved, in this lane.
+
+**2. The proper-noun accuracy gate is HIT@2, not HIT@1.** **Why:** every recorded miss passes at
+HIT@2, and the shipped composer is fed **5** candidates (`web/src/lib/teacher/teach.ts:102-103`,
+`RETRIEVE_K = 6`, `COMPOSE_VOICES = 5`) — the "2-3 voices" in `src/teacher/prompt.ts:58` is a
+prompt FLOOR, not the pool. A HIT@1 miss therefore sits inside the set the reader is shown, so
+HIT@1 was measuring something narrower than the product's behaviour. **This obsoletes the
+proposed n≈100 proper-noun labelling slice; that work is cancelled, not deferred.**
+
+> **OPEN, AND DELIBERATELY NOT RULED HERE — the bar value.** The **70%** bar was derived for
+> HIT@1. Carried across unchanged it is cleared by **100%** with no margin, i.e. a gate that
+> cannot fail. This repo has already ruled on exactly this shape once:
+> [ADR-103](#adr-103) required K to be **re-derived** when the metric changed, because carrying it
+> over is "B-1's circularity in a new costume". The HIT@2 bar needs deriving on its own terms.
+> **Recorded as an outstanding owner decision; the metric change above stands regardless, since
+> HIT@2 is the honest metric whatever its bar turns out to be.**
+
+**3. The `interpretation_bait` bar stays ≥99%, and the teacher stays OWNER-ONLY through gated
+beta.** Current state is 100/100 clean = a **~97% lower bound** (rule of three, n=100), which does
+not meet the bar. ~300 clean cases of genuinely NEW attack vectors — never rephrasings — are
+required to earn it. Gated beta therefore launches on **reader / search / library** surfaces with
+teacher access owner-gated.
+
+> **FINDING, surfaced not shipped around (2026-08-21):** the teacher is **not** owner-gated today.
+> `web/src/app/api/ask/route.ts:25` and `web/src/app/api/ask/stream/route.ts:46` call
+> `requireUser()` — *any authenticated user*, with no owner allowlist anywhere on that path. So any
+> beta user who has the site password and registers an account reaches it. Ruling 3 is therefore
+> **net-new work, not a configuration change**, and it is a gated-beta blocker.
+
+**Rejected:** loosening the bait bar for beta (the faithfulness guarantee is the product's whole
+differentiator, and n=100 is honest evidence for ~97%, not for ≥99%); re-deriving the HIT@2 bar
+inside this ADR without the owner (that is the error ADR-103 names); and building the n≈100
+proper-noun set, which the metric change makes unnecessary.
