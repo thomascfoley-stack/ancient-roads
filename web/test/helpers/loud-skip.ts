@@ -24,13 +24,21 @@ export interface SkipRequirement {
   /** True when the requirement is satisfied. */
   readonly present: boolean;
   /**
-   * `secret` — CI/db-invariants must FAIL when absent under REQUIRE_SECRETS=1.
+   * `secret` — a credential CI is SUPPOSED to hold. Absent ⇒ db-invariants must FAIL
+   * under REQUIRE_SECRETS=1, because a silent skip would be unearned green.
    * `artifact` — gitignored or machine-local files CI cannot have; LOUD SKIP only,
    * never a failure (enforced instead at deploy via REQUIRE_CORPUS / predeploy-gate).
    * `provider` — a third-party service the check depends on is UNAVAILABLE (429/5xx),
    * as distinct from present-and-wrong. LOUD SKIP, never a failure and never a pass.
+   * `withheld` — a credential CI is DELIBERATELY not given, by a recorded decision.
+   * LOUD SKIP, never a failure. This is NOT a softening of the `secret` rule: it is the
+   * distinction that rule always implied. Failing forever on a credential nobody intends
+   * to supply produces a permanently red job, which teaches readers that red means
+   * "probably fine" — the exact harm REQUIRE_SECRETS exists to prevent. Every use must
+   * name the decision that withheld it, so the classification is reviewable and can be
+   * reversed if the decision changes.
    */
-  readonly kind?: 'secret' | 'artifact' | 'provider';
+  readonly kind?: 'secret' | 'artifact' | 'provider' | 'withheld';
 }
 
 /** Sidecar manifest path — set by db-invariants workflow; read by ci-skip-ceiling.mjs. */
@@ -76,9 +84,11 @@ export function announceSkip(
   const missingSecrets = requirements.filter((r) => !r.present && (r.kind ?? 'secret') === 'secret');
   const missingArtifacts = requirements.filter((r) => !r.present && r.kind === 'artifact');
   const unavailableProviders = requirements.filter((r) => !r.present && r.kind === 'provider');
-  if (missingSecrets.length === 0 && missingArtifacts.length === 0 && unavailableProviders.length === 0) return false;
+  const withheld = requirements.filter((r) => !r.present && r.kind === 'withheld');
+  if (missingSecrets.length === 0 && missingArtifacts.length === 0
+    && unavailableProviders.length === 0 && withheld.length === 0) return false;
 
-  const missingNames = [...missingSecrets, ...missingArtifacts, ...unavailableProviders].map((r) => r.name);
+  const missingNames = [...missingSecrets, ...missingArtifacts, ...unavailableProviders, ...withheld].map((r) => r.name);
   const msg =
     `${check} DID NOT RUN — missing ${missingNames.join(' and ')}. ` +
     `It covers: ${covers}. A green suite without it is not evidence that any of those hold.`;
