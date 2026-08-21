@@ -61,7 +61,8 @@ function VerseHandleHint() {
       <p className="flex-1 font-sans text-[13px] leading-relaxed text-stone-700 dark:text-stone-300">
         Tap any <span className="font-sans text-micro font-semibold text-accent-600 dark:text-accent-300">verse&nbsp;number</span> for
         highlights, notes, word study and what the commentators said. Selecting the text itself
-        offers the same tools for a phrase.
+        offers the same tools for a phrase — and double-tapping a single word shows the{' '}
+        <span className="font-sans text-micro font-semibold text-accent-600 dark:text-accent-300">Greek or Hebrew</span> behind it.
       </p>
       <button
         onClick={dismiss}
