@@ -1,5 +1,63 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 — Reading-plans deep-dive inspection (read-only; findings + recommendations)
+
+Owner asked for a deep dive on the reading plan / Bible study feature and ideas to make it
+better. Three parallel explorations (code map, content inventory, docs trail) + a signed-out
+browser walk at 390px and desktop. **No code changed**; one bug filed as a task chip.
+
+**The headline: there are no Bible studies in the product.** `/plans` is a *generator* —
+scope (book / 7 canonical collections / ~12,941 corpus topics) × weeks × days-per-week,
+expanded by pure arithmetic (`web/src/lib/plan/expand.ts`). No authored plan catalog exists
+anywhere in the repo; `study_guides.is_template` has zero code references. The only authored
+daily content is Spurgeon's Morning & Evening (366-day JSON) wired to /home, not to plans.
+Verified against WORKLOG 2026-08-03: the topical corpus IS published and live on prod
+(naves/torrey/openbible + daily-light, 13,829 served rows) — two agent reports quoted stale
+STATE_OF_TRUTH lines claiming otherwise; corrected here rather than propagated.
+
+**New defect (code-confirmed, not browser-reproduced — signed-in builder unreachable in this
+tree):** clearing the Weeks/Days field crashes the builder page. `plans-client.tsx:449-455`
+does `Number('')`→0; `expandPlan` with dayCount=0 returns `{ok:true, days:[]}` (the
+`chapters.length < dayCount` refusal at `expand.ts:126` cannot fire at 0); `plans-client.tsx:318`
+reads `r.days[0]!.date` → render TypeError → error boundary. Topic mode renders "about
+Infinity passages a day" (`:311`). Server safe (`parsePlanSpec` rejects weeks<1). Filed as a
+task chip with the exit test named.
+
+**Also found:** `range` scope ("Romans 1–8") fully built+tested but unreachable — `MODES`
+offers only book/books/topic (`plans-client.tsx:254-258`); topic-mode preview hand-approximates
+instead of calling `expandTopicalPlan` and cannot run the coverage gate, so a topic plan can
+still be refused after submit — the dead end the preview exists to prevent; no `/plans/[id]`
+URL — a plan cannot be linked/refreshed/back-buttoned (all client state); 401/400/404/500 on
+day-toggle collapse to one toast (UX_REMEDIATION:362, still true); `listPlans` orders by
+`updated_at` which nothing ever updates (creation order in effect); `/study/[id]` ComingSoon
+stub one character from the real `/studies/[id]`.
+
+**Carried-open confirmations (no change):** L2 step 2 optimistic toggle still unbuilt
+(`toggle()` awaits then full re-fetch); L2b/L2c BROWSER checks owner-attested only;
+authenticated plan behavior never QA'd end-to-end (qa-fleet 2026-08-16 MASTER_QA_REPORT:517);
+§12 step 5 model intake, §7 `planSource`, §8 .ics feed unbuilt; migration 041 delivery columns
+dormant.
+
+**Recommendations (full ranked list in the session report):** the two differentiators are
+(1) **voices on the day** — build §7 `planSource` so each plan day carries 2–3 attributed
+commentary excerpts on that day's passage (designed, corpus already serves it, concordance-true);
+(2) **historic authored plans** — M'Cheyne 1842 calendar, Daily Light (already ingested,
+deliberately idle for this purpose), Morning & Evening as a followable plan, named presets over
+the existing generator. §10 scoped "plan templates" out; un-scoping is an OWNER CALL — the
+historic-plans framing keeps the product guarantee intact (the plans themselves are attributed
+tradition, not product voice). Then: plan URLs; signed-out browse/preview (this branch's Q1
+territory); catch-up/"shift remaining days"; pericope-aware day splits (src/bible/pericopes
+exists); expose range mode; honest topic preview; L2 step 2.
+
+### NOT DONE / UNVERIFIED
+- No fix applied anywhere; inspection only. The preview-crash trace is from code reading —
+  not executed in a browser (no Neon auth env in this tree; signed-in surfaces unrenderable
+  locally — that dev-env gap itself cost this inspection its end-to-end walk).
+- Prod behavior of `/plans` not re-checked live (bylaw 7 — no prod read taken this session).
+- The stale STATE_OF_TRUTH §plans lines (040 HELD / "/plans not deployed") were NOT edited
+  here; they contradict WORKLOG 2026-08-03 and should be reconciled by a session doing a
+  prod read.
+
 ## 2026-08-21 (ALL PHASES COMPLETE) — the history corpus is live on production
 
 **Every claim below verified independently of the tools that made it.**
