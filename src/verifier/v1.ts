@@ -284,14 +284,21 @@ export async function verifyV1(
   // passage Gen 3:1-Rev 22:21 claims the whole canon on a sliver of overlap —
   // interpretation-by-selection). A shown passage must sit WITHIN a single
   // source-grounded anchor; a passage spanning two grounded spans must be two items.
+  // TRUST BOUNDARY (SERMON_SEARCH_DESIGN.md §7(b)/(c); defect H4, 2026-08-20 uploader deep
+  // dive): user-library voices are ADDITIVE, never load-bearing. They remain legal cited
+  // voices — the resolution/quote/attribution/anchor checks above ran on them — but only
+  // corpus-origin voices may GROUND a displayed passage or satisfy the diversity floors
+  // below. Otherwise a user's own upload could authorize Scripture display or stand in for
+  // a second tradition, making the product guarantee circular.
+  const corpusVoiceBlocks = voiceBlocks.filter(({ block }) => block.attribution.origin === 'corpus');
   const rangeContains = (outer: VerseRange, inner: VerseRange): boolean => outer.start <= inner.start && inner.end <= outer.end;
-  const groundingRanges: VerseRange[] = voiceBlocks.flatMap(({ block }) => block.anchors ?? []);
+  const groundingRanges: VerseRange[] = corpusVoiceBlocks.flatMap(({ block }) => block.anchors ?? []);
   for (const { item, index } of passageChecks) {
     if (!groundingRanges.some((g) => rangeContains(g, item))) {
       violations.push({
         check: 'passages_grounded',
         blockIndex: index,
-        message: `passage ${formatVerseId(item.start)}-${formatVerseId(item.end)} is ungrounded: it is not contained within any source-grounded voice-block anchor (interpretation-by-selection)`,
+        message: `passage ${formatVerseId(item.start)}-${formatVerseId(item.end)} is ungrounded: it is not contained within any CORPUS-grounded voice-block anchor (interpretation-by-selection; user_library anchors do not ground display)`,
       });
     }
   }
@@ -326,20 +333,22 @@ export async function verifyV1(
   const realTraditions = (xs: readonly (string | null | undefined)[]) =>
     new Set(xs.map((t) => normalizeForMatch(t ?? '')).filter((t) => !NOT_A_TRADITION.has(t)));
   const availableTraditions = realTraditions(retrieval.traditions);
-  const usedTraditions = realTraditions(voiceBlocks.map(({ block }) => block.attribution.tradition));
-  const distinctVoiceSections = new Set(voiceBlocks.map(({ block }) => block.section_id));
+  // Corpus-origin voices only (H4, comment above the grounding screen): a user upload's
+  // tradition/section must never satisfy these floors.
+  const usedTraditions = realTraditions(corpusVoiceBlocks.map(({ block }) => block.attribution.tradition));
+  const distinctVoiceSections = new Set(corpusVoiceBlocks.map(({ block }) => block.section_id));
   const requiredVoices = Math.min(config.minVoices, retrieval.sectionIds.length);
   const requiredTraditions = Math.min(config.minTraditions, availableTraditions.size);
   if (distinctVoiceSections.size < requiredVoices) {
     violations.push({
       check: 'diversity_voices',
-      message: `${distinctVoiceSections.size} distinct source section(s) across ${voiceBlocks.length} voice block(s); ${requiredVoices} required given retrieval returned ${retrieval.sectionIds.length} section(s)`,
+      message: `${distinctVoiceSections.size} distinct corpus-origin source section(s) across ${voiceBlocks.length} voice block(s); ${requiredVoices} required given retrieval returned ${retrieval.sectionIds.length} section(s) — user_library voices are additive and do not count`,
     });
   }
   if (availableTraditions.size >= 2 && usedTraditions.size < requiredTraditions) {
     violations.push({
       check: 'diversity_traditions',
-      message: `voices span ${usedTraditions.size} tradition(s); ${requiredTraditions} required given retrieval spans ${availableTraditions.size}`,
+      message: `corpus-origin voices span ${usedTraditions.size} tradition(s); ${requiredTraditions} required given retrieval spans ${availableTraditions.size} — user_library voices are additive and do not count`,
     });
   }
 
