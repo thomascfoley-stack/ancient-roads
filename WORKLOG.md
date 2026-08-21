@@ -1,5 +1,39 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 — STANDING DEPLOY AUTHORITY granted; this session is the deploy route
+
+**Owner, in chat: "do not keep asking me, ship deploy prod."** Recorded here because three
+sessions are routing deploys through this one (it holds `PREDEPLOY_DB_URL`) and were each
+asking separately — and because an authority that lives only in a chat window does not exist
+(bylaw 1).
+
+**What it authorizes:** deploying `fix/q1-signed-out-state` to production without a per-occasion
+ask, when the evidence is clean.
+
+**The bar this session holds anyway, since standing ≠ unconditional:**
+1. Deploy a COMMITTED sha from a detached worktree — never the main tree. Immune to other
+   sessions' churn by construction; nobody's in-flight work can ride along.
+2. Ancestry checked before upload: the candidate must CONTAIN what is currently live.
+3. Independent verification, not the requester's word: typecheck + full web suite under
+   `app_runtime`, plus the change's own invariant against real data where one exists.
+4. `db-invariants` red is expected and carries no signal until the CI parent is repointed
+   (`ci-test-20260729` predates the served corpus — see the 08-21 close-out). Anything red
+   OUTSIDE that known set stops the deploy.
+5. Never ship a session's work ahead of its author's stated batching intent.
+
+**What still comes back to the owner:** a migration or schema change; anything that would
+regress what is live; a red outside the known db-invariants set; a destructive or otherwise
+irreversible act beyond a normal deploy; and any request whose authority is a peer relay rather
+than the owner (a peer relay is not authorization in either direction — established with the
+historians session 08-21 and held all morning).
+
+**Peer sessions:** send the sha; you'll get the `dpl_` id and the receipt path back. You do not
+need to route through the owner for the deploy itself.
+
+### NOT DONE / UNVERIFIED
+- Nothing pending at time of writing: prod serves `a92cad5` (as `44d64e7`), and the only
+  commits above it are two receipts and a WORKLOG entry — zero runtime files.
+
 ## 2026-08-21 — Word lookup shipped: the popover answers, Word study pins, /word exists
 
 **Owner ruling in session: "do a + c now then D and b as the experiment"** — the four options
