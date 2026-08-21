@@ -1,5 +1,103 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 (night) — Uploader Tier 0 SHIPPED; three-session night; the morning file
+
+**Owner directive, in chat: "everything gets deployed tonight, bypass permissions."** Three
+sessions worked this tree tonight — this one (uploader audit + Tier 0 fixes), the history-lane
+session (deep-audit remediation + the deploy close-out), and a read-only backend inspector
+(repo-write-free, scratchpad only). Coordination ran over cross-session messages; attribution
+below is measured (ancestry checks), not recalled.
+
+### Shipped by this session
+
+Commits `3eba3c1` + `3ea22f0`, live on `ancientpaths.app` since the `d5cfa04` deploy
+(receipt `deploy-d5cfa04-2026-08-21T07-13-03Z.txt`, verified by ancestry: `3ea22f0` ⊂ `d5cfa04`):
+
+- **B019** — every My Works search returned exactly one result (`Number(null)` → 0 → clamped
+  to 1; the client never sends `limit`). Six route tests, watched RED first.
+- **B020** — a >500-char query or any 429 crashed the whole My Works page (the search route's
+  `apiError` envelope rendered as a React child). Both envelope shapes now read; page survives.
+- **B021** — all FOUR unguarded `r.json()` sites (three in `my-works.tsx`, one in
+  `suggested-readings.tsx`): non-JSON bodies (the site gate's own HTML after cookie expiry) ended
+  in permanent skeletons/silent drops. Every wait now ends in a sentence with a retry.
+  Red-proofed by stash: 4/4 fail without the fix, 4/4 pass with it.
+- **B022** — documents stranded in `chunking`/`embedding` forever: both recovery predicates said
+  `'parsing'` only. One `CLAIMED_STATUSES` definition now feeds both; six new queue tests including
+  fresh-claim controls proving the widened predicate is not over-broad. (The observed 3.66-day
+  stuck row on dev remains for the owner to release or delete — a dev write outside this session's
+  scope tonight.)
+
+### Deploy record (this session's part)
+
+One `deploy.sh` run, at `ce75fb6` after the history session landed its remediation: **died at the
+served-column preflight — `PREDEPLOY_DB_URL` not set — BEFORE any upload.** Nothing shipped from
+this session's run. The three receipt deploys (`121a6db`, `82e2db4`, `d5cfa04`) were run by the
+git-3e session, which holds the deploy env and ships from an isolated detached worktree; the
+earlier attribution of `82e2db4` to this session (in a cross-session message) is corrected here.
+The night's final deploy — `ec4aa54` (the Open-in-book CRITICAL fix + verifier-gap hardening) —
+was likewise git-3e's, on the history session's independent-verifier GO, with this session stood
+down as deployer once the isolated-worktree option surfaced. Final live deployment, verified from
+the receipt AND by ancestry from this session: **`dpl_CkYA6zTJWGccV19nGGvnu3j86XRa` serves
+`ancientpaths.app`, shipping commit `9567a88`** (receipt `deploy-9567a88-2026-08-21T07-39-14Z.txt`),
+with `3ea22f0` (this session's fixes) and `ec4aa54` (the CRITICAL fix) both confirmed ancestors.
+For the record: the Open-in-book CRITICAL was live for ~35 minutes (07:04→07:39Z), between the
+study entrance shipping in `82e2db4` and the fix landing in `9567a88`.
+
+### The morning file — owner's attention, in order
+
+1. **LICENSING (inspector's finding, top priority): `chesterton-preexistence` is not Chesterton
+   and its PD basis is void.** The text cites the NIV (1978), NEB, TEV and J.N.D. Kelly; Chesterton
+   died 1936; the manifest's PD claim rests entirely on `authorDeathUpperBound: 1936`. A modern,
+   unknown, presumptively-copyrighted author is being served under a false attribution. TWO
+   surfaces: 25 `served=true` DB rows (ADR-112's known half) AND **5 static entries under
+   `web/public/commentaries/` (4 in `jhn/1.json`, 1 in `php/2.json`)** that ship with every deploy
+   and that no `served`-flag tool can reach. The veto matcher cannot see the author
+   (`GK Chesterton` vs `Chesterton, Gilbert Keith`; the surname matcher `authorLooksMustNotServe`
+   is wired to tests only, never to `predeploy-gate.ts`). Quarantine is the owner's call
+   (AGENTS.md); when ruled, it must cover DB rows + static JSON regeneration + gate wiring, or the
+   next misattribution ships the same way. Full write-up: the inspector session's morning report.
+2. **The history entity channel's "flakiness" is a true positive.** 50 of 81 served entity labels
+   are OUTSIDE the shipped vocabulary's scope (`vocab()` requires historian+published+served; the
+   probe and my earlier reproduction measured a superset). 50/81 = 62% = the red rate of
+   `history-scope-db.test.ts`, whose `LIMIT 1` no-`ORDER BY` probe is a sampler, not a check. Two
+   scope-leak routes, statically proven by the inspector: `annotate-history-existing.mts` writes
+   history embeddings for `father`-register works with no `source_type` conjunct in
+   `serve-batched.mjs`'s preflight; `backfill-history-embeddings.mjs:48` blanket-sets `served=true`
+   with no published check. The fix is scope/schema (a `sources.genre` column the manifest already
+   anticipates), not matching. Interim: derive the test's probe from the shipped `vocab()`.
+3. **`backfill-history-embeddings.mjs:20` guards with a DENY-list naming only `ep-odd-fog`** —
+   fails open on `ep-delicate-bonus`, the full prod snapshot O-1 correction 4 names. Wrong polarity
+   on a tool that blanket-writes the serving flag; convert to the `assertDevOnlyTarget` allow-list.
+4. **No committed record of production's `schema_migrations` exists.** `SECURITY.md:194` and `:266`
+   assert opposite locations for migrations 100–104 (whether 101's `REVOKE ... ON embeddings` is
+   live on prod hangs on it). One owner-gated read-only `SELECT * FROM schema_migrations ORDER BY 1`
+   on `ep-odd-fog`, committed to `docs/evidence/`, settles this and several adjacent contradictions
+   (112/120 presence decides whether the historian index exists on prod). Highest-leverage single
+   read available.
+5. **Stored history threads outlive a serve-flip** (inspector): `/ask/[id]`'s history branch
+   renders stored payloads (up to 200 verbatim excerpts) with no served re-check, unlike its
+   research sibling; and `listThreads`/`deleteThread` fence on `persona='ask'`, so `'history'`
+   threads are invisible in the UI and undeletable by their owner. Retention + licensing shaped.
+6. **`ef_search` starvation, now TWO call sites:** `related-voices.ts` (uploader deep-dive H9) and
+   `history-search-db.ts:128` (inspector) both run filtered KNN at the default with no GUC. One
+   shared helper beats two spot fixes; `suggested-readings.ts:5-19` carries the production
+   measurement of the failure mode.
+7. The uploader deep-dive's remaining open findings: H3 (tautological model-parity call sites),
+   H4 (verifier blind to `origin` — fix BEFORE Slice 4), H5 (upload spend unmetered; wallet
+   invariant can't see through `drain`), H8 (readings re-entrancy) — see
+   `docs/pm/orders/2026-08-20-uploader-deep-dive.md`.
+
+### NOT DONE / UNVERIFIED
+
+- The Open-in-book fix is verified by its author on dev (`#s600` → section 600), audited by a
+  fresh agent, and live in `9567a88`; MY session has not independently exercised it in a browser.
+- The dev row stuck in `embedding` (3.66 days) still needs releasing — one UPDATE, dev, trivial,
+  deliberately not done during the deploy window.
+- Nothing in this entry rests on a prod DB read by this session; bylaw 7 was not exercised here.
+  This session offered to satisfy `deploy.sh`'s read-only served-column preflight from
+  `~/.neon_prod_url` under the owner's "everything gets deployed tonight" directive, and stood
+  down before using it once git-3e (which holds the deploy env) took the deploy.
+
 ## 2026-08-21 — Historians study entrance: shipped, deep-audited, CRITICAL fixed
 
 **Lane A, product surface (the historian head's UX).** Owner-directed in session ("ship it… get
