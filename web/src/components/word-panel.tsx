@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { fetchLexEntry, decodeMorph, type OWord, type LexEntry } from '@/lib/original';
 import { ConcordanceList } from '@/components/concordance-list';
 
@@ -75,9 +76,15 @@ export function WordPanel({
             </div>
             <div className="flex items-center gap-2">
               {word.s && (
-                <span className="bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-500 dark:bg-stone-800 dark:text-stone-400">
+                // Option D: the chip is the door to the full word page (deep-linkable, with the
+                // complete concordance) — a destination, not a decoration.
+                <Link
+                  href={`/word/${word.s}`}
+                  title={`Everything about ${word.s}`}
+                  className="bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-500 transition-colors ease-gentle hover:bg-accent-100 hover:text-accent-800 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-accent-950/60 dark:hover:text-accent-300"
+                >
                   {word.s}
-                </span>
+                </Link>
               )}
               <button
                 onClick={onClose}

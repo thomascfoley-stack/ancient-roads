@@ -565,21 +565,30 @@ function WordRow({ word, lang, defaultOpen = false }: { word: OWord; lang: 'hebr
 
   return (
  <div className="border-b edge last:border-0">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex min-h-[48px] w-full items-center gap-3 px-2 py-2.5 text-left transition-colors ease-gentle hover:bg-accent-50/60 active:bg-accent-50/80 dark:hover:bg-accent-950/30"
-      >
-        <span dir={rtl ? 'rtl' : 'ltr'} lang={rtl ? 'he' : 'el'} className="font-scripture text-xl text-stone-900 dark:text-stone-100">
-          {word.w}
-        </span>
-        <span className="text-xs text-stone-500 dark:text-stone-400">{word.tr}</span>
-        {word.g && <span className="flex-1 truncate text-sm text-stone-600 dark:text-stone-500">{word.g}</span>}
-        {word.s && (
-          <span className="bg-stone-100 px-2 py-0.5 text-micro font-semibold text-stone-500 dark:bg-stone-800 dark:text-stone-400">
-            {word.s}
+      {/* The chip is a LINK to /word/{s} (option D: every Strong's chip is a destination) and a
+          SIBLING of the toggle, never nested inside it — a link in a button is invalid and one
+          tap cannot honestly do two things. The toggle keeps the whole rest of the row. */}
+      <div className="flex items-center">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="flex min-h-[48px] w-full min-w-0 flex-1 items-center gap-3 px-2 py-2.5 text-left transition-colors ease-gentle hover:bg-accent-50/60 active:bg-accent-50/80 dark:hover:bg-accent-950/30"
+        >
+          <span dir={rtl ? 'rtl' : 'ltr'} lang={rtl ? 'he' : 'el'} className="font-scripture text-xl text-stone-900 dark:text-stone-100">
+            {word.w}
           </span>
+          <span className="text-xs text-stone-500 dark:text-stone-400">{word.tr}</span>
+          {word.g && <span className="flex-1 truncate text-sm text-stone-600 dark:text-stone-500">{word.g}</span>}
+        </button>
+        {word.s && (
+          <Link
+            href={`/word/${word.s}`}
+            title={`Everything about ${word.s}`}
+            className="mr-2 shrink-0 bg-stone-100 px-2 py-0.5 text-micro font-semibold text-stone-500 transition-colors ease-gentle hover:bg-accent-100 hover:text-accent-800 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-accent-950/60 dark:hover:text-accent-300"
+          >
+            {word.s}
+          </Link>
         )}
-      </button>
+      </div>
       {open && (
         <div className="space-y-2 px-2 pb-3 text-sm">
           {morph && (
