@@ -19,7 +19,7 @@
 
 import { runAsUser } from '@/lib/db';
 import { MIN_VERSE_SHINGLES, SHIPPED_K, anchorChunk } from './anchor';
-import { getAnchorIndex } from './bible-index';
+import { detectDocumentTranslation, getAnchorIndexFor } from './bible-index';
 import { getUserDocument } from './blob';
 import { chunkProse } from './chunk';
 import { setDocStatus, setParseResult } from './documents';
@@ -152,19 +152,22 @@ async function processOne(userId: string, row: Row): Promise<DocStatus> {
     }
 
     // ── anchor ───────────────────────────────────────────────────────────────────────────────────
-    // Throws BibleIndexUnavailable if the index is missing, rather than anchoring nothing. An empty
-    // index would lose the channel carrying 90% of the recall and still report success.
-    const index = getAnchorIndex();
+    // ADR-100's detection, built 2026-08-21: the document votes on WHICH translation it quotes
+    // (a KJV-pinned index cost non-KJV quoters roughly half their recall — measured, Run 3 of
+    // the deep dive), the uncited channel shingles against the winner's index, and the
+    // detection's REAL confidence is what lands in user_section_anchors.confidence — never a
+    // hardcoded 1.0. Throws BibleIndexUnavailable if an index is missing, rather than anchoring
+    // nothing: an empty index would lose the channel carrying 90% of the recall and still
+    // report success.
+    const detection = detectDocumentTranslation(parsed.text);
+    const index = getAnchorIndexFor(detection.translation);
     const anchored = chunks.map((chunk) => ({
       chunk,
       anchors: anchorChunk(chunk.text, {
         index,
         minHits: SHIPPED_K,
         minVerseShingles: MIN_VERSE_SHINGLES,
-        // Detection is not built; Slice 1 shingles against the KJV family's canonical member and
-        // says so at full confidence. ADR-100's confidence field is what will qualify this when
-        // detection lands.
-        translationConfidence: 1.0,
+        translationConfidence: detection.confidence,
       }),
     }));
 
