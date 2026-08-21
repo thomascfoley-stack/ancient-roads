@@ -1,5 +1,101 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 — Historians study entrance: shipped, deep-audited, CRITICAL fixed
+
+**Lane A, product surface (the historian head's UX).** Owner-directed in session ("ship it… get
+this deployed… loop engineering to get it live"). Order: `docs/pm/orders/2026-08-20-historians-study-entrance.md`.
+Design canvas (mockups + write-up): https://claude.ai/code/artifact/0db0e72d-4703-4999-9800-0b6ecaf5d414
+
+### What shipped (commits e64ba58, 672513a, then remediation ce75fb6)
+
+The Historians shelf leads with **"What do you want to study?"**, routing the question into shipped
+History mode (`/ask?mode=history&q=…`) — a router, not a second retrieval path; the classic
+body-text FTS survives behind a "Search the full text" reveal. HistoryAsk runs a carried query once
+(value-keyed, StrictMode-safe). Voices-mode `/ask` gains a church-history invitation on its empty
+state. Desk panes read **continuously** (scroll+rect auto-load; IntersectionObserver was tried and
+could not be watched firing in the QA browser, so it does not ship). History surfaces restyled onto
+the app's tokens. `fq=` rides beside `from=hist:` so the reader's return strip names the study.
+
+### The deep-audit (5 parallel lenses) — and the CRITICAL it caught
+
+Ran the `deep-audit` skill before deploy (attack surface · client · domain · docs · test-honesty).
+It earned its keep:
+
+- **CRITICAL — history "Open in book" was broken for all 28 works.** The result ordinal was
+  `sections.unit_ordinal` (migration-024 collapsed units); the reader resolves `#s{n}` against
+  `sections.ordinal`. Measured on the dev corpus: **11 of 12 works carry unit_ordinal NULL in every
+  row** → `#snull` → the reader opened at the top; **josephus differs in 4,110 of 4,112 rows** →
+  landed ~65% off. Pre-existing (history mode shipped with it), but the entrance funnels the whole
+  shelf into it and the copy promised "the exact page." Fixed by carrying `sections.ordinal` (the
+  column `catalog-search.tsx` already uses for the identical URL); mapper extracted as an exported
+  pure function `rowToResult` with a **red-proved** unit test (`history-row-to-result.test.ts`), and
+  the reader landing verified live (`#s600` → section 600).
+- **HIGH — desk auto-load retry storm.** A failed load-more set `error`, unmounting the read; the
+  scroll effect then measured the detached button (zeroed rect = always-near) and re-fired forever.
+  Split into `moreError` (keeps the read + inline Retry + stops the loader) + an `isConnected` guard.
+  New test proves no-storm-on-failure.
+- **HIGH — stale filter state** leaked across searches, manufacturing a false "nothing matched".
+  Per-search `key` resets it.
+- Copy honesty: "opened to the exact page" now TRUE; "the church's historians" → "history's own
+  witnesses" (Josephus is a first-century Jewish historian); "Exact-phrase search" → "Search the
+  full text" (stemmed FTS). Naming lock `works`→`items`; signed-out sign-in link (Q1); aria-live on
+  status surfaces; focusable fallback button; chunk-index citation artifact stripped; stale
+  IntersectionObserver comment corrected; HISTORY_RETRIEVAL_DESIGN header un-staled.
+
+Remediation independently re-verified by a fresh agent on the diff (fixer ≠ verifier): GO, with
+three LOW gaps it/the inspection session flagged — the deep-link guard was mapper-only (the bug
+also lived in the `ROW_COLS` SQL), the desk Retry was an effective no-op, and the stale-filter
+HIGH had no test. All three closed and red-proved in `ec4aa54`; jumpTo now clears the stale
+banner. git-76 independently reached the same CRITICAL diagnosis (two lenses, 11/28 NULL).
+
+**LIVE on `ancientpaths.app` — sha `ec4aa54` (deployed as `9567a88` = ec4aa54 + a docs-only
+receipt commit; my code byte-identical, `git diff ec4aa54 9567a88 -- web/src web/test` empty).**
+`dpl_CkYA6zTJWGccV19nGGvnu3j86XRa`, live 2026-08-21T07:39Z, receipt
+`docs/evidence/deploys/deploy-9567a88-2026-08-21T07-39-14Z.txt` (`alias_serves` = the deployment
+id, `state: live`). Executed by the deploy-env session (git-3e) from an isolated detached worktree
+on this session's GO; this session lacked `PREDEPLOY_DB_URL` and did not run deploy.sh. Corroborated
+independently: the deep-link fix IS in the deployed sha (`ROW_COLS` selects `s.ordinal`, mapper
+emits `row.ordinal`). The aborted wave-four run left at most an orphaned never-aliased `ce75fb6`
+deployment (receipt committed, outcome unknown, resolution noted).
+
+**Live verification limited by SEC-1:** production is behind the site-password gate and history
+search requires auth, so this session could NOT exercise the prod history flow. Verification is
+(a) the alias serves the deployment id (deploy.sh's own inspect check + receipt), (b) the code is
+byte-identical to the verified tree, and (c) the deep-link fix verified on the DEV server (`#s600`
+→ section 600) plus red-proved mapper + SQL-contract guards. **The signed-in prod walk is the
+owner's to do** (see NOT DONE).
+
+### Concurrency note
+
+Up to four sessions worked this tree tonight (Lane A + Lane B My Works + a deploy-env holder +
+a morning-file session), file-disjoint by the two-lane design, so no code collisions. Deploy
+attribution, measured not inferred: the My Works session (commits 3eba3c1 + 3ea22f0) deployed
+NOTHING — its one deploy.sh run died at the served-column preflight (`PREDEPLOY_DB_URL` not set),
+before upload. The earlier three deploys tonight (121a6db, 82e2db4, d5cfa04) and THIS one
+(9567a88) were run by the deploy-env session (git-3e), which holds `PREDEPLOY_DB_URL`. The
+entrance shipped at `82e2db4`/`d5cfa04` AHEAD of this remediation, so the Open-in-book CRITICAL
+was briefly live in production (~35 min, 07:04→07:39Z) until `9567a88` closed it. Four sessions
+coordinated to a single deployer via cross-session messages — no double-deploy, no tree
+collisions (Lane A / Lane B file-disjoint by design).
+
+### NOT DONE / UNVERIFIED / OPEN
+
+- **The §8b similarity floor is STILL OPEN** — a nonsense query still renders a confident "Closest
+  match" hero. Held safe today ONLY by the SEC-1 site-password gate (owner-only), NOT by code.
+  **Must land before this lane is any real user's front door.** First work item of the public-launch
+  path for this surface.
+- **Signed-in verification** of the results restyle and the named return strip was NOT possible
+  (no credentials; agents cannot enter passwords). Unit tests cover both; owner should eyeball one
+  real study on prod.
+- Pre-existing flake noted by the peer: `test/invariants/history-scope-db.test.ts` is red ~60% of
+  runs (entity channel matches 31/81 labels; the test probes ONE label via `LIMIT 1` with no
+  `ORDER BY` — a coin flip). Not caused by this work. Worth a real fix (deterministic probe or a
+  broader entity-vocabulary pass) in a quality-slice.
+- Deferred lower-severity audit findings (attack-surface CSRF Content-Type floor across ~13 routes,
+  no global daily ceiling on the history limiter, `after=1e21`→500 on the sections route, `(CCEL)`
+  hardcoded provenance): pre-existing, app-wide, behind the gate — filed for a security-pass, not
+  blockers for this surface.
+
 ## 2026-08-21 — NIGHT CLOSE-OUT: three deploys, everything committed is live
 
 **Owner directive before sleeping: "everything gets deployed tonight." Done, in three verified
