@@ -478,6 +478,24 @@ const MULTIWORD_SCAN_RE =
       )
     : null;
 
+// SCAN_RE's leftmost-first match at a word PRECEDING a numbered book consumes the ordinal as that
+// word's numeric tail — "see also 1 Corinthians 13:4-7" yields the dead candidate "also 1", and
+// because matchAll resumes AFTER the consumed "1", the true span can never start; the leftover
+// "Corinthians 13:4-7" is ambiguous (1 Cor vs 2 Cor) and dies in parseRef. SCAN_RE's book group
+// (`[a-z]{2,}` straight into `\s+`) also has no room for an abbreviation's period, so
+// "1 Cor. 13:4-7" forms no candidate at all — while parseRef handles both forms fine
+// (docs/evidence/uploader-deep-dive-2026-08-20/MEASUREMENTS.md Run 4, defect M3). This pass scans
+// the ordinal-prefixed forms with their own regex, whose matchAll position SCAN_RE cannot starve,
+// and admits one optional trailing period on the book word. Additive: it never alters a SCAN_RE
+// match (dedupe by display), and parseRef still validates every span — "1 dog. 3" dies on the
+// unknown book "1 dog". The period is admitted ONLY here, behind a required ordinal: putting `\.?`
+// on SCAN_RE's own book word would turn every sentence ending in a book-alias word before a
+// number into a candidate ("did his job. 3 of them" → Job 3) on the /ask intent-routing path,
+// which has no isExplicitCitation gate. The unnumbered period form ("Rom. 8:28") therefore stays
+// unscanned — a known residual, recorded with M3, not silently.
+const ORDINAL_BOOK_SCAN_RE =
+  /\b([1-3]|i{1,3}|first|second|third)\s+([a-z]{2,})\.?\s+(\d{1,3}(?::\d{1,3})?(?:\s*[-–]\s*\d{1,3}(?::\d{1,3})?)?)\b/gi;
+
 // Find scripture references embedded in prose — "1 Corinthians 13 the greatest
 // of these…", "Isaiah 53", "John 3:16" — and return the resolved refs. Unlike
 // parseRef (whole-string typeahead), this scans candidate spans anywhere in the
@@ -495,6 +513,9 @@ export function scanReferences(text: string, opts: ParseOptions = {}): ResolvedR
   };
   for (const m of text.matchAll(SCAN_RE)) {
     consider(`${m[1] ?? ''}${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim());
+  }
+  for (const m of text.matchAll(ORDINAL_BOOK_SCAN_RE)) {
+    consider(`${m[1]} ${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim());
   }
   if (MULTIWORD_SCAN_RE) {
     for (const m of text.matchAll(MULTIWORD_SCAN_RE)) {
