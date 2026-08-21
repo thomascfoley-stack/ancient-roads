@@ -1,5 +1,39 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 — Lexicon quality pass: all five held works are serve-quality; Thayer's is back from the dead
+
+**Owner-directed, ahead of the reference-works flip.** Read-only against dev (`ep-tiny-hat`),
+quality-slice discipline: artifact named (the `sections` rows `search-lexicons.ts` would serve),
+quarantined `thayers-lexicon` run through the identical instrument as the known-bad control, 12
+random sections per work READ with human eyes. Evidence: `docs/evidence/lexqa-2026-08-21/README.md`.
+
+- **All five held works (bdb, easton, isbe, nave, smith) are SERVE-QUALITY**: structured digital
+  sources (CrossWire SWORD, openscriptures XML), zero OCR signatures across 57,550 sections,
+  provenance + license present (BDB is CC BY — attribution required). The scary-looking numbers
+  are genre, not damage (BDB's 35% tiny = its real two-line entries; Nave's 21% tiny = an index).
+- **The stale-quarantine finding: Thayer's on dev is healthy.** The quarantine record ("0%
+  Greek-script headwords") describes a dead attempt; dev's 08-13 re-ingest has 100% Greek
+  headwords, 99.8% Strong's-keyed, full articles. The 08-13 retrieval POSTDATES the dev reset,
+  so **prod may still hold the dead copy — prod-state check + owner quarantine-lift required**
+  before Thayer's serves. One nit: unchunked sections up to 34.6K chars.
+- **The slice-shaping fact: BDB and Thayer's carry the Strong's number IN the heading**
+  (`H5867 עֵילָם`, `G3306 μένω`) → wiring them to /word/[strongs] is a prefix match, not a
+  mapping project. Easton/Smith/ISBE/Nave are name/topic-keyed → lexicon search now, topic
+  surfaces later; Nave's fits a topic page better than /word.
+
+**Recommended order stands: wire /word first (small), then ONE owner-terminal flip lights the
+pane and lexicon search together.** Next: the short design note for the /word wiring
+(design-before-code), then the slice.
+
+### NOT DONE / UNVERIFIED
+
+- Prod parity assumed for the five (copied 08-02, dev reset from prod 08-10); **NOT assumed for
+  Thayer's** (see above). The flip ritual re-verifies on prod at the owner's terminal.
+- Formal per-work PD text-match (shingle vs reference) not run — the source class (structured
+  primary editions, not scans) + records satisfy the risk here; the text-match remains available
+  if the owner wants belt-and-braces before serving.
+- The /word wiring slice itself: not built yet — design note first.
+
 ## 2026-08-21 — STANDING DEPLOY AUTHORITY granted; this session is the deploy route
 
 **Owner, in chat: "do not keep asking me, ship deploy prod."** Recorded here because three
