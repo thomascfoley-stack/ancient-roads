@@ -1,5 +1,42 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 — Word lookup shipped: the popover answers, Word study pins, /word exists
+
+**Owner ruling in session: "do a + c now then D and b as the experiment"** — the four options
+of the Behind the Word canvas (https://claude.ai/code/artifact/aa0a4f44-78a9-4b77-bba7-64d494814956).
+Order: `docs/pm/orders/2026-08-21-word-lookup-abcd.md`. Three commits, each red-first-tested,
+audit-green, browser-verified signed-out at desktop + 375px:
+
+- **`b9acc90` (A + C).** A single-word selection now shows its Greek/Hebrew IN the popover —
+  word, transliteration, Strong's chip, concordance count — replacing the "Define" button whose
+  label hid the feature. Ambiguity renders every candidate (John 21:15 "love" → ἀγαπᾷς AND φιλῶ,
+  never a guess; the interlinear has no English alignment, so 0/1/many are the only honest
+  outcomes) with a *compare in word study* door; Word study then pins the candidates on top,
+  first expanded, rest folded ("The rest of the verse · N words"). DefineSheet deleted.
+- **`8cf1049` (D).** `/word/[strongs]` — the word as a deep-linkable destination: full Strong's
+  entry + the complete concordance (θεός: 1,148 verses, paged), case-folded param, honest
+  invalid/missing/unavailable states. Every Strong's chip in Word study/WordPanel is now a link
+  there. The page names the five held reference works (BDB · ISBE · Smith's · Easton's ·
+  Nave's) as COMING — **this is the reference-pane UX their DECISIONS hold-ruling waits on; the
+  unblock is now the owner's flip + a data slice.**
+- **`7b89b0e` (B).** The double-tap gesture was already free (native double-click selection →
+  popover → A's answer; verified with a real double-click live). Shipped as teaching in the
+  reader's first-run hint, not as a parallel tap pipeline.
+
+Also this session, deployed earlier at `dpl_J5cjqCLFKYgwWEjdLZRnQSzhxKEc`: the historians
+design-fidelity pass `0e5780a` (landing glow, margin ordinals, stacked mobile entrance) — see
+that deploy's receipt and the corrected attribution in the morning file.
+
+### NOT DONE / UNVERIFIED / OPEN
+
+- **A+C+D+B are committed and pushed, NOT yet deployed** — one deploy.sh wave ships all three
+  commits; coordinated with the deploy-env session.
+- The **Strong's ingest data nit** (truncated glosses, def/derivation field splits — G2316's
+  "figuratively") is filed in the order doc; visible on the new surfaces, an ingest fix.
+- The **history entity-channel scope leak** (31/81 labels in vocab scope; history-scope-db reds
+  are TRUE positives) stays this lane's next quality-slice.
+- Serving the five held lexicon works on /word: owner flip + data slice, filed.
+
 ## 2026-08-21 — The zero-margin position race FIXED: contested retries disambiguate
 
 **Owner directive: implement the deterministic fix for the studies position race, then deploy.**
