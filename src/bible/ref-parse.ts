@@ -502,25 +502,42 @@ const ORDINAL_BOOK_SCAN_RE =
 // text and keeps only those that parse to a valid reference (high precision).
 // Used to route a query to the passage it names; never guesses.
 export function scanReferences(text: string, opts: ParseOptions = {}): ResolvedRef[] {
-  const out: ResolvedRef[] = [];
-  const seen = new Set<string>();
-  const consider = (span: string) => {
+  // Candidates carry their SOURCE SPANS so overlaps can be resolved. Without positions,
+  // display-dedupe let the ordinal pass's correct "1 John 4:8" coexist with SCAN_RE's wrong
+  // "John 4:8" from the SAME characters — different displays, one slice of text — and the
+  // /ask floor spent a slot on Gospel-of-John commentary for an epistle question (tier-level
+  // verification, 2026-08-21). Where two VALID candidates overlap in the source, the longer
+  // span wins (ties: the earlier start); non-overlapping candidates are all kept, which is
+  // what protects "Ephesians 2:8-9 and 1 Peter 5:7".
+  const candidates: { ref: ResolvedRef; start: number; end: number }[] = [];
+  const consider = (span: string, start: number, end: number) => {
     const outcome = parseRef(span, opts);
-    if (outcome.ok && !seen.has(outcome.ref.display)) {
-      seen.add(outcome.ref.display);
-      out.push(outcome.ref);
-    }
+    if (outcome.ok) candidates.push({ ref: outcome.ref, start, end });
   };
   for (const m of text.matchAll(SCAN_RE)) {
-    consider(`${m[1] ?? ''}${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim());
+    consider(`${m[1] ?? ''}${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length);
   }
   for (const m of text.matchAll(ORDINAL_BOOK_SCAN_RE)) {
-    consider(`${m[1]} ${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim());
+    consider(`${m[1]} ${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length);
   }
   if (MULTIWORD_SCAN_RE) {
     for (const m of text.matchAll(MULTIWORD_SCAN_RE)) {
-      consider(`${m[1]} ${m[2]}`.replace(/\s+/g, ' ').trim());
+      consider(`${m[1]} ${m[2]}`.replace(/\s+/g, ' ').trim(), m.index!, m.index! + m[0].length);
     }
+  }
+  const keep = candidates.filter((c) =>
+    !candidates.some((o) =>
+      o !== c && o.start < c.end && c.start < o.end &&
+      (o.end - o.start > c.end - c.start ||
+        (o.end - o.start === c.end - c.start && (o.start < c.start || (o.start === c.start && candidates.indexOf(o) < candidates.indexOf(c))))),
+    ));
+  keep.sort((a, b) => a.start - b.start);
+  const out: ResolvedRef[] = [];
+  const seen = new Set<string>();
+  for (const { ref } of keep) {
+    if (seen.has(ref.display)) continue;
+    seen.add(ref.display);
+    out.push(ref);
   }
   return out;
 }

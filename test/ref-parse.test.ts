@@ -405,3 +405,30 @@ describe('scanReferences — numbered books mid-prose and abbreviated forms (M3)
     expect(scan(text)).toEqual([]);
   });
 });
+
+describe('scanReferences — overlap dedupe (the 1/2/3-John residual)', () => {
+  // Tier-level verification of the M3 fix (2026-08-21) found the additive ordinal pass left the
+  // OLD wrong-book match alive beside the new correct one wherever the bare name is itself an
+  // alias: "What does 1 John 4:8 mean?" scanned to BOTH John 4:8 (the Gospel, wrong) and
+  // 1 John 4:8 — display-dedupe cannot see that the two candidates overlap in the SOURCE. The
+  // floor then spent one of its two reserved slots on Gospel-of-John commentary. Overlapping
+  // candidate spans now resolve to the LONGER span.
+  const books = (s: string) => scanReferences(s).map((r) => r.display);
+
+  it('a prefixed numbered-John query yields ONLY the epistle', () => {
+    expect(books('What does 1 John 4:8 mean?')).toEqual(['1 John 4:8']);
+    // Single-chapter books display without the chapter — the canonical form, not a bug.
+    expect(books('read 2 John 1:6')).toEqual(['2 John 6']);
+    expect(books('on 3 John 1:4')).toEqual(['3 John 4']);
+  });
+
+  it('non-overlapping references all survive — the dedupe is positional, not greedy', () => {
+    expect(books('Ephesians 2:8-9 and 1 Peter 5:7')).toEqual(['Ephesians 2:8–9', '1 Peter 5:7']);
+    expect(books('Genesis 1:1-3 and Revelation 22:20')).toEqual(['Genesis 1:1–3', 'Revelation 22:20']);
+  });
+
+  it('the bare alias alone is untouched', () => {
+    expect(books('John 4:8')).toEqual(['John 4:8']);
+    expect(books('What does John 4:8 mean?')).toEqual(['John 4:8']);
+  });
+});
