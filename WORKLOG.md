@@ -1,5 +1,57 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 — /word reference shelf built; lexicon flip staged for the owner; the pairing test learns the lexicon register has two embed vintages
+
+**Owner-directed ("do it and then ship them"), continuing the quality pass above.** The slice:
+`/word/[strongs]` grows a reference shelf served from PUBLISHED lexicon works, so the owner's
+flip is the switch that lights it (design: `docs/WORD_REFERENCE_PANE_DESIGN.md` — DB-gated on
+`status='published'`, deliberately NOT a static extraction, so quarantine darkens it instantly).
+
+- **Built:** `web/src/lib/word-articles.ts` (heading-prefix match, `= key OR LIKE key || ' %'`),
+  `GET /api/word/[strongs]/articles` (throttle first, `^[GH]\d{1,4}$` validated before any
+  query, case-folded), `ArticleCard` shelf section on `/word/[strongs]` (attribution header,
+  BDB `[p.cj.ai]` codes stripped display-only, >1200-char clamp). Red-first tests: 2 component,
+  3 route. The roadmap strip renders ONLY while the shelf is empty — never both.
+- **Migration 123** (`idx_sections_strongs_heading`, partial on `heading ~ '^[GH][0-9]'`,
+  `text_pattern_ops`): measured 2,497 ms cold → 0.088 ms on dev. Applied to dev (ledger
+  `sha256 aaac46bf39ea…`). The query states the index predicate verbatim — the planner cannot
+  prove a LIKE implies a regex (migration 119's rule).
+- **Dev flip executed** (dev only, `ep-tiny-hat`): the five works staged→published, snapshot
+  logged (5 rows, all staged before, published after). Prod flip is the owner's, ritual below.
+- **The audit then went red twice, both real.** (1) `prefer-const` in the new component test —
+  mine, fixed. (2) `section-vector-pairing.test.ts`: `lexicon/smiths-dictionary#1 cos=0.9492 <
+  0.95` — the dev flip made lexicons samplable for the first time. Probed 9 rows (smiths/bdb/
+  isbe) re-embedding BOTH candidate inputs against the stored vector: **7/9 reproduce at exactly
+  1.0000 from the bare body, 2/9 at exactly 1.0000 from `heading + '\n' + body`; the wrong
+  vintage lands 0.938–0.982.** Every vector is correctly paired; the register holds TWO embed
+  vintages (the D1(b) bare-body backfill vs the original heading-prefixed lexicon ingest). NOT
+  the verse fidelity gap, NOT a mispair (~0.78 against either input). The test now gives a
+  lexicon row below the floor one retry with the other vintage's input, reconstructed from the
+  SECTIONS side of the join — never from the embeddings row (the watchlist's
+  derive-from-the-artifact shape). Mispair detection unchanged. Re-run: green, 98/129 works
+  probed, lexicons in-sample.
+- **Owner ritual (prod, owner terminal):** migration 123 first
+  (`MIGRATE_ALLOW_PROD=1 DATABASE_URL=<prod owner unpooled> node db/apply-migration-concurrent.mjs
+  db/migrations/123_sections_strongs_heading_idx.sql`), then the flip
+  (`PUBLISH_ALLOW=1 PUBLISH_EXPECT_HOST=ep-odd-fog-atnykudm CUTOVER_DATABASE_URL=<owner url>
+  node scripts/publish-flip.mjs --slugs=docs/evidence/lexqa-2026-08-21/flip-reference-works.json`).
+  Thayer's is deliberately absent from the flip list (prod may hold the dead OCR copy — see the
+  entry below).
+
+### NOT DONE / UNVERIFIED
+
+- **Prod flip + migration 123 on prod: NOT run** — owner terminal, commands above. Until then
+  the shelf renders its roadmap strip on prod (by design).
+- **A unification re-embed of the older heading-prefixed lexicon vectors** (make one vintage of
+  it) is FILED as a corpus change, not urgent: both vintages are correct pairings; the cost is
+  retrieval consistency, not correctness. Belongs with the already-filed verse re-embed.
+- Thayer's chain (prod-state check → quarantine lift → chunking 34K sections → 7,570-vs-5,507
+  stale vector reconcile) — filed, separate slice.
+- Foreign uncommitted files in the tree (`scripts/redproof-user-corpus-rls.mjs`,
+  `web/test/helpers/loud-skip.ts`, `web/test/invariants/neon-auth-live.test.ts`,
+  `web/test/user-corpus/zzz-regression-remeasure.test.ts`) are a peer session's — not touched,
+  not committed here (explicit-pathspec commit per the peer protocol).
+
 ## 2026-08-21 — Lexicon quality pass: all five held works are serve-quality; Thayer's is back from the dead
 
 **Owner-directed, ahead of the reference-works flip.** Read-only against dev (`ep-tiny-hat`),

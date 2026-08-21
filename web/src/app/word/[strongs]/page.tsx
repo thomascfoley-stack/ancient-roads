@@ -15,9 +15,39 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { fetchLexEntry, type LexEntry } from '@/lib/original';
+import type { WordArticle } from '@/lib/word-articles';
 import { ConcordanceList } from '@/components/concordance-list';
 import { formatVerseId } from '@bible/verse-id';
 import { verseHref } from '@/lib/verse-link';
+
+/** BDB headings carry openscriptures internal codes ("H5867 עֵילָם [p.cj.ai]") — display noise,
+ *  stripped from the SHOWN heading only; the stored row is untouched. */
+const displayHeading = (h: string): string => h.replace(/\s*\[[a-z0-9.]+\]\s*$/i, '');
+
+/** One reference-shelf article: attribution header, heading, body (long ones clamp). */
+function ArticleCard({ article }: { article: WordArticle }) {
+  const [expanded, setExpanded] = useState(false);
+  const long = article.body.length > 1200;
+  const shown = long && !expanded ? `${article.body.slice(0, 1200)}…` : article.body;
+  return (
+    <article className="border edge p-4">
+      <p className="text-micro font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400">
+        {article.work.author ?? 'Unattributed'} — {article.work.title}
+      </p>
+      <p className="mt-1.5 font-scripture text-lg text-stone-900 dark:text-stone-100">{displayHeading(article.heading)}</p>
+      <p className="mt-2 whitespace-pre-line font-scripture text-[15px] leading-relaxed text-stone-800 dark:text-stone-200">{shown}</p>
+      {long && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-2 text-sm text-stone-600 underline transition-colors ease-gentle hover:text-accent-700 dark:text-stone-400 dark:hover:text-accent-300"
+        >
+          {expanded ? 'Show less' : 'Read the whole entry'}
+        </button>
+      )}
+    </article>
+  );
+}
 
 /** G1–G5624 / H1–H8674 — anything else is not a Strong's key. Case folds: links must not care. */
 function normalizeStrongs(raw: string | undefined): string | null {
@@ -39,6 +69,25 @@ export default function WordPage() {
 
   const [entry, setEntry] = useState<LexEntry | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'unavailable'>('loading');
+  // The reference shelf: articles from PUBLISHED lexicon works, DB-gated behind the owner's
+  // flip. Empty (or a failed fetch) renders nothing new — the roadmap strip stays instead.
+  const [articles, setArticles] = useState<WordArticle[]>([]);
+
+  useEffect(() => {
+    if (!strongs) return;
+    let cancelled = false;
+    fetch(`/api/word/${strongs}/articles`)
+      .then(async (r) => (r.ok ? ((await r.json()) as { articles?: WordArticle[] }) : null))
+      .then((d) => {
+        if (!cancelled) setArticles(Array.isArray(d?.articles) ? d.articles : []);
+      })
+      .catch(() => {
+        /* the strip stays; the shelf simply doesn't render */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [strongs]);
 
   useEffect(() => {
     if (!strongs) return;
@@ -162,19 +211,33 @@ export default function WordPage() {
               <ConcordanceList strong={strongs} minCount={1} />
             </section>
 
-            {/* The unblock this page exists to earn — named as COMING, never as a dead control.
-                Serving these five works is an owner flip (DECISIONS: held until this pane
-                shipped), then a data slice; the strip is the roadmap fact and nothing more. */}
-            <section className="border-t edge pt-5">
-              <h2 className="mb-1 text-micro font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400">
-                Deeper entries · coming to this page
-              </h2>
-              <p className="text-sm leading-relaxed text-stone-500 dark:text-stone-400">
-                Full reference articles from{' '}
-                <span className="text-stone-700 dark:text-stone-300">BDB · ISBE · Smith&rsquo;s · Easton&rsquo;s · Nave&rsquo;s</span>{' '}
-                — quoted and attributed, never summarized.
-              </p>
-            </section>
+            {/* THE REFERENCE SHELF — published lexicon works' articles for this key, quoted and
+                attributed. DB-gated: the owner's flip lights it, quarantine darkens it. The
+                roadmap strip below renders ONLY while nothing has come back — never both, and
+                no hand-maintained list of what is "missing" (the watchlist class). */}
+            {articles.length > 0 ? (
+              <section className="border-t edge pt-5">
+                <h2 className="mb-2 text-micro font-semibold uppercase tracking-[0.08em] text-accent-600 dark:text-accent-400">
+                  From the reference shelf
+                </h2>
+                <div className="space-y-3">
+                  {articles.map((a) => (
+                    <ArticleCard key={`${a.work.slug}:${a.ordinal}`} article={a} />
+                  ))}
+                </div>
+              </section>
+            ) : (
+              <section className="border-t edge pt-5">
+                <h2 className="mb-1 text-micro font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400">
+                  Deeper entries · coming to this page
+                </h2>
+                <p className="text-sm leading-relaxed text-stone-500 dark:text-stone-400">
+                  Full reference articles from{' '}
+                  <span className="text-stone-700 dark:text-stone-300">BDB · ISBE · Smith&rsquo;s · Easton&rsquo;s · Nave&rsquo;s</span>{' '}
+                  — quoted and attributed, never summarized.
+                </p>
+              </section>
+            )}
           </div>
         </>
       )}

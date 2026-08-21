@@ -52,6 +52,18 @@ const SELF_MIN_VERSE = 0.90;
 const VERSE_TYPES = new Set(['hymn', 'poetry']);
 const MARGIN = 0.05;
 
+// THE LEXICON REGISTER HOLDS TWO EMBED VINTAGES, measured on dev 2026-08-21 (WORKLOG): of 9
+// probed rows across smiths/bdb/isbe, 7 reproduce their stored vector at exactly 1.0000 from
+// the bare body (the D1(b) backfill, scripts/backfill-section-embeddings.mjs:176 embeds
+// `r.body`) and the other 2 reach 1.0000 only as `heading + '\n' + body` (the original lexicon
+// ingest prefixed the entry heading). Both are CORRECT pairings — the wrong vintage's
+// reconstruction lands 0.938–0.982, the same fidelity band as verse, while a seeded mispair
+// scores ~0.78 against EITHER reconstruction. So a lexicon row below the floor gets exactly one
+// more chance: the other vintage's input, rebuilt from the SECTIONS side of the join — never
+// from anything in the embeddings row, which would be the watchlist's
+// derive-the-expectation-from-the-artifact-under-test shape.
+const HEADING_PREFIXED_TYPES = new Set(['lexicon']);
+
 function cosine(a: number[], b: number[]): number {
   let dot = 0, na = 0, nb = 0;
   for (let i = 0; i < a.length; i++) { dot += a[i]! * b[i]!; na += a[i]! * a[i]!; nb += b[i]! * b[i]!; }
@@ -64,7 +76,7 @@ function parseVector(v: unknown): number[] {
   return String(v).replace(/^\[|\]$/g, '').split(',').map(Number);
 }
 
-interface Sample { slug: string; sourceType: string; ordinal: number; body: string; embedding: unknown }
+interface Sample { slug: string; sourceType: string; ordinal: number; heading: string | null; body: string; embedding: unknown }
 
 // THIS CHECK IS THE ONE MOST LIKELY TO SILENTLY NOT RUN, and it is the only thing standing
 // between the corpus and a content↔vector mispairing that every counting check waves through.
@@ -105,7 +117,7 @@ describe.skipIf(SKIP)('§B0 class 2 — every section body matches its own store
     // chunk (EMBED_MAX). The NOT COVERED list below keeps the cost of that bound visible.
     const samples = (await sql`
       SELECT DISTINCT ON (s.slug)
-             s.slug, s.source_type AS "sourceType", sec.ordinal, sec.body, se.embedding
+             s.slug, s.source_type AS "sourceType", sec.ordinal, sec.heading, sec.body, se.embedding
         FROM sections sec
         JOIN sources s ON s.id = sec.source_id
         JOIN section_embeddings se ON se.section_id = sec.id
@@ -158,27 +170,42 @@ describe.skipIf(SKIP)('§B0 class 2 — every section body matches its own store
       'every published section body matching its own stored vector, and discriminating against a neighbour',
     )) { ctx.skip(); return; }
 
-    const failures: string[] = [];
-    for (let i = 0; i < samples.length; i++) {
-      const s = samples[i]!;
-      const stored = parseVector(s.embedding);
-      let fresh: number[];
+    // The provider can go down mid-run, after the probe said it was up. Both embed sites below
+    // need the same exit: announce NOT RUN, never a pass. Returns null only after announcing.
+    const embedOrAnnounce = async (text: string): Promise<number[] | null> => {
       try {
-        fresh = await embedQuery(s.body);
+        return await embedQuery(text);
       } catch (err) {
-        // The provider went down mid-run, after the probe said it was up.
         if (isProviderUnavailable(err)) {
           announceSkip(
             '§B0 class 2 — section/vector pairing (provider failed mid-run)',
             [{ name: `DeepInfra embeddings (${err instanceof Error ? err.message : String(err)})`, present: false, kind: 'provider' }],
             'the remaining published sections in this run',
           );
-          ctx.skip();
-          return;
+          return null;
         }
         throw err;
       }
-      const self = cosine(stored, fresh);
+    };
+
+    const failures: string[] = [];
+    for (let i = 0; i < samples.length; i++) {
+      const s = samples[i]!;
+      const stored = parseVector(s.embedding);
+      const bare = await embedOrAnnounce(s.body);
+      if (!bare) { ctx.skip(); return; }
+      let self = cosine(stored, bare);
+      let fresh = bare;
+
+      // The lexicon two-vintage fallback (see HEADING_PREFIXED_TYPES above): one extra embed,
+      // only on a lexicon row that missed with the bare body. A mispaired vector misses BOTH
+      // reconstructions, so this weakens nothing.
+      if (self < SELF_MIN_PROSE && HEADING_PREFIXED_TYPES.has(s.sourceType) && s.heading) {
+        const prefixed = await embedOrAnnounce(`${s.heading}\n${s.body}`);
+        if (!prefixed) { ctx.skip(); return; }
+        const selfPrefixed = cosine(stored, prefixed);
+        if (selfPrefixed > self) { self = selfPrefixed; fresh = prefixed; }
+      }
 
       // Discrimination control, in the SAME run: the stored vector of a DIFFERENT section must
       // score materially lower against this body. Without it, an embedder that returned a
