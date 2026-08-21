@@ -47,9 +47,11 @@ export interface TraditionVoice {
   tradition: string;
   /** Always 'corpus' here. A user's own words are never returned by this function (§7). */
   origin: 'corpus';
-  /** The verse of the best-matching entry, for a deep link. */
+  /** The verse of the first engaged entry, for a deep link. */
   verseId: number;
   sourceId: string;
+  /** How many of THIS document's anchor ranges the work engages — the ranking signal. */
+  rangesHit: number;
 }
 
 export interface TraditionGapResult {
@@ -118,12 +120,18 @@ export async function traditionGap(
        LIMIT $3
     ),
     hits AS (
-      SELECT DISTINCT ON (e.metadata->>'author', e.metadata->>'work')
-             e.metadata->>'author'    AS author,
+      -- One row per (author, work), RANKED BY SPECIFICITY TO THIS DOCUMENT (Tier 3, 2026-08-21):
+      -- ranges_hit counts how many of the document's own anchor ranges the work engages, so the
+      -- panel leads with the voices that walked the most of THIS sermon's ground — the old
+      -- ORDER BY author put Clarke/Barnes/Maclaren first on every document in the corpus, which
+      -- is alphabet, not relevance. verse_id/source_id come from the FIRST engaged range
+      -- (min), keeping the row a real, linkable citation.
+      SELECT e.metadata->>'author'    AS author,
              e.metadata->>'work'      AS work,
-             e.metadata->>'tradition' AS tradition,
-             (e.metadata->>'verseId')::int AS verse_id,
-             e.source_id
+             max(e.metadata->>'tradition') AS tradition,
+             min((e.metadata->>'verseId')::int) AS verse_id,
+             min(e.source_id) AS source_id,
+             count(DISTINCT d.verse_id_start)::int AS ranges_hit
         FROM embeddings e
         JOIN doc_anchors d
           ON (e.metadata->>'verseId')::int BETWEEN d.verse_id_start AND d.verse_id_end
@@ -137,17 +145,18 @@ export async function traditionGap(
                 SELECT 1 FROM unnest($5::text[]) d2
                 WHERE lower(e.metadata->>'sourceUrl') LIKE '%' || d2 || '%'))
          AND ${predicate}
-       ORDER BY e.metadata->>'author', e.metadata->>'work', (e.metadata->>'verseId')::int
+       GROUP BY e.metadata->>'author', e.metadata->>'work'
     )
     -- metadata->>'work' is a SLUG, and the panel was printing it at the reader:
     -- "Alexander Maclaren, maclaren-expositions". sources.slug is the join key the corpus census
     -- already uses, so resolve it to the title the rest of the library shows. LEFT, and COALESCE
     -- back to the slug, because a row whose work has no sources entry must still list its author
     -- rather than vanish.
-    SELECT h.author, COALESCE(s.title, h.work) AS work, h.tradition, h.verse_id, h.source_id
+    SELECT h.author, COALESCE(s.title, h.work) AS work, h.tradition, h.verse_id, h.source_id,
+           h.ranges_hit
       FROM hits h
       LEFT JOIN sources s ON s.slug = h.work
-     ORDER BY h.author, 2 LIMIT $4`;
+     ORDER BY h.ranges_hit DESC, h.author, 2 LIMIT $4`;
 
   const countText = `
     SELECT count(*)::int AS n FROM (
@@ -165,6 +174,7 @@ export async function traditionGap(
 
   const voices = (voiceRows as {
     author: string; work: string | null; tradition: string | null; verse_id: number; source_id: string;
+    ranges_hit: number;
   }[]).map((r) => ({
     author: r.author,
     work: r.work ?? '',
@@ -172,6 +182,7 @@ export async function traditionGap(
     origin: 'corpus' as const,
     verseId: r.verse_id,
     sourceId: r.source_id,
+    rangesHit: r.ranges_hit,
   }));
 
   return {
