@@ -29,8 +29,16 @@ that deploy's receipt and the corrected attribution in the morning file.
 
 ### NOT DONE / UNVERIFIED / OPEN
 
-- **A+C+D+B are committed and pushed, NOT yet deployed** — one deploy.sh wave ships all three
-  commits; coordinated with the deploy-env session.
+- ~~A+C+D+B committed, not yet deployed~~ **DEPLOYED 2026-08-21T16:03:50Z** —
+  `dpl_1378p9zsKUPwE8Z11aUb8Jexukp7` (sha `a92cad5`, deployed as its receipt commit `44d64e7`),
+  alias-serves confirmed by deploy.sh's inspect check; receipt
+  `docs/evidence/deploys/deploy-44d64e7-2026-08-21T16-03-50Z.txt`. Corroborated here: all three
+  word-lookup commits are ancestors of the deployed sha and /word/[strongs] is in its tree. The
+  wave also carried the Studies position-race fix (`fa1b1f0`) — deliberate consolidation by the
+  deploy session. Its attempt 1 died mid-upload on a transport EPIPE, prod never moved
+  (read-only inspect confirmed; failed receipt kept with resolution at `3408397`); one orphaned
+  never-aliased deployment may exist from 16:01. **Rendered signed-in behaviour of /word and the
+  popover ON PROD is still unverified** (SEC-1 gate; owner's eyes).
 - The **Strong's ingest data nit** (truncated glosses, def/derivation field splits — G2316's
   "figuratively") is filed in the order doc; visible on the new surfaces, an ingest fix.
 - The **history entity-channel scope leak** (31/81 labels in vocab scope; history-scope-db reds
@@ -66,6 +74,22 @@ zero key growth. Suffix safety under an upper bound is proven from the midpoint 
 Blast radius: study-position 14/14, studies-order 6/6, studies-bounds, studies-surface-routes,
 study-export-docx, clipping-tombstone all green; typecheck + lint clean.
 
+**DEPLOYED AND LIVE — `dpl_1378p9zsKUPwE8Z11aUb8Jexukp7`, 2026-08-21T16:03:50Z** (receipt
+`deploy-44d64e7-2026-08-21T16-03-50Z.txt`; shipped sha `a92cad5` = this fix + the word-lookup
+session's A/C/D/B batch, consolidated by -3e so as not to split a batch its owner asked kept
+whole; `fa1b1f0 ⊂ 44d64e7` verified by ancestry from this session). Independently verified by the
+deployer before shipping — bylaw 4 satisfied by a second executor, not the author: studies-order
+6/6 against the real dev DB at the shipped sha, study-position 14/14, full web suite 1427/0.
+Deploy history for the record: this session's own main-tree attempt aborted at the pre-upload
+clean-tree check (a fifth session's in-flight files — the gate's third catch of the day); -3e's
+attempt 1 died mid-upload on a network EPIPE with prod unmoved (failed receipt kept at `3408397`;
+one orphaned never-aliased deployment may exist from 16:01).
+
+**Standing process recommendation (from the inspector session, seconded here after four
+announce-and-hope cycles in one day):** non-deployers work in worktrees by default; the main tree
+belongs to whoever holds the deploy. deploy.sh caught every incursion mechanically — three
+sessions, zero reached production — but each catch costs a full build.
+
 ### NOT DONE / UNVERIFIED
 - The residual is probabilistic, stated: a ~1/3,782 per-pair suffix collision per round, absorbed
   by the remaining 3-try belt (~1e-7 for a full second collision). Not zero; documented at the
@@ -73,6 +97,9 @@ study-export-docx, clipping-tombstone all green; typecheck + lint clean.
 - CI's `db-invariants` remains red for the four data-starvation failures + `neon-auth-live`
   (parent branch predates the served corpus — the -3e/-76 finding). The signal for this commit is
   narrow: `studies-order` green, nothing else newly red.
+- Re-running the tenancy suites needs an `app_runtime` connection — an OWNER connection bypasses
+  RLS and produces 7 spurious failures (-3e proved this against the already-live sha; it is the
+  instrument, not the code).
 
 ## 2026-08-21 — External live walk filed; watchlist instances 17+18 recorded
 
