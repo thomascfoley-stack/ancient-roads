@@ -7,10 +7,15 @@
 // the connection this slice spent migration 101 taking away.
 //
 // NOTHING IS EVER SILENTLY DROPPED. Every path out of a claim ends in a written status. The two
-// ways a queue normally loses work are both closed here: a worker that dies mid-parse leaves a row
-// in 'parsing' that the stale-claim rule reclaims by age, and a document that fails forever is
-// retired to 'failed' by reapExhausted rather than being skipped by the claim predicate and left
-// sitting in 'parsing' where no one would look for it.
+// ways a queue normally loses work are both closed here: a worker that dies mid-flight leaves a row
+// in one of the CLAIMED_STATUSES that the stale-claim rule reclaims by age, and a document that
+// fails forever is retired to 'failed' by reapExhausted rather than being skipped by the claim
+// predicate and left where no one would look for it.
+//
+// THIS PARAGRAPH WAS FALSE FOR THE LIFE OF THE SLICE, and said 'parsing' in both places while
+// `processOne` also writes 'chunking' and 'embedding' — see CLAIMED_STATUSES (B022). A header that
+// states a guarantee the predicates do not implement is worse than no header, because it is read
+// as a specification.
 
 import { runAsUser } from '@/lib/db';
 import { MIN_VERSE_SHINGLES, SHIPPED_K, anchorChunk } from './anchor';
@@ -34,6 +39,25 @@ export const MAX_ATTEMPTS = 3;
  */
 export const STALE_CLAIM_MINUTES = 5;
 
+/**
+ * The statuses a worker holds a claim in — everything `processOne` can be interrupted mid-way
+ * through.
+ *
+ * B022 — BOTH RECOVERY RULES USED TO SAY 'parsing' AND ONLY 'parsing', while `processOne` writes
+ * 'chunking' and then 'embedding'. Embedding is the longest phase (an external provider call), so
+ * it is the state a killed serverless function is MOST likely to leave behind — and such a row was
+ * invisible to the stale-claim reclaim and to the reaper alike, counted forever in `queueStats`
+ * depth, offered no retry control, and refused a re-upload by checksum dedupe. The only way out was
+ * hand-written SQL. A row in 'embedding' sat on the dev database for 3.66 days.
+ *
+ * ONE definition, used by both predicates, so they cannot drift apart again — and so adding a
+ * status to the walk means adding it here rather than remembering two call sites.
+ */
+export const CLAIMED_STATUSES = ['parsing', 'chunking', 'embedding'] as const;
+
+/** The same set as a plain array, because a `readonly` tuple is not a bindable SQL parameter. */
+const CLAIMED_SQL: string[] = [...CLAIMED_STATUSES];
+
 interface Row {
   id: string;
   blob_url: string | null;
@@ -55,7 +79,8 @@ async function claimNext(userId: string): Promise<Row | null> {
             AND attempts < ${MAX_ATTEMPTS}
             AND (
               status = 'queued'
-              OR (status = 'parsing' AND claimed_at < now() - (${STALE_CLAIM_MINUTES} || ' minutes')::interval)
+              OR (status = ANY(${CLAIMED_SQL}::text[])
+                  AND claimed_at < now() - (${STALE_CLAIM_MINUTES} || ' minutes')::interval)
             )
           ORDER BY claimed_at NULLS FIRST, created_at
           FOR UPDATE SKIP LOCKED
@@ -80,7 +105,7 @@ export async function reapExhausted(userId: string): Promise<number> {
             parse_error = 'Gave up after ' || attempts || ' attempts. The last error was: ' || COALESCE(parse_error, 'unknown'),
             updated_at = now()
         WHERE user_id = ${userId}
-          AND status = 'parsing'
+          AND status = ANY(${CLAIMED_SQL}::text[])
           AND attempts >= ${MAX_ATTEMPTS}
           AND claimed_at < now() - (${STALE_CLAIM_MINUTES} || ' minutes')::interval
         RETURNING id`,

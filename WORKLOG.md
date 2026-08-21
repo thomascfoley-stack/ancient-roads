@@ -1,5 +1,65 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-20 — Sermon uploader deep dive: 7-lens audit + the A9 run that never happened
+
+**Owner ask, in chat:** inspect the sermon uploader and its search, test it deeply, then plan
+enhancements. **No code was changed.** Findings and plan:
+[`docs/pm/orders/2026-08-20-uploader-deep-dive.md`](docs/pm/orders/2026-08-20-uploader-deep-dive.md) ·
+measurements: [`docs/evidence/uploader-deep-dive-2026-08-20/MEASUREMENTS.md`](docs/evidence/uploader-deep-dive-2026-08-20/MEASUREMENTS.md).
+
+**Method:** `deep-audit`, 7 non-overlapping lenses in parallel (attack surface · data layer ·
+pipeline · trust boundary · docs-vs-reality · client · test honesty), none of which wrote the code
+it audited, plus four measurement runs driving the SHIPPED pipeline — only the blob hop
+substituted — over 50 de-headered Spurgeon sermons from CCEL vol 62, a set no prior harness has
+seen. Labels validated against the KJV text before counting: 2 of 52 name verses that do not exist.
+
+**This is the run `UPLOADER_DESIGN.md` §Q6/A9 required before multi-user ship and which never
+happened.** Result: **70% chapter-level recall at the shipped K=3, against a pre-registered bar of
+≥70%.** At the bar, not above it. K=1 reproduces at 92% vs the published 90%, so the frozen Slice 0
+harness is sound — the design simply leads with a number belonging to a threshold that does not ship.
+
+**The largest product finding: translation mismatch roughly halves recall, silently.** Same 50
+sermons across all 18 shipped indexes: KJV 70%, median non-KJV **48%**, BSB **36%**, worst 16%. The
+five KJV-family members cluster at 70–76%, independently reproducing ADR-100's family measurement.
+Detection was never built and `translationConfidence` is hardcoded `1.0`, so every degraded anchor
+is stored claiming certainty.
+
+**Refuted, so nobody spends a fix on it:** per-chunk vs whole-document anchoring costs 0–2 points at
+every K. The grain concern is sound in theory and immaterial in practice.
+
+**Nine HIGH findings.** Two proven by execution rather than argued: **every My Works search returns
+exactly one result** (`Number(null)` → `0` → `clampLimit` → 1; the client never sends `limit`), and
+**the verifier never branches on `origin`** — the shipped `verifyV1` returns `ok` for an answer
+composed entirely of user uploads. One observed live: a document stuck in `embedding` for 3.66 days
+on dev, invisible to both the stale-claim rule and the reaper, which filter on `parsing` only, with
+no retry control and re-upload refused by checksum dedupe. Also: the model-parity check is
+tautological at both shipped call sites, upload spends with no limiter while the wallet invariant's
+predicate cannot reach it through `drain`, and a >500-char query blanks the whole page.
+
+**New defect the audit did not predict, found by control:** `scanReferences` drops a numbered book
+embedded in prose (`see also 1 Corinthians 13:4-7 on love` → nothing, while `Ephesians 2:8-9` in the
+same sentence survives) and drops `1 Cor. 13:4-7` entirely even standalone — a form present in the
+CCEL headers themselves. `parseRef` handles both; the two disagree. Measured effect: 4 explicit
+anchors across 30 sermons / 945 chunks. Slice 0 read that silence as Spurgeon's header-only citation
+style; true of Spurgeon, and it has masked this since.
+
+### NOT DONE / UNVERIFIED
+
+- **No production read taken** (bylaw 7). Three need the owner's terminal: `EXPLAIN (ANALYZE)` on
+  the three `relatedVoices` sweeps; `relrowsecurity`/`relforcerowsecurity` and `app_runtime` grants
+  across the five user tables; a count of prod `user_documents` in `chunking`/`embedding` — H2's
+  real blast radius.
+- **Nothing exercised signed in.** Entering credentials is out of scope for the agent, so every
+  client finding is source-derived plus a signed-out render at 390px. The filename-overflow finding
+  is CSS arithmetic, not a screenshot.
+- **RLS under Neon's user-id format still unproven** (MASTER C5); no two-account run since the
+  cutover, and `scripts/redproof-user-corpus-rls.mjs` is wired into no workflow.
+- **Lane B tests do not run in CI** — credentials sit in `db-invariants`, the suites in `audit`.
+  Reproduced locally credential-free: 98 passed, **62 skipped**, exit 0.
+- Docs corrections listed in the order are **filed, not applied** — including
+  `STATE_OF_TRUTH.md:429` "No user-corpus code or tables exist yet", which is false and is the
+  designated cold-read page.
+
 ## 2026-08-21 — Daily Office Sprint 1 BUILT (dossier §3.1) + the union merge that heals the split
 
 **Owner go, in chat: "build it and deploy this, follow the rules."** Scope decision recorded:

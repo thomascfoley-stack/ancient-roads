@@ -253,4 +253,77 @@ describeDb('the queue never silently drops a document', () => {
     expect((await getDocument(USER_A, doc.id))?.status).toBe('queued');
     await setDocStatus(USER_A, doc.id, 'queued', null);
   });
+
+  // ── B022 — THE TWO STATES BOTH RECOVERY RULES COULD NOT SEE ─────────────────────────────────
+  //
+  // This suite is named for "nothing is ever silently dropped" and, until now, seeded only
+  // 'queued' and 'parsing'. But `processOne` writes 'chunking' and then 'embedding', and embedding
+  // is the LONGEST phase — an external DeepInfra call — so it is the state a killed serverless
+  // function is most likely to leave behind. Both recovery rules filtered on `status = 'parsing'`,
+  // so such a row was invisible to the stale-claim reclaim AND to the reaper, counted forever in
+  // queueStats depth, shown no retry control (the UI renders one only for 'failed'), and refused a
+  // re-upload by checksum dedupe. The only exit was hand-written SQL.
+  //
+  // NOT HYPOTHETICAL: the 2026-08-20 deep dive found a row on the dev database that had been in
+  // 'embedding' for 3.66 days with attempts = 1.
+  for (const stuck of ['chunking', 'embedding'] as const) {
+    it(`a worker killed during ${stuck} is reclaimed, not stranded`, async () => {
+      // SEED: revert claimNext's stale branch to `status = 'parsing'` only -> RED, processed 0.
+      await cleanup();
+      const doc = await seedQueued(USER_A, `stuck-${stuck}`);
+      await runAsUser(USER_A, (sql) => [
+        sql`UPDATE user_documents
+            SET status = ${stuck}, attempts = 1,
+                claimed_at = now() - (${STALE_CLAIM_MINUTES + 1} || ' minutes')::interval
+            WHERE user_id = ${USER_A} AND id = ${doc.id}`,
+      ]);
+
+      const result = await drain(USER_A, 5);
+      expect(result.processed).toBe(1);
+      const after = await getDocument(USER_A, doc.id);
+      expect(after?.attempts).toBe(2);
+      // It reached a TERMINAL state. Which one does not matter here — the seeded document has no
+      // stored blob, so it fails — what matters is that it is no longer invisible.
+      expect(['failed', 'ready', 'empty']).toContain(after?.status);
+    });
+
+    it(`an exhausted document stuck in ${stuck} is retired rather than left invisible`, async () => {
+      // SEED: revert reapExhausted's status predicate to 'parsing' only -> RED, reaped 0 and the
+      // row keeps its non-terminal status forever.
+      await cleanup();
+      const doc = await seedQueued(USER_A, `exhausted-${stuck}`);
+      await runAsUser(USER_A, (sql) => [
+        sql`UPDATE user_documents
+            SET status = ${stuck},
+                attempts = ${MAX_ATTEMPTS},
+                claimed_at = now() - (${STALE_CLAIM_MINUTES + 1} || ' minutes')::interval,
+                parse_error = 'embedder timed out'
+            WHERE user_id = ${USER_A} AND id = ${doc.id}`,
+      ]);
+
+      expect(await reapExhausted(USER_A)).toBe(1);
+      const after = await getDocument(USER_A, doc.id);
+      expect(after?.status).toBe('failed');
+      expect(after?.parseError).toContain('Gave up after');
+      expect(after?.parseError).toContain('embedder timed out');
+    });
+
+    it(`a FRESH ${stuck} claim is left alone — the reclaim is by age, not by status`, async () => {
+      // The other side, for the states just added. Without this, widening the predicate to every
+      // in-flight status would pass the reclaim tests above while double-processing every document
+      // that is legitimately mid-pipeline.
+      await cleanup();
+      const doc = await seedQueued(USER_A, `fresh-${stuck}`);
+      await runAsUser(USER_A, (sql) => [
+        sql`UPDATE user_documents SET status = ${stuck}, attempts = 1, claimed_at = now()
+            WHERE user_id = ${USER_A} AND id = ${doc.id}`,
+      ]);
+      const result = await drain(USER_A, 5);
+      expect(result.processed).toBe(0);
+      expect(result.reaped).toBe(0);
+      const after = await getDocument(USER_A, doc.id);
+      expect(after?.status).toBe(stuck);
+      expect(after?.attempts).toBe(1);
+    });
+  }
 });

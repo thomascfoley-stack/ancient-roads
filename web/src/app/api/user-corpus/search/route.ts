@@ -51,8 +51,17 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   const params = req.nextUrl.searchParams;
   const documentId = params.get('documentId') ?? undefined;
-  const limitRaw = Number(params.get('limit'));
-  const limit = Number.isFinite(limitRaw) ? limitRaw : undefined;
+  // B019 — EVERY SEARCH RETURNED EXACTLY ONE RESULT. This was `Number(params.get('limit'))`, and
+  // `Number(null)` is 0, as is `Number('')`. `Number.isFinite(0)` is true, so an ABSENT parameter
+  // became `limit: 0`, which `clampLimit` floors to 1 — and `scope.limit ?? DEFAULT_LIMIT` in
+  // search.ts cannot rescue it, because `??` catches null and undefined but not zero. The shipped
+  // client never sends `limit`, so this was every search on every mode.
+  //
+  // Absent means "no preference", which is `undefined`. An explicit `limit=0` is also nonsense as
+  // a request and lands on the same answer rather than on a silent one-result page.
+  const limitParam = params.get('limit')?.trim();
+  const limitRaw = limitParam ? Number(limitParam) : NaN;
+  const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : undefined;
   const scope = { documentId, limit };
 
   // ── verse presence ────────────────────────────────────────────────────────────────────────────

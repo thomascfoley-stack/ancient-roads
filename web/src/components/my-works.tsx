@@ -78,6 +78,45 @@ export function fmtBytes(n: number | null): string {
 }
 
 /**
+ * Parse a JSON body, or `null` when the response is not JSON at all.
+ *
+ * B021 — `await r.json()` sat OUTSIDE every try block here, and before any `r.ok` check, so a
+ * non-JSON body threw past the handler entirely: the list stayed a permanent skeleton, an upload
+ * was discarded in silence, a search rendered nothing. This is not exotic. The site's own password
+ * gate REDIRECTS an expired cookie, `fetch` follows the redirect, and gate HTML arrives with status
+ * 200 — `r.ok` is true and the parse is what fails. Platform 413/502/504 pages are the same class.
+ *
+ * Returning null rather than throwing puts the decision at the call site, where the right sentence
+ * for that particular failure is known.
+ */
+async function readJson<T>(r: Response): Promise<T | null> {
+  try {
+    return (await r.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The human message out of either error envelope.
+ *
+ * B020 — most `/api/user-corpus/*` routes answer `{ error: "some sentence" }`, but the search route
+ * uses the app-wide `apiError`, whose envelope is `{ error: { code, message } }` (docs/API_ERRORS.md).
+ * The client typed it as the first shape and stored the object; rendering an object as a React child
+ * throws, and the root boundary replaced the entire page. Read both shapes, and fall back to a
+ * sentence rather than to `undefined`.
+ */
+function errorMessage(body: unknown, fallback: string): string {
+  const e = (body as { error?: unknown } | null)?.error;
+  if (typeof e === 'string' && e.trim()) return e;
+  if (e && typeof e === 'object') {
+    const m = (e as { message?: unknown }).message;
+    if (typeof m === 'string' && m.trim()) return m;
+  }
+  return fallback;
+}
+
+/**
  * Markdown syntax out of the search excerpt.
  *
  * A .md upload is stored exactly as the user wrote it, so the excerpt was showing a preacher his
@@ -141,7 +180,15 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
     // Any other failure (403 when uploads are switched off, 500) used to `return` and leave state
     // on 'loading' forever: the page sat at "Loading…" with no upload control and no reason given.
     if (!r.ok) { setState('unavailable'); return; }
-    const d = (await r.json()) as { documents: Doc[] };
+    // B021 — a 200 that is not JSON (the gate's HTML, a platform error page) used to throw here and
+    // pin the page on its skeleton forever. End the wait, and offer the retry.
+    const d = await readJson<{ documents: Doc[] }>(r);
+    if (!d || !Array.isArray(d.documents)) {
+      setDocsLoaded(true);
+      setState('ready');
+      setLoadError('Your documents could not be loaded. Check your connection and try again.');
+      return;
+    }
     setDocs(d.documents);
     setDocsLoaded(true);
     setState('ready');
@@ -165,12 +212,21 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
       for (const file of Array.from(files)) {
         const body = new FormData();
         body.append('file', file);
-        const r = await fetch('/api/user-corpus/upload', { method: 'POST', body });
-        const d = (await r.json()) as { error?: string; message?: string };
+        let r: Response;
+        try {
+          r = await fetch('/api/user-corpus/upload', { method: 'POST', body });
+        } catch {
+          setUploadError(`“${file.name}” could not be uploaded. Check your connection and try again.`);
+          continue;
+        }
+        const d = await readJson<{ error?: unknown; message?: string }>(r);
         // A refusal is shown as itself. The route already writes messages a person can act on
         // ("That PDF has no readable text layer… it needs OCR"), so they are surfaced verbatim
         // rather than replaced with a generic failure.
-        if (!r.ok) setUploadError(d.error ?? 'That file could not be uploaded.');
+        if (!r.ok) setUploadError(errorMessage(d, `“${file.name}” could not be uploaded.`));
+        // B021 — a non-JSON 200 used to throw out of the loop: `finally` cleared `busy`, the label
+        // flicked back to "Add a document", and nothing was said about a file that never arrived.
+        else if (!d) setUploadError(`“${file.name}” could not be uploaded. Please try again.`);
         else if (d.message) setUploadError(d.message); // e.g. already uploaded
       }
       await load();
@@ -214,9 +270,19 @@ export function MyWorksClient({ initialState = 'loading' }: { initialState?: MyW
       const url = looksLikeRef
         ? `/api/user-corpus/search?ref=${encodeURIComponent(q)}`
         : `/api/user-corpus/search?q=${encodeURIComponent(q)}`;
-      const r = await fetch(url);
-      const d = (await r.json()) as { mode?: string; hits?: Hit[]; anchors?: Presence[]; error?: string; degraded?: string };
-      if (!r.ok) { setSearchNote(d.error ?? 'That search could not be run.'); return; }
+      let r: Response;
+      try {
+        r = await fetch(url);
+      } catch {
+        setSearchNote('That search could not be run. Check your connection and try again.');
+        return;
+      }
+      const d = await readJson<{ mode?: string; hits?: Hit[]; anchors?: Presence[]; error?: unknown; degraded?: string }>(r);
+      // B020 — the search route answers failures with `apiError`'s `{ error: { code, message } }`,
+      // not the bare string every other route here returns. Storing the object and rendering it
+      // threw, and the root boundary replaced the whole page.
+      if (!r.ok) { setSearchNote(errorMessage(d, 'That search could not be run.')); return; }
+      if (!d) { setSearchNote('That search could not be run. Please try again.'); return; }
       if (d.degraded) setSearchNote(d.degraded);
       if (d.mode === 'verse') setPresence(d.anchors ?? []);
       else setHits(d.hits ?? []);
