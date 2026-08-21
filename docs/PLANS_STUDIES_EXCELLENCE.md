@@ -72,6 +72,10 @@ Home becomes an appointment, morning and evening:
 - Streak = "days kept." Dated content is the only return-trigger a generator cannot fake.
 - Every piece exists today; this is composition onto one screen, not acquisition. Ships with
   PostHog events (see §4's prerequisite).
+- **PREREQUISITE INSIDE THE SPRINT (Fable's catch): plan URLs first.** A home card needs
+  something to link to — `/plans/[id]` (exposing the built-but-hidden range scope while there)
+  is part of this sprint, not trailing hygiene. Without it the card links nowhere and the
+  sprint can't close.
 
 ### Sprint 2 — Journeys (the centerpiece; "search-created study")
 
@@ -79,7 +83,8 @@ The user types any subject — "anxiety," "covenant," "Rahab" — and the produc
 multi-day guided path:
 
 - the topical indexes supply the verse sequence (the tradition's own editorial ordering);
-- voices retrieval supplies 2–3 attributed excerpts per day (the coverage gate applies);
+- voices retrieval supplies 2–3 attributed excerpts per day — the DESIGNED mechanism is
+  `planSource` (STUDY_PLANS_DESIGN §7, designed and unbuilt); the coverage gate applies;
 - the plan machinery supplies days, mark-read, and catch-up — a Journey IS a plan.
 - This generalizes both inspections' Tier-1 "voices on the day" into paths on any subject.
   Nothing else in the market does it; every component is already built and tested.
