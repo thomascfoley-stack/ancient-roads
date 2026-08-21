@@ -143,6 +143,25 @@ export interface EnglishMatch {
   index: number;
 }
 
+/** What the selection popover renders for a single-word selection (option A, ruling 2026-08-21):
+ *  the resolved candidates, shown as the answer itself. 0, 1, or several — never a guess. */
+export interface DefineResolution {
+  english: string;
+  lang: 'hebrew' | 'greek';
+  matches: EnglishMatch[];
+  /** Concordance verse count for the single confident match; absent when unknown or ambiguous. */
+  count?: number;
+  /** The lexicon file failed to load, so matching fell back to glosses alone — degraded, and said. */
+  lexiconDown: boolean;
+}
+
+/** The selection context Word study pins on top (option C): the English word and the verse
+ *  indices of its candidates. Empty indices = "matched nothing", which the tab says plainly. */
+export interface WordSelection {
+  english: string;
+  indices: number[];
+}
+
 // Leading articles/markers in a gloss ("a shepherd", "to give"), and Strong's own "X" filler.
 // Dropped ONLY when the gloss has more words after them, so a gloss that is just "the" still
 // matches the word "the".

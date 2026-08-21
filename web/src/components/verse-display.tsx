@@ -6,7 +6,7 @@ import type { ChapterData } from '@/lib/bible';
 import { HIGHLIGHT_BG, HIGHLIGHT_WASH } from '@/lib/highlight-colors';
 import { flattenToSegments, wordTokens, type HighlightRange } from '@/lib/highlight-range';
 import { useTextAnnotation, type AnnotationTarget } from '@/lib/use-text-annotation';
-import { singleWordOf } from '@/lib/original';
+import { singleWordOf, type DefineResolution, type EnglishMatch, type WordSelection } from '@/lib/original';
 // StoredSpan is defined in the hook that produces it (use-annotation-writes.ts), not here —
 // this component only renders the shape, it doesn't own it. Re-exported for callers that used to
 // import it from this module.
@@ -89,7 +89,9 @@ export function VerseDisplay({
   signedIn,
   onAddHighlight,
   onOpen,
-  onDefine,
+  resolveDefine,
+  onPickDefine,
+  onOpenWordStudy,
   tapMode,
   onExitTapMode,
 }: {
@@ -117,10 +119,15 @@ export function VerseDisplay({
   signedIn?: boolean;
   onAddHighlight?: (verse: number, range: { start: number; end: number } | null, color: string) => void;
   onOpen?: (verse: number, tab: StudyTab) => void;
-  /** Look up the original-language word behind a selected English word. Offered ONLY for
-   *  single-word selections, because that is the only question this lookup can answer — a phrase
-   *  has no one word behind it. Absent when the chapter has no interlinear data. */
-  onDefine?: (english: string, verse: number) => void;
+  /** OPTION A (ruling 2026-08-21). Resolve the original-language candidates behind a selected
+   *  English word — run ONLY for single-word selections, because that is the only question the
+   *  lookup can answer; a phrase has no one word behind it. Absent when the chapter has no
+   *  interlinear data. The popover then shows the ANSWER (the word rows), not a "Define" verb. */
+  resolveDefine?: (english: string, verse: number) => Promise<DefineResolution | null>;
+  /** Open the full entry for one resolved candidate. */
+  onPickDefine?: (verse: number, m: EnglishMatch) => void;
+  /** Option C's door: open the verse's Word study carrying the selection context. */
+  onOpenWordStudy?: (verse: number, selection: WordSelection) => void;
   /** Two-tap highlighting (the phone flow): while on, verse text renders word-level tap
    *  targets — first tap anchors, second completes the span and raises it as `pending`
    *  through the SAME popover path a drag-selection uses. Word spans exist only in this
@@ -153,6 +160,24 @@ export function VerseDisplay({
   );
 
   const { pending, dismiss, raise } = useTextAnnotation(rootRef, resolveTarget);
+
+  // ── Option A: resolve the original word(s) behind a single-word selection ───────────────
+  // Resolved HERE, at selection time, so the popover can show the answer instead of a labeled
+  // verb. Seq-guarded: a stale resolution must never render against a newer selection. The
+  // first-ever resolve pays the lexicon fetch (~1MB, then cached for the tab's life); the row
+  // simply appears when ready — the popover renders fine without it in the interim.
+  const [define, setDefine] = useState<DefineResolution | null>(null);
+  const defineSeq = useRef(0);
+  useEffect(() => {
+    const seq = ++defineSeq.current;
+    setDefine(null);
+    if (!pending || !resolveDefine) return;
+    const english = singleWordOf(pending.text);
+    if (!english) return;
+    void resolveDefine(english, Number(pending.key)).then((r) => {
+      if (seq === defineSeq.current) setDefine(r);
+    });
+  }, [pending, resolveDefine]);
 
   // ── tap mode (two-tap highlight) ─────────────────────────────────────────────────────────
   // The first tap's word. Kept here, not in the page: it is meaningless outside this mode and
@@ -524,14 +549,24 @@ export function VerseDisplay({
               : undefined
           }
           onAsk={askPending}
-          onDefine={
-            onDefine && singleWordOf(pending.text)
+          // Option A: the resolved original word(s), rendered by the popover as the answer.
+          define={define}
+          onPickDefine={
+            onPickDefine
+              ? (m) => {
+                  const verse = Number(pending.key);
+                  dismiss();
+                  onPickDefine(verse, m);
+                }
+              : undefined
+          }
+          onOpenWordStudy={
+            onOpenWordStudy && define
               ? () => {
                   const verse = Number(pending.key);
-                  // The bare word, without the punctuation the snap brought with it.
-                  const english = singleWordOf(pending.text)!;
+                  const selection = { english: define.english, indices: define.matches.map((x) => x.index) };
                   dismiss();
-                  onDefine(english, verse);
+                  onOpenWordStudy(verse, selection);
                 }
               : undefined
           }

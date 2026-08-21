@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { type CommentaryEntry } from '@/lib/bible';
 import { HIGHLIGHT_COLORS } from '@/lib/highlight-colors';
-import { fetchLexEntry, decodeMorph, type OWord, type LexEntry } from '@/lib/original';
+import { fetchLexEntry, decodeMorph, type OWord, type LexEntry, type WordSelection } from '@/lib/original';
 import { useDragDismiss } from '@/lib/use-drag-dismiss';
 import { useDialog } from '@/lib/use-dialog';
 import {
@@ -37,6 +37,7 @@ export function StudyPanel({
   onToggleBookmark,
   defaultTab = 'commentaries',
   focusWordIdx,
+  selection,
   verseId,
   prevVerse = null,
   nextVerse = null,
@@ -64,6 +65,11 @@ export function StudyPanel({
   onToggleBookmark?: () => void;
   defaultTab?: StudyTab;
   focusWordIdx?: number;
+  /** OPTION C (ruling 2026-08-21): the reader's single-word selection, carried in from the
+   *  popover's word-study doors. The Word study tab pins its candidate rows on top, expanded,
+   *  and folds the rest of the verse below a hairline. Empty `indices` = matched nothing,
+   *  which the tab says plainly over the full list. Absent = today's plain list. */
+  selection?: WordSelection;
   /** Numeric verse id, for the Pray entry point. Optional so existing callers are unaffected. */
   verseId?: number;
   /** A027/A028 — THE PANEL IS IN A SEQUENCE AND DID NOT KNOW IT.
@@ -225,7 +231,7 @@ export function StudyPanel({
         {/* Tab content */}
         <div className="min-h-[30vh] flex-1 overflow-y-auto">
           {tab === 'commentaries' && <CommentariesTab entries={entries} />}
-          {tab === 'word' && <WordTab words={originalWords} lang={lang} focusIdx={focusWordIdx} />}
+          {tab === 'word' && <WordTab words={originalWords} lang={lang} focusIdx={focusWordIdx} selection={selection} />}
           {tab === 'notes' && <NotesTab annotation={annotation} />}
           {/* PRAY — block PR1a. An ACTION, not a fourth tab: commentaries/word/notes are facets of
               the verse, and prayer is something the reader does with it. Making it a tab would file
@@ -464,10 +470,12 @@ function WordTab({
   words,
   lang,
   focusIdx,
+  selection,
 }: {
   words: OWord[] | null;
   lang: 'hebrew' | 'greek' | null;
   focusIdx?: number;
+  selection?: WordSelection;
 }) {
   if (words === null) {
     return <p className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">Loading Greek / Hebrew…</p>;
@@ -479,8 +487,55 @@ function WordTab({
       </p>
     );
   }
+
+  // OPTION C (ruling 2026-08-21): a carried selection pins its candidate rows on top, first one
+  // open, and folds the remainder below a hairline — instead of the reader hunting one word
+  // through the verse's original-order list. Same-Strong's repeats fold into the pinned row's
+  // caption ("twice in the Greek: θεὸν · θεὸς") rather than listing twice; matched-nothing says
+  // so plainly over the FULL list. No selection = exactly the plain list this always was.
+  const pinnedIdx = (selection?.indices ?? []).filter((i) => i >= 0 && i < words.length);
+  if (selection && pinnedIdx.length > 0) {
+    const pinnedStrongs = new Set(pinnedIdx.map((i) => words[i]!.s).filter(Boolean));
+    const rest = words
+      .map((w, i) => ({ w, i }))
+      .filter(({ w, i }) => !pinnedIdx.includes(i) && !(w.s && pinnedStrongs.has(w.s)));
+    return (
+      <div className="px-3 py-3">
+        <p className="px-2 pb-2 text-micro font-semibold uppercase tracking-[0.08em] text-accent-600 dark:text-accent-400">
+          Matches your selection &middot; &ldquo;{selection.english}&rdquo;
+        </p>
+        {pinnedIdx.map((i, n) => {
+          const w = words[i]!;
+          const siblings = w.s ? words.filter((x) => x.s === w.s) : [w];
+          return (
+            <div key={i} className="mb-1 border border-accent-300 bg-accent-50/40 dark:border-accent-800 dark:bg-accent-950/20">
+              {siblings.length > 1 && (
+                <p className="px-2 pt-2 text-micro text-stone-500 dark:text-stone-400">
+                  {siblings.length === 2 ? 'twice' : `${siblings.length} times`} in the {lang === 'hebrew' ? 'Hebrew' : 'Greek'}:{' '}
+                  <span dir={lang === 'hebrew' ? 'rtl' : 'ltr'} className="font-scripture">{siblings.map((x) => x.w).join(' · ')}</span>
+                </p>
+              )}
+              <WordRow word={w} lang={lang} defaultOpen={n === 0} />
+            </div>
+          );
+        })}
+        <p className="px-2 pb-2 pt-4 text-micro font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400">
+          The rest of the verse &middot; {rest.length} {rest.length === 1 ? 'word' : 'words'}
+        </p>
+        {rest.map(({ w, i }) => (
+          <WordRow key={i} word={w} lang={lang} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="px-3 py-3">
+      {selection && (
+        <p className="px-2 pb-2 text-micro font-semibold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400">
+          No direct match for &ldquo;{selection.english}&rdquo; &mdash; the verse&rsquo;s words:
+        </p>
+      )}
       {words.map((w, i) => (
         <WordRow key={i} word={w} lang={lang} defaultOpen={i === focusIdx} />
       ))}

@@ -26,6 +26,8 @@ import {
 } from '@/lib/copy-format';
 import { placePopover, type Placement } from '@/lib/popover-position';
 import type { PendingAnnotation } from '@/lib/use-text-annotation';
+import type { DefineResolution, EnglishMatch } from '@/lib/original';
+import { DISPLAY_LOCALE } from '@/lib/locale';
 
 type CopyMode = 'styled' | 'lines' | 'text';
 
@@ -82,9 +84,17 @@ export interface SelectionPopoverProps {
   onHighlight?: (color: string) => void;
   onAddNote?: () => void;
   onAsk?: () => void;
-  /** Single-word selections only, and only where original-language data exists — the caller
-   *  decides both, so this component just renders the button when a handler arrives. */
-  onDefine?: () => void;
+  /** OPTION A (ruling 2026-08-21): the original word(s) behind a single-word selection, shown
+   *  as the answer itself — the "Define" verb this replaced hid the feature behind the one
+   *  label that didn't say what it does. The caller resolves (single word + interlinear loaded)
+   *  and hands DATA; this component only renders it. 1 match = the word row; several = every
+   *  candidate (never a guess — original.ts's standing rule); 0 = the quiet word-study line.
+   *  Absent = a phrase selection or no data: nothing renders, exactly as before. */
+  define?: DefineResolution | null;
+  /** Open the full entry for one candidate. */
+  onPickDefine?: (m: EnglishMatch) => void;
+  /** Option C's door: open the verse's Word study carrying the selection (compare / no-match). */
+  onOpenWordStudy?: () => void;
   /** Phase 3 (bookmarks table) wires this; the button renders ONLY when provided. */
   onBookmark?: () => void;
   /** Whether the verse the popover is raised on is ALREADY bookmarked. Drives the label: the
@@ -132,7 +142,9 @@ export function SelectionPopover({
   onHighlight,
   onAddNote,
   onAsk,
-  onDefine,
+  define,
+  onPickDefine,
+  onOpenWordStudy,
   onBookmark,
   bookmarked = false,
   highlighted = false,
@@ -273,20 +285,80 @@ export function SelectionPopover({
       <SaveToStudy clip={clampedClip} contextTitle={clipTitle ?? contextLabel} className={`shrink-0 ${SAVE_ON_PILL}`} />
     ) : null;
 
+  // OPTION A — the original word(s) behind the selection, rendered as the answer (the row this
+  // replaced was a "Define" text button whose label hid the feature). Inverted like everything
+  // on this surface: light text on the night card, ink on the parchment one. The rows never
+  // guess: one confident match, every candidate, or the honest zero line (original.ts:128-138).
+  const langName = define ? (define.lang === 'hebrew' ? 'Hebrew' : 'Greek') : '';
+  const defineRow = (m: EnglishMatch, showCount: boolean) => (
+    <button
+      key={m.index}
+      onClick={() => onPickDefine?.(m)}
+      className="flex w-full items-center gap-2.5 border border-white/15 px-2.5 py-1.5 text-left hover:border-white/30 dark:border-stone-900/25 dark:hover:border-stone-900/40"
+    >
+      <span
+        dir={define!.lang === 'hebrew' ? 'rtl' : 'ltr'}
+        lang={define!.lang === 'hebrew' ? 'he' : 'el'}
+        className="shrink-0 font-scripture text-lg leading-none text-stone-100 dark:text-stone-900"
+      >
+        {m.word.w}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-xs text-stone-300 dark:text-stone-600">
+          <i>{m.word.tr}</i>
+          {m.word.g ? ` — ${m.word.g}` : ''}
+        </span>
+        {showCount && define!.count !== undefined && (
+          <span className="block text-micro text-stone-400 dark:text-stone-500">
+            Appears in {define!.count.toLocaleString(DISPLAY_LOCALE)} verses
+          </span>
+        )}
+      </span>
+      {m.word.s && (
+        <span className="shrink-0 border border-white/15 px-1.5 py-0.5 text-micro font-semibold text-stone-300 dark:border-stone-900/25 dark:text-stone-600">
+          {m.word.s}
+        </span>
+      )}
+      <span aria-hidden className="shrink-0 text-accent-300 dark:text-accent-700">&rarr;</span>
+    </button>
+  );
+  const defineBlock = define ? (
+    <div className="flex w-full flex-col gap-1.5">
+      {define.matches.length > 1 && (
+        <span className="px-0.5 text-micro text-stone-400 dark:text-stone-500">
+          {define.matches.length} {langName} words in this verse can stand behind &ldquo;{define.english}&rdquo; — tap one:
+        </span>
+      )}
+      {define.matches.map((m) => defineRow(m, define.matches.length === 1))}
+      {define.matches.length > 1 && onOpenWordStudy && (
+        <button
+          onClick={onOpenWordStudy}
+          className="self-start px-0.5 text-micro text-accent-300 underline hover:text-accent-200 dark:text-accent-700 dark:hover:text-accent-800"
+        >
+          compare in word study &rarr;
+        </button>
+      )}
+      {define.matches.length === 0 && onOpenWordStudy && (
+        <button
+          onClick={onOpenWordStudy}
+          className="self-start px-0.5 text-xs text-stone-300 underline hover:text-white dark:text-stone-600 dark:hover:text-stone-900"
+        >
+          No {langName} match — open the verse&rsquo;s word study &rarr;
+        </button>
+      )}
+      {define.lexiconDown && define.matches.length > 0 && (
+        <span className="px-0.5 text-micro text-stone-400 dark:text-stone-500">
+          (dictionary unavailable — matched on glosses alone)
+        </span>
+      )}
+    </div>
+  ) : null;
+
   // The pill is night-surface in light mode and INVERTED to parchment in dark (PRD §8), so
   // every control on it carries both palettes: stone-200→white text on the dark pill,
   // stone-700→stone-900 on the parchment one.
   const actionButtons = (
     <>
-      {onDefine && (
-        <button
-          onClick={onDefine}
-          title="Greek or Hebrew behind this word"
-          className="shrink-0 rounded-full px-2 py-1 text-xs font-medium text-stone-200 hover:text-white dark:text-stone-700 dark:hover:text-stone-900"
-        >
-          Define
-        </button>
-      )}
       {onAddNote && (
         <button
           onClick={onAddNote}
@@ -387,6 +459,9 @@ export function SelectionPopover({
               narrower card (a `pending.rect` near a screen edge, per `popover-position.ts`) still
               shows every colour, wrapped to a second line, rather than clipping silently. */}
           <div className="flex flex-wrap items-center gap-2">{swatches}</div>
+          {/* Option A sits between the swatches and the verbs: it is content about the
+              selection, not an action on it. */}
+          {defineBlock && <div className="mt-2">{defineBlock}</div>}
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {actionButtons}
           </div>
@@ -443,6 +518,14 @@ export function SelectionPopover({
         {saveToStudy && (
           <div className="max-w-full animate-[fade-in_150ms_var(--ease-gentle)] border border-stone-800 bg-stone-950 px-3 py-1 dark:border-stone-900 dark:bg-stone-50">
             {saveToStudy}
+          </div>
+        )}
+        {/* Option A on mobile rides its own box above the pill — the pill is a one-row
+            overflow-x scroller and word rows are not row-of-chips content. Same stacked-box
+            pattern (and the same overflow reasoning) as Save above. */}
+        {defineBlock && (
+          <div className="w-full max-w-[420px] animate-[fade-in_150ms_var(--ease-gentle)] border border-stone-800 bg-stone-950 px-3 py-2 dark:border-stone-900 dark:bg-stone-50">
+            {defineBlock}
           </div>
         )}
         <div className="flex max-w-full animate-[fade-in_150ms_var(--ease-gentle)] items-center gap-2 overflow-x-auto rounded-full border border-stone-800 bg-stone-950 px-3 py-2 dark:border-stone-900 dark:bg-stone-50">
