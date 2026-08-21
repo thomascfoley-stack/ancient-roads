@@ -127,11 +127,28 @@ rank 20**, in the tail where distances bunch. Inside the pool that feeds composi
 on any probe. And the pool feeds a cross-encoder that re-orders everything anyway, so near-tie order
 at the retrieval stage is washed out downstream.
 
-**The gap, and it is the reason this is not a green light.** These comparisons re-rank *the candidate
-set fp32 selected*. They cannot show whether halfvec would pull in a row fp32 ranked 61st. Settling
-that needs an exact dual scan (attempted; timed out at 2 minutes over 131k rows — needs a longer
-budget or a narrower pool) or the index actually built. **Until then this is strong evidence, not
-proof, and the full pre-registered run in §4 still stands.**
+**The gap named above is now CLOSED — exact dual scan, 2026-08-21.** The measurements above re-rank
+*the candidate set fp32 selected*, so they could not show whether halfvec would pull in a row fp32
+ranked below the cutoff. Settled by re-running with `enable_indexscan=off` and `enable_bitmapscan=off`
+on **both** arms, so each computes an exact top-20 over all 131,569 rows independently — a scan that
+*can* surface a different candidate set:
+
+| probe | top-20 set overlap | order identical |
+|---|---|---|
+| 1 | **20/20** | **20/20** |
+| 2 | **20/20** | **20/20** |
+| 3 | **20/20** | **20/20** |
+
+So halfvec selects the same candidates, in the same order, when nothing constrains it to fp32's
+choices. Combined with the error/gap arithmetic above, the picture is consistent: the perturbation is
+real but ~1.4 × 10⁻⁵, which only reorders items whose true distances are closer together than that,
+and no such pair reaches the top 20.
+
+**What is still NOT proven, and why §4 stands.** n = 3 exact and n = 8 indexed are early signals, not
+the pre-registered run — Bar A asks for ≥99% over **≥200 queries**, and these probes are corpus
+vectors rather than embedded user questions, so they are in-distribution but not query-distribution.
+**Bars C (index size −40%) and D (p50 no regression) are entirely unmeasured** and cannot be measured
+until the index exists. Nothing here authorizes building anything.
 
 ## 5. Apply order (ADR-025 zero-window)
 
