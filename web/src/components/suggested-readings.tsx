@@ -42,13 +42,27 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
   const [note, setNote] = useState<string | null>(null);
   const polling = useRef(false);
 
+  /** Load failures end the wait with a sentence — never a permanent "Loading…". */
+  const [loadFailed, setLoadFailed] = useState(false);
+
   const load = useCallback(async () => {
-    const r = await fetch(`/api/user-corpus/documents/${documentId}/readings`);
-    if (!r.ok) return null;
-    const d = (await r.json()) as State;
-    setState(d);
-    setChosen(d.categories);
-    return d;
+    // B021 — this was `await r.json()` with no guard and `if (!r.ok) return null` with no message.
+    // Either way `state` stayed null and the panel rendered "Loading…" for the life of the tab —
+    // including for a non-JSON 200 (the site gate's HTML after a cookie expires) and for every
+    // handled failure. The wait must end in a state the reader can see and retry.
+    try {
+      const r = await fetch(`/api/user-corpus/documents/${documentId}/readings`);
+      if (!r.ok) { setLoadFailed(true); return null; }
+      const d = (await r.json()) as State | null;
+      if (!d || typeof d !== 'object' || !Array.isArray(d.categories)) { setLoadFailed(true); return null; }
+      setLoadFailed(false);
+      setState(d);
+      setChosen(d.categories);
+      return d;
+    } catch {
+      setLoadFailed(true);
+      return null;
+    }
   }, [documentId]);
 
   useEffect(() => { void load(); }, [load]);
@@ -177,7 +191,16 @@ export function SuggestedReadings({ documentId, docReady }: { documentId: string
           The search failed: {state.error ?? 'no reason recorded'}
         </p>
       ) : !state ? (
-        <p role="status" className="font-serif text-[14px] text-stone-500 dark:text-stone-400">Loading…</p>
+        loadFailed ? (
+          <p role="alert" className="font-serif text-[14px] text-amber-800 dark:text-amber-300">
+            Suggested readings could not be loaded.{' '}
+            <button type="button" onClick={() => void load()} className="underline underline-offset-2">
+              Try again
+            </button>
+          </p>
+        ) : (
+          <p role="status" className="font-serif text-[14px] text-stone-500 dark:text-stone-400">Loading…</p>
+        )
       ) : byCategory.length === 0 ? (
         <div>
           <p className="font-serif text-[14px] text-stone-500 dark:text-stone-400">

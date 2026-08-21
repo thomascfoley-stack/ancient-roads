@@ -5,8 +5,10 @@ surface · data layer · pipeline · trust boundary · docs-vs-reality · client
 four live measurement runs against the shipped pipeline.
 **Measurements:** [`docs/evidence/uploader-deep-dive-2026-08-20/MEASUREMENTS.md`](../../evidence/uploader-deep-dive-2026-08-20/MEASUREMENTS.md)
 
-**Nothing here is fixed.** This is a findings list for the owner to direct, per deep-audit's
-"present the list, do not start fixing".
+**Status 2026-08-21:** the owner directed fixes the same night ("everything gets deployed
+tonight"). Tier 0 landed at `3eba3c1` — H1 (B019), H2 (B022), H6 (B020), H7 (B021) — each test
+watched RED first. Checkboxes below are updated; everything unchecked remains findings for
+direction, per deep-audit's "present the list".
 
 ---
 
@@ -42,7 +44,7 @@ Two consequences to act on before anything else:
 
 ### CRITICAL / HIGH
 
-- [ ] **H1 — Every My Works search returns exactly one result.**
+- [x] **H1 — Every My Works search returns exactly one result.**
       `web/src/app/api/user-corpus/search/route.ts:54-55`. `Number(params.get('limit'))` is
       `Number(null)` = `0`; `Number.isFinite(0)` is true, so `limit: 0` reaches `clampLimit`, which
       floors to **1**. `scope.limit ?? DEFAULT_LIMIT` (`search.ts:247`) cannot rescue it — `??` only
@@ -50,7 +52,7 @@ Two consequences to act on before anything else:
       **Proven by execution:** route-built scope → 1 result; limit omitted → 20. Hits all three
       modes: fused, keyword, and verse presence. This is the primary search surface of the feature.
 
-- [ ] **H2 — Documents strand in `chunking`/`embedding` with no path out.**
+- [x] **H2 — Documents strand in `chunking`/`embedding` with no path out.**
       `queue.ts:56-59` (claim) and `:84` (reap) both filter `status = 'parsing'`, but `processOne`
       writes `'chunking'` (`:120`) then `'embedding'` (`:147`) — and embedding is the longest phase,
       so it is the one running when a serverless function is killed. Such a row is invisible to both
@@ -86,14 +88,14 @@ Two consequences to act on before anything else:
       `UPLOADER_DESIGN.md` §2 documents a five-row quota table and `grep -rni quota web/src` returns
       nothing.
 
-- [ ] **H6 — Search errors crash the entire page.** `my-works.tsx:218-219` casts the response as
+- [x] **H6 — Search errors crash the entire page.** `my-works.tsx:218-219` casts the response as
       `{error?: string}`, but the search route returns `apiError`, whose envelope is
       `{error: {code, message}}`. `setSearchNote(d.error)` stores an object; `{searchNote}` at `:342`
       throws "Objects are not valid as a React child" and the root boundary replaces the whole page.
       Two ordinary triggers: a query over 500 chars (the input has **no `maxLength`**), and any 429
       — including one from `checkCorpusSearchRateLimit` failing closed on a transient DB error.
 
-- [ ] **H7 — Four `r.json()` calls sit outside their try blocks.**
+- [x] **H7 — Four `r.json()` calls sit outside their try blocks.**
       `my-works.tsx:144, 169, 218` and `suggested-readings.tsx:44`. A non-JSON body throws before
       any `r.ok` check: the document list becomes a permanent `aria-busy` skeleton with no recovery
       control, an upload is silently discarded with the label flicking back to "Add a document", and
