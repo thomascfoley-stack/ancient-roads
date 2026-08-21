@@ -63,16 +63,18 @@ describe('the manifest and the served lists are both really there', () => {
     expect(MANIFEST.length).toBeGreaterThan(40);
     expect(ALL_SERVED_WORKS.length).toBeGreaterThan(20);
     expect(WITHHELD.length, 'no serve:false entry found — the flag was renamed or the parse broke').toBeGreaterThan(0);
-    // The standing serve:false rulings. josephus-works is the floor's named pin: withheld as a
-    // not-yet-ingested historian. thayers-lexicon was the previous pin — its ruling was closed
-    // 2026-08-14 (owner close-out #4: re-sourced to the CC0 structured edition, published;
-    // lexicon rows match no lane/pool/index, so served=true is inert until a lexicon lane
-    // exists — D4 remains the standing note for that). If a rename or manifest edit removes
-    // josephus-works' ruling, that is a decision someone must have made on purpose.
-    // The three quality quarantines that used to be pinned here (whitefield-works,
-    // donne-divine-poems, herrick-noble-numbers) were RESOLVED 2026-08-13 and are serve:true.
-    for (const slug of ['josephus-works']) {
+    // The standing serve:false rulings. josephus-works was the floor's named pin until
+    // 2026-08-21, when the owner-executed history-corpus flip served it with 27 siblings
+    // (f4d2207) — the deliberate un-ruling this pin exists to catch, and it caught it.
+    // hort-james1909 is the manifest's remaining withheld ruling and the new pin. If a rename
+    // or manifest edit removes its ruling, that is a decision someone must have made on purpose.
+    for (const slug of ['hort-james1909']) {
       expect(WITHHELD, `${slug} is no longer serve:false in the manifest`).toContain(slug);
+    }
+    // The un-ruled pin must STAY out of the withheld set — a regression that re-withholds the
+    // live history corpus is exactly the breach this guard names.
+    for (const slug of ['josephus-works']) {
+      expect(WITHHELD, `${slug} is serve:false again — re-quarantining a served work is a ruling, not an edit`).not.toContain(slug);
     }
     // The resolved three must STAY out of the withheld set — a regression that re-withholds a
     // work already listed in SERVED_*_WORKS is exactly the breach the cases below catch, but

@@ -121,6 +121,12 @@ describe('every destructive writer actually invokes the guard', () => {
       .filter(Boolean)
       // register-writer.ts carries its own equivalent guard, documented in dev-only-target.mjs.
       .filter((f) => !f.endsWith('register-writer.ts'))
+      // annotate-history-existing.mts carries its own equivalent guard too: it is a PROD-capable
+      // deliberate writer (ANNOTATE_ALLOW_HOST must name the endpoint id per occasion or it
+      // STOPs before connecting), so assertDevOnlyTarget — which refuses prod outright — is the
+      // wrong guard for it. Its DELETE FROM section_history_anchors is the idempotent re-run
+      // half of an ADD-only tool (see its header). 2026-08-21, the history-corpus build.
+      .filter((f) => !f.endsWith('annotate-history-existing.mts'))
       // A GUARD THAT NAMES THE STATEMENT IT GUARDS IS NOT A WRITER. `grep` reads raw bytes, so it
       // enrolled dev-only-target.mjs on its own header, and on 2026-08-02 it enrolled the new
       // reingest-guard.ts on a comment and an error message. The exemption used to be a filename;

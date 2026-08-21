@@ -418,15 +418,13 @@ describe('the pre-connect serve gates refuse without touching any database', () 
   };
 
   it('a manifest serve:false ruling STOPs a forward flip before any connection', () => {
-    // josephus-works carries a standing serve:false ruling in ingest/sources.config.json, and it
-    // is the floor's NAMED PIN (served-lists-respect-the-manifest.test.ts) — two guards break on
-    // one deliberate ruling change, loudly. The fixture history is this test working as built:
-    // whitefield-works held this slot until 2026-08-13 (quality quarantine resolved, serve:true);
-    // thayers-lexicon held it until 2026-08-14 (owner close-out #4 published it, serve:true) —
-    // each flip went red HERE and was reviewed against the recorded owner ruling before the
-    // fixture moved (this one at the 2026-08-15 fork merge). If josephus-works is ever un-ruled,
-    // the same review happens again.
-    const r = flip(['josephus-works']);
+    // The fixture history is this test working as built: whitefield-works held this slot until
+    // 2026-08-13; thayers-lexicon until 2026-08-14; josephus-works until 2026-08-21, when the
+    // owner-executed history-corpus flip served it and 27 siblings (f4d2207, "the history corpus
+    // is live") — the deliberate ruling change this pin exists to catch. It caught it; the
+    // fixture moves to hort-james1909, the manifest's remaining serve:false ruling. If
+    // hort-james1909 is ever un-ruled, the same review happens again.
+    const r = flip(['hort-james1909']);
     expect(r.code).toBe(2);
     expect(r.err).toMatch(/serve:false in the manifest/);
     expect(r.err).not.toMatch(/could not connect/);
