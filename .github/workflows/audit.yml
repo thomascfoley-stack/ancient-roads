@@ -254,11 +254,18 @@ jobs:
       # This is the watchlist's instance-fifteen shape: a cited premise nothing re-checks.
       - name: apply pending migrations to the test branch
         timeout-minutes: 30
-        env:
-          # MIGRATE_TARGET_ENDPOINT arrives from GITHUB_ENV (the ephemeral branch). The history
-          # below is kept because it is the argument for cutting a fresh branch per run: every
-          # entry in it is a way that topping up ONE shared branch went wrong.
-          #
+      # NO `env:` BLOCK HERE, and it must stay absent rather than become empty. When this step's
+      # last key (MIGRATE_TARGET_ENDPOINT, now supplied by GITHUB_ENV) was replaced with comments,
+      # `env:` was left with only comments under it — which YAML reads as `env: null` and GitHub
+      # Actions rejects at workflow-validation time, before any job is created. The run then fails
+      # with "This run likely failed because of a workflow file issue", no jobs, and no log to read.
+      # A local `yaml.safe_load` cannot see it: null is perfectly valid YAML. Caught by
+      # @action-validator/cli and now guarded by test/invariants/ci-ephemeral-branch.test.ts.
+      #
+      # MIGRATE_TARGET_ENDPOINT arrives from GITHUB_ENV (the ephemeral branch). The history below
+      # is kept because it is the argument for cutting a fresh branch per run: every entry in it is
+      # a way that topping up ONE shared branch went wrong.
+      #
           # DERIVED, not guessed — db/describe-target.mjs read the branch on 2026-08-08 and reported
           # 039 and 042 as missing. 044/045 were added after `licensing.test.ts` then failed with
           # `column "served" does not exist` — a table-presence check cannot see a migration that

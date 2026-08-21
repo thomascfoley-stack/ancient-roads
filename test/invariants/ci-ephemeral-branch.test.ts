@@ -79,11 +79,27 @@ export function checkEphemeralBranch(wf: Workflow): Violation[] {
   }
 
   for (const step of steps) {
+    const label = JSON.stringify(step.name ?? step.uses ?? '?');
+
+    // An `env:` key whose only content is comments parses as `env: null`. That is valid YAML —
+    // `yaml.safe_load` and `parse()` both accept it — and GitHub Actions REJECTS it at
+    // workflow-validation time, before a single job is created. The run then reports "This run
+    // likely failed because of a workflow file issue", produces zero jobs, and leaves no log to
+    // read. This is not hypothetical: it is exactly how the first push of this change failed
+    // (run 32494747173), when the apply-pending step's last env key was replaced with comments.
+    // Empty-object `env: {}` is rejected for the same reason and by the same schema rule.
+    if ('env' in step && (step.env === null || step.env === undefined || Object.keys(step.env).length === 0)) {
+      out.push({
+        code: 'empty-env',
+        detail: `step ${label} has an \`env:\` key with no entries; Actions rejects the whole workflow. Delete the key.`,
+      });
+    }
+
     for (const key of GITHUB_ENV_OWNED) {
       if (step.env && Object.prototype.hasOwnProperty.call(step.env, key)) {
         out.push({
           code: 'shadowed-env',
-          detail: `step ${JSON.stringify(step.name ?? step.uses ?? '?')} sets ${key} as a step-level env, shadowing the ephemeral value`,
+          detail: `step ${label} sets ${key} as a step-level env, shadowing the ephemeral value`,
         });
       }
     }
@@ -129,6 +145,22 @@ describe('db-invariants runs against an ephemeral Neon branch', () => {
     const wf = clone();
     wf.jobs['db-invariants']!.steps = steps(wf).filter((s) => !/delete ephemeral/i.test(s.name ?? ''));
     expect(codesFor(wf)).toContain('no-delete');
+  });
+
+  // The one this suite MISSED on its first outing. It was green while the workflow was
+  // unrunnable, which is the false-confidence shape this repo audits for — so the red-proof
+  // reproduces the real defect: a step whose last env key was replaced by comments.
+  it('goes red when a step has an env: key with no entries', () => {
+    const wf = clone();
+    const applyStep = steps(wf).find((s) => /apply pending migrations/i.test(s.name ?? ''))!;
+    (applyStep as { env?: unknown }).env = null;
+    expect(codesFor(wf)).toContain('empty-env');
+  });
+
+  it('goes red for an empty-object env too, not just null', () => {
+    const wf = clone();
+    steps(wf)[0]!.env = {};
+    expect(codesFor(wf)).toContain('empty-env');
   });
 
   it('goes red when the production refusal is dropped from the create step', () => {
