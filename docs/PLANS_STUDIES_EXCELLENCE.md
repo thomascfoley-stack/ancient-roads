@@ -1,135 +1,147 @@
-# PLANS & STUDIES — the excellence dossier
+# PLANS & STUDIES — the excellence dossier (revised: the companion thesis)
 
-**Status: INSPECTION + PROGRAM, 2026-08-20. Nothing here is built by this document.** Compiled from
-a live signed-in walk of production (dpl_6rkRV96mPVHbhEwNXPSpS3mkUR8t, serving `d09d4f2`) plus the
-two governing designs (`STUDY_PLANS_DESIGN.md`, `STUDY_DOCS_DESIGN.md`). Every "measured" line was
-observed on prod, not inferred from code. The bar the owner set: *the world's best Bible study and
-reading-plan companion.*
+**Status: INSPECTION + PROGRAM, revised 2026-08-20 after the owner's "fight back" steer and a
+second independent inspection (Fable, WORKLOG 3d0489a). Nothing here is built by this document.**
+Compiled from live signed-in walks of production plus the corpus inventory below. The bar the
+owner set: *the world's best Bible study and reading-plan companion.*
+
+**The thesis (revised):** the gap is not better features. It is a different shape — **a daily
+rule of life and a guide that composes paths through any subject**, built entirely from material
+the corpus already serves. No acquisition, no product-authored content. The work is composition.
 
 ---
 
 ## 1. What exists today — measured on prod
 
-### Reading Plans (`/plans`)
+### The corpus ammunition (measured 2026-08-20)
 
-- **Builder**: stepped manual form — WHAT TO READ (one book / a collection / a topic) → HOW LONG
-  (weeks) → days each week → start date → a live-computed preview ("15 readings · about 1 chapter
-  a day · Romans · 16 chapters · Thu, Aug 20 → Mon, Sep 7"). Expansion is pure arithmetic, as
-  `STUDY_PLANS_DESIGN.md` §2 rules. The LLM natural-language intake (§12 step 5) is **not built**.
-- **Plan detail**: UP NEXT · DUE NOW card (Read it / Mark as read) + a dated ALL READINGS list
-  (weekday schedule). Measured: the Gospels plan reads "DUE NOW" on a reading dated Aug 3 —
-  **17 days stale with no catch-up affordance**.
-- **Not built vs. its own design**: grounded materials per day (§2 step 4 — corpus voices attached
-  to each reading; nothing renders but Read it / Mark as read); Today-page integration (§12 step
-  6); `.ics` feed (§8 — owner ruled third-party push, later slice).
-- Measured engagement: 2 active plans, both "Day 0 of 40". The feature has never carried a user
-  past day zero — including its owner.
+- **Two date-keyed dailies**: `daily-light` (732 sections, headed "January 1 — Morning/Evening";
+  Bagster 1875) and `spurgeon-morning-evening` (744). Both keyed to the calendar.
+- **15 published devotionals**: kempis-imitation, ryle-holiness, lawrence-practice-presence,
+  baxter-saints-rest, rutherford-letters, calvin-prayer, taylor-holy-living, guyon-prayer,
+  habermann-dailyprayers, jowett-mattermost, scougal-life-of-god, spurgeon-faiths-checkbook,
+  meyer-homily2, daily-light, spurgeon-morning-evening.
+- **Three topical indexes** (subject → verses, machine-readable): naves-topical-bible (4,870
+  sections), openbible-topics (6,711), torreys-topical-textbook (628).
+- The machinery: plan scheduler (pure arithmetic), studies editor, voices retrieval with the
+  coverage gate, highlights/notes/prayers all date-stamped.
 
-### Studies (`/studies`)
+### Reading Plans (`/plans`) — measured
 
-- **Editor**: two-pane (document + library panel with six register tabs: Commentaries, Sermons,
-  Hymns & Poetry, Historians, Theology & Creeds, Lexicons). Pin, Export (Word/PDF), + Insert —
-  all work. The blocks feed re-checks servability server-side before rendering a stored clipping
-  (F-W3-2 — the licensing belt; correct and load-bearing).
-- **Measured wounds**: both studies are "Untitled study" since Aug 13. Clippings carry
-  citation-stripping artifacts — `( = ; ; )`, `(See ).` — empty parentheses where cross-references
-  were removed at ingest. On every JFB clipping, in the user's own document.
-- R4's two-area split (Research History = capture, Studies = curation) is live and clean.
+- Builder: stepped manual form with a live preview running the server's own pure function —
+  the best interaction design in the product (both inspections agree; protect it).
+- Measured wounds: both plans at "Day 0 of 40"; Gospels plan "DUE NOW" on an Aug 3 reading —
+  17 days stale, no catch-up. (Fable, code-confirmed: clearing the Weeks field crashes the page
+  — `Number('')`→0 → zero days → `days[0]!` throws; range scope built+tested but unreachable;
+  plans have no URLs — no refresh/back/share; topic preview bypasses the real expand function so
+  a topic plan can be refused after submit; mark-as-read round-trips with a full refetch.)
+- Unbuilt vs. its own design: grounded materials per day (§2 step 4), Today integration (§12
+  step 6), .ics (§8, owner-deferred).
 
----
+### Studies (`/studies`) — measured
 
-## 2. The verdict
+- Two-pane editor (doc + six-register library panel), Pin, Export (Word/PDF), + Insert; the
+  blocks feed re-checks servability server-side (the licensing belt — load-bearing).
+- Measured wounds: both studies "Untitled study" since Aug 13; clippings carry
+  citation-stripping artifacts (`( = ; ; )`, `(See ).`) in the user's own document.
+- (Fable) /studies crashes to the error boundary signed out.
 
-Plans today is a **schedule generator**, not a companion: it doesn't meet you where you are,
-forgive you for falling behind, or show you why a day matters. Studies is a **working document**
-that doesn't yet feel curated. Both are pre-delight, not broken. The designs were right; the
-programme stopped two steps short of them.
+### Housekeeping flag
 
-The gap to "world's best" is not more features. It is three properties the best companions have
-and this one doesn't, yet: **it meets you** (in the reader, on the home screen, at the right
-moment), **it forgives you** (a plan that survives a bad week), and **it accumulates visibly**
-(your insight compounds into a body of work you can see growing).
+Duplicate topical slugs: `naves-topical-bible` (4,870) and `naves-topical` (5,357) both exist —
+the same two-slug disease as `jfb`/`jamieson-jfb`. One must win; file with that cleanup.
 
 ---
 
-## 3. The program, sequenced
+## 2. The three properties "world's best" requires
 
-### Sprint 1 — retention and trust (small, high-yield)
+The best companions **meet you** (in the reader, on the home screen, at the right moment),
+**forgive you** (a plan survives a bad week), and **accumulate visibly** (insight compounds into
+a body of work you can see growing). Every sprint below serves one of these.
 
-1. **Catch-up intelligence.** One button on a stale plan: "17 days behind — restart from today?"
-   Expansion is already pure arithmetic; a replan is a re-run of `expandPlan` with a new start
-   date. Reading plans die silently without forgiveness. This is the single highest-value line of
-   code in this dossier.
-2. **Citation hygiene at render or ingest.** Strip empty cross-reference parens (`( = ; ; )`,
-   `(See ).`) from clippings. This is a visible quality wound *in the user's own document* — the
-   surface where polish matters most. Needs a red-proofed cleaner (strip only when the parens are
-   empty post-strip; never eat real content).
-3. **Title-from-content.** After the first insert into an untitled study, suggest the clipping's
-   heading as the title, inline, one click to accept. "Untitled study" forever is a small sadness
-   that compounds in the sidebar (two identical entries today).
+---
 
-### Sprint 2 — meet the user where they are
+## 3. The program
 
-4. **Today's reading on /home.** One card: plan name, today's passage, Read / Mark done. The plan
-   must live in the room the user is already in, not a room they must remember to visit.
-5. **"Mark today's reading done" in the reader.** When the reader is showing the day's passage
-   (the plan knows; the reader knows), a quiet chip closes the loop where reading happens.
-6. **Progress texture.** A 40-day grid on the plan card and index (the streak is the motivation);
-   "% through Romans" on the index card. Static "Day 0 of 40" text motivates no one.
+### Sprint 1 — The Daily Office (the retention engine)
 
-### Sprint 3 — the differentiators
+Home becomes an appointment, morning and evening:
 
-7. **Grounded materials per day** (the design's unbuilt step 4). Each day expands to 2–3 corpus
-   voices on the passage, admission-filtered. Retrieval and the grounding tests already exist
-   (`passages-anchor-grounding`). Every app has reading plans; nobody else's day comes with
-   Matthew Henry already attached. **This is the "world's best" claim made literal.**
-8. **"Study this day."** One action on each plan day: create-or-append to a study with the day's
-   passage and its voices pre-attached. Plans supply the discipline; studies accumulate the
-   insight. This is R4's "all of the app working together" as a feature, and it makes Sprint 3's
-   materials write-through instead of read-only.
+- *Morning*: Daily Light's morning reading (already keyed to today's date) + the plan's day +
+  one voice on that passage. *Evening*: the evening half + tomorrow's reading.
+- Streak = "days kept." Dated content is the only return-trigger a generator cannot fake.
+- Every piece exists today; this is composition onto one screen, not acquisition. Ships with
+  PostHog events (see §4's prerequisite).
 
-### Sprint 4 — zero-decision starts and coverage
+### Sprint 2 — Journeys (the centerpiece; "search-created study")
 
-9. **Plan templates.** Advent, Lent, Psalms-in-a-month, the Gospels — one-tap starts. The builder
-   is good; a template is no decisions at all.
-10. **Save-to-study coverage audit** (R3: "one canonical verb on every surfaced item, on every
-    surface"). Verify presence on verse panel, history results, word study, passage search —
-    attach where missing.
-11. **Sidebar hygiene.** Two "Untitled study" entries dedupe via Sprint 1.3; add date or snippet
-    preview to the sidebar rows so studies are distinguishable at a glance.
+The user types any subject — "anxiety," "covenant," "Rahab" — and the product composes a
+multi-day guided path:
+
+- the topical indexes supply the verse sequence (the tradition's own editorial ordering);
+- voices retrieval supplies 2–3 attributed excerpts per day (the coverage gate applies);
+- the plan machinery supplies days, mark-read, and catch-up — a Journey IS a plan.
+- This generalizes both inspections' Tier-1 "voices on the day" into paths on any subject.
+  Nothing else in the market does it; every component is already built and tested.
+- Faithfulness: the composer assembles, never writes — zero generated prose, same spine as the
+  history lane's "every string is a template or a verbatim excerpt."
+
+### Sprint 3 — Historic rules of life (the shelf, Fable's framing)
+
+The 15 devotionals become followable companions: "Walk with Kempis for 40 days," "Ryle's
+Holiness for Lent," "Lawrence's Presence as a 28-day practice," M'Cheyne's 1842 calendar,
+Daily Light as a followable year. Tradition-authored, public domain, attributed — this satisfies
+STUDY_PLANS_DESIGN §10's scope-out (the product authors nothing) while giving users the shelf a
+form can never be. **Owner call needed to un-scope §10 under this framing.**
+
+### Sprint 4 — The companion remembers
+
+"On this day last year you highlighted this." Your most-returned-to chapter. A prayer-journal
+anniversary. All inputs are date-stamped already. Quiet and reverent — a candle, not confetti.
+
+### Sprint 5 — Lectio mode (the immersive read)
+
+One slow-reading screen for the day's passage: full typography, deliberate pacing, one voice
+after the second read. The design language is already 90% there.
+
+### Hygiene track (threads under every sprint)
+
+- Weeks-field crash fix (Fable's chip) and the same `Number('')` pattern on days-per-week.
+- Catch-up: "17 days behind — restart from today?" (pure re-run of expandPlan).
+- Plan URLs (`/plans/[id]`) — refresh/back/share; expose the built-but-hidden range scope.
+- Optimistic mark-as-read; pericope-snapped day boundaries (`src/bible/pericopes` exists).
+- Citation-artifact cleaner (red-proofed: strip only empty parens); title-from-content;
+  /studies signed-out error boundary → clean gate; duplicate topical slugs resolved.
+- "Study this day": plan day → create-or-append to a study with passage + voices pre-attached
+  (the plans↔studies bridge; R4's "all of the app working together" made literal).
 
 ### Explicitly not recommended
 
-- **The LLM plan intake** (design §12 step 5). The manual form is honest and works; the model
-  adds a failure class (bad spec → bad schedule) for a few seconds saved. Revisit only after
-  Sprint 3 lands and real usage data says the form is the drop-off point.
-- **A social/shared-plans layer.** Out of the product's spine (concordance, not commentator —
-  and not a social network).
+- LLM plan intake (form is honest; model adds a failure class for seconds saved).
+- Social/shared plans (off-spine).
+- Confetti-and-badges gamification (cheapens the register; the streak is a candle, not a slot
+  machine).
 
 ---
 
-## 4. What "world's best" requires beyond this list
+## 4. Proof, not vibes — and the prerequisite
 
-The three best-in-class properties named in §2 each have a measurable proxy the programme can
-track without inventing vanity metrics:
-
-- **Meets you**: % of plan-days opened from /home or the reader chip rather than /plans directly.
-- **Forgives you**: % of plans still active 7 days after first falling behind, with and without
-  the restart button (the before/after is the proof Sprint 1.1 mattered).
-- **Accumulates visibly**: median blocks per study at 30 days; % of studies titled.
-
-All three need observability that works — PostHog events on plan-day open, restart, mark-done,
-and study insert. As of 2026-08-20 PostHog is initialized but event flow on prod is unverified
-(see WORKLOG 2026-08-19: the CSP/static-assets defect). **Fix the analytics pipe before Sprint 1
-ships, or none of these numbers will exist.**
+- **Meets you**: % of plan-days opened from /home or the reader chip vs. /plans directly.
+- **Forgives you**: % of plans active 7 days after first falling behind, before/after the
+  restart button.
+- **Accumulates**: median blocks per study at 30 days; % of studies titled; days-kept streak
+  distribution once the Daily Office ships.
+- **PREREQUISITE**: PostHog event flow on prod was unverified as of 2026-08-19 (CSP/static-assets
+  defect). Sprint 1 does not ship without `plan_day_open`, `streak_kept`, `journey_created`,
+  `study_insert` events observed landing. No pipe, no numbers, no claims.
 
 ---
 
 ## 5. Evidence index
 
-- Live walk: 2026-08-20, signed-in, prod — plans index/detail/builder, studies index/editor,
-  + Insert flow, library panel tabs.
-- Stale-plan measurement: Gospels plan "DUE NOW" on an Aug 3 reading, observed Aug 20.
-- Artifact examples: JFB clippings in the owner's Aug-13 study (`( = ; ; )`, `(See ).`).
-- Designs: `STUDY_PLANS_DESIGN.md` (§2 steps 4-5, §8, §12 step 6 unbuilt), `STUDY_DOCS_DESIGN.md`
-  (R1-R5; R3 coverage unaudited).
+- Live walks: 2026-08-20 (this dossier's author: plans index/detail/builder, studies editor,
+  + Insert flow, insert-panel tabs) and Fable's 2026-08-21 pass (WORKLOG 3d0489a: Weeks crash,
+  range scope, URLs, topic preview, signed-out crashes).
+- Corpus inventory: prod `sources`/`sections` counts, 2026-08-20 (devotionals, topical indexes,
+  dated dailies).
+- Designs: STUDY_PLANS_DESIGN.md (§2, §8, §10, §12), STUDY_DOCS_DESIGN.md (R1–R5).
