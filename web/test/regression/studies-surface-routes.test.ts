@@ -4,8 +4,10 @@
 //
 //   GET /studies/[id]/feed   — paginated blocks, each row carrying the server-computed
 //                              renderState (the servability re-check the bare blocks route lacks)
-//   GET /studies/[id]/export — the study as a markdown download; a render path, so the same
-//                              fail-closed re-check runs before serialization
+//   GET /studies/[id]/export — the study as a download (.docx, or the print view for PDF);
+//                              a render path, so the same fail-closed re-check runs before
+//                              serialization. Markdown was removed 2026-08-21 (owner ruling;
+//                              the 2026-08-12 ruling already said "Word or PDF").
 //
 // What this pins, beyond the P1 route contract (studies-routes.test.ts):
 //   - renderState is present per block on every feed page, text AND clipping rows;
@@ -77,7 +79,11 @@ const req = (method: string, body?: unknown, path = 'http://localhost/api/studie
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 const code = async (res: Response) => ((await res.json()) as { error?: { code?: string } }).error?.code;
 const feedReq = (id: string, query = '') => req('GET', undefined, `http://localhost/studies/${id}/feed${query}`);
-const exportReq = (id: string) => req('GET', undefined, `http://localhost/studies/${id}/export`);
+// Format is REQUIRED since the 2026-08-21 markdown removal — the old `md` default was a relic of
+// the route's origin as the serializer workaround. Tests that exercise ownership/licensing use
+// 'pdf' (the print view: text/html, so content is assertable without unzipping a .docx).
+const exportReq = (id: string, format?: string) =>
+  req('GET', undefined, `http://localhost/studies/${id}/export${format ? `?format=${format}` : ''}`);
 
 interface FeedBlock {
   id: string;
@@ -153,7 +159,7 @@ describe.skipIf(SKIP)('Studies surface routes (feed + export, handler → lib �
       const f = await feedGet(feedReq(VALID_BUT_FOREIGN), ctx(VALID_BUT_FOREIGN));
       expect(f.status).toBe(401);
       expect(await code(f)).toBe('UNAUTHENTICATED');
-      const x = await exportGet(exportReq(VALID_BUT_FOREIGN), ctx(VALID_BUT_FOREIGN));
+      const x = await exportGet(exportReq(VALID_BUT_FOREIGN, 'pdf'), ctx(VALID_BUT_FOREIGN));
       expect(x.status).toBe(401);
       expect(await code(x)).toBe('UNAUTHENTICATED');
     } finally {
@@ -244,23 +250,38 @@ describe.skipIf(SKIP)('Studies surface routes (feed + export, handler → lib �
     }
   });
 
-  it('export: a markdown download — headers, title, text verbatim, live clipping quoted + attributed', async () => {
+  it('export: the print view — title, text verbatim, live clipping quoted + attributed', async () => {
     const id = await newStudy('Route Surface Export');
     expect((await postBlocks(req('POST', { kind: 'text', body: 'My own words.' }), ctx(id))).status).toBe(201);
     expect((await postBlocks(req('POST', { kind: 'clipping', sectionId }), ctx(id))).status).toBe(201);
 
-    const res = await exportGet(exportReq(id), ctx(id));
+    const res = await exportGet(exportReq(id, 'pdf'), ctx(id));
     expect(res.status).toBe(200);
-    expect(res.headers.get('content-type')).toContain('text/markdown');
+    expect(res.headers.get('content-type')).toContain('text/html');
+
+    const html = await res.text();
+    expect(html).toContain('<h1>Route Surface Export</h1>');
+    expect(html).toContain('My own words.');
+    expect(html).toContain(SECTION_TOKEN);
+    expect(html).toContain('QA Surface Author');
+  });
+
+  it('export: a .docx download — content type and filename', async () => {
+    const id = await newStudy('Route Surface Docx');
+    expect((await postBlocks(req('POST', { kind: 'text', body: 'My own words.' }), ctx(id))).status).toBe(201);
+
+    const res = await exportGet(exportReq(id, 'docx'), ctx(id));
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('officedocument.wordprocessingml');
     const disposition = res.headers.get('content-disposition') ?? '';
     expect(disposition).toContain('attachment');
-    expect(disposition).toContain('route-surface-export.md');
+    expect(disposition).toContain('route-surface-docx.docx');
+  });
 
-    const md = await res.text();
-    expect(md.startsWith('# Route Surface Export')).toBe(true);
-    expect(md).toContain('My own words.');
-    expect(md).toContain(SECTION_TOKEN);
-    expect(md).toContain('QA Surface Author');
+  it('export: markdown is REFUSED, and so is a missing format (owner 2026-08-21)', async () => {
+    const id = await newStudy('Route Surface No Md');
+    expect((await exportGet(exportReq(id, 'md'), ctx(id))).status).toBe(400);
+    expect((await exportGet(exportReq(id), ctx(id))).status).toBe(400);
   });
 
   it('export: a tombstone renders attribution + the notice — no quote bytes, no link (S-10 on the wire)', async () => {
@@ -269,21 +290,21 @@ describe.skipIf(SKIP)('Studies surface routes (feed + export, handler → lib �
 
     await owner!.query(`UPDATE sources SET status = 'staged' WHERE slug = $1`, [SLUG]);
     try {
-      const res = await exportGet(exportReq(id), ctx(id));
+      const res = await exportGet(exportReq(id, 'pdf'), ctx(id));
       expect(res.status).toBe(200);
-      const md = await res.text();
-      expect(md).toContain('QA Surface Author');
-      expect(md).toContain(TOMBSTONE_NOTICE);
-      expect(md, 'the withdrawn text must not be in the file').not.toContain(SECTION_TOKEN);
-      const tombLine = md.split('\n').find((l) => l.includes(TOMBSTONE_NOTICE))!;
-      expect(tombLine, 'a tombstone offers NO link').not.toMatch(/]\(|\/work\//);
+      const html = await res.text();
+      expect(html).toContain('QA Surface Author');
+      expect(html).toContain(TOMBSTONE_NOTICE);
+      expect(html, 'the withdrawn text must not be in the file').not.toContain(SECTION_TOKEN);
+      const tombLine = html.split('\n').find((l) => l.includes(TOMBSTONE_NOTICE))!;
+      expect(tombLine, 'a tombstone offers NO link').not.toMatch(/<a |href=|\/work\//);
     } finally {
       await owner!.query(`UPDATE sources SET status = 'published' WHERE slug = $1`, [SLUG]);
     }
   });
 
   it('export: 404 NOT_FOUND (never 401, never an empty file) for a study the caller does not own', async () => {
-    const res = await exportGet(exportReq(VALID_BUT_FOREIGN), ctx(VALID_BUT_FOREIGN));
+    const res = await exportGet(exportReq(VALID_BUT_FOREIGN, 'pdf'), ctx(VALID_BUT_FOREIGN));
     expect(res.status).toBe(404);
     expect(await code(res)).toBe('NOT_FOUND');
   });
@@ -297,7 +318,7 @@ describe.skipIf(SKIP)('Studies surface routes (feed + export, handler → lib �
        SELECT $1, $2, 'z' || g, 'text', 'x' FROM generate_series(1, $3) g`,
       [id, testUser, EXPORT_MAX_BLOCKS + 1],
     );
-    const res = await exportGet(exportReq(id), ctx(id));
+    const res = await exportGet(exportReq(id, 'pdf'), ctx(id));
     expect(res.status).toBe(422);
     expect(await code(res)).toBe('EXPORT_TOO_LARGE');
   }, 60_000);

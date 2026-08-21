@@ -822,9 +822,8 @@ export function StudyEditor({
                 <a href={`/studies/${study.id}/export?format=pdf`} target="_blank" rel="noreferrer" className="px-4 py-2 hover:bg-stone-50 hover:text-accent-700 dark:hover:bg-stone-800 dark:hover:text-accent-300">
                   PDF (print)
                 </a>
-                <a href={`/studies/${study.id}/export?format=md`} className="px-4 py-2 hover:bg-stone-50 hover:text-accent-700 dark:hover:bg-stone-800 dark:hover:text-accent-300">
-                  Markdown
-                </a>
+                {/* No Markdown: removed 2026-08-21 (owner) — the 2026-08-12 ruling was already
+                    "Word or PDF"; a .md file is plumbing, not something a person hands to a person. */}
               </div>
             </details>
             <button

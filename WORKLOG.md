@@ -1,5 +1,39 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 — Markdown export type REMOVED from Studies (owner ruling)
+
+**Owner, in chat: "why would someone need a markdown file export? Isn't that ai native? Remove
+markdown export type."** Enforced — and it turned out to be the SECOND time this was ruled: the
+2026-08-12 editor-v2 requirement recorded in `study-export-docx.ts`'s own header already said
+"export as a Microsoft Word document or PDF … we cannot export a .md file". The md branch and
+menu item survived that ruling as "markdown kept as the plumbing format"; today it is deleted,
+not kept.
+
+**Removed:** the Markdown item from the study editor's Export menu; the `md` branch of
+`GET /studies/[id]/export` (format is now REQUIRED, `docx|pdf` — the old `md` DEFAULT was a relic
+of the route's origin as the F-W3-3 serializer workaround, so a bare GET now 400s instead of
+silently returning markdown); `web/src/lib/study-export.ts` and its test, deleted whole (bylaw 3 —
+no other callers; git history holds it). `ExportBlock` moved to `study-export-docx.ts`, which now
+owns the one export model both surviving formats render from.
+
+**Repointed, not weakened:** the S-10 tombstone invariant (`clipping-tombstone.test.ts`) and the
+wire-level export tests (`studies-surface-routes.test.ts`) proved the licensing render rule on the
+markdown surface; they now prove it on `studyExportModel` and the print view — same rule, the
+surface that actually ships. New refusal test: `format=md` and missing format both 400.
+
+**Red-proofed:** the no-Markdown-link assertion and the md-refusal test were written first and
+watched RED against the old code (link present; md returned 200), then GREEN after. 33/33 across
+the four touched suites, typecheck + lint clean. `docs/STUDY_DOCS_DESIGN.md` Flow E amended in
+place, at the paragraph a reader meets.
+
+### NOT DONE / UNVERIFIED
+- **No browser look at the Export menu** — the study editor is behind auth and this session
+  cannot sign in (standing limitation, same as UX-2's record). The menu change is covered by the
+  component test's absence assertion; the strict DoD browser leg is open for whoever next signs in.
+- The audit's DB-backed legs ran locally (owner-seeded suites green); full `npm run audit` not
+  re-run for this slice — the history-scope-db sampler red documented 2026-08-21 (night) is still
+  the known standing red and is unrelated to this change.
+
 ## 2026-08-21 — Data-model inspection, then three fixes: one shipped, one filed, one RETRACTED
 
 **Owner ask, in two parts:** overnight, a read-only deep inspection of the backend data model and

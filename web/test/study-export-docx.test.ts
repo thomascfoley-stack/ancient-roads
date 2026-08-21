@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { exportStudyDocx, studyExportModel } from '../src/lib/study-export-docx';
-import type { ExportBlock } from '../src/lib/study-export';
+import type { ExportBlock } from '../src/lib/study-export-docx';
 import type { ServabilityResolution } from '../src/lib/servability';
 
 // The .docx export's MODEL layer (editor v2). Same licensing contract as the markdown

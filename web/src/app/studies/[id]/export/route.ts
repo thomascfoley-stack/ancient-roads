@@ -3,23 +3,26 @@ import { requireUser } from '@/lib/session';
 import { apiError } from '@/lib/api-error';
 import { getStudy, listAllBlocksForExport } from '@/lib/studies';
 import { resolveServability } from '@/lib/servability';
-import { exportStudyMarkdown } from '@/lib/study-export';
 import { exportStudyDocx, studyExportModel, type ExportNode } from '@/lib/study-export-docx';
 
-// GET /studies/[id]/export?format=docx|pdf|md — the study as a download (design Flow E), in the
-// formats people actually hand to other people (editor v2, owner 2026-08-12: Word and PDF, ask
-// which; markdown kept as the plumbing format — it feeds the §12 Google Docs export later).
+// GET /studies/[id]/export?format=docx|pdf — the study as a download (design Flow E), in the
+// formats people actually hand to other people (editor v2, owner 2026-08-12: "Word or PDF …
+// we cannot export a .md file").
+//
+// MARKDOWN WAS REMOVED 2026-08-21 (owner: an AI-native plumbing format, not something a person
+// hands to a person) — and the 2026-08-12 ruling above had already said so; the md branch and
+// menu item survived it as "plumbing kept", which is how a ruling erodes. The serializer lived
+// in lib/study-export.ts (deleted with this change; git history has it if the §12 Google Docs
+// export ever wants a text pipeline — though that export should render from the MODEL below,
+// as both surviving formats do). Format is REQUIRED now: the old `md` default was a relic of
+// this route's origin as the F-W3-3 serializer workaround.
 //
 // EVERY FORMAT IS THE SAME RENDER PATH. One bounded read (listAllBlocksForExport — THROWS past
 // the ceiling; a truncated export is a lie about the document), one fail-closed servability
-// re-check, and then three renderers over the same decided content: the markdown serializer,
-// the .docx model, and the print view — which is the .docx MODEL rendered as print-styled HTML
-// that opens the browser's print dialog ("Save as PDF"). A real PDF engine is a heavy
-// dependency this replaces with the browser the user is already holding; the tradeoff is
-// recorded here, not hidden.
-//
-// (Historical note kept from v1: this route began as the F-W3-3 workaround exposing P1's
-// serializer; it is now the export surface proper.)
+// re-check, and then two renderers over the same decided content: the .docx model, and the
+// print view — which is the .docx MODEL rendered as print-styled HTML that opens the browser's
+// print dialog ("Save as PDF"). A real PDF engine is a heavy dependency this replaces with the
+// browser the user is already holding; the tradeoff is recorded here, not hidden.
 
 export const runtime = 'nodejs';
 
@@ -78,9 +81,9 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   const { id } = await ctx.params;
   if (!UUID_RE.test(id)) return apiError('INVALID_REQUEST', { message: 'study id must be a UUID' });
 
-  const format = new URL(req.url).searchParams.get('format') ?? 'md';
-  if (format !== 'md' && format !== 'docx' && format !== 'pdf') {
-    return apiError('INVALID_REQUEST', { message: "format must be 'docx', 'pdf', or 'md'" });
+  const format = new URL(req.url).searchParams.get('format');
+  if (format !== 'docx' && format !== 'pdf') {
+    return apiError('INVALID_REQUEST', { message: "format must be 'docx' or 'pdf'" });
   }
 
   try {
@@ -99,19 +102,10 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
         },
       });
     }
-    if (format === 'pdf') {
-      // Inline, not attachment: the page IS the deliverable — it opens print-ready and the
-      // browser's dialog does the "Save as PDF".
-      return new Response(printHtml(studyExportModel(study, blocks, resolution)), {
-        headers: { 'content-type': 'text/html; charset=utf-8' },
-      });
-    }
-    const markdown = exportStudyMarkdown(study, blocks, resolution);
-    return new Response(markdown, {
-      headers: {
-        'content-type': 'text/markdown; charset=utf-8',
-        'content-disposition': `attachment; filename="${baseFilename(study.title)}.md"`,
-      },
+    // format === 'pdf' — inline, not attachment: the page IS the deliverable; it opens
+    // print-ready and the browser's dialog does the "Save as PDF".
+    return new Response(printHtml(studyExportModel(study, blocks, resolution)), {
+      headers: { 'content-type': 'text/html; charset=utf-8' },
     });
   } catch (e) {
     if ((e as Error).message.includes('EXPORT_MAX_BLOCKS')) {

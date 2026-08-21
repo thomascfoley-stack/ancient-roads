@@ -269,9 +269,16 @@ thread pinning, delete) — that dependency is a gate, not a footnote.
    The purge is not a one-way door.
 
 ### Flow E — export
-A study serializes to markdown: title, then blocks in order — text verbatim, clippings as
-blockquote + attribution line, tombstones as attribution + notice. One deterministic loop over
-the bounded read. Ships in T1 (review P-2): "durable body of work" includes taking it with you.
+A study serializes to a download: title, then blocks in order — text verbatim, clippings quoted
+with an attribution line, tombstones as attribution + notice. One deterministic loop over the
+bounded read. Ships in T1 (review P-2): "durable body of work" includes taking it with you.
+
+> **Amended 2026-08-21 (owner ruling): the formats are `.docx` and the PDF print view, both
+> rendered from one model (`lib/study-export-docx.ts`). The markdown serializer this flow
+> originally described is REMOVED** — the 2026-08-12 editor-v2 ruling was already "Word or PDF …
+> we cannot export a .md file", and markdown is an AI-native plumbing format, not something a
+> person hands to a person. If the §12 Google Docs export lands, it renders from the model, not
+> from a text format. (Git history holds the deleted serializer: `web/src/lib/study-export.ts`.)
 
 ---
 

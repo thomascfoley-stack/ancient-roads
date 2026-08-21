@@ -4,22 +4,34 @@ import {
   TOMBSTONE_NOTICE,
   type ServabilityResolution,
 } from './servability';
-import type { ExportBlock } from './study-export';
+import type { ServabilityKeyed } from './servability';
 import { clippingDisplay } from './clipping-display';
 
 // Study → Word (.docx) — editor v2, owner requirement 2026-08-12 ("export as a Microsoft Word
-// document or PDF … we cannot export a .md file"). Same contract as the markdown serializer:
-// export is a RENDER PATH, so every block passes through the ONE shared licensing rule
-// (blockRenderState) — the .docx and the .md can disagree about styling, never about what text
-// may appear. The `docx` dependency was surfaced and owner-approved with the requirement.
+// document or PDF … we cannot export a .md file"). Export is a RENDER PATH, so every block
+// passes through the ONE shared licensing rule (blockRenderState) — formats can disagree about
+// styling, never about what text may appear. The `docx` dependency was surfaced and
+// owner-approved with the requirement. (The markdown serializer this module once sat beside
+// was removed 2026-08-21 with the md export type — same owner, enforcing the ruling above.)
 //
 // TWO LAYERS ON PURPOSE. `studyExportModel` is a pure, dependency-free description of the
-// document (tested directly, like the markdown serializer); `exportStudyDocx` maps that model
-// onto docx primitives and packs it. A licensing bug can only live in the model layer, where
-// the tests are.
+// document (tested directly); `exportStudyDocx` maps that model onto docx primitives and packs
+// it, and the print view renders the same model as HTML. A licensing bug can only live in the
+// model layer, where the tests are.
 //
-// Text blocks are the user's markdown, exported as plain paragraphs (split on blank lines) —
+// Text blocks are the user's prose, exported as plain paragraphs (split on blank lines) —
 // markdown SYNTAX is not interpreted in v1; the user's prose is what Word receives.
+
+/** A block as the bounded export read returns it. Moved here from study-export.ts (deleted). */
+export interface ExportBlock extends ServabilityKeyed {
+  kind: 'text' | 'clipping';
+  body: string | null;
+  quote: string | null;
+  attribution: { author?: string; work_title?: string; reference?: string } | null;
+  /** Trim offsets (111): exports show the same excerpt the editor shows, ellipses included. */
+  trim_start?: number | null;
+  trim_end?: number | null;
+}
 
 export type ExportNode =
   | { type: 'title'; text: string }

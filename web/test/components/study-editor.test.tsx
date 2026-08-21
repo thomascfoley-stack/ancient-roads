@@ -292,9 +292,10 @@ describe('StudyEditor — title, pin, export', () => {
     expect(screen.getByRole('link', { name: 'PDF (print)' }).getAttribute('href')).toBe(
       `/studies/${STUDY.id}/export?format=pdf`,
     );
-    expect(screen.getByRole('link', { name: 'Markdown' }).getAttribute('href')).toBe(
-      `/studies/${STUDY.id}/export?format=md`,
-    );
+    // NO Markdown option. The 2026-08-12 ruling was already "Word or PDF … we cannot export a
+    // .md file" (study-export-docx.ts header); the menu item survived it anyway until the owner
+    // re-ruled on 2026-08-21. Asserted as absence so it cannot quietly come back.
+    expect(screen.queryByRole('link', { name: 'Markdown' })).toBeNull();
   });
 });
 

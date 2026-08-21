@@ -10,10 +10,11 @@
 //        (reader path, section_id only) — and FAIL-CLOSED: the lookup is made to throw (a
 //        malformed BIGINT key forces a real cast error, no mocks) and every keyed clipping
 //        tombstones, failedClosed=true.
-//   S-10 The render rule is proven on a real surface: exportStudyMarkdown (lib/study-export.ts —
-//        the one shipped render path P1 owns) emits attribution + TOMBSTONE_NOTICE for the
-//        tombstone, never the quote bytes, never a link. The on-screen rule is the SAME
-//        blockRenderState, asserted directly.
+//   S-10 The render rule is proven on a real surface: studyExportModel (lib/study-export-docx.ts
+//        — the shipped export path since the 2026-08-21 markdown removal; both remaining formats,
+//        .docx and the print view, render from this one model) emits attribution +
+//        TOMBSTONE_NOTICE for the tombstone, never the quote bytes, never a link. The on-screen
+//        rule is the SAME blockRenderState, asserted directly.
 //
 // Pins S-2/S-3/S-10 (docs/STUDY_DOCS_DESIGN.md §8). Motivated by finding F2 (§3) and the
 // ask-history audit's F-4: the library is not static (2026-08-06: two works quarantined back
@@ -45,7 +46,9 @@ import {
   type ServabilityKeyed,
   type ServabilityResolution,
 } from '@/lib/servability';
-import { exportStudyMarkdown } from '@/lib/study-export';
+// The export surface is the .docx/print MODEL since the 2026-08-21 markdown removal; S-10 is
+// proven over its nodes — same render rule, same one shared servability decision.
+import { studyExportModel, type ExportNode } from '@/lib/study-export-docx';
 import { ensureDbEnv, seedOwnerUrl } from '../helpers/env';
 import { announceSkip } from '../helpers/loud-skip';
 
@@ -167,15 +170,16 @@ describe.skipIf(SKIP)('S-2/S-3/S-10 — the servability re-check and the tombsto
       // S-3, shape coverage: the OTHER leg (source_id-only, ask shape) is untouched by this leg.
       expect(blockRenderState(live, resolution), 'the ask-leg clipping must stay live').toBe('clipping');
 
-      // S-10 on a real render surface: the export shows attribution + notice, never the bytes,
-      // never a link.
-      const md = exportStudyMarkdown({ title: 'Tombstone QA' }, blocks, resolution);
-      expect(md).toContain('QA Tomb Author');
-      expect(md).toContain(TOMBSTONE_NOTICE);
-      expect(md, 'the withdrawn text must not render').not.toContain(SECTION_TOKEN);
-      const tombLine = md.split('\n').find((l) => l.includes(TOMBSTONE_NOTICE))!;
-      expect(tombLine, 'a tombstone offers NO link').not.toMatch(/]\(|\/work\//);
-      expect(md, 'the live clipping still renders its bytes').toContain(EMBED_CONTENT);
+      // S-10 on a real render surface: the export model shows attribution + notice, never the
+      // bytes, never a link. Nodes carry only text — no href field exists on any node type, so
+      // "no link" is asserted over every node's text.
+      const nodes = studyExportModel({ title: 'Tombstone QA' }, blocks, resolution);
+      const allText = nodes.map((n: ExportNode) => n.text).join('\n');
+      expect(allText).toContain('QA Tomb Author');
+      expect(nodes.some((n: ExportNode) => n.type === 'notice' && n.text.includes(TOMBSTONE_NOTICE))).toBe(true);
+      expect(allText, 'the withdrawn text must not render').not.toContain(SECTION_TOKEN);
+      expect(allText, 'a tombstone offers NO link').not.toMatch(/\/work\//);
+      expect(allText, 'the live clipping still renders its bytes').toContain(EMBED_CONTENT);
     } finally {
       await owner!.query(`UPDATE sources SET status = 'published' WHERE slug = $1`, [SLUG]);
     }
@@ -239,9 +243,10 @@ describe.skipIf(SKIP)('S-2/S-3/S-10 — the servability re-check and the tombsto
     const { resolution } = await readAndResolve();
     expect(resolution.servableSectionIds.has(String(sectionId)), 'precondition: section servable').toBe(true);
     expect(blockRenderState(purged, resolution)).toBe('tombstone');
-    const md = exportStudyMarkdown({ title: 'Tombstone QA' }, [purged as never], resolution);
-    expect(md).toContain('QA Tomb Author');
-    expect(md).toContain(TOMBSTONE_NOTICE);
-    expect(md.split('\n').find((l) => l.includes(TOMBSTONE_NOTICE))!, 'a tombstone offers NO link').not.toMatch(/]\(|\/work\//);
+    const nodes = studyExportModel({ title: 'Tombstone QA' }, [purged as never], resolution);
+    const allText = nodes.map((n: ExportNode) => n.text).join('\n');
+    expect(allText).toContain('QA Tomb Author');
+    expect(nodes.some((n: ExportNode) => n.type === 'notice' && n.text.includes(TOMBSTONE_NOTICE))).toBe(true);
+    expect(allText, 'a tombstone offers NO link').not.toMatch(/\/work\//);
   }, 60_000);
 });
