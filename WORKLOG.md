@@ -1,5 +1,47 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 — THE LEXICON FLIP IS DONE ON PROD: 5 works published, 52,043 rows served, /ask verified untouched
+
+**Owner-executed at the terminal ~18:03 UTC, gate held.** Continuation of the /word-shelf entry
+below. Migration 123 applied to prod first (this session, owner's explicit go in chat; index
+verified `indisvalid` + live `EXPLAIN` shows the planner on it — bitmap scan, cost ~12, vs the
+2,497 ms heap scan). Then the flip: 5 of 5 census-eligible, snapshot
+`flip-pre-snapshot-2026-08-21T17-42-00-008Z.json` (838 rows + served state) written before
+COMMIT, [run log](docs/evidence/work-order-v2-stage2/flip-run-2026-08-21T17-41-51-237Z.log).
+The transaction ran **~21 minutes** — the A9 served-sync UPDATE
+(`metadata->>'work' = ANY(slugs)`, no index) seq-scanned the flat embeddings table on a cold
+compute; watched live the whole way (`pg_stat_activity`: active on PS_ReadIO/FileCache_Read,
+never blocked). Do not Ctrl-C this next time; it is working.
+
+- **A dev-based prediction was WRONG, caught by measuring:** I forecast the served-sync would
+  move 0 rows (it moved 0 on dev). On PROD it moved **52,043 rows -> served=true** — prod's
+  lexicon embeddings carry `metadata->>'work'` (dev's lineage differs). Every claim about the
+  serving set below is therefore re-measured, not carried.
+- **/ask is untouched — verified four ways, not asserted:** every vector lane is type-fenced
+  (`EXEGETICAL_TYPE_SQL` = commentary+father; sermon; theology+confession; song-verse applies
+  `SONG_VERSE_TYPE_SQL` at both query sites routing.ts:365/374); `PROSE_TYPE_SQL` (the one list
+  containing 'lexicon') has **zero query consumers** — vestigial; the exegetical FTS leg runs
+  over `commentary_entries`, which holds **0 lexicon rows** (measured by work-slug AND title
+  heuristic); so the 52,043 served vectors are reachable by NO shipped query. Retrieval pools
+  unchanged ⇒ no accuracy-gate obligation. D4's "lexicons are served by nothing — no lane
+  exists" stays true at the query level.
+- **Finding, filed (E-lane shape, inert today):** lexicon embedding rows carry
+  `register='prose'` — misdeclared. `EXEGETICAL_FTS_EXCLUSION` is a NOT-list that fails OPEN on
+  it, so if lexicon rows ever reach a searched table (a future materialization, an unfenced
+  query), they leak into exegesis exactly like hort-james1909. Cheap durable fix is corpus
+  metadata: stamp `register='lexicon'`. Until then the fence is the type-fenced lanes.
+- Post-flip prod state: 389 published / 446 staged / 3 quarantined sources. H430 shelf row
+  serves (bdb-lexicon, 1 row; shipped query 815 ms cold, index-backed). Reverse ritual is in
+  the run log.
+
+### NOT DONE / UNVERIFIED
+
+- **/word/H430 NOT yet verified on the live site** — the deploy carrying 135d492 was in flight
+  (git-66's wave) at write time; the DB side is done, the page lights when the deploy lands.
+- Push freeze honored: this commit is LOCAL until CI run 32510118724 reports (owner ruling via
+  peer relay — `cancel-in-progress: true`, first potential db-invariants verdict ever).
+- The `register='prose'` metadata fix — filed above, not built.
+
 ## 2026-08-21 — "Do it all": the uploader remediation programme, both waves, executed
 
 **Owner directive: implement everything open from the uploader deep-dive, loop-tested, smooth and
