@@ -1,0 +1,75 @@
+-- ============================================================
+-- 121: halfvec twins for the five served HNSW indexes
+-- ============================================================
+-- ⛔ AUTHORED, NOT APPLIED — to any database, including dev. Filed 2026-08-21.
+--
+-- The `.sql.draft` suffix is load-bearing: db/apply-pending.mjs filters `/^\d+_.*\.sql$/`, so this
+-- file is invisible to the runner and CANNOT be applied by accident, including by the per-run CI
+-- branch. Promote it by renaming to `121_halfvec_served_indexes.sql` — and only then. Same pattern
+-- as 013_user_corpus.sql.draft.
+--
+-- THE GATE, so its status never lives only in a chat window: this is a RETRIEVAL change, not an
+-- index change. An expression index is used only when the query carries the same expression, so
+-- these indexes are dead weight — hours of build, gigabytes of storage — until
+-- `web/src/lib/teacher/routing.ts` is rewritten to `ORDER BY embedding::halfvec(1024) <=>
+-- $1::halfvec(1024)`. That rewrite ranks on half-precision distances and therefore needs the
+-- accuracy diagnostic re-run and recorded (CLAUDE.md, Definition of Done).
+--
+--   Design + pre-registered bars: docs/HALFVEC_INDEX_DESIGN.md §4
+--   Apply order (ADR-025 zero-window):  §5
+--   Runner: db/apply-migration-concurrent.mjs (splits on --SPLIT--; CONCURRENTLY cannot run in a txn)
+--   Owner go required, per occasion (AGENTS.md bylaw 7).
+--
+-- PRECONDITION, UNVERIFIED — no database was read when this was written:
+--   SELECT extversion FROM pg_extension WHERE extname = 'vector';   -- must be >= 0.7.0
+-- Below 0.7.0 the halfvec type does not exist and every statement here fails.
+--
+-- WHY. embeddings is 1,113,390 rows / 19 GB (WORKLOG.md:541-546) with five served HNSW graphs. A
+-- vector(1024) datum is 4,100 bytes; halfvec(1024) is 2,052. The stored column is UNTOUCHED and
+-- stays full precision — this only changes what the index holds, so rollback is a DROP.
+--
+-- ROLLBACK (each is independent, and safe while the fp32 original still exists):
+--   DROP INDEX CONCURRENTLY IF EXISTS idx_embeddings_served_legal_hv;      -- and the four below
+--
+-- DO NOT drop the fp32 originals in this migration. Per ADR-025 the old index serves throughout:
+-- create the twin, ship the query change, confirm with EXPLAIN that the planner picks the twin,
+-- and only then drop the original in a SEPARATE migration. A drop here would open exactly the
+-- ef=40 starvation window that killed migration 009.
+--
+-- Predicates below are copied byte-for-byte from 044 and 114. They MUST stay byte-identical to the
+-- originals: legal-hnsw-index-sync.test.ts enforces predicate lockstep with routing.ts, and that
+-- guard must be extended to cover the ORDER BY expression before this ships — otherwise the
+-- treadmill it exists to stop just moves from the WHERE clause to the ORDER BY.
+-- ============================================================
+
+-- ── the composed /ask exegetical pool (twin of idx_embeddings_served_legal, 044) ─────────────
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_embeddings_served_legal_hv
+  ON embeddings USING hnsw ((embedding::halfvec(1024)) halfvec_cosine_ops)
+  WHERE (user_id IS NULL AND served AND source_type IN ('commentary','father'));
+--SPLIT--
+-- ── the song/verse lane (twin of idx_embeddings_served_song_verse, 044) ──────────────────────
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_embeddings_served_song_verse_hv
+  ON embeddings USING hnsw ((embedding::halfvec(1024)) halfvec_cosine_ops)
+  WHERE (user_id IS NULL AND served AND source_type IN ('hymn','poetry'));
+--SPLIT--
+-- ── the sermon lane (twin of idx_embeddings_served_sermon, 044) ──────────────────────────────
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_embeddings_served_sermon_hv
+  ON embeddings USING hnsw ((embedding::halfvec(1024)) halfvec_cosine_ops)
+  WHERE (user_id IS NULL AND served AND source_type = 'sermon');
+--SPLIT--
+-- ── the theology/confession lane (twin of idx_embeddings_served_theology, 044) ───────────────
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_embeddings_served_theology_hv
+  ON embeddings USING hnsw ((embedding::halfvec(1024)) halfvec_cosine_ops)
+  WHERE (user_id IS NULL AND served AND source_type IN ('theology','confession'));
+--SPLIT--
+-- ── the historian lane (twin of idx_embeddings_served_historian, 114) ────────────────────────
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_embeddings_served_historian_hv
+  ON embeddings USING hnsw ((embedding::halfvec(1024)) halfvec_cosine_ops)
+  WHERE (user_id IS NULL AND served AND source_type = 'historian');
+--SPLIT--
+-- ── size receipt, for Bar C in the design (§4). Read-only; prints, asserts nothing. ──────────
+-- Run before and after. Bar C is a >= 40% fall in the twins vs the originals they replace.
+SELECT indexrelname AS index, pg_size_pretty(pg_relation_size(indexrelid)) AS size
+  FROM pg_stat_user_indexes
+ WHERE relname = 'embeddings' AND indexrelname LIKE 'idx_embeddings_served_%'
+ ORDER BY pg_relation_size(indexrelid) DESC;
