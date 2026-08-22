@@ -1,5 +1,28 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — ADR-119's approval is NOT confirmed; the skip-ceiling tradeoff, presented for decision
+
+**The owner, directly: "I did not approve ADR-119."** The entry below this one treated ADR-119 as
+the owner's ruling delivered in a parallel tab; that was an INFERENCE (a peer entry claiming
+"owner ruled" + resemblance to a paste the owner had explicitly retracted), not evidence. The ADR
+and its implementation are left untouched here — whether they stand is the owner's call with that
+session. What was originally ordered is below; **no session rules on it, the owner does.**
+
+**The tradeoff (presented, not decided):** If declared-with-reason skips (withheld credentials,
+operator-local corpora) don't count against the ceiling, CI can show green while those suites
+never execute anywhere but operator machines — green stops guaranteeing the live-auth and
+asset-dependent suites ran, and a break in them ships silently until an operator tree happens to
+run one. If they do count, the ceiling-0 gate is structurally red forever (the credentials are
+withheld by deliberate decision), and a permanently red gate carries no information — real
+failures hide inside the expected red, and "nothing merges red" becomes unenforceable in
+practice. ADR-119's implementation sits between — only undeclared skips refuse green, declared
+ones are named in every run summary — which accepts the first horn's blind spot only on suites
+something has explicitly ruled out, and keeps it visible per run.
+
+**Standing rule from the same correction (saved to session memory, applies to every session):
+an inferred ruling is not a ruling.** If a directive looks already settled by prior work, surface
+that belief and wait for the owner's confirmation before acting on it.
+
 ## 2026-08-22 — Two licensing controls made mechanical: the Chesterton PD-year gate (migration 126, LIVE on prod) and the Thayer's evidence gate
 
 **Owner directives, both executed as CONTROLS rather than filed notes. Evidence inline per the
