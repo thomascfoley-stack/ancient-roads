@@ -44,12 +44,31 @@ normally, so the `1` comes from `process.exitCode` set in the new `finally` and 
 An earlier throw-based leg was also run and is the weaker of the two: it wrote `captured 3/10,
 complete: false` correctly, but its exit code was not attributable to this check.
 
-## NOT DONE
+## Now guarded in CI — the first version of this file said it could not be
 
-- **No CI test.** `captureVerdict` is exported and pure, but importing it pulls the module's
-  top-level `neon(...)` construction and the whole `routing.ts` import graph, so a unit test needs
-  either an env shim or extracting the function to its own module — premature at one call site
-  (CLAUDE.md: inline until the 3rd). The property is proven by execution above and **is not
-  guarded on every push.** Stated rather than papered over.
+**The original NOT DONE here was wrong, and a reviewer caught it the same day.** It read: "a unit
+test needs either an env shim or extracting the function to its own module", so the property was
+proven once and not guarded. That reasoning assumed the test had to **import** `captureVerdict` —
+but the red-proof above never imported anything. It ran the script offline as a process.
+
+`web/test/invariants/eval-whole-capture.test.ts` does exactly that: drives the real script as a
+**subprocess**, so it needs neither the `neon()` construction nor the `routing.ts` graph, and it
+exercises the artifact, the exit code and the loop together — which importing the pure function
+never could. Both legs run in CI, offline:
+
+| leg | invocation | asserts |
+|---|---|---|
+| GREEN | `--frozen --cats control` | 10/10 records, `complete: true`, exit `0` |
+| RED | `… --stop-after 3` | 3/10 records, `complete: false`, exit **non-zero** |
+
+`--stop-after N` was added for the red leg so CI can execute it **without mutating the source**.
+It is self-announcing rather than a trap: any run using it writes `complete: false` and exits
+non-zero, which is the property being demonstrated.
+
+**The test was itself watched RED** (THE_LOOP rule 4). Seeding the defect the check exists for —
+`writeCapture` forced to report `complete: true` unconditionally — fails the RED leg with
+`expected true to be false`, while the GREEN leg still passes. Reverted, both green.
+
+## NOT DONE
 - Not yet run against a real query set (needs DB + DeepInfra); the control-only path exercises the
   capture machinery end to end but not the scored branch's `records.push`.

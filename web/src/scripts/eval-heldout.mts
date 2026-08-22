@@ -38,6 +38,11 @@ const EF = Number(argVal('--ef') ?? HNSW_EF_SEARCH); // hnsw.ef_search sweep kno
 const CAT_FILTER = argVal('--cats')?.split(',');
 const CAP = Number(argVal('--cap') ?? PASSAGE_CAP); // per-passage cap sweep knob
 const NO_RERANK = process.argv.includes('--no-rerank'); // §2 diagnosis: keep pure vector order
+// --stop-after N: halt the run after N queries. Exists so the WHOLE-CAPTURE completeness check
+// has a red leg that CI can execute without mutating this file (see the capture block below and
+// test/invariants/eval-whole-capture.test.ts). It is self-announcing, not a trap: any run that
+// uses it writes `complete: false` and exits non-zero, which is the whole point.
+const STOP_AFTER = argVal('--stop-after') ? Number(argVal('--stop-after')) : null;
 // Sermon-lane diagnosis (2026-07-18): read-only pool-exclusion knobs. Measure the
 // exegetical pool with certain source_types/works removed, through the SHIPPED
 // legalBasePool path. --exclude-types sermon · --exclude-works spurgeon-sermons.
@@ -397,6 +402,7 @@ async function main() {
   const startedAt = new Date().toISOString();
   try {
   for (const q of set) {
+    if (STOP_AFTER !== null && records.length >= STOP_AFTER) break;
     const t = tally[q.cat]!; t.n++;
     if (q.cat === 'control') {
       const floored = resolveIntent(q.query).floor.length > 0;

@@ -22,9 +22,12 @@ three is 70% at n=10, 74.1% is the exact binomial.
 
 ### NOT DONE / UNVERIFIED
 
-- **No CI test for the completeness check.** Proven by execution, not guarded on every push —
-  `captureVerdict` is pure but its module drags `neon()` + the `routing.ts` graph. Stated, not
-  papered over.
+- ~~**No CI test for the completeness check.**~~ **CLOSED same session, and the reasoning that
+  deferred it was wrong.** It assumed a test must IMPORT `captureVerdict` (which drags `neon()` +
+  the `routing.ts` graph) — but the red-proof itself never imported anything, it ran the script as
+  a process. `web/test/invariants/eval-whole-capture.test.ts` drives the real script as a
+  subprocess, offline, and guards BOTH legs (`--stop-after 3` gives CI a red leg without mutating
+  the source). The test was watched red against a seeded defect. Caught by kimi's review, not by me.
 - **The scored branch's `records.push` is untested** — the control-only red-proof exercises the
   capture machinery but not the HIT@1/HIT@2 record path. Needs one real run with credentials.
 - **The proper-noun HIT@2 bar is STILL UNRULED** and stays that way: ADR-116 records it as an
