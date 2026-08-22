@@ -5,6 +5,8 @@
 // docs/HELDOUT_EVAL_DESIGN.md.  Default set = PILOT (plumbing); --frozen = the 120.
 //   cd web && npx tsx --env-file=.env.local src/scripts/eval-heldout.mts [--frozen]
 
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { neon } from '@neondatabase/serverless';
 import { parseRef } from '../bible/ref-parse';
 import { resolveIntent } from '../bible/pericopes';
@@ -209,6 +211,64 @@ const BOOKS = ['Gen', 'Exod', 'Lev', 'Num', 'Deut', 'Josh', 'Judg', 'Ruth', '1Sa
 const loc = (v: number) => `${BOOKS[Math.floor(v / 1e6) - 1]}${Math.floor((v % 1e6) / 1000)}`;
 const shortAuthor = (a: string) => ({ 'John Gill': 'Gill', 'Jamieson, Fausset & Brown': 'JFB', 'Adam Clarke': 'Clarke', 'Matthew Henry': 'Henry', 'John Chrysostom': 'Chrys', 'Augustine of Hippo': 'Aug' })[a] ?? a.slice(0, 6);
 
+// ── WHOLE-CAPTURE — the harness writes its own evidence ───────────────────────────────────────
+// Until 2026-08-21 this harness emitted to stdout ONLY (no writeFile anywhere in the file), so
+// whether a run's evidence survived depended entirely on whoever piped it. The 2026-08-19 P4.n
+// baseline lost 79 of 120 queries to a truncated capture and NOTHING in the output said so: the
+// per-query diff that decided a corpus flip covered a third of the set while reading as whole.
+// Two of three runs in that sequence lost evidence the same way.
+//
+// The property is COMPLETENESS, and it is asserted, not hoped for: one record per query, the
+// count the run expected, and a `complete` flag comparing them. A run that dies mid-loop still
+// writes what it had, marked incomplete, and exits non-zero — so a partial run is loud instead of
+// silent. Absence of the file is itself a signal (the process never reached the end).
+//
+// This does NOT replace stdout; the console output is unchanged. It removes the pipe from the
+// evidence path, which is where the losses happened.
+
+type QRecord = {
+  id: string;
+  cat: Cat;
+  query: string;
+  expected: string[];
+  /** control rows: null — a control has no HIT, only the hijack check. */
+  hit1: boolean | null;
+  hit2: boolean | null;
+  voices: number | null;
+  code: string;
+};
+
+/** Pure, so the completeness verdict is testable without a database or a provider. */
+export function captureVerdict(expected: number, captured: number): { complete: boolean; message: string } {
+  if (captured === expected) return { complete: true, message: `captured ${captured}/${expected}` };
+  return {
+    complete: false,
+    message: `INCOMPLETE CAPTURE — ${captured}/${expected} queries recorded. This run's numbers are a `
+      + `partial tail and must NOT be reported as a result (docs/evidence/p4n-flip-2026-08-19).`,
+  };
+}
+
+function writeCapture(setName: string, expected: number, records: QRecord[], startedAt: string): boolean {
+  const verdict = captureVerdict(expected, records.length);
+  const out = argVal('--out')
+    ?? new URL(`../../../docs/evidence/heldout/${setName}-${startedAt.replace(/[:.]/g, '-')}.json`, import.meta.url).pathname;
+  const payload = {
+    set: setName,
+    expected,
+    captured: records.length,
+    complete: verdict.complete,
+    config: { K, pool: POOL, ef: EF, cap: CAP, noRerank: NO_RERANK, cats: CAT_FILTER ?? null, rerankModel: RERANK_MODEL },
+    startedAt,
+    finishedAt: new Date().toISOString(),
+    records,
+  };
+  mkdirSync(dirname(out), { recursive: true });
+  writeFileSync(out, `${JSON.stringify(payload, null, 2)}\n`);
+  console.log(`\ncapture → ${out}  (${verdict.message})`);
+  if (!verdict.complete) console.error(verdict.message);
+  return verdict.complete;
+}
+
 type Code = 'pass' | '<2-voices' | 'wrong-passage' | 'no-content';
 interface Tally { n: number; hit1: number; hit2: number; codes: Record<Code, number> }
 const blank = (): Tally => ({ n: 0, hit1: 0, hit2: 0, codes: { pass: 0, '<2-voices': 0, 'wrong-passage': 0, 'no-content': 0 } });
@@ -330,12 +390,19 @@ async function main() {
   let hijacks = 0;
 
   console.log(`Held-out eval — ${setName} · ${set.length} q · K=${K} · corpus=legal(shared) · pool=${POOL} · ef=${EF}${CAT_FILTER ? ` · cats=${CAT_FILTER.join(',')}` : ''}\n`);
+  // Whole-capture: accumulate here, write in the finally below so a run that dies mid-loop still
+  // leaves its partial evidence MARKED partial rather than leaving nothing (or, worse, a truncated
+  // stdout tail that reads as complete).
+  const records: QRecord[] = [];
+  const startedAt = new Date().toISOString();
+  try {
   for (const q of set) {
     const t = tally[q.cat]!; t.n++;
     if (q.cat === 'control') {
       const floored = resolveIntent(q.query).floor.length > 0;
       if (floored) { hijacks++; console.log(`  ✗ [control] ${q.id}  HIJACK (floor fired) — ${q.query}`); }
       else { t.hit1++; console.log(`  ✓ [control] ${q.id}  clean (no floor) — ${q.query}`); }
+      records.push({ id: q.id, cat: q.cat, query: q.query, expected: q.expected, hit1: null, hit2: null, voices: null, code: floored ? 'control-hijack' : 'control-clean' });
       continue;
     }
     const exp = toRanges(expectedFor(q));
@@ -350,6 +417,11 @@ async function main() {
     else code = (await hasContent(exp)) ? 'wrong-passage' : 'no-content';
     if (hit1) t.hit1++; if (hit2) t.hit2++; t.codes[code]++;
     console.log(`  ${hit2 ? '✓' : '·'} [${q.cat}] ${q.id}  HIT@1=${hit1 ? 'Y' : 'n'} voices=${authors.size} ${code}  — ${q.query.slice(0, 46)}`);
+    records.push({ id: q.id, cat: q.cat, query: q.query, expected: q.expected, hit1, hit2, voices: authors.size, code });
+  }
+  } finally {
+    // Runs on the happy path AND on a throw: partial evidence, marked partial, is the point.
+    if (!writeCapture(setName, set.length, records, startedAt)) process.exitCode = 1;
   }
 
   const pct = (x: number, d: number) => (d === 0 ? '  —  ' : `${Math.round((100 * x) / d)}%`.padStart(4));

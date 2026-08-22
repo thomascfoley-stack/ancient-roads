@@ -1,5 +1,48 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 (late) — Whole-capture: the eval harness now writes its own evidence
+
+**Done.** `eval-heldout.mts` emitted to stdout ONLY — no `writeFile` in the file — so evidence
+survival depended on whoever piped it. That cost the 2026-08-19 P4.n commentary-flip adjudication
+**79 of 120 queries**; the per-query diff behind an 87-work corpus flip covered a third of the set
+and read as whole. The harness now writes one record per query plus the count it expected, with a
+`complete` flag; a run that dies mid-loop writes its partial evidence MARKED partial and exits
+non-zero. stdout unchanged.
+
+**Red-proofed both legs, offline** (`--frozen --cats control` needs neither DB nor DeepInfra):
+GREEN exit 0 / 10-of-10 / `complete: true`; RED exit **1** / 3-of-10 / `complete: false`. The red
+leg is a silent `break`, not a throw, on purpose — a throw would have proven the pre-existing
+`.catch(process.exit(1))` rather than this check. [Evidence](docs/evidence/heldout/whole-capture-redproof-2026-08-21.md).
+
+**Also this session (docs, `823cfdf`):** MASTER's D4 row claimed the prod `/ask` stage-split still
+needed timers deployed while the owner-gated n=25 prod run sat in `docs/evidence/ask-latency/` from
+the same day — and its verdict is the OPPOSITE of the dev-local row it sat in (compose **74.4%**,
+Rule 1 FIRES, vs 50.3% untriggered). `DECISIONS.md:1857` called 74% "the rule of three"; rule of
+three is 70% at n=10, 74.1% is the exact binomial.
+
+### NOT DONE / UNVERIFIED
+
+- **No CI test for the completeness check.** Proven by execution, not guarded on every push —
+  `captureVerdict` is pure but its module drags `neon()` + the `routing.ts` graph. Stated, not
+  papered over.
+- **The scored branch's `records.push` is untested** — the control-only red-proof exercises the
+  capture machinery but not the HIT@1/HIT@2 record path. Needs one real run with credentials.
+- **The proper-noun HIT@2 bar is STILL UNRULED** and stays that way: ADR-116 records it as an
+  outstanding owner decision. Analysis converged on 85% gated on the POINT ESTIMATE at **n=20**
+  (17/20 is the exact rung; n=19 has none — its achievable values jump 84.2% → 89.5%, so "85% at
+  n=19" would write one bar and enforce another). Power, honestly: a true-75% system fails ~77.5%,
+  a system sitting at the bar fails ~35%. **Not recorded as a ruling — an agent may not make it.**
+- **Item 3 (clipping → `ask_outcome` link) NOT STARTED.** Un-backfillable: every day of gated-beta
+  traffic without it is training signal permanently lost. `study_blocks` carries `source_id` for
+  ask-surface clippings but no link to the `ask_outcomes` row, so today the join is a lossy
+  user+source+time-window match. Next.
+- **The doc-restatement guard NOT BUILT.** Design settled (CLAUDE.md may carry ruled values but
+  must match `DECISIONS.md`; all other files may not carry them at all). Note for whoever builds
+  it: parsing expected values out of `DECISIONS.md` looks like watchlist instance fourteen but is
+  not — the derivation source is not the thing under test; the other docs are. Write that in the
+  file or someone will "fix" it into a hardcoded list.
+
+
 ## 2026-08-21 (evening) — The owner's list, knocked out
 
 **Owner: "do them, knock all of these out." All seven, executed, each verified:**
