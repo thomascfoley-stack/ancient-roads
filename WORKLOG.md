@@ -1,5 +1,35 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — Session close-out: two detached DB jobs run to completion unattended; the handoff
+
+**Owner closed the session at 41 min. Both jobs are detached (nohup) and survive it.** State at
+close and what a future session inherits — everything re-measurable from the DATABASES, no log
+dependency:
+
+- **Relabel (prose→lexicon, flat embeddings):** DEV COMPLETE — final group-by is exactly one
+  group, `register='lexicon' n=83,270`, matching the pre-write census sum (an earlier "83,280"
+  in the entry below was an addition slip). PROD was 14,000/83,270 at close, same idempotent
+  2,000-row batches; the process finishes on its own and its own final group-by is the receipt.
+  **Re-verify anytime:** `SELECT metadata->>'register', count(*) FROM embeddings WHERE user_id
+  IS NULL AND source_type='lexicon' GROUP BY 1` — one row, `lexicon`, 83,270, on each env.
+- **Vector unification (six works, bare-body D1(b)):** DEV had bdb (9,794) + eastons + isbe
+  (26,475) done, naves in flight, smiths + thayers queued; ~51 sections truncated over-window
+  (adaptive shrink, the backfill's own idiom), **0 failed**. The process finishes DEV and stops.
+  **NOT DONE, inherited:** (1) verify DEV with `web/test/invariants/section-vector-pairing.test.ts`
+  (lexicon samples should reproduce ~1.0 from bare body); (2) on green, run the same script
+  against PROD (`unify-lexicon-vectors.cjs prod` — recreate from this entry's spec or the
+  scratchpad if it survives: re-embed the six works' section_embeddings from
+  `body.slice(0,1800)`, `BAAI/bge-large-en-v1.5`, batch 64, bisect+shrink on 400s);
+  (3) append final numbers here.
+- **Owner call, banked for the next menu:** delete the 2,865 stale thayers flat rows (served
+  but mapping to no live section — unreachable by any query; measured in
+  docs/evidence/thayers-source-verification.md). Reversible only by re-copy; recommendation:
+  delete, they are dead weight.
+
+Everything else from the night is DONE and recorded: the /word shelf + lexicon flip live, F5
+achieved, ADR-118/119 sourced, migration 020/123/126 applied, Thayer's verified, the CI asset
+pipeline, the skip-manifest repairs.
+
 ## 2026-08-22 — "Get it live": abe5252 deployed, 125 applied first, /ask fails closed
 
 Owner: "ok everything is live now? If not get it live." Measured (not assumed): main was fully
