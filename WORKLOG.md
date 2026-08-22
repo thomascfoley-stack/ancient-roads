@@ -28,8 +28,13 @@
 5. **fix/chesterton-surname-gate merged** (16/16 gate tests) — the prevention rule now rides main.
 6. **The history similarity floor** — calibrated (real 0.71-0.75 vs nonsense 0.44-0.54),
    pre-registered at 0.6, 8/8 nonsense suppressed, entity heroes kept; shipped WITH the lane's
-   ef_search fix and a cosine backfill so the floor judges semantics. Prod recall projected from
-   calibration; post-deploy walk owed. `docs/evidence/history-similarity-floor-2026-08-21.md`.
+   ef_search fix and a cosine backfill so the floor judges semantics. **LIVE and WALKED on prod
+   2026-08-22T03Z** — deploy `3a6b1b5` (`dpl_EPeGyKDrmPUBNccJ6jWSNrzkVj1U`, receipt committed) after a
+   peer session measured that 40823ee was committed-not-live (my "docs-only" delta claim was
+   WRONG; the diff had five runtime files). Walk through the shipped searchHistory against prod
+   data: all 3 previously-hero-producing nonsense queries now NONE/0; Nicaea and Josephus keep
+   their entity heroes. The ANN post-filter recall finding in the same module stays OPEN and is
+   its finder's, not closed by this. `docs/evidence/history-similarity-floor-2026-08-21.md`.
 7. **main fast-forwarded to the tip** — main IS the product for the first time since 2026-08-01.
 
 Remaining for the owner alone: the signed-in product walk (upload a sermon — closes B019/B022's

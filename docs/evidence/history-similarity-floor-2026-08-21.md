@@ -29,3 +29,32 @@ measurement; the post-deploy walk is where it gets confirmed. Also shipped with 
 history vector lane's ef_search starvation fixed (set_config rides the same transaction — the
 stateless-driver rule), and EVERY text candidate now carries a real cosine via one batch lookup,
 so the floor judges semantics, never word-hits.
+
+## Post-deploy walk — PROD, 2026-08-22T03:16Z (the owed leg, now paid)
+
+Deploy `3a6b1b5` live and alias-verified (`dpl_EPeGyKDrmPUBNccJ6jWSNrzkVj1U`). The battery ran
+through the SHIPPED `searchHistory` at the deployed sha (deploy worktree), against production
+data, read-only. The gate cookie was unavailable to the agent (SITE_PASSWORD lives only in
+Vercel's env), so the lambda wrapper is covered separately: the ungated endpoint returns 401
+(middleware holding) and the alias receipt pins the sha; the wrapper is unchanged by 40823ee.
+
+| query | closest | sections | matched |
+|---|---|---|---|
+| weather forecast | **NONE** | 0 | — |
+| pizza toppings | **NONE** | 0 | — |
+| kitchen tap | **NONE** | 0 | — |
+| council of Nicaea | van Braght (entity) | 134 | entity 100 · text 34 |
+| the fall of Jerusalem in 70 AD | Josephus (entity) | 150 | entity 100 · text 50 |
+
+The three queries that produced confident word-hit heroes before the floor now produce the
+honest empty state ON PRODUCTION DATA — the defect K3's walk flagged is gone at the data layer.
+
+**Deliberately NOT claimed:** the text-matched rows (34/50) show the semantic leg returning
+rows where the ANN post-filter finding predicted starvation. That finding (partial HNSW
+44,575 rows → 4,112 surviving the published+historian join; flips between 50 and 0 on plan
+choice alone) is a separate open item owned by its finder — one good run is not evidence
+against a plan-dependent failure. The ef_search 40→120 + cosine backfill shipped here makes
+the starved leg less starved; it does not close that finding.
+
+Observation, unmeasured: "70 AD" produced period-matched 0 — whether parsePeriod handles a
+bare "NN AD" form was not part of this walk's scope; noting for whoever owns the period lane.
