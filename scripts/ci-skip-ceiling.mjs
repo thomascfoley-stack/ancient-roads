@@ -53,18 +53,27 @@ const skippedCount = secretSkipped.length;
 
 console.log(`db-invariants skip ceiling: ${ceiling}; secret-caused fully-skipped files: ${skippedCount}`);
 for (const f of secretSkipped) console.log(`  skipped (secret): ${f.name}`);
-console.log(`artifact NOT RUN (exempt from ceiling): ${artifactSkipped.length}`);
+// Every exempt suite is REPORTED in the run summary, by kind and by what it was missing — the
+// owner's 2026-08-22 ruling. An exemption nobody reads is indistinguishable from a suite quietly
+// not running, which is the failure this whole ratchet exists to prevent. `withheld` joins
+// `artifact`/`provider` here: a credential CI is deliberately not given, by a recorded decision
+// (b24bfe3), is accounted for — not counted as an unexplained secret skip. That is the existing
+// ruling reaching the counter, NOT a change to the bar; an UNDECLARED missing secret still counts
+// and still refuses green below.
+console.log(`NOT RUN, accounted for (exempt from ceiling): ${artifactSkipped.length}`);
 for (const f of artifactSkipped) {
   const rec = artifactSkips.find((s) => isArtifactSkip(f, [s]));
   const missing = rec?.missing?.join(', ') ?? '(manifest entry missing — treat as secret skip)';
-  console.log(`  NOT RUN (artifact): ${f.name} — missing ${missing}`);
+  console.log(`  NOT RUN (${rec?.kind ?? 'unknown-kind'}): ${f.name} — missing ${missing}`);
 }
 
 if (skippedCount > ceiling) {
   console.error(
     `\nREFUSING green: ${skippedCount} secret-caused suite(s) fully skipped, ceiling is ${ceiling}. `
     + 'Raise DB_INVARIANTS_SKIP_CEILING only with owner approval (ADR-035). '
-    + 'Artifact skips (gitignored corpus) are NOT RUN and do not count.',
+    + 'Declared skips — artifact (gitignored corpus), provider (upstream unavailable) and '
+    + 'withheld (a credential CI is deliberately not given, by a recorded decision) — are NOT RUN, '
+    + 'are listed above, and do not count. What counts is a suite that skipped without saying why.',
   );
   process.exit(1);
 }

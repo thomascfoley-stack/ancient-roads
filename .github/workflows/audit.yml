@@ -373,6 +373,13 @@ jobs:
           # export anything if the branch it just made resolves near production. seedOwnerUrl()
           # still refuses production independently, whatever is declared.
           DEEPINFRA_API_KEY: ${{ secrets.DEEPINFRA_API_KEY }}
+          # Owner ruling 2026-08-22: blob-round-trip EXECUTES in CI rather than being exempted —
+          # the @vercel/blob network hop is the one thing that suite proves and no local run
+          # substitutes for it. Safe as a step-level env (unlike the GITHUB_ENV trio above): no
+          # other source sets it, so an unset secret rendering as '' shadows nothing. Until the
+          # secret exists the suite FAILS LOUDLY under REQUIRE_SECRETS=1 naming this variable,
+          # which is the intended signal, not a regression.
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
           NEON_PROJECT: spring-heart-74819093
           # clientIp() returns null for a synthetic Request, so publicReadThrottle collapses every

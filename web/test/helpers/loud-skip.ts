@@ -48,6 +48,13 @@ interface ArtifactSkipRecord {
   readonly check: string;
   readonly missing: readonly string[];
   readonly suiteFile: string;
+  /**
+   * WHY this suite is exempt from the db-invariants skip ceiling. Recorded rather than inferred:
+   * `ci-skip-ceiling.mjs` used to classify by ELIMINATION — anything absent from this manifest was
+   * "secret-caused" — so the counter could not tell a gitignored asset from a withheld credential
+   * from a suite that simply never announced itself. It now prints the kind it was told.
+   */
+  readonly kind: 'artifact' | 'provider' | 'withheld';
 }
 
 function detectSuiteFile(): string {
@@ -60,7 +67,7 @@ function detectSuiteFile(): string {
 }
 
 /** Record artifact-only skips for CI scripts — derived from announceSkip, not a hand-maintained list. */
-function recordArtifactSkip(check: string, missing: readonly string[]): void {
+function recordArtifactSkip(check: string, missing: readonly string[], kind: ArtifactSkipRecord['kind']): void {
   const manifestPath = process.env[MANIFEST_ENV];
   if (!manifestPath) return;
   mkdirSync(path.dirname(manifestPath), { recursive: true });
@@ -68,7 +75,7 @@ function recordArtifactSkip(check: string, missing: readonly string[]): void {
   if (existsSync(manifestPath)) {
     manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { artifactSkips: ArtifactSkipRecord[] };
   }
-  manifest.artifactSkips.push({ check, missing, suiteFile: detectSuiteFile() });
+  manifest.artifactSkips.push({ check, missing, suiteFile: detectSuiteFile(), kind });
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
@@ -99,10 +106,19 @@ export function announceSkip(
   }
 
   if (missingSecrets.length === 0 && missingArtifacts.length > 0) {
-    recordArtifactSkip(check, missingArtifacts.map((r) => r.name));
+    recordArtifactSkip(check, missingArtifacts.map((r) => r.name), 'artifact');
   }
   if (missingSecrets.length === 0 && unavailableProviders.length > 0) {
-    recordArtifactSkip(check, unavailableProviders.map((r) => r.name));
+    recordArtifactSkip(check, unavailableProviders.map((r) => r.name), 'provider');
+  }
+  // WITHHELD is recorded too (owner ruling, 2026-08-22). It was the one declared kind that never
+  // reached the manifest, so a suite doing the RIGHT thing — declaring a credential CI is
+  // deliberately not given, by a recorded decision (b24bfe3) — landed in the ceiling's residual
+  // bucket and was counted as an unexplained secret skip. With the ceiling at 0 that single suite
+  // held the gate red on its own, forever, no matter what else was fixed. This is that ruling
+  // reaching the counter; it does NOT move the bar, and a missing SECRET still throws above.
+  if (missingSecrets.length === 0 && withheld.length > 0) {
+    recordArtifactSkip(check, withheld.map((r) => r.name), 'withheld');
   }
 
   if (process.env.GITHUB_ACTIONS === 'true') {

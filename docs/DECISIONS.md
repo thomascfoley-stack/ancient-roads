@@ -2038,3 +2038,54 @@ not 100).
 **Derived work, NOT done by this ADR:** the 20 fresh cases do not exist. Until they are minted and
 frozen, this is a bar with nothing measured against it — the ruling stands, the measurement is
 owed. See `HELDOUT_EVAL_DESIGN.md` for the freezing discipline (hash before any number exists).
+
+## ADR-119 — The db-invariants skip ceiling: four families, ruled (owner, 2026-08-22)
+
+**Context.** Run `32554632033` was the first `db-invariants` run in this repo's history with **zero
+failing tests** (143 files, 955 passed, 88 skipped). It still exited 1, on
+`scripts/ci-skip-ceiling.mjs` (ADR-035): *"8 secret-caused suite(s) fully skipped, ceiling is 0"*.
+
+The ratchet was right to refuse — a green where suites never ran is the thing it exists to prevent.
+**Its counter was wrong.** `ci-skip-ceiling.mjs` classified by ELIMINATION: `secretSkipped =
+fullySkipped.filter((f) => !isArtifactSkip(f, artifactSkips))`, so "secret-caused" meant "absent
+from the manifest" — and seven of the eight counted suites never called `announceSkip` at all. The
+count was an inference about cause dressed as a measurement of it. Same failure shape as watchlist
+instances 17/18, inside the instrument built to keep greens honest.
+
+Converting those suites to self-report turned the inference into a measurement, and the eight
+resolve into **four families**. The owner ruled each:
+
+**1. `blob-round-trip` — EXECUTE. Not exempt.** `BLOB_READ_WRITE_TOKEN` goes into the workflow
+secrets and the `db-invariants` step env. The `@vercel/blob` network hop is the only thing this
+suite proves and nothing local substitutes for it. Until the secret exists the suite **fails
+loudly** naming the variable — the intended signal, not a regression.
+
+**2. `real-files-end-to-end` · `scanned-threshold-calibration` — EXEMPT, kind `artifact`.**
+**Reason, recorded:** they read operator-local calibration corpora (`REALFILE_*`, `CALIBRATION_*`)
+that exist only on an operator's machine. They cannot run in CI and are not expected to.
+
+**3. `draft-check` · `pipeline-to-ready` · `routes` · `search` — EXEMPT in CI, kind `artifact`, AND
+the gap stays on the plan.** **Reason, recorded:** they need `web/public/bible/kjv`, gitignored at
+`.gitignore:22`, so a CI checkout can never satisfy them; they DO run in operator trees. **The
+exemption is not the end state** — a fetch-from-blob-store-with-cache slice is filed
+([order](pm/orders/2026-08-22-ci-corpus-assets.md)) so CI execution stays a planned outcome rather
+than a permanently accepted absence.
+
+**4. `withheld` becomes vocabulary the counter knows.** A credential CI is deliberately not given,
+by a recorded decision, is **recorded, reported in every run summary, and not counted as
+secret-caused**. `neon-auth-live` declared `kind: 'withheld'` (b24bfe3) and `announceSkip` recorded
+`artifact` and `provider` but **never `withheld`** — so the one suite doing exactly the right thing
+fell into the residual bucket and, at ceiling 0, **held the gate red on its own, permanently,
+whatever else was fixed.** This is b24bfe3's ruling reaching the counter. **It is not a change to
+the bar:** an UNDECLARED missing secret still counts and still refuses green — red-proofed both
+ways against crafted report/manifest fixtures (declared-only → exit 0; one undeclared suite added
+→ exit 1).
+
+**Rejected:** raising `DB_INVARIANTS_SKIP_CEILING` above 0 (the script's own message warns against
+it, and it would hide family 1, which is a real missing credential); reclassifying the seven
+wholesale into the exempt bucket before measuring their causes (laundering an inference into an
+exemption); leaving the counter as-is (family 4 makes a zero ceiling unreachable, so "never green"
+would have stayed structural).
+
+**F5 closes on the first run that is green with every suite truthfully accounted for** — not on
+zero failing tests, which run `32554632033` already had.

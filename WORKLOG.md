@@ -1,5 +1,43 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — The skip-ceiling ruling, executed (ADR-119)
+
+**Owner ruled all four families; all four implemented.**
+
+1. **`blob-round-trip` EXECUTES** — `BLOB_READ_WRITE_TOKEN` wired into the `db-invariants` step
+   env. Safe as a step-level `env:` unlike the GITHUB_ENV trio beside it: nothing else sets it, so
+   an unset secret rendering as `''` shadows nothing. Until the owner adds the secret the suite
+   fails loudly naming the variable — intended signal, not regression.
+2. **`real-files-end-to-end` · `scanned-threshold-calibration`** — exempt, kind `artifact`, reason
+   recorded (operator-local calibration corpora).
+3. **The four bible-asset suites** — exempt, kind `artifact`, reason recorded, **and the slice is
+   filed**: [`2026-08-22-ci-corpus-assets.md`](docs/pm/orders/2026-08-22-ci-corpus-assets.md).
+   Smallest slice is `web/public/bible/kjv` alone; `commentaries` is out of scope.
+4. **The counter now knows `withheld`.** `announceSkip` recorded `artifact` and `provider` but
+   never `withheld`, so `neon-auth-live` — the one suite doing exactly the right thing (b24bfe3) —
+   fell into the residual bucket and, at ceiling 0, **held the gate red on its own, permanently**.
+   Now recorded, and every exempt suite is printed in the run summary **by kind and by what it was
+   missing**: `NOT RUN (withheld): … — missing NEON_AUTH_BASE_URL`.
+
+**The bar did not move, and that is red-proofed, not asserted.** Against crafted report/manifest
+fixtures: declared withheld + artifact skips alone → `skip ceiling OK`, **exit 0**; add ONE suite
+that skipped without declaring why → `REFUSING green: 1 secret-caused suite(s)`, **exit 1**. What
+counts is now "skipped without saying why", which is what the ratchet was always for.
+
+### NOT DONE / UNVERIFIED
+
+- **F5 is NOT closed.** It closes on the first run green with every suite truthfully accounted for
+  — not on zero failing tests, which run `32554632033` already had.
+- **`BLOB_READ_WRITE_TOKEN` is not in the repo secrets yet** (owner action). Until it is,
+  `blob-round-trip` fails CI by design, naming the variable.
+- **The CI corpus-asset fetch is filed, not built**, and depends on D3.
+- **⚠️ A SECOND SESSION IS COMMITTING TO THIS BRANCH.** `2c00411` (migration 020 NOT VALID) and
+  `f9ddb69` (re-verification WORKLOG) landed in this same working tree between my pushes, and my
+  run on `0052935` was **cancelled** by their push — `cancel-in-progress: true` is per-ref (F3), so
+  concurrent sessions on one branch cancel each other's CI. Everything here used explicit
+  pathspecs. This is the AGENTS.md worktree rule being tested by exactly the situation it names.
+
+
 ## 2026-08-22 (early) — db-invariants: zero failing tests for the first time; the red moved to the counter
 
 **The gate-test fix worked.** Run `32554632033` on `9ffecd5`: **143 files, 955 tests passed, 88
