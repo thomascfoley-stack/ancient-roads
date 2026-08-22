@@ -675,7 +675,7 @@ export async function insertClippingFromSection(
 export async function insertClippingFromEmbedding(
   userId: string,
   studyId: string,
-  clip: { sourceId: string; chunkIndex?: number; reference?: string },
+  clip: { sourceId: string; chunkIndex?: number; reference?: string; askOutcomeId?: string },
   place: BlockPlacement = {},
 ): Promise<InsertBlockResult> {
   for (let attempt = 0; attempt < POSITION_RETRIES; attempt++) {
@@ -685,12 +685,16 @@ export async function insertClippingFromEmbedding(
     try {
       const [rows] = await runAsUser(userId, (sql) => [
         sql`INSERT INTO study_blocks (study_id, user_id, position, kind,
-                                      source_id, work_slug, quote, attribution)
+                                      source_id, work_slug, quote, attribution, ask_outcome_id)
             SELECT ${studyId}, ${userId}, ${position}, 'clipping',
                    e.source_id, e.metadata->>'work', e.content,
                    jsonb_strip_nulls(jsonb_build_object(
                      'author', e.metadata->>'author', 'work_title', e.metadata->>'sourceTitle',
-                     'reference', ${clip.reference ?? null}::text))
+                     'reference', ${clip.reference ?? null}::text)),
+                   -- 125: the ask this voice was kept from. No FK — ask_outcomes fails open (116),
+                   -- so the row may legitimately not exist and a constraint would break the user's
+                   -- save over a lost telemetry write.
+                   ${clip.askOutcomeId ?? null}::uuid
             FROM embeddings e
             WHERE e.source_type = split_part(${clip.sourceId}, ':', 1)
               AND e.source_id = ${clip.sourceId}

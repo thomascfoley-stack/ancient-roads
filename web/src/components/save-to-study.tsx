@@ -46,7 +46,11 @@ export interface StudySummary {
 
 /** The clipping reference a surface hands us — exactly the route's two shapes, never text. */
 export type ClipRef =
-  | { sourceId: string; reference?: string; matchHint?: string }
+  // `askOutcomeId` (migration 125): the ask this voice was surfaced by, when the clip comes from
+  // the ask surface. Kept-from-an-ask is the only behavioural relevance signal this product
+  // records, and the association cannot be reconstructed after the fact — so it travels with the
+  // clip or it is lost. Only the ask surface has one; the reader and topic surfaces never do.
+  | { sourceId: string; reference?: string; matchHint?: string; askOutcomeId?: string }
   | { sectionId: number; reference?: string; matchHint?: string };
 
 interface LastTarget {
@@ -179,7 +183,7 @@ export function SaveToStudy({ clip, contextTitle, className }: { clip: ClipRef; 
   const postClip = useCallback(async (studyId: string): Promise<SaveOutcome> => {
     const body =
       'sourceId' in clip
-        ? { kind: 'clipping', sourceId: clip.sourceId, reference: clip.reference }
+        ? { kind: 'clipping', sourceId: clip.sourceId, reference: clip.reference, askOutcomeId: clip.askOutcomeId }
         // B030: `matchHint` is a HINT, never text to store — the server locates it in its own
         // snapshot and stores the surrounding paragraph as a trim VIEW. The S-1 rule that no
         // surface may send `quote`/`attribution` is untouched: this field cannot become content.

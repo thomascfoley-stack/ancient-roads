@@ -1,5 +1,57 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-21 (late) — Item 3: the clipping → ask link, built (NOT applied)
+
+**Why this one and not the bar ruling:** the bar governs nothing until there is traffic and a
+retrieval change, and ADR-116 records it as an open owner decision. This is the opposite — it is
+**un-backfillable**. `ask_outcomes` records what an ask SURFACED and nothing about what the reader
+did with it (no click/rating/dwell column exists anywhere in the schema), so it is Phase-D
+classifier signal, not a ranking signal. The nearest real positive already exists: a
+`study_blocks` clipping with an ask-surface `source_id` is a reader KEEPING a voice. One column
+turns a lossy user+source+time-window match into an exact (query, surfaced set, kept voice) label.
+Nothing reconstructs it later.
+
+**Built:** migration `125_study_blocks_ask_outcome_link.sql` (+ partial index, self-verifying DO
+tail); the id is now **minted in the route** (`randomUUID()`), returned as `askOutcomeId` on
+`/api/ask` and as a new `outcome` stream stage on `/api/ask/stream`; carried on the turn through
+`Answer` → `SaveToStudy` → the clipping POST; UUID-validated in the blocks route; stored by
+`insertClippingFromEmbedding`.
+
+**Three design calls, each stated in the migration header rather than assumed:**
+- **No foreign key.** 116 makes the ask_outcomes write fail OPEN on purpose. An FK would turn a
+  tolerated silent telemetry loss into a hard failure on the user's own study write. The referent
+  is genuinely allowed not to exist; a dangling id means "the ask row was lost", which is data.
+- **Minted in the route, not by the database.** 116 inserts without RETURNING (its INSERT-only RLS
+  policy makes the row invisible to `app_runtime`), so a DB-generated id could never be handed to
+  the client at all.
+- **Ownership is not verifiable at write time** — `app_runtime` has no SELECT on `ask_outcomes`.
+  The id is unguessable rather than unforgeable; the residual is a user labelling their own
+  clipping with their own other ask, which pollutes only their own signal.
+
+**Tests.** `ask-outcome-persist.test.ts` asserted bind parameters **positionally**, and prepending
+`id` shifted every index by one — so the file now keys off a hand-typed `INSERT_COLS` list (typed
+here deliberately: deriving it from the module under test would make the check agree with whatever
+the code does). New test that the route-minted id is what lands, **red-proofed** by dropping `id`
+from the INSERT. Full web suite green: **252 files, 1618 tests, 0 failures**.
+
+### NOT DONE / UNVERIFIED — read the first one before deploying
+
+- **⚠️ DEPLOY ORDERING IS LOAD-BEARING. Migration 125 must be applied BEFORE this code ships.**
+  The clipping INSERT names `ask_outcome_id` unconditionally; against a database without the
+  column, **every ask-surface clipping 500s**. That is the 039 shape exactly, and it is stated
+  here rather than softened with a conditional write, because a conditional write is the "cited
+  premise" pattern this repo keeps paying for. **125 is applied NOWHERE — not dev, not prod.**
+- **No DB-backed assertion that the column lands on the row.** `clipping-tombstone.test.ts` is the
+  natural home and it needs an owner connection AND 125 applied to dev — neither of which exists
+  yet. Once the owner applies 125 to dev, extend that suite. Covered today: the route→row id path
+  (mocked DB, red-proofed) and typecheck/lint across all seven touched files.
+- **The proper-noun HIT@2 bar is STILL UNRULED**, deliberately. Converged recommendation: 85% on
+  the POINT ESTIMATE at n=20 (17/20 is the exact rung; n=19 has none, jumping 84.2% → 89.5%).
+  Power, honestly: a true-75% system fails ~77.5%, a system at the bar fails ~35%. **An agent may
+  not make this call.**
+- **The doc-restatement guard is not built.** Design settled; note in the previous entry.
+
+
 ## 2026-08-21 (late) — Whole-capture: the eval harness now writes its own evidence
 
 **Done.** `eval-heldout.mts` emitted to stdout ONLY — no `writeFile` in the file — so evidence

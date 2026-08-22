@@ -5,6 +5,7 @@ import { checkAskRateLimit } from '@/lib/rate-limit';
 import { apiError } from '@/lib/api-error';
 import { logEvent } from '@/lib/observability';
 import { teach } from '@/lib/teacher/teach';
+import { randomUUID } from 'node:crypto';
 import { logAskOutcome } from '@/lib/ask-outcome-log';
 import { scheduleAskOutcome } from '@/lib/ask-outcomes';
 
@@ -72,8 +73,13 @@ export async function POST(req: NextRequest) {
     logAskOutcome(result.kind, latencyMs, meta);
     // Same durable write as the stream route (migration 116) — off the request path,
     // fail-open: a logging failure never breaks an ask.
-    scheduleAskOutcome({ userId: user.id, query: question, lanes: {}, result, meta, latencyMs });
-    return NextResponse.json(result);
+    // The id is minted HERE, not by the database, so it can be returned to the client and come
+    // back on a clipping (125). 116 inserts without RETURNING, so a DB-generated id would never
+    // be reachable. `askOutcomeId` is opaque and read-only to the client: app_runtime holds no
+    // SELECT on ask_outcomes, so possessing it grants nothing.
+    const askOutcomeId = randomUUID();
+    scheduleAskOutcome({ id: askOutcomeId, userId: user.id, query: question, lanes: {}, result, meta, latencyMs });
+    return NextResponse.json({ ...result, askOutcomeId });
   } catch (e) {
     console.error('teacher pipeline error:', (e as Error).message);
     logEvent('error', { where: 'api/ask', message: (e as Error).message });

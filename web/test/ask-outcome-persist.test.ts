@@ -73,6 +73,7 @@ function composedInput(overrides: Partial<AskOutcomeInput> = {}): AskOutcomeInpu
     rejections: [],
   };
   return {
+    id: '11111111-2222-4333-8444-555555555555',
     userId: 'user-123',
     query: 'What does John 1:1 mean?',
     lanes: { sermons: false },
@@ -89,6 +90,19 @@ function firstInsertValues(): unknown[] {
   return sqlMock.mock.calls[0]!.slice(1);
 }
 
+// The INSERT's column order, typed HERE rather than read out of the module under test — a
+// hand-typed list is the point: if the statement's order changes, this goes red and someone
+// looks, which is exactly what happened when 125 prepended `id` and every positional index in
+// this file silently shifted by one. (Deriving it from the source would make the check agree
+// with whatever the code does — the tautology this repo has paid for before.)
+const INSERT_COLS = ['id', 'user_id', 'query', 'lanes', 'retrieved', 'attempts', 'verdict', 'failures', 'latency_ms', 'stage_ms'] as const;
+
+function val(name: (typeof INSERT_COLS)[number]): unknown {
+  const values = firstInsertValues();
+  expect(values).toHaveLength(INSERT_COLS.length);
+  return values[INSERT_COLS.indexOf(name)];
+}
+
 beforeEach(() => {
   sqlMock.mockReset().mockReturnValue(Promise.resolve([]));
   vi.mocked(runAsUser).mockClear();
@@ -101,8 +115,9 @@ describe('recordAskOutcome — the row lands with the right fields', () => {
     await recordAskOutcome(composedInput());
     expect(runAsUser).toHaveBeenCalledWith('user-123', expect.any(Function));
     expect(getDb).not.toHaveBeenCalled();
-    const [userId, query, lanes, retrieved, attempts, verdict, failures, latencyMs, stageMs] =
+    const [id, userId, query, lanes, retrieved, attempts, verdict, failures, latencyMs, stageMs] =
       firstInsertValues();
+    expect(id).toBe('11111111-2222-4333-8444-555555555555'); // 125: route-minted, not defaulted
     expect(userId).toBe('user-123');
     expect(query).toBe('What does John 1:1 mean?');
     expect(JSON.parse(lanes as string)).toEqual({ sermons: false });
@@ -117,7 +132,7 @@ describe('recordAskOutcome — the row lands with the right fields', () => {
 
   it('retrieved rows are REFERENCES: source id, work slug, verse window, lane — never text', async () => {
     await recordAskOutcome(composedInput());
-    const retrieved = JSON.parse(firstInsertValues()[3] as string);
+    const retrieved = JSON.parse(val('retrieved') as string);
     expect(retrieved).toEqual([
       {
         source: 'gill-john-1-1',
@@ -137,7 +152,7 @@ describe('recordAskOutcome — the row lands with the right fields', () => {
       sermons: [{ ...RETRIEVAL[0]!, sourceId: 'bunyan-sermon-1', lane: 'sermon' }],
     };
     await recordAskOutcome(input);
-    const retrieved = JSON.parse(firstInsertValues()[3] as string);
+    const retrieved = JSON.parse(val('retrieved') as string);
     expect(retrieved.map((r: { lane: string }) => r.lane)).toEqual(['commentary', 'sermon']);
   });
 
@@ -154,10 +169,9 @@ describe('recordAskOutcome — the row lands with the right fields', () => {
     };
     const result: TeacherResult = { kind: 'fallback', retrieval: RETRIEVAL, violations: [] };
     await recordAskOutcome(composedInput({ result, meta }));
-    const values = firstInsertValues();
-    expect(values[4]).toBe(3);
-    expect(values[5]).toBe('fallback');
-    const codes = JSON.parse(values[6] as string).map((r: { violations: { check: string }[] }) =>
+    expect(val('attempts')).toBe(3);
+    expect(val('verdict')).toBe('fallback');
+    const codes = JSON.parse(val('failures') as string).map((r: { violations: { check: string }[] }) =>
       r.violations.map((v) => v.check),
     );
     expect(codes).toEqual([['quote_verbatim'], ['passages_grounded']]);
@@ -167,21 +181,28 @@ describe('recordAskOutcome — the row lands with the right fields', () => {
     const result: TeacherResult = { kind: 'empty', reason: 'No relevant sources found for this question.' };
     const meta: TeachMeta = { attempts: 0, voices: 0, traditions: 0, rejections: [] };
     await recordAskOutcome(composedInput({ result, meta }));
-    const values = firstInsertValues();
-    expect(values[5]).toBe('empty');
-    expect(values[4]).toBe(0);
-    expect(JSON.parse(values[3] as string)).toEqual([]);
-    expect(JSON.parse(values[6] as string)).toEqual([
+    expect(val('verdict')).toBe('empty');
+    expect(val('attempts')).toBe(0);
+    expect(JSON.parse(val('retrieved') as string)).toEqual([]);
+    expect(JSON.parse(val('failures') as string)).toEqual([
       { check: 'empty', message: 'No relevant sources found for this question.' },
     ]);
-    expect(values[8]).toBeNull(); // no stageMs on this meta → SQL NULL, not 'null'::jsonb
+    expect(val('stage_ms')).toBeNull(); // no stageMs on this meta → SQL NULL, not 'null'::jsonb
+  });
+
+  // 125: the clipping→ask join is only exact because the ROUTE mints the id and the row carries
+  // that same value. If the insert ever dropped it (or the DB default won instead), every kept
+  // voice would come back unattributable and nothing would be reconstructible after the fact.
+  it('the route-minted id is what lands in the row', async () => {
+    await recordAskOutcome(composedInput({ id: '99999999-8888-4777-8666-555555555555' }));
+    expect(val('id')).toBe('99999999-8888-4777-8666-555555555555');
   });
 
   it('anonymous ask: plain insert with NULL user_id, runAsUser untouched', async () => {
     await recordAskOutcome(composedInput({ userId: null }));
     expect(runAsUser).not.toHaveBeenCalled();
     expect(getDb).toHaveBeenCalled();
-    expect(firstInsertValues()[0]).toBeNull();
+    expect(val('user_id')).toBeNull();
   });
 });
 

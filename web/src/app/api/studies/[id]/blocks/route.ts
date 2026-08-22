@@ -190,7 +190,20 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         }
         chunkIndex = n;
       }
-      const result = await insertClippingFromEmbedding(user.id, id, { sourceId, chunkIndex, reference }, place);
+      // migration 125 — which ask surfaced this voice. Validated as a UUID and otherwise opaque:
+      // app_runtime cannot SELECT ask_outcomes, so the server cannot (and does not need to) check
+      // that the row exists or is the caller's. The id is server-minted and returned only to the
+      // asker, so it is unguessable; the residual — a user labelling their own clipping with
+      // their own other ask — costs nothing but their own signal. Absent is fine and common
+      // (every reader/topic clipping, and any ask replayed from history).
+      let askOutcomeId: string | undefined;
+      if (body.askOutcomeId !== undefined && body.askOutcomeId !== null) {
+        if (typeof body.askOutcomeId !== 'string' || !UUID_RE.test(body.askOutcomeId)) {
+          return apiError('INVALID_REQUEST', { message: 'askOutcomeId must be a UUID' });
+        }
+        askOutcomeId = body.askOutcomeId;
+      }
+      const result = await insertClippingFromEmbedding(user.id, id, { sourceId, chunkIndex, reference, askOutcomeId }, place);
       if (!result.ok) return reasonResponse(result.reason);
       return NextResponse.json({ block: result.block }, { status: 201 });
     }

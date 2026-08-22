@@ -42,7 +42,11 @@ type StreamEvent =
   // durable URL; `saved` arrives after persistence and is the §4.6 saved signal (NOT design I-8, which is turn immutability — unenforced, logged NOT DONE) — false renders as
   // "not saved" on the turn, never silently.
   | { stage: 'thread'; threadId: string }
-  | { stage: 'saved'; ok: boolean };
+  | { stage: 'saved'; ok: boolean }
+  // The ask_outcomes row id for this ask (migration 125). Carried so a clipping taken from this
+  // answer can name the ask it came from; that link is un-backfillable, so the client has to hold
+  // it while the answer is on screen. Opaque — holding it grants no read.
+  | { stage: 'outcome'; askOutcomeId: string };
 
 interface Turn {
   id: number;
@@ -64,6 +68,10 @@ interface Turn {
    *  link) rather than only "Ask again", which re-fails identically. A flag rather than matching
    *  on `error` text: the copy is user-facing and would silently unhook the link when reworded. */
   needsSignIn?: boolean;
+  /** The ask_outcomes row this turn produced (125). Sent to the clipping API so a kept voice can
+   *  be joined back to the ask that surfaced it. Absent on stored turns replayed from history —
+   *  the association is not reconstructible after the fact, which is why it is captured live. */
+  askOutcomeId?: string;
 }
 
 /** What /ask/[id] passes down: stored turns already in their terminal state. */
@@ -286,6 +294,7 @@ export function AskClient({ initialThread }: { initialThread?: InitialThread } =
                 window.history.replaceState(null, '', `/ask/${ev.threadId}`);
               }
               break;
+            case 'outcome': patch(id, { askOutcomeId: ev.askOutcomeId }); break;
             case 'saved': patch(id, { saved: ev.ok }); break;
             case 'error': patch(id, { stage: 'error', error: ev.message }); break;
             default: patch(id, { stage: 'retrieving' });
@@ -629,7 +638,7 @@ function TurnView({ turn, onRetry, busy }: { turn: Turn; onRetry: () => void; bu
           <RetryButton onRetry={onRetry} busy={busy} tone="error" />
         </div>
       ) : turn.stage === 'done' && turn.result ? (
-        <Answer result={turn.result} onRetry={onRetry} busy={busy} contextTitle={turn.question} withdrawnIds={turn.withdrawnIds} />
+        <Answer result={turn.result} onRetry={onRetry} busy={busy} contextTitle={turn.question} withdrawnIds={turn.withdrawnIds} askOutcomeId={turn.askOutcomeId} />
       ) : (
         <Progress turn={turn} />
       )}
@@ -814,7 +823,10 @@ function Tombstone({ author, work }: { author: string; work?: string }) {
   );
 }
 
-function Answer({ result, onRetry, busy, contextTitle, withdrawnIds }: { result: TeacherResult; onRetry: () => void; busy: boolean; contextTitle?: string; withdrawnIds?: string[] }) {
+// `askOutcomeId` rides down to the save affordance so a kept voice names the ask it came from
+// (migration 125). Optional throughout: stored turns replayed from history do not carry one,
+// and a clipping without it is still a perfectly good clipping — just an unlabelled one.
+function Answer({ result, onRetry, busy, contextTitle, withdrawnIds, askOutcomeId }: { result: TeacherResult; onRetry: () => void; busy: boolean; contextTitle?: string; withdrawnIds?: string[]; askOutcomeId?: string }) {
   // Hooks before any early return (rules-of-hooks): entries are derived from the result shape.
   const entries: { key: ShowKey; n: number }[] = [];
   if (result.kind === 'composed') {
@@ -928,7 +940,7 @@ function Answer({ result, onRetry, busy, contextTitle, withdrawnIds }: { result:
               {/* The affordance sits OUTSIDE the ResultLink — a button inside an anchor is
                   invalid HTML — aligned with the card text (link px-2.5 + figure pl-5). */}
               {saveSourceId && (
-                <SaveToStudy className="ml-[30px]" clip={{ sourceId: saveSourceId }} contextTitle={contextTitle} />
+                <SaveToStudy className="ml-[30px]" clip={{ sourceId: saveSourceId, askOutcomeId }} contextTitle={contextTitle} />
               )}
             </div>
           );

@@ -5,6 +5,7 @@ import { checkAskRateLimit } from '@/lib/rate-limit';
 import { apiError } from '@/lib/api-error';
 import { logEvent } from '@/lib/observability';
 import { teach, type TeacherEvent, type LaneFlags } from '@/lib/teacher/teach';
+import { randomUUID } from 'node:crypto';
 import { logAskOutcome } from '@/lib/ask-outcome-log';
 import { scheduleAskOutcome } from '@/lib/ask-outcomes';
 import { createThreadWithQuestion, appendQuestion, appendAnswer, isThreadId, type StoredAnswer } from '@/lib/research';
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest) {
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const write = (e: TeacherEvent | { stage: 'error'; message: string } | { stage: 'thread'; threadId: string } | { stage: 'saved'; ok: boolean }) => {
+      const write = (e: TeacherEvent | { stage: 'error'; message: string } | { stage: 'thread'; threadId: string } | { stage: 'saved'; ok: boolean } | { stage: 'outcome'; askOutcomeId: string }) => {
         controller.enqueue(encoder.encode(JSON.stringify(e) + '\n'));
       };
       const startedAt = Date.now();
@@ -125,7 +126,16 @@ export async function POST(req: NextRequest) {
         logAskOutcome(result.kind, latencyMs, meta);
         // One durable row per completed ask (migration 116, Phase-D substrate). Off the
         // stream's critical path and fail-open — a logging failure never breaks an ask.
-        scheduleAskOutcome({ userId: user.id, query: question, lanes, result, meta, latencyMs });
+        // Minted here rather than by the database: 116 inserts without RETURNING (its INSERT-only
+        // RLS policy makes the row invisible to app_runtime), so a DB-generated id could never
+        // reach the client. The client needs it to attribute a clipping back to this ask (125),
+        // and that link cannot be reconstructed later.
+        const askOutcomeId = randomUUID();
+        scheduleAskOutcome({ id: askOutcomeId, userId: user.id, query: question, lanes, result, meta, latencyMs });
+        // Its own stage, emitted BEFORE 'saved' so a client that closes early still has it. Opaque
+        // and read-only: app_runtime holds no SELECT on ask_outcomes, so holding the id grants
+        // nothing beyond naming the ask you just made.
+        write({ stage: 'outcome', askOutcomeId });
 
         let saved = false;
         if (threadId) {
