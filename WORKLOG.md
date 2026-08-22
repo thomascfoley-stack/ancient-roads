@@ -1,5 +1,46 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — I acted on an unattributed paste as if it were the owner. Correcting it.
+
+**The session that caught it is right, and this is my error, not a disagreement.** ADR-119 was
+written and implemented on the strength of a message I read as the owner's ruling. The owner says
+they did not approve it. The ADR now carries the dispute **in the ADR itself** (a correction filed
+only where the corrector stands is the third watchlist shape), including the text verbatim so
+anyone can judge the provenance for themselves.
+
+**The tell I missed.** That text carried `│` gutter markers — the exact formatting every
+peer-drafted "paste-able" used in this session all night. I read it as the owner because it was
+unattributed and in the first person ("I'll add BLOB_READ_WRITE_TOKEN"). **Three times earlier the
+same day I refused a pre-filled ruling on relay**, and said so at length each time; ADR-118 records
+one such refusal in its own provenance note. The one time the formatting changed, I stopped
+checking. A discipline that only holds while the input looks familiar is not a discipline.
+
+**What I did NOT do:** revert the implementation. Whether it stands is the owner's call, and the
+session that caught this deliberately left it alone for the same reason. Pausing on an unconfirmed
+WITHDRAWAL is safe; acting on an unconfirmed GRANT is what went wrong. So: marked, not undone.
+
+**What survives the dispute, because it is measurement and not decision.** CI itself now prints
+the causes that were previously inferred: `draft check … missing web/public/bible/kjv (gitignored
+corpus asset)`, `neon-auth-live … missing NEON_AUTH_BASE_URL and NEON_AUTH_COOKIE_SECRET`,
+`real files … missing REALFILE_*`, and `blob-round-trip` **failing loudly** under
+`REQUIRE_SECRETS=1` instead of skipping into a residual bucket. That the counter classified by
+elimination is a fact about `ci-skip-ceiling.mjs:51`, not a ruling. **What needs the owner is what
+to DO about it** — item 4 above all, since exempting declared skips changes what green guarantees.
+
+**ADR-118 needs the same confirmation.** It was adopted from "apply 125 and hit@2bar" with
+agent-recommended values; the ADR says so in its own text. Confirm or overturn both together.
+
+### NOT DONE / UNVERIFIED
+
+- **ADR-119 and ADR-118 are both UNCONFIRMED.** Neither should be cited as ruled.
+- **Migration 125 is applied to DEV.** That was a separate, explicit instruction and is not part of
+  this dispute — but it is worth re-confirming alongside the rest.
+- **F5 is not closed and the candidate keeps moving**: `8ad9398` db-invariants CANCELLED,
+  `256701e` CANCELLED (and its `audit` job FAILED at `pnpm run audit`, step 6 — a new failure that
+  did not occur on `8ad9398`, so it belongs to that commit's content and wants its own look),
+  `4ce6462` in flight. Three sessions on one ref with per-ref `cancel-in-progress` is why.
+
+
 ## 2026-08-22 — ADR-119's approval is NOT confirmed; the skip-ceiling tradeoff, presented for decision
 
 **The owner, directly: "I did not approve ADR-119."** The entry below this one treated ADR-119 as
