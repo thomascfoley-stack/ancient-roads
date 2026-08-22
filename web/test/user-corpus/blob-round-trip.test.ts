@@ -153,12 +153,32 @@ describe.skipIf(!enabled)('@vercel/blob against the live store', () => {
     // suite's first-ever CI execution surfaced exactly this); with the key one pass ends
     // {"processed":1,"outcomes":{"ready":1}} and the row is status='ready', parse_error NULL.
     const result = await drain(USER, 1);
-    expect(result.processed).toBe(1);
 
+    // ── THE FAILURE MESSAGE CARRIES THE CAUSE (2026-08-22) ───────────────────────────────────
+    // This assertion used to fail as a bare `expected 'queued' to be 'ready'`, which says a
+    // document did not finish and nothing about why — and the two fields that DO say why were
+    // both in hand and discarded. `processOne`'s catch (queue.ts) treats anything that is not an
+    // UploadRefused as transient: it writes the real message to `user_documents.parse_error`,
+    // parks the document back at 'queued', and reports that in `drain().outcomes`. So a CI
+    // failure here was unexplainable from the log — diagnosing it locally took adding a probe,
+    // which is exactly what nobody can do on a runner.
+    //
+    // Note `processed` and `outcomes` disagree by design: `processed++` counts every claimed
+    // document whatever the outcome (queue.ts), so `{processed: 1, outcomes: {queued: 1}}` means
+    // "attempted once, got nowhere". Asserting `processed` alone reads that as progress.
+    //
+    // Secrets: `parse_error` is already user-facing (it renders in the document list) and GitHub
+    // masks registered secrets in logs, so surfacing it here adds no exposure.
     const after = await getDocument(USER, doc.id);
-    expect(after?.status).toBe('ready'); // the whole pipeline, not a prefix of it
-    expect(after?.parseError ?? null).toBeNull();
-    expect(after?.extractableChars ?? 0).toBeGreaterThan(0);
+    const why =
+      `drain=${JSON.stringify(result.outcomes)} processed=${result.processed} reaped=${result.reaped} `
+      + `status=${after?.status} attempts=${after?.attempts ?? 0} chars=${after?.extractableChars ?? 0} `
+      + `parseError=${after?.parseError ?? '(none)'}`;
+
+    expect(result.processed, why).toBe(1);
+    expect(after?.status, why).toBe('ready'); // the whole pipeline, not a prefix of it
+    expect(after?.parseError ?? null, why).toBeNull();
+    expect(after?.extractableChars ?? 0, why).toBeGreaterThan(0);
   }, 60_000);
 
   it('deleting a document deletes its blob — the cascade leg Postgres cannot do', async () => {

@@ -1,5 +1,44 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — blob-round-trip: the test can now say why it failed
+
+**The suite is healthy; the CI failure is environment-specific; and the test could not tell anyone
+which.** With the real credentials it passes **4/4 locally against dev** (`blob-round-trip` runs
+the real `@vercel/blob` hop plus parse → chunk → embed → ready). CI parks the document at `queued`
+and reported only `expected 'queued' to be 'ready'`.
+
+**A correction I made mid-diagnosis, because it wasted a step.** I first reported the
+"CI-environment" hypothesis as FALSIFIED, having "reproduced" the failure locally. That
+reproduction was invalid: I read `DEEPINFRA_API_KEY` from the root `.env.local`, where it does not
+exist (it is in `web/.env.local`), so I passed an empty string and reproduced my own misconfiguration.
+The environment hypothesis was never falsified — it is now the leading one.
+
+**Why CI could not explain itself.** `processOne`'s catch writes the real message to
+`user_documents.parse_error`, parks the document at `queued`, and reports it in `drain().outcomes`.
+The test asserted `status` and `processed` and **discarded both diagnostic fields**. Diagnosing it
+locally took adding a probe — precisely what nobody can do on a runner. Same shape as the
+skip-ceiling counter earlier tonight: the instrument had the answer and threw it away.
+
+**Fixed (test-only):** the pipeline assertions now carry `drain outcomes`, `processed`, `reaped`,
+`status`, `attempts`, `chars` and `parseError` in the failure message. **Red-proofed** by blanking
+the embed key — the exact failure class — which now fails as
+`drain={"queued":1} processed=1 reaped=0 status=queued attempts=1 chars=52 parseError=DEEPINFRA_API_KEY is not set`
+instead of `expected 'queued' to be 'ready'`. Green leg with the real key: 4/4.
+
+**Two real product findings, FILED not fixed** ([order](docs/pm/orders/2026-08-22-drain-failure-semantics.md)):
+a permanent config error is retried as transient, so a deployment missing the embed key parks every
+upload in a state indistinguishable from "waiting its turn"; and `drain()` counts `processed` for
+documents it did not process, so `{processed: 1, outcomes: {queued: 1}}` reads as progress. Both
+change when a user's document is marked failed and do not belong in a branch about CI counting.
+
+### NOT DONE / UNVERIFIED
+
+- **The CI cause is still unknown.** The next run names it or it does not; that is the point of
+  this change. Do not close F5 on a green that comes from anything other than a run.
+- The two filed defects are unowned and unscheduled.
+- The 20 fresh proper-noun cases for ADR-118 (90%, 18/20) still do not exist.
+
+
 ## 2026-08-22 — blob-round-trip's first real execution: 020 verified PASS, and the one red is a two-layer find (stale test + missing embed key). CI env decision OWNER-PENDING
 
 **Run `32557649616` (sha 93e92d5) — the first db-invariants run to reach a verdict on migration
