@@ -21,13 +21,20 @@ import { createDocument, deleteDocument, getDocument } from '@/lib/user-corpus/d
 import { drain } from '@/lib/user-corpus/queue';
 import { checksum } from '@/lib/user-corpus/sniff';
 import { localEnv, runtimeDbUrl } from '../helpers/env';
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 // The library reads process.env directly, so lift it out of web/.env.local before anything imports it.
 const TOKEN = localEnv('BLOB_READ_WRITE_TOKEN');
 if (TOKEN && !process.env.BLOB_READ_WRITE_TOKEN) process.env.BLOB_READ_WRITE_TOKEN = TOKEN;
 
 const APP_URL = runtimeDbUrl();
-const enabled = Boolean(TOKEN && APP_URL);
+// The drain's ADR-100 detection scans web/public/bible (gitignored): without it the pipeline
+// test reds on an ENOENT requeue instead of skipping honestly (run 32560946966, after the CI
+// asset fetch was rate-limited to fail-open). The assets are a REQUIREMENT of this suite, so
+// their absence must be a declared artifact skip, same as the other user-corpus suites.
+const BIBLE_ASSETS = existsSync(fileURLToPath(new URL('../../public/bible/kjv/jhn.json', import.meta.url)));
+const enabled = Boolean(TOKEN && APP_URL && BIBLE_ASSETS);
 
 // SELF-REPORTED SKIP (2026-08-22). This suite used to skip with a bare console.warn, which put it
 // in `ci-skip-ceiling.mjs`'s RESIDUAL bucket: that script defines "secret-caused" as "not
@@ -41,6 +48,7 @@ announceSkip(
   [
     { name: 'BLOB_READ_WRITE_TOKEN', present: Boolean(TOKEN) },
     { name: 'APP_DATABASE_URL', present: Boolean(APP_URL) },
+    { name: 'web/public/bible (gitignored corpus assets — the drain\'s detection scans it)', present: BIBLE_ASSETS, kind: 'artifact' },
   ],
   'the @vercel/blob network hop — put, get and delete against the real store',
 );

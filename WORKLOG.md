@@ -1,5 +1,29 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — The store rate-limits CI's egress; the cache never saved on failing jobs; blob-round-trip never declared the assets. Three fixes
+
+**Run `32560946966` regressed to the ENOENT** because the assets never arrived, and its log
+names both mechanisms, verbatim:
+
+```
+Cache not found for input keys: bible-assets-f7dfe89bc5578afb
+##[warning]bible/nheb/ezk.json: HTTP 403 — 11702/22590 fetched, nothing installed
+```
+
+(1) **The public store rate-limits GitHub's egress** — the same fetch completes locally at
+22,590/22,590; from CI it 403'd at 11,702. Fetch now runs concurrency 16 with 5-attempt
+exponential backoff + jitter on 403/429/5xx. (2) **actions/cache's post-job save never fired on
+the failing run**, so the one complete fetch (32560311067, 148 passed) seeded nothing. The
+workflow now uses restore/save SPLIT: an explicit save immediately after the fetch, guarded by
+the script's new `--check` (every manifest file present at its manifest size — a failed fetch
+can never seed a poisoned cache). One successful fetch ever is now enough. (3) **blob-round-trip
+never declared the bible assets** its drain scans, so a failed fetch became a meaningless red
+instead of an honest skip — the requirement is now in its announceSkip (kind `artifact`), and
+the suite still passes 4/4 locally with full env.
+
+Net honesty property, either way the next fetch goes: assets present → suites RUN; fetch
+rate-limited → every affected suite skips DECLARED → the ceiling counts them accounted for.
+
 ## 2026-08-22 — ZERO failing tests again, and the last red was the counter EATING ITS OWN RECORDS: two defects in the skip manifest, both fixed and proven
 
 **Run `32560311067`: 148/148 test files passed** (translation-detect cleared with the full

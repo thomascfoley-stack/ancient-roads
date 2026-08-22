@@ -308,13 +308,34 @@ jobs:
       - name: bible assets — cache key from the manifest
         id: biblekey
         run: echo "key=$(node scripts/ci-fetch-bible-assets.mjs --print-cache-key)" >> "$GITHUB_OUTPUT"
+      # restore/save SPLIT, deliberately: the combined actions/cache saves post-job, and a run
+      # that fails its tests never seeded the cache (run 32560946966: "Cache not found" one run
+      # after a complete 22,590-file fetch). Saving IMMEDIATELY after a verified-complete fetch
+      # means one successful fetch ever is enough, whatever the tests later do. The save is
+      # guarded by the script's --check (all files present at manifest size), so a failed fetch
+      # can never seed a poisoned cache.
       - name: bible assets — restore cache
-        uses: actions/cache@v4
+        id: biblerestore
+        uses: actions/cache/restore@v4
         with:
           path: web/public/bible
           key: ${{ steps.biblekey.outputs.key }}
       - name: bible assets — fetch on miss (verified, atomic, fail-open to the honest skip)
         run: node scripts/ci-fetch-bible-assets.mjs
+      - name: bible assets — completeness for the save guard
+        id: bibledone
+        run: |
+          if node scripts/ci-fetch-bible-assets.mjs --check; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: bible assets — save cache (only a verified-complete tree)
+        if: steps.biblerestore.outputs.cache-hit != 'true' && steps.bibledone.outputs.complete == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: web/public/bible
+          key: ${{ steps.biblekey.outputs.key }}
 
       # timeout-minutes, because this step wedged CI for 35 minutes on 2026-08-08 (CONCURRENTLY in
       # an implicit transaction) with no output and no failure. An unbounded migration step is a way

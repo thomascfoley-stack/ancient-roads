@@ -29,13 +29,27 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MANIFEST = path.join(ROOT, 'docs/evidence/corpus-cdn/sync-manifest.json');
 const TARGET = path.join(ROOT, 'web/public/bible');
 const PREFIX = 'bible/';
-const CONCURRENCY = 48;
+const CONCURRENCY = 16; // 48 tripped the public store's rate limit from CI egress (HTTP 403
+// at 11,702/22,590, run 32560946966); 16 + backoff below stays under it. Cold cost rises to
+// ~3-4 min, paid only on a manifest change and only until one successful fetch seeds the cache
+// (the workflow saves the cache immediately after a complete fetch, not post-job).
 
 const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8'));
 // manifest.files is an OBJECT: path -> { sha256, size }. The per-file sha256 makes the cache
 // key content-addressed and lets every download be VERIFIED before it is installed.
 const entryMap = manifest.files;
 const files = Object.keys(entryMap).filter((p) => p.startsWith(PREFIX)).sort();
+
+// --check: complete-or-not, NO network — the workflow's cache-save guard. Exit 0 only when
+// every manifest file is present at its manifest size, so a failed fetch can never seed a cache.
+if (process.argv.includes('--check')) {
+  const ok = files.length > 0 && files.every((p) => {
+    const local = path.join(TARGET, p.slice(PREFIX.length));
+    try { return statSync(local).size === (entryMap[p]?.size ?? -1); } catch { return false; }
+  });
+  process.stdout.write(ok ? 'complete\n' : 'incomplete\n');
+  process.exit(ok ? 0 : 1);
+}
 
 if (process.argv.includes('--print-cache-key')) {
   const digest = createHash('sha256')
@@ -69,12 +83,24 @@ const base = String(manifest.baseUrl || '').replace(/\/$/, '');
 let failed = null;
 let done = 0;
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 async function fetchOne(rel) {
   const url = `${base}/${rel}`;
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  // 5 attempts with exponential backoff + jitter: the store answers a rate limit as 403/429,
+  // and an immediate retry just re-trips it. Genuine 404s stop retrying after attempt 2.
+  const ATTEMPTS = 5;
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
     try {
       const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const throttled = res.status === 403 || res.status === 429 || res.status >= 500;
+        if (throttled && attempt < ATTEMPTS) {
+          await sleep(500 * 2 ** attempt + Math.floor(Math.random() * 400));
+          continue;
+        }
+        throw new Error(`HTTP ${res.status}`);
+      }
       const bytes = Buffer.from(await res.arrayBuffer());
       const want = entryMap[rel]?.sha256;
       const got = createHash('sha256').update(bytes).digest('hex');
@@ -85,7 +111,8 @@ async function fetchOne(rel) {
       done++;
       return;
     } catch (e) {
-      if (attempt === 2) throw new Error(`${rel}: ${e.message}`);
+      if (attempt === ATTEMPTS) throw new Error(`${rel}: ${e.message}`);
+      await sleep(250 * attempt);
     }
   }
 }
