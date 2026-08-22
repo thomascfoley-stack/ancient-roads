@@ -1,0 +1,13 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /private/tmp/swarm-W-HISTSCOPE/web
+
+ ✓ test/invariants/history-scope-db.test.ts (2 tests) 6987ms
+   ✓ history search — scope and excerpt gate against a real DB > returns historian/published works only, every excerpt verbatim 6343ms
+   ✓ history search — scope and excerpt gate against a real DB > an entity anchored ONLY in out-of-scope works returns nothing — the leak direction 644ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  10:35:46
+   Duration  7.58s (transform 39ms, setup 0ms, collect 46ms, tests 6.99s, environment 0ms, prepare 52ms)
+

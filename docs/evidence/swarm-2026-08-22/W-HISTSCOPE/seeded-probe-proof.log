@@ -1,0 +1,8 @@
+target host: ep-tiny-hat-atdgpisx.c-9.us-east-1.aws.neon.tech (dev, ep-tiny-hat)
+
+
+PASS — found an out-of-scope served section to seed on (bede-history [historian/staged])
+PASS — sentinel visible inside the transaction
+PASS — OLD probe (served-only) DRAWS the out-of-scope sentinel (drew AAA_SWARM_HISTSCOPE_SENTINEL)
+PASS — CORRECTED probe (sources legs) does NOT draw the sentinel (drew Abraham)
+PASS — sentinel gone after ROLLBACK (dev untouched)

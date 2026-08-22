@@ -323,7 +323,7 @@ honest **NOT RUN** via the loud-skip helper, which is the correct posture and th
 
 | suite | why red | owner |
 |---|---|---|
-| `history-scope-db` | **TRUE POSITIVE.** dev carries 81 served anchored entities, only **31 inside the shipped `vocab()` scope**, so its `LIMIT 1` probe draws an out-of-scope label ~62% of the time. The entity scope leak, correctly reported | historians lane |
+| `history-scope-db` | **CLOSED — the red was an instrument defect, not a product leak.** Root-caused and fixed `4baefe5` (2026-08-21): the probe drew from a served-only join WITHOUT the `sources` legs (watchlist instance 17), so 50 of 81 probes could never match; `LIMIT 1` with no `ORDER BY` made which one plan-dependent. Probe restated to the shipped scope, ordered, and given the leak direction that can fail; green on dev 2026-08-22 (W-HISTSCOPE re-run + seeded both-directions proof). **The product signal the row was opened to track stands and moves to the historians lane:** 50 of 81 served anchored entities live only in STAGED historian works — enumerated in `docs/evidence/swarm-2026-08-22/W-HISTSCOPE/FINDING-historians-lane.md` | historians lane |
 | `licensing` · `plan-tenancy` · `register-wall-surfaces` | Expected to clear on the repointed parent — the data they need is present on `dev`. **UNCONFIRMED: no run has completed there yet** | — |
 
 **A green `db-invariants` is the exit condition for this lane.** Until then, every "nothing merges
