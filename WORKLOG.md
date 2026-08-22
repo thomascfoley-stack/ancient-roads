@@ -339,6 +339,50 @@ commits ahead of it.
 - The `history-scope-db` commit message lost the phrase `status = 'published'` to shell backtick
   substitution; the previous WORKLOG entry carries the accurate red-proof.
 
+## 2026-08-21 (late) — Independent re-verification pass: Chesterton clean, CDN weld verified by fetch, migration 020 unblocked
+
+**Owner push-back, verbatim spirit: every "verified" tonight was self-reported by the session
+that did the work — bylaw 4's exact target. This entry is the response: re-execute the checkable
+claims with checks that could fail, and say plainly which claims remain self-certified.**
+
+- **Chesterton licensing — VERIFIED CLEAN, one gap filed.** Prod holds 23 GKC works: **1
+  published** (`chesterton-historyengland`, 1917, PD, CCEL provenance — clean under both the US
+  95-year term and UK life+70, d. 1936), 21 staged (inert), 1 quarantined
+  (`chesterton-preexistence` — also a likely misattribution; the title is not a Chesterton
+  work). `chesterton-aquinas` (1933, ADR-112) never reached prod. **Zero Chesterton vectors are
+  served** — no /ask exposure at all. **Gap:** all 21 staged works carry `year_written: NULL`,
+  so the owner's pre-1931 rule is mechanically UNCHECKABLE at flip time; backfill years before
+  any Chesterton flip.
+- **The CDN quarantine weld (0c47219) — VERIFIED BY INDEPENDENT FETCH,** not by the fixing
+  session's report: pulled `commentaries/jhn/1.json` (6.3 MB) and `commentaries/php/2.json`
+  (2.3 MB) live from the public store; zero occurrences of the quarantined slug or of
+  "chesterton" in either. The fail-open is closed on the wire.
+- **Migration 020 fixed (`2c00411`)** — the blocker that stopped CI run 32510118724 at the
+  migration replay. Root cause: 020's plain ADD CONSTRAINT validates July's 11-type list
+  against data that 112 legalizes later in the sequence (historian/devotional/topical_index).
+  Fix: `NOT VALID`, the repo's own 038/040/112 idiom — new writes still checked from that
+  sequence point, historic rows deferred to 112's VALIDATE, end state byte-identical.
+  Red-proofed 4 legs on a throwaway local PG 14 (original 020 watched RED with CI's exact
+  error; patched applies; NOT VALID still rejects a new bad insert; 112 validates to
+  convalidated=t). Still needed even after the 08-22 zero-failures run: replay-FROM-ZERO (fresh
+  branch, DR, cutover.mjs's own sequence) hits original-020 whenever the target's ledger lacks
+  it. **Independent verifier: CI run 32555836983 (queued at write time) — read ITS verdict.**
+- **Honest accounting of the night's remaining self-certified claims:** the /word shelf slice
+  was audited mechanically and browser-verified by its own author (this session) — no
+  independent session has re-executed it; the deploy receipt was corroborated for internal
+  consistency (ancestry, receipt vs alias) but never re-derived from Vercel independently (the
+  CLI-scope limit, watchlist instance six). The flip is the best-verified item: owner-executed,
+  tool receipt, AND this session's independent DB measurements agree.
+- **Thayer's requirement, filed into its follow-up:** before any Thayer's flip, verify the prod
+  copy against the CC0 source by checksum/shingle-diff — never by a session's "confirmed
+  healthy." A citation pointing at corrupted data is worse than no citation.
+
+### NOT DONE / UNVERIFIED
+- CI run 32555836983's verdict — queued at write time; nobody has seen it.
+- /word/H430 behind the SEC-1 gate — still the owner's one click; two agents have now declined
+  to enter the gate password (correctly).
+- The `year_written` backfill for the 21 staged Chesterton works — filed above, not built.
+
 ## 2026-08-21 — THE LEXICON FLIP IS DONE ON PROD: 5 works published, 52,043 rows served, /ask verified untouched
 
 **Owner-executed at the terminal ~18:03 UTC, gate held.** Continuation of the /word-shelf entry
