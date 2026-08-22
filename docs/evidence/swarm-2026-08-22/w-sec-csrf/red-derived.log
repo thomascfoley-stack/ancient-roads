@@ -1,0 +1,280 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /private/tmp/swarm-W-SEC-CSRF/web
+
+ ❯ test/invariants/csrf-content-type-floor.test.ts (28 tests | 19 failed) 20ms
+   × CSRF Content-Type floor — derived route list > POST src/app/api/annotations/route.ts calls requireJsonContentType BEFORE req.json() 4ms
+     → POST src/app/api/annotations/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × CSRF Content-Type floor — derived route list > DELETE src/app/api/annotations/route.ts calls requireJsonContentType BEFORE req.json() 1ms
+     → DELETE src/app/api/annotations/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × CSRF Content-Type floor — derived route list > POST src/app/api/ask/route.ts calls requireJsonContentType BEFORE req.json() 0ms
+     → POST src/app/api/ask/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × CSRF Content-Type floor — derived route list > POST src/app/api/ask/stream/route.ts calls requireJsonContentType BEFORE req.json() 0ms
+     → POST src/app/api/ask/stream/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × CSRF Content-Type floor — derived route list > POST src/app/api/channels/route.ts calls requireJsonContentType BEFORE req.json() 0ms
+     → POST src/app/api/channels/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × CSRF Content-Type floor — derived route list > POST src/app/api/chats/route.ts calls requireJsonContentType BEFORE req.json() 0ms
+     → POST src/app/api/chats/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × CSRF Content-Type floor — derived route list > POST src/app/api/history/search/route.ts calls requireJsonContentType BEFORE req.json() 0ms
+     → POST src/app/api/history/search/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × CSRF Content-Type floor — derived route list > POST src/app/api/messages/route.ts calls requireJsonContentType BEFORE req.json() 0ms
+     → POST src/app/api/messages/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × CSRF Content-Type floor — derived route list > POST src/app/api/plans/[id]/route.ts calls requireJsonContentType BEFORE req.json() 0ms
+     → POST src/app/api/plans/[id]/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × CSRF Content-Type floor — derived route list > POST src/app/api/plans/route.ts calls requireJsonContentType BEFORE req.json() 1ms
+     → POST src/app/api/plans/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × CSRF Content-Type floor — derived route list > POST src/app/api/prayers/route.ts calls requireJsonContentType BEFORE req.json() 0ms
+     → POST src/app/api/prayers/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × CSRF Content-Type floor — derived route list > POST src/app/api/studies/[id]/blocks/route.ts calls requireJsonContentType BEFORE req.json() 0ms
+     → POST src/app/api/studies/[id]/blocks/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × CSRF Content-Type floor — derived route list > PATCH src/app/api/studies/[id]/blocks/route.ts calls requireJsonContentType BEFORE req.json() 0ms
+     → PATCH src/app/api/studies/[id]/blocks/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × CSRF Content-Type floor — derived route list > PATCH src/app/api/studies/[id]/route.ts calls requireJsonContentType BEFORE req.json() 0ms
+     → PATCH src/app/api/studies/[id]/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × CSRF Content-Type floor — derived route list > POST src/app/api/studies/route.ts calls requireJsonContentType BEFORE req.json() 0ms
+     → POST src/app/api/studies/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × CSRF Content-Type floor — derived route list > POST src/app/api/user-corpus/draft-check/route.ts calls requireJsonContentType BEFORE req.json() 0ms
+     → POST src/app/api/user-corpus/draft-check/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × CSRF Content-Type floor — derived route list > POST src/app/api/work/[slug]/progress/route.ts calls requireJsonContentType BEFORE req.json() 0ms
+     → POST src/app/api/work/[slug]/progress/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × CSRF Content-Type floor — derived route list > PUT src/app/api/work/[slug]/shelf/route.ts calls requireJsonContentType BEFORE req.json() 0ms
+     → PUT src/app/api/work/[slug]/shelf/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+   × POST /api/history/search — the floor on the wire > a simple-Content-Type mutation is 400 and never reaches retrieval 2ms
+     → Cannot read properties of undefined (reading 'ok')
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 19 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > POST src/app/api/annotations/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: POST src/app/api/annotations/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > DELETE src/app/api/annotations/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: DELETE src/app/api/annotations/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > POST src/app/api/ask/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: POST src/app/api/ask/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > POST src/app/api/ask/stream/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: POST src/app/api/ask/stream/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > POST src/app/api/channels/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: POST src/app/api/channels/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > POST src/app/api/chats/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: POST src/app/api/chats/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > POST src/app/api/history/search/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: POST src/app/api/history/search/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > POST src/app/api/messages/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: POST src/app/api/messages/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > POST src/app/api/plans/[id]/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: POST src/app/api/plans/[id]/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > POST src/app/api/plans/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: POST src/app/api/plans/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > POST src/app/api/prayers/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: POST src/app/api/prayers/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > POST src/app/api/studies/[id]/blocks/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: POST src/app/api/studies/[id]/blocks/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > PATCH src/app/api/studies/[id]/blocks/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: PATCH src/app/api/studies/[id]/blocks/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > PATCH src/app/api/studies/[id]/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: PATCH src/app/api/studies/[id]/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > POST src/app/api/studies/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: POST src/app/api/studies/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > POST src/app/api/user-corpus/draft-check/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: POST src/app/api/user-corpus/draft-check/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > POST src/app/api/work/[slug]/progress/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: POST src/app/api/work/[slug]/progress/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > CSRF Content-Type floor — derived route list > PUT src/app/api/work/[slug]/shelf/route.ts calls requireJsonContentType BEFORE req.json()
+AssertionError: PUT src/app/api/work/[slug]/shelf/route.ts parses a JSON body without the CSRF floor: expected -1 to be greater than or equal to 0
+ ❯ test/invariants/csrf-content-type-floor.test.ts:115:90
+    113|     (_label, c) => {
+    114|       const guardAt = c.body.search(GUARD_CALL);
+    115|       expect(guardAt, `${c.method} ${c.file} parses a JSON body withou…
+       |                                                                                          ^
+    116|       expect(
+    117|         guardAt < c.body.search(PARSES_JSON),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/19]⎯
+
+ FAIL  test/invariants/csrf-content-type-floor.test.ts > POST /api/history/search — the floor on the wire > a simple-Content-Type mutation is 400 and never reaches retrieval
+TypeError: Cannot read properties of undefined (reading 'ok')
+ ❯ Module.POST src/app/api/history/search/route.ts:43:11
+     41| 
+     42|   const rl = await checkHistorySearchRateLimit(userId);
+     43|   if (!rl.ok) {
+       |           ^
+     44|     return NextResponse.json(
+     45|       { error: 'rate_limited', retryAfterSec: rl.retryAfterSec },
+ ❯ test/invariants/csrf-content-type-floor.test.ts:173:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/19]⎯
+
+ Test Files  1 failed (1)
+      Tests  19 failed | 9 passed (28)
+   Start at  10:40:13
+   Duration  568ms (transform 61ms, setup 0ms, collect 143ms, tests 20ms, environment 0ms, prepare 78ms)
+
