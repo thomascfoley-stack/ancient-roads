@@ -8,6 +8,17 @@
  *  a regression floor and is never tuned against. */
 export const HISTORY_RANK_WEIGHTS = { entity: 3, period: 2, cosine: 1, fts: 0.5 } as const;
 
+/**
+ * The similarity floor (2026-08-21, pre-registered + calibrated:
+ * docs/evidence/history-similarity-floor-2026-08-21.md). A result whose ONLY evidence is text
+ * must have cosine >= this to count as matched at all — measured on dev: real-with-data 0.75,
+ * nonsense 0.44-0.54. FTS word-hits alone never make a "Closest match" hero: "how to fix a
+ * leaking kitchen tap" was matching sections containing "fix" and "tap", and the hero it
+ * produced is exactly the confident-wrong answer the pre-launch walk flagged. Entity and period
+ * evidence is verbatim/structural and unaffected.
+ */
+export const HISTORY_TEXT_COSINE_FLOOR = 0.6;
+
 export interface Period { start: number; end: number }
 
 const ORDINALS: Record<string, number> = {

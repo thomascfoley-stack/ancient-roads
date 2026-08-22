@@ -4,7 +4,7 @@
 import { getDb } from './db';
 import { embedQuery } from './teacher/deepinfra';
 import {
-  type Period, assertExcerptVerbatim, makeExcerpt, matchEntities, parsePeriod, periodsOverlap, scoreSection,
+  type Period, assertExcerptVerbatim, makeExcerpt, matchEntities, parsePeriod, periodsOverlap, scoreSection, HISTORY_TEXT_COSINE_FLOOR,
 } from './history-search';
 
 export interface HistoryResult {
@@ -125,14 +125,22 @@ export async function searchHistory(query: string): Promise<HistoryResponse> {
     )) as Row[], () => { /* period overlap recomputed below from row columns */ });
   }
   const vec = await embedQuery(query);
-  fold((await sql.query(
-    `SELECT ${ROW_COLS}, 1 - (he.embedding <=> $1::vector) AS cosine
-       FROM history_embeddings he
-       JOIN sections s ON s.id = he.section_id
-       JOIN sources src ON src.id = s.source_id
-      WHERE ${SCOPE} ORDER BY he.embedding <=> $1::vector LIMIT 50`,
-    [JSON.stringify(vec)],
-  )) as Row[], () => { /* cosine carried on the row */ });
+  // ef_search rides the SAME transaction as the KNN — on the stateless HTTP driver a set_config
+  // in its own call binds nothing (routing.ts:311-315). At the default 40 this lane STARVED
+  // through the partial index (measured 2026-08-21: three of four real probes returned empty
+  // top-3), which is what left FTS-found rows with no cosine for the floor below.
+  const [, vecRows] = await sql.transaction([
+    sql`SELECT set_config('hnsw.ef_search', '120', true)`,
+    sql.query(
+      `SELECT ${ROW_COLS}, 1 - (he.embedding <=> $1::vector) AS cosine
+         FROM history_embeddings he
+         JOIN sections s ON s.id = he.section_id
+         JOIN sources src ON src.id = s.source_id
+        WHERE ${SCOPE} ORDER BY he.embedding <=> $1::vector LIMIT 50`,
+      [JSON.stringify(vec)],
+    ),
+  ]);
+  fold(vecRows as Row[], () => { /* cosine carried on the row */ });
   fold((await sql.query(
     `SELECT ${ROW_COLS}, ts_rank(s.tsv, plainto_tsquery('english', $1)) AS fts
        FROM sections s
@@ -143,6 +151,22 @@ export async function searchHistory(query: string): Promise<HistoryResponse> {
     [query],
   )) as Row[], () => { /* fts carried on the row */ });
 
+  // The floor must judge EVERY text candidate on semantics, including FTS-found rows outside
+  // the KNN top-50 — "the church at Ephesus" earns its hero on cosine even when 'Ephesus' is
+  // outside the entity vocabulary, while "kitchen tap" word-hits die. One batch lookup.
+  const unscored = [...byId.values()].filter((r) => r.cosine == null).map((r) => r.id);
+  if (unscored.length > 0) {
+    const cosRows = (await sql.query(
+      `SELECT he.section_id, 1 - (he.embedding <=> $1::vector) AS cosine
+         FROM history_embeddings he WHERE he.section_id = ANY($2::bigint[])`,
+      [JSON.stringify(vec), unscored],
+    )) as { section_id: string; cosine: number }[];
+    for (const c of cosRows) {
+      const row = byId.get(Number(c.section_id));
+      if (row) row.cosine = Number(c.cosine);
+    }
+  }
+
   const maxFts = Math.max(...[...byId.values()].map((r) => r.fts ?? 0), 0) || 1;
   const scored = [...byId.values()].map((r) => {
     const overlap = period
@@ -151,7 +175,9 @@ export async function searchHistory(query: string): Promise<HistoryResponse> {
     const matched: HistoryResult['matched'] = [];
     if (r.entity) matched.push('entity');
     if (overlap) matched.push('period');
-    if ((r.fts ?? 0) > 0 || (r.cosine ?? 0) > 0) matched.push('text');
+    // The floor: text-only evidence needs a real semantic match, never bare word-hits
+    // (HISTORY_TEXT_COSINE_FLOOR — calibrated, see history-search.ts).
+    if ((r.cosine ?? 0) >= HISTORY_TEXT_COSINE_FLOOR) matched.push('text');
     return {
       row: r, matched,
       score: scoreSection({
@@ -159,7 +185,7 @@ export async function searchHistory(query: string): Promise<HistoryResponse> {
         cosine: r.cosine ?? 0, fts: (r.fts ?? 0) / maxFts,
       }),
     };
-  }).sort((a, b) => b.score - a.score).slice(0, 200);
+  }).filter((x) => x.matched.length > 0).sort((a, b) => b.score - a.score).slice(0, 200);
 
   const needle = entities[0]?.label;
   const toResult = (x: (typeof scored)[number]): HistoryResult => rowToResult(x.row, x.matched, needle);
