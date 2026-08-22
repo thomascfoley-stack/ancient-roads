@@ -1,5 +1,51 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — The three batched items, executed: Thayer's verified (and the narrative was wrong TWICE), relabel + vector unification in flight
+
+**Owner: "do the three of these."** Status per item, evidence inline:
+
+### 1. Thayer's — verification DONE, and the prod-state check overturned the standing story in both directions
+
+**Prod does NOT hold the dead OCR copy, and prod's `thayers-lexicon` was ALREADY published and
+serving** (7,570 flat rows `served=true`) before tonight's flip — proven by that flip's own
+pre-snapshot (`thayers-lexicon: published` at 17:42Z) and by measurement:
+
+```
+DEV : sections=5507 greekHeadings=5507 strongsKeyed=5507  status=staged    served=0
+PROD: sections=5507 greekHeadings=5507 strongsKeyed=5507  status=published served=7570
+sha256(ordered corpus): e10b468bea377408477b61140a0f2195c942ec8b64d0e8e3a35270faf5419814 — BOTH sides
+```
+
+Three entries human-read on both DBs (G101 ἀδυνατέω · G2507 καθαιρέω · G5115 τόξον) — genuine
+Thayer. The gate's evidence file now exists with the sha256s:
+[thayers-source-verification.md](docs/evidence/thayers-source-verification.md) — including what
+it does NOT cover (no direct shingle-match to an independent source copy; the identity proven is
+prod ≡ dev-certified). Stale measured precisely: **2,865 of 7,570 flat rows map to no live
+section** — served but reachable by no query (type-fenced lanes); cleanup filed, deliberately
+not batched into the verification pass. `flip-reference-works.json`'s wrong reason corrected in
+place with the original kept for the record. Serving implication now true and stated: **the
+/word shelf answers Greek keys on prod TODAY** (Thayer's is published there; dev shows the
+roadmap strip because dev's copy is staged).
+
+### 2. register='prose' → 'lexicon' relabel — IN FLIGHT (detached, resumable)
+
+16 lexicon works × 83,280 rows per env, dev and prod identical counts (censused before any
+write). Zero code readers of `metadata->>'register'` exist (grepped web/src, src, scripts, db —
+the field is write-only today), so the relabel breaks nothing; the value is that any FUTURE
+materialization or register list sees the truth. jsonb updates rewrite whole rows (vector
+included) — slow on cold computes; running detached in 2,000-row idempotent batches
+(`WHERE register='prose'` only), dev then prod. Final counts appended when it lands.
+
+### 3. Section-vector unification — IN FLIGHT on dev (detached)
+
+Re-embedding the six published lexicon works' `section_embeddings` from the BARE BODY (leading
+1,800 chars — mirrors `backfill-section-embeddings.mjs`'s exact constants, `BAAI/bge-large-en-v1.5`),
+collapsing the two measured embed vintages into the D1(b) convention. Dev first; the
+verification is the section-vector-pairing suite (lexicon samples should reproduce at ~1.0 on
+bare body, the two-vintage fallback going dormant); prod follows the same script after dev
+verifies. Old vectors are not snapshotted — they are REGENERABLE from text and the operation is
+convergent; risk accepted and stated.
+
 ## 2026-08-22 — F5 ACHIEVED: the first green db-invariants run in this repository's history
 
 **Run [`32562471249`](https://github.com/thomascfoley-stack/ancient-roads/actions/runs/32562471249)

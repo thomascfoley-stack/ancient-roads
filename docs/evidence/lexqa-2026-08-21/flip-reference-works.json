@@ -1,5 +1,6 @@
 {
-  "_": "The reference-works flip (owner terminal, prod). Quality pass: docs/evidence/lexqa-2026-08-21/README.md — all five serve-quality, records present. Design: docs/WORD_REFERENCE_PANE_DESIGN.md. Thayer's is DELIBERATELY absent: prod may hold its dead OCR copy (the healthy re-ingest postdates the dev reset) — prod-state check + quarantine-record lift first, then its own one-work flip.",
+  "_": "The reference-works flip (owner terminal, prod — EXECUTED 2026-08-21 ~18:03Z, gate held). Quality pass: docs/evidence/lexqa-2026-08-21/README.md — all five serve-quality, records present. Design: docs/WORD_REFERENCE_PANE_DESIGN.md. Thayer's absent from this list; the reason given below was WRONG — corrected 2026-08-22 by the prod-state check (docs/evidence/thayers-source-verification.md): prod does NOT hold the dead OCR copy (5,507/5,507 Greek headwords, sha256-identical to dev's certified re-ingest), and prod's thayers-lexicon was ALREADY published and serving before this flip ran (proven by this flip's own pre-snapshot).",
+  "_original_reason_kept_for_the_record": "Thayer's is DELIBERATELY absent: prod may hold its dead OCR copy (the healthy re-ingest postdates the dev reset) — prod-state check + quarantine-record lift first, then its own one-work flip.",
   "builtFor": "the /word reference shelf + lexicon search — DECISIONS 'Lexicons stay staged until the reference-pane UX ships' (the pane shipped 2026-08-21)",
   "host": "ep-odd-fog-atnykudm",
   "cohort": "staged",
