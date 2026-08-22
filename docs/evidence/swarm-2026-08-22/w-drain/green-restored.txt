@@ -1,0 +1,13 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /private/tmp/swarm-W-DRAIN/web
+
+ ✓ test/user-corpus/drain-failure-semantics.test.ts (2 tests) 14319ms
+   ✓ drain failure semantics > a missing DEEPINFRA_API_KEY fails the document PERMANENTLY — it is not parked back at queued 13213ms
+   ✓ drain failure semantics > a drain that gets nowhere reports attempted, not completed 726ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  10:38:44
+   Duration  14.98s (transform 198ms, setup 0ms, collect 284ms, tests 14.32s, environment 0ms, prepare 60ms)
+
