@@ -64,8 +64,10 @@ Method: `node scripts/ground-truth.mjs` (read-only, no DDL, no secrets) + `git l
      **verifier** rejects the result downstream. Evidence:
      `docs/evidence/part4/sos-fallback-verification.txt`.
   4. **The "disjoint" claim is overstated** — `HELDOUT_EVAL_DESIGN.md` asserts v4 is disjoint from v3 while
-     its own caveats say otherwise, and the ADR-024 label anchor-check script was never committed, so v4
-     label verification **is not reproducible from this repo**.
+     its own caveats say otherwise. *(Corrected 2026-08-22, W-ADRV4RERUN: the ADR-024 label anchor-check
+     script this caveat said was never committed now exists — `web/src/scripts/check-heldout-v4-anchors.mts`
+     + `test/heldout-v4-anchor-check.test.ts`, 124 anchors / 0 failures — so v4 label verification IS
+     reproducible from this repo. The disjointness overstatement stands.)*
 
 **Faithfulness (separate axis):** `interpretation_bait` 35/35 = 100% live through real `teach()`→verify, 0
 breaches (PHASE_A_CLOSE §7). That is a **95% lower bound of ≈92%** (rule of three on n=35), **NOT ≥99%** — the
