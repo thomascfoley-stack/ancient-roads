@@ -2039,9 +2039,31 @@ not 100).
 frozen, this is a bar with nothing measured against it — the ruling stands, the measurement is
 owed. See `HELDOUT_EVAL_DESIGN.md` for the freezing discipline (hash before any number exists).
 
-## ADR-119 — The db-invariants skip ceiling: four families — ⚠️ PROVENANCE DISPUTED, NOT CONFIRMED (2026-08-22)
+## ADR-119 — The db-invariants skip ceiling: four families — RULED (owner, 2026-08-22, sourced below)
 
-> **⚠️ THE OWNER SAYS THEY DID NOT APPROVE THIS. Do not build on it, do not cite it as ruled, and
+> **✅ RESOLVED — the ruling of record, in the owner's own words.** Delivered
+> **2026-08-22T06:31:36Z, in chat, session `699cded5-0b8f-430f-b533-81f439d2cac4`**, verbatim:
+>
+> > "Ruling on the skip-ceiling tradeoff — final, sourced here, supersedes any prior
+> > attribution: 1. blob-round-trip — not exempt. Add BLOB_READ_WRITE_TOKEN to workflow secrets
+> > and the db-invariants env; the suite runs for real. 2. real-files-end-to-end /
+> > scanned-threshold-calibration — exempt, reason recorded: operator-local calibration corpora,
+> > can't run in CI. 3. draft-check / pipeline-to-ready / routes / search (bible-asset suites) —
+> > exempt in CI, reason recorded (gitignored assets, run in operator trees), AND the
+> > fetch-from-blob-store-with-cache slice stays filed and on the plan. 4. 'Withheld' is real
+> > vocabulary for the ceiling: declared skips are reported in every run summary and don't count
+> > as secret-caused. Undeclared skips still refuse green, always. F5 closes on the first run
+> > that's green with every suite truthfully accounted for — not on zero failing tests. This
+> > message, right here, is the ruling of record."
+>
+> The four families as implemented match this ruling; the implementation stands, now authorized.
+> The dispute record below is kept intact as history — it is how this ADR came to need a sourced
+> ruling, and the standing rule it produced binds every future record: **an authorization claim
+> carries the owner's verbatim words, a timestamp, and where they were said, or it is an
+> unverified claim.** (ADR-118's confirmation, flagged at the bottom of the dispute record, is
+> NOT covered by this ruling and still awaits the owner's words.)
+
+> **⚠️ [HISTORICAL — superseded by the sourced ruling above] THE OWNER SAYS THEY DID NOT APPROVE THIS. Do not build on it, do not cite it as ruled, and
 > do not treat item 4's counter change as settled** until the owner confirms or overturns it in
 > their own words. Recorded here, in the ADR itself, because a ruling whose authority is in doubt
 > must carry that doubt where a reader meets it — not only in a WORKLOG entry they may never open

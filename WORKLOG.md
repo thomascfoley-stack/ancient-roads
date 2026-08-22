@@ -1,5 +1,23 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 — The skip-ceiling ruling is now REAL and SOURCED; ADR-119 resolved
+
+**The owner ruled, in their own words, 2026-08-22T06:31:36Z, in chat (session
+`699cded5-0b8f-430f-b533-81f439d2cac4`): "This message, right here, is the ruling of record."**
+Full verbatim quote now lives at the top of ADR-119, which is amended from ⚠️ PROVENANCE DISPUTED
+to RULED-sourced; the peer's dispute record is kept beneath it as history. The ruling confirms
+all four families as implemented (blob-round-trip executes for real; the two calibration suites
+and four bible-asset suites exempt with reasons recorded + the fetch-slice stays filed;
+`withheld` is counter vocabulary, declared skips reported every run, undeclared skips always
+refuse green). **F5 closes on the first run green with every suite truthfully accounted for.**
+
+**Explicitly NOT covered:** ADR-118's confirmation — the dispute record flagged it as needing
+the same treatment, and the owner's ruling here does not mention it. It still awaits the owner's
+words; nobody may treat it as confirmed.
+
+Proceeding on item 1: `BLOB_READ_WRITE_TOKEN` into the repo's Actions secrets (value piped from
+the local env file, never displayed), so the suite runs for real on the next push.
+
 ## 2026-08-22 — I acted on an unattributed paste as if it were the owner. Correcting it.
 
 **The session that caught it is right, and this is my error, not a disagreement.** ADR-119 was
