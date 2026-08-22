@@ -16,6 +16,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { announceSkip } from '../helpers/loud-skip';
 
 /** documentId -> file on disk, populated per test before the drain runs. */
 const BYTES = new Map<string, Uint8Array>();
@@ -43,12 +44,24 @@ const PDF_DIR = process.env.REALFILE_PDF_DIR;
 const SCAN_DIR = process.env.REALFILE_SCAN_DIR;
 const enabled = Boolean(APP_URL && DOCX_DIR && PDF_DIR && SCAN_DIR);
 
-if (!enabled) {
-  console.warn(
-    '⚠ SKIPPED (visibly): real-file end-to-end needs APP_DATABASE_URL plus REALFILE_DOCX_DIR / ' +
-      'REALFILE_PDF_DIR / REALFILE_SCAN_DIR.',
-  );
-}
+
+// SELF-REPORTED SKIP (2026-08-22). This suite used to skip with a bare console.warn, which put it
+// in `ci-skip-ceiling.mjs`'s RESIDUAL bucket: that script defines "secret-caused" as "not
+// registered as an artifact skip", so any suite that does not call announceSkip is counted as a
+// missing SECRET whatever the real cause. Eight suites were being counted that way and the gate
+// was refusing green on the total. announceSkip makes each requirement state its own kind, so the
+// count becomes a measurement instead of an elimination — and it cannot launder a secret into an
+// exemption: under REQUIRE_SECRETS=1 a missing SECRET throws rather than being recorded.
+announceSkip(
+  'real files, end to end, against the real database',
+  [
+    { name: 'APP_DATABASE_URL', present: Boolean(APP_URL) },
+    { name: 'REALFILE_DOCX_DIR (operator-supplied local corpus)', present: Boolean(DOCX_DIR), kind: 'artifact' as const },
+    { name: 'REALFILE_PDF_DIR (operator-supplied local corpus)', present: Boolean(PDF_DIR), kind: 'artifact' as const },
+    { name: 'REALFILE_SCAN_DIR (operator-supplied local corpus)', present: Boolean(SCAN_DIR), kind: 'artifact' as const },
+  ],
+  'real .docx/.pdf/scanned files through the shipped pipeline',
+);
 
 const RUN = `realfile-${Date.now().toString(36)}`;
 const USER = `${RUN}-user`;

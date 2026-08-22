@@ -14,6 +14,7 @@
 
 import { Buffer } from 'node:buffer';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { announceSkip } from '../helpers/loud-skip';
 import { deleteUserDocument, getUserDocument, putUserDocument } from '@/lib/user-corpus/blob';
 import { runAsUser } from '@/lib/db';
 import { createDocument, deleteDocument, getDocument } from '@/lib/user-corpus/documents';
@@ -27,12 +28,22 @@ if (TOKEN && !process.env.BLOB_READ_WRITE_TOKEN) process.env.BLOB_READ_WRITE_TOK
 
 const APP_URL = runtimeDbUrl();
 const enabled = Boolean(TOKEN && APP_URL);
-if (!enabled) {
-  console.warn(
-    '⚠ SKIPPED (visibly): blob round-trip needs BLOB_READ_WRITE_TOKEN (web/.env.local or env) ' +
-      'and APP_DATABASE_URL. The @vercel/blob network hop is UNPROVEN when this does not run.',
-  );
-}
+
+// SELF-REPORTED SKIP (2026-08-22). This suite used to skip with a bare console.warn, which put it
+// in `ci-skip-ceiling.mjs`'s RESIDUAL bucket: that script defines "secret-caused" as "not
+// registered as an artifact skip", so any suite that does not call announceSkip is counted as a
+// missing SECRET whatever the real cause. Eight suites were being counted that way and the gate
+// was refusing green on the total. announceSkip makes each requirement state its own kind, so the
+// count becomes a measurement instead of an elimination — and it cannot launder a secret into an
+// exemption: under REQUIRE_SECRETS=1 a missing SECRET throws rather than being recorded.
+announceSkip(
+  '@vercel/blob against the live store',
+  [
+    { name: 'BLOB_READ_WRITE_TOKEN', present: Boolean(TOKEN) },
+    { name: 'APP_DATABASE_URL', present: Boolean(APP_URL) },
+  ],
+  'the @vercel/blob network hop — put, get and delete against the real store',
+);
 
 const RUN = `blobtest-${Date.now().toString(36)}`;
 const USER = `${RUN}-user`;

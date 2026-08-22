@@ -37,10 +37,23 @@ const path = (await import('node:path')).default;
 
 const KEY = localEnv('DEEPINFRA_API_KEY');
 if (KEY && !process.env.DEEPINFRA_API_KEY) process.env.DEEPINFRA_API_KEY = KEY;
-const enabled = Boolean(runtimeDbUrl() && KEY && existsSync(path.resolve(__dirname, '../../public/bible/kjv')));
-if (!enabled) {
-  console.warn('⚠ SKIPPED (visibly): search suite needs APP_DATABASE_URL, DEEPINFRA_API_KEY and public/bible/kjv.');
-}
+const HAVE_KJV = existsSync(path.resolve(__dirname, '../../public/bible/kjv'));
+const enabled = Boolean(runtimeDbUrl() && KEY && HAVE_KJV);
+// SELF-REPORTED SKIP (2026-08-22) — see the note in draft-check.test.ts. A bare console.warn put
+// this suite in ci-skip-ceiling.mjs's RESIDUAL "secret-caused" bucket regardless of why it
+// skipped; announceSkip makes each requirement declare its kind, so the ceiling counts a
+// measurement rather than an elimination. A missing SECRET still throws under REQUIRE_SECRETS=1,
+// so this cannot turn a withheld credential into an exemption.
+const { announceSkip } = await import('../helpers/loud-skip');
+announceSkip(
+  'the three searches',
+  [
+    { name: 'APP_DATABASE_URL', present: Boolean(runtimeDbUrl()) },
+    { name: 'DEEPINFRA_API_KEY', present: Boolean(KEY) },
+    { name: 'web/public/bible/kjv (gitignored corpus asset)', present: HAVE_KJV, kind: 'artifact' as const },
+  ],
+  'keyword, semantic and verse-anchor search over a real user corpus',
+);
 
 const RUN = `search-${Date.now().toString(36)}`;
 const USER_A = `${RUN}-A`;

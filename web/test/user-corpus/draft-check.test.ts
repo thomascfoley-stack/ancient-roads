@@ -9,6 +9,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
+import { announceSkip } from '../helpers/loud-skip';
 import { runAsUser } from '../../src/lib/db';
 import { createDocument, deleteDocument } from '../../src/lib/user-corpus/documents';
 import { anchorDraft, draftCheck, DRAFT_MAX_RANGES } from '../../src/lib/user-corpus/draft-check';
@@ -18,7 +19,22 @@ import { runtimeDbUrl } from '../helpers/env';
 
 const HAVE_BIBLE = existsSync(path.resolve(__dirname, '../../public/bible/kjv/jhn.json'));
 const enabled = Boolean(runtimeDbUrl()) && HAVE_BIBLE;
-if (!enabled) console.warn('⚠ SKIPPED (visibly): draft-check needs APP_DATABASE_URL and public/bible.');
+
+// SELF-REPORTED SKIP (2026-08-22). This suite used to skip with a bare console.warn, which put it
+// in `ci-skip-ceiling.mjs`'s RESIDUAL bucket: that script defines "secret-caused" as "not
+// registered as an artifact skip", so any suite that does not call announceSkip is counted as a
+// missing SECRET whatever the real cause. Eight suites were being counted that way and the gate
+// was refusing green on the total. announceSkip makes each requirement state its own kind, so the
+// count becomes a measurement instead of an elimination — and it cannot launder a secret into an
+// exemption: under REQUIRE_SECRETS=1 a missing SECRET throws rather than being recorded.
+announceSkip(
+  'draft check',
+  [
+    { name: 'APP_DATABASE_URL', present: Boolean(runtimeDbUrl()) },
+    { name: 'web/public/bible/kjv (gitignored corpus asset)', present: HAVE_BIBLE, kind: 'artifact' as const },
+  ],
+  'draft anchoring against the real KJV and the live corpus predicate',
+);
 
 const USER = `draftcheck-${Date.now().toString(36)}`;
 // Rom 8:28 KJV — verbatim, so the uncited channel anchors it at the shipped K.

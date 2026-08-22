@@ -1,5 +1,57 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 (early) — db-invariants: zero failing tests for the first time; the red moved to the counter
+
+**The gate-test fix worked.** Run `32554632033` on `9ffecd5`: **143 files, 955 tests passed, 88
+skipped, ZERO failed** — the first db-invariants run in this repo's history with no failing test.
+The `audit` job passed too.
+
+**The job still exited 1, and not on a test.** `scripts/ci-skip-ceiling.mjs` (ADR-035) refused
+green: *"8 secret-caused suite(s) fully skipped, ceiling is 0"*. That mechanism is working as
+designed — it exists to refuse a green where suites never executed.
+
+**But the counter over-reads, and this is the finding.** `ci-skip-ceiling.mjs:51` defines
+secret-caused as a **residual**: `fullySkipped.filter((f) => !isArtifactSkip(f, artifactSkips))`.
+"Secret-caused" therefore means *"not registered as an artifact skip"* — a classification by
+elimination, not a measurement of cause. Seven of the eight counted suites never called
+`announceSkip` at all (bare `describe.skipIf` + `console.warn`), so they landed in the residual
+bucket whatever the real reason. Same shape as watchlist instances 17/18 — an extraction whose
+match set is wider than the property, read as the property — this time inside the instrument built
+to keep greens honest.
+
+**Fixed by making the suites self-report, which produces evidence without asserting an outcome.**
+Five converted to `announceSkip` with per-requirement `kind`, two more (`routes`, `search`) in
+their dynamic-import idiom. This CANNOT launder a withheld credential into an exemption: under
+`REQUIRE_SECRETS=1` a missing **secret** throws rather than being recorded. Measured locally, the
+causes are now named rather than inferred:
+
+| suite | actually missing | kind |
+|---|---|---|
+| `blob-round-trip` | **`BLOB_READ_WRITE_TOKEN`** | **secret** — the D3 credential class |
+| `real-files-end-to-end` | `REALFILE_{DOCX,PDF,SCAN}_DIR` | artifact (operator-supplied local corpora) |
+| `scanned-threshold-calibration` | `CALIBRATION_{TEXT,SCAN}_DIR` | artifact |
+| `draft-check` · `pipeline-to-ready` · `routes` · `search` | `web/public/bible/kjv` in CI (gitignored, `.gitignore:22`) | artifact |
+
+Full web suite with DB env: **267 files, 1733 tests, 0 failures.**
+
+### NOT DONE / UNVERIFIED — two owner calls, and one of them decides whether CI can EVER be green
+
+- **⚠️ `neon-auth-live` makes a zero ceiling unreachable, structurally.** It declares its
+  credentials `kind: 'withheld'` (b24bfe3 — the deliberate honest posture MASTER F4 credits), but
+  `announceSkip` calls `recordArtifactSkip` **only** for `artifact` and `provider`, never for
+  `withheld`. So a withheld-only skip is absent from the manifest, falls into the residual bucket,
+  and is counted as secret-caused. **With `DB_INVARIANTS_SKIP_CEILING: '0'`, that one suite keeps
+  the job red no matter what else is fixed.** The two components disagree about the vocabulary.
+  NOT changed here: teaching the ceiling about `withheld` changes what "green" means, and ADR-035
+  makes the ceiling an owner call.
+- **`blob-round-trip` will now FAIL LOUDLY in CI rather than skip silently** — `BLOB_READ_WRITE_TOKEN`
+  is not in the db-invariants step's env, and a missing secret throws under `REQUIRE_SECRETS=1`.
+  That is the honest outcome and it is a real, named blocker: give CI the token, or rule the suite
+  exempt with the reason recorded. Same credential family as D3.
+- **Lane F5 is NOT achieved.** Do not close it. Zero failing tests is not a green run.
+- The 20 fresh proper-noun cases, the DECISIONS-values guard, and 125-on-prod all still stand.
+
+
 ## 2026-08-22 (early) — The one test keeping db-invariants red, and it was green for the wrong reason
 
 **CI finally completes, so the red is finally information.** Lane F3 fixed the scheduling; four

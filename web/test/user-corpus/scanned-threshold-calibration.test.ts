@@ -38,6 +38,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { announceSkip } from '../helpers/loud-skip';
 import { parsePdf } from '@/lib/user-corpus/parse-pdf';
 import { MIN_CHARS_PER_PAGE, countExtractable } from '@/lib/user-corpus/parse';
 
@@ -45,12 +46,22 @@ const TEXT_DIR = process.env.CALIBRATION_TEXT_DIR;
 const SCAN_DIR = process.env.CALIBRATION_SCAN_DIR;
 const enabled = Boolean(TEXT_DIR && SCAN_DIR);
 
-if (!enabled) {
-  console.warn(
-    '⚠ SKIPPED (visibly): scanned-threshold calibration needs CALIBRATION_TEXT_DIR and ' +
-      'CALIBRATION_SCAN_DIR. The committed measurement is in docs/evidence/lane-b-slice1/.',
-  );
-}
+
+// SELF-REPORTED SKIP (2026-08-22). This suite used to skip with a bare console.warn, which put it
+// in `ci-skip-ceiling.mjs`'s RESIDUAL bucket: that script defines "secret-caused" as "not
+// registered as an artifact skip", so any suite that does not call announceSkip is counted as a
+// missing SECRET whatever the real cause. Eight suites were being counted that way and the gate
+// was refusing green on the total. announceSkip makes each requirement state its own kind, so the
+// count becomes a measurement instead of an elimination — and it cannot launder a secret into an
+// exemption: under REQUIRE_SECRETS=1 a missing SECRET throws rather than being recorded.
+announceSkip(
+  'MIN_CHARS_PER_PAGE, measured against real documents',
+  [
+    { name: 'CALIBRATION_TEXT_DIR (operator-supplied local corpus)', present: Boolean(TEXT_DIR), kind: 'artifact' as const },
+    { name: 'CALIBRATION_SCAN_DIR (operator-supplied local corpus)', present: Boolean(SCAN_DIR), kind: 'artifact' as const },
+  ],
+  'the MIN_CHARS_PER_PAGE scanned-vs-text threshold against real documents',
+);
 
 interface Measured {
   pages: number;

@@ -10,6 +10,7 @@
 
 import { Buffer } from 'node:buffer';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { announceSkip } from '../helpers/loud-skip';
 
 const BYTES = new Map<string, Uint8Array>();
 vi.mock('@/lib/user-corpus/blob', () => ({
@@ -39,12 +40,23 @@ if (KEY && !process.env.DEEPINFRA_API_KEY) process.env.DEEPINFRA_API_KEY = KEY;
 const APP_URL = runtimeDbUrl();
 const HAVE_BIBLE = existsSync(path.resolve(__dirname, '../../public/bible/kjv'));
 const enabled = Boolean(APP_URL && KEY && HAVE_BIBLE);
-if (!enabled) {
-  console.warn(
-    '⚠ SKIPPED (visibly): pipeline-to-ready needs APP_DATABASE_URL, DEEPINFRA_API_KEY and ' +
-      'public/bible/kjv. The end-to-end claim is UNPROVEN when this does not run.',
-  );
-}
+
+// SELF-REPORTED SKIP (2026-08-22). This suite used to skip with a bare console.warn, which put it
+// in `ci-skip-ceiling.mjs`'s RESIDUAL bucket: that script defines "secret-caused" as "not
+// registered as an artifact skip", so any suite that does not call announceSkip is counted as a
+// missing SECRET whatever the real cause. Eight suites were being counted that way and the gate
+// was refusing green on the total. announceSkip makes each requirement state its own kind, so the
+// count becomes a measurement instead of an elimination — and it cannot launder a secret into an
+// exemption: under REQUIRE_SECRETS=1 a missing SECRET throws rather than being recorded.
+announceSkip(
+  'a document goes in and comes out searchable',
+  [
+    { name: 'APP_DATABASE_URL', present: Boolean(APP_URL) },
+    { name: 'DEEPINFRA_API_KEY', present: Boolean(KEY) },
+    { name: 'web/public/bible/kjv (gitignored corpus asset)', present: HAVE_BIBLE, kind: 'artifact' as const },
+  ],
+  'the end-to-end upload → parse → embed → searchable claim',
+);
 
 const RUN = `e2e-${Date.now().toString(36)}`;
 const USER = `${RUN}-user`;
