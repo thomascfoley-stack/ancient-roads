@@ -1,5 +1,51 @@
 # WORKLOG — Autonomous session 2026-08-12
 
+## 2026-08-22 (early) — The one test keeping db-invariants red, and it was green for the wrong reason
+
+**CI finally completes, so the red is finally information.** Lane F3 fixed the scheduling; four
+completed runs since then are all red, and **it is one file, not a class**: 142 passed, 1 failed,
+9 skipped. The `audit` JOB passes — including on the ADR-118 commit. `db-invariants` is a **job
+inside `audit.yml`**, not a workflow of its own, which is why every run is listed as "audit".
+
+**The failure:** `teacher-owner-gate-routes.test.ts` → "an ALLOWLISTED caller is NOT refused" →
+**timed out in 5000ms**. It predates tonight's commits (same file red on `15793b3`).
+
+**Root cause, and the second half is the real finding.** The positive control called the shipped
+`POST /api/ask` with an allowlisted caller and asserted `status !== 403`. Past the gate, the route
+continues into `teach()` — embed + retrieve + compose against a live provider:
+
+1. **In CI**, where the provider secrets exist, it did real work and blew vitest's 5s budget — and
+   **billed a provider call on every push**, in the suite whose entire subject is "a stranger must
+   not be able to spend our money".
+2. **Locally**, where they do not, `teach()` threw instantly, the route returned 500, and
+   `status !== 403` was satisfied **without the gate having been exercised at all**. Green for the
+   wrong reason, in the positive control of an access gate — THE_LOOP §6's unearned green, sitting
+   in the one check that exists to prove the gate is not simply off. It passed in the full local
+   suite tonight for exactly that reason.
+
+**Fix:** stub `teach` (and `scheduleAskOutcome`) the way this file already stubs the rate limiter,
+so the test stops at the boundary its claim is actually about, and assert `spent.teach === 1`
+directly rather than inferring "not refused" from a status code that several unrelated failures
+also produce. 4 tests, **42ms** (was a 5000ms timeout).
+
+**Red-proofed in BOTH directions**, because a stub is exactly the thing that could have defanged it:
+- delete the gate from the route → the two **negative** controls go red;
+- make the gate refuse everyone → the **positive** control goes red.
+Reverted, 4/4 green. Full web suite with DB env: **267 files, 1733 tests, 0 failures.**
+
+### NOT DONE / UNVERIFIED
+
+- **The first green `db-invariants` run has not happened yet** — this commit is the candidate.
+  Lane F5 is not closed until a run completes green; do not mark it from a local pass.
+- **CLAUDE.md's accuracy pointer is one ADR short:** it names "ADR-028 + its amendment ADR-116" as
+  the only place the status is stated, and **ADR-118** now states the bar. A pointer fix, NOT a
+  stale value — the July `60/100` on that line is the correct record of the July v4 run and is
+  explicitly labelled as such. Worth knowing before the DECISIONS-values guard is built: a guard
+  tuned to catch a stale value that is not there would be testing the wrong pattern.
+- The 20 fresh proper-noun cases for ADR-118 still do not exist.
+- 125 is still not on production, and must precede any deploy carrying `7b2eae6`.
+
+
 ## 2026-08-21 (late) — 125 applied to dev; the HIT@2 bar ruled (ADR-118)
 
 **Owner: "apply 125 and hit@2bar."**

@@ -22,7 +22,7 @@ vi.mock('@/lib/session', () => ({
 
 // Spend tripwires: if the gate lets a refused caller through, these record it. They are the
 // evidence for "refused costs nothing", not decoration.
-const spent = { rateLimit: 0 };
+const spent = { rateLimit: 0, teach: 0 };
 vi.mock('@/lib/rate-limit', () => ({
   checkAskRateLimit: async () => {
     spent.rateLimit += 1;
@@ -31,9 +31,42 @@ vi.mock('@/lib/rate-limit', () => ({
   checkGateRateLimit: async () => ({ ok: true }),
 }));
 
+// THE PIPELINE IS STUBBED, and that is the point of this suite rather than a convenience.
+//
+// This file's claim is about the GATE — who reaches the paid path — not about what the paid path
+// then produces. Unstubbed, the positive control below ran the real `teach()`: embed + retrieve +
+// compose against a live provider. Two things followed, and they were the ONE test keeping
+// `db-invariants` red (142 passed, 1 failed):
+//
+//   1. In CI, where the provider secrets exist, it did real work and blew vitest's 5s budget —
+//      and billed a provider call on every push, in the suite whose whole subject is "a stranger
+//      must not be able to spend our money".
+//   2. Locally, where they do not, `teach()` threw instantly, the route returned 500, and
+//      `status !== 403` was satisfied WITHOUT THE GATE HAVING BEEN EXERCISED. Green for the wrong
+//      reason, in the positive control of an access gate — THE_LOOP §6's unearned green, sitting
+//      in the check that exists to prove the gate is not simply off.
+//
+// Stubbed, the same assertion becomes exact: the caller reached the pipeline entry point. That is
+// the boundary "not refused" actually means, and `spent.teach` now says so directly instead of
+// being inferred from a status code that several unrelated failures also produce.
+vi.mock('@/lib/teacher/teach', () => ({
+  teach: async () => {
+    spent.teach += 1;
+    return {
+      result: { kind: 'empty', reason: 'stubbed — this suite tests the gate, not the pipeline' },
+      meta: { attempts: 0, voices: 0, traditions: 0, rejections: [] },
+    };
+  },
+}));
+
+// Same reasoning one layer down: the outcome log is a fire-and-forget DB write, and this suite has
+// no business appending rows to whatever database CI hands it.
+vi.mock('@/lib/ask-outcomes', () => ({ scheduleAskOutcome: () => {} }));
+
 const ORIGINAL = process.env.TEACHER_ALLOWLIST;
 beforeEach(() => {
   spent.rateLimit = 0;
+  spent.teach = 0;
   process.env.TEACHER_ALLOWLIST = 'owner@example.test';
 });
 afterEach(() => {
@@ -77,8 +110,11 @@ describe('the teacher owner-gate fires on the shipped routes (ADR-116 ruling 3)'
     const { POST } = await import('@/app/api/ask/route');
     const res = await POST(askReq());
     expect(res.status).not.toBe(403);
-    // It got past the gate to the limiter, which is the next thing on the path.
+    // Past the gate, to the limiter, and into the pipeline — the boundary "not refused" means.
+    // `status !== 403` alone is weak evidence: a 500 from any unrelated failure satisfies it, and
+    // that is precisely how this test used to pass without exercising the gate.
     expect(spent.rateLimit).toBe(1);
+    expect(spent.teach).toBe(1);
   });
 
   it('with the allowlist UNSET, even the owner is refused — fail-closed, on the real route', async () => {
@@ -88,5 +124,6 @@ describe('the teacher owner-gate fires on the shipped routes (ADR-116 ruling 3)'
     const res = await POST(askReq());
     expect(res.status).toBe(403);
     expect(spent.rateLimit).toBe(0);
+    expect(spent.teach).toBe(0);
   });
 });
