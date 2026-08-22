@@ -263,8 +263,12 @@ and is also gone by version. `deps-audit` correctly FAILED on "declared id no lo
 before `scripts/audit.sh` was updated: a disappearance from the declared set is as much a gate
 failure as an addition, which is the point of enumerating it rather than thresholding it.
 
-**What is still open:** the production cutover itself. Migrations 100-104 are on the `lane-b-uploader`
-Neon branch only, production still runs the Neon Auth wiring, and the clean-start re-register has not
+**What is still open:** the production cutover itself. ~~Migrations 100-104 are on the `lane-b-uploader`
+Neon branch only~~ — **FALSE as of 2026-08-05 and corrected 2026-08-21: 100–105 are applied to
+production and recorded in its ledger** (measured, not inferred:
+`docs/evidence/prod-schema-migrations-2026-08-21.md`, prod `schema_migrations` rows
+`100_user_corpus.sql` … `105_suggested_readings.sql`, applied 2026-08-05/06). The rest of the
+sentence stands: production still runs the Neon Auth wiring, and the clean-start re-register has not
 happened. `MULTI_USER_UPLOADS` stays `false` until it has (UPLOADER_DESIGN §4, enforced by
 `web/test/invariants/sec1-upload-gate.test.ts`).
 

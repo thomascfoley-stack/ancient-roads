@@ -9,6 +9,14 @@
    (the bar kimi set: don't repeat 032's assert-without-checking); 119 genuinely un-applied,
    applied for real (concurrent runner, index VALID). **Phantom-pending now computes EMPTY** —
    the next db-invariants run applies nothing and goes straight to the tests.
+   **Root-cause addendum (same evening, kimi's flag): the dev fix was the SYMPTOM fix.** Prod's
+   ledger is the ROOT — dev is reset from `production` (08-10 was such a reset), so a dev-only
+   fix re-breaks on the next reset, and ANY future CI branch cut from production inherits the
+   same wall. **The root is now fixed too:** the 13 rows renamed on prod's ledger — transactional,
+   collision-checked, `checksum IS NULL`-guarded, all-13-or-rollback, row count unchanged at 67,
+   exact inverse recorded. The table is inert on prod (nothing runs apply-pending there), so the
+   write changes no serving behavior; it exists so the next reset seeds dev truthfully. Full
+   record + rename table: `docs/evidence/prod-schema-migrations-2026-08-21.md` addendum.
 2. **The prod ledger's first committed record** — `docs/evidence/prod-schema-migrations-2026-08-21.md`.
    SECURITY.md:194 TRUE, :266 FALSE, settled by measurement; prod carries the same 13 phantom
    rows (inert there), noted.

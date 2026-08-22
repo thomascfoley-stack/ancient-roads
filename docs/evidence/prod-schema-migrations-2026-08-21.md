@@ -77,3 +77,39 @@ rows: 65
 120_history_embeddings.sql	2026-08-20T06:59:38.525Z	sha
 123_sections_strongs_heading_idx.sql	2026-08-21T17:41:07.768Z	sha
 ```
+
+## Addendum 2026-08-21 (late) — the root fixed, not just the copy
+
+Kimi's root-cause flag, confirmed: **prod's ledger was the SOURCE of the 13 phantom rows** — dev is
+periodically reset from `production` (e.g. 08-10, `br-cool-flower`), so fixing dev alone meant the
+next reset re-inherits the wall and CI breaks again at 020. Any future CI branch cut from
+`production` inherits it the same way.
+
+**Executed on prod, same sitting as the authorized item-1 ledger work:** the 13 rows renamed to the
+filenames whose effects were verified present (the dev probe, above — same schema lineage; prod's
+schema predates none of the 13). Transactional; collision-checked first (none of the correct names
+pre-existed on prod); `checksum IS NULL` guard restricted the UPDATE to the 032-backfill signature;
+all-or-nothing (13 expected, 13 renamed, else ROLLBACK); `applied_by` carries the audit note. Row
+count unchanged: **67 before and after** (the 65 at read time + 122/124's own rows). The table is
+inert on prod — nothing runs apply-pending there — so this changes no behavior today; it exists so
+the NEXT reset-from-production seeds dev with a truthful ledger.
+
+**Exact inverse**, should the owner want it back: the same 13 UPDATEs with the pairs reversed
+(each row is unique by filename; the renamed rows are identifiable by the `[renamed 2026-08-21…]`
+suffix in `applied_by`).
+
+| was (032's wrong name) | now (effect-verified) |
+|---|---|
+| 002_teacher.sql | 002_notes_unique_active.sql |
+| 004_hybrid_search.sql | 004_hybrid_search_v2.sql |
+| 005_annotations.sql | 005_commentary_entry_index.sql |
+| 007_section_embeddings.sql | 007_verseid_index.sql |
+| 010_revoke_dml_corpus.sql | 010_revoke_corpus_writes.sql |
+| 011_commentary_fts_legal_rebuild.sql | 011_rebuild_fts_legal_predicate_drift.sql |
+| 012_source_anchors.sql | 012_partial_legal_hnsw.sql |
+| 015_channels.sql | 015_highlight_subverse.sql |
+| 018_section_history_anchors.sql | 018_register_partial_indexes.sql |
+| 020_source_type_check.sql | 020_embeddings_source_type_registers.sql |
+| 021_revoke_dml_section_tables.sql | 021_revoke_app_runtime_anchor_writes.sql |
+| 022_embeddings_write_policy.sql | 022_embeddings_write_policy_user_scope.sql |
+| 025_notes_highlights.sql | 025_annotations_polymorphic.sql |
